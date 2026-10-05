@@ -1,46 +1,19 @@
 {
   "issue": "491",
   "code": "L2",
-<<<<<<< HEAD
-<<<<<<< HEAD
   "status": "verified",
-  "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
-  "sourceFingerprint": "afb8aa9045a066774438b0c407f4eff3f1123003f5bbafcac1cc1b05685418ed",
+  "currentCommit": "a7d77e8adb61650b93680f88cf07b6cbbf07a60a",
+  "sourceFingerprint": "fa3f897818688bdad2048ecc32334d633bd9f3999db9f13f1e61db8f31b7fe69",
   "verifierCommand": "npx tsx script/m24/verify-hover.ts",
   "evidenceFile": "L2.json",
-  "generatedAt": "2026-10-05T04:20:14.421Z",
+  "generatedAt": "2026-10-05T14:24:29.002Z",
   "passed": 58,
   "failed": 0,
   "failures": [],
-=======
-  "status": "known-gap",
-  "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
-  "sourceFingerprint": "08cae55c9091af3ad3ef2d78ecb9307056b0434645779a16292fb9ea3bc3b051",
-  "verifierCommand": "npx tsx script/m24/verify-hover.ts",
-  "evidenceFile": "L2.json",
-  "generatedAt": "2026-10-05T03:26:43.286Z",
-=======
-  "status": "known-gap",
-  "currentCommit": "39a6b52c0d4618af5af443f88c5f5d6b39e62be6",
-  "sourceFingerprint": "21d0ad943c6b4138b735005777430036bee687f2bc8e68a8d36e789a2e96c70d",
-  "verifierCommand": "npx tsx script/m24/verify-hover.ts",
-  "evidenceFile": "L2.json",
-  "generatedAt": "2026-10-05T06:59:10.283Z",
->>>>>>> feat/hover-all-relationships
-  "passed": 43,
-  "failed": 2,
-  "failures": [
-    "G8/CONTROL: the same stimulus DOES throw when the row is resolved unguarded (so G8 is not vacuous)",
-    "G4/§5.1: no file in src/lsp/ converts an LSP/index line inline (outside the position owner)"
-  ],
-<<<<<<< HEAD
->>>>>>> close/surface-and-docs
-=======
->>>>>>> feat/hover-all-relationships
   "negativeCases": 14,
   "verdict": {
-    "realComponentFailures": 2,
-    "mutantsCaught": 5,
+    "realComponentFailures": 0,
+    "mutantsCaught": 6,
     "mutantsTotal": 6,
     "mutantsByComponent": {
       "hover": {
@@ -49,12 +22,12 @@
         "anchorDrift": 0
       },
       "rich_hover": {
-        "caught": 1,
+        "caught": 2,
         "total": 2,
         "anchorDrift": 0
       }
     },
-    "ok": false,
+    "ok": true,
     "anchorDrift": 0,
     "anchorDriftNote": "A mutant whose anchor no longer exists, or whose module fails to load, no longer tests what this gate names. It is reported as NOT-CAUGHT and forces known-gap — §8.3: silence is guilt, and a skip is not a pass.",
     "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
@@ -70,17 +43,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-<<<<<<< HEAD
-<<<<<<< HEAD
-    "sealedAt": "2026-10-05T04:20:14.422Z",
-    "contentSha256": "bc0f049865753519501b593acb5edc943d56981bcfd8f6ee8e881bedf4001b8c"
-=======
-    "sealedAt": "2026-10-05T03:26:43.287Z",
-    "contentSha256": "b3d0d4f38f5f80387d0c8e634a459636ffcb8caae132fc74136ea060fd51b5ce"
->>>>>>> close/surface-and-docs
-=======
-    "sealedAt": "2026-10-05T06:59:10.284Z",
-    "contentSha256": "5e08d39719959e7fb4625e9f31f6e3848cb07434d290eae7593fefc71186ac0c"
->>>>>>> feat/hover-all-relationships
+    "sealedAt": "2026-10-05T14:24:29.003Z",
+    "contentSha256": "d32ac25ab74d4d867a0ed1331eea61886e13a1c728ba8116a4bffd7a6adfbb25"
   }
 }
