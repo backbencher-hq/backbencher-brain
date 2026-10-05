@@ -2,11 +2,11 @@
   "issue": "496",
   "code": "D1",
   "status": "known-gap",
-  "currentCommit": "691623832108667e506b66bcc653d09d68e0e347",
+  "currentCommit": "0b1f296a291b7a32ee9ff450b94852b9353e4d71",
   "sourceFingerprint": "4fe136ceb104bc7523db076bbc1e9fe18316dc685d06aec6d0e5a38e062e5c2e",
   "verifierCommand": "npx tsx script/m24/verify-docs.ts",
   "evidenceFile": "D1.json",
-  "generatedAt": "2026-10-05T04:21:55.447Z",
+  "generatedAt": "2026-10-05T04:23:08.723Z",
   "passed": 45,
   "failed": 2,
   "failures": [
@@ -80,7 +80,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:21:55.447Z",
-    "contentSha256": "b6a603a30be39eb72503677e89e99c9c6717e5d3bb7fe969b095b1abe7fe745c"
+    "sealedAt": "2026-10-05T04:23:08.723Z",
+    "contentSha256": "0be9564ac6065704f708e131d5d64a5c8f8eb414ea35e4242cd6cc6eaf12423a"
   }
 }
