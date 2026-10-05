@@ -617,7 +617,66 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (hit !== null) return hit
         return text
       }
+      // An unqualified name is assumed package-relative — but "assumed" is where
+      // this used to end, and the assumption is wrong whenever the declaration is
+      // in an ANCESTOR package the file imports. protoc's rule is C++ scope
+      // lookup: `plugin.proto` in `package google.protobuf.compiler` imports
+      // `google/protobuf/descriptor.proto` and writes its field type BARE as
+      // `repeated FileDescriptorProto proto_file = 15;`, and
+      // `FileDescriptorProto` is declared in `package google.protobuf` — the
+      // imported file's package, an ancestor of this one. protoc resolves it
+      // there; prefixing this file's package produced
+      // `google.protobuf.compiler.FileDescriptorProto`, which no corpus file
+      // publishes. So the assumption emitted a name that resolves to nothing for
+      // the shape the reference implementation's own corpus is built from.
+      // `echo_duplicate.proto` is the same shape one package over: it declares
+      // `package grpc.testing.duplicate`, imports the file holding
+      // `package grpc.testing`, spells one rpc's types in full and leaves the
+      // next rpc's bare.
+      //
+      // The walk is `resolveViaImports`' condition applied to an unqualified
+      // name: the candidate is `${scope}.${text}`, and it is accepted only when
+      // that scope's directory is one this file actually imports. Same evidence,
+      // same suffix guard, same refusal to guess when a more specific scope is
+      // also imported — so this cannot resolve a name to a package this file
+      // cannot see.
+      const bare = resolveBareViaImports(text, scope)
+      if (bare !== null) return bare
       return qualify(pkg || null, text)
+    }
+
+    /**
+     * The unqualified-name form of `resolveViaImports`: does any ENCLOSING scope
+     * name a directory this file imports?
+     *
+     * Where `resolveViaImports` asks "is the package written into the dotted
+     * name one of my imports", this asks "is one of my ANCESTOR packages one of my
+     * imports" — which is the only question an unqualified name leaves open. The
+     * scope chain is walked innermost first, because protoc stops at the first
+     * scope that holds a declaration, and a nearer scope is the one it stops at.
+     *
+     * The directory-suffix guard is the same one `resolveViaImports` carries, and
+     * for the same reason: a directory name need not be the package it holds, so a
+     * match at a broad scope whose directory is a proper suffix of a more
+     * specific candidate's is not evidence. Declining leaves the caller's
+     * package-relative guess in place, which is what this function's caller did
+     * before any of it existed.
+     */
+    const resolveBareViaImports = (text: string, scope: string | null): string | null => {
+      if (importDirs.size === 0) return null
+      const chain = specScopeChain(scope)
+      for (const base of chain) {
+        if (base.length === 0) continue
+        const dir = base.split(".").join("/")
+        if (!importDirs.has(dir)) continue
+        for (const other of chain) {
+          if (other.length === 0) continue
+          const otherDir = other.split(".").join("/")
+          if (otherDir !== dir && otherDir.endsWith(dir)) return null
+        }
+        return `${base}.${text}`
+      }
+      return null
     }
 
     /**

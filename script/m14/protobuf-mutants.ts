@@ -813,6 +813,20 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
   },
   {
     id: "protobuf/qualified-id-stopped-being-published",
+    // `language` and `defectClass` were MISSING from this entry, and the mutant had
+    // therefore never run. `mutate-analyzer.ts:18869` calls `clean(m.language)` and
+    // `runLang(undefined)` throws `TypeError: The "paths[1]" property must be of type
+    // string, got undefined` — so the shared F4 gate CRASHES on this mutant rather than
+    // passing it, and a crash is not a verdict: every mutant after it in the array goes
+    // unrun. Measured at this pass: with `BB_MUTANT_ONLY="protobuf/"` the battery reported
+    // 30 CAUGHT and then died on mutant 31 of 34, and 33 of the lane's mutants had
+    // reached a verdict while `qualified-id-stopped-being-published` had reached none.
+    // Importing the array directly is what made it visible —
+    // `PROTOBUF_MUTANTS.filter(m => !m.language).map(m => m.id)` returned exactly this
+    // one id — because a crash inside a long run reads as an infrastructure failure
+    // rather than as a mutant that cannot be constructed.
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
     description:
       "The resolved id is published on the symbol through TWO channels — `qualifiedName` (the one " +
       "pool-worker's projection carries into `brain_symbol.qualified_name`, which is the column " +
@@ -1014,6 +1028,61 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
       })
       void byId
       return { ...r, symbols: out, relationships: remapped }
+    },
+  },
+  {
+    id: "protobuf/dotted-relative-name-package-prefixed",
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
+    description:
+      "Prefixes the file's own `package` onto a DOTTED type name whenever the import-directory " +
+      "guard declines — the defect the analyzer avoids by construction, reproduced here so the " +
+      "refusal has a regression test rather than being an unexamined gap.\n\n" +
+      "`resolveViaImports` returns the name AS WRITTEN when no enclosing scope's candidate " +
+      "directory is one this file imports, because that is the only honest outcome: the import " +
+      "path is relative to an include root the analyzer is never told, so path and package are " +
+      "independent and the path is not evidence about any package name. The tempting repair is " +
+      "to fall back on the package-relative reading that UNQUALIFIED names already get.\n\n" +
+      "Measured over all 842 on-disk corpus files, that fallback would be wrong on every dotted " +
+      "name the guard declines, and it is wrong in a way no fixture can miss: it produces a " +
+      "fully-qualified-looking id that no file anywhere publishes. `extend " +
+      "google.protobuf.MessageOptions` inside `package a` would become " +
+      "`a.google.protobuf.MessageOptions`, which the language cannot declare.\n\n" +
+      "The corpus shapes it breaks, from script/m14/protobuf-ambiguity-split.mts over 842 files " +
+      "and 13,024 `uses` edges: 42 edges on 12 distinct targets whose leaf IS declared under a " +
+      "different id — `common.EnterpriseMeta`, `common.RaftIndex`, `common.Locality`, " +
+      "`types.Platform`, `types.Metric`, `NodeSpec.Membership`, `connect.IssuedCert`, " +
+      "`connect.CARoots`, `config.Config`, `common.QueryMeta`, `status.Status`, " +
+      "`NodeSpec.Availability` — plus 4 edges whose leaf is declared nowhere. The transform " +
+      "below keys on the analyzer's own `metadata.role: \"fieldType\"`, so it stops matching the " +
+      "moment a fixture is edited rather than silently passing.\n\n" +
+      "Caught by protobuf/dotted-relative-sibling-package ROW 3, which requires the target to " +
+      "stay `resources.scopes.v1.ScopeInfo`; this mutant rewrites it to " +
+      "`corp.api.resources.accounts.v1.resources.scopes.v1.ScopeInfo`. Caught also by " +
+      "protobuf/ancestor-scope-resolution, whose `resources.scopes.v1.ScopeInfo` and " +
+      "`types.Platform` rows are CLIMBS the guard resolves — the mutant leaves those alone, " +
+      "which is why one fixture is not enough: the always-declines mutant is caught there and " +
+      "this one is caught here.",
+    transform: (r: any) => {
+      const rels = (x: any): any[] => (x?.relationships ?? []) as any[]
+      const pkg = (r?.metadata ?? {}).protoPackage as string | undefined
+      if (!pkg) return r
+      // Keyed on `role: "fieldType"` rather than on a name from a fixture, so editing a
+      // fixture cannot make this stop matching. Two exclusions keep it to ONE defect: an
+      // unqualified name (the package-relative reading is already correct for it) and a
+      // target that already carries the file's own package (the climb the guard
+      // performed). A target the guard CLIMBED is therefore left alone, which is why
+      // `protobuf/ancestor-scope-resolution` is not the fixture that catches this and
+      // `protobuf/dotted-relative-sibling-package` is.
+      const remapped = rels(r).map((e: any) => {
+        if ((e.type ?? e.relationshipType) !== "uses") return e
+        if (role(e) !== "fieldType") return e
+        const t = e.target as string
+        if (!t.includes(".")) return e
+        if (t.startsWith(`${pkg}.`)) return e
+        return { ...e, target: `${pkg}.${t}` }
+      })
+      return { ...r, relationships: remapped }
     },
   },
 ]
