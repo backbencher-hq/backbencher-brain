@@ -473,6 +473,34 @@ function main(): void {
         JSON.stringify(p),
       )
     }
+    // M4b: a count the LEDGER carries and the RECORD does not must be DROPPED,
+    // not left in place. Found live: the projection reported
+    // `negativeCases: ledger=4 derived=0` for m25.V1 and then kept the ledger's
+    // 4, because the evidence block was spread first and only the record's keys
+    // overwritten. A projection that reports a change and then keeps the wrong
+    // value is worse than one that reports nothing, because it looks like a fix.
+    {
+      const entry: ProjectableEntry = { code: "A1", status: "verified", evidence: { status: "verified", passed: 10, negativeCases: 4 } }
+      const p = projectEntry(entry, { status: "verified", passed: 10 }, {}, "A1.json")
+      mutant(
+        "M4b: a count the record does not report is DROPPED from the projection, not left as the ledger's stale value",
+        p.entry.evidence?.negativeCases === undefined && p.entry.evidence?.passed === 10 && p.changed.some((c) => c.includes("negativeCases") && c.includes("dropped")),
+        JSON.stringify(p.entry.evidence),
+      )
+    }
+    // M4c: the projection is still a fixpoint with the drop rule in force — the
+    // second pass must report NO change, or the gate would "heal" every run and
+    // the drift finding would be indistinguishable from bookkeeping.
+    {
+      const rec = { status: "verified", passed: 10, failed: 0 }
+      const once = projectLedger({ status: "closed", issues: [{ code: "A1", status: "verified", evidence: { status: "verified", passed: 10, negativeCases: 4 } }] }, () => rec, {})
+      const twice = projectLedger(once.ledger, () => rec, {})
+      mutant(
+        "M4c: the drop rule keeps the projection a fixpoint (second pass over the same records changes nothing)",
+        twice.healed.length === 0 && twice.findings.length === 0 && once.ledger.issues?.[0]?.evidence?.negativeCases === undefined,
+        `once=${JSON.stringify(once.healed)} twice=${JSON.stringify(twice.healed)}`,
+      )
+    }
     // M5: an untrusted record must NOT be assumed green.
     {
       const entry: ProjectableEntry = { code: "A1", status: "verified", evidence: { status: "verified" } }

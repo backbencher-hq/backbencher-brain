@@ -141,22 +141,35 @@ export function projectEntry(
   if (ev.status !== recordStatus) changed.push(`evidence.status: ledger=${String(ev.status)} record=${recordStatus}`)
 
   const derived: Record<string, unknown> = { ...ev, status: recordStatus, evidenceFile }
-  // Counts: copied from the record, never from the ledger. A count the record
-  // does not carry is OMITTED from the derivation, so the two cannot disagree
-  // about a number only one of them measured.
-  for (const [key, recKey] of [
-    ["passed", "passed"],
-    ["failed", "failed"],
-    ["realFailed", "realFailed"],
-    ["negativeCases", "negativeCases"],
-    ["mutantsCaught", "mutantsCaught"],
-    ["mutantsTotal", "mutantsTotal"],
-  ] as const) {
-    const fromRecord = num(record[recKey])
-    if (fromRecord === undefined) continue
-    if ((ev as Record<string, unknown>)[key] !== fromRecord) {
-      changed.push(`${key}: ledger=${JSON.stringify((ev as Record<string, unknown>)[key])} derived=${fromRecord}`)
+  // Counts are OWNED BY THE RECORD, in both directions. A count the record
+  // carries is copied; a count the ledger carries and the record does NOT is
+  // DROPPED, because a zero-valued field reads as "declared zero" when it
+  // really means "not applicable" — and because a ledger number no record
+  // measured is exactly the hand-typed drift this module exists to end.
+  //
+  // Dropping matters: spreading the ledger's evidence block first and only
+  // overwriting the keys the record happens to carry left a stale
+  // `negativeCases: 4` in m25.V1's entry after the record stopped reporting
+  // one. The projection reported the change and then kept the wrong value.
+  const COUNT_KEYS = [
+    "passed",
+    "failed",
+    "realFailed",
+    "negativeCases",
+    "mutantsCaught",
+    "mutantsTotal",
+  ] as const
+  for (const key of COUNT_KEYS) {
+    const fromRecord = num(record[key])
+    const onLedger = (ev as Record<string, unknown>)[key]
+    if (fromRecord === undefined) {
+      if (key in ev) {
+        changed.push(`${key}: ledger=${JSON.stringify(onLedger)} dropped — the record does not report it`)
+        delete derived[key]
+      }
+      continue
     }
+    if (onLedger !== fromRecord) changed.push(`${key}: ledger=${JSON.stringify(onLedger)} derived=${fromRecord}`)
     derived[key] = fromRecord
   }
   // The verifier command is the record's: an entry naming a command the record
