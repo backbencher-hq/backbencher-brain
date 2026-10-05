@@ -2824,9 +2824,187 @@ can be a fixture asserting things the code does not do, and the fixture is what 
 - **An oracle is a second walker over one grammar.** A grammar bug shared by the analyzer and all five
   oracles is invisible to every differential in this file, and nothing in them can see a relationship
   type that neither side derives. Only instrument A and instrument B measure the language.
+- **Nothing this lane emits can make a cross-file target resolve, and the reason is one line of shared
+  machinery.** `src/ast/parallel-indexer.ts:3393` reduces every emitted target to its leaf name before
+  the lookup at `:3500`, so the resolver cannot see a module qualifier, a kind, or a file. Measured
+  below: 65.8% of this lane's ambiguous targets are attributed across files by a rule nobody chose, and
+  the ceiling on every change this lane could make is 23.1%. This is §8 row 16.
 
 ---
 
+# THE AMBIGUITY SPLIT — what the fleet's column counts, and what the reverse walk actually does
+
+Round brief: measure this lane's own ambiguity split, then fix the largest bucket this lane controls. This
+section is both halves, and the second half's answer is **no analyzer change was made**, with the
+measurement that says why and the condition that would overturn it.
+
+Instrument: `validation/m14/fixtures/julia/ambiguity-split.ts`, lane-owned, drives production `parseFile`,
+writes only `--json`. Record: `validation/m14/measurements/julia-ambiguity-before.json`.
+Population: 600 of 1,985 admitted files, **stride 3 over `repo/rel` order**, `sampleHash 1c76a52a3ba9c16c`,
+corpus `1985 files / 199 repositories`, 10,681 symbols, 70,959 edges, 0 degraded, 0 parse failures.
+
+**The fleet's `ambiguousTargets` column is a floor, and the reason is its own definition.**
+`script/m14/incoming-check.ts:176-187` accumulates only the DISTINCT KINDS a name was published under and
+`:218` asks `hits.length > 1`. The reverse walk's question is DISTINCT SYMBOLS. On this identical sample:
+
+| | edges | share of ambSym |
+|---|---|---|
+| `ambSym` — binds to >1 published symbol (the reverse walk's problem) | **19,938** | 100.0% |
+| `ambKind` — binds to >1 kind (the fleet's definition, comparable) | **10,331** | 51.8% |
+| `ambSymButNotAmbKind` — invisible to the fleet column | **9,607** | 48.2% |
+
+9,607 edges over 965 names collide on **same-kind** duplicates — two `function`s named `main`, two
+`property`s named `name` — and read 0 in the fleet's column while being exactly as ambiguous.
+
+### The two instruments reconciled on the SAME 600 files, to the edge
+
+`script/m14/incoming-check.ts` was run on the identical file set — the `sampleList` out of the record, not
+a fresh sample — so the two columns are comparable rather than merely related:
+
+```
+npx tsx script/m14/incoming-check.ts julia $(python3 -c "… sampleList …")
+  incoming check — julia, 600 file(s), 10681 symbols
+  degraded parses: 0   parse failures: 0
+```
+
+| | `ambiguity-split.ts` | `incoming-check.ts` | difference |
+|---|---|---|---|
+| symbols | 10,681 | 10,681 | 0 |
+| edges | 70,959 | 70,959 | 0 |
+| unresolved | **27,735** | **27,735** | **0** |
+| ambiguous | **10,828** (`ambKind` 10,331 + 497 self-loops) | 10,828 | 0, once the self-loop arm is named |
+| ambiguous, symbol definition | **19,938** | not measured | **9,110 (84.2%)** |
+
+The unresolved column agrees exactly, which is the check that the two instruments are reading the same
+population; the ambiguous column agrees exactly once this file's self-loop arm (497) is added, because
+`incoming-check.ts:246` counts self-loops and `ambiguity-split.ts` separates them. **So the whole 9,110-edge
+difference between the two ambiguous columns is the definition, not the instrument** — and the fleet's
+column is the lower one on this sample by 84.2%.
+
+## The three-way split the brief asked for, and the refinement it needed
+
+Per edge whose target name binds to >1 published symbol, with `hit` the colliding declarations:
+
+| bucket | edges | share | what it is |
+|---|---|---|---|
+| B1 | 2,180 | 10.9% | one file, >1 enclosing `ownerName` |
+| B2 | 9,135 | 45.8% | >1 file of ONE repo declares it |
+| B3a | 7,525 | 37.7% | >1 repo declares it independently |
+| B3b | 1,098 | 5.5% | one file, one owner, two declarations share a spelling |
+
+**B2 is not one population, and calling it "repairable" was wrong at 9,135.** Split on the colliding set's
+owners (all three asserted to sum to `ambSym` at runtime, `exit 2` otherwise):
+
+| fine | edges | share | names | what it is |
+|---|---|---|---|---|
+| B2a | 2,849 | 14.3% | 85 | >1 file, one repo, every colliding declaration shares ONE non-empty `ownerName` — **one Julia binding with N method definitions**. mean 4.559 declarations, max 20; 1,405 all-`function` (a method table), 1,444 carry a non-`function` kind (`struct X` + `X(…)`, one binding twice) |
+| B2b | 2,793 | 14.0% | 121 | >1 file, one repo, **>=2 distinct non-empty `ownerName`s** — the referring file's `using`/`import` set says which module is in scope and the analyzer does not consult it |
+| B2c | 3,493 | 17.5% | 167 | >1 file, one repo, every colliding declaration has an EMPTY `ownerName` — no `module` block, so **there is no scope to model** |
+| B1x | 892 | 4.5% | 136 | one file, >=2 real module scopes; `ownerName` is on the symbol and absent from the edge |
+| B1e | 1,288 | 6.5% | 127 | one file, not >=2 non-empty owners |
+| B3a | 7,525 | 37.7% | 217 | >1 repo |
+| B3b | 1,098 | 5.5% | 112 | one file, one scope, two same-spelled declarations |
+
+So the addressable-looking half of B2 is **2,793, not 9,135**, and 3,493 of it has no scope anywhere in
+the corpus to derive an answer from. B2c is expected to be large rather than surprising: 71.9% of admitted
+Julia files declare no `module` at all.
+
+**A second partition, of the same 19,938 edges, asks the question that decides actionability**: does the
+REFERRING FILE hold the disambiguating evidence?
+
+| | edges | share |
+|---|---|---|
+| repairable — the file declares the name under >=2 scopes | **2,740** | 13.7% |
+| partial — the file declares it once, under exactly one real scope | **2,572** | 12.9% |
+| noScope — the file does not declare it, or declares it with no scope | **14,626** | 73.3% |
+
+## What the PRODUCT does with an ambiguous target — and why the fix is not in this lane
+
+`src/ast/parallel-indexer.ts:2239` is where an emitted target becomes a stored `target_symbol_id`:
+
+```sql
+SELECT s.id FROM brain_symbol s … WHERE s.project_id = ? AND s.name = ?
+ORDER BY COALESCE(s.is_declaration,0) ASC, (s.file_id = ?) DESC, (f.language = ?) DESC, s.id
+LIMIT 1
+```
+
+and `:3393` computes the `s.name` it matches from `extractLeaf(targetName)`. Two facts follow, and the
+second is the whole finding of this round:
+
+1. **The pick prefers the referring file, then `s.id`** — and `s.id` is `${fileId}:${name}:${line}` compared
+   as TEXT, so among same-file candidates the lexicographically smallest LINE wins. Nothing in that ORDER BY
+   encodes scope, kind, or the reference site.
+2. **`extractLeaf` strips `Owner.name` to `name` before the lookup, so a module-qualified target resolves
+   exactly as if the analyzer had emitted the bare name.** A change to what this lane emits cannot reach
+   this resolver.
+
+Measured against that ORDER BY, over the same 19,938 edges (third asserted partition):
+
+| arm | edges | share | what the resolver does |
+|---|---|---|---|
+| **forced** — the file declares the name EXACTLY once | **3,330** | 16.7% | the same-file preference has one candidate; the attribution is right whatever the ORDER BY returns |
+| inFileMulti — the file declares it >=2 times (mean 2.856, max 20) | 3,485 | 17.5% | picks among in-file candidates by TEXT-ordered line |
+| crossFile — the file declares it 0 times | **13,123** | **65.8%** | picks among 6.911 declarations on average, **max 71**, across files |
+
+**137,784 candidate declarations stand behind 19,938 edges.** Each edge is attributed to one of them, so
+**16,608 of 19,938 (83.3%) are attributed arbitrarily today**, and the 3,330 "forced" edges are ambiguous to
+`incoming-check` while being correct in the store. A count of ambiguous targets is not a count of wrong
+attributions, and this lane's overstates by **3,330 edges (16.7%)**.
+
+## The ceiling of every change this lane could make, computed without making it
+
+The analyzer controls exactly one thing the resolver reads: the SET of published symbols a name can bind to.
+So the ceiling of any publication change is computable from the published data, with no analyzer edit —
+fourth asserted partition:
+
+| | edges | share |
+|---|---|---|
+| would bind to exactly 1 symbol if every declaration of one name in one module of one repo published ONE symbol | **4,597** | 23.1% |
+| would still bind to >1 — >=2 modules or >=2 repos declare it | **15,341** | **76.9%** |
+
+(kind kept in the binding key instead: 16,975 still ambiguous.) 4,597 edges over 280 distinct names.
+
+**That 23.1% is an UPPER BOUND and it is not free, and this lane did not take it**, for three measured
+reasons:
+
+1. **It is wrong for the population that makes it large.** The key is `(repo, ownerName, name)`, and 3,493
+   of the collapsible edges (B2c) have an EMPTY `ownerName` in several files of one repo — files that a
+   package `include`s into one module, and also files that have nothing to do with each other. Collapsing
+   them asserts that two unrelated files' top-level `f` are one binding. A per-file analyzer cannot tell
+   those apart, and the doc's B2c row is the measurement of how much of it there is.
+2. **It costs the per-method symbol the lane's own `overrides` depends on.** `overrides` targets the METHOD
+   symbol and carries `metadata.replacesLine` naming the displaced site; collapsing N methods of one binding
+   to one symbol collapses the target of all 3 surviving edges and removes the method site they name.
+   `contains` targets move with it, and this file's 308 checked table cells read those figures.
+3. **Even taken, it leaves 76.9% ambiguous.** A change that costs method-level identity and moves 23.1% of
+   a population is a judgement call for the supervisor, not a silent default for a lane.
+
+**The lever that would move B2b and B1x — emitting `Owner.name` — is measured to move 0.** Not estimated:
+read at `:3393`. It is written up as §8 row 16, with the asymmetry that makes it a one-place change:
+**the SOURCE path has the exact-spelling step and the TARGET path does not.** `:3430` reads
+`nameToSymbol.get(sourceName) ?? nameToSymbol.get(sourceLeaf)`, and `nameToSymbol` was populated at
+`:2758-2762` with `${sScope}.${nm}` — so a source spelled `Owner.name` resolves to exactly one symbol. The
+target half at `:3500` goes straight to SQL on the leaf. One `nameToSymbol.get(targetName) ??` in front of
+it, falling back to today's leaf behaviour, is the whole fix and it is bounded to same-file qualified
+targets — which is this lane's `attribInFileMulti` arm (3,485) and `perFileRepairable` arm (2,740).
+
+**The precondition, stated because the fix is not safe on its own: a bare reference is not automatically the
+module-level binding.** Inside `module M`, a bare `f` at a site where a local variable `f` is in scope
+resolves to the LOCAL. This lane publishes 21,693 corpus-wide local bindings that are deliberately not
+symbols, so the shadow check exists — but a `Owner.name` target emitted without it is a fabricated binding,
+which is the one mistake this workstream's rules price highest. So the correct order is: shared-machinery
+step first, shadow-aware emission second. Neither shipped in this round, and the ambiguous count therefore
+did not move: **19,938 before, 19,938 after**, with `incoming-check` on the same 600 files quoted in the
+report.
+
+**Overturn condition.** A lane-owned emission change is worth making if and only if
+`src/ast/parallel-indexer.ts:3500` gains an exact-spelling target lookup (or the store gains an inbound
+edge, which laptop C owns). At that point the falsifiable prediction is: on sampleHash `1c76a52a3ba9c16c`,
+the `attribInFileMulti` arm (3,485 edges) moves to zero and `incoming-check`'s `ambiguous` column for
+`contains`, `references` and `instantiates` falls by at least the 827 + 1,343 + 357 = 2,527 same-file
+multi-declaration edges those three types contribute. **If a shadow-aware qualification shipped without the
+shared step, the honest prediction is that no column moves at all** — that is the control, and it is why the
+step is the ask.
 
 ## Gates re-run on current shared machinery, 2026-10-05
 
