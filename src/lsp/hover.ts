@@ -63,8 +63,9 @@ import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./
 import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
 import { countUsageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
 import { classifyStoredRow, orderTiers, primaryTier, type EvidenceTier, type StoredTierRow } from "./evidence_tier"
-import { parseParameters, renderSignature } from "./signature"
+import { parseParameters, renderSignature, UNRESOLVED_TYPE } from "./signature"
 import { parseForSafety } from "../ast/safety-primitives"
+import { renderTypeLine, resolveTypeLine, type TypeLine } from "./type_inference_surface"
 import { actionsSection, connectedGroups, connectedSummarySection, containmentSection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
 
 /** The launch set, its membership test, and the path→language map live in
@@ -138,6 +139,14 @@ export interface SymbolHoverData {
    *  location) is not resolvable: no actions without a clickable target
    *  (§12.1 nothing unclickable). */
   actionsSection: string
+  /** M55.T6: the type's PROVENANCE, decided by the one owner
+   *  (src/lsp/type_inference_surface.ts). Exactly one of `stored` /
+   *  `inferred` / `unknown` — the pre-T6 hover showed `brain_symbol.return_type`
+   *  with no statement of whether the analyzer read it from an explicit
+   *  annotation or inferred it, so a developer could not tell a declared type
+   *  from a guess. `confidence` is non-null iff `inferred`; `unknown` is the
+   *  declared marker, never a guess (§15.4). */
+  typeLine: TypeLine
 }
 
 export interface HoverRequest {
@@ -384,6 +393,13 @@ export function evidenceTiersFor(raw: CoreDatabase, symbolId: string): EvidenceT
 export function formatHoverMarkdown(data: SymbolHoverData): string {
   const lines: string[] = []
   lines.push(`\`\`\`\n${data.signature}\n\`\`\``)
+  // M55.T6: the type line, rendered by its single owner. Placed DIRECTLY UNDER
+  // the signature so the two cannot be read as unrelated facts, and it states
+  // its own provenance: `inferred` carries the engine's confidence, `stored`
+  // declares that the index records no origin, `unknown` is the declared
+  // marker with the reason. §15.4 human text is human — this is a sentence, not
+  // a serialization.
+  lines.push(renderTypeLine(data.typeLine))
   // M55.T3: the count line declares what was counted, so a reader (and the
   // references surface, which legitimately answers a wider question when the
   // client asks for the declaration too) can never read two numbers as a
@@ -608,6 +624,45 @@ export async function hover(
     }
   }
 
+  // M55.T6: the type's provenance, decided by the facade. It runs AFTER the
+  // freshness check above so the line can carry the file's staleness (§4.3),
+  // and it never throws out of the hover: a facade failure degrades to the
+  // declared unknown marker, because a hover that rejects over a type is the
+  // M42.H2 defect class all over again (one unresolvable row must not fail the
+  // whole card).
+  let typeLine: TypeLine
+  try {
+    const typeSource = readFileSync(file.path, "utf8")
+    typeLine = (
+      await resolveTypeLine(
+        file.path,
+        typeSource,
+        {
+          name: symbol.name,
+          symbol_type: symbol.symbol_type,
+          return_type: symbol.return_type,
+          line_start: symbol.line_start,
+          line_end: symbol.line_end,
+          language: file.language,
+        },
+        symbol.return_type,
+      )
+    ).line
+    typeLine.stale = stale
+  } catch {
+    typeLine = {
+      provenance: "unknown",
+      text: UNRESOLVED_TYPE,
+      confidence: null,
+      reason: "the type could not be resolved; the hover renders the declared marker",
+      withheld: "parse-failed",
+      withheldText: null,
+      storedProvenanceUnknown: false,
+      stale,
+      witness: null,
+    }
+  }
+
   const data: SymbolHoverData = {
     name: symbol.name,
     qualifiedName: symbol.qualified_name,
@@ -650,6 +705,7 @@ export async function hover(
     filePath: file.path,
     lineStart: symbol.line_start,
     lineEnd: symbol.line_end,
+    typeLine,
   }
 
   const elapsed = (deps.now ?? Date.now)() - startedAt
