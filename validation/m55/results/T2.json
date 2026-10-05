@@ -2,20 +2,60 @@
   "issue": "M55.T2",
   "code": "T2",
   "milestone": "M55",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 39,
-  "passed": 39,
+  "passed": 37,
   "failed": 0,
-  "realFailed": 0,
+  "realFailed": 2,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "505eaa6bd1709918876e1fa38055b95d9c317f1b",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "workingTreeRelevantChanges": [
+    "docs/m25/FORK-CAPABILITY-MATRIX.md",
+    "validation/m24/results/D1.json",
+    "validation/m24/results/L1.json",
+    "validation/m24/results/L2.json",
+    "validation/m24/results/L3.json",
+    "validation/m24/results/L4.json",
+    "validation/m24/results/L5.json",
+    "validation/m24/results/V1.json",
+    "validation/m25/results/D1.json",
+    "validation/m25/results/E1.json",
+    "validation/m25/results/E2.json",
+    "validation/m25/results/E3-render-capture.txt",
+    "validation/m25/results/E3.json",
+    "validation/m25/results/E7-darwin.json",
+    "validation/m25/results/E7-linux.json",
+    "validation/m25/results/E7-windows.json",
+    "validation/m25/results/F-ANTIGRAVITY.json",
+    "validation/m25/results/F-CURSOR.json",
+    "validation/m25/results/F-WINDSURF.json",
+    "validation/m25/results/V1.json",
+    "validation/m25/results/X1.json",
+    "validation/m26/results/D1.json",
+    "validation/m26/results/V1.json",
+    "validation/m26/results/W1.json",
+    "validation/m26/results/W2.json",
+    "validation/m26/results/W3-pairs.json",
+    "validation/m26/results/W3.json",
+    "validation/m26/results/W4.json",
+    "validation/m26/results/W5.json",
+    "validation/m26/results/W6.json",
+    "validation/m27/results/G1.json",
+    "validation/m28/results/G1.json",
+    "validation/m55/results/P1.json",
+    "validation/m55/results/T1.json",
+    "validation/m55/results/T3.json",
+    "validation/m55/results/T4.json",
+    "validation/m61/results/V4.json",
+    "validation/m24/.freshness-mutant.ts",
+    "validation/m26/graph-core.w4mutant.1791154051491.2.ts"
+  ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-09-19T02:53:57.428Z",
+  "generatedAt": "2026-10-04T22:50:40.016Z",
   "fixture": {
-    "root": "$HOME/backbencher-brain/validation/m55/fixtures/t2-workspace",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/lsp9/validation/m55/fixtures/t2-workspace",
     "files": [
       "src/store.ts",
       "src/loop.ts",
@@ -33,14 +73,17 @@
       "one caller with two call sites (many → deep ×2) — both ranges reported"
     ]
   },
-  "failures": [],
+  "failures": [
+    "W1: `get` is never called anywhere in the fixture, so it has zero callers (no fabricated ones): [\"Store\",\"set\"]",
+    "C2: resolved call sites are declared, none approximate: {\"resolved\":1,\"approx\":1,\"calls\":2}"
+  ],
   "limitations": [
     "the analyzer stores relationship line_number = 0 for every row today; the call-site positions here are derived from the caller's own source, which is why they are exact. The stored-value path (a future analyzer change) is exercised only as a declared fallback.",
     "invocation scanning is line-comment aware but not string-literal aware (declared in the component header); every result is bounded by the caller's own declaration range."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:53:57.430Z",
-    "contentSha256": "0c71cda0f65f441a747c1306440d92b968f5b384bae3721ce3ef66c05e1f0bc2"
+    "sealedAt": "2026-10-04T22:50:40.018Z",
+    "contentSha256": "abb6caaee6d35c270067662fac55fe7e6c704260ce3a075af40fc8ee4396234d"
   }
 }
