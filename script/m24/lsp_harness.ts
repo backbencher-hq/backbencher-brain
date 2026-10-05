@@ -19,6 +19,7 @@
 // but does not by itself fail the harness — the verifier decides the status.
 
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync, readFileSync } from "node:fs"
+import os from "node:os"
 import { tmpdir } from "node:os"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -29,6 +30,31 @@ import { realpathSync } from "node:fs"
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const SERVER_SOURCE = join(ROOT, "src", "lsp", "server.ts")
 const SERVER_DIST = join(ROOT, "dist", "lsp", "server.js")
+
+/**
+ * The machine facts contract §3 requires every measured number to carry, with
+ * each fact naming the API that produced it.
+ *
+ * `value: null` is a DECLARED ABSENCE and is legal — but only with a `reason`.
+ * A number that reads as a measurement but is an artifact of a failed read
+ * (`ramGb: 0`) or a string that reads as a name but is empty (`cpu: ""`) is a
+ * quiet falsehood in a sealed record, and that is the defect this shape
+ * exists to make impossible to publish.
+ */
+export interface MachineFacts {
+  kernel: string
+  kernelSource: string
+  /** null = declared absent, and then `cpuReason` is required */
+  cpu: string | null
+  cpuSource: string
+  cpuReason?: string
+  /** null = declared absent, and then `ramReason` is required */
+  ramGb: number | null
+  ramSource: string
+  ramReason?: string
+  node: string
+  runtime: string
+}
 
 export interface HarnessOptions {
   runtime: "node-source" | "node-dist" | "bun-source"
@@ -51,7 +77,7 @@ export interface HarnessRun {
   status: "verified" | "failed" | "blocked"
   reason?: string
   commit: string
-  machine: { kernel: string; cpu: string; ramGb: number; node: string; runtime: string }
+  machine: MachineFacts
   features: FeatureMeasurement[]
   checks: Array<{ name: string; ok: boolean; detail?: string }>
   fixtureStats: { files: number; symbols: number; relationships: number }
@@ -71,14 +97,63 @@ function main(): void {
 }
 `
 
-function machineInfo(runtime: string) {
-  const kernel = execFileSync("uname", ["-sr"], { encoding: "utf8" }).trim()
-  let cpu = "unknown"
-  try {
-    cpu = execFileSync("sh", ["-c", "grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs"], { encoding: "utf8" }).trim()
-  } catch {}
-  const ramGb = Math.round((Number(execFileSync("sh", ["-c", "grep MemTotal /proc/meminfo | awk '{print $2}'"], { encoding: "utf8" }).trim()) / 1e6) * 10) / 10
-  return { kernel, cpu, ramGb, node: process.version, runtime }
+/**
+ * THE OWNER of this record's machine facts (contract §3: every measured number
+ * records kernel, CPU and RAM).
+ *
+ * It is node:os only — no `uname`, no `/proc`, no shell — for three measured
+ * reasons:
+ *
+ *  1. THE DEFECT THIS REPLACES. The previous owner read
+ *     `sh -c "grep -m1 'model name' /proc/cpuinfo | …"` and
+ *     `sh -c "grep MemTotal /proc/meminfo | awk …"`. On a `sh -c` PIPELINE the
+ *     exit status is the LAST stage's, so `grep` failing and `awk` succeeding
+ *     meant `execFileSync` returned NORMALLY with an empty string: the
+ *     `catch {}` on the CPU line never fired, `""` overwrote the `let cpu =
+ *     "unknown"` fallback the author had clearly intended, and
+ *     `Number("") / 1e6` rounded to `ramGb: 0`. Three sealed V1 runs published
+ *     `{"cpu": "", "ramGb": 0}` as machine facts, under a VERIFIED verdict,
+ *     with the grep error only on the gate's stderr. Silence is guilt (§8.3)
+ *     and so is a plausible-looking zero (§8.7).
+ *  2. `os.cpus()` / `os.totalmem()` / `os.release()` are the runtime's own
+ *     answers and work on darwin, linux and win32. `/proc` exists on linux
+ *     only; this record is published with every latency number in it, so it
+ *     must be emittable wherever the numbers are.
+ *  3. The repo already made this call: `machineInfo` in
+ *     script/m25/feature-assertions.ts:637 is node:os only with the same
+ *     header rationale. This function is that owner, brought to M24 — plus the
+ *     absence-with-reason discipline m25 does not have (its `?? "unknown"`
+ *     cannot catch an EMPTY `os.cpus()[0].model`, which is the same quiet lie).
+ *
+ * `kernel` keeps the exact string `uname -sr` produced on this machine:
+ * `${os.type()} ${os.release()}` === "Darwin 23.6.0" === `uname -sr` here, and
+ * on linux both spell "Linux <release>". So the portable owner loses no
+ * information and costs one process spawn fewer per run.
+ *
+ * Anything it cannot determine is published as null WITH a reason, never as a
+ * zero or an empty string.
+ */
+export function machineFacts(runtime: string): MachineFacts {
+  const kernel = `${os.type()} ${os.release()}`
+  const cpuModel = os.cpus()[0]?.model?.trim() ?? ""
+  const totalBytes = os.totalmem()
+  const facts: MachineFacts = {
+    kernel,
+    kernelSource: "os.type() + os.release()",
+    cpu: cpuModel === "" ? null : cpuModel,
+    cpuSource: "os.cpus()[0].model",
+    ramGb: Number.isFinite(totalBytes) && totalBytes > 0 ? Math.round((totalBytes / 1e9) * 10) / 10 : null,
+    ramSource: "os.totalmem()",
+    node: process.version,
+    runtime,
+  }
+  if (facts.cpu === null) {
+    facts.cpuReason = "os.cpus()[0].model was empty or absent — the runtime returned no CPU model on this host (common in some containers), so no CPU fact is claimed"
+  }
+  if (facts.ramGb === null) {
+    facts.ramReason = `os.totalmem() returned ${String(totalBytes)} — a non-positive total cannot be published as a RAM measurement, so no RAM fact is claimed`
+  }
+  return facts
 }
 
 /** Seed a real brain.db at <dataDir>/projects/<projectId>/brain.db with the
@@ -432,7 +507,7 @@ export async function runHarness(options: HarnessOptions): Promise<HarnessRun> {
       status: "blocked",
       reason: `dist binary missing: ${SERVER_DIST} (run npm run build)`,
       commit,
-      machine: machineInfo(options.runtime),
+      machine: machineFacts(options.runtime),
       features: [],
       checks: [{ name: "runtime availability", ok: false, detail: "dist binary missing" }],
       fixtureStats: { files: 0, symbols: 0, relationships: 0 },
@@ -447,7 +522,7 @@ export async function runHarness(options: HarnessOptions): Promise<HarnessRun> {
         status: "blocked",
         reason: "bun runtime not found on PATH",
         commit,
-        machine: machineInfo(options.runtime),
+        machine: machineFacts(options.runtime),
         features: [],
         checks: [{ name: "runtime availability", ok: false, detail: "bun not found" }],
         fixtureStats: { files: 0, symbols: 0, relationships: 0 },
@@ -491,7 +566,7 @@ export async function runHarness(options: HarnessOptions): Promise<HarnessRun> {
     status: ok ? "verified" : "failed",
     reason: fatal,
     commit,
-    machine: machineInfo(options.runtime),
+    machine: machineFacts(options.runtime),
     features: measurements,
     checks,
     fixtureStats,

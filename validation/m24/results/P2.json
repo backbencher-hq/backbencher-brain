@@ -99,22 +99,23 @@
       "owner": "src/lsp owner — NOT edited by the m24 lane-1 repair"
     }
   ],
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "currentCommit": "b93e83c43b4f2897f9becb0238541a7a6e041cfc",
   "sourceFingerprint": "44bdf9f570c8807e4c84d2fda13eee1a64b1b15d8228b1bcefa4060e70223a4a",
   "sourceFingerprintAlgorithm": "sha256 over raw file bytes (node:crypto; no process spawn)",
   "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
   "evidenceFile": "P2.json",
-  "generatedAt": "2026-10-04T23:54:10.942Z",
+  "generatedAt": "2026-10-05T00:36:47.436Z",
   "limitations": [
     "Watcher exercised through real fs.watch on a temp directory. THIS RUN'S OS IS IN `measuredOs`, and the watcher event classes the claims are scoped to are in `watcherEventClasses`; the per-run event counts are printed to the run log rather than recorded, because they vary between runs of the same commit and evidence must regenerate byte-identically (contract §8.2, §10.2: platform scope is declared per claim, other OSes declared absent, never assumed).",
     "The convergence legs (G1, G2, G3, G4, G5 recovery, G7) assert convergence WITHIN a declared bound (6000 ms) and stability across a 150 ms window, rather than at the instant drain() returned: watcher delivery latency is the platform's. The one-directional guarantee — never fresh before the reindex lands — is asserted at full strength, and the 'pendingReindex never clears' mutant proves the bounded wait cannot hide a stuck monitor.",
     "brain.db interaction exercised through an interface double whose reindex mirrors reindexFilesParallel's contract (delete-only for `deleted`, hasValidExtension for `modified`, never reads a directory). The DB-backed path and the real indexer are NOT executed in this lane.",
     "Debounce window tested at the declared 300 ms; extreme event bursts (>1000/s) are a scale concern deferred to M29/R3.",
-    "The brain.db double is an interface double: `raw.prepare(...).get()/all()` are shaped to the monitor's two queries. A change to those SQL shapes inside src/lsp/freshness.ts would need this double updated (it fails loudly rather than silently passing, because the monitor's own freshness call would throw into the `try {}` that declares the file unknown)."
+    "The brain.db double is an interface double: `raw.prepare(...).get()/all()` are shaped to the monitor's two queries. A change to those SQL shapes inside src/lsp/freshness.ts would need this double updated (it fails loudly rather than silently passing, because the monitor's own freshness call would throw into the `try {}` that declares the file unknown).",
+    "CORRECTION (M24 lane-1 wave 2) to this lane's wave-1 REPORT, kept in the open rather than deleted: wave 1 stated that script/m24/lsp_harness.ts:80 'is unguarded and throws on macOS — every M24 harness that calls machineInfo() (L1-L5, V1) dies there'. Both halves were wrong. It does not throw (a `sh -c` PIPELINE exits with its last stage's status, so `grep … | awk …` returns an empty string with exit status 0), and only V1 published machine facts from that harness. So the honest shape of that defect is the one this record's own watcher discipline is about: an absence that should have been DECLARED was published as a plausible-looking value (`ramGb: 0`, `cpu: \"\"`) inside a sealed VERIFIED record, with the only trace on stderr. Fixed in wave 2 and gated by V1's G5/G6 (`null` plus a reason is the only legal absence; `0` and `\"\"` are rejected)."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:54:10.943Z",
-    "contentSha256": "abadc2110ce5f9b0338205dbc733bdb0205872b3f0e4950405109ad9e0efb14f"
+    "sealedAt": "2026-10-05T00:36:47.436Z",
+    "contentSha256": "4f7bfbf916a4dede12110bcf0b610e2a002d22ee1af16666989f15448fa41778"
   }
 }
