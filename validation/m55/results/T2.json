@@ -103,8 +103,19 @@
       "./symbols"
     ]
   },
-  "currentCommit": "800d8e8969b321b108a1f4e21c6251797bc14f0b",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
+  "workingTreeRelevantChanges": [
+    "validation/m24/results/D1.json",
+    "validation/m24/results/L1.json",
+    "validation/m24/results/L2.json",
+    "validation/m24/results/L3.json",
+    "validation/m24/results/L4.json",
+    "validation/m24/results/L5.json",
+    "validation/m24/results/P1.json",
+    "validation/m24/results/P2.json",
+    "validation/m24/results/V1.json",
+    "validation/m55/results/T3.json"
+  ],
   "volatileFields": [
     "generatedAt",
     "bbSeal.sealedAt",
@@ -113,9 +124,9 @@
   ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-10-05T13:07:24.811Z",
+  "generatedAt": "2026-10-05T16:51:40.037Z",
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/validation/m55/fixtures/t2-workspace",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/merge-upstream/validation/m55/fixtures/t2-workspace",
     "files": [
       "src/store.ts",
       "src/loop.ts",
@@ -167,7 +178,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T13:07:24.814Z",
-    "contentSha256": "e1f07229de53ddb1619ef4d781b309fd76d5a7a33b83cfc9439a5ebcb7c33853"
+    "sealedAt": "2026-10-05T16:51:40.039Z",
+    "contentSha256": "3abca5f7290da0e19310f6012a802996ab01a150c0df54407d58aec38fa01656"
   }
 }
