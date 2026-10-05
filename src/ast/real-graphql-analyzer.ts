@@ -225,7 +225,12 @@ function parseHashImport(text: string): HashImport | null {
   const word = (): string => {
     skipSpace()
     const s = i
-    while (i < text.length && !isInlineSpace(text.charCodeAt(i)) && !isQuote(text.charCodeAt(i))) i++
+    // A comma terminates a binding name as well as whitespace: `# import First, Second
+    // from "x"` is 12 of the corpus's 170 directives, and a reader that stopped only at
+    // whitespace swallowed the comma into the name, got `["First,"]`, then read `Second`
+    // where it expected `from`, and returned null — so the one form it failed on was
+    // silently the form that could not be expressed at all.
+    while (i < text.length && !isInlineSpace(text.charCodeAt(i)) && !isQuote(text.charCodeAt(i)) && text.charCodeAt(i) !== 0x2c) i++
     return text.slice(s, i)
   }
 
