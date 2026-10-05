@@ -32,11 +32,12 @@
 import type { CoreDatabase } from "../brain/database"
 import { edgeLocation } from "./navigation"
 import { PositionError } from "./positions"
-<<<<<<< HEAD
-import { usageSites, USAGE_COUNT_UNIT_LABEL, USAGE_SITE_FILTER_LABEL } from "./relations"
-=======
-import { isDeclarationRelationship, usageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
->>>>>>> feat/hover-all-relationships
+import {
+  isDeclarationRelationship,
+  usageSites,
+  USAGE_COUNT_UNIT_LABEL,
+  USAGE_SITE_FILTER_LABEL,
+} from "./relations"
 import {
   ADDRESS_NOTES,
   addressLine0,
