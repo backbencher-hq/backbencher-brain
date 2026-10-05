@@ -1152,6 +1152,19 @@ convenient: the thing `implements` would carry here is already carried, under it
 instrument-A inventory, **or** a corpus measurement of an `implements` row that is not a subtype
 relation. The census prints the first directly.
 
+**The shape of that overturn condition, stated because a ruling whose condition no correct
+implementation can meet is decorative rather than falsifiable.** Neither half of it is reachable by
+writing a better analyzer: both require julia or its grammar to change. The first is a count the gate
+can take today and does; the second asks for an `implements` row that is not a subtype relation, and
+**no julia syntax produces one** — `abstract type` and `primitive type` enter the hierarchy only
+through `<:` and `>:` (`script/m14/julia-ruled.ts:150-152` counts exactly those two operators), and
+duck typing has no declaration to point at. So the honest description of this ruling is that it is
+falsifiable **by the language and not by the implementation**, and a reviewer who believes the
+mapping should be split cannot settle it by writing code: the 449 occurrences in 87 files are the
+figure the argument has to be made against, and `JULIA_RULED_INSTRUMENT_B` in
+`script/m14/julia-ruled.ts` is the table that reports them, so swapping the registered instrument
+turns the gate's verdict to FALSIFIED in one edit.
+
 ---
 
 ## `overrides` — EMITTED, and the earlier DECLINE was wrong
