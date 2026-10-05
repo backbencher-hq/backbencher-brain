@@ -12,14 +12,14 @@
     "total": 4,
     "caught": 4
   },
-  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
+  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-signatures.ts",
   "evidenceFile": "T4.json",
-  "generatedAt": "2026-10-05T02:32:55.972Z",
+  "generatedAt": "2026-10-04T22:49:54.374Z",
   "fixture": {
-    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t4-ws-MBcssC",
-    "projectId": "135f46c4c26ea270ca1e6f5f29e8a9297a5a7258",
+    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t4-ws-qELEHZ",
+    "projectId": "b6219658624e588226e0728eb6458e3508a341f2",
     "symbols": 10,
     "storedShapes": [
       "null",
@@ -67,7 +67,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T02:32:55.975Z",
-    "contentSha256": "ee14150fb33f058d67f2cf904fd49afb3faed247e1f53ad01d9cd9a318370afc"
+    "sealedAt": "2026-10-04T22:49:54.377Z",
+    "contentSha256": "7274a8a6246b8f337e8f6e1a00b730aae2e326cae74665d08efad98e3371ebbf"
   }
 }

@@ -43,6 +43,8 @@ type Issue = {
     negativeCases?: number
     mutantsCaught?: number
     mutantsTotal?: number
+    /** Required on a `blocked` entry (contract §8.3): the reason the leg is blocked. */
+    blockedReason?: string
   }
 }
 type Ledger = {
@@ -84,6 +86,19 @@ function isClosable(issue: Issue): boolean {
   if (issue.status === "planned") return false
   if (!issue.evidence) return false
   const e = issue.evidence
+  // `blocked` is an HONEST terminal state under contract §8.3: a missing
+  // editor/fork/runtime is recorded `blocked` WITH its reason, never silently
+  // omitted and never assumed. Such an entry is legitimately not green — its
+  // provisioning check failed on purpose — so the green-count rule below must
+  // not apply to it. What it DOES require is the reason and a real evidence
+  // file: a `blocked` entry with no reason is a silent gap, and §8.3 makes
+  // that a violation. Before this rule existed, projecting N1's honest
+  // `blocked` status out of its record failed this gate as
+  // `hollow-blocked:N1` — the ledger could not say the truth without going red
+  // for saying it.
+  if (issue.status === "blocked") {
+    return Boolean(e.status === "blocked" && e.evidenceFile && e.verifierCommand && typeof e.blockedReason === "string" && e.blockedReason.trim().length > 0)
+  }
   // Mutant-based verifiers record intentional mutant-catch failures in the
   // raw `failed` counter; `realFailed` (or an all-zero `failed`) is the
   // honest number (M24.G1 rule, reused verbatim).
@@ -378,6 +393,42 @@ function main(): void {
   tampered.githubMilestone = 26
   negative("G1: ledger milestone tamper is rejected", validateLedger(tampered, plan, contract).some((error) => error === "milestone"))
 
+  // A `blocked` entry is closable ONLY with its reason — the negative that keeps
+// that exemption from becoming a hole. Without this rule, dropping the reason
+// would let a blocked leg pass as a legitimate limitation while saying nothing
+// about why it is blocked (§8.3: never silently omitted).
+// NOTE the idiom `!== -1`, not a non-strict comparison against zero: this
+// file's own self-audit (below) rejects the literal two-character sequence
+// formed by a non-strict comparison and a zero anywhere in its source as a
+// hollow zero-threshold assertion. An index lookup is not a zero threshold, but
+// the lint cannot tell the difference — and a gate that cannot be written
+// honestly is a gate that gets disabled, so the source conforms to the lint.
+const blockedIdx = ledger.issues.findIndex((i) => i.status === "blocked")
+  if (blockedIdx !== -1) {
+    const noReason = structuredClone(ledger)
+    delete noReason.issues[blockedIdx]!.evidence!.blockedReason
+    negative(
+      `G1: a blocked entry without a reason is rejected (${noReason.issues[blockedIdx]!.code})`,
+      validateLedger(noReason, plan, contract).some((e) => e === `hollow-blocked:${noReason.issues[blockedIdx]!.code}`),
+    )
+    const withReason = structuredClone(ledger)
+    withReason.issues[blockedIdx]!.evidence!.blockedReason = "nvim absent on this machine"
+    negative(
+      `G1: a blocked entry WITH its stated reason is accepted (${withReason.issues[blockedIdx]!.code})`,
+      !validateLedger(withReason, plan, contract).some((e) => e === `hollow-blocked:${withReason.issues[blockedIdx]!.code}`),
+    )
+    // And the projection itself: a ledger claiming verified over a blocked
+    // record must be refused (the drift this lane healed).
+    const lying = structuredClone(ledger)
+    lying.issues[blockedIdx]!.status = "verified"
+    negative(
+      `G1: a ledger claiming verified over a blocked record is rejected`,
+      validateLedger(lying, plan, contract).length > 0,
+    )
+  } else {
+    negative("G1: a blocked entry without a reason is rejected", true, "no blocked entry in the ledger — nothing to mutate")
+  }
+
   const fakeEvidence = structuredClone(ledger)
   const plannedIdx = fakeEvidence.issues.findIndex((issue) => issue.status === "planned")
   if (plannedIdx !== -1) {
@@ -414,6 +465,15 @@ function main(): void {
   // Cross-check: every non-planned M27 ledger issue must reference a
   // persisted evidence JSON whose status matches. G1 is excluded: its
   // evidence records the outcome of this very check (self-referential).
+  //
+  // A `blocked` issue is exempt from the `persisted-failed` rule only, and
+  // only because its provisioning check is EXPECTED to fail — the reason it is
+  // blocked (§8.3). Its status must still match its record, and it must carry
+  // the reason (see the negative below). Before the exemption, projecting
+  // N1's honest `blocked` state made this check report `N1:persisted-failed`,
+  // so the only two states the ledger could hold were "verified over a blocked
+  // record" (dishonest) and "blocked over a blocked record" (red for telling
+  // the truth).
   let evidenceErrors: string[] = []
   for (const issue of ledger.issues.filter((item) => item.status !== "planned" && item.code !== "G1")) {
     const evidence = issue.evidence
@@ -427,7 +487,10 @@ function main(): void {
       if (persisted["status"] !== issue.status) evidenceErrors.push(`${issue.code}:status-mismatch`)
       const verdict = persisted["verdict"] as { realComponentFailures?: number } | undefined
       const realFailed = verdict && typeof verdict.realComponentFailures === "number" ? verdict.realComponentFailures : persisted["failed"]
-      if (realFailed !== 0) evidenceErrors.push(`${issue.code}:persisted-failed`)
+      if (realFailed !== 0 && issue.status !== "blocked") evidenceErrors.push(`${issue.code}:persisted-failed`)
+      if (issue.status === "blocked" && !(typeof issue.evidence?.blockedReason === "string" && issue.evidence.blockedReason.trim().length > 0)) {
+        evidenceErrors.push(`${issue.code}:blocked-without-reason`)
+      }
       const evidenceCommit = persisted["currentCommit"]
       if (typeof evidenceCommit !== "string" || evidenceCommit !== currentCommit) {
         if (typeof evidenceCommit !== "string" || commitDiffTouchesRelevant(issue.code, evidenceCommit, currentCommit)) {
@@ -488,6 +551,79 @@ function main(): void {
   const finalFailed2 = checks - passed
   const finalResult = { ...result, checks, passed, failed: finalFailed2, status: finalFailed2 === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap" }
   writeSealed(evidencePath, finalResult)
+
+  // --- The ledger is a PROJECTION of the records, written here ---------------
+  // The defect this fixes (found at HEAD a0ed9eade): manifest.json was
+  // HAND-MAINTAINED, so an issue's `status` survived as `verified` long after
+  // its record on disk read `known-gap` or `blocked`. The G1 cross-check above
+  // EXEMPTS G1 (it cannot check its own record before writing it) and only
+  // compared the ledger to the record for non-G1 issues it did not cover, so
+  // nothing corrected the drift. Contract §8.4 makes the record the
+  // authority: the ledger is derived from the records, never hand-set.
+  //
+  // Each entry is re-derived from its own record's `status`, `passed`,
+  // `failed` and `negativeCases`. A record reading `blocked` or `known-gap`
+  // demotes the entry, and the lane status becomes `open` — mechanically.
+  {
+    const healed: string[] = []
+    const entries = ledger.issues.map((issue) => {
+      const file = issue.evidence?.evidenceFile ?? `${issue.code}.json`
+      let record: Record<string, unknown>
+      try {
+        record = parseSealedRecord(path.join(ROOT, "validation/m27/results", file)) as Record<string, unknown>
+      } catch {
+        return issue
+      }
+      const recordStatus = typeof record.status === "string" ? record.status : null
+      if (!recordStatus) return issue
+      const statusChanged = recordStatus !== issue.status
+      // The counts and the blocked reason are re-derived on EVERY run, not
+      // only when the status differs. Without this the projection is not a
+      // fixpoint: on the second run the status already matches, the early
+      // return fires, and the fields the status change had brought in (a
+      // blocked leg's reason, a healed run's counts) are never written — so
+      // the ledger stays half-projected and the gate reads `hollow-blocked`
+      // for an entry that IS honestly blocked-with-a-reason.
+      const reasonFromRecord = typeof record.blockedReason === "string" ? { blockedReason: record.blockedReason } : {}
+      if (!statusChanged && Object.keys(reasonFromRecord).length === 0 && record.passed === issue.evidence?.passed && record.failed === issue.evidence?.failed) {
+        return issue
+      }
+      if (statusChanged) healed.push(`${issue.code}: ${issue.status} -> ${recordStatus}`)
+      return {
+        ...issue,
+        status: recordStatus,
+        evidence: {
+          ...(issue.evidence ?? {}),
+          status: recordStatus,
+          currentCommit: record.currentCommit,
+          passed: record.passed,
+          failed: record.failed,
+          ...(typeof record.negativeCases === "number" ? { negativeCases: record.negativeCases } : {}),
+          // A `blocked` entry is only honest with its reason carried across
+          // (contract §8.3); the ledger is the human-facing record of why.
+          ...reasonFromRecord,
+          evidenceFile: file,
+        },
+      }
+    })
+    const projectedStatus = entries.every((i) => i.status === "verified") ? "closed" : "open"
+    const projected = { ...ledger, issues: entries, status: projectedStatus, updatedAt: new Date().toISOString() }
+    writeSealed(path.join(ROOT, "validation/m27/results/manifest.json"), projected as unknown as Record<string, unknown>)
+    const mismatches: string[] = []
+    for (const entry of entries) {
+      const file = entry.evidence?.evidenceFile ?? `${entry.code}.json`
+      try {
+        const rec = parseSealedRecord(path.join(ROOT, "validation/m27/results", file)) as { status?: string }
+        if (rec.status && rec.status !== entry.status) mismatches.push(`${entry.code}: ledger=${entry.status} record=${rec.status}`)
+      } catch {
+        /* an unreadable record keeps the entry; the cross-check above reports it */
+      }
+    }
+    check("G1: the ledger is projected from its records (no entry claims a status its record contradicts)", mismatches.length === 0, mismatches.join(", "))
+    check("G1: the lane status is mechanical (closed only when every entry is verified)", projectedStatus === (entries.every((i) => i.status === "verified") ? "closed" : "open"))
+    if (healed.length > 0) console.log(`      ledger healed from records: ${healed.join(", ")}`)
+  }
+
   console.log(`G1: ${finalResult.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
   process.exit(finalFailed2 === 0 ? 0 : 1)
 }
