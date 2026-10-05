@@ -64,6 +64,7 @@ import { JULIA_RULED } from "./julia-ruled"
 import { CSS_RULED } from "./css-ruled"
 import { XML_RULED } from "./xml-ruled"
 import { NIM_RULED } from "./nim-ruled"
+import { SCSS_RULED } from "./scss-ruled"
 import { PHP_RULED } from "./php-ruled"
 import { SQL_RULED } from "./sql-ruled"
 
@@ -230,6 +231,7 @@ const RULED_BY_LANG: Record<string, Ruled[]> = {
   xml: XML_RULED,
   php: PHP_RULED,
   sql: SQL_RULED,
+  scss: SCSS_RULED,
 }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
