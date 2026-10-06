@@ -66,6 +66,28 @@ interface LuaFrame {
   inFunction: boolean
 }
 
+/**
+ * M60 LUA-54: the eight standard-library TABLES of Lua 5.4, transcribed from the
+ * reference manual §6.1. Not derived from the corpus, and stated as such — a
+ * number produced against a hand-typed list is only as good as the list, so the
+ * claim `markStdlibExternal` supports is "the receiver names a documented standard
+ * table" and nothing wider.
+ *
+ * EIGHT NAMES, NOT A FIELD LIST, and that is the whole design. A list of every
+ * standard FIELD (`insert`, `format`, `sub`, ...) would mark a bare `insert(x)`,
+ * which is an undefined global rather than `table.insert(x)`; see the rejected
+ * rule on `markStdlibExternal`, measured at 4.1x this rule's population.
+ *
+ * `package`, `arg`, `bit32` and `jit` are deliberately absent. `package` and
+ * `arg` are data tables whose fields are accessed as values rather than called as
+ * members, `bit32` and `jit` are not in the 5.4 manual at all, and a member read
+ * through them is rare enough that including them would buy a number without
+ * buying a fact.
+ */
+const LUA54_TABLES: ReadonlySet<string> = new Set([
+  "string", "table", "math", "io", "os", "coroutine", "debug", "utf8",
+])
+
 interface LuaContext {
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
@@ -105,6 +127,10 @@ interface LuaContext {
    * rather than re-splitting the key is what stops this map being confused with
    * `supertypeLinks`, which holds two other conventions. */
   factorySupertypeLines: Map<string, { derived: string; base: string; line: number }>
+  /** M60 LUA-54: edges whose TARGET is the field of a member read whose RECEIVER
+   *  names a documented Lua 5.4 standard table, held back until every symbol this
+   *  file declares is known. See `markStdlibExternal`. */
+  stdlibCandidates: Array<{ rel: ASTEngine.UniversalRelationship; receiver: string }>
 }
 
 export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -126,6 +152,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       membersByOwner: new Map(),
       supertypeLinks: new Map(),
       factorySupertypeLines: new Map(),
+      stdlibCandidates: [],
     }
 
     this.collectErrors(rootNode, ctx)
@@ -233,6 +260,9 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `supertypeLinks` and the factory links must already be in it.
     this.addFactorySupertypeEdges(ctx)
     this.addOverrideRelationships(ctx)
+    // M60 LUA-54: LAST, because the shadowing guard needs every symbol this file
+    // declares, and a declaration is not known until the walk has passed it.
+    this.markStdlibExternal(ctx)
     const detectedFrameworks = [...ctx.frameworks]
     const detectedPatterns = [...ctx.patterns]
 
@@ -1832,7 +1862,105 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // name that may live in another file, and the property really is imported
     // from somewhere.
     relationship.metadata = { evidenceClass: this.evidenceClassFor(type), ...relationship.metadata }
+    // M60 LUA-54: the receiver test is made HERE, at the node, because this is the
+    // one place every edge passes through and the one place the node is in hand.
+    // Whether the receiver names the standard library is decided in
+    // `markStdlibExternal`; what is decided here is only WHICH edges are eligible,
+    // which is a structural fact about this edge's own node and needs no list.
+    const receiver = nameNode ? this.stdlibReceiverOf(nameNode) : null
+    if (receiver) ctx.stdlibCandidates.push({ rel: relationship, receiver })
     ctx.relationships.push(relationship)
+  }
+
+  /**
+   * M60 LUA-54 — the standard-library receiver of a member read, or `null`.
+   *
+   * The name node is the edge's own target, so the test is structural rather than
+   * a name comparison: walk up to the `dot_index_expression` /
+   * `method_index_expression` that OWNS this node, require its receiver to be an
+   * `identifier`, and return that identifier's text. `bracket_index_expression` is
+   * excluded deliberately — `t["insert"]` is a member read whose key is a STRING
+   * literal and never an identifier, so it cannot carry a receiver name, and
+   * `stdlibReceiverOf` returning `null` for it is the correct answer rather than a
+   * miss. `t[table.insert]` is a real `table.insert` read and is NOT marked: the
+   * subscript is a computed value, so the name it denotes is not in the tree.
+   *
+   * Returns the RECEIVER's text and nothing else. Whether that name is a standard
+   * library table is decided by the caller against a transcribed list, so this
+   * method holds no list and cannot drift from one.
+   */
+  private stdlibReceiverOf(nameNode: Node): string | null {
+    const owner = nameNode.parent
+    if (!owner) return null
+    if (owner.type !== "dot_index_expression" && owner.type !== "method_index_expression") return null
+    // The node must BE the field, or the receiver we return belongs to an outer
+    // expression and names the wrong thing: `table.insert` read as `t.a.b` has the
+    // middle node as a receiver, not the leaf.
+    const field = owner.childForFieldName("field") ?? owner.childForFieldName("method")
+    if (!field || !this.isSameNode(field, nameNode)) return null
+    const receiver = owner.childForFieldName("table") ?? owner.childForFieldName("object")
+    if (!receiver || receiver.type !== "identifier") return null
+    return receiver.text
+  }
+
+  /**
+   * M60 LUA-54 — mark the standard-library member edges, from ONE post-pass, after
+   * every symbol this file declares is known.
+   *
+   * ## WHAT IT CLAIMS, AND THE MEASUREMENT BEHIND THE CLAIM
+   *
+   * An edge is marked `external` when its target is the field of a member read
+   * whose receiver is an identifier naming one of the eight documented Lua 5.4
+   * standard tables (`string`, `table`, `math`, `io`, `os`, `coroutine`, `debug`,
+   * `utf8` — reference manual §6, transcribed into `LUA54_TABLES`), AND this file
+   * publishes no symbol under that receiver.
+   *
+   * Measured on the whole-corpus draw of 3,252 .lua files from 199 repos
+   * (drawDigest 502ef2f4..., 219,981 relationships, production `parseFile`,
+   * `script/m60/lua-external-marking.ts`): 3,956 edges are eligible, the
+   * shadowing guard fires on 491 of them, and 3,956/219,981 is the population the
+   * claim is about. It changes NO edge count and creates NO edge — the key is
+   * additive metadata, so every consumer that ignores it sees the identical graph.
+   *
+   * ## THE RULE THAT WAS REJECTED, because it is the interesting half
+   *
+   * The first version of this marked any target whose bare name is in a
+   * transcribed stdlib surface — 16,195 edges, 4.1x the above — and it is a
+   * NAME-MATCH GUESS. This analyzer publishes the FINAL SEGMENT of a member read
+   * (LUA-13), so `table.insert(x)` arrives as target `insert`, and a bare
+   * `insert(x)` with no receiver arrives as target `insert` too. Lua 5.4
+   * publishes no global named `insert`, so the name alone cannot tell the standard
+   * library from a user's own global, and marking the second case `external`
+   * would move it out of `unresolved` without moving anything toward truth — the
+   * arbiter's PASS would then mean less than it did. Measured: **0** edge targets
+   * a dotted `table.field` spelling anywhere in the corpus, which is why the name
+   * list cannot recover the receiver from the target.
+   *
+   * ## WHAT IS DELIBERATELY LEFT UNMARKED
+   *
+   * `imports` targets (6,601 on the same draw) are Lua MODULE paths, not
+   * declarations. One file cannot tell a sibling module from a luarocks rock, and
+   * `classb-origin` measured both populations — 2,425 dotted targets whose module
+   * file is in the corpus against 3,060 whose file is absent. Marking all 6,601
+   * would assert the second count for the first. The gate has no bucket for "this
+   * type's target is a module", so they are reported rather than swept.
+   */
+  private markStdlibExternal(ctx: LuaContext): void {
+    if (ctx.stdlibCandidates.length === 0) return
+    const declared = new Set<string>()
+    for (const s of ctx.symbols) {
+      if (s.name) declared.add(s.name)
+      if (s.qualifiedName) declared.add(s.qualifiedName)
+    }
+    for (const { rel, receiver } of ctx.stdlibCandidates) {
+      if (!LUA54_TABLES.has(receiver)) continue
+      // The shadowing guard. `local table = {}` then `table.insert(x)` has not
+      // reached the standard library, and this file DOES declare `table`.
+      if (declared.has(receiver)) continue
+      rel.metadata.external = true
+      rel.metadata.externalKind = "lua54-stdlib"
+      rel.metadata.externalReceiver = receiver
+    }
   }
 
   /** M60 LUA-43: the evidence tier for a relationship type. See the call site for
