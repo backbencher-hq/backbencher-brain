@@ -3879,7 +3879,49 @@ quiet machine will cover all 5,227 through the production path.
     it under a heading that read as though the edge's line bound one. 2,155 vs 531. Both
     columns are now printed and the header states which is which.
 
-39. **This lane's defect column was quoted at 126 and was never a measurement of the
+39. **The three-way ambiguity split was last measured at analyzer `deeab0756e0c4c1f`
+    (session 19) and at `1475e53d0e528d0a` (session 13); neither is the committed blob,
+    so every split number in this document was a statement about a superseded analyzer
+    until this pass.** Re-run at `96ef87bb47f63eca`, same 600-file window, same list
+    sha256 `bebc7c932ae22406`, production `parseFile`, 0 degraded, 0 parse failures,
+    15,052 symbols, 0 empty names, 0 empty kinds (`s30-ambiguity-classify.{txt,json}`):
+
+    | type | edges | unique | B1_scope | B3_legit | B2_module | unresolved |
+    | --- | --- | --- | --- | --- | --- | --- |
+    | `calls` | 12,522 | 4,230 | 185 | 876 | 3,023 | 4,208 |
+    | `uses` | 4,268 | 2,572 | 364 | 49 | 1,283 | 0 |
+    | `contains` | 3,238 | 2,158 | 448 | 52 | 579 | 1 |
+    | `imports` | 1,335 | **266** | 0 | 1 | 103 | 965 |
+    | `references` | 7,796 | 2,013 | 1 | 160 | 900 | 4,722 |
+    | `exports` | 100 | 29 | 0 | 1 | 17 | 53 |
+    | `extends` | 68 | 29 | 0 | 0 | 14 | 25 |
+    | `implements` | 3 | 1 | 0 | 0 | 2 | 0 |
+    | `overrides` | 5 | 5 | 0 | 0 | 0 | 0 |
+    | `instantiates` | 315 | 198 | 0 | 18 | 99 | 0 |
+    | **TOTAL** | **29,650** | **11,501** | **998** | **1,157** | **6,020** | **9,974** |
+
+    Against session 13 at the older digest: 8,175 → **8,175 ambiguous edges** (the total
+    is unchanged), B1 991 → **998**, B3 1,148 → **1,157**, B2 5,930 → **6,020**, and
+    `uses` unresolved **12 → 0**. The one cell that moved by an order of magnitude is
+    `imports` unique targets, **37 → 266**, which is the module-symbol pass of commit
+    `7a7ab080c` and is the cause of `uses` unresolved reaching 0.
+
+    **The three buckets are stable across three digests and one of them is not this
+    lane's.** B2 MODULE-NOT-MODELLED is **73.6%** and its 6,020 edges are cross-file by
+    construction — the instrument prints `all 6020 cross-file edges` in the overlap row,
+    so the classification is not an inference. B3 LEGIT-SHARED-NAME is **14.2%** and its
+    1,067 of 1,157 sub-shape rows are `sameKindOverload`: Nim admits `proc f(int)` beside
+    `proc f(string)` beside a `template f`, all published under the bare name `f`, and no
+    per-edge fix exists short of a signature-qualified published name. **Only B1
+    SCOPE-COLLAPSED, 998 edges = 12.2%, is a scoping failure this analyzer could
+    repair**, and *Limitations* 38 already measures the prescribed remedy for it at
+    **1,022 of 8,175 (12.5%) would become unique**, of which 940 are `contains` — the one
+    type the store already places structurally by line (*Limitations* 37), so the
+    name-resolved types gain **82 edges of 7,061 (1.2%)**. The honest reading is that this
+    lane's per-file ambiguity lever is spent at ~1.2% of the name-resolved surface, and
+    the remaining 87.8% is whole-program scope modelling in shared machinery (§8).
+
+40. **This lane's defect column was quoted at 126 and was never a measurement of the
     corpus — the instrument that produces it died mid-walk and nothing recorded by how
     much.** `resolution-audit.ts` ran its 6,063-file pass in a bare `Promise.all` worker
     pool with no checkpoint, and `parseFile` can `process.exit()` the whole process. On
@@ -3902,7 +3944,7 @@ quiet machine will cover all 5,227 through the production path.
     550 B in at most 71 ms. The `[BB-HANG]` message names the file whose parse threw, not
     one that is stuck.
 
-40. **The one remaining TREE-ONLY edge is a shared-machinery defect, and it is in
+41. **The one remaining TREE-ONLY edge is a shared-machinery defect, and it is in
     `keepSymbol`'s denylist rather than in any analyzer.** `nim/tests/objects/tobject3.nim:20,22`
     declares `template super(self: TBar): TFoo` and `template super(self: TBar2): TBar`.
     Nim's grammar reads `super` as an ordinary `identifier` — the probe shows
@@ -3931,11 +3973,11 @@ quiet machine will cover all 5,227 through the production path.
     `super` routine in this language. The same list appears at `analysis-exclusions.ts:238`,
     `parallel-indexer.ts:2583`, and `pool-worker.ts:132` and `:333`.
 
-41. **Four unpublished callable declarations remain, and all four are correct behaviour.**
+42. **Four unpublished callable declarations remain, and all four are correct behaviour.**
     At the full population, callable recall is 46,971 on the tree against 46,967 published —
     **100.0%**, and the 4 are `proc _` (`nim/tests/stmt/tmiscunderscore.nim:4,6`, the
     discard-underscore, which `buildCallableSymbol` refuses by name at `:547`) and the two
-    `super` templates of limitation 40. `type`, `enum_member` and `object_field` read 0 on
+    `super` templates of limitation 41. `type`, `enum_member` and `object_field` read 0 on
     the tree in this instrument, which is a property of how it enumerates the tree and not
     a recall claim — the analyzer publishes 3,227 types, 11,688 enum members and 16,549
     properties over the same corpus.
@@ -3949,7 +3991,7 @@ quiet machine will cover all 5,227 through the production path.
     TREE-ONLY by design: one is external, the other is a gap, and this instrument has
     separate columns for them because conflating them is how a 1-edge defect gets reported
     as 2,038.
-42. **The analyzer's Regex inventory claimed zero while it held two regexes, both
+43. **The analyzer's Regex inventory claimed zero while it held two regexes, both
     introduced by the module pass, and replacing them cost a predicate narrowing that had
     to be caught and corrected.**
 
@@ -4003,7 +4045,7 @@ quiet machine will cover all 5,227 through the production path.
     `bare-node-identity-comparison`-style source gate this lane runs as an A/B
     (`verify-analyzer-hygiene-nim.ts`, 0 findings on HEAD, reverted copy CAUGHT).
 
-43. **The `imports` marker has two spellings upstream actually writes and no fixture
+44. **The `imports` marker has two spellings upstream actually writes and no fixture
     pinned, so the no-regex replacement could have dropped both and stayed green.** The
     branches are a leading QUOTE — an `include` path is a string literal — and WHITESPACE
     around the separator. The spaced form is not hypothetical: upstream Nim writes
@@ -4013,9 +4055,9 @@ quiet machine will cover all 5,227 through the production path.
     source as a local module. `nim/module-target` now carries both
     (`include "std/prelude"` as a `nim_include` row with the marker asserted TRUE, and
     `import std / monotimes` with `meta.nimModulePath` keeping the spaces verbatim), and
-    the mutation table in limitation 42 records that one of the two is caught and one is
+    the mutation table in limitation 43 records that one of the two is caught and one is
     not.
-44. **The arbiter can print a whole `emitted 10/10 … FALSIFIED 0` table and still exit
+45. **The arbiter can print a whole `emitted 10/10 … FALSIFIED 0` table and still exit
     1, so the exit code is not a statement about the verdict it just printed.**
     MEASURED, session 24, `s25b-arbiter-resume.txt`. The gate computes its verdict
     *after* its two whole-corpus instruments (`script/m14/ontology-coverage-gate.ts:332-355`,
@@ -4057,7 +4099,7 @@ quiet machine will cover all 5,227 through the production path.
     gate on the same corpus cannot finish a walk at all. Both halves are recorded because
     either alone is misleading: a reader who sees only the exit-1 row concludes the lane
     fails; a reader who sees only the exit-0 row concludes the shared gate can do this.
-45. **`script/m14/verify-analyzer-hygiene.ts` does not run on this branch, so the
+46. **`script/m14/verify-analyzer-hygiene.ts` does not run on this branch, so the
     regex-free criterion has no automated witness here.** EXIT 1, session 24:
     `ReferenceError: __dirname is not defined in ES module scope` at
     `script/m14/verify-analyzer-hygiene.ts:27`
