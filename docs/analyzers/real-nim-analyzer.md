@@ -3994,6 +3994,72 @@ quiet machine will cover all 5,227 through the production path.
     lane's per-file ambiguity lever is spent at ~1.2% of the name-resolved surface, and
     the remaining 87.8% is whole-program scope modelling in shared machinery (§8).
 
+    **What a field-type rule could actually recover was measured before it was built, and
+    the number is 38.** B1's largest shape is `ownerCollision` — a name declared twice in
+    ONE file at two scopes — and the case is small enough to read whole:
+    `graphql-nim/playground/swapi.nim` declares `id` at `Character` (line 38) and at
+    `Starship` (line 53), and line 158 is `resp(c.id)` inside
+    `proc charToResp(ctx: Starwars, c: Character)`. The correct target is `Character.id`
+    and the FILE says which: the edge's own metadata already carries the receiver as
+    `fieldAccessExpression: "c.id"`, and the source symbol's `parameters` already carry
+    `c: Character`. So a per-file rule exists that needs no import graph, and
+    `validation/m14/fixtures/nim/field-type-ceiling.mts` costs it over the 600-file lane
+    window (29,650 edges, 0 degraded) with four clauses and prints every qualifying edge
+    (`s30-field-type-ceiling.{txt,json}`):
+
+    | stage | count |
+    | --- | --- |
+    | `uses`/`calls` edges carrying a receiver-bearing metadata key | 2,181 `uses`, 12,522 `calls` |
+    | …whose bare target is multi-declared in their OWN file | **91** |
+    | …and whose receiver base is a parameter of the source | 53 |
+    | …with a bare declared type declared in the file | 42 |
+    | …and the qualifier selecting exactly ONE of that type's same-named members | 42 file-unique |
+    | …and that qualified name published exactly ONCE in the whole 600-file window | **38 recoverable AND binding** |
+
+    **38 of 8,175 ambiguous edges is 0.46%, and 38 of B1's 998 is 3.8%.** 42 are
+    file-unique; **4 of those 42 MIGRATE B1 → B2** rather than resolve, because the
+    qualified name is published by more than one file in the window (`Obj.x`, `Obj.y`)
+    and `parallel-indexer.ts:3763` deduplicates `_res_qname` with `MIN(id)` — so the
+    store would bind the edge to whichever file sorts first, which is the silent
+    misattribution the split exists to name. The binding set is therefore 32 `uses` + 6
+    `calls` across 14 files, and the instrument reports all three numbers so the gap
+    between them is visible rather than averaged away.
+
+    The other 949 B1 edges fail for reasons that are structural, not for want of a rule,
+    and every rejection count is printed: **208** whose receiver is not a parameter of the
+    source (a local `let`/`var`, or a chained access `a.b.c` — needs local type
+    inference), **131** whose parameter type is not a bare name (`Option[X]`, `seq[X]` —
+    needs generic-argument resolution), **115** whose base is not a bare identifier,
+    **79** whose parameter type is not declared as a type in the same file, 28 whose
+    call-expression callee does not match the edge target. The remaining 448 B1 edges are
+    `contains`, which the store already places structurally by line (*Limitations* 37:
+    1,057 of 1,073 on the intended member).
+
+    **So the rule was measured and not built, and the reason is the ratio.** The
+    MECHANISM is available and costs one edit, which is worth stating because this
+    section first asserted the opposite. An object field does publish a qualified name:
+    `pool-worker.ts:930` computes `s.qualifiedName || s.metadata?.fqn ||
+    (s.scope ? `${s.scope}.${s.name}` : s.name)`, a field sets neither of the first two,
+    and `real-nim-analyzer.ts` gives it `scope: <owner type>`, so the store holds
+    `Character.id` — verified directly: `field-receiver.nim` parses to `id` with
+    `scope=Character ownerName=Character`. And a dotted target is resolved by Strategy 1's
+    exact qualified-name match (`parallel-indexer.ts:3768-3779`), which is what the
+    `overrides` edges already rely on. **An earlier cut of this paragraph claimed a field
+    publishes no qualified name because `:589` sets `scope` to the enclosing CALLABLE,
+    which is empty at field scope. That is wrong for fields**: the callable fallback
+    describes fields' absence of `qualifiedName`, not the value `pool-worker` computes,
+    and the two were conflated. The claim is withdrawn here rather than left standing,
+    and `validation/m14/fixtures/nim/field-receiver.expectation.json` now pins the
+    spelling so a reader can check it in one command.
+
+    What is not cheap is the ratio: **38 edges of 8,175 (0.46%) do not justify changing
+    the target spelling of every member-access edge in the language**, which is a
+    semantic change to `bb_graph`, `bb_impact` and every name-keyed consumer, for under
+    half a percent of the ambiguity, while the brief's own bar is resolution rather than
+    counts. What would change the answer is a wider anchor, not a better rule: the 208 +
+    131 + 79 cases need a per-scope symbol table with generic-argument resolution, and
+    the 6,020 B2 edges need the import graph — both whole-program, both §8.
+
 40. **This lane's defect column was quoted at 126 and was never a measurement of the
     corpus — the instrument that produces it died mid-walk and nothing recorded by how
     much.** `resolution-audit.ts` ran its 6,063-file pass in a bare `Promise.all` worker
