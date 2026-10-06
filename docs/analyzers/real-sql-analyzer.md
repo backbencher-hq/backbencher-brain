@@ -522,6 +522,29 @@ Both are shared machinery (`src/ast/engine.ts`), so neither is edited here:
 - **D2, the trap itself.** After ~1,015 parses against the cached SQL parser. The 500-file
   rebuild in `engine.ts` `getParser` does not bound it: 1,015 > 500 and the trap still lands.
 
+### What the qualified `contains` target was worth AT THE STORE, re-measured at pass 15
+
+Pass 14 measured the qualified name through `parseFile` and a resolution probe over 600
+files. This is the same change read at the other end, through production
+`indexProjectParallel`, over the full 5-repo / 1,903-file population of the pass-13
+instrument — so the two numbers are comparable. Artifact:
+`pass15-store-resolution-AFTER.json`.
+
+| | pass 13 | pass 15 | moved |
+| --- | --- | --- | --- |
+| `contains` edges held | 13,600 | **24,798** | **+11,198** |
+| `contains` target unresolved | 12 | **12** | 0 |
+| `contains` source unresolved | 200 | 233 | +33 |
+| all edges held | 32,555 | **43,753** | **+11,198** |
+| all target unresolved | 2,073 | 2,073 | 0 |
+| every other type | — | — | **unchanged, edge for edge** |
+
+`contains` is the only row that moved and it moved by exactly the pass-14 delta: the
+store previously collapsed `contains` rows whose bare member target repeated inside a
+file — `Schema.sql::teams.id` and a second `id` under another owner were the SAME row —
+and the qualified spelling separates them. Unresolved did not rise, so the +11,198 are
+recovered rows, not new ones that fail to bind.
+
 ### The arbiter at this commit, both invocations
 
 | | `--fresh` | resumed (no flag) |
