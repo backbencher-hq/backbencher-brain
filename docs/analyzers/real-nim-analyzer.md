@@ -1956,6 +1956,7 @@ quoted from an earlier round.
 | `npx tsx validation/m14/fixtures/nim/import-resolution-probe.mts <out>` | **0** | **session 18, new instrument, at `deeab0756e0c4c1f`**: 6,063 files, 1 worker, 0 empty names, **0 empty-KIND symbols** (the guard that detects a degraded walk — `parseFile` does NOT throw on a WASM heap loss, it logs `[BB-PARSE-ERR]` and returns fewer edges, which is how an early version of this probe read 13,363 edges against the census's 13,365 without knowing why). `nim_import` 12,907 at 91.8% intra / 96.3% corpus-wide, `nim_include` 458 at 96.9% / 98.0%; **normalisation changed 364 targets and reverting binds 0**; `meta.nimStdlibModule: true` on **5,389** edges, **66** of the 485 declared nowhere in the corpus (`s18-import-probe.txt`) |
 | `BB_NIM_RULED_WORKERS=1 npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | **0** | **session 18: the arbiter's own verdict loop on a patched COPY, and the runner itself needed three fixes before it could run at all.** The verdict is `corpus: 6063 admitted files`, `walk: 6063/6063 files (100.0%)  newly walked 6063, resumed 0`, and **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`** at analyzer `deeab0756e0c4c1f` unchanged across the child's walk (`s18-ruled-gate.txt`). Three runner defects, all found by RUNNING it and all of the same shape — a proof runner demanding a state the shared gate has moved past: (1) the fan-out patch targeted `Array.from({ length: 8 }, () => worker())`, a hand-rolled pool the gate no longer has, so it exited 2 with "worker patch did not apply" on a correctly-wired gate — it now matches `concurrency: 8,` and DETECTS rather than demands; (2) the copy lives in /tmp and the gate's new `await import("./resumable-walk")` did not resolve, `ERR_MODULE_NOT_FOUND` before the corpus was admitted, so nothing was measured; (3) same for the static `from "./differential"`, which the lane-table pattern deliberately cannot match because it requires a `-ruled` suffix |
 | `BB_NIM_BEFORE=<ref> npx tsx validation/m14/fixtures/nim/imports-edge-delta.mts <out>` | **0** | **session 18, new instrument, run twice**: `1475e53d0e528d0a` → `deeab0756e0c4c1f` reads **13,364 → 13,364, delta 0, 0 of 6,063 files differing**; `2426fdda15f9960e` → `deeab0756e0c4c1f` reads **13,365 → 13,365, delta 0, 0 differing**. The module pass adds and removes no `imports` edge anywhere in the corpus, so the census's +1 is walk non-determinism between two CLEAN walks (0 threw, 0 empty-kind on both sides), not an edge the pass created. Each swap is digest-verified and a `finally` restores the tree — the artifact records the digest actually walked beside the one the caller expected, because `HEAD~1` silently became the wrong blob once the pass was itself committed (`s18-imports-edge-delta-{1475e53d,HEAD1}.{txt,json}`) |
+| `BB_NIM_WINDOW=fleet npx tsx validation/m14/fixtures/nim/incoming-digest-delta.mts <json> <txt>` | **0** | **session 30, new instrument, the fleet window (`find|sort|head -600`, sha256 `85a168e09c155f78`) and the lane window (`session13-file-list.txt`, sha256 `bebc7c932ae22406`) at two analyzer digests, unmodified shared `incoming-check.ts` (`bee4dad9eda555b9`, byte-identical to the tsv commit), analyzer digest-verified on both sides of each walk and restored in `finally`.** FLEET WINDOW, 600 files both sides, 0 degraded both sides, child exit 0 both sides: the BEFORE pass at `9d9ee478e3295c28` reproduces the `incoming-whole.tsv` row **to the digit** — `600 8 12491 9424` — and the AFTER pass at the committed `96ef87bb47f63eca` reads **`600 8 13087 7246`**: ambiguous **+596 (+4.8%)**, unresolved **−2,178 (−23.1%)**. `imports` carries both signs: ambiguous 268→686, unresolved 3,233→1,088. LANE WINDOW, same digests, 600 files: `fired 10` both sides, ambiguous 4,269→4,351 (+82), unresolved 10,275→9,974 (−301). The two windows share **62 of 600 files**, so a figure from one is not comparable to a figure from the other (`s30-incoming-digest-delta-{fleet,lane}.{txt,json}`) |
 | `npx tsx script/m14/diagnose-incoming.mts nim nim 600 <corpus>` | **0** | **session 18, before and after, same command and same 600 files**: unresolved targets **1,859 → 1,289** (-570, -30.7%); ambiguous targets 1,112 → 1,145 (+33, and the reason is stated below); B's recoverable count **3 → 0** — which is the point, not a null result. The `+33` on ambiguity is the honest cost of the pass: it published 600 module symbols in this window, 36 of which collide by basename, and `submodule.nim` alone is the basename of 16 files. **A gain of 570 resolutions bought with 33 newly ambiguous targets is a trade, and it is reported as one** (`s18-diagnose-BEFORE.txt`, `s18-diagnose-AFTER.txt`) |
 | **`npx tsx script/m14/ontology-coverage-gate.ts nim --fresh`** | **1** | **session 24, three consecutive invocations at `96ef87bb47f63eca`, three different results from the same analyzer on the same 6,063-file corpus** (`s25{a,b,c}-arbiter*.txt`). `--fresh` → exit 1 on `[BB-HANG] parser stuck 120s on nim/lib/std/private/threadtypes.nim — exiting`, table never printed. resume → exit 1, `walk: 6063/6063 (100.0%) newly walked 1552, resumed 4511`, verdict **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, and the log then carries `[BB-HANG] … nimony/tests/nimony/modules/deps/ismain_include.nim`. resume again → exit 1, `walk: 6063/6063 (100.0%) newly walked 0, resumed 6063`, verdict **`emitted 0/10  ruled-sound 3  FALSIFIED 0  ruled-without-justification 7`**. *Limitations* 36 and 44 are these two rows respectively |
 | **`BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>`** | **0** | **session 24, at `96ef87bb47f63eca`** (`s27-census-clean.txt`): 6,063 files, 6,063 parsed, 0 throws, **0 empty names, 0 empty kinds, 0 off-ontology edge types, 8 literal `unknown` endpoints**, **116,127 symbols / 267,266 edges**. Every per-type figure is **byte-identical to the session-18 table above** on a different digest, so it is a reproduction and not a second census. `degradedWalk: null`. The same script at the bare default of 6 workers is **exit 1 and writes nothing under its own name**: 10 empty-kind symbols, all `nimony/bench/gcbench.nim`, whose parse logs `memory access out of bounds` and then hangs 120s (`s26-census.degraded.json`, `s26-census.txt`) |
@@ -2628,6 +2629,78 @@ side: `npx tsx script/m12/verify-regex-census.ts` FAILS repo-wide, and **0 of it
 51 rows are this lane's** — 26 MISSING and 25 STALE, in `css`, `julia`, `clean`,
 `fsharp`, `javascript`, `python`, `svelte` and `typescript`. There is no nim row
 to fix because there is no nim regex.
+
+### The fleet-wide `incoming-whole.tsv` row for nim, and what it is a reading of
+
+`validation/m14/measurements/incoming-whole.tsv` is the table the whole programme is
+read against — "ZERO of 23 lanes have fully-resolving incoming" is read off it. Its
+`nim` row is `600  8  12491  9424` (files, fired, ambiguous, unresolved). Two things
+about that row are worth stating because neither is visible in the artifact.
+
+**It is a correct reading of a superseded analyzer, and this lane initially claimed
+otherwise.** `git log` puts the tsv at `a7a5debfc`, whose copy of
+`src/ast/real-nim-analyzer.ts` is `9d9ee478e3295c28`. The committed blob is
+`96ef87bb47f63eca`, three analyzer generations later. The first cut of this section
+called the row stale and wrong, on the reasoning that `fired 8` is false of an analyzer
+that fires ten. **That reasoning was wrong, and the instrument that produced the wrong
+claim is recorded here because it is the same shape as three other errors this document
+already carries.** `fired` is `edges > 0` per type (`incoming-check.ts:233`), and
+`implements` and `overrides` emit **0 edges on this particular 600-file window at both
+digests**. `fired 8` is a property of the window, not of the analyzer: the same blob
+fires 10/10 over the 6,063-file corpus (*Limitations*, the session-29 gate row). The
+tsv row was never a miscount.
+
+**What the row IS a reading of is a different population than this lane's own 600 files,
+and the two overlap by 62 of 600.** The tsv's window is
+`find <corpus> -name '*.nim' -type f | sort | head -600` — the walk
+`script/m14/diagnose-incoming.sh:35` performs. Every artifact under
+`measurements/nim/` uses the pinned `session13-file-list.txt` instead. Measured overlap
+between the two lists: **62 files, 10.3%**. So the lane's own 8,175 ambiguous edges and
+the fleet's 12,491 ambiguous targets are not one measurement read two ways, and neither
+figure should be quoted beside the other without saying which window it came from. Both
+lists are now committed (`s30-fleet-window-file-list.txt`) and
+`validation/m14/fixtures/nim/incoming-digest-delta.mts` requires the window as an
+argument (`BB_NIM_WINDOW=fleet|lane`) rather than defaulting it silently.
+
+**Restated at the committed blob, on the tsv's own window, the row moves.**
+`incoming-digest-delta.mts` swaps the analyzer file between two complete passes of the
+unmodified shared `incoming-check.ts` (`bee4dad9eda555b9`, byte-identical to the tsv
+commit), digest-verifies each swap and re-verifies after the walk, and restores the tree
+in `finally`. 600 files both sides, 0 degraded both sides, child exit 0 both sides
+(`s30-incoming-digest-delta-fleet.{txt,json}`):
+
+| | tsv row, at `9d9ee478` | committed blob `96ef87bb` | delta |
+| --- | --- | --- | --- |
+| files | 600 | 600 | 0 |
+| symbols | 21,167 | 21,767 | +600 (+2.8%) |
+| fired | 8 | 8 | 0 |
+| **ambiguous** | **12,491** | **13,087** | **+596 (+4.8%)** |
+| **unresolved** | **9,424** | **7,246** | **−2,178 (−23.1%)** |
+
+The BEFORE column reproduces the tsv row **to the digit** (`600 8 12491 9424`), which is
+what makes the AFTER column a measurement of the analyzer rather than of a changed
+instrument or a changed window.
+
+Both movements come from one commit, `7a7ab080c`, and they pull in opposite directions:
+
+| type | ambiguous | unresolved |
+| --- | --- | --- |
+| `imports` | 268 → 686 (**+418**) | 3,233 → 1,088 (**−2,145**) |
+| `exports` | 21 → 32 (+11) | 82 → 51 (−31) |
+| `uses` | 3,476 → 3,552 (+76) | 0 → 0 |
+| `contains` | 1,090 → 1,126 (+36) | 0 → 0 |
+| `calls` | 6,511 → 6,553 (+42) | 4,431 → 4,429 (−2) |
+
+That is the module-symbol pass, and the trade is legible in the two columns: publishing
+one module symbol per file resolved 2,145 `imports` targets that were module PATHS, and
+made 418 target names newly ambiguous because a module's basename now collides with
+local declarations. `submodule.nim` alone is the basename of 16 corpus files. **The
+lane's own doc already records this trade for a different window** — 570 resolutions
+bought with 33 newly ambiguous targets (the `diagnose-incoming` row in the gates table)
+— so this is the second window confirming the same sign and a larger magnitude, not a
+new mechanism. It is reported as a trade because that is what it is; the unresolved
+column, which is what a consumer of the reverse walk actually loses an edge to, falls
+23.1%.
 
 ## Verification evidence
 
@@ -3920,6 +3993,72 @@ quiet machine will cover all 5,227 through the production path.
     name-resolved types gain **82 edges of 7,061 (1.2%)**. The honest reading is that this
     lane's per-file ambiguity lever is spent at ~1.2% of the name-resolved surface, and
     the remaining 87.8% is whole-program scope modelling in shared machinery (§8).
+
+    **What a field-type rule could actually recover was measured before it was built, and
+    the number is 38.** B1's largest shape is `ownerCollision` — a name declared twice in
+    ONE file at two scopes — and the case is small enough to read whole:
+    `graphql-nim/playground/swapi.nim` declares `id` at `Character` (line 38) and at
+    `Starship` (line 53), and line 158 is `resp(c.id)` inside
+    `proc charToResp(ctx: Starwars, c: Character)`. The correct target is `Character.id`
+    and the FILE says which: the edge's own metadata already carries the receiver as
+    `fieldAccessExpression: "c.id"`, and the source symbol's `parameters` already carry
+    `c: Character`. So a per-file rule exists that needs no import graph, and
+    `validation/m14/fixtures/nim/field-type-ceiling.mts` costs it over the 600-file lane
+    window (29,650 edges, 0 degraded) with four clauses and prints every qualifying edge
+    (`s30-field-type-ceiling.{txt,json}`):
+
+    | stage | count |
+    | --- | --- |
+    | `uses`/`calls` edges carrying a receiver-bearing metadata key | 2,181 `uses`, 12,522 `calls` |
+    | …whose bare target is multi-declared in their OWN file | **91** |
+    | …and whose receiver base is a parameter of the source | 53 |
+    | …with a bare declared type declared in the file | 42 |
+    | …and the qualifier selecting exactly ONE of that type's same-named members | 42 file-unique |
+    | …and that qualified name published exactly ONCE in the whole 600-file window | **38 recoverable AND binding** |
+
+    **38 of 8,175 ambiguous edges is 0.46%, and 38 of B1's 998 is 3.8%.** 42 are
+    file-unique; **4 of those 42 MIGRATE B1 → B2** rather than resolve, because the
+    qualified name is published by more than one file in the window (`Obj.x`, `Obj.y`)
+    and `parallel-indexer.ts:3763` deduplicates `_res_qname` with `MIN(id)` — so the
+    store would bind the edge to whichever file sorts first, which is the silent
+    misattribution the split exists to name. The binding set is therefore 32 `uses` + 6
+    `calls` across 14 files, and the instrument reports all three numbers so the gap
+    between them is visible rather than averaged away.
+
+    The other 949 B1 edges fail for reasons that are structural, not for want of a rule,
+    and every rejection count is printed: **208** whose receiver is not a parameter of the
+    source (a local `let`/`var`, or a chained access `a.b.c` — needs local type
+    inference), **131** whose parameter type is not a bare name (`Option[X]`, `seq[X]` —
+    needs generic-argument resolution), **115** whose base is not a bare identifier,
+    **79** whose parameter type is not declared as a type in the same file, 28 whose
+    call-expression callee does not match the edge target. The remaining 448 B1 edges are
+    `contains`, which the store already places structurally by line (*Limitations* 37:
+    1,057 of 1,073 on the intended member).
+
+    **So the rule was measured and not built, and the reason is the ratio.** The
+    MECHANISM is available and costs one edit, which is worth stating because this
+    section first asserted the opposite. An object field does publish a qualified name:
+    `pool-worker.ts:930` computes `s.qualifiedName || s.metadata?.fqn ||
+    (s.scope ? `${s.scope}.${s.name}` : s.name)`, a field sets neither of the first two,
+    and `real-nim-analyzer.ts` gives it `scope: <owner type>`, so the store holds
+    `Character.id` — verified directly: `field-receiver.nim` parses to `id` with
+    `scope=Character ownerName=Character`. And a dotted target is resolved by Strategy 1's
+    exact qualified-name match (`parallel-indexer.ts:3768-3779`), which is what the
+    `overrides` edges already rely on. **An earlier cut of this paragraph claimed a field
+    publishes no qualified name because `:589` sets `scope` to the enclosing CALLABLE,
+    which is empty at field scope. That is wrong for fields**: the callable fallback
+    describes fields' absence of `qualifiedName`, not the value `pool-worker` computes,
+    and the two were conflated. The claim is withdrawn here rather than left standing,
+    and `validation/m14/fixtures/nim/field-receiver.expectation.json` now pins the
+    spelling so a reader can check it in one command.
+
+    What is not cheap is the ratio: **38 edges of 8,175 (0.46%) do not justify changing
+    the target spelling of every member-access edge in the language**, which is a
+    semantic change to `bb_graph`, `bb_impact` and every name-keyed consumer, for under
+    half a percent of the ambiguity, while the brief's own bar is resolution rather than
+    counts. What would change the answer is a wider anchor, not a better rule: the 208 +
+    131 + 79 cases need a per-scope symbol table with generic-argument resolution, and
+    the 6,020 B2 edges need the import graph — both whole-program, both §8.
 
 40. **This lane's defect column was quoted at 126 and was never a measurement of the
     corpus — the instrument that produces it died mid-walk and nothing recorded by how
