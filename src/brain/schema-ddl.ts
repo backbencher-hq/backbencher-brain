@@ -416,19 +416,49 @@ export const ANNOTATION_DDL = `
  * see ensureAnnotationTable). A BEFORE trigger is additive, survives reopening,
  * and refuses the write loudly instead of letting a mislabelled note be rendered
  * to a human as a human's own note.
+ *
+ * WHY THE MESSAGE IS A STATIC LITERAL (measured, 2026-10-06): the previous
+ * revision interpolated the offending value --
+ *   RAISE(ABORT, '... (got: ' || COALESCE(NEW.author_class,'NULL') || ')')
+ * -- which requires SQLite >= 3.47.0. That release (2024-10-21) added
+ * "arbitrary expressions in the second argument to the RAISE function"
+ * (sqlite.org/releaselog/3_47_0.html). On any older SQLite the statement is a
+ * PARSE ERROR -- measured on 3.43.2: 'near "||": syntax error' -- and because a
+ * trigger it cannot parse makes the WHOLE schema unloadable, the database then
+ * fails to open at all:
+ *   sqlite3.DatabaseError: malformed database schema
+ *     (brain_annotation_author_class_guard) - near "||": syntax error
+ * On this machine, 762 of the 801 local indexes under ~/.bb/projects are
+ * unreadable to SQLite 3.43.2 for exactly this reason.
+ *
+ * CORRECTION, stated here because the first version of this comment (and the
+ * commit that introduced this DDL) overclaimed: the tool's own runtime bundles
+ * SQLite 3.49.2 via better-sqlite3, which is >= 3.47, so on THIS runtime the
+ * interpolated form parses, the guard installs, and it enforces -- measured by
+ * inserting into a real pre-fix index: author_class='robot' and author_class=NULL
+ * are both refused by the trigger, with the interpolated "(got: ...)" text. So
+ * these files were NOT universally corrupt. The defect is a PORTABILITY one:
+ * the schema silently depended on a SQLite version the tool does not control,
+ * and anything reading these files with an older SQLite -- a user's script, a
+ * tool, an editor integration -- could not open them at all. The static
+ * literal parses on every SQLite version and refuses exactly the same writes
+ * (NULL, absent column, a value outside the set, and an UPDATE into it) while
+ * accepting a valid one. The price is that the message can no longer name the
+ * offending value; it must not pretend to. See
+ * script/m28/verify-annotation-store.ts for the enforcement proofs.
  */
 export const ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL = `
     CREATE TRIGGER IF NOT EXISTS brain_annotation_author_class_guard
     BEFORE INSERT ON brain_annotation
     WHEN NEW.author_class IS NULL OR NEW.author_class NOT IN ('agent', 'human')
     BEGIN
-      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human'' (got: ' || COALESCE(NEW.author_class, 'NULL') || ')');
+      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human''');
     END;
     CREATE TRIGGER IF NOT EXISTS brain_annotation_author_class_guard_update
     BEFORE UPDATE OF author_class ON brain_annotation
     WHEN NEW.author_class IS NULL OR NEW.author_class NOT IN ('agent', 'human')
     BEGIN
-      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human'' (got: ' || COALESCE(NEW.author_class, 'NULL') || ')');
+      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human''');
     END;
   `
 
@@ -439,12 +469,38 @@ export function ensureAnnotationTable(raw: any): void {
   } catch {}
   // The author-class guard is part of the same additive, idempotent migration:
   // a pre-existing DB gains it on the next open, exactly like the table and the
-  // location index. Failures stay swallowed (a read-only or busy open must not
-  // fail because a trigger could not be created) — the same contract as every
-  // other migration here.
+  // location index.
+  //
+  // WHY THIS IS NO LONGER SILENT (measured 2026-10-06): the exec was wrapped in
+  // `catch {}`, and a trigger body the running SQLite cannot parse IS a parse
+  // error, not a busy or read-only database. The previous revision of this DDL
+  // required SQLite >= 3.47 (an expression inside RAISE). On an older client the
+  // CREATE threw here, was swallowed, and the database was left carrying a
+  // schema that client could not load at all — while the indexer, running its
+  // own 3.49, reported success. 762 local indexes carried it. The writer was
+  // reporting success for a file it had only proven readable by itself.
+  //
+  // A closed catch is still permitted for the genuinely transient case (a
+  // read-only or busy open), but a SCHEMA DEFECT must be loud: it does not heal
+  // on retry, and swallowing it manufactures a green result over a broken
+  // artifact. So the failure is re-checked by parsing the schema back, and
+  // re-thrown when the database cannot be read.
   try {
     raw.exec(ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL)
-  } catch {}
+  } catch (error) {
+    // Distinguish "could not create the guard right now" (transient — a
+    // read-only or busy handle) from "the schema is now malformed" (permanent —
+    // the database cannot be read at all). Only the second is re-thrown.
+    try {
+      raw.prepare("SELECT count(*) FROM sqlite_master WHERE type='trigger'").all()
+    } catch (unreadable) {
+      throw new Error(
+        `annotation author-class guard failed AND the schema is unreadable after it: ${String(
+          (unreadable as { message?: string })?.message ?? unreadable,
+        )}`,
+      )
+    }
+  }
 }
 
 /**
