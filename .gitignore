@@ -286,7 +286,8 @@ validation/m14/measurements/walk-*.txt
 # script/m27/verify-zed.ts; never a source artifact).
 ide/zed/bb-lsp/target/
 
-# dart lane: nested-if spines are DERIVED from their generators, not authored.
-# Each one is a function of a single integer in node-crossing-census.ts / deep-nesting-cost.ts,
-# so committing 552K of them would let a stale copy outlive the generator that made it.
-validation/m14/fixtures/dart/generated/
+
+# dart lane: nested-if spines are DERIVED and now live OUTSIDE the fixture tree.
+# run-fixtures treats a subdirectory of fixtures/<lang>/ as a fixture group, so writing
+# them under fixtures/dart/generated/ turned 14 derived files into 14 phantom
+# "missing expectation file" failures.
