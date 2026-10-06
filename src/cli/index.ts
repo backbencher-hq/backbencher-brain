@@ -667,9 +667,20 @@ async function cmdProjects(opts: { sort?: string; remove?: string; force?: boole
   const when = (t: number | null) => (t ? new Date(t).toISOString().slice(0, 10) : "n/a")
   for (const p of projects) {
     const where = p.humanPath ?? "(no path recorded)"
-    console.log(`${p.id.slice(0, 8)} | ${p.files} files ${p.symbols} syms | ${mb(p.dbSizeBytes)} | idx ${when(p.lastIndexed)} | ${p.status ?? ""} | ${where} | db: ${p.dbPath}`)
+    // An unreadable database is reported as UNREADABLE, never as `0 files 0
+    // syms` — a measured zero and an unmeasured one must not look alike.
+    const counts = p.unreadable ? `UNREADABLE (${p.unreadable})` : `${p.files} files ${p.symbols} syms`
+    console.log(`${p.id.slice(0, 8)} | ${counts} | ${mb(p.dbSizeBytes)} | idx ${when(p.lastIndexed)} | ${p.status ?? ""} | ${where} | db: ${p.dbPath}`)
   }
+  const unreadableCount = projects.filter((p) => p.unreadable !== null).length
   console.log(`\n${projects.length} projects, ${mb(totalProjectsBytes(projects))} total index size (${bbProjectsDir()})`)
+  if (unreadableCount > 0) {
+    // Stated rather than implied by the rows: a reader who greps for one project
+    // must not have to notice the token to learn that N of them cannot be read.
+    console.log(
+      `${unreadableCount} of ${projects.length} could not be read; re-index them (bb index <path>) — their file/symbol counts are unknown, not zero`,
+    )
+  }
 }
 
 async function cmdStatus(dir: string | undefined) {
