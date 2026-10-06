@@ -1272,3 +1272,369 @@ carries the replacement) whose import is exempt but whose use on the truth path 
 
 - Cross-file `overrides` at project scale, because the companion index is not
   populated in production.
+
+---
+
+## Round: the incoming side, measured (2026-10-06)
+
+**No analyzer change this round.** Coverage was adjudicated by the previous round
+(10 of 10 types EMITTED, `PHP_RULED` empty because nothing is left to rule), so this
+round spent its budget on the incoming side — what the graph can walk *to* — and on
+three defects in the instruments that measure it. Every number below is over the
+**whole admitted corpus**, not a draw: 199 repos, **5,094** git-tracked files that
+`detectLanguageFromPath` admits as `php`, production `parseFile` from
+`src/ast/pool-worker.ts`. Commands and artifacts are named beside each figure, per
+§"a number and the command that produced it".
+
+### 1. The coverage arbiter reports a verdict from the files it happened to walk
+
+`script/m14/ontology-coverage-gate.ts` checkpoints its walk to
+`validation/m14/measurements/walk-php.txt` so a WASM hang cannot cost a corpus walk.
+The checkpoint records *that* a file was walked. It does not record what that file
+emitted, and `resumableWalk` does not call the walk callback for an index it has
+already done — so `observed`, the map the verdict is computed from, is populated
+**only by files walked in the current invocation**.
+
+Measured, same tree, same corpus, two invocations:
+
+| invocation | gate prints | `exports` | `overrides` | verdict |
+| --- | --- | --- | --- | --- |
+| resumed | `newly walked 53, resumed 5041` | RULED-UNJUSTIFIED | RULED-UNJUSTIFIED | **8/10**, exit 1 |
+| `--fresh` | `newly walked 5094, resumed 0` | **EMITTED, 57 edges** | **EMITTED, 2 edges** | **10/10**, FALSIFIED 0 |
+
+The resumed run also printed `walk: 5094/5094 files (100.0%)` while holding 53
+files' worth of edges in `observed`. A coverage gate that reports 100% of a
+population it counted 1% of is a vacuous pass, and it is the failure this project
+exists to catch: it read two real types as absent from the language.
+
+This lane cannot fix it — the gate is shared machinery. The report is in §"Broken
+outside your language" with the file, the function and the shape of the change.
+
+**What `--fresh` costs, so the supervisor can weigh it:** the fresh walk is ~20
+minutes on this corpus and it reported 6 files failing with
+`[BB-PARSE-ERR] … memory access out of bounds` plus one `[BB-HANG]` that exits 1.
+Those exclusions are why the gate's fresh counts sit slightly below
+`ambiguity-split.json`'s, which parses the same files sequentially and loses none:
+`calls` 103,015 vs 103,190, `uses` 154,513 vs 155,016, `contains` 35,032 vs 35,087,
+`imports` 28,558 vs 28,630, `references` 10,291 vs 10,296, `extends` 3,104 vs 3,110,
+`instantiates` 13,796 vs 13,848 — and they agree **exactly** on `exports` 57,
+`implements` 1,106 and `overrides` 2, which are the three a resumed run gets wrong.
+
+### 2. `uses` is not one rule, and 65% of it cannot resolve under any implementation
+
+`uses` is the lane's largest label (155,016 edges, 44.2% of 350,342). Each emission
+carries its own `metadata.phpSpecific` flag, and the flags have **different
+resolvability properties**, so a single resolution rate for `uses` is a number about
+no particular thing.
+
+`validation/m14/fixtures/php/uses-resolution-shape.mts --files 300` groups every
+`uses` edge of 300 files (9,024 edges, 2,369 symbols published, 0 parse failures,
+0 degraded) by the flag the analyzer wrote on it and by whether the bare target
+matches something published. A target is classified **variableInFile** without
+reading its text: the walk re-parses the same file and collects every
+`variable_name` leaf the grammar produced, then asks set membership — a parse-tree
+fact, not a pattern.
+
+| class | edges | share | what it means |
+| --- | --- | --- | --- |
+| `resolvesBare` | 2,562 | 28.39% | the target matches a published name somewhere in the walk |
+| `variableInFile` | 5,872 | **65.07%** | the target is a `$variable` in its own file |
+| `internalSymbol` | 107 | 1.19% | php-src declares it — cause C, already labelled |
+| `UNCLASSIFIED` | 483 | 5.35% | the only bucket that can hide a real defect |
+
+**The 65.07% is a structural limit, not a defect.** A PHP local variable has no
+declaration site: `$foo = 1;` produces no symbol, so no correct implementation can
+ever publish one, and no spelling change makes those 5,872 edges resolve. The remedy
+is a label or a declared limitation — never a new edge, which would be a fabricated
+node. Broken out by emitting rule, the shape is unambiguous:
+
+| flag | edges | variableInFile | UNCLASSIFIED |
+| --- | --- | --- | --- |
+| `isLocalRead` | 5,967 | 4,744 | 0 |
+| `isMemberRead` | 1,741 | 252 | **356** |
+| `isSubscriptBase` | 749 | 681 | 0 |
+| `isConstFetch+isMemberRead` | 199 | 0 | **123** |
+| `isMemberRead+isStaticRead` | 183 | 92 | 0 |
+| `isInterpolationRead` | 79 | 78 | 0 |
+| `isConstRead` | 77 | 0 | 2 |
+| `isClosureCapture` | 23 | 21 | 0 |
+| `isGlobalRead` | 4 | 4 | 0 |
+| `isTraitUse` | 2 | 0 | 2 |
+
+**479 of the 483 UNCLASSIFIED are member-name or const-fetch targets** (356 + 123).
+That is cause A proper, priced: a member is published as (bare `name`, `ownerName`)
+in two fields, so the edge's bare target collides with every other declaration of
+that method name in the corpus. The multi-declaration counts are in
+`validation/m60/php/ambiguity-split.json`: of `uses`' 106,317 distinct targets,
+**86,829** are published 2+ times, while the fleet's multi-KIND instrument — the one
+behind `script/m14/incoming-check.ts` — counts **54,281** on the same edges. So the
+fleet's `amb` column understates this lane's ambiguity by **1.60x**, and the two
+numbers are not comparable across lanes. (Both are reported as distinct targets; on
+this lane the multi-symbol and multi-kind EDGE counts happen to equal their
+distinct-target counts, 86,829 and 54,281 respectively.)
+
+**A control that changed how the table reads.** `ownerScoped` — "the target does not
+resolve bare, but PHP's own `(owner, member)` key does" — printed **0**, which reads
+as *no member read is owner-resolvable*. The control says something narrower and
+truer: 276 symbols **are** published under a joined name and **all 276 are kind
+`namespace`**, so the bucket could fire and did not. PHP publishes a member as
+(bare name, `ownerName`) and never as the `Owner\member` name its own resolver
+builds. The 0 is a real measurement of a real absence: a consumer cannot
+disambiguate a member read by owner today without joining a field the store does not
+index. The remedy is a **publisher** change — visible to every downstream consumer,
+which is why this round does not make it unasked.
+
+### 3. `calls` deletes 14,541 real call sites instead of labelling them
+
+Cause C's stated mechanism is "mark them external so they stop polluting
+`unresolved`", and `labelExternalTargets()` does exactly that for `imports`,
+`instantiates` and `references`. For `calls` the same names never reach labelling:
+`real-php-analyzer.ts:1669` reads `if (PHP_BUILTINS.has(callName)) return` and
+**deletes** them.
+
+`validation/m14/fixtures/php/builtin-calls-probe.mts --files 5094`, output in
+`validation/m60/php/builtin-calls-probe.txt`:
+
+| quantity | value |
+| --- | --- |
+| `function_call_expression` nodes | 18,910 |
+| named by the analyzer's own `phpStaticCallableName` | 18,217 |
+| variable/member callees with no static name | 693 |
+| **sites the filter deletes** | **14,541** |
+| — of which FUNCTIONS (real php-src symbols) | 12,217 across 475 names |
+| — of which CONSTRUCTS (language syntax) | 2,324 across 3 names |
+| `PHP_INTERNAL_FUNCTIONS` / `PHP_LANGUAGE_CONSTRUCTS` / union | 2,389 / 92 / 2,480 |
+
+**14,541 of 18,217 statically-named calls — 79.8% — are absent from the graph**, and
+the top of the FUNCTION half is `sprintf` 1,176, `assert` 725, `count` 559,
+`htmlspecialchars` 387, `in_array` 370. Those are real functions with declaration
+sites and signatures, declared by php-src at commit `91b93bcc`. The CONSTRUCT half
+(`isset` 1,943, `empty` 378, `eval` 3) is correctly dropped: no such symbol exists,
+so an edge onto one would point at nothing.
+
+The contrast that sizes the asymmetry: the same corpus holds **14,065**
+`object_creation_expression` nodes, **13,849** of them naming an internal class, and
+**all** of those are emitted and then labelled `metadata.external`. So a `new
+Exception()` call site is in the graph with an externality label while an
+`Exception->getMessage()`-shaped `calls` edge is deleted outright. `exit` is in both
+derived sets (2,389 + 92 − 1 = 2,480), so the two buckets partition by rule rather
+than by luck.
+
+**The 14,541 and the round's edge delta are populations of different sizes**, and the
+probe reconciles them instead of leaving the arithmetic to the reader.
+`PHP_BUILTINS` was 217 distinct hand-written names until the previous round, so the
+ambiguity-split `calls` move (107,611 → 103,190) is the **increment**:
+
+| | sites |
+| --- | --- |
+| the prefix filter already took | 10,104 across 187 names |
+| the derived table added (FUNCTIONS) | 2,113 across 288 names |
+| CONSTRUCT sites absent from the prefix list (`isset`, `empty`) | 2,321 |
+| **= sites the derived table newly filters** | **4,434** |
+| measured `calls` edge delta | 4,421 |
+| residual | **−13, 0.29% of the delta** |
+
+The residual is stated, not explained away. The probe counts call **sites**; the
+analyzer pushes one relationship per surviving site and has no dedup key of its own,
+so the two populations are the same set up to whatever the pipeline after the
+analyzer does. This lane did not measure that collapse separately, so the
+reconciliation is agreement to within the residual, not exact. Both sides are read
+from committed artifacts (`php-builtins-pre-m60.json`, `calls-edges-pre-m60.json`)
+and the probe exits 3 if the two ambiguity-split runs are over different file
+populations.
+
+### 4. The literal `unknown` endpoint check: 26 hits, 0 defects
+
+§2b of the lane brief requires tallying endpoints equal to the string `unknown`.
+`ambiguity-split.json` records 26 of 350,342 (0.0074%): `calls:target` 13,
+`uses:target` 7, `instantiates:source` 2, `contains:target` 2, `references:source` 2.
+A count does not say what to do about it, because the two readings have opposite
+consequences: the **sentinel** would be an endpoint naming nothing, and a **declaration
+in the corpus spelled `unknown`** would be a true edge that a "fix" would destroy.
+
+`validation/m14/fixtures/php/unknown-endpoints.mts --files 5094` decides it by
+measurement from two signals per hit — is `unknown` published as a symbol by any file
+in the walk, and by the hit's own file — both set membership over what `parseFile`
+published, no regex and no source-text reading. Result: **26 of 26 have a published
+`unknown` somewhere in the walk; 0 are sentinel-shaped.** The two published symbols
+are `public static function unknown()` in `phpunit/src/Framework/TestSize/TestSize.php:21`
+and `phpunit/src/Framework/TestStatus/TestStatus.php:39`, and reading the sources
+settles the rest: `phpmyadmin/src/Charsets/Collation.php:124` and
+`slim/tests/Handlers/Strategies/RequestResponseNamedArgsTest.php:137` target a local
+`$unknown` variable, which is the structural limit of §2 above, not a sentinel.
+
+**An ordering bug this instrument shipped and then fixed.** The first whole-corpus
+run reported 5 "sentinel-shaped" hits. `walkPublishesUnknown` was evaluated *inside*
+the walk, so a hit in a file sorting before `TestSize.php` read false — the answer
+depended on file order, which makes it not a discriminator. Resolved after the walk
+it is 0. The corrected numbers are what the committed JSON carries, so artifact and
+command still agree.
+
+### 5. One differential MISSING row is a stale oracle label, not a missing edge
+
+`bun run script/m14/differential.ts --lang php` exits 0 and reports one MISSING row
+in 120 files across two repos: phpunit `files=60 tree-truth=1180 covered=1179
+(99.9%) MISSING=1 | analyzer-edges=1124 unexplained=0 heuristic=0`;
+phpmyadmin `files=60 tree-truth=1906 covered=1906 (100%) MISSING=0 | analyzer-edges=1856
+unexplained=0 heuristic=0`.
+
+The row is `references (expr) -> __DIR__/MyExtensionBootstrap.php` in
+`phpunit/tests/end-to-end/extension-cli/_files/class-does-not-implement-interface/src/autoload.php`,
+which is `require __DIR__ . '/MyExtensionBootstrap.php';`. The edge **is emitted**,
+as `imports`, at 0.9 with `metadata.relationshipType: "include_path"`,
+`includeType: "require"`, `evidenceClass: "import_based"`. The oracle pushes
+`references` for the same node at `script/m14/differential.ts:12148`, under a
+comment reading "Mirror the analyzer's emitInclude: references -> the include path".
+
+The analyzer's label is the deliberate one. `emitInclude` carries the reasoning
+inline (`src/ast/real-php-analyzer.ts:2300`): "`require`/`include` is a module
+dependency, not a symbol reference. It was filed as `references`, which mislabels a
+file-level edge as an intra-file symbol read and kept it out of the file-level
+reader's `('imports','exports')` filter." Since that change `references` in this lane
+means one thing — a declared-type reference (`real-php-analyzer.ts:2890`) — so the
+oracle is stale by one label and the row can never match. `script/m14/differential.ts`
+is shared machinery: reported, not edited. **Sample size is one row in one repo.**
+
+### 6. DERIVATION, restated against this round's numbers
+
+Unchanged from the previous round and re-measured here, because a DERIVATION finding
+is a type the differential never audits. `derivePhpEdges` pushes exactly seven
+labels — `calls`, `uses`, `extends`, `implements`, `instantiates`, `overrides`,
+`references`. Three emitted types derive nothing: **`contains` (35,087 edges),
+`imports` (28,630), `exports` (57)** — **63,774 of 350,342 edges, 18.2%** of the
+lane, stored and compared against nothing. The compared-label allowlist for `php`
+resolves to those same seven, so those three are filtered off the analyzer side too:
+`unexplained 0` says nothing about them.
+
+The `exports` half is as far as this lane can take it alone. Its correctness is held
+by a **second independent implementation** of the file-scope rule run against the
+wasm, agreeing 57/57 with the analyzer over the same population, plus 3 injected
+mutants the fixture suite catches — but that is an L1/L3 argument for a label the
+differential will not compare. An oracle for `contains` and one for `imports`/`exports`
+belong in `script/m14/differential.ts`; §"Broken outside your language" states what
+each would have to derive.
+
+### 7. Gates re-run
+
+| gate | command | result |
+| --- | --- | --- |
+| coverage arbiter | `npx tsx script/m14/ontology-coverage-gate.ts php --fresh` | `emitted 10/10 ruled-sound 0 FALSIFIED 0 ruled-without-justification 0`, then exit 1 on `[BB-HANG]` (`phpmyadmin/tests/unit/Engines/Innodb/BufferPoolTest.php`, 120 s) and 6 `[BB-PARSE-ERR] memory access out of bounds` |
+| fixtures | `bun run script/m14/run-fixtures.ts --lang php` | **23 pass / 0 fail**, "all fixtures pass", exit 0 |
+| differential | `bun run script/m14/differential.ts --lang php` | exit 0; 2 lanes measured; the 1 MISSING row of §5; scoped run correctly declined to write M14.0.F5 |
+| types | `npx tsc --noEmit -p tsconfig.json` | exit 0 |
+| mutation | `bun run script/m14/mutate-analyzer.ts` (no scoped invocation exists; it sweeps every lane) | **53 php mutants, 52 CAUGHT, 1 SURVIVED** |
+| honesty | `npx tsx script/m14/verify-honesty.ts` | exit 6; **33 banned-vocabulary failures, none in a php file** — every one is in another lane's artifact (c, clean, csharp, html, zig ×8, julia, nim ×2, fsharp, M14.0.F5) and every one is present at the base commit `80836570d`. Plus one php-adjacent failure, see below. |
+
+**The one surviving php mutant is dead, and predates this round.**
+`php/drop-external-override-guess` (`script/m14/mutate-analyzer.ts:18447`) filters
+`overrides` edges whose source is `AuditService.handle` and whose target is
+`ExternalBase.handle`. That edge **has not existed since M12.PHP-OVERRIDE-AUDIT
+removed the first-parent guess**, and `php/external-override` now pins its ABSENCE
+in three `forbidRelationships` rows. A mutant that deletes an absent edge is a no-op,
+so it cannot fail and its survival proves nothing. The same file's
+`php/re-add-external-override-guess` mutant exists for this exact reason and says so
+in its own description: "once the guess was removed from the analyzer, a mutant that
+filtered the edge became a no-op and survived, proving nothing … the mutant must
+inject it." Both mutants are present; the inverted one is caught, the original is
+vestigial. Already on record before this round — `validation/m14/measurements/nim/
+session16-mutants.txt:1743` carries `SURVIVED php/drop-external-override-guess`, and
+that file is in the base commit. Deleting the vestigial entry is a
+`script/m14/mutate-analyzer.ts` edit and therefore a §8 report item.
+
+**`M14.0.F4` is stale and this lane does not regenerate it.**
+`verify-honesty.ts` reports `M14.0.F4: 13 declared input(s) changed since
+7faf956b1e — regenerate (src/ast/php-internal-symbols.ts, src/ast/real-php-analyzer.ts,
+validation/m14/fixtures/php/ambiguity-split.mts, validation/m14/fixtures/php/
+builtin-calls-probe.mts, …)`. All 13 are this lane's. Regenerating means writing
+`validation/m14/results/M14.0.F4.json`, which §8 assigns to the supervisor, and the
+only invocation sweeps all 46 lanes rather than php. The figures quoted above come
+from a worktree-local regeneration at `7faf956b1`, uncommitted for that reason.
+
+The `--lang php` differential is scoped by **space-separated** `--lang php`.
+`--lang=php` is not recognised and runs all 66 lanes; under `npx tsx` it dies first
+on an extensionless import (`src/ast/js-builtin-prototypes`) that only `bun`
+resolves. Both are recorded because the failure looks like a missing module and is not.
+
+### 8. Broken outside this language — measured, reported, not edited
+
+Each item names the file, the function, what it must do and why, so it can be applied
+without re-deriving it.
+
+**(a) `script/m14/ontology-coverage-gate.ts` — the coverage arbiter's resume path
+produces a verdict from the wrong population.** `resumableWalk(CHECKPOINT, …)` at
+`:305` skips the walk callback for indices the checkpoint already holds, and `observed`
+— the map the entire verdict is computed from — is written **only** inside that
+callback (`:312-322`). The checkpoint at `validation/m14/measurements/walk-php.txt`
+stores a path per file and nothing about what the file emitted. So on a resumed run
+`observed` holds the newly-walked files alone while the header prints
+`walk: 5094/5094 files (100.0%)`. Measured: resumed → **8/10** with `exports` (57 real
+edges) and `overrides` (2 real edges) both reported `RULED-UNJUSTIFIED`; `--fresh` →
+**10/10**, `FALSIFIED 0`. Two ways to fix it, both in that file: have the walk
+callback persist per-file per-type counts so a resumed run can replay them into
+`observed`, or refuse to print a coverage verdict unless
+`walkStats.alreadyDone === 0`. The second is a smaller change and turns a silently
+wrong verdict into a loud refusal; the first is what makes `--fresh`'s 20 minutes
+optional. Either way the header's `(100.0%)` should print the population `observed`
+actually covers, since that percentage is the claim and it is currently false.
+
+**(b) `script/m14/differential.ts:12148` — the php include oracle pushes a label the
+analyzer stopped emitting.** `push("references", p)` inside the
+`require_once_expression` / `include_expression` branch, under a comment reading
+"Mirror the analyzer's emitInclude: references -> the include path". `emitInclude`
+emits `RelationshipType.Imports` and has since M12.PHP-IMPORTS, for the stated reason
+that a file-level edge labelled `references` is invisible to the file-level reader's
+`('imports','exports')` filter. Change the push to `push("imports", p)` — then the
+`php/include-paths` rule is compared rather than asserted, and the 1 MISSING row on
+both published draws goes to 0. Sample size of the discrepancy: **one row, one repo**.
+
+**(c) `script/m14/differential.ts` — no oracle derives `contains`, `imports` or
+`exports` for php.** `derivePhpEdges` (`:11696-12387`) pushes exactly seven labels.
+An oracle for `contains` must derive, for each declaration node the analyzer
+symbolises, one `owner -> member` row with the member's **leaf** name and the owner's
+**bare** name — the analyzer publishes a `namespace` symbol per file, so a truth
+function that matched on any segment would read 65-way ambiguous where exactly one
+declaration exists, which is the instrument defect already documented for `imports`.
+For `imports`/`exports` the rule is one per file-scope `use` clause and one per
+`define("X", …)` call whose first argument is a string literal. Until those exist,
+**63,774 of 350,342 php edges (18.2%) are compared against nothing** and the
+`unexplained 0` in the differential output does not speak to them.
+
+**(d) `script/m14/mutate-analyzer.ts:18447` — a vestigial php mutant.**
+`php/drop-external-override-guess` filters an edge the analyzer has not emitted since
+M12.PHP-OVERRIDE-AUDIT, so it is a no-op that survives forever and dilutes the
+survival count. Its own replacement, `php/re-add-external-override-guess` at `:10842`,
+is caught and is the one that proves anything. Delete the `drop-` entry. Predates
+this round; on record at `validation/m14/measurements/nim/session16-mutants.txt:1743`.
+
+**(e) `src/ast/types.ts` vs `src/ast/engine.ts` disagree on the value of
+`RelationshipType.Imports`** (`brain_import` vs `imports`). Not load-bearing for php
+this round — the analyzer imports the enum from `engine.ts` and this round cited no
+blocker drawn from either — but it remains live for any lane that rules on it.
+
+**(f) Six corpus files fail php parsing with `memory access out of bounds` and one
+hangs past 120 s** (`phpmyadmin/tests/unit/Engines/Innodb/BufferPoolTest.php`,
+`tests/unit/EncodingTest.php`, `tests/unit/Display/ResultsTest.php`,
+`phpunit/src/Metadata/WithoutErrorHandler.php`, `phpunit/tests/end-to-end/repeat/_files/
+RepeatAttributeOnDependentTest.php`, `…/RepeatAttributeOnNonVoidReturnTest.php`). The
+hang makes `ontology-coverage-gate.ts` exit 1 even at 10/10, so a lane whose walk is
+otherwise sound cannot exit 0 on this corpus. Parser robustness, not an analyzer
+defect; recorded because it changes the exit code a supervisor reads.
+
+### 9. What this round could not settle
+
+- **Cause A for members is not closed.** The 479 UNCLASSIFIED member/const-fetch
+  targets need a publisher change to become resolvable, and a publisher change
+  changes what every consumer sees. Measured and named, not attempted.
+- **The 13-edge reconciliation residual** is not explained, only bounded.
+- **`exports` and `overrides` corpus evidence is 57 and 2 edges.** `overrides` is
+  2 rows in a vendored phpstan fixture under `phpunit/tools/.phpstan/vendor/` that is
+  in neither canonical 60-file draw, so on the published draws that label compares 0
+  rows to 0 rows and reads PASS. The rule is correct and the corpus contains almost
+  no genuine same-file method overrides (2,631 classes carry a base, 26 have it in
+  the same file, and the nearest ones redeclare nothing). The fixture and its mutants
+  are the evidence here, not the differential.
+- **The gate's resume semantics** are a shared-file defect this lane can measure but
+  not repair; until they change, any lane's coverage verdict from a resumed run is a
+  statement about the newly-walked files only.
+- **Cross-file `overrides` at project scale**, because
+  `AnalyzeContext.overrideCompanion` is still never populated in production.

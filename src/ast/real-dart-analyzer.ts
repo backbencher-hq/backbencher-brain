@@ -1844,6 +1844,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       current: string | null,
       owner: string | null,
       locals: Set<string>,
+      insideCollected: boolean,
     ): void => {
       const prev = current
       const prevOwner = owner
@@ -1855,14 +1856,56 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // declarators plus the formal parameters of the preceding signature
       // sibling (Dart puts the body AFTER the signature in the container).
       let childLocals = locals
+      // Whether a STRICT ancestor's whole subtree has already been collected into
+      // `locals`. See the block below for why that makes a re-walk redundant.
+      let childInsideCollected = insideCollected
       if (t === "function_body" || t === "function_expression_body" || t === "block") {
-        const bound = this.collectDartLocals(n)
+        // `collectDartLocals(n)` returns the names declared in subtree(n). If a strict
+        // ancestor A already had its whole subtree collected, then subtree(n) is a SUBSET
+        // of subtree(A), so S(n) ⊆ S(A) — and S(A) was merged into the `locals` this node
+        // INHERITS. Re-walking n therefore cannot add a name: the merge below would be
+        // unioning S(n) into a set that already contains it. Skipping is output-identical,
+        // not a heuristic.
+        //
+        // Without this the pass is QUADRATIC in nesting depth. `block` is a trigger, so
+        // n nested blocks each walk their own subtree; the block at depth d has O(n-d)
+        // nodes beneath it and Σ(n-d) = O(n²). Measured on a nested-if spine: `parent`
+        // and `type` crossings both scale as n^1.95–1.98, and 95% of them were eight
+        // lines inside collectDartLocals' loop body (see
+        // validation/m14/fixtures/dart/climb-attribution.ts). Production parseFile did
+        // not finish `dart-sdk/tests/language/syntax/deep_nesting_statement_test.dart`
+        // within 300,000 ms.
+        //
+        // A node-count cap was rejected against evidence: real corpus trigger subtrees
+        // reach 140,062 nodes (dart-sdk/tests/language/regress/regress41983_test.dart),
+        // the same order as the pathological case, so no cap separates them without
+        // changing real files. Redundancy does — it needs no threshold.
+        //
+        // `null` rather than an empty Set: "nothing contributed here" must stay
+        // distinguishable from "contributed nothing new", because the latter still has to
+        // COPY `locals` before merging. Writing into `locals` in place would leak this
+        // scope's bindings back into its parent's set.
+        let bound: Set<string> | null = null
+        if (!insideCollected) {
+          const own = this.collectDartLocals(n)
+          if (own.size > 0) bound = own
+        }
+        // A signature SIBLING is not a descendant, so its parameters are NOT implied by
+        // the ancestor's collection. This walk stays unconditional — it is over a
+        // signature node, not the body, and is not what made the pass quadratic.
         const sig = n.previousNamedSibling
-        if (sig) for (const nm of this.collectDartLocals(sig)) bound.add(nm)
-        if (bound.size > 0) {
+        if (sig) {
+          const sigNames = this.collectDartLocals(sig)
+          if (sigNames.size > 0) {
+            if (!bound) bound = new Set<string>()
+            for (const nm of sigNames) bound.add(nm)
+          }
+        }
+        if (bound) {
           childLocals = new Set(locals)
           for (const nm of bound) childLocals.add(nm)
         }
+        if (!insideCollected) childInsideCollected = true
       }
       // DT2: constructor initializer lists (`: x = p`, `: super(p)`) read
       // the constructor's parameters, but the list is a SIBLING of the
@@ -2388,14 +2431,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
-        if (child) processNode(child, current, owner, childLocals)
+        if (child) processNode(child, current, owner, childLocals, childInsideCollected)
       }
 
       current = prev
       owner = prevOwner
     }
 
-    processNode(node, null, null, new Set<string>())
+    processNode(node, null, null, new Set<string>(), false)
   }
 
   // ============================================================================

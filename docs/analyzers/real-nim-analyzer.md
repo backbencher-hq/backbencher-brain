@@ -1945,12 +1945,24 @@ quoted from an earlier round.
 
 | command | exit | result |
 | --- | --- | --- |
+| **`npx tsx validation/m14/fixtures/nim/ruled-gate.ts`** | **0** | **session 29, at `96ef87bb47f63eca`, `--fresh` passed to the child so the verdict is about the corpus and not the gitignored checkpoint.** 632s. `walk: 6063/6063 files (100.0%)  newly walked 6063, resumed 0`, and **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**. Per type — `calls` 118,130, `references` 56,407, `uses` 45,555, `contains` 29,298, `imports` 13,348, `instantiates` 2,838, `extends` **627**, `exports` **617**, `overrides` **67**, `implements` **47**. **Four types are byte-identical to the 1-worker census at the same digest and six read low by 27–131 edges**, which is the fan-out spread *Limitations* 8/11 measure rather than a disagreement: the gate walks 8-way, the census walks 1 worker. `s29-ruled-gate-reverify.txt` |
+| **`npx tsx validation/m14/fixtures/nim/verify-mutants.ts`** | **0** | **session 29, at `96ef87bb47f63eca`: 27 nim mutants recorded, 26 run, 26 CAUGHT, 0 survived, 1 retired** — the retirement reason is printed in full, and it is a harness-reach argument, not an exemption. Reproduces session 24 to the digit. `s29-mutants.txt` |
+| **`npx tsx validation/m14/fixtures/nim/oracle-crosscheck.ts <out>`** | **0** | **session 29, at `96ef87bb47f63eca`: MISSING 3 / UNEXPLAINED 26, identical to session 24 and to session 11**, with the same three per-type counts on both derivations (`contains` 1,285 vs 1,295; `calls` 2,517 vs 2,528; `uses` 1,002 vs 1,003) and the same six exact. **Three runs at three digests returning the same 3/26 is the reproducibility claim for the oracle instrument**; it is what makes the 26 adjudications in *The six questions* load-bearing rather than one run's residue. `s29-oracle-crosscheck.txt` |
+| **`npx tsx script/m14/run-fixtures.ts --lang nim`** | **0** | **session 29, new command for this lane: 12 fixtures, 12 PASS, 0 FAIL** (`nim/bare-case`, `concept`, `contract`, `extbase`, `extderived`, `extmod`, `helpers`, `mac`, `module-target`, `negative`, `nested`, `reexport`). Scoped, so it writes no evidence and refuses `--update-baseline`; the milestone's own gate remains the full run. `s29-fixtures.txt` |
+| **`npx tsc --noEmit -p tsconfig.json`** | **0** | **session 29: clean.** The lane's analyzer (4,261 lines) and its oracle (1,328 lines) both compile. `npx tsx script/m12/verify-regex-census.ts` also prints `regex census gate PASSED`, and a direct `grep -cE 'new RegExp\|RegExp\(' src/ast/real-nim-analyzer.ts` reads **0**, which is the zero-regex property criterion 1 asks for |
+| `npx tsx script/m14/verify-honesty.ts` | **6** | **session 29: 24 failures, 22 of them whole-repo and shared.** The nine F-series failures are artifact-staleness lineage (`M14.0.F1: lineage a235c3fa… is not a commit in this repository`; F2–F9 each name inputs changed since the commit their artifact declares) and `freshness rule flags every artifact — it cannot distinguish current from stale`. Nine of the banned-vocabulary hits are in other lanes' fixtures and results. **This lane's two failures are unchanged and are the two `Complete` hits in `validation/m14/measurements/nim/session10-bare-case-delta-{HEAD,PREFIX}.json`** — 15 `Complete`, 2 `CompleteImportc`, 1 `CompleteStruct`, 1 `CompletedFuture` inside recorded symbol names (`autoComplete`, `AutoComplete`, `CompleteImportc`). Not edited: rewriting a recorded corpus identifier to satisfy a lint is falsifying the artifact. `s29-honesty-gate.txt` |
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **1** |
 | `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>` | **0** | **session 18, at `deeab0756e0c4c1f`** (the module pass + the `std/` marker): 6,063 files, 6,063 parsed, **0 empty names, 0 empty kinds, 0 throws, 0 off-ontology edge types, 8 literal `unknown` endpoints**, **116,127 symbols**, of which **6,012 `module`** — the population the pass added, and it is 6,012 against 6,063 files because 51 corpus files are `.nims` and are deliberately not published. `imports` **92.0%** intra-file (was 37.1%); **all nine other types byte-identical to session 10**, which is the check that the pass touched one column and no finding (`s18-1w-census.txt`) |
 | `npx tsx validation/m14/fixtures/nim/import-resolution-probe.mts <out>` | **0** | **session 18, new instrument, at `deeab0756e0c4c1f`**: 6,063 files, 1 worker, 0 empty names, **0 empty-KIND symbols** (the guard that detects a degraded walk — `parseFile` does NOT throw on a WASM heap loss, it logs `[BB-PARSE-ERR]` and returns fewer edges, which is how an early version of this probe read 13,363 edges against the census's 13,365 without knowing why). `nim_import` 12,907 at 91.8% intra / 96.3% corpus-wide, `nim_include` 458 at 96.9% / 98.0%; **normalisation changed 364 targets and reverting binds 0**; `meta.nimStdlibModule: true` on **5,389** edges, **66** of the 485 declared nowhere in the corpus (`s18-import-probe.txt`) |
 | `BB_NIM_RULED_WORKERS=1 npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | **0** | **session 18: the arbiter's own verdict loop on a patched COPY, and the runner itself needed three fixes before it could run at all.** The verdict is `corpus: 6063 admitted files`, `walk: 6063/6063 files (100.0%)  newly walked 6063, resumed 0`, and **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`** at analyzer `deeab0756e0c4c1f` unchanged across the child's walk (`s18-ruled-gate.txt`). Three runner defects, all found by RUNNING it and all of the same shape — a proof runner demanding a state the shared gate has moved past: (1) the fan-out patch targeted `Array.from({ length: 8 }, () => worker())`, a hand-rolled pool the gate no longer has, so it exited 2 with "worker patch did not apply" on a correctly-wired gate — it now matches `concurrency: 8,` and DETECTS rather than demands; (2) the copy lives in /tmp and the gate's new `await import("./resumable-walk")` did not resolve, `ERR_MODULE_NOT_FOUND` before the corpus was admitted, so nothing was measured; (3) same for the static `from "./differential"`, which the lane-table pattern deliberately cannot match because it requires a `-ruled` suffix |
 | `BB_NIM_BEFORE=<ref> npx tsx validation/m14/fixtures/nim/imports-edge-delta.mts <out>` | **0** | **session 18, new instrument, run twice**: `1475e53d0e528d0a` → `deeab0756e0c4c1f` reads **13,364 → 13,364, delta 0, 0 of 6,063 files differing**; `2426fdda15f9960e` → `deeab0756e0c4c1f` reads **13,365 → 13,365, delta 0, 0 differing**. The module pass adds and removes no `imports` edge anywhere in the corpus, so the census's +1 is walk non-determinism between two CLEAN walks (0 threw, 0 empty-kind on both sides), not an edge the pass created. Each swap is digest-verified and a `finally` restores the tree — the artifact records the digest actually walked beside the one the caller expected, because `HEAD~1` silently became the wrong blob once the pass was itself committed (`s18-imports-edge-delta-{1475e53d,HEAD1}.{txt,json}`) |
 | `npx tsx script/m14/diagnose-incoming.mts nim nim 600 <corpus>` | **0** | **session 18, before and after, same command and same 600 files**: unresolved targets **1,859 → 1,289** (-570, -30.7%); ambiguous targets 1,112 → 1,145 (+33, and the reason is stated below); B's recoverable count **3 → 0** — which is the point, not a null result. The `+33` on ambiguity is the honest cost of the pass: it published 600 module symbols in this window, 36 of which collide by basename, and `submodule.nim` alone is the basename of 16 files. **A gain of 570 resolutions bought with 33 newly ambiguous targets is a trade, and it is reported as one** (`s18-diagnose-BEFORE.txt`, `s18-diagnose-AFTER.txt`) |
+| **`npx tsx script/m14/ontology-coverage-gate.ts nim --fresh`** | **1** | **session 24, three consecutive invocations at `96ef87bb47f63eca`, three different results from the same analyzer on the same 6,063-file corpus** (`s25{a,b,c}-arbiter*.txt`). `--fresh` → exit 1 on `[BB-HANG] parser stuck 120s on nim/lib/std/private/threadtypes.nim — exiting`, table never printed. resume → exit 1, `walk: 6063/6063 (100.0%) newly walked 1552, resumed 4511`, verdict **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, and the log then carries `[BB-HANG] … nimony/tests/nimony/modules/deps/ismain_include.nim`. resume again → exit 1, `walk: 6063/6063 (100.0%) newly walked 0, resumed 6063`, verdict **`emitted 0/10  ruled-sound 3  FALSIFIED 0  ruled-without-justification 7`**. *Limitations* 36 and 44 are these two rows respectively |
+| **`BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>`** | **0** | **session 24, at `96ef87bb47f63eca`** (`s27-census-clean.txt`): 6,063 files, 6,063 parsed, 0 throws, **0 empty names, 0 empty kinds, 0 off-ontology edge types, 8 literal `unknown` endpoints**, **116,127 symbols / 267,266 edges**. Every per-type figure is **byte-identical to the session-18 table above** on a different digest, so it is a reproduction and not a second census. `degradedWalk: null`. The same script at the bare default of 6 workers is **exit 1 and writes nothing under its own name**: 10 empty-kind symbols, all `nimony/bench/gcbench.nim`, whose parse logs `memory access out of bounds` and then hangs 120s (`s26-census.degraded.json`, `s26-census.txt`) |
+| `npx tsx validation/m14/fixtures/nim/oracle-crosscheck.ts <out>` | **0** | **session 24, at `96ef87bb47f63eca`**: 400 of 6,063 every-15th, **MISSING 3 / UNEXPLAINED 26**, all ten compared. Per type, analyzer vs oracle targets — `calls` 2,517 / 2,528 (15 unexplained), `contains` 1,285 / 1,295 (10), `uses` 1,002 / 1,003 (1), `references` 694 / 694 (3 missing), and `imports` 307, `uses` 1,003, `exports` 12, `extends` 22, `implements` 3, `overrides` 1, `instantiates` 134 — **exact on both sides** for the remaining six (`s28-oracle-crosscheck.txt`) |
+| `npx tsx validation/m14/fixtures/nim/verify-mutants.ts` | **0** | **session 24, at `96ef87bb47f63eca`**: **27 nim mutants recorded, 26 run, 26 caught, 0 survived, 1 retired** with its reason printed (`s28-mutants.txt`) |
+| `npx tsx validation/m14/fixtures/nim/verify-analyzer-hygiene-nim.ts` | **1** | **session 24: `ReferenceError: __dirname is not defined in ES module scope` at `script/m14/verify-analyzer-hygiene.ts:27`** — a SHARED file this lane does not own. Not a regression: `session16-hygiene-nim.txt` is the same traceback. *Limitations* 45 |
+| `npx tsx script/m14/differential.ts --lang nim` | **0** | **session 24: `SKIP nim: no corpus repo mapped in LANG_REPOS and none checked out — declared unrun, not measured`**, and `measured 0 lane(s) — M14.0.F5 NOT written`. All ten emitted types are therefore **DERIVATION findings at F5**; the lane-owned `oracle-crosscheck.ts` above is the only thing that audits them (`s28-differential.txt`) |
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **1** | session 18, at `deeab0756e0c4c1f`: `corpus: 6063 admitted files`, `walk: 6063/6063 files (100.0%)`, and the verdict **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`** — printed BEFORE the exit, so the gate's verdict is recorded even though the process then dies on `[BB-HANG] parser stuck 120s on nimony/lib/std/stripes.nim`. That hang is the known robustness finding (*Limitations* 8) and it names a **different file on each run** (`session16-arbiter.txt` names `nim/tests/distinct/typeclassborrow.nim`, this one names `stripes.nim`), which is itself the evidence that it is a heap-exhaustion race rather than one bad input. Exit 1 is the hang, not the verdict (`s18-arbiter.txt`) | session 7, and this row's exit code has MOVED: earlier passes read **2** with `corpus: 6063 admitted files` then `no RULING TABLE for nim`. This pass never reaches the refusal — it prints the header and two `[BB-PARSE-ERR] … memory access out of bounds` lines (`dll/nimhcr_0_6.nim`, `package/stdlib/stdlib.nimble`) and then dies on `[BB-HANG] parser stuck 120s … dll/nimhcr_0_6.nim`. The §8 wiring is unchanged and still the reason the gate would refuse; at 8 workers the shared watchdog now gets there first, so the refusal is no longer the observable outcome. `RULED_BY_LANG` still carries `bash`, `json`, `lua`, `toml` and no `nim` (`session7-arbiter.txt`) |
 | `npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | the arbiter's own verdict loop on a copy: **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 255s, `implements EMITTED 47 edges in 4+ files, e.g. nimony/lib/std/math.nim`. Table rows: 0 |
 | **`BB_NIM_RULED_WORKERS=1 npx tsx validation/m14/fixtures/nim/ruled-gate.ts`** | **0** | **session 11, 519s, at the CURRENT blob `1475e53d0e528d0a`: `emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 6,063 admitted files, and **all ten per-type counts identical to the digit with the current 1-worker census** — `calls` 118,261, `uses` 45,664, `contains` 29,330, `references` 56,445, `imports` 13,364, `instantiates` 2,843, `extends` 627, `exports` 617, `overrides` 67, `implements` 47. Two instruments, zero disagreement, at fan-out 1 (`session11-ruled-gate.txt`) |
@@ -3806,3 +3818,300 @@ quiet machine will cover all 5,227 through the production path.
     (`newly walked 1947, resumed 4116`) and its per-type counts — `calls` 45,053,
     `imports` 5,279 — are a fraction of the `--fresh` figures for the same analyzer. The
     10/10 verdict is unaffected; the counts are not comparable to a census's.
+37. **`contains` is the one type the store resolves STRUCTURALLY, and this lane's
+    ambiguity numbers have been reading it as a name.** `parallel-indexer.ts:2354-2360`
+    orders candidates by `(s.file_id = ?) DESC, (s.line_start = ?) DESC` against the line
+    the edge itself carries, and the I13 name-resolution pass **explicitly excludes**
+    `contains` because "its target is pinned to the edge's own line rather than to a
+    name" (`:4109-4110`). So the bare member name is the CORRECT target spelling for this
+    type, and the brief's prescribed cause-A remedy — publish `Owner.member` and target
+    that — would move all 1,079 edges off a rule that places every one of them onto the
+    name-only statement, which mis-places 284 (26.3%).
+
+    Measured by replaying both statements over the same candidate sets, 600 files,
+    analyzer `deeab0756e0c4c1f` (`s19-ambiguity-classify.txt`):
+
+    | | amb | placed | winner's owner IS the edge's owner | winner in another file | decided by TEXT id order |
+    | --- | --- | --- | --- | --- | --- |
+    | `contains`, line-hinted (current) | 1,079 | **1,079** | **1,079** | 0 | **0** |
+    | `contains`, name-only (pre-#612) | 1,079 | 1,079 | 795 | 0 | 500 |
+    | all ten types | 8,175 | 8,175 | n/a | 2,598 | 4,253 (52.0%) |
+
+    **The 16 `contains` edges an earlier cut of that table reported as placed on the wrong
+    owner were the INSTRUMENT's error, and the number was confident.** It read `scope` as
+    the owner, and `scope` is a different field: `real-nim-analyzer.ts:589` publishes
+    `scope: nestedIn || undefined` — the enclosing CALLABLE, empty at file scope — while
+    `:608` puts the receiver type in `ownerName`, which is what `collectContainment`
+    builds the edge's `source` from (`:2068`). A top-level `method` therefore has an owner
+    the instrument could not see. Fixed by carrying `ownerName` through the declaration
+    record and scoring against `owner || scope`; all 16 were on their own file AND their own
+    line, i.e. already correct. The instrument now PRINTS every contradicted edge rather
+    than a count, because naming them is what found this.
+
+38. **Owner-qualification — the round brief's prescribed cause-A fix — is worth 1,006 of
+    8,175 ambiguous edges here (12.3%), and 82 of 7,061 (1.2%) on the four highest-volume
+    name-resolved types.** Measured per edge over the same 600 files, globally, not
+    intra-file: `contains` 924/1,079, `calls` 72/4,084, `uses` 9/1,696, `references`
+    1/1,061, and 0 for `imports`/`exports`/`extends`/`implements`/`instantiates`. The
+    reading is `target!member`: **5,969 of 8,175 edges name a target that is not a member
+    of any owner**, so `Owner.target` is a name nothing publishes — qualifying them
+    produces 0 new resolutions and 0 new failures. This is a fact about Nim's calling
+    convention, not about this analyzer: Nim lets an imported exported symbol be called
+    BARE (`import strutils` then `startsWith(a, b)`), so most call sites name no module at
+    all. Closing the rest needs the import resolved to a file and the file to its declaring
+    module — whole-program work in shared machinery (§8).
+
+    The three anchors compared, on the same edges:
+
+    | anchor | edges settled | share |
+    | --- | --- | --- |
+    | file hint, already applied by the store as its first key | 6,020 | 73.6% |
+    | line equality, extends the file hint | 531 | 6.5% |
+    | owner-qualification, not applied | 1,006 | 12.3% |
+    | unresolved by any per-file rule | **1,624** | **19.9%** |
+
+    The line anchor's 531 is `500 contains` and `31` everything else, and that split is why
+    `parallel-indexer.ts:3492-3495`'s prohibition is right rather than merely cautious: a
+    `calls` edge's line is the SITE that made the call, and it lands on a declaration in 5
+    of 1,061 cases. **A first cut of this table reported 100.0% in the analogous column
+    everywhere and was wrong in the direction that matters** — it counted whether the
+    same-file candidates carry DISTINCT lines, which says a key is possible, and printed
+    it under a heading that read as though the edge's line bound one. 2,155 vs 531. Both
+    columns are now printed and the header states which is which.
+
+39. **The three-way ambiguity split was last measured at analyzer `deeab0756e0c4c1f`
+    (session 19) and at `1475e53d0e528d0a` (session 13); neither is the committed blob,
+    so every split number in this document was a statement about a superseded analyzer
+    until this pass.** Re-run at `96ef87bb47f63eca`, same 600-file window, same list
+    sha256 `bebc7c932ae22406`, production `parseFile`, 0 degraded, 0 parse failures,
+    15,052 symbols, 0 empty names, 0 empty kinds (`s30-ambiguity-classify.{txt,json}`):
+
+    | type | edges | unique | B1_scope | B3_legit | B2_module | unresolved |
+    | --- | --- | --- | --- | --- | --- | --- |
+    | `calls` | 12,522 | 4,230 | 185 | 876 | 3,023 | 4,208 |
+    | `uses` | 4,268 | 2,572 | 364 | 49 | 1,283 | 0 |
+    | `contains` | 3,238 | 2,158 | 448 | 52 | 579 | 1 |
+    | `imports` | 1,335 | **266** | 0 | 1 | 103 | 965 |
+    | `references` | 7,796 | 2,013 | 1 | 160 | 900 | 4,722 |
+    | `exports` | 100 | 29 | 0 | 1 | 17 | 53 |
+    | `extends` | 68 | 29 | 0 | 0 | 14 | 25 |
+    | `implements` | 3 | 1 | 0 | 0 | 2 | 0 |
+    | `overrides` | 5 | 5 | 0 | 0 | 0 | 0 |
+    | `instantiates` | 315 | 198 | 0 | 18 | 99 | 0 |
+    | **TOTAL** | **29,650** | **11,501** | **998** | **1,157** | **6,020** | **9,974** |
+
+    Against session 13 at the older digest: 8,175 → **8,175 ambiguous edges** (the total
+    is unchanged), B1 991 → **998**, B3 1,148 → **1,157**, B2 5,930 → **6,020**, and
+    `uses` unresolved **12 → 0**. The one cell that moved by an order of magnitude is
+    `imports` unique targets, **37 → 266**, which is the module-symbol pass of commit
+    `7a7ab080c` and is the cause of `uses` unresolved reaching 0.
+
+    **The three buckets are stable across three digests and one of them is not this
+    lane's.** B2 MODULE-NOT-MODELLED is **73.6%** and its 6,020 edges are cross-file by
+    construction — the instrument prints `all 6020 cross-file edges` in the overlap row,
+    so the classification is not an inference. B3 LEGIT-SHARED-NAME is **14.2%** and its
+    1,067 of 1,157 sub-shape rows are `sameKindOverload`: Nim admits `proc f(int)` beside
+    `proc f(string)` beside a `template f`, all published under the bare name `f`, and no
+    per-edge fix exists short of a signature-qualified published name. **Only B1
+    SCOPE-COLLAPSED, 998 edges = 12.2%, is a scoping failure this analyzer could
+    repair**, and *Limitations* 38 already measures the prescribed remedy for it at
+    **1,022 of 8,175 (12.5%) would become unique**, of which 940 are `contains` — the one
+    type the store already places structurally by line (*Limitations* 37), so the
+    name-resolved types gain **82 edges of 7,061 (1.2%)**. The honest reading is that this
+    lane's per-file ambiguity lever is spent at ~1.2% of the name-resolved surface, and
+    the remaining 87.8% is whole-program scope modelling in shared machinery (§8).
+
+40. **This lane's defect column was quoted at 126 and was never a measurement of the
+    corpus — the instrument that produces it died mid-walk and nothing recorded by how
+    much.** `resolution-audit.ts` ran its 6,063-file pass in a bare `Promise.all` worker
+    pool with no checkpoint, and `parseFile` can `process.exit()` the whole process. On
+    2026-10-05 at 2 workers it printed `[BB-PARSE-ERR] … tpolltimeouts.nim … memory access
+    out of bounds`, then `[BB-HANG] … — exiting`, and wrote no table. TREE-ONLY — the
+    column whose entire purpose is "declared on a corpus parse tree, published nowhere" —
+    read **126** on record.
+
+    Pass 1 now runs through `script/m14/resumable-walk.ts` and every table is printed with
+    its POPULATION. The committed artifact records `walked 6063, resumed 0, skippedBad 0,
+    partial false` at analyzer `deeab0756e0c4c1f`. **TREE-ONLY is 1.** The 125 were files
+    the walk never reached, not declarations the analyzer dropped — which is the specific
+    confusion the honesty contract's population rule exists to prevent, reached by the one
+    instrument whose numbers were quoted as whole-corpus.
+
+    Both named files are innocent, measured by adding them to
+    `hang-file-arbitration.ts` (9 for 9 OK, exit 0): `nim/tests/async/tpolltimeouts.nim`
+    is 337 B / 20 lines and parses alone 5/5 in at most **40 ms** against the engine's
+    120,000 ms watchdog — 3,000× headroom — and `nim/tests/overload/tgenericalias.nim` is
+    550 B in at most 71 ms. The `[BB-HANG]` message names the file whose parse threw, not
+    one that is stuck.
+
+41. **The one remaining TREE-ONLY edge is a shared-machinery defect, and it is in
+    `keepSymbol`'s denylist rather than in any analyzer.** `nim/tests/objects/tobject3.nim:20,22`
+    declares `template super(self: TBar): TFoo` and `template super(self: TBar2): TBar`.
+    Nim's grammar reads `super` as an ordinary `identifier` — the probe shows
+    `template_declaration nameField=identifier "super"` — and **this analyzer publishes
+    both** (`kind=macro`, `callableKind=template`, lines 20 and 22). `pool-worker.ts:482`
+    then deletes them, because `"super"` sits in the `UNIVERSAL` denylist that every
+    language is filtered against. The verified chain, calling the analyzer directly to
+    bypass the filter:
+
+    ```
+    BEFORE keepSymbol (analyzer direct) — `super` symbols: 2
+       kind=macro line=20 callableKind=template   keepSymbol(nim)=false
+       kind=macro line=22 callableKind=template   keepSymbol(nim)=false
+    AFTER  keepSymbol (production parseFile) — `super` symbols: 0
+    edges targeting `super`: 1  Foo->super@34
+    ```
+
+    So **one `uses` edge names a symbol the store does not contain** — the defect
+    requirement D calls "an edge the graph cannot walk". §8 item, reported not edited:
+    move `"super"` out of `UNIVERSAL` and into the `RESERVED` map the comment at
+    `:452-480` already describes ("keep only names that are RESERVED in the language
+    being parsed, and decide that per language"). That comment removed `root`, `self`,
+    `me`, `program` and `source_file` on exactly this evidence across six lanes; `super`
+    is the same class and is the one still there — reserved in Java/JavaScript/C++/Python,
+    legal in Nim. Cost of the fix, measured over the corpus: **1 file of 6,063** declares a
+    `super` routine in this language. The same list appears at `analysis-exclusions.ts:238`,
+    `parallel-indexer.ts:2583`, and `pool-worker.ts:132` and `:333`.
+
+42. **Four unpublished callable declarations remain, and all four are correct behaviour.**
+    At the full population, callable recall is 46,971 on the tree against 46,967 published —
+    **100.0%**, and the 4 are `proc _` (`nim/tests/stmt/tmiscunderscore.nim:4,6`, the
+    discard-underscore, which `buildCallableSymbol` refuses by name at `:547`) and the two
+    `super` templates of limitation 41. `type`, `enum_member` and `object_field` read 0 on
+    the tree in this instrument, which is a property of how it enumerates the tree and not
+    a recall claim — the analyzer publishes 3,227 types, 11,688 enum members and 16,549
+    properties over the same corpus.
+
+    Full-population figures at `deeab0756e0c4c1f` (`s19-resolution-audit.txt`): 116,118
+    symbols, 59,739 distinct published names, 0 empty names, 0 empty kinds, 0 raw-parse
+    failures, 0 parse failures. `imports` is 92.0% module-resolved and `exports` 5.2% local
+    / 92.7% other-file; `calls` 38.9% local / 59.4% other-file, with 1 TREE-ONLY and 1.7%
+    `nowhere`. The `nowhere` populations are third-party packages the corpus does not
+    contain (`gtk2`, `gdk2`, `PLabel`, `TTextBuffer`) and are counted separately from
+    TREE-ONLY by design: one is external, the other is a gap, and this instrument has
+    separate columns for them because conflating them is how a 1-edge defect gets reported
+    as 2,038.
+43. **The analyzer's Regex inventory claimed zero while it held two regexes, both
+    introduced by the module pass, and replacing them cost a predicate narrowing that had
+    to be caught and corrected.**
+
+    `verify-regex-census.ts` named both as MISSING entries — `real-nim-analyzer.ts:1970`
+    `/\\+$/` and `:2031` `/^\s*"?std\s*\//` — and this doc's *Regex inventory* said
+    "Zero. The analyzer contains no `RegExp`, no `.match(`, `.replace(`, `.test(`". Both
+    were `moduleNameOfPath` (stripping a Windows-style trailing `\`) and
+    `isStdlibModulePath` (the `std/` prefix test), added by the pass that published the
+    module symbol. The doc was wrong and the census was right; the census had been read
+    as "no nim row to fix" on at least one earlier pass, which is how the contradiction
+    survived.
+
+    Both are now character scans, and the equivalence is measured rather than asserted:
+    an A/B of old against new over **6,063 corpus paths and 27 constructed cases
+    including `std / syncio`, `  "std/prelude`, tab and newline separators, `std/os`,
+    `STD/os`, `xstd/os` and three Windows-separator paths reads 0 differences on
+    `moduleNameOfPath` and 0 on `isStdlibModulePath`.**
+
+    The narrowing is the part worth recording. A first replacement spelled `\s` as six
+    ASCII code units, and the A/B found one disagreement: `std\u00a0/os` — the old regex's
+    `\s` is UNICODE whitespace, so it accepted a no-break space and my scan did not. A
+    corpus sweep for a non-ASCII space inside an import path found **0 of 6,063 files**, so
+    no published figure moved — and the difference is still a difference. The predicate now
+    spells JavaScript's `\s` out exactly (`WHITESPACE_CODE_UNITS`, the `WhiteSpace` +
+    `LineTerminator` set), because a helper that quietly matches LESS than the one it
+    replaced changes a measurement without its author seeing it.
+
+    **Two of the three mutations aimed at the new predicates SURVIVE, and that is the
+    finding, not a footnote.** With `nim/module-target` extended to carry the two spellings
+    no fixture had:
+
+    | mutation | verdict |
+    | --- | --- |
+    | drop the `skipSpace()` before the separator — kills `std / x` | **CAUGHT**, `nim/module-target` fails |
+    | drop the leading-quote branch | SURVIVES |
+    | drop the trailing-backslash strip | SURVIVES |
+
+    The quote branch survives because it is unreachable on the production path:
+    `readImportFromStatement` strips the quotes before the predicate runs, so the fixture's
+    `include "std/prelude"` row passes with or without it. The branch is KEPT — deleting
+    it would narrow the predicate for any caller that passes literal text, and the old
+    regex accepted the quoted form — but its comment now says it is defensive rather than
+    load-bearing, because a reader would otherwise assume the fixture pins it. The
+    backslash strip survives because **no corpus file has a Windows-style module path**;
+    its 0-hit population is measured (6,063 paths, `a/b/c.nim\` style inputs exercise it
+    directly in the A/B, which is why the A/B exists and the fixture does not).
+
+    A dead-code detector would have caught the first draft of the replacement, which
+    introduced an `isStdSlash` helper whose whitespace branch was unreachable because
+    `skipSpace` had already run — the detector that removes it is the same
+    `bare-node-identity-comparison`-style source gate this lane runs as an A/B
+    (`verify-analyzer-hygiene-nim.ts`, 0 findings on HEAD, reverted copy CAUGHT).
+
+44. **The `imports` marker has two spellings upstream actually writes and no fixture
+    pinned, so the no-regex replacement could have dropped both and stayed green.** The
+    branches are a leading QUOTE — an `include` path is a string literal — and WHITESPACE
+    around the separator. The spaced form is not hypothetical: upstream Nim writes
+    `import std / [strutils, sets]` at `nim/tools/grammar_nanny.nim:4` and
+    `import std / strutils` at `nim/tools/atlas/parse_requires.nim:4`, plus 15 further
+    corpus files, so a predicate that required `std/` with no space marks real upstream
+    source as a local module. `nim/module-target` now carries both
+    (`include "std/prelude"` as a `nim_include` row with the marker asserted TRUE, and
+    `import std / monotimes` with `meta.nimModulePath` keeping the spaces verbatim), and
+    the mutation table in limitation 43 records that one of the two is caught and one is
+    not.
+45. **The arbiter can print a whole `emitted 10/10 … FALSIFIED 0` table and still exit
+    1, so the exit code is not a statement about the verdict it just printed.**
+    MEASURED, session 24, `s25b-arbiter-resume.txt`. The gate computes its verdict
+    *after* its two whole-corpus instruments (`script/m14/ontology-coverage-gate.ts:332-355`,
+    a raw `web-tree-sitter` re-parse of all 6,063 files for the grammar inventory and the
+    parse-tree construct counts), and only reaches
+    `process.exitCode = falsified.length + unjustified.length === 0 ? 0 : 1` at `:522`
+    once they are done. Those instruments walk the same files a second time with the same
+    WASM parser, so a file that traps the heap traps them too — and `ASTEngine`'s 120s
+    parse self-destruct calls `process.exit()`, which never returns to `:522`. What the
+    supervisor sees is a log containing `emitted 10/10  ruled-sound 0  FALSIFIED 0
+    ruled-without-justification 0` and an exit status of 1, with no line saying which of
+    the two disagreed.
+
+    *Limitations* 36 records the same self-destruct killing the arbiter "before it prints
+    a verdict", which is what session 18 observed. That is now measurably incomplete: the
+    table is in the log. One caveat carried rather than glossed — **stderr is unbuffered
+    and stdout is buffered when both are redirected to one file, so the `[BB-HANG]` line
+    appearing after the summary line in the merged log does NOT place the trap after the
+    verdict.** The code order puts the instruments first; the log order is a buffering
+    artefact. Either way the observable is the same and it is the observable that matters:
+    exit 1 beside a passing table.
+
+    Which file traps **moves between runs**, which is what makes this a trap rather than a
+    bad file list. Three runs, three files: `nim/lib/std/private/strimpl.nim`,
+    `nim/lib/std/private/threadtypes.nim`, `nimony/tests/nimony/modules/deps/ismain_include.nim`.
+    The same corpus also produced four `[BB-PARSE-ERR] … memory access out of bounds`
+    without a hang — `strimpl.nim`, `nim/tests/avr/thello.nim`,
+    `nimterop/nimterop/build/ccompiler.nim`, `nimterop/nimterop/build/conan.nim` — and
+    two more from `census.ts`, `nimony/bench/gcbench.nim` and
+    `nimony/tests/nimony/assembler/tbadnaked.nim`. A corpus with no file the parser
+    survives cannot be walked twice by this gate.
+
+    **This lane's own runner is what produces an exit-0 verdict**, and it does so by
+    removing the mechanism: `ruled-gate.ts` patch 4 disables the 120s self-destruct in the
+    COPY's module body, which is how it reaches `walk 6063/6063 newly walked 6063,
+    resumed 0` and `emitted 10/10  ruled-sound 0  FALSIFIED 0
+    ruled-without-justification 0` at exit 0 in 499s (`s28-ruled-gate.txt`). So the
+    10/10 is measured over a walk of all 6,063 files with nothing excluded, and the unpatched shared
+    gate on the same corpus cannot finish a walk at all. Both halves are recorded because
+    either alone is misleading: a reader who sees only the exit-1 row concludes the lane
+    fails; a reader who sees only the exit-0 row concludes the shared gate can do this.
+46. **`script/m14/verify-analyzer-hygiene.ts` does not run on this branch, so the
+    regex-free criterion has no automated witness here.** EXIT 1, session 24:
+    `ReferenceError: __dirname is not defined in ES module scope` at
+    `script/m14/verify-analyzer-hygiene.ts:27`
+    (`const ROOT = path.resolve(__dirname, "..", "..")`) — the file is loaded as an ES
+    module, where `__dirname` does not exist. Not introduced by this pass: the identical
+    traceback is on record at `session16-hygiene-nim.txt`, so it has been dark for at least
+    two sessions of gate runs. It is a SHARED file, so this lane reports it rather than
+    fixing it.
+
+    The claim it would witness is still supported here, but by a different artifact and
+    on a narrower statement: `npx tsx script/m12/verify-regex-census.ts` is the gate that
+    decides pass/fail, and the lane's own zero-regex claim was re-established by re-running
+    the census after committing the analyzer that removed them (commit `d62782289`). What
+    is **not** currently witnessed is the hygiene script's own checks. That is a gap in the
+    evidence, stated as one, and it is the supervisor's to close.

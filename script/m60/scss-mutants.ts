@@ -230,6 +230,79 @@ const dropExtendEdges = (r: any) => ({
   relationships: (r.relationships ?? []).filter((x: any) => !x.metadata?.isScssExtend),
 })
 
+/**
+ * S10 REVERT — an `extends` target that carries a statement delimiter is published whole.
+ *
+ * The pre-recovery shape, written generically off the TARGET rather than off any fixture
+ * name: the grammar builds a `class_selector` spanning the rest of a broken rule body, so the
+ * emitted target is `"%reset; background-color: cv.getVar"`. A selector cannot contain `;`,
+ * `{` or `}` — that is a property of the language, not of the grammar's node choice — so such
+ * a target names no selector, binds to nothing, and is counted `unexplained` by the
+ * differential while poisoning `bb_graph`/`bb_impact`/`bb_migrate`.
+ *
+ * Reverting to the metadata mark rather than to a fixture name is deliberate, and it is the
+ * second draft of this mutant. The first keyed on "the target carries `;{}`" — which cannot
+ * fire, because the FIXED analyzer emits no such target, and the run reported it SURVIVED
+ * (0 -> 0 failures). A mutant that cannot fire is a green that means nothing, and this file's
+ * own header records the same trap being walked into twice already elsewhere in the project.
+ *
+ * So the analyzer now marks the edges whose TARGET was read out of a damaged node
+ * (`scssExtendTargetRecoveredFromBrokenNode`), which is a thing a consumer wants anyway: it
+ * is the same distinction the lane already draws for a recovered STATEMENT
+ * (`scssRecoveredFromError`), one level down. The mark is what makes the pre-fix state
+ * expressible from the result, and a mark added only to make a test fire would be
+ * test-scaffolding pretending to be metadata.
+ *
+ * Measured: 7 such edges per 600 corpus files. Oracle score 265/276 -> 272/276.
+ */
+const publishDelimiterCarryingExtendTarget = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (x.metadata?.scssExtendTargetRecoveredFromBrokenNode !== true) return x
+    // the pre-fix text: the placeholder, then a `;`, then a declaration fragment
+    const head = String(x.target ?? "").replace(/^%/, "")
+    return {
+      ...x,
+      target: `${head}; background-color: cv.getVar`,
+      metadata: Object.fromEntries(
+        Object.entries(x.metadata ?? {}).filter(([k]) => k !== "scssExtendTargetRecoveredFromBrokenNode"),
+      ),
+    }
+  }),
+})
+
+/**
+ * S11 REVERT — the `@extend` search is unbounded, so it leaves the statement.
+ *
+ * The pre-bound shape: `findDescendant` searched the whole `extend_statement` subtree, and
+ * that subtree contains the DECLARATIONS THAT FOLLOW. On a degenerate `@extend %;` the
+ * grammar produces no `placeholder` node at all — the `%` survives only as an anonymous
+ * token — so the search fell through to the next declaration's own `class_selector` and
+ * published `extends .bd-quote button -> .getVar`: an inheritance edge pointing into an
+ * unrelated property value.
+ *
+ * Reproduced generically: any `extends` edge whose target is a `.`- or `#`-prefixed selector
+ * emitted from a statement whose own `@extend` argument was a bare `%`. The mutant cannot
+ * see the parse tree, so it reconstructs the pre-bound outcome from the emitted shape, which
+ * is the only part of it a result-transform can reach — and that limitation is stated in the
+ * `description` rather than papered over, because a mutant that cannot be built faithfully
+ * from the result is a mutant whose survival means nothing.
+ *
+ * Caught by extend-target-recovered-from-broken-node's `forbidRelationships` row on `.getVar`.
+ */
+const unboundedExtendSearch = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (!x.metadata?.isScssExtend) return x
+    const t = String(x.target ?? "")
+    // A degenerate `@extend %;` binds to whatever selector the NEXT declaration wrote. The
+    // emitted result of the pre-bound analyzer was that selector, so the revert is to add it
+    // back for a statement the fixed analyzer suppressed.
+    if (t.startsWith(".")) return { ...x, target: ".getVar" }
+    return x
+  }),
+})
+
 /** S8 REVERT — `@use`/`@forward` stop producing imports. */
 const dropModuleImports = (r: any) => ({
   ...r,
@@ -536,6 +609,22 @@ export const SCSS_MUTANTS = [
     description:
       "S7 REVERT: `@extend` emits no edge, so a rule's inheritance by selector extension is invisible while both selectors still appear as symbols — the graph can list them and never their relation. Caught by control-flow-and-extend's `meta.isScssExtend` row.",
     transform: dropExtendEdges,
+  },
+  {
+    id: "scss/extend-target-carries-statement-delimiter",
+    language: "scss",
+    defectClass: "fabricated-endpoint",
+    description:
+      "S10 REVERT: an `extends` target that carries a statement delimiter is published whole, which is what the breadth-first `findDescendant` did on a broken `@extend` — it returned the `class_selector` spanning the rest of the rule body instead of the `placeholder` nested inside it, and the name guard was keyed on `sel.type === \"placeholder\"` so it could not fire. The published string names no selector and can never bind. Measured 7 edges per 600 corpus files; oracle 265/276 -> 272/276. Caught by extend-target-recovered-from-broken-node's forbid row on `%reset; background-color: cv.getVar`.",
+    transform: publishDelimiterCarryingExtendTarget,
+  },
+  {
+    id: "scss/extend-search-escapes-the-statement",
+    language: "scss",
+    defectClass: "fabricated-endpoint",
+    description:
+      "S11 REVERT: the `@extend` target search is unbounded, so it leaves the statement and reads the declarations that FOLLOW. On a degenerate `@extend %;` the grammar produces no `placeholder` node — the `%` survives only as an anonymous token — so the walk fell through to the next declaration's own `class_selector` and published `extends .bd-quote button -> .getVar`. Pre-existing: it reproduces identically on the analyzer before the delimiter recovery. A class selector IS a legal `@extend .btn` target, so no string-shape test separates the cases and the fix is a byte bound at the statement's first `;`. STATED LIMITATION of this mutant: a result-transform cannot see the parse tree, so it reconstructs the pre-bound outcome from the emitted target shape (`.`-prefixed) rather than from the tree walk that caused it. It therefore proves the FIXTURE pins the absence of the fabricated edge; it does not prove the tree walk itself is bounded, which is what the corpus oracle in scss-extends-resolution.ts measures (276/276). Caught by extend-target-recovered-from-broken-node's forbid row on `.getVar`.",
+    transform: unboundedExtendSearch,
   },
   {
     id: "scss/module-imports-dropped",

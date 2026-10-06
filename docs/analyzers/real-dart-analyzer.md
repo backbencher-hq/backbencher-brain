@@ -3870,3 +3870,321 @@ remove the publication → all three library fixtures fail (17/20); unmutated 20
   `src/ast/cross-language-migration-assistant.ts`). Those artifacts are section 8. The
   failure is pre-existing base drift, not this change; it is reported, not fixed.
 
+
+### A fourteenth pass: the gate cannot run this lane, and the file that stops it is one the walk had already abandoned
+
+Every earlier pass in this file reports a per-type verdict from a scoped arbiter and records
+that `ontology-coverage-gate.ts dart` did not finish. This pass establishes WHY, and the
+reason is not load, not a poison file, and not this analyzer: it is a `RangeError` in the
+arbiter's own Instrument A, raised on a file the arbiter's own checkpoint had already marked
+bad.
+
+#### The gate's failure, verbatim
+
+```
+$ npx tsx script/m14/ontology-coverage-gate.ts dart
+ontology coverage gate — dart
+corpus: 33692 admitted files
+
+RangeError: Maximum call stack size exceeded
+    at Node.child (node_modules/web-tree-sitter/tree-sitter.js:671:8)
+    at v (script/m14/ontology-coverage-gate.ts:339:141)
+    at v (script/m14/ontology-coverage-gate.ts:339:137)   x N
+```
+
+Exit 1, and **no table is printed at all**. `v` at gate:339 is Instrument A:
+
+```js
+const v = (n) => { grammarNodeTypes.set(n.type, (grammarNodeTypes.get(n.type) ?? 0) + 1); for (let i = 0; i < n.childCount; i++) v(n.child(i)) }
+v(t.rootNode)
+```
+
+Unbounded recursion over parse-tree depth, run at gate:336 across every one of the 33,692
+admitted files.
+
+#### The file, measured rather than inferred
+
+`validation/m14/fixtures/dart/instrument-a-depth-probe.ts` computes tree depth with an
+explicit stack — the question cannot be answered with the instrument that broke — and
+reproduces the arbiter's descent in a child process so its `RangeError` is data:
+
+| file | bytes | parse | iterative max depth | arbiter's own `v` |
+|---|---|---|---|---|
+| `dart-sdk/tests/language/syntax/deep_nesting_statement_test.dart` | 350,435 | 1,063 ms | **20,005** | **DIED** `RangeError` |
+| `flutter-packages/.../go_relative_test.dart` (control) | 1,059 | 1 ms | 24 | SURVIVED |
+| `validation/m14/fixtures/dart/type-references.dart` (control) | 9,018 | 5 ms | 13 | SURVIVED |
+
+The deep-nesting file is 9,998 repetitions of `if (x == 0) {`, so the tree is a left-leaning
+spine ~10,000 levels deep. It is **already marked bad in the arbiter's own checkpoint**:
+
+```
+!/…/dart-sdk/tests/language/syntax/deep_nesting_statement_test.dart
+```
+
+So the sequence is: the `parseFile` walk honours the marker and abandons the file, and then
+Instrument A re-parses the same file anyway — gate:336 iterates `files`, the same admitted
+array the walk consumed, with no bad-file filter, no `try/catch`, and no depth bound.
+
+#### Why the loss is small and the report is still worth filing
+
+`grammarNodeTypes` is read at exactly two places, gate:493 and gate:505, and both are inside
+the branch that runs only for a type that is **NOT emitted and HAS a ruling**. This lane
+emits all ten, so for dart the entire Instrument A pass is dead work that can only lose the
+table. The cheapest correct fix is to skip the pass when no type needs it; the durable fix is
+to make `v` iterative, skip files the walk already marked `!bad`, and wrap the parse. Both are
+in section 8.
+
+#### A second `!bad` marker that has outlived its defect
+
+`walk-dart.txt` also marks `flutter-packages/packages/go_router/example/test/go_relative_test.dart`
+bad. Production `parseFile` handles that file in **1,259 ms** and emits 13 relationships
+(`imports` 2, `calls` 7, `uses` 4). `resumable-walk` marks bad permanently and never retries,
+so this file costs the walk one file forever on the strength of a result the current analyzer
+contradicts. A marker that outlives the defect it recorded is indistinguishable from a real
+one. Section 8.
+
+#### What this pass actually fixed: an O(n²) that made a 350 KB file unparseable
+
+The gate's crash is shared machinery, but the walk's second bad file was not. It was
+**this analyzer**, and it is now fixed.
+
+`parseFile` did not finish `deep_nesting_statement_test.dart` within **300,000 ms**, while the
+raw `parser.parse` of the same file takes 1,063 ms for 43,567 nodes. The parse completes, so
+>299 s was spent after it, inside `real-dart-analyzer.ts`. The analyzer's tree walk is
+iterative (`stack: Frame[]`, line 394), so this is not recursion — it is super-linear cost in
+depth.
+
+`validation/m14/fixtures/dart/node-crossing-census.ts` counts crossings of the WASM node
+boundary instead of milliseconds, because `loadavg` was **22–30** with five other lanes on the
+host and a ladder-ordered timing run produced `n=1000 HUNG > 45 s` beside `n=4000 2,815 ms` —
+non-monotonic in its own input, therefore a measurement of load. Operation counts are a
+function of (tree shape, analyzer code) only:
+
+| n | `parent` | `child` | `namedChild` | `type` | TOTAL |
+|---|---|---|---|---|---|
+| 50 | 1,971 | 15 | 11,219 | 89,240 | 102,465 |
+| 100 | 6,396 | 15 | 39,844 | 320,365 | 366,640 |
+| 200 | 22,746 | 15 | 149,594 | 1,210,115 | 1,382,490 |
+| 400 | 85,446 | 15 | 579,094 | 4,699,615 | 5,364,190 |
+| 800 | 330,846 | 15 | 2,278,094 | 18,518,615 | 21,127,590 |
+
+Exponent of `parent`: 1.70 → 1.83 → 1.91 → **1.95**. Of TOTAL: 1.84 → 1.91 → 1.96 → **1.98**.
+
+`climb-attribution.ts` then samples the JS stack on every 97th crossing and puts **95% of the
+cost in eight lines**, all inside `collectDartLocals` (2977–3028) — the six `n.type === "…"`
+comparisons of its single loop body. The loop is O(nodes) *in one call*, which is why reading
+it suggests a per-node cost rather than the measured n². The quadratic is the **call count**:
+line 1858 triggers it on `function_body`, `function_expression_body` **and `block`**, so n
+nested blocks each walk their own subtree and the block at depth d has O(n−d) nodes beneath
+it. The function's own docblock says "O(subtree)" — true, and the defect, because nothing
+bounded how many times that ran.
+
+I had guessed the unguarded climb at 3464 (`while (p && p.type !== "optional_formal_parameters") p = p.parent`,
+which is genuinely unguarded). The measurement refuted it: 3464 does not appear in the
+sampled set, because a nested-if spine has no formal parameters to reach it. Reading six loops
+and picking one would have been unfalsifiable — every climb produces identical crossings.
+
+**The fix is redundancy, not a threshold.** `collectDartLocals(n)` returns names declared in
+`subtree(n)`. If a strict ancestor `A` already had its whole subtree collected, then
+`subtree(n) ⊆ subtree(A)`, so `S(n) ⊆ S(A)`, and `S(A)` was merged into the `locals` this node
+**inherits**. The merge unions a set into a set that already contains it. `processNode` now
+threads `insideCollected`, and when it is already true the body walk is skipped. The signature
+**sibling** walk stays unconditional — a sibling is not a descendant, so its parameters are
+not implied.
+
+A node-count cap was rejected against evidence rather than taste:
+
+| p50 | p90 | p99 | p99.9 | max |
+|---|---|---|---|---|
+| 14 | 128 | 777 | 3,965 | **140,062** |
+
+1,200 files by stride 28; the largest is `dart-sdk/tests/language/regress/regress41983_test.dart`.
+Real trigger subtrees are the same order as the pathological case, so no cap separates them
+without changing real files. Redundancy needs no threshold.
+
+| | before | after |
+|---|---|---|
+| `parent` crossings @ n=800 | 330,846 | **9,644** (34.3× fewer) |
+| TOTAL crossings @ n=800 | 21,127,590 | **250,315** (84.4× fewer) |
+| exponent of `parent` | n^1.95 | **n^0.99** |
+| `parseFile` on the 350 KB file | **> 300,000 ms (no result)** | **72,729 ms** |
+
+72,729 ms is a wall-clock figure on a loaded host and is the weaker of the two claims; the
+crossing census is the load-independent one. The file now yields **0 relationships and 0
+symbols**, which is the correct answer — it declares nothing.
+
+#### The fix changes no published output, established by A/B
+
+`ab-analyzer.ts` parses the same files with the analyzer as it stands, then with the other
+revision checked out over it. 200 files, stride 175 of 35,090, 0 errors; analyzer blob recorded
+per leg (`b5d61dcb…` with, `64390ddd…` without):
+
+| type | pre | post | delta | kind | pre | post | delta |
+|---|---|---|---|---|---|---|---|
+| calls | 2,602 | 2,602 | +0 | class | 312 | 312 | +0 |
+| contains | 2,103 | 2,103 | +0 | constant | 300 | 300 | +0 |
+| exports | 7 | 7 | +0 | constructor | 203 | 203 | +0 |
+| extends | 159 | 159 | +0 | enum | 29 | 29 | +0 |
+| implements | 65 | 65 | +0 | enum_member | 95 | 95 | +0 |
+| imports | 655 | 655 | +0 | extension | 49 | 49 | +0 |
+| instantiates | 882 | 882 | +0 | function | 324 | 324 | +0 |
+| overrides | 397 | 397 | +0 | method | 909 | 909 | +0 |
+| references | 285 | 285 | +0 | mixin | 3 | 3 | +0 |
+| uses | 6,125 | 6,125 | +0 | module | 200 | 200 | +0 |
+| **TOTAL** | **13,280** | **13,280** | **+0** | property | 1,023 | 1,023 | +0 |
+| | | | | variable | 33 | 33 | +0 |
+| | | | | **TOTAL** | **3,506** | **3,506** | **+0** |
+
+**0 of 200 files differ in the full record.**
+
+#### Why an A/B and not the 600-file before/after
+
+The 600-file re-walk moved the symbol count by **+600** — one `module` per file, in 600 of 600
+files, no removals — which a change inside `processNode` cannot cause, since `processNode`
+emits relationships and Module nodes are published in `analyze()`. The committed baseline was
+made at **12:30** and three analyzer commits landed after it, the first of which is
+`18bd9e58b 15:30 publish the library node`. A 12:30 baseline against a 23:37 analyzer
+measures three commits, not one.
+
+Baseline vs fresh, same 600 files, same list digest `8237d3e31ac2` so the sample is provably
+the same:
+
+- all ten relationship **counts** unchanged, delta +0 each, 45,590 both
+- **symbols** 10,868 → 11,468 (+600, all kind `module`)
+- relationship **content** 17 of 600 files differ, **+77 / −77 net zero** — a relabelling, not
+  new or lost edges (`imports` sources moved from file stem to declared library name, which
+  is what makes them bind)
+- empty symbol names 0 → 0; endpoints equal to literal `unknown` 0 → 0
+
+Three `uses` **self-loops** were added by that relabelling (159 vs 156), all from `18bd9e58b`,
+none from the skip. Self-loops are long-standing in this lane (407 in the baseline) and 3 more
+is a finding, not a rounding: a `uses` self-loop is the shape the bare-member-read gate exists
+to prevent.
+
+#### The per-type verdict table, and the six questions behind it
+
+Population: the committed 600-file production `parseFile` census
+(`validation/m14/measurements/dart-600-8237d3e31ac2.raw.ndjson`), deterministic stride, named
+by its own list digest. Resolution from `resolution-rate-600.ts`; Instrument A from
+`validation/m14/measurements/dart-grammar-inventory-1200.txt`.
+
+| type | verdict | edges | files | src resolves | tgt resolves | both ends | conf < 0.7 |
+|---|---|---|---|---|---|---|---|
+| `uses` | EMITTED | 20,570 | 492 | 100.0% | 53.7% | 53.7% | 2,457 |
+| `calls` | EMITTED | 10,239 | 470 | 100.0% | 54.4% | 54.4% | 0 |
+| `contains` | EMITTED | 6,936 | 348 | 100.0% | 100.0% | **100.0%** | 0 |
+| `instantiates` | EMITTED | 2,644 | 359 | 100.0% | 25.9% | 25.9% | 0 |
+| `imports` | EMITTED | 1,815 | 472 | 100.0% | **0.0%** | 0.0% | 0 |
+| `references` | EMITTED | 1,320 | 162 | 100.0% | 100.0% | **100.0%** | 0 |
+| `overrides` | EMITTED | 1,220 | 147 | 100.0% | 16.1% | 16.1% | 0 |
+| `extends` | EMITTED | 560 | 194 | 100.0% | 33.0% | 33.0% | 0 |
+| `implements` | EMITTED | 276 | 81 | 100.0% | 38.0% | 38.0% | 0 |
+| `exports` | EMITTED | 10 | 7 | 100.0% | **0.0%** | 0.0% | 0 |
+| **TOTAL** | 10/10 | **45,590** | 600 | | | 39.2% | 2,457 |
+
+Resolution is at two grains because a cross-file edge fails the within-file test and passes the
+within-census one (15,299 distinct symbol names); reporting only the first makes a correct edge
+look broken. The figures above are the within-census grain. `imports`/`exports` targets resolve
+0/1,815 and 0/10 at **both** grains, and `overrides` is 16.1% at both — so neither defect is a
+corpus-size artifact.
+
+**Six questions.**
+
+1. **Exists** — all ten are constructed from source; `imports`/`exports` from directives, the
+   rest from AST node shapes. No type is reachable only by a literal.
+2. **Fires** — all ten, on the committed census above. `exports` is the narrow one: the 26-lane
+   sweep records `notFired: ["exports"]` at n=120, and 10 edges across 7 files at 600 files is
+   the measurement that settles it. A 120-file sample is too small to contain one.
+3. **Correct** — an oracle exists in `script/m14/differential.ts`; this pass did **not** re-run
+   it, and the limitation is structural: the oracle is a second walker over the same grammar,
+   so a grammar bug shared by both paths is invisible to it. This pass's correctness evidence
+   is the A/B (identical output) and the crossing census, not the differential.
+4. **Labelled** — `contains` and `references` resolve at 100% at both ends, which is what
+   containment and type-mention edges should do. `uses`/`calls` targets land at 53.7%/54.4%,
+   consistent with member reads and callee names that are frequently declared in another file
+   or not at all in a flat name space.
+5. **Resolved** — the table. 39.2% of all edges resolve at both ends. `references` at 100.0%
+   is the figure to set beside the CSS lane's 66.8% reference point.
+6. **Confident** — 2,457 edges (5.4%) sit below 0.7 and **all of them are `uses`**. Every other
+   type is at confidence 1 or 0.9, which is consistent with those being parse facts rather than
+   name-match guesses.
+
+**DERIVATION findings: 0.** Every type this lane emits is audited by the differential; there
+is no type stored and compared against nothing.
+
+**Instrument A.** 218 distinct node types over 1,200 files by stride 28, 1,371,294 nodes,
+deepest tree 266. The saturation curve is **measured**, not interpolated: 182 at 10%, 191,
+205, 211, 212, 217, then **218 at 70% and flat through 100%**. Converged, so 218 is not merely
+a lower bound. The full list is committed. `import_or_export` 3,473, `library_import` 3,412,
+`library_export` **61** — the construct behind `exports` is expressible, which is the fact the
+n=120 row could not show.
+
+#### Gates re-run
+
+| command | result |
+|---|---|
+| `npx tsc --noEmit -p tsconfig.json` | clean, exit 0 |
+| `npx tsx script/m14/run-fixtures.ts --lang dart` | **21 pass, 0 fail** |
+| same, with the guard inverted | **18 pass, 3 fail** — mutant caught |
+| `npx tsx script/m14/ontology-coverage-gate.ts dart` | **exit 1, RangeError, no table** — see section 8 |
+| `npx tsx script/m14/verify-honesty.ts` | 37 failures, **none naming a dart file**; banned-vocabulary lint over `validation/m14` and the M14 docs passes |
+| `npx tsx script/m14/differential.ts --lang dart` | **not run** — see limitations |
+
+#### Declared limitations of this pass
+
+- **The arbiter's verdict for this lane does not exist.** Everything in the verdict table comes
+  from the committed census and the lane's own instruments, at 600 files and 1,200 files, not
+  from `ontology-coverage-gate.ts dart` over its 33,692. That is a smaller population than the
+  gate's and is not presented as the gate's verdict.
+- **`imports`/`exports` targets resolve 0/1,815 and 0/10.** The target is a URI; a URI is not a
+  declared name anywhere in Dart. Resolver work, not analyzer work — section 8.
+- **`overrides` targets resolve 196/1,220 (16.1%), at both grains.** The bind happens at insert
+  time against a flat leaf name. The retarget-the-source recipe was measured and rejected:
+  bare source and bare target are the same string, converting 1,220 edges into 1,220 self-loops
+  (0/1,220 measured for `source == lastSegment(target)`).
+- **Three `uses` self-loops** were introduced by `18bd9e58b` and are not fixed here. 159 of
+  20,570 now, against 156 before.
+- **No millisecond figure in this pass is load-independent.** `loadavg` 22–30 throughout. Every
+  timing claim here is paired with an operation count, and the operation counts are the claims.
+- **The differential was not re-run**, so this pass makes no new correctness claim about edge
+  content. Its correctness evidence is output-identity under A/B.
+- **`go_relative_test.dart`'s `!bad` marker is stale** and this lane did not clear it, because
+  `resumable-walk.ts` and the checkpoint are shared.
+- **The 3 `uses` self-loops and the 41 coincidental Module bindings are counted, not absorbed.**
+  In a flat name space any string that can be an edge endpoint can also be an identifier.
+
+#### Section 8 — shared-machinery needs, reported not edited
+
+**8.1 `script/m14/ontology-coverage-gate.ts` — Instrument A cannot complete for dart, and the
+pass is unnecessary for any lane that emits every type.** Reproduced twice, exit 1, no table.
+
+- `v` at **line 339** is unbounded recursion over parse-tree depth. Replace it with the
+  explicit-stack walk in `validation/m14/fixtures/dart/instrument-a-depth-probe.ts`, which
+  measures the same quantity and survives a 20,005-deep tree.
+- `gate:336` iterates `files` with **no bad-file filter**, so it re-parses the two files
+  `walk-dart.txt` already marked `!bad`. Read the checkpoint via `loadCheckpoint` and skip them,
+  and wrap `parser.parse` in `try/catch`.
+- Cheapest sufficient fix if the above is not wanted: **skip the Instrument A loop entirely
+  when no un-emitted type has an `A:grammar-inventory` ruling.** `grammarNodeTypes` is read only
+  at gate:493 and gate:505, both inside that branch, so for a 10/10 lane the pass cannot
+  contribute to any printed row.
+- Affects every language whose corpus contains a pathologically deep file, not only dart.
+
+**8.2 `script/m14/resumable-walk.ts` — a `!bad` marker has no revalidation path.**
+`go_relative_test.dart` is marked bad; `parseFile` handles it in 1,259 ms and emits 13
+relationships. Bad is permanent and never retried, so the marker costs one file per corpus per
+regression. A bounded revalidation — retry bad files on `--fresh`, and record the outcome — would
+make the marker mean "bad as of commit X" rather than "bad forever".
+
+**8.3 `script/m14/run-fixtures.ts` — a subdirectory of `fixtures/<lang>/` is read as a fixture
+group.** Cost this lane 14 phantom `missing expectation file` failures from 552K of derived
+probe output. No change needed if lanes write scratch outside the fixture tree (this lane now
+does), but the failure mode is indistinguishable from a real defect in the summary.
+
+**8.4 `script/m14/verify-honesty.ts` — 37 failures, all shared-artifact lineage and freshness.**
+`M14.0.F1` names a lineage commit that is not in this repository; `F2`–`F9` report 75–3,371
+declared inputs changed since pinned commits, naming `script/m14/differential.ts`,
+`script/m14/mutate-analyzer.ts`, `script/m14/run-fixtures.ts` and
+`src/ast/analysis-exclusions.ts` — files every lane changes. One check also reports that the
+freshness rule flags **every** artifact and therefore cannot distinguish current from stale.
+Pre-existing aggregate drift across 26 lanes, not this lane's work; it names no dart file.
