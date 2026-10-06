@@ -420,14 +420,31 @@ export const ANNOTATION_DDL = `
  * WHY THE MESSAGE IS A STATIC LITERAL (measured, 2026-10-06): the previous
  * revision interpolated the offending value --
  *   RAISE(ABORT, '... (got: ' || COALESCE(NEW.author_class,'NULL') || ')')
- * -- and SQLite's CREATE TRIGGER parser REJECTS an expression in RAISE's
- * message argument ("near \"||\": syntax error"). Every brain.db this tool
- * wrote was therefore unreadable by any SQLite client, while the indexer
- * still reported success. Verified on sqlite 3.43.2: the `||` form is
- * rejected; a static literal is accepted and refuses exactly the same
- * writes (NULL, absent column, a value outside the set, and an UPDATE into
- * it) while accepting a valid one. The price is that the message can no
- * longer name the offending value; it must not pretend to. See
+ * -- which requires SQLite >= 3.47.0. That release (2024-10-21) added
+ * "arbitrary expressions in the second argument to the RAISE function"
+ * (sqlite.org/releaselog/3_47_0.html). On any older SQLite the statement is a
+ * PARSE ERROR -- measured on 3.43.2: 'near "||": syntax error' -- and because a
+ * trigger it cannot parse makes the WHOLE schema unloadable, the database then
+ * fails to open at all:
+ *   sqlite3.DatabaseError: malformed database schema
+ *     (brain_annotation_author_class_guard) - near "||": syntax error
+ * On this machine, 762 of the 801 local indexes under ~/.bb/projects are
+ * unreadable to SQLite 3.43.2 for exactly this reason.
+ *
+ * CORRECTION, stated here because the first version of this comment (and the
+ * commit that introduced this DDL) overclaimed: the tool's own runtime bundles
+ * SQLite 3.49.2 via better-sqlite3, which is >= 3.47, so on THIS runtime the
+ * interpolated form parses, the guard installs, and it enforces -- measured by
+ * inserting into a real pre-fix index: author_class='robot' and author_class=NULL
+ * are both refused by the trigger, with the interpolated "(got: ...)" text. So
+ * these files were NOT universally corrupt. The defect is a PORTABILITY one:
+ * the schema silently depended on a SQLite version the tool does not control,
+ * and anything reading these files with an older SQLite -- a user's script, a
+ * tool, an editor integration -- could not open them at all. The static
+ * literal parses on every SQLite version and refuses exactly the same writes
+ * (NULL, absent column, a value outside the set, and an UPDATE into it) while
+ * accepting a valid one. The price is that the message can no longer name the
+ * offending value; it must not pretend to. See
  * script/m28/verify-annotation-store.ts for the enforcement proofs.
  */
 export const ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL = `
@@ -455,18 +472,19 @@ export function ensureAnnotationTable(raw: any): void {
   // location index.
   //
   // WHY THIS IS NO LONGER SILENT (measured 2026-10-06): the exec was wrapped in
-  // `catch {}`, and a MALFORMED trigger body is a parse error, not a busy or
-  // read-only database. So the previous revision of this DDL — which put a `||`
-  // expression inside RAISE(), which SQLite's CREATE TRIGGER parser rejects —
-  // threw here, was swallowed, and every brain.db the tool wrote was left with
-  // an unreadable schema while the indexer still reported success. 800 local
-  // indexes carried it.
+  // `catch {}`, and a trigger body the running SQLite cannot parse IS a parse
+  // error, not a busy or read-only database. The previous revision of this DDL
+  // required SQLite >= 3.47 (an expression inside RAISE). On an older client the
+  // CREATE threw here, was swallowed, and the database was left carrying a
+  // schema that client could not load at all — while the indexer, running its
+  // own 3.49, reported success. 762 local indexes carried it. The writer was
+  // reporting success for a file it had only proven readable by itself.
   //
   // A closed catch is still permitted for the genuinely transient case (a
-  // read-only or busy open), but a SCHEMA DEFECT must be loud: it is not a
-  // condition that heals on retry, and swallowing it manufactures a green
-  // result over a broken artifact. So the failure is re-checked by parsing the
-  // schema back, and re-thrown when the database cannot be read.
+  // read-only or busy open), but a SCHEMA DEFECT must be loud: it does not heal
+  // on retry, and swallowing it manufactures a green result over a broken
+  // artifact. So the failure is re-checked by parsing the schema back, and
+  // re-thrown when the database cannot be read.
   try {
     raw.exec(ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL)
   } catch (error) {

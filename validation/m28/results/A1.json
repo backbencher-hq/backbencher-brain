@@ -26,8 +26,8 @@
       "caught": true
     }
   ],
-  "currentCommit": "5c9f5839acbfa66c9989a511da0e888081fac8c2",
-  "sourceFingerprint": "7dbd0fd8a14abce4e5ef94697f0cb6af6dbae8a274e21d898fce2f1f9da8d7ba",
+  "currentCommit": "f0094bb770357cacefee544062edb34992c81d08",
+  "sourceFingerprint": "8a9abc62bbac33c1db15388dfd3c4c9b8b6f7d9a8fe34b3eeecf7b0ad9816dff",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m28/verify-annotation-store.ts",
@@ -37,12 +37,12 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-annotation-store.ts",
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-10-06T20:34:13.976Z",
+  "generatedAt": "2026-10-06T21:51:28.891Z",
   "claimLevel": "verified — annotation store proven against a real sqlite db (fresh + pre-existing paths), provenance enforced in code, suite can-fail proven",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-06T20:34:13.980Z",
-    "contentSha256": "c38a3885cecc157987ed6a9a21f92d8e272718a57cd4e3955b462fe7d7819ad7"
+    "sealedAt": "2026-10-06T21:51:28.894Z",
+    "contentSha256": "e9cc1660f415e9b2fa040811f61fa8e002435ab5a8ccf4a2ad7e789df62e5fdf"
   }
 }
