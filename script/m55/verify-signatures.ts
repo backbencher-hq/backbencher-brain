@@ -38,6 +38,7 @@ import { pathToFileURL } from "node:url"
 import { T4_EXPECT, T4_SYMBOLS, seedT4Db, writeT4Workspace } from "./t4-fixture.ts"
 import { StdioLsp, ensureServerBuilt } from "./lsp-wire.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const SIGNATURE = path.join(ROOT, "src/lsp/signature.ts")
@@ -288,6 +289,7 @@ const result = {
   negativeCases: mutantsTotal,
   mutants: { total: mutantsTotal, caught: mutantsCaught },
   currentCommit,
+  ...fingerprintFields(["m55.T4"], ROOT),
   workingTreeRelevantChanges: relevant,
   verifierCommand: "npx tsx script/m55/verify-signatures.ts",
   evidenceFile: "T4.json",

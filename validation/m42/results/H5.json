@@ -3,17 +3,29 @@
   "code": "H5",
   "milestone": "M42",
   "status": "verified",
-  "checks": 40,
-  "passed": 40,
+  "checks": 43,
+  "passed": 43,
   "failed": 0,
+  "failures": [],
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "mutantsCaughtBy": [
+    "M1: type chips dropped (groupRow never calls relChips)",
+    "M2: truncation hidden (hubSummary never renders the marker)",
+    "M3: callees dropped (treeSideInto never emits the callee side)",
+    "M4: wrong grouping (list-by-file keys groups by symbol name)",
+    "M5: orphaned section (hubSection uses dom.create, never dom.root)"
+  ],
+  "mutantHonesty": {
+    "loadFailureIsACatch": false,
+    "note": "A mutant whose module will not import runs no probe and no harness assertion. This gate booked that as a detected defect — PROVEN: a mutant whose replacement was a bare syntax error printed 'mutant failed to load — counts as detected' and the gate still reported 6/6 mutants caught and VERIFIED. An unevaluable mutant, and an anchor that no longer matches, are both FAILURES now (§8.3 silence is guilt; the old branch printed the word SKIP and continued)."
+  },
+  "currentCommit": "6a19b00cc00e1cd2ed8d38b1fd4dd54499f4c067",
   "verifierCommand": "npx tsx script/m42/verify-hub.ts",
   "evidenceFile": "H5.json",
-  "generatedAt": "2026-09-20T02:50:30.846Z",
+  "generatedAt": "2026-10-05T22:33:18.429Z",
   "fixture": {
-    "root": "$HOME/backbencher-brain/.tools/m42-h2-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"
@@ -30,6 +42,11 @@
   "u1Shape": {
     "note": "re-verified under M44.U1 grouped usages (schemaVersion 2); hub renders one row per symbol group"
   },
+  "priorRecord": {
+    "was": "known-gap 34/40, currentCommit 93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+    "cause": "the committed record was STALE, not the hub. Re-running at that commit's own graph_usages.ts reproduces 34/40 exactly (measured), and all six failures are the caller SET being 5 groups instead of 2: src/lsp/graph_usages.ts was admitting `Greeter contains render` as a caller of render. Commit 84fccdd23 fixed that at the owner by filtering declaration containments with the vocabulary owner's own predicate, and re-running at HEAD with only that file reverted gives the six failures back. So the defect was real, it was upstream of this gate, and it was fixed by another lane's merge — this gate never had a hub-surface defect. The record sat red because it was not re-emitted.",
+    "lawThatGoverns": "§14 rule 1 (one surface, one answer) with §13.1: a declaration containment is how a symbol is DECLARED, never who uses it (src/lsp/relations.ts, isDeclarationRelationship)."
+  },
   "limitations": [
     "DOM assertions cover structure/classes/data attributes over a stub DOM; CSS/paint and the webview toggle script's runtime are per-editor presentation (the E5 leg covers the real editor).",
     "The usages fixture is single-file-language (java); cross-language usages reuse the M26.W3 surface, not re-tested here.",
@@ -37,7 +54,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:50:30.847Z",
-    "contentSha256": "df3ee633c23423b32bf011c4810b6e10f2d478fa12c08232cfad069f6d31ad82"
+    "sealedAt": "2026-10-05T22:33:18.432Z",
+    "contentSha256": "a5cbb47b21069203e56a06d304474cc84fcaaae474e4e09994b20a46d72cbbef"
   }
 }

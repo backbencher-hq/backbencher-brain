@@ -16,11 +16,31 @@
 //   G3 honesty:     symbol not in index → declared "not indexed" hover,
 //                   never a fabricated entry
 //   G4 positions:   position resolution via the P1 component ONLY
-//                   (no inline conversion — contract §5)
+//                   (no inline conversion — contract §5). Lane 6: this claim
+//                   was FALSE at `findSymbolAtPosition` until this wave — the
+//                   line was converted inline in the SQL argument list
+//                   (`position.line + 1`) two lines under this very comment.
+//                   A gate that reads a comment is not a gate; the claim is now
+//                   asserted at the SOURCE level (a planted `line + 1` must
+//                   fail) by script/m24/verify-hover.ts.
 //   G5 freshness:   stale file (hash differs from disk) → stale marker on
 //                   the hover, per the freshness gate (P2)
 //   G6 latency:     p95 warm hover under the 50 ms budget on the fixture
-//                   workspace (contract §3) — measured, machine-recorded
+//                   workspace (contract §3) — measured, machine-recorded, as a
+//                   p95 over the full sample set. The pre-lane check was a p95
+//                   over 100 samples with the fixture double, which is a real
+//                   p95; the M42 sibling gate's MEAN over 40 is not, and it is
+//                   named as such in that gate's own limitations.
+//   G7 absence:     a non-launch language returns a declared-absent envelope
+//                   naming the language AND the launch set, with no data —
+//                   asserted structurally at the component layer (not by a
+//                   substring), because a substring check cannot tell a
+//                   declared absence from prose that happens to say "launch".
+//   G8 resilience:  ONE unresolvable stored row must not fail the whole hover
+//                   (lane 6: measured 71/4000 symbols on a real index throwing
+//                   PositionError out of the collector, which the server turns
+//                   into a rejected LSP request — the editor then silently
+//                   falls back to its native hover and the user sees NOTHING).
 //
 // Declared limitations:
 //   - index-sourced only; no compiler-backed types (complement stance)
@@ -37,14 +57,16 @@ import {
   resolveRowByteColumns,
   type IndexPosition,
   type LspPosition,
+  type PositionConverter,
 } from "./positions"
 import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
 import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
 import { countUsageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
 import { classifyStoredRow, orderTiers, primaryTier, type EvidenceTier, type StoredTierRow } from "./evidence_tier"
-import { parseParameters, renderSignature } from "./signature"
+import { parseParameters, renderSignature, UNRESOLVED_TYPE } from "./signature"
 import { parseForSafety } from "../ast/safety-primitives"
-import { actionsSection, connectedGroups, connectedSummarySection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
+import { renderTypeLine, resolveTypeLine, type TypeLine } from "./type_inference_surface"
+import { actionsSection, connectedGroups, connectedSummarySection, containmentSection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
 
 /** The launch set, its membership test, and the path→language map live in
  *  the single-owner module (M29.R2: one owner; the set was duplicated here
@@ -105,11 +127,26 @@ export interface SymbolHoverData {
   /** M42.H2: pre-rendered usages section — empty string when no usage
    *  sites exist (declared absence). */
   usagesSection: string
+  /** Owner-decided ("show all the relationships, not just contains"): the
+   *  DECLARATION CONTAINMENT section — the rows `relations.ts` deliberately
+   *  excludes from the usage vocabulary (`contains`, `exports`), rendered in
+   *  their own labelled block. Empty string when the symbol neither declares
+   *  nor is declared by anything (declared absence). It is a separate section
+   *  rather than a loosened usage list precisely so the usage law stays intact. */
+  containmentSection: string
   /** M42.H4: pre-rendered hover-actions row (open in graph / impact /
    *  call hierarchy) — empty string when the symbol identity (declaration
    *  location) is not resolvable: no actions without a clickable target
    *  (§12.1 nothing unclickable). */
   actionsSection: string
+  /** M55.T6: the type's PROVENANCE, decided by the one owner
+   *  (src/lsp/type_inference_surface.ts). Exactly one of `stored` /
+   *  `inferred` / `unknown` — the pre-T6 hover showed `brain_symbol.return_type`
+   *  with no statement of whether the analyzer read it from an explicit
+   *  annotation or inferred it, so a developer could not tell a declared type
+   *  from a guess. `confidence` is non-null iff `inferred`; `unknown` is the
+   *  declared marker, never a guess (§15.4). */
+  typeLine: TypeLine
 }
 
 export interface HoverRequest {
@@ -183,9 +220,51 @@ export function findSymbolAtPosition(
   raw: CoreDatabase,
   filePath: string,
   position: LspPosition,
+  mapper?: PositionConverter,
 ): { symbol: SymbolRow; file: FileRow } | null {
   // Single index query: symbols in this file whose line range could contain
-  // the requested line. Position conversion happens ONLY via P1.
+  // the requested line.
+  //
+  // Lane 6 (#the CC1 rule, §5.1): the line conversion goes through the P1
+  // component. It used to be `position.line + 1` written inline in the SQL
+  // argument list while the comment two lines above claimed "Position
+  // conversion happens ONLY via P1" — a claim the same function contradicted,
+  // which is how an off-by-one survives a gate that reads the comment. The
+  // arithmetic happened to be right for a 0-based line and was wrong for
+  // everything P1 owns: a line past the end of the file resolved to an index
+  // line that does not exist, and the mapper's declared PositionError (the
+  // contract's "never guess, fail" rule) could not be raised at all.
+  //
+  // `mapper` is the caller's already-built PositionMapper for this file (the
+  // hover reads the file once for the occurrence path and hands it over). When
+  // absent, one is built from the file's own text — the conversion is still
+  // P1's, never inline arithmetic.
+  let line1: number
+  if (mapper !== undefined) {
+    try {
+      line1 = mapper.lspToIndex(position).line
+    } catch (error) {
+      // A position past the last line of the file is IMPOSSIBLE, not
+      // not-indexed: declared absence (§13.10), and the distinction is the
+      // whole reason the conversion has an owner.
+      if (error instanceof PositionError) return null
+      throw error
+    }
+  } else {
+    let content: string
+    try {
+      content = readFileSync(filePath, "utf8")
+    } catch {
+      return null
+    }
+    try {
+      line1 = createPositionMapper(content).lspToIndex(position).line
+    } catch (error) {
+      if (error instanceof PositionError) return null
+      throw error
+    }
+  }
+
   const rows = raw
     .prepare(
       `SELECT ${SYMBOL_ROW_SELECT}
@@ -193,7 +272,7 @@ export function findSymbolAtPosition(
        WHERE f.path = ? AND s.line_start IS NOT NULL AND s.line_end IS NOT NULL
          AND s.line_start <= ? AND s.line_end >= ?`,
     )
-    .all(filePath, position.line + 1, position.line + 1) as Array<SymbolRow & { f_id: string; path: string; language: string | null }>
+    .all(filePath, line1, line1) as Array<SymbolRow & { f_id: string; path: string; language: string | null }>
 
   if (rows.length === 0) return null
 
@@ -226,7 +305,7 @@ export async function resolveOccurrenceSymbol(
   raw: CoreDatabase,
   filePath: string,
   position: LspPosition,
-): Promise<{ symbol: SymbolRow; file: FileRow; occurrence: { startLine: number; startColumn: number; endColumn: number } } | null> {
+): Promise<{ symbol: SymbolRow; file: FileRow; occurrence: { startLine: number; startColumn: number; endColumn: number }; mapper: PositionConverter } | null> {
   let content: string
   try {
     content = readFileSync(filePath, "utf8")
@@ -269,6 +348,11 @@ export async function resolveOccurrenceSymbol(
     symbol: row,
     file: { id: row.f_id, path: row.path, relative_path: (row as { relative_path?: string }).relative_path ?? "", language: row.language },
     occurrence: { startLine: cursorOcc.startLine, startColumn: cursorOcc.startColumn, endColumn: cursorOcc.endColumn },
+    // Lane 6: the mapper for THIS file's text, handed back so the containing-
+    // symbol fallback can convert its line through the same owner without a
+    // second read. Two P1 mappers over the same bytes would be two answers to
+    // the same question, which is the drift §5.1 exists to prevent.
+    mapper,
   }
 }
 
@@ -309,6 +393,13 @@ export function evidenceTiersFor(raw: CoreDatabase, symbolId: string): EvidenceT
 export function formatHoverMarkdown(data: SymbolHoverData): string {
   const lines: string[] = []
   lines.push(`\`\`\`\n${data.signature}\n\`\`\``)
+  // M55.T6: the type line, rendered by its single owner. Placed DIRECTLY UNDER
+  // the signature so the two cannot be read as unrelated facts, and it states
+  // its own provenance: `inferred` carries the engine's confidence, `stored`
+  // declares that the index records no origin, `unknown` is the declared
+  // marker with the reason. §15.4 human text is human — this is a sentence, not
+  // a serialization.
+  lines.push(renderTypeLine(data.typeLine))
   // M55.T3: the count line declares what was counted, so a reader (and the
   // references surface, which legitimately answers a wider question when the
   // client asks for the declaration too) can never read two numbers as a
@@ -329,6 +420,13 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   }
   if (data.usagesSection && data.usagesSection.length > 0) {
     lines.push(data.usagesSection)
+  }
+  // The declaration-containment block, AFTER the usages section and in its own
+  // labelled header. Order matters for the negative test: a reader (and the
+  // gate) meets the usages list first, so a `contains` row can only ever be read
+  // as the containment it is.
+  if (data.containmentSection && data.containmentSection.length > 0) {
+    lines.push(data.containmentSection)
   }
   // M42.H4: the actions row — the hover is the entry point to the deep
   // surfaces (graph, impact, call hierarchy). Empty row renders nothing
@@ -402,8 +500,14 @@ export async function hover(
   // Occurrence-first (call sites / member reads resolve to the referenced
   // declaration); the containing-symbol model stays as the fallback for
   // positions that are not on a resolvable identifier.
+  //
+  // ONE file read feeds both resolvers (lane 6): `resolveOccurrenceSymbol`
+  // already reads the file and builds a P1 mapper for the file at the cursor,
+  // and `findSymbolAtPosition` now takes that mapper instead of re-reading and
+  // re-deriving the line conversion. Before this the fallback path did its own
+  // read AND its own inline `line + 1`.
   const occurrence = await resolveOccurrenceSymbol(raw, request.filePath, request.position)
-  const containing = findSymbolAtPosition(raw, request.filePath, request.position)
+  const containing = findSymbolAtPosition(raw, request.filePath, request.position, occurrence?.mapper)
   const found = occurrence ?? containing
   if (!found) {
     return {
@@ -520,6 +624,45 @@ export async function hover(
     }
   }
 
+  // M55.T6: the type's provenance, decided by the facade. It runs AFTER the
+  // freshness check above so the line can carry the file's staleness (§4.3),
+  // and it never throws out of the hover: a facade failure degrades to the
+  // declared unknown marker, because a hover that rejects over a type is the
+  // M42.H2 defect class all over again (one unresolvable row must not fail the
+  // whole card).
+  let typeLine: TypeLine
+  try {
+    const typeSource = readFileSync(file.path, "utf8")
+    typeLine = (
+      await resolveTypeLine(
+        file.path,
+        typeSource,
+        {
+          name: symbol.name,
+          symbol_type: symbol.symbol_type,
+          return_type: symbol.return_type,
+          line_start: symbol.line_start,
+          line_end: symbol.line_end,
+          language: file.language,
+        },
+        symbol.return_type,
+      )
+    ).line
+    typeLine.stale = stale
+  } catch {
+    typeLine = {
+      provenance: "unknown",
+      text: UNRESOLVED_TYPE,
+      confidence: null,
+      reason: "the type could not be resolved; the hover renders the declared marker",
+      withheld: "parse-failed",
+      withheldText: null,
+      storedProvenanceUnknown: false,
+      stale,
+      witness: null,
+    }
+  }
+
   const data: SymbolHoverData = {
     name: symbol.name,
     qualifiedName: symbol.qualified_name,
@@ -543,6 +686,11 @@ export async function hover(
     // M42.H2: rich sections composed from stored relationship rows.
     connectedSection: connectedSummarySection(connectedGroups(sites)),
     usagesSection: usagesSection(usageSiteRows, usageCount, symbol.name, file.path, request.position.line, request.position.character),
+    // The declaration-containment rows come from the SAME collected array the
+    // usage list and the connected summary read (one collection, three
+    // renderings), so a containment count can never disagree with a usage count
+    // about the same rows.
+    containmentSection: containmentSection(sites),
     // LSP definition location (range.start) when resolvable; null otherwise
     // (the footnote then renders the plain location — still honest).
     definition: range === null ? null : { line: range.start.line, character: range.start.character },
@@ -557,6 +705,7 @@ export async function hover(
     filePath: file.path,
     lineStart: symbol.line_start,
     lineEnd: symbol.line_end,
+    typeLine,
   }
 
   const elapsed = (deps.now ?? Date.now)() - startedAt

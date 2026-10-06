@@ -35,6 +35,73 @@ const debug = false
 
 function log(..._args: unknown[]) {}
 
+// ── worker startup diagnostics ───────────────────────────────────────────────
+//
+// THE CONTRACT THIS FILE NOW HONOURS: a worker that cannot do its job says so
+// on stderr, in a form the parent already forwards to the user. The pool
+// mirrors child stderr verbatim (`[WORKER-ERR] …`, parallel-indexer.ts:1544),
+// so writing one line here makes a failure visible with NO change to any other
+// file — which is the whole point, because every previous report of "pool
+// workers don't start" arrived with no attached explanation.
+//
+// Two failures were silent here before, and both are silent *by omission*:
+//
+//   1. `import("./engine")` failing during warmup. `engineModule` stayed null,
+//      every `parseFile` re-attempted the import, the import threw again, and
+//      the file fell through to `extractFallback` — regex extraction, marked
+//      `fallback: true`. The index completed, looked healthy, and contained
+//      fewer symbols than the same run would have produced with a working
+//      engine. The parent's handler for an `engine_fail` message
+//      (parallel-indexer.ts:1557) has existed all along and nothing ever sent
+//      one; that branch was dead code.
+//   2. The wasm registry failing to load. Same shape, same silence.
+
+/** Startup problems found so far, reported in the `ready` handshake. */
+const startupDiagnostics: string[] = []
+
+/**
+ * Deduplicates the report.
+ *
+ * One of these can fire PER BATCH (the project index is deserialised once per
+ * `parse_batch`), so a worker serving 1,000 batches with an unbuildable index
+ * would emit 1,000 identical lines and grow `startupDiagnostics` without
+ * bound. The first occurrence carries the information; the other 999 are noise
+ * on a channel the parent forwards to a terminal.
+ */
+const reportedStartupProblems = new Set<string>()
+
+function reportStartupProblem(what: string, error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error)
+  const line = `${what}: ${message}`
+  if (reportedStartupProblems.has(line)) return
+  reportedStartupProblems.add(line)
+  // stderr first: it is the channel the parent forwards verbatim, so this is
+  // visible on the user's terminal on the very next line.
+  process.stderr.write(`[BB-WORKER-STARTUP] ${line}\n`)
+  startupDiagnostics.push(line.slice(0, 300))
+}
+
+/**
+ * `process.send` that cannot take the worker down.
+ *
+ * Every send in this file used `process.send?.(…)`, which is null-safe but
+ * NOT channel-safe. When the parent dies mid-batch the send throws
+ * `ERR_IPC_CHANNEL_CLOSED`; inside the async `message` handler that becomes an
+ * unhandled rejection, which Node 22 terminates the process on — so a clean
+ * shutdown could be reported as a worker crash. A send that fails because
+ * nobody is listening is not an error worth dying over.
+ */
+function safeSend(message: Record<string, unknown>): boolean {
+  try {
+    if (typeof process.send !== "function") return false
+    if (process.connected === false) return false
+    process.send(message)
+    return true
+  } catch {
+    return false
+  }
+}
+
 interface BasicSymbol {
   name: string
   type: string
@@ -1230,25 +1297,145 @@ export async function parseFile(filePath: string, projectPath: string, context?:
     if (!isExpected) {
       process.stderr.write(`[BB-PARSE-ERR] ${lang} | ${filePath} | ${errMsg.substring(0, 300)}\n`)
     }
-    if (isExpected) {
-      return extractFallback(content, lang, hash, sizeBytes, lastModified)
-    }
+    // ONE return, not two. The `if (isExpected)` branch this replaced returned
+    // exactly what the line below it returned — identical arguments, identical
+    // value — so the branch could only ever be dead. That matters here because
+    // `isExpected` LOOKS like a decision: a reader (or a future editor) has to
+    // re-derive that the "expected" failures take no different path, and can
+    // easily conclude the opposite and give a supported file type a
+    // regex-only result. `isExpected` still has exactly one job — it decides
+    // whether the error is worth a stderr line.
     return extractFallback(content, lang, hash, sizeBytes, lastModified)
   }
 }
 
+/**
+ * The startup work, factored out so the IPC handshake and the self-test cannot
+ * disagree about what "started" means.
+ *
+ * Two callers, one implementation, deliberately:
+ *
+ *   - the `warmup` IPC message, which answers `ready` afterwards;
+ *   - `BB_POOL_WORKER_SELFTEST=1`, which prints a machine-readable line and
+ *     exits, so `bb doctor` can verify a worker from a SYNCHRONOUS caller
+ *     (`runDoctorChecks` is sync and src/cli/index.ts calls it without `await`).
+ *
+ * If these were written twice they would drift, and the drift would be silent
+ * and one-sided: doctor would keep reporting a healthy worker while indexing
+ * quietly fell back to regex.
+ */
+async function warmUpWorker(): Promise<{ engine: "ok" | "unavailable"; wasm: "ok" | "unavailable" }> {
+  // Pre-load the WASM registry and engine before processing.
+  // Registry loads core grammars only with 10s timeout per import.
+  //
+  // Both of these used to be `catch {}`. A failure in either one left the
+  // worker alive, holding the IPC channel, answering `ready`, and then parsing
+  // every file with regex extraction while reporting success — see the note on
+  // reportStartupProblem above. A degraded worker now SAYS SO on stderr (which
+  // the parent forwards) and in the `ready` payload (which the parent's `ready`
+  // branch ignores, so this changes no control flow).
+  let wasm: "ok" | "unavailable" = "ok"
+  try {
+    const { ensureWasmRegistry } = await import("../util/wasm")
+    await ensureWasmRegistry()
+  } catch (e: any) {
+    wasm = "unavailable"
+    reportStartupProblem("wasm registry unavailable — tree-sitter grammars may not load", e)
+  }
+
+  let engine: "ok" | "unavailable" = "ok"
+  try {
+    engineModule = await import("./engine")
+    if (!engineModule?.ASTEngine) {
+      engine = "unavailable"
+      reportStartupProblem("engine module loaded but exports no ASTEngine", new Error("ASTEngine missing"))
+    }
+  } catch (e: any) {
+    engine = "unavailable"
+    reportStartupProblem("engine module failed to load — falling back to regex extraction for EVERY file", e)
+  }
+  return { engine, wasm }
+}
+
+/** Persist startup problems where someone will find them without a terminal. */
+function persistStartupDiagnostics(): void {
+  if (startupDiagnostics.length === 0) return
+  // stderr only reaches whoever happened to be watching. Same place parse errors
+  // already go: $BB_DATA_DIR/logs/.
+  try {
+    fs.appendFileSync(
+      bbDiagnosticsLogPath("worker-startup.log"),
+      `${new Date().toISOString()} | pid=${process.pid} | node=${process.version} | ${startupDiagnostics.join(" | ")}\n`,
+    )
+  } catch {}
+}
+
+/**
+ * One-shot startup self-test: `BB_POOL_WORKER_SELFTEST=1 node <this file>`.
+ *
+ * Prints `[BB-WORKER-SELFTEST] {json}` on stdout and sets an exit code. It runs
+ * the SAME `warmUpWorker()` the IPC handshake runs, so it exercises the real
+ * module graph — a native module built for another platform, an uninstalled
+ * import, or a missing engine all show up here rather than being discovered
+ * halfway through an index run.
+ *
+ * Exits 0 when the engine and the grammars both loaded, 1 when either did not.
+ * A non-zero exit is NOT "the pool cannot start": the worker still indexes, it
+ * just indexes with regex. `diagnosePoolStartupSync` reports that as `degraded`,
+ * which is why the distinction matters.
+ *
+ * Nothing here is written to stderr on the happy path, so `bb doctor` stays
+ * quiet for a healthy install.
+ */
+async function runSelfTest(): Promise<number> {
+  const { engine, wasm } = await warmUpWorker()
+  persistStartupDiagnostics()
+  const report = {
+    ok: engine === "ok" && wasm === "ok",
+    engine,
+    wasm,
+    node: process.version,
+    pid: process.pid,
+    execPath: process.execPath,
+    diagnostics: startupDiagnostics.slice(0, 5),
+  }
+  process.stdout.write(`[BB-WORKER-SELFTEST] ${JSON.stringify(report)}\n`)
+  return report.ok ? 0 : 1
+}
 // IPC message handler
 process.on("message", async (msg: any) => {
   if (msg.type === "warmup") {
-    // Pre-load the WASM registry and engine before processing.
-    // Registry loads core grammars only with 10s timeout per import.
-    try {
-      const { ensureWasmRegistry } = await import("../util/wasm")
-      await ensureWasmRegistry()
-    } catch {}
-    try {
-      engineModule = await import("./engine")
-    } catch {}
+    // Timed, because a startup TIMEOUT is otherwise undiagnosable from the
+    // worker's side. The parent kills this process if `ready` has not arrived
+    // within its watchdog and reports "worker did not become ready within
+    // startup timeout"; when that happens on a slow machine or a cold cache
+    // there is nothing in the log to say whether the worker was dead or merely
+    // still loading grammars. It announces itself now.
+    //
+    // The threshold is half the parent's watchdog, read from the same env var.
+    // `poolStartupTimeoutMs()` in ./pool-diagnostics is the canonical reader;
+    // it is deliberately NOT imported here — this file is the one process that
+    // must never fail to LOAD, so it keeps a dependency-free import graph — and
+    // the only thing at stake is when to print a note, never whether to fail.
+    const watchdogMs = Number(process.env.BB_WORKER_STARTUP_TIMEOUT_MS || 0) || 30_000
+    const slowWarmNote = setTimeout(() => {
+      process.stderr.write(
+        `[BB-WORKER-STARTUP] still warming after ${Math.round(watchdogMs / 2)}ms ` +
+          `(loading tree-sitter grammars); the parent's watchdog is ${watchdogMs}ms\n`,
+      )
+    }, Math.max(1, Math.round(watchdogMs / 2)))
+    slowWarmNote.unref?.()
+
+    const { engine: engineStatus, wasm: wasmStatus } = await warmUpWorker()
+    // The parent has always handled `engine_fail` (parallel-indexer.ts:1557):
+    // it counts the worker, reports the reason, and puts it in the idle pool
+    // because regex extraction still parses files. Sending it activates a dead
+    // branch and changes no outcome — it only stops the degradation from being
+    // invisible.
+    if (engineStatus === "unavailable") {
+      safeSend({ type: "engine_fail", workerId: msg.workerId, error: startupDiagnostics.join(" | ") })
+    }
+
     // M21.W1 debug hook: BB_WORKER_DELAY_READY_MS delays the `ready` signal so
     // the parent's startup watchdog can be exercised deterministically.
     // M40.A8: quarantined behind BB_TEST_HOOKS=1 — a stray env var can no
@@ -1257,7 +1444,23 @@ process.on("message", async (msg: any) => {
       const delayReady = Number(process.env.BB_WORKER_DELAY_READY_MS || 0)
       if (delayReady > 0) await new Promise((r) => setTimeout(r, delayReady))
     }
-    process.send?.({ type: "ready", workerId: msg.workerId })
+    clearTimeout(slowWarmNote)
+
+    // The extra fields are ADDITIVE. The parent branches on `msg.type` only, so
+    // this payload is inert against today's indexer and free evidence for
+    // `bb doctor` / a future parent that wants to report a degraded pool.
+    safeSend({
+      type: "ready",
+      workerId: msg.workerId,
+      pid: process.pid,
+      node: process.version,
+      execPath: process.execPath,
+      engine: engineStatus,
+      wasm: wasmStatus,
+      diagnostics: startupDiagnostics.slice(0, 5),
+    })
+
+    persistStartupDiagnostics()
   } else if (msg.type === "parse_batch") {
     const { batchId, files, projectPath, projectIndexes } = msg
     // SOL-21. A project index, when the parent built one, deserialised ONCE per worker
@@ -1287,6 +1490,12 @@ process.on("message", async (msg: any) => {
         }
       } catch (e: any) {
         log(`[Worker] project index unavailable, continuing per-file: ${e?.message ?? e}`)
+        // Reported, not swallowed. The comment above says enrichment is
+        // additive and never load-bearing, which is true — so this used to be
+        // safe to discard entirely, and the cost was that a project index that
+        // fails on EVERY file is indistinguishable from one that was never
+        // built. It costs one stderr line to keep them apart.
+        reportStartupProblem("project index unavailable, indexing per-file", e)
         indexCache = null
       }
     }
@@ -1326,7 +1535,7 @@ process.on("message", async (msg: any) => {
     for (const filePath of files) {
       try {
         // Yield to event loop to ensure file_start is sent BEFORE sync tree-sitter block
-        process.send?.({ type: "file_start", batchId, filePath })
+        safeSend({ type: "file_start", batchId, filePath })
         await new Promise((r) => setTimeout(r, 0))
         // M21.W1 fixture hook: per-file delay AFTER file_start (see above).
         if (delayParse > 0) await new Promise((r) => setTimeout(r, delayParse))
@@ -1340,9 +1549,9 @@ process.on("message", async (msg: any) => {
         const result = await parseFile(filePath, projectPath, contextFor(filePath))
         clearTimeout(fileTimer)
 
-        process.send?.({ type: "file_done", batchId, filePath, result })
+        safeSend({ type: "file_done", batchId, filePath, result })
       } catch (err) {
-        process.send?.({
+        safeSend({
           type: "file_error",
           batchId,
           filePath,
@@ -1351,7 +1560,7 @@ process.on("message", async (msg: any) => {
       }
     }
 
-    process.send?.({ type: "batch_done", batchId })
+    safeSend({ type: "batch_done", batchId })
   }
 })
 
@@ -1361,6 +1570,54 @@ process.on("disconnect", () => process.exit(0))
 // Self-executing worker entry (compiled dist: `node dist/pool-worker.js`).
 // The IPC channel alone keeps a forked child alive, but hold the event loop
 // explicitly so this entry works under every runtime (plain Node, tsx, Bun).
-if (process.env.BB_POOL_WORKER === "1") {
+//
+// THE CONDITION IS THE IPC CHANNEL, NOT THE ENV VAR — and getting that wrong
+// was a "workers don't start" bug that reported itself as something else
+// entirely.
+//
+// `BB_POOL_WORKER=1` is set BY THE PARENT for its children
+// (parallel-indexer.ts:1516 and 4543), so an exported `BB_POOL_WORKER=0` —
+// which reads like a supported "don't use the pool" switch, and which the
+// product's own remediation text would tell a user to set — reached every
+// forked worker as `!== "1"`. The child then skipped this keep-alive, ran out
+// of work, and exited 0 WITHOUT EVER SENDING `ready`. The fork probe's `exit`
+// handler only rejects a NON-zero code (parallel-indexer.ts:4562), so the
+// promise never settled: every index run sat for the probe's full 60 s
+// timeout, then reported "worker pool unavailable (worker fork test timed out
+// after 60s)" and silently switched to in-process indexing. Turning off the
+// pool was supposed to be faster; it was a minute-long stall.
+//
+// A forked child is exactly a process with a live IPC channel, so that is the
+// condition. The env var is still read — as evidence, below — because a
+// misconfigured env is worth saying out loud, and `process.connected` is false
+// when this entry is run standalone (`node dist/pool-worker.js`), which is
+// where the original check was right.
+if (process.connected) {
+  if (process.env.BB_POOL_WORKER !== "1") {
+    process.stderr.write(
+      `[BB-WORKER-STARTUP] forked with BB_POOL_WORKER=${JSON.stringify(process.env.BB_POOL_WORKER ?? null)} rather than "1"; ` +
+        `serving anyway — unset BB_POOL_WORKER to use in-process indexing\n`,
+    )
+  }
   setInterval(() => {}, 1 << 30)
+}
+
+// Startup self-test: `BB_POOL_WORKER_SELFTEST=1`. Runs the same warm-up the
+// `warmup` message runs and exits, so `bb doctor` can verify a worker without an
+// IPC handshake and without making the CLI's synchronous call path async.
+//
+// Deliberately NOT top-level await: this file is bundled by tsup and a top-level
+// await in the entry would constrain the whole bundle's output shape. A promise
+// chain sets the exit code instead, which is all this needs.
+if (process.env.BB_POOL_WORKER_SELFTEST === "1" && !process.connected) {
+  runSelfTest().then(
+    (code) => {
+      process.exitCode = code
+    },
+    (e: any) => {
+      // A self-test that throws is itself a result: the worker cannot even start.
+      process.stderr.write(`[BB-WORKER-SELFTEST] failed: ${e?.message ?? String(e)}\n`)
+      process.exitCode = 1
+    },
+  )
 }

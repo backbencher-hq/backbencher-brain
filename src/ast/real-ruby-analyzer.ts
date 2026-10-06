@@ -294,6 +294,119 @@ export const RAILS_MACRO_METHODS = new Set([
 ])
 
 // ============================================================================
+// RAKE — `task :name do … end` is a NAMED, INVOKABLE UNIT
+// ============================================================================
+//
+// A Rakefile parsed clean and reported 0 symbols, and the file was still counted
+// in the index, so it read as covered. That is the worst shape this codebase has:
+// a file that looks indexed and contributes nothing. Measured on a Rakefile with
+// three tasks and a plain `a.rb` alongside: Rakefile 0 symbols, a.rb 2.
+//
+// The cause is structural, not a parsing failure. Rake's DSL is a method CALL
+// with a block — `task :test do … end` is a `call` node — while this analyzer
+// declares symbols from `class`, `module`, `method` and `singleton_method`
+// nodes. Nothing matched, so nothing was emitted.
+//
+// Everything below reads the tree. No regex: a task name is a `pair`'s `key`
+// field, a `simple_symbol`, or a `string` depending on which of Rake's three
+// declaration forms was used, and `namespace` is a `call` whose block holds the
+// tasks it prefixes.
+
+/** The basename of a path, without regex (char scan, as elsewhere in this file). */
+function basenameOf(filePath: string): string {
+  const norm = filePath.indexOf("\\") !== -1 ? filePath.replace(/\\/g, "/") : filePath
+  const slash = norm.lastIndexOf("/")
+  return slash === -1 ? norm : norm.slice(slash + 1)
+}
+
+/**
+ * Whether this file is a Rake DEFINITION file, which is what makes `task`
+ * mean Rake's DSL rather than an application method of the same name.
+ *
+ * Gated on the filename deliberately. The node shape alone (`task` + a symbol +
+ * a block) is suggestive but not conclusive: a Rails app may define its own
+ * `task` helper, and reporting its call sites as Rake tasks would fabricate
+ * symbols. `Rakefile` and `*.rake` is the same rule `rake` itself applies, and
+ * it is the one the router already uses to send these files to this analyzer.
+ */
+function isRakeDefinitionFile(filePath: string): boolean {
+  const base = basenameOf(filePath)
+  if (base === "Rakefile" || base === "rakefile") return true
+  return base.length > 5 && base.endsWith(".rake")
+}
+
+/**
+ * The task name a `task` call declares, or null if this call is not a task
+ * declaration.
+ *
+ * Rake accepts three forms for the task name, and they are three different node
+ * shapes — measured on the grammar:
+ *
+ *   task :test do            → simple_symbol   `:test`
+ *   task default: %i[a b]    → pair, `key`     `default`
+ *   task :build => [:a]      → pair, `key`     `:build`
+ *   task("ci") { }           → string          `ci`
+ *
+ * The `:` prefix is Ruby symbol syntax, not part of the task's name, so it is
+ * dropped: `rake -T` lists `test`, and the symbol should match.
+ */
+function rakeTaskName(callNode: Node): string | null {
+  const args = callNode.childForFieldName("arguments")
+  if (!args || args.namedChildCount === 0) return null
+  const first = args.namedChild(0)
+  if (!first) return null
+  let raw: string | null = null
+  if (first.type === "pair") {
+    const key = first.childForFieldName("key")
+    raw = key ? key.text : null
+  } else if (first.type === "simple_symbol" || first.type === "string") {
+    raw = first.text
+  }
+  if (raw === null || raw.length === 0) return null
+  // A `string` node's text INCLUDES its delimiters, so `task("release")` would
+  // otherwise be indexed under the name `"release"` — quotes included — which
+  // matches nothing `rake -T` prints and nothing a user would search for.
+  let name = raw
+  if (name.length >= 2 && name.charCodeAt(0) === 34 /* " */ && name.charCodeAt(name.length - 1) === 34) {
+    name = name.slice(1, -1)
+  }
+  if (name.length === 0) return null
+  // Drop Ruby's leading `:` from a symbol literal. Both `:test` and `test` then
+  // name the same task, which is what `rake -T` and every Rake error message use.
+  return name.charCodeAt(0) === 58 /* ':' */ ? name.slice(1) : name
+}
+
+/** The `desc "…"` immediately above a task, used as the task's documentation. */
+function rakeTaskDescription(callNode: Node): string | undefined {
+  const prev = callNode.previousNamedSibling
+  if (!prev || prev.type !== "call") return undefined
+  if (prev.childForFieldName("method")?.text !== "desc") return undefined
+  const args = prev.childForFieldName("arguments")
+  if (!args || args.namedChildCount === 0) return undefined
+  const first = args.namedChild(0)
+  if (!first || first.type !== "string") return undefined
+  const inner = first.text.slice(1, -1)
+  return inner.length > 0 ? inner : undefined
+}
+
+/** The `namespace :x do … end` a task sits inside, for `x:task` naming. */
+function rakeNamespaceName(callNode: Node): string | null {
+  if (callNode.childForFieldName("method")?.text !== "namespace") return null
+  const args = callNode.childForFieldName("arguments")
+  if (!args || args.namedChildCount === 0) return null
+  const first = args.namedChild(0)
+  if (!first || (first.type !== "simple_symbol" && first.type !== "string")) return null
+  const raw = first.text
+  // Same delimiter handling as a task name: a `string` node's text carries its
+  // quotes, and `namespace "db"` would otherwise prefix tasks with `"db`.
+  const name = raw.length >= 2 && raw.charCodeAt(0) === 34 && raw.charCodeAt(raw.length - 1) === 34
+    ? raw.slice(1, -1)
+    : raw
+  if (name.length === 0) return null
+  return name.charCodeAt(0) === 58 ? name.slice(1) : name
+}
+
+// ============================================================================
 // MAIN ANALYZER
 // ============================================================================
 export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -351,6 +464,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Visibility tracking: private/protected state markers
     // Call source: the nearest enclosing method/function name
     const visibilityOverrides = new Map<string, string>()
+    // Computed once per file, not per node: it reads the PATH, so it cannot
+    // change during a traversal.
+    const isRakeFile = isRakeDefinitionFile(filePath)
     const stack: {
       node: Node
       owner: string | undefined
@@ -360,6 +476,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Set when this frame is INSIDE the block of an anonymous dynamic class
       // (`anon = Class.new(Base) do ... end`). See the assignment branch.
       anonBinding?: string
+      // Set when this frame is inside a Rake `namespace :x do … end`, so a task
+      // declared there is named `x:task` the way `rake -T` lists it. Only ever
+      // set for a Rake definition file.
+      rakeNamespace?: string
     }[] = [{
       node: rootNode,
       owner: undefined,
@@ -763,11 +883,88 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // recursion below: a declaration call's ARGUMENTS may themselves hold
       // calls (`require File.expand_path(...)`) which must still surface.
       if (type === "call") {
+        // --- Rake DSL: `task :name do … end` and `namespace :x do … end` ---
+        // Handled BEFORE processCall, because a task is a declaration, not a
+        // call site: it is a named invokable unit with a body, and reporting it
+        // only as a call would leave a Rakefile contributing nothing.
+        if (isRakeFile) {
+          const nsHere = rakeNamespaceName(node)
+          if (nsHere !== null) {
+            // The namespace is a NAMED, INVOKABLE unit in its own right —
+            // `rake db:migrate` is what a user types — so it is emitted as a
+            // symbol rather than being only a name prefix.
+            //
+            // It has to be a real symbol, not just an `ownerName`: `contains`
+            // is resolved by looking the owner up by name, so an `ownerName` of
+            // `db` with no `db` symbol makes the containment unresolvable and it
+            // is silently DROPPED at persist time. Emitting the namespace is
+            // what makes the grouping survive into the graph.
+            const enclosingNs = frame.rakeNamespace
+            symbols.push({
+              name: enclosingNs ? `${enclosingNs}:${nsHere}` : nsHere,
+              kind: ASTEngine.SymbolKind.Module,
+              range: this.nodeToRange(node),
+              // No `ownerName`, for the same reason a task does not set one: the
+              // persist layer derives containment from the qualified name, so
+              // `db:schema` already yields `db --contains--> db:schema`.
+              metadata: { rakeNamespace: true },
+            })
+            // Carry the prefix into the block. The block's children are pushed
+            // below with the frame they already have plus this namespace.
+            const blk = node.childForFieldName("block")
+            if (blk) {
+              for (let i = blk.namedChildCount - 1; i >= 0; i--) {
+                const child = blk.namedChild(i)
+                if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding, rakeNamespace: enclosingNs ? `${enclosingNs}:${nsHere}` : nsHere })
+              }
+            }
+            continue
+          }
+          if (node.childForFieldName("method")?.text === "task") {
+            const taskName = rakeTaskName(node)
+            // A task with no block is a declaration of dependencies only
+            // (`task :default => [:build]`). It still names a unit `rake -T`
+            // will list once something defines it, so it is reported — with an
+            // empty body rather than being dropped.
+            if (taskName !== null) {
+              const qualified = frame.rakeNamespace ? `${frame.rakeNamespace}:${taskName}` : taskName
+              const description = rakeTaskDescription(node)
+              const block = node.childForFieldName("block")
+              const sym: ASTEngine.UniversalSymbol = {
+                name: qualified,
+                kind: ASTEngine.SymbolKind.Function,
+                range: this.nodeToRange(node),
+                // `ownerName` is deliberately NOT set. The persist layer already
+                // derives containment from the qualified name — a `db:migrate`
+                // symbol gets a `db --contains--> db:migrate` edge from its name
+                // alone. Setting `ownerName: "db"` as well produced that edge
+                // TWICE, measured: 2 identical `contains` rows for one task.
+                //
+                // The namespace is still a real emitted symbol (see the
+                // `namespace` branch below), so the edge resolves to something
+                // that exists rather than dangling.
+                docstring: description,
+                complexity: block ? this.calculateNodeComplexity(block) : 1,
+                metadata: { rakeTask: true },
+              }
+              symbols.push(sym)
+            }
+            // The task BODY is still traversed, so the calls inside it
+            // (`sh "pytest"`, `puts`) keep producing relationships exactly as
+            // they did before tasks were recognised. Only the task DECLARATION
+            // is handled here; its interior is ordinary Ruby.
+            for (let i = node.namedChildCount - 1; i >= 0; i--) {
+              const child = node.namedChild(i)
+              if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding, rakeNamespace: frame.rakeNamespace })
+            }
+            continue
+          }
+        }
         this.processCall(node, symbols, relationships, imports, metadata,
           owner, undefined, visibilityOverrides, anonBinding)
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding })
+          if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding, rakeNamespace: frame.rakeNamespace })
         }
         continue
       }
@@ -905,7 +1102,17 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // inside an anonymous block — which is to say, every member, since
           // the block body is itself a level — went out unmarked and the first
           // implementation of this marker marked nothing at all.
-          if (child) childFrames.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding })
+          //
+          // `rakeNamespace` is carried for the same reason and was the same
+          // bug: a Rake `namespace :db do … end` block's only named child is a
+          // `body_statement` wrapper, which lands HERE rather than in the call
+          // handler, so dropping the prefix at this line renamed every task in a
+          // namespace from `db:migrate` to `migrate`. Verified: with the carry,
+          // `namespace :db` + `task :migrate` emits `db:migrate`.
+          //
+          // Any context added to the frame type must be added HERE too, or it
+          // is silently discarded at the first level of descent.
+          if (child) childFrames.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding, rakeNamespace: frame.rakeNamespace })
         }
         for (const cf of childFrames) stack.push(cf)
       }

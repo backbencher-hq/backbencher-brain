@@ -27,6 +27,7 @@ import path from "node:path"
 import { buildLedger } from "./generate-precision-ledger.ts"
 import { generateWaveDoc } from "./generate-wave-doc.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const WAVE_DOC = path.join(ROOT, "docs/m29/WAVE-PROTOCOL.md")
@@ -164,6 +165,7 @@ const result = {
   verdict: { realComponentFailures: failed, mutantsCaught: mutants.caught, mutantsTotal: mutants.total, ok: mutants.caught === mutants.total },
   currentCommit: gitCommit(),
   verifierCommand: "npx tsx script/m29/verify-m29-docs.ts",
+  ...fingerprintFields(["m29.D1-verify"], ROOT),
   evidenceFile: "D1-verify.json",
   generatedAt: new Date().toISOString(),
   limitations: [

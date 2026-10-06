@@ -22,6 +22,7 @@ import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
@@ -252,6 +253,7 @@ const result = {
   failures,
   negativeCases: negatives,
   currentCommit,
+  ...fingerprintFields(["m26.X1"], ROOT),
   verifierCommand: "npx tsx script/m26/verify-closure.ts",
   barViolations,
   perMutantRecords,

@@ -1,19 +1,36 @@
 {
-  "status": "verified",
-  "passed": 28,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 21,
+  "failed": 6,
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
-  "relevantInputsHash": "49b428d28e42965e261aa89e2bd731849fdf741b",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "relevantInputsHash": "8e9b880e58f3c8508bf4b53652787a3b2f593de2",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
+  "sourceFingerprint": "ac490dc839b4b199089b1ff6b12dd780696c4d6f258cc150fc87f7291873617b",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m29/verify-giant-repo.ts",
+    "src/brain/brain.sql.ts",
+    "src/brain/schema-ddl.ts",
+    "src/lsp/cross_language_hover.ts",
+    "src/lsp/hover.ts",
+    "script/m25/feature-assertions.ts",
+    "script/m29/giant-repo-budget.ts"
+  ],
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-09-20T02:45:31.520Z",
-  "details": [],
+  "generatedAt": "2026-10-05T22:40:18.512Z",
+  "details": [
+    "R1: corpus meets the M19 giant-scale bar (files >= 50k): undefined",
+    "R1: corpus on disk matches the manifest: disk=0 manifest=undefined",
+    "R2: relevant inputs unchanged since the evidence run: evidence=49b428d28e42965e261aa89e2bd731849fdf741b vs current=8e9b880e58f3c8508bf4b53652787a3b2f593de2 — re-run giant-repo-budget.ts --reuse to refresh",
+    "R2: evidence indexed counts agree with the manifest: 59000 vs undefined",
+    "R6: live probe skipped (no persistent index — run --index-only first): declared skip, not a silent pass"
+  ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:45:31.520Z",
-    "contentSha256": "9b3358a38a4e2153afc3f173db386938620afb2228dfdb812e11b9bf8837688c"
+    "sealedAt": "2026-10-05T22:40:18.514Z",
+    "contentSha256": "527cae2c1e9f9f94d7af170cd8a210c8aaa2fd9f45223db9f6e860f6e2ff8435"
   }
 }

@@ -3,7 +3,7 @@
   "milestone": "M29",
   "githubMilestone": 29,
   "title": "M29: Precision Waves (IDE v5)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m29/M29-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 535,
       "tool": "governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "M29 ledger, closure gate, verify wiring; M28 bar re-audit automated (ladder discipline).",
       "acceptanceCriteria": [
         "Ledger + gate + wiring",
@@ -30,14 +30,15 @@
         "Clean rerun"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "see G1.json",
+        "status": "known-gap",
+        "currentCommit": "d8dad6ebbf971c5f724e18275fbd97eb624e7d42",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 70,
-        "failed": 0,
+        "passed": 64,
+        "failed": 6,
         "realFailed": 0,
-        "negativeCases": 10
+        "negativeCases": 10,
+        "blockedReason": "6 check(s) failed: G1: all 9 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — closure-gate evidence verified at an ancestor-or-equal commit … — the relevant tree was clean at measure time"
       }
     },
     {
@@ -58,14 +59,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see R1.json",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
         "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
         "evidenceFile": "R1.json",
-        "passed": 32,
+        "passed": 36,
         "failed": 0,
-        "realFailed": 0,
-        "mutantsCaught": 4,
-        "mutantsTotal": 4
+        "mutantsCaught": 7,
+        "mutantsTotal": 7,
+        "blockedReason": "S5 (per-language server leg) and S6 (in-editor leg) are R2 execution work; in the dry-run they are declared blockers that cap at I1."
       }
     },
     {
@@ -86,14 +87,13 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see R2.json",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
         "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
         "evidenceFile": "R2.json",
-        "passed": 115,
+        "passed": 261,
         "failed": 0,
-        "realFailed": 0,
-        "mutantsCaught": 3,
-        "mutantsTotal": 3,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5,
         "approvalRecord": "validation/m29/results/wave-1-approval.json",
         "languages": [
           "java",
@@ -103,7 +103,8 @@
           "kotlin",
           "scala"
         ],
-        "s6InEditor": "real headless Neovim sessions per language (M27.N1 pattern)"
+        "s6InEditor": "real headless Neovim sessions per language (M27.N1 pattern)",
+        "blockedReason": "S6 in-editor legs run in headless Neovim on Linux only (OS-scoped per contract §10); other OSes are declared absent, not assumed."
       }
     },
     {
@@ -124,13 +125,11 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see R3.json",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
         "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
         "evidenceFile": "R3-verify.json",
-        "passed": 25,
-        "failed": 0,
-        "realFailed": 0,
-        "negativeCases": 6
+        "passed": 28,
+        "failed": 0
       }
     },
     {
@@ -151,13 +150,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see R4-verify.json",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
         "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
         "evidenceFile": "R4-verify.json",
-        "passed": 16,
+        "passed": 19,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 5
+        "mutantsCaught": 6,
+        "mutantsTotal": 6
       }
     },
     {
@@ -178,13 +178,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see R5-verify.json",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
         "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
         "evidenceFile": "R5-verify.json",
-        "passed": 18,
+        "passed": 20,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 4
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
       }
     },
     {
@@ -205,13 +206,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see V1-verify.json",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
         "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
         "evidenceFile": "V1-verify.json",
         "passed": 14,
         "failed": 0,
+        "blockedReason": "W2/W3 execute the runner and drift gates only; the nvim-dependent editor legs (S6) and giant-index legs (R3) are covered by their own verifiers and are out of scope here.",
         "realFailed": 0,
-        "negativeCases": 3
+        "mutantsCaught": 5,
+        "mutantsTotal": 5
       }
     },
     {
@@ -232,13 +235,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see D1-verify.json",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
         "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
         "evidenceFile": "D1-verify.json",
         "passed": 13,
         "failed": 0,
+        "blockedReason": "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it.",
         "realFailed": 0,
-        "negativeCases": 3
+        "mutantsCaught": 3,
+        "mutantsTotal": 3
       }
     },
     {
@@ -259,20 +264,20 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see X1.json",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
         "verifierCommand": "npx tsx script/m29/verify-closure.ts",
         "evidenceFile": "X1.json",
         "passed": 32,
         "failed": 0,
-        "realFailed": 0,
         "note": "28/28 at HEAD; owner spot-check pack prepared in X1.json (the achieved/not-achieved verdict is the owner's, §8.5)",
-        "negativeCases": 3
+        "negativeCases": 3,
+        "blockedReason": "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run."
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.434Z",
-    "contentSha256": "d1d7286d692f97c66e9b6c89ca586e7d9b31600d0b8267d66583339dd757ee33"
+    "sealedAt": "2026-10-05T15:35:51.619Z",
+    "contentSha256": "5808d9e58408da1f9e1dda89f1e4d8c20be7c21a970f5ba23d446b3363dc8e07"
   }
 }

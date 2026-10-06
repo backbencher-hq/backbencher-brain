@@ -43,6 +43,8 @@ type Issue = {
     negativeCases?: number
     mutantsCaught?: number
     mutantsTotal?: number
+    /** Required on a `blocked` entry (contract §8.3): why the leg is blocked. */
+    blockedReason?: string
   }
 }
 type Ledger = {
@@ -84,23 +86,39 @@ function isClosable(issue: Issue): boolean {
   if (issue.status === "planned") return false
   if (!issue.evidence) return false
   const e = issue.evidence
-  // Mutant-based verifiers record intentional mutant-catch failures in the
-  // raw `failed` counter; `realFailed` (or an all-zero `failed`) is the
-  // honest number (M24.G1 rule, reused verbatim).
+  // A NON-GREEN state is an honest state, and it is not hollow — it is
+  // hollow only when it claims to be green with no proof, or when it hides why
+  // it is not green. `known-gap` and `blocked` therefore need REAL evidence
+  // (a record that names its verifier, a can-fail proof, and the reason where
+  // one is required) but NOT a zero failure count: their failure count is
+  // precisely why they are not verified.
+  //
+  // Before this rule existed, projecting T1/U1/A2/V1's honest `known-gap` out
+  // of their records failed this gate as `hollow-known-gap:*`, so the ledger
+  // could either lie (`verified` over a failing record) or tell the truth and
+  // go red for it. Both are violations of §8.4/§8.3; this rule is what makes
+  // the honest state expressible.
   const realFailed = typeof e.realFailed === "number" ? e.realFailed : e.failed
-  // Can-fail proof: dedicated negatives or a fully-caught mutant set.
   const mutantProof =
     typeof e.mutantsCaught === "number" &&
     e.mutantsCaught > 0 &&
     e.mutantsTotal === e.mutantsCaught
-  return Boolean(
-    e.status === issue.status &&
-      e.verifierCommand &&
-      e.evidenceFile &&
-      e.passed > 0 &&
-      realFailed === 0 &&
-      (typeof e.negativeCases === "number" && e.negativeCases > 0 ? true : mutantProof),
-  )
+  const hasCanFailProof = typeof e.negativeCases === "number" && e.negativeCases > 0 ? true : mutantProof
+  const identity = Boolean(e.status === issue.status && e.verifierCommand && e.evidenceFile)
+  if (issue.status === "blocked") {
+    // §8.3: a blocked leg records its reason, never silently omits it. Its
+    // provisioning check failed, so a can-fail proof is not the bar here — the
+    // recorded reason is.
+    return identity && typeof e.blockedReason === "string" && e.blockedReason.trim().length > 0
+  }
+  if (issue.status === "known-gap") {
+    // The entry must still PROVE it can fail (a gate that cannot fail is not
+    // evidence, §8.7) — that requirement is unchanged for a red entry.
+    return identity && hasCanFailProof
+  }
+  // `verified` (and any other state claiming green) needs the full bar: real
+  // evidence, at least one passing check, and zero real failures.
+  return Boolean(identity && e.passed > 0 && realFailed === 0 && hasCanFailProof)
 }
 
 const EXPECTED_CODES = ["G1", "T1", "U1", "A1", "A2", "V1", "X1"]
@@ -351,6 +369,54 @@ function main(): void {
     validateLedger(hollow, plan, contract).some((error) => error === "hollow-verified:G1"),
   )
 
+  // The two rules this lane added for honest non-green states, each with its
+  // negative so neither can rot into an exemption that hides a hollow entry.
+  {
+    const gapIdx = ledger.issues.findIndex((i) => i.status === "known-gap")
+    if (gapIdx !== -1) {
+      const code = ledger.issues[gapIdx]!.code
+      // A known-gap entry must still prove its gate can fail (§8.7): strip the
+      // can-fail proof and the entry must be rejected as hollow.
+      const noProof = structuredClone(ledger)
+      const ev = noProof.issues[gapIdx]!.evidence!
+      ev.negativeCases = 0
+      ev.mutantsCaught = 0
+      ev.mutantsTotal = 0
+      negative(
+        `G1: a known-gap entry with no can-fail proof is rejected (${code})`,
+        validateLedger(noProof, plan, contract).some((e) => e === `hollow-known-gap:${code}`),
+      )
+      // And the positive control: the same entry with its proof intact passes.
+      const withProof = structuredClone(ledger)
+      negative(
+        `G1: a known-gap entry WITH its can-fail proof is accepted (${code})`,
+        !validateLedger(withProof, plan, contract).some((e) => e === `hollow-known-gap:${code}`),
+      )
+      // A known-gap entry claiming a real failure count is NOT hollow: that is
+      // what a gap is. Without this the ledger could not say "known-gap".
+      const honestGap = structuredClone(ledger)
+      honestGap.issues[gapIdx]!.evidence!.failed = 3
+      negative(
+        `G1: a known-gap entry whose record HAS failures is still accepted (${code})`,
+        !validateLedger(honestGap, plan, contract).some((e) => e === `hollow-known-gap:${code}`),
+      )
+    } else {
+      negative("G1: a known-gap entry with no can-fail proof is rejected", true, "no known-gap entry in the ledger — nothing to mutate")
+    }
+    const blockedIdx = ledger.issues.findIndex((i) => i.status === "blocked")
+    if (blockedIdx !== -1) {
+      const code = ledger.issues[blockedIdx]!.code
+      const noReason = structuredClone(ledger)
+      delete noReason.issues[blockedIdx]!.evidence!.blockedReason
+      negative(
+        `G1: a blocked entry without a reason is rejected (${code})`,
+        validateLedger(noReason, plan, contract).some((e) => e === `hollow-blocked:${code}`),
+      )
+    } else {
+      negative("G1: a blocked entry without a reason is rejected", true, "no blocked entry in the ledger — nothing to mutate")
+    }
+  }
+
   const missing = structuredClone(ledger)
   missing.issues.pop()
   negative("G1: missing issue entry is rejected", validateLedger(missing, plan, contract).includes("issue-count"), `issues=${missing.issues.length}`)
@@ -411,9 +477,16 @@ function main(): void {
     negative("G1: M27 bar with a demoted issue is rejected", true, "no M26 issue to demote — skipped")
   }
 
-  // Cross-check: every non-planned M27 ledger issue must reference a
+  // Cross-check: every non-planned M28 ledger issue must reference a
   // persisted evidence JSON whose status matches. G1 is excluded: its
   // evidence records the outcome of this very check (self-referential).
+  //
+  // `persisted-failed` applies to entries that CLAIM GREEN only. A
+  // `known-gap` entry's record has real failures — that is the gap — and a
+  // `blocked` entry's provisioning check failed on purpose (§8.3). Without
+  // this scoping the check reported `T1:persisted-failed` against entries that
+  // had just been healed to their honest state, so the ledger was red for
+  // telling the truth and green only while lying.
   let evidenceErrors: string[] = []
   for (const issue of ledger.issues.filter((item) => item.status !== "planned" && item.code !== "G1")) {
     const evidence = issue.evidence
@@ -427,7 +500,21 @@ function main(): void {
       if (persisted["status"] !== issue.status) evidenceErrors.push(`${issue.code}:status-mismatch`)
       const verdict = persisted["verdict"] as { realComponentFailures?: number } | undefined
       const realFailed = verdict && typeof verdict.realComponentFailures === "number" ? verdict.realComponentFailures : persisted["failed"]
-      if (realFailed !== 0) evidenceErrors.push(`${issue.code}:persisted-failed`)
+      if (realFailed !== 0 && issue.status === "verified") evidenceErrors.push(`${issue.code}:persisted-failed`)
+      if (issue.status === "blocked" && !(typeof issue.evidence?.blockedReason === "string" && issue.evidence.blockedReason.trim().length > 0)) {
+        evidenceErrors.push(`${issue.code}:blocked-without-reason`)
+      }
+      // A non-green entry must still PROVE its gate can fail (§8.7): a record
+      // with no negatives and no fully-caught mutant set is not evidence of a
+      // gap, it is evidence of nothing.
+      if (issue.status !== "verified") {
+        const recMutantsCaught = persisted["mutantsCaught"]
+        const recMutantsTotal = persisted["mutantsTotal"]
+        const canFail =
+          (typeof persisted["negativeCases"] === "number" && persisted["negativeCases"] > 0) ||
+          (typeof recMutantsCaught === "number" && recMutantsCaught > 0 && recMutantsCaught === recMutantsTotal)
+        if (!canFail) evidenceErrors.push(`${issue.code}:no-can-fail-proof`)
+      }
       const evidenceCommit = persisted["currentCommit"]
       if (typeof evidenceCommit !== "string" || evidenceCommit !== currentCommit) {
         if (typeof evidenceCommit !== "string" || commitDiffTouchesRelevant(issue.code, evidenceCommit, currentCommit)) {
@@ -488,6 +575,68 @@ function main(): void {
   const finalFailed2 = checks - passed
   const finalResult = { ...result, checks, passed, failed: finalFailed2, status: finalFailed2 === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap" }
   writeSealed(evidencePath, finalResult)
+
+  // --- The ledger is a PROJECTION of the records, written here ---------------
+  // The same defect M27.G1 healed, in this lane: manifest.json was
+  // HAND-MAINTAINED, so every entry kept `status: "verified"` while the
+  // records on disk read `known-gap` (T1, U1, A2, V1 at HEAD a0ed9eade) — the
+  // lane ledger claimed 7/7 verified over four failing records. Contract §8.4
+  // makes the record the authority; the ledger is derived, never hand-set.
+  //
+  // Each entry is re-derived from its own record's `status`, `passed`,
+  // `failed`, `negativeCases` and (for a blocked leg) its reason. The counts
+  // and the reason are written on EVERY run, not only when the status differs,
+  // so the projection is a fixpoint rather than a one-shot heal.
+  {
+    const healed: string[] = []
+    const entries = ledger.issues.map((issue) => {
+      const file = issue.evidence?.evidenceFile ?? `${issue.code}.json`
+      let record: Record<string, unknown>
+      try {
+        record = parseSealedRecord(path.join(ROOT, "validation/m28/results", file)) as Record<string, unknown>
+      } catch {
+        return issue
+      }
+      const recordStatus = typeof record.status === "string" ? record.status : null
+      if (!recordStatus) return issue
+      const statusChanged = recordStatus !== issue.status
+      const reasonFromRecord = typeof record.blockedReason === "string" ? { blockedReason: record.blockedReason } : {}
+      const countsSame = record.passed === issue.evidence?.passed && record.failed === issue.evidence?.failed
+      if (!statusChanged && Object.keys(reasonFromRecord).length === 0 && countsSame) return issue
+      if (statusChanged) healed.push(`${issue.code}: ${issue.status} -> ${recordStatus}`)
+      return {
+        ...issue,
+        status: recordStatus,
+        evidence: {
+          ...(issue.evidence ?? {}),
+          status: recordStatus,
+          currentCommit: record.currentCommit,
+          passed: record.passed,
+          failed: record.failed,
+          ...(typeof record.negativeCases === "number" ? { negativeCases: record.negativeCases } : {}),
+          ...reasonFromRecord,
+          evidenceFile: file,
+        },
+      }
+    })
+    const projectedStatus = entries.every((i) => i.status === "verified") ? "closed" : "open"
+    const projected = { ...ledger, issues: entries, status: projectedStatus, updatedAt: new Date().toISOString() }
+    writeSealed(path.join(ROOT, "validation/m28/results/manifest.json"), projected as unknown as Record<string, unknown>)
+    const mismatches: string[] = []
+    for (const entry of entries) {
+      const file = entry.evidence?.evidenceFile ?? `${entry.code}.json`
+      try {
+        const rec = parseSealedRecord(path.join(ROOT, "validation/m28/results", file)) as { status?: string }
+        if (rec.status && rec.status !== entry.status) mismatches.push(`${entry.code}: ledger=${entry.status} record=${rec.status}`)
+      } catch {
+        /* an unreadable record keeps the entry; the cross-check above reports it */
+      }
+    }
+    check("G1: the ledger is projected from its records (no entry claims a status its record contradicts)", mismatches.length === 0, mismatches.join(", "))
+    check("G1: the lane status is mechanical (closed only when every entry is verified)", projectedStatus === (entries.every((i) => i.status === "verified") ? "closed" : "open"))
+    if (healed.length > 0) console.log(`      ledger healed from records: ${healed.join(", ")}`)
+  }
+
   console.log(`G1: ${finalResult.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
   process.exit(finalFailed2 === 0 ? 0 : 1)
 }

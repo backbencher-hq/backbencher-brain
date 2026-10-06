@@ -27,6 +27,7 @@ import path from "node:path"
 import os from "node:os"
 import { mkdtempSync } from "node:fs"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -180,6 +181,7 @@ const result = {
   verdict: { realComponentFailures: failed, mutantsCaught: mutants.caught, mutantsTotal: mutants.total, ok: mutants.caught === mutants.total },
   currentCommit: gitCommit(),
   verifierCommand: "npx tsx script/m29/verify-wave-harness.ts",
+  ...fingerprintFields(["m29.V1-verify"], ROOT),
   evidenceFile: "V1-verify.json",
   generatedAt: new Date().toISOString(),
   limitations,

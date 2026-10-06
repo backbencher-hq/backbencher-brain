@@ -3,16 +3,16 @@
   "code": "U3",
   "milestone": "M44",
   "status": "verified",
-  "checks": 29,
-  "passed": 29,
+  "checks": 32,
+  "passed": 32,
   "failed": 0,
   "failures": [],
-  "mutantsCaught": 6,
-  "mutantsTotal": 6,
-  "currentCommit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
+  "mutantsCaught": 9,
+  "mutantsTotal": 9,
+  "currentCommit": "6a19b00cc00e1cd2ed8d38b1fd4dd54499f4c067",
   "verifierCommand": "npx tsx script/m44/verify-hub-tree.ts",
   "evidenceFile": "U3.json",
-  "generatedAt": "2026-09-26T23:16:24.889Z",
+  "generatedAt": "2026-10-05T22:33:22.214Z",
   "fixture": {
     "root": "Widget (file-1:Widget)",
     "nesting": "callers: render -> make -> Widget; callees: Widget -> util -> deep; external callee push"
@@ -21,16 +21,22 @@
     "R1 data law: every row carries parentSymbolId/parentName; depth-1 rows parent to rendered groups",
     "R2 render: AH1-9 over the real response",
     "R2b in-tree truncation marker",
-    "R3 real server over stdio",
-    "R4 five mutants (flatten, double-render, dropped expander, depth lie, level lie)"
+    "R2c an unnesteable row is a DECLARED placement error, never a phantom parent",
+    "R3 real server over stdio, over the ONE project-identity owner (src/util/project-id.ts)",
+    "R4 nine mutants, each EVALUATED: a load failure is not a catch (§6/§8.3). §13.8's three named defects are each planted — duplicated symbol, fabricated nesting level, undeclared control."
   ],
+  "mutantHonesty": {
+    "loadFailureIsACatch": false,
+    "note": "A mutant whose module will not import exercises no law. Before this run the harness booked that as a catch and still printed 6/6 — PROVEN by a mutant whose replacement was a bare syntax error. An unevaluable mutant and an anchor that no longer matches are both FAILURES now (§8.3 silence is guilt).",
+    "everyMutantCaughtByAssertion": true
+  },
   "limitations": [
     "The traversal recursion (not a cascade fold) produces this fixture's nesting; the cascade fold (depth-0 rows toward root's class members) is asserted at the harness level in V1.",
     "DOM assertions cover structure/classes/data attributes over a stub DOM; the real-editor click/expand leg is E5 (in-editor) over this same DOM contract."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-26T23:16:24.890Z",
-    "contentSha256": "dcb2afb788cdb59a4a538a10a816902100c463ec11df51ef4dbe09bb4ea3df7d"
+    "sealedAt": "2026-10-05T22:33:22.216Z",
+    "contentSha256": "ecacbc30f648114c12354da8949a1f67f4b01175af7f95b7a83d78d194d1d88b"
   }
 }

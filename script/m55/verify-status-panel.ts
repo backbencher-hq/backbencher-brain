@@ -44,6 +44,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const MODULE = path.join(ROOT, "ide/vscode/src/status-markup.ts")
@@ -388,6 +389,7 @@ const result = {
   mutantsTotal,
   negatives: 0,
   currentCommit,
+  ...fingerprintFields(["m55.V1-status-panel"], ROOT),
   workingTreeRelevantChanges: dirty.filter((f) => f.startsWith("ide/vscode/") || f.startsWith("script/m55/")),
   foundBy: "the V1 rig's own frame: validation/m55/frames/live-7/7-status.png (the visible content was the single line 'launch: compiled dist (bundled) — …')",
   owner: "ide/vscode/src/status-markup.ts (pure markup) + ide/vscode/src/extension.ts (panel + reuse)",

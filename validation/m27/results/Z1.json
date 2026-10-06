@@ -3,11 +3,11 @@
   "code": "Z1",
   "milestone": "M27",
   "status": "verified",
-  "checks": 28,
-  "passed": 28,
+  "checks": 29,
+  "passed": 29,
   "failed": 0,
-  "mutantsCaught": 3,
-  "mutantsTotal": 3,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
   "mutantRecords": [
     {
       "name": "Z1 mutant: shim dist-path drift is rejected",
@@ -18,24 +18,36 @@
       "caught": true
     },
     {
-      "name": "Z1 mutant: shim order drift vs oracle is rejected",
+      "name": "Z1 mutant: shim order drift vs oracle is rejected (code, not comment)",
+      "caught": true
+    },
+    {
+      "name": "Z1: a comment renumbering a step is not code drift",
       "caught": true
     }
   ],
-  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "currentCommit": "b52c2bc7ad5caade0356f5228c84dc77afd32293",
+  "sourceFingerprint": "3d86246aa2b7b0a4300753a43b1f87931ef8a41a86ae9d97337639ae0b05c27a",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m27/verify-zed.ts",
+    "src/lsp/server.ts",
+    "script/m24/lsp_harness.ts",
+    "script/m27/server-caps.ts"
+  ],
   "build": {
-    "ran": false,
+    "ran": true,
     "ok": false,
-    "reason": "cargo/rust toolchain not provisioned (D-7 portable layout covers nvim/zed binaries; wasm target toolchain ~1 GB not downloaded)"
+    "reason": "cargo build failed: error: rustup could not choose a version of cargo to run, because one wasn't specified explicitly, and no default is configured.\nhelp: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.\n"
   },
   "verifierCommand": "npx tsx script/m27/verify-zed.ts",
   "evidenceFile": "Z1.json",
-  "generatedAt": "2026-09-20T02:24:10.656Z",
+  "generatedAt": "2026-10-05T22:41:54.956Z",
   "claimLevel": "I2 — extension + shim unit-proven against the real server's wire capabilities; wasm build blocked-with-reason (toolchain boundary per D-7); no editor session driven",
   "blockedLegs": [
     {
       "leg": "wasm shim build",
-      "reason": "cargo/rust toolchain not provisioned (D-7 portable layout covers nvim/zed binaries; wasm target toolchain ~1 GB not downloaded)"
+      "reason": "cargo build failed: error: rustup could not choose a version of cargo to run, because one wasn't specified explicitly, and no default is configured.\nhelp: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.\n"
     },
     {
       "leg": "in-editor Zed session",
@@ -48,7 +60,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:24:10.657Z",
-    "contentSha256": "c7c854a483953f20fb1a41677e15166c379f9daa843d22a8201030c8578b5800"
+    "sealedAt": "2026-10-05T22:41:54.958Z",
+    "contentSha256": "4122baf8772bfe8537be2d60ef7a56a8bc43024815075b0cb529118ee90d1046"
   }
 }
