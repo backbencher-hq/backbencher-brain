@@ -37,6 +37,7 @@ import { parse as parseToml } from "smol-toml"
 import { fetchServerCapabilities } from "./server-caps.ts"
 import { runHarness } from "../m24/lsp_harness.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const EXT = path.join(ROOT, "ide", "zed", "bb-lsp")
@@ -99,17 +100,45 @@ export function resolveBbLspCommand(input: ResolveInput): ResolveResult {
   }
 }
 
-/** Drift gate: the shim source must mention the same resolution steps in the
- *  same order (owner override → dist → PATH → error). The CODE body (after
- *  the header comment) is what's checked — the header documents the same
- *  order but would otherwise double-count the dist mention. */
+/** Strip Rust comments so a law about CODE cannot be satisfied by prose.
+ *  The header comment documents this same resolution order, so searching the
+ *  raw source double-counts every step and the ordering law becomes
+ *  unfalsifiable. Previously the body search anchored on the literal
+ *  `use serde_json` import — but that import is not a contract, so removing
+ *  an unused import silently changed what the gate inspected. */
+function stripRustComments(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .split("\n")
+    .map((line) => {
+      let out = "";
+      let inStr: string | null = null;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (inStr) {
+          out += ch;
+          if (ch === "\\") { out += line[++i] ?? ""; continue; }
+          if (ch === inStr) inStr = null;
+          continue;
+        }
+        if (ch === '"') { inStr = '"'; out += ch; continue; }
+        if (ch === "/" && line[i + 1] === "/") break;
+        out += ch;
+      }
+      return out;
+    })
+    .join("\n");
+}
+
+/** Drift gate: the shim CODE must resolve in this order — owner override →
+ *  dist → PATH → loud declared error. Checked against comment-stripped code
+ *  so the header's prose cannot satisfy it. */
 function shimOrderMatches(shimSrc: string): boolean {
-  const codeStart = shimSrc.indexOf("use serde_json")
-  const code = codeStart !== -1 ? shimSrc.slice(codeStart) : shimSrc
-  const iOverride = code.indexOf("LspSettings::for_worktree")
-  const iDist = code.indexOf("dist/lsp/server.js")
-  const iPath = code.indexOf("worktree.which")
-  const iError = code.indexOf("no server found")
+  const code = stripRustComments(shimSrc);
+  const iOverride = code.indexOf("LspSettings::for_worktree");
+  const iDist = code.indexOf("dist/lsp/server.js");
+  const iPath = code.indexOf("worktree.which");
+  const iError = code.indexOf("no server found");
   return iOverride !== -1 && iOverride < iDist && iDist < iPath && iPath < iError
 }
 
@@ -221,8 +250,24 @@ function main(): void {
     const brokenParsed = parseToml(brokenManifest) as any
     negative("Z1 mutant: dropped/renamed language is rejected", !(brokenParsed.language_servers?.["bb-lsp"]?.languages?.includes("JavaScript") ?? false))
 
-    const reorderedOracle = mutatedShim.replace("// 2. A backbencher-brain", "// 3. A backbencher-brain")
-    negative("Z1 mutant: shim order drift vs oracle is rejected", !shimOrderMatches(reorderedOracle))
+    // The order law is a law about CODE. A comment that renumbers a step is
+    // documentation drift, not resolution drift, so the mutant must move a
+    // real call site. (It previously rewrote a `// 2.` comment and was
+    // "caught" only because the gate searched raw text — i.e. it passed for
+    // the wrong reason, and became a survivor once comments were stripped.)
+    const swappedCode = mutatedShim
+      .replace("LspSettings::for_worktree", "__BB_MUT_OVERRIDE__")
+      .replace("dist/lsp/server.js", "LspSettings::for_worktree")
+      .replace("__BB_MUT_OVERRIDE__", "dist/lsp/server.js")
+    negative(
+      "Z1 mutant: shim order drift vs oracle is rejected (code, not comment)",
+      swappedCode !== mutatedShim && !shimOrderMatches(swappedCode),
+    )
+    // And the comment-only case must NOT be treated as drift.
+    negative(
+      "Z1: a comment renumbering a step is not code drift",
+      shimOrderMatches(mutatedShim.replace("// 2. A backbencher-brain", "// 3. A backbencher-brain")),
+    )
 
     // --- Persist evidence -------------------------------------------------------------------
     const failed = checks - passed
@@ -238,6 +283,7 @@ function main(): void {
       mutantsTotal,
       mutantRecords,
       currentCommit,
+      ...fingerprintFields(["m27.Z1"], ROOT),
       build: { ran: buildRan, ok: buildOk, reason: buildReason },
       verifierCommand: "npx tsx script/m27/verify-zed.ts",
       evidenceFile: "Z1.json",

@@ -34,6 +34,7 @@ import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 // M26 ambient split (audited 2026-09-18): machine reality is scanned by the ONE
 // owner and RECORDED; the byte-gated document asserts repository-derived facts
 // only. See script/m26/ambient-reality.ts for the defect this fixes (a doc that
@@ -338,6 +339,7 @@ async function main(): Promise<void> {
       mutantsTotal,
       currentCommit: commit,
       verifierCommand: "npx tsx script/m26/verify-cross-language-hover.ts",
+      ...fingerprintFields(["m26.W3","m26.W3-pairs"], ROOT),
       evidenceFile: "W3.json",
       pairsFile: "W3-pairs.json",
       generatedAt: new Date().toISOString(),

@@ -471,6 +471,209 @@ so a grammar defect both the auditor and the analyzer accept would be invisible 
 construct probe and the capability battery cover that gap by measuring the grammar's own
 vocabulary rather than agreeing about it.
 
+## PASS 13 — the store was DISCARDING 5,799 edges the analyzer had emitted (2026-10-05)
+
+Every earlier pass on this page measured through `parseFile`. That entry point returns a
+symbol list and an edge list, so an edge is a row of JSON — and a row of JSON that later
+fails to bind is still reported by every instrument here as an edge that exists. This pass
+added the instrument that reads the other end: `validation/m14/fixtures/sql/store-resolution.mts`
+indexes real repositories through production `indexProjectParallel` and then queries
+`brain_symbol` / `brain_relationship`.
+
+**The population.** Every git-tracked `.sql` file of every corpus repository holding at least
+20 of them — 5 repos, **1,903 files**: `duckdb` 594, `boundary` 486, `proxicall` 438,
+`hasura-engine` 353, `postgrest` 32. `indexProjectParallel` is called with an explicit `files`
+list, so the project holds SQL only. That is the optimistic end for a name-keyed resolution and
+is stated as such in the instrument's header: a SQL-only symbol table has fewer same-named
+symbols than a mixed-language one.
+
+### The defect: a source that named nothing, and the store deleting rows because of it
+
+This lane sourced every file-level fact — `GRANT … ON s`, `COMMENT ON t`, `DROP VIEW v`, a DML
+target, a call inside a routine body — from the literal string `global`, on the reasoning that
+"the two ends cannot be two symbols: SQL has no module". Nothing published `global`. Measured at
+the store, BEFORE (`…/measurements/pass13-store-resolution-BEFORE.json`):
+
+| | count |
+| --- | --- |
+| relationships with `source_symbol_id IS NULL` | **2,994** |
+| of those, `source_external = 'global'` | **2,779** |
+| of those 2,779, the **target** resolved | **2,356** |
+| edges emitted by the analyzer over the same 1,903 files | 30,374 |
+| edges the store **held** | 24,575 |
+| emitted edges the store **deleted** | **5,799 (19.1%)** |
+
+The third row is the walkability half: 2,356 edges were attached at one end, described
+correctly, and unreachable from the other, so `bb_graph` on the very table a `GRANT` names
+reported no incoming edges.
+
+The fourth and fifth rows are the half no instrument on this page could see, and they are the
+worse half. `brain_relationship.id` is
+`` `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? "?"}` ``
+(`src/ast/parallel-indexer.ts:3657`), so an unresolved source puts `null` in the identity and
+`INSERT OR IGNORE` collapses rows that share a target. `duckdb` is the extreme: **1,921 of its
+3,562 emitted edges were deleted**, because 1,893 of them were `uses` edges from many files to
+the same name with no line. The analyzer emitted them; the store threw them away.
+
+**Measured, not inferred.** `uses-split-probe.mts` parses the same 1,903 files through
+`parseFile` under both analyzer versions:
+
+| | emitted | distinct (source, target) |
+| --- | --- | --- |
+| before | 30,374 | 17,016 |
+| after | **30,374** | **22,439** |
+
+The edge count is identical, so nothing was invented and nothing was removed at the analyzer.
+What changed is that the corpus-level distinct pairs rose by **5,423 (+31.9%)**: the literal
+`global` merged two different owners' facts into one name, and the store then deleted the
+duplicates it could not tell apart.
+
+### The fix: the file is a real symbol (`fileModuleNameFor`, `publishQualifiedNames`)
+
+One `module` symbol per file, named the **basename with its extension**, and every file-level
+edge sourced from it. This is bash's BD2 ruling and PowerShell's PS1 taking the same shape for
+the same defect. The basename is not unique — the corpus holds 110 `up.sql` and 110 `down.sql` —
+and does not need to be: the store resolves a relationship's source with an **exact name match
+over the symbols of the file being stored** (`parallel-indexer.ts:3427`, `nameToSymbol.get(sourceName)`
+ahead of every leaf fallback), so a file's own module symbol is always the one found.
+
+AFTER, same five repos, same 1,903 files (`…/measurements/pass13-store-resolution-AFTER.json`):
+
+| | before | after |
+| --- | --- | --- |
+| `source_symbol_id IS NULL` | 2,994 | **216** (contains 200, references 13, calls 3) |
+| edges stored | 24,575 | **32,555** |
+| emitted edges deleted at the store | 5,799 | **0** |
+| target unresolved | 991 | 2,073 |
+| external-labelled among the unresolved | — | **399** |
+| symbols published | 19,711 | 21,614 (+1 per file in every repo) |
+
+**The resolution rate FELL, 95.97% → 93.63%, and the honest reading is in the two rows above
+it.** The denominator grew: the 5,799 edges that used to be deleted are stored now, and most of
+them do not resolve. Recovering an edge and having it resolve are different properties, and this
+change bought the first. What the recovered population looks like, measured over the 10,664
+module-sourced stored rows: **1,499 unresolved, 14.0%**, so 86.0% bind.
+
+Also **+2,263** `contains` rows whose source is the module symbol. Those are the store's own
+line-range containment derivation — the same one every language's container symbols get — and
+the fact it asserts is true: a `CREATE TABLE` at line 126 of `X.sql` is inside `X.sql`.
+
+### Cause A: the qualified name existed, and was inert
+
+`symbolsWithQualifiedNameDistinctFromName` was **0** over the whole admitted population
+(1,962 files, 18,652 symbols → 7,875 distinct `name`s), so every ambiguous target also had no
+`qualifiedName` to disambiguate it. Not a naming choice: `pool-worker.ts:930` derives the stored
+value as `` s.qualifiedName || s.metadata?.fqn || (s.scope ? `${s.scope}.${s.name}` : s.name) ``,
+this analyzer set `ownerName` and never `scope`, so the derived value was always `name`.
+
+`publishQualifiedNames` writes `metadata.fqn` — the arm that formula reads first after the
+analyzer's own field, the one the C# family already writes and fsharp took for this same reason
+— as `<basename>::<owner>.<name>`. The file is in the key because `owner.name` alone is not an
+identifier here: 187 corpus files declare a symbol called `id`, 104 call one `name`, 36 call one
+`changed_by`, every one a `property`, so `items.id` would read the same in `001_init.sql` and
+`002_orders.sql`. `name` and every relationship target are untouched, which is why 16/16
+fixtures pass with no expectation rewritten for this half.
+
+| | before | after |
+| --- | --- | --- |
+| symbols with `qualifiedName` distinct from `name` | 0 | **18,652** of 20,614 |
+| ambiguous edges whose candidates have NO distinct `qualifiedName` | 100% | **433 of 19,699 (2.2%)** |
+| `diagnose-incoming.mts` on 40 files: ambiguous targets with NO distinct `qualifiedName` | **57 (100%)** | **0 (0%)** |
+| `K3_qname` resolution | 651 / 2,512 / 4,364 … | **0 — unchanged, and reported as 0** |
+
+`K3` does not move because no edge in this lane targets a qualified name, and making one do so
+would be a second contract change. The qualified name is a precondition for a name-keyed choice
+to be **checkable**, not a resolution.
+
+**Both fields are written, and the second one was not redundant.** `metadata.fqn` is the arm
+`pool-worker.ts` reads, so the store saw the qualified name from the first commit of this pass.
+`ASTEngine.parseFile` derives nothing — it returns the analyzer's symbol objects unchanged — and
+it is the entry point `script/m14/diagnose-incoming.mts` uses. Measured on
+`postgrest/test/io/fixtures/big_schema.sql`, the same 1,054 symbols through both:
+
+| | `qualifiedName` != `name` | `metadata.fqn` present |
+| --- | --- | --- |
+| `pool-worker.parseFile` | 1,053 | 0 |
+| `ASTEngine.parseFile` | **0** | 1,054 |
+
+So the shared instrument printed `of those, NO distinct qualifiedName: 57 (100%)` about this lane
+— a true statement about the field it read and a false statement about the analyzer. Both fields
+are now written from one string so they cannot disagree, and the same command on the same 40 files
+prints `0 (0%)` with the 57 ambiguous targets and the B and C rows unchanged.
+
+### Cause B: measured at 6 of 31,278 edges, and all 6 are a predicate artefact
+
+`resolution-census.mts` counts the brief's B signature directly — target contains `.`, target
+itself unpublished, target's final segment published. Over the whole admitted population:
+**6 hits, every one an `imports` edge** for a `\i` path such as `../../orioledb.sql`, where the
+"final segment" of a PATH split on `.` is the string `sql`. B is structurally near-zero here for
+a reason this lane measured rather than assumed: a `contains`/`references` target in this
+analyzer is a **bare** table or column name, with any schema qualifier carried on
+`metadata.qualified` precisely because `classifyExternalTarget` needs the bare leaf. The published
+surface has no dots to disagree with, and the only dotted names in it are quoted identifiers
+whose dot is part of the name (`"vault.secret"`), published and targeted with the same string.
+
+### Cause C: the label was reaching the store and the reader could not see it
+
+`store-resolution.mts` first reported `ext 0` on every type of every project. That was the
+**reader**: it looked for `classifyExternalTarget`'s four strings and this lane writes a second
+shape, `external: true`, on a `CREATE EXTENSION` `imports` edge. A direct query over the same
+stored rows read **399 string-labelled and 26 boolean-labelled** edges. Both shapes are named in
+the instrument now. `duckdb` is 644 unresolved with 0 labels, and that is a stated limitation
+rather than an omission: its `.sql` files call into a C++ engine whose function list this lane
+does not have and will not guess.
+
+### What this pass did NOT settle
+
+- **216 `contains` edges still have no source.** They are cross-file: a migration's
+  `CREATE INDEX` names a table a previous migration declared, and the store resolves a source
+  within the file being stored. `search_path` is what decides that live.
+- **433 ambiguous edges target a module symbol**, whose `qualifiedName` equals its `name` by
+  construction. Making that key unique needs the member KIND in it, which is what
+  `metadata.memberKind` already carries.
+- **Within one file the key is not unique.** `postgrest/test/big_schema.sql` publishes 1,054
+  symbols and 1,003 distinct qualified names, so 50 collide — the shape this lane already
+  documents for `contains` `memberKind`, an index named after its own column.
+
+### A mutant SURVIVED, and the cause was this pass
+
+`bun run script/m60/run-sql-ontology-mutants.ts` reads **20 / 21 caught** after the file-module
+change, against 21/21 at `b06a5151a`. The survivor is `sql/declaration-dispatched-twice`, whose
+transform copied `r.symbols[0]` to reproduce the pre-fix defect (the declaration sweep
+re-dispatching what the root walk already dispatched). Index 0 was a **declaration** only by
+accident of emission order; this pass publishes the module symbol at the FRONT of the list, so
+the copy landed there instead — a different defect, and an invisible one, because the fixture
+runner matches each `expectSymbols` entry against ≥1 actual item and tolerates extras.
+
+The transform now copies the first **non-module** symbol, which is the declaration the defect
+actually duplicated, and the battery reads 21/21. Recorded because the signal was the
+**survival**: nothing about a passing run says a transform has stopped describing its defect.
+
+### Every gate this lane can run, at `7616e0081`
+
+| Gate | Command | Result |
+| --- | --- | --- |
+| ontology arbiter, whole corpus, fresh walk | `npx tsx script/m14/ontology-coverage-gate.ts sql --fresh` | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`**, exit 0, 1,962/1,962 files newly walked |
+| fixture lane | `bun run script/m14/run-fixtures.ts --lang sql` | **16 / 16 PASS**, baseline gate `no regressions` |
+| mutant battery | `bun run script/m60/run-sql-ontology-mutants.ts` | **21/21 CAUGHT**, exit 0 |
+| perf gate | `bun run script/m60/sql-perf-gate.ts` | **PASSED** — 188,053 B/s over 438 files, p50 14.2 ms / p95 139.0 ms / max 328.9 ms, worst single file 329 ms |
+| ruling tables registered | `npx tsx script/m14/verify-ruling-tables-registered.ts` | **PASS** — 18 tables on disk, 18 registered |
+| differential | `npx tsx script/m14/differential.ts --lang sql` | **`SKIP sql: no corpus repo mapped in LANG_REPOS`** — shared machinery, §8 |
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | **clean, exit 0** |
+| store resolution | `npx tsx validation/m14/fixtures/sql/store-resolution.mts --out …` | 5 projects, 1,903 files, 32,555 edges |
+| parseFile census | `npx tsx validation/m14/fixtures/sql/ambiguity-split.mts --files 1962 --out …` | 20,614 symbols, 31,278 edges, 0 empty names, 0 `unknown` endpoints |
+| resolution census | `npx tsx validation/m14/fixtures/sql/resolution-census.mts --files 1962 --out …` | B 6, A 19,699 ambiguous / 433 without a distinct qname, C 357 labels |
+
+**`--fresh` is load-bearing, and the reason is a §8 report item.** `resumable-walk.ts` appends
+**paths**, not counts. A run that resumes a complete checkpoint walks zero files, so the arbiter's
+`observed` map is empty and it prints `emitted 0/10` — every type then reads as `NOT EMITTED` and
+the written ruling is accepted as the reason. Measured on this lane: the first run of the day
+printed `emitted 0/10   ruled-sound 10   FALSIFIED 0` with `newly walked 0, resumed 1962`, while
+`calls` had 3,908 edges at `parseFile` in the same corpus. A gate that reports a type as absent
+when it has 3,908 edges, and then confirms a ruling against that, is the failure this project
+exists to prevent. Not edited here: `resumable-walk.ts` and `ontology-coverage-gate.ts` are
+shared machinery.
+
 ## PASS 2 — the adversarial audit (2026-10-03)
 
 Pass 1 measured **whether** each type fires. Pass 2 assumes each label is **wrong** and looks

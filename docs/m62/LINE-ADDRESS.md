@@ -36,6 +36,7 @@ and every display surface consumes that interpretation instead of the number.
 | `legacy` | `call site not stored (legacy index: line_number is 0)` |
 | `notStored` | `call site not stored (no line_number in the index)` |
 | `substitute` | `this is the calling symbol's declaration, not the call site` |
+| `unattributed` | `call site not read (no relationship row at this depth could be attributed)` |
 | `unusable` | `call site not stored (unusable line_number in the index)` |
 
 The address kinds are: `call-site`, `declaration`, `unknown`.

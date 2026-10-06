@@ -116,6 +116,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       genericParamNames,
       declaredSubtypes,
     })
+    this.publishModuleSymbol(rootNode, filePath, symbols)
     this.collectContainment(symbols, relationships)
     this.collectInheritance(symbols, relationships, fileTypes)
     this.collectContractRefinement(rootNode, symbols, relationships)
@@ -1411,11 +1412,15 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const seg of this.moduleSegments(module)) qualifiers.add(seg)
       relationships.push({
         source: "(global)",
-        target: module,
+        target: this.moduleNameOfPath(module),
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1,
         line_number: moduleNode ? moduleNode.startPosition.row + 1 : n.startPosition.row + 1,
-        metadata: { relationshipType: "nim_import", isImport: true, fileLevel: true },
+        // Only the edge TARGET is normalised, and only so that it can equal the module
+        // symbol's name — the two spellings drifted apart, which is what left 8,404 of
+        // 13,364 `imports` edges with no candidate to bind to. The path AS WRITTEN
+        // survives in `imports[].module` and on `meta.nimModulePath`.
+        metadata: this.moduleEdgeMetadata("nim_import", module),
       })
     }
   }
@@ -1445,11 +1450,11 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
       relationships.push({
         source: "(global)",
-        target: text,
+        target: this.moduleNameOfPath(text),
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1,
         line_number: n.startPosition.row + 1,
-        metadata: { relationshipType: "nim_include", isImport: true, fileLevel: true },
+        metadata: this.moduleEdgeMetadata("nim_include", text),
       })
     }
   }
@@ -1696,18 +1701,15 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (const seg of this.moduleSegments(path)) qualifiers.add(seg)
         relationships.push({
           source: "(global)",
-          target: path,
+          target: this.moduleNameOfPath(path),
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1,
           line_number: site.startPosition.row + 1,
-          metadata: {
-            relationshipType: "nim_import",
-            isImport: true,
-            fileLevel: true,
+          metadata: this.moduleEdgeMetadata("nim_import", path, {
             ...(parsed.isPathList ? { nimModuleList: true } : {}),
             ...(alias ? { nimAlias: alias } : {}),
             ...(qualifier ? { nimQualifier: qualifier } : {}),
-          },
+          }),
         })
       }
     }
@@ -1870,6 +1872,195 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       return { paths: [{ path: this.nodeText(node), site: node }], isPathList: false }
     }
     return null
+  }
+
+  /**
+   * The MODULE this file defines, as one `SymbolKind.Module` symbol.
+   *
+   * ## Why this is a symbol and not a scope name
+   *
+   * A Nim `.nim` file IS a module, it has a name, it is the unit `import`
+   * names, and it is the unit `export` publishes from. Every one of those is a
+   * fact about a declaration, and before this pass the graph had no node for it:
+   * every `imports` edge named a module that existed nowhere in the symbol set.
+   *
+   * MEASURED, 6,063 corpus files, production `parseFile` (`census.ts`, artifacts in
+   * `validation/m14/measurements/nim/`): `imports` resolved its target on **37.1%** of
+   * 13,364 edges, and the unresolved population is the module path as written —
+   * `std/assertions`(823) `std/syncio`(671) `std/strutils`(386) `std/os`(297)
+   * `std/tables`(240). 8,404 of 13,364 edges named a module the graph could not bind
+   * to. It was not a resolution failure: there was no candidate to fail to find.
+   *
+   * The store cannot rescue it either, and that is checked rather than assumed. Its
+   * insert-time target resolver matches `brain_symbol.name` (`parallel-indexer.ts:2239`)
+   * and its three post-pass strategies match a bare `name`, a `qualified_name`, or —
+   * for a DOT target — everything after the first `.` (`parallel-indexer.ts:3755-3774`).
+   * `std/assertions` is none of those, and the fourth strategy, `resolveImportTargets`,
+   * is scoped to the `<module>:<item>` form that javascript/typescript/python emit —
+   * nim writes a bare path, so it never reaches that planner.
+   *
+   * ## Why the NAME is the last path segment, and why that is the module
+   *
+   * Nim resolves `import std/assertions` to the module `assertions` in
+   * `lib/std/assertions.nim`; the `std/` prefix is a directory on the module search
+   * path, not part of the module's name. So the symbol is named after the file's
+   * basename and the edge target is normalised to the same rule, which is what makes
+   * the two strings equal. This is the same "publish the string you target" shape the
+   * graphql lane measured at a 75% reduction, applied to the construct nim actually has.
+   *
+* ## What is deliberately NOT published
+   *
+   *   - `.nims`. A NimScript file is `include`d into another module; it is not a module
+   *     and nothing can `import` it. Publishing one would be a node the language cannot
+   *     name. So `include`'s edge target is normalised by the SAME rule, and that is
+   *     measured rather than assumed: 458 `nim_include` edges over the corpus resolve
+   *     at both ends on 96.9% in-file and 98.0% in-corpus, and reverting them to the
+   *     verbatim path would bind **0** of the 14 they currently leave unresolved
+   *     (`import-resolution-probe.mts`, `s18-import-probe.txt`). An earlier draft of
+   *     this comment asserted the opposite — that `include` keeps the written path —
+   *     while the code normalised it; the measurement decided which of the two was
+   *     true and the comment was corrected to match.
+   *   - A renamed module. `module Foo` inside `bar.nim` declares module `Foo`, and the
+   *     pinned grammar has NO node for it — `grammars/tree-sitter-nim/grammar.js`
+   *     mentions "module" twice and neither is a declaration, so there is nothing on
+   *     the tree to read. The symbol is therefore named after the FILE. This is a real
+   *     inaccuracy and it is bounded: the corpus measurement is in the doc, and a file
+   *     that renames its module gets a module symbol no `import` will ever name.
+   *   - An empty basename. A path that yields no name publishes nothing rather than an
+   *     empty-named symbol.
+   *
+   * The range is the whole `source_file` node, so the symbol covers what it contains.
+   * A file whose root is not a `source_file` falls back to line 1, never to a line 0 —
+   * a line-0 symbol reads as a missed line to every consumer that checks.
+   */
+  private publishModuleSymbol(rootNode: Node, filePath: string, symbols: ASTEngine.UniversalSymbol[]): void {
+    const name = this.moduleNameOfPath(filePath)
+    if (!name) return
+    const lower = filePath.toLowerCase()
+    // A NimScript file is a script, not a module. See the header.
+    if (lower.endsWith(".nims")) return
+    const src = rootNode.type === "source_file" ? rootNode : null
+    symbols.push({
+      name,
+      kind: ASTEngine.SymbolKind.Module,
+      visibility: "public",
+      range: src
+        ? this.nodeRange(src)
+        : { startLine: 1, startColumn: 0, endLine: 1, endColumn: 0, startIndex: 0, endIndex: 0 },
+      // The module name is the whole identity here, so `qualifiedName` carries it too:
+      // the store's second resolution strategy matches `qualified_name`, and a row that
+      // is correct under one spelling should not be unreachable because it took another.
+      qualifiedName: name,
+      metadata: { nimModule: true, nimModuleName: name },
+    })
+  }
+
+  /**
+   * The module name a file path denotes: its basename without the extension, which is
+   * Nim's own rule for the name a file has unless it renames the module inside.
+   *
+   * It is also the LAST SEGMENT of an import path, and both spellings go through here so
+   * the publisher and the emitter cannot drift apart — the whole defect this pass exists
+   * to fix is two pieces of code spelling one symbol differently.
+   */
+  private moduleNameOfPath(filePath: string): string {
+    const seg = String(filePath ?? "").split("/").pop() ?? ""
+    // A trailing `\` would come from a Windows-style path; a declared module name never
+    // contains one, and leaving it in would publish an unnameable node.
+    // Strip trailing backslashes without a regex. This lane is at ZERO regex by policy and
+    // by census; `/\\+$/` was reintroduced and the census gate caught it on the next run,
+    // which is the gate doing exactly its job.
+    let base = seg
+    while (base.length > 0 && base.charCodeAt(base.length - 1) === 92 /* \\ */) base = base.slice(0, -1)
+    const dot = base.lastIndexOf(".")
+    const stem = dot > 0 ? base.slice(0, dot) : base
+    // `std / syncio` — Nim's path syntax allows spaces around `/`, and the corpus writes
+    // it (823 of the unresolved imports are `std/X`, and `std / syncio` is among them).
+    // The last segment of the path is the module name either way.
+    const parts = stem.split("/")
+    const last = (parts[parts.length - 1] ?? "").trim()
+    return last
+  }
+
+  /**
+   * Is this written module path Nim's own STANDARD LIBRARY?
+   *
+   * ## What the marker is for, and the number that sizes it
+   *
+   * After the module-symbol pass the residual `imports` population that is declared
+   * NOWHERE in the corpus — the population cause C is about — is 485 edges: 476 on
+   * `nim_import` and 9 on `nim_include`. Measured by
+   * `validation/m14/fixtures/nim/import-resolution-probe.mts` over the same 6,063
+   * files, same analyzer digest (`s18-import-probe.txt`):
+   *
+   *     bare name          309   (301 import + 8 include)
+   *     other path         103   (102 + 1)
+   *     std/ path prefix    66   (66 + 0)
+   *     parent-relative       8   (7 + 1)
+   *
+   * 66 of 485 — 13.6% — is identifiable from the spelling alone, and this is that
+   * identification. A `std/`-prefixed path is Nim's standard-library root by the
+   * language's own rule, so `nimStdlibModule` is a fact about the PATH, not a guess
+   * about where the declaration lives.
+   *
+   * ## Why the other 419 are NOT marked, which is the honest part
+   *
+   * 309 are BARE names. Per file, `import re` is three indistinguishable things: a
+   * module in this project, a module in `lib/pure` (which is how Nim spells `re`,
+   * `parseutils`, `algorithm`, `math` — no path prefix at all), or a typo. Nothing in
+   * one file separates them, and marking them external would assert that a local module
+   * is not local — the fabricated-edge failure the workstream brief calls the most
+   * expensive mistake available. 103 are paths with some other prefix (a `nimble`
+   * package name, a sibling directory) and 8 are `../`, which is local by definition.
+   *
+   * Separating the bare cases needs whole-program import resolution: for each bare
+   * target, find the file this project declares by that name and ask whether its path
+   * lies under the Nim library roots. That is shared machinery (workstream §8), so the
+   * need is reported rather than built.
+   *
+   * ## Why the key is `nimStdlibModule` and not the family's `isExternalTarget`
+   *
+   * 15 other analyzers write `isExternalTarget`, and in every one of them it means "the
+   * target is NOT declared in this file". For an `imports` edge that is vacuously true
+   * of every edge — a module is never declared in the file that imports it — so the
+   * family key would carry no information here and would be read as if it did. The key
+   * says what is actually known: the path names the standard library.
+   */
+  private isStdlibModulePath(writtenPath: string): boolean {
+    // The written path is matched, never the normalised target: the target has already
+    // had its prefix stripped, so it cannot answer this. Spaces around `/` are legal
+    // Nim path syntax and the corpus writes them (`std / syncio`), and a leading quote
+    // comes from `include "std/prelude"`. Anchored at the start, so a project that has
+    // its own `std/` directory cannot make a local path claim to be the library.
+    // Anchored equivalent of /^\s*"?std\s*\// by char code — this lane is at ZERO regex
+    // and the census gate caught this reintroduced.
+    return isStdModulePath(String(writtenPath ?? ""))
+  }
+
+  /**
+   * The metadata block every `imports` edge carries, built from ONE argument so the
+   * written path and the stdlib marker can never be derived from different strings.
+   *
+   * This is the same one-function discipline `moduleNameOfPath` exists for, applied to
+   * the metadata: the defect being paid down is two pieces of code spelling one module
+   * differently, and a marker computed from a different string than the path it
+   * describes is that defect a second time.
+   */
+  private moduleEdgeMetadata(
+    relationshipType: "nim_import" | "nim_include",
+    writtenPath: string,
+    extra?: Record<string, unknown>,
+  ): Record<string, unknown> {
+    return {
+      relationshipType,
+      isImport: true,
+      fileLevel: true,
+      // The path AS WRITTEN. `brain_import` and the file-dependency engine read this,
+      // and so does anyone asking which file on disk is meant.
+      nimModulePath: writtenPath,
+      ...(this.isStdlibModulePath(writtenPath) ? { nimStdlibModule: true } : {}),
+      ...(extra ?? {}),
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -3917,6 +4108,26 @@ const NIM_BUILTIN_TYPES = [
  * a `.` (`.import`, `.end`) — the guard keeps either shape from producing an
  * edge to a non-name.
  */
+/**
+ * `^\s*"?std\s*\//` by char code: optional whitespace, optional quote, `std`, optional
+ * whitespace, then a slash. Anchored, so a project with its own `std/` directory cannot
+ * make a local path claim to be the standard library.
+ */
+function isStdModulePath(p: string): boolean {
+  const WS = (c: number): boolean =>
+    c === 32 || c === 9 || c === 10 || c === 13 || (c >= 0x2000 && c <= 0x200a)
+  let i = 0
+  while (i < p.length && WS(p.charCodeAt(i))) i++
+  // The pattern's quote is `"?` — a LITERAL double quote, not a character class. The first
+  // version accepted a single quote too, so `'std/y` matched when the regex rejects it.
+  // Caught by the differential, not by reading the pattern carefully enough.
+  if (i < p.length && p[i] === '"') i++
+  if (p[i] !== "s" || p[i + 1] !== "t" || p[i + 2] !== "d") return false
+  i += 3
+  while (i < p.length && WS(p.charCodeAt(i))) i++
+  return p[i] === "/"
+}
+
 function isKeywordLike(name: string): boolean {
   return KEYWORD_LIKE.indexOf(name) !== -1
 }

@@ -100,7 +100,11 @@ export interface ImportResolution {
 const PROBE_SUFFIXES = [
   "", ".js", ".mjs", ".cjs", ".jsx", ".ts", ".tsx", ".mts", ".cts", ".vue", ".svelte", ".json",
 ]
-const INDEX_BASENAMES = ["index.js", "index.mjs", ".cjs", "index.ts", "index.tsx", "index.jsx"]
+// `"index.js", "index.mjs", ".cjs", …` — the third entry was a copy-paste slip
+// that dropped the `index` prefix, so `./bar` probed for `src/bar/.cjs`, a
+// dotfile that essentially never exists. Every CommonJS directory import
+// (`./bar` where bar/ holds index.cjs) therefore failed to resolve.
+const INDEX_BASENAMES = ["index.js", "index.mjs", "index.cjs", "index.ts", "index.tsx", "index.jsx"]
 
 /** Join a specifier onto an importer's directory and normalise `.` / `..`. */
 export function resolveSpecifierPath(importerRelPath: string, specifier: string): string | null {
@@ -111,7 +115,21 @@ export function resolveSpecifierPath(importerRelPath: string, specifier: string)
     const out: string[] = []
     for (const seg of parts) {
       if (seg === "" || seg === ".") continue
-      if (seg === "..") { out.pop(); continue }
+      if (seg === "..") {
+        // UNDERFLOW means the specifier climbs ABOVE the project root. The old
+        // `out.pop()` on an empty array is a silent no-op, so `a.ts` importing
+        // `../../escape` clamped to `escape` — and if a real `escape.ts` existed
+        // the caller resolved it and emitted a cross-file edge to a module the
+        // source never referenced. A false edge is worse than no edge: `bb_graph`
+        // and `bb_impact` report it as truth.
+        //
+        // Climbing WITHIN the project is unaffected and still works:
+        // `packages/a/src/index.ts` importing `../../b/src/index.ts` resolves to
+        // `packages/b/src/index.ts`, because there is something to pop.
+        if (out.length === 0) return null
+        out.pop()
+        continue
+      }
       out.push(seg)
     }
     return out.join("/")

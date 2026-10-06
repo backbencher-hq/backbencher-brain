@@ -531,4 +531,36 @@ export const CSS_MUTANTS: Mutant[] = [
       ),
     }),
   },
+  {
+    id: "css/import-target-stays-the-raw-specifier",
+    language: "css",
+    defectClass: "wrong-endpoint",
+    description:
+      "The `imports` target reverted to the verbatim specifier — the defect the fix removed, and the reason one edge had its two ends spelled by two different rules. The source is `lastPathSegment(filePath)` (`layout.css`); the target was `styles/layout.css`. No stylesheet symbol in the store carries a path separator, so the store's `WHERE project_id = ? AND name = ?` lookup can never join them. MEASURED over the 600-file window (`validation/m14/census/css-import-specifier-names.ts`, 58 import edges): 11 edges named a file that exists under the basename with that basename unique in its own repo, and all 11 were unreachable. Re-measured after the fix with `css-incoming-split.ts` at the same window: `imports` byEdge `U4-absent-corpus` 56 -> 33 edges, and the store outcome row `crossFileUnique` 0 -> 6. Caught by css/import-specifier-names-its-target, whose `expectRelationships` require `layout.css`, `theme.css` and `other.scss` while six `forbidRelationships` rows refuse the multi-segment spellings — so a partial fix that recovers only slash-bearing specifiers with a `.css` extension is still red on `other.scss`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((rel: any) => {
+        const md = rel.metadata as any
+        if (md?.isCssImport !== true || typeof md?.importSpecifier !== "string") return rel
+        return { ...rel, target: md.importSpecifier }
+      }),
+    }),
+  },
+  {
+    id: "css/import-target-reduces-a-url-specifier",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "Every specifier reduced to its last segment, with no test for whether that segment names a stylesheet. This is the failure mode the extension test exists to prevent, and it is the dangerous direction of this fix because it makes MORE edges resolve: `https://fonts.googleapis.com/css?family=Lato:400,400i` becomes `Lato:400,400i`, `@fontsource-variable/figtree/index.css` becomes `index.css`, and each then binds to whatever unrelated same-named file its project happens to hold. An edge that resolves to the wrong stylesheet is worse than one that resolves to nothing, because nothing downstream can tell them apart — `bb_graph`, `bb_impact` and `bb_migrate` all read a resolved edge as a fact. MEASURED in the same 58-edge window: 10 URL edges, 1 package subpath. The two exclusions are also what stop the fix being a fabrication generator at scale: 24 bare package names, and `tailwindcss` in particular DOES collide with a real file in this corpus, so recovering it would resolve to the wrong thing. Caught by css/import-specifier-names-its-target, whose `forbidRelationships` rows refuse `Lato:400,400i`, `figtree/index.css` and `index.css` — an implementation that recovers everything satisfies all eight `expectRelationships` and is caught only by these six.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((rel: any) => {
+        const md = rel.metadata as any
+        if (md?.isCssImport !== true || typeof rel.target !== "string") return rel
+        const slash = (rel.target as string).lastIndexOf("/")
+        if (slash < 0) return rel
+        return { ...rel, target: (rel.target as string).slice(slash + 1) }
+      }),
+    }),
+  },
 ]
