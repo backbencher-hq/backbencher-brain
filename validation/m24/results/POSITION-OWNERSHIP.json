@@ -2,11 +2,17 @@
   "issue": "M24.lane4-position-ownership",
   "code": "POSITION-OWNERSHIP",
   "status": "verified",
-  "currentCommit": "9c25a1dc2384899d2370c0ad05c638b1f362aa17",
-  "sourceFingerprint": "9c8e0c8abd73d947695fb117de1721ed385bd023268cf431d3160d369668e9af",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "sourceFingerprint": "d18145d6e6828da10a7e3da147b2f33672243567ab482edaf6ff818961686a8a",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m24/verify-position-arithmetic.ts",
+    "src/lsp/navigation.ts",
+    "script/m24/no-inline-position-arithmetic.ts"
+  ],
   "verifierCommand": "npx tsx script/m24/verify-position-arithmetic.ts",
   "evidenceFile": "POSITION-OWNERSHIP.json",
-  "generatedAt": "2026-10-05T02:45:33.925Z",
+  "generatedAt": "2026-10-05T22:29:32.056Z",
   "passed": 7,
   "failed": 0,
   "failures": [],
@@ -51,36 +57,7 @@
     "src/lsp/navigation.ts"
   ],
   "ownedFindings": [],
-  "reportedElsewhere": [
-    {
-      "file": "src/lsp/call_hierarchy.ts",
-      "line": 312,
-      "rule": "P1",
-      "law": "byte arithmetic (Buffer.byteLength) belongs to the position mapper; feature code reads positions through it",
-      "text": "const startByte = Buffer.byteLength(line.slice(0, at), \"utf8\") + 1;"
-    },
-    {
-      "file": "src/lsp/call_hierarchy.ts",
-      "line": 313,
-      "rule": "P1",
-      "law": "byte arithmetic (Buffer.byteLength) belongs to the position mapper; feature code reads positions through it",
-      "text": "const endByte = Buffer.byteLength(line.slice(0, at + targetName.length), \"utf8\") + 1;"
-    },
-    {
-      "file": "src/lsp/call_hierarchy.ts",
-      "line": 345,
-      "rule": "P1",
-      "law": "byte arithmetic (Buffer.byteLength) belongs to the position mapper; feature code reads positions through it",
-      "text": "const startByte = Buffer.byteLength(line.slice(0, at), \"utf8\") + 1;"
-    },
-    {
-      "file": "src/lsp/call_hierarchy.ts",
-      "line": 346,
-      "rule": "P1",
-      "law": "byte arithmetic (Buffer.byteLength) belongs to the position mapper; feature code reads positions through it",
-      "text": "const endByte = Buffer.byteLength(line.slice(0, at + name.length), \"utf8\") + 1;"
-    }
-  ],
+  "reportedElsewhere": [],
   "reportedElsewhereNote": "Findings in modules this lane does not own are reported, not failed: other lanes are editing those files concurrently and a gate that fails on their in-flight work gets disabled rather than fixed. Each is a §5 rule 1 bypass to route through src/lsp/positions.ts.",
   "determinism": {
     "declaredVolatileFields": [
@@ -98,7 +75,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T02:45:33.926Z",
-    "contentSha256": "86068e3a745eab24a99e606754c33f785310ec34b1e89eaaae7370bebfb69352"
+    "sealedAt": "2026-10-05T22:29:32.057Z",
+    "contentSha256": "620d52b4347786c1361efe445e7a6f192b17f35a6b5f4f8f20262902d2d78adb"
   }
 }

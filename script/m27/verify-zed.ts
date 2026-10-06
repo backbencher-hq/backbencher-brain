@@ -37,6 +37,7 @@ import { parse as parseToml } from "smol-toml"
 import { fetchServerCapabilities } from "./server-caps.ts"
 import { runHarness } from "../m24/lsp_harness.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const EXT = path.join(ROOT, "ide", "zed", "bb-lsp")
@@ -282,6 +283,7 @@ function main(): void {
       mutantsTotal,
       mutantRecords,
       currentCommit,
+      ...fingerprintFields(["m27.Z1"], ROOT),
       build: { ran: buildRan, ok: buildOk, reason: buildReason },
       verifierCommand: "npx tsx script/m27/verify-zed.ts",
       evidenceFile: "Z1.json",

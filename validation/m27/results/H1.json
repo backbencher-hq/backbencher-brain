@@ -2,10 +2,10 @@
   "issue": "M27.H1",
   "code": "H1",
   "milestone": "M27",
-  "status": "verified",
-  "checks": 21,
-  "passed": 21,
-  "failed": 0,
+  "status": "known-gap",
+  "checks": 15,
+  "passed": 12,
+  "failed": 3,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
   "mutantRecords": [
@@ -26,10 +26,18 @@
       "caught": true
     }
   ],
-  "currentCommit": "f70ec0734fbae53b25994d7395bb108fd1999343",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "sourceFingerprint": "ac7b5beb5fc7250fabc939d862cc27777327603197cdf4b45a8d83ab7fe4baab",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m27/verify-helix.ts",
+    "src/lsp/server.ts",
+    "script/m24/lsp_harness.ts",
+    "script/m27/server-caps.ts"
+  ],
   "verifierCommand": "npx tsx script/m27/verify-helix.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-10-05T14:22:18.948Z",
+  "generatedAt": "2026-10-05T22:32:51.365Z",
   "claimLevel": "I2 — configuration verified against the real server's advertised capabilities; no driven hx session on this machine (D-7)",
   "blockedLegs": [
     {
@@ -43,7 +51,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:22:18.952Z",
-    "contentSha256": "a3987172d8657c6589a5557bd54e934968502f185f9a8294d84b5977346a950b"
+    "sealedAt": "2026-10-05T22:32:51.368Z",
+    "contentSha256": "4a92753301824187b9257c5b56d874e8d208ab03113168f2b5c07ed14a0db02a"
   }
 }

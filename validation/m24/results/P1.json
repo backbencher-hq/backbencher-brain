@@ -93,52 +93,52 @@
       {
         "name": "planted execFileSync sha256sum (the defect that killed this gate)",
         "caught": true,
-        "detail": "caught at line 1385 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1386 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted execSync shell sha256sum",
         "caught": true,
-        "detail": "caught at line 1385 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1386 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted spawnSync md5sum",
         "caught": true,
-        "detail": "caught at line 1385 (non-portable-binary: md5sum)"
+        "detail": "caught at line 1386 (non-portable-binary: md5sum)"
       },
       {
         "name": "planted spawn of an absent-on-darwin coreutils binary (timeout)",
         "caught": true,
-        "detail": "caught at line 1385 (non-portable-binary: timeout)"
+        "detail": "caught at line 1386 (non-portable-binary: timeout)"
       },
       {
         "name": "planted /proc read inside a shell spawn",
         "caught": true,
-        "detail": "caught at line 1385 (platform-only-path: /proc)"
+        "detail": "caught at line 1386 (platform-only-path: /proc)"
       },
       {
         "name": "planted GNU-only stat -c",
         "caught": true,
-        "detail": "caught at line 1385 (gnu-only-command-form: stat -c)"
+        "detail": "caught at line 1386 (gnu-only-command-form: stat -c)"
       },
       {
         "name": "planted GNU-only sort -V (accepted-but-ignored on BSD)",
         "caught": true,
-        "detail": "caught at line 1385 (gnu-only-command-form: sort -V)"
+        "detail": "caught at line 1386 (gnu-only-command-form: sort -V)"
       },
       {
         "name": "planted GNU-only grep -P",
         "caught": true,
-        "detail": "caught at line 1385 (gnu-only-command-form: grep -P)"
+        "detail": "caught at line 1386 (gnu-only-command-form: grep -P)"
       },
       {
         "name": "planted GNU-only sed -i in-place form (argv shape)",
         "caught": true,
-        "detail": "caught at line 1385 (gnu-only-command-form: sed -i (GNU form))"
+        "detail": "caught at line 1386 (gnu-only-command-form: sed -i (GNU form))"
       },
       {
         "name": "planted sha256sum laundered through a local spawn wrapper",
         "caught": true,
-        "detail": "caught at line 1386 (denylisted-binary-in-spawned-command: sha256sum)"
+        "detail": "caught at line 1387 (denylisted-binary-in-spawned-command: sha256sum)"
       },
       {
         "name": "PRECISION: the same spawn text inside a string literal is not a spawn",
@@ -219,12 +219,18 @@
     ],
     "ok": true
   },
-  "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
-  "sourceFingerprint": "cb86c59603cc4c331526ab1c1fc72a89ce4142f6c4f4cbac2b4832ba6bc65e52",
-  "sourceFingerprintAlgorithm": "sha256 over raw file bytes (node:crypto; no process spawn)",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "sourceFingerprint": "8f156b68257952e2e20aa72585047fe6348c926646522ea0eb7e08a2899e1ed9",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m24/verify-positions.ts",
+    "src/lsp/positions.ts",
+    "script/m24/portability.ts",
+    "script/m24/verify-hover.ts"
+  ],
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-10-05T16:45:45.713Z",
+  "generatedAt": "2026-10-05T22:37:53.242Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -238,7 +244,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T16:45:45.714Z",
-    "contentSha256": "6c08e6b119e6dbac1c694c9eae2f27e99100617a411bbd2c509b17a4cdf25569"
+    "sealedAt": "2026-10-05T22:37:53.243Z",
+    "contentSha256": "82a461e5610ac3c0452b65734a90e508e267baff9233a77ce2424ff41994b2dc"
   }
 }

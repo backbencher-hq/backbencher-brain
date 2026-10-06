@@ -21,6 +21,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { readEvidence, writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { deriveU2, type DerivedSource, type U2Declaration } from "./hub-list-derivation.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -111,6 +112,12 @@ async function main(): Promise<void> {
     // The library is pure (no clock); the gate stamps and seals.
     generatedAt: new Date().toISOString(),
     gateCommit: currentCommit,
+    // The §8.4 fingerprint. `derived.record` spreads the SOURCE record's fields
+    // (this record is a derivation of U4's, per `derivedFrom`), and a
+    // derivation must not inherit a fingerprint computed over a different
+    // coverage — so the fields are stamped here, from THIS gate's declared
+    // coverage, AFTER the spread.
+    ...fingerprintFields(["m44.U2"], ROOT),
   }
   mkdirSync(dirname(OUT), { recursive: true })
   writeSealed(OUT, record)

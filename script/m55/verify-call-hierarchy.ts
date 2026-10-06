@@ -33,6 +33,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { T2_ROOT, T2_EXPECT, writeT2Fixture } from "./t2-fixture.ts";
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 const COMPONENT = path.join(ROOT, "src/lsp/call_hierarchy.ts");
@@ -1097,6 +1098,7 @@ function rewriteRelativeImports(source: string): string {
       componentImportsAtThisRun: relativeImportsOfComponent(),
     },
     currentCommit,
+    ...fingerprintFields(["m55.T2"], ROOT),
     workingTreeRelevantChanges: workingTreeDirty,
     /**
      * §8.2 — "byte-identical modulo timestamps declared as such" is only

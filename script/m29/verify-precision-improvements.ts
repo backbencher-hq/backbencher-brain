@@ -29,6 +29,7 @@ import path from "node:path"
 import { probeFixture, seedTierFixture } from "./r5-tier-fixture.ts"
 import { createRequire } from "node:module"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const require = createRequire(import.meta.url)
@@ -195,6 +196,7 @@ const result = {
   verdict: { realComponentFailures: failed, mutantsCaught: mutants.caught, mutantsTotal: mutants.total, ok: mutants.caught === mutants.total },
   currentCommit: gitCommit(),
   verifierCommand: "npx tsx script/m29/verify-precision-improvements.ts",
+  ...fingerprintFields(["m29.R5-verify"], ROOT),
   evidenceFile: "R5-verify.json",
   generatedAt: new Date().toISOString(),
   details: details.slice(0, 10),

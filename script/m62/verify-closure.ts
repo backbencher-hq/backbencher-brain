@@ -40,6 +40,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { readEvidence, writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { SEED } from "./a1-fixture.ts"
 import {
   EXPECTED_CODES,
@@ -440,6 +441,7 @@ async function main(): Promise<void> {
     mutantsCaught: 0,
     mutantsTotal: 0,
     currentCommit,
+    ...fingerprintFields(["m62.X1"], ROOT),
     verifierCommand: "npx tsx script/m62/verify-closure.ts",
     evidenceFile: "X1.json",
     generatedAt: new Date().toISOString(),
