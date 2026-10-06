@@ -346,6 +346,41 @@ function ownerPathOf(container: ZigWalkSymbol | null): string | undefined {
   return container.zigOwnerPath ?? container.name
 }
 
+/**
+ * A member's own PUBLISHED spelling — `scope ? scope + "." + name : name`, the
+ * exact expression the shared projection applies when it fills `qualifiedName`
+ * (`pool-worker.ts:997`), with `scope` being this symbol's `ownerName`
+ * (`mkSymbol`: `scope: ownerName ?? undefined`).
+ *
+ * ## Why ONE function and not the expression repeated
+ *
+ * Because this analyzer has already paid for getting it wrong. Z-p22 fixed the
+ * SOURCE half of a `contains` edge — the owner path — and left the TARGET half
+ * spelling a bare member name, so the two halves of one edge lived in two
+ * coordinate systems and the target matched no published `qualified_name` at all.
+ * M60 cause A fixed the target half, and the `contains` endpoint alias table in
+ * `annotateTargetScope` then had to be taught the same spelling or the three
+ * `meta.targetScope: file-local` fixtures read `file-external` — three sites
+ * disagreeing about one string.
+ *
+ * So the expression lives here, once, and both the emitter and the alias table
+ * call it. A site that needs it a third time should call this rather than
+ * re-derive it, because the failure mode is silent: the edge still emits, it just
+ * resolves to nothing, which reads as a corpus fact rather than a spelling bug.
+ *
+ * NOTE this is called BEFORE `canonicalizePublishedNames` runs, so `name` may
+ * still carry `@"…"` quoting while `ownerName` is already stripped (it is built
+ * per component). That is deliberate and it is what keeps the two sites equal:
+ * the emitter and the alias table run at the same point in the pipeline, so both
+ * see the same spelling and agree. The later stripping pass then rewrites both
+ * sides identically.
+ */
+function publishedSpelling(s: { name?: string | null; ownerName?: string | null }): string {
+  const name = String(s.name ?? "")
+  const owner = s.ownerName
+  return owner ? `${owner}.${name}` : name
+}
+
 export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -1113,7 +1148,42 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (s.ownerName) {
         relationships.push({
           source: s.ownerName,
-          target: s.name,
+          // M60 cause A — the target is the member's own PUBLISHED SPELLING, which
+          // is what Z-p22 above already established for the SOURCE and this edge
+          // never followed on the target half.
+          //
+          // The projection spells a symbol `scope ? scope + "." + name : name`
+          // (pool-worker.ts:997) and `scope` is this symbol's `ownerName`
+          // (see `mkSymbol`'s `scope: ownerName ?? undefined`). So the string this
+          // edge targets IS the member's published `qualified_name`, and the store
+          // resolves it on its FIRST strategy: `target_external = qualified_name`
+          // is an exact JOIN (parallel-indexer.ts:4483-4495, `_res_qname` PRIMARY
+          // KEY), which binds one declaration by construction.
+          //
+          // A BARE member name reaches only strategy 2, which fires
+          // `_res_name.cnt = 1` — the name must be unique across the WHOLE project
+          // (parallel-indexer.ts:4506). No container member name ever is: the
+          // fleet's own corpus declares `init`, `deinit`, `assert` and `release`
+          // in dozens of files each. So the bare target was not merely imprecise,
+          // it was the one spelling guaranteed to fail the only strategy that
+          // could have carried it.
+          //
+          // MEASURED, 600-file stride sample, production `parseFile`, incoming-gate
+          // (which counts ambiguity by DECLARATION and indexes name + qualifiedName
+          // aliases): `contains` 13,690 edges — 8,993 resolved, 4,697 AMBIGUOUS,
+          // 0 unresolved. That 4,697 was the largest single ambiguous bucket in the
+          // lane, 24.6% of the 19,084 total. Priced over the FULL population first
+          // (3,834 files, 80,876 contains edges, `contains-qualify-control.ts`):
+          // FIX 31,800 / RISK 5 / LOST 797 / NEUTRAL 48,274 — i.e. +31,800 edges
+          // that resolve to exactly one declaration against 5 that stop doing so.
+          //
+          // The name SURFACE is untouched: `symbols.push({ name: s.name })` still
+          // publishes the bare member, so hover, navigation and every expectation
+          // file that reads `name` are unaffected. Only the edge endpoint changes.
+          // `source` still carries the owner, so containment survives independently
+          // of the target — the two halves are redundant by design, and this makes
+          // them agree.
+          target: publishedSpelling(s),
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           // M59.A7 (#825): a containment edge has no call site, but it has a
@@ -2899,9 +2969,28 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of symbols) {
       const n = String(s.name ?? "")
       if (!n) continue
-      const set = kindsByName.get(n) ?? new Set<string>()
-      set.add(String(s.kind ?? ""))
-      kindsByName.set(n, set)
+      // Indexed under BOTH spellings, and that is the store's own model rather
+      // than a convenience: the resolver keeps a `qualified_name` table (strategy
+      // 1, an exact JOIN) alongside a `name` table that only fires when the name
+      // is unique across the project (strategy 2, `_res_name.cnt = 1`).
+      // `incoming-gate.ts` aliases the same two keys for the same reason.
+      //
+      // The qualified alias is what keeps a `contains` target — which since M60
+      // cause A spells the member's published name — labelled `file-local`. Without
+      // it the three fixtures pinning `meta.targetScope: file-local` read
+      // `file-external`, which is a claim about the file that was false: the
+      // declaration is in the file, under the name the edge now names.
+      //
+      // The bare key is retained because every OTHER relationship type still emits
+      // a bare target, so dropping it would relabel `calls`/`uses`/`references`.
+      const addKey = (k: string): void => {
+        const set = kindsByName.get(k) ?? new Set<string>()
+        set.add(String(s.kind ?? ""))
+        kindsByName.set(k, set)
+      }
+      addKey(n)
+      const qualified = publishedSpelling(s)
+      if (qualified !== n) addKey(qualified)
     }
     const MARKERS = new Set(["(global)", "(file)", "(declared-type)", "(import)", "(local)"])
     for (const r of relationships) {

@@ -970,13 +970,57 @@ So: 307 hits, **0 of which is an implementation clause**. A Wayland `<interface>
 paragraph of documentation. A non-zero count of an element carrying an
 implementation clause — not a declaration of one — overturns the ruling.
 
-**Second finding from the same 261 sites, owed and not fixed here:** the Wayland
-protocol vocabulary is not in `DECLARATION_VOCABULARIES`, so 261 interface
-declarations are published under their tag name rather than the `name` attribute
-they carry. That is the declared-name recall gap X1 fixed for XSD, in a vocabulary
-nobody had listed. It is a recall gap, not a correctness one, and adding the
-vocabulary is a change to a shared table with 261 corpus sites of blast radius —
-recorded as owed rather than done in passing.
+**Second finding from the same 261 sites, owed, and the reason it was owed was WRONG.**
+This paragraph previously said the Wayland protocol vocabulary is missing from
+`DECLARATION_VOCABULARIES` and that adding it "is a change to a shared table with 261
+corpus sites of blast radius". **The table is not shared.** It is
+`RealXmlAnalyzer.DECLARATION_VOCABULARIES`, a `private static readonly` in
+`src/ast/real-xml-analyzer.ts:146` — this lane's own file. So the item was never blocked
+by ownership, and "shared table" was a reason that did not exist. It is refused now for a
+reason that does, measured by
+`validation/m14/fixtures/xml/wayland-vocabulary-blast-radius.mts`.
+
+**The real obstacle is that the vocabulary is namespace-less and the table is
+namespace-keyed.** The Wayland protocol files are `<protocol name="…">` with no `xmlns`,
+so an entry for them can only be keyed by the empty namespace — and every local name in it
+would then be claimed in **every** namespace-less document. Measured on the whole corpus,
+11,611 xml-admitted files by extension of which 11,552 were read (15 over 512 KB, 44
+unreadable — and 11,611 − 15 − 44 = 11,552 is exactly the arbiter's admitted count, so this
+probe reproduces the gate's population rather than approximating it):
+
+| local name | sites in namespace-less files | files | what those files actually are |
+| --- | ---: | ---: | --- |
+| `entry` | 3,154 | 21 | a docsets file, DocBook DTD-driven tables |
+| `arg` | 991 | 10 | Maven POMs (`clojure/build.xml`, a dbeaver `pom.xml`), libxslt API prose |
+| `property` | 678 | 67 | dbeaver plugin descriptors |
+| `interface` | 308 | 5 | **1 Wayland file and 4 DocBook prose documents** |
+| `description` | 213 | 45 | Writerside rules, FSharp.Data test data, ansible comps |
+| `enum` | 77 | 2 | 1 Wayland, 1 libxslt API doc |
+| `copyright` | 56 | 40 | Eclipse feature manifests |
+| `event` | 41 | 2 | 1 Wayland, 1 dbeaver plugin descriptor |
+| `request` | 4 | 2 | 1 Wayland, 1 phpunit fixture |
+| `protocol` | 1 | 1 | Wayland |
+
+**A namespace-less entry claims 5,523 sites across 195 files to recover 261 declarations in
+2 — an over-claim of 21×, and the over-claim is not near-miss noise.** Four of the five
+files claiming `<interface>` are DocBook documents where the element is prose structure;
+`<entry>`'s 21 files include an Alamofire docsets file and DocBook `tblcals.xml` /
+`tblxchg.xml`. Declaring those sites would publish wrong names at 21× the size of the
+defect it repairs, which is the fabrication class this lane treats as its most expensive
+available mistake.
+
+**What would overturn this refusal**, so it is a falsifiable claim and not a preference: a
+measurement showing a namespace-less vocabulary can be scoped to a *file* rather than to
+the empty namespace — i.e. that the effective namespace a document presents to
+`DECLARATION_VOCABULARIES` can carry the document's own identity, which is §8 item 9's
+file-scoped identity arriving at the analyzer rather than only at the store. A root element
+with a `name` attribute and no `xmlns` is a *heuristic* discriminator, not an identity, and
+`libxslt/tests/docbook/test/book2.xml` satisfies it as well as the Wayland file does, which
+is why it is not used here.
+
+**Left owed, at 261 declarations in 2 files of 11,552** — 0.002 % of the admitted
+population and 261 of 201,634 edges. It is stated here rather than in §8 because the
+obstruction is in this lane's file and the number is small enough to name exactly.
 
 #### `overrides` — was RULED, the corpus overturned it, and the type is EMITTED
 
@@ -3444,4 +3488,72 @@ mutants caught, 0 survivors** (was 21/23 with 2 survivors).
 
 ## Issue
 
-M12.35 / GitHub issue #174.
+## The arbiter died once, silently, and the runner hid it
+
+### The observation, and why it is not a verdict
+
+`BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` is the only
+instrument that produces a MEASURED verdict for this lane, and it produced two different
+outcomes from one unchanged tree, minutes apart, with no edit between them:
+
+| run | exit | verdict rows | `[BB-PARSE-ERR]` | `[BB-HANG]` | child stderr |
+| --- | ---: | ---: | ---: | ---: | --- |
+| A | **1** | **0 — no table at all** | 0 | 0 | not recoverable |
+| B | 0 | 10 | 0 | 0 | clean |
+| C | 0 | 10 | 0 | 0 | clean |
+| D | 0 | 10 | 0 | 0 | clean |
+| E | 0 | 10 | 0 | 0 | clean |
+
+Run A stopped after `corpus: 11552 admitted files`, so the child died inside
+`await Promise.all(…worker())` — the walk itself, before instrument A and before either
+instrument-B probe. **No verdict is claimed from run A, and none is claimed from the four
+that succeeded beyond what they printed.** The count of runs is 5; the count of failures is
+1; **n is too small to state a rate** and the cause is not identified.
+
+### Why the cause is not identified, which is the part that was fixable
+
+The runner filtered the child's stderr down to `[BB-PARSE-ERR]` and `[BB-HANG]` lines and
+dropped everything else. Run A carried neither, so the runner's own output for it was
+`patched gate exit status: 1` and silence. An unhandled exception, an OOM kill, a thrown
+assertion and a gate that declined to answer were four identical outputs. The evidence did
+not survive the instrument that produced it, and no amount of re-running could have
+recovered it after the fact.
+
+`ruled-gate.ts` now writes the whole stderr to
+`/tmp/opencode/xml-ruled-proof/child-exit<N>.log` and prints its last 25 lines whenever the
+child exits non-zero with no table and no `[BB-HANG]`, and says plainly that there is no
+result in that run. It does not convert a failure into a verdict, and it does not retry.
+
+### What the code says can happen, offered as hypotheses and not as findings
+
+Three exits in the shared gate reach `process.exit(1)` or set `exitCode = 1`: `:335`
+(exit 0), `:342` (exit 2) and `:394` (`exitCode = falsified.length + unjustified.length ===
+0 ? 0 : 1`). `:394` runs *after* the verdict loop, so it cannot produce a run with no
+table. That leaves a death inside the walk, and `worker()` wraps its only fallible call
+(`try { r = await parseFile(f.abs, f.dir) } catch { continue }`, `:226`), so a rejection
+thrown there is caught. What is **not** caught is a top-level `await` rejection escaping the
+module — `await Promise.all(…)` at `:237` has no `.catch` — which in an ESM module exits 1
+with the error on stderr, and `process.exit(1)` from `src/ast/engine.ts:1442` fires only
+with its `[BB-HANG]` line, which run A did not have.
+
+**These are three candidate mechanisms, not a diagnosis.** Distinguishing them needs the
+stderr of a failing run, which is exactly what the runner could not previously produce, and
+which it now writes. Until a failing run is captured, this lane's claim is exactly the
+narrow one: *the arbiter can die silently, and before this commit it took its evidence with
+it.*
+
+### Why this is filed as §8 item 10 and not fixed here
+
+The defect is in shared machinery this lane does not own — `script/m14/ontology-coverage-gate.ts`
+has no per-file resilience in its walk, and there is no
+`resumable-walk.ts` call in it, although one exists and other lanes use it. The two
+workarounds in the runner (patch 4 lowers the worker count; patch 5 measures the B walk) are
+declared in its header as lane-local and temporary for that reason.
+
+**A cross-check that does support the existing item 3 conclusion and narrows it.** §8 item 3
+measured that the fault tracks concurrency and not the document, at n=8 with the result
+recorded INCONCLUSIVE. Run A happened at `BB_XML_WORKERS=1` — the lowest count the runner
+offers — on a tree that had just produced a clean run at the same count. So the trigger is
+not this lane's worker count alone. Host load was not measured, and with six to twenty-three
+lanes sharing one 8-core box it is the obvious next variable; stating it as the next
+variable is not the same as showing it, and it is not shown.

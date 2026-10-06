@@ -70,6 +70,7 @@ import { CLEAN_RULED } from "./clean-ruled"
 import { R_RULED } from "./r-ruled"
 import { GRAPHQL_RULED } from "./graphql-ruled"
 import { DART_RULED } from "./dart-ruled"
+import { POWERSHELL_RULED } from "./powershell-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
@@ -265,6 +266,7 @@ clean: CLEAN_RULED,
   r: R_RULED,
   graphql: GRAPHQL_RULED,
   dart: DART_RULED,
+  powershell: POWERSHELL_RULED,
 }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 

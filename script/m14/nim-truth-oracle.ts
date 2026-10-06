@@ -744,7 +744,40 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
   // reader that consumes it. Convention checked against real-c-analyzer.ts:1191
   // (M60/#910), where the same class of gap was fixed for C.
   const emitImport = (pathText: string): void => {
-    if (pathText) push("imports", "(global)", pathText)
+    if (pathText) push("imports", "(global)", moduleNameOf(pathText))
+  }
+
+  /**
+   * The MODULE NAME an import path denotes — its last segment.
+   *
+   * This is the analyzer's contract as of the module-symbol pass, and this oracle
+   * predates it: it pushed the path AS WRITTEN, so the cross-check reported 543
+   * MISSING and 543 of 569 UNEXPLAINED, every row `imports`, every pair the same
+   * module under two spellings (`std/options` vs `options`, `./common/ast` vs
+   * `common/ast`). A differential disagreement that is one contract change on both
+   * sides is not a finding about either, and leaving it in place would have this
+   * oracle reporting 0 unexplained for a set of edges that were wrong when written.
+   *
+   * WHY the last segment is the right answer rather than the two sides agreeing
+   * again: a `.nim` file IS a module, it is the unit `import` names, and the
+   * analyzer publishes one symbol per file named by the file's basename — so
+   * `std/options` names module `options` and the edge has to name the same string
+   * the symbol publishes or it binds to nothing. Measured: `imports` went from
+   * 37.1% to 92.0% both-ends resolution across the 6,063-file corpus when the edge
+   * was retargeted and the module symbol published. The written path is not lost —
+   * it is kept on `meta.nimModulePath`, which `brain_import` and the file-dependency
+   * engine read.
+   *
+   * The segmentation mirrors the analyzer's `moduleNameOfPath` deliberately and is
+   * written out rather than shared, because two implementations agreeing is the
+   * only corroboration this cross-check has: sharing one function would make the
+   * oracle unable to disagree about it, which is the whole defect class
+   * `ontology-coverage-gate.ts` exists to catch.
+   */
+  const moduleNameOf = (p: string): string => {
+    const stem = p.replace(/^["']/, "").replace(/["']$/, "")
+    const segs = stem.split("/").map((s) => s.trim()).filter((s) => s.length > 0)
+    return segs.length === 0 ? "" : segs[segs.length - 1]
   }
   const walkImports = (n: any): void => {
     if (n.type === "import_statement") {
