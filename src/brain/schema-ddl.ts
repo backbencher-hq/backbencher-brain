@@ -416,19 +416,32 @@ export const ANNOTATION_DDL = `
  * see ensureAnnotationTable). A BEFORE trigger is additive, survives reopening,
  * and refuses the write loudly instead of letting a mislabelled note be rendered
  * to a human as a human's own note.
+ *
+ * WHY THE MESSAGE IS A STATIC LITERAL (measured, 2026-10-06): the previous
+ * revision interpolated the offending value --
+ *   RAISE(ABORT, '... (got: ' || COALESCE(NEW.author_class,'NULL') || ')')
+ * -- and SQLite's CREATE TRIGGER parser REJECTS an expression in RAISE's
+ * message argument ("near \"||\": syntax error"). Every brain.db this tool
+ * wrote was therefore unreadable by any SQLite client, while the indexer
+ * still reported success. Verified on sqlite 3.43.2: the `||` form is
+ * rejected; a static literal is accepted and refuses exactly the same
+ * writes (NULL, absent column, a value outside the set, and an UPDATE into
+ * it) while accepting a valid one. The price is that the message can no
+ * longer name the offending value; it must not pretend to. See
+ * script/m28/verify-annotation-store.ts for the enforcement proofs.
  */
 export const ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL = `
     CREATE TRIGGER IF NOT EXISTS brain_annotation_author_class_guard
     BEFORE INSERT ON brain_annotation
     WHEN NEW.author_class IS NULL OR NEW.author_class NOT IN ('agent', 'human')
     BEGIN
-      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human'' (got: ' || COALESCE(NEW.author_class, 'NULL') || ')');
+      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human''');
     END;
     CREATE TRIGGER IF NOT EXISTS brain_annotation_author_class_guard_update
     BEFORE UPDATE OF author_class ON brain_annotation
     WHEN NEW.author_class IS NULL OR NEW.author_class NOT IN ('agent', 'human')
     BEGIN
-      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human'' (got: ' || COALESCE(NEW.author_class, 'NULL') || ')');
+      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human''');
     END;
   `
 
@@ -439,12 +452,37 @@ export function ensureAnnotationTable(raw: any): void {
   } catch {}
   // The author-class guard is part of the same additive, idempotent migration:
   // a pre-existing DB gains it on the next open, exactly like the table and the
-  // location index. Failures stay swallowed (a read-only or busy open must not
-  // fail because a trigger could not be created) — the same contract as every
-  // other migration here.
+  // location index.
+  //
+  // WHY THIS IS NO LONGER SILENT (measured 2026-10-06): the exec was wrapped in
+  // `catch {}`, and a MALFORMED trigger body is a parse error, not a busy or
+  // read-only database. So the previous revision of this DDL — which put a `||`
+  // expression inside RAISE(), which SQLite's CREATE TRIGGER parser rejects —
+  // threw here, was swallowed, and every brain.db the tool wrote was left with
+  // an unreadable schema while the indexer still reported success. 800 local
+  // indexes carried it.
+  //
+  // A closed catch is still permitted for the genuinely transient case (a
+  // read-only or busy open), but a SCHEMA DEFECT must be loud: it is not a
+  // condition that heals on retry, and swallowing it manufactures a green
+  // result over a broken artifact. So the failure is re-checked by parsing the
+  // schema back, and re-thrown when the database cannot be read.
   try {
     raw.exec(ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL)
-  } catch {}
+  } catch (error) {
+    // Distinguish "could not create the guard right now" (transient — a
+    // read-only or busy handle) from "the schema is now malformed" (permanent —
+    // the database cannot be read at all). Only the second is re-thrown.
+    try {
+      raw.prepare("SELECT count(*) FROM sqlite_master WHERE type='trigger'").all()
+    } catch (unreadable) {
+      throw new Error(
+        `annotation author-class guard failed AND the schema is unreadable after it: ${String(
+          (unreadable as { message?: string })?.message ?? unreadable,
+        )}`,
+      )
+    }
+  }
 }
 
 /**
