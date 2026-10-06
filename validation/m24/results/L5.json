@@ -2,31 +2,47 @@
   "issue": "494",
   "code": "L5",
   "status": "verified",
-  "currentCommit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
-  "sourceFingerprint": "a5a92ec983f3355b9d597e7920588237241159b709ec851538c42683aaa48514",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "sourceFingerprint": "fae25d6f5fadf55e91a60f4d0375f9e3e0e7fb220f6c79d00c52f2c826148de1",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m24/verify-call-hierarchy.ts",
+    "src/brain/freshness.ts",
+    "src/lsp/call_hierarchy.ts",
+    "src/lsp/symbols.ts",
+    "script/m24/position-inline-gate.ts"
+  ],
   "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
   "evidenceFile": "L5.json",
-  "generatedAt": "2026-09-26T23:03:54.659Z",
-  "passed": 20,
+  "generatedAt": "2026-10-05T22:26:18.413Z",
+  "passed": 97,
   "failed": 0,
   "failures": [],
-  "negativeCases": 0,
+  "negativeCases": 16,
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 5,
-    "mutantsTotal": 5,
+    "mutantsCaught": 23,
+    "mutantsTotal": 23,
+    "mutantsNotJudged": 0,
+    "mutantsJudged": 23,
+    "mutantGroups": {
+      "callHierarchy": 10,
+      "d4CrossCheck": 13
+    },
     "ok": true,
-    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
+    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block. `mutantsNotJudged` counts a mutant the harness could not judge (missing anchor or an import failure) — an import failure is NOT counted as caught, because the oracle never ran. The pre-lane suite reported 5/5 caught while all five mutants had died on an unrewritten `./signature` import."
   },
   "limitations": [
     "adapter proven against a fixture double reproducing the engine contract; the engine itself is M14-verified and exercised end-to-end by the V1 harness",
     "heuristic edges from the engine are included; their ratio is declared by the engine's provenance",
     "ranges for engine nodes use line-level precision when the engine lacks byte columns",
-    "latency measured on this machine only; cross-platform budgets are M25 scope"
+    "latency measured on this machine only; cross-platform budgets are M25 scope",
+    "the machine-readable absence reason is carried on the component result; src/lsp/server.ts (another lane) maps the wire response and currently returns a bare `null` / bare `[]` — the exact patch is reported",
+    "the declared-absence and staleness vocabulary lives in src/lsp/symbols.ts (this lane owns both files); a dedicated src/lsp/declared_absence.ts owner would be the right home and is reported"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-26T23:03:54.663Z",
-    "contentSha256": "6c223fa646def3a47d1354c2aff06fc57cccaf39f0bef2940c3f1a48a5980ed5"
+    "sealedAt": "2026-10-05T22:26:18.415Z",
+    "contentSha256": "15443157ff5fb209fde31c2fc48885e097445be65ffd5beb52212cd525afe89d"
   }
 }

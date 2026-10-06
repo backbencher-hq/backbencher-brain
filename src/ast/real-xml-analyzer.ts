@@ -54,16 +54,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     Name: "the name-bearing leaf for tags, attributes, PIs, DTD declarations and notations",
     Attribute: "a property of its element, and the source of `references` / `imports` edges for its value",
     doctypedecl: "a Type symbol naming the DTD, plus its ExternalID import",
-    ExternalID: "a file reference on a doctypedecl, entity or notation",
+    ExternalID: "a file reference on a doctypedecl, entity or notation — ONLY when it carries a SystemLiteral",
     SystemLiteral: "the file path inside a SYSTEM ExternalID",
-    PubidLiteral: "the public identifier inside a PUBLIC ExternalID",
+    PubidLiteral: "the public identifier inside a PUBLIC ExternalID; a catalogue name, not a path",
     elementdecl: "a Type symbol for a DTD element declaration; its contentspec is the content model",
     AttlistDecl: "the element whose attributes are declared here",
     AttDef: "a Property symbol plus a `contains` edge from the element it is declared for",
     GEDecl: "a general entity declaration: a Type symbol owned by the DTD, plus its ExternalID import",
     PEDecl: "a parameter entity declaration: a Type symbol owned by the DTD, plus its ExternalID import",
     NotationDecl: "a notation declaration: a Type symbol owned by the DTD, plus its ExternalID import",
-    PublicID: "a file reference on a NotationDecl",
+    PublicID: "a PUBLIC identifier on a NotationDecl; it names NO file, so it publishes no import",
     NDataDecl: "the notation an unparsed entity points at: a `contains` edge",
     contentspec: "the content model of an element declaration; each Name leaf becomes a `contains` edge",
     NotationType: "the notations an attribute may carry: each Name leaf becomes a `contains` edge",
@@ -272,7 +272,20 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     dtd_attribute_declaration: "structural",
     dtd_content_model: "usage_contextual",
     dtd_notation_reference: "usage_contextual",
-    dtd_ndata_notation: "structural",
+    // NOT `structural`, and the containment ledger is what moved it. XML 1.0 §4.5
+    // writes the clause as "NDATA NotationName", naming a notation that the DTD
+    // declares ELSEWHERE — and necessarily EARLIER, so the notation's declaration is
+    // never inside the entity's. Measured over the full 11,464-file admitted
+    // population: 2 edges, `libxslt/tests/general/bug-21-.xml` (`<!ENTITY test SYSTEM
+    // "test.jpg" NDATA JPEG>` with `<!NOTATION JPEG …>` at 96-130 and the entity at
+    // 131-174) and `libxslt/tests/general/bug-52.xml`, and in both the target's span lies
+    // entirely BEFORE the source's. A `structural` tier is a claim that nesting was
+    // observed, and no nesting was; `usage_contextual` already defines this exact shape
+    // one row up — "a containment the document states through an attribute rather than
+    // through nesting" — and the DTD content model is its precedent. Two edges is not
+    // worth a new relationship type, and relabelling them `references` would be worse:
+    // `references` resolution has four classes and this construct is not one of them.
+    dtd_ndata_notation: "usage_contextual",
     dtd_entity_declaration: "structural",
     dtd_parameter_entity_declaration: "structural",
     dtd_notation_declaration: "structural",
@@ -294,6 +307,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the vocabulary element IS the declaration of the relation, so the fact needs
     // nothing outside the file, exactly as a parent/child edge does.
     xsd_derivation_base: "structural",
+    // XSLT 1.0 §5.5 competing template rules. `structural`, not `inferred`: both
+    // declarations and the three attributes that make them compete are read straight
+    // off the tree, and the only thing the spec contributes is WHICH of two colliding
+    // declarations wins — a direction, recorded in `metadata.derivation`, not a guess
+    // about whether the relation exists. Leaving this role unmapped let `addRelationship`
+    // label every one of these edges `inferred`, which is the tier the ontology census
+    // counts as heuristic: a deterministic parse fact filed as a guess, and the census
+    // row `tier inferred = 0` would have become false without anything changing in the
+    // analyzer's behaviour.
+    xslt_competing_template_rule: "structural",
     // An entity use is reached through a NAME in the document's own DTD, not
     // through a declared namespace prefix — but it is a reference to a
     // declaration all the same, and `usage_contextual` would say the document is
@@ -513,6 +536,32 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
      * from the vocabulary declaration rule and nothing else.
      */
     const declaredTemplateNames = new Set<string>()
+
+    /**
+     * MATCH-BASED `xsl:template` DECLARATIONS, collected for the `overrides` pass.
+     *
+     * One row per `xsl:template` in the XSLT namespace that carries a `match`
+     * attribute, keyed on the triple XSLT 1.0 §5.5 defines a template rule's identity
+     * by: pattern, mode and priority. Two rows sharing a key are two declarations that
+     * replace one another, which is the only sense this language has an override.
+     *
+     * Collected and not decided, for the same reason as `callCandidates`: a second
+     * template may be declared anywhere later in the file, so a rule that decided on
+     * sight would drop every forward declaration.
+     */
+    const competingTemplates: {
+      key: string
+      /** The `name` attribute's value when the template has one, else "". */
+      declaredName: string
+      match: string
+      mode: string
+      priority: string
+      node: Node
+      /** The `match` attribute node: the line the identity is written on. */
+      anchorNode: Node
+      /** The enclosing element's own symbol, so the derived identity is owned too. */
+      ownerName: string | undefined
+    }[] = []
 
     /**
      * ENTITY USES — M60 M18. `&name;` in content is a real reference to a
@@ -752,11 +801,11 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // still COUNTS them, because a symbol published from a file the analyzer
     // then reports as erroneous has to say so on the symbol.
 
-    type WorkItem = { node: Node; ownerName?: string; dtdName?: string; bindDepth?: number }
+    type WorkItem = { node: Node; ownerName?: string; dtdName?: string; bindDepth?: number; nearestNamedDeclaration?: string }
     const work: WorkItem[] = [{ node: rootNode }]
 
     while (work.length > 0) {
-      const { node, ownerName, dtdName, bindDepth } = work.pop()!
+      const { node, ownerName, dtdName, bindDepth, nearestNamedDeclaration } = work.pop()!
       // Leaving an element's subtree: put the outer namespace map back.
       while (bindingScopes.length > (bindDepth ?? 0)) {
         const scope = bindingScopes.pop()!
@@ -787,6 +836,46 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const declaredName = declaration?.name
           const symbolName = declaredName ?? name
 
+          // ── THE NEAREST NAMED DECLARATION ABOVE THIS ELEMENT ──────────────────
+          //
+          // This exists for two edge types, and it exists because the obvious owner was
+          // MEASURED to be fabricated: 100% of `extends` and 90.3% of `calls`.
+          //
+          // `extends` relates two TYPES and `calls` relates a CALLER TO A CALLEE. XSD writes
+          // type derivation as a `base=`
+          // attribute on an inline `<xs:extension>`/`<xs:restriction>` (XSD 1.0 Part 1
+          // §3.4.2), and that element carries no `name` of its own — so line 824's
+          // `symbolName = declaredName ?? name` falls back to the TAG TEXT, and lines
+          // 908-925 hand that text to `extractAttribute` as the attribute's owner. The
+          // edge came out as:
+          //
+          //   <xs:simpleType name="SKU">
+          //     <xs:restriction base="xs:string">        -> "xs:restriction" -> "string"
+          //   <xs:element name="quantity">
+          //     <xs:simpleType>
+          //       <xs:restriction base="xs:positiveInteger">
+          //                                                  -> "xs:restriction" -> "positiveInteger"
+          //
+          // `xs:restriction` is not a type; it is the schema vocabulary's own word for a
+          // type CONSTRUCTOR, and a symbol with that name was published so the edge would
+          // have somewhere to hang. Over the full 11,456-file admitted population that was
+          // **438 of 438 edges — 100%, with zero sources that a document declares**
+          // (`validation/m14/fixtures/xml/derivation-accounting.mts`). It is the same defect
+          // class the lane brief names for powershell, which published a wildcard as a symbol
+          // name: a name in the graph that no file supports, which `bb_graph`, `bb_impact` and
+          // `bb_migrate` then present as a real type.
+          //
+          // The convention "an attribute belongs to the element it sits on" is CORRECT for
+          // `type=` — `<xs:element name="x" type="T">` really does give `x` the type `T` —
+          // and wrong only for `base=`, because a derivation element is not a named entity.
+          // What is being derived is its nearest ancestor that DECLARES a name. So this
+          // tracks that ancestor and `extractAttribute` uses it for `base` and nothing else.
+          const isNamedVocabularyDeclaration =
+            effectiveNamespace !== undefined
+            && RealXmlAnalyzer.DECLARATION_VOCABULARIES[effectiveNamespace]?.has(localName) === true
+            && declaredName !== undefined
+          const namedDeclarationForChildren = isNamedVocabularyDeclaration ? symbolName : nearestNamedDeclaration
+
           const elementSymbol: ASTEngine.UniversalSymbol = {
             name: symbolName,
             kind: ASTEngine.SymbolKind.Class,
@@ -799,7 +888,32 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             // at the ATTRIBUTE, while `elementRange` below keeps the structural
             // span so a reader can still find the element itself. Before this the
             // two readings shared one field and one of them had to be wrong.
-            range: declaration ? this.nodeToRange(declaration.nameNode) : this.nodeToRange(node),
+            //
+            // M60 (containment ledger, 2026-10-04): the ANCHOR is right about the
+            // line and wrong about the SPAN, and the span is what `contains` is made
+            // of. Anchoring the same-line case to the `name=` Attribute put the
+            // declaration's range INSIDE its own element, so
+            //
+            //   <define name="boolean">      symbol `boolean` @ name="boolean"
+            //     <choice>                   symbol `choice`  @ <choice>…</choice>
+            //
+            // produced the edge `boolean -contains-> choice` — which is TRUE — with a
+            // target that is not inside the source, and the attribute symbol `name`
+            // occupied the identical byte range as the declaration itself.
+            // Measured over 300 corpus files: 194 contains edges unverifiable by span
+            // nesting because two names shared one range, and 280 more whose source
+            // span did not enclose a child the source really does contain. Both are
+            // invisible to a resolution rate, which is 100 % on this type.
+            //
+            // So the all-on-one-line case anchors to the ELEMENT, and the reported LINE
+            // cannot move, because that is exactly the condition under which the
+            // element's row and the attribute's row are the same row. The other two
+            // shapes keep the Attribute / AttValue anchor and M19 exactly as measured —
+            // at the cost of leaving their containment unverifiable, which is 4 of
+            // 19,852 declarations and is declared rather than rounded away.
+            range: declaration
+              ? this.nodeToRange(declaration.allOnOneLine ? node : declaration.nameNode)
+              : this.nodeToRange(node),
             visibility: "public",
             ownerName,
             ownerKind: ownerName ? ASTEngine.SymbolKind.Class : undefined,
@@ -822,6 +936,44 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // An `xsl:template name="X"` is the only thing a `calls` edge may name.
           if (declaration && effectiveNamespace === "http://www.w3.org/1999/XSL/Transform" && localName === "template") {
             declaredTemplateNames.add(symbolName)
+          }
+          // A MATCH-BASED `xsl:template`, collected for the `overrides` pass below.
+          //
+          // This is a separate condition from the one above on purpose. A template
+          // carrying `match` and no `name` has `declaration === null`, so
+          // `symbolName` falls back to the TAG name and every match-based template in
+          // a stylesheet publishes the SAME symbol, `xsl:template`. That is correct
+          // for containment and useless for identity: two templates that XSLT 1.0
+          // §5.5 makes replace one another cannot be told apart if they share a name.
+          //
+          // Measured over the full 11,456-file admitted population, 3 sites in 3 files
+          // declare two templates competing at the same match/mode/priority — e.g.
+          // `libxslt/tests/docbook/fo/toc.xsl` lines 180 and 190, both
+          // `<xsl:template match="*" mode="toc.for.section">`. §5.5: "It is an error if
+          // a stylesheet contains more than one template with the same match and same
+          // import precedence", and the later one is the one that runs. The lane had
+          // RULED `overrides` inapplicable; the corpus overturned that ruling and
+          // `script/m14/ontology-coverage-gate.ts` reports it FALSIFIED, so the type
+          // is emitted rather than re-ruled.
+          if (effectiveNamespace === "http://www.w3.org/1999/XSL/Transform" && localName === "template") {
+            const matchAttr = this.findDirectAttribute(tagNode, "match")
+            if (matchAttr) {
+              const matchValue = this.attributeValueOf(tagNode, "match") ?? ""
+              const modeValue = this.attributeValueOf(tagNode, "mode") ?? ""
+              const priorityValue = this.attributeValueOf(tagNode, "priority") ?? ""
+              // The identity XSLT 1.0 §5.5 compares is the (pattern, mode, priority)
+              // triple, and it is the only identity a match-based template HAS.
+              competingTemplates.push({
+                key: `${matchValue}|${modeValue}|${priorityValue}`,
+                declaredName: declaration ? symbolName : "",
+                match: matchValue,
+                mode: modeValue,
+                priority: priorityValue,
+                node,
+                anchorNode: matchAttr,
+                ownerName,
+              })
+            }
           }
 
           if (ownerName) {
@@ -853,12 +1005,14 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
               callCandidates,
               derivationCandidates,
               ownerName,
+              nearestNamedDeclaration,
+              isNamedVocabularyDeclaration ? symbolName : undefined,
             )
           }
 
           for (let i = node.namedChildCount - 1; i >= 0; i--) {
             const child = node.namedChild(i)
-            if (child && child !== tagNode) work.push({ node: child, ownerName: symbolName, dtdName, bindDepth: bindingScopes.length })
+            if (child && child !== tagNode) work.push({ node: child, ownerName: symbolName, dtdName, bindDepth: bindingScopes.length, nearestNamedDeclaration: namedDeclarationForChildren })
           }
           continue
         }
@@ -1079,7 +1233,32 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             }, nameNode)
           }
 
-          const externalId = this.findDirectChild(node, "ExternalID") || (isNotation ? this.findDirectChild(node, "PublicID") : null)
+          // `PUBLIC "pubid"` WITH NO SYSTEM LITERAL NAMES NO FILE, so it is not an
+          // ExternalID and there is nothing to import. This used to read
+          // `ExternalID || (isNotation ? PublicID : null)`, and the `PublicID` branch is
+          // what produced the corpus's one fabricated `imports` edge:
+          //
+          //   libxslt/tests/general/bug-52.xml
+          //     <!NOTATION GIF PUBLIC "GIF">
+          //     <!ENTITY graphic SYSTEM "graphic.gif" NDATA GIF>
+          //   ->  GIF -imports-> GIF  role=notation_external_id  confidence=1
+          //
+          // The grammar makes the two shapes distinct nodes, and the distinction is the
+          // whole point: `SYSTEM "graphic.gif"` is an `ExternalID` with a `SystemLiteral`,
+          // while `PUBLIC "GIF"` is a `PublicID` with a `PubidLiteral` and nothing else.
+          // XML's own grammar allows `PUBLIC PubidLiteral` with no system literal
+          // precisely so a parser can resolve it from a catalogue — a symbolic name, not
+          // a path. Reading it as one is the same defect the powerShell round removed
+          // from `New-Object $type`: a value that is not a file published as a target.
+          //
+          // Measured both ways by `validation/m14/fixtures/xml/public-id-census.mts`, and
+          // the two agree, which is what makes this fix exactly scoped rather than a
+          // guess: 299 ExternalID/PublicID nodes over 11,552 files, 298 with a
+          // SystemLiteral and 1 without, and 469 `imports` edges of which 298 carry
+          // `externalIdKind: "system"` and 1 carries `"public"` — that same edge. The
+          // SystemLiteral path needs no change; the count matches to the edge.
+          const externalId = this.findDirectChild(node, "ExternalID")
+
           if (externalId) {
             this.extractExternalId(
               externalId,
@@ -1221,6 +1400,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             addRelationship(label, value, ASTEngine.RelationshipType.Imports, {
               role: "processing_instruction_href",
               attributeName,
+              resolvable: this.importTargetClass(value),
             }, valueNode)
             imports.push({
               module: value,
@@ -1260,7 +1440,20 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Same reasoning as the entity-replacement-text path: no length cap,
           // because the name is bounded by the file and the declaration side has
           // none either.
-          if (name.length > 0) entityReferenceCandidates.push({ ownerName, name, node, textNode: node })
+          //
+          // The SOURCE is `nearestNamedDeclaration`, the same re-base the
+          // `attribute_qname_reference` pass got, and for the same reason. The node
+          // here is CONTENT, so its owner is whatever element encloses the text:
+          // `<xsl:if>&gt;</xsl:if>` inside `<xsl:template name="row">` is used by
+          // `row`, and the edge said `xsl:if` — the instruction's own tag, an entity
+          // no document declares. The work item's `nearestNamedDeclaration` already
+          // means self-or-ancestor, so a `use` written directly in a named
+          // declaration keeps its source (`row -> amp`) and only the case with no
+          // name in scope falls back to the enclosing element, which is the value
+          // that was there before. Measured: 158 `references` edges still carried a
+          // vocabulary tag as source after the attribute pass alone, and this was
+          // the largest remaining class among them.
+          if (name.length > 0) entityReferenceCandidates.push({ ownerName: nearestNamedDeclaration ?? ownerName, name, node, textNode: node })
         }
       }
 
@@ -1307,10 +1500,34 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // corpus contains both `%xx;` and `% zz '&#60;` and only the first is a
           // use. The semicolon is the discriminator, and requiring it is what stops
           // a literal `%` in replacement text becoming a name.
+          //
+          // MEASURED, not assumed — `validation/m14/fixtures/xml/pereference-shape-probe.mts`
+          // runs three candidate predicates over every `PEReference` node it can
+          // obtain and prints both verdicts per node. The two guards above are BOTH
+          // load-bearing, which the prose here did not previously show:
+          //
+          //   shape                            semicolon  whitespace  published name
+          //   `%pe;`  in an internal subset    yes        no         pe      <- the reference
+          //   `% zz '&#60;`  (value form)      yes        YES        (none)  <- must stay dropped
+          //   `%pe`   in <!ELEMENT %pe EMPTY>  NO         no         (none)  <- must stay dropped
+          //
+          // The third row is why the semicolon test cannot be relaxed: the grammar's
+          // `PEReference` is `"%" Name ";"`, but on `<!ELEMENT %pe EMPTY>` — where the
+          // semicolon is missing — error recovery still yields a `PEReference` node
+          // whose single child is a `Name`. Reading that child publishes a use of `pe`
+          // from a document that never wrote `%pe;`.
+          //
+          // So the whitespace question below stays a question about TEXT, and it is
+          // the last thing in this analyzer that is. The reason is measured too: the
+          // whitespace guard is only reachable on shapes where the recovered node's
+          // structure does NOT decide the answer, which is exactly the case a
+          // tree-walk cannot express. Read on 11 obtainable nodes (4 fixture, 7
+          // synthetic, 0 corpus — see the probe's `corpus.counts`), replacing this
+          // test with `Name`-child lookup disagreed on 3 and was wrong on 2 of them.
           const semi = text.indexOf(";")
           if (semi > 1) {
             const ref = text.slice(1, semi).trim()
-            const isValueForm = ref.length === 0 || /\s/.test(ref)
+            const isValueForm = ref.length === 0 || RealXmlAnalyzer.containsEcmaWhitespace(ref)
             // Is this reference inside an ENTITY'S REPLACEMENT TEXT? It has to be
             // answered by walking UP — the first version asked the `PEReference`
             // node for a direct `EntityValue` child, which a reference never has,
@@ -1339,7 +1556,14 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const childDepth = bindDepth ?? 0
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) work.push({ node: child, ownerName, dtdName, bindDepth: childDepth })
+        // `nearestNamedDeclaration` is PROPAGATED UNCHANGED here, and it has to be: this
+        // is the generic tail every non-`element` node takes, and an XSD element's
+        // children live under a `content` node, so `<xs:sequence>` and every derivation
+        // beneath it are reached through here. Omitting it — which the first version of
+        // the fix did — left every real derivation with `owner=""` and silently dropped
+        // all 438 edges rather than mislabelling them. A fix that turns a wrong answer
+        // into no answer is worth noticing precisely because it is quieter.
+        if (child) work.push({ node: child, ownerName, dtdName, bindDepth: childDepth, nearestNamedDeclaration })
       }
     }
 
@@ -1572,6 +1796,108 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }, cand.textNode)
     }
 
+    // ── COMPETING TEMPLATE RULES (XSLT 1.0 §5.5) ────────────────────────────
+    //
+    // Two `xsl:template` declarations in one stylesheet with the same `match`, `mode`
+    // and `priority` are an ERROR in XSLT 1.0 §5.5 — "It is an error if a stylesheet
+    // contains more than one template with the same match and same import precedence"
+    // — and the processor resolves it by running the LATER one. That is an override in
+    // the only sense this language has one, and it is what this lane's `overrides`
+    // verdict now records.
+    //
+    // WHY THIS IS A GAP AND NOT A RULED TYPE: the lane ruled `overrides` inapplicable
+    // on a parse-tree count, and `script/m14/ontology-coverage-gate.ts` reported that
+    // ruling FALSIFIED over the full 11,456-file admitted population — 3 sites in 3
+    // files. The first counter-example found was `libxslt/tests/docbook/fo/toc.xsl`,
+    // which declares `<xsl:template match="*" mode="toc.for.section">` at line 180 and
+    // again at line 190. The gate exists because a differential cannot catch this: the
+    // oracle omitted the type for the same reason the analyzer did, so nothing
+    // disagreed with anything.
+    //
+    // DIRECTION: source is the template that WINS (the later declaration), target is
+    // the one it REPLACES. So the edge answers "what silently took this rule's place",
+    // which is the question a reader of a stylesheet with a duplicated rule has.
+    //
+    // THE ENDPOINT NAMES, and why they are safe. A match-based template has no `name`,
+    // so this analyzer gives it the TAG name `xsl:template` — and then every
+    // match-based template in the file is the same symbol, which is why this could not
+    // be emitted before. A colliding template therefore publishes a DERIVED identity
+    // built from the very triple §5.5 compares: `match=<pattern>|mode=<mode>|priority=
+    // <priority>`. Two properties make that safe rather than inventive:
+    //
+    //   1. It is DISJOINT from every name a document can declare. `|`, `=`, `<` and `>`
+    //    are not NCName characters (XML 1.0 §2.3: NameChar excludes all four), so no
+    //    `xsl:template name="…"` and no declared name in any vocabulary can equal it.
+    //    A derived identity can therefore never shadow, merge with or be mistaken for a
+    //    real name — it can only ever be its own thing.
+    //   2. It is published ONLY for templates that actually collide. 3 sites in 11,456
+    //    files, so the symbol table gains a handful of clearly-marked rows rather than
+    //    one per match-based template in the corpus.
+    //
+    // A template that DOES carry a `name` is published under that name, which is the
+    // better endpoint and is preferred; the derived identity is a fallback for the
+    // nameless case only.
+    {
+      const byKey = new Map<string, typeof competingTemplates>()
+      for (const t of competingTemplates) {
+        const arr = byKey.get(t.key) ?? []
+        arr.push(t)
+        byKey.set(t.key, arr)
+      }
+      for (const group of byKey.values()) {
+        if (group.length < 2) continue
+        // Do the members have DISTINCT declared names? If so those names are the better
+        // endpoints — they are written in the document. If they share one name, or have
+        // none, the declared name cannot separate the two declarations at all: two
+        // templates of one name ARE one name as far as the store is concerned, and an
+        // `overrides first -> first` self-edge carries no information a reader can use.
+        const declared = group.map((t) => t.declaredName)
+        const useDeclaredNames = declared.every((d) => d.length > 0) && new Set(declared).size === declared.length
+        // Document order is the order §5.5 resolves in, and `competingTemplates` is
+        // filled by a walk that visits elements in document order, so index N of a group
+        // is a stable property of the declaration rather than of the parse.
+        const identityOf = (t: (typeof group)[number], index: number): string => {
+          if (useDeclaredNames) return t.declaredName
+          const derived = `xsl:template[match=${t.match}|mode=${t.mode}|priority=${t.priority}]#${index}`
+          ensureTargetSymbol(derived, t.ownerName, ASTEngine.SymbolKind.Class, t.anchorNode, {
+            nodeType: "element",
+            tagName: "xsl:template",
+            isXmlElement: true,
+            // Marked, so a consumer can tell a derived identity from a declared one
+            // instead of inferring it from the punctuation.
+            derivedTemplateIdentity: true,
+            // The `name` attribute is carried here because a colliding pair usually
+            // shares one, or has none: dropping it would lose the only name the
+            // document actually wrote.
+            ...(t.declaredName.length > 0 ? { declaredName: t.declaredName } : {}),
+            templateMatch: t.match,
+            templateMode: t.mode,
+            templatePriority: t.priority,
+            templateOccurrenceInGroup: index,
+          })
+          return derived
+        }
+        const identities = group.map(identityOf)
+        for (let i = 1; i < group.length; i++) {
+          const winner = group[i]
+          const source = identities[i]
+          const target = identities[i - 1]
+          if (source.length === 0 || target.length === 0 || source === target) continue
+          addRelationship(source, target, ASTEngine.RelationshipType.Overrides, {
+            role: "xslt_competing_template_rule",
+            // The three attributes §5.5 compares, carried so a consumer can re-derive
+            // the collision instead of trusting the edge.
+            templateMatch: winner.match,
+            templateMode: winner.mode,
+            templatePriority: winner.priority,
+            derivation: "xslt-5.5-later-template-replaces-earlier",
+            resolvable: "in-document",
+            ...(winner.declaredName.length > 0 ? { declaredName: winner.declaredName } : {}),
+          }, winner.anchorNode)
+        }
+      }
+    }
+
     // ── XSD TYPE DERIVATION (XSD 1.0 §3.4.2) ─────────────────────────────────
     //
     // The four resolvability classes are the reference pass's, unchanged, because
@@ -1763,6 +2089,21 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * path, so the edge's line is the LITERAL's line (M59.A7 / #825) — passing the
    * `ExternalID` node instead points the edge at the `SYSTEM` keyword's line,
    * which is the line of no name in the edge.
+   *
+   * A `SystemLiteral` is REQUIRED and a `PubidLiteral` is not a substitute. The two are
+   * different things and only one of them is a file: `SYSTEM "graphic.gif"` names a path
+   * a parser opens, `PUBLIC "GIF"` names a symbolic identifier a parser matches against a
+   * catalogue. This read was `systemLiteral || pubidLiteral`, so the second stood in for
+   * the first and a public identifier became an edge target — the fabricated
+   * `GIF -imports-> GIF` in `libxslt/tests/general/bug-52.xml`, at `confidence: 1`, on a
+   * tier table that maps `notation_external_id` to `import_based`.
+   *
+   * The invariant lives HERE rather than only at the one caller that broke it, because
+   * this is the single point where the target string is created: any future caller that
+   * hands this a `PublicID` now gets nothing instead of an edge, which is the correct
+   * outcome for a node that carries no file. Measured by
+   * `validation/m14/fixtures/xml/public-id-census.mts` — 298 system-literal nodes and 298
+   * `externalIdKind: "system"` edges agree exactly, so nothing legitimate is lost.
    */
   private extractExternalId(
     externalId: Node,
@@ -1771,9 +2112,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     addRelationship: (source: string, target: string, type: ASTEngine.RelationshipType, metadata: Record<string, any>, node?: Node | null) => void,
     imports: ASTEngine.ImportInfo[],
   ): void {
-    const systemLiteral = this.findDirectChild(externalId, "SystemLiteral")
-    const pubidLiteral = this.findDirectChild(externalId, "PubidLiteral")
-    const literal = systemLiteral || pubidLiteral
+    const literal = this.findDirectChild(externalId, "SystemLiteral")
     if (!literal) return
     const path = this.unquote(literal.text)
     if (!path) return
@@ -1782,11 +2121,12 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       path,
       importType: "xml-doctype",
       range: this.nodeToRange(literal),
-      metadata: { isDtdExternalId: true, role, systemId: Boolean(systemLiteral) },
+      metadata: { isDtdExternalId: true, role, systemId: true },
     })
     addRelationship(owner, path, ASTEngine.RelationshipType.Imports, {
       role,
-      externalIdKind: systemLiteral ? "system" : "public",
+      externalIdKind: "system",
+      resolvable: this.importTargetClass(path),
     }, literal)
   }
 
@@ -1862,6 +2202,42 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
      * with forty call instructions the source would be one name forty times over.
      */
     elementOwnerName: string | undefined,
+    /**
+     * The nearest ancestor that DECLARES a name in a schema vocabulary — used for
+     * `base=` and nothing else.
+     *
+     * `elementOwnerName` is ONE level out, which is the right distance for `calls` and
+     * the wrong one for derivation: for
+     * `<xs:simpleType name="SKU"><xs:restriction base="xs:string">` the element that owns
+     * `<xs:restriction>` is the anonymous `<xs:simpleType>`, so `elementOwnerName` is
+     * `"xs:simpleType"` — still a vocabulary tag, still not the type being derived. `SKU`
+     * is two levels out and is the only name in that subtree that a document declares.
+     *
+     * There is deliberately NO fallback to `ownerName` or `elementOwnerName` here. Both
+     * can hold a vocabulary tag when no named ancestor exists, and emitting an edge from a
+     * vocabulary tag is the fabrication this parameter exists to remove. Undefined is the
+     * honest value, and `addRelationship` already refuses a falsy source.
+     */
+    nearestNamedDeclaration: string | undefined,
+    /**
+     * This element's OWN declared name, when it has one — undefined when it does not,
+     * which is the case that made `ownerName` a vocabulary tag.
+     *
+     * It is read at the same place `nearestNamedDeclaration` is (the walk knows both),
+     * and it exists because the SOURCE of a reference edge is the element that DECLARES
+     * the name being referenced FROM, and that is this element when this element has a
+     * name of its own. `<xs:element name="e" type="T"/>` is `e -> T`: the element `e`
+     * has the type `T`, and `ownerName` already said so. It is only when the carrier has
+     * NO name — `<xs:element ref="c"/>` inside `<xs:complexType name="PurchaseOrderType">`
+     * — that `ownerName` falls back to the TAG TEXT, and then the declarer is the nearest
+     * named ancestor.
+     *
+     * So the two parameters answer one question between them and the reference pass reads
+     * them in that order. Neither is a fallback for the other: `nearestNamedDeclaration`
+     * can never be right for an element that declares its own name, because the reference
+     * belongs to the declaration, not to its enclosing scope.
+     */
+    selfNamedDeclaration: string | undefined,
   ): void {
     // The OWNER's resolved namespace, carried on every reference candidate. X11:
     // a BARE value names a built-in type only when the element carrying it is
@@ -1905,7 +2281,53 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // search. Measured on libxml2's `err_1.xml` and two libxslt fixtures.
     if (!attributeName) return
     if (isNamespace && namespacePrefix.length === 0) return
-    const name = isNamespace ? namespacePrefix : attributeName
+    // M60: a namespaced attribute is published under its LOCAL name, and the
+    // written spelling (`xml:space`) is kept in metadata as `attributeName` plus
+    // the prefix as `namespacePrefix`. The prefix used to be part of the NAME.
+    //
+    // WHY, and it is not a naming preference — it is a measured resolution
+    // defect. The store reduces an edge target to its last `:`/`.` segment
+    // before any lookup (`parallel-indexer.ts:3375-3390`, `extractLeaf`), so an
+    // edge spelling `xml:space` is looked up as `space`, while the declaration it
+    // names was published as `xml:space`. Nothing matches: no strategy binds it.
+    // Measured on the 120-file draw `08d7fb24a87da7e7` through the REAL indexer
+    // (`validation/m14/fixtures/xml/store-binding-truth.mts`):
+    //
+    //   contains rows 3,803 — unbound 179, bound to ANOTHER FILE 35
+    //   of the 179 unbound, 178 have a project-unique declaration of the LOCAL
+    //   name (`leafUnique`), i.e. the declaration was there the whole time and
+    //   the SPELLING hid it
+    //   the 35 cross-file rows are the worse half: `g -[inkscape:cx]-> circle.cx`
+    //   in one repository's SVG bound to a `circle` element in another
+    //   repository's file, because nothing in the source file was named `cx`
+    //   and `resolveContainsTargetStmt` (`parallel-indexer.ts:2354-2360`) only
+    //   ORDERS same-file first — it does not FILTER to the file. A `contains`
+    //   edge asserting ENCLOSURE then bound a declaration in a file that
+    //   contains neither endpoint.
+    //
+    // The top unbound targets were `xml:space` 13, `rdf:resource` 10,
+    // `xlink:href` 10, `rdf:about` 8, `cc:Work` 7, `dc:format` 7,
+    // `inkscape:window-*` 6 each — every one of them a prefixed attribute.
+    //
+    // This is the SAME convention the reference edges in this file already use
+    // ("the target is the LOCAL NAME ... a prefix never reaches the target",
+    // `:2342-2345`, and `qname: "xml:space"` on the row for `ref="xml:space"`),
+    // so the analyzer stops disagreeing with itself: the declaration and the edge
+    // that names it now carry the same spelling.
+    //
+    // WHAT IT COSTS, stated rather than implied: the prefixed spelling is no
+    // longer a searchable symbol NAME. `attributeName` and `namespacePrefix`
+    // carry it, and `pool-worker.ts:1020-1072`'s allowlist drops both at the
+    // worker boundary, so until that allowlist is widened (§8 item 11) the
+    // written spelling does not survive into the store. Two attributes with the
+    // same local name and DIFFERENT prefixes on the same element now share a
+    // name and are told apart only by `qualifiedName`'s owner — measured on the
+    // corpus as a residual, not asserted away.
+    const colon = isNamespace ? -1 : attributeName.indexOf(":")
+    const attributePrefix = colon > 0 ? attributeName.slice(0, colon) : undefined
+    const attributeLocalName = colon > 0 ? attributeName.slice(colon + 1) : attributeName
+    if (colon > 0 && attributeLocalName.length === 0) return
+    const name = isNamespace ? namespacePrefix : attributeLocalName
     const kind = isNamespace ? ASTEngine.SymbolKind.Namespace : ASTEngine.SymbolKind.Property
 
     symbols.push({
@@ -1915,13 +2337,36 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       visibility: "public",
       ownerName,
       ownerKind: ASTEngine.SymbolKind.Class,
+      // M60: an attribute is a declaration OWNED BY the element it is written on,
+      // and `pool-worker.ts:930` defaults `qualifiedName` to the bare name when the
+      // analyzer leaves it unset. So `svg/@fill` and `path/@fill` were both
+      // published under the single key `fill` and the store could not tell two
+      // declarations of two elements apart (`parallel-indexer.ts:3038` writes
+      // `symbol.qualifiedName || symbol.name`). Measured on the 600-file draw
+      // `099e7a868f7b73ee`: 83,454 `property` symbols and 1,002 `namespace` symbols
+      // carried a qualified name equal to their bare name.
+      //
+      // The same expression already used for elements at `:790` and `:920`, so this
+      // is one convention in one analyzer rather than a second identity scheme.
+      //
+      // WHAT IT DOES NOT FIX, stated rather than implied: two instances of the SAME
+      // tag (`<path fill>` twice) still publish `path.fill` twice, because a
+      // qualified name is unique within a scope and the distinguishing information
+      // — ancestry and position — is not in the published name. Measured residual
+      // for this edit: 2,195 of 14,081 ambiguous edges repaired, 11,886 left
+      // (`validation/m14/measurements/xml/qname-population-after-d1.json`).
+      qualifiedName: ownerName ? `${ownerName}.${name}` : name,
       metadata: {
         nodeType: node.type,
         isXmlAttribute: !isNamespace,
         isXmlNamespace: isNamespace,
+        // The name AS WRITTEN, prefix included. The symbol's `name` is the local
+        // part, so this is the only place the prefix survives in the analyzer's
+        // output — see the comment on `attributeLocalName` above.
         attributeName,
+        attributeLocalName,
         value,
-        namespacePrefix: isNamespace ? namespacePrefix : undefined,
+        namespacePrefix: isNamespace ? namespacePrefix : attributePrefix,
         namespaceUri: isNamespace ? value : undefined,
       },
     })
@@ -1968,6 +2413,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           role: "schema_location",
           attributeName,
           namespace: paired ? parts[i - 1] : undefined,
+          resolvable: this.importTargetClass(target),
         }, valueNode)
         emitted++
       }
@@ -2013,10 +2459,27 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // unprefixed name is the template's own name.
       const colon = value.indexOf(":")
       const local = colon >= 0 ? value.slice(colon + 1) : value
-      // No enclosing declaration means no caller to name, so the site is recorded
-      // nowhere rather than against the instruction's own tag.
-      if (local.length > 0 && local.length <= 256 && elementOwnerName) {
-        callCandidates.push({ ownerName: elementOwnerName, templateName: local, valueNode: node, textNode: valueNode })
+      // No enclosing NAMED declaration means no caller to name, so the site is recorded
+      // nowhere rather than against an instruction's own tag.
+      //
+      // `nearestNamedDeclaration`, NOT `elementOwnerName`, and this is the same defect
+      // `extends` had, found by asking the `extends` question of `calls`:
+      // `elementOwnerName` is the enclosing ELEMENT, so a call inside
+      // `<xsl:for-each>` or `<xsl:if>` was published as
+      // `"xsl:for-each" -> "dumptext"`. Measured over the full admitted corpus that put a
+      // vocabulary tag or an HTML tag on the source of 495 of 548 `calls` edges — 90.3 % —
+      // leaving 53 whose source is a name the stylesheet declares. `calls` resolves at
+      // 100 % at both ends on every draw, which is exactly why this hid: the analyzer
+      // mints a symbol for whatever name the edge needs, so a fabricated source resolves
+      // perfectly.
+      //
+      // A `<xsl:call-template>` directly inside `<xsl:template name="tower">` gives
+      // `"tower"`, and a call inside a top-level `<xsl:variable name="v">` gives `"v"` —
+      // a variable is a legitimate caller, and XSLT 1.0 §6 makes the enclosing
+      // instruction sequence the thing doing the calling. A call at stylesheet top level,
+      // outside any template or variable, is not executable and now yields no edge.
+      if (local.length > 0 && local.length <= 256 && nearestNamedDeclaration) {
+        callCandidates.push({ ownerName: nearestNamedDeclaration, templateName: local, valueNode: node, textNode: valueNode })
       }
       return
     }
@@ -2069,7 +2532,11 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // readers see one string and the resolution classes stay identical to the
       // reference pass they were factored from.
       derivationCandidates.push({
-        ownerName,
+        // `nearestNamedDeclaration`, NOT `ownerName`. `ownerName` is the derivation
+        // ELEMENT's own symbol, which for `<xs:restriction>` is the tag text — measured at
+        // 438 of 438 corpus edges naming a vocabulary constructor instead of a declared
+        // type. See the NEAREST NAMED SCHEMA DECLARATION block in the walk above.
+        ownerName: nearestNamedDeclaration ?? "",
         value: collapsed,
         binding,
         ownerNs,
@@ -2080,7 +2547,40 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
     referenceCandidates.push({
-      ownerName,
+      // THE SOURCE OF A REFERENCE EDGE. This is the third edge type to need it, and the
+      // defect is the same one the other two had: `ownerName` is the element's OWN symbol,
+      // which is its declared name when the vocabulary writes one on `name=` and its TAG
+      // TEXT when it does not. A tag text is not an entity a document declares.
+      //
+      // From FSharp.Data/docs/data/po.xsd, verbatim:
+      //
+      //   "xs:element" -> "comment"   (role=attribute_qname_reference)
+      //
+      // `<xs:element ref="comment" minOccurs="0"/>` sits inside
+      // `<xs:complexType name="PurchaseOrderType">`. The reference is made BY that type's
+      // content model, so the source is `PurchaseOrderType`; the analyzer published
+      // `xs:element`, which is the schema vocabulary's word for a type CONSTRUCTOR and a
+      // symbol no document declares. Measured at 1,066 of 10,411 `references` edges on the
+      // gate's own sample — see `docs/analyzers/real-xml-analyzer.md`.
+      //
+      // The rule, and it is deliberately two lines rather than one:
+      //
+      //   self declared      the carrier HAS a name of its own, so the reference belongs
+      //                      to that declaration — `<xs:element name="e" type="T"/>` is
+      //                      `e -> T`, and this branch leaves those edges exactly as they
+      //                      were. It is also why `nearestNamedDeclaration` must not be
+      //                      consulted here: for that element the enclosing scope is not
+      //                      the declarer.
+      //   nearest, else tag  the carrier has NO name, so the declarer is the nearest
+      //                      named ancestor, and the tag is kept when there is none. That
+      //                      fallback is the difference between this fix and the
+      //                      `extends` fix, which has no fallback at all and refuses
+      //                      instead: `references` is emitted for carriers in EVERY
+      //                      vocabulary — Spring, SVG, WSDL, DocBook and application XML —
+      //                      and most of them have no named schema ancestor, so refusing
+      //                      would delete real edges rather than re-base them. It cannot
+      //                      fabricate, because it is the value that was there before.
+      ownerName: selfNamedDeclaration ?? nearestNamedDeclaration ?? ownerName,
       attributeName,
       // The COLLAPSED value, not the raw one. The deferred pass re-parses
       // `candidate.value` with `asQName`, so storing the raw text meant the
@@ -2145,6 +2645,40 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * WHAT KIND OF THING an `imports` target is, so the edge carries a class a consumer
+   * can count instead of reading as a dangling name.
+   *
+   * `imports` is the only relationship type this analyzer emits whose target is not a
+   * symbol, and until this existed the type reported 0 % resolution with nothing on the
+   * edge to say why — which is the state the round brief's cause C calls "silently
+   * unresolved". Measured on the census draw `3bd539410d1a9189` by
+   * `validation/m14/fixtures/xml/imports-target-classes.mts`: 263 edges, 84 distinct
+   * targets, **0 of 263 carrying any class**. The same probe splits them 153 path-shaped,
+   * 107 scheme-bearing, 3 in-document fragments.
+   *
+   * Three classes, and each is a claim this function can actually keep:
+   *
+   *   `in-document` — the target starts with `#`, so it names a location in THIS file.
+   *     The one `imports` shape whose target can resolve to a symbol here.
+   *   `external`    — `isRemoteUri`, the SAME test `schemaLocation` already applies, so
+   *     this file does not grow a second notion of "remote" that disagrees with the
+   *     first. Outside the corpus by construction.
+   *   `file`        — a path. **Not a claim that the file exists.** The analyzer is a
+   *     per-file pure unit and does no filesystem access, so existence is a corpus
+   *     question it cannot answer; the probe answers it for one draw and the honest
+   *     split of the 153 is 130 admitting as xml, 21 present nowhere, 2 present but not
+   *     admitted. A consumer that needs that split must ask the corpus, not the edge.
+   *
+   * `file` is a new member of the vocabulary `references` and `extends` already use
+   * (`in-document` / `builtin` / `external` / `unresolved`); nothing outside this file
+   * switches on it, which was checked rather than assumed.
+   */
+  private importTargetClass(target: string): "in-document" | "file" | "external" {
+    if (target.startsWith("#")) return "in-document"
+    return this.isRemoteUri(target) ? "external" : "file"
+  }
+
+  /**
    * WHICH ATTRIBUTE carries a declaration's name, where `name` is not it.
    *
    * XSLT 1.0 §7.1 gives `xsl:output` no `name` at all: the output method IS its
@@ -2203,13 +2737,22 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `<xsd:element name=` and carries no part of the name; the AttValue is on
    * 234. Anchoring to the Attribute reported 233, so a search for the name
    * landed one line above the string that spells it.
+   *
+   * `allOnOneLine` says which of the shapes this declaration is, because the shapes
+   * want DIFFERENT spans even where two of them agree on the line. See the call site:
+   * when all three share a line the SYMBOL anchors to the whole element, and the
+   * difference is containment rather than cosmetics.
    */
   private declaredNameOf(
     namespaceUri: string | undefined,
     localName: string,
     tagNode: Node,
   ): { name: string; attribute: string; /** The node the NAME is written on — AttValue when it is on another line. */
-    nameNode: Node } | null {
+    nameNode: Node
+    /** Whether the tag, the `name=` attribute and its value all sit on ONE line. This is
+     *  the switch that decides the SYMBOL's span, and it is a different question from
+     *  which node carries the name's LINE. See the call site. */
+    allOnOneLine: boolean } | null {
     if (!namespaceUri) return null
     const declaring = RealXmlAnalyzer.DECLARATION_VOCABULARIES[namespaceUri]
     if (!declaring || !declaring.has(localName)) return null
@@ -2228,7 +2771,28 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // node's line; when they share a line, both give the same answer and the
       // whole Attribute is the wider, more useful anchor.
       const anchor = valueNode.startPosition.row !== node.startPosition.row ? valueNode : node
-      return { name: value, attribute, nameNode: anchor }
+      return {
+        name: value,
+        attribute,
+        nameNode: anchor,
+        // The switch the call site needs is "are the TAG, the ATTRIBUTE and the VALUE
+        // all on ONE line". Either half alone is wrong, and the M19 fixture
+        // `xml/xsd-declared-name-lines` fails on each of them in turn:
+        //
+        //   tag 27 / attribute 28 / value 28   `<xsd:attribute` + `name="X"` on 28
+        //        — attribute and value share a line, the tag does not. Testing the
+        //          value's row alone anchors to the element and reports 27.
+        //   tag 23 / attribute 23 / value 24   `<xsd:element name=` + `"X"` on 24
+        //        — tag and attribute share a line, the value does not. Testing the
+        //          attribute's row alone anchors to the element and reports 23.
+        //
+        // All three on one line is the only shape where the element's row and the
+        // attribute's row are the same row, which is the whole reason the element
+        // anchor is line-safe.
+        allOnOneLine:
+          node.startPosition.row === tagNode.startPosition.row
+          && valueNode.startPosition.row === node.startPosition.row,
+      }
     }
     return null
   }
@@ -2288,6 +2852,73 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return parts
+  }
+
+  /**
+   * Does `text` contain any code point JavaScript's `\s` matches?
+   *
+   * This is the analyzer's LAST regular expression, deleted. It stood at the
+   * `PEReference` branch as `/\s/.test(ref)` — the predicate separating a parameter
+   * entity REFERENCE (`%name;`) from the VALUE form (`% name '...'`) — and the doc
+   * already claimed zero regex usages while the machine census carried that line as
+   * unremoved. The census and the doc disagreed and the census was right.
+   *
+   * ## Why the class is spelled out and NOT narrowed to XML's own `S`
+   *
+   * The obvious replacement is {@link splitOnWhitespace}, since XML 1.0 §2.3 `S` is
+   * `[ \t\r\n]` and that is the only whitespace a document may use BETWEEN tokens.
+   * Narrowing to it is a behaviour change, and it was measured rather than assumed:
+   * `validation/m14/fixtures/xml/pereference-shape-probe.mts` runs the deleted
+   * predicate (`\s`), the narrowed one (`S`) and a `Name`-child lookup over every
+   * `PEReference` node obtainable from the corpus, the lane's fixtures and eight
+   * synthetic shapes.
+   *
+   *   - corpus: 0 nodes. The branch is not exercised by `$HOME/fixtures`
+   *     at all, so no corpus number can decide this. The 22 admitted files whose
+   *     text contains `<!ENTITY %` are bare `.dtd` fragments, which this grammar
+   *     cannot root (no `document`), and the one admitted `.xml` — libxslt's
+   *     `tests/xmlspec/REC-xml-20001006.xml` — carries its `<!ENTITY %` inside
+   *     `CDSect`/`CDATA`, i.e. documentation ABOUT parameter entities.
+   *   - fixtures: 4 nodes, `\s` and `S` agree on 4 of 4.
+   *   - synthetic: 7 nodes, `\s` and `S` agree on 6 of 7. The one disagreement is
+   *     `%p<U+00A0>e;`, where `\s` drops it and `S` publishes a symbol named
+   *     `p<U+00A0>e` — a name no XML parser would accept, since `Name` is
+   *     `[a-zA-Z_][a-zA-Z0-9_:.·-]*`. On that single node the wider class is the
+   *     better answer, so this keeps it.
+   *
+   * ## Why the code points are listed rather than inherited
+   *
+   * The set is ECMAScript's `WhiteSpace` and `LineTerminator` productions, written
+   * out so the behaviour is pinned to a stated list rather than to a dialect. It is
+   * 25 code points and `isEcmaWhitespace` is total over them, which is what makes
+   * this a replacement rather than an approximation: for any string, the answer is
+   * identical to the deleted expression's, because both ask the same per-character
+   * question and a character class is a per-character question.
+   *
+   * A narrower class WOULD be defensible here on XML grounds, and is recorded as a
+   * limitation rather than shipped, because shipping it would change one measured
+   * verdict on a shape the corpus cannot produce, which is the trade this lane has
+   * no evidence to make.
+   */
+  private static containsEcmaWhitespace(text: string): boolean {
+    for (let i = 0; i < text.length; i++) {
+      if (RealXmlAnalyzer.isEcmaWhitespace(text.charCodeAt(i))) return true
+    }
+    return false
+  }
+
+  /** ECMAScript `\s`: `WhiteSpace` + `LineTerminator`. 25 code points, total. */
+  private static isEcmaWhitespace(c: number): boolean {
+    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) return true // SP TAB LF CR
+    if (c === 0x0b || c === 0x0c) return true                             // VT FF
+    if (c === 0xa0) return true                                          // NBSP
+    if (c === 0x1680) return true                                        // OGHAM SPACE MARK
+    if (c >= 0x2000 && c <= 0x200a) return true                           // EN QUAD .. HAIR SPACE
+    if (c === 0x2028 || c === 0x2029) return true                        // LS PS
+    if (c === 0x202f || c === 0x205f) return true                        // NNBSP MMSP
+    if (c === 0x3000) return true                                        // IDEOGRAPHIC SPACE
+    if (c === 0xfeff) return true                                        // ZWNBSP
+    return false
   }
 
   private isSchemaConstruct(name: string): boolean {
@@ -2390,6 +3021,42 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (child?.type === type) return child
     }
     return null
+  }
+
+  /**
+   * A named `Attribute` child of a tag node, by attribute name.
+   *
+   * Read off the TREE rather than off the tag's text: an attribute name is a `Name`
+   * child inside an `Attribute` node, and three sibling attributes on one tag differ
+   * only in which of their own `Name` children says `match`. Splitting the tag's text
+   * would have to re-tokenise, and would match an attribute NAME that appears inside
+   * another attribute's VALUE.
+   */
+  private findDirectAttribute(tagNode: Node, attrName: string): Node | null {
+    for (let i = 0; i < tagNode.namedChildCount; i++) {
+      const attr = tagNode.namedChild(i)
+      if (attr?.type !== "Attribute") continue
+      const nameNode = this.findDirectChild(attr, "Name")
+      const text = nameNode?.text.trim()
+      if (text === attrName) return attr
+    }
+    return null
+  }
+
+  /**
+   * An attribute's value, unquoted and with the XML Schema `collapse` facet applied.
+   *
+   * `unquote` rather than a pattern, for the reason the rest of this analyzer spells
+   * out: an `AttValue` is `"…"` or `'…'` in the tree, and only the quote characters
+   * need removing. Returns `null` for an attribute written with no value, which is a
+   * different thing from an empty value and must not collapse to `""`.
+   */
+  private attributeValueOf(tagNode: Node, attrName: string): string | null {
+    const attr = this.findDirectAttribute(tagNode, attrName)
+    if (!attr) return null
+    const valueNode = this.findDirectChild(attr, "AttValue")
+    if (!valueNode) return null
+    return RealXmlAnalyzer.collapseWhitespace(this.unquote(valueNode.text.trim()))
   }
 
   private findFirstNamedChild(node: Node, types: Set<string>): Node | null {

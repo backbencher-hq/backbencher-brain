@@ -1,0 +1,90 @@
+{
+  "issue": "M55.HOV-REDTEAM",
+  "code": "HOV-REDTEAM",
+  "milestone": "M55",
+  "status": "verified",
+  "checks": 16,
+  "passed": 16,
+  "failed": 0,
+  "realFailed": 0,
+  "negativeCases": 3,
+  "plants": [
+    {
+      "id": "D1",
+      "file": "src/lsp/relations.ts",
+      "defect": "a relationship kind the INDEX holds is DROPPED FROM THE HOVER: every incoming `uses` row is reclassified as a declaration containment and vanishes from the usages list while the index still stores it",
+      "clause": "§14 rule 1 (one surface, one answer); the audit's own question — index knows X, hover renders Y",
+      "expectedFailedCheck": "D1: every stored relationship kind is rendered with a verb or DECLARED absent with a reason"
+    },
+    {
+      "id": "D2",
+      "file": "src/lsp/rich_hover.ts",
+      "defect": "a COUNT that disagrees with the RENDERED LIST: the usages header claims one more usage than the list it headlines actually contains",
+      "clause": "§13.4 (counts equal what is rendered); §14 rule 1",
+      "expectedFailedCheck": "D2: every section header's stated count equals the rows beneath it"
+    },
+    {
+      "id": "D3",
+      "file": "src/lsp/evidence_tier.ts",
+      "defect": "a FABRICATED TIER: a stored row the index never classified is rendered at parser-fact tier ('structural') instead of its declared absence",
+      "clause": "§12.3 (enrichment/inference never at parser-fact tier); §14 rule 3",
+      "expectedFailedCheck": "D3: every evidence tier the card renders is justified by a stored relationship row"
+    }
+  ],
+  "currentCommit": "a7d77e8adb61650b93680f88cf07b6cbbf07a60a",
+  "workingTreeRelevantChanges": [
+    "validation/m24/results/L2.json",
+    "validation/m24/results/L4.json",
+    "validation/m42/results/H1.json",
+    "validation/m42/results/H2.json",
+    "validation/m42/results/H3.json",
+    "validation/m42/results/H4.json",
+    "validation/m55/results/HOV-COVERAGE.json",
+    "validation/m55/results/T3.json",
+    "validation/m55/results/T4.json"
+  ],
+  "verifierCommand": "npx tsx script/m55/verify-hover-coverage-redteam.ts",
+  "evidenceFile": "HOV-REDTEAM.json",
+  "generatedAt": "2026-10-05T14:27:46.999Z",
+  "observed": {
+    "cleanTreeVerdict": "VERIFIED",
+    "cleanTreeExit": 0,
+    "cleanTreeFailures": [],
+    "baselineFailures": [],
+    "judgedBy": "SET DIFFERENCE of failing checks, never the exit code — on a loaded machine the gate's own §3 latency check is legitimately red, and an exit-code oracle would call every mutant detected for the wrong reason",
+    "restores": [
+      {
+        "file": "src/lsp/relations.ts",
+        "ok": true,
+        "detail": "byte-identical to the pre-mutation bytes this harness read"
+      },
+      {
+        "file": "src/lsp/rich_hover.ts",
+        "ok": true,
+        "detail": "byte-identical to the pre-mutation bytes this harness read"
+      },
+      {
+        "file": "src/lsp/evidence_tier.ts",
+        "ok": true,
+        "detail": "byte-identical to the pre-mutation bytes this harness read"
+      },
+      {
+        "file": "src/lsp/relations.ts",
+        "ok": true,
+        "detail": "byte-identical to the pre-mutation bytes this harness read"
+      }
+    ]
+  },
+  "failures": [],
+  "limitations": [
+    "Each planted defect is a TEXTUAL mutation of a real source file, chosen because it is a real defect shape. It proves the gate's checks fire on that shape; it does not prove the gate catches every mutation of that file, and it says nothing about defects in files this lane does not own.",
+    "The oracle is the gate subprocess, so a planted defect that makes the gate CRASH is reported as not-caught (H1 proves that classification works). That is deliberate: this program's repeated lesson is that a mutant caught only by a load failure is not caught, and a crash here would otherwise read as a pass.",
+    "The mutations are applied to the WORKING TREE and restored in a finally block. A kill between the write and the restore would leave the tree mutated; the restore is verified byte-for-byte (H3) but only for the runs this process actually completed.",
+    "This harness measures ONE property: that the gate can fail. It is not a coverage measure and adds nothing to the gap table in docs/HOVER-KNOWLEDGE-AUDIT.md."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-05T14:27:47.002Z",
+    "contentSha256": "1f6f1eff4d9dc6bb71b447348d766bcf1dfe6c4118dd0b2c1c15ee43b32ed55f"
+  }
+}

@@ -35,6 +35,7 @@
 import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, rmSync, readdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = process.cwd()
 const SITE = path.join(ROOT, "website")
@@ -189,10 +190,22 @@ mutated(
 
 const ok = failed === 0
 const evidence = {
-  gate: "T1",
-  issue: 711,
+  issue: "M45.T1 site embed",
+  code: "T1",
+  milestone: "M45",
+  // §8.4: every claim field. This record previously carried NONE of `status`,
+  // `evidenceFile`, `generatedAt` or `limitations` — so the m45 manifest's entry
+  // for T1 said `verified` over a record that stated no verdict at all, and the
+  // ledger projection could not read it (it reported "record T1.json carries no
+  // status — cannot project"). A record that declines to state its status cannot
+  // be the authority for a ledger that claims one.
+  status: ok ? "verified" : "known-gap",
+  // §8.3: a run that is not green records WHY, in the record itself.
+  ...(ok ? {} : { blockedReason: `${failed} check(s) failed: ${failures.slice(0, 6).join(" | ")}${failures.length > 6 ? ` | … +${failures.length - 6} more` : ""}` }),
   scopeChange: "M56.I1 (#785): /demos retired by owner decision; withdrawn films removed from the published bundle, retired URL redirects to /editors, surviving verified stills serve on /editors.",
   verifierCommand: "npx tsx script/m45/verify-site-embed.ts",
+  evidenceFile: "T1.json",
+  generatedAt: new Date().toISOString(),
   currentCommit: (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch { return "unknown" } })(),
   passed,
   failed,
@@ -201,8 +214,15 @@ const evidence = {
   verdict: ok ? "PASS" : "FAIL",
   checkedAt: new Date().toISOString(),
   failures,
+  limitations: [
+    "Embed checks are DOM/HTML assertions on the built site, not a read frame: contract §15.5 requires the editor to be the gate for a visual claim, and a rendered frame is M55's leg, not this gate's.",
+    "This gate reads the BUILT bundle under website/. A stale build (a source change with no `next build`) makes it read the previous tree; the failure it reports in that case is a build step, not a code defect, and it says so in `failures`.",
+  ],
 }
-writeFileSync(path.join(EV, "T1.json"), JSON.stringify(evidence, null, 2) + "\n")
+// SEALED WRITE (M61 D-1), replacing `writeFileSync(JSON.stringify(...))`: an
+// unsealed record carries no content hash, so a clobbered or hand-edited record
+// is believed by every downstream gate that reads it.
+writeSealed(path.join(EV, "T1.json"), evidence as unknown as Record<string, unknown>)
 console.log(`\nT1 gate: ${ok ? "VERIFIED" : "FAILED"} (${passed}/${passed + failed} checks, ${mutantsCaught}/6 mutants caught)`)
 if (!ok || mutantsSurvived > 0) {
   for (const f of failures) console.log(`  FAIL: ${f}`)

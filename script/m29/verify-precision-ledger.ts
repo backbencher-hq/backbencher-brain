@@ -31,6 +31,7 @@ import { createHash } from "node:crypto"
 import { buildLedger, normalizeEvidence } from "./generate-precision-ledger.ts"
 import { computeCap, type SpecLedger, type Step } from "./wave-protocol.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT_JSON = path.join(ROOT, "validation/m29/results/PRECISION-LEDGER.json")
@@ -228,6 +229,7 @@ const result = {
   verdict: { realComponentFailures: failed, mutantsCaught: mutants.caught, mutantsTotal: mutants.total, ok: mutants.caught === mutants.total },
   currentCommit: gitCommit(),
   verifierCommand: "npx tsx script/m29/verify-precision-ledger.ts",
+  ...fingerprintFields(["m29.R4-verify"], ROOT),
   evidenceFile: "R4-verify.json",
   generatedAt: new Date().toISOString(),
   details: details.slice(0, 10),

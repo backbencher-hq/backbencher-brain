@@ -24,13 +24,45 @@ Contract: [IDE-HONESTY-CONTRACT.md](./IDE-HONESTY-CONTRACT.md)
 | v4 | M28 | The Union (MCP + agent) | **CLOSED** (7/7 verified) | U1 I3-equivalent (MCP answers machine-proven identical to IDE answers on the shared fixture); annotations schema-enforced provenance + real headless-editor leg; 18 mutants caught across 5 suites | [m28 ledger](../validation/m28/results/manifest.json), [surface](./m28/MCP-SURFACE.md) |
 | v5 | M29 | Precision Waves | **CLOSED** (9/9 verified) | wave-1 languages owner-approved (java/python/ts/js/kotlin/scala) verified through real editors; giant-repo budgets within contract §3 | [m29 ledger](../validation/m29/results/manifest.json) |
 | v6 | M42 | The Interactive Hover | **CLOSED** (8/8 verified) | rich hover + actions live in-editor (E5 70/70, E6 cursor/antigravity); click-throughs and panels verified in real VS Code | [m42 ledger](../validation/m42/results/manifest.json) |
-| v7 | M44 | The Understandable Hub | closure gate verified (X1 48/48 at HEAD); owner spot check pending | — | [m44/M44-MASTER-PLAN.md](./m44/M44-MASTER-PLAN.md) |
+| v7 | M44 | The Understandable Hub | **CLOSED on GitHub**; closure gate X1 verified 48/48 at its closing commit, owner spot check pending — **governance record reads `known-gap` at HEAD `a0ed9eade`** | — (no claim level published from a red governance record) | [m44/M44-MASTER-PLAN.md](./m44/M44-MASTER-PLAN.md), [G1](../validation/m44/results/G1.json) |
+| v8 | M55 | The Hub That Tells the Truth | **CLOSED on GitHub**; **3 of 9 records red at HEAD `a0ed9eade`** — T2 `known-gap` (2 call-hierarchy checks), T3 `known-gap` (2 relations checks), X1 `known-gap` (4 closure checks) | I1 for the protocol-level gates only (T1/T4/P1 verified this pass); **no I3/I5 claim survives the red records** | [m55/M55-MASTER-PLAN.md](./m55/M55-MASTER-PLAN.md), [ledger](../validation/m55/results/manifest.json) |
+| v9 | M62 | Address Truth | **CLOSED**; ledger closed, G1/A1/A2/A3/X1 `verified`, pinned at commit `a943047e5c` (2026-09-28) and **not re-earned since** | I1 (machine-level address truth); the editor-visible half is the owner's I3 spot-check, which is scheduled, not recorded | [m62/M62-MASTER-PLAN.md](./m62/M62-MASTER-PLAN.md), [ledger](../validation/m62/results/manifest.json) |
 
 Nothing on this page is a fork- or editor-verified claim until a milestone's
 ledger pins a version, a run, and a machine per claim (I3/I4 definitions,
 contract §2). v1's claims are pinned in `validation/m25/results/*.json` and
 the per-fork capability matrix
 ([m25/FORK-CAPABILITY-MATRIX.md](./m25/FORK-CAPABILITY-MATRIX.md)).
+
+## The gate-reachability audit (commit `a0ed9eade`, this pass)
+
+A gate nothing runs is not a gate, and a ledger that says `verified` over a
+record that says `known-gap` is worse than no ledger. Both were true of this
+program at the commit above. What was measured, and by which gate:
+
+| Finding | Measured | Now caught by |
+| --- | --- | --- |
+| The whole M27 lane (7 verifiers) and M28 lane (7) were named by **no** npm script | 0 references in `package.json` | wired as `verify:m27`, `verify:m28` |
+| Six M55 gates — the ones `src/lsp/call_hierarchy.ts` and `src/lsp/identity.ts` NAME as their protecting gates — were wired nowhere | `grep 'm55/verify-identity' package.json` → 0 | wired as `verify:m55` |
+| `script/m55/verify-closure.ts:478` asserted `package.json scripts['verify:m55']` contains `m55/verify-closure`, and no `verify:m55` script existed — an unsatisfiable check | C6 could never pass | `verify:m55` exists; G4 of the gate below keeps it existing |
+| 6 lane closure gates (m25, m26, m29, m42, m45, m53) were referenced by nothing | — | wired as `verify:lane-closures` |
+| 7 IDE surface gates named by `src/lsp/*` and `ide/vscode/*` as their own mutation gates were wired nowhere | — | wired as `verify:m25-surface`, `verify:m26-surface`, `verify:m42-surface`, `verify:m44-surface` |
+| 196 verifier scripts remain unreachable from any npm script | census | each is DECLARED with a stated reason in [script/m61/orphan-baseline.json](../script/m61/orphan-baseline.json); a new undeclared one fails G1 |
+
+The standing gate for all of it is `script/m61/verify-orphan-gates.ts`
+(`npm run verify:gate-wiring`, evidence `validation/m61/results/V5.json`). It
+proves the census sees a real tree, that every unwired verifier is declared with
+a reason, that a declared orphan which has since been wired FAILS (the list
+cannot rot into an allowlist), that every verifier the LSP source names is wired
+or declared, that C6 stays satisfiable, and that no lane ledger claims
+`verified` over a non-verified record. Its M9 mutant plants a real file on disk
+and proves the live census refuses it.
+
+**What is still open, stated plainly:** 24 ledger-vs-record drifts exist at this
+commit across M20, M24, M25, M26, M29, M42, M44, M45 and M61. The M27, M28 and
+M55 ledgers are now PROJECTED from their records by their own governance gates,
+so they cannot drift again. The remaining ledgers are hand-maintained; their
+lanes own that fix and it is not done.
 
 ## v2 — The Graph (M26): shipped capabilities
 
@@ -143,6 +175,26 @@ Standalone LSP 3.18 binary over stdio (`bb lsp`, entry in
 
 ## Next up
 
-M29 — Precision Waves (v5), per the decision record. The v4 bar is
-closed: the M28 governance gate re-audited the M27 bar, and M29's gate
-will re-audit the v4 bar the same way (ladder discipline).
+The ladder discipline is unchanged: each milestone's governance gate re-audits
+the bar below it, so a red bar above blocks the next wave. As of this pass the
+red bars are, in dependency order:
+
+1. **M24's §3 latency gate** — `script/m24/verify-harness.ts` is `known-gap`
+   because the `node-dist` leg misses warm budgets on the machine it last ran
+   (hover 132.7 ms vs a 50 ms budget; `prepareCallHierarchy` 135.8 ms and
+   `callHierarchyExpand` 112.1 ms vs 100 ms). The `node-source` leg passes. The
+   `bun` leg is `blocked` — bun is absent.
+2. **M27 / M28** — `known-gap`, correctly: their ledger projections now publish
+   the red records (M27.N1 `blocked` — no nvim; M28 T1/U1/A2/V1 `known-gap`).
+   These lanes are honest-red, not drifting.
+3. **M55** — T2 and T3 `known-gap` on real checks (a fixture call-site the
+   relations gate cannot resolve; a `get` symbol with declared zero callers that
+   the fixture now contradicts). Needs a lane fix, not a doc fix.
+4. **Every lane's governance gate whose bar depends on the above** — M25, M26,
+   M29 and M44 all report RED for `stale-commit` pins and inherited bar
+   failures, which is the correct answer for a program whose lower bars are red.
+
+M29 — Precision Waves (v5) closed 2026-09-04; the versions above it (v6 M42,
+v7 M44, v8 M55, v9 M62) are all closed on GitHub. There is no v10. The next
+program work is re-earning the red records above on a machine that can run them,
+not opening a new milestone.

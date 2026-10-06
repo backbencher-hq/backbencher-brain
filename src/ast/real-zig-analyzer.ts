@@ -40,6 +40,18 @@ const ANONYMOUS_CONTAINER_NODES = new Set([
   "error_set_declaration", "opaque_declaration",
 ])
 
+/** Node types the pinned lexer produces for an enum member's NAME when that
+ *  name happens to spell a Zig primitive type or keyword literal. Zig has no
+ *  reserved words, so `pub const Feature = enum { bool, clamps }` and
+ *  `pub const SimpleValue = enum { undefined, null, true, ... }` are ordinary
+ *  declarations whose names the lexer classifies by what they MEAN rather than
+ *  by their grammatical role. Every entry is measured — see the container_field
+ *  name site for the census that produced these four and the enum gate that
+ *  keeps the same token refused where it IS a type (a tuple struct's element). */
+const ENUM_MEMBER_NAME_NODE_TYPES: ReadonlySet<string> = new Set([
+  "builtin_type", "boolean", "null", "undefined",
+])
+
 const ZIG_VALUE_RHS = new Set([
   "integer", "float", "string", "multiline_string", "boolean", "character",
   "binary_expression", "unary_expression", "null_coercion_expression",
@@ -99,6 +111,138 @@ export function zigFileScopeNames(root: Node): Set<string> {
   return out
 }
 
+/**
+ * Z66 — the local name an `@import` BINDS, which is a different fact from the
+ * module path the import NAMES, and which this analyzer was discarding.
+ *
+ * ## The defect
+ *
+ * `const std = @import("std");` is the commonest binding form in Zig. The
+ * `imports`/`references` twins of `collectZigImportSites` record the MODULE PATH
+ * (`std`) with source `(global)`; nothing recorded WHICH LOCAL NAME it was
+ * assigned to. Every read through that alias therefore reached the edge layer as a
+ * bare leaf — `std.mem.Allocator` published `uses -> Allocator`, `std.debug.print`
+ * published `calls -> print` — so an external module member and a same-named
+ * local declaration became the SAME edge target. Measured by
+ * `validation/m14/fixtures/zig/alias-receiver-probe.ts` over 300 corpus files and
+ * production `parseFile`: of 18,612 distinct (`uses`|`calls`|`references`)
+ * (source, target) pairs, 3,688 (20%) name the leaf of a dotted path rooted at an
+ * `@import` of a bare module path, and 1,009 of those carry a leaf that some
+ * declaration in the window publishes — so they resolve today, to the wrong
+ * declaration, and `brain_relationship`'s `misattached` measure cannot see them
+ * because it only fires when the attached symbol's name DIFFERS from the leaf.
+ *
+ * ## The two refusals, both deliberate
+ *
+ *  - A name bound by `@import` somewhere in the file AND bound to a NON-import
+ *    right-hand side somewhere in the file is DELETED from the map. A shadowed
+ *    alias means `std.foo` need not be a module member at all, and this analyzer
+ *    does not model which binding wins at which site; refusing to qualify is the
+ *    only answer that cannot publish a path the source does not contain.
+ *  - A module path that is RELATIVE, absolute, or carries a separator or a `.zig`
+ *    / `.zon` suffix is recorded as `external: false` and never qualified. `const c
+ *    = @import("c.zig")` names a file in this project; qualifying its reads would
+ *    replace a leaf that binds today with a path nothing in the index publishes.
+ */
+type ZigImportAlias = { module: string; external: boolean }
+
+const ZIG_IMPORT_ALIASES = new WeakMap<object, Map<string, ZigImportAlias>>()
+
+export function zigImportAliases(root: Node): Map<string, ZigImportAlias> {
+  const cached = ZIG_IMPORT_ALIASES.get(root as unknown as object)
+  if (cached) return cached
+  const imports = new Map<string, ZigImportAlias>()
+  /** names this file also binds to something that is not an import — the refuse set */
+  const shadowed = new Set<string>()
+  const stack: Node[] = [root]
+  let guard = 0
+  while (stack.length > 0 && guard++ < 400000) {
+    const n = stack.pop()!
+    if (n.type === "variable_declaration") {
+      const kids = zigNamedChildren(n)
+      const nameNode = kids.length > 0 && kids[0]!.type === "identifier" ? kids[0]! : null
+      const rhs = kids.length > 0 ? kids[kids.length - 1]! : null
+      const bound = nameNode ? stripZigQuoting(nameNode.text) : ""
+      if (bound) {
+        const lit = zigImportModuleLiteral(rhs)
+        if (lit) imports.set(bound, { module: lit.module, external: zigModuleIsExternal(lit.module) })
+        else shadowed.add(bound)
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+  for (const s of shadowed) imports.delete(s)
+  ZIG_IMPORT_ALIASES.set(root as unknown as object, imports)
+  return imports
+}
+
+/** A bare module path names something outside the project by construction; a
+ *  path with a separator or a file suffix names a file in it. */
+function zigModuleIsExternal(modulePath: string): boolean {
+  if (modulePath.startsWith(".") || modulePath.startsWith("/")) return false
+  if (modulePath.includes("/") || modulePath.includes("\\")) return false
+  if (modulePath.endsWith(".zig") || modulePath.endsWith(".zon")) return false
+  return true
+}
+
+/** The string module path of an `@import`/`@cImport` right-hand side, with the
+ *  literal node itself, or null. ONE copy of this walk: `collectZigImportSites`
+ *  and `zigImportAliases` both read it, because two copies of "how do I spell the
+ *  path" is two answers. The NODE is returned because it is the only place the
+ *  literal is, and the `imports` edge's site line is the literal's line. */
+function zigImportModuleLiteral(rhs: Node | null): { module: string; node: Node } | null {
+  if (!rhs) return null
+  const host = rhs.type === "call_expression" || rhs.type === "builtin_function" ? rhs : null
+  if (!host) return null
+  let isImport = false
+  for (let i = 0; i < host.namedChildCount; i++) {
+    const c = host.namedChild(i)
+    if (c && (c.type === "builtin_identifier" || c.type === "identifier")) {
+      const t = String(c.text ?? "")
+      if (t === "@import" || t === "@cImport" || t === "import") { isImport = true; break }
+    }
+  }
+  if (!isImport) return null
+  const firstString = (h: Node | null): Node | null => {
+    if (!h) return null
+    for (let i = 0; i < h.namedChildCount; i++) {
+      const c = h.namedChild(i)
+      if (c && (c.type === "string" || c.type === "string_content")) return c
+    }
+    return null
+  }
+  let args: Node | null = null
+  for (let i = 0; i < host.namedChildCount; i++) {
+    const c = host.namedChild(i)
+    if (c && c.type === "arguments") { args = c; break }
+  }
+  let strNode = firstString(host) ?? firstString(args)
+  if (strNode && strNode.type === "string") {
+    for (let i = 0; i < strNode.namedChildCount; i++) {
+      const sc = strNode.namedChild(i)
+      if (sc && sc.type === "string_content") { strNode = sc; break }
+    }
+  }
+  if (!strNode) return null
+  let out = String(strNode.text ?? "")
+  if (
+    (out.startsWith('"') && out.endsWith('"')) ||
+    (out.startsWith("'") && out.endsWith("'"))
+  ) out = out.substring(1, out.length - 1)
+  return out.length > 0 ? { module: out, node: strNode } : null
+}
+
+/** A module-level child reader, so the exported alias builder above can walk a
+ *  tree without an analyzer instance. */
+function zigNamedChildren(n: Node): Node[] {
+  const out: Node[] = []
+  for (let i = 0; i < n.namedChildCount; i++) {
+    const c = n.namedChild(i)
+    if (c) out.push(c)
+  }
+  return out
+}
+
 export const ZIG_DECLARED_TYPE_BUILTINS: ReadonlySet<string> = new Set([
   "void", "bool", "f16", "f32", "f64", "f80", "f128", "c_longdouble",
   "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize",
@@ -154,6 +298,54 @@ export function stripZigQuoting(text: string): string {
   return out
 }
 
+/**
+ * A symbol as the walk carries it, plus the ONE internal field this analyzer
+ * needs and the projection must never publish.
+ *
+ * `zigOwnerPath` is the container's ABSOLUTE dotted path — the same string the
+ * shared projection builds as that container's `qualifiedName`. It is read only
+ * to spell a member's own owner; `pool-worker.ts:926-946` copies an explicit
+ * field list, so an extra key here is invisible to everything downstream.
+ */
+type ZigWalkSymbol = ASTEngine.UniversalSymbol & { zigOwnerPath?: string }
+
+/**
+ * The owner's ABSOLUTE dotted path, falling back to its bare name for a
+ * file-scope container — where the two are the same string, which is why this
+ * is a no-op for every top-level container and its members.
+ *
+ * ## Why the path, and not the bare name (Z-p22)
+ *
+ * `scope`/`ownerName` were `container.name`, and the projection spells a symbol
+ * `scope ? scope + "." + name : name` (pool-worker.ts:930). A container
+ * therefore published its ABSOLUTE name and its members published a RELATIVE
+ * one, so the two halves of one nesting landed in two coordinate systems:
+ *
+ * ```zig
+ * pub const IOSurface = struct {      // ghostty/pkg/macos/iosurface/iosurface.zig:10
+ *     pub const Error = error{         // container -> qn `IOSurface.Error`
+ *         InvalidOperation,            // member    -> qn `Error.InvalidOperation`
+ * ```
+ *
+ * The member is then unreachable from the only spelling that identifies its
+ * container, and the `contains` edge names a source that is not a published
+ * qualified name at all. Measured over the 3,834-file draw before this change:
+ * **15,686 of 80,876 `contains` edges (19.4%)** were not composition-resolvable
+ * (owner-path-probe.ts), in 529 files. Carrying the absolute path makes the
+ * edge's source a published `qualifiedName` and makes `source + "." + target`
+ * the member's own published spelling, which is the walk the graph performs.
+ *
+ * Components are stripped at CONSTRUCTION rather than left to
+ * `canonicalizePublishedNames`, because that pass strips `ownerName` but not
+ * `scope` — a raw `@"my type"` component would leave the container spelling
+ * `my type` and the member `@"my type".field`, the same split this change
+ * removes.
+ */
+function ownerPathOf(container: ZigWalkSymbol | null): string | undefined {
+  if (!container) return undefined
+  return container.zigOwnerPath ?? container.name
+}
+
 export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -169,9 +361,15 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // reached as an EXPRESSION (an `if`/`switch` branch, a struct literal in a
     // prune). Such a container has no name, so it can own nothing: see the
     // ANONYMOUS CONTAINER branch below.
-    const walkStack: { node: Node; container: ASTEngine.UniversalSymbol | null; inFunction: boolean; anonContainer: boolean }[] = [
+    const walkStack: { node: Node; container: ZigWalkSymbol | null; inFunction: boolean; anonContainer: boolean }[] = [
       { node: rootNode, container: null, inFunction: false, anonContainer: false },
     ]
+
+    /** The name the FILE gives its own container, if it gives one. Computed once,
+     *  before the walk, because it is a property of the file rather than of any
+     *  node the walk visits — and read here so the `container_field` branch can
+     *  attribute a file-level field to it. */
+    const fileContainerName = this.zigThisBindingName(rootNode)
 
     while (walkStack.length > 0) {
       const item = walkStack.pop()!
@@ -337,7 +535,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             // (1,458 bindings in 400 corpus files), a `pub const X = @import(...)`
             // re-export named a binding the index could not resolve (the fixture
             // runner's export invariant caught it), and the binding was invisible
-            // while the import EDGE was perfect. The fix is the REMOVAL of an early
+            // while the import EDGE was published for every one of them. The fix is the
+            // REMOVAL of an early
             // exit: at file or container scope the walk falls through to the same
             // const/var handling every other declaration gets, so kind, visibility
             // and owner are decided in ONE place. Inside a function body the exit
@@ -406,8 +605,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           kind,
           visibility: isExported ? "public" : "private",
           range: this.nodeRange(node),
-          scope: container ? container.name : undefined,
-          ownerName: container?.name,
+          scope: ownerPathOf(container),
+          ownerName: ownerPathOf(container),
           ownerKind: container?.kind,
           metadata: {
             zigDeclaration: kind,
@@ -433,6 +632,18 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (isExported && !container) exports.push({ name: varName, kind, range: this.nodeRange(node) })
 
         // Container members belong to the new container symbol.
+        //
+        // Z-p22: a container records its OWN absolute path, which is what a
+        // member's `ownerName`/`scope` are spelled from (`ownerPathOf`). It is
+        // computed only for a container, so the 100k+ non-container declarations
+        // pay nothing, and `stripZigQuoting` runs per component so the path
+        // agrees with the STRIPPED name the projection builds the container's own
+        // `qualifiedName` from.
+        if (isContainer) {
+          const own = stripZigQuoting(varName)
+          const parentPath = ownerPathOf(container)
+          ;(sym as ZigWalkSymbol).zigOwnerPath = parentPath ? `${parentPath}.${own}` : own
+        }
         const newContainer = isContainer ? sym : container
         this.pushChildren(node, walkStack, newContainer, inFunction, anonContainer)
         continue
@@ -623,9 +834,9 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
             visibility: isExported ? "public" : "private",
             range: this.nodeRange(node),
-            scope: container ? container.name : undefined,
+            scope: ownerPathOf(container),
             parameters: params,
-            ownerName: container?.name,
+            ownerName: ownerPathOf(container),
             ownerKind: container?.kind,
             // Per-symbol cyclomatic complexity (family standard — go/c/rust
             // emit symbol.complexity; zig did NOT, so completeness section C
@@ -702,6 +913,38 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // have no stable container identity and must NOT become file-scope
       // symbols (C negative contract: anonymous containers are not named).
       if (type === "container_field") {
+        // ─── A FIELD OF THE FILE ITSELF (`@This()`) ───
+        // Zig lets a FILE be a struct. `const OpenURI = @This();` followed by
+        // bare fields makes the file's top level the body of that struct, and
+        // the grammar states that structurally: the fields arrive as
+        // `container_field` whose DIRECT parent is `source_file`, not as a
+        // child of any `container_declaration`. Pinned-wasm probe,
+        // ghostty/src/apprt/gtk/portal/OpenURI.zig:20 — the ancestors read
+        // `container_field < source_file`, and the file's own tree declares
+        // `app`, `dbus`, `mutex`, `entries`, `cleanup_timer`, `alive`.
+        //
+        // The `!container` skip below did not reach this shape, and the
+        // negative contract it cites does not either. That contract is about a
+        // field inside an ANONYMOUS struct — one returned from a generic
+        // function, `fn GenericStack(...) type { return struct {...} }` — whose
+        // owner has no stable identity. A file-level field's owner is the FILE:
+        // it has a path, and in 401 of the 411 corpus files that declare one it
+        // has a name too, bound by `const X = @This()`. Measured over the
+        // published 3,834-file draw (filecontainer-census.ts): 411 files carry
+        // at least one, 3,324 fields in all, and 2,892 of those names were
+        // published NOWHERE in their own file — so every read of one was an
+        // unresolvable `uses` edge naming a declaration the parser had in hand.
+        //
+        // The owner is asserted ONLY when the file names it. `anonContainer` is
+        // not consulted: a file-level field is by construction not inside an
+        // anonymous container, and requiring `node.parent` to be `source_file`
+        // is the stronger statement — it cannot be true of a field that some
+        // enclosing struct owns.
+        if (!container && !anonContainer && node.parent?.type === "source_file") {
+          this.zigFileLevelField(node, fileContainerName, symbols)
+          this.pushChildren(node, walkStack, container, inFunction, anonContainer)
+          continue
+        }
         if (!container || anonContainer) {
           this.pushChildren(node, walkStack, container, inFunction, anonContainer)
           continue
@@ -741,13 +984,46 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // claimed 0 unknown. The live disjunct is the first one, so removing the
         // dead one changes no output -- which is the point: it was never load
         // bearing, only misleading.
+        //
+        // Z-p20, and it is the GATE that the refusal above was missing. That
+        // refusal was right about `zls/src/analyser/InternPool.zig` -- a
+        // `builtin_type` name field there is a TUPLE struct's element type, and
+        // publishing it as a field name fabricates a declaration. It was wrong as
+        // a blanket rule, because Zig also lets an enum member be NAMED with a
+        // primitive type name: `pub const Feature = enum { bool, clamps }`
+        // (zig/lib/std/Target/xtensa.zig:8), `BlockType.f64 = 0x7C`
+        // (zig/lib/std/wasm.zig:663), `Key.f16` (ghostty/src/input/key.zig:263).
+        // Measured over the 3,834-file draw `sha256:2f3545f9`: 468 sites carry a
+        // `builtin_type` name field, of which 122 sit in an ENUM and all 122 were
+        // ABSENT from parseFile's output -- `Feature.clamps` published beside an
+        // unpublished `Feature.bool`, same enum, same container, the only
+        // difference being how the lexer spelled the name. Enum bodies have no
+        // positional form, so a bare token there is a member NAME by the language's
+        // own rules. Structs and unions DO have one, which is why the same token in
+        // `struct { usize, bool }` (ghostty/src/simd/base64.zig:197) is an element
+        // type and stays refused: that is 332 of the 468, and naming them would
+        // repeat the 31 fabrications this comment already records.
+        //
+        // The four node types are the census's, not a judgement: over the same
+        // draw, 162 bound non-local enum members carry a name field the lexer
+        // spelled as something other than an `identifier` — `builtin_type` 116
+        // (Feature.bool, BlockType.f64, Key.f16), `boolean` 28 (Redraw.true,
+        // Redraw.false), `null` 14 (OptRef.null, SimpleValue.null) and
+        // `undefined` 4 (SimpleValue.undefined). Every one of those texts is a
+        // legal identifier in Zig declaration position, which the corpus
+        // demonstrates by compiling. A node type absent from this set is absent BY
+        // MEASUREMENT, so adding one needs a census row rather than an intuition.
+        const isEnumMember = container?.kind === ASTEngine.SymbolKind.Enum
+        const enumPrimitiveName =
+          isEnumMember && nameField && ENUM_MEMBER_NAME_NODE_TYPES.has(nameField.type)
+            ? nameField
+            : null
         const nameNode =
           nameField && nameField.type === "identifier"
             ? nameField
-            : this.anyChild(node, (n) => n.type === "identifier")
+            : (enumPrimitiveName ?? this.anyChild(node, (n) => n.type === "identifier"))
         const fieldName = nameNode ? nameNode.text : ""
         if (fieldName && fieldName !== "_" && fieldName.length < 200) {
-          const isEnumMember = container?.kind === ASTEngine.SymbolKind.Enum
           // Z17b (deep review): the field's declared type used to be found by
           // asking for one of five node types, so the most common kinds of
           // declaration in Zig published NO type at all — `size: Size`,
@@ -762,8 +1038,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: isEnumMember ? ASTEngine.SymbolKind.EnumMember : ASTEngine.SymbolKind.Property,
             visibility: "public",
             range: this.nodeRange(node),
-            scope: container?.name,
-            ownerName: container?.name,
+            scope: ownerPathOf(container),
+            ownerName: ownerPathOf(container),
             ownerKind: container?.kind,
             returnType: typeField ? this.nodeText(typeField) : undefined,
             metadata: { zigField: true, ...(isEnumMember ? { zigEnumMember: true } : {}) },
@@ -784,8 +1060,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: ASTEngine.SymbolKind.EnumMember,
             visibility: "public",
             range: this.nodeRange(node),
-            scope: container.name,
-            ownerName: container.name,
+            scope: ownerPathOf(container),
+            ownerName: ownerPathOf(container),
             ownerKind: container.kind,
             metadata: { zigErrorSetMember: true },
           })
@@ -960,6 +1236,9 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (family rules — go/rust/c/cpp all classify; zig did NOT).
     this.classifyEvidenceTier(relationships)
 
+    // Z65: TARGET SCOPE — what a reverse walk can bind this edge to.
+    this.annotateTargetScope(symbols, relationships)
+
     // No References edge for imports (imports stay in the imports array) and
     // no generic `exports module -> X` edge — `module` is not a symbol, so the
     // edge would never resolve (Java-family contract; the exports array and
@@ -1072,6 +1351,9 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): void {
     const emittedCalls = new Set<string>()
     const emittedUses = new Set<string>()
+    // Z66: the names this file binds by importing a module, read ONCE per file
+    // (memoised on the root) rather than per edge site.
+    const importAliases = zigImportAliases(rootNode)
     const stack: { node: Node; fn: string | null; inFn: boolean }[] = [{ node: rootNode, fn: null, inFn: false }]
     while (stack.length > 0) {
       const { node: n, fn, inFn } = stack.pop()!
@@ -1116,18 +1398,33 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           // function body (go family contract: package-scope calls emit with
           // source "global").
           const source = nextInFn && nextFn ? nextFn : "(global)"
-          const k = `${source}->${leaf}`
+          // Z66: a call THROUGH an external import alias names the module member,
+          // not a same-named local function. `std.debug.print` -> `calls ->
+          // std.debug.print`, with the receiver in metadata. The bare leaf stays
+          // the target for every other call, which is the shared callee-leaf
+          // contract (rust/go) and is not weakened.
+          const calleeExpr = n.namedChildCount > 0 ? n.namedChild(0) : null
+          const ext = this.zigExternalReceiverPath(
+            calleeExpr?.type === "field_expression" ? calleeExpr : undefined,
+            importAliases,
+          )
+          const target = ext ? ext.target : leaf
+          const k = `${source}->${target}`
           if (!emittedCalls.has(k)) {
             emittedCalls.add(k)
             relationships.push({
               source,
-              target: leaf,
+              target,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.85,
               // M59.A7 (#825): the callee LEAF as written — the name-bearing
               // node, not the call expression (which a receiver can precede).
               ...(this.nodeLine(leafNode) ? { line_number: this.nodeLine(leafNode)! } : {}),
-              metadata: { relationshipType: "zig_function_call", callExpression: n.text.slice(0, 60) },
+              metadata: {
+                relationshipType: "zig_function_call",
+                callExpression: n.text.slice(0, 60),
+                ...(ext ? { zigExternalRef: true, zigImportAlias: ext.alias, zigImportModule: ext.module } : {}),
+              },
             })
           }
         }
@@ -1206,19 +1503,63 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         })()
         if (field && notBuiltinAccess && !isAssignLhs && !isEnumLiteral && !isTypePosition) {
           const source = nextInFn && nextFn ? nextFn : "(global)"
-          const k = `${source}->${field}`
+          // Z66: as for `calls`, a read whose receiver is an external import alias
+          // names the module member. `std.mem.Allocator` -> `uses ->
+          // std.mem.Allocator`. `notBuiltinAccess` already refuses a receiver the
+          // grammar calls a builtin; this refuses the opposite mistake — a
+          // receiver that IS a local module alias keeps its bare leaf, because
+          // `c.zig`'s members are published under their own names.
+          const ext = this.zigExternalReceiverPath(n, importAliases)
+          const target = ext ? ext.target : field
+          const k = `${source}->${target}`
           if (!emittedUses.has(k)) {
             emittedUses.add(k)
             relationships.push({
               source,
-              target: field,
+              target,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.75,
               // M59.A7 (#825): the field LEAF as written.
               ...(this.nodeLine(fieldNode) ? { line_number: this.nodeLine(fieldNode)! } : {}),
-              metadata: { relationshipType: "zig_field_access", fieldAccessExpression: n.text.slice(0, 60) },
+              metadata: {
+                relationshipType: "zig_field_access",
+                fieldAccessExpression: n.text.slice(0, 60),
+                ...(ext ? { zigExternalRef: true, zigImportAlias: ext.alias, zigImportModule: ext.module } : {}),
+              },
             })
           }
+        }
+      }
+      // Z24 (pass 24): `@field(S, "x")` reads the member `x` of `S` by name-as-text. The
+      // read is the same fact `S.x` states, so it is a `uses` edge at the same confidence —
+      // what the analyzer does NOT know is that the symbol the graph will bind `x` to is
+      // `S`'s own member, which is exactly the inference `zig_field_access` already makes,
+      // and that is why this is 0.75 and not 1.0. `@hasDecl` is deliberately absent; see
+      // `zigReflectionFieldName` for the reason and the measured population.
+      //
+      // The dedup key is `emittedUses`' own `${source}->${field}` on purpose: Z52's
+      // post-pass already collapses one `uses` edge per (source, target) keeping the higher
+      // confidence, so a file that both reads `p.x` and reflects on it publishes ONE edge.
+      // A separate key would have published the same target twice with two reason codes,
+      // which is the defect Z52 was written to remove.
+      const reflectedName = this.zigReflectionFieldName(n)
+      if (reflectedName) {
+        const source = nextInFn && nextFn ? nextFn : "(global)"
+        const k = `${source}->${reflectedName.text}`
+        if (!emittedUses.has(k)) {
+          emittedUses.add(k)
+          relationships.push({
+            source,
+            target: reflectedName.text,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.75,
+            // M59.A7 (#825): the line of the NAME, matching `zig_field_access`.
+            ...(this.nodeLine(reflectedName) ? { line_number: this.nodeLine(reflectedName)! } : {}),
+            metadata: {
+              relationshipType: "zig_field_reflection",
+              reflectedMember: reflectedName.text,
+            },
+          })
         }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -1315,14 +1656,6 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         else seenRefEdges.add(k)
       }
     }
-    const firstString = (host: Node | null): Node | null => {
-      if (!host) return null
-      for (let i = 0; i < host.namedChildCount; i++) {
-        const c = host.namedChild(i)
-        if (c && (c.type === "string" || c.type === "string_content")) return c
-      }
-      return null
-    }
     while (stack.length > 0) {
       const n = stack.pop()!
       if (n.type === "builtin_function" || n.type === "call_expression") {
@@ -1337,27 +1670,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         const text = String(id?.text ?? "")
         if (text === "@import" || text === "@cImport" || text === "import") {
-          let args: Node | null = null
-          for (let i = 0; i < n.namedChildCount; i++) {
-            const c = n.namedChild(i)
-            if (c && c.type === "arguments") { args = c; break }
-          }
-          let strNode = firstString(n) ?? firstString(args)
-          if (strNode && strNode.type === "string") {
-            for (let i = 0; i < strNode.namedChildCount; i++) {
-              const sc = strNode.namedChild(i)
-              if (sc && sc.type === "string_content") { strNode = sc; break }
-            }
-          }
-          if (strNode) {
-            let target = String(strNode.text ?? "")
-            if (
-              (target.startsWith('"') && target.endsWith('"')) ||
-              (target.startsWith("'") && target.endsWith("'"))
-            ) {
-              target = target.substring(1, target.length - 1)
-            }
-            const line = this.nodeLine(strNode) ?? 0
+          // Z66: ONE reader for "what path does this @import spell", shared with
+          // `zigImportAliases`. The line anchor stays the STRING node, because that
+          // is the site an `imports` edge must point at, and the string node is the
+          // only place the literal is.
+          const lit = zigImportModuleLiteral(n)
+          if (lit) {
+            const target = lit.module
+            const line = this.nodeLine(lit.node) ?? 0
             const isUsingNamespace = n.parent?.type === "using_namespace_declaration"
             if (target && line > 0) {
               const k = `${line}|${target}`
@@ -1959,6 +2279,84 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * Z66 — the dotted path a read's receiver spells, when the receiver is an
+   * EXTERNAL `@import` alias, else null. The path is written out of the tree,
+   * segment by segment, so it is a parse fact and not a guess.
+   *
+   * `std.mem.Allocator` reaches the edge layer as the leaf `Allocator` alone; this
+   * walks up the `field_expression` chain to the root identifier and, if that root
+   * is a name this file binds by importing a BARE module path, returns
+   * `std.mem.Allocator`. A chain that breaks anywhere — a call result receiver
+   * (`std.io.getStdOut().writer()`), an anonymous enum literal (`.bad`, one named
+   * child and no base), a computed base — returns null and the edge stays as it
+   * was, because a path this analyzer cannot spell out of the tree is a path it
+   * must not publish.
+   *
+   * The name is emitted in place of the leaf and the receiver is recorded in
+   * metadata, so the edge says which module it names (`zigImportAlias`,
+   * `zigImportModule`) and a consumer can EXCLUDE it from its own unresolved count
+   * with a declared reason instead of inferring one. That is the whole of the
+   * `imports`-module-path defect's cost: `diagnose-incoming` reads 404 / 1,024 /
+   * 2,585 unresolved targets for zig with 0 module-wildcard shaped, because the
+   * target was the leaf, so nothing about the edge said `std`.
+   */
+  private zigExternalReceiverPath(
+    expr: Node | undefined,
+    aliases: Map<string, ZigImportAlias>,
+  ): { target: string; alias: string; module: string } | null {
+    if (!expr || expr.type !== "field_expression" || aliases.size === 0) return null
+    // An anonymous enum literal (`.bad`) is a field_expression with ONE named child
+    // and no base. It is not a member access and has no receiver to qualify.
+    if (expr.namedChildCount < 2) return null
+    // The nesting is DOWNWARD: `a.b.c` is field(base = field(base = a, b), c). So the
+    // walk is a descent through the bases from the node the EDGE is about, collecting
+    // each field in written order.
+    //
+    // It must start at the edge's own field_expression, not at the outermost one. The
+    // walk visits every `field_expression` in a chain, and `std.debug.assert` produces
+    // a `uses` edge for the INNER `std.debug` as well as the `calls` edge for the
+    // whole thing; starting at the outermost gave the inner read the longer path
+    // `std.debug.assert`, which names an access this file did not make at that node.
+    const segments: string[] = []
+    let node: Node = expr
+    let root = ""
+    let depth = 0
+    while (depth++ < 64) {
+      const fieldNode = node.namedChild(node.namedChildCount - 1)
+      if (!fieldNode || fieldNode.type !== "identifier") return null
+      segments.push(stripZigQuoting(String(fieldNode.text ?? "")))
+      const base = node.namedChild(0)
+      if (!base) return null
+      if (base.type === "identifier") { root = stripZigQuoting(String(base.text ?? "")); break }
+      // a call result receiver (`std.io.getStdOut().writer()`) is not a name, and a
+      // computed base is not a path: both are refused rather than guessed at
+      if (base.type !== "field_expression") return null
+      node = base
+    }
+    if (root === "") return null
+    const hit = aliases.get(root)
+    if (!hit || !hit.external) return null
+    segments.reverse()
+    return { target: `${root}.${segments.join(".")}`, alias: root, module: hit.module }
+  }
+
+  /**
+   * The field_expression a leaf NAME belongs to, when the leaf is the LAST named
+   * child of one — i.e. when the leaf really is the final segment of that access
+   * rather than an identifier found somewhere under it. The declared-type pass reads
+   * leaves by a breadth-first walk (Z19), so for an unnamed fn-TYPE parameter the leaf
+   * can be a BASE segment; qualifying from there would name a path the annotation
+   * does not end at, so that case is refused instead.
+   */
+  private zigTrailingFieldExpr(leaf: Node | undefined): Node | undefined {
+    if (!leaf) return undefined
+    const parent = leaf.parent
+    if (!parent || parent.type !== "field_expression") return undefined
+    if (parent.namedChild(parent.namedChildCount - 1)?.id !== leaf.id) return undefined
+    return parent
+  }
+
+  /**
    * Declared-type reference graph (family standard — go/c/rust M14). Collects
    * the leaf names of parameter types, return types, and struct/union/enum/
    * error-set field types, emitting `references` edges. Builtins and the bare
@@ -1970,6 +2368,13 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
   ): void {
     const emitted = new Set<string>()
+    // Z66: same alias map as the two code-relationship passes, and the same rule —
+    // a declared type written through an external import alias names the module's
+    // type. `var gpa: std.heap.GeneralPurposeAllocator` -> `references ->
+    // std.heap.GeneralPurposeAllocator`, which is the ONLY spelling of that type
+    // anywhere in the corpus and is exactly what a consumer needs to exclude an
+    // external dependency by a rule rather than by a guess.
+    const importAliases = zigImportAliases(rootNode)
     // `site` is the type node the leaf name was read from — M59.A7 (#825) wants
     // the reference line of the NAME, not of the enclosing declaration.
     const push = (leaf: string, site?: Node) => {
@@ -2007,16 +2412,21 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // identifier starts with `@`, so it is exempt by construction.
       const c0 = head.charCodeAt(0)
       if (c0 >= 48 && c0 <= 57) return
-      if (!emitted.has(head)) {
-        emitted.add(head)
+      const ext = this.zigExternalReceiverPath(this.zigTrailingFieldExpr(site), importAliases)
+      const target = ext ? ext.target : head
+      if (!emitted.has(target)) {
+        emitted.add(target)
         relationships.push({
           source: "(declared-type)",
-          target: head,
+          target,
           type: ASTEngine.RelationshipType.References,
           confidence: 0.9,
           // M59.A7 (#825): the type as written at this site.
           ...(this.nodeLine(site) ? { line_number: this.nodeLine(site)! } : {}),
-          metadata: { relationshipType: "declared_type" },
+          metadata: {
+            relationshipType: "declared_type",
+            ...(ext ? { zigExternalRef: true, zigImportAlias: ext.alias, zigImportModule: ext.module } : {}),
+          },
         })
       }
     }
@@ -2440,10 +2850,162 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * Z65 — TARGET SCOPE: state, per edge, whether the target name is a symbol THIS
+   * file publishes, and with which kind.
+   *
+   * WHY. A zig relationship carries six keys and both endpoints are NAME STRINGS.
+   * `src/lsp/impact.ts` obtains inbound edges by scanning outgoing edges and
+   * MATCHING TARGETS — no inbound edge is stored — so an edge's name is all a
+   * reverse walk has, and a name two declarations share is attributed to one of
+   * them by a rule nobody chose. Measured over the whole 3,834-file zig corpus
+   * (draw `sha256:2f3545f9…`, production `parseFile`, 392,550 edges):
+   * **265,887 edges (67.73%) name a target 2+ published symbols share**, and of
+   * those **151,004 (56.79%) have a candidate in the edge's OWN file** — a tie a
+   * per-file rule breaks soundly, because within one file the analyzer knows which
+   * declaration it published.
+   *
+   * WHAT IT ADDS. `metadata.targetScope`, plus `targetKind` when the file
+   * publishes exactly one kind under that name:
+   *   `file-local`     the file publishes a symbol with this exact name. A
+   *                    consumer resolves the edge to THAT symbol and needs no
+   *                    cross-file guess.
+   *   `file-external`  the file publishes none. The edge names something outside
+   *                    it — a `std.*` declaration, a builtin, an import path — and
+   *                    no per-file rule can say which. Stated, not guessed.
+   *   `scope-marker`   the endpoint is one of the literal scope markers
+   *                    (`(global)`, `(file)`, `(declared-type)`), which is a fact
+   *                    about the edge's provenance and not a symbol name.
+   *
+   * It adds NO edge, removes NO edge, and changes NO count — it is a label on
+   * edges that already exist, derived from this analyzer's own output rather than
+   * from a guess about the rest of the repository. A consumer that ignores it
+   * behaves exactly as before, which is why it cannot regress a budgeted lane.
+   *
+   * THE LIMIT, stated because it is the part that cannot be fixed here. This says
+   * whether the target is IN this file, not whether it is the declaration the
+   * author meant: `const Self = @This();` is a file-local name, and 240 edges
+   * resolve against it, while `keepSymbol`'s UNIVERSAL denylist
+   * (`src/ast/pool-worker.ts:449`, shared, §8) refuses to publish ANY symbol
+   * named `Self` — so those edges are labelled `file-external` even though the
+   * name is right there in the file. The denylist is the defect, and it is not
+   * this lane's file.
+   */
+  private annotateTargetScope(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const kindsByName = new Map<string, Set<string>>()
+    for (const s of symbols) {
+      const n = String(s.name ?? "")
+      if (!n) continue
+      const set = kindsByName.get(n) ?? new Set<string>()
+      set.add(String(s.kind ?? ""))
+      kindsByName.set(n, set)
+    }
+    const MARKERS = new Set(["(global)", "(file)", "(declared-type)", "(import)", "(local)"])
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.targetScope) continue
+      const t = String(r.target ?? "")
+      if (MARKERS.has(t)) { md.targetScope = "scope-marker"; continue }
+      const kinds = kindsByName.get(t)
+      if (!kinds) { md.targetScope = "file-external"; continue }
+      md.targetScope = "file-local"
+      // The kind only when it is unambiguous WITHIN the file: two kinds under one
+      // name here is a real collision, and picking one would be a guess.
+      if (kinds.size === 1) md.targetKind = [...kinds][0]
+      else md.targetKindCount = kinds.size
+    }
+  }
+
+  /** The `const X = @This();` binding of a file, or null when the file does not
+   *  name its own container. Read off node types only: a direct
+   *  `variable_declaration` child of the root whose value is a `builtin_function`
+   *  carrying the `builtin_identifier` `@This`.
+   *
+   *  The NAME is `namedChild(0)` when that is an `identifier`, NOT
+   *  `childForFieldName("name")`: this grammar declares no `name` field on
+   *  `variable_declaration` — the walk reads a variable declaration's name the
+   *  same way, and a probe that used the field lookup reported 0 bindings on a
+   *  source that carries one. `container_field` DOES declare `name`, which is
+   *  why `zigFileLevelField` can use the field.
+   *
+   *  Null is a real answer and not a fallback: 10 of the 411 corpus files that
+   *  declare file-level fields never bind `@This()`, and for those the owner of
+   *  those fields is not nameable from the file. */
+  private zigThisBindingName(root: Node): string | null {
+    for (let i = 0; i < root.namedChildCount; i++) {
+      const decl = root.namedChild(i)
+      if (!decl || decl.type !== "variable_declaration") continue
+      for (let j = 0; j < decl.namedChildCount; j++) {
+        const value = decl.namedChild(j)
+        if (!value || value.type !== "builtin_function") continue
+        const isThis = this.anyChild(value, (n) => n.type === "builtin_identifier" && n.text === "@This")
+        if (!isThis) continue
+        const name = decl.namedChildCount > 0 ? decl.namedChild(0) : null
+        if (name && name.type === "identifier") return name.text
+      }
+    }
+    return null
+  }
+
+  /** Publish one `container_field` whose direct parent is the file's root — a
+   *  member of the struct the FILE is, per `zigThisBindingName`.
+   *
+   *  The kind is decided by the field's own `type` FIELD, which is this
+   *  analyzer's discriminator between a struct field and an enum member
+   *  (`:2180`): the grammar uses one node type for `a: u8` and for `north`, and
+   *  only the former carries a type. A named container gets that answer from
+   *  its kind instead; a file-level container has no published kind, because
+   *  `const X = @This()` publishes `X` as a `Type` whether the body is a struct
+   *  or an enum, so the field's own field is the only evidence there is.
+   *
+   *  The owner is set ONLY when the file names it. The 10 corpus files that
+   *  declare file-level fields without a `@This()` binding publish the field
+   *  with no owner: the declaration is real and its reads then resolve, while
+   *  no `contains` edge is emitted for it, because that edge would need a
+   *  source symbol and asserting one would be inventing the container's name.
+   *
+   *  The name guards are the SAME three the named-container branch applies, and
+   *  they are load-bearing here rather than defensive: the corpus's three
+   *  untyped file-level fields are all in `zig/test/cases/compile_errors/`
+   *  (`file_level_tuple.zig` — a file-level tuple, which Zig rejects), and their
+   *  text holds a TYPE where a name belongs (`u32`, `comptime u8 = 123`). A
+   *  symbol named `u32` is a fabrication, so they are refused exactly as an
+   *  unnamed `extern struct` member is. */
+  private zigFileLevelField(
+    node: Node,
+    ownerName: string | null,
+    symbols: ASTEngine.UniversalSymbol[],
+  ): void {
+    const nameField = this.namedFieldOf(node, "name")
+    const nameNode =
+      nameField && nameField.type === "identifier" ? nameField : this.anyChild(node, (n) => n.type === "identifier")
+    const fieldName = nameNode ? nameNode.text : ""
+    if (!fieldName || fieldName === "_" || fieldName.length >= 200) return
+    const typeField = this.typeFieldOf(node)
+    symbols.push({
+      name: fieldName,
+      kind: typeField ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.EnumMember,
+      visibility: "public",
+      range: this.nodeRange(node),
+      scope: ownerName ?? undefined,
+      ownerName: ownerName ?? undefined,
+      ownerKind: ownerName ? ASTEngine.SymbolKind.Type : undefined,
+      returnType: typeField ? this.nodeText(typeField) : undefined,
+      metadata: {
+        zigField: true,
+        zigFileLevelField: true,
+        ...(typeField ? {} : { zigEnumMember: true }),
+      },
+    })
+  }
+
   private pushChildren(
     node: Node,
-    walkStack: { node: Node; container: ASTEngine.UniversalSymbol | null; inFunction: boolean; anonContainer: boolean }[],
-    container: ASTEngine.UniversalSymbol | null,
+    walkStack: { node: Node; container: ZigWalkSymbol | null; inFunction: boolean; anonContainer: boolean }[],
+    container: ZigWalkSymbol | null,
     inFunction: boolean,
     anonContainer: boolean,
   ): void {
@@ -2480,6 +3042,125 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (child && predicate(child)) return child
     }
     return null
+  }
+
+  /**
+   * Z24 (pass 24): the DECLARATION NAME `@field` reads, when it is spelled as a string.
+   *
+   * ## The construct
+   *
+   * Zig can read a container's member by name-as-text rather than by identifier:
+   *
+   *     @field(p, "x")        // the field `x` of whatever `p` holds
+   *     @field(Point, "z")    // the field `z` of the type `Point`
+   *
+   * Measured over the whole zig corpus (`validation/m14/fixtures/zig/reflection-builtin-probe.mts`,
+   * 8 shards, 3,848/3,848 files, 0 parse traps): **779 `@field` and 210 `@hasDecl` call
+   * sites over 242 files**, of which **206 name a declaration as a string**. Before this
+   * pass the analyzer read none of them — `reflection-firing.mts` drove the production
+   * `parseFile` over all 70 files carrying such a site and found **0** edges attributed to
+   * a reflection reason code. The 52 sites whose line carried an edge naming the same
+   * declaration decompose, by the analyzer's own reason codes, into `zig_field_access` 39,
+   * `zig_function_call` 10, `zig_export` 3 and `identifier_usage` 1 — all different
+   * constructs that share a line, since a relationship carries `line_number` and no range.
+   *
+   * Measured AFTER this pass, same instrument, same 70 files: **18 of the 22 named `@field`
+   * sites are represented by a `zig_field_reflection` edge**, and 7 of those 18 have the edge
+   * on their OWN line. The gap between 18 and 7 is Z52's post-pass, which collapses one `uses`
+   * edge per (source, target) keeping the higher confidence: `zig/test/behavior/member_func.zig:77,78`
+   * name `one` and `two`, the reflection edge for each is emitted, and the dot-access edge the
+   * same file already published at lines 39 and 62 wins the tie at the same 0.75. The
+   * site-level number alone would have read 7 and filed a working derivation as 11 misses.
+   *
+   * ## Why `@field` and NOT `@hasDecl`
+   *
+   * `@field(S, "a")` READS `S.a`: the corpus compiles, so `S` has that member and the code
+   * consumes its value. That is exactly the claim the `zig_field_access` pass already makes
+   * for `S.a` written with dots, so it is emitted as `uses` at the same confidence, with a
+   * distinct reason code so the two derivations stay auditable apart.
+   *
+   * `@hasDecl(S, "a")` is an EXISTENCE TEST. Its whole purpose is to ask whether `a` is
+   * there, and the surrounding code handles both answers (`if (@hasDecl(T, "opt")) … else
+   * …`). A hard `uses`/`references` edge would assert a dependency the source deliberately
+   * does not take, which is the fabrication this workstream exists to prevent, so it is NOT
+   * emitted. Its measured population is published instead: 184 named sites, and 128 of the
+   * 184 name a declaration this corpus does not publish at all (a foreign container, a type
+   * parameter, a translate-c struct), so even a permissive reading would have produced 128
+   * edges the graph cannot walk to.
+   *
+   * ## Why the name must be identifier-shaped
+   *
+   * `@field(anyerror, "Expected closing ]")` is a legal Zig read of an error-set member, and
+   * Z18 already recorded what publishing such a text as a bare target does: it produced
+   * targets like `@"ziglib"` for names that were legitimate. The same guard applies — a
+   * `string_content` carrying a character outside `[A-Za-z0-9_]` is an error name, not a
+   * member this file declares, and publishing it would add an edge whose target is junk.
+   * Measured: **2 of the 22 named `@field` sites** carry a non-identifier-shaped name
+   * (`zig/lib/std/fmt.zig:1550,1557`, both `"Expected closing ]"`) and **both are declined**.
+   *
+   * ## WHAT THE SHAPE GUARD DOES NOT DO, because a comment that claimed otherwise was wrong
+   *
+   * An earlier revision of this header read "3 of the 22 resolve to nothing and all 3 are
+   * declined, which is what the arity measurement independently found". The two numbers are
+   * 2 and 3 and they are not the same set. The third zero-resolving site is `NotFound` at
+   * `zig/test/behavior/error.zig:897`, `@field(anyerror, "NotFound")`, and its name IS
+   * identifier-shaped, so it is EMITTED — with `targetScope: file-external`, because nothing in
+   * that 3,000-line file publishes `NotFound`. So the guard is not an error-set detector: it
+   * declines error names containing punctuation and lets identifier-shaped error names
+   * through. That is the intended behaviour and it is stated rather than papered over:
+   *
+   *   - `error.NotFound` IS a legitimate declaration name in Zig, so the edge states a TRUE
+   *     dependency — on a name this particular file's corpus does not publish.
+   *   - `anyerror` is a `builtin_type` node, not an `identifier`, so its member namespace is
+   *     the inferred error set of the whole PROGRAM: unbounded, and bindable by no per-file
+   *     rule.
+   *   - Suppressing it instead would be inconsistent with the sibling pass, which publishes
+   *     `@typeInfo(u8).Int` → `Int` under the same `file-external` label, and `Int` equally
+   *     resolves to nothing in its own file. Dropping one unresolvable read and keeping the
+   *     other would be a fit to a single test line, not a rule.
+   *
+   * So the honest count is: of the 7 `zig_field_reflection` edges the corpus produces, **6
+   * carry a target published in their own file and exactly 1 does not**
+   * (`zig/test/behavior/error.zig:897`), and it says so on the edge.
+   *
+   * No regex: the shape test is a Set of node types and the character test is a
+   * character-code range, both the file's existing zero-regex discipline.
+   */
+  private zigReflectionFieldName(node: Node): Node | null {
+    if (node.type !== "builtin_function") return null
+    const bid = this.anyChild(node, (c) => c.type === "builtin_identifier")
+    if (!bid || bid.text !== "@field") return null
+    const args = this.anyChild(node, (c) => c.type === "arguments")
+    if (!args) return null
+    // The SECOND argument is the member name; the first is the container. A `@field` with
+    // no string second argument names its member by a comptime VALUE, which is not a name
+    // this pass can read — `@field(T, field_name)` where `field_name` is a comptime
+    // variable is the majority shape in the corpus (757 of the 779 sites) and correctly
+    // yields nothing here.
+    let stringArg: Node | null = null
+    let seen = 0
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const a = args.namedChild(i)
+      if (!a) continue
+      seen++
+      if (seen === 2 && a.type === "string") stringArg = a
+    }
+    if (!stringArg) return null
+    const content = this.anyChild(stringArg, (c) => c.type === "string_content")
+    if (!content) return null
+    const text = content.text
+    if (!text) return null
+    // ≡ /^[A-Za-z_][A-Za-z0-9_]*$/ — first char is a letter or underscore, then letters,
+    // digits and underscores. A member name that is not identifier-shaped is an error-set
+    // member (see the Z24 header).
+    const isStart = (c: number) =>
+      (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95
+    const isRest = (c: number) => isStart(c) || (c >= 48 && c <= 57)
+    if (!isStart(text.charCodeAt(0))) return null
+    for (let i = 1; i < text.length; i++) {
+      if (!isRest(text.charCodeAt(i))) return null
+    }
+    return content
   }
 
   // The `pub`/`export`/`inline` modifiers are anonymous token children
