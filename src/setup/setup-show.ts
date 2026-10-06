@@ -14,6 +14,15 @@
 //     or rendered by this module
 //   - the config file's permission mode, with a warning when it is not 0600
 //
+// It also prints the provider chain bb will actually use, in resolution order,
+// with each layer's source env var — the answer to "which provider am I on and
+// what do I change to move off it", which the tier table alone does not give
+// (a tier can be complete and still be unusable: no key for a remote host, or
+// a base URL that is not an endpoint). That block comes from
+// src/brain/semantic/embedding-diagnosis.ts, the same module `bb doctor` and
+// `bb health` read, so the three surfaces cannot disagree about what bb is
+// going to do.
+//
 // Pure local state: no network, no prompts, non-TTY safe. The CLI exits 1
 // when nothing is configured so scripts can branch on it.
 
@@ -21,6 +30,12 @@ import { existsSync, readFileSync, statSync } from "node:fs"
 import path from "node:path"
 import { bbDataDir } from "../util/bb-data-dir"
 import { fingerprintKey } from "./setup-wizard"
+import {
+  buildEmbeddingDiagnosis,
+  embeddingChainVerdict,
+  renderChainSummary,
+  type EmbeddingDiagnosis,
+} from "../brain/semantic/embedding-diagnosis"
 
 export type TierId = "env" | "global" | "project"
 
@@ -46,6 +61,12 @@ export type SetupShowState = {
   winner: TierId | "none"
   configured: boolean
   tiers: TierView[]
+  /**
+   * The provider chain and its problems, attached at construction so a caller
+   * that already has a state does not rebuild it. Optional because the tier view
+   * alone remains a valid, self-contained description — the chain is additive.
+   */
+  diagnosis?: EmbeddingDiagnosis
 }
 
 function readJsonSafe(p: string): any | null {
@@ -120,12 +141,26 @@ export function describeEmbeddingConfig(cwd = process.cwd(), env: Record<string,
   const tiers = [envTier, globalTier, projectTier]
   // Winner mirrors hasEmbeddingConfig(): first COMPLETE tier in env > global
   // > project order. An incomplete tier is shown but can never win.
+  //
+  // KNOWN DISAGREEMENT, reported rather than silently changed: the runtime merges
+  // the two file tiers in the opposite order (Config.get() is
+  // `{...home, ...local, ...explicit}`, so a project's bb.json overrides
+  // ~/.bb/config.json) and EMBEDDINGS.md documents it that way too. So when both
+  // file tiers are complete, the "Winner" line below names the global tier while
+  // indexing actually uses the project one. script/m32/verify-setup-show.ts
+  // asserts this order as the contract ("global still outranks project"), so it
+  // is not changed here; `buildEmbeddingDiagnosis` surfaces the disagreement as
+  // `tierOrderDisagreement` and `bb doctor` prints it.
   const winningTier = tiers.find((t) => t.complete)
-  return {
+  const state: SetupShowState = {
     winner: winningTier?.tier ?? "none",
     configured: Boolean(winningTier),
     tiers,
   }
+  // The diagnosis needs the state, and the state gains the diagnosis: build it
+  // here rather than in the renderer so every caller of the state sees it.
+  state.diagnosis = buildEmbeddingDiagnosis({ state, env: env as NodeJS.ProcessEnv })
+  return state
 }
 
 // Render human-readable output. Only fingerprints may appear here — the full
@@ -164,6 +199,28 @@ export function renderSetupShow(state: SetupShowState): string {
     lines.push(`Winner: ${tierLabel[w]}`)
   } else {
     lines.push("Winner: none — semantic search will use local vectors (weaker). Setup: bb setup")
+  }
+
+  // The chain, in the order bb resolves it. `bb setup show` is where a user goes
+  // to find out what the machine is going to do, so it answers that here rather
+  // than making them run `bb doctor`. Rendered from `state.diagnosis` when
+  // present — the same object `bb doctor` prints, so the two cannot disagree.
+  const diagnosis = state.diagnosis
+  if (diagnosis) {
+    lines.push("")
+    lines.push(`Chain: ${embeddingChainVerdict(diagnosis)}`)
+    for (const line of renderChainSummary(diagnosis)) lines.push(line)
+    const problems = diagnosis.problems.filter((p) => !/^No embedding provider is configured/.test(p.message))
+    for (const p of problems) {
+      const varName = p.envVar ? `${p.envVar}: ` : ""
+      lines.push(`  ! ${varName}${p.message}`)
+    }
+    for (const f of diagnosis.observedFailures) {
+      lines.push(`  ✗ ${f.status} ${f.kind} from ${f.baseURL} — ${f.advice}`)
+    }
+    if (diagnosis.tierOrderDisagreement) {
+      lines.push(`  ! ${diagnosis.tierOrderDisagreement.detail}`)
+    }
   }
   return lines.join("\n") + "\n"
 }

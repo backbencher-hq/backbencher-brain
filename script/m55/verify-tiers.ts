@@ -46,6 +46,7 @@ import { pathToFileURL } from "node:url"
 import { T5_EXPECT, T5_ROW_TIER, T5_ROWS, T5_SYMBOLS, nameColumn, rowsForExternal, rowsForSymbol, seedT5Db, writeT5Workspace } from "./t5-fixture.ts"
 import { StdioLsp, ensureServerBuilt } from "./lsp-wire.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const OWNER = path.join(ROOT, "src/lsp/evidence_tier.ts")
@@ -548,6 +549,7 @@ const result = {
   negativeCases: mutantsTotal,
   mutants: { total: mutantsTotal, caught: mutantsCaught },
   currentCommit,
+  ...fingerprintFields(["m55.T5"], ROOT),
   workingTreeRelevantChanges,
   verifierCommand: "npx tsx script/m55/verify-tiers.ts",
   evidenceFile: "T5.json",

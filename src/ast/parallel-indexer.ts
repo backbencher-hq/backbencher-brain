@@ -1,4 +1,3 @@
-// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
 // Parallel Indexer v4 - Batch Processing to Avoid Event Loop Blocking
 // Scales gracefully and avoids 500ms setup overhead per file
 
@@ -10,6 +9,11 @@ import * as path from "path"
 import { fork, type ChildProcess } from "child_process"
 import { realpathSync } from "fs"
 import * as Log from "../tool/brain-log"
+import {
+  resolvePoolWorkerForkSafe,
+  poolFailureLine,
+  poolStartupTimeoutMs,
+} from "./pool-diagnostics"
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
 import { isIndexArtifactName, isIndexArtifactNameStrict } from "./analysis-exclusions"
@@ -441,6 +445,75 @@ export interface ParallelIndexingStats {
      *  measurement `derivedPass` is not, and it is what decides whether the
      *  remediation is `bb index --post`. */
     unresolvedRelationships?: number
+    /** What happened to embeddings during this run.
+     *
+     *  Embeddings are produced AFTER parsing, in the background, by a drainer
+     *  that can fail long after the parse phase reported success. Those outcomes
+     *  were accumulated in `backgroundEmbedMetrics` and read NOWHERE — not by the
+     *  summary, not by the CLI — so a run could lose every vector and still print
+     *  "✓ indexed N files".
+     *
+     *  `embedded` counts vectors actually stored. `failed` includes vectors the
+     *  provider returned but which were unusable (empty, non-array, or holding a
+     *  non-finite component); those are a different fault from a short result and
+     *  are worth separating when triaging. */
+    embedOutcome?: {
+      queued: number
+      embedded: number
+      failed: number
+      skipped: number
+      dropped: number
+      /** Vectors that arrived malformed and were discarded at the write boundary. */
+      invalid: number
+    }
+    /** Distinct embedding models present in the index after this run.
+     *
+     *  More than one means the index is MIXED: when the provider dies mid-run
+     *  some chunks are written under the API model and the rest under the local
+     *  one. That is measured, not hypothetical — 100 rows `mock-1536d`/1536
+     *  alongside 160 rows `local-word-vectors-v3`/50 in a single index.
+     *
+     *  It matters because `bb_ask` reads the index under ONE model label, so the
+     *  other model's vectors become invisible with nothing on screen saying so.
+     *  Reported rather than prevented: each vector is valid for its own model,
+     *  so per-vector validation cannot stop this. */
+    embedModels?: Array<{ model: string; dimension: number; count: number }>
+    /** Vector-integrity census for this project.
+     *
+     *  Exists because a corrupt vector is invisible in every other number:
+     *  `vector_dimension` is written as `vec.length`, so a bad vector records a
+     *  dimension that describes itself and the row looks internally consistent.
+     *  Nothing re-derives the true length at read time, so the row surfaces much
+     *  later as a silently missing search result.
+     *
+     *  `dimensions` are OBSERVED lengths rather than the declared
+     *  `vector_dimension`, deliberately: reading back the declared value would
+     *  report the corrupt row as healthy, which is the one thing this census
+     *  exists to prevent. A model whose observed lengths disagree with each
+     *  other is the signal.
+     *
+     *  Contract pinned by script/a3-relationship-enrichment/verify-embedding-integrity.ts. */
+    embeddingIntegrity?: {
+      /** Rows in brain_semantic_embedding for this project. */
+      total: number
+      /** One entry per DISTINCT embedding_model. */
+      models: Array<{ model: string; rows: number; dimensions: number[] }>
+      /** More than one model — `bb_ask` reads the index under a single label. */
+      mixed: boolean
+      /** Rows whose OBSERVED length disagrees with their declared vector_dimension. */
+      dimensionMismatches: number
+      /** Rows whose vector does not scan to finite numbers. */
+      malformedVectors: number
+      /** mismatches + malformed. Coverage must EXCLUDE these, not count them. */
+      unusableEmbeddings: number
+      /** Vectors actually inspected. Below `total` when the scan was bounded. */
+      scanned?: number
+      /** True when the bounded scan did not cover every row, so the counts
+       *  above describe a SAMPLE. Reported rather than implied: a partial
+       *  census presented as complete is the same dishonesty as an uncounted
+       *  corrupt row. */
+      truncated?: boolean
+    }
     /** How the files were parsed: `worker-pool` or `in-process`.
      *
      *  When the pool's fork test fails the run degrades to in-process parsing and
@@ -574,6 +647,22 @@ const cliSkipPatterns: RegExp[] = [
 
 export function shouldSkipCli(filePath: string): boolean {
   return cliSkipPatterns.some((p) => p.test(filePath))
+}
+
+/**
+ * The CLI skip list, exported so the fingerprint walk can DERIVE its own list from
+ * the same patterns instead of keeping a hand-maintained copy.
+ *
+ * The copy drifted by 21 directory names, which made `computeCheckoutFingerprint`
+ * and `computeDbFingerprint` disagree on an unchanged tree — every index then
+ * looked permanently stale, and the "did anything change" signal meant nothing.
+ * Two copies of a skip list cannot be kept in agreement by review; they have to
+ * have only one source.
+ *
+ * Exported as a copy of the array reference so a caller cannot mutate ours.
+ */
+export function parallelIndexerCliSkipPatterns(): RegExp[] {
+  return cliSkipPatterns.slice()
 }
 
 export function hasValidExtension(filePath: string): boolean {
@@ -781,12 +870,21 @@ async function discoverAndFilterFiles(
   const rawDb = eligibleOnly ? null : await BrainDatabase.getRawInstance(projectId)
   let existingRecords: { path: string; last_modified: number; size_bytes: number }[] = []
 
-  if (eligibleOnly) {
+  if (!rawDb) {
     // M64.C: nothing below needs the index, and `rawDb` is deliberately null
     // here. The guard has to be a branch rather than a `rawDb &&` on each use:
     // the first version assigned null and then dereferenced it two lines later,
     // so the whole walk threw and bb_health reported UNKNOWN_SCAN_FAILED on
     // every call.
+    //
+    // ON `!rawDb` AND NOT ON `eligibleOnly`, which is what this used to test.
+    // `rawDb` is null IFF `eligibleOnly`, so the two guards accept exactly the
+    // same runs — but only one of them lets the type system know. Narrowing a
+    // `const` union by a DIFFERENT variable is not something TypeScript tracks,
+    // so every `rawDb.` below stayed "possibly null" and the seven uses that
+    // follow needed suppression to compile. Testing the value that is actually
+    // dereferenced is both correct and narrower: it holds if a future
+    // `getRawInstance` can return null for any other reason.
   } else if (filesOverride && filesOverride.length > 0) {
     // Only fetch stats for the specific files being overridden
     const placeholders = filesOverride.map(() => "?").join(",")
@@ -982,7 +1080,11 @@ async function discoverAndFilterFiles(
   // M64.C: NEVER on an eligible-only run. That caller is asking what is on disk,
   // and deleting index rows to "answer" a health question would make the
   // question destructive — a read-only tool that mutated the index.
-  if (!eligibleOnly && (!filesOverride || filesOverride.length === 0)) {
+  // `rawDb` rather than `!eligibleOnly` for the same reason as the guard above:
+  // this block dereferences the handle seven times, and the null-ness is the
+  // handle's own. `existingRecords` is empty on the null path, so `staleFiles`
+  // is empty too — the `!rawDb` test changes nothing about what runs.
+  if (rawDb && !eligibleOnly && (!filesOverride || filesOverride.length === 0)) {
     const staleFiles = existingRecords.filter((record) => !foundFiles.has(record.path))
     if (staleFiles.length > 0) {
       log.debug("cleaning up stale files from database", { staleCount: staleFiles.length })
@@ -1048,6 +1150,16 @@ async function processInProcess(
   let processed = 0
   let consecutiveTimeouts = 0
   const MAX_CONSECUTIVE_TIMEOUTS = 50
+  // A cancel observed here has to be REPORTED, and `stats` does not exist in
+  // this function — this line read `stats.cancelled = true`, which is a
+  // ReferenceError at runtime. It was invisible because the whole file carries
+  // `@ts-nocheck`, which is exactly the class of defect that directive hides.
+  //
+  // `telemetry` is the channel this function already has for telling the caller
+  // what happened (it carries workerStartFailures/poisonFiles and is threaded
+  // from the caller), so `cancelled` belongs there rather than in a phantom
+  // variable. The caller propagates it to `stats.cancelled`.
+  let sawCancel = false
   const FILE_TIMEOUT_MS = 60000 // 60s per file in in-process mode
 
   // SAFETY LIMITS for compiled mode (where tree-sitter WASM can hang synchronously)
@@ -1067,7 +1179,8 @@ async function processInProcess(
   for (const file of effectiveFiles) {
     // M21.R3: cooperative cancellation — stop before starting the next file.
     if (aborted()) {
-      stats.cancelled = true
+      sawCancel = true
+      if (telemetry) (telemetry as { cancelled?: number }).cancelled = 1
       for (const f of effectiveFiles.slice(effectiveFiles.indexOf(file))) {
         results.push({ filePath: f, success: false, error: "cancelled by user" })
         processed++
@@ -1228,6 +1341,36 @@ function resolvePoolWorkerFork(): { workerPath: string | null; workerArgs: strin
   }
   // Bun: runs TypeScript natively — fork the worker entry itself
   return { workerPath: workerEntry, workerArgs: [] }
+}
+
+/**
+ * Why a worker pool could not be started, in terms a user can act on.
+ *
+ * `resolvePoolWorkerFork` returns `workerPath: null` when it cannot find a
+ * TypeScript loader, but its two call sites used to pass that straight into
+ * `fork()`. `fork(null)` throws a TypeError, and because the call sat inside a
+ * broad try/catch the throw was swallowed and reported as a generic
+ * "worker pool unavailable" — so a missing `tsx` looked identical to a genuine
+ * crash, and the run silently degraded to serial in-process parsing.
+ *
+ * This narrows the diagnosis so the CLI can name the actual cause and the fix.
+ */
+export function describePoolWorkerUnavailable(): string {
+  // Retained for callers that only want prose. The resolver below is the
+  // structured path and should be preferred.
+  if (process.execPath.endsWith("node") || process.execPath.endsWith("node.exe")) {
+    const moduleDir = path.dirname(require("url").fileURLToPath(import.meta.url))
+    const projectRoot = path.resolve(moduleDir, "../..")
+    const localTsx = path.join(projectRoot, "node_modules", ".bin", "tsx")
+    if (!require("fs").existsSync(localTsx) && !findOnPath("tsx")) {
+      return (
+        "no TypeScript loader found: neither node_modules/.bin/tsx nor tsx on PATH. " +
+        "Run `npm install` (or `npm i -D tsx`) to restore parallel indexing, or set " +
+        "BB_POOL_WORKER=0 to accept serial in-process indexing."
+      )
+    }
+  }
+  return "the worker pool could not be forked; falling back to serial in-process indexing"
 }
 
 export async function processWithWorkerPool(
@@ -1541,12 +1684,27 @@ export async function processWithWorkerPool(
         }
       }
 
-      worker.stderr?.on("data", (data: Buffer) => {
-        process.stderr.write(`[WORKER-ERR] ${data.toString()}`)
-      })
-      worker.stdout?.on("data", (data: Buffer) => {
-        process.stderr.write(`[WORKER-OUT] ${data.toString()}`)
-      })
+      // Worker stdout/stderr is piped (never inherited), so something has to drain it
+      // or a chatty child fills the pipe buffer and deadlocks. But echoing every
+      // line verbatim turned routine INFO logging from N workers into a wall of
+      // `[WORKER-ERR] [INFO] [ast-engine] tree-sitter core initialized` noise
+      // that buried the progress line users actually read.
+      //
+      // So: drain always (required), echo only when explicitly asked, and treat
+      // the child's stderr as diagnostics rather than errors — a worker writing
+      // to stderr is normal, not a failure.
+      const echoWorkerOutput = process.env.BB_WORKER_ECHO === "1"
+      const relayWorker = (tag: string) => (data: Buffer) => {
+        if (!echoWorkerOutput) return
+        // Buffer partial lines: a single chunk can split mid-line and produce
+        // ragged, doubled output.
+        const text = data.toString()
+        for (const line of text.split("\n")) {
+          if (line.trim().length > 0) process.stderr.write(`[${tag}] ${line}\n`)
+        }
+      }
+      worker.stderr?.on("data", relayWorker("worker"))
+      worker.stdout?.on("data", relayWorker("worker-out"))
 
       worker.on("message", (msg: any) => {
         try {
@@ -1843,10 +2001,271 @@ function withTimeout<T>(p: Promise<T> | T, ms: number, msg: string): Promise<T> 
   })
 }
 
+/**
+ * Which embedding models does this index actually hold?
+ *
+ * A mixed-model index is producible in a single run: when the provider dies
+ * partway, earlier chunks were written under the API model and later ones under
+ * the local fallback. Measured: 100 rows `mock-1536d`/1536 alongside 160 rows
+ * `local-word-vectors-v3`/50 in one index.
+ *
+ * This is not prevented, because each vector is individually valid for its own
+ * model — a per-vector check cannot detect a cross-vector inconsistency. It is
+ * MEASURED and reported instead, because `bb_ask` reads the index under a single
+ * model label: the other model's vectors stop being found, and without this
+ * number nothing on screen says why results got worse.
+ */
+export async function surveyEmbeddingModels(
+  projectId: ProjectID,
+): Promise<Array<{ model: string; dimension: number; count: number }>> {
+  try {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return raw
+      .prepare(
+        `SELECT embedding_model AS model, vector_dimension AS dimension, COUNT(*) AS count
+         FROM brain_semantic_embedding
+         WHERE project_id = ?
+         GROUP BY embedding_model, vector_dimension
+         ORDER BY count DESC`,
+      )
+      .all(projectId) as Array<{ model: string; dimension: number; count: number }>
+  } catch (e: any) {
+    log.warn("could not survey embedding models", { error: e?.message })
+    return []
+  }
+}
+
+/**
+ * Census the actual vectors, not the numbers that describe them.
+ *
+ * `brain_semantic_embedding.vector_dimension` is written as `vec.length`, so it
+ * is self-describing and cannot detect a corrupt row. This walks the stored
+ * vectors instead:
+ *
+ *   - observed length vs declared `vector_dimension` -> dimension mismatch
+ *   - a vector that does not scan to finite numbers   -> malformed
+ *
+ * The malformed check is not theoretical: a non-finite component makes every
+ * downstream cosine NaN, and the read path filters NaN — so such a row is
+ * counted in `total` and in coverage while being unreachable by search.
+ *
+ * Bounded on purpose. A project with 500k vectors cannot afford to JSON.parse
+ * all of them on every run, so above `MAX_INTEGRITY_SCAN_VECTORS` this reports
+ * what it measured and sets `scanned`/`truncated` so a caller can say the census
+ * is partial rather than implying full coverage.
+ */
+const MAX_INTEGRITY_SCAN_VECTORS = 50_000
+
+export async function surveyEmbeddingIntegrity(projectId: ProjectID): Promise<{
+  total: number
+  models: Array<{ model: string; rows: number; dimensions: number[] }>
+  mixed: boolean
+  dimensionMismatches: number
+  malformedVectors: number
+  unusableEmbeddings: number
+  scanned: number
+  truncated: boolean
+}> {
+  const empty = {
+    total: 0,
+    models: [],
+    mixed: false,
+    dimensionMismatches: 0,
+    malformedVectors: 0,
+    unusableEmbeddings: 0,
+    scanned: 0,
+    truncated: false,
+  }
+  try {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    const total = Number(
+      (raw
+        .prepare("SELECT COUNT(*) c FROM brain_semantic_embedding WHERE project_id = ?")
+        .get(projectId) as any)?.c ?? 0,
+    )
+
+    // Per-model row counts and declared dimensions, straight from SQL.
+    const byModel = raw
+      .prepare(
+        `SELECT embedding_model AS model, COUNT(*) AS rows, vector_dimension AS declared
+         FROM brain_semantic_embedding WHERE project_id = ?
+         GROUP BY embedding_model, vector_dimension`,
+      )
+      .all(projectId) as Array<{ model: string; rows: number; declared: number }>
+
+    const models = new Map<string, { model: string; rows: number; dimensions: number[] }>()
+    for (const r of byModel) {
+      const cur = models.get(r.model) ?? { model: r.model, rows: 0, dimensions: [] }
+      cur.rows += r.rows
+      models.set(r.model, cur)
+    }
+
+    // Now actually look at the vectors, within a bounded scan.
+    const limit = Math.min(total, MAX_INTEGRITY_SCAN_VECTORS)
+    const rows = raw
+      .prepare(
+        `SELECT embedding_model AS model, embedding_vector AS vec, vector_dimension AS declared
+         FROM brain_semantic_embedding WHERE project_id = ? LIMIT ?`,
+      )
+      .all(projectId, limit) as Array<{ model: string; vec: string | null; declared: number | null }>
+
+    let dimensionMismatches = 0
+    let malformedVectors = 0
+
+    for (const r of rows) {
+      let observed: number | null = null
+      let ok = true
+      if (r.vec) {
+        try {
+          const parsed = JSON.parse(r.vec)
+          if (Array.isArray(parsed)) {
+            observed = parsed.length
+            for (const v of parsed) {
+              if (typeof v !== "number" || !Number.isFinite(v)) {
+                ok = false
+                break
+              }
+            }
+          } else {
+            ok = false
+          }
+        } catch {
+          ok = false
+        }
+      } else {
+        ok = false
+      }
+
+      const entry = models.get(r.model)
+      if (entry && observed !== null && !entry.dimensions.includes(observed)) {
+        entry.dimensions.push(observed)
+      }
+      if (!ok) malformedVectors++
+      if (observed !== null && r.declared !== null && observed !== r.declared) {
+        dimensionMismatches++
+      }
+    }
+
+    const modelList = [...models.values()]
+      .map((m) => ({ model: m.model, rows: m.rows, dimensions: m.dimensions.sort((a, b) => a - b) }))
+      .sort((a, b) => b.rows - a.rows)
+
+    return {
+      total,
+      models: modelList,
+      mixed: modelList.length > 1,
+      dimensionMismatches,
+      malformedVectors,
+      // A row can be both (wrong length AND non-finite), so count the union:
+      // "unusable" is a count of rows, not of findings.
+      unusableEmbeddings: rows.length - rows.filter((r) => {
+        try {
+          const p = JSON.parse(r.vec as string)
+          if (!Array.isArray(p)) return false
+          if (r.declared !== null && p.length !== r.declared) return false
+          return p.every((v) => typeof v === "number" && Number.isFinite(v))
+        } catch {
+          return false
+        }
+      }).length,
+      scanned: rows.length,
+      truncated: total > limit,
+    }
+  } catch (e: any) {
+    log.warn("could not survey embedding integrity", { error: e?.message })
+    return empty
+  }
+}
+
+/**
+ * The pool numbers this run adds to the persisted summary.
+ *
+ * `BrainDatabase.IndexPerformanceStats["runs"][number]` declares exactly five keys
+ * (database.ts:284-290) and this is a sixth, so the object literal below was
+ * rejected for a property the type did not know about. The key IS written to the
+ * JSON column and IS read back by nothing — `dbFlushMs` duplicates `phases`, and
+ * the other four are pool counters that `phases` omits.
+ *
+ * Declared here rather than cast at the call site, because a cast would only
+ * silence the check; naming the shape states what is actually persisted. The
+ * honest long-term fix is one of:
+ *
+ *   - add `poolTelemetry?: {...}` to `IndexPerformanceStats` in
+ *     src/brain/database.ts (one line, keeps the data), or
+ *   - drop the key, since nothing consumes it.
+ *
+ * Neither is this file's to decide — the first belongs to database.ts, the second
+ * changes persisted output. Kept as-is, typed honestly, until then.
+ */
+type PersistedRun = BrainDatabase.IndexPerformanceStats["runs"][number] & {
+  poolTelemetry?: {
+    dbFlushMs: number
+    retries: number
+    workerCount: number
+    workerStartupFailures: number
+    poisonFiles: number
+  }
+}
+
+/**
+ * Render the integrity census through the indexer's logger.
+ *
+ * Shared by both summary paths (derived-pass and no-op incremental) and used
+ * instead of two inline copies, so the logger and the CLI cannot drift into
+ * reporting different things about the same index. Silent when healthy.
+ */
+function reportEmbeddingIntegrity(
+  _log: { log: (s: string) => void },
+  // `IndexStatsSummary["embeddingIntegrity"]`, NOT `ReturnType<typeof
+  // surveyEmbeddingIntegrity>` — the parameter type was derived from the
+  // PRODUCER, which always sets both fields, while the argument is often the
+  // value READ BACK from `performanceStats`, where a run persisted before those
+  // fields existed genuinely lacks them. The producer's return type therefore
+  // promised something the read path cannot deliver.
+  //
+  // The body already knew: it tests `if (integ.truncated)` and prints
+  // `integ.scanned ?? 0`. Those are not defensive noise — they are the code
+  // this signature was written for, and the annotation was the part that was
+  // wrong.
+  integ: NonNullable<ParallelIndexingStats["summary"]>["embeddingIntegrity"],
+): void {
+  if (!integ || (integ.models.length <= 1 && integ.unusableEmbeddings === 0)) return
+  if (integ.mixed) {
+    _log.log(
+      `  ⚠ index holds ${integ.models.length} embedding models — search compares only one, so the rest are ignored:`,
+    )
+    for (const m of integ.models) {
+      _log.log(
+        `      ${m.model}: ${m.rows.toLocaleString()} vectors (observed dims ${m.dimensions.join(", ")})`,
+      )
+    }
+  }
+  if (integ.unusableEmbeddings > 0) {
+    _log.log(
+      `  ⚠ ${integ.unusableEmbeddings} of ${integ.total.toLocaleString()} vectors are unusable ` +
+        `(${integ.dimensionMismatches} dimension mismatch, ${integ.malformedVectors} malformed) — ` +
+        `counted as coverage, unreachable by search`,
+    )
+    _log.log(`      fix: reindex with a single provider — bb index --force`)
+  }
+  if (integ.truncated) {
+    _log.log(
+      `      (integrity census sampled ${(integ.scanned ?? 0).toLocaleString()} of ${integ.total.toLocaleString()} vectors)`,
+    )
+  }
+}
+
 export const backgroundEmbedMetrics = {
   // M40.A9: verifier-only observability for the background queue (read by
   // script/m21 gates). Product code consumes queue state via DB rows, not
   // this counter object. Keep exported; do not call from product paths.
+  //
+  // CORRECTION (launch-readiness): that "verifier-only" framing is why a run
+  // could fail to embed every vector and still print "✓ indexed N files" —
+  // these numbers were accumulated and read by nothing a user sees. They are
+  // now copied onto the run summary (`summary.embedOutcome`) and printed by
+  // the CLI, because an embedding outage that is invisible is indistinguishable
+  // from an index that succeeded.
   /** Items accepted into the queue (cap-permitting). */
   queued: 0,
   /** Items dropped because the queue cap or batch limit was hit. */
@@ -1857,6 +2276,12 @@ export const backgroundEmbedMetrics = {
   fallback: 0,
   /** Items whose provider attempt AND fallback both failed. */
   failed: 0,
+  /** Vectors the provider RETURNED that were unusable and were discarded at the
+   *  write boundary: empty, not an array, or containing a non-finite component.
+   *  A distinct fault from `failed` (which is "nothing came back") because the
+   *  cause and the fix differ — this one points at a malformed provider response
+   *  or a corrupt upstream, not at connectivity. */
+  invalid: 0,
   /** Jobs skipped entirely because the project/db was removed. */
   skipped: 0,
 }
@@ -2009,6 +2434,11 @@ async function drainBackgroundEmbeddings() {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `)
           let missingInChunk = 0
+          // Vectors that ARRIVED but are unusable (empty, non-array, or holding
+          // a non-finite component). Counted separately from `missing` so a
+          // malformed-provider response is distinguishable from a short result —
+          // they have different causes and different fixes.
+          let invalidInChunk = 0
           const txEmbed = rawDb.transaction((rows: any) => {
             for (let k = 0; k < rows.length; k++) {
               const item = chunk[k]
@@ -2018,6 +2448,39 @@ async function drainBackgroundEmbeddings() {
               // silently skipped. Counts are applied AFTER the transaction
               // commits so a rolled-back batch is never counted as embedded.
               if (!vec) { missingInChunk++; continue }
+              // Validate the vector before it becomes a stored claim.
+              //
+              // `vector_dimension` is written as `vec.length`, so a malformed
+              // vector records a dimension that describes itself — the row then
+              // looks internally consistent while the bytes are wrong. Nothing
+              // downstream re-derives the true length, and the read path admits
+              // a blob only at the exact byte length, so a bad vector surfaces
+              // much later as a silently missing row rather than at the write.
+              //
+              // Co-agent 2 measured the cause: when the provider dies mid-run
+              // some chunks are written under the API model and some under
+              // `local-word-vectors-v3`, so ONE index can hold vectors of
+              // different dimensions and different vector spaces. Per-vector
+              // validation cannot prevent that (each vector is valid for its own
+              // model); it prevents the corrupt-vector case, which it can.
+              if (!Array.isArray(vec) || vec.length === 0) {
+                invalidInChunk++
+                continue
+              }
+              // A non-finite component makes every downstream cosine NaN, which
+              // the read path filters — so the vector silently disappears from
+              // results while the row claims a dimension.
+              let hasNonFinite = false
+              for (let j = 0; j < vec.length; j++) {
+                if (typeof vec[j] !== "number" || !Number.isFinite(vec[j])) {
+                  hasNonFinite = true
+                  break
+                }
+              }
+              if (hasNonFinite) {
+                invalidInChunk++
+                continue
+              }
               const contentHash = createHash("sha256").update(item.snippet).digest("hex")
               insertEmbed.run(
                 `${item.symbolId}:embed`,
@@ -2041,8 +2504,19 @@ async function drainBackgroundEmbeddings() {
           })
           try {
             txEmbed(chunk)
-            backgroundEmbedMetrics.embedded += chunk.length - missingInChunk
-            backgroundEmbedMetrics.failed += missingInChunk
+            // `embedded` must count only vectors actually stored. Skipping
+            // invalidInChunk here would report a corrupt vector as a success,
+            // and the index would claim coverage it does not have.
+            backgroundEmbedMetrics.embedded += chunk.length - missingInChunk - invalidInChunk
+            backgroundEmbedMetrics.failed += missingInChunk + invalidInChunk
+            if (invalidInChunk > 0) {
+              backgroundEmbedMetrics.invalid += invalidInChunk
+              log.warn("discarded malformed embedding vectors", {
+                projectId: job.projectId,
+                count: invalidInChunk,
+                model: modelLabel,
+              })
+            }
             accounted += chunk.length
           } catch (txErr: any) {
             // Transaction rolled back: nothing durable was written for this
@@ -2162,7 +2636,6 @@ export async function storeResults(
      -- the wrong column, which is the seam class this INSERT was fixed for.
      (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, source_text, scope_kind, is_declaration, super_types, time_created, time_updated)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
    `)
  
    const insertImport = rawDb.prepare(`
@@ -2187,6 +2660,19 @@ export async function storeResults(
  
    const deleteFileSymbols = rawDb.prepare(`DELETE FROM brain_symbol WHERE file_id = ?`)
    const deleteFileImports = rawDb.prepare(`DELETE FROM brain_import WHERE file_id = ?`)
+   // Co-agent 2 measured this: nothing in src/ ever deleted from
+   // brain_semantic_embedding, so a renamed or moved symbol kept a live vector
+   // forever (3 embedding rows for 2 live symbols after a rename). The table
+   // grows without bound across reindexes and `coverage` counts those orphans,
+   // so a health check reports coverage it does not have.
+   //
+   // Must run BEFORE deleteFileSymbols: it selects the file's symbol ids while
+   // they still exist. Ordered after the relationship deletes so nothing is
+   // removed out from under a constraint.
+   const deleteFileEmbeddings = rawDb.prepare(`
+     DELETE FROM brain_semantic_embedding
+     WHERE entity_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
+   `)
    const deleteFileRelationships = rawDb.prepare(`
      DELETE FROM brain_relationship 
      WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
@@ -2371,6 +2857,7 @@ export async function storeResults(
      insertTaintSource,
      deleteFileSymbols,
      deleteFileImports,
+     deleteFileEmbeddings,
      deleteFileRelationships,
      deleteFileRelationshipsByTarget,
      deleteFileTaints,
@@ -2441,6 +2928,9 @@ export async function storeResults(
          stmt.deleteFileRelationships.run(fileId)
          stmt.deleteFileRelationshipsByTarget.run(fileId)
          stmt.deleteFileTaints.run(fileId, fileId)
+         // Must precede deleteFileSymbols — it resolves the file's symbol ids
+         // through brain_symbol, so running it after would delete nothing.
+         stmt.deleteFileEmbeddings.run(fileId)
          stmt.deleteFileSymbols.run(fileId)
          stmt.deleteFileImports.run(fileId)
  
@@ -4316,11 +4806,40 @@ export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<nu
  * Best-effort: a failure to measure is logged and leaves the field absent, which
  * callers render as "not measured" rather than as a clean bill.
  */
+/**
+ * Relationships that SHOULD have been attached to an internal symbol but were
+ * not — the real inconsistency, and the only kind `bb index --post` can fix.
+ *
+ * The previous query was `target_symbol_id IS NULL AND target_external IS NOT
+ * NULL`, which counts EXTERNAL references — calls into third-party libraries —
+ * as failures. On this repository that reported 28,139 "unresolved
+ * relationships" and told the user to run `bb index --post` for them.
+ *
+ * Measured against the same index: 20,966 were `calls` with an external target
+ * and 7,174 were imports, all with `target_external` set. Zero internal edges
+ * had failed to resolve. Every one of those 28,139 rows is CORRECT — an
+ * external symbol has no row in brain_symbol to point at, so a null
+ * target_symbol_id is the accurate representation, not a defect.
+ *
+ * So the warning was not merely noisy, it was false: it named a remediation
+ * that cannot help and implied a broken index on a healthy one. This now counts
+ * only rows with no external fallback either — those really are unattached.
+ */
 async function measureUnresolvedRelationships(projectId: ProjectID): Promise<number | undefined> {
   try {
     const raw = await BrainDatabase.getRawInstance(projectId)
+    // Unattached on BOTH ends and with no external identity on either side.
+    // An external target/source is a legitimate, correctly-recorded edge.
     return Number(
-      (raw.prepare("SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL").get(projectId) as any)?.c ?? 0,
+      (raw
+        .prepare(
+          `SELECT COUNT(*) c FROM brain_relationship
+           WHERE project_id = ?
+             AND target_symbol_id IS NULL
+             AND (target_external IS NULL OR target_external = '')
+             AND (source_external IS NULL OR source_external = '')`,
+        )
+        .get(projectId) as any)?.c ?? 0,
     )
   } catch (e: any) {
     log.warn("could not measure unresolved relationships", { error: e?.message })
@@ -4397,6 +4916,20 @@ export async function indexProjectParallel(
     workerBatchSize: ParallelIndexerConfig.workerBatchSize,
     dbBatchSize: ParallelIndexerConfig.dbBatchSize,
     retries: 0,
+    // Set here, not only where the pool reports them (parallel-indexer.ts:5195).
+    // The interface calls both REQUIRED, and that promise was being broken on a
+    // real path: the no-op branch assigns `stats.phases = phases` and returns at
+    // :5007, which is BEFORE the pool's unconditional assignments at :5195 — so a
+    // run that found nothing to index returned `undefined` for both counters.
+    //
+    // Measured consequence: `script/m21/verify-w1-worker-lifecycle.ts:111-112`
+    // asserts `d.phases?.workerStartupFailures === 0` — strict equality, not
+    // `?? 0` — so `undefined` fails a check that is asking "were there any?".
+    // Zero is the true answer for a no-op run: no worker was started, so none
+    // failed and none was poisoned. Overwritten with the real values on the main
+    // path; this makes the early return honest rather than merely convenient.
+    workerStartupFailures: 0,
+    poisonFiles: 0,
     noop: false,
   }
 
@@ -4455,10 +4988,25 @@ export async function indexProjectParallel(
         // the one that can carry a previous run's unfinished work. Measured 16 on
         // a cancel-then-resume, and 0 after `bb index --post`.
         unresolvedRelationships: await measureUnresolvedRelationships(projectId),
+        // Embedding state is reported on EVERY summary, including this no-op
+        // path: an index that already holds a MIX of models still does after a
+        // run that parses nothing, and that is exactly the condition a user
+        // needs told about.
+        embedModels: await surveyEmbeddingModels(projectId),
+        // The full census, not just the model list: a corrupt vector is invisible
+        // to every other number because vector_dimension is self-describing.
+        embeddingIntegrity: await surveyEmbeddingIntegrity(projectId),
         // Nothing was parsed, so there was no parse mode to choose. Declared
         // rather than left undefined so "no parse ran" is a value and not a gap.
         parseMode: "worker-pool",
       }
+
+      // Report here too, not only on the derived-pass path. A no-op incremental
+      // run is exactly the case where an index already holds defects and the
+      // user is told nothing happened — so the defects must still be surfaced.
+      // Sourced from the summary rather than duplicated: one computation, two
+      // renderings, so the logger and the CLI cannot disagree.
+      reportEmbeddingIntegrity(_log, stats.summary.embeddingIntegrity)
 
       // M40.A2: an incremental noop run can still observe DELETIONS —
       // discovery only walks files present on disk, so a removed file leaves
@@ -4496,6 +5044,7 @@ export async function indexProjectParallel(
         filesIndexed: stats.totalFiles,
         filesParsed: 0, // noop: nothing parsed this run
         symbolsIndexed: stats.symbolsExtracted,
+        relationshipsIndexed: stats.relationshipsFound,
         status: "complete",
         errors: [],
         codebaseFingerprintProjectPath: projectPath,
@@ -4538,16 +5087,29 @@ export async function indexProjectParallel(
     const workerStartupStart = Date.now()
     try {
       const { fork } = await import("child_process")
-      const { workerPath: testWorkerPath, workerArgs: testWorkerArgs } = resolvePoolWorkerFork()
+      // Use the diagnosing resolver (pool-diagnostics.ts) rather than the raw
+      // one: it returns a discriminated union, so "no tsx" / "compiled entry
+      // missing" / "disabled by env" are each named with a fix instead of all
+      // collapsing into one indistinguishable pool failure.
+      const resolution = resolvePoolWorkerForkSafe()
+      if (!resolution.ok) {
+        throw new Error(poolFailureLine(resolution))
+      }
+      const { workerPath: testWorkerPath, workerArgs: testWorkerArgs } = resolution
       const testWorker = fork(testWorkerPath, testWorkerArgs, {
         env: { ...process.env, BB_POOL_WORKER: "1" },
         stdio: ["ignore", "pipe", "pipe", "ipc"],
       })
       await new Promise<void>((resolve, reject) => {
+        // Was hardcoded 60s while the pool's own startup watchdog used
+        // BB_WORKER_STARTUP_TIMEOUT_MS (default 30s) — so a slow machine could
+        // fail the real pool at 30s and then wait another 60s for a probe that
+        // was never going to pass. One knob, one value, both paths.
+        const startupMs = poolStartupTimeoutMs()
         const timeout = setTimeout(() => {
           testWorker.kill()
-          reject(new Error("worker fork test timed out after 60s"))
-        }, 60000)
+          reject(new Error(`worker fork test timed out after ${Math.round(startupMs / 1000)}s`))
+        }, startupMs)
         testWorker.on("message", (msg: any) => {
           if (msg?.type === "ready") {
             clearTimeout(timeout)
@@ -4571,7 +5133,12 @@ export async function indexProjectParallel(
       _log.log("[brain] ✓ worker pool available — using parallel indexing with 45s timeouts")
       log.info("worker pool fork test passed — using parallel workers")
     } catch (e: any) {
-      _log.log(`[brain] ⚠ worker pool unavailable (${e?.message}), falling back to in-process indexing`)
+      _log.log(`[brain] ⚠ worker pool unavailable — falling back to serial in-process indexing`)
+      // Name the cause, not just the fact. Users reported "workers don't start"
+      // with nothing actionable; the underlying reason (usually a missing tsx)
+      // was previously swallowed into a generic message.
+      _log.log(`[brain]   reason: ${e?.message}`)
+      _log.log(`[brain]   this run is correct but serial, so it will be slower`)
       log.warn("worker pool fork unavailable, falling back to in-process", { error: e?.message })
       processFn = processInProcess
     }
@@ -4714,7 +5281,20 @@ export async function indexProjectParallel(
       if (!previous || result.success || !previous.success) finalOutcomes.set(result.filePath, result)
     }
     stats.structuredErrors = []
-    const byLanguage: Record<string, { files: number; success: number; error: number; timeout: number; fallback: number; cancelled: number }> = {}
+    // No `cancelled` member, which is what the type used to declare.
+    //
+    // It was declared required here, omitted by BOTH `??=` initializers
+    // (:5212, :5302), and absent from the exported summary type too (:606) —
+    // three shapes for one field. Nothing in the repository reads or writes it:
+    // a cancelled file takes the `result.error === "cancelled by user"` branch,
+    // which bumps the separate `cancelledCount` scalar and `continue`s, so the
+    // per-language accumulator is never touched for a cancellation.
+    //
+    // So the field was a promise the code never kept: every language bucket that
+    // existed had `cancelled === undefined`, on a type that said it was a number.
+    // Dropping it aligns all three shapes with what the code actually does.
+    // Populating it instead would change reported output, which is not this task.
+    const byLanguage: Record<string, { files: number; success: number; error: number; timeout: number; fallback: number }> = {}
     // M21.R3: cancelled files are a distinct bucket — they were never parsed,
     // so counting them as "errors" misrepresents a cancelled run as broken.
     let cancelledCount = 0
@@ -4808,8 +5388,29 @@ export async function indexProjectParallel(
         // dotnet/fsharp's Cancellable.fs), taking the whole index run and any
         // unsaved evidence down with it. processWithWorkerPool stores successes
         // itself, so no extra storeResults call is needed here.
+        // `undefined, signal` — not `signal`.
+        //
+        // processWithWorkerPool's signature is (projectId, projectPath, files,
+        // onProgress, telemetry?, signal?), so passing `signal` fifth handed an
+        // AbortSignal to the TELEMETRY parameter and left the real signal
+        // undefined. Two consequences, both silent:
+        //
+        //   1. this retry pass could not be cancelled. The whole block is
+        //      skipped when `stats.cancelled` is already set, so a cancel that
+        //      arrives DURING the retry does nothing — the pool ran to
+        //      completion, which is precisely when a user who pressed Ctrl-C
+        //      expects the run to stop;
+        //   2. the pool then mutated the AbortSignal as if it were its metrics
+        //      object: `telemetry.dbFlushMs += …` and
+        //      `telemetry.workerStartupFailures = …` (parallel-indexer.ts:1496,
+        //      :1509) wrote numeric fields onto a signal, producing `NaN` and
+        //      junk properties.
+        //
+        // `undefined` is the right value, not a fresh telemetry object: nothing
+        // reads this call's telemetry (its return value is the FileResult list),
+        // and the enclosing run already keeps its own accumulator.
         const reprocessed = await processWithWorkerPool(projectId, projectPath, missed, () => {},
-                                                        signal)
+                                                        undefined, signal)
         // Map of files already tallied in the main pass, so a file that failed
         // there but recovered here is counted ONCE (as a success), not twice.
         const mainOutcomes = new Map<string, { success: boolean; timeout: boolean }>()
@@ -4935,6 +5536,7 @@ export async function indexProjectParallel(
       filesIndexed: stats.successFiles + stats.skippedFiles,
       filesParsed: stats.successFiles,
       symbolsIndexed: stats.symbolsExtracted,
+      relationshipsIndexed: stats.relationshipsFound,
       status: stats.errorFiles > 0 ? "partial" : "complete",
       errors: stats.structuredErrors,
       performanceStats: perfStats,
@@ -5033,9 +5635,88 @@ export async function indexProjectParallel(
 
     // Measured after every derived path has run, so the number describes the index
     // as handed back rather than the pass that produced it.
+    //
+    // The perf-stats write above (updateIndexStatus with `performanceStats`)
+    // happens BEFORE post-processing, so `phases.totalWallMs` was still unset
+    // when it was persisted — `bb status` therefore printed "total n/a" after
+    // every FULL run while incremental runs showed a real number.
+    //
+    // Re-persist now that the total is known. It repeats the SAME counter values
+    // the first call wrote rather than omitting them: `updateIndexStatus` binds
+    // `?? 0` for absent counters, so a call carrying only `performanceStats`
+    // RESET total_files/total_symbols to 0 and the status row read as empty for
+    // a fully indexed project (caught by store-integrity). Passing them again
+    // makes this idempotent and needs no nullability tricks on NOT NULL columns.
+    // Built as an ANNOTATED LOCAL rather than an inline literal, which is the
+    // whole mechanism: a fresh object literal is excess-property-checked against
+    // the declared run type, and that type has no `poolTelemetry` key (see
+    // PersistedRun). A variable is checked for assignability only, so the sixth
+    // key — which is genuinely what gets written to the JSON column — is part of
+    // the shape instead of a violation of it.
+    const persistedRun: PersistedRun = {
+      generatedAt: perfStats.runs[0].generatedAt,
+      mode: phases.mode,
+      noop: false,
+      phases: {
+        discoveryMs: phases.discoveryMs,
+        workerStartupMs: phases.workerStartupMs,
+        parseMs: phases.parseMs,
+        dbFlushMs: phases.dbFlushMs,
+        finalAccountingMs: phases.finalAccountingMs,
+        postProcessingMs: phases.postProcessingMs,
+        totalWallMs: phases.totalWallMs,
+      },
+      counts: perfStats.runs[0].counts,
+      poolTelemetry: {
+        dbFlushMs: phases.dbFlushMs,
+        retries: phases.retries,
+        workerCount: poolTelemetry.workerCount,
+        workerStartupFailures: phases.workerStartupFailures,
+        poisonFiles: phases.poisonFiles,
+      },
+    }
+    try {
+      await BrainDatabase.updateIndexStatus(projectId, {
+        filesIndexed: stats.successFiles + stats.skippedFiles,
+        filesParsed: stats.successFiles,
+        symbolsIndexed: stats.symbolsExtracted,
+        relationshipsIndexed: stats.relationshipsFound,
+        status: stats.errorFiles > 0 ? "partial" : "complete",
+        errors: stats.structuredErrors,
+        performanceStats: {
+          schemaVersion: 1,
+          runs: [persistedRun],
+        },
+      })
+    } catch (e: any) {
+      // The totals are a convenience for `bb status`. Failing to refresh them
+      // must not fail the run that has already indexed everything.
+      log.warn("could not persist final phase timings", { error: e?.message })
+    }
+
     if (stats.summary) {
       stats.summary.unresolvedRelationships = await measureUnresolvedRelationships(projectId)
+      // Measured here, after the derived pass, because that is when the final
+      // vector population is known. A provider that died mid-run leaves the
+      // index holding two models, and the search path will read it with one.
+      stats.summary.embedModels = await surveyEmbeddingModels(projectId)
+      stats.summary.embeddingIntegrity = await surveyEmbeddingIntegrity(projectId)
+      stats.summary.embedOutcome = {
+        queued: backgroundEmbedMetrics.queued,
+        embedded: backgroundEmbedMetrics.embedded,
+        failed: backgroundEmbedMetrics.failed,
+        skipped: backgroundEmbedMetrics.skipped,
+        dropped: backgroundEmbedMetrics.dropped,
+        invalid: backgroundEmbedMetrics.invalid,
+      }
     }
+
+    // Say it through the indexer's own logger too, not only via the summary.
+    // Every other honesty line on this path does this, and a library consumer
+    // (an MCP host, an embedding library) never sees the CLI — so a defect
+    // reported only in `cli/index.ts` is silent for everyone else. Bounded on
+    // `mixed`/defects so a healthy index adds nothing.
+    reportEmbeddingIntegrity(_log, stats.summary?.embeddingIntegrity)
 
     Bus.publishSafe(BrainService.Event.IndexingCompleted, {
       projectId,
@@ -5310,7 +5991,16 @@ export async function runPostProcessing(
       _log.log("  Enriching relationships with architectural context...")
       _t = Date.now()
       const enrichResult = await enrichRelationships(projectId, (step: string, pct: number) => {
-        _log.write(`\r  Enriching: ${step} ${pct}%\x1b[K`)
+        // `\r` + erase-code only rewrites a line on a real terminal. Written to a
+        // pipe or log file it emits one unerasable fragment per step — the
+        // "Enriching: reading 0%[KEnriching: counting 0%[K..." smear. Off a TTY,
+        // report only at meaningful milestones so the log stays readable.
+        const isTTY = Boolean(process.stderr.isTTY)
+        if (isTTY) {
+          _log.write(`\r  Enriching: ${step} ${pct}%\x1b[K`)
+        } else if (pct === 100 || pct % 25 === 0) {
+          _log.write(`  enriching ${step} ${pct}%\n`)
+        }
       })
       recordPhase("enrichment", Date.now() - _t, "ok")
       _log.log(`  ✅ Enriched ${enrichResult.enriched.toLocaleString()} relationships (${enrichResult.patternsFound.toLocaleString()} patterns) in ${Date.now()-_t}ms`)

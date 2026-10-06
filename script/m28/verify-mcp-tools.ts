@@ -24,6 +24,7 @@ import os from "node:os"
 import path from "node:path"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 
@@ -59,8 +60,17 @@ try {
 }
 
 // --- R4: reuse (D-1) — imports of the IDE components -------------------------
+// The reuse check asserted a LITERAL CALL NAME (`storedCrossLanguageRows(`) that
+// the door had already stopped making when the cross-language answer became a
+// union over every copy of a name (M63.CL1). The door calls
+// `storedCrossLanguageFactsByName(` instead, so this check went RED for a reason
+// that had nothing to do with reuse — a gate asserting a dead anchor teaches its
+// readers that the suite is broken when the suite is fine. It now asserts the
+// DECLARED property (the door delegates its rows to the owner module, through
+// whichever entry point that module publishes) rather than one call spelling.
 check("T1: handlers import src/lsp/impact (computeImpact) — no reimplementation", handlersSrc.includes('from "../lsp/impact"') && handlersSrc.includes("computeImpact("))
-check("T1: handlers import src/lsp/cross_language_hover — no reimplementation", handlersSrc.includes('from "../lsp/cross_language_hover"') && handlersSrc.includes("storedCrossLanguageRows("))
+const crossLanguageOwnerCalls = [...handlersSrc.matchAll(/\b(storedCrossLanguageRows|storedCrossLanguageFactsByName|factsFromRows|tierForCrossLanguageEdge)\b/g)]
+check("T1: handlers import src/lsp/cross_language_hover and call it — no reimplementation", handlersSrc.includes('from "../lsp/cross_language_hover"') && crossLanguageOwnerCalls.length > 0, `owner entry points used: ${[...new Set(crossLanguageOwnerCalls.map((m) => m[1]))].join(", ") || "none"}`)
 
 async function main(): Promise<void> {
   let currentCommit = "unknown"
@@ -207,6 +217,7 @@ async function main(): Promise<void> {
     mutantsTotal,
     mutantRecords,
     currentCommit,
+    ...fingerprintFields(["m28.T1"], ROOT),
     verifierCommand: "npx tsx script/m28/verify-mcp-tools.ts",
     evidenceFile: "T1.json",
     generatedAt: new Date().toISOString(),

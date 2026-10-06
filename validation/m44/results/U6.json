@@ -3,19 +3,32 @@
   "code": "U6",
   "milestone": "M44",
   "status": "verified",
-  "checks": 25,
-  "passed": 25,
+  "checks": 31,
+  "passed": 31,
   "failed": 0,
   "negativeCases": 2,
-  "mutantsCaught": 4,
-  "mutantsTotal": 4,
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "mutantsCaught": 6,
+  "mutantsTotal": 6,
+  "mutantsCaughtBy": [
+    "M1 message-only regression (fallback downgraded to reveal floor)",
+    "M2 parse accepts an empty symbol (client-side guessing re-enters)",
+    "M3 native handoff ignored (fallback must stay secondary)",
+    "M4 hover link drops the symbol (fallback could not query)",
+    "dead end while the native references surface is available (handoff ok -> reveal floor)",
+    "dead end on the unavailable branch (the hub fallback replaced by the reveal floor)"
+  ],
+  "mutantHonesty": {
+    "loadFailureIsACatch": false,
+    "note": "A mutant whose module will not import exercises no §13.6 path. This gate booked that as a catch — PROVEN twice: a mutant whose replacement was a bare syntax error printed 'mutant caught', and M4 (the hover-link mutant, written to validation/m44/ where src/lsp/rich_hover.ts's relative imports do not resolve) could never load at all, so the one mutant that proves the link carries the symbol had ZERO coverage while the record read 4/4. Mutants are now written beside the module they mutate, and an unevaluable mutant, a probe that cannot run, and an anchor that no longer matches are all FAILURES (§8.3 silence is guilt)."
+  },
+  "failures": [],
+  "currentCommit": "6a19b00cc00e1cd2ed8d38b1fd4dd54499f4c067",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
   "evidenceFile": "U6.json",
-  "generatedAt": "2026-09-20T02:50:47.525Z",
+  "generatedAt": "2026-10-05T22:33:31.613Z",
   "fixture": {
-    "root": "$HOME/backbencher-brain/.tools/m44-u6-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m44-u6-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Extra1.java",
@@ -23,7 +36,19 @@
     ],
     "symbol": "render",
     "shownLinks": 3,
-    "hiddenMore": 1
+    "hiddenMore": 2,
+    "usagePlaces": 5,
+    "placeUnit": "one per served position — a stored call-site line, else the referencing declaration (src/lsp/relations.ts)",
+    "places": [
+      "App.java:6 (main)",
+      "App.java:19 (ExtraCalls.both)",
+      "App.java:20 (ExtraCalls.both)",
+      "Extra1.java:5 (main)",
+      "Extra2.java:5 (main)"
+    ],
+    "excluded": [
+      "App.java:11 Greeter contains render — a DECLARATION, never a usage (§14 rule 1, M55.T3)"
+    ]
   },
   "limitations": [
     "The vscode command handler cannot execute headlessly; its wiring is pinned structurally (R3) and executed live by the E5 in-editor leg (click show-all-usages → native peek OR usages fallback, never a bare message).",
@@ -31,7 +56,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:50:47.526Z",
-    "contentSha256": "8c59a7e613134892ab11a632555cb78de6df1ae56ae4a536f13668cf8495cd3d"
+    "sealedAt": "2026-10-05T22:33:31.615Z",
+    "contentSha256": "5bbe975984beadb1ec7d1eb8bbb128a4a80417bc60c00762905afcef772636dd"
   }
 }

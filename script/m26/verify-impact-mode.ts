@@ -47,6 +47,7 @@ import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const IMPACT = join(ROOT, "src", "lsp", "impact.ts")
@@ -853,6 +854,7 @@ async function main(): Promise<void> {
       mutantsTotal,
       currentCommit: commit,
       verifierCommand: "npx tsx script/m26/verify-impact-mode.ts",
+      ...fingerprintFields(["m26.W5"], ROOT),
       evidenceFile: "W5.json",
       generatedAt: new Date().toISOString(),
       differential: {

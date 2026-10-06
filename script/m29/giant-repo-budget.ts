@@ -19,7 +19,7 @@
 // Evidence: validation/m29/results/R3.json (machine-emitted)
 
 import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs"
-import { tmpdir } from "node:os"
+import os, { tmpdir } from "node:os"
 import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { realpathSync } from "node:fs"
@@ -144,15 +144,76 @@ function gitCommit(): string {
   }
 }
 
-function machineInfo(): Record<string, string> {
-  try {
-    const kernel = execFileSync("uname", ["-sr"], { encoding: "utf8" }).trim()
-    const cpu = readFileSync("/proc/cpuinfo", "utf8").match(/model name\s*:\s*(.+)/)?.[1]?.trim() ?? "unknown"
-    const memKb = Number(readFileSync("/proc/meminfo", "utf8").match(/MemTotal:\s*(\d+)/)?.[1] ?? 0)
-    return { kernel, cpu, ramGb: (memKb / 1048576).toFixed(1), node: process.version }
-  } catch {
-    return { kernel: "unknown", cpu: "unknown", ramGb: "unknown", node: process.version }
+/**
+ * THE OWNER of this record's machine facts — the host every §3 latency number in
+ * validation/m29/results/R3.json was measured on. Contract §3 requires that host
+ * to be recorded, and §10 makes the record OS-scoped, so it must be obtainable
+ * wherever the measurement runs.
+ *
+ * WHAT THIS REPLACES, and both halves of it were lies:
+ *
+ *  1. `/proc/cpuinfo` and `/proc/meminfo` are LINUX-ONLY. `readFileSync` on
+ *     either THROWS on macOS and Windows, and both reads sat inside ONE `try`
+ *     whose `catch` published `{kernel:"unknown", cpu:"unknown", ramGb:"unknown"}`
+ *     — so a legal `uname` reading that had already succeeded on the line above
+ *     was thrown away too. A Linux budget record and a darwin budget record both
+ *     claimed to be "machine facts", and on darwin every field was `unknown`.
+ *  2. `ramGb` was typed `string` and produced by `.toFixed(1)`, so the committed
+ *     R3.json carries `"ramGb":"15.4"` — a NUMBER wearing quotes. A consumer
+ *     doing arithmetic on it gets a string-concatenation ("15.41"), and the
+ *     catch branch published the string `"unknown"`, which reads as a value in
+ *     a field the type declares as a measurement. This is the `ramGb: 0` defect
+ *     from script/m24/lsp_harness.ts machineFacts(), one type-width over: a
+ *     machine fact that cannot be measured published as a plausible-looking
+ *     token instead of a declared absence.
+ *
+ * node:os only — no `uname`, no `/proc`, no shell — which is also what
+ * script/m24/lsp_harness.ts machineFacts() does, with the same header rationale.
+ * `${os.type()} ${os.release()}` reproduces `uname -sr` on both darwin ("Darwin
+ * <release>") and linux ("Linux <release>"), so the portable owner loses no
+ * information and costs one process spawn fewer.
+ *
+ * Anything it cannot determine is `null` WITH a reason, never `0` and never `""`.
+ * The EMPTY-STRING cpu model is the case `?? "unknown"` cannot catch: `""` is
+ * not nullish, so the old `?? "unknown"` would have published `cpu: ""` — the
+ * documented V1 artifact, where three sealed runs shipped `machine.cpu === ""`
+ * under a VERIFIED verdict.
+ */
+export interface GiantMachineFacts {
+  kernel: string
+  kernelSource: string
+  /** null = declared absent, and then `cpuReason` is present */
+  cpu: string | null
+  cpuSource: string
+  cpuReason?: string
+  /** A NUMBER or null. It was a string before (`.toFixed(1)`), so a consumer
+   *  reading it as a number got NaN / string-concatenation. */
+  ramGb: number | null
+  ramSource: string
+  ramReason?: string
+  node: string
+}
+
+export function machineInfo(): GiantMachineFacts {
+  const kernel = `${os.type()} ${os.release()}`
+  const cpuModel = os.cpus()[0]?.model?.trim() ?? ""
+  const totalBytes = os.totalmem()
+  const facts: GiantMachineFacts = {
+    kernel,
+    kernelSource: "os.type() + os.release() (equals `uname -sr` on darwin and linux)",
+    cpu: cpuModel === "" ? null : cpuModel,
+    cpuSource: "os.cpus()[0].model",
+    ramGb: Number.isFinite(totalBytes) && totalBytes > 0 ? Math.round((totalBytes / 1e9) * 10) / 10 : null,
+    ramSource: "os.totalmem(), in GB (10^9), rounded to one decimal",
+    node: process.version,
   }
+  if (facts.cpu === null) {
+    facts.cpuReason = "os.cpus()[0].model was empty or absent — the runtime returned no CPU model on this host (common in some containers), so no CPU fact is claimed"
+  }
+  if (facts.ramGb === null) {
+    facts.ramReason = `os.totalmem() returned ${String(totalBytes)} — a non-positive total cannot be published as a RAM measurement, so no RAM fact is claimed`
+  }
+  return facts
 }
 
 /** A target file per language with a known symbol, for per-language probes. */

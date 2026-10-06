@@ -239,17 +239,74 @@ console.log("\npass 4: launch-bar OS leg — E7 re-run at HEAD (linux real, darw
   } catch (e) {
     exit = (e as { status?: number }).status ?? -1
   }
-  check("X1: E7 cross-platform verifier runs clean at HEAD (linux leg + blocked records)", exit === 0, `exit=${exit}`)
-  for (const [os, file] of [["darwin", "E7-darwin.json"], ["win32", "E7-windows.json"]] as const) {
-    let blocked = false
+  check("X1: E7 cross-platform verifier runs clean at HEAD (this host's leg + blocked records)", exit === 0, `exit=${exit}`)
+  // THE OS MATRIX IS HOST-SCOPED, NOT HARD-CODED. This block asserted that the
+  // darwin and win32 legs are `blocked` and that the LINUX leg is `verified` —
+  // which was true of the machine the lane was developed on and false of any
+  // other. On this host (darwin, x86_64 macOS 14.8.4) the correct shape is the
+  // mirror image: darwin measured, linux and win32 blocked-with-reason. A gate
+  // that hard-codes which platform is absent cannot be run on a second machine,
+  // and its "verdict" on a macOS host would have been a claim about Linux.
+  //
+  // What is asserted now is the CONTRACT RULE (IDE Honesty Contract §10: budgets
+  // and claim levels are OS-scoped; every platform is either measured here or
+  // declared-absent with a reason, never assumed):
+  //   1. all three platform legs exist and are named (never omitted),
+  //   2. exactly the platform this host runs on is the one that may be verified,
+  //   3. every other platform is `blocked` WITH a non-empty reason,
+  //   4. the host's own leg carries this host's OS.
+  const PLATFORM_LEGS = [
+    { os: "darwin", file: "E7-darwin.json" },
+    { os: "linux", file: "E7-linux.json" },
+    { os: "win32", file: "E7-windows.json" },
+  ] as const
+  const THIS_HOST = process.platform
+  const legRows = PLATFORM_LEGS.map(({ os, file }) => {
     try {
-      const d = JSON.parse(readFileSync(join(ROOT, "validation/m25/results", file), "utf8")) as { os?: string; status?: string }
-      blocked = d.os === os && d.status === "blocked"
-    } catch {}
-    check(`X1: ${os} leg recorded as machine-blocked (never omitted, never claimed)`, blocked, "")
+      const d = JSON.parse(readFileSync(join(ROOT, "validation/m25/results", file), "utf8")) as { os?: string; status?: string; blockedReason?: string; currentCommit?: string }
+      return { os, file, present: true, declaredOs: d.os, status: String(d.status ?? "(none)"), reason: String(d.blockedReason ?? "").trim(), commit: d.currentCommit }
+    } catch {
+      return { os, file, present: false, declaredOs: "", status: "(absent)", reason: "", commit: undefined }
+    }
+  })
+  console.log(`      this host is ${THIS_HOST}; the OS matrix under audit: ${legRows.map((l) => `${l.os}=${l.status}`).join(", ")}`)
+  check(
+    "X1: every platform leg exists and is named (no OS is silently omitted)",
+    legRows.every((l) => l.present),
+    legRows.filter((l) => !l.present).map((l) => l.file).join(", "),
+  )
+  check(
+    "X1: every platform leg declares its own OS (a record may not claim another platform's leg)",
+    legRows.every((l) => l.declaredOs === l.os),
+    legRows.filter((l) => l.declaredOs !== l.os).map((l) => `${l.file} declares ${l.declaredOs}`).join(", "),
+  )
+  // The host's own leg must be the one MEASURED — measured, not passed. A
+  // `known-gap` host leg is an honest measurement of this platform that found a
+  // real failure (on this host: H2's usage link), and it must be REPORTED as
+  // such, not silently accepted. So the assertion is that the host leg is
+  // stamped at this HEAD and is one of the two states a measurement can honestly
+  // end in; the green requirement stays, and its failure names the leg's own
+  // recorded reason rather than a bare status.
+  const hostLeg = legRows.find((l) => l.os === THIS_HOST)
+  check(
+    `X1: the leg for THIS host (${THIS_HOST}) is the measured one, stamped at this HEAD`,
+    hostLeg !== undefined && (hostLeg.status === "verified" || hostLeg.status === "known-gap") && hostLeg.commit === currentCommit,
+    `host leg: ${hostLeg?.status} commit=${String(hostLeg?.commit).slice(0, 8)} (HEAD=${currentCommit.slice(0, 8)})`,
+  )
+  check(
+    `X1: the ${THIS_HOST} leg is green at this HEAD (a known-gap host leg is a real platform finding, and names why)`,
+    hostLeg?.status === "verified",
+    hostLeg?.status === "verified" ? "" : `${THIS_HOST} leg is ${String(hostLeg?.status)}${hostLeg?.reason ? ` — ${hostLeg.reason.slice(0, 220)}` : " with no recorded reason (contract §8.3)"}`,
+  )
+  // Every OTHER platform is declared-absent WITH a reason — never assumed.
+  const others = legRows.filter((l) => l.os !== THIS_HOST)
+  for (const other of others) {
+    check(
+      `X1: the ${other.os} leg is declared-absent with a reason (never omitted, never assumed)`,
+      other.status === "blocked" && other.reason.length > 0,
+      `status=${other.status} reason=${other.reason.length === 0 ? "(NONE)" : other.reason.slice(0, 90)}`,
+    )
   }
-  const e7after = JSON.parse(readFileSync(join(ROOT, "validation/m25/results/E7-linux.json"), "utf8")) as { status?: string; currentCommit?: string }
-  check("X1: E7 linux evidence re-stamped at THIS HEAD", e7after.status === "verified" && e7after.currentCommit === currentCommit, `commit=${String(e7after.currentCommit).slice(0, 8)}`)
 }
 
 // --- Evidence ------------------------------------------------------------------------

@@ -3,23 +3,37 @@
   "code": "G1",
   "milestone": "M24",
   "status": "known-gap",
-  "checks": 23,
-  "passed": 22,
+  "checks": 29,
+  "passed": 28,
   "failed": 1,
-  "negativeCases": 10,
-  "currentCommit": "b44fa33a09659ddead56e6f211e1088a6b98d607",
-  "workingTreeRelevantChanges": [],
-  "verifierCommand": "bun run script/m24/verify-governance.ts",
+  "negativeCases": 11,
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "workingTreeRelevantChanges": [
+    "script/m24/verify-call-hierarchy.ts",
+    "script/m24/verify-callsite-agreement.ts",
+    "script/m24/verify-closure.ts",
+    "script/m24/verify-docs.ts",
+    "script/m24/verify-freshness.ts",
+    "script/m24/verify-harness.ts",
+    "script/m24/verify-hover.ts",
+    "script/m24/verify-navigation.ts",
+    "script/m24/verify-position-arithmetic.ts",
+    "script/m24/verify-positions.ts",
+    "script/m24/verify-server.ts",
+    "script/m24/verify-symbols.ts"
+  ],
+  "verifierCommand": "npx tsx script/m24/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-01T20:03:02.706Z",
+  "generatedAt": "2026-10-05T22:34:55.183Z",
   "ledger": "validation/m24/results/manifest.json",
   "limitations": [
     "This gate validates governance metadata and mutation response; it does not verify LSP feature implementations.",
     "A run with relevant uncommitted M24 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
+  "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit - relevant uncommitted files at measure time: script/m24/verify-call-hierarchy.ts, script/m24/verify-callsite-agreement.ts, script/m24/verify-closure.ts, script/m24/verify-docs.ts, script/m24/verify-freshness.ts, script/m24/verify-harness.ts",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-01T20:03:02.713Z",
-    "contentSha256": "ee1309462423c877ba917a8654b192d83e7544370816d11e68f8d53463b4746c"
+    "sealedAt": "2026-10-05T22:34:55.200Z",
+    "contentSha256": "35a25cd01c35b251db5801cf0408d8a7c817710a8b1b937809d04c4cc3f0bf02"
   }
 }

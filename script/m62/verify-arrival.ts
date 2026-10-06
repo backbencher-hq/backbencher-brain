@@ -38,6 +38,8 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
+import { getProjectId } from "../../src/util/project-id.ts"
 import { LEGACY_NOTE, NOT_STORED_NOTE, SEED, SUBSTITUTE_NOTE, UNUSABLE_NOTE } from "./a1-fixture.ts"
 
 /** The two planted defects this hook's invariants must catch (its can-fail
@@ -89,7 +91,8 @@ async function makeFixture(): Promise<Fixture> {
   const ws = mkdtempSync(path.join(tmpdir(), "m62a3-ws-"))
   const dataDir = mkdtempSync(path.join(tmpdir(), "m62a3-data-"))
   for (const [rel, content] of Object.entries(SEED.files)) writeFileSync(path.join(ws, rel), content)
-  const projectId = createHash("sha1").update(path.resolve(ws)).digest("hex").substring(0, 40)
+  // M62 lane-7: project identity has ONE owner (src/util/project-id.ts).
+  const projectId = getProjectId(ws)
   mkdirSync(path.join(dataDir, "projects", projectId), { recursive: true })
   process.env.BB_DATA_DIR = dataDir
   const { BrainDatabase } = await import(path.join(ROOT, "src/brain/database.ts"))
@@ -237,6 +240,7 @@ async function main(): Promise<void> {
     mutantsCaught: mutantCaught,
     mutantsTotal: mutantHits,
     currentCommit,
+    ...fingerprintFields(["m62.A3"], ROOT),
     verifierCommand: "npx tsx script/m62/verify-arrival.ts",
     evidenceFile: "A3.json",
     generatedAt: new Date().toISOString(),

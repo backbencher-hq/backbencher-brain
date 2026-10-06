@@ -11,28 +11,28 @@ Tool count: 16 (11 pre-existing + 5 added by M28).
 | --- | --- | --- | --- | --- |
 | bb_search | read | mode?, query?, symbolName?, filePath?, limit?, language?, symbolKind?, includeContent?, exact?, caseSensitive?, regex?, offset?, refresh? | pre-existing tool (v3 surface) | — |
 | bb_ask | read | query, limit? | pre-existing tool (v3 surface) | — |
-| bb_health | read | verbose?, history?, limit?, refresh?, force?, wait?, freshness?, sampleSize?, integrity?, includeAnalysisRuns? | pre-existing tool (v3 surface) | — |
+| bb_health | read | verbose?, history?, limit?, refresh?, force?, wait?, freshness?, sampleSize?, integrity?, includeAnalysisRuns?, paths?, checkUnindexed? | pre-existing tool (v3 surface) | — |
 | bb_patterns | read | scope?, limit?, includeOrphaned?, includeFramework?, includeAntiPatterns?, confidenceThreshold?, history?, recordRun? | pre-existing tool (v3 surface) | — |
 | bb_security | read | history?, recordRun?, limit? | pre-existing tool (v3 surface) | — |
-| bb_visualize | read | scope?, target?, maxNodes?, maxLinks?, relationshipTypes?, languages?, format? | pre-existing tool (v3 surface) | — |
-| bb_migrate | read | symbolName?, symbolNames?, targetLanguage, format? | pre-existing tool (v3 surface) | — |
+| bb_visualize | read | scope?, target?, maxNodes?, maxLinks?, relationshipTypes?, languages?, excludePatterns?, includeTests?, view?, format? | pre-existing tool (v3 surface) | — |
+| bb_migrate | read | symbolName?, symbolNames?, paths?, symbolIds?, targetLanguage, format? | pre-existing tool (v3 surface) | — |
 | bb_analyze | read | mode, target?, filePath?, limit? | pre-existing tool (v3 surface) | — |
-| bb_doc | read | mode, target?, format?, audience?, detail?, includeExamples?, includeDiagrams?, includeTests?, limit?, maxTokens? | pre-existing tool (v3 surface) | — |
+| bb_doc | read | mode, target?, format?, audience?, detail?, includeExamples?, includeDiagrams?, includeTests?, limit?, maxTokens?, refresh? | pre-existing tool (v3 surface) | — |
 | bb_edit | write | mode, dryRun?, filePath?, symbolName?, lineStart?, content?, newContent?, targetSymbolName?, position?, newName?, force?, format? | pre-existing tool (v3 surface) | — |
 | bb_index | write | path, mode? | pre-existing tool (v3 surface) | — |
-| bb_graph **(M28)** | read | symbol, maxDepth? | graph engine + tier rules (same as the editor graph panel) | [T1.json](../../validation/m28/results/T1.json) |
-| bb_impact **(M28)** | read | symbol | src/lsp/impact.ts (identical totals + truncation declarations) | [T1.json](../../validation/m28/results/T1.json) |
-| bb_cross_language **(M28)** | read | symbol | cross-language hover facts (stored rows only, declared absence) | [T1.json](../../validation/m28/results/T1.json) |
+| bb_graph **(M28)** | read | symbol, maxDepth?, direction?, relationshipTypes?, includeCrossLanguage?, timeBudgetMs?, maxEdges?, edgeLimit? | graph engine + tier rules (same as the editor graph panel) | [T1.json](../../validation/m28/results/T1.json) |
+| bb_impact **(M28)** | read | symbol, relationshipTypes?, refresh? | src/lsp/impact.ts (identical totals + truncation declarations) | [T1.json](../../validation/m28/results/T1.json) |
+| bb_cross_language **(M28)** | read | symbol, limit? | cross-language hover facts (stored rows only, declared absence) | [T1.json](../../validation/m28/results/T1.json) |
 | bb_annotate **(M28)** | write | symbol, body, path?, toolIdentity? | writes the store the hover section + graph badge render | [T1.json](../../validation/m28/results/T1.json) |
-| bb_annotations **(M28)** | read | symbol?, limit? | reads the store the hover section + graph badge render | [T1.json](../../validation/m28/results/T1.json) |
+| bb_annotations **(M28)** | read | symbol?, path?, limit?, includeNameLevel? | reads the store the hover section + graph badge render | [T1.json](../../validation/m28/results/T1.json) |
 
 ## The union claim (machine-checked)
 
-One fixture, two doors: agent (MCP) and developer (IDE) receive machine-proven identical answers — graph edge multisets with tiers, impact sets with declared truncation, cross-language facts with declared absence. Claim: verified via [U1.json](../../validation/m28/results/U1.json) (16/16 checks, 4/4 mutants).
+One fixture, two doors: agent (MCP) and developer (IDE) receive machine-proven identical answers — graph edge multisets with tiers, impact sets with declared truncation, cross-language facts with declared absence. Claim: verified via [U1.json](../../validation/m28/results/U1.json) (24/24 checks, 4/4 mutants).
 
 ## Annotations (D-3/D-6)
 
-Provenance is schema-enforced (`author_class` NOT NULL; tool writes are hardcoded `agent`): verified via [A1.json](../../validation/m28/results/A1.json). Annotations render where the human reads — hover section + graph badge, author-labeled: verified via [A2.json](../../validation/m28/results/A2.json) (includes a real headless-editor leg).
+Provenance is schema-enforced (`author_class` NOT NULL; tool writes are hardcoded `agent`): verified via [A1.json](../../validation/m28/results/A1.json). Annotations render where the human reads — hover section + graph badge, author-labeled: known-gap via [A2.json](../../validation/m28/results/A2.json) (includes a real headless-editor leg).
 
 The three new read tools reuse their IDE-side components (D-1) — verified verified via [T1.json](../../validation/m28/results/T1.json).
 

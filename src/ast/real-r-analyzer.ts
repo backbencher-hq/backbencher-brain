@@ -145,12 +145,14 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     const symbolLine = new Map<string, number>()
     /** (owner, member) -> the line that member's own name is written on. */
     const memberLine = new Map<string, number>()
-    /** class name -> the member names it declares, for the file-scoped `overrides` pass. */
-    const classMembers = new Map<string, string[]>()
-    /** class name -> the base class names it names in `inherit=`/`contains=`/`parent=`. */
-    const classBases = new Map<string, string[]>()
-    /** class name -> the node that names the class, for the `overrides` line. */
-    const classDeclLine = new Map<string, number>()
+    /**
+     * One class DECLARATION, for the file-scoped `overrides` pass. A NAME is not a
+     * declaration: R6 and S7 test suites redeclare `AC` in every `test_that()` block, so
+     * keying by name unions member sets that never coexisted.
+     */
+    type ClassDecl = { line: number; endLine: number; members: Map<string, number>; bases: string[] }
+    /** class name -> its declarations in this file, in line order. */
+    const classDecls = new Map<string, ClassDecl[]>()
 
     /** Ambiguity counters, surfaced in metadata so a claim of completeness can be audited. */
     const ambiguity = {
@@ -169,6 +171,11 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       memberWrites: 0,
       memberReadsUnresolvedScope: 0,
       memberReadsWithComputedIndex: 0,
+      // `overrides` accounting, for the same reason: the pass declines to assert an edge
+      // when no EARLIER declaration of the base name exists in the file, and the count of
+      // those declines is otherwise indistinguishable from "there was nothing to inherit".
+      overridesEdgesEmitted: 0,
+      overridesBasesNotDeclaredEarlierInFile: 0,
     }
 
     if (rootNode.hasError) {
@@ -306,23 +313,46 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // `overrides` needs each class DECLARATION's own members and its own bases, and the
+    // two have to come from the same declaration. Keying either by name is what produced
+    // `Dog -overrides-> name (overrides Pet)` at S7/inst/doc/S7.R:12, where the `Dog` at
+    // line 9 declares `properties` but names no parent, and the `parent = Pet` belongs to
+    // a DIFFERENT `Dog` at line 74: `classBases` kept the last declaration of a name
+    // (:320) while `classMembers` kept the union of all of them, so the two maps
+    // described two different classes and every edge between them was invented.
     for (const s of symbols) {
       if (!symbolLine.has(s.name)) symbolLine.set(s.name, this.nameLineOf(s, content))
-      if (s.ownerName && (s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Property)) {
-        const arr = classMembers.get(s.ownerName) ?? []
-        arr.push(s.name)
-        classMembers.set(s.ownerName, arr)
-        const memberKey = `${s.ownerName}\u001f${s.name}`
-        if (!memberLine.has(memberKey)) memberLine.set(memberKey, this.nameLineOf(s, content))
+      if (s.kind !== ASTEngine.SymbolKind.Class) continue
+      const line = s.range.startLine
+      const bases = (s.metadata?.baseClasses as string[] | undefined) ?? []
+      const parent = s.metadata?.parent
+      const all = Array.isArray(parent) ? (parent as string[]) : bases
+      const decls = classDecls.get(s.name) ?? []
+      decls.push({ line, endLine: s.range.endLine, members: new Map(), bases: all })
+      classDecls.set(s.name, decls)
+    }
+    for (const decls of classDecls.values()) decls.sort((a, b) => a.line - b.line)
+
+    // A member belongs to the declaration whose line range contains it. `ownerName` alone
+    // cannot say which, because every `AC` in the file reports `ownerName: "AC"`.
+    for (const s of symbols) {
+      if (!s.ownerName) continue
+      if (s.kind !== ASTEngine.SymbolKind.Method && s.kind !== ASTEngine.SymbolKind.Property) continue
+      const line = this.nameLineOf(s, content)
+      const decls = classDecls.get(s.ownerName)
+      if (!decls?.length) continue
+      let owner = decls.find(d => line >= d.line && line <= d.endLine)
+      if (!owner) {
+        // S7 attaches a method to an existing class from OUTSIDE that class's
+        // declaration: `method(describe, Dog) <- function(x) …` at
+        // S7/inst/doc/S7.R:91 declares a member of the `Dog` declared at line 74. So a
+        // member line can sit outside every declaration of its owner, and the binding in
+        // scope is the nearest PRECEDING one — the last declaration would be a different
+        // class whenever the owner is redeclared later in the file.
+        const prior = decls.filter(d => d.line < line)
+        owner = prior.length ? prior[prior.length - 1] : decls[0]
       }
-      if (s.kind === ASTEngine.SymbolKind.Class) {
-        const bases = (s.metadata?.baseClasses as string[] | undefined) ?? []
-        if (bases.length) classBases.set(s.name, bases)
-        if (!classDeclLine.has(s.name)) classDeclLine.set(s.name, s.range.startLine)
-      }
-      if (s.kind === ASTEngine.SymbolKind.Class && Array.isArray(s.metadata?.parent)) {
-        classBases.set(s.name, s.metadata!.parent as string[])
-      }
+      if (!owner.members.has(s.name)) owner.members.set(s.name, line)
     }
 
     // `exports` edges. The ExportInfo array is the source of truth (it is what
@@ -346,24 +376,67 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     // base class DECLARED IN THIS SAME FILE is a provable override. A base that
     // lives in another package cannot be resolved from syntax, so no edge is
     // invented for it — the scope limit is stated on the edge.
-    for (const [className, bases] of classBases) {
-      const own = classMembers.get(className)
-      if (!own || !own.length) continue
-      for (const base of bases) {
-        const inherited = classMembers.get(base)
-        if (!inherited) continue
-        for (const member of inherited) {
-          if (!own.includes(member)) continue
-          this.pushRel(relationships, base, member, ASTEngine.RelationshipType.Overrides, 0.95, {
-            rSpecific: true,
-            relationshipSubType: "object_system_method_override",
-            overriddenBy: className,
-            reasonCode: "base_class_declared_in_same_file",
-            reason: `base class \`${base}\` is declared in this file, so the shadowing member is provably an override`,
-          }, memberLine.get(`${className}\u001f${member}`) ?? classDeclLine.get(className))
+    //
+    // DIRECTION. This used to push `(base, member)`, which says "the BASE class's
+    // member overrides something". `Child2$render` is what overrides `Base2$render`;
+    // the derived declaration is the override and the base declaration is what it
+    // overrides. Every other analyzer in this repo runs the edge the other way —
+    // real-kotlin-analyzer.ts:537 emits `${ownerName}.${s.name}` -> `${parent}.${s.name}`,
+    // real-java-analyzer.ts:1866 emits the overriding task's FQN -> the overridden
+    // FQN, and script/m60/objc-line-truth.ts:77 states the line contract in as many
+    // words: "an override's line is the overriding declaration". The old direction
+    // also put the answer in metadata (`overriddenBy`) while asserting the opposite
+    // in the source position, and F12-edges.R is the fixture that shows it: three
+    // classes declare `render`, and the single edge read `overrides Base2 -> render`.
+    //
+    // TARGET stays the bare member name because that is the name R publishes the
+    // method under (`name: "render"`, `ownerName: "Base2"`), and an edge whose target
+    // resolves to nothing is an edge the graph cannot walk. That leaves a real
+    // ambiguity when two classes in one file declare the same member name, so both
+    // qualified names ride in metadata where a consumer can read them.
+    //
+    // BASE RESOLUTION IS BY POSITION. `inherit = AC` is an ordinary lookup evaluated when
+    // R6Class() runs, so the base in scope is the nearest PRECEDING declaration of the
+    // name — never the union of every declaration of it. Over the admitted corpus this
+    // moved the rate at which an independent tree walker re-derives the emitted edges
+    // from 45.8% (nearest-first) / 29.9% (nearest-last) to the analyzer and the walker
+    // agreeing on one resolution rule; measured by
+    // `validation/m14/fixtures/r/probe-overrides-scoping.ts`, whose BLOCK D lists the
+    // 6 of 9 files that redeclare a class name (`AC` 19 times in R6's test-clone.R).
+    let overridesEdges = 0
+    let overridesBasesUnresolved = 0
+    for (const [className, decls] of classDecls) {
+      for (const decl of decls) {
+        if (!decl.members.size || !decl.bases.length) continue
+        for (const base of decl.bases) {
+          const prior = (classDecls.get(base) ?? []).filter(d => d.line < decl.line)
+          const baseDecl = prior.length ? prior[prior.length - 1] : null
+          if (!baseDecl) {
+            overridesBasesUnresolved++
+            continue
+          }
+          for (const member of baseDecl.members.keys()) {
+            if (!decl.members.has(member)) continue
+            overridesEdges++
+            this.pushRel(relationships, className, member, ASTEngine.RelationshipType.Overrides, 0.95, {
+              rSpecific: true,
+              relationshipSubType: "object_system_method_override",
+              overridingMember: `${className}$${member}`,
+              overriddenMember: `${base}$${member}`,
+              overriddenClass: base,
+              reasonCode: "base_class_declared_in_same_file",
+              reason: `\`${className}$${member}\` shadows \`${base}$${member}\`, whose class is declared earlier in this file, so the shadowing member is provably an override`,
+              // The OVERRIDING declaration's line, not the overridden one's. Taking the
+              // line out of `baseDecl` instead of `decl` put `BC -overrides-> x` on AC's
+              // `x` at R6/tests/testthat/test-portable-inheritance.R:194, four lines
+              // above the `BC` that declares it.
+            }, decl.members.get(member)!)
+          }
         }
       }
     }
+    ambiguity.overridesBasesNotDeclaredEarlierInFile = overridesBasesUnresolved
+    ambiguity.overridesEdgesEmitted = overridesEdges
 
     this.detectFrameworksFromImports(imports, metadata)
 
@@ -442,6 +515,11 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       memberWrites: ambiguity.memberWrites,
       memberReadsUnresolvedScope: ambiguity.memberReadsUnresolvedScope,
       memberReadsWithComputedIndex: ambiguity.memberReadsWithComputedIndex,
+      overridesEdgesEmitted: ambiguity.overridesEdgesEmitted,
+      // Bases named by `inherit=`/`contains=`/`parent=` that no EARLIER declaration of
+      // that name in the same file satisfies. Counted rather than dropped so a reader can
+      // see how much of the inheritance graph this pass declines to assert.
+      overridesBasesNotDeclaredEarlierInFile: ambiguity.overridesBasesNotDeclaredEarlierInFile,
     }
 
     this.byteOffsetOf = null
@@ -843,7 +921,28 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
-      if (doc && this.roxygenHasTag(doc, "@export")) exports.push({ name: className, kind: ASTEngine.SymbolKind.Class })
+      // The EXPORT names the R BINDING, not the declared class name.
+      //
+      // `#' @export` on `class_logical <- new_base_class("logical")` marks the object
+      // bound on the LEFT for export, so roxygen2 writes `export(class_logical)`. This
+      // line pushed `className`, so it emitted `exports global -> logical` and no
+      // `exports global -> class_logical` — and the symbol layer eleven lines above
+      // had already published BOTH names and linked them with an `s7_class_binding`
+      // edge, so the graph simultaneously asserted that `logical` is not the package's
+      // export and that the package exports `logical`.
+      //
+      // S7's own roxygen-generated NAMESPACE settles which is right, and it is not a
+      // matter of opinion: `export(class_logical)` is at S7/NAMESPACE:66, there are 25
+      // `export(class_*)` lines, and `export(logical)` / `export(double)` /
+      // `export(integer)` appear ZERO times in the file. Found by the lane oracle
+      // (validation/m14/fixtures/r/oracle-r.ts) as 17 UNEXPLAINED `exports` edges.
+      //
+      // The kind follows the symbol actually published under `name`: the binding is a
+      // `Variable` when the declared name differs (line 814) and the `Class` itself when
+      // it does not.
+      if (doc && this.roxygenHasTag(doc, "@export")) {
+        exports.push({ name, kind: declared && declared !== name ? ASTEngine.SymbolKind.Variable : ASTEngine.SymbolKind.Class })
+      }
       return true
     }
 
@@ -1271,17 +1370,21 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (entry.type === "argument") {
               const nm = entry.childForFieldName("name")
               const v = entry.childForFieldName("value")
-              const text = nm?.text ?? (v ? this.nodeAsName(v) : "")
+              const text = nm?.text ?? (v ? this.baseClassNodeName(v) : "")
               if (text === wanted) return nm ?? v ?? entry
             } else {
-              if (this.nodeAsName(entry) === wanted) return entry
+              if (this.baseClassNodeName(entry) === wanted) return entry
             }
           }
         }
-        if (this.nodeAsName(value) === wanted) return value
+        if (this.baseClassNodeName(value) === wanted) return value
         continue
       }
-      if (this.nodeAsName(value) === wanted) return value
+      // `baseClassNodeName` and not `nodeAsName`: the five callers are all base-class
+      // arguments, and `nodeAsName` returns "" for the `pkg::Parent` spelling, which left the
+      // edge real but unstamped — `BC -extends-> AC` published with no line. An edge whose
+      // line is unknown is not wrong, but it is unattributable, and this one is attributable.
+      if (this.baseClassNodeName(value) === wanted) return value
     }
     return null
   }
@@ -1837,6 +1940,31 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: { rSpecific: true, accessOperator: op },
         })
         this.pushRel(relationships, "global", this.unquoteIdentifier(ns.text), ASTEngine.RelationshipType.Imports, 1.0, {
+          rSpecific: true,
+          relationshipSubType: "namespace_access",
+          accessOperator: op,
+        }, ns)
+        // The same dependency, published as `references` too, because that is the
+        // type every OTHER R dependency form already carries both of.
+        //
+        // `src/ast/types.ts:72` declares `DependsOn = "references"`, so `references`
+        // IS this ontology's dependsOn type, and `base::det` (Matrix/R/kappa.R:19) is a
+        // dependsOn exactly as `library(base)` is — R must load the namespace to evaluate
+        // it, so it is a hard dependency, not a mention. The asymmetry was measurable:
+        // library()/require() (:2108) and source()/sourceCpp() (:2141) each
+        // emitted the pair, and namespace access did not, which left `references` at 387
+        // edges on the oracle's 2,058-file sample where the independent oracle derives
+        // 2,171 — recall 16.9%, the lowest of the ten types by a factor of four. (387 is
+        // that sample's count; over the full 2,184-file admitted population the same
+        // pre-fix walk read 389, and both are correct for their own population.)
+        //
+        // Same confidence (1.0) and the same `namespace_access` subtype as the `imports`
+        // edge beside it, deliberately: `rcpp_source` and `r_source` are already carried
+        // by both types under one name, so a consumer keying on the subtype sees the pair
+        // rather than an unexplained extra edge. The cost is stated rather than assumed:
+        // 1,751 of the 2,095 `imports` edges in this corpus are namespace access, so this
+        // takes `references` from 389 to about 2,140 and the lane's total by 2.2%.
+        this.pushRel(relationships, "global", this.unquoteIdentifier(ns.text), ASTEngine.RelationshipType.References, 1.0, {
           rSpecific: true,
           relationshipSubType: "namespace_access",
           accessOperator: op,
@@ -2705,22 +2833,56 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!ca || ca.type === "comma") continue
             if (ca.type === "argument") {
               const v = ca.childForFieldName("value")
-              if (v && (v.type === "string" || v.type === "identifier")) {
-                const text = v.type === "string" ? this.stringNodeText(v) : this.unquoteIdentifier(v.text)
-                if (text) results.push(text)
-              }
-            } else if (ca.type === "string" || ca.type === "identifier") {
-              const text = ca.type === "string" ? this.stringNodeText(ca) : this.unquoteIdentifier(ca.text)
+              const text = v ? this.baseClassNodeName(v) : ""
+              if (text) results.push(text)
+            } else {
+              const text = this.baseClassNodeName(ca)
               if (text) results.push(text)
             }
           }
         }
-      } else if (valNode.type === "string" || valNode.type === "identifier") {
-        const text = valNode.type === "string" ? this.stringNodeText(valNode) : this.unquoteIdentifier(valNode.text)
+      } else {
+        const text = this.baseClassNodeName(valNode)
         if (text) results.push(text)
       }
     }
     return results
+  }
+
+  /**
+   * The class name a base-class ARGUMENT node carries, or "".
+   *
+   * R writes a base class three ways and this reads all three:
+   *
+   *   inherit = Parent            identifier      -> Parent
+   *   contains = "Parent"         string          -> Parent
+   *   inherit = pkg::Parent       namespace_operator
+   *
+   * The third was dropped. R6 documents it — `inherit` may name a class in another package,
+   * and R6's own test suite uses it: `R6/tests/manual/test-inheritance.R:126` writes
+   * `BC <- R6Class(inherit = R6testA::AC, ...)`, where `AC` is declared 9 lines above in the
+   * same file inside the `R6testA = {...}` argument. A census of every class-constructor call
+   * in the corpus (738 of them across 2,342 R files: `new_class` 283, `R6Class` 229,
+   * `setClass` 201, `new_base_class` 12, `setRefClass` 9) found exactly ONE qualified base
+   * class, so this is a 1-edge gap and is recorded as one rather than dressed up. It is a
+   * deterministic parse fact, so the edge it produces is a fact and not a heuristic.
+   *
+   * The qualifier is dropped and the BARE name kept: `pkg::Parent` names the class `Parent`,
+   * which is what `class(x)` returns and what dispatch keys on, and a symbol named
+   * `pkg::Parent` binds to nothing in any file.
+   */
+  private baseClassNodeName(node: Node | null | undefined): string {
+    if (!node) return ""
+    if (node.type === "string") return this.stringNodeText(node)
+    if (node.type === "identifier") return this.unquoteIdentifier(node.text)
+    if (node.type === "namespace_operator") {
+      // `pkg::Parent` — the `rhs` field is the name. `pkg:::Parent` reaches here as the same
+      // node type; `calleeName` already normalises `:::` to `::` and the class name is the
+      // same token either way.
+      const rhs = node.childForFieldName("rhs")
+      return rhs ? this.unquoteIdentifier(rhs.text) : ""
+    }
+    return ""
   }
 
   /**

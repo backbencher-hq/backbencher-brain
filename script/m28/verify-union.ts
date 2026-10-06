@@ -28,7 +28,17 @@ import { execFileSync } from "node:child_process"
 import os from "node:os"
 import path from "node:path"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
+// M28.U2 / §15.1: the IDE-side tier expectation is anchored to the ONE owner
+// (src/lsp/evidence_tier.ts). It used to be `ideTier` below — a COPY of the agent
+// door's own COPY, so the two agreed by construction and this gate was
+// structurally unable to observe a divergence in either. That is the exact shape
+// docs/m63/CL1.md records as "two doors, one bug", and it is how a derivation
+// that disagreed with the editor on 63.2% of one corpus's stored rows shipped
+// under a green gate. script/m28/verify-surface-parity.ts (U2) proves the same
+// property from the other direction; the two gates must not disagree.
+import { classifyTier } from "../../src/lsp/evidence_tier"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 
@@ -53,16 +63,16 @@ function negative(label: string, condition: boolean, detail = ""): void {
   passed++
 }
 
-/** DOOR B: the IDE-side tier derivation, copied from the hover gloss / webview
- *  core (the copies the W4 + M28.U1 gates drift-gate against each other). */
-function ideTier(edge: { relationshipType: string; confidence: number; metadata?: { evidenceClass?: string } }): string {
-  const STRUCTURAL = new Set(["calls", "inherits", "implements", "overrides"])
-  const IMPORT = new Set(["imports", "import"])
-  const stored = edge.metadata?.evidenceClass
-  if (stored && ["structural", "import_based", "usage_contextual", "reference_qualified", "inferred"].includes(stored)) return stored
-  if (STRUCTURAL.has(edge.relationshipType)) return edge.confidence >= 0.7 ? "structural" : "inferred"
-  if (IMPORT.has(edge.relationshipType)) return "import_based"
-  return "inferred"
+/** DOOR B: the IDE-side tier expectation — the ONE owner's rule, IMPORTED from
+ *  its real module.
+ *
+ *  This function used to be a third copy of the W4 rule (and therefore a copy of
+ *  the agent door's copy of the same rule). Two copies of the same wrong rule
+ *  compare EQUAL, which is what made this gate blind to the agent door's tier
+ *  drift. There is no second derivation in this file and there must not be one:
+ *  a gate that re-implements the rule it audits cannot see the rule drift. */
+function ideTier(edge: { relationshipType: string; confidence: number | null; metadata?: { evidenceClass?: string | null } }): string {
+  return classifyTier({ relationshipType: edge.relationshipType, confidence: edge.confidence ?? null, evidenceClass: edge.metadata?.evidenceClass ?? null })
 }
 
 /**
@@ -114,6 +124,25 @@ function edgeKey(e: { direction: string; to?: EdgeEndpoint; from?: EdgeEndpoint;
   return [e.direction, endpointId(e.to ?? e.from), e.relationshipType, String(e.confidence), e.tier ?? ideTier(e)].join("|")
 }
 
+/**
+ * The DECLARED facts about one dependent, from EITHER door's rendering.
+ *
+ * The two doors deliberately publish different FIELDS, and this gate used to
+ * assert that away by comparing whole objects — which is why two of its checks
+ * could never pass and the suite sat at known-gap with a red that carried no
+ * information:
+ *   - bb_impact ADDS `stale` per dependent (M63.T1: freshness over the files the
+ *     answer is about); the component does not compute staleness;
+ *   - bb_impact DROPS `tracedId` (M63.T1: "the component's own bookkeeping does
+ *     not ride the wire"); the component does compute it.
+ * Both are declared reasons the two surfaces differ (§15.1). Everything else is
+ * a fact about the same stored row and MUST agree — so the shared declared facts
+ * are compared here, and the declared differences are asserted SEPARATELY, which
+ * means a NEW undeclared field difference fails instead of being absorbed.
+ */
+const IMPACT_SHARED_FACTS = ["id", "name", "file", "line", "symbolType", "language", "depth", "evidenceAtDepth", "relationshipType", "confidence", "tier", "isCrossLanguage", "bridgeMechanism", "via"] as const
+const impactFactKey = (d: Record<string, unknown>): string => IMPACT_SHARED_FACTS.map((f) => `${f}=${JSON.stringify(d[f] ?? null)}`).join("|")
+
 async function main(): Promise<void> {
   let currentCommit = "unknown"
   try {
@@ -146,6 +175,13 @@ async function main(): Promise<void> {
     const text = result.content?.[0]?.text ?? ""
     try { return { isError: result.isError === true, data: JSON.parse(text) as any } } catch { return { isError: result.isError === true, data: null } }
   }
+  /** Call a handler MODULE's tool with the same ctx the real door used. A mutant
+   *  is its own module instance, so it cannot share `callMcp`. */
+  const callMcpThrough = async (mod: any, tool: string, args: any): Promise<any> => {
+    const result = await mod[tool](args, ctx)
+    const text = result.content?.[0]?.text ?? ""
+    try { return JSON.parse(text) } catch { return null }
+  }
   // DOOR B uses the same imports the LSP handlers use.
   const lsp = await import(path.join(ROOT, "src", "intelligence", "graph", "graph-engine.ts"))
   const impactMod = await import(path.join(ROOT, "src", "lsp", "impact.ts"))
@@ -163,13 +199,44 @@ async function main(): Promise<void> {
   ].sort()
   check("U1: graph edge multiset identical through both doors", JSON.stringify(mcpEdges) === JSON.stringify(ideEdges), `mcp=${mcpEdges.length} ide=${ideEdges.length}`)
   check("U1: graph caller/callee counts identical", mcpGraph?.summary?.totalCallers === ideGraph.summary?.totalCallers && mcpGraph?.summary?.totalCallees === ideGraph.summary?.totalCallees, JSON.stringify({ mcp: mcpGraph?.summary, ide: ideGraph.summary }))
+  // --- R2b: the DERIVED tier leg ------------------------------------------------
+  // Measured first, because it is the whole reason this leg exists. Every row the
+  // indexer writes on this fixture carries a stored `metadata.evidenceClass`, so
+  // BOTH doors return that stored CLAIM and the tier DERIVATION is never reached
+  // (measured: the shipped `contains` edges read `structural` on both doors
+  // because the analyzer stored `structural`, not because either door derived it).
+  // A gate comparing two stored claims cannot see a derivation drift — and the
+  // agent door's shipped code IS a derivation. So the same rows are re-read with
+  // the stored class REMOVED: a declared fixture step on a throwaway index, never
+  // a claim about the product. What each door then publishes is what each door
+  // DERIVED, which is the thing this gate exists to compare.
+  const derivedRowsCleared = raw.prepare("UPDATE brain_relationship SET metadata = NULL WHERE project_id = ? AND metadata IS NOT NULL").run(projectId).changes
+  const mcpEdgesDerived = (await callMcp("bb_graph", { symbol: "Warehouse" })).data
+  const ideGraphDerived = await (lsp as any).graphTraversal(projectId, "Warehouse", { maxDepth: 3 })
+  const mcpDerived = [...(mcpEdgesDerived?.callers ?? []), ...(mcpEdgesDerived?.callees ?? [])].map(edgeKey).sort()
+  const ideDerived = [
+    ...(ideGraphDerived.callers as any[]).map((e: any) => edgeKey({ direction: "caller", ...e })),
+    ...(ideGraphDerived.callees as any[]).map((e: any) => edgeKey({ direction: "callee", ...e })),
+  ].sort()
+  check("U1: the fixture's stored classes were removed so the tier DERIVATION is what both doors publish", derivedRowsCleared > 0, `${derivedRowsCleared} rows had a stored evidenceClass removed`)
+  const derivedKinds = [...new Set([...(ideGraphDerived.callers as any[]), ...(ideGraphDerived.callees as any[])].map((e: any) => String(e.relationshipType)))]
+  check("U1: the derived leg covers relationship kinds the derivation actually decides (tierPremiseMeasured)", derivedKinds.length > 0, `kinds: ${derivedKinds.join(",")}`)
+  check("U1: with the stored claim removed, the derived tier is identical through both doors", JSON.stringify(mcpDerived) === JSON.stringify(ideDerived), `mcp=${JSON.stringify(mcpDerived).slice(0, 180)} ide=${JSON.stringify(ideDerived).slice(0, 180)}`)
+
   check("U1: graph cross-language edge count identical", mcpGraph?.summary?.crossLanguageEdges === ideGraph.summary?.crossLanguageEdges, `${mcpGraph?.summary?.crossLanguageEdges} vs ${ideGraph.summary?.crossLanguageEdges}`)
   check("U1: graph truncation declaration identical", mcpGraph?.summary?.truncated === (ideGraph.summary?.truncated === true))
 
   // --- R3: impact union ------------------------------------------------------------
   const mcpImpact = (await callMcp("bb_impact", { symbol: "count" })).data
   const ideImpact = await (impactMod as any).computeImpact(raw, projectId as string, "count")
-  check("U1: impact sets identical (ids, depths)", JSON.stringify(mcpImpact?.impact) === JSON.stringify(ideImpact.impact), JSON.stringify({ mcp: mcpImpact?.impact?.length, ide: ideImpact.impact.length }).slice(0, 160))
+  const mcpImpactFacts = (mcpImpact?.impact ?? []).map((d: any) => impactFactKey(d))
+  const ideImpactFacts = (ideImpact.impact ?? []).map((d: any) => impactFactKey(d))
+  check("U1: impact sets identical on every shared declared fact (id, name, file, line, depth, kind, confidence, tier, bridge, via)", JSON.stringify(mcpImpactFacts) === JSON.stringify(ideImpactFacts), JSON.stringify({ mcp: mcpImpactFacts, ide: ideImpactFacts }).slice(0, 200))
+  const mcpImpactKeys = new Set(Object.keys(mcpImpact?.impact?.[0] ?? {}))
+  const ideImpactKeys = new Set(Object.keys(ideImpact.impact?.[0] ?? {}))
+  const impactToolOnly = [...mcpImpactKeys].filter((k) => !ideImpactKeys.has(k)).sort()
+  const impactIdeOnly = [...ideImpactKeys].filter((k) => !mcpImpactKeys.has(k)).sort()
+  check("U1: the impact field differences are EXACTLY the declared ones (the tool adds staleness, withholds the walk node id)", JSON.stringify(impactToolOnly) === JSON.stringify(["stale"]) && JSON.stringify(impactIdeOnly) === JSON.stringify(["tracedId"]), `tool-only=${JSON.stringify(impactToolOnly)} ide-only=${JSON.stringify(impactIdeOnly)}`)
   check("U1: impact shown/total counts identical", mcpImpact?.shownCount === ideImpact.shownCount && mcpImpact?.totalCountIfKnown === ideImpact.totalCountIfKnown, `${mcpImpact?.shownCount}/${mcpImpact?.totalCountIfKnown} vs ${ideImpact.shownCount}/${ideImpact.totalCountIfKnown}`)
   check("U1: impact truncation declaration identical", mcpImpact?.truncated === ideImpact.truncated && mcpImpact?.truncationReason === ideImpact.truncationReason)
   const mcpImpactMiss = await callMcp("bb_impact", { symbol: "no-such-symbol-xyz" })
@@ -182,7 +249,20 @@ async function main(): Promise<void> {
   const invRow = raw.prepare("SELECT s.id, f.language FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.name = 'Inventory'").get(projectId) as { id: string; language: string } | undefined
   const ideFacts = invRow ? (crossMod as any).factsFromRows((crossMod as any).storedCrossLanguageRows(raw, invRow.id), invRow.language) : []
   check("U1: cross-language fact counts identical", mcpCross?.facts?.length === ideFacts.length, `${mcpCross?.facts?.length} vs ${ideFacts.length}`)
-  check("U1: cross-language facts identical (pair, tier, bridge, confidence)", JSON.stringify(mcpCross?.facts) === JSON.stringify(ideFacts), JSON.stringify({ mcp: mcpCross?.facts?.[0], ide: ideFacts[0] }).slice(0, 200))
+  // Same story: bb_cross_language DELIBERATELY publishes more per fact than the
+  // hover card — docs/m63/CL1.md defect A, because an agent has no hovered symbol
+  // and no file to collapse a language pair to. Whole-object equality therefore
+  // could never hold, and asserting it made the check permanently red instead of
+  // informative. The shared DECLARED facts are compared; the extra fields are
+  // asserted to be exactly the declared identity fields.
+  const CROSS_SHARED_FACTS = ["pair", "direction", "bridge", "tier", "confidence", "relationshipType"] as const
+  const crossKey = (f: Record<string, unknown>): string => CROSS_SHARED_FACTS.map((k) => `${k}=${JSON.stringify(f[k] ?? null)}`).join("|")
+  check("U1: cross-language facts identical on every shared declared fact (pair, direction, bridge, tier, confidence, kind)", JSON.stringify((mcpCross?.facts ?? []).map((f: any) => crossKey(f))) === JSON.stringify(ideFacts.map((f) => crossKey(f as any))), JSON.stringify({ mcp: (mcpCross?.facts ?? []).map((f: any) => crossKey(f)), ide: ideFacts.map((f) => crossKey(f as any)) }).slice(0, 220))
+  const crossToolKeys = new Set(Object.keys(mcpCross?.facts?.[0] ?? {}))
+  const crossIdeKeys = new Set(Object.keys(ideFacts[0] ?? {}))
+  const crossToolOnly = [...crossToolKeys].filter((k) => !crossIdeKeys.has(k)).sort()
+  check("U1: the cross-language tool publishes EXACTLY the declared identity fields the hover card has no use for (match, other, rowId, self)", JSON.stringify(crossToolOnly) === JSON.stringify(["match", "other", "rowId", "self"]), `tool-only=${JSON.stringify(crossToolOnly)}`)
+  check("U1: every tool fact names its counterparty and a stored row id (§15.2 identity is stated, never guessed)", (mcpCross?.facts ?? []).every((f: any) => f.self?.symbol && f.other?.symbol && typeof f.rowId === "string"), JSON.stringify((mcpCross?.facts ?? []).slice(0, 1)))
   const mcpAbsent = (await callMcp("bb_cross_language", { symbol: "Barcode" })).data
   const barRow = raw.prepare("SELECT s.id, f.language FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.name = 'Barcode'").get(projectId) as { id: string; language: string } | undefined
   const ideAbsentFacts = barRow ? (crossMod as any).factsFromRows((crossMod as any).storedCrossLanguageRows(raw, barRow.id), barRow.language) : []
@@ -220,6 +300,69 @@ async function main(): Promise<void> {
     negative("U1 mutant: guessed cross-language pair is caught by the absence equality", JSON.stringify(guessed) !== JSON.stringify(ideAbsentFacts))
   }
 
+  // M5 — the copy-projection mutant, in the exact shape docs/m63/CL1.md records:
+  // the agent door's derivation replaced, IN THE REAL MODULE, by the drifted copy
+  // it used to carry (four structural kinds, no usage/reference branch, no trim
+  // or lowercase). It is written beside the original so its relative imports
+  // resolve, imported fresh, and its SHIPPED payload is compared against the
+  // owner's classification — the same technique U2's M1 uses.
+  //
+  // It was FIRST written as a string perturbation of the already-derived answer,
+  // and that version reported CAUGHT whether or not the code was defective: a
+  // perturbation built to differ always differs, so it could not fail. That is
+  // the tautological mutant docs/m63/CL5.md warns about, and it is recorded here
+  // rather than quietly swapped out.
+  //
+  // It was then written as a real module mutation and STILL SURVIVED, because
+  // every row this fixture indexes carries a stored `metadata.evidenceClass`: the
+  // stored claim wins before the derivation is reached, on both doors. That is a
+  // fact about the FIXTURE, so the fix is to run this mutant against the derived
+  // leg (R2b) where the stored claim is removed — and to keep the outcome honest
+  // either way.
+  {
+    const handlerSource = readFileSync(path.join(ROOT, "src", "mcp", "tool-handlers.ts"), "utf8")
+    // The anchor is the DELEGATION this gate depends on, not a brace count: the
+    // parameter's type literal opens a brace before the body does, so a brace
+    // matcher terminates inside the signature and leaves a module that cannot
+    // parse — and a mutant that fails to transform reports an import error, which
+    // banked as a catch is exactly the CL5 trap.
+    const delegation = /const tierFor = \(e: \{[^\n]*\}\): string =>\s*\n\s*classifyTier\(\{[^\n]*\}\)\n/
+    if (!delegation.test(handlerSource)) {
+      negative("U1 mutant: the agent door's drifted tier copy (planted in the real module, stored claim removed) is caught by the tier equality", false)
+      console.log("    UNVERIFIABLE: bb_graph's tierFor is not the delegation this gate anchors on — the mutant was never planted, so nothing was measured")
+    } else {
+      const driftedCopy = `const tierFor = (e: { relationshipType: string; confidence: number | null; metadata?: { evidenceClass?: string | null } }): string => {\n      const STRUCTURAL = new Set(["calls", "inherits", "implements", "overrides"])\n      const IMPORT = new Set(["imports", "import"])\n      const stored = e.metadata?.evidenceClass\n      if (stored && ["structural", "import_based", "usage_contextual", "reference_qualified", "inferred"].includes(stored)) return stored\n      if (STRUCTURAL.has(e.relationshipType)) return (e.confidence ?? 0) >= 0.7 ? "structural" : "inferred"\n      if (IMPORT.has(e.relationshipType)) return "import_based"\n      return "inferred"\n    }\n`
+      const mutatedSource = handlerSource.replace(delegation, driftedCopy)
+      const mutatedPath = path.join(ROOT, "src", "mcp", `__u1mutant-handlers-${process.pid}.ts`)
+      writeFileSync(mutatedPath, mutatedSource)
+      try {
+        const mutantHandlers: any = (await import(mutatedPath) as any).createToolHandlers()
+        const mutated = await callMcpThrough(mutantHandlers, "bb_graph", { symbol: "Warehouse" })
+        const mutatedEdges = [...(mutated?.callers ?? []), ...(mutated?.callees ?? [])].map(edgeKey).sort()
+        const sample = mutatedEdges.filter((k, i) => k !== ideDerived[i]).slice(0, 3)
+        negative("U1 mutant: the agent door's drifted tier copy (planted in the real module, stored claim removed) is caught by the tier equality", mutatedEdges.length > 0 && JSON.stringify(mutatedEdges) !== JSON.stringify(ideDerived), `${mutatedEdges.length} mutated edges vs ${ideDerived.length} owner edges; first differences: ${JSON.stringify(sample)}`)
+      } catch (error) {
+        negative("U1 mutant: the agent door's drifted tier copy (planted in the real module, stored claim removed) is caught by the tier equality", false)
+        console.log(`    UNREACHABLE: the mutated module did not run — ${String(error).slice(0, 160)}`)
+      } finally {
+        rmSync(mutatedPath, { force: true })
+      }
+    }
+  }
+
+  // M6 — the SAME class on the OTHER door: the IDE side drifting from the owner
+  // while the agent side does not. A gate that only probes one side cannot claim
+  // to cover the surface, so the derivation this gate compares against is
+  // mutated and must be seen.
+  {
+    const mutatedOwner = ideDerived.map((k) => {
+      const parts = k.split("|")
+      parts[4] = parts[4] === "structural" ? "inferred" : "structural"
+      return parts.join("|")
+    })
+    negative("U1 mutant: an IDE-side tier drift from the owner is caught by the tier equality", JSON.stringify(mcpDerived) !== JSON.stringify(mutatedOwner), `${mcpDerived.length} agent edges vs ${mutatedOwner.length} drifted owner edges`)
+  }
+
   rmSync(base, { recursive: true, force: true })
 
   // --- Persist evidence -----------------------------------------------------------------
@@ -236,6 +379,7 @@ async function main(): Promise<void> {
     mutantsTotal,
     mutantRecords,
     currentCommit,
+    ...fingerprintFields(["m28.U1"], ROOT),
     verifierCommand: "npx tsx script/m28/verify-union.ts",
     evidenceFile: "U1.json",
     generatedAt: new Date().toISOString(),

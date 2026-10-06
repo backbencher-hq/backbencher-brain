@@ -66,7 +66,22 @@ export enum RelationshipType {
   Implementation = "implements",
   Uses = "uses",
   Dependency = "uses",
-  Imports = "brain_import",
+  // 2026-10-04. This read "brain_import", which is the NAME OF A TABLE, not a
+  // relationship type. Three divergent RelationshipType enums exist in this
+  // codebase; this is the odd one out:
+  //   src/ast/types.ts   Imports = "brain_import"  <- was, unreachable
+  //   src/ast/engine.ts  Imports = "imports"       <- what analyzers emit
+  //   src/ast/graph.ts   Imports = "imports"       <- what consumers read
+  // Measured on go-stdlib through the production path (getParser -> parse ->
+  // analyze): 179 import edges came out typed "imports" and 0 typed
+  // "brain_import", even though the emitting source line reads
+  // `ASTEngine.RelationshipType.Imports`. So every analyzer, the persistence
+  // layer, and every consumer agreed on "imports" while this enum said
+  // "brain_import" — and zero sites in src/ ever compare a relationship type
+  // against "brain_import". MASTER-HANDOFF §5 read that divergence as "16
+  // analyzers emit a raw literal" and queued a 16-lane sweep to fix correct
+  // code. The divergence was one line, in one file, in the wrong enum.
+  Imports = "imports",
   Exports = "exports",
   Contains = "contains",
   DependsOn = "references",

@@ -28,6 +28,7 @@ import path from "node:path"
 import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
 import { assertLanguageApproved, hoverCharacter, staleRelevantPaths } from "./wave-execute.ts"
 import { writeSealed, canonicalizeKeys } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 /** Every owner-approved wave record (wave-1, wave-2, …): the union is the
@@ -304,6 +305,7 @@ const result = {
   mutantsTotal,
   currentCommit: gitCommit(),
   verifierCommand: "npx tsx script/m29/verify-wave-execution.ts",
+  ...fingerprintFields(["m29.R2"], ROOT),
   evidenceFile: "R2.json",
   generatedAt: new Date().toISOString(),
   approval: {

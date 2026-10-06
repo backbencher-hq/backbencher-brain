@@ -23,10 +23,13 @@ import { ASTEngine } from "./engine"
  *   - fenced_code_block            -> function (executable/declared snippet)
  *   - minus_metadata (front matter) -> namespace (document metadata)
  *
- * Relationship map:
- *   - contains: heading -> nested heading / table / code block / front matter
- *   - uses: heading/table/code -> link destination, image source,
+* Relationship map:
+ *   contains: heading -> nested heading / table / code block / front matter
+ *   uses: heading/table/code -> link destination, image source,
  *     uri autolink, email autolink (from the inline grammar)
+ *   references: a `#fragment` destination resolved to the heading it names, which is
+ *     the one edge class here whose target is a symbol THIS file publishes (measured
+ *     1,107 of 1,107) — see `addRel`'s call site for why it is not `uses`.
  */
 export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
@@ -198,6 +201,30 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Document-level container for top-level facts.
     const DOC = "document"
 
+    /**
+     * How many headings were PUBLISHED, counted as they are published.
+     *
+     * MD-L2 (2026-10-03, the M60 pass-2 line-by-line read). This field used to be
+     * `headingStack.length`, evaluated in the RETURN object — and by then the stack
+     * holds the ancestor chain of the LAST heading the walk reached, not the headings
+     * of the document. CommonMark caps that chain at six, so the field could not
+     * exceed 6 in any document ever written, under any heading count, on any corpus.
+     *
+     * Measured on a 1,200-file draw of a corpus whose documents carry hundreds of
+     * headings: the field took exactly the five values 0, 1, 2, 3 and 4
+     * (94 / 361 / 542 / 186 / 17 files) with a maximum of 4, against a mean of 7.1
+     * published headings per file in the same draw
+     * (`validation/m60/markdown/pass2-labelling-probe.json`, `headingCountMetadata`).
+     * A consumer filtering documents by "how many headings does this have" was reading
+     * the nesting depth of the last one.
+     *
+     * Nothing in this repository reads markdown's `headingCount` — html's field of the
+     * same name is its own and is computed by its own counter at
+     * `real-html-analyzer.ts:754` — so the change is contained to this file, and the
+     * old value was wrong rather than load-bearing.
+     */
+    let publishedHeadings = 0
+
     // Same-document references, resolved after the walk.
     //
     // `anchorMap` is filled as headings are published, so by the time the walk ends
@@ -231,6 +258,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         const level = this.headingLevel(node)
         const name = this.headingText(node)
         if (name) {
+          publishedHeadings++
           while (headingStack.length > 0 && headingStack[headingStack.length - 1].level >= level) {
             headingStack.pop()
           }
@@ -308,7 +336,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         patterns.push("Markdown headings")
         // Emit inline-derived uses for this heading's inline content.
-        this.emitInlineUses(node, inlineByStart, addRel, currentOwner ?? DOC, definitions, pendingAnchors)
+        this.emitInlineUses(node, inlineByStart, addRel, currentOwner ?? DOC, definitions, pendingAnchors, imports)
         continue
       }
 
@@ -320,6 +348,12 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (inline?.tree?.rootNode) {
           const source = currentOwner ?? DOC
           this.walkInlineTree(inline.tree.rootNode, addRel, source, inline.line, definitions, pendingAnchors)
+          // MD-G3: a template include directive is not a node, so the structural walk
+          // above has nothing to dispatch on. It is read here, where the OWNING SECTION
+          // and the block's FILE LINE are both in hand — which is the only reason the
+          // source is the heading the directive sits under rather than whatever heading
+          // happened to be current when a whole-file pass ran.
+          this.emitIncludeImports(String(inline.tree.rootNode.text ?? ""), addRel, source, inline.line, imports)
         }
         continue
       }
@@ -512,9 +546,55 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       // target-name-plus-link-line pair would name a row that does not exist — the
       // dangling-endpoint class again, one line away. The link's own line is kept in
       // metadata, so where the author wrote it is not lost.
+      //
+      // MD-L1 (2026-10-03, the M60 pass-2 labelling review). The TYPE is `references`,
+      // and it was `uses`. The label change is the whole of the defect and it is
+      // measured, not stylistic:
+      //
+      //   Every link destination this lane publishes was `uses` — 10,709 of them in a
+      //   1,200-file corpus draw, of which **0** have a target that is a name the file
+      //   declares. That is not a quality footnote, it is the aggregate a consumer
+      //   reads: "this analyzer's edges resolve at 0.0%". The number is an artefact of
+      //   the label, because those 10,709 are four different relations published under
+      //   one name. Classified on the tree by the node's OWN text, the same draw gives:
+      //
+      //     scheme (https:, mailto:, …)  8,943   an external resource, unresolvable by
+      //                                              construction — no file declares it
+      //     relative (./other.md, …)     1,325   another file; 822 resolve to a tracked
+      //                                              file, 503 name a dead path
+      //     fragment (#install)           1,406   a heading IN THIS FILE
+      //     absolute-path (/img/x.png)     131
+      //
+      //   The third class is the one that is a reference to something DECLARED, and it
+      //   is the only edge class in this lane whose target binds to a published symbol:
+      //   **1,107 of 1,107, 100.0%** (`validation/m60/markdown/pass2-labelling-probe.json`,
+      //   role `markdown_internal_anchor`, `targetResolved`). css's `references` is the
+      //   same shape for the same reason — `var(--x)` reading a custom property the file
+      //   declares — and the enum itself spells the class twice: `References = "references"`
+      //   beside `DependsOn = "references"`, against `Uses = "uses"`.
+      //
+      //   So the split is: a destination the FILE DECLARES is a `references` edge; a
+      //   destination the file merely NAMES — a URL, an autolink, a cross-file path — is
+      //   a `uses` edge. That relabels 1,107 edges the lane already published and adds
+      //   none, so the fabrication class the workstream forbids is untouched.
+      //
+      //   What it does NOT do is claim the cross-file class: 1,325 relative destinations
+      //   are published as `uses` and 503 of them name a path no tracked file has. A
+      //   per-file analyzer cannot tell a live path from a dead one — production hands a
+      //   markdown analyzer no project index (`PROJECT_INDEX_EXTENSIONS` carries `.sol`
+      //   only) — so relabelling those would publish a `references` edge the lane cannot
+      //   resolve at all. They stay `uses`, and the limitation is declared in the doc
+      //   rather than left for a reader to discover.
+      //
+      //   The SOURCE half of this edge class is a separate fact and is NOT a defect: 610
+      //   of the 1,107 name `document` as their source, because the linking paragraph
+      //   sits above the document's first heading. `document` is the repo-wide
+      //   pseudo-owner that html, json, toml and yaml all use and none of them publish;
+      //   `parallel-indexer.ts` writes `source_symbol_id = null` with the name kept in
+      //   `source_external`, which is nullable by design.
       addRel(
         p.source,
-        ASTEngine.RelationshipType.Uses,
+        ASTEngine.RelationshipType.References,
         hit.name,
         {
           role: "markdown_internal_anchor",
@@ -543,7 +623,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         linesOfCode: content.split("\n").length,
         patterns,
         framework: "Markdown",
-        headingCount: headingStack.length,
+        headingCount: publishedHeadings,
         inlineBlockCount: mdInlineTrees.length,
       },
     }
@@ -574,6 +654,12 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
    *     lane resolves a destination the grammar read out of a node, so the
    *     `resolved === false` arm that other lanes need is unreachable here and is
    *     deliberately not invented.
+   *   references -> reference_qualified
+   *     The same tier as `uses`, for the same reason, and deliberately NOT
+   *     `structural`: the edge is not a parent/child relation read off the tree. A
+   *     `#fragment` names a heading, the analyzer recomputes that heading's anchor and
+   *     looks it up, and the edge exists because the lookup HIT. The lookup is the
+   *     qualification.
    */
   private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
     for (const r of relationships) {
@@ -586,6 +672,19 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (t === "uses") {
         md.evidenceClass = "reference_qualified"
+        continue
+      }
+      if (t === "references") {
+        md.evidenceClass = "reference_qualified"
+        continue
+      }
+      if (t === "imports") {
+        // MD-G3. The same tier css gives its `imports` and `references` classes, and for
+        // the same reason: the evidence is a PATH the document names, which is what
+        // `import_based` means. It is not `structural` — nothing here was read off the
+        // block tree — and it is not `usage_contextual` — the argument was not matched
+        // against a name appearing in context. It was read verbatim out of a directive.
+        md.evidenceClass = "import_based"
         continue
       }
       md.evidenceClass = "usage_contextual"
@@ -618,7 +717,11 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         const destNode = this.findChildByType(n, new Set(["link_destination"]))
         if (labelNode && destNode) {
           const label = this.stripBrackets(labelNode.text)
-          const destination = destNode.text.trim()
+          // Same rule as the inline form and for the same reason (MD-G4): the angle
+          // brackets are delimiters, not the destination, so `[x]: <https://y>`
+          // defines the destination `https://y`. See the `link_destination` case in
+          // `walkInlineTree` for the full argument and the measured population.
+          const destination = this.stripAngleBrackets(destNode.text.trim()).trim()
           if (label && destination && !into.has(label)) {
             into.set(label, { destination, line: labelNode.startPosition.row + 1 })
           }
@@ -633,8 +736,63 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * A heading's OWN `inline` node, which the two heading forms do not hold the same way.
+   *
+   * MD-DEFECT-1 (2026-10-03, the M60 pass-2 review). The ATX form puts the heading text in
+   * a DIRECT `inline` child:
+   *
+   *     atx_heading > atx_h1_marker, inline
+   *
+   * and the SETEXT form does not — the text lives one level down, inside the paragraph the
+   * underline terminates:
+   *
+   *     setext_heading > paragraph > inline , setext_h1_underline
+   *
+   * Both shapes are measured on the pinned wasm, not read off a spec. `emitInlineUses`
+   * resolved the heading's inline with `findChildByType`, which walks DIRECT named
+   * children only, so it returned null for every setext heading and the method returned
+   * before emitting anything: **every link, image, autolink and reference link inside a
+   * setext heading was silently dropped.** The `if (!inline) return` read as a guard
+   * against a heading with no text, and it was in fact a guard that matched half the
+   * heading forms.
+   *
+   * The population is small and it is stated rather than inflated: 76 setext headings in a
+   * 1,200-file corpus draw, of which 17 files carry one, and a whole-corpus scan of every
+   * line whose FOLLOWING line is a setext underline and which itself contains a link found
+   * **3** — `docker/vendor/github.com/hashicorp/go-immutable-radix/README.md:1`,
+   * `docker/vendor/github.com/hashicorp/go-immutable-radix/v2/README.md:1`, and
+   * `packer/README.md:4`. All three are H1 badge banners. Three instances is small; the
+   * asymmetry inside ONE construct is the defect, and the same argument closed MD-G1 for
+   * indented code blocks at a population the lane's own first estimate understated by 100x.
+   * It is also a dead branch in the sense the workstream names — reachable, and always
+   * taking the early return for one of the two heading forms.
+   *
+   * The engine already supplies the tree. `extractMarkdownInlineBlocks` walks the WHOLE
+   * block tree and collects every `inline` node, so the setext paragraph's inline is in
+   * `context.mdInlineStarts` under its own byte offset; nothing but this lookup was
+   * missing, and no shared file changes.
+   *
+   * Depth is bounded to one `paragraph` hop on purpose. A heading's text is the inline
+   * inside that paragraph, and reaching further would start picking up inline blocks that
+   * are body content rather than heading text.
+   */
+  private headingInline(node: Node): Node | null {
+    const direct = this.findChildByType(node, new Set(["inline"]))
+    if (direct) return direct
+    // SETEXT: the heading text is the paragraph's inline, one level down.
+    const paragraph = this.findChildByType(node, new Set(["paragraph"]))
+    if (!paragraph) return null
+    return this.findChildByType(paragraph, new Set(["inline"]))
+  }
+
+  /**
    * Walk a heading node's own inline child and emit `uses` edges for every
    * link/image/autolink in the companion inline tree matched by byte offset.
+   *
+   * `headingInline` rather than a direct-child lookup, for the reason its own comment
+   * gives: an ATX heading holds its `inline` directly and a setext heading holds it inside
+   * a `paragraph`, and reading only the direct form dropped every link in every setext
+   * heading in the corpus.
    */
   private emitInlineUses(
     node: Node,
@@ -642,12 +800,213 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
     addRel: (source: string, type: string, target: string, metadata: Record<string, unknown>, line?: number) => void,
     source: string,
     definitions: Map<string, { destination: string; line: number }>,
-    pendingAnchors?: { source: string; fragment: string; literal: string; line?: number }[],
+    pendingAnchors: { source: string; fragment: string; literal: string; line?: number }[] | undefined,
+    imports: ASTEngine.ImportInfo[],
   ): void {
-    const inline = this.findChildByType(node, new Set(["inline"]))
+    const inline = this.headingInline(node)
     if (!inline) return
     const entry = inlineByStart.get(inline.startIndex)
-    if (entry?.tree?.rootNode) this.walkInlineTree(entry.tree.rootNode, addRel, source, entry.line, definitions, pendingAnchors)
+    if (entry?.tree?.rootNode) {
+      this.walkInlineTree(entry.tree.rootNode, addRel, source, entry.line, definitions, pendingAnchors)
+      // MD-G3, the heading half. A `{% include … %}` inside a heading is the same
+      // construct as one inside a paragraph and the same rule reads it; the reason it
+      // is a separate call rather than a fold into the DFS is that the DFS `continue`s
+      // on a heading and never reaches its `inline` child.
+      this.emitIncludeImports(String(entry.tree.rootNode.text ?? ""), addRel, source, entry.line, imports)
+    }
+  }
+
+  /**
+   * A template include directive, and the `imports` edge it carries (MD-G3).
+   *
+   * ## Why this is a text rule in a lane whose measured property is zero regexes
+   *
+   * Zero regex literals is a property this lane publishes and a probe measures
+   * (`validation/m12/results/regex-census.json`, markdown 4 → 0). Keeping it is not
+   * stubbornness: it is what makes "every fact this analyzer publishes is AST-derived"
+   * a checkable claim rather than a habit. This method is the one place where the fact
+   * cannot be AST-derived, and it is a character-code scan of ONE node's own text for a
+   * construct the grammar does not model — which is a different thing from scanning a
+   * file for a pattern. `stripAngleBrackets`, `stripAtxClosingSequence`, `anchorSlug` and
+   * `decodeFragment` are all the same technique, and they are why the property survived
+   * this round.
+   *
+   * ## What it reads, and what it refuses to read
+   *
+   * `{%` … `%}`, whose first word is `include` (optionally `include-markdown` or
+   * `include_relative`), whose argument is either a quoted string or a bare token, and
+   * whose argument **ends in a known file extension**.
+   *
+   * That last clause is the whole discipline. The corpus carries 1,030+ `{% include %}`
+   * directives and most are Jinja/pymdownx MACRO calls naming no file —
+   * `{% include type t="Number" %}` (317 occurrences), `{% include tag ver="5.0" %}`
+   * (60+), `{% include example spec=… %}` (94). Publishing `imports -> Number` or
+   * `imports -> 5.0` would be exactly the fabrication the workstream forbids, and it
+   * would be invisible to the differential only because the oracle would have to repeat
+   * the same mistake. The extension test is the discriminator, and it is measured: 68
+   * directives on the pinned corpus name a file, and those 68 are the population.
+   *
+   * ## Confidence and evidence class
+   *
+   * `1.0` and `import_based`. Nothing here is inferred: the path is the author's own
+   * text, read verbatim, and the edge says this document pulls that path in. The
+   * confidence is NOT a claim that the file exists — a per-file analyzer cannot know,
+   * and 0 of the 68 were checked for existence by this lane. It is a claim about how the
+   * edge was derived, which is what the number means everywhere else in this lane.
+   */
+  private emitIncludeImports(
+    text: string,
+    addRel: (source: string, type: string, target: string, metadata: Record<string, unknown>, line?: number) => void,
+    source: string,
+    baseLine: number,
+    imports: ASTEngine.ImportInfo[],
+  ): void {
+    const n = text.length
+    // The DIRECTIVE's row inside this block, tracked incrementally. The first version
+    // recounted the whole block for every directive, which is O(n x directives) and turns
+    // a pathological paragraph — a 100 KB block carrying a thousand `{% … %}` — into
+    // 100 M character operations. `i` only moves forward, so carrying the scan position
+    // makes the whole method O(n), which is the envelope this lane documents.
+    let row = 0
+    let scannedTo = 0
+    for (let i = 0; i + 1 < n; i++) {
+      if (text.charCodeAt(i) !== 123 /* '{' */ || text.charCodeAt(i + 1) !== 37 /* '%' */) continue
+      let p = i + 2
+      // `{%-` is Liquid's whitespace-trim form and carries the same meaning.
+      if (p < n && text.charCodeAt(p) === 45 /* '-' */) p++
+      while (p < n && this.isSpaceCode(text.charCodeAt(p))) p++
+      const wordAt = p
+      if (!this.consumeWord(text, p, "include")) continue
+      p += 7
+      // The rest of the directive's own name. `include-markdown` and `include_relative`
+      // are single words, so the sweep takes letters and digits as well as the joining
+      // `-`/`_`: a sweep over the joiners alone stopped at the `m` of `markdown`, the
+      // argument reader then took `markdown` as the argument, `namesAFile` rejected it,
+      // and 54 of the corpus's 68 file-naming directives published nothing while the
+      // fixture still read as covering them.
+      while (p < n) {
+        const c = text.charCodeAt(p)
+        const wordChar =
+          (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 45 || c === 95
+        if (!wordChar) break
+        p++
+      }
+      const wordEnd = p
+      while (p < n && this.isSpaceCode(text.charCodeAt(p))) p++
+      const arg = this.readIncludeArgument(text, p, wordAt, wordEnd)
+      if (!arg.path || !this.namesAFile(arg.path)) continue
+      // The line is the DIRECTIVE's, not the block's: a paragraph may hold several, and
+      // M59 #825 takes `line_number` from the construct the edge is about.
+      for (let k = scannedTo; k < i; k++) if (text.charCodeAt(k) === 10 /* '\n' */) row++
+      scannedTo = i
+      const line = typeof baseLine === "number" && baseLine > 0 ? baseLine + row : undefined
+      const offset = baseLine > 0 ? row : 0
+      imports.push({
+        path: arg.path,
+        importType: "template-include",
+        localName: arg.path,
+        range: {
+          startLine: line ?? 0,
+          startColumn: 0,
+          endLine: (line ?? 0) + arg.lines - 1,
+          endColumn: 0,
+          startIndex: 0,
+          endIndex: 0,
+        },
+        metadata: { directive: arg.directive, quoted: arg.quoted, inlineBlockLine: offset },
+      })
+      addRel(
+        source,
+        ASTEngine.RelationshipType.Imports,
+        arg.path,
+        { role: "markdown_template_include", directive: arg.directive, ...(arg.quoted ? { quoted: true } : {}) },
+        line,
+      )
+      // Continue past the directive rather than re-scanning its own argument, so a path
+      // containing the literal `{%` cannot produce a second edge for one directive.
+      i = i + 2
+      continue
+    }
+  }
+
+  private isSpaceCode(c: number): boolean {
+    return c === 32 || c === 9 || c === 10 || c === 13
+  }
+
+  /**
+   * `word` at `at`, by character code.
+   *
+   * The boundary rule is asymmetric on purpose and the first version got it wrong in the
+   * direction that loses real edges: it treated `-` and `_` as word characters, so
+   * `include-markdown` and `include_relative` — 53 of the corpus's 68 file-naming
+   * directives between them — did not match, and only the bare `{% include x.md %}` form
+   * published. A letter or a digit after the word still ends the match, so `{% includes
+   * x.md %}` is not a directive; that is the case the fixture's near-miss section pins.
+   */
+  private consumeWord(text: string, at: number, word: string): boolean {
+    for (let k = 0; k < word.length; k++) if (text.charCodeAt(at + k) !== word.charCodeAt(k)) return false
+    const after = text.charCodeAt(at + word.length)
+    if ((after >= 65 && after <= 90) || (after >= 97 && after <= 122) || (after >= 48 && after <= 57)) return false
+    return true
+  }
+
+  /**
+   * The directive's argument: a quoted string if there is one, else the bare token up to
+   * whitespace or `%}`. Returns `lines` so the emitted range can cover a multi-line
+   * directive, which `{% include` with a long argument list does produce.
+   */
+  private readIncludeArgument(
+    text: string,
+    at: number,
+    wordAt: number,
+    wordEnd: number,
+  ): { path?: string; directive: string; quoted: boolean; lines: number } {
+    const n = text.length
+    // The directive's OWN NAME is the word, `include` / `include-markdown` /
+    // `include_relative`, and it is recorded because it is what tells a reader which of
+    // the three spellings the document used. Character codes, not a pattern:
+    // `split(/[%\s]/)` was the first thing written here and it put a regex literal into
+    // a file whose zero-regex count is a published, measured property.
+    const directive = wordEnd > wordAt ? text.slice(wordAt, wordEnd) : "include"
+    let p = at
+    let quoted = false
+    if (p < n && (text.charCodeAt(p) === 34 /* '"' */ || text.charCodeAt(p) === 39 /* "'" */)) {
+      const q = text.charCodeAt(p)
+      quoted = true
+      p++
+      let out = ""
+      while (p < n && text.charCodeAt(p) !== q) {
+        out += text[p]
+        p++
+      }
+      return { path: out.trim() || undefined, directive, quoted, lines: 1 }
+    }
+    let out = ""
+    while (p < n && !this.isSpaceCode(text.charCodeAt(p)) && text.charCodeAt(p) !== 37 /* '%' */) {
+      out += text[p]
+      p++
+    }
+    let lines = 1
+    for (let k = at; k < p && k < n; k++) if (text.charCodeAt(k) === 10) lines++
+    return { path: out || undefined, directive, quoted: false, lines }
+  }
+
+  /**
+   * Does this argument name a FILE rather than a macro keyword?
+   *
+   * The extension list is by character code and closed, and every entry is an extension
+   * that appears in the corpus's own include directives. It is a ROLE test rather than a
+   * shape test: the role is "a path to another file this build will read", and the
+   * discriminator the corpus supports is the extension, because that is the only part of
+   * the argument that differs between `properties.md` and `t="Number"`.
+   */
+  private namesAFile(path: string): boolean {
+    const dot = path.lastIndexOf(".")
+    if (dot <= 0 || dot === path.length - 1) return false
+    const ext = path.slice(dot + 1).toLowerCase()
+    const known = ["md", "markdown", "html", "htm", "txt", "yml", "yaml", "json", "toml", "svg", "png", "jpg", "jpeg", "gif", "csv", "ini", "conf", "pdf"]
+    for (const k of known) if (ext === k) return true
+    return false
   }
 
   /**
@@ -692,7 +1051,36 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "link_destination": {
           // Only reached as a NAMED child of inline_link / image, so it is a real
           // destination and never a code span's punctuation.
-          const target = inn.text.trim()
+          //
+          // MD-G4 (2026-10-05). The `<...>` destination form arrived with its
+          // DELIMITERS still attached: `[x](<https://y>)` published the target
+          // `<https://y>`. CommonMark 0.31.2 §4.7 is explicit that the angle
+          // brackets are the enclosing syntax and not part of the destination, so
+          // the spelling was wrong independently of anything downstream — and it
+          // cost every such edge twice over:
+          //
+          //  - The universal identifier sanitizer at src/ast/pool-worker.ts:653
+          //    drops any relationship whose target leaf matches `/[{}`<>\n\r\t]/`,
+          //    so the `<`/`>` deleted the edge at the production boundary. Measured:
+          //    calling `analyze()` directly publishes it, calling `parseFile`
+          //    returns 0 edges for the same file. That sanitizer already exempts
+          //    json/yaml/hcl/terraform/graphql outright and bash for path-shaped
+          //    labels, and markdown is absent from both lists — reported, not
+          //    edited, because pool-worker.ts is shared machinery (§8).
+          //  - A store lookup on `<https://y>` can never bind, so the edge was
+          //    unreachable even had it survived.
+          //
+          // The population is small and is stated rather than inflated: 96 sites in
+          // 33 of the 17,456 admitted corpus files. It includes a corpus file whose
+          // entire purpose is this construct —
+          // `gh-cli/internal/attachments/testdata/references_input.md` — and four
+          // copies of the same GitHub `repo-assist.md` issue template.
+          //
+          // The BALANCED-PAREN form is deliberately NOT stripped: CommonMark allows
+          // unescaped parentheses inside a bare destination when they form a
+          // balanced pair, so `[x]((y))` has the destination `(y)` and the
+          // parentheses really are part of it.
+          const target = this.stripAngleBrackets(inn.text.trim()).trim()
           if (target) {
             // A destination that is ONLY a fragment names a heading in THIS document,
             // so it is an internal reference and not an external one. It is deferred
@@ -707,7 +1095,13 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (pendingAnchors && target.charCodeAt(0) === 35 /* '#' */) {
               pendingAnchors.push({ source, fragment: target.slice(1), literal: target, line: fileLine(inn) })
             } else {
-              addRel(source, ASTEngine.RelationshipType.Uses, target, { role: "markdown_link", linkText: target }, fileLine(inn))
+              addRel(
+                source,
+                ASTEngine.RelationshipType.Uses,
+                target,
+                { role: "markdown_link", linkText: target, ...this.linkTargetMetadata(target) },
+                fileLine(inn),
+              )
             }
           }
           break
@@ -717,7 +1111,21 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
           // The grammar exposes the URI/email only as the node's raw text in angle
           // brackets (no child node) — strip the brackets by position.
           const target = this.stripAngleBrackets(inn.text)
-          if (target) addRel(source, ASTEngine.RelationshipType.Uses, target, { role: "markdown_autolink" }, fileLine(inn))
+          if (target) {
+            // An autolink is external BY CONSTRUCTION — `<https://x>` and
+            // `<a@b.c>` are the two forms CommonMark defines and neither can name a
+            // local declaration — so `isExternal` is true here without consulting
+            // the classifier, while `targetKind` still distinguishes a URI from an
+            // email address.
+            const kind = this.linkTargetMetadata(target)
+            addRel(
+              source,
+              ASTEngine.RelationshipType.Uses,
+              target,
+              { role: "markdown_autolink", isExternal: true, targetKind: this.uriSchemeOf(target) === null ? "emailAutolink" : kind.targetKind, ...(kind.externalScheme !== undefined ? { externalScheme: kind.externalScheme } : {}) },
+              fileLine(inn),
+            )
+          }
           break
         }
         case "full_reference_link":
@@ -784,7 +1192,17 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       source,
       ASTEngine.RelationshipType.Uses,
       defined.destination,
-      { role: "markdown_link", linkText: label, linkForm: node.type, resolvedVia: "link_reference_definition" },
+      {
+        role: "markdown_link",
+        linkText: label,
+        linkForm: node.type,
+        resolvedVia: "link_reference_definition",
+        // The destination, not the label. A reference link resolves its LABEL
+        // through the definition and its DESTINATION is what the edge points at, so
+        // classifying the label would answer a question nobody asked — `[home]` is
+        // not a path and `http://example.com` is not a heading.
+        ...this.linkTargetMetadata(defined.destination),
+      },
       line,
     )
   }
@@ -829,6 +1247,117 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       return t.slice(1, -1)
     }
     return t
+  }
+
+  /**
+   * A link destination's RFC 3986 scheme, or `null` when it has none.
+   *
+   * By the RFC's own rule rather than by pattern: `ALPHA *( ALPHA / DIGIT / "+" /
+   * "-" / "." ) ":"`, with `/`, `?` or `#` ending the scan because none of them may
+   * appear in a scheme. `https://x` has one; `docs/a.md` does not — the segment
+   * before its colon contains a `/`.
+   *
+   * TWO constraints, both measured rather than assumed:
+   *
+   *  - **Two characters minimum.** RFC 3986 admits `X:`, so a Windows drive path
+   *    `X:/src` classified as a URI scheme. It is a path in this repository, and
+   *    calling it external would be a false statement about where the target lives.
+   *  - **One balanced PARENTHESIS pair stripped first.** `[x]((https://…))` is
+   *    legal CommonMark and its destination really is `(https://…)` — the inner
+   *    pair is balanced, so the parentheses are part of the destination rather than
+   *    delimiters — so the scan has to see through them to find the scheme.
+   *
+   * An ANGLE pair is NOT stripped here, and that is deliberate: the `<...>`
+   * destination form is unwrapped at its source instead (`walkInlineTree`'s
+   * `link_destination` case and `collectReferenceDefinitions`), because CommonMark
+   * says those brackets are not part of the destination at all. Stripping them a
+   * second time here would be a branch that never fires, and a rule the
+   * implementation cannot reach is not a rule.
+   */
+  private uriSchemeOf(dest: string): string | null {
+    let body = dest.trim()
+    for (let guard = 0; guard < 2; guard++) {
+      if (body.length < 2) break
+      if (body.charCodeAt(0) !== 40 /* ( */ || body.charCodeAt(body.length - 1) !== 41 /* ) */) break
+      body = body.slice(1, -1).trim()
+    }
+    // A network-path reference, `//host/path`, has no scheme and is still a remote
+    // target: the authority is what makes it remote, not the scheme.
+    if (body.length >= 2 && body.charCodeAt(0) === 47 && body.charCodeAt(1) === 47) return "network-path"
+    let colon = -1
+    for (let i = 0; i < body.length; i++) {
+      const c = body.charCodeAt(i)
+      if (c === 58 /* : */) {
+        colon = i
+        break
+      }
+      if (c === 47 /* / */ || c === 63 /* ? */ || c === 35 /* # */) return null
+    }
+    if (colon < 2) return null
+    const first = body.charCodeAt(0)
+    const alpha = (first >= 65 && first <= 90) || (first >= 97 && first <= 122)
+    if (!alpha) return null
+    for (let k = 1; k < colon; k++) {
+      const d = body.charCodeAt(k)
+      const ok =
+        (d >= 65 && d <= 90) ||
+        (d >= 97 && d <= 122) ||
+        (d >= 48 && d <= 57) ||
+        d === 43 /* + */ ||
+        d === 45 /* - */ ||
+        d === 46 /* . */
+      if (!ok) return null
+    }
+    return body.slice(0, colon)
+  }
+
+  /**
+   * What KIND of place a link destination names, as metadata on the `uses` edge.
+   *
+   * Why this exists, measured on the 600-file prefix of this lane's 17,456-file
+   * admitted population (production `parseFile`, `validation/m60/markdown/
+   * abc-before-600.json`): 4,107 of the 4,951 edge targets that bind to no local
+   * declaration carry a URI scheme — 3,996 `https`, 110 `http`, 1 `some` — and a
+   * consumer reading a resolution rate cannot tell them apart from a reference to a
+   * heading that failed to bind. The column therefore overstated this lane's
+   * defects by 82.9% before the split existed.
+   *
+   * The three-way split is the substance, not a detail:
+   *
+   *  - `externalUri` — a remote resource. Outside the corpus by construction, so
+   *    it can never bind to a local declaration and must not be scored as a miss.
+   *  - `repoRelativePath` — 572 targets, a link to a sibling file in the SAME
+   *    repository (`CHANGELOG.md`, `docs/src/contributing.md`). Marking these
+   *    external would be a false statement: the file is in the corpus, the analyzer
+   *    simply has no document-target model. They are named so they are countable as
+   *    what they are — a modelling gap, not an external reference.
+   *  - `bareToken` — 272 targets, dominated by Documenter.jl's `@ref`
+   *    cross-reference placeholder (262 of them). A template directive, not a path.
+   *
+   * What this deliberately does NOT do, because each would be a fabrication or a
+   * contract break:
+   *
+   *  - It does not change the TARGET STRING. The endpoint is the link destination
+   *    as written; a consumer that wants a file target needs a file model, not a
+   *    renamed endpoint.
+   *  - It does not change the TYPE LABEL. `uses` over a URL is the lane's pinned
+   *    contract (`markdown-mutants.ts` mutant MD-L1 relabels these in place, and
+   *    `internal-anchor-links` forbids `uses` over an in-document anchor), so the
+   *    label is untouched and only metadata is added.
+   *  - It does not SUPPRESS the edge. A markdown link to a website is a real use of
+   *    that resource and belongs in the graph; dropping 4,107 edges to make a
+   *    column look better is the opposite of the point.
+   *
+   * Character scanning throughout, no regex, for the reason `anchorSlug` documents:
+   * 0 regex literals is a pinned property of this analyzer and
+   * `script/m12/verify-regex-census.ts` is the gate that decides it.
+   */
+  private linkTargetMetadata(dest: string): Record<string, unknown> {
+    const scheme = this.uriSchemeOf(dest)
+    if (scheme !== null) return { isExternal: true, externalScheme: scheme, targetKind: "externalUri" }
+    const body = dest.trim()
+    if (body.indexOf("/") >= 0 || body.indexOf(".") >= 0) return { isExternal: false, targetKind: "repoRelativePath" }
+    return { isExternal: false, targetKind: "bareToken" }
   }
 
   /**

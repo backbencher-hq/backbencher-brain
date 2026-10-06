@@ -10,18 +10,18 @@
   "mutantsCaught": 11,
   "mutantsTotal": 11,
   "negatives": 0,
-  "currentCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
+  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
   "workingTreeRelevantChanges": [],
   "foundBy": "the V1 rig's own frame: validation/m55/frames/live-7/7-status.png (the visible content was the single line 'launch: compiled dist (bundled) — …')",
   "owner": "ide/vscode/src/status-markup.ts (pure markup) + ide/vscode/src/extension.ts (panel + reuse)",
   "modelOwner": "ide/vscode/src/status-model.ts (unchanged; gated by script/m25/verify-status-surface.ts)",
   "verifierCommand": "npx tsx script/m55/verify-status-panel.ts",
   "evidenceFile": "V1-status-panel.json",
-  "generatedAt": "2026-09-16T22:05:17.600Z",
+  "generatedAt": "2026-10-04T22:50:46.475Z",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T22:05:17.601Z",
-    "contentSha256": "18b6ebc069c7ab013c5c70abf178c7248c6c7a9a51e7e84b2db7e554c7d69ee5"
+    "sealedAt": "2026-10-04T22:50:46.477Z",
+    "contentSha256": "16e952a523b0d454c0e4edb11a281f3324b6af4a83268a9740297fc3599a0fe2"
   }
 }

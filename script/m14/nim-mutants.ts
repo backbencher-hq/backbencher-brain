@@ -50,6 +50,30 @@ export interface NimMutant {
   transform: (r: any, source?: string) => any
 }
 
+/**
+ * The names a bare-`case` recovery lands on in this lane's fixtures, as a
+ * TRANSFORM-side list. The analyzer decides this structurally (the `case`-row
+ * adjacency test); a mutant has no parse tree, so it re-expresses the defect as
+ * "re-publish the borrowed names" by naming them. Kept minimal and explicit
+ * rather than clever so the mutant's own claim is checkable by reading it.
+ */
+const BORROWED_DISCRIMINATORS = new Set(["AddOpr", "SubOpr", "None", "Some", "float", "Circle", "Value"])
+const isBorrowedDiscriminatorName = (n: string): boolean => BORROWED_DISCRIMINATORS.has(n)
+
+/** Nim's reserved words, for the partial-fix mutant. Copied from the analyzer's
+ *  `NIM_KEYWORDS` export rather than imported so the mutant fails if the two
+ *  ever disagree — `verify-mutants.ts` asserts the equality. */
+const NIM_RESERVED = new Set([
+  "addr", "and", "as", "bind", "block", "break", "case", "concept", "const",
+  "continue", "converter", "defer", "discard", "distinct", "div", "do", "elif",
+  "else", "end", "enum", "except", "export", "finally", "for", "from", "func",
+  "if", "import", "in", "include", "interface", "is", "isnot", "iterator", "let",
+  "macro", "method", "mixin", "mod", "nil", "not", "notin", "object", "of", "or",
+  "out", "proc", "ptr", "raise", "ref", "return", "shl", "shr", "static",
+  "template", "try", "tuple", "type", "using", "var", "when", "while", "xor",
+  "yield",
+])
+
 export const NIM_MUTANTS: NimMutant[] = [
   // ═══════════════════════════════════════════════════════════════════════
   // M60 ontology wave — `implements` (concept refinement)
@@ -114,6 +138,66 @@ export const NIM_MUTANTS: NimMutant[] = [
         }),
       }
     },
+  },
+  {
+    id: "nim/concept-generic-target-read-as-the-type-argument",
+    language: "nim",
+    defectClass: "fabricated-endpoint",
+    description:
+      "`of Source[T]` publishes the type ARGUMENT `T` instead of the refined " +
+      "contract `Source`. `refinement_list` is `sep1($.type_expression, \",\")` and a " +
+      "generic instantiation is a `bracket_expression` whose FIRST named child is the " +
+      "constructor while its `argument_list` holds the type arguments, so a reader that " +
+      "takes the last name under the list lands on the argument. " +
+      "This is 2 of the family's 47 corpus edges — nimony's " +
+      "`tconceptinheritnotgeneric.nim:7 Bar = concept of Foo[T]` and " +
+      "`tconceptinvocationbody.nim:39 MutableIndexable*[T] = concept of Indexable[T]` — " +
+      "and it was unpinned until that repo entered the corpus on 2026-10-04. " +
+      "The edge it produces is a FABRICATION, not a mislabel: `T` is a generic " +
+      "parameter, it resolves at neither end, and `bb_impact` on it is wrong refactoring " +
+      "advice. This lane's own oracle made exactly this mistake on its first pass and " +
+      "the oracle cross-check caught it one round after the code was written. " +
+      "Caught by nim/concept's forbidRelationships {implements, Wrapped -> T}, whose " +
+      "sibling positive row {implements, Wrapped -> Source} has no other way to fail.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "implements" && String(x.source) === "Wrapped"
+          ? { ...x, target: "T" }
+          : x,
+      ),
+    }),
+  },
+  {
+    id: "nim/concept-self-cycle-published",
+    language: "nim",
+    defectClass: "fabricated-relationship",
+    description:
+      "`type Cycle = concept of Cycle` publishes `Cycle implements Cycle`. A concept " +
+      "refining itself is not a relationship, and this is a REAL corpus file rather than " +
+      "a synthetic one: nimony/tests/nimony/concepts/tconceptcycle.nim is exactly that " +
+      "one line, and upstream ships tconceptcycle.msgs reading `Error: concept " +
+      "inheritance cycle detected`. " +
+      "The guard already exists for this family, on both spellings, but only the `is`-form " +
+      "half was pinned by a fixture — so a change that kept `r is Recursive` suppressed " +
+      "while dropping the `of`-form guard would have passed the suite. " +
+      "Caught by nim/concept's forbidRelationships {implements, from: Cycle}, which has no " +
+      "sibling row: `Cycle` refines nothing else.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        ...(r.symbols ?? [])
+          .filter((s: any) => String(s.name) === "Cycle")
+          .map((s: any) => ({
+            source: "Cycle",
+            target: "Cycle",
+            type: "implements",
+            confidence: 1,
+            metadata: { relationshipType: "nim_concept_refinement" },
+          })),
+      ],
+    }),
   },
   {
     id: "nim/concept-satisfaction-invented",
@@ -280,5 +364,445 @@ export const NIM_MUTANTS: NimMutant[] = [
         }))
       return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
     },
+  },
+  {
+    id: "nim/nested-routine-symbol-dropped",
+    language: "nim",
+    defectClass: "unpublished-declaration",
+    description:
+      "A NAMED nested routine stops being published, which is the exact defect this lane " +
+      "fixed: 653 `calls` edges over 4,555 corpus files named a declaration the parse tree " +
+      "carried and the run published nowhere, because a `calls` EDGE was emitted while its " +
+      "far end had no symbol. The analyzer is a per-file walker with no second pass, so the " +
+      "regression is invisible in any edge count — only the symbol is missing. " +
+      "Caught by nim/nested's expectSymbols {recentlyOpenedAdd, scope: closeTab} and by its " +
+      "expectRelationships {contains, closeTab -> recentlyOpenedAdd}.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.scope === undefined || s.scope === ""),
+    }),
+  },
+  {
+    id: "nim/nested-routine-scope-lost",
+    language: "nim",
+    defectClass: "scope-misattribution",
+    description:
+      "The nested routine keeps its symbol but loses `scope`, so it reads as a module " +
+      "procedure. The lua lane measured why this is a real defect and not cosmetics: `scope` " +
+      "is what a consumer reads to decide where a symbol belongs, and a closure declared " +
+      "inside `closeTab` does not belong to the file's module scope. It also breaks the " +
+      "`qualifiedName` the worker derives from `scope`, so `closeTab.recentlyOpenedAdd` " +
+      "stops resolving for the incoming walk. " +
+      "Caught by nim/nested's expectSymbols scope assertion.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.scope ? { ...s, scope: undefined } : s)),
+    }),
+  },
+  {
+    id: "nim/doc-example-values-published",
+    language: "nim",
+    defectClass: "phantom-symbol",
+    description:
+      "A `runnableExamples` block's VALUE declarations are published as module symbols. " +
+      "`var base: Base = Sub1()` is a local of the example unit exactly as `var` in a routine " +
+      "body is a local of that routine, so this is `LocalsAreNotSymbols` violated in the " +
+      "opposite direction from the nested-routine fix — the two must be fixed together or the " +
+      "first fix reintroduces the second defect. " +
+      "Caught by nim/nested's forbidSymbols {exampleOnlyLocal}, a name the fixture " +
+      "declares nowhere else so the forbid cannot be satisfied by a coincidence.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        {
+          name: "exampleOnlyLocal",
+          kind: "variable",
+          visibility: "private",
+          range: { startLine: 56, startColumn: 5, endLine: 56, endColumn: 30, startIndex: 0, endIndex: 0 },
+        },
+      ],
+    }),
+  },
+  {
+    id: "nim/runnable-examples-pragma-published-as-a-call",
+    language: "nim",
+    defectClass: "fabricated-edge",
+    description:
+      "The `runnableExamples:` doc pragma is published as a `calls` edge. This is the " +
+      "fabrication rule's cheapest available instance: the grammar parses the whole example " +
+      "as the call's `argument_list`, so the call branch fires on a keyword, and the edge " +
+      "lands on an identifier no Nim program can call — a name the graph can never resolve. " +
+      "Measured before the fix: 24 such frames in nim/lib/system.nim alone. " +
+      "Caught by nim/nested's forbidRelationships {calls, describe -> runnableExamples}.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        {
+          source: "describe",
+          target: "runnableExamples",
+          type: "calls",
+          confidence: 0.85,
+          line_number: 1,
+          metadata: { relationshipType: "nim_call", evidenceClass: "usage_contextual" },
+        },
+      ],
+    }),
+  },
+  {
+    id: "nim/method-qualified-name-dropped",
+    language: "nim",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "A method stops publishing `qualifiedName`, so every `overrides` endpoint — which is " +
+      "receiver-qualified (`Rect.describe`) because the bare name cannot address either end — " +
+      "fails to resolve for the incoming walk. Measured with `script/m14/incoming-check.ts` on " +
+      "nim/lib/pure (105 files, 6,638 symbols) before the fix: 14 of 14 `overrides` edges " +
+      "reported as UNRESOLVED targets, every one a correct edge. The worker's `qualifiedName` " +
+      "fallback cannot recover it, because a method's owner is `ownerName`, not `scope`. " +
+      "Caught by nim/contract's expectSymbols {describe, meta.fqn: Shape.describe}. The pin is " +
+      "on `meta.fqn` rather than on `qualifiedName` because run-fixtures.ts cannot assert the " +
+      "latter — it is missing from CONSTRAINT_KEY_ALLOWLIST, so a row carrying it is reported as " +
+      "an INERT assertion. `pool-worker.ts:870` reads `s.qualifiedName || s.metadata?.fqn`, so " +
+      "both carry the same fact and the metadata one is the assertable channel.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.kind === "method" && s.ownerName
+          ? { ...s, qualifiedName: undefined, metadata: { ...(s.metadata ?? {}), fqn: undefined } }
+          : s,
+      ),
+    }),
+  },
+  {
+    id: "nim/nested-routine-ufcs-call-lost",
+    language: "nim",
+    defectClass: "dropped-relationship-family",
+    description:
+      "A parenless UFCS call of a NESTED routine stops being emitted. `s.trimmed` " +
+      "invokes `trimmed(s)` with no parentheses and no call node, so the callee is a " +
+      "member leaf and the analyzer has to decide it is a callable by name. Testing " +
+      "only the module-scope set loses it, because nested routines are deliberately " +
+      "kept out of that set. Found by script/m14/nim-truth-oracle.ts: one " +
+      "unexplained `calls` edge on the 400-file sample, at " +
+      "nim/lib/packages/docutils/rst.nim:3493 where `rmSpaces` is declared at :3491 " +
+      "inside `proc dirImportdoc`. An analyzer that reads only its own metadata would " +
+      "have agreed with itself and reported nothing. " +
+      "Caught by nim/nested's forbidRelationships {uses, strip -> trimmed} — a mutant " +
+      "that reclassified the call as a read is caught by the same pin, because the " +
+      "shape is what is being asserted.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (e: any) => e.metadata?.relationshipType !== "nim_ufcs_member_call",
+      ),
+    }),
+  },
+  // ═══════════════════════════════════════════════════════════════════════
+  // M60 bare-`case` discriminator fabrication
+  //
+  // Nim permits `case` with no discriminator name, and tree-sitter-nim has no
+  // slot for the missing one, so error recovery attaches the FOLLOWING line —
+  // the `of A, B:` branch list — to `variant_discriminator_declaration`. The
+  // analyzer published the slot's first `symbol_declaration` as a `property` of
+  // the owning type plus a `contains` edge to it: a field the object does not
+  // have. Measured at 18 sites / 29 edges over nimony's 1,508 files.
+  //
+  // The shipped guard is the `case`-row adjacency test, which scored a perfect
+  // separation (TP 19 / FN 0 / FP 0 / TN 24) against the structural ground truth.
+  // The two mutants below are the two ways that guard, or any replacement for
+  // it, can be defeated, and both are caught by nim/bare-case.
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    id: "nim/bare-case-discriminator-guard-removed",
+    language: "nim",
+    defectClass: "fabricated-symbol",
+    description:
+      "The bare-`case` guard stops applying, and the slot's borrowed constructor " +
+      "is published again as a field of the owning type with a `contains` edge " +
+      "to it. This is the defect itself, reproduced as a transform so the fixture " +
+      "is proved able to catch it. " +
+      "Caught by nim/bare-case's forbidSymbols {AddOpr, SubOpr, None, Some, float, " +
+      "Circle, Value} and its four forbidRelationships `contains` rows.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !s.metadata?.nimVariantDiscriminator
+        || isBorrowedDiscriminatorName(String(s.name ?? ""))),
+      relationships: (r.relationships ?? []).filter((e: any) => !isBorrowedDiscriminatorName(String(e.target ?? ""))),
+    }),
+  },
+  {
+    id: "nim/bare-case-guard-restored-by-keyword-list",
+    language: "nim",
+    retired: true,
+    retiredOn: "the same commit that shipped the guard",
+    retirementReason:
+      "NOT EXPRESSIBLE as an output transform against a fixed analyzer, and the reason is " +
+      "structural rather than convenient. This mutant models the PARTIAL fix — a keyword-list " +
+      "guard — by dropping published discriminators whose name is a Nim reserved word. On the " +
+      "PRE-fix analyzer that transform would reproduce the defect and the fixture would catch " +
+      "it. On the SHIPPED analyzer the real guard has already removed every borrowed name, so " +
+      "the filter is idempotent and the harness's rule (`mutated.fail > base.fail`) cannot see " +
+      "it. A surviving mutant here is the harness telling the truth about its own reach, not a " +
+      "gap in the fixture: `mutate-analyzer.ts` transforms RESULTS, and a fix that changes which " +
+      "symbols EXIST cannot be undone by transforming the result of the fix. " +
+      "The hazard is not left unpinned — it is pinned from the other side, by the fixture rows " +
+      "that a partial fix would have to keep passing: nim/bare-case's forbidSymbols name " +
+      "AddOpr, None, Some, float and Circle, NONE of which is a Nim reserved word, so a keyword " +
+      "guard cannot satisfy them. Mutant `nim/bare-case-discriminator-guard-removed` remains " +
+      "live and CAUGHT, and it is the one that can be expressed.",
+    defectClass: "partial-fix",
+    description:
+      "The guard is 'fixed' with the cheap instrument instead of the measured one: " +
+      "a published discriminator is dropped when its name is a Nim reserved word. " +
+      "That is the rewrite the measurement exists to prevent — over nimony's 43 " +
+      "slots the reserved-word test catches 5 of 19 fabrications and misses 14, " +
+      "because `None`, `Some`, `AddOpr`, `float` and `T` are legal identifiers and " +
+      "not keywords. It PASSES the corpus keyword probe, which is why it is " +
+      "dangerous: the defect looks closed and 14 fabrications per repo remain. " +
+      "Caught by nim/bare-case's forbidSymbols {AddOpr, None, Some, float, Circle}, " +
+      "none of which is a reserved word.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !s.metadata?.nimVariantDiscriminator
+        || !NIM_RESERVED.has(String(s.name ?? ""))),
+      relationships: (r.relationships ?? []).filter((e: any) => !NIM_RESERVED.has(String(e.target ?? ""))),
+    }),
+  },
+  // ═══════════════════════════════════════════════════════════════════════
+  // M60 module identity — the module symbol and the target that names it
+  //
+  // Two emitters spelling one symbol differently is the defect class the
+  // B/A/C brief calls "format mismatch", and it is worth two mutants rather
+  // than one because the two halves fail INDEPENDENTLY and a fixture that only
+  // pins one of them passes while the other half is broken.
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    id: "nim/module-symbol-dropped",
+    language: "nim",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "A `.nim` file stops publishing the MODULE it defines, so every `imports` edge " +
+      "names a module that exists nowhere in the symbol set. This is not a resolution " +
+      "failure — there is no candidate to fail to find — and the store cannot rescue " +
+      "it: the insert-time resolver matches `brain_symbol.name` " +
+      "(parallel-indexer.ts:2239), the three post-pass strategies match a bare name, a " +
+      "`qualified_name`, or everything after the first `.` of a dotted target " +
+      "(:3755-3774), and `std/assertions` is none of those; the fourth, " +
+      "`resolveImportTargets`, is scoped to the `<module>:<item>` form " +
+      "javascript/typescript/python emit and nim never reaches it. " +
+      "MEASURED with production `parseFile` over the 6,063-file corpus " +
+      "(validation/m14/fixtures/nim/census.ts): `imports` resolved on 37.1% of 13,364 " +
+      "edges before the module pass and 92.0% of 13,365 after it. " +
+      "Caught by nim/module-target's expectSymbols {module-target, kind: module}. The " +
+      "mutant is kept separate from the target-normalisation mutant below because " +
+      "dropping the symbol while keeping the normalised target leaves the edge pointing " +
+      "at a name that exists, which a target-only fixture would not notice is wrong.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "module"),
+    }),
+  },
+  {
+    id: "nim/import-target-keeps-the-written-path",
+    language: "nim",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "The `imports` target goes back to the module path AS WRITTEN while the module " +
+      "symbol stays published. The two halves drifted apart in the first place, which " +
+      "is why this is expressible as its own mutant: the emitter wrote the path " +
+      "`parseModuleExpression` returned and the publisher wrote the file's basename, " +
+      "and no test compared them. `import std/os` then targets `std/os`, which no " +
+      "symbol carries, and `import ./helpers` targets `./helpers`. Both were CORRECT " +
+      "for the corpus by accident and wrong for the graph. " +
+      "Caught by nim/module-target's three forbidRelationships rows — {imports, " +
+      "std/os}, {imports, std/private/globs}, {imports, ../shared} — and by " +
+      "nim/contract's five retargeted `imports` rows, whose `meta.nimModulePath` pins " +
+      "the written path separately from the target so the two cannot be confused " +
+      "again. Verified by hand before registration: reverting the three target sites " +
+      "made nim/module-target and nim/contract FAIL (10 pass / 2 fail) with all three " +
+      "forbid rows firing.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) => {
+        const written = e?.metadata?.nimModulePath
+        if (!written) return e
+        return { ...e, target: written }
+      }),
+    }),
+  },
+  // ═══════════════════════════════════════════════════════════════════════
+  // M60 cause C — the standard-library marker, in both directions
+  //
+  // Two mutants rather than one, because "never marked" and "always marked" are
+  // opposite defects and a pin written for either one alone is satisfied by the
+  // other. The corpus sizes the gap between them: 485 `imports` edges are declared
+  // nowhere in the corpus, of which 66 carry a `std/` prefix and 419 do not
+  // (validation/m14/measurements/nim/s18-import-probe.txt).
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    id: "nim/stdlib-marker-dropped",
+    language: "nim",
+    defectClass: "missing-metadata",
+    description:
+      "The `std/` prefix stops being recognised, so every standard-library import is " +
+      "emitted indistinguishably from a local one. The edges are still correct and " +
+      "still resolve where the corpus contains the module — this removes a LABEL, not " +
+      "an edge, which is exactly why it needs its own pin: the resolution census is " +
+      "blind to it. `nim/module-target` pins `meta.nimStdlibModule: true` on the three " +
+      "`std/` rows (`os`, `strutils`, `globs`).",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) => {
+        if (!e?.metadata || e.metadata.nimStdlibModule === undefined) return e
+        const { nimStdlibModule: _dropped, ...rest } = e.metadata
+        return { ...e, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "nim/stdlib-marker-over-applied",
+    language: "nim",
+    defectClass: "fabricated-metadata",
+    description:
+      "The marker is applied to EVERY `imports` edge, which is the fabrication this " +
+      "workstream calls its most expensive mistake: it asserts that a local module is " +
+      "part of the standard library. `import ../shared` and `import ./helpers` would " +
+      "both be marked, and 309 of the 485 unbindable corpus edges are BARE names — a " +
+      "local module, a `lib/pure` module (`import re`) and a typo are the same string in " +
+      "one file and nothing per-file separates them. Caught by nim/module-target's " +
+      "`meta.nimStdlibModule: null` row on the `../shared` edge, which the runner reads " +
+      "as \"must not carry this key\". The first version of this mutant was verified by " +
+      "hand before registration: marking every import made nim/module-target FAIL on " +
+      "that row alone.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) =>
+        String(e?.type ?? "").toLowerCase() === "imports"
+          ? { ...e, metadata: { ...(e.metadata ?? {}), nimStdlibModule: true } }
+          : e,
+      ),
+    }),
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // M60 module identity, PART 2 — re-arming three guards the target
+  // normalisation silently disarmed
+  //
+  // Three nim mutants live in `script/m14/mutate-analyzer.ts` (shared machinery,
+  // workstream §8) whose transforms select edges by their PATH-SHAPED target:
+  // `String(x.target).startsWith("../")`, `String(x.target).split("/").length > 2`,
+  // and `x.target === "std/os" || x.target === "std/strutils"`. The module pass
+  // normalised every target to its last segment, so all three filters now match
+  // NOTHING, each transform is a no-op, and all three SURVIVE:
+  //
+  //   SURVIVED nim/relative-import-lost              (0 -> 0 failures)
+  //   SURVIVED nim/deep-import-path-lost             (0 -> 0 failures)
+  //   SURVIVED nim/module-list-collapsed-to-one-edge (0 -> 0 failures)
+  //   (s18-mutants.txt, BB_MUTANT_ONLY=nim/)
+  //
+  // A mutant that can no longer express its defect is not a passing mutant, so
+  // each is re-expressed below against the CURRENT contract — selecting on
+  // `meta.nimModulePath`, which the pass preserved deliberately, so the guard
+  // survives the next normalisation too. The shared copies are reported, not
+  // edited.
+  //
+  // A fourth shared mutant, `nim/cross-file-macro-called-without-an-import`, is
+  // HALF disarmed: its `imports[].module !== "./mac"` half still fires (that array
+  // keeps the written path) but its `x.target === "./mac"` half is a no-op. It is
+  // still CAUGHT, by the imports half alone, and that is stated rather than left
+  // to look intact.
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    id: "nim/relative-import-edge-dropped-v2",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description:
+      "A relative import publishes no edge — the replacement for the disarmed " +
+      "`nim/relative-import-lost`. The pre-fix rule only read the infix path shape, " +
+      "so the leading `./` — a PREFIX operator, not a path segment — made every " +
+      "`import ./sibling` vanish, and a three-file module whose files all import each " +
+      "other relatively measured 0 imports. Selected on `meta.nimModulePath`, which " +
+      "keeps the written `./helpers` and `../shared` the old filter looked for, while " +
+      "the target is the module name. Caught by nim/contract's expectRelationships " +
+      "{imports -> helpers} and {imports -> shared}, and by nim/module-target's " +
+      "{imports -> shared} row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((e: any) => {
+        if (String(e?.type ?? "") !== "imports") return true
+        const w = String(e?.metadata?.nimModulePath ?? "")
+        return !(w.startsWith("./") || w.startsWith("../"))
+      }),
+    }),
+  },
+  {
+    id: "nim/deep-import-path-edge-dropped-v2",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description:
+      "A path deeper than two segments publishes no edge — the replacement for the " +
+      "disarmed `nim/deep-import-path-lost`. The grammar models the separator as a " +
+      "NAMED `operator` node whose text is the whole token (`/`, or `/../` fused with " +
+      "a parent hop), so `op.type` is never `/` and an identifier/identifier test never " +
+      "matched: 171 deep-path imports across 141 corpus files and 434 multi-segment " +
+      "relative imports across 299 files published nothing, and because the whole path " +
+      "vanished there was no dangling target to surface it. Caught by nim/contract's " +
+      "expectImports {module: std/private/globs} AND its expectRelationships sibling " +
+      "{imports -> globs} — both, because the imports half and the edge half fail " +
+      "independently and pinning only one leaves the other unguarded.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((e: any) => {
+        if (String(e?.type ?? "") !== "imports") return true
+        const w = String(e?.metadata?.nimModulePath ?? "")
+        return w.split("/").length <= 2
+      }),
+    }),
+  },
+  {
+    id: "nim/module-list-collapsed-to-one-edge-v2",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description:
+      "`import std/[os, strutils]` publishes ONE edge for the whole list instead of one " +
+      "per element, so a two-module import becomes a single dependency on a name no " +
+      "file has — the replacement for the disarmed " +
+      "`nim/module-list-collapsed-to-one-edge`, which matched the old target strings " +
+      "`std/os`/`std/strutils` and therefore matched nothing once the targets became " +
+      "`os`/`strutils`. Caught by nim/module-target's two rows for `os` and `strutils` " +
+      "and nim/contract's expectImports {module: std/os} + {module: std/strutils}: one " +
+      "pin alone would pass, which is why both are there.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((e: any) => {
+        if (String(e?.type ?? "") !== "imports") return true
+        const w = String(e?.metadata?.nimModulePath ?? "")
+        return !(w === "std/os" || w === "std/strutils")
+      }),
+    }),
+  },
+  {
+    id: "nim/from-import-edge-dropped-without-its-imports-row",
+    language: "nim",
+    defectClass: "dangling-edge",
+    description:
+      "A from-import keeps its `imports[]` row and loses only its `imports` EDGE — the " +
+      "half of `nim/cross-file-macro-called-without-an-import` that the target " +
+      "normalisation disarmed, isolated so it can be caught on its own. Its shared " +
+      "twin still passes because its `imports[].module` half fires; this one fires only " +
+      "the dead half, and before this entry it was the state of the shared mutant: a " +
+      "guard whose edge clause could not fail. A file-dependency consumer reads the " +
+      "EDGE, so an imports row with no edge is exactly the invisible-dependency defect " +
+      "the family `imports` type exists to prevent. Caught by nim/contract's " +
+      "expectRelationships {imports -> mac} and nim/module-target's four rows.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((e: any) => {
+        if (String(e?.type ?? "") !== "imports") return true
+        return String(e?.metadata?.nimModulePath ?? "") !== "./mac"
+      }),
+    }),
   },
 ]

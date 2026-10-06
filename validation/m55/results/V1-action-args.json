@@ -10,17 +10,17 @@
   "mutantsCaught": 7,
   "mutantsTotal": 7,
   "negatives": 23,
-  "currentCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
+  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
   "workingTreeRelevantChanges": [],
   "foundBy": "the V1 rig's own frames (flows 4 and 5 captured the error toast: validation/m55/frames/live-6/4-open-in-graph.png, 5-impact.png)",
   "owner": "ide/vscode/src/hover-action-args.ts (pure) + ide/vscode/src/hover-commands.ts (IO)",
   "verifierCommand": "npx tsx script/m55/verify-action-args.ts",
   "evidenceFile": "V1-action-args.json",
-  "generatedAt": "2026-09-16T22:05:19.460Z",
+  "generatedAt": "2026-10-04T22:50:43.507Z",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T22:05:19.460Z",
-    "contentSha256": "c4f4c0dfb9a7f37c5ff2af718bde56eb4bb07edea1bd206183d7f7cbbb357be2"
+    "sealedAt": "2026-10-04T22:50:43.509Z",
+    "contentSha256": "04e726ab843cb1839994e6289d9b3f75102dc609c95fed5223be46fe423f02da"
   }
 }

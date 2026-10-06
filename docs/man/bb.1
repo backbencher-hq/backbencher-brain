@@ -41,11 +41,15 @@ global, project), the winning tier, and the key as a last-four fingerprint
 only. The full key is never displayed. Exits 1 when nothing is configured.
 .TP
 .B doctor
-Diagnose embedding setup and index consistency from real local state (config
-tiers, file permissions, and the models actually stored in the project
-index). Every finding names the exact fix command. Read-only. Exits 1 when a
-hard finding exists, for example a model mismatch between configuration and
-index.
+Diagnose embedding setup, worker-pool startup and index consistency from real
+local state: the embedding configuration tiers, file permissions, the models
+actually stored in the project index, and a live probe that forks a pool worker
+and asks what it loaded (the only way to tell "no tsx" from "tsx ran and the
+engine would not load", which look identical from the outside and need opposite
+fixes). Every finding names the exact command that resolves it. Read-only by
+default; exits 1 when a hard finding exists.
+This is the first command to run when pool workers do not start or when semantic
+search returns poor results.
 .TP
 .B doctor \-\-fix
 Repair config file permissions to 0600 only. This is the single mutating arm
@@ -53,10 +57,54 @@ of doctor: every change is printed, and everything else (keys, config
 content, index) is never modified.
 .TP
 .BI search " query"
-Search the index (keyword and semantic modes).
+Search the index. Modes are
+.BR symbols " (default), " content ", " symbol ", and " file .
+There is no semantic mode: embeddings power
+.BR bb_ask ,
+not
+.BR bb_search .
 .TP
 .BI health " [dir]"
 Index health and freshness.
+.TP
+.BI stats " [dir]"
+Query index counts at any time \(em files, symbols, relationships, embeddings
+\(em and print the database path. Unlike
+.B health
+this is a count, not an assessment: use it to check what is stored.
+.TP
+.BI status " [dir]"
+Show in-flight and last-run index state with per-phase timings (discovery,
+worker startup, parse, database flush), which parse mode ran, and how many
+workers were used. This is the command to reach for when indexing felt slow:
+the phase timings say whether the time went to parsing or to the derived pass.
+.TP
+.BI projects " [options]"
+List every indexed project with its database path, size, counts and last index
+time \(em useful for finding or reclaiming disk.
+.B \-\-remove
+<id> deletes one project's index;
+.B \-\-force
+skips the confirmation.
+.TP
+.B upgrade
+Report whether a newer
+.I bb
+is published, and print the exact command to install it. bb is installed with
+.BR "npm install -g backbencher-brain" ,
+so npm owns the install and this command deliberately does not replace its own
+files \(em a self-updater would fight the package manager and fail on a
+read-only or root-owned global prefix.
+.B \-\-check
+reports only, changing nothing;
+.B \-\-to
+<dist-tag-or-range>
+compares against something other than
+.IR latest .
+When the registry cannot be reached, or answers with an error, it says so and
+exits 1 rather than reporting that you are up to date \(em a claim it cannot
+support. After upgrading, re-index with
+.BR "bb index \-\-changed" .
 .TP
 .BI onboard " [dir]"
 Write the bb tools guidance section into
@@ -87,6 +135,17 @@ and
 .B help
 Show help for any command.
 .SH OPTIONS
+.TP
+.B \-\-verbose
+Show diagnostics: debug logs, per-file worker and WASM lines. This is how you
+see why the worker pool did or did not start. Note there is no short form:
+.B \-v
+is
+.BR \-\-version .
+.TP
+.B \-\-quiet
+Suppress informational output; warnings and errors only. Note there is no short
+form.
 .TP
 .BR \-v ", " \-\-version
 Output the version number.
@@ -121,3 +180,11 @@ index was built with a different embedding model than the configuration).
 .SH SEE ALSO
 The repository README and EMBEDDINGS.md document setup, diagnostics, and the
 honesty rules in full.
+.PP
+Full indexing reference, in the repository under
+.BR docs/indexing/ :
+.BR README.md " (flag semantics), " resume.md " (interrupting and resuming), "
+.BR performance.md " (measured timings), " troubleshooting.md " (the worker
+pool), and " embeddings.md " (embedding configuration).
+.B bb\ index\ \-\-help
+points at the same directory.

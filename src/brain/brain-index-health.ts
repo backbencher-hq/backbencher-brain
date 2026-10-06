@@ -59,11 +59,69 @@ export interface HealthCheck {
   kind?: "scored" | "informational"
 }
 
+/**
+ * A64.V1: a per-file freshness CLASSIFICATION for the same population the disk
+ * checks walked, at no extra I/O — the walk that already reads each file for
+ * the hash comparison can say what it found.
+ *
+ * This is the fresh/stale/missing vocabulary AGENTS.md promises of the read
+ * tools. It is reported here as counts WITH the sample size and whether the
+ * sample covered the whole project, because a stale-rate with no denominator
+ * attached is the exact failure mode the M64.I1 comment above records (an
+ * unordered `LIMIT 100` extrapolated to a project total). When the caller
+ * pre-resolved freshness (bb_health), these are that scan's own numbers and
+ * they cover every indexed file.
+ */
+export interface IndexStaleness {
+  fresh: number
+  stale: number
+  missing: number
+  /** Files the resolver could not classify at all (no stored row). */
+  unclassified: number
+  /** How many indexed files were examined. */
+  sampleSize: number
+  /** Indexed files in total, so `sampleSize < total` is visible. */
+  total: number
+  /** True when every indexed file was examined — the counts are the project's. */
+  complete: boolean
+  /**
+   * Where the numbers came from. "exact" = the caller's own per-file freshness
+   * verdicts over the whole corpus; "sample" = this battery's deterministic
+   * sample, which carries sampling error.
+   */
+  basis: "exact" | "sample"
+  /** Files verified by reading content; the rest by mtime+size alone. */
+  verifiedByContent: number
+}
+
 export interface IndexHealthReport {
   projectId: ProjectID
   timestamp: number
   /** M64.I3: ok / scoredChecks, 0-100. Informational checks do not count. */
   overallHealth: number
+  /**
+   * A64.V1: the honest summary word, derived rather than asserted. `overallHealth`
+   * alone is a RATIO of checks, so a project with nothing indexed scores 92%
+   * (measured: 11 of 12 checks "ok" on an empty DB — every "is this data
+   * malformed?" check passes vacuously when there is no data) and a project
+   * explicitly marked PARTIAL by the indexer scores the same 92%. A number like
+   * that reads as a health verdict on a terminal, and it is not one.
+   *
+   *   "empty"    nothing is indexed. Every check is vacuously satisfied; this
+   *              is the case a percentage cannot express.
+   *   "broken"   at least one scored check is `error` — a real integrity fault.
+   *   "degraded" warnings but no errors.
+   *   "healthy"  no scored check below `ok`.
+   *
+   * "partial" — an index that exists but does not cover its corpus — is
+   * reported as `broken` when the shortfall or the `partial` status is known,
+   * because the index is not fit to answer questions about the project. The
+   * distinction is carried by the "Index Completeness" check's own text.
+   */
+  verdict: "healthy" | "degraded" | "broken" | "empty"
+  /** The index's own recorded status (`brain_index_status.status`), if any. */
+  indexStatus: { status: string | null; totalFiles: number | null; indexedFiles: number | null; shortfall: number | null; recorded: boolean }
+  staleness: IndexStaleness
   checks: HealthCheck[]
   summary: {
     ok: number
@@ -150,7 +208,8 @@ export async function runIndexHealthCheck(projectId: ProjectID, options: IndexHe
   // `total` is re-checked against the live row count so a stale map is
   // discarded rather than trusted.
   const preResolved = options.preResolved && options.preResolved.total === totalFiles(rawDb, projectId) ? options.preResolved : null
-  checks.push(await checkHashDrift(rawDb, projectId, diskScan, preResolved))
+  const drift = await checkHashDrift(rawDb, projectId, diskScan, preResolved)
+  checks.push(drift.check)
 
   // 7. Files missing from disk
   checks.push(await checkMissingFiles(rawDb, projectId, diskScan, preResolved))
@@ -170,6 +229,23 @@ export async function runIndexHealthCheck(projectId: ProjectID, options: IndexHe
   // 12. Relationship count vs symbol count ratio (sanity)
   checks.push(await checkRelationshipRatio(rawDb, projectId))
 
+  // 13. Is this index actually a COMPLETE index of the project?
+  // A64.V1: added because this battery had no notion of completeness at all.
+  // Measured on the pre-change code: a brain_index_status row saying
+  // status="partial", total_files=5000, indexed_files=3 produced the same
+  // 92% / 11-ok report as a healthy index. The indexer records that condition
+  // deliberately (parallel-indexer sets "partial" on error files and on a
+  // failed derived phase) and the health report threw the record away, so the
+  // one signal that says "this index does not cover the project" was the one
+  // signal health could not see.
+  const completeness = checkIndexCompleteness(rawDb, projectId)
+  checks.push(completeness.check)
+
+  // A64.V1: the per-file classification, taken from whichever pass already had
+  // the files open — the drift scan's own tally, or the caller's freshness
+  // reasons. No extra reads either way.
+  const staleness = drift.classification
+
   // M64.I3: the score is over scored checks only. See HealthCheck.kind.
   const scored = checks.filter((c) => c.kind !== "informational")
   const informational = checks.filter((c) => c.kind === "informational")
@@ -178,12 +254,154 @@ export async function runIndexHealthCheck(projectId: ProjectID, options: IndexHe
   const error = scored.filter((c) => c.status === "error").length
   const overallHealth = Math.round((ok / Math.max(scored.length, 1)) * 100)
 
+  // A64.V1: `empty` is decided by POPULATION, not by the check statuses, because
+  // an empty index satisfies every "is this data malformed?" question by having
+  // no data. Reported as its own verdict so no reader has to infer it from a
+  // percentage; `overallHealth` is still returned unchanged for callers that
+  // only have that field.
+  const populated = staleness.total > 0 || completeness.totalSymbols > 0
+  const verdict: IndexHealthReport["verdict"] = !populated
+    ? "empty"
+    : error > 0 ? "broken" : warn > 0 ? "degraded" : "healthy"
+
   return {
     projectId,
     timestamp: Date.now(),
     overallHealth,
+    verdict,
+    indexStatus: completeness.indexStatus,
+    staleness,
     checks,
     summary: { ok, warn, error, total: checks.length, scored: scored.length, informational: informational.length },
+  }
+}
+
+// ─── Completeness: "indexed" vs "indexed and PARTIAL" ───────────────────────
+
+interface CompletenessResult {
+  check: HealthCheck
+  indexStatus: IndexHealthReport["indexStatus"]
+  totalSymbols: number
+}
+
+function checkIndexCompleteness(rawDb: any, projectId: ProjectID): CompletenessResult {
+  const stored = rawDb.prepare(`
+    SELECT status, total_files, indexed_files
+    FROM brain_index_status WHERE project_id = ?
+  `).get(projectId) as any
+
+  const totalSymbols = (rawDb.prepare(`SELECT COUNT(*) as count FROM brain_symbol WHERE project_id = ?`).get(projectId) as any)?.count ?? 0
+
+  const status = typeof stored?.status === "string" ? stored.status : null
+  const totalFilesRecorded = typeof stored?.total_files === "number" ? stored.total_files : null
+  const indexedFilesRecorded = typeof stored?.indexed_files === "number" ? stored.indexed_files : null
+  const shortfall =
+    totalFilesRecorded !== null && indexedFilesRecorded !== null && indexedFilesRecorded < totalFilesRecorded
+      ? totalFilesRecorded - indexedFilesRecorded
+      : null
+
+  const indexStatus: IndexHealthReport["indexStatus"] = {
+    status,
+    totalFiles: totalFilesRecorded,
+    indexedFiles: indexedFilesRecorded,
+    shortfall,
+    recorded: !!stored,
+  }
+
+  const parts: string[] = []
+  let status_: HealthStatus = "ok"
+  const errNote = indexedErrorsNote(rawDb, projectId)
+
+  if (!stored) {
+    status_ = "warn"
+    parts.push(
+      "No brain_index_status row exists for this project, so how complete the index is was never recorded. UNRECORDED is not the same as complete — it cannot be checked, and a reader who treats it as a pass is reading an absence as a measurement.",
+    )
+  } else {
+    if (status === "partial") {
+      status_ = "error"
+      parts.push(
+        `The indexer recorded this run's status as "partial"${errNote}. An index marked partial is INCOMPLETE, and every count this report makes describes only the part that was written.`,
+      )
+    } else if (status && status !== "complete") {
+      status_ = "warn"
+      parts.push(`The indexer recorded this run's status as "${status}", not "complete".`)
+    }
+    if (shortfall !== null && shortfall > 0) {
+      status_ = "error"
+      parts.push(
+        `${shortfall} of ${totalFilesRecorded} discovered files were never written (${indexedFilesRecorded} of ${totalFilesRecorded} indexed), so the index does not cover the project` +
+        // The status field and the counts can disagree, and when they do the
+        // user needs to know which one to believe. health-provider.ts already
+        // detects this ("INCOMPLETE even though the status field says
+        // complete"); saying it here too keeps the two reports consistent.
+        (status === "complete" ? ` — note the status field says "complete" while the counts say otherwise; the counts are the measurement.` : "."),
+      )
+    }
+  }
+
+  if (parts.length === 0) {
+    parts.push(
+      `The indexer recorded this run as "${status ?? "complete"}" with ${indexedFilesRecorded ?? "?"} of ${totalFilesRecorded ?? "?"} discovered files written.`,
+    )
+  }
+
+  return {
+    check: {
+      name: "Index Completeness",
+      status: status_,
+      value: shortfall ?? 0,
+      total: totalFilesRecorded ?? 0,
+      threshold: { warn: 0, error: 1 },
+      description: parts.join(" "),
+      remediation:
+        status_ === "ok"
+          ? undefined
+          // `projectId` is a sha of the project path, not a path a user can
+          // hand to `bb index`. Naming it would send the reader to a directory
+          // that does not exist — the same defect class as the "bb2 brain
+          // --post" remediation M64.I4 already fixed once. `bb index --force`
+          // takes the current directory, which is where a user asking about a
+          // project's health is standing.
+          : `Re-index from the project root: bb index --force (full rebuild), then bb index --post if a derived phase is what failed. ` +
+            `If the shortfall persists on a clean rebuild, this is an indexer bug — report it with the numbers above.`,
+    },
+    indexStatus,
+    totalSymbols,
+  }
+}
+
+/** How many files the last run recorded as errored, for the partial message. */
+function indexedErrorsNote(rawDb: any, projectId: ProjectID): string {
+  try {
+    const raw = rawDb.prepare(`SELECT indexing_errors FROM brain_index_status WHERE project_id = ?`).get(projectId) as any
+    const parsed = raw?.indexing_errors ? JSON.parse(String(raw.indexing_errors)) : null
+    const n = Array.isArray(parsed) ? parsed.length : null
+    return n ? ` — ${n} file(s) errored during the run` : ""
+  } catch { /* the message is best-effort; the status itself is the claim */ }
+  return ""
+}
+
+// ─── Staleness: the fresh/stale/missing classification ─────────────────────
+
+/**
+ * Build the classification from the caller's already-resolved per-file reasons
+ * — arithmetic only, no I/O. `metadata-fast-path` and `hash-match` are both
+ * FRESH but are not the same claim (the first never read the file), so
+ * `verifiedByContent` reports only the latter.
+ */
+function stalenessFromReasons(total: number, reasons: Record<string, number>): IndexStaleness {
+  const fresh = (reasons["metadata-fast-path"] ?? 0) + (reasons["hash-match"] ?? 0)
+  return {
+    fresh,
+    stale: reasons["hash-differs"] ?? 0,
+    missing: (reasons["file-gone"] ?? 0) + (reasons["unreadable"] ?? 0),
+    unclassified: reasons["no-row"] ?? 0,
+    sampleSize: fresh + (reasons["hash-differs"] ?? 0) + (reasons["file-gone"] ?? 0) + (reasons["unreadable"] ?? 0) + (reasons["no-row"] ?? 0),
+    total,
+    complete: true,
+    basis: "exact",
+    verifiedByContent: reasons["hash-match"] ?? 0,
   }
 }
 
@@ -382,7 +600,7 @@ function totalFiles(rawDb: any, projectId: ProjectID): number {
   return (rawDb.prepare(`SELECT COUNT(*) as count FROM brain_file WHERE project_id = ?`).get(projectId) as any)?.count ?? 0
 }
 
-async function checkHashDrift(rawDb: any, projectId: ProjectID, diskScan: "sample" | "complete", preResolved: { total: number; reasons: Record<string, number> } | null): Promise<HealthCheck> {
+async function checkHashDrift(rawDb: any, projectId: ProjectID, diskScan: "sample" | "complete", preResolved: { total: number; reasons: Record<string, number> } | null): Promise<{ check: HealthCheck; classification: IndexStaleness }> {
   // M64.N1: this sampled with `ORDER BY RANDOM()`, which made the check's own
   // verdict non-reproducible. Proven on a 400-file fixture with exactly 40
   // files (10.0%) staled on disk, five consecutive integrity runs on the SAME
@@ -413,15 +631,20 @@ async function checkHashDrift(rawDb: any, projectId: ProjectID, diskScan: "sampl
     const drift = preResolved.reasons["hash-differs"] ?? 0
     const byContent = preResolved.reasons["hash-match"] ?? 0
     const pctAll = total > 0 ? (drift / total) * 100 : 0
+    // The caller's freshness scan already produced the whole classification, so
+    // this check hands it straight up rather than reading anything itself.
     return {
-      name: "Hash Drift (Stale Files)",
-      status: pctAll > 10 ? "error" : pctAll > 3 ? "warn" : "ok",
-      value: drift,
-      total,
-      percentage: Math.round((100 - pctAll) * 10) / 10,
-      threshold: { warn: 3, error: 10 },
-      description: `${drift} of ${total} indexed files have changed on disk since indexing. EXACT: every indexed file was resolved against disk, and these verdicts are the SAME ones bb_health's own freshness scan just produced — this check reads no files of its own, so the two can never disagree and the corpus is not hashed twice. ${byContent} file(s) were verified by content hash; the rest by mtime+size.`,
-      remediation: drift > 0 ? "Run bb_health with refresh=true to reindex changed files." : undefined,
+      check: {
+        name: "Hash Drift (Stale Files)",
+        status: pctAll > 10 ? "error" : pctAll > 3 ? "warn" : "ok",
+        value: drift,
+        total,
+        percentage: Math.round((100 - pctAll) * 10) / 10,
+        threshold: { warn: 3, error: 10 },
+        description: `${drift} of ${total} indexed files have changed on disk since indexing. EXACT: every indexed file was resolved against disk, and these verdicts are the SAME ones bb_health's own freshness scan just produced — this check reads no files of its own, so the two can never disagree and the corpus is not hashed twice. ${byContent} file(s) were verified by content hash; the rest by mtime+size.`,
+        remediation: drift > 0 ? "Run bb_health with refresh=true to reindex changed files." : undefined,
+      },
+      classification: stalenessFromReasons(total, preResolved.reasons),
     }
   }
 
@@ -430,19 +653,34 @@ async function checkHashDrift(rawDb: any, projectId: ProjectID, diskScan: "sampl
   `).all(projectId) as any[]
   const files = (diskScan === "complete" ? selectSampleFiles(allFiles, Number.MAX_SAFE_INTEGER) : selectSampleFiles(allFiles, 200)) as any[]
 
+  // A64.V1: this loop classifies while it hashes, so the report's
+  // fresh/stale/missing breakdown costs NOTHING — it is the same pass that
+  // already reads every sampled file for the drift comparison. The first draft
+  // of this added a THIRD walk of `brain_file` that re-read the same files, and
+  // that is precisely the defect M64.A4 documents one screen above: two passes
+  // over the corpus to produce one set of numbers, on the hot path of every
+  // index run.
   let driftCount = 0
+  let freshCount = 0
+  let goneCount = 0
+  let unreadableCount = 0
   const driftSamples: string[] = []
   for (const f of files) {
+    let buf: Buffer
     try {
-      const buf = fs.readFileSync(f.path)
-      const hash = crypto.createHash("sha256").update(buf).digest("hex").slice(0, 16)
-      if (hash !== f.file_hash) {
-        driftCount++
-        if (driftSamples.length < 5) driftSamples.push(f.relative_path)
-      }
-    } catch {
-      // File deleted since index — counted by checkMissingFiles, skip here
+      buf = fs.readFileSync(f.path)
+    } catch (e: any) {
+      // A DELETED file and an UNREADABLE one are different problems with
+      // different remedies — a reindex purges the first, a chmod fixes the
+      // second — so they are tallied apart rather than folded into one "missing".
+      if (e?.code === "ENOENT") goneCount++
+      else unreadableCount++
+      continue
     }
+    const hash = crypto.createHash("sha256").update(buf).digest("hex").slice(0, 16)
+    if (hash === f.file_hash) { freshCount++; continue }
+    driftCount++
+    if (driftSamples.length < 5) driftSamples.push(f.relative_path)
   }
 
   const sampleSize = files.length
@@ -451,17 +689,30 @@ async function checkHashDrift(rawDb: any, projectId: ProjectID, diskScan: "sampl
   const estimatedTotal = isCompleteScan ? driftCount : total > 0 ? Math.round((driftCount / Math.max(sampleSize, 1)) * total) : 0
 
   return {
-    name: "Hash Drift (Stale Files)",
-    status: pct > 10 ? "error" : pct > 3 ? "warn" : "ok",
-    value: driftCount,
-    total: sampleSize,
-    percentage: Math.round((100 - pct) * 10) / 10,
-    threshold: { warn: 3, error: 10 },
-    description: isCompleteScan
-      ? `${driftCount} of ${sampleSize} indexed files have changed on disk since indexing. EXACT: every indexed file was content-hashed, so this is the project's drift count and this status is a measurement, not an estimate.`
-      : `${driftCount} of ${sampleSize} sampled files have changed on disk since indexing (estimated ${estimatedTotal} total). ESTIMATE: a deterministic unbiased sample of every indexed file — reproducible and independent of file ordering, but the rate and therefore this status carry sampling error. bb_health integrity=true runs this as a complete scan.`,
-    remediation: driftCount > 0 ? "Run bb_health with refresh=true to reindex changed files." : undefined,
-    sample: driftSamples.length > 0 ? driftSamples : undefined,
+    check: {
+      name: "Hash Drift (Stale Files)",
+      status: pct > 10 ? "error" : pct > 3 ? "warn" : "ok",
+      value: driftCount,
+      total: sampleSize,
+      percentage: Math.round((100 - pct) * 10) / 10,
+      threshold: { warn: 3, error: 10 },
+      description: isCompleteScan
+        ? `${driftCount} of ${sampleSize} indexed files have changed on disk since indexing. EXACT: every indexed file was content-hashed, so this is the project's drift count and this status is a measurement, not an estimate.`
+        : `${driftCount} of ${sampleSize} sampled files have changed on disk since indexing (estimated ${estimatedTotal} total). ESTIMATE: a deterministic unbiased sample of every indexed file — reproducible and independent of file ordering, but the rate and therefore this status carry sampling error. bb_health integrity=true runs this as a complete scan.`,
+      remediation: driftCount > 0 ? "Run bb_health with refresh=true to reindex changed files." : undefined,
+      sample: driftSamples.length > 0 ? driftSamples : undefined,
+    },
+    classification: {
+      fresh: freshCount,
+      stale: driftCount,
+      missing: goneCount + unreadableCount,
+      unclassified: 0,
+      sampleSize,
+      total,
+      complete: isCompleteScan,
+      basis: isCompleteScan ? "exact" : "sample",
+      verifiedByContent: freshCount + driftCount,
+    },
   }
 }
 
@@ -709,13 +960,20 @@ async function checkWalSize(rawDb: any, projectId: ProjectID): Promise<HealthChe
       description: `WAL file is ${walMB} MB (DB is ${Math.round(dbSizeBytes / (1024 * 1024) * 10) / 10} MB). Large WAL files slow down read queries.`,
       remediation: walMB > 200 ? "WAL will auto-checkpoint. If this persists, restart the brain service." : undefined,
     }
-  } catch {
+  } catch (e: any) {
+    // A64.V1: this returned `status: "ok"` when the check could not run at all.
+    // That is the worst possible answer from an integrity check: it both
+    // displayed a ✅ and contributed a PASSING point to `overallHealth`, so a
+    // WAL that could not be measured made the index look measurably healthier.
+    // "Not measured" is a `warn`, and it is stated as not measured — the
+    // remediation cannot be derived from an absent measurement, so none is
+    // offered.
     return {
       name: "WAL Size",
-      status: "ok",
+      status: "warn",
       value: 0,
       threshold: { warn: 100, error: 500 },
-      description: "WAL size check skipped (unable to query).",
+      description: `WAL size was NOT MEASURED (${e instanceof Error ? e.message : String(e)}). This check neither passed nor failed; it did not run.`,
     }
   }
 }
@@ -851,16 +1109,49 @@ export function formatHealthReport(report: IndexHealthReport): string {
   const filled = Math.round((report.overallHealth / 100) * barLen)
   const bar = "█".repeat(filled) + "░".repeat(barLen - filled)
 
-  let output = `INDEX HEALTH: ${report.overallHealth}%  [${bar}]\n`
+  // A64.V1: the verdict leads, and the percentage is qualified by it. `92%` on
+  // its own reads as a health judgement; on an EMPTY index it is 11 of 12
+  // checks passing vacuously, and the verdict is what makes that visible.
+  const verdictWord: Record<IndexHealthReport["verdict"], string> = {
+    healthy: "HEALTHY",
+    degraded: "DEGRADED",
+    broken: "BROKEN",
+    empty: "EMPTY — nothing is indexed",
+  }
+  let output = `INDEX HEALTH: ${report.overallHealth}%  [${bar}]  ${verdictWord[report.verdict]}\n`
+  if (report.verdict === "empty") {
+    output += `  ↑ the score above counts checks that pass because there is NO DATA to be malformed.\n`
+    output += `    It is not a measure of an index's quality. Run: bb index "<project path>"\n`
+  }
   output += `Project: ${report.projectId}\n`
   output += `Time: ${new Date(report.timestamp).toISOString()}\n`
-  output += `Status: ${report.summary.ok} OK / ${report.summary.warn} WARN / ${report.summary.error} ERROR\n\n`
+  output += `Status: ${report.summary.ok} OK / ${report.summary.warn} WARN / ${report.summary.error} ERROR (${report.summary.scored} scored + ${report.summary.informational} informational)\n`
 
-  const icon = (s: HealthStatus) => s === "ok" ? "✅" : s === "warn" ? "⚠️" : "❌"
+  const s = report.staleness
+  const stalenessScope = s.complete
+    ? `all ${s.total} indexed files`
+    : `a ${s.sampleSize}-file sample of ${s.total} — a LOWER BOUND, not a total`
+  output += `Staleness (${s.basis}): ${s.fresh} fresh | ${s.stale} stale | ${s.missing} missing | ${s.unclassified} unclassified — ${stalenessScope}${s.verifiedByContent > 0 ? `, ${s.verifiedByContent} verified by content` : ""}\n`
+
+  if (!report.indexStatus.recorded) {
+    output += `Index status: UNRECORDED — this project has no brain_index_status row, so completeness is not knowable from the index.\n`
+  } else {
+    const i = report.indexStatus
+    output += `Index status: recorded=${i.status ?? "null"} indexed=${i.indexedFiles ?? "?"}/${i.totalFiles ?? "?"}${i.shortfall ? ` — INCOMPLETE, ${i.shortfall} file(s) never written` : ""}\n`
+  }
+  output += "\n"
+
+  const icon = (s2: HealthStatus) => s2 === "ok" ? "✅" : s2 === "warn" ? "⚠️" : "❌"
 
   for (const check of report.checks) {
     const pctStr = check.percentage !== undefined ? ` (${check.percentage}%)` : ""
-    output += `${icon(check.status)} ${check.name}: ${check.value.toLocaleString()}${check.total ? ` / ${check.total.toLocaleString()}` : ""}${pctStr}\n`
+    // A64.V1: an informational check is not a verdict, so it does not get the
+    // same icon a scored pass gets. It previously rendered with a bare ✅,
+    // indistinguishable on the terminal from a check that was actually run and
+    // actually passed.
+    const mark = check.kind === "informational" ? "ℹ️ " : icon(check.status)
+    const scope = check.kind === "informational" ? " [informational — not scored]" : ""
+    output += `${mark} ${check.name}: ${check.value.toLocaleString()}${check.total ? ` / ${check.total.toLocaleString()}` : ""}${pctStr}${scope}\n`
     output += `   ${check.description}\n`
     if (check.remediation) {
       output += `   🔧 ${check.remediation}\n`
