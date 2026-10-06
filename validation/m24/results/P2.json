@@ -99,12 +99,18 @@
       "owner": "src/lsp owner — NOT edited by the m24 lane-1 repair"
     }
   ],
-  "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
-  "sourceFingerprint": "44bdf9f570c8807e4c84d2fda13eee1a64b1b15d8228b1bcefa4060e70223a4a",
-  "sourceFingerprintAlgorithm": "sha256 over raw file bytes (node:crypto; no process spawn)",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "sourceFingerprint": "0cf0aeffbf56055754eba2adc8431c0a6e34df8720a69e78fd9262c3a91c5daf",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m24/verify-freshness.ts",
+    "src/brain/freshness.ts",
+    "src/lsp/freshness.ts",
+    "script/m24/portability.ts"
+  ],
   "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
   "evidenceFile": "P2.json",
-  "generatedAt": "2026-10-05T16:51:22.098Z",
+  "generatedAt": "2026-10-05T22:40:10.602Z",
   "limitations": [
     "Watcher exercised through real fs.watch on a temp directory. THIS RUN'S OS IS IN `measuredOs`, and the watcher event classes the claims are scoped to are in `watcherEventClasses`; the per-run event counts are printed to the run log rather than recorded, because they vary between runs of the same commit and evidence must regenerate byte-identically (contract §8.2, §10.2: platform scope is declared per claim, other OSes declared absent, never assumed).",
     "The convergence legs (G1, G2, G3, G4, G5 recovery, G7) assert convergence WITHIN a declared bound (6000 ms) and stability across a 150 ms window, rather than at the instant drain() returned: watcher delivery latency is the platform's. The one-directional guarantee — never fresh before the reindex lands — is asserted at full strength, and the 'pendingReindex never clears' mutant proves the bounded wait cannot hide a stuck monitor.",
@@ -115,7 +121,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T16:51:22.098Z",
-    "contentSha256": "4546b2e3bccef9ca721fbc430801b8320c3e326661312e5fc44bdfe5baf6852d"
+    "sealedAt": "2026-10-05T22:40:10.602Z",
+    "contentSha256": "1c6d4223860da5532fb3ad9017ad23ff8f41367a37dc199ce6f3cdf3a088b878"
   }
 }

@@ -50,6 +50,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 // M62 lane-7: project identity has ONE owner. See makeFixture().
 import { getProjectId } from "../../src/util/project-id.ts"
 
@@ -563,6 +564,7 @@ async function main(): Promise<void> {
     mutantsCaught: mutants.caught,
     mutantsTotal: mutants.total,
     currentCommit,
+    ...fingerprintFields(["m44.U1"], ROOT),
     verifierCommand: "npx tsx script/m44/verify-usages-groups.ts",
     evidenceFile: "U1.json",
     generatedAt: new Date().toISOString(),

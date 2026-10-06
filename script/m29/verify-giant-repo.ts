@@ -28,6 +28,7 @@ import os from "node:os"
 import { budgetViolationsFrom, relevantInputsHash, WARM_BUDGETS, type HostNoise, type FeatureMeasurement } from "./giant-repo-budget.ts"
 import { createStdioTransport } from "../m25/feature-assertions.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -238,6 +239,7 @@ const result = {
   currentCommit: commit,
   relevantInputsHash: relevantInputsHash(),
   verifierCommand: "npx tsx script/m29/verify-giant-repo.ts",
+  ...fingerprintFields(["m29.R3-verify"], ROOT),
   evidenceFile: "R3-verify.json",
   generatedAt: new Date().toISOString(),
   details: details.slice(0, 10),

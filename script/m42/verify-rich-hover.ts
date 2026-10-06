@@ -64,6 +64,7 @@ import { isDeclarationRelationship, USAGE_SITE_FILTER_LABEL } from "../../src/ls
 import { createPositionMapper, resolveRowByteColumns } from "../../src/lsp/positions.ts"
 import type { CallSiteAddress } from "../../src/intelligence/contracts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H2.json")
@@ -1984,6 +1985,7 @@ const result = {
   budgets: { hoverP95Ms: 50 },
   measured: budget,
   currentCommit,
+  ...fingerprintFields(["m42.H2"], ROOT),
   verifierCommand: "npx tsx script/m42/verify-rich-hover.ts",
   evidenceFile: "H2.json",
   generatedAt: new Date().toISOString(),

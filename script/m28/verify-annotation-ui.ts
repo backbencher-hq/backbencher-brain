@@ -23,6 +23,7 @@ import { realpathSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -305,6 +306,7 @@ const result = {
   mutantsTotal,
   mutantRecords,
   currentCommit,
+  ...fingerprintFields(["m28.A2"], ROOT),
   verifierCommand: "npx tsx script/m28/verify-annotation-ui.ts",
   evidenceFile: "A2.json",
   generatedAt: new Date().toISOString(),

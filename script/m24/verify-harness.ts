@@ -43,6 +43,7 @@ import { execFileSync } from "node:child_process"
 import os, { tmpdir } from "node:os"
 import { machineFacts, runHarness, type HarnessRun, type MachineFacts } from "./lsp_harness"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE_PATH = join(ROOT, "validation", "m24", "results", "V1.json")
@@ -417,7 +418,7 @@ async function main(): Promise<void> {
     code: "V1",
     status: ok ? "verified" : "known-gap",
     currentCommit,
-    sourceFingerprint,
+    ...fingerprintFields(["m24.V1"], ROOT),
     verifierCommand: "npx tsx script/m24/verify-harness.ts",
     evidenceFile: "V1.json",
     generatedAt: new Date().toISOString(),

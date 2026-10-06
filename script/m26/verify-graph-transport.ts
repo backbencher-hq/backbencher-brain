@@ -39,6 +39,7 @@ import { createHash } from "node:crypto"
 import { spawn, execFileSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const COMPONENT = join(ROOT, "src", "lsp", "graph_request.ts")
@@ -359,6 +360,7 @@ async function main(): Promise<void> {
     mutantsTotal,
     currentCommit: commit,
     verifierCommand: "npx tsx script/m26/verify-graph-transport.ts",
+    ...fingerprintFields(["m26.W2"], ROOT),
     evidenceFile: "W2.json",
     generatedAt: new Date().toISOString(),
     schemaVersion: GRAPH_SCHEMA_VERSION,

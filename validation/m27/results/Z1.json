@@ -26,7 +26,15 @@
       "caught": true
     }
   ],
-  "currentCommit": "b5ea6a8b6ff3fc27d67cadba9083ed8bce0da271",
+  "currentCommit": "b52c2bc7ad5caade0356f5228c84dc77afd32293",
+  "sourceFingerprint": "3d86246aa2b7b0a4300753a43b1f87931ef8a41a86ae9d97337639ae0b05c27a",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m27/verify-zed.ts",
+    "src/lsp/server.ts",
+    "script/m24/lsp_harness.ts",
+    "script/m27/server-caps.ts"
+  ],
   "build": {
     "ran": true,
     "ok": false,
@@ -34,7 +42,7 @@
   },
   "verifierCommand": "npx tsx script/m27/verify-zed.ts",
   "evidenceFile": "Z1.json",
-  "generatedAt": "2026-10-05T17:58:05.358Z",
+  "generatedAt": "2026-10-05T22:41:54.956Z",
   "claimLevel": "I2 — extension + shim unit-proven against the real server's wire capabilities; wasm build blocked-with-reason (toolchain boundary per D-7); no editor session driven",
   "blockedLegs": [
     {
@@ -52,7 +60,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T17:58:05.360Z",
-    "contentSha256": "9fdc430551d1df6e07e0f3dcc6e580c1e0affebfbf6b5d9c662dff44a14660cf"
+    "sealedAt": "2026-10-05T22:41:54.958Z",
+    "contentSha256": "4122baf8772bfe8537be2d60ef7a56a8bc43024815075b0cb529118ee90d1046"
   }
 }

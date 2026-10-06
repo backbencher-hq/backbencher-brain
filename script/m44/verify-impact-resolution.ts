@@ -34,6 +34,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 // The fixture this gate indexes. Written BY the run (see indexFixture) — see the
 // note there for why that was not already true.
 import { writeU5Fixture } from "./u5-fixture.ts"
@@ -591,6 +592,7 @@ async function main(): Promise<void> {
     mutantsCaught: mutants.caught,
     mutantsTotal: mutants.total,
     currentCommit,
+    ...fingerprintFields(["m44.U5"], ROOT),
     verifierCommand: "npx tsx script/m44/verify-impact-resolution.ts",
     evidenceFile: "U5.json",
     generatedAt: new Date().toISOString(),
