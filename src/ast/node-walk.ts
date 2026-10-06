@@ -29,11 +29,21 @@
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function treeContainsNodeType(root: any, type: string): boolean {
+  // A null/undefined root cannot contain anything, and answering "no" is the
+  // correct answer. Without this the first `n.type` read threw
+  // `TypeError: Cannot read properties of null`.
+  //
+  // The two current call sites both pass a non-null `rootNode: Node`, so this is
+  // not reachable today — but this helper is typed `any`, so the compiler enforces
+  // nothing, and it is on the path of every traversal in every analyzer. A guard
+  // that costs one comparison is worth more than a crash found by a user.
+  if (!root) return false
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stack: any[] = [root]
   while (stack.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const n = stack.pop()!
+    if (!n) continue
     if (n.type === type) return true
     for (let i = 0; i < n.namedChildCount; i++) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,6 +75,10 @@ export function isNodeInSpans(
   n: any,
 ): boolean {
   if (spans.length === 0) return false
+  // Same reasoning as `treeContainsNodeType`: a null node is not inside any span.
+  // The `while (p)` loop already handled a null `n` (it never entered), so this
+  // is belt-and-braces for a caller passing something falsy that is not null.
+  if (!n) return false
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let p: any = n
   while (p) {

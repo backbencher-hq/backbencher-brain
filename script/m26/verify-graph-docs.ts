@@ -48,6 +48,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { execFileSync } from "node:child_process"
 import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import {
   leakyControlDoc,
   realityPointerLines,
@@ -322,6 +323,7 @@ function main(): void {
     docFile: "docs/m26/GRAPH.md",
     currentCommit: commit,
     verifierCommand: "npx tsx script/m26/verify-graph-docs.ts",
+    ...fingerprintFields(["m26.D1"], ROOT),
     generatedAt: new Date().toISOString(),
     limitations: [
       "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate.",

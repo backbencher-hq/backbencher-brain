@@ -534,15 +534,128 @@ function main(): void {
       "The in-editor legs (V1's frames) are out of this gate's reach: it can only assert that the ledger points at evidence files, never that a frame was read by a human.",
     ],
   };
-  writeSealed(path.join(RESULTS, "G1.json"), evidence);
+  // The ledger is a PROJECTION of the records, written here. Same defect the
+  // M27/M28 lanes healed: manifest.json was HAND-MAINTAINED, so T2/T3 kept
+  // `status: "verified"` while their records read `known-gap` — the lane
+  // ledger read 9/9 verified over three non-verified records at HEAD
+  // a0ed9eade. Contract §8.4 makes the record the authority.
+  //
+  // G1 and X1 are excluded from the STATUS projection only: their records are
+  // written by this run and by the closure gate respectively, and their verdict
+  // is established by `status`/`barStatus` computed above. Their entries still
+  // get their counts re-derived, so the projection is a fixpoint.
+  {
+    const healed: string[] = []
+    const statusSame = (i: Issue, r: Record<string, unknown>): boolean => r.status === i.status;
+    const entries = ledger.issues.map((issue) => {
+      const file = issue.evidence?.evidenceFile ?? `${issue.code}.json`
+      if (issue.code === "G1") {
+        // G1's record is written by THIS run, below, so the copy on disk right
+        // now belongs to the PREVIOUS run. Leaving this entry untouched is how
+        // `G1: verified` survived in the ledger over a `known-gap` record — the
+        // exemption was self-fulfilling, because the entry could only ever be
+        // written by hand. It is filled in from this run's own verdict after
+        // the projection checks have run (see `g1Entry` below), because G1's
+        // status depends on those checks' result.
+        return issue
+      }
+      // Read through the SAME trusted path the ledger validation uses
+      // (`ctx.readEvidence`): a sealed record verifies, a legacy one is accepted
+      // with its declared warning, a tampered/unparseable one is refused.
+      // Reading the file raw here would bypass the seal check, so the
+      // projection could "heal" a ledger toward a TAMPERED record's status —
+      // the projection must trust exactly what the validation trusted.
+      // (A first attempt read the file directly and silently healed nothing:
+      // `readSealedRecord` returns a RESULT object, not the record, so
+      // `record.status` was undefined on every entry and the block was a no-op
+      // that still looked like it ran. Caught by probing the healed list.)
+      const trusted = ctx.readEvidence(file)
+      if (trusted === null) return issue
+      const record = trusted as unknown as Record<string, unknown>
+      const recordStatus = typeof record.status === "string" ? record.status : null
+      if (!recordStatus) return issue
+      const countsSame = record.passed === issue.evidence?.passed && record.failed === issue.evidence?.failed;
+      // G1 was handled at the top of this map from this run's own verdict.
+      // Every other entry — X1 included — is projected from its record. X1's
+      // record is written by a DIFFERENT gate (verify-closure.ts) and its copy
+      // on disk is this commit's, so exempting it left `X1: verified` in the
+      // ledger over a `known-gap` record: exactly the drift this block ends.
+      const nextStatus = recordStatus;
+      if (!statusSame(issue, record)) healed.push(`${issue.code}: ${issue.status} -> ${nextStatus}`);
+      if (nextStatus === issue.status && countsSame) return issue;
+      return {
+        ...issue,
+        status: nextStatus,
+        evidence: {
+          ...(issue.evidence ?? {}),
+          status: nextStatus,
+          currentCommit: record.currentCommit,
+          passed: record.passed,
+          failed: record.failed,
+          ...(typeof record.negativeCases === "number" ? { negativeCases: record.negativeCases } : {}),
+          ...(typeof record.blockedReason === "string" ? { blockedReason: record.blockedReason } : {}),
+          evidenceFile: file,
+        },
+      };
+    });
+    const projectedStatus = entries.every((i) => i.status === "verified") ? "closed" : "open";
+    const projected = { ...ledger, issues: entries, status: projectedStatus };
+    writeSealed(path.join(RESULTS, "manifest.json"), projected as unknown as Record<string, unknown>);
+    const mismatches: string[] = [];
+    for (const entry of entries) {
+      if (SELF_OWNED_CODES.includes(entry.code)) continue;
+      const file = entry.evidence?.evidenceFile ?? `${entry.code}.json`;
+      const rec = ctx.readEvidence(file) as unknown as { status?: string } | null;
+      if (rec?.status && rec.status !== entry.status) mismatches.push(`${entry.code}: ledger=${entry.status} record=${rec.status}`);
+    }
+    check(
+      "G1: the ledger is projected from its records (no entry claims a status its record contradicts)",
+      mismatches.length === 0,
+      mismatches.join(", "),
+    );
+    if (healed.length > 0) console.log(`      ledger healed from records: ${healed.join(", ")}`);
+  }
 
-  console.log(`\nG1: ${status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`);
+  // G1's ledger entry is projected from THIS run's verdict, and the projection
+  // is written only after the two projection checks above have contributed
+  // their own results — so the entry can never be green while this run is red.
+  // This is the last write of the ledger; nothing after it may change a check.
+  {
+    const finalRealFailedForLedger = failures.length;
+    const g1Status =
+      finalRealFailedForLedger > 0 || barStatus === "failed" ? "known-gap" : barStatus === "blocked" ? "blocked" : "verified";
+    const ledgerNow = parseSealedRecord(path.join(RESULTS, "manifest.json")) as Ledger;
+    const withG1 = {
+      ...ledgerNow,
+      issues: ledgerNow.issues.map((i) =>
+        i.code === "G1"
+          ? { ...i, status: g1Status, evidence: { ...(i.evidence ?? {}), status: g1Status, currentCommit, evidenceFile: i.evidence?.evidenceFile ?? "G1.json" } }
+          : i,
+      ),
+    };
+    const laneStatus = withG1.issues.every((i) => i.status === "verified") ? "closed" : "open";
+    writeSealed(path.join(RESULTS, "manifest.json"), { ...withG1, status: laneStatus } as unknown as Record<string, unknown>);
+    console.log(`      ledger G1 entry projected from this run: ${g1Status} (lane ${laneStatus})`);
+  }
+
+  // The record is written AFTER every check, including the ledger projection's
+  // (the M61 G8 law: no check runs after a gate's last evidence write — a record
+  // one check stale is a record that disagrees with its run). The status and
+  // counts below are therefore computed here, after the projection's checks have
+  // contributed to `failures`, and they are the SAME values the ledger's G1
+  // entry was just given, so the two agree by the time the gate exits.
+  const finalRealFailed = failures.length;
+  const finalStatus =
+    finalRealFailed > 0 || barStatus === "failed" ? "known-gap" : barStatus === "blocked" ? "blocked" : "verified";
+  writeSealed(path.join(RESULTS, "G1.json"), { ...evidence, checks, passed, realFailed: finalRealFailed, failed: 0, status: finalStatus });
+
+  console.log(`\nG1: ${finalStatus.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`);
   console.log(`Evidence: ${path.join(RESULTS, "G1.json")}`);
   if (failures.length > 0) {
     console.log("Failures:");
     for (const f of failures) console.log(`  - ${f}`);
   }
-  process.exit(realFailed === 0 && barStatus !== "failed" ? 0 : 1);
+  process.exit(finalRealFailed === 0 && barStatus !== "failed" ? 0 : 1);
 }
 
 main();

@@ -81,7 +81,14 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     // ── Per-file facts, all built in ONE pass and read by the later passes ──
     const fileValues = new Set<string>() // module-scope const/let/var/using names
     const fileTypes = new Set<string>() // module-scope type names
-    const fileCallables = new Set<string>() // proc/func/method/… names
+    const fileCallables = new Set<string>() // MODULE-SCOPE proc/func/method/… names
+    /** Callables this file declares INSIDE another routine. Deliberately a
+     *  separate set from `fileCallables`: a nested routine is not module scope,
+     *  and adding it to `fileCallables` would reclassify every unqualified
+     *  reference to that name anywhere in the file. It is consulted by exactly
+     *  one rule — the parenless UFCS test below — which asks a narrower
+     *  question: "does THIS FILE declare a callable by this name". */
+    const nestedCallables = new Set<string>()
     const fileEnumMembers = new Set<string>() // every enum field name in the file
     const fileFieldNames = new Set<string>() // every object field name in the file
     const genericParamNames = new Set<string>() // [T, U] of any generic in the file
@@ -103,11 +110,13 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       fileValues,
       fileTypes,
       fileCallables,
+      nestedCallables,
       fileEnumMembers,
       fileFieldNames,
       genericParamNames,
       declaredSubtypes,
     })
+    this.publishModuleSymbol(rootNode, filePath, symbols)
     this.collectContainment(symbols, relationships)
     this.collectInheritance(symbols, relationships, fileTypes)
     this.collectContractRefinement(rootNode, symbols, relationships)
@@ -117,6 +126,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       fileValues,
       fileTypes,
       fileCallables,
+      nestedCallables,
       fileEnumMembers,
       fileFieldNames,
       genericParamNames,
@@ -304,6 +314,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       fileValues: Set<string>
       fileTypes: Set<string>
       fileCallables: Set<string>
+      nestedCallables: Set<string>
       fileEnumMembers: Set<string>
       fileFieldNames: Set<string>
       genericParamNames: Set<string>
@@ -313,16 +324,30 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     interface Frame {
       node: Node
       /** True once the walk is inside a routine body. Locals — and a `type`
-       *  section inside a body (C-D1) — are execution artifacts, never symbols. */
+       *  section inside a body (C-D1) — are execution artifacts, never symbols.
+       *
+       *  EXCEPT the one case measured below: a routine's own DOC COMMENT is not
+       *  its body, and a `## runnableExamples:` block is compiled by the Nim
+       *  compiler as a real unit. Reading "inside a declaration" instead of
+       *  "inside the body field" dropped those declarations whole. */
       inCallable: boolean
+      /** The nearest enclosing routine's SYMBOL NAME. A named nested routine is a
+       *  first-class Nim declaration with a stable name, callable by that name
+       *  from its parent, so it is published with this as its `scope` and as the
+       *  far end of a `contains` edge. */
+      enclosingCallable: string
+      /** Inside a `runnableExamples:` block — a doc-comment unit the Nim COMPILER
+       *  compiles. Its TYPE declarations are declarations; its value declarations
+       *  are locals of the example, not of the enclosing routine. */
+      docExample: boolean
       /** The `ref`/`ptr` wrapper of the enclosing type declaration, so a nested
        *  `object_declaration` knows whether it is a value or a reference type. */
       objectKind: string
     }
-    const stack: Frame[] = [{ node: rootNode, inCallable: false, objectKind: "" }]
+    const stack: Frame[] = [{ node: rootNode, inCallable: false, enclosingCallable: "", docExample: false, objectKind: "" }]
 
     while (stack.length > 0) {
-      const { node, inCallable, objectKind } = stack.pop()!
+      const { node, inCallable, enclosingCallable, docExample, objectKind } = stack.pop()!
       const type = node.type
 
       // ── error reporting: one row per ERROR / MISSING node, never per
@@ -340,18 +365,25 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       // ── the seven callable spellings ────────────────────────────────────
       const callable = this.callableNodes[type]
       if (callable) {
-        const sym = this.buildCallableSymbol(node, callable, ctx, inCallable)
+        const sym = this.buildCallableSymbol(node, callable, ctx, inCallable, enclosingCallable)
         if (sym) {
           ctx.symbols.push(sym)
-          ctx.fileCallables.add(sym.name)
+          // `fileCallables` is the MODULE-SCOPE callable set, and it is what
+          // `collectCallsAndUses` reads to decide that an unqualified call names
+          // something this module declares. A nested routine is callable only
+          // from inside its parent, so adding it there would reclassify every
+          // reference to that name anywhere in the file. It goes in
+          // `nestedCallables` instead, which only the parenless-UFCS test reads.
+          if (inCallable) ctx.nestedCallables.add(sym.name)
+          else ctx.fileCallables.add(sym.name)
         }
-        this.pushChildren(node, stack, true, "")
+        this.pushCallableChildren(node, stack, enclosingCallable)
         continue
       }
 
       // ── type definitions ────────────────────────────────────────────────
       if (type === "type_declaration") {
-        if (!inCallable) {
+        if (!inCallable || docExample) {
           const sym = this.buildTypeSymbol(node, ctx, objectKind)
           if (sym) {
             ctx.symbols.push(sym)
@@ -360,7 +392,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
             this.pushTypeMembers(node, sym, ctx)
           }
         }
-        this.pushChildren(node, stack, inCallable, objectKind)
+        this.pushChildren(node, stack, inCallable, enclosingCallable, docExample, objectKind)
         continue
       }
 
@@ -370,13 +402,18 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = 0; i < node.namedChildCount; i++) {
           const decl = node.namedChild(i)
           if (decl && decl.type === "variable_declaration") {
-            for (const sym of this.buildValueSymbols(decl, sectionKind, type, inCallable, ctx)) {
+            // A doc example's `var base: Base = Sub1()` is a local of the EXAMPLE,
+            // exactly like a local of a routine body — `LocalsAreNotSymbols`
+            // applies to both. `inCallable` is false inside the example (that is
+            // what re-enables its type declarations), so the suppression is
+            // `inCallable || docExample`.
+            for (const sym of this.buildValueSymbols(decl, sectionKind, type, inCallable || docExample, ctx)) {
               ctx.symbols.push(sym)
               ctx.fileValues.add(sym.name)
             }
           }
         }
-        this.pushChildren(node, stack, inCallable, objectKind)
+        this.pushChildren(node, stack, inCallable, enclosingCallable, docExample, objectKind)
         continue
       }
 
@@ -385,8 +422,109 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       const childObjectKind =
         type === "ref_type" ? "ref_type" : type === "pointer_type" ? "pointer_type" : type === "distinct_type" || type === "out_type" || type === "var_type" ? type : objectKind
 
-      this.pushChildren(node, stack, inCallable, childObjectKind)
+      this.pushChildren(node, stack, inCallable, enclosingCallable, docExample, childObjectKind,
+        inCallable ? this.runnableExamplesArgument(node) : null)
     }
+  }
+
+  /**
+   * `runnableExamples:` — a `##` doc-comment block the Nim COMPILER compiles.
+   *
+   * ## What the grammar does with it, and why it matters
+   *
+   * The pinned grammar does not give the block a node type. For
+   *
+   *     proc `of`*[T, S](x: T, y: typedesc[S]): bool =
+   *       ## Checks if `x` is an instance of `y`.
+   *       runnableExamples:
+   *         type
+   *           Base = ref object of RootObj
+   *           Sub1 = ref object of Base
+   *           Sub2 = ref object of Base
+   *
+   * it emits ONE `documentation_comment` node for the first `##` line, and then
+   * parses `runnableExamples:` as ordinary CODE — a `call` whose `function` is the
+   * identifier `runnableExamples` and whose `argument_list` holds the whole
+   * example body — INSIDE the routine's `body` field. So the example's types are
+   * body-locals by tree position, and the C-D1 rule (a `type` section inside a
+   * body is an execution artifact) correctly suppressed them.
+   *
+   * That rule is right for a body and wrong here, because a `runnableExamples`
+   * block is not the routine's body: it is a separate compilation unit that
+   * `nim doc` type-checks, and the declarations in it are real.
+   *
+   * ## Measured cost of getting it wrong, and what is left
+   *
+   * Over 4,555 corpus files, 9 `object_declaration.inherits` occurrences on the
+   * parse tree had an owner symbol the analyzer published NOWHERE. This rule took
+   * that to 6, and the six that remain are three different things, none of them
+   * this rule:
+   *
+   *   - 2 in nimsuggest/tests/fixtures/mclass_macro.nim — `type \`typeName\` of
+   *     \`baseName\``, a macro that BUILDS an inheritance clause from two
+   *     backtick parameters. The declarations exist only as macro input.
+   *   - 1 in tests/macros/tgettypeinst.nim — `_ of Model`, where the declared
+   *     name is `_` and the analyzer suppresses `_` by design (it is Nim's
+   *     discard name for a declaration).
+   *   - 1 each in tests/stdlib/trepr.nim (`TFoo`, under `static:` inside a proc)
+   *     and tests/template/template_issues.nim (`name`, inside a `template` body)
+   *     — a `type` section inside a BODY, which is the C-D1 rule and is
+   *     deliberate. A `runnableExamples` block is a separate compilation unit; a
+   *     `static:` block or a template body is not.
+   *
+   * So the honest claim is 9 -> 6, with the residue enumerated. An earlier draft
+   * of this comment said the rule emptied the bucket; the measurement says
+   * otherwise and the measurement is what is written here.
+   *
+   * ## What is published, and what is not
+   *
+   * The block's `type_section` declarations are published — they are type
+   * declarations the compiler checks. Its value declarations are NOT: `var base:
+   * Base = Sub1()` is a local of the EXAMPLE, exactly like a local of a routine
+   * body, and publishing it as a file-scope value would be the same defect in the
+   * opposite direction.
+   *
+   * The trigger is read off the tree as a SHAPE WITH A ROLE — a `call` whose
+   * `function` field is the identifier `runnableExamples` — not as a text search,
+   * so a comment or a string cannot fake it. It fires only inside a routine body,
+   * because outside one `runnableExamples` is an ordinary (if odd) call and its
+   * arguments are ordinary expressions.
+   */
+  private runnableExamplesArgument(node: Node): Node | null {
+    if (node.type !== "call") return null
+    const fn = node.childForFieldName("function") ?? this.namedChildOfType(node, "identifier")
+    if (!fn || fn.type !== "identifier") return null
+    if (String(fn.text) !== "runnableExamples") return null
+    // The `argument_list` FIELD is not populated for this node — the grammar
+    // parses `runnableExamples:` as a labelled statement, and the field name is
+    // declared for a different alternative — so `childForFieldName` returns null
+    // while the child is plainly there. Read it as a NAMED CHILD of that type
+    // instead. Verified against nim/lib/system.nim:857, where the call at line
+    // 859 has `function: identifier runnableExamples` and an unlabelled
+    // `argument_list` child holding the example's `statement_list`.
+    const args = node.childForFieldName("argument_list") ?? this.namedChildOfType(node, "argument_list")
+    if (!args) return null
+    // The `argument_list` itself is returned, not the `statement_list` inside it.
+    // The frame is applied by comparing a node's own children against the
+    // returned start offset, and the example body is a GRANDchild of the call
+    // (`call > argument_list > statement_list`), so returning the inner node
+    // matched nothing and the whole rule was dead. Verified on
+    // nim/lib/system.nim:859 — 24 example frames are found across that file and
+    // every one of them silently published nothing before this was fixed.
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const c = args.namedChild(i)
+      if (c && (c.type === "statement_list" || c.type === "block")) return args
+    }
+    return null
+  }
+
+  /** The first NAMED child of the given node type, or null. */
+  private namedChildOfType(node: Node, type: string): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === type) return c
+    }
+    return null
   }
 
   private buildCallableSymbol(
@@ -398,6 +536,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       genericParamNames: Set<string>
     },
     inCallable: boolean,
+    enclosingCallable: string,
   ): ASTEngine.UniversalSymbol | null {
     // The name field is `_symbol` (identifier or accent_quoted for `+`) or
     // `exported_symbol` (identifier/accent_quoted followed by `*`).
@@ -405,10 +544,6 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!nameNode) return null
     const nameInfo = this.readNameNode(nameNode)
     if (!nameInfo.name || nameInfo.name === "_") return null
-    // A routine declared inside another routine is a nested routine: Nim
-    // allows it (closure), and the family rule is that an anonymous/inner
-    // body entity is an execution artifact.
-    if (inCallable) return null
 
     const parameters = this.readParameters(node)
     const returnNode = node.childForFieldName("return_type")
@@ -421,13 +556,37 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     const doc = ctx.docCommentByStartLine.get(node.startPosition.row + 1)
 
     const receiverType = callable.callableKind === "method" ? this.methodReceiverTypeLeaf(node) : undefined
+    // A NAMED routine nested in another routine's body. Nim closures are
+    // first-class named procedures: `proc recentlyOpenedAdd(filename: string)`
+    // inside `proc closeTab` is called by that name from its parent and from its
+    // own body, and both calls are already published as `calls` edges.
+    //
+    // Dropping the symbol while keeping the edges is the defect requirement D
+    // names: "an edge the graph cannot walk is a thing the graph asserts that is
+    // not there". Measured over 4,555 corpus files: 653 `calls` edges named a
+    // declaration the parse tree carried and the analyzer published nowhere, and
+    // every one of them was a nested routine (Aporia's `{.closure.}` GTK
+    // callbacks, `onConnect`, `toggleSingle`, and so on).
+    //
+    // It is published with `scope` set to its parent — the lua lane's convention
+    // for exactly this shape (real-lua-analyzer.ts, `lexicallyLocal`) — so a
+    // consumer can tell a closure from a module procedure, and it is NOT added to
+    // `fileCallables`, which is the module-scope callable set. The companion
+    // `contains` edge is emitted in `collectContainment` from
+    // `metadata.nimNestedIn`, not from `ownerName`, because the owner here is a
+    // FUNCTION and `ownerName` is the family field for a class or module owner.
+    //
+    // What stays dropped: an unnamed nested routine. `readNameNode` returns "" for
+    // `proc() = ...` written without a name, and that is the "anonymous inner body
+    // entity" the family rule is actually about.
+    const nestedIn = inCallable ? enclosingCallable : ""
 
     const sym: ASTEngine.UniversalSymbol = {
       name: nameInfo.name,
       kind: callable.kind,
-      visibility: nameInfo.exported ? "public" : "private",
+      visibility: nestedIn ? "private" : nameInfo.exported ? "public" : "private",
       range: this.nodeRange(node),
-      scope: undefined,
+      scope: nestedIn || undefined,
       parameters,
       returnType: returnNode ? this.nodeText(returnNode) : undefined,
       genericParameters: genericParameters.length > 0 ? genericParameters : undefined,
@@ -447,6 +606,18 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       // copy stays — the override labels are built from it, and it is the
       // documented place the receiver is recorded.
       ...(receiverType ? { ownerName: receiverType, ownerKind: ASTEngine.SymbolKind.Class } : {}),
+      // `qualifiedName` is the disambiguating handle the override edges need.
+      // `overrides` endpoints are receiver-qualified (`Rect.describe`) because the
+      // bare name `describe` cannot address either end — and a consumer that
+      // resolves an edge by matching a target against published names has no way
+      // to reach `Rect.describe` unless some symbol publishes that spelling.
+      // Measured on nim/lib/pure (105 files, 6,638 symbols) with
+      // `script/m14/incoming-check.ts`: all 14 `overrides` edges reported as
+      // UNRESOLVED targets, every one of them a correct receiver-qualified edge.
+      // This is the same field the lua lane fills for the same reason
+      // (real-lua-analyzer.ts: `qualifiedName: label`, "the `name` field is the
+      // identity; this is the path").
+      ...(receiverType ? { qualifiedName: `${receiverType}.${nameInfo.name}` } : {}),
       // The store binds `brain_symbol.docstring` from this field (see
       // parallel-indexer's insertSymbol binding). Emitting only `comments`
       // produced docs=0 for every nim symbol through the real CLI, so the `##`
@@ -466,7 +637,22 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(nameInfo.exported ? { exported: true } : {}),
         paramCount: parameters.length,
         ...(genericParameters.length > 0 ? { genericParameterCount: genericParameters.length } : {}),
+        ...(nestedIn ? { nimNestedIn: nestedIn } : {}),
         ...(callable.callableKind === "method" ? { nimReceiverType: receiverType } : {}),
+        // The receiver-qualified LABEL, recorded in metadata as well as in
+        // `qualifiedName`. Two reasons, both measured:
+        //   - `pool-worker.ts:870` reads `s.qualifiedName || s.metadata?.fqn ||
+        //     (s.scope ? …)`, so `metadata.fqn` is the worker\'s own declared
+        //     fallback channel and this is where the same fact belongs for a
+        //     consumer that reads metadata.
+        //   - `script/m14/run-fixtures.ts` cannot assert `qualifiedName`: it is
+        //     absent from that file\'s CONSTRAINT_KEY_ALLOWLIST, so a fixture row
+        //     carrying it is reported as an INERT assertion and the
+        //     `nim/method-qualified-name-dropped` mutant survives. `meta.*` keys
+        //     ARE assertable, so the same fact is pinned here instead of nowhere.
+        //     The allowlist gap is reported to the supervisor rather than edited
+        //     (workstream §8).
+        ...(receiverType ? { fqn: `${receiverType}.${nameInfo.name}` } : {}),
         ...(node.childForFieldName("rewrite_pattern") ? { nimRewritePattern: true } : {}),
         ...(hasPragma("raises") ? { nimRaises: true } : {}),
         ...(hasPragma("noSideEffect") ? { nimNoSideEffect: true } : {}),
@@ -511,9 +697,22 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     let objectKind = parentObjectKind
     let inherits: string | null = null
     let objectNode: Node | null = null
+    //
+    // The skip is by INDEX, and it has to be. `c === symDecl` is the shape the
+    // hygiene gate flags as `bare-node-identity-comparison` (KAD2/TSD2 class):
+    // web-tree-sitter hands out a FRESH wrapper per access, so two `namedChild`
+    // reads of the same node are never `===`. Measured over the corpus by
+    // validation/m14/fixtures/nim/verify-analyzer-hygiene-nim.ts: 494
+    // `type_declaration` nodes across 109 files, `c === symDecl` TRUE at the one
+    // index where it could be — **0**; `c.id === symDecl.id` and span equality,
+    // **494 of 494**. So the guard never fired: the loop went on to test the
+    // symbol declaration itself, whose type matches no branch below, and the
+    // outcome was the same — a no-op iteration. Behaviour-identical, so no edge
+    // count moved; but the guard was dead code that reads as protection, and a
+    // later branch keyed on `type_symbol_declaration` would have consumed it.
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
-      if (!c || c === symDecl) continue
+      if (!c || i === 0) continue
       if (c.type === "ref_type" || c.type === "pointer_type" || c.type === "out_type" || c.type === "var_type" || c.type === "distinct_type") {
         objectKind = c.type
         const inner = this.lastNamedChild(c)
@@ -793,6 +992,34 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /** True when this `variant_discriminator_declaration` holds an author-written
+   *  discriminator rather than a branch list the parser absorbed.
+   *
+   *  A genuine discriminator is written adjacent to `case` — `case kind: Kind` —
+   *  so its name node shares a source row with the `case` token. The bare form
+   *  has no name to write, recovery attaches the following `of A, B:` line to the
+   *  slot, and that line is on a later row by construction.
+   *
+   *  The `case` token is looked up among the owning `variant_declaration`'s
+   *  children rather than through a field name, because the grammar exposes it as
+   *  an anonymous `case` token. A missing token is answered pessimistically
+   *  (NOT adjacent), so an unexpected tree drops the field instead of publishing a
+   *  fabricated one — the asymmetry is deliberate: a lost field is recoverable,
+   *  a fabricated edge poisons `bb_graph`, `bb_impact` and `bb_migrate`. */
+  private discriminatorIsAdjacentToCase(node: Node): boolean {
+    const owner = node.parent
+    if (!owner || owner.type !== "variant_declaration") return false
+    let caseTok: Node | null = null
+    for (let i = 0; i < owner.childCount; i++) {
+      const c = owner.child(i)
+      if (c && c.type === "case") { caseTok = c; break }
+    }
+    if (!caseTok) return false
+    // Compare against the SLOT's own first row, not the name node's: the slot is
+    // what recovery re-parents, and the name node is its first declaration.
+    return caseTok.startPosition.row === node.startPosition.row
+  }
+
   private buildFieldSymbols(
     node: Node,
     owner: ASTEngine.UniversalSymbol,
@@ -824,6 +1051,44 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Inside an OBJECT there is no unnamed element, so the ancestor test is what
     // separates `tuple[int, string]` from `case isCircle`.
     if (!typeNode && this.hasAncestorOfType(node, "tuple_type")) return out
+    // ── the bare-`case` fabrication guard ────────────────────────────────────
+    // Nim writes a discriminator as `case <name>`, adjacent. It ALSO permits the
+    // bare form, in which there is no name to write and the following line is the
+    // branch list:
+    //
+    //     type Node = ref object
+    //       case
+    //       of AddOpr, SubOpr:
+    //         a, b: Node
+    //
+    // tree-sitter-nim gives that bare form no slot to put a name in, so error
+    // recovery attaches the NEXT LINE to `variant_discriminator_declaration`. The
+    // slot then holds a `symbol_declaration_list` whose first entry is a
+    // CONSTRUCTOR, and the loop below would publish it as a `property` of the
+    // owning type plus a `contains` edge to it — a field the object does not have.
+    //
+    // The node SHAPE cannot tell the two apart, and this was measured rather than
+    // assumed (`variant-discriminator.ts`, 43 slots over 1,508 nimony files):
+    //
+    //   tcaseobjectrange.nim:15  `case kind: Kind`     symbol_declaration_list,
+    //                                                          decls=1, errInSlot=0
+    //   opt.nim:33-34            bare `case`/`of None:` symbol_declaration_list,
+    //                                                          decls=1, errInSlot=0
+    //
+    // Identical. ERROR position cannot either — the recovery ERROR is a CHILD of
+    // `variant_declaration` in msumtype.nim and a SIBLING under
+    // `field_declaration_list` in tsumtype.nim, so an ERROR test catches 14 of 19
+    // and misses 5. A reserved-word test catches 5 of 19 and misses 14, because
+    // `None`, `Some`, `AddOpr`, `float` and `T` are all perfectly legal
+    // identifiers and are not keywords.
+    //
+    // What DOES separate them is the ROW: a genuine discriminator is adjacent to
+    // `case`, and an absorbed line is necessarily on a later one. Measured as a
+    // perfect separator on the same 43 slots — TP 19, FN 0, FP 0, TN 24 — which
+    // is the only reason this guard is shippable.
+    if (node.type === "variant_discriminator_declaration" && !this.discriminatorIsAdjacentToCase(node)) {
+      return out
+    }
     const doc = docCommentByStartLine.get(node.startPosition.row + 1)
     for (let i = 0; i < list.namedChildCount; i++) {
       const decl = list.namedChild(i)
@@ -1147,11 +1412,15 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const seg of this.moduleSegments(module)) qualifiers.add(seg)
       relationships.push({
         source: "(global)",
-        target: module,
+        target: this.moduleNameOfPath(module),
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1,
         line_number: moduleNode ? moduleNode.startPosition.row + 1 : n.startPosition.row + 1,
-        metadata: { relationshipType: "nim_import", isImport: true, fileLevel: true },
+        // Only the edge TARGET is normalised, and only so that it can equal the module
+        // symbol's name — the two spellings drifted apart, which is what left 8,404 of
+        // 13,364 `imports` edges with no candidate to bind to. The path AS WRITTEN
+        // survives in `imports[].module` and on `meta.nimModulePath`.
+        metadata: this.moduleEdgeMetadata("nim_import", module),
       })
     }
   }
@@ -1181,11 +1450,11 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
       relationships.push({
         source: "(global)",
-        target: text,
+        target: this.moduleNameOfPath(text),
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1,
         line_number: n.startPosition.row + 1,
-        metadata: { relationshipType: "nim_include", isImport: true, fileLevel: true },
+        metadata: this.moduleEdgeMetadata("nim_include", text),
       })
     }
   }
@@ -1432,18 +1701,15 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (const seg of this.moduleSegments(path)) qualifiers.add(seg)
         relationships.push({
           source: "(global)",
-          target: path,
+          target: this.moduleNameOfPath(path),
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1,
           line_number: site.startPosition.row + 1,
-          metadata: {
-            relationshipType: "nim_import",
-            isImport: true,
-            fileLevel: true,
+          metadata: this.moduleEdgeMetadata("nim_import", path, {
             ...(parsed.isPathList ? { nimModuleList: true } : {}),
             ...(alias ? { nimAlias: alias } : {}),
             ...(qualifier ? { nimQualifier: qualifier } : {}),
-          },
+          }),
         })
       }
     }
@@ -1608,6 +1874,195 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
+  /**
+   * The MODULE this file defines, as one `SymbolKind.Module` symbol.
+   *
+   * ## Why this is a symbol and not a scope name
+   *
+   * A Nim `.nim` file IS a module, it has a name, it is the unit `import`
+   * names, and it is the unit `export` publishes from. Every one of those is a
+   * fact about a declaration, and before this pass the graph had no node for it:
+   * every `imports` edge named a module that existed nowhere in the symbol set.
+   *
+   * MEASURED, 6,063 corpus files, production `parseFile` (`census.ts`, artifacts in
+   * `validation/m14/measurements/nim/`): `imports` resolved its target on **37.1%** of
+   * 13,364 edges, and the unresolved population is the module path as written —
+   * `std/assertions`(823) `std/syncio`(671) `std/strutils`(386) `std/os`(297)
+   * `std/tables`(240). 8,404 of 13,364 edges named a module the graph could not bind
+   * to. It was not a resolution failure: there was no candidate to fail to find.
+   *
+   * The store cannot rescue it either, and that is checked rather than assumed. Its
+   * insert-time target resolver matches `brain_symbol.name` (`parallel-indexer.ts:2239`)
+   * and its three post-pass strategies match a bare `name`, a `qualified_name`, or —
+   * for a DOT target — everything after the first `.` (`parallel-indexer.ts:3755-3774`).
+   * `std/assertions` is none of those, and the fourth strategy, `resolveImportTargets`,
+   * is scoped to the `<module>:<item>` form that javascript/typescript/python emit —
+   * nim writes a bare path, so it never reaches that planner.
+   *
+   * ## Why the NAME is the last path segment, and why that is the module
+   *
+   * Nim resolves `import std/assertions` to the module `assertions` in
+   * `lib/std/assertions.nim`; the `std/` prefix is a directory on the module search
+   * path, not part of the module's name. So the symbol is named after the file's
+   * basename and the edge target is normalised to the same rule, which is what makes
+   * the two strings equal. This is the same "publish the string you target" shape the
+   * graphql lane measured at a 75% reduction, applied to the construct nim actually has.
+   *
+* ## What is deliberately NOT published
+   *
+   *   - `.nims`. A NimScript file is `include`d into another module; it is not a module
+   *     and nothing can `import` it. Publishing one would be a node the language cannot
+   *     name. So `include`'s edge target is normalised by the SAME rule, and that is
+   *     measured rather than assumed: 458 `nim_include` edges over the corpus resolve
+   *     at both ends on 96.9% in-file and 98.0% in-corpus, and reverting them to the
+   *     verbatim path would bind **0** of the 14 they currently leave unresolved
+   *     (`import-resolution-probe.mts`, `s18-import-probe.txt`). An earlier draft of
+   *     this comment asserted the opposite — that `include` keeps the written path —
+   *     while the code normalised it; the measurement decided which of the two was
+   *     true and the comment was corrected to match.
+   *   - A renamed module. `module Foo` inside `bar.nim` declares module `Foo`, and the
+   *     pinned grammar has NO node for it — `grammars/tree-sitter-nim/grammar.js`
+   *     mentions "module" twice and neither is a declaration, so there is nothing on
+   *     the tree to read. The symbol is therefore named after the FILE. This is a real
+   *     inaccuracy and it is bounded: the corpus measurement is in the doc, and a file
+   *     that renames its module gets a module symbol no `import` will ever name.
+   *   - An empty basename. A path that yields no name publishes nothing rather than an
+   *     empty-named symbol.
+   *
+   * The range is the whole `source_file` node, so the symbol covers what it contains.
+   * A file whose root is not a `source_file` falls back to line 1, never to a line 0 —
+   * a line-0 symbol reads as a missed line to every consumer that checks.
+   */
+  private publishModuleSymbol(rootNode: Node, filePath: string, symbols: ASTEngine.UniversalSymbol[]): void {
+    const name = this.moduleNameOfPath(filePath)
+    if (!name) return
+    const lower = filePath.toLowerCase()
+    // A NimScript file is a script, not a module. See the header.
+    if (lower.endsWith(".nims")) return
+    const src = rootNode.type === "source_file" ? rootNode : null
+    symbols.push({
+      name,
+      kind: ASTEngine.SymbolKind.Module,
+      visibility: "public",
+      range: src
+        ? this.nodeRange(src)
+        : { startLine: 1, startColumn: 0, endLine: 1, endColumn: 0, startIndex: 0, endIndex: 0 },
+      // The module name is the whole identity here, so `qualifiedName` carries it too:
+      // the store's second resolution strategy matches `qualified_name`, and a row that
+      // is correct under one spelling should not be unreachable because it took another.
+      qualifiedName: name,
+      metadata: { nimModule: true, nimModuleName: name },
+    })
+  }
+
+  /**
+   * The module name a file path denotes: its basename without the extension, which is
+   * Nim's own rule for the name a file has unless it renames the module inside.
+   *
+   * It is also the LAST SEGMENT of an import path, and both spellings go through here so
+   * the publisher and the emitter cannot drift apart — the whole defect this pass exists
+   * to fix is two pieces of code spelling one symbol differently.
+   */
+  private moduleNameOfPath(filePath: string): string {
+    const seg = String(filePath ?? "").split("/").pop() ?? ""
+    // A trailing `\` would come from a Windows-style path; a declared module name never
+    // contains one, and leaving it in would publish an unnameable node.
+    // Strip trailing backslashes without a regex. This lane is at ZERO regex by policy and
+    // by census; `/\\+$/` was reintroduced and the census gate caught it on the next run,
+    // which is the gate doing exactly its job.
+    let base = seg
+    while (base.length > 0 && base.charCodeAt(base.length - 1) === 92 /* \\ */) base = base.slice(0, -1)
+    const dot = base.lastIndexOf(".")
+    const stem = dot > 0 ? base.slice(0, dot) : base
+    // `std / syncio` — Nim's path syntax allows spaces around `/`, and the corpus writes
+    // it (823 of the unresolved imports are `std/X`, and `std / syncio` is among them).
+    // The last segment of the path is the module name either way.
+    const parts = stem.split("/")
+    const last = (parts[parts.length - 1] ?? "").trim()
+    return last
+  }
+
+  /**
+   * Is this written module path Nim's own STANDARD LIBRARY?
+   *
+   * ## What the marker is for, and the number that sizes it
+   *
+   * After the module-symbol pass the residual `imports` population that is declared
+   * NOWHERE in the corpus — the population cause C is about — is 485 edges: 476 on
+   * `nim_import` and 9 on `nim_include`. Measured by
+   * `validation/m14/fixtures/nim/import-resolution-probe.mts` over the same 6,063
+   * files, same analyzer digest (`s18-import-probe.txt`):
+   *
+   *     bare name          309   (301 import + 8 include)
+   *     other path         103   (102 + 1)
+   *     std/ path prefix    66   (66 + 0)
+   *     parent-relative       8   (7 + 1)
+   *
+   * 66 of 485 — 13.6% — is identifiable from the spelling alone, and this is that
+   * identification. A `std/`-prefixed path is Nim's standard-library root by the
+   * language's own rule, so `nimStdlibModule` is a fact about the PATH, not a guess
+   * about where the declaration lives.
+   *
+   * ## Why the other 419 are NOT marked, which is the honest part
+   *
+   * 309 are BARE names. Per file, `import re` is three indistinguishable things: a
+   * module in this project, a module in `lib/pure` (which is how Nim spells `re`,
+   * `parseutils`, `algorithm`, `math` — no path prefix at all), or a typo. Nothing in
+   * one file separates them, and marking them external would assert that a local module
+   * is not local — the fabricated-edge failure the workstream brief calls the most
+   * expensive mistake available. 103 are paths with some other prefix (a `nimble`
+   * package name, a sibling directory) and 8 are `../`, which is local by definition.
+   *
+   * Separating the bare cases needs whole-program import resolution: for each bare
+   * target, find the file this project declares by that name and ask whether its path
+   * lies under the Nim library roots. That is shared machinery (workstream §8), so the
+   * need is reported rather than built.
+   *
+   * ## Why the key is `nimStdlibModule` and not the family's `isExternalTarget`
+   *
+   * 15 other analyzers write `isExternalTarget`, and in every one of them it means "the
+   * target is NOT declared in this file". For an `imports` edge that is vacuously true
+   * of every edge — a module is never declared in the file that imports it — so the
+   * family key would carry no information here and would be read as if it did. The key
+   * says what is actually known: the path names the standard library.
+   */
+  private isStdlibModulePath(writtenPath: string): boolean {
+    // The written path is matched, never the normalised target: the target has already
+    // had its prefix stripped, so it cannot answer this. Spaces around `/` are legal
+    // Nim path syntax and the corpus writes them (`std / syncio`), and a leading quote
+    // comes from `include "std/prelude"`. Anchored at the start, so a project that has
+    // its own `std/` directory cannot make a local path claim to be the library.
+    // Anchored equivalent of /^\s*"?std\s*\// by char code — this lane is at ZERO regex
+    // and the census gate caught this reintroduced.
+    return isStdModulePath(String(writtenPath ?? ""))
+  }
+
+  /**
+   * The metadata block every `imports` edge carries, built from ONE argument so the
+   * written path and the stdlib marker can never be derived from different strings.
+   *
+   * This is the same one-function discipline `moduleNameOfPath` exists for, applied to
+   * the metadata: the defect being paid down is two pieces of code spelling one module
+   * differently, and a marker computed from a different string than the path it
+   * describes is that defect a second time.
+   */
+  private moduleEdgeMetadata(
+    relationshipType: "nim_import" | "nim_include",
+    writtenPath: string,
+    extra?: Record<string, unknown>,
+  ): Record<string, unknown> {
+    return {
+      relationshipType,
+      isImport: true,
+      fileLevel: true,
+      // The path AS WRITTEN. `brain_import` and the file-dependency engine read this,
+      // and so does anyone asking which file on disk is meant.
+      nimModulePath: writtenPath,
+      ...(this.isStdlibModulePath(writtenPath) ? { nimStdlibModule: true } : {}),
+      ...(extra ?? {}),
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════════════
   // 4. RELATIONSHIPS
   // ═══════════════════════════════════════════════════════════════════════
@@ -1616,17 +2071,37 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
   private collectContainment(symbols: ASTEngine.UniversalSymbol[], relationships: ASTEngine.UniversalRelationship[]): void {
     const seen = new Set<string>()
     for (const s of symbols) {
-      if (!s.ownerName) continue
-      const key = `${s.ownerName} ${s.name}`
+      if (s.ownerName) {
+        const key = `${s.ownerName} ${s.name}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        relationships.push({
+          source: s.ownerName,
+          target: s.name,
+          type: ASTEngine.RelationshipType.Contains,
+          confidence: 1,
+          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
+          metadata: { relationshipType: "nim_contains" },
+        })
+        continue
+      }
+      // A nested ROUTINE's owner is a function, and `ownerName` is the family
+      // field for a class or module owner — so the containment is published from
+      // the metadata instead, and it is a real lexical fact read off the tree
+      // rather than a name-shape guess. Confidence 1: the parent is the node this
+      // routine is physically nested in, which the grammar gives directly.
+      const parent = typeof s.metadata?.nimNestedIn === "string" ? (s.metadata.nimNestedIn as string) : ""
+      if (!parent) continue
+      const key = `${parent} ${s.name}`
       if (seen.has(key)) continue
       seen.add(key)
       relationships.push({
-        source: s.ownerName,
+        source: parent,
         target: s.name,
         type: ASTEngine.RelationshipType.Contains,
         confidence: 1,
         ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
-        metadata: { relationshipType: "nim_contains" },
+        metadata: { relationshipType: "nim_contains", nimNestedRoutine: true },
       })
     }
   }
@@ -2125,6 +2600,10 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       fileValues: Set<string>
       fileTypes: Set<string>
       fileCallables: Set<string>
+      /** Callables declared INSIDE another routine. Read by the parenless-UFCS
+       *  test only — see the note at that branch. Not a substitute for
+       *  `fileCallables`, which is the module-scope set. */
+      nestedCallables: Set<string>
       fileEnumMembers: Set<string>
       fileFieldNames: Set<string>
       genericParamNames: Set<string>
@@ -2308,7 +2787,20 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         } else {
         const leaf = fn ? this.calleeLeafNode(fn) : undefined
         const leafText = leaf?.text
-        if (leafText && leafText !== "_" && REAL_NIM_BUILTINS.indexOf(leafText) === -1 && !isKeywordLike(leafText)) {
+        // `runnableExamples:` is a DOC-COMMENT PRAGMA, not a call. The grammar
+        // parses the whole example as the call's `argument_list`, so the call
+        // branch fired on it and published
+        //   describe -[calls]-> runnableExamples
+        // with `callExpression` holding sixty characters of the example's
+        // source. No Nim program calls anything named `runnableExamples`: it is
+        // the one identifier in the language that is spelled like a call and
+        // never is one, and an edge to it is a name the graph can never resolve.
+        //
+        // The test is the SHAPE, not the word alone: the argument must be a
+        // statement list or a block. A real `runnableExamples(x)` call has an
+        // expression argument, and a user proc of that name is still published.
+        const isDocPragma = leafText === "runnableExamples" && this.runnableExamplesArgument(node) !== null
+        if (leafText && leafText !== "_" && !isDocPragma && REAL_NIM_BUILTINS.indexOf(leafText) === -1 && !isKeywordLike(leafText)) {
           const source = currentFn()
           const importBased = fn ? this.isImportQualified(fn, ctx.importQualifiers) : false
           push(source, leafText, ASTEngine.RelationshipType.Calls, importBased ? 0.75 : 0.85, leaf ? leaf.startPosition.row + 1 : node.startPosition.row + 1, {
@@ -2348,7 +2840,19 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         // exercise -> describe` for `r.describe` inside `echo s, …, r.describe`).
         // Both the analyzer AND the differential oracle omitted it, so the lane
         // reported 0% unexplained — the shape was invisible to every gate.
-        const callableName = leafText && (ctx.fileCallables.has(leafText)) ? leafText : null
+        // BOTH sets, and the reason is a measured disagreement rather than a
+        // guess. `script/m14/nim-truth-oracle.ts` derives this rule against every
+        // callable the file declares, and it disagreed: on
+        // nim/lib/packages/docutils/rst.nim:3493 the read
+        // `p.s.idxImports[origFilename.rmSpaces]` is a parenless UFCS call of
+        // `rmSpaces`, a routine declared at rst.nim:3491 — INSIDE
+        // `proc dirImportdoc`. Testing `fileCallables` alone could not see it,
+        // because nested routines are deliberately kept out of that set, so the
+        // oracle reported one unexplained `calls` edge on the 400-file sample and
+        // the analyzer had no defence. Both sets is the answer: the question is
+        // whether this FILE declares the callable, and a nested routine is a
+        // declaration this file makes.
+        const callableName = leafText && (ctx.fileCallables.has(leafText) || ctx.nestedCallables.has(leafText)) ? leafText : null
         if (callableName && !inCallCallee) {
           push(currentFn(), callableName, ASTEngine.RelationshipType.Calls, 0.9, leaf ? leaf.startPosition.row + 1 : node.startPosition.row + 1, {
             relationshipType: "nim_ufcs_member_call",
@@ -3190,14 +3694,98 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private pushChildren(
     node: Node,
-    stack: { node: Node; inCallable: boolean; objectKind: string }[],
+    stack: { node: Node; inCallable: boolean; enclosingCallable: string; docExample: boolean; objectKind: string }[],
     inCallable: boolean,
+    enclosingCallable: string,
+    docExample: boolean,
     objectKind: string,
+    /** When set, this node is a `runnableExamples:` call and that child opens a
+     *  doc-example frame instead of inheriting the caller's. */
+    exampleBody?: Node | null,
   ): void {
+    // Compare by START OFFSET, not by `===`: the accessors each allocate their
+    // own JS wrapper for one underlying node, and two nodes cannot share a start
+    // offset inside one tree.
+    const exampleStart = exampleBody ? exampleBody.startIndex : -1
     for (let i = node.namedChildCount - 1; i >= 0; i--) {
       const c = node.namedChild(i)
-      if (c) stack.push({ node: c, inCallable, objectKind })
+      if (!c) continue
+      const inExample = exampleStart >= 0 && c.startIndex === exampleStart
+      stack.push({
+        node: c,
+        // Inside the example, `inCallable` is FALSE: the C-D1 rule suppressed
+        // these because they sat inside a routine BODY, and the example is not
+        // the body. Value declarations are suppressed separately, by `docExample`.
+        inCallable: inExample ? false : inCallable,
+        enclosingCallable,
+        docExample: inExample ? true : docExample,
+        objectKind,
+      })
     }
+  }
+
+  /**
+   * A routine's children are NOT all its body, and reading them as if they were
+   * dropped real declarations.
+   *
+   * The pinned grammar ABSORBS a `##` doc comment into the declaration node (see
+   * `collectDocModulesAndComplexity` for the two placements and why reading only
+   * the sibling form measured zero docstrings). So for
+   *
+   *     proc `of`*[T, S](x: T, y: typedesc[S]): bool =
+   *       ## Checks if `x` is an instance of `y`.
+   *       runnableExamples:
+   *         type
+   *           Base = ref object of RootObj
+   *           Sub1 = ref object of Base
+   *
+   * the doc comment — and the `runnableExamples:` code the Nim COMPILER compiles
+   * as its own unit — is a child of the `proc_declaration`, sibling to the `body`
+   * field. Pushing every child with `inCallable: true` therefore marked
+   * `Base` and `Sub1` as body-local and published neither.
+   *
+   * Measured cost over the corpus: 9 `object_declaration.inherits` occurrences on
+   * the parse tree had no published owner symbol, every one of them inside a
+   * `runnableExamples` block (nim/lib/system.nim Sub1/Sub2, lib/std/assertions.nim
+   * MyError, tests/stdlib/trepr.nim TFoo, tests/stdlib/tjsonmacro.nim MsgChallenge,
+   * tests/template/template_issues.nim `name`) — so `extends` lost the edges and
+   * the graph lost the symbols.
+   *
+   * Only the `body` field carries `inCallable: true`, which is exactly the
+   * distinction the C-D1 rule wanted: a `type` section inside a BODY is still
+   * dropped, and a `type` section inside a DOC COMMENT is a declaration the
+   * compiler type-checks.
+   */
+  private pushCallableChildren(
+    node: Node,
+    stack: { node: Node; inCallable: boolean; enclosingCallable: string; docExample: boolean; objectKind: string }[],
+    enclosingCallable: string,
+  ): void {
+    const body = node.childForFieldName("body")
+    const selfName = this.callableNameOf(node)
+    // Compare by START OFFSET, not by `===`. `childForFieldName` and
+    // `namedChild` each allocate their own JS wrapper for the same underlying
+    // node, so `c === body` was false for the body itself and every child of
+    // every routine was pushed with `inCallable: false` — which republished every
+    // function-local `let`/`var` and failed nim/negative. Two nodes in one tree
+    // cannot share a start offset, so this is exact.
+    const bodyStart = body ? body.startIndex : -1
+    for (let i = node.namedChildCount - 1; i >= 0; i--) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      const isBody = c.startIndex === bodyStart && bodyStart >= 0
+      // The body opens a new lexical frame whose owner is THIS routine, so a
+      // routine nested one level deeper is scoped to it rather than to whatever
+      // surrounded this one.
+      stack.push({ node: c, inCallable: isBody, enclosingCallable: isBody ? selfName : enclosingCallable, docExample: false, objectKind: "" })
+    }
+  }
+
+  /** The published NAME of a routine node, or "" when it has none. */
+  private callableNameOf(node: Node): string {
+    const nameNode = node.childForFieldName("name")
+    if (!nameNode) return ""
+    return this.readNameNode(nameNode).name
   }
 
   private nodeRange(node: Node): ASTEngine.UniversalSymbol["range"] {
@@ -3520,6 +4108,26 @@ const NIM_BUILTIN_TYPES = [
  * a `.` (`.import`, `.end`) — the guard keeps either shape from producing an
  * edge to a non-name.
  */
+/**
+ * `^\s*"?std\s*\//` by char code: optional whitespace, optional quote, `std`, optional
+ * whitespace, then a slash. Anchored, so a project with its own `std/` directory cannot
+ * make a local path claim to be the standard library.
+ */
+function isStdModulePath(p: string): boolean {
+  const WS = (c: number): boolean =>
+    c === 32 || c === 9 || c === 10 || c === 13 || (c >= 0x2000 && c <= 0x200a)
+  let i = 0
+  while (i < p.length && WS(p.charCodeAt(i))) i++
+  // The pattern's quote is `"?` — a LITERAL double quote, not a character class. The first
+  // version accepted a single quote too, so `'std/y` matched when the regex rejects it.
+  // Caught by the differential, not by reading the pattern carefully enough.
+  if (i < p.length && p[i] === '"') i++
+  if (p[i] !== "s" || p[i + 1] !== "t" || p[i + 2] !== "d") return false
+  i += 3
+  while (i < p.length && WS(p.charCodeAt(i))) i++
+  return p[i] === "/"
+}
+
 function isKeywordLike(name: string): boolean {
   return KEYWORD_LIKE.indexOf(name) !== -1
 }

@@ -208,7 +208,43 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
   const refs: { from: string; refPath: string }[] = []
   const deps: { from: string; name: string }[] = []
   const endpoints: { from: string; target: string }[] = []
-  const composed: { from: string; target: string }[] = []
+  /**
+   * Composition found during the walk, with its target still the RAW POINTER.
+   *
+   * The first version resolved the pointer against `pathToName` DURING the walk, and that
+   * is an ORDERING bug rather than a semantic one: `definitions` frequently comes AFTER
+   * `properties` in a JSON Schema document, so a pointer into `definitions` had not been
+   * recorded yet when the `allOf` that referenced it was read. Measured: 809 `extends` edges
+   * on a 3,272-file corpus read as analyzer-only, and on go-openapi's `schema.json` alone the
+   * oracle produced ZERO while the analyzer produced 4 — every one of them an `allOf` under
+   * `properties`. The same document order is why the `references` rule, which resolves in a
+   * SECOND pass, was always right. Resolving composition after the walk is the fix.
+   */
+  const composed: { from: string; refPath: string }[] = []
+  /**
+   * INHERITANCE STATED AS ORDINARY KEYS — `extends` and `implements` from type
+   * DECLARATIONS, not from schema composition.
+   *
+   * Written from the corpus rather than from the analyzer: the two shapes that occur are the
+   * Language Server Protocol's meta-model (a `name` string plus an array of
+   * `{"kind":"reference","name":X}` literals under `extends` / `mixins`) and duckdb's
+   * serialisation schemas (a `class` string plus a `base` string). Both are announced by the
+   * document before anything is interpreted, which is what stops a `name` key in an i18n
+   * bundle from being read as a type declaration — measured: 2 of 11,713 admitted documents
+   * contain a `{"kind":"reference"}` literal and 21 contain a `class` string.
+   *
+   * `mixins` names the TypeScript interfaces a class mixes in, which is `implements`: an
+   * interface carries no implementation, so there is nothing else for the word to mean.
+   *
+   * A reference to a type the document does not declare produces NO edge. Measured: 16
+   * supertype statements in duckdb's schemas name a type declared in a sibling file, and an
+   * edge to a symbol this file does not contain is a fabrication.
+   */
+  const typeDeclarations = new Map<string, string>()
+  const inheritanceCandidates: { from: string; target: string; label: "extends" | "implements" }[] = []
+  const LSP_INHERITANCE_KEYS = ["extends", "base", "superclass", "superClass", "implements", "mixins"]
+  let usesReferenceLiterals = false
+  let usesClassDeclarations = false
   const HTTP_METHOD_KEYS = new Set(["get", "put", "post", "delete", "options", "head", "patch", "trace"])
 
   const keyText = (pair: any): string | null => {
@@ -230,6 +266,55 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
     const t = String(n?.text ?? "")
     return t.length >= 2 ? t.slice(1, -1) : t
   }
+  /** The string VALUE of a pair, or null when the value is not a string. */
+  const stringValue = (pair: any): string | null => {
+    const v = valueOf(pair)
+    return v?.type === "string" ? unquote(v) : null
+  }
+  const stringField = (pairs: any[], key: string): string | null => {
+    for (const p of pairs) if (keyText(p) === key) return stringValue(p)
+    return null
+  }
+  const hasField = (pairs: any[], key: string): boolean => pairs.some((p: any) => keyText(p) === key)
+  const isIdentifierText = (text: string): boolean => {
+    if (text.length === 0) return false
+    const first = text[0]
+    if (!((first >= "a" && first <= "z") || (first >= "A" && first <= "Z") || first === "_")) return false
+    for (let i = 1; i < text.length; i++) {
+      const c = text[i]
+      if (!((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_")) return false
+    }
+    return true
+  }
+  /** LSP's reference literal: `{"kind":"reference","name":X}`. A REFERENCE, never a declaration. */
+  const referenceLiteralName = (node: any): string | null => {
+    if (!isObject(node)) return null
+    const pairs = (node.namedChildren ?? []).filter((c: any) => c.type === "pair")
+    if (stringField(pairs, "kind") !== "reference") return null
+    return stringField(pairs, "name")
+  }
+
+  // Pass 0 — the two DOCUMENT preconditions, read once before any key is interpreted.
+  //
+  // Both exist because the pass-2 corpus probe found inheritance declared as ordinary object
+  // keys, in exactly 2 of 11,713 admitted documents (`{"kind":"reference"}` literal) and 21
+  // (`class` string). Without the precondition a `name` key in an i18n bundle or an OpenAPI
+  // operation would be read as a type declaration, which is the fabrication the ontology
+  // workstream calls the most expensive mistake available.
+  {
+    const pre: any[] = [root]
+    while (pre.length) {
+      const n = pre.pop()
+      if (n.type === "pair") {
+        if (keyText(n) === "kind" && stringValue(n) === "reference") usesReferenceLiterals = true
+        if (keyText(n) === "class") {
+          const declared = stringValue(n)
+          if (declared !== null && isIdentifierText(declared)) usesClassDeclarations = true
+        }
+      }
+      for (let i = n.childCount - 1; i >= 0; i--) pre.push(n.child(i))
+    }
+  }
 
   // Pass 1 — walk, recording CONTAINMENT and every path at which a name is declared,
   // plus every `$ref` with the path it was written at.
@@ -243,18 +328,42 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
       // would have convicted correct edges, which is the one failure a differential
       // must never produce.
       const items = (node.namedChildren ?? []).filter((c: any) => c.type !== "[")
+      // An element that is itself an ARRAY is a container with a declared position, so it
+      // carries containment and needs a name. Declining it — which this oracle did, and which
+      // is why 30 `contains` edges on a 3,272-file corpus had no truth to match — states less
+      // than the document does: `{ "rows": [[{"cell":1}]] }` plainly has `rows` containing
+      // `rows[0]`. Named from the array's own QUALIFIED path, which is what an array nested
+      // inside another array needs: the inner array's bare name is the outer array's name, so
+      // naming from it made two different objects collide and produced
+      // `rows[0] contains rows[0][1]` between objects that are not nested at all.
+      // An array that is itself an ELEMENT has no key of its own, so its children are named
+      // from its qualified path; an array written under a KEY keeps the short name that key
+      // gives it, because that is the name the document already uses (`allOf[0]`). The test is
+      // the path's last segment: an element's ends in `]`.
+      // A document whose TOP LEVEL is an array is named by the MODULE, whose basename may
+      // contain a dot — `Dotted.name.json` — so its element is `Dotted.name[0]` and not
+      // `name[0]`. That case is why the module name, and not the last dot-segment, is the
+      // identity here.
+      const lastSegment = parentPath.slice(parentPath.lastIndexOf(".") + 1)
+      const self =
+        parentPath === scriptName
+          ? scriptName
+          : lastSegment.endsWith("]")
+            ? parentPath.slice(scriptName.length + 1)
+            : lastSegment
       items.forEach((item: any, i: number) => {
-        if (!isObject(item)) return // a scalar element has no named children
-        // The item is named from the ARRAY's own name plus the index, never from
-        // the item's path. Taking the last dot-segment is correct only while the
-        // module name has no dot, and `index.svelte.warnings.json` is an ordinary
-        // filename: that path gives `warnings[0]` where the truth is
-        // `index.svelte.warnings[0]`. The analyzer had the same bug and both were
-        // fixed from the same rule — an array element is identified by its index
-        // UNDER THE ARRAY, and the array is named by the key it was written under.
+        const isContainer = isObject(item) || isArray(item)
+        if (!isContainer) return // a scalar element has no named children and nothing to own
         const itemPath = `${parentPath}[${i}]`
-        const itemName = `${parentName}[${i}]`
-        if (parentName) edges.push({ label: "contains", from: parentName, target: itemName })
+        const itemName = `${self}[${i}]`
+        // `contains` endpoints are QUALIFIED PATHS on both sides, and this is why: a JSON
+        // document repeats key names relentlessly, so a bare-name endpoint is ambiguous by
+        // construction and the shared resolver declines a non-unique bare name — the edge is in
+        // the graph, asserts containment, and cannot be walked in either direction. Measured on
+        // a 202-file, 99-repo sample: 32,660 of 66,032 `contains` edges (49.4%) named a target
+        // matching more than one published symbol, and 1,119 were self-loops because the source
+        // and the target were the same bare string.
+        if (parentName) edges.push({ label: "contains", from: parentPath, target: itemPath })
         pathToName.set(itemPath, itemName)
         walk(item, itemPath, itemName)
       })
@@ -275,29 +384,88 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
     // reach independently. An EMPTY key is declined — 10 occurrences, every one a
     // document the grammar recovered with ERROR nodes, and an empty key names no member.
     const declaredHere = new Set<string>()
+    // A type DECLARATION this document makes, and the inheritance it states. Recorded here
+    // because `parentPath` IS the walked object's own path, which is what the endpoints need.
+    if (referenceLiteralName(node) === null) {
+      const className = usesClassDeclarations ? stringField(pairs, "class") : null
+      // A declaration names itself AND carries a key that makes it a type rather than one of
+      // its members. A property descriptor `{"name":"textDocument","type":{…}}` has a name
+      // and none of those, and it sits inside a declaration in the same file.
+      const lspName =
+        usesReferenceLiterals && (hasField(pairs, "properties") || hasField(pairs, "values") || hasField(pairs, "extends") || hasField(pairs, "mixins") || hasField(pairs, "implements"))
+          ? stringField(pairs, "name") ?? stringField(pairs, "typeName")
+          : null
+      const named = className ?? lspName
+      if (named !== null && named.length > 0 && !typeDeclarations.has(named)) typeDeclarations.set(named, parentPath)
+      if (named !== null && named.length > 0) {
+        if (className !== null) {
+          const base = stringField(pairs, "base")
+          // A member descriptor — duckdb writes `{"id":200,"name":"info","type":"AlterInfo*",
+          // "base":"ParseInfo"}` for a FIELD — carries no `class` marker, so the 16 such
+          // statements are declined by the marker rather than by a name list.
+          if (base !== null && base.length > 0) inheritanceCandidates.push({ from: parentPath, target: base, label: "extends" })
+        } else {
+          for (const key of LSP_INHERITANCE_KEYS) {
+            const pair = pairs.find((p: any) => keyText(p) === key)
+            const value = pair ? valueOf(pair) : null
+            if (!isArray(value)) continue
+            const label: "extends" | "implements" = key === "mixins" || key === "implements" ? "implements" : "extends"
+            for (const item of (value.namedChildren ?? []).filter((c: any) => c.type !== "[")) {
+              const reference = referenceLiteralName(item)
+              if (reference === null) continue
+              inheritanceCandidates.push({ from: parentPath, target: reference, label })
+            }
+          }
+        }
+      }
+    }
     for (const pair of pairs) {
       const key = keyText(pair)
       const value = valueOf(pair)
       if (!key || !value) continue
+      const here = parentPath ? `${parentPath}.${key}` : key
       if (key.length > 0) {
         if (declaredHere.has(key)) {
-          if (parentName) edges.push({ label: "overrides", from: parentName, target: key })
+          // Both endpoints are QUALIFIED PATHS, like every other label here. They were the
+          // bare owner name and the bare key, which is the last bare-name edge the analyzer
+          // emitted; the whole-population differential read `overrides` at 0 of 22 covered
+          // after the analyzer moved and this side had not, which is the fourth time this
+          // lane has had to retarget an oracle after an endpoint-form change (`contains`,
+          // `calls`, OpenAPI `uses`, and now `overrides`). A bare key is ambiguous on every
+          // corpus edge: 22 of 22 matched more than one published symbol by name, against
+          // 14 of 22 by path — `FSharp.Data`'s bare `rec2` names both elements of one array
+          // and its bare `1` names four keys.
+          if (parentPath) edges.push({ label: "overrides", from: parentPath, target: here })
         } else {
           declaredHere.add(key)
         }
       }
-      const here = parentPath ? `${parentPath}.${key}` : key
-      // CONTAINMENT: the object a key is written in contains that key. The SOURCE
-      // is the parent SYMBOL's name, never its qualified path — an edge whose source
-      // is not a symbol name resolves to nothing, which is the defect the contract
-      // probe caught.
-      if (parentName) edges.push({ label: "contains", from: parentName, target: key })
+      // CONTAINMENT: the object a key is written in contains that key, and both endpoints are
+      // QUALIFIED PATHS. The SOURCE used to be the parent symbol's BARE name, on the reasoning
+      // that an edge whose source is not a symbol name resolves to nothing — which is true and
+      // is also why the edge was unwalkable: a bare name shared by every array element in the
+      // file resolves to an arbitrary one of them, and 51 corpus-wide resolved to nothing at
+      // all because a real JSON key is named `unknown`. The path is the symbol's identity and
+      // the resolver matches it exactly, so it is what both sides emit.
+      if (parentName) edges.push({ label: "contains", from: parentPath, target: here })
       pathToName.set(here, key)
       // OpenAPI path entry: a `/`-prefixed key whose object declares an HTTP method.
-      if (key.length > 1 && key.startsWith("/") && isObject(value)) {
+      //
+      // The guard used to read `key.length > 1`, which excluded the ROOT path `/` — and the
+      // root path is a legal OpenAPI path key, so that condition declined a valid edge. The
+      // OpenAPI 3.0 Paths Object requires each path name to BEGIN with a forward slash, and
+      // `/` does; `gql-graphql-mesh/packages/loaders/openapi/tests/fixtures/blockfrost.json`
+      // declares `paths["/"]` with a `get` returning a 200 describing the service root, so the
+      // whole-population differential read the edge as 1 UNEXPLAINED `uses` against an
+      // analyzer that was right. Found by that disagreement, not by a fixture.
+      //
+      // The condition is now exactly the rule this comment states — non-empty, starts with `/`,
+      // value is an object, and the object declares an HTTP method — with no length floor,
+      // because nothing in the document shape imposes one.
+      if (key.length > 0 && key.startsWith("/") && isObject(value)) {
         const methods = (value.namedChildren ?? []).filter((c: any) => c.type === "pair").map((c: any) => keyText(c))
         if (methods.some((m: string | null) => !!m && HTTP_METHOD_KEYS.has(m))) {
-          endpoints.push({ from: parentName || scriptName, target: key })
+          endpoints.push({ from: parentPath, target: here })
         }
       }
       if (opts?.manifest && MANIFEST_DEPENDENCY_KEYS.has(key) && isObject(value)) {
@@ -320,6 +488,12 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
         const bracket = owner.lastIndexOf("[")
         if (bracket > 0 && owner.endsWith("]")) owner = owner.slice(0, bracket)
         if (owner.endsWith(".allOf")) {
+          // The SOURCE is the schema object that COMPOSES, not the `allOf` array that records
+          // the composition. The first version used the array, so every edge read
+          // `Request.allOf -[extends]-> ProtocolMessage` — and `allOf` is a keyword shared by
+          // every schema in the file, so a consumer resolving by name binds it to an arbitrary
+          // one. The thing that inherits is `Request`.
+          const composer = owner.length > ".allOf".length ? owner.slice(0, owner.length - ".allOf".length) : scriptName
           const ptr = unquote(value)
           // Two ref forms count as composition, derived from the SEEN shapes rather
           // than an assumed one: `#/…` inside the document, and a sibling file with a
@@ -328,12 +502,7 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
           // analyzer, so agreement is evidence rather than a shared assumption.
           const isDoc = ptr.startsWith("#/")
           const isFile = !isDoc && isFileNamingRef(ptr)
-          if (isDoc) {
-            const pointed = `${scriptName}.${ptr.slice(2).replaceAll("/", ".")}`
-            if (pathToName.has(pointed)) composed.push({ from: owner, target: pointed })
-          } else if (isFile) {
-            composed.push({ from: owner, target: ptr })
-          }
+          if (isDoc || isFile) composed.push({ from: composer, refPath: ptr })
         }
         refs.push({ from: here, refPath: unquote(value) })
       } else if (isObject(value) || isArray(value)) {
@@ -427,13 +596,46 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
   // which is a superset-of relationship; `anyOf`/`oneOf` are ALTERNATIVES and have no
   // ontology type, so they contribute only the `references` their `$ref`s already
   // produce. Recorded during the ref emission below, where the enclosing path is known.
-  for (const c of composed) edges.push({ label: "extends", from: c.from, target: c.target })
+  // Resolved HERE, after the walk, for the ordering reason recorded on `composed`. A
+  // pointer into a location this document never declares still produces no edge: measured,
+  // that is the analyzer's own fallback case and the two implementations disagree about it
+  // by design (the analyzer keeps the raw pointer, the oracle declines), which is the one
+  // `extends` class the lane records as unadjudicated.
+  for (const c of composed) {
+    if (!c.refPath.startsWith("#/")) {
+      edges.push({ label: "extends", from: c.from, target: c.refPath })
+      continue
+    }
+    const pointed = `${scriptName}.${c.refPath.slice(2).replaceAll("/", ".")}`
+    if (pathToName.has(pointed)) edges.push({ label: "extends", from: c.from, target: pointed })
+  }
+
+  // Inheritance declared as ordinary keys, resolved against the declarations this document
+  // makes. A reference to a type the document never declares produces NO edge.
+  for (const c of inheritanceCandidates) {
+    const targetPath = typeDeclarations.get(c.target)
+    if (targetPath === undefined || targetPath === c.from) continue
+    edges.push({ label: c.label, from: c.from, target: targetPath })
+  }
 
   if (opts?.manifest) {
     // the root object is the document's only named child
     const rootObject = (root?.namedChildren ?? []).find((c: any) => c.type === "object") ?? (root?.type === "object" ? root : null)
     for (const name of manifestPublished(rootObject)) edges.push({ label: "exports", from: scriptName, target: name })
-    for (const c of npmScriptCalls(rootObject)) edges.push({ label: "calls", from: c.from, target: c.target })
+    for (const c of npmScriptCalls(rootObject)) {
+      // QUALIFIED PATHS on both ends, because both endpoints are keys of ONE `scripts`
+      // object and therefore both have a position in the document. The oracle published bare
+      // script names while the analyzer published paths, which put every `calls` edge on the
+      // population at 0% covered / 217 MISSING / 217 UNEXPLAINED — a disagreement about
+      // endpoint FORM dressed as a disagreement about the language. This is the second time
+      // this lane has run it (the first was `contains`); an endpoint-form change is a change
+      // to the comparison, and the comparison has to be re-run or it certifies nothing.
+      edges.push({
+        label: "calls",
+        from: `${scriptName}.scripts.${c.from}`,
+        target: `${scriptName}.scripts.${c.target}`,
+      })
+    }
   }
 
   for (const d of deps) edges.push({ label: "uses", from: d.from, target: d.name })

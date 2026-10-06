@@ -59,6 +59,7 @@ import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { pathToFileURL } from "node:url"
 import { M55_ROOT, ensureServerBuilt } from "./lsp-wire.ts"
 import { EDITOR_CONTENT_REGION, navigationSpannedFile, noNavigationReason, type RegionDiff } from "./navigation.ts"
@@ -843,6 +844,7 @@ const result = {
   negativeCases: mutantsTotal,
   mutants: { total: mutantsTotal, caught: mutantsCaught },
   currentCommit,
+  ...fingerprintFields(["m55.V1"], ROOT),
   workingTreeRelevantChanges,
   verifierCommand: "npx tsx script/m55/verify-live-surface.ts",
   evidenceFile: "V1.json",

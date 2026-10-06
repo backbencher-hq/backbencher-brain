@@ -34,6 +34,8 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
+import { getProjectId } from "../../src/util/project-id.ts"
 import { A1_CASES, LEGACY_NOTE, NOT_STORED_NOTE, SEED, SUBSTITUTE_NOTE, type AddressCase, type ExpectedAddress } from "./a1-fixture.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -180,7 +182,10 @@ async function makeFixture(): Promise<Fixture> {
   const ws = mkdtempSync(path.join(tmpdir(), "m62a1-ws-"))
   const dataDir = mkdtempSync(path.join(tmpdir(), "m62a1-data-"))
   for (const [rel, content] of Object.entries(SEED.files)) writeFileSync(path.join(ws, rel), content)
-  const projectId = createHash("sha1").update(path.resolve(ws)).digest("hex").substring(0, 40)
+  // M62 lane-7: project identity has ONE owner (src/util/project-id.ts). This gate
+  // seeded a lexical sha1 while the owner hashes realpath, so its seeded project
+  // could differ from the one a real client opens wherever the path is a symlink.
+  const projectId = getProjectId(ws)
   mkdirSync(path.join(dataDir, "projects", projectId), { recursive: true })
   process.env.BB_DATA_DIR = dataDir
 
@@ -347,6 +352,7 @@ async function main(): Promise<void> {
     mutantsCaught: mutants.caught,
     mutantsTotal: mutants.total,
     currentCommit,
+    ...fingerprintFields(["m62.A1"], ROOT),
     verifierCommand: "npx tsx script/m62/verify-address.ts",
     evidenceFile: "A1.json",
     generatedAt: new Date().toISOString(),

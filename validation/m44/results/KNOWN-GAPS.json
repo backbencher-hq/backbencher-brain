@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "status": "verified",
-  "count": 21,
+  "count": 22,
   "inventory": [
     {
       "code": "G1",
@@ -18,6 +18,10 @@
     {
       "code": "U1",
       "limitation": "DOM/presentation is U2+ scope; this gate pins the grouped DATA shape and its render-target laws."
+    },
+    {
+      "code": "U1",
+      "limitation": "L5's 'sort removed' probe is vacuous on this fixture: the engine's row order is already (file,name) ascending, so the mutant is probed by a reversed comparator instead. Named, not hidden — making the fixture's natural order adversarial is the fix for the residual."
     },
     {
       "code": "U2",
@@ -91,7 +95,7 @@
   "note": "Compiled by script/m44/verify-closure.ts from the m44 evidence limitations + closure-time items (deterministic; no wall clock). Every entry carries its disposition in docs/m44/LAUNCH-RECORD.md (fixed / documented-with-reason / owner / CI-pending). None silent.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:50:47.609Z",
-    "contentSha256": "cf283d4672a90655690b2d796059fc835ddcd85cd60ea7fc4671e962f09fa615"
+    "sealedAt": "2026-10-05T14:42:41.634Z",
+    "contentSha256": "272997566ef63d0d7dfbec131843b44e8deda43a09344981a770f160d3e09fd1"
   }
 }

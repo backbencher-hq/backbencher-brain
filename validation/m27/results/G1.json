@@ -3,17 +3,22 @@
   "code": "G1",
   "milestone": "M27",
   "status": "known-gap",
-  "checks": 70,
-  "passed": 69,
-  "failed": 1,
-  "negativeCases": 10,
-  "currentCommit": "c2a31c00882e73d41a25815a9f0a2ebc1aec85bd",
+  "checks": 73,
+  "passed": 70,
+  "failed": 3,
+  "negativeCases": 13,
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
   "workingTreeRelevantChanges": [
-    "package.json"
+    "docs/m27/FORK-CAPABILITY-MATRIX.md",
+    "script/m27/verify-helix.ts",
+    "script/m27/verify-lsp4ij.ts",
+    "script/m27/verify-matrix.ts",
+    "script/m27/verify-nvim.ts",
+    "script/m27/verify-zed.ts"
   ],
   "verifierCommand": "npx tsx script/m27/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-30T20:20:27.498Z",
+  "generatedAt": "2026-10-05T22:34:59.035Z",
   "ledger": "validation/m27/results/manifest.json",
   "m26Bar": {
     "ledgerStatus": "closed",
@@ -25,7 +30,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-30T20:20:27.502Z",
-    "contentSha256": "bd0e40ee7e4c735452d48d6cad94d958c2193966c207f9c2593420173fcfa2c9"
+    "sealedAt": "2026-10-05T22:34:59.038Z",
+    "contentSha256": "1fc7ea26f956a7bd88ef24f1c09cdf03c6acc433bab25b57d80684fbb9ad3651"
   }
 }

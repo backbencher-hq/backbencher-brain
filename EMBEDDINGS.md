@@ -47,8 +47,30 @@ A key is validated before it is saved. The exact messages users see:
 - `Provider returned no embedding. Check the base URL and model name.`
 
 429 and 5xx are treated as "key shape accepted" (rate/provider side issue) and
-saved; index-time resilience (per-batch fallback + 429 backoff) retries them.
-A 401/403/404 or malformed response is a hard error: the key is NOT saved.
+saved; A 401/403/404 or malformed response is a hard error: the key is NOT saved.
+
+**What a saved key actually gets at index time.** The wording above is
+`bb setup`'s pre-save validation, and one of those messages is optimistic about
+what follows: indexing does not re-run key validation, so a 503 seen here is not
+proof that indexing will retry the same way. Concretely, at index time:
+
+- A **429** degrades only that batch, per-batch, to local word vectors, and
+  further batches are held off by a bounded `Retry-After` window in the engine
+  (never a process-wide latch, so the run recovers by itself).
+- A **5xx, timeout, or unreachable provider** degrades that batch to local word
+  vectors. The next batch tries again — there is no wait, so a provider that is
+  down for a whole run costs one degraded batch per batch, not one at the end.
+- A **401 or 404** stops being retried for the rest of the process: further
+  embedding requests fail immediately with the same classified error, and `bb
+  doctor` reports the status and what to change. Re-running the command after
+  fixing the key picks it up again.
+- **No batch is silently lost**: a batch that cannot be embedded by any provider
+  falls back to sparse `tfidf-v1` rows, and the run reports how many were
+  embedded, fell back, or failed.
+
+If you want a second provider tried when the first one fails, configure
+`BB_EMBEDDING_FALLBACK_*` (below) — that provider is the one with a client-side
+retry loop, bounded by `BB_EMBEDDING_FALLBACK_RETRIES`.
 
 ## Inspecting and diagnosing: `bb setup show` and `bb doctor` (M32)
 
@@ -162,6 +184,91 @@ BB_EMBEDDING_BASE_URL=https://integrate.api.nvidia.com/v1
 BB_EMBEDDING_MODEL=nvidia/nv-embedqa-e5-v5
 ```
 
+## Environment variables
+
+The three above decide **which** provider is used, and their precedence is
+`env BB_EMBEDDING_*` > config file (`BB_CONFIG_FILE` > `bb.json` > `config.json`)
+> built-in default. Everything below tunes how that provider is called. None of
+them has a config-file equivalent: they are operational knobs, read from the
+environment only.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `BB_EMBEDDING_DISABLED` | unset | `1`/`true`/`yes`/`on` turns remote embeddings off entirely. Indexing stores local word vectors and makes no embedding request. An unrecognised value is treated as OFF, so a typo cannot silently drop a provider you pay for. |
+| `BB_EMBEDDING_FALLBACK_BASE_URL` | unset | A second provider to try when the primary fails. Requires `BB_EMBEDDING_FALLBACK_MODEL`. |
+| `BB_EMBEDDING_FALLBACK_MODEL` | unset | Model for the fallback provider. |
+| `BB_EMBEDDING_FALLBACK_API_KEY` | unset | Key for the fallback provider. A loopback fallback needs none. |
+| `BB_EMBEDDING_FALLBACK_RETRIES` | `2` | Retries for the FALLBACK provider only, exponential backoff with jitter. `0` means one attempt, no retry loop. |
+| `BB_EMBEDDING_TIMEOUT_MS` | `30000` | Bound on one embedding request, covering headers **and** body. Floored at 1000ms, so a typo cannot instant-fail every request. |
+| `BB_EMBEDDING_MAX_INPUTS` | `256` | Ceiling on inputs per `/embeddings` request. A ceiling, not a partition: the indexer already batches 100 snippets, so ordinary indexing stays one request. |
+| `BB_EMBEDDING_RETRY_BASE_MS` | `250` | First backoff step; doubles per attempt. Fallback provider only. |
+| `BB_EMBEDDING_RETRY_CAP_MS` | `4000` | Ceiling on one backoff wait. Fallback provider only. |
+| `BB_EMBEDDING_CACHE_MAX` | `128` | How many recent query vectors are cached in memory (LRU). Cached only when they came back non-empty; a config change keys the cache so a different model or endpoint can never serve a vector from another vector space. |
+| `BB_EMBEDDING_CALL_TIMEOUT_MS` | `60000` | Bound on one whole `embedMany` call inside the background drainer, above the client's own per-request bound. Exceeding it counts as a provider failure for that batch, which is what routes it to the local fallback instead of wedging the queue. |
+| `BB_EMBEDDING_DIMENSION` | unset | Assertion, not a request parameter: the vector width you expect from the configured model. A response of a different width is refused rather than written, because vectors of two widths cannot share one `embedding_model` label. Unset it if the real width differs. |
+
+Two of these deserve the emphasis, because the defaults are not the only
+sensible choice for everyone:
+
+- **`BB_EMBEDDING_DISABLED`** is the switch to reach for when you would rather
+  pay the local quality cost than any network call — an air-gapped machine, a CI
+  runner with no provider key, or a debugging session where you want indexing to
+  stop waiting on someone else's uptime.
+- **`BB_EMBEDDING_MAX_INPUTS`** exists because a failure in any chunk of a
+  multi-chunk request discards the whole request, so needless fragmentation turns
+  an unrelated later failure into a loss of earlier completed work.
+
+## The fallback chain, in order
+
+1. `BB_EMBEDDING_DISABLED` on → local word vectors only, no HTTP.
+2. The primary provider (env / config file / default, by the precedence above).
+3. The fallback provider, if `BB_EMBEDDING_FALLBACK_*` is configured. Reached
+   only when the primary fails, and the only layer with a client-side retry loop.
+4. Local word vectors (`local-word-vectors-v3`, 50-dimensional) — always
+   available, offline, and the reason the chain has no dead end.
+
+The chain has no dead end by design: no configuration makes indexing fail to
+produce vectors. What a misconfiguration costs is quality (layer 4 instead of
+layer 2), which is why the diagnosis below is worth reading.
+
+## When something is wrong: `bb doctor` and `bb setup show`
+
+Both print the chain in the order above with the env var each layer came from,
+so "which provider am I on and what do I change to move off it" is answerable
+without reading a config file. `bb health --verbose` prints the same chain, from
+the same code, so the three surfaces cannot disagree.
+
+```
+$ bb doctor
+bb doctor — diagnostics
+
+! Embeddings are switched off (BB_EMBEDDING_DISABLED), so indexing stores only local word vectors.
+  Fix: unset BB_EMBEDDING_DISABLED
+✗ env tier is incomplete: missing model.
+  Fix: bb setup
+embedding provider chain (embeddings disabled — local only):
+   1. embeddings disabled: none · none  [env:BB_EMBEDDING_DISABLED]
+  →2. local word vectors: offline · 50-dim  [built in]
+```
+
+What each surface adds:
+
+- **`bb doctor`** — the findings, each naming the exact command or env var that
+  resolves it, and the exit code (1 when a FAIL-level finding exists, so CI can
+  branch). It also reports failures the provider has already given this process:
+  a 401 and a 404 are FAILs because neither is fixed by waiting, while a 429 or a
+  5xx is a WARN because indexing degrades that batch and carries on.
+- **`bb setup show`** — the tier table (base URL, model, and the key as its last
+  four characters) plus the chain and any problem found in it.
+- **`bb health --verbose`** — the chain, and `embeddingChain` in the JSON for a
+  machine consumer.
+
+Diagnosis is read-only and makes no network call, so it is safe in CI and on a
+machine that cannot reach the provider. The one exception is a live probe,
+available as `runDoctorChecksWithProbe` in `src/setup/doctor.ts`: it makes a
+single bounded request through the same client indexing uses, and it does not
+affect what indexing does next. `bb health` never probes.
+
 ## What changes when it's on
 
 - `bb index` stores real embedding vectors (`brain_semantic_embedding`,
@@ -197,7 +304,23 @@ M11 corpus benchmarks), set `BB_EMBEDDING_BATCH_LIMIT=0` in the harness scope.
 ## The no-key trade-off, in plain terms
 
 Without any embedding key, semantic search uses **local word vectors
-(`local-word-vectors`, keyword-level matching)**. That is a real, declared
+(`local-word-vectors-v3`, keyword-level matching)**. That label is what appears
+in the `embedding_model` column of `brain_semantic_embedding`, so it is the
+string to query when you want the offline vectors:
+
+```sql
+SELECT embedding_model, vector_dimension, COUNT(*)
+FROM brain_semantic_embedding
+WHERE embedding_model = 'local-word-vectors-v3'
+GROUP BY 1, 2;
+```
+
+(The `-v3` suffix is load-bearing, not decoration: earlier versions of this
+model tokenized and combined words differently, so those vectors occupy a
+different space and are never compared with current ones. Bumping the version is
+how a model change is prevented from producing a confident nonsense score; an
+index built by an older version reports `no-matching-model-embeddings` until it
+is re-embedded with `bb index --force`.) That is a real, declared
 quality cost — not "the same, just offline". It is the honest default: nothing
 is silently degraded, and the notice above says so. Adding a real model later
 **requires `bb index --force <project>`** to re-embed the whole index; old
