@@ -352,6 +352,79 @@ const SWITCH_ARGUMENT_VALUES = new Set([
  */
 const QUALIFIED_PREFIXES = ["$global:", "$script:", "$env:", "$using:", "$local:", "$private:", "$variable:"]
 
+/** Does this target carry a byte no bare PowerShell identifier has? `.` `\` `/` and `:` are
+ *  the four, and `::` is the `:` pair — all four are checked by char code, never by a regex
+ *  over source text. See `externalReadingOf` for what the answer is used for. */
+const carriesQualifierByte = (t: string): boolean => {
+  for (let i = 0; i < t.length; i++) {
+    const c = t.charCodeAt(i)
+    if (c === 46 /* . */ || c === 92 /* \ */ || c === 47 /* / */ || c === 58 /* : */) return true
+  }
+  return false
+}
+/** The scope prefixes a declaration IN THIS FILE can bind. `function global:Foo {…}` and
+ *  `$script:Foo` are ordinary PowerShell, and this analyzer publishes both as symbols — so a
+ *  target carrying one of these prefixes is a name the FILE ITSELF may declare, and marking it
+ *  external would be a claim this file can falsify. They are excluded from the qualified
+ *  reading for that reason, and the exclusion is measured: 881 of 6,358 corpus edges carry one
+ *  (`global:functionName` 2, `global:Invoke-WebRequest` 1, `global:Get-SimpleFunc*` 1,
+ *  `Local:`/`PRIVATE:`/`ScRiPt:`/`script:Start-UnelevatedProcess` and others, one each). */
+const FILE_DEFINABLE_SCOPE_PREFIXES = ["global", "script", "local", "private", "function"]
+/** The tables this file cannot declare into. `$env:FOO` reads the process environment,
+ *  `$variable:X` the dynamic variable table, `$using:X` the CALLER's scope — all three are
+ *  bound by the runtime from outside the parse, so they keep the qualified reading. */
+const RUNTIME_TABLE_SCOPE_PREFIXES = ["env", "variable", "using"]
+/** Case-insensitive `prefix:` match, folded with a char-code scan rather than
+ *  `startsWith` on a lowered copy so the predicate stays allocation-free on a hot path and the
+ *  file's zero-regex property is not the only thing being asserted. */
+const hasScopePrefix = (t: string, prefixes: string[]): boolean => {
+  for (const p of prefixes) {
+    if (t.length <= p.length + 1) continue
+    if (t.charCodeAt(p.length) !== 58 /* : */) continue
+    let eq = true
+    for (let i = 0; i < p.length; i++) {
+      let c = t.charCodeAt(i)
+      if (c >= 65 && c <= 90) c += 32 // PowerShell scope keywords are case-insensitive
+      if (c !== p.charCodeAt(i)) { eq = false; break }
+    }
+    if (eq) return true
+  }
+  return false
+}
+const hasFileDefinableScopePrefix = (t: string): boolean => hasScopePrefix(t, FILE_DEFINABLE_SCOPE_PREFIXES)
+const isAsciiUpper = (c: number): boolean => c >= 65 && c <= 90
+/**
+ * WHICH EXTERNALITY READING FIRES ON THIS TARGET, or null for neither.
+ *
+ * `"cmdlet"`   a hyphen with an ASCII uppercase letter on BOTH sides — PowerShell's own
+ *              `Verb-Noun` command spelling, and the only one: `Get-ChildItem`, `Should`,
+ *              `Join-Path`. A lowercase letter on either side means it is not this shape,
+ *              which is why a corpus that lowercases its cmdlets is measured rather than
+ *              assumed.
+ * `"qualified"` a qualifier byte, with TWO exclusions and both are measured, not stylistic:
+ *                - a leading QUOTE, because this analyzer publishes hashtable keys and command
+ *                  arguments verbatim, so `'Content-Type'` (43 edges), `"Authorization"` (18)
+ *                  and `"it:skip"` (7) arrive as property/variable names and "carries a dot"
+ *                  is not evidence that a target is a module path;
+ *                - a scope prefix this file can DECLARE INTO (`global`, `script`, `local`,
+ *                  `private`, `function` — 881 corpus edges), because `function global:Foo` is
+ *                  ordinary PowerShell and this analyzer publishes it as a symbol.
+ *              A `env:` / `variable:` / `using:` prefix KEEPS the reading: those are runtime
+ *              tables and the caller's scope, bound from outside the parse.
+ *
+ * Zero regex, and no word list: every predicate here is a byte test over the published name.
+ */
+const externalReadingOf = (t: string): "cmdlet" | "qualified" | null => {
+  if (t.charCodeAt(0) === 34 /* " */ || t.charCodeAt(0) === 39 /* ' */) return null
+  for (let i = 1; i < t.length; i++) {
+    if (t.charCodeAt(i) !== 45 /* - */) continue
+    if (isAsciiUpper(t.charCodeAt(0)) && isAsciiUpper(t.charCodeAt(i + 1))) return "cmdlet"
+  }
+  if (!carriesQualifierByte(t)) return null
+  if (hasFileDefinableScopePrefix(t)) return null
+  return "qualified"
+}
+
 /**
  * Is this declared type a PowerShell TYPE ACCELERATOR rather than a project
  * type?
@@ -2595,6 +2668,83 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         base = baseClassByClass.get(base)
+      }
+    }
+
+    // ---------------------------------------------------- externality, cause C
+    //
+    // ## WHAT THIS PUBLISHES, AND WHY IT IS NOT `isExternal`
+    //
+    // A bare PowerShell name — a command, a variable, a property — is bound by the RUNTIME,
+    // against session state: dot-sourced scope, then the caller's scope chain, then module
+    // exports. A single-file analyzer therefore cannot say "this name is external", because
+    // "external" is a statement about the machine the script runs on. What it CAN say, and
+    // what this pass publishes, is the fact that decides the question for the reader:
+    //
+    //   `noDeclarationInFile: true`   this file declares no symbol with that spelling
+    //
+    // bash reached the same conclusion and shipped `variableDeclaredInFile` for the same
+    // reason. It is published on the FALSE state only, so absence means "not asserted"
+    // and never "declared here" — the alternative, publishing both states, costs a row on
+    // every edge the lane already emits for no additional information.
+    //
+    // ## WHY A SHAPE IS STILL NEEDED, AND WHICH ONE
+    //
+    // `noDeclarationInFile` is honest but it is not actionable: a `$local` no file declares
+    // and a cmdlet are indistinguishable under it, and only the second is external by
+    // construction. So the second key is published only where the SPELLING rules out a local
+    // declaration AND the declaration table agrees:
+    //
+    //   `externalTarget: true` with `externalVia` naming which reading fired
+    //
+    // Two readings, both char-code scans over the target, neither a word list:
+    //
+    //   "cmdlet"    Verb-Noun — a hyphen with an uppercase letter on BOTH sides. Pester's
+    //               `Should`, .NET's `Join-Path`, and this analyzer's own fixtures' local
+    //               `function Get-Thing` are all that shape, which is why the declaration
+    //               guard is the half that carries the claim and the shape is only what
+    //               nominates a candidate.
+    //   "qualified" a `.` / `\` / `/` / `:` / `::` byte, which no PowerShell identifier
+    //               has — so it is a module path, a .NET type, or a scope prefix. A leading
+    //               quote is EXCLUDED: this analyzer publishes hashtable keys and command
+    //               arguments verbatim, so `'Content-Type'` and `"it:skip"` reach an edge as
+    //               property/variable names, and a quoted literal is not an identifier.
+    //
+    // ## THE MEASUREMENT THAT DECIDES IT
+    //
+    // Over the whole admitted corpus — 1,181 files, production `parseFile`, no sampling cut
+    // (`npx tsx validation/m14/fixtures/powershell/ambiguity-split.mts`) — the unguarded
+    // Verb-Noun shape marks 32,368 live edges of which **7,040 (21.75%) point at a name the
+    // EMITTING FILE declares**, and the declaration-guarded reading marks 25,328 with **0**.
+    // The corpus-wide column disagrees on a further 3,680, and those are not errors: they are
+    // names another file declares, which is the dot-source / module-export case and is the
+    // population cause C is about. Char-code scans only; zero regex.
+    const declaredFolded = new Set<string>()
+    for (const s of symbols) declaredFolded.add(s.name.toLowerCase())
+    const declaredInFile = (name: string): boolean => declaredFolded.has(name.toLowerCase())
+
+    for (const rel of relationships) {
+      const target = rel.target
+      if (target == null || target.length === 0) continue
+      const type = rel.type
+      if (declaredInFile(target)) continue
+      // The two keys PARTITION the "no declaration here" population rather than overlapping:
+      // `externalTarget` fires where a reading names a reason, and it implies the fact, so
+      // publishing `noDeclarationInFile` on the same row would be the same fact twice. The
+      // partition is worth bytes — measured over the same 1,181-file walk, publishing both on
+      // every row costs 3,888,591 B (+11.15% of the lane's relationship payload) where the
+      // partition costs 2,808,952 B: `noDeclarationInFile` alone was 2,466,639 B of it.
+      const via = externalReadingOf(target)
+      if (via) {
+        rel.metadata.externalTarget = true
+        rel.metadata.externalVia = via
+        continue
+      }
+      // A qualified spelling is not a bare-word name at all: `$env:PATH` and `Foo::Bar` are
+      // not spellings a declaration table can answer for, and the scope-prefix exclusion in
+      // `externalReadingOf` is why `global:Foo` reaches here rather than above.
+      if (type === ASTEngine.RelationshipType.Calls || type === ASTEngine.RelationshipType.Uses) {
+        rel.metadata.noDeclarationInFile = true
       }
     }
 
