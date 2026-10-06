@@ -44,8 +44,8 @@
         "bytes": 31052
       },
       "src/ast/real-sql-analyzer.ts": {
-        "sha256": "df395c3d54ced4e0f237e298c81525818485ebaf2ea0e55dffba887b6944c533",
-        "bytes": 179491
+        "sha256": "083aea65688d42f944cfbfa1284083498e6087ddf2801746707bb9c443151897",
+        "bytes": 204552
       },
       "src/ast/solidity-reserved-tokens.ts": {
         "sha256": "08285e3d5bee306abad097fc8694a2b4da0455471f3f8cbce5abac3522b93bd2",
@@ -116,28 +116,24 @@
         "bytes": 1563
       },
       "validation/m12/ground-truth/sql.json": {
-        "sha256": "15103e7080cf7a425b4ed071cddefcca6d5dafcfe0fcea3355ab9719043beca3",
-        "bytes": 23384
+        "sha256": "3d5906d390fc4fa8d961970e5bc17580afb5c6021196ea49bf320af661f07010",
+        "bytes": 26693
       }
     },
-    "digest": "cce83a89428cea44b49a29eb07b12ea9eae159d829bbc653a7d3cf32775be552",
-    "parser": {
-      "path": "/tmp/bb-wasm_tree-sitter-sql_tree-sitter-sql.wasm",
-      "sha256": "848e081247247db54545d4122a394dad3c85f79bb96a5713dbd658081b8eb819",
-      "bytes": 12620599
-    },
+    "digest": "1bbeee6d86644ac6d21b9473c72f8c94feea8dcd547d5b163d4e6d7249d3e9b3",
+    "parser": null,
     "siblings": {
       "src/ast/real-bash-analyzer.ts": {
-        "sha256": "709e26a5ef8d1a024bd5a6ddf2a0cd28d37e87249440856f8aaae9c243c4ccf9",
-        "bytes": 82232
+        "sha256": "79abb42e6d0f63457acc3b0fc6cb29099fd032a5e387f2293682b41c92faa26a",
+        "bytes": 134966
       },
       "src/ast/real-c-analyzer.ts": {
         "sha256": "07e1cae2573b406fbb13d5c648005d9399e0c3b6541b72b5a133da0566d48b4d",
         "bytes": 350692
       },
       "src/ast/real-clean-analyzer.ts": {
-        "sha256": "29499a3b88272bb57f5c43b80a131c854a5b3df4b0cd3c09d440c1b1fa30b332",
-        "bytes": 171177
+        "sha256": "f2530ce37b8acb0801970a9efb94ca73ddcd01031469d997f315683a1ddef181",
+        "bytes": 183909
       },
       "src/ast/real-clojure-analyzer.ts": {
         "sha256": "d17238bf1215cd03cb3ba4df22842dbf91482e8839aa706768df0bfe20db38f3",
@@ -152,12 +148,12 @@
         "bytes": 214320
       },
       "src/ast/real-css-analyzer.ts": {
-        "sha256": "a3343d3f87fdb9aaa2ea5c6327cafaeb2f40b971a44a824a5d7ffd8affac4eb2",
-        "bytes": 165755
+        "sha256": "74f064ee8b80fb852c6f58bb10f6e1a0a38a2f7b4629974a8ce3104477f006db",
+        "bytes": 193572
       },
       "src/ast/real-dart-analyzer.ts": {
-        "sha256": "41b40f8abedc4b8600ef726f985619d126df2fb5a174ac6a8f6003ced69ee67f",
-        "bytes": 154805
+        "sha256": "d1b26d32654c5350b0d62180b30f7a405818c7d523988aaf347689f640122ef2",
+        "bytes": 168092
       },
       "src/ast/real-elixir-analyzer.ts": {
         "sha256": "4018b3b8eeb93452f94c3b4ac8f068be2e31d6d54829733707250c7db912df97",
@@ -168,16 +164,16 @@
         "bytes": 96826
       },
       "src/ast/real-fsharp-analyzer.ts": {
-        "sha256": "f0ac2adb0fb2ee69dc328aa6571b6d08e4e07be65f40f21193bef668a88b9d33",
-        "bytes": 147572
+        "sha256": "dcdb711b1f1858df24b55516e9e1e61a437411ebad4f5d22cf3a45e0baf0e515",
+        "bytes": 150685
       },
       "src/ast/real-go-analyzer.ts": {
-        "sha256": "fc9a18f52faad8159aa95240e7850f045ffd79db269b8b9736c484e5812fdab4",
-        "bytes": 202799
+        "sha256": "8edf21c6b38293370d082758b365b4e466845635464e6ff238dfd983b90445a0",
+        "bytes": 230071
       },
       "src/ast/real-graphql-analyzer.ts": {
-        "sha256": "c8095c48e5ec5fadc4ffa5789ade8b56dbd168a3d45c20d8bb659f74bf7836f3",
-        "bytes": 90244
+        "sha256": "c8000358754c3c82c425f65457fc98b554e6f992b6263993713b2115228b3012",
+        "bytes": 100197
       },
       "src/ast/real-groovy-analyzer.ts": {
         "sha256": "f673784b72c2c95a4b33054c9cbc4f5dcf46349d38af2f837a4f1f3b83544530",
@@ -204,32 +200,32 @@
         "bytes": 146051
       },
       "src/ast/real-json-analyzer.ts": {
-        "sha256": "79cfccb65d91b00127877d634648fbdd070d113b0438143c6e5afcee39b0be22",
-        "bytes": 47758
+        "sha256": "ddb93ff95cf532ce3896c3736faa7a5ff65251adaeba25afa0c6581293e21815",
+        "bytes": 81318
       },
       "src/ast/real-julia-analyzer.ts": {
-        "sha256": "5faef5d94e38c49d1b9fdaf14aab5a577c09ca2a408fb3eeec6918474f0e1117",
-        "bytes": 105873
+        "sha256": "09940918968027bae2669796640f65c057bbc7f84dc01d86f85b6bbbdfd72ce5",
+        "bytes": 122912
       },
       "src/ast/real-kotlin-analyzer.ts": {
         "sha256": "843ef5c777c6f8c50ffda7982a2bb7fcfe55297965d8c66d677ff27902a58c33",
         "bytes": 174274
       },
       "src/ast/real-lua-analyzer.ts": {
-        "sha256": "e2880ce3cfd50d5d1d7e2bb41f9c4feb7d06d51fcbb8565c62fb7aa1765e5118",
-        "bytes": 99098
+        "sha256": "79ef19aab6895d23a508062c8e72066901f4bca7965d5f2f578d64ef65c4378b",
+        "bytes": 121468
       },
       "src/ast/real-makefile-analyzer.ts": {
         "sha256": "d6a95d8dc20981828da52b8ae819f6395270a554663c8fb3c40e6f93215d335a",
         "bytes": 46412
       },
       "src/ast/real-markdown-analyzer.ts": {
-        "sha256": "6a40e89138bfd436ad2b8831f290d92616b8fe1b500f83433abe8998db32bfcd",
-        "bytes": 57660
+        "sha256": "f12248fcbe1375c64347ba85cebc9e6bc30d3ca368a73777bea2fe903b6115b7",
+        "bytes": 68684
       },
       "src/ast/real-nim-analyzer.ts": {
-        "sha256": "37112977bad165424e8c296e3a7984a0f4c48de64d34fca0bdaea01d7f4ed355",
-        "bytes": 159272
+        "sha256": "1475e53d0e528d0a34b5706d0c2b3db3b12757c79ae05e796c81a78f20059ba1",
+        "bytes": 182781
       },
       "src/ast/real-objective-c-analyzer.ts": {
         "sha256": "7440387ea868feb7c532e3947395f19da255edd74f78ce91401f39c765cf0004",
@@ -240,40 +236,40 @@
         "bytes": 99474
       },
       "src/ast/real-php-analyzer.ts": {
-        "sha256": "cfd33b3301487a64ed41a3457b86d751fa58fecff558ccc096fa5178b27343dd",
-        "bytes": 136474
+        "sha256": "d1e6fdf20d5b6f4eb8a70554847fe5c2349274daec4bd325c20649c08f6d18d9",
+        "bytes": 145019
       },
       "src/ast/real-powershell-analyzer.ts": {
         "sha256": "a10063f4eafac5161c44a237306e2eadb8666b5a6809b0413ac4e6c93a262718",
         "bytes": 167329
       },
       "src/ast/real-protobuf-analyzer.ts": {
-        "sha256": "af7e3701ccc777a27418f26f9ab392cf3a4137cae566e5e64cfd6dbd0b1f8bbe",
-        "bytes": 46201
+        "sha256": "4123b0d1711100865128137108cdedb71ad475d15758e4773dab72999048ea64",
+        "bytes": 78043
       },
       "src/ast/real-python-analyzer.ts": {
         "sha256": "95d920ec1693089b95b9067e0a9c6b6aa7b6897f50962fb0cbb601e87eacffea",
         "bytes": 115122
       },
       "src/ast/real-r-analyzer.ts": {
-        "sha256": "0e4cd636538e28f977d554b598652dfca6c4771314d7170812f17ae6245caab0",
-        "bytes": 124841
+        "sha256": "ecb02eecda7bf54b3996b55a2a6e10d054edd95cdc1c72a73b9d96d82175ea4e",
+        "bytes": 135295
       },
       "src/ast/real-ruby-analyzer.ts": {
         "sha256": "e1ef6e355cb1d692cdd2670d607a3d5f220393537a3734985b1c32ee74a42916",
         "bytes": 115426
       },
       "src/ast/real-rust-analyzer.ts": {
-        "sha256": "62be3c50fe0992e11a75ac365762de73206434340c5e6ec4b70c289deae564c6",
-        "bytes": 120710
+        "sha256": "9af327c7a95f9f1d477447508af76dac390c40e9661e125c536eff72c58715ca",
+        "bytes": 147882
       },
       "src/ast/real-scala-analyzer.ts": {
         "sha256": "aeb5f258236d36d428f7b773ad0d4765fdea4639b6fcc83c219d8cbb83230034",
         "bytes": 168999
       },
       "src/ast/real-scss-analyzer.ts": {
-        "sha256": "c556884014b30ca983067a017d107dbaa485e790af77cd977be8efff182217d6",
-        "bytes": 64728
+        "sha256": "3cf9a0c718b490b2ad7eaa4774372b4f5ac7fe6a038690594b64da91a7de89ca",
+        "bytes": 69393
       },
       "src/ast/real-solidity-analyzer.ts": {
         "sha256": "4255b0ef62c135924e5c7ec99055268a41842e151efe7cab3f93ace72eff4b3d",
@@ -288,32 +284,32 @@
         "bytes": 107709
       },
       "src/ast/real-toml-analyzer.ts": {
-        "sha256": "44cde7f2f54128e7a10e7c90c267c6bf0f94c49c89f5c6a1a018394798065b51",
-        "bytes": 32064
+        "sha256": "ad64607b1046c5597670f407a89ce041a552cb98356d7a0f91b716b96608e662",
+        "bytes": 40116
       },
       "src/ast/real-typescript-analyzer.ts": {
-        "sha256": "cfce8a83010a3f8a1aa36dea8d1ef6a581c8f61df36a3cbc8443e98e8ae7fae8",
-        "bytes": 293283
+        "sha256": "2081bcbe345705c09513b76e19edc41d11cd270bf48a4ec3c48f608914077eb7",
+        "bytes": 300680
       },
       "src/ast/real-vb-analyzer.ts": {
         "sha256": "4c9d29e9d5d72fb53144de3dc9cdc8e95b096d176df60785b00404cc21f9f7cd",
         "bytes": 76833
       },
       "src/ast/real-vue-analyzer.ts": {
-        "sha256": "3fcda67a27b832d0ad7dc6f6d035d45a15b7447aedd4b01dca1eda51017e81ce",
-        "bytes": 142750
+        "sha256": "dc618855f37b2d31b2bcd8bda1dcdbcc886a48515e64b6d0c493c6af4d2b80d8",
+        "bytes": 153980
       },
       "src/ast/real-xml-analyzer.ts": {
-        "sha256": "e5fecbb92135e2529f5650fc0d477b6be56e3538f37e3aecb61e4067f7b0ba4d",
-        "bytes": 126593
+        "sha256": "85425c6957c62456789e73b23b451b40300fec2dd25a3ab9bf6ed4afd0b019f8",
+        "bytes": 164008
       },
       "src/ast/real-yaml-analyzer.ts": {
         "sha256": "c3a58465e08b66590f7e395ac748c16fcffa5f2d744074c0b55f327038ae4ea3",
         "bytes": 98708
       },
       "src/ast/real-zig-analyzer.ts": {
-        "sha256": "7a88f9b279b6e0003ec4607f2e9db50bb67b6eba7feb2008dbf4dfe1f236d911",
-        "bytes": 130099
+        "sha256": "ed841c6e18017e20fce71960b2928121ab7201130131d72c4cc5f1b7fb927379",
+        "bytes": 156063
       }
     }
   },
@@ -329,23 +325,23 @@
   ],
   "perFile": {
     "Negative.sql": {
-      "symbols": 0,
+      "symbols": 1,
       "relationships": 2
     },
     "Queries.sql": {
-      "symbols": 0,
+      "symbols": 1,
       "relationships": 4
     },
     "Queries2.sql": {
-      "symbols": 1,
+      "symbols": 2,
       "relationships": 7
     },
     "Schema.sql": {
-      "symbols": 13,
+      "symbols": 14,
       "relationships": 15
     },
     "Schema2.sql": {
-      "symbols": 23,
+      "symbols": 24,
       "relationships": 19
     }
   },
@@ -353,9 +349,9 @@
     "schemaVersion": 1,
     "passed": true,
     "metrics": {
-      "expected": 84,
-      "observedResolved": 84,
-      "truePositive": 84,
+      "expected": 89,
+      "observedResolved": 89,
+      "truePositive": 89,
       "falsePositive": 0,
       "falseNegative": 0,
       "unknown": 0,
@@ -370,59 +366,63 @@
     },
     "earliestFailingLayer": null,
     "truePositiveIds": [
-      "rel:Negative.sql:uses:global:teams",
-      "rel:Negative.sql:uses:global:users",
-      "rel:Queries.sql:calls:global:lookup_user",
-      "rel:Queries.sql:uses:global:audit_log",
-      "rel:Queries.sql:uses:global:teams",
-      "rel:Queries.sql:uses:global:users",
-      "rel:Queries2.sql:calls:global:compute_total",
+      "rel:Negative.sql:uses:Negative.sql:teams",
+      "rel:Negative.sql:uses:Negative.sql:users",
+      "rel:Queries.sql:calls:Queries.sql:lookup_user",
+      "rel:Queries.sql:uses:Queries.sql:audit_log",
+      "rel:Queries.sql:uses:Queries.sql:teams",
+      "rel:Queries.sql:uses:Queries.sql:users",
+      "rel:Queries2.sql:calls:Queries2.sql:compute_total",
       "rel:Queries2.sql:calls:trg_orders_audit:audit_order",
-      "rel:Queries2.sql:references:global:orders",
+      "rel:Queries2.sql:references:Queries2.sql:orders",
       "rel:Queries2.sql:references:trg_orders_audit:orders",
-      "rel:Queries2.sql:uses:global:order_items",
-      "rel:Queries2.sql:uses:global:orders",
-      "rel:Queries2.sql:uses:global:staging",
+      "rel:Queries2.sql:uses:Queries2.sql:order_items",
+      "rel:Queries2.sql:uses:Queries2.sql:orders",
+      "rel:Queries2.sql:uses:Queries2.sql:staging",
       "rel:Schema.sql:calls:users_audit:audit_users",
-      "rel:Schema.sql:contains:teams:id",
-      "rel:Schema.sql:contains:teams:name",
-      "rel:Schema.sql:contains:users:active",
-      "rel:Schema.sql:contains:users:email",
-      "rel:Schema.sql:contains:users:id",
-      "rel:Schema.sql:contains:users:team_id",
-      "rel:Schema.sql:contains:users:users_team_idx",
+      "rel:Schema.sql:contains:teams:Schema.sql::teams.id",
+      "rel:Schema.sql:contains:teams:Schema.sql::teams.name",
+      "rel:Schema.sql:contains:users:Schema.sql::users.active",
+      "rel:Schema.sql:contains:users:Schema.sql::users.email",
+      "rel:Schema.sql:contains:users:Schema.sql::users.id",
+      "rel:Schema.sql:contains:users:Schema.sql::users.team_id",
+      "rel:Schema.sql:contains:users:Schema.sql::users.users_team_idx",
       "rel:Schema.sql:references:users:teams",
       "rel:Schema.sql:references:users_audit:users",
       "rel:Schema.sql:references:users_team_idx:users",
+      "rel:Schema.sql:uses:Schema.sql:users",
       "rel:Schema.sql:uses:active_users:teams",
       "rel:Schema.sql:uses:active_users:users",
-      "rel:Schema.sql:uses:global:users",
       "rel:Schema.sql:uses:lookup_user:users",
-      "rel:Schema2.sql:contains:customers:CustomerId",
-      "rel:Schema2.sql:contains:customers:email",
-      "rel:Schema2.sql:contains:customers:idx_customers_email",
-      "rel:Schema2.sql:contains:customers:total",
-      "rel:Schema2.sql:contains:order_items:id",
-      "rel:Schema2.sql:contains:order_items:oi_order_fk",
-      "rel:Schema2.sql:contains:order_items:oi_qty_ck",
-      "rel:Schema2.sql:contains:order_items:oi_sku_unq",
-      "rel:Schema2.sql:contains:order_items:order_id",
-      "rel:Schema2.sql:contains:order_items:sku",
-      "rel:Schema2.sql:contains:orders:customer_id",
-      "rel:Schema2.sql:contains:orders:id",
-      "rel:Schema2.sql:contains:orders:labels",
-      "rel:Schema2.sql:contains:orders:ship_to",
-      "rel:Schema2.sql:contains:orders:status",
-      "rel:Schema2.sql:references:global:orders",
+      "rel:Schema2.sql:contains:customers:Schema2.sql::customers.CustomerId",
+      "rel:Schema2.sql:contains:customers:Schema2.sql::customers.email",
+      "rel:Schema2.sql:contains:customers:Schema2.sql::customers.idx_customers_email",
+      "rel:Schema2.sql:contains:customers:Schema2.sql::customers.total",
+      "rel:Schema2.sql:contains:order_items:Schema2.sql::order_items.id",
+      "rel:Schema2.sql:contains:order_items:Schema2.sql::order_items.oi_order_fk",
+      "rel:Schema2.sql:contains:order_items:Schema2.sql::order_items.oi_qty_ck",
+      "rel:Schema2.sql:contains:order_items:Schema2.sql::order_items.oi_sku_unq",
+      "rel:Schema2.sql:contains:order_items:Schema2.sql::order_items.order_id",
+      "rel:Schema2.sql:contains:order_items:Schema2.sql::order_items.sku",
+      "rel:Schema2.sql:contains:orders:Schema2.sql::orders.customer_id",
+      "rel:Schema2.sql:contains:orders:Schema2.sql::orders.id",
+      "rel:Schema2.sql:contains:orders:Schema2.sql::orders.labels",
+      "rel:Schema2.sql:contains:orders:Schema2.sql::orders.ship_to",
+      "rel:Schema2.sql:contains:orders:Schema2.sql::orders.status",
+      "rel:Schema2.sql:references:Schema2.sql:orders",
       "rel:Schema2.sql:references:idx_customers_email:customers",
       "rel:Schema2.sql:references:order_items:orders",
       "rel:Schema2.sql:references:orders:customers",
+      "symbol:Negative.sql:1:module:Negative.sql",
+      "symbol:Queries.sql:1:module:Queries.sql",
+      "symbol:Queries2.sql:1:module:Queries2.sql",
       "symbol:Queries2.sql:41:function:trg_orders_audit",
       "symbol:Schema.sql:10:property:team_id",
       "symbol:Schema.sql:11:property:email",
       "symbol:Schema.sql:12:property:active",
       "symbol:Schema.sql:15:constant:users_team_idx",
       "symbol:Schema.sql:17:class:active_users",
+      "symbol:Schema.sql:1:module:Schema.sql",
       "symbol:Schema.sql:1:namespace:app",
       "symbol:Schema.sql:23:function:lookup_user",
       "symbol:Schema.sql:27:function:users_audit",
@@ -437,6 +437,7 @@
       "symbol:Schema2.sql:17:property:customer_id",
       "symbol:Schema2.sql:18:property:status",
       "symbol:Schema2.sql:19:property:labels",
+      "symbol:Schema2.sql:1:module:Schema2.sql",
       "symbol:Schema2.sql:20:property:ship_to",
       "symbol:Schema2.sql:24:class:order_items",
       "symbol:Schema2.sql:25:property:id",
@@ -465,11 +466,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:sql",
-      "wallTimeMs": 129.385603,
-      "userCpuMs": 147.5,
-      "systemCpuMs": 12.897,
-      "peakRssBytes": 339247104,
-      "rssDeltaBytes": 8519680,
+      "wallTimeMs": 112.101378,
+      "userCpuMs": 134.493,
+      "systemCpuMs": 5.142,
+      "peakRssBytes": 333410304,
+      "rssDeltaBytes": 3538944,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
