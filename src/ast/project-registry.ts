@@ -25,6 +25,21 @@ export interface ProjectEntry {
   lastIndexed: number | null
   status: string | null
   humanPath: string | null
+  /**
+   * WHY this database could not be read, verbatim, or null when it could.
+   *
+   * Added because the catch below used to swallow a corrupt schema and leave
+   * `files`/`symbols` at 0, which the listing then rendered as
+   * `0 files 0 syms` — indistinguishable from a project that was genuinely
+   * indexed and genuinely empty. Measured on this machine 2026-10-06: 762 of
+   * 801 local indexes were unreadable, and 530 of the 536 projects the listing
+   * reported as `0 files 0 syms` were unreadable rather than empty (99%). A
+   * reader could not tell a broken database from an empty one, which is the
+   * fabricated-zero rule (M23.P1, stated 12 lines above this) applied to the
+   * wrong case. `null` and `0` now have to be told apart by the consumer, and
+   * this field is how.
+   */
+  unreadable: string | null
 }
 
 /** Longest common prefix of absolute paths (project root as indexed). */
@@ -69,6 +84,7 @@ export function listProjects(): ProjectEntry[] {
     let sizeBytes = 0
     try { sizeBytes = statSync(dbPath).size } catch {}
     let files = 0, symbols = 0, lastIndexed: number | null = null, status: string | null = null, humanPath: string | null = null
+    let unreadable: string | null = null
     try {
       // prefer the persisted meta (no full scan); fall back to direct counts
       const row = (BrainDatabase.openByPath(dbPath, { readonly: true }) as any)
@@ -93,10 +109,15 @@ export function listProjects(): ProjectEntry[] {
       // human path: longest common prefix of a bounded sample of indexed paths
       const sample = (row.prepare("SELECT path FROM brain_file LIMIT 300").all() as any[]).map((r: any) => String(r.path))
       humanPath = commonRoot(sample)
-    } catch {
-      // unreadable/corrupt DB — still list it with what we have (size + id)
+    } catch (error) {
+      // A database that cannot be read is NOT an empty project. It is still
+      // listed — the id and the on-disk size are real facts — but the reason it
+      // could not be read is carried, so the renderer can say UNREADABLE instead
+      // of printing a zero it did not measure. `files`/`symbols` stay 0 and are
+      // NOT to be read as counts; `unreadable` is what qualifies them.
+      unreadable = String((error as { message?: string })?.message ?? error).slice(0, 200)
     }
-    entries.push({ id, dbPath, dbSizeBytes: sizeBytes, files, symbols, lastIndexed, status, humanPath })
+    entries.push({ id, dbPath, dbSizeBytes: sizeBytes, files, symbols, lastIndexed, status, humanPath, unreadable })
   }
   return entries
 }
