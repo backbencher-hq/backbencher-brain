@@ -25,6 +25,7 @@ import { fileURLToPath } from "node:url"
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { noInlinePositionArithmetic } from "./no-inline-position-arithmetic.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -2162,7 +2163,7 @@ async function main(): Promise<void> {
     code: "L3",
     status,
     currentCommit,
-    sourceFingerprint,
+    ...fingerprintFields(["m24.L3"], ROOT),
     verifierCommand: "npx tsx script/m24/verify-navigation.ts",
     evidenceFile: "L3.json",
     generatedAt: new Date().toISOString(),

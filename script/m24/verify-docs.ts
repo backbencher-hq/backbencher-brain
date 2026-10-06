@@ -24,6 +24,7 @@ import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { generateToolDoc } from "./generate-tool-doc"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -320,7 +321,7 @@ async function main(): Promise<void> {
     code: "D1",
     status,
     currentCommit,
-    sourceFingerprint: docFingerprint,
+    ...fingerprintFields(["m24.D1"], ROOT),
     verifierCommand: "npx tsx script/m24/verify-docs.ts",
     evidenceFile: "D1.json",
     generatedAt: new Date().toISOString(),

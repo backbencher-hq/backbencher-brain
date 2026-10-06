@@ -56,6 +56,7 @@ import { classifyStoredLine, deriveCallSiteAddress, isExactAddress, ADDRESS_NOTE
 import { USAGE_SITE_FILTER_LABEL } from "../../src/lsp/relations.ts"
 import { MAX_USAGE_LINKS } from "../../src/lsp/rich_hover.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m55/results/HOV-COVERAGE.json")
@@ -1420,6 +1421,7 @@ const evidence = {
   failed: checks - passed,
   failures,
   currentCommit,
+  ...fingerprintFields(["m55.HOV-COVERAGE"], ROOT),
   verifierCommand: "npx tsx script/m55/verify-hover-coverage.ts",
   evidenceFile: "HOV-COVERAGE.json",
   generatedAt: new Date().toISOString(),

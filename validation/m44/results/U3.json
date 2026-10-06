@@ -2,20 +2,17 @@
   "issue": "M44.U3",
   "code": "U3",
   "milestone": "M44",
-  "status": "known-gap",
-  "checks": 29,
-  "passed": 27,
-  "failed": 2,
-  "failures": [
-    "R3: real-server grouped response renders clean under AH1–AH9: session did not complete: bb/graph: workspace is not indexed — run `bb index` first (declared error: an unindexed workspace has no graph to serve)",
-    "R3: wire caller groups carry the nesting fixture (make/draw/render): session did not complete: bb/graph: workspace is not indexed — run `bb index` first (declared error: an unindexed workspace has no graph to serve)"
-  ],
-  "mutantsCaught": 6,
-  "mutantsTotal": 6,
-  "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+  "status": "verified",
+  "checks": 32,
+  "passed": 32,
+  "failed": 0,
+  "failures": [],
+  "mutantsCaught": 9,
+  "mutantsTotal": 9,
+  "currentCommit": "6a19b00cc00e1cd2ed8d38b1fd4dd54499f4c067",
   "verifierCommand": "npx tsx script/m44/verify-hub-tree.ts",
   "evidenceFile": "U3.json",
-  "generatedAt": "2026-10-05T14:42:24.073Z",
+  "generatedAt": "2026-10-05T22:33:22.214Z",
   "fixture": {
     "root": "Widget (file-1:Widget)",
     "nesting": "callers: render -> make -> Widget; callees: Widget -> util -> deep; external callee push"
@@ -24,16 +21,22 @@
     "R1 data law: every row carries parentSymbolId/parentName; depth-1 rows parent to rendered groups",
     "R2 render: AH1-9 over the real response",
     "R2b in-tree truncation marker",
-    "R3 real server over stdio",
-    "R4 five mutants (flatten, double-render, dropped expander, depth lie, level lie)"
+    "R2c an unnesteable row is a DECLARED placement error, never a phantom parent",
+    "R3 real server over stdio, over the ONE project-identity owner (src/util/project-id.ts)",
+    "R4 nine mutants, each EVALUATED: a load failure is not a catch (§6/§8.3). §13.8's three named defects are each planted — duplicated symbol, fabricated nesting level, undeclared control."
   ],
+  "mutantHonesty": {
+    "loadFailureIsACatch": false,
+    "note": "A mutant whose module will not import exercises no law. Before this run the harness booked that as a catch and still printed 6/6 — PROVEN by a mutant whose replacement was a bare syntax error. An unevaluable mutant and an anchor that no longer matches are both FAILURES now (§8.3 silence is guilt).",
+    "everyMutantCaughtByAssertion": true
+  },
   "limitations": [
     "The traversal recursion (not a cascade fold) produces this fixture's nesting; the cascade fold (depth-0 rows toward root's class members) is asserted at the harness level in V1.",
     "DOM assertions cover structure/classes/data attributes over a stub DOM; the real-editor click/expand leg is E5 (in-editor) over this same DOM contract."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:42:24.074Z",
-    "contentSha256": "2c3a48bf45f21f645ce5e758413d89e008589e0bf9741c2c7344a74ae0930bff"
+    "sealedAt": "2026-10-05T22:33:22.216Z",
+    "contentSha256": "ecacbc30f648114c12354da8949a1f67f4b01175af7f95b7a83d78d194d1d88b"
   }
 }

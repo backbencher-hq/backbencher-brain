@@ -53,6 +53,7 @@ import {
   selfTestSurvivors,
 } from "./position-inline-gate.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const COMPONENT = join(ROOT, "src", "lsp", "call_hierarchy.ts")
@@ -1321,7 +1322,7 @@ async function main(): Promise<void> {
     code: "L5",
     status,
     currentCommit,
-    sourceFingerprint,
+    ...fingerprintFields(["m24.L5"], ROOT),
     verifierCommand: "npx tsx script/m24/verify-call-hierarchy.ts",
     evidenceFile: "L5.json",
     generatedAt: new Date().toISOString(),

@@ -38,6 +38,7 @@ import {
   type Enrichment,
 } from "../../src/lsp/enrichment.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H3.json")
@@ -274,6 +275,7 @@ const result = {
   fixture: { root: H2_ROOT, file: H2_REL_APP },
   budgets: { enrichmentReadOverheadP95Ms: 5, hoverP95Ms: 55 },
   currentCommit,
+  ...fingerprintFields(["m42.H3"], ROOT),
   verifierCommand: "npx tsx script/m42/verify-enrichment-surface.ts",
   evidenceFile: "H3.json",
   generatedAt: new Date().toISOString(),

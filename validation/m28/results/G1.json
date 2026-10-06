@@ -7,11 +7,19 @@
   "passed": 70,
   "failed": 4,
   "negativeCases": 14,
-  "currentCommit": "d8dad6ebbf971c5f724e18275fbd97eb624e7d42",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "workingTreeRelevantChanges": [
+    "docs/m28/MCP-SURFACE.md",
+    "script/m28/verify-annotation-store.ts",
+    "script/m28/verify-annotation-ui.ts",
+    "script/m28/verify-mcp-surface.ts",
+    "script/m28/verify-mcp-tools.ts",
+    "script/m28/verify-surface-parity.ts",
+    "script/m28/verify-union.ts"
+  ],
   "verifierCommand": "npx tsx script/m28/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-05T15:35:47.744Z",
+  "generatedAt": "2026-10-05T22:34:59.305Z",
   "ledger": "validation/m28/results/manifest.json",
   "m27Bar": {
     "ledgerStatus": "open",
@@ -23,7 +31,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T15:35:47.749Z",
-    "contentSha256": "579c00719dabb12049524d032fc10d9cbb3dfebc47d32046421cfb52d3333a8f"
+    "sealedAt": "2026-10-05T22:34:59.308Z",
+    "contentSha256": "c11ff6e4d61870b245818dec3f7c9ff38515cc9269d2405a9c50dc3b38ca41e9"
   }
 }

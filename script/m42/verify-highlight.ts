@@ -60,6 +60,7 @@ import {
 } from "./h1-fixture.ts"
 import { scanDirectoryForUnguardedParses } from "./parse-guard-scan.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H1.json")
@@ -491,6 +492,7 @@ const result = {
   fixture: { root: H1_ROOT, file: H1_REL, expectations: H1_EXPECT, unroutable: UNROUTED_REL },
   budgets: { highlightP95Ms: 25 },
   currentCommit,
+  ...fingerprintFields(["m42.H1"], ROOT),
   verifierCommand: "npx tsx script/m42/verify-highlight.ts",
   evidenceFile: "H1.json",
   generatedAt: new Date().toISOString(),

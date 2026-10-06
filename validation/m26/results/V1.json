@@ -8,17 +8,24 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
   "verifierCommand": "npx tsx script/m26/verify-webview-harness.ts",
+  "sourceFingerprint": "1b2fe746ff3d67ede58ff55db3938e694147927efd1b8b15acdbcb3061bc6094",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m26/verify-webview-harness.ts",
+    "script/m26/graph-core.ts",
+    "script/m26/webview-harness.ts"
+  ],
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-26T23:05:15.773Z",
+  "generatedAt": "2026-10-05T22:32:18.325Z",
   "limitations": [
     "The harness asserts the DOM contract (classes, data attributes, counts) over a stub DOM; CSS/paint is per-editor presentation.",
     "Full-budget A4 profile: the pinned fixture's traversal truncation is declared, so the marker assertions are the expected failures there."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-26T23:05:15.774Z",
-    "contentSha256": "5dfc65c4847a15c1c6e884db7a95588c0ae0efb60800ec2d1683222110864533"
+    "sealedAt": "2026-10-05T22:32:18.327Z",
+    "contentSha256": "6700ec8af552de97b2388f7eeaefb649fcadbfa119a08f82b3b15753ad9750e5"
   }
 }

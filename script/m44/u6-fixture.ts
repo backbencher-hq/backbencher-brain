@@ -9,6 +9,8 @@
 // Exercised facts:
 //   - hover on render → **usages** section renders top-3 links PLUS
 //     "+2 more — [show all usages](command:bb.showAllUsages?...)";
+//   - the header's total is 5 = the three shown + the two the hatch stands
+//     for (§13.4 — the header counts what the eye can verify);
 //   - the link args carry {file, line, character, symbol:"render"} — the
 //     SERVER-RESOLVED identity (no client-side guessing, issue #652 rule);
 //   - the location equals the stored declaration (the definition link's
@@ -73,13 +75,35 @@ function declLine(source: string, needle: string): number {
 export const U6_EXPECT = {
   renderDeclLine: declLine(U6_SOURCE_APP, "public String render()"),
   renderDeclChar: U6_SOURCE_APP.split("\n")[declLine(U6_SOURCE_APP, "public String render()")]!.indexOf("render"),
-  // FOUR usage sites: App.main, ExtraCalls.both (twice — one site after the
-  // location dedup), Extra1.main, Extra2.main. The usages section shows the
-  // top-3 links + "+1 more". (Pre-M55 the count was 5 because render's own
-  // owning class `contains` row was offered as a usage — M55.T3, §14 Truth
-  // Rule 1: a declaration is never a usage.)
+  // FIVE usage PLACES, shown as the top-3 links + "+2 more".
+  //
+  // The rows in the store (measured, not asserted): six incoming rows, of
+  // which one is `Greeter contains render` — a DECLARATION, filtered out by
+  // the vocabulary owner src/lsp/relations.ts (§14 Truth Rule 1, M55.T3). Five
+  // are `calls`, and a call is counted once per PLACE (the unit label the
+  // header prints verbatim): App.java:6 (main), App.java:19 and App.java:20
+  // (ExtraCalls.both — TWO call sites on TWO lines), Extra1.java:5, and
+  // Extra2.java:5.
+  //
+  // WHY THIS NUMBER MOVED, and which law now governs. It was 4 ("+1 more"),
+  // and the reason it was 4 is that M62 §2 made `brain_relationship.line_number`
+  // a REAL call-site line and every surface now serves it. The two
+  // ExtraCalls.both rows used to dedupe to ONE place because both served the
+  // CALLER'S DECLARATION (ExtraCalls.both at App.java:17) — under §14 rule 3
+  // ("positions are where the thing is") that was the old defect, not the
+  // truth: two calls on two lines are two places, and a caret cannot be put
+  // in two places at once. The count that followed from the old key was a
+  // lie that happened to be small.
+  //
+  // The law that governs today is §13.4 with §14 rule 3: the header counts
+  // what the eye can verify, and each row opens the stored call site. Five
+  // places, three rendered, two behind the declared escape hatch. §13.6 is
+  // unaffected — the hatch still opens the hub, never a message.
   shownLinks: 3,
-  hiddenMore: 1,
+  hiddenMore: 2,
+  /** The header's own total, so §13.4 is checked against the fixture's
+   *  arithmetic rather than against a second hand-written number. */
+  totalPlaces: 5,
   symbol: "render",
 } as const
 
