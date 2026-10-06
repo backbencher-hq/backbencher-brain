@@ -6186,3 +6186,231 @@ in use are 1.0, 0.9, 0.85 and 0.75, all at or above the 0.7 threshold.
   5,097 satisfy the unguarded one, all of them wrong bindings. *Not mine:* the brief is the
   supervisor's; the measurement is this lane's and is reproducible with
   `npx tsx validation/m14/fixtures/zig/absent-class.ts $HOME/fixtures/repositories 3848`.
+
+---
+
+## Pass 25 — the 15 unannotated edges are SIZE-ROUTED files, and `[BB-HANG]` mis-names the file it prints
+
+(2026-10-05)
+
+Two findings. The first closes pass 24 §H.3, which had been open for one pass. The second
+overturns the mechanism §8 item 40 asks for, and it is the reason no arbiter verdict exists for
+this lane at all. Both are measured at the whole 3,848-file corpus through production
+`parseFile`, except where the instrument is declared otherwise.
+
+### A. §H.3 settled: the residue is 4 files above `FULL_AST_LIMIT`, and the analyzer never ran on them
+
+`unannotated-edge-probe.ts` now replays pool-worker's OWN two regexes — `methodCallPattern`
+(`src/ast/pool-worker.ts:284`) and `callPattern` (`:283`) — against the line each edge names,
+instead of re-deriving from a second grammar. Replaying is the point: a second opinion from a
+different grammar would only prove that two wrong readings can disagree.
+
+Full population, 3,848 files, production `parseFile`, 432,468 edges:
+
+| classification | count | what it means |
+|---|---|---|
+| `receiver-call` | 6 | `.name(` with a real receiver — the edge's core claim holds |
+| `shadow-duplicate` | 3 | `this -> name` duplicating a receiver edge, same line and target |
+| `bare-call-fabricated-source` | 3 | the call is real, but `source: "this"` names nothing — zig has no `this` |
+| `declaration-not-call` | 1 | `pub fn src(block: Block, …)` — a declaration read as a call |
+| `block-label-not-call` | 2 | `break :ptr (…)` — a zig block label read as a call |
+
+`fabricatedCalls` = **3** — the claimed call does not exist in the source bytes.
+`fabricatedSources` = **6** — the call exists and the source endpoint names nothing.
+All 15 are `calls`, all carry `metadata: {line, method: "regex"}`, and they sit in **2** files.
+
+That metadata pair is written in exactly three places in `src/`, at `pool-worker.ts:305`, `:321`
+and `:347`, and none of them is `real-zig-analyzer.ts`. All three are inside
+`extractBasicRelationships` (`:266-352`), whose only caller is `extractFallback` (`:374`), which
+`parseFile` reaches on three pre-analyzer routes. `large-file-route.ts` prices the one that
+applies here — size:
+
+| band | files | route | what production returns |
+|---|---|---|---|
+| `> 5 MB` (`STRUCTURAL_LIMIT`) | 2 | early return, `:779-793` | **0 symbols, 0 imports, 0 relationships**, `success: true` |
+| `1–5 MB` (`FULL_AST_LIMIT`) | 2 | 256 KB prefix, `:797-812` | `extractBasicSymbols` + regex only |
+| `<= 1 MB` | 3,844 | the analyzer path | the real parse |
+
+Per file:
+
+| size | file | symbols | rels | producer | unannotated | prefix read |
+|---|---|---|---|---|---|---|
+| 10.43 MB | `zig/src/codegen/x86_64/CodeGen.zig` | 0 | 0 | — | 0 | 2.4% |
+| 9.77 MB | `zig/lib/compiler_rt/udivmodti4_test.zig` | 0 | 0 | — | 0 | 2.6% |
+| 1.81 MB | `zig/lib/compiler_rt/udivmoddi4_test.zig` | 6 | 1 | regex | 1 | 13.8% |
+| 1.54 MB | `zig/src/Sema.zig` | 1,001 | 14 | regex | 14 | 16.3% |
+
+1 + 14 = **15**, which is the entire residue, on the same two files the residue probe named. So
+the identity holds with no remainder: **every unannotated edge in the corpus is an edge from a
+file the analyzer never touched, and the analyzer path contributes 0 unannotated edges out of
+432,453.**
+
+`extractFallback` at `:811` is an early `return`, before any analyzer dispatch, and it builds its
+own symbols with `extractBasicSymbols`. The analyzer therefore provably did not execute on these
+4 files, which excludes BOTH mechanisms pass 24 §H.3 could not separate — `canonicalizePublishedNames`
+and the Z52 `uses` dedup ordering — by the fact that the code they live in did not run. Neither
+was the cause.
+
+Two things in that table are findings in their own right and neither is mine to fix:
+`zig/src/codegen/x86_64/CodeGen.zig` is 10.43 MB and publishes as an **empty** parse with
+`success: true`, and `zig/src/Sema.zig` publishes 1,001 symbols and 15 relationships from a
+256 KB prefix of 1.61 MB — 16.3% of the bytes — with no field anywhere downstream that says so.
+
+### B. The grammar never traps on this corpus: 0 of 3,848, and the instrument is declared
+
+`[BB-PARSE-ERR] … memory access out of bounds` followed by `[BB-HANG] parser stuck 120s on <the
+same file> — exiting` has now ended **five** measurements on this lane: three runs of the shared
+arbiter and two of this lane's own census at the full population. Pass 24 §H.1 recorded 2 of 2;
+pass 25 reproduced it a third time (`ghostty/src/lib/tinyio/test.zig`) and a fourth
+(`zig/test/cases/safety/value does not fit in shortening cast.zig`), the fourth killing this
+lane's own `ontology-census.ts` at the full population, which is why §A had to be priced with
+two probes rather than one census.
+
+`parse-robustness.ts` measures the thing that would price the walk-killing class directly:
+`web-tree-sitter`'s `Parser.parse()` on the pinned `wasm/tree-sitter-zig.wasm`, no 120 s guard,
+no size routing, over **every** `.zig` file the corpus root holds (3,848, draw
+`4dc2626c726ba33e`, not a sample):
+
+| outcome | files | pct |
+|---|---|---|
+| clean (`rootNode.hasError === false`) | 3,629 | 94.309 |
+| error node (recoverable; the tree still exists and is still walked) | 219 | 5.692 |
+| **TRAP (`parse()` threw)** | **0** | **0** |
+
+By production size band: `<=1 MB` 3,844 files, 0 traps, 218 error nodes; `1-5 MB` 2 files, 0
+traps; `>5 MB` 2 files, 0 traps, 1 error node. Slowest five parses: 6,335 ms
+(`CodeGen.zig`, 10.4 MB, error node), 2,850 ms (`udivmodti4_test.zig`, clean), 801 ms
+(`Sema.zig`, clean), 781 ms (`udivmoddi4_test.zig`, clean), 540 ms (`behavior/x86_64/cast.zig`,
+clean).
+
+**Instrument caveat, stated because it bounds the claim:** this is not `parseFile`. The
+workstream contract requires every relationship count to come from production `parseFile`, and
+this probe counts no relationships — only per-file parse outcomes — so it does not need the
+pipeline stages. It also applies no size routing, so it reads whole files where production reads
+a 256 KB prefix; §A prices those 4 files separately. What it shows is that **no zig corpus file
+traps the grammar**, so `memory access out of bounds` is not a property of any file. This
+generalises pass 15's `trap-second-parse.ts`, which found 0 of 2 files trapping twice in one
+process: the population was 2 and it is now 3,848, and the answer is the same.
+
+### C. `[BB-HANG]` names the file that THREW, not the file that blocked — and §8 item 40's fix is aimed at the wrong thing
+
+Read rather than inferred. `src/ast/engine.ts:1438-1449`, the whole guard:
+
+```ts
+const parseBomb = setTimeout(() => {
+  process.stderr.write(`[BB-HANG] parser stuck 120s on ${filePath} — exiting\n`)
+  process.exit(1)
+}, 120000)
+
+const tree = parser.parse(content)
+clearTimeout(parseBomb)
+```
+
+`clearTimeout` is on the line after the parse, with **no `try`/`finally`**. So when
+`parser.parse()` throws, `clearTimeout` is never reached, the bomb stays armed, and the throw
+propagates to `pool-worker.ts:1220` — whose catch logs `[BB-PARSE-ERR]` and **returns
+`extractFallback`, so the walk continues carrying an armed bomb.** When the event loop next
+yields, that bomb fires and prints the `filePath` of the parse that threw.
+
+Three consequences, and each is a prediction the logs then satisfy:
+
+1. **The 120 s is measured from the trap, not from a blocking parse.** Because `parser.parse()`
+   is synchronous WASM, a timer cannot fire while it runs; the bomb can only fire at a yield.
+   So a `[BB-HANG]` never means "this file took 120 s". In this pass's arbiter log the trap sits
+   between the `21:36:36` and `21:37:31` load lines and the hang prints just after `21:38:26`,
+   which is the ~120 s an armed-but-uncleared timer predicts and not the profile of one slow file
+   — the slowest single parse in the corpus is 6,335 ms.
+2. **The pairing is ordering, not coincidence.** Each trapping parse leaves one armed bomb, so the
+   hang names the EARLIEST one still armed. In the census run two files trapped
+   (`…/value does not fit in shortening cast.zig`, then `zig/src/link/C.zig`) and the hang named
+   the FIRST — which is why the `[BB-PARSE-ERR]`/`[BB-HANG]` pairing looked mechanical at n=4
+   across four runs, and why the named file rotates between runs as walk order and fan-out
+   scheduling change. It is one bug being reported twice, not a file-level pathology.
+3. **The trap source is instance lifecycle, not the corpus.** The parser is cached per language
+   and **recycled every 500 parses** (`engine.ts:746`, whose own comment says the recycle exists
+   because "WASM memory accumulation … causes hangs"), production runs at `concurrency: 8`
+   (`ontology-coverage-gate.ts:308`), and my 0-trap probe used one instance, sequentially, with no
+   recycle. So the defect lives in the reused/recycled WASM instance under fan-out.
+
+This changes the §8 ask. Item 40 asks that a file which already logged `[BB-PARSE-ERR]` not be
+re-parsed. That would suppress the second message and leave the process alive, but it treats the
+symptom: the first message is itself the instance-state fault, and an armed bomb can still be
+left behind by any throw path that does not go through `extractFallback`. The one-line fix is
+`try { … } finally { clearTimeout(parseBomb) }`, which makes the timer incapable of outliving the
+parse it guards.
+
+### D. Every gate this lane can run, re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | **0 errors** |
+| fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **15 pass / 0 fail**, no baseline regression |
+| mutation (shared, zig-scoped) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (1,815 → 50), exit 0 |
+| arbiter, full root | `npx tsx script/m14/ontology-coverage-gate.ts zig` | **exit 1 — §C. The 5th reproduction** |
+| census, full population | `npx tsx validation/m14/fixtures/zig/ontology-census.ts --sample 4000` | **exit 1 — same `[BB-HANG]`, §B** |
+| residue probe, full population | `npx tsx validation/m14/fixtures/zig/unannotated-edge-probe.ts <root> 3848` | 15 of 432,468, classified, §A |
+| size-route probe | `npx tsx validation/m14/fixtures/zig/large-file-route.ts <root>` | 4 of 3,848 above `FULL_AST_LIMIT`, §A |
+| robustness census, full population | `npx tsx validation/m14/fixtures/zig/parse-robustness.ts <root>` | 3,629 clean / 219 error / **0 trap**, §B |
+
+**This lane therefore still publishes no arbiter verdict, and its per-type counts remain the
+`N=120` census figures carried from pass 24, not a full-population table.** §B says why a
+full-population table is not merely missing but unreachable today: the walk dies at whichever
+trapping parse fires first, and one 120 s bomb per trap means a corpus walk cannot survive the
+population it is walking. The `7/10` EMITTED figure and the per-type counts are unchanged by
+this pass — nothing in §A–§C adds or removes an edge — and §B lowers the ceiling on all of them
+by naming the one class that ends a walk.
+
+### E. What pass 25 could not settle
+
+1. **No full-population per-type table.** Two instruments that would produce one both exit 1, for
+   the reason in §C. The per-type numbers in this lane's record are the `N=120` hashed draw
+   (`sha256:02fb72df…`), and they are labelled with that population everywhere they appear.
+2. **Which instance traps.** §B shows no file traps the grammar and §C localises the fault to
+   instance lifecycle under fan-out, but no instrument here reproduces a trap at all: one reused
+   instance, sequentially, 0 traps in 3,848. Separating "recycle every 500" from "concurrency 8"
+   needs a probe that deliberately recycles, which this pass did not build. §8 item 21's ask —
+   stamp `[BB-PARSE-ERR]` and `[BB-HANG]` with the parser instance id and the parse ordinal — is
+   what would settle it, and it is still the cheapest route.
+3. **Pass 24 §H.4 and §H.5 are untouched.** The 4,193 publication-gap edges remain a lower bound
+   behind a 62.49% detector, and the `corpusExact` 96,125 (22.23%) population remains ambiguous at
+   one draw per instrument. This pass spent its budget on §A–§C.
+4. **The 219 error-node files are not attributed.** A tree with `hasError` is still walked, so
+   edges from those files are emitted and may be incomplete in a way nothing records. The count
+   is measured; the per-file edge deficit against a clean parse is not.
+
+### F. §8 items, from this pass
+
+- **Item 40 is REPLACED, and the replacement is one line.** *File:* `src/ast/engine.ts:1441-1447`,
+  the `parseBomb` / `clearTimeout` pair. *What it must do:* clear the timer in a `finally` so it
+  cannot outlive the parse it guards. *Why, measured:* §C — `clearTimeout` sits on the line after
+  a throwing `parser.parse()` with no `finally`, and `pool-worker.ts:1220` then continues the walk
+  with the bomb still armed, so `[BB-HANG]` reports a trapping file rather than a slow one. The
+  symptom-level fix item 40 currently asks for (suppress the re-parse of a file that already
+  logged `[BB-PARSE-ERR]`) treats the second message and leaves the first. *Evidence, 5 runs:*
+  pass 24 §H.1 twice, pass 25 twice more (§B), plus the ordering prediction in §C.2 satisfied in
+  both of this pass's logs. *Not mine:* shared machinery.
+- **Item 42 — `parser.parse()` throwing must not be able to end a corpus walk, and the wrapper is
+  the wrong place.** *File:* `src/ast/pool-worker.ts:1220-1236`, the `catch` that logs
+  `[BB-PARSE-ERR]` and returns `extractFallback`. *What it must do, beyond item 40:* treat a WASM
+  trap as a per-file failure that is counted and reported in the run's own output, so a walk
+  terminates with a coverage figure naming what it skipped rather than with `process.exit(1)` and
+  no verdict. *Why, measured:* §B — five measurements on this lane ended with no table at all, and
+  §C shows the loss is a timer, not a file. *Not mine:* shared machinery.
+- **Item 43 — a file over `FULL_AST_LIMIT` publishes as a partial parse with no marker.**
+  *File:* `src/ast/pool-worker.ts:779-793` and `:797-812`. *What it must do:* record which route a
+  file took and what fraction of its bytes was read, and carry it into the parse result, so a
+  consumer can tell `zig/src/Sema.zig`'s 1,001 symbols from 16.3% of the file from a parse of the
+  whole file. *Why, measured:* §A — 4 of 3,848 files, 2 of them publishing 0 symbols and 0
+  relationships at `success: true`, and 2 publishing regex-derived edges with no
+  `metadata.relationshipType`, which is the entire unannotated residue. *Not mine:* shared
+  machinery.
+- **Item 44 — `zig` has no row in the 26-lane production sweep, and the sweep's own header names
+  it as authoritative per lane.** *File:* `validation/m14/measurements/firing-sweep-26-lanes.ndjson`
+  (26 rows; `lang` values are bash, clean, css, dart, fsharp, groovy, hcl, haskell, java, json,
+  julia, lua, make, nim, php, powershell, protobuf, python, r, ruby, scala, scss, sql, toml, xml,
+  yaml — **zig is absent**). *What it must do, if the sweep is meant to cover every lane:* either
+  add a zig row, or state in the file which lanes it excludes and why. *Why it matters:* the
+  workstream brief instructs each lane to read its own row there as authoritative for `fired`,
+  `relationships`, `files`, `corpusTotal` and the per-type breakdown; for zig there is no row, so
+  those figures do not exist in the programme and this lane has been carrying its own. *Not
+  mine:* a shared measurement artifact.
