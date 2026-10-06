@@ -6414,3 +6414,320 @@ by naming the one class that ends a walk.
   `relationships`, `files`, `corpusTotal` and the per-type breakdown; for zig there is no row, so
   those figures do not exist in the programme and this lane has been carrying its own. *Not
   mine:* a shared measurement artifact.
+
+---
+
+## Pass 26 — cause A on `contains`: the target now spells the member's published name (2026-10-05)
+
+### A. The ten types, at the whole admitted population
+
+Population: **3,834 admitted `.zig` files, every one parsed, 0 fallback, 0 parse
+failures**, in 8 shards of 479–480, union hash `sha256:2f3545f9…` asserted equal
+to the published draw by `shard-merge.py`. 131,097 symbols, 397,805 edges.
+Repos: `zig` 2,938 · `ghostty` 805 · `zls` 90 · `nvim-treesitter` 1. Instrument:
+`ontology-census.ts` through production `parseFile`. Artifact:
+`full-population-contains-target.json`.
+
+**A naming trap in this lane's own artifacts, stated so nobody reads the wrong
+file.** This document numbers its sections `## Pass N`, and the measurement files
+under `validation/m14/fixtures/zig/measurements/` carry a DIFFERENT `pN` label
+that does not line up. There is already a `p27/` directory and an
+`ambiguity-split-p27.json` from an earlier pass, and `firing-check-120-p28.json`,
+`bare-vs-spelled-zig300-p29.json` and others besides. The artifacts this section
+produced are therefore named for **what they measure**, not for a pass number:
+`full-population-contains-target.json` (after) and
+`full-population-p26.json` (before, the earlier full-population draw). If a
+number here says "p26"/"p27", read the filename it sits in.
+
+| type | count | files | verdict | why |
+|---|---|---|---|---|
+| calls | 114,048 | 2,781 | EMITTED | `call_expression` |
+| uses | 133,082 | 2,852 | EMITTED | `identifier` read + field access |
+| contains | 80,876 | 1,557 | EMITTED | container membership |
+| references | 31,179 | 2,966 | EMITTED | declared types + import specifiers |
+| exports | 24,114 | 3,164 | EMITTED | `pub` at file scope |
+| imports | 10,200 | 2,693 | EMITTED | `@import` |
+| instantiates | 4,306 | 530 | EMITTED | struct/enum literal |
+| extends | 0 | 0 | **RULED-SOUND** | instrument A, grammar inventory |
+| implements | 0 | 0 | **RULED-SOUND** | instrument A, grammar inventory |
+| overrides | 0 | 0 | **RULED-SOUND** | instrument B, parse-tree count |
+
+Arbiter: `npx tsx script/m14/ontology-coverage-gate.ts zig` →
+`emitted 7/10  ruled-sound 3  FALSIFIED 0  ruled-without-justification 0`.
+**10 of 10 adjudicated** — no type is unadjudicated. The three rulings, their
+probes and their overturn conditions are in `script/m14/zig-ruled.ts` and
+`script/m14/spec/zig-completeness.json` (ZIG.O.1, ZIG.O.2, ZIG.O.3); the
+`overrides` probe pushes 0 duplicate declarations the zig compiler accepts,
+against 21 on the raw tree, and the arbiter reads 0.
+
+### B. The change: one expression, and the contract it was already half-keeping
+
+`real-zig-analyzer.ts:1116`
+
+    target: s.name   ->   target: publishedSpelling(s)
+
+where `publishedSpelling(s) = ownerName ? ownerName + "." + name : name` — the
+exact expression the shared projection applies when it fills `qualifiedName`
+(`pool-worker.ts:997`), with `scope` being this symbol's `ownerName`.
+
+**The analyzer had been keeping this contract on the SOURCE half since Z-p22 and
+not on the target half.** `real-zig-analyzer.ts:335` already said it in prose —
+"makes `source + "." + target` the member's own published spelling, which is the
+walk the graph performs" — and then emitted a bare target, so the two halves of
+one edge lived in two coordinate systems.
+
+Why the bare spelling could not work: the store resolves a relationship endpoint
+in three steps, and the bare name can only ever reach the second.
+`parallel-indexer.ts:4483-4495` is strategy 1, an exact JOIN of
+`target_external` against a `qualified_name` table. Strategy 2
+(`parallel-indexer.ts:4498-4510`) fires only `_res_name.cnt = 1` — the name must
+be **unique across the whole project**. No container member name is:
+`init`, `deinit`, `assert` and `release` are each declared in dozens of files in
+this corpus alone. So the bare target was not merely imprecise, it was the one
+spelling guaranteed to miss the only strategy that could have carried it.
+
+**The name surface is untouched.** `symbols.push({ name: s.name })` still
+publishes the bare member, so hover, navigation and every `expectSymbols` row are
+unaffected. Only the edge endpoint changed. `source` still carries the owner, so
+containment survives independently of the target — the halves are redundant by
+design and now agree.
+
+### C. Measured, two instruments, both declared
+
+**Arbiter, 600-file stride sample, same instrument and population before and
+after** (`incoming-gate.ts`, which counts ambiguity by DECLARATION and indexes
+`name` + `qualifiedName` aliases; its own planted control fired):
+
+| contains | edges | resolved | amb(decl) | amb(kind) | unresolved |
+|---|---|---|---|---|---|
+| BEFORE | 13,690 | 8,993 | 4,697 | 2,444 | 0 |
+| AFTER | 13,690 | **13,234** | **456** | **15** | 0 |
+
+`+4,241 resolved, −4,241 ambiguous by declaration (−90.3%), −99.4% by kind,
+unresolved unmoved at 0.` Lane totals: resolved 24,434 → 28,675 (+17.4%),
+ambiguous 19,084 → 14,843 (−22.2%), unresolved 11,117 → 11,117. The gate still
+reports FAIL, on `calls`/`uses`/`references`/`imports`, which this change does
+not touch.
+
+**Full-population price, taken before the change was applied**
+(`contains-qualify-control.ts`, same 3,834 files, union hash asserted):
+
+    FIX 31,800   RISK 5   LOST 797   NEUTRAL 48,274   sum 80,876
+
+`+31,800` edges that resolve to exactly one declaration, against `5` that stop
+doing so. All 5 are `zig/lib/std/builtin.zig`, where `Type.ContainerLayout`,
+`Type.StructField`, `Type.ErrorUnion`, `Type.UnionField` and `Type.Fn.Param` are
+each published **twice** — once as an enum prong and once as a nested struct of
+the same name, which zig permits. 5 of 80,876 = 0.006%. Under the store's
+`_res_qname` (`qualified_name` PRIMARY KEY, `GROUP BY`, `MIN(id)`) exactly one of
+the two binds, deterministically.
+
+**The full population, after: the counts did not move, and that is the point.**
+
+| type | BEFORE (`full-population-p26.json`) | AFTER (`full-population-contains-target.json`) |
+|---|---|---|
+| calls | 114,048 | 114,048 |
+| contains | 80,876 | 80,876 |
+| exports | 24,114 | 24,114 |
+| imports | 10,200 | 10,200 |
+| instantiates | 4,306 | 4,306 |
+| references | 31,179 | 31,179 |
+| uses | 133,082 | 133,082 |
+| **total** | **397,805** | **397,805** |
+
+symbols 131,097 both. This is a spelling change and this is the proof it is
+nothing else: not one edge added, dropped or retyped across the corpus.
+
+### D. One number moved for a reason that needed checking, not banking
+
+`edgesWithUnknownEndpoint` **39 → 5**. Thirty-four of those were `contains`
+edges whose target was the literal `unknown`. Checked against the shard dumps:
+**all 34 sit in files that publish a declaration literally named `unknown`**, and
+the new target is that declaration's own qualified name. Verified concretely on
+`zig/lib/std/Io/File.zig`, where `Kind` is an enum with a real member `unknown` —
+`Kind -> unknown` became `Kind -> Kind.unknown`, naming the same real
+`enum_member` both times.
+
+So the census's sentinel check could not tell "a member named `unknown`" from
+"the analyzer failed to resolve a name", and counted a resolvable edge as
+unresolved. **0 of the 34 were dangling; nothing was suppressed and nothing was
+fabricated.** The remaining 5 are `uses`/`exports` edges, which is where the
+genuine placeholders are.
+
+This paragraph exists because a metric that improves for a cosmetic reason is
+worse than one that does not move, and because the check is cheap: 34 edges is
+small enough to verify individually from the dumps.
+
+### E. A second site, and then one function instead of two
+
+Applying the target change alone turned three fixtures red:
+`meta.targetScope: file-local` rows read `file-external`, because
+`annotateTargetScope` indexed its endpoint alias table on the bare `s.name`. That
+is a claim about the file, and it was false — the declaration is in the file,
+under the name the edge now names.
+
+So `publishedSpelling` is now called by the emitter **and** by the alias table,
+and the alias table indexes both spellings. That is the store's own model rather
+than a convenience: a `qualified_name` table beside a `name` table that fires
+only on a unique name, which is what `incoming-gate.ts` aliases too. The **bare**
+key is kept deliberately, because `calls`/`uses`/`references` still emit bare
+targets and dropping it would relabel those types.
+
+Two sites computing one string is what produced this defect, so there are now
+zero sites computing it independently.
+
+### F. Fixtures and mutants
+
+43 `contains` rows across 8 expectation files were rewritten by a committed
+script, `migrate-contains-targets.mts`, rather than by hand. It does **not**
+rewrite `forbidRelationships` — those pin the pre-fix Z-p22 source spellings that
+must stay absent — nor `expectSymbols`, because the published name surface did
+not change.
+
+`zig` fixtures: **7 pass / 8 fail → 15 pass / 0 fail.** `tsc --noEmit` exit 0.
+Fixture baseline gate: no regressions.
+
+Two mutant sets, both run against the real production `parseFile`, both with a
+baseline of 0 failing assertions so a "caught" is attributable:
+
+`owner-path-mutants.mts` — the SOURCE half, **7 of 7 CAUGHT** after the change.
+`contains-target-mutants.mts` — the TARGET half, new, **7 of 7 CAUGHT**:
+
+    target/revert-to-bare          30 assertions   the pre-M60 behaviour itself
+    target/one-level                9 assertions   last owner segment only; passes
+                                                     every depth-1 row, so only the
+                                                     depth-3 rows catch it
+    target/qualified-source-too    30 assertions   over-qualifies the source
+    target/file-scope-stays-bare   21 assertions   the plausible partial application
+    target/methods-only             3 assertions   branch ordering
+    target/prefix-the-file         30 assertions   the fabrication direction
+    alias-table/bare-names-only     9 assertions   the annotateTargetScope half
+
+`alias-table/bare-names-only` is the one no `contains` row can catch: reverting
+the alias table changes no edge and no resolution, only metadata. A suite reading
+relationship rows would call that revert correct.
+
+The two halves are separate because they fail independently — reverting one
+leaves the other correct — and mutantsing only one half reports the other as
+working.
+
+### G. Two bugs in my own instruments, both found by a number disagreeing with a claim
+
+**`contains-qualify-control.ts` never incremented `nowAmbigCorpus`.** It printed
+`ambiguous 0 (0.00%)` and `FIX … n/a of today's ambiguous` on a population whose
+entire subject is the ambiguous count. The FIX/RISK/NEUTRAL/LOST partition was
+unaffected and its sum check caught that, but every rate printed from that
+denominator read zero. Now: `ambiguous 32,597 (40.30%)`, `FIX 31,800 = 97.55% of
+today's ambiguous`.
+
+**`migrate-contains-targets.mts` had an idempotence guard that could not fire.**
+It compared `target === src + "." + target`, a string equality that never holds,
+so a second run would have **double-qualified all 43 rows**. The correct test is
+`startsWith(src + ".")`. `--check` now exits 0 and a second write pass rewrites 0
+rows and leaves the tree byte-identical.
+
+**`shard-merge.py`'s `compositionResolvable` assumed a bare target.** It tested
+`src + "." + tgt in qns`, which is the Z-p22 metric. Post-fix that concatenation
+is `Owner.Owner.member` and can never resolve, so the column read **0.0%** on a
+corpus where 99.99% of `contains` targets bind. A correct implementation must not
+be published as a defect, so the test now accepts either spelling and the
+column is comparable across the two runs — re-merging **both** runs with
+the same script gives `compOK% 99.99` for `contains` in **both**. The apparent
+regression was the instrument, and it is named here rather than quietly deleted.
+
+### H. The six questions, per emitted type
+
+Resolution is `bothResolvedCorpusTierPct` — BOTH endpoints binding — from the
+3,834-file census. Ambiguity is the arbiter's declaration count at 600 files,
+which is the only instrument that counts declarations rather than kinds.
+
+| type | exists | fires | correct | labelled | resolved (both ends) | ambiguous (decl) | confident |
+|---|---|---|---|---|---|---|---|
+| calls | yes | 114,048 | oracle-limited (§J) | yes — `zig_function_call` | 86.80% | 4,585 | 114,048 @ 0.85 |
+| uses | yes | 133,082 | oracle-limited (§J) | yes — `zig_field_access` 119,669 / `identifier_usage` 13,406 / `zig_field_reflection` 7 | 82.91% | 6,922 | 0 < 0.7; 13,406 @ 1.0, 119,676 @ 0.75 |
+| contains | yes | 80,876 | yes — composition 99.99% both runs | yes — `zig_ownership`, `structural` | 99.99% | **456** (was 4,697) | 80,876 @ 1.0 |
+| references | yes | 31,179 | oracle-limited (§J) | yes — `zig_import` 10,200 / `declared_type` 20,979 | 67.92% | 1,365 | 0 < 0.7 |
+| exports | yes | 24,114 | yes — file-local 100% | yes — `zig_export`, `import_based` | 100.00% | 897 | 24,114 @ 1.0 |
+| imports | yes | 10,200 | yes — path resolvable | yes — `zig_import` | 33.92% | 466 | 10,200 @ 0.9 |
+| instantiates | yes | 4,306 | yes — file-local 85.72% | yes — `zig_instantiation`, `structural` | 96.05% | 152 | 4,306 @ 1.0 |
+
+**Confident: edges under confidence 0.7 = 0, at the whole population.** Every
+edge carries a `reasonCode`, and every one of the seven types has a single named
+reason except `references` (two) and `uses` (three). `evidenceClass` per type:
+`structural` for `contains`/`instantiates`, `usage_contextual` for
+`calls`/`uses`, `import_based` for `exports`/`imports`, `reference_qualified` for
+the 20,979 declared-type `references`.
+
+**Labelled: the one confusion this lane carries is `uses` vs `references`.**
+119,669 `zig_field_access` + 13,406 `identifier_usage` sit under `uses`, and
+20,979 `declared_type` sit under `references` — a field read and a type name in
+source position. The reason codes make the split auditable per edge, which is the
+only form of "labelled correctly" a consumer can check without re-parsing.
+
+**DERIVATION: 0 findings.** Every one of the seven emitted types is audited by
+`script/m14/differential.ts`; none is stored and compared against nothing.
+
+### I. Gates re-run at this commit
+
+| command | result |
+|---|---|
+| `npx tsx script/m14/ontology-coverage-gate.ts zig` | `emitted 7/10  ruled-sound 3  FALSIFIED 0  ruled-without-justification 0` — exit 1 from `[BB-HANG]` after the walk finished (§J) |
+| `npx tsx script/m14/incoming-gate.ts zig zig 600` | self-test PASS; `contains` resolved 8,993 → 13,234; FAIL overall on the four untouched types |
+| `bun run script/m14/run-fixtures.ts --lang zig` | `{"zig":{"pass":15,"fail":0}}`; fixture baseline gate: no regressions |
+| `npx tsx validation/m14/fixtures/zig/owner-path-mutants.mts` | 7 of 7 CAUGHT |
+| `npx tsx validation/m14/fixtures/zig/contains-target-mutants.mts` | 7 of 7 CAUGHT |
+| `npx tsx validation/m14/fixtures/zig/migrate-contains-targets.mts --check` | 0 bare-target rows, exit 0 |
+| `npx tsc --noEmit -p tsconfig.json` | exit 0 |
+
+### J. §8 items from this pass
+
+**1 — the arbiter's edge counts silently cover only the newly-walked subset.**
+`ontology-coverage-gate.ts` printed `walk: 3834/3834 files (100.0%)  newly walked
+2630, resumed 1204` with `contains 60,800` against 80,876 for the same 3,834
+files. `walkedPct` counts `alreadyDone` as walked, but `observed` is tallied
+**only inside the `run` callback**, so an already-done file contributes nothing to
+any per-type count: a resumed run's table is a 2,630-file table wearing a
+3,834-file label. `resumable-walk.ts` exposes `partial` and says callers MUST
+surface it, but `partial` came back false and no warning printed. Fix, precisely:
+in `script/m14/ontology-coverage-gate.ts`, report `walkStats.walked` as the
+population the **counts** are over, separately from the resumed-union coverage
+percentage, and set the partial condition to also fire when `alreadyDone > 0`.
+Not mine to edit (§8).
+
+**2 — `[BB-HANG]` still mis-names the file it prints** (§C of pass 25, unchanged).
+It names `switch_on_error_with_non_trivial_switch_operand.zig` while the walk
+reports 100% and the same corpus has 0 traps. Still aimed at the wrong file.
+
+**3 — the differential cannot judge `contains` targets independently of this
+analyzer's own spelling.** It is a separate walker over the same grammar, so a
+grammar bug shared by both paths is invisible to it, and an endpoint-contract
+question is not a grammar question at all. That is why the correctness claim for
+`calls`/`uses`/`references` above reads "oracle-limited" rather than "correct".
+
+### K. Declared limitations
+
+- **`calls`, `uses` and `references` are not audited for correctness** by
+  anything this lane can run. Their oracle agreement is bounded by the shared
+  grammar, and no independent instrument here can separate "the edge is wrong"
+  from "the grammar is wrong in both paths".
+- **The ambiguity that remains is not `contains`.** 456 ambiguous at 600 files,
+  against `calls` 4,585, `uses` 6,922, `references` 1,365 and `imports` 466.
+  Those four carry 13,398 of the lane's 14,843 remaining ambiguous edges and none
+  is addressed by this change.
+- **`imports` resolves at 33.92% both ends.** Most import targets are module
+  paths outside the corpus; Z65 marks the external ones, and the remainder are
+  counted rather than hidden, but the number is a real resolution rate and not a
+  marking rate.
+- **`contains` is 99.99% resolved by an instrument, not by the store.** The
+  store's `_res_qname` is `qualified_name` PRIMARY KEY with `GROUP BY`/`MIN(id)`,
+  so it binds one declaration deterministically where two share a qualified name
+  — the 5 `builtin.zig` sites. Which one wins is an id-ordering artefact, not a
+  resolution.
+- **Zig can express arbitrary computation and this analyzer reads declarations, not semantics.**
+  Everything reachable only through `comptime` reflection, a build step, or
+  generated code is absent from these counts by construction.
+- **The corpus is 4 repos.** `nvim-treesitter` contributes 1 file. A construct
+  that only a fifth repository exercises would not appear here, and a ruling whose
+  overturn condition depends on one would not flip.
+- **`[BB-HANG]` cost this pass its arbiter exit code**, so the gate's exit status
+  is not a usable signal for zig on a warm checkpoint.
