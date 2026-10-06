@@ -471,6 +471,97 @@ so a grammar defect both the auditor and the analyzer accept would be invisible 
 construct probe and the capability battery cover that gap by measuring the grammar's own
 vocabulary rather than agreeing about it.
 
+## PASS 15 — the arbiter's exit 1 is a LEAKED TIMER in `engine.ts`, and the trap is not this lane's (2026-10-05)
+
+The pass-15 arbiter walk printed a correct table (`emitted 7/10`, `ruled-sound 3`,
+`FALSIFIED 0`, 1962/1962 files) and then exited 1 carrying four `[BB-PARSE-ERR]` wasm traps
+and one `[BB-HANG]`. Both are now attributed, each link of the chain measured separately by
+`validation/m14/fixtures/sql/trap-onset.mts`. Artifact:
+`validation/m14/fixtures/sql/measurements/pass15-trap-onset.{txt,md}`.
+
+### The chain
+
+1. `src/ast/engine.ts:1446` calls `parser.parse(content)`. The wasm raises
+   `memory access out of bounds` — after **~1,015 parses in the same process**, and never in
+   a fresh process over the same files. Two runs put the first trap at parse ordinal
+   **1016** and **1015** of 1,962.
+2. The throw escapes before `clearTimeout(parseBomb)` at `engine.ts:1447`, so the 120 s
+   self-destruct armed at `engine.ts:1441` **stays armed**.
+3. `pool-worker.ts:1219` catches the throw, writes `[BB-PARSE-ERR]`, and returns
+   `extractFallback`. So the caller sees a successful-looking result: `parseFile` **throws
+   nothing** (`threw=0` in every arm of every probe on this page).
+4. 120 s after the trap, the leaked timer fires: `[BB-HANG] parser stuck 120s on … 89.sql —
+   exiting` and `process.exit(1)`. Measured directly, the two lines are 1791255954 →
+   1791256074 = **120 s** apart, and the process was idle.
+
+The `[BB-HANG]` names the file that trapped, but it is not a hang. An armed-after-a-throw
+timer is the whole mechanism, and it is why a correct table is printed and *then* the exit
+code is 1.
+
+### Every competing explanation, measured
+
+| candidate | arm | result |
+| --- | --- | --- |
+| the file is poison | `89.sql` ×300, `store*.sql` ×300 each, fresh process | **900 parses, 0 traps** |
+| concurrency | 1,962 files at concurrency 1 | **0 traps** |
+| concurrency | 1,962 files at concurrency 8 | **0 traps** |
+| this lane's analyzer | `RealSqlAnalyzer.prototype.analyze` wrapped and counted per file | **invoked on 0 of 1** trapping files; 1961 of 1962 files reached it |
+| per-parse wasm copy growth | `wasm-growth.mts` | +1 copy per 200 parses, 12.0 MiB — not a trap cause |
+
+`analyze()` being unreached on the trapping file is the ownership measurement. The analyzer
+cannot be the cause of a throw that happens before it is called, and this counts the calls
+rather than reading the call order and believing it.
+
+### What the two defects are, and where they live
+
+Both are shared machinery (`src/ast/engine.ts`), so neither is edited here:
+
+- **D1, leaked timer.** `engine.ts:1441-1447`: `clearTimeout(parseBomb)` is not in a
+  `finally`, so **any** throw from `parser.parse` leaves a live 120 s `process.exit(1)` in the
+  process. Fix: wrap the parse in `try { … } finally { clearTimeout(parseBomb) }`. One line.
+- **D2, the trap itself.** After ~1,015 parses against the cached SQL parser. The 500-file
+  rebuild in `engine.ts` `getParser` does not bound it: 1,015 > 500 and the trap still lands.
+
+### What the qualified `contains` target was worth AT THE STORE, re-measured at pass 15
+
+Pass 14 measured the qualified name through `parseFile` and a resolution probe over 600
+files. This is the same change read at the other end, through production
+`indexProjectParallel`, over the full 5-repo / 1,903-file population of the pass-13
+instrument — so the two numbers are comparable. Artifact:
+`pass15-store-resolution-AFTER.json`.
+
+| | pass 13 | pass 15 | moved |
+| --- | --- | --- | --- |
+| `contains` edges held | 13,600 | **24,798** | **+11,198** |
+| `contains` target unresolved | 12 | **12** | 0 |
+| `contains` source unresolved | 200 | 233 | +33 |
+| all edges held | 32,555 | **43,753** | **+11,198** |
+| all target unresolved | 2,073 | 2,073 | 0 |
+| every other type | — | — | **unchanged, edge for edge** |
+
+`contains` is the only row that moved and it moved by exactly the pass-14 delta: the
+store previously collapsed `contains` rows whose bare member target repeated inside a
+file — `Schema.sql::teams.id` and a second `id` under another owner were the SAME row —
+and the qualified spelling separates them. Unresolved did not rise, so the +11,198 are
+recovered rows, not new ones that fail to bind.
+
+### The arbiter at this commit, both invocations
+
+| | `--fresh` | resumed (no flag) |
+| --- | --- | --- |
+| exit code | **1** | **0** |
+| walk | 1962 newly walked | 1962 resumed, **0 newly walked** |
+| table | `emitted 7/10 ruled-sound 3 FALSIFIED 0` | `emitted 0/10 ruled-sound 10 FALSIFIED 0` |
+| edges | calls 3,908 · uses 9,142 · contains 12,106 · imports 53 · references 6,018 · overrides 22 · instantiates 21 | — |
+| artifacts | `pass15-arbiter-fresh.txt` | `pass15-arbiter-resumed.txt` |
+
+The resumed invocation is the second half of the finding and it is independent of the timer.
+With every file already in the checkpoint, `resumableWalk` re-reads nothing and `observed`
+stays empty, so **all ten types report `RULED-SOUND` at 0 emitted and the gate exits 0** — a
+false green over a corpus it never parsed. `script/m14/resumable-walk.ts` and the gate are
+§8-owned. A resumed run must not be able to print a verdict; that is a §8 item, stated with
+the numbers above.
+
 ## PASS 13 — the store was DISCARDING 5,799 edges the analyzer had emitted (2026-10-05)
 
 Every earlier pass on this page measured through `parseFile`. That entry point returns a
