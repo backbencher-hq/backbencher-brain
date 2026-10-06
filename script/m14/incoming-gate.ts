@@ -235,6 +235,9 @@ type Row = {
   unresolved: number
   /** targets naming nothing published but carrying an external marker */
   markedExternal: number
+  /** the colliding TARGET STRINGS, so the gap is a list a lane can act on */
+  ambiguousNames: { name: string; declarations: number; kinds: string }[]
+  unresolvedNames: { name: string; type: string }[]
 }
 
 async function measure(lang: string, ext: string, maxFiles: number) {
@@ -250,6 +253,7 @@ async function measure(lang: string, ext: string, maxFiles: number) {
     rows.set(t, {
       type: t, edges: 0, resolved: 0, ambiguousByDecl: 0,
       ambiguousByKind: 0, unresolved: 0, markedExternal: 0,
+      ambiguousNames: [], unresolvedNames: [],
     })
   }
 
@@ -326,12 +330,26 @@ async function measure(lang: string, ext: string, maxFiles: number) {
       const decls = declCount.get(tgt) ?? 0
       if (decls === 0) {
         if (isMarkedExternal(rel)) row.markedExternal++
-        else row.unresolved++
+        else {
+          row.unresolved++
+          // NAME IT. A count a lane cannot resolve back to the things it counted leaves
+          // the only response as re-running the whole lane hoping to see it again — and
+          // it is not guaranteed to reproduce. This is the population rule applied to the
+          // verdict itself, and it is capped per type so one pathological name (a
+          // stdlib function used 40,000 times) cannot produce a 40,000-line report.
+          if (row.unresolvedNames.length < 25) row.unresolvedNames.push({ name: tgt, type: label })
+        }
         continue
       }
       if (decls > 1) {
         row.ambiguousByDecl++
         if ((kindsByName.get(tgt)?.size ?? 0) > 1) row.ambiguousByKind++
+        if (row.ambiguousNames.length < 25) {
+          row.ambiguousNames.push({
+            name: tgt, declarations: decls,
+            kinds: [...(kindsByName.get(tgt) ?? [])].sort().join("|"),
+          })
+        }
         continue
       }
       row.resolved++
@@ -381,6 +399,7 @@ function verdict(rep: Report): { pass: boolean; totals: Row; reason: string } {
   const t: Row = {
     type: "calls", edges: 0, resolved: 0, ambiguousByDecl: 0,
     ambiguousByKind: 0, unresolved: 0, markedExternal: 0,
+    ambiguousNames: [], unresolvedNames: [],
   }
   for (const r of rep.rows.values()) {
     t.edges += r.edges
@@ -445,6 +464,30 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     w(t.ambiguousByKind, 11) + w(t.unresolved, 12) + String(t.markedExternal),
   )
   console.log()
+  // THE WORKLIST. A count a lane cannot resolve back to the things it counted leaves the
+  // only response as re-running the whole lane hoping to see it again, and it is not
+  // guaranteed to reproduce — so the gate prints the offending target strings, capped.
+  // This is the difference between "296 ambiguous" and a list of 296 names.
+  const ambList = [...rep.rows.values()].flatMap((r) =>
+    r.ambiguousNames.map((a) => ({ ...a, type: r.type })),
+  )
+  const unresList = [...rep.rows.values()].flatMap((r) =>
+    r.unresolvedNames.map((u) => ({ ...u })),
+  )
+  if (ambList.length) {
+    const shown = ambList.slice(0, 20)
+    console.log(`AMBIGUOUS TARGETS (${ambList.length} sampled, up to 20 shown) — the worklist:`)
+    for (const a of shown) {
+      console.log(`  ${w(a.type, 13)} ${w(a.name, 42)} ${a.declarations} declarations  [${a.kinds}]`)
+    }
+    console.log()
+  }
+  if (unresList.length) {
+    const shown = unresList.slice(0, 20)
+    console.log(`UNRESOLVED TARGETS (${unresList.length} sampled, up to 20 shown) — the worklist:`)
+    for (const u of shown) console.log(`  ${w(u.type, 13)} ${u.name}`)
+    console.log()
+  }
   console.log(`VERDICT: ${v.pass ? "PASS" : "FAIL"} — ${v.reason}`)
   console.log(`instrument self-test: ${control.ok ? "PASS (control fired)" : "FAILED — THE INSTRUMENT IS BROKEN"}`)
   if (!control.ok) for (const f of control.failures) console.log(`    ${f}`)
