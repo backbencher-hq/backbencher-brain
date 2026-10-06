@@ -1916,11 +1916,19 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * publishes no symbol under that receiver.
    *
    * Measured on the whole-corpus draw of 3,252 .lua files from 199 repos
-   * (drawDigest 502ef2f4..., 219,981 relationships, production `parseFile`,
-   * `script/m60/lua-external-marking.ts`): 3,956 edges are eligible, the
-   * shadowing guard fires on 491 of them, and 3,956/219,981 is the population the
-   * claim is about. It changes NO edge count and creates NO edge — the key is
-   * additive metadata, so every consumer that ignores it sees the identical graph.
+   * (drawDigest 502ef2f4..., 3,250 parsed, 219,981 relationships, production
+   * `parseFile`): 3,525 edges are marked — 2,738 `calls` and 787 `references` —
+   * out of 219,981, by `script/m60/verify-lua-stdlib-external.mts`. It changes NO
+   * edge count and creates NO edge: the edge digest is `bc0c38b6...` with and
+   * without this method, because the key is additive metadata and every consumer
+   * that ignores it sees the identical graph.
+   *
+   * `script/m60/lua-external-marking.ts` puts the same rule at 3,956 from outside
+   * the analyzer. The 431 difference is the outer instrument keying on LINE,
+   * which credits a hit to every edge on that line — including the 398 `contains`
+   * edges that share a line with a `references` edge and carry no node at all. The
+   * two agree exactly on `calls` at 2,725, so the gap sits entirely in the types
+   * with no node to test, which is what the analyzer can prove.
    *
    * ## THE RULE THAT WAS REJECTED, because it is the interesting half
    *
