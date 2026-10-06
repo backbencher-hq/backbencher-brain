@@ -1947,16 +1947,60 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private markStdlibExternal(ctx: LuaContext): void {
     if (ctx.stdlibCandidates.length === 0) return
-    const declared = new Set<string>()
+    // The shadowing guard, on the language's own rule rather than the file's
+    // extent.
+    //
+    // A Lua local is visible FROM ITS DECLARATION LINE to the end of its block,
+    // and is not hoisted above that line. So the test that matches the language is
+    // one-sided: a receiver is shadowed for this edge iff the file declares that
+    // name AT OR BEFORE the edge's line.
+    //
+    // Two versions were wrong before this one, in opposite directions, and both are
+    // recorded because the fixture pins the difference:
+    //
+    //   file-wide  "does the file declare it anywhere". Wrong by withholding: in
+    //     `local r1 = string.format(...)` on line 30 and `local string = {}` on
+    //     line 78, line 30 reads the GLOBAL `string`, and the file-wide test
+    //     withholds the mark from a read that is genuinely the standard library.
+    //   both ends  "startLine <= line <= endLine". Wrong the other way: a local is
+    //     published with its DECLARATION POINT as the span, so requiring the edge to
+    //     fall inside it makes every mark fail and the whole rule reads 0.
+    //   wrong FIELD  reading `symbol.startLine` rather than `symbol.range.startLine`.
+    //     This analyzer's own symbols carry `range` and no `startLine`, so every
+    //     lookup returned `undefined`, every line 0, and the "unprovable" branch
+    //     fired on every candidate — which is why the first run of the FIXED guard
+    //     still marked only receivers the file never declares. The CSS lane hit this
+    //     same field on this same question.
+    //
+    // A declaration with no usable startLine is treated as shadowing, so an
+    // unprovable claim is not made. That direction is deliberately one-sided: it can
+    // lose a mark, never invent one.
+    const declaredAt: Map<string, Array<number>> = new Map()
     for (const s of ctx.symbols) {
-      if (s.name) declared.add(s.name)
-      if (s.qualifiedName) declared.add(s.qualifiedName)
+      // The line lives on `range.startLine`, NOT on a `startLine` field. This
+      // analyzer's symbols carry `range: nodeToRange(node)` and nothing else; the
+      // published symbol's `startLine`/`endLine` are attached further down the
+      // pipeline, so reading `s.startLine` here yields `undefined` for EVERY
+      // symbol, `Number(undefined ?? 0)` is 0, and the guard's "unprovable, so
+      // treat as shadowed" branch fires on every candidate. The observable symptom
+      // was that only receivers the file never declares at all were marked, which
+      // is the file-wide guard wearing a lexically-bounded one's name — the same
+      // `symbol.range` / `symbol.range.start.line` confusion the CSS lane hit on
+      // this exact question.
+      const line = Number(s.range?.startLine ?? (s as any).startLine ?? 0)
+      if (!s.name) continue
+      const arr = declaredAt.get(s.name) ?? []
+      arr.push(line)
+      declaredAt.set(s.name, arr)
     }
     for (const { rel, receiver } of ctx.stdlibCandidates) {
       if (!LUA54_TABLES.has(receiver)) continue
-      // The shadowing guard. `local table = {}` then `table.insert(x)` has not
-      // reached the standard library, and this file DOES declare `table`.
-      if (declared.has(receiver)) continue
+      const line = Number(rel.line_number ?? 0)
+      const lines = declaredAt.get(receiver)
+      // Shadowed only when the file DOES declare the name at or before this edge.
+      // No declaration at all means the receiver is the global it reads as, which is
+      // the case the rule exists to mark.
+      if (lines && lines.some(l => l <= 0 || (line > 0 && l <= line))) continue
       rel.metadata.external = true
       rel.metadata.externalKind = "lua54-stdlib"
       rel.metadata.externalReceiver = receiver
