@@ -1,0 +1,1954 @@
+{
+  "instrument": "validation/m14/fixtures/php/ambiguity-split.mts",
+  "entryPoint": "parseFile (src/ast/pool-worker.ts)",
+  "corpusRoot": "$HOME/fixtures/repositories",
+  "reposScanned": 199,
+  "admittedPopulation": 5094,
+  "requestedFiles": 5094,
+  "filesArgumentPresent": true,
+  "sampleFiles": 5094,
+  "sampling": "deterministic stride over the 5094 admitted files sorted by repo/relative/path",
+  "symbolsPublished": 40240,
+  "symbolsWithQualifiedNameDistinctFromName": 5174,
+  "symbolsWithFqn": 0,
+  "symbolsWithDerivedNamespace": 5174,
+  "probeControls": {
+    "namespaceProbeCanFire": true,
+    "qualifiedNameProbeCanFire": true,
+    "bareNameProbeCanFire": true
+  },
+  "symbolMetadataSurvivingWorkerBoundary": {},
+  "distinctPublishedOwnerFqns": 32529,
+  "emptySymbolNames": 0,
+  "degradedFiles": 0,
+  "parseFailures": 0,
+  "distinctPublishedNames": 21199,
+  "distinctPublishedFqns": 0,
+  "symbolKinds": {
+    "method": 23558,
+    "property": 5872,
+    "namespace": 4889,
+    "class": 4638,
+    "constant": 523,
+    "function": 321,
+    "interface": 235,
+    "enum_member": 137,
+    "enum": 49,
+    "trait": 18
+  },
+  "unknownLiteralEndpoints": {
+    "uses:target": 7,
+    "calls:target": 13,
+    "instantiates:source": 2,
+    "contains:target": 2,
+    "references:source": 2
+  },
+  "edgeTypesOutsideTheTen": {},
+  "ambiguityCounterpair": {
+    "note": "the fleet `amb` column is multiKIND; multiSymbol is what bb_impact collides on",
+    "byType": {
+      "calls": {
+        "edges": 107611,
+        "multiSymbol": 65834,
+        "multiKind": 35282,
+        "ratio": 1.8659373051414319
+      },
+      "uses": {
+        "edges": 155029,
+        "multiSymbol": 86829,
+        "multiKind": 54281,
+        "ratio": 1.5996204933586338
+      },
+      "contains": {
+        "edges": 35087,
+        "multiSymbol": 17856,
+        "multiKind": 5366,
+        "ratio": 3.3276183376816997
+      },
+      "imports": {
+        "edges": 28630,
+        "multiSymbol": 2651,
+        "multiKind": 333,
+        "ratio": 7.960960960960961
+      },
+      "references": {
+        "edges": 10296,
+        "multiSymbol": 2369,
+        "multiKind": 709,
+        "ratio": 3.3413258110014104
+      },
+      "exports": {
+        "edges": 57,
+        "multiSymbol": 14,
+        "multiKind": 0,
+        "ratio": null
+      },
+      "extends": {
+        "edges": 3110,
+        "multiSymbol": 2342,
+        "multiKind": 334,
+        "ratio": 7.0119760479041915
+      },
+      "implements": {
+        "edges": 1106,
+        "multiSymbol": 327,
+        "multiKind": 232,
+        "ratio": 1.4094827586206897
+      },
+      "overrides": {
+        "edges": 2,
+        "multiSymbol": 0,
+        "multiKind": 0,
+        "ratio": null
+      },
+      "instantiates": {
+        "edges": 13848,
+        "multiSymbol": 4083,
+        "multiKind": 1626,
+        "ratio": 2.511070110701107
+      }
+    },
+    "totals": {
+      "edges": 354776,
+      "multiSymbol": 182305,
+      "multiKind": 98163
+    }
+  },
+  "perType": {
+    "calls": {
+      "edges": 107611,
+      "selfLoops": 1327,
+      "emptyTarget": 0,
+      "k0": 28932,
+      "multiSymbol": 65834,
+      "multiKind": 35282,
+      "k1": 31083,
+      "k2": 28932,
+      "k3": 28932,
+      "k1orK2": 31083,
+      "k2orK3": 28932,
+      "B1_ownerScoped": 0,
+      "B2a_crossFileSameNs": 42195,
+      "B2b_crossFileDiffNs": 22844,
+      "B3_kindDiffers": 795,
+      "B4_indistinct": 0,
+      "labelledExternal": 0,
+      "labelledExternalKinds": {},
+      "unlabelledUnresolved": 11518,
+      "unlabelledTopTargets": {
+        "__": 3315,
+        "isset": 1943,
+        "reveal": 562,
+        "prophesize": 452,
+        "setValue": 245,
+        "_pgettext": 189,
+        "invokeArgs": 145,
+        "mb_substr": 141,
+        "assertArraySubset": 115,
+        "writeAttribute": 107,
+        "ob_start": 88,
+        "isIgnorePHPUnitWarnings": 86,
+        "shouldBeCalledOnce": 82,
+        "addRoute": 80,
+        "hasAttribute": 78,
+        "ob_get_clean": 77,
+        "mb_strlen": 76,
+        "startElement": 72,
+        "endElement": 72,
+        "mb_strtolower": 71,
+        "func_get_args": 56,
+        "ini_get": 51,
+        "bin2hex": 50,
+        "getenv": 50,
+        "sendKeys": 49,
+        "ini_set": 45,
+        "Cell": 45,
+        "getProperty": 41,
+        "typeOnly": 40,
+        "setAttribute": 38,
+        "strtr": 35,
+        "getElementsByTagName": 32,
+        "uniqid": 32,
+        "mb_strpos": 32,
+        "extension_loaded": 28,
+        "pack": 26,
+        "item": 26,
+        "is_readable": 25,
+        "sodium_base642bin": 25,
+        "removeAttribute": 25,
+        "mb_strtoupper": 24,
+        "curl_setopt": 24,
+        "getClassReflection": 24,
+        "version_compare": 22,
+        "await": 22,
+        "complete": 22,
+        "writeElement": 22,
+        "bindTo": 22,
+        "iterator_to_array": 21,
+        "error_get_last": 21,
+        "error_reporting": 20,
+        "strtotime": 20,
+        "writeln": 20,
+        "setlocale": 20,
+        "hrtime": 20,
+        "getDeclaringClass": 20,
+        "getPrevious": 19,
+        "restore_error_handler": 19,
+        "array_any": 18,
+        "createElement": 18
+      },
+      "lowConfidence": 0,
+      "nonStructural": 107611,
+      "distinctTargets": 94766,
+      "multiSymbolDistinctTargets": 65834,
+      "multiKindDistinctTargets": 35282,
+      "examples": {
+        "B2a_crossFileSameNs": [
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|setup",
+            "hits": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php#setup(method) ; phpmyadmin/src/Plugins/TwoFactor/Application.php#setup(method) ; phpmyadmin/src/Plugins/TwoFactor/Key.php#setup(method) ; phpmyadmin/src/Plugins/TwoFactor/WebAuthn.php#setup(method) ; phpmyadmin/src/Plugins/TwoFactorPlugin.php#setup(method)",
+            "edgeSource": "edgeSource=transform"
+          },
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|empty",
+            "hits": "phpmyadmin/src/Gis/Ds/Extent.php#empty(method) ; phpunit/src/Framework/TestSuite.php#empty(method)",
+            "edgeSource": "edgeSource=_doHeaders_callback_setext"
+          },
+          {
+            "key": "cloogle.org/frontend/api.php|prepare",
+            "hits": "slim/Slim/Interfaces/RouteInterface.php#prepare(method) ; slim/Slim/Routing/Route.php#prepare(method)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "cloogle.org/frontend/api.php|execute",
+            "hits": "gql-graphql-php/src/Executor/Executor.php#execute(method) ; gql-graphql-php/tests/Executor/SyncTest.php#execute(method) ; phpmyadmin/src/Command/CacheWarmupCommand.php#execute(method) ; phpmyadmin/src/Command/FixPoTwigCommand.php#execute(method) ; phpmyadmin/src/Command/SetVersionCommand.php#execute(method)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "cloogle.org/frontend/api.php|close",
+            "hits": "phpmyadmin/src/File.php#close(method) ; slim/tests/Mocks/MockStream.php#close(method) ; slim/tests/Mocks/SlowPokeStream.php#close(method) ; slim/tests/Mocks/SmallChunksStream.php#close(method)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "cloogle.org/frontend/api.php|respond",
+            "hits": "cloogle.org/frontend/api.php#respond(function) ; slim/Slim/Handlers/ErrorHandler.php#respond(method)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "cloogle.org/frontend/banners.php|time",
+            "hits": "phpmyadmin/src/Triggers/Triggers.php#time(property) ; phpunit/src/Event/Value/Telemetry/Info.php#time(method) ; phpunit/src/Event/Value/Telemetry/Snapshot.php#time(property) ; phpunit/src/Event/Value/Telemetry/Snapshot.php#time(method) ; phpunit/src/Logging/JUnit/JunitXmlLogger.php#time(property)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "cloogle.org/frontend/doc/contents.php|factory",
+            "hits": "cloogle.org/frontend/doc/contents.php#factory(method) ; phpunit/src/Runner/Filter/Factory.php#factory(method)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "cloogle.org/frontend/src/src.php|empty",
+            "hits": "phpmyadmin/src/Gis/Ds/Extent.php#empty(method) ; phpunit/src/Framework/TestSuite.php#empty(method)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "cloogle.org/frontend/stats/ajax/by-hour.php|prepare",
+            "hits": "slim/Slim/Interfaces/RouteInterface.php#prepare(method) ; slim/Slim/Routing/Route.php#prepare(method)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "cloogle.org/frontend/stats/ajax/by-hour.php|execute",
+            "hits": "gql-graphql-php/src/Executor/Executor.php#execute(method) ; gql-graphql-php/tests/Executor/SyncTest.php#execute(method) ; phpmyadmin/src/Command/CacheWarmupCommand.php#execute(method) ; phpmyadmin/src/Command/FixPoTwigCommand.php#execute(method) ; phpmyadmin/src/Command/SetVersionCommand.php#execute(method)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "cloogle.org/frontend/stats/ajax/by-hour.php|close",
+            "hits": "phpmyadmin/src/File.php#close(method) ; slim/tests/Mocks/MockStream.php#close(method) ; slim/tests/Mocks/SlowPokeStream.php#close(method) ; slim/tests/Mocks/SmallChunksStream.php#close(method)",
+            "edgeSource": "edgeSource=global"
+          }
+        ],
+        "B2b_crossFileDiffNs": [
+          {
+            "key": "gql-graphql-php/src/Executor/Promise/Adapter/SyncPromiseQueue.php|isEmpty",
+            "hits": "gql-graphql-php/src/Executor/Promise/Adapter/SyncPromiseQueue.php#isEmpty(method) ; phpmyadmin/src/ConfigStorage/Foreigners.php#isEmpty(method) ; phpmyadmin/src/Gis/Ds/Extent.php#isEmpty(method) ; phpunit/src/Event/Events/EventCollection.php#isEmpty(method) ; phpunit/src/Framework/Assert.php#isEmpty(method)",
+            "edgeSource": "edgeSource=run"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/Parser.php|any",
+            "hits": "gql-graphql-php/src/Language/Parser.php#any(method) ; phpunit/src/Framework/Assert/Functions.php#any(function ns=PHPUnit\\Framework) ; phpunit/src/Framework/TestCase.php#any(method) ; phpunit/tools/.phpstan/vendor/ergebnis/phpstan-rules/src/Invocation.php#any(method) ; slim/Slim/Interfaces/RouteCollectorProxyInterface.php#any(method)",
+            "edgeSource": "edgeSource=parseArray"
+          },
+          {
+            "key": "gql-graphql-php/tests/Error/ErrorTest.php|assertSame",
+            "hits": "phpunit/src/Framework/Assert.php#assertSame(method) ; phpunit/src/Framework/Assert/Functions.php#assertSame(function ns=PHPUnit\\Framework)",
+            "edgeSource": "edgeSource=testUsesTheStackOfAnOriginalError"
+          },
+          {
+            "key": "gql-graphql-php/tests/Error/ErrorTest.php|assertEquals",
+            "hits": "phpunit/src/Framework/Assert.php#assertEquals(method) ; phpunit/src/Framework/Assert/Functions.php#assertEquals(function ns=PHPUnit\\Framework) ; phpunit/tests/end-to-end/event/_files/CustomComparator.php#assertEquals(method)",
+            "edgeSource": "edgeSource=testConvertsNodesToPositionsAndLocations"
+          },
+          {
+            "key": "gql-graphql-php/tests/Error/ErrorTest.php|assertNotNull",
+            "hits": "phpunit/src/Framework/Assert.php#assertNotNull(method) ; phpunit/src/Framework/Assert/Functions.php#assertNotNull(function ns=PHPUnit\\Framework)",
+            "edgeSource": "edgeSource=testErrorReadsOverriddenMethods"
+          },
+          {
+            "key": "gql-graphql-php/tests/Error/FormattedErrorTest.php|assertSame",
+            "hits": "phpunit/src/Framework/Assert.php#assertSame(method) ; phpunit/src/Framework/Assert/Functions.php#assertSame(function ns=PHPUnit\\Framework)",
+            "edgeSource": "edgeSource=testPrintVar"
+          },
+          {
+            "key": "gql-graphql-php/tests/Error/PrintErrorTest.php|assertSame",
+            "hits": "phpunit/src/Framework/Assert.php#assertSame(method) ; phpunit/src/Framework/Assert/Functions.php#assertSame(function ns=PHPUnit\\Framework)",
+            "edgeSource": "edgeSource=testPrintsAnLineNumbersWithCorrectPadding"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/AbstractPromiseTest.php|assertEquals",
+            "hits": "phpunit/src/Framework/Assert.php#assertEquals(method) ; phpunit/src/Framework/Assert/Functions.php#assertEquals(function ns=PHPUnit\\Framework) ; phpunit/tests/end-to-end/event/_files/CustomComparator.php#assertEquals(method)",
+            "edgeSource": "edgeSource=testIsTypeOfUsedToResolveRuntimeTypeForInterface"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/AbstractTest.php|assertEquals",
+            "hits": "phpunit/src/Framework/Assert.php#assertEquals(method) ; phpunit/src/Framework/Assert/Functions.php#assertEquals(function ns=PHPUnit\\Framework) ; phpunit/tests/end-to-end/event/_files/CustomComparator.php#assertEquals(method)",
+            "edgeSource": "edgeSource=testIsTypeOfUsedToResolveRuntimeTypeForInterface"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/AbstractTest.php|assertCount",
+            "hits": "phpunit/src/Framework/Assert.php#assertCount(method) ; phpunit/src/Framework/Assert/Functions.php#assertCount(function ns=PHPUnit\\Framework)",
+            "edgeSource": "edgeSource=testWarnsAboutOrphanedTypesWhenMissingType"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/AbstractTest.php|assertStringContainsString",
+            "hits": "phpunit/src/Framework/Assert.php#assertStringContainsString(method) ; phpunit/src/Framework/Assert/Functions.php#assertStringContainsString(function ns=PHPUnit\\Framework)",
+            "edgeSource": "edgeSource=testWarnsAboutOrphanedTypesWhenMissingType"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/AbstractTest.php|assertSame",
+            "hits": "phpunit/src/Framework/Assert.php#assertSame(method) ; phpunit/src/Framework/Assert/Functions.php#assertSame(function ns=PHPUnit\\Framework)",
+            "edgeSource": "edgeSource=testResolveTypeAllowsResolvingWithTypeName"
+          }
+        ],
+        "B3_kindDiffers": [
+          {
+            "key": "gql-graphql-php/src/GraphQL.php|builtInScalars",
+            "hits": "gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(property) ; gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(method)",
+            "edgeSource": "edgeSource=getStandardTypes"
+          },
+          {
+            "key": "gql-graphql-php/src/GraphQL.php|defaultRules",
+            "hits": "gql-graphql-php/src/Validator/DocumentValidator.php#defaultRules(property) ; gql-graphql-php/src/Validator/DocumentValidator.php#defaultRules(method)",
+            "edgeSource": "edgeSource=getStandardValidationRules"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Definition/InputObjectType.php|isOneOf",
+            "hits": "gql-graphql-php/src/Type/Definition/InputObjectType.php#isOneOf(property) ; gql-graphql-php/src/Type/Definition/InputObjectType.php#isOneOf(method)",
+            "edgeSource": "edgeSource=assertValid"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Definition/Type.php|builtInScalars",
+            "hits": "gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(property) ; gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(method)",
+            "edgeSource": "edgeSource=builtInTypes"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Introspection.php|isOneOf",
+            "hits": "gql-graphql-php/src/Type/Definition/InputObjectType.php#isOneOf(property) ; gql-graphql-php/src/Type/Definition/InputObjectType.php#isOneOf(method)",
+            "edgeSource": "edgeSource=_type"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Schema.php|builtInScalars",
+            "hits": "gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(property) ; gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(method)",
+            "edgeSource": "edgeSource=getType"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Schema.php|objects",
+            "hits": "gql-graphql-php/src/Utils/InterfaceImplementations.php#objects(property) ; gql-graphql-php/src/Utils/InterfaceImplementations.php#objects(method)",
+            "edgeSource": "edgeSource=getPossibleTypes"
+          },
+          {
+            "key": "gql-graphql-php/src/Utils/ASTDefinitionBuilder.php|builtInTypes",
+            "hits": "gql-graphql-php/src/Type/Definition/Type.php#builtInTypes(property) ; gql-graphql-php/src/Type/Definition/Type.php#builtInTypes(method)",
+            "edgeSource": "edgeSource=__construct"
+          },
+          {
+            "key": "gql-graphql-php/src/Utils/BuildClientSchema.php|builtInScalars",
+            "hits": "gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(property) ; gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(method)",
+            "edgeSource": "edgeSource=buildSchema"
+          },
+          {
+            "key": "gql-graphql-php/src/Utils/SchemaPrinter.php|isOneOf",
+            "hits": "gql-graphql-php/src/Type/Definition/InputObjectType.php#isOneOf(property) ; gql-graphql-php/src/Type/Definition/InputObjectType.php#isOneOf(method)",
+            "edgeSource": "edgeSource=printInputObject"
+          },
+          {
+            "key": "gql-graphql-php/src/Utils/Value.php|isOneOf",
+            "hits": "gql-graphql-php/src/Type/Definition/InputObjectType.php#isOneOf(property) ; gql-graphql-php/src/Type/Definition/InputObjectType.php#isOneOf(method)",
+            "edgeSource": "edgeSource=coerceInputValue"
+          },
+          {
+            "key": "gql-graphql-php/src/Validator/DocumentValidator.php|defaultRules",
+            "hits": "gql-graphql-php/src/Validator/DocumentValidator.php#defaultRules(property) ; gql-graphql-php/src/Validator/DocumentValidator.php#defaultRules(method)",
+            "edgeSource": "edgeSource=allRules"
+          }
+        ]
+      }
+    },
+    "uses": {
+      "edges": 155029,
+      "selfLoops": 1553,
+      "emptyTarget": 0,
+      "k0": 19488,
+      "multiSymbol": 86829,
+      "multiKind": 54281,
+      "k1": 26253,
+      "k2": 19488,
+      "k3": 19488,
+      "k1orK2": 26253,
+      "k2orK3": 19488,
+      "B1_ownerScoped": 29,
+      "B2a_crossFileSameNs": 83983,
+      "B2b_crossFileDiffNs": 735,
+      "B3_kindDiffers": 2082,
+      "B4_indistinct": 0,
+      "labelledExternal": 0,
+      "labelledExternalKinds": {},
+      "unlabelledUnresolved": 47159,
+      "unlabelledTopTargets": {
+        "_POST": 1033,
+        "i": 958,
+        "dbiDummy": 705,
+        "_SESSION": 676,
+        "PHP_EOL": 413,
+        "double": 362,
+        "entry": 331,
+        "other": 312,
+        "subscriber": 307,
+        "cliConfiguration": 295,
+        "form": 294,
+        "e": 286,
+        "issueTrigger": 252,
+        "xmlConfiguration": 233,
+        "_REQUEST": 231,
+        "parent": 224,
+        "progress": 216,
+        "attributeInstance": 211,
+        "retval": 202,
+        "scope": 197,
+        "userPrivileges": 197,
+        "statementInfo": 191,
+        "leaf": 187,
+        "ret": 184,
+        "urlParams": 183,
+        "requestProphecy": 176,
+        "tabs": 173,
+        "generalOptions": 168,
+        "haystack": 162,
+        "app": 161,
+        "responseFactoryProphecy": 158,
+        "meta": 156,
+        "collection": 154,
+        "DIRECTORY_SEPARATOR": 146,
+        "arr": 137,
+        "_SERVER": 136,
+        "promise": 132,
+        "option": 132,
+        "suite": 131,
+        "t": 128,
+        "stmt": 126,
+        "responseProphecy": 126,
+        "documentElement": 122,
+        "resultStub": 119,
+        "j": 115,
+        "E_USER_DEPRECATED": 111,
+        "exportArray": 109,
+        "typeName": 103,
+        "def": 103,
+        "routine": 103,
+        "displayParts": 102,
+        "settingsArray": 102,
+        "flags": 101,
+        "lines": 100,
+        "mergedConfig": 100,
+        "item": 97,
+        "dbname": 96,
+        "streamProphecy": 94,
+        "url": 93,
+        "generalProperties": 93
+      },
+      "lowConfidence": 0,
+      "nonStructural": 155029,
+      "distinctTargets": 106317,
+      "multiSymbolDistinctTargets": 86829,
+      "multiKindDistinctTargets": 54281,
+      "examples": {
+        "B2a_crossFileSameNs": [
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|parser",
+            "hits": "phpmyadmin/src/Indexes/Index.php#parser(property) ; phpunit/src/Metadata/Parser/Registry.php#parser(method) ; phpunit/tests/unit/Metadata/Parser/AttributeParserTest.php#parser(method) ; phpunit/tests/unit/Metadata/Parser/AttributeParserTestCase.php#parser(method) ; phpunit/tests/unit/Metadata/Parser/CachedAttributeParserTest.php#parser(method)",
+            "edgeSource": "edgeSource=Markdown"
+          },
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|text",
+            "hits": "phpmyadmin/src/Properties/Options/OptionsPropertyItem.php#text(property) ; phpmyadmin/src/Properties/Plugins/PluginPropertyItem.php#text(property) ; phpmyadmin/src/Table/Maintenance/Message.php#text(property) ; phpunit/src/Framework/Attributes/TestDox.php#text(property) ; phpunit/src/Framework/Attributes/TestDox.php#text(method)",
+            "edgeSource": "edgeSource=Markdown"
+          },
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|method",
+            "hits": "phpmyadmin/src/Config/Settings/Export.php#method(property) ; phpmyadmin/src/Partitioning/SubPartition.php#method(property) ; phpunit/src/Framework/Constraint/Object/ObjectEquals.php#method(property) ; phpunit/src/Framework/MockObject/Runtime/AbstractInvocationImplementation.php#method(method) ; phpunit/src/Framework/MockObject/Runtime/Api/Method.php#method(method)",
+            "edgeSource": "edgeSource=transform"
+          },
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|content",
+            "hits": "gql-graphql-php/tests/Type/EagerTypeLoaderTest.php#content(property) ; gql-graphql-php/tests/Type/LazyTypeLoaderTest.php#content(property) ; gql-graphql-php/tests/Utils/ExtractTypesTest.php#content(property) ; phpmyadmin/src/File.php#content(property)",
+            "edgeSource": "edgeSource=hashHTMLBlocks"
+          },
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|key",
+            "hits": "phpmyadmin/src/Column.php#key(property) ; phpmyadmin/src/InsertEditColumn.php#key(property) ; phpmyadmin/src/Plugins/Export/Helpers/TableProperty.php#key(property) ; phpmyadmin/src/Utils/SessionCache.php#key(method) ; phpunit/src/Event/Events/EventCollectionIterator.php#key(method)",
+            "edgeSource": "edgeSource=_hashHTMLBlocks_callback"
+          },
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|title",
+            "hits": "cloogle.org/frontend/doc/contents.php#title(property) ; gql-graphql-php/examples/01-blog/Blog/Data/Story.php#title(property) ; phpmyadmin/src/Header.php#title(property) ; phpmyadmin/src/Navigation/Nodes/Icon.php#title(property) ; phpmyadmin/src/Navigation/Nodes/Link.php#title(property)",
+            "edgeSource": "edgeSource=_doAnchors_reference_callback"
+          },
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|result",
+            "hits": "gql-graphql-php/src/Executor/Promise/Adapter/SyncPromise.php#result(property) ; gql-graphql-php/src/Executor/PromiseExecutor.php#result(property) ; phpmyadmin/src/Dbal/MysqliResult.php#result(property) ; phpmyadmin/src/Import/Import.php#result(property) ; phpmyadmin/tests/unit/Stubs/DummyResult.php#result(property)",
+            "edgeSource": "edgeSource=_doAnchors_reference_callback"
+          },
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|level",
+            "hits": "phpmyadmin/src/Dbal/Warning.php#level(property) ; phpunit/src/Metadata/Metadata.php#level(property)",
+            "edgeSource": "edgeSource=_doHeaders_callback_setext"
+          },
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|code",
+            "hits": "phpmyadmin/src/Dbal/Warning.php#code(property) ; phpmyadmin/src/I18n/Language.php#code(property) ; phpmyadmin/src/Scripts.php#code(property) ; phpunit/src/Util/PHP/Job.php#code(property) ; phpunit/src/Util/PHP/Job.php#code(method)",
+            "edgeSource": "edgeSource=_doHeaders_callback_setext"
+          },
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|value",
+            "hits": "gql-graphql-php/src/Language/AST/ArgumentNode.php#value(property) ; gql-graphql-php/src/Language/AST/BooleanValueNode.php#value(property) ; gql-graphql-php/src/Language/AST/EnumValueNode.php#value(property) ; gql-graphql-php/src/Language/AST/FloatValueNode.php#value(property) ; gql-graphql-php/src/Language/AST/IntValueNode.php#value(property)",
+            "edgeSource": "edgeSource=_doHeaders_callback_setext"
+          },
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|link",
+            "hits": "cloogle.org/frontend/doc/contents.php#link(property) ; phpmyadmin/src/Navigation/Nodes/Node.php#link(property)",
+            "edgeSource": "edgeSource=_doHeaders_callback_setext"
+          },
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|output",
+            "hits": "phpunit/src/Event/Events/Test/PrintedUnexpectedOutput.php#output(property) ; phpunit/src/Event/Events/Test/PrintedUnexpectedOutput.php#output(method) ; phpunit/src/Framework/TestCase.php#output(method) ; phpunit/src/Framework/TestCase/OutputBuffer.php#output(property) ; phpunit/src/Framework/TestCase/OutputBuffer.php#output(method)",
+            "edgeSource": "edgeSource=_doHeaders_callback_setext"
+          }
+        ],
+        "B2b_crossFileDiffNs": [
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|matches",
+            "hits": "phpunit/src/Framework/Assert.php#matches(method) ; phpunit/src/Framework/Assert/Functions.php#matches(function ns=PHPUnit\\Framework) ; phpunit/src/Framework/Constraint/Array/ArrayHasKey.php#matches(method) ; phpunit/src/Framework/Constraint/Array/IsList.php#matches(method) ; phpunit/src/Framework/Constraint/Boolean/IsFalse.php#matches(method)",
+            "edgeSource": "edgeSource=_stripLinkDefinitions_callback"
+          },
+          {
+            "key": "cloogle.org/frontend/doc/contents.php|matches",
+            "hits": "phpunit/src/Framework/Assert.php#matches(method) ; phpunit/src/Framework/Assert/Functions.php#matches(function ns=PHPUnit\\Framework) ; phpunit/src/Framework/Constraint/Array/ArrayHasKey.php#matches(method) ; phpunit/src/Framework/Constraint/Array/IsList.php#matches(method) ; phpunit/src/Framework/Constraint/Boolean/IsFalse.php#matches(method)",
+            "edgeSource": "edgeSource=cleanToc"
+          },
+          {
+            "key": "cloogle.org/frontend/src/lib.php|f",
+            "hits": "phpunit/tests/_files/Generator.php#f(function ns=PHPUnit\\TestFixture\\Generator) ; phpunit/tests/_files/Metadata/Attribute/src/Example.php#f(function ns=PHPUnit\\TestFixture\\Metadata\\Attribute) ; phpunit/tests/end-to-end/_files/attribute-based-filtering/src/f.php#f(function ns=PHPUnit\\TestFixture\\AttributeBasedFiltering)",
+            "edgeSource": "edgeSource=containsModules"
+          },
+          {
+            "key": "cloogle.org/frontend/stats/ajax/conf.php|callback",
+            "hits": "phpunit/src/Framework/Assert.php#callback(method) ; phpunit/src/Framework/Assert/Functions.php#callback(function ns=PHPUnit\\Framework) ; phpunit/src/Framework/Constraint/Callback.php#callback(property) ; phpunit/src/Framework/MockObject/Runtime/Stub/ReturnCallback.php#callback(property)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/src/Executor/Promise/Adapter/AmpPromiseAdapter.php|callback",
+            "hits": "phpunit/src/Framework/Assert.php#callback(method) ; phpunit/src/Framework/Assert/Functions.php#callback(function ns=PHPUnit\\Framework) ; phpunit/src/Framework/Constraint/Callback.php#callback(property) ; phpunit/src/Framework/MockObject/Runtime/Stub/ReturnCallback.php#callback(property)",
+            "edgeSource": "edgeSource=resolveWithCallable"
+          },
+          {
+            "key": "gql-graphql-php/src/Executor/ReferenceExecutor.php|callback",
+            "hits": "phpunit/src/Framework/Assert.php#callback(method) ; phpunit/src/Framework/Assert/Functions.php#callback(function ns=PHPUnit\\Framework) ; phpunit/src/Framework/Constraint/Callback.php#callback(property) ; phpunit/src/Framework/MockObject/Runtime/Stub/ReturnCallback.php#callback(property)",
+            "edgeSource": "edgeSource=promiseReduce"
+          },
+          {
+            "key": "gql-graphql-php/src/Executor/Values.php|isNull",
+            "hits": "phpmyadmin/src/Column.php#isNull(property) ; phpmyadmin/src/EditField.php#isNull(property) ; phpmyadmin/src/InsertEditColumn.php#isNull(property) ; phpunit/src/Framework/Assert.php#isNull(method) ; phpunit/src/Framework/Assert/Functions.php#isNull(function ns=PHPUnit\\Framework)",
+            "edgeSource": "edgeSource=getArgumentValuesForMap"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/Lexer.php|isFloat",
+            "hits": "phpunit/src/Framework/Assert.php#isFloat(method) ; phpunit/src/Framework/Assert/Functions.php#isFloat(function ns=PHPUnit\\Framework)",
+            "edgeSource": "edgeSource=readNumber"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/Source.php|matches",
+            "hits": "phpunit/src/Framework/Assert.php#matches(method) ; phpunit/src/Framework/Assert/Functions.php#matches(function ns=PHPUnit\\Framework) ; phpunit/src/Framework/Constraint/Array/ArrayHasKey.php#matches(method) ; phpunit/src/Framework/Constraint/Array/IsList.php#matches(method) ; phpunit/src/Framework/Constraint/Boolean/IsFalse.php#matches(method)",
+            "edgeSource": "edgeSource=getLocation"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Definition/IntType.php|isInt",
+            "hits": "phpunit/src/Framework/Assert.php#isInt(method) ; phpunit/src/Framework/Assert/Functions.php#isInt(function ns=PHPUnit\\Framework)",
+            "edgeSource": "edgeSource=parseValue"
+          },
+          {
+            "key": "gql-graphql-php/src/Utils/AST.php|isArray",
+            "hits": "phpunit/src/Framework/Assert.php#isArray(method) ; phpunit/src/Framework/Assert/Functions.php#isArray(function ns=PHPUnit\\Framework) ; phpunit/tools/.phpstan/vendor/webmozart/assert/src/Assert.php#isArray(method)",
+            "edgeSource": "edgeSource=astFromValue"
+          },
+          {
+            "key": "gql-graphql-php/src/Utils/SchemaPrinter.php|f",
+            "hits": "phpunit/tests/_files/Generator.php#f(function ns=PHPUnit\\TestFixture\\Generator) ; phpunit/tests/_files/Metadata/Attribute/src/Example.php#f(function ns=PHPUnit\\TestFixture\\Metadata\\Attribute) ; phpunit/tests/end-to-end/_files/attribute-based-filtering/src/f.php#f(function ns=PHPUnit\\TestFixture\\AttributeBasedFiltering)",
+            "edgeSource": "edgeSource=printFields"
+          }
+        ],
+        "B1_ownerScoped": [
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|tag",
+            "hits": "gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property) ; gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property)",
+            "edgeSource": "edgeSource=_doHeaders_callback_setext"
+          },
+          {
+            "key": "gql-graphql-php/tests/Type/InputObjectTypeTest.php|popular",
+            "hits": "gql-graphql-php/tests/Type/InputObjectTypeTest.php#popular(property) ; gql-graphql-php/tests/Type/InputObjectTypeTest.php#popular(property)",
+            "edgeSource": "edgeSource=__construct"
+          },
+          {
+            "key": "gql-graphql-php/tests/Type/InputObjectTypeTest.php|tag",
+            "hits": "gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property) ; gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property)",
+            "edgeSource": "edgeSource=__construct"
+          },
+          {
+            "key": "phpunit/build/scripts/phar-manifest.php|tag",
+            "hits": "gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property) ; gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property)",
+            "edgeSource": "edgeSource=version"
+          },
+          {
+            "key": "phpunit/build/scripts/phar-set-timestamps/run.php|tag",
+            "hits": "gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property) ; gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpunit/src/Logging/OpenTestReporting/OtrXmlLogger.php|tag",
+            "hits": "gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property) ; gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property)",
+            "edgeSource": "edgeSource=writeTestStarted"
+          },
+          {
+            "key": "phpunit/tools/.phpstan/vendor/ergebnis/phpstan-rules/src/Files/NoPhpstanIgnoreRule.php|tag",
+            "hits": "gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property) ; gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property)",
+            "edgeSource": "edgeSource=processNode"
+          },
+          {
+            "key": "phpunit/tools/.phpstan/vendor/ergebnis/phpstan-rules/src/Methods/PrivateInFinalClassRule.php|tag",
+            "hits": "gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property) ; gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property)",
+            "edgeSource": "edgeSource=hasWhitelistedAnnotation"
+          }
+        ],
+        "B3_kindDiffers": [
+          {
+            "key": "gql-graphql-php/benchmarks/convert-results.php|xml",
+            "hits": "phpunit/src/TextUI/Configuration/Xml/CodeCoverage/CodeCoverage.php#xml(property) ; phpunit/src/TextUI/Configuration/Xml/CodeCoverage/CodeCoverage.php#xml(method)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/src/Error/CoercionError.php|previous",
+            "hits": "phpunit/src/Event/Value/Throwable.php#previous(property) ; phpunit/src/Event/Value/Throwable.php#previous(method)",
+            "edgeSource": "edgeSource=make"
+          },
+          {
+            "key": "gql-graphql-php/src/Error/Error.php|previous",
+            "hits": "phpunit/src/Event/Value/Throwable.php#previous(property) ; phpunit/src/Event/Value/Throwable.php#previous(method)",
+            "edgeSource": "edgeSource=__construct"
+          },
+          {
+            "key": "gql-graphql-php/src/Executor/Executor.php|defaultFieldResolver",
+            "hits": "gql-graphql-php/src/Executor/Executor.php#defaultFieldResolver(property) ; gql-graphql-php/src/Executor/Executor.php#defaultFieldResolver(method)",
+            "edgeSource": "edgeSource=getDefaultFieldResolver"
+          },
+          {
+            "key": "gql-graphql-php/src/Executor/Executor.php|defaultArgsMapper",
+            "hits": "gql-graphql-php/src/Executor/Executor.php#defaultArgsMapper(property) ; gql-graphql-php/src/Executor/Executor.php#defaultArgsMapper(method)",
+            "edgeSource": "edgeSource=getDefaultArgsMapper"
+          },
+          {
+            "key": "gql-graphql-php/src/Executor/ReferenceExecutor.php|include",
+            "hits": "phpunit/src/TextUI/Configuration/Xml/Groups.php#include(property) ; phpunit/src/TextUI/Configuration/Xml/Groups.php#include(method)",
+            "edgeSource": "edgeSource=shouldIncludeNode"
+          },
+          {
+            "key": "gql-graphql-php/src/Executor/ReferenceExecutor.php|previous",
+            "hits": "phpunit/src/Event/Value/Throwable.php#previous(property) ; phpunit/src/Event/Value/Throwable.php#previous(method)",
+            "edgeSource": "edgeSource=promiseReduce"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/Lexer.php|bytes",
+            "hits": "phpunit/src/Event/Value/Telemetry/MemoryUsage.php#bytes(property) ; phpunit/src/Event/Value/Telemetry/MemoryUsage.php#bytes(method)",
+            "edgeSource": "edgeSource=readToken"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/Token.php|previous",
+            "hits": "phpunit/src/Event/Value/Throwable.php#previous(property) ; phpunit/src/Event/Value/Throwable.php#previous(method)",
+            "edgeSource": "edgeSource=__construct"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Definition/QueryPlan.php|queryPlan",
+            "hits": "gql-graphql-php/src/Type/Definition/QueryPlan.php#queryPlan(property) ; gql-graphql-php/src/Type/Definition/QueryPlan.php#queryPlan(method)",
+            "edgeSource": "edgeSource=analyzeQueryPlan"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Definition/Type.php|builtInScalars",
+            "hits": "gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(property) ; gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(method)",
+            "edgeSource": "edgeSource=int"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Schema.php|builtInScalars",
+            "hits": "gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(property) ; gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(method)",
+            "edgeSource": "edgeSource=getType"
+          }
+        ]
+      }
+    },
+    "contains": {
+      "edges": 35087,
+      "selfLoops": 3,
+      "emptyTarget": 0,
+      "k0": 17227,
+      "multiSymbol": 17856,
+      "multiKind": 5366,
+      "k1": 17496,
+      "k2": 17227,
+      "k3": 17227,
+      "k1orK2": 17496,
+      "k2orK3": 17227,
+      "B1_ownerScoped": 4,
+      "B2a_crossFileSameNs": 15540,
+      "B2b_crossFileDiffNs": 1840,
+      "B3_kindDiffers": 472,
+      "B4_indistinct": 0,
+      "labelledExternal": 0,
+      "labelledExternalKinds": {},
+      "unlabelledUnresolved": 1,
+      "unlabelledTopTargets": {
+        "parent": 1
+      },
+      "lowConfidence": 0,
+      "nonStructural": 0,
+      "distinctTargets": 35083,
+      "multiSymbolDistinctTargets": 17856,
+      "multiKindDistinctTargets": 5366,
+      "examples": {
+        "B2a_crossFileSameNs": [
+          {
+            "key": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php|setup",
+            "hits": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php#setup(method) ; phpmyadmin/src/Plugins/TwoFactor/Application.php#setup(method) ; phpmyadmin/src/Plugins/TwoFactor/Key.php#setup(method) ; phpmyadmin/src/Plugins/TwoFactor/WebAuthn.php#setup(method) ; phpmyadmin/src/Plugins/TwoFactorPlugin.php#setup(method)",
+            "edgeSource": "edgeSource=Markdown_Parser"
+          },
+          {
+            "key": "cloogle.org/frontend/doc/contents.php|title",
+            "hits": "cloogle.org/frontend/doc/contents.php#title(property) ; gql-graphql-php/examples/01-blog/Blog/Data/Story.php#title(property) ; phpmyadmin/src/Header.php#title(property) ; phpmyadmin/src/Navigation/Nodes/Icon.php#title(property) ; phpmyadmin/src/Navigation/Nodes/Link.php#title(property)",
+            "edgeSource": "edgeSource=Toc"
+          },
+          {
+            "key": "cloogle.org/frontend/doc/contents.php|link",
+            "hits": "cloogle.org/frontend/doc/contents.php#link(property) ; phpmyadmin/src/Navigation/Nodes/Node.php#link(property)",
+            "edgeSource": "edgeSource=Toc"
+          },
+          {
+            "key": "cloogle.org/frontend/doc/contents.php|children",
+            "hits": "cloogle.org/frontend/doc/contents.php#children(property) ; phpmyadmin/src/Navigation/Nodes/Node.php#children(property)",
+            "edgeSource": "edgeSource=Toc"
+          },
+          {
+            "key": "cloogle.org/frontend/doc/contents.php|factory",
+            "hits": "cloogle.org/frontend/doc/contents.php#factory(method) ; phpunit/src/Runner/Filter/Factory.php#factory(method)",
+            "edgeSource": "edgeSource=Toc"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/BuildSchemaBench.php|schema",
+            "hits": "gql-graphql-php/benchmarks/BuildSchemaBench.php#schema(property) ; gql-graphql-php/benchmarks/HugeSchemaBench.php#schema(property) ; gql-graphql-php/benchmarks/OverlappingFieldsCanBeMergedBench.php#schema(property) ; gql-graphql-php/benchmarks/Utils/QueryGenerator.php#schema(property) ; gql-graphql-php/src/Executor/ExecutionContext.php#schema(property)",
+            "edgeSource": "edgeSource=BuildSchemaBench"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/HugeSchemaBench.php|schema",
+            "hits": "gql-graphql-php/benchmarks/BuildSchemaBench.php#schema(property) ; gql-graphql-php/benchmarks/HugeSchemaBench.php#schema(property) ; gql-graphql-php/benchmarks/OverlappingFieldsCanBeMergedBench.php#schema(property) ; gql-graphql-php/benchmarks/Utils/QueryGenerator.php#schema(property) ; gql-graphql-php/src/Executor/ExecutionContext.php#schema(property)",
+            "edgeSource": "edgeSource=HugeSchemaBench"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/HugeSchemaBench.php|setUp",
+            "hits": "gql-graphql-php/benchmarks/HugeSchemaBench.php#setUp(method) ; gql-graphql-php/benchmarks/LexerBench.php#setUp(method) ; gql-graphql-php/benchmarks/ScalarOverrideBench.php#setUp(method) ; gql-graphql-php/benchmarks/VisitorBench.php#setUp(method) ; gql-graphql-php/tests/Executor/DeferredFieldsTest.php#setUp(method)",
+            "edgeSource": "edgeSource=HugeSchemaBench"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/HugeSchemaBench.php|benchSchema",
+            "hits": "gql-graphql-php/benchmarks/HugeSchemaBench.php#benchSchema(method) ; gql-graphql-php/benchmarks/StarWarsBench.php#benchSchema(method)",
+            "edgeSource": "edgeSource=HugeSchemaBench"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/LexerBench.php|setUp",
+            "hits": "gql-graphql-php/benchmarks/HugeSchemaBench.php#setUp(method) ; gql-graphql-php/benchmarks/LexerBench.php#setUp(method) ; gql-graphql-php/benchmarks/ScalarOverrideBench.php#setUp(method) ; gql-graphql-php/benchmarks/VisitorBench.php#setUp(method) ; gql-graphql-php/tests/Executor/DeferredFieldsTest.php#setUp(method)",
+            "edgeSource": "edgeSource=LexerBench"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/OverlappingFieldsCanBeMergedBench.php|schema",
+            "hits": "gql-graphql-php/benchmarks/BuildSchemaBench.php#schema(property) ; gql-graphql-php/benchmarks/HugeSchemaBench.php#schema(property) ; gql-graphql-php/benchmarks/OverlappingFieldsCanBeMergedBench.php#schema(property) ; gql-graphql-php/benchmarks/Utils/QueryGenerator.php#schema(property) ; gql-graphql-php/src/Executor/ExecutionContext.php#schema(property)",
+            "edgeSource": "edgeSource=OverlappingFieldsCanBeMergedBench"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/OverlappingFieldsCanBeMergedBench.php|__construct",
+            "hits": "gql-graphql-php/benchmarks/OverlappingFieldsCanBeMergedBench.php#__construct(method) ; gql-graphql-php/benchmarks/Utils/QueryGenerator.php#__construct(method) ; gql-graphql-php/benchmarks/Utils/SchemaGenerator.php#__construct(method) ; gql-graphql-php/examples/01-blog/Blog/Data/Comment.php#__construct(method) ; gql-graphql-php/examples/01-blog/Blog/Data/Image.php#__construct(method)",
+            "edgeSource": "edgeSource=OverlappingFieldsCanBeMergedBench"
+          }
+        ],
+        "B2b_crossFileDiffNs": [
+          {
+            "key": "gql-graphql-php/examples/01-blog/Blog/Data/User.php|User",
+            "hits": "gql-graphql-php/examples/01-blog/Blog/Data/User.php#User(class ns=GraphQL\\Examples\\Blog\\Data) ; phpmyadmin/src/Dbal/ConnectionType.php#User(enum_member) ; phpunit/tools/.phpstan/vendor/tomasvotruba/type-coverage/packages/type-perfect/tests/Rules/NarrowPublicClassMethodParamTypeRule/Fixture/Generics/SkipPassedGenerics.php#User(class ns=Rector\\TypePerfect\\Tests\\Rules\\NarrowPublicClassMethodParamTypeRule\\Fixture\\Generics)",
+            "edgeSource": "edgeSource=GraphQL\\Examples\\Blog\\Data"
+          },
+          {
+            "key": "gql-graphql-php/examples/01-blog/Blog/Type/NodeType.php|NodeType",
+            "hits": "gql-graphql-php/examples/01-blog/Blog/Type/NodeType.php#NodeType(class ns=GraphQL\\Examples\\Blog\\Type) ; phpmyadmin/src/Navigation/NodeType.php#NodeType(enum ns=PhpMyAdmin\\Navigation)",
+            "edgeSource": "edgeSource=GraphQL\\Examples\\Blog\\Type"
+          },
+          {
+            "key": "gql-graphql-php/examples/05-type-config-decorator/app/Models/Author.php|Author",
+            "hits": "gql-graphql-php/examples/05-type-config-decorator/app/Models/Author.php#Author(class ns=App\\Models) ; phpunit/tests/_files/Author.php#Author(class ns=PHPUnit\\TestFixture)",
+            "edgeSource": "edgeSource=App\\Models"
+          },
+          {
+            "key": "gql-graphql-php/src/Error/Error.php|Error",
+            "hits": "gql-graphql-php/src/Error/Error.php#Error(class ns=GraphQL\\Error) ; phpmyadmin/src/Error/Error.php#Error(class ns=PhpMyAdmin\\Error) ; phpmyadmin/src/MessageType.php#Error(enum_member) ; phpmyadmin/src/Pdf.php#Error(method) ; phpunit/src/Framework/TestStatus/Error.php#Error(class ns=PHPUnit\\Framework\\TestStatus)",
+            "edgeSource": "edgeSource=GraphQL\\Error"
+          },
+          {
+            "key": "gql-graphql-php/src/Error/Warning.php|Warning",
+            "hits": "gql-graphql-php/src/Error/Warning.php#Warning(class ns=GraphQL\\Error) ; phpmyadmin/src/Dbal/Warning.php#Warning(class ns=PhpMyAdmin\\Dbal) ; phpunit/src/Framework/TestStatus/Warning.php#Warning(class ns=PHPUnit\\Framework\\TestStatus)",
+            "edgeSource": "edgeSource=GraphQL\\Error"
+          },
+          {
+            "key": "gql-graphql-php/src/Executor/Promise/Adapter/SyncPromiseQueue.php|isEmpty",
+            "hits": "gql-graphql-php/src/Executor/Promise/Adapter/SyncPromiseQueue.php#isEmpty(method) ; phpmyadmin/src/ConfigStorage/Foreigners.php#isEmpty(method) ; phpmyadmin/src/Gis/Ds/Extent.php#isEmpty(method) ; phpunit/src/Event/Events/EventCollection.php#isEmpty(method) ; phpunit/src/Framework/Assert.php#isEmpty(method)",
+            "edgeSource": "edgeSource=SyncPromiseQueue"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/AST/Node.php|Node",
+            "hits": "gql-graphql-php/src/Language/AST/Node.php#Node(class ns=GraphQL\\Language\\AST) ; phpmyadmin/src/Navigation/Nodes/Node.php#Node(class ns=PhpMyAdmin\\Navigation\\Nodes)",
+            "edgeSource": "edgeSource=GraphQL\\Language\\AST"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/Parser.php|Parser",
+            "hits": "gql-graphql-php/src/Language/Parser.php#Parser(class ns=GraphQL\\Language) ; phpunit/src/Metadata/Parser/Parser.php#Parser(interface ns=PHPUnit\\Metadata\\Parser) ; phpunit/src/Runner/Phpt/Parser.php#Parser(class ns=PHPUnit\\Runner\\Phpt)",
+            "edgeSource": "edgeSource=GraphQL\\Language"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/Parser.php|any",
+            "hits": "gql-graphql-php/src/Language/Parser.php#any(method) ; phpunit/src/Framework/Assert/Functions.php#any(function ns=PHPUnit\\Framework) ; phpunit/src/Framework/TestCase.php#any(method) ; phpunit/tools/.phpstan/vendor/ergebnis/phpstan-rules/src/Invocation.php#any(method) ; slim/Slim/Interfaces/RouteCollectorProxyInterface.php#any(method)",
+            "edgeSource": "edgeSource=Parser"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/Printer.php|Printer",
+            "hits": "gql-graphql-php/src/Language/Printer.php#Printer(class ns=GraphQL\\Language) ; phpunit/src/TextUI/Output/Printer/Printer.php#Printer(interface ns=PHPUnit\\TextUI\\Output)",
+            "edgeSource": "edgeSource=GraphQL\\Language"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/Source.php|Source",
+            "hits": "gql-graphql-php/src/Language/Source.php#Source(class ns=GraphQL\\Language) ; phpunit/src/TextUI/Configuration/Value/Source.php#Source(class ns=PHPUnit\\TextUI\\Configuration) ; phpunit/tests/end-to-end/_files/baseline/generate-baseline-suppressed-with-ignored-suppression/src/Source.php#Source(class ns=PHPUnit\\TestFixture\\Baseline) ; phpunit/tests/end-to-end/_files/baseline/generate-baseline-suppressed/src/Source.php#Source(class ns=PHPUnit\\TestFixture\\Baseline) ; phpunit/tests/end-to-end/_files/baseline/generate-baseline/src/Source.php#Source(class ns=PHPUnit\\TestFixture\\Baseline)",
+            "edgeSource": "edgeSource=GraphQL\\Language"
+          },
+          {
+            "key": "gql-graphql-php/src/Server/Helper.php|Helper",
+            "hits": "gql-graphql-php/src/Server/Helper.php#Helper(class ns=GraphQL\\Server) ; phpunit/tests/end-to-end/code-coverage/_files/include-in-code-coverage/support/Helper.php#Helper(class ns=PHPUnit\\TestFixture\\Event\\IncludeInCodeCoverage)",
+            "edgeSource": "edgeSource=GraphQL\\Server"
+          }
+        ],
+        "B3_kindDiffers": [
+          {
+            "key": "gql-graphql-php/src/Executor/Executor.php|defaultFieldResolver",
+            "hits": "gql-graphql-php/src/Executor/Executor.php#defaultFieldResolver(property) ; gql-graphql-php/src/Executor/Executor.php#defaultFieldResolver(method)",
+            "edgeSource": "edgeSource=Executor"
+          },
+          {
+            "key": "gql-graphql-php/src/Executor/Executor.php|defaultArgsMapper",
+            "hits": "gql-graphql-php/src/Executor/Executor.php#defaultArgsMapper(property) ; gql-graphql-php/src/Executor/Executor.php#defaultArgsMapper(method)",
+            "edgeSource": "edgeSource=Executor"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Definition/InputObjectType.php|isOneOf",
+            "hits": "gql-graphql-php/src/Type/Definition/InputObjectType.php#isOneOf(property) ; gql-graphql-php/src/Type/Definition/InputObjectType.php#isOneOf(method)",
+            "edgeSource": "edgeSource=InputObjectType"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Definition/QueryPlan.php|queryPlan",
+            "hits": "gql-graphql-php/src/Type/Definition/QueryPlan.php#queryPlan(property) ; gql-graphql-php/src/Type/Definition/QueryPlan.php#queryPlan(method)",
+            "edgeSource": "edgeSource=QueryPlan"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Definition/Type.php|builtInScalars",
+            "hits": "gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(property) ; gql-graphql-php/src/Type/Definition/Type.php#builtInScalars(method)",
+            "edgeSource": "edgeSource=Type"
+          },
+          {
+            "key": "gql-graphql-php/src/Type/Definition/Type.php|builtInTypes",
+            "hits": "gql-graphql-php/src/Type/Definition/Type.php#builtInTypes(property) ; gql-graphql-php/src/Type/Definition/Type.php#builtInTypes(method)",
+            "edgeSource": "edgeSource=Type"
+          },
+          {
+            "key": "gql-graphql-php/src/Utils/InterfaceImplementations.php|objects",
+            "hits": "gql-graphql-php/src/Utils/InterfaceImplementations.php#objects(property) ; gql-graphql-php/src/Utils/InterfaceImplementations.php#objects(method)",
+            "edgeSource": "edgeSource=InterfaceImplementations"
+          },
+          {
+            "key": "gql-graphql-php/src/Validator/DocumentValidator.php|defaultRules",
+            "hits": "gql-graphql-php/src/Validator/DocumentValidator.php#defaultRules(property) ; gql-graphql-php/src/Validator/DocumentValidator.php#defaultRules(method)",
+            "edgeSource": "edgeSource=DocumentValidator"
+          },
+          {
+            "key": "gql-graphql-php/src/Validator/DocumentValidator.php|securityRules",
+            "hits": "gql-graphql-php/src/Validator/DocumentValidator.php#securityRules(property) ; gql-graphql-php/src/Validator/DocumentValidator.php#securityRules(method)",
+            "edgeSource": "edgeSource=DocumentValidator"
+          },
+          {
+            "key": "gql-graphql-php/src/Validator/DocumentValidator.php|sdlRules",
+            "hits": "gql-graphql-php/src/Validator/DocumentValidator.php#sdlRules(property) ; gql-graphql-php/src/Validator/DocumentValidator.php#sdlRules(method)",
+            "edgeSource": "edgeSource=DocumentValidator"
+          },
+          {
+            "key": "gql-graphql-php/tests/Utils/AstFromValueTest.php|complexValue",
+            "hits": "gql-graphql-php/tests/Utils/AstFromValueTest.php#complexValue(property) ; gql-graphql-php/tests/Utils/AstFromValueTest.php#complexValue(method)",
+            "edgeSource": "edgeSource=AstFromValueTest"
+          },
+          {
+            "key": "gql-graphql-php/tests/Utils/ValueFromAstTest.php|inputObj",
+            "hits": "gql-graphql-php/tests/Utils/ValueFromAstTest.php#inputObj(property) ; gql-graphql-php/tests/Utils/ValueFromAstTest.php#inputObj(method)",
+            "edgeSource": "edgeSource=ValueFromAstTest"
+          }
+        ],
+        "B1_ownerScoped": [
+          {
+            "key": "gql-graphql-php/tests/Type/InputObjectTypeTest.php|popular",
+            "hits": "gql-graphql-php/tests/Type/InputObjectTypeTest.php#popular(property) ; gql-graphql-php/tests/Type/InputObjectTypeTest.php#popular(property)",
+            "edgeSource": "edgeSource=StoryFiltersInput"
+          },
+          {
+            "key": "gql-graphql-php/tests/Type/InputObjectTypeTest.php|tag",
+            "hits": "gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property) ; gql-graphql-php/tests/Type/InputObjectTypeTest.php#tag(property)",
+            "edgeSource": "edgeSource=StoryFiltersInput"
+          }
+        ]
+      }
+    },
+    "imports": {
+      "edges": 28630,
+      "selfLoops": 0,
+      "emptyTarget": 0,
+      "k0": 17383,
+      "multiSymbol": 2651,
+      "multiKind": 333,
+      "k1": 17383,
+      "k2": 19143,
+      "k3": 36124,
+      "k1orK2": 19138,
+      "k2orK3": 19138,
+      "B1_ownerScoped": 0,
+      "B2a_crossFileSameNs": 2318,
+      "B2b_crossFileDiffNs": 333,
+      "B3_kindDiffers": 0,
+      "B4_indistinct": 0,
+      "labelledExternal": 0,
+      "labelledExternalKinds": {},
+      "unlabelledUnresolved": 8596,
+      "unlabelledTopTargets": {
+        "sprintf": 439,
+        "__": 346,
+        "assert": 184,
+        "is_string": 152,
+        "PHP_EOL": 134,
+        "is_array": 132,
+        "in_array": 132,
+        "PhpParser\\Node": 123,
+        "implode": 113,
+        "htmlspecialchars": 110,
+        "ReflectionProperty": 106,
+        "Psr\\Http\\Message\\ServerRequestInterface": 97,
+        "explode": 94,
+        "Psr\\Http\\Message\\ResponseInterface": 90,
+        "str_replace": 85,
+        "trigger_error": 85,
+        "Attribute": 79,
+        "PHPStan\\Analyser\\Scope": 78,
+        "preg_match": 78,
+        "str_contains": 76,
+        "Fig\\Http\\Message\\StatusCodeInterface": 75,
+        "Psr\\Http\\Server\\RequestHandlerInterface": 71,
+        "ReflectionMethod": 70,
+        "PHPStan\\Rules\\Rule": 69,
+        "json_encode": 65,
+        "array_merge": 63,
+        "E_USER_DEPRECATED": 62,
+        "PHPStan\\Rules\\RuleErrorBuilder": 58,
+        "array_keys": 57,
+        "Psr\\Http\\Server\\MiddlewareInterface": 56,
+        "str_starts_with": 55,
+        "mb_substr": 53,
+        "preg_replace": 52,
+        "array_key_exists": 50,
+        "DIRECTORY_SEPARATOR": 48,
+        "array_map": 47,
+        "class_exists": 47,
+        "json_decode": 46,
+        "realpath": 45,
+        "file_get_contents": 43,
+        "is_numeric": 43,
+        "DOMDocument": 43,
+        "substr": 42,
+        "strtolower": 42,
+        "ReflectionClass": 42,
+        "DOMElement": 42,
+        "mb_strlen": 41,
+        "Iterator": 37,
+        "ob_start": 36,
+        "array_values": 36,
+        "max": 35,
+        "unlink": 35,
+        "sys_get_temp_dir": 34,
+        "bin2hex": 34,
+        "fclose": 33,
+        "file_put_contents": 32,
+        "file_exists": 32,
+        "function_exists": 32,
+        "ini_get": 31,
+        "mb_strtolower": 31
+      },
+      "lowConfidence": 0,
+      "nonStructural": 28630,
+      "distinctTargets": 20034,
+      "multiSymbolDistinctTargets": 2651,
+      "multiKindDistinctTargets": 333,
+      "examples": {
+        "B2a_crossFileSameNs": [
+          {
+            "key": "gql-graphql-php/tests/Error/ErrorTest.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/tests/Error/FormattedErrorTest.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/tests/Error/PrintErrorTest.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/AbstractPromiseTest.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/AbstractTest.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/DeferredFieldsTest.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/DirectivesTest.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/ExecutionResultTest.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/ExecutorLazySchemaTest.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/ExecutorSchemaTest.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/ExecutorTest.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/LazyInterfaceTest.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=global"
+          }
+        ],
+        "B2b_crossFileDiffNs": [
+          {
+            "key": "phpmyadmin/src/Controllers/Console/UpdateConfigController.php|InvalidArgumentException",
+            "hits": "phpunit/src/Event/Exception/InvalidArgumentException.php#InvalidArgumentException(class ns=PHPUnit\\Event) ; phpunit/src/Framework/Exception/InvalidArgumentException.php#InvalidArgumentException(class ns=PHPUnit\\Framework) ; phpunit/tools/.phpstan/vendor/webmozart/assert/src/InvalidArgumentException.php#InvalidArgumentException(class ns=Webmozart\\Assert)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/src/Dbal/ConnectionException.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/src/Dbal/DatabasesFullInfoFailure.php|RuntimeException",
+            "hits": "phpunit/src/Event/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\Event) ; phpunit/src/Framework/MockObject/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\Framework\\MockObject) ; phpunit/src/Framework/MockObject/Generator/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\Framework\\MockObject\\Generator) ; phpunit/src/TextUI/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\TextUI)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/src/Dbal/MysqliResult.php|Generator",
+            "hits": "phpmyadmin/src/Html/Generator.php#Generator(class ns=PhpMyAdmin\\Html) ; phpmyadmin/src/Query/Generator.php#Generator(class ns=PhpMyAdmin\\Query) ; phpunit/src/Framework/MockObject/Generator/Generator.php#Generator(class ns=PHPUnit\\Framework\\MockObject\\Generator) ; phpunit/src/Runner/Baseline/Generator.php#Generator(class ns=PHPUnit\\Runner\\Baseline) ; phpunit/src/TextUI/Configuration/Xml/Generator.php#Generator(class ns=PHPUnit\\TextUI\\XmlConfiguration)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/src/Dbal/ResultInterface.php|Generator",
+            "hits": "phpmyadmin/src/Html/Generator.php#Generator(class ns=PhpMyAdmin\\Html) ; phpmyadmin/src/Query/Generator.php#Generator(class ns=PhpMyAdmin\\Query) ; phpunit/src/Framework/MockObject/Generator/Generator.php#Generator(class ns=PHPUnit\\Framework\\MockObject\\Generator) ; phpunit/src/Runner/Baseline/Generator.php#Generator(class ns=PHPUnit\\Runner\\Baseline) ; phpunit/src/TextUI/Configuration/Xml/Generator.php#Generator(class ns=PHPUnit\\TextUI\\XmlConfiguration)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/src/Exceptions/AuthenticationFailure.php|RuntimeException",
+            "hits": "phpunit/src/Event/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\Event) ; phpunit/src/Framework/MockObject/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\Framework\\MockObject) ; phpunit/src/Framework/MockObject/Generator/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\Framework\\MockObject\\Generator) ; phpunit/src/TextUI/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\TextUI)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/src/Exceptions/AuthenticationPluginException.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/src/Exceptions/ConfigException.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/src/Exceptions/ExitException.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/src/Exceptions/ExportException.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/src/Exceptions/InvalidImagePath.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/src/Exceptions/MismatchedSessionId.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=global"
+          }
+        ]
+      }
+    },
+    "references": {
+      "edges": 10296,
+      "selfLoops": 24,
+      "emptyTarget": 0,
+      "k0": 6486,
+      "multiSymbol": 2369,
+      "multiKind": 709,
+      "k1": 6510,
+      "k2": 6486,
+      "k3": 6486,
+      "k1orK2": 6510,
+      "k2orK3": 6486,
+      "B1_ownerScoped": 0,
+      "B2a_crossFileSameNs": 24,
+      "B2b_crossFileDiffNs": 2345,
+      "B3_kindDiffers": 0,
+      "B4_indistinct": 0,
+      "labelledExternal": 0,
+      "labelledExternalKinds": {},
+      "unlabelledUnresolved": 1417,
+      "unlabelledTopTargets": {
+        "ServerRequestInterface": 167,
+        "ResponseInterface": 137,
+        "Scope": 128,
+        "RequestHandlerInterface": 67,
+        "DOMDocument": 47,
+        "StatementInfo": 33,
+        "DateTimeImmutable": 30,
+        "Countable": 29,
+        "Param": 29,
+        "ContainerInterface": 28,
+        "ResponseFactoryInterface": 27,
+        "ClassReflection": 24,
+        "ArrayObject": 22,
+        "Closure": 21,
+        "DOMElement": 21,
+        "BaseInvocation": 19,
+        "ReflectionMethod": 17,
+        "ReflectionClass": 15,
+        "Iterator": 15,
+        "ReflectionProvider": 14,
+        "DOMXPath": 13,
+        "StaticCall": 12,
+        "MethodCall": 12,
+        "Rule": 12,
+        "SplObjectStorage": 11,
+        "Traversable": 11,
+        "ServerContext": 11,
+        "StreamFactoryInterface": 11,
+        "StreamInterface": 10,
+        "TCPDF": 10,
+        "ArrayAccess": 10,
+        "RawCodeCoverageData": 10,
+        "Expr": 10,
+        "MethodReflection": 9,
+        "ClockInterface": 9,
+        "RemoteWebElement": 9,
+        "MiddlewareInterface": 9,
+        "TypeSpecifierContext": 8,
+        "TypeSpecifier": 8,
+        "OutputInterface": 8,
+        "Statement": 8,
+        "SimpleXMLElement": 8,
+        "CliConfiguration": 8,
+        "RuleLevelHelper": 8,
+        "LoggerInterface": 8,
+        "TargetCollection": 7,
+        "RequestInterface": 6,
+        "UriInterface": 6,
+        "Compiler": 6,
+        "InvokedCountMatcher": 6,
+        "TestSuiteSkipped": 6,
+        "InputInterface": 5,
+        "MessageInterface": 5,
+        "DisplayResults": 5,
+        "Expression": 5,
+        "ObjectExporter": 5,
+        "TestDoxTestResult": 5,
+        "Request": 5,
+        "SpecifiedTypes": 4,
+        "ServerCallWriter": 4
+      },
+      "lowConfidence": 0,
+      "nonStructural": 10296,
+      "distinctTargets": 8855,
+      "multiSymbolDistinctTargets": 2369,
+      "multiKindDistinctTargets": 709,
+      "examples": {
+        "B2b_crossFileDiffNs": [
+          {
+            "key": "gql-graphql-php/benchmarks/HugeSchemaBench.php|Schema",
+            "hits": "gql-graphql-php/src/Type/Schema.php#Schema(class ns=GraphQL\\Type) ; phpmyadmin/src/Config/Settings.php#Schema(property) ; phpmyadmin/src/Config/Settings/Schema.php#Schema(class ns=PhpMyAdmin\\Config\\Settings) ; phpmyadmin/src/Plugins/PluginType.php#Schema(enum_member) ; phpmyadmin/src/Tracking/LogType.php#Schema(enum_member)",
+            "edgeSource": "edgeSource=createLazySchema"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/LexerBench.php|Source",
+            "hits": "gql-graphql-php/src/Language/Source.php#Source(class ns=GraphQL\\Language) ; phpunit/src/TextUI/Configuration/Value/Source.php#Source(class ns=PHPUnit\\TextUI\\Configuration) ; phpunit/tests/end-to-end/_files/baseline/generate-baseline-suppressed-with-ignored-suppression/src/Source.php#Source(class ns=PHPUnit\\TestFixture\\Baseline) ; phpunit/tests/end-to-end/_files/baseline/generate-baseline-suppressed/src/Source.php#Source(class ns=PHPUnit\\TestFixture\\Baseline) ; phpunit/tests/end-to-end/_files/baseline/generate-baseline/src/Source.php#Source(class ns=PHPUnit\\TestFixture\\Baseline)",
+            "edgeSource": "edgeSource=LexerBench"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/OverlappingFieldsCanBeMergedBench.php|Schema",
+            "hits": "gql-graphql-php/src/Type/Schema.php#Schema(class ns=GraphQL\\Type) ; phpmyadmin/src/Config/Settings.php#Schema(property) ; phpmyadmin/src/Config/Settings/Schema.php#Schema(class ns=PhpMyAdmin\\Config\\Settings) ; phpmyadmin/src/Plugins/PluginType.php#Schema(enum_member) ; phpmyadmin/src/Tracking/LogType.php#Schema(enum_member)",
+            "edgeSource": "edgeSource=OverlappingFieldsCanBeMergedBench"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/ScalarOverrideBench.php|Schema",
+            "hits": "gql-graphql-php/src/Type/Schema.php#Schema(class ns=GraphQL\\Type) ; phpmyadmin/src/Config/Settings.php#Schema(property) ; phpmyadmin/src/Config/Settings/Schema.php#Schema(class ns=PhpMyAdmin\\Config\\Settings) ; phpmyadmin/src/Plugins/PluginType.php#Schema(enum_member) ; phpmyadmin/src/Tracking/LogType.php#Schema(enum_member)",
+            "edgeSource": "edgeSource=ScalarOverrideBench"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/Utils/QueryGenerator.php|Schema",
+            "hits": "gql-graphql-php/src/Type/Schema.php#Schema(class ns=GraphQL\\Type) ; phpmyadmin/src/Config/Settings.php#Schema(property) ; phpmyadmin/src/Config/Settings/Schema.php#Schema(class ns=PhpMyAdmin\\Config\\Settings) ; phpmyadmin/src/Plugins/PluginType.php#Schema(enum_member) ; phpmyadmin/src/Tracking/LogType.php#Schema(enum_member)",
+            "edgeSource": "edgeSource=__construct"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/Utils/SchemaGenerator.php|Schema",
+            "hits": "gql-graphql-php/src/Type/Schema.php#Schema(class ns=GraphQL\\Type) ; phpmyadmin/src/Config/Settings.php#Schema(property) ; phpmyadmin/src/Config/Settings/Schema.php#Schema(class ns=PhpMyAdmin\\Config\\Settings) ; phpmyadmin/src/Plugins/PluginType.php#Schema(enum_member) ; phpmyadmin/src/Tracking/LogType.php#Schema(enum_member)",
+            "edgeSource": "edgeSource=buildSchema"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/VisitorBench.php|Node",
+            "hits": "gql-graphql-php/src/Language/AST/Node.php#Node(class ns=GraphQL\\Language\\AST) ; phpmyadmin/src/Navigation/Nodes/Node.php#Node(class ns=PhpMyAdmin\\Navigation\\Nodes)",
+            "edgeSource": "edgeSource=benchVisitNestedWithEnterLeave"
+          },
+          {
+            "key": "gql-graphql-php/examples/01-blog/Blog/AppContext.php|User",
+            "hits": "gql-graphql-php/examples/01-blog/Blog/Data/User.php#User(class ns=GraphQL\\Examples\\Blog\\Data) ; phpmyadmin/src/Dbal/ConnectionType.php#User(enum_member) ; phpunit/tools/.phpstan/vendor/tomasvotruba/type-coverage/packages/type-perfect/tests/Rules/NarrowPublicClassMethodParamTypeRule/Fixture/Generics/SkipPassedGenerics.php#User(class ns=Rector\\TypePerfect\\Tests\\Rules\\NarrowPublicClassMethodParamTypeRule\\Fixture\\Generics)",
+            "edgeSource": "edgeSource=AppContext"
+          },
+          {
+            "key": "gql-graphql-php/examples/01-blog/Blog/Data/DataSource.php|User",
+            "hits": "gql-graphql-php/examples/01-blog/Blog/Data/User.php#User(class ns=GraphQL\\Examples\\Blog\\Data) ; phpmyadmin/src/Dbal/ConnectionType.php#User(enum_member) ; phpunit/tools/.phpstan/vendor/tomasvotruba/type-coverage/packages/type-perfect/tests/Rules/NarrowPublicClassMethodParamTypeRule/Fixture/Generics/SkipPassedGenerics.php#User(class ns=Rector\\TypePerfect\\Tests\\Rules\\NarrowPublicClassMethodParamTypeRule\\Fixture\\Generics)",
+            "edgeSource": "edgeSource=findUser"
+          },
+          {
+            "key": "gql-graphql-php/examples/01-blog/Blog/Type/Scalar/EmailType.php|Node",
+            "hits": "gql-graphql-php/src/Language/AST/Node.php#Node(class ns=GraphQL\\Language\\AST) ; phpmyadmin/src/Navigation/Nodes/Node.php#Node(class ns=PhpMyAdmin\\Navigation\\Nodes)",
+            "edgeSource": "edgeSource=parseLiteral"
+          },
+          {
+            "key": "gql-graphql-php/examples/01-blog/Blog/Type/Scalar/UrlType.php|Node",
+            "hits": "gql-graphql-php/src/Language/AST/Node.php#Node(class ns=GraphQL\\Language\\AST) ; phpmyadmin/src/Navigation/Nodes/Node.php#Node(class ns=PhpMyAdmin\\Navigation\\Nodes)",
+            "edgeSource": "edgeSource=parseLiteral"
+          },
+          {
+            "key": "gql-graphql-php/examples/01-blog/Blog/Type/UserType.php|User",
+            "hits": "gql-graphql-php/examples/01-blog/Blog/Data/User.php#User(class ns=GraphQL\\Examples\\Blog\\Data) ; phpmyadmin/src/Dbal/ConnectionType.php#User(enum_member) ; phpunit/tools/.phpstan/vendor/tomasvotruba/type-coverage/packages/type-perfect/tests/Rules/NarrowPublicClassMethodParamTypeRule/Fixture/Generics/SkipPassedGenerics.php#User(class ns=Rector\\TypePerfect\\Tests\\Rules\\NarrowPublicClassMethodParamTypeRule\\Fixture\\Generics)",
+            "edgeSource": "edgeSource=__construct"
+          }
+        ],
+        "B2a_crossFileSameNs": [
+          {
+            "key": "gql-graphql-php/src/Executor/ReferenceExecutor.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=ReferenceExecutor"
+          },
+          {
+            "key": "gql-graphql-php/src/Utils/Utils.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=undefined"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/ExecutorTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=testArgsMapper"
+          },
+          {
+            "key": "gql-graphql-php/tests/Utils/AstFromValueTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=complexValue"
+          },
+          {
+            "key": "phpmyadmin/src/Database/Designer.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=getDesignerConfig"
+          },
+          {
+            "key": "phpmyadmin/src/Git.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=isRemoteCommit"
+          },
+          {
+            "key": "phpunit/build/scripts/phar-set-timestamps/vendor/composer/autoload_static.php|ClassLoader",
+            "hits": "phpunit/build/scripts/phar-set-timestamps/vendor/composer/ClassLoader.php#ClassLoader(class ns=Composer\\Autoload) ; phpunit/tools/.phpstan/vendor/composer/ClassLoader.php#ClassLoader(class ns=Composer\\Autoload)",
+            "edgeSource": "edgeSource=getInitializer"
+          },
+          {
+            "key": "phpunit/tests/_files/ObjectEquals/ValueObjectWithEqualsMethodThatHasIncompatibleParameterType.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=equals"
+          },
+          {
+            "key": "phpunit/tests/_files/ObjectEquals/ValueObjectWithEqualsMethodThatHasUnionParameterType.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=equals"
+          },
+          {
+            "key": "phpunit/tests/end-to-end/event/_files/DependencyReturnValueCloningTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=testDirectConsumer"
+          },
+          {
+            "key": "phpunit/tests/end-to-end/regression/3156/Issue3156Test.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=testDependsRequire"
+          },
+          {
+            "key": "phpunit/tests/end-to-end/regression/6601/Issue6601Test.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=customize"
+          }
+        ]
+      }
+    },
+    "exports": {
+      "edges": 57,
+      "selfLoops": 0,
+      "emptyTarget": 0,
+      "k0": 43,
+      "multiSymbol": 14,
+      "multiKind": 0,
+      "k1": 43,
+      "k2": 43,
+      "k3": 43,
+      "k1orK2": 43,
+      "k2orK3": 43,
+      "B1_ownerScoped": 0,
+      "B2a_crossFileSameNs": 14,
+      "B2b_crossFileDiffNs": 0,
+      "B3_kindDiffers": 0,
+      "B4_indistinct": 0,
+      "labelledExternal": 0,
+      "labelledExternalKinds": {},
+      "unlabelledUnresolved": 0,
+      "unlabelledTopTargets": {},
+      "lowConfidence": 0,
+      "nonStructural": 57,
+      "distinctTargets": 57,
+      "multiSymbolDistinctTargets": 14,
+      "multiKindDistinctTargets": 0,
+      "examples": {
+        "B2a_crossFileSameNs": [
+          {
+            "key": "cloogle.org/frontend/doc/contents.php|CLEANHOME",
+            "hits": "cloogle.org/frontend/doc/contents.php#CLEANHOME(constant) ; cloogle.org/frontend/doc/src.php#CLEANHOME(constant) ; cloogle.org/frontend/src/lib.php#CLEANHOME(constant)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "cloogle.org/frontend/doc/src.php|CLEANHOME",
+            "hits": "cloogle.org/frontend/doc/contents.php#CLEANHOME(constant) ; cloogle.org/frontend/doc/src.php#CLEANHOME(constant) ; cloogle.org/frontend/src/lib.php#CLEANHOME(constant)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "cloogle.org/frontend/src/lib.php|CLEANHOME",
+            "hits": "cloogle.org/frontend/doc/contents.php#CLEANHOME(constant) ; cloogle.org/frontend/doc/src.php#CLEANHOME(constant) ; cloogle.org/frontend/src/lib.php#CLEANHOME(constant)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/app/constants.php|CACHE_DIR",
+            "hits": "phpmyadmin/app/constants.php#CACHE_DIR(constant) ; phpmyadmin/tests/phpstan-constants.php#CACHE_DIR(constant)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/app/constants.php|VERSION_SUFFIX",
+            "hits": "phpmyadmin/app/constants.php#VERSION_SUFFIX(constant) ; phpmyadmin/tests/phpstan-constants.php#VERSION_SUFFIX(constant)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/public/index.php|ROOT_PATH",
+            "hits": "phpmyadmin/public/index.php#ROOT_PATH(constant) ; phpmyadmin/public/setup/index.php#ROOT_PATH(constant) ; phpmyadmin/tests/bootstrap-static.php#ROOT_PATH(constant) ; phpmyadmin/tests/bootstrap.php#ROOT_PATH(constant) ; phpmyadmin/tests/phpstan-constants.php#ROOT_PATH(constant)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/public/setup/index.php|ROOT_PATH",
+            "hits": "phpmyadmin/public/index.php#ROOT_PATH(constant) ; phpmyadmin/public/setup/index.php#ROOT_PATH(constant) ; phpmyadmin/tests/bootstrap-static.php#ROOT_PATH(constant) ; phpmyadmin/tests/bootstrap.php#ROOT_PATH(constant) ; phpmyadmin/tests/phpstan-constants.php#ROOT_PATH(constant)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/tests/bootstrap-static.php|ROOT_PATH",
+            "hits": "phpmyadmin/public/index.php#ROOT_PATH(constant) ; phpmyadmin/public/setup/index.php#ROOT_PATH(constant) ; phpmyadmin/tests/bootstrap-static.php#ROOT_PATH(constant) ; phpmyadmin/tests/bootstrap.php#ROOT_PATH(constant) ; phpmyadmin/tests/phpstan-constants.php#ROOT_PATH(constant)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/tests/bootstrap-static.php|TESTSUITE",
+            "hits": "phpmyadmin/tests/bootstrap-static.php#TESTSUITE(constant) ; phpmyadmin/tests/bootstrap.php#TESTSUITE(constant)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/tests/bootstrap.php|TESTSUITE",
+            "hits": "phpmyadmin/tests/bootstrap-static.php#TESTSUITE(constant) ; phpmyadmin/tests/bootstrap.php#TESTSUITE(constant)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/tests/bootstrap.php|ROOT_PATH",
+            "hits": "phpmyadmin/public/index.php#ROOT_PATH(constant) ; phpmyadmin/public/setup/index.php#ROOT_PATH(constant) ; phpmyadmin/tests/bootstrap-static.php#ROOT_PATH(constant) ; phpmyadmin/tests/bootstrap.php#ROOT_PATH(constant) ; phpmyadmin/tests/phpstan-constants.php#ROOT_PATH(constant)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "phpmyadmin/tests/phpstan-constants.php|ROOT_PATH",
+            "hits": "phpmyadmin/public/index.php#ROOT_PATH(constant) ; phpmyadmin/public/setup/index.php#ROOT_PATH(constant) ; phpmyadmin/tests/bootstrap-static.php#ROOT_PATH(constant) ; phpmyadmin/tests/bootstrap.php#ROOT_PATH(constant) ; phpmyadmin/tests/phpstan-constants.php#ROOT_PATH(constant)",
+            "edgeSource": "edgeSource=global"
+          }
+        ]
+      }
+    },
+    "extends": {
+      "edges": 3110,
+      "selfLoops": 0,
+      "emptyTarget": 0,
+      "k0": 718,
+      "multiSymbol": 2342,
+      "multiKind": 334,
+      "k1": 1124,
+      "k2": 719,
+      "k3": 736,
+      "k1orK2": 1125,
+      "k2orK3": 719,
+      "B1_ownerScoped": 0,
+      "B2a_crossFileSameNs": 1,
+      "B2b_crossFileDiffNs": 2341,
+      "B3_kindDiffers": 0,
+      "B4_indistinct": 0,
+      "labelledExternal": 0,
+      "labelledExternalKinds": {},
+      "unlabelledUnresolved": 50,
+      "unlabelledTopTargets": {
+        "Driver": 10,
+        "RuleTestCase": 10,
+        "RecursiveFilterIterator": 3,
+        "BaseStub": 2,
+        "PdfLib": 2,
+        "XMLWriter": 2,
+        "LogicException": 1,
+        "IteratorAggregate": 1,
+        "SplDoublyLinkedList": 1,
+        "Stringable": 1,
+        "ArrayObject": 1,
+        "TCPDF": 1,
+        "ShapeFile": 1,
+        "AbstractExtension": 1,
+        "AbstractExpression": 1,
+        "BaseException": 1,
+        "Countable": 1,
+        "Traversable": 1,
+        "Comparator": 1,
+        "FrameworkTestCase": 1,
+        "NodeVisitorAbstract": 1,
+        "SplFixedArray": 1,
+        "PhpFileLoader": 1,
+        "RequestHandlerInterface": 1,
+        "AbstractLogger": 1,
+        "GroupCountBased": 1,
+        "PhpUnitTestCase": 1
+      },
+      "lowConfidence": 0,
+      "nonStructural": 0,
+      "distinctTargets": 3060,
+      "multiSymbolDistinctTargets": 2342,
+      "multiKindDistinctTargets": 334,
+      "examples": {
+        "B2b_crossFileDiffNs": [
+          {
+            "key": "gql-graphql-php/src/Error/CoercionError.php|Error",
+            "hits": "gql-graphql-php/src/Error/Error.php#Error(class ns=GraphQL\\Error) ; phpmyadmin/src/Error/Error.php#Error(class ns=PhpMyAdmin\\Error) ; phpmyadmin/src/MessageType.php#Error(enum_member) ; phpmyadmin/src/Pdf.php#Error(method) ; phpunit/src/Framework/TestStatus/Error.php#Error(class ns=PHPUnit\\Framework\\TestStatus)",
+            "edgeSource": "edgeSource=CoercionError"
+          },
+          {
+            "key": "gql-graphql-php/src/Error/Error.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=Error"
+          },
+          {
+            "key": "gql-graphql-php/src/Error/SerializationError.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=SerializationError"
+          },
+          {
+            "key": "gql-graphql-php/src/Error/SyntaxError.php|Error",
+            "hits": "gql-graphql-php/src/Error/Error.php#Error(class ns=GraphQL\\Error) ; phpmyadmin/src/Error/Error.php#Error(class ns=PhpMyAdmin\\Error) ; phpmyadmin/src/MessageType.php#Error(enum_member) ; phpmyadmin/src/Pdf.php#Error(method) ; phpunit/src/Framework/TestStatus/Error.php#Error(class ns=PHPUnit\\Framework\\TestStatus)",
+            "edgeSource": "edgeSource=SyntaxError"
+          },
+          {
+            "key": "gql-graphql-php/src/Error/UserError.php|RuntimeException",
+            "hits": "phpunit/src/Event/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\Event) ; phpunit/src/Framework/MockObject/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\Framework\\MockObject) ; phpunit/src/Framework/MockObject/Generator/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\Framework\\MockObject\\Generator) ; phpunit/src/TextUI/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\TextUI)",
+            "edgeSource": "edgeSource=UserError"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/AST/ArgumentNode.php|Node",
+            "hits": "gql-graphql-php/src/Language/AST/Node.php#Node(class ns=GraphQL\\Language\\AST) ; phpmyadmin/src/Navigation/Nodes/Node.php#Node(class ns=PhpMyAdmin\\Navigation\\Nodes)",
+            "edgeSource": "edgeSource=ArgumentNode"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/AST/BooleanValueNode.php|Node",
+            "hits": "gql-graphql-php/src/Language/AST/Node.php#Node(class ns=GraphQL\\Language\\AST) ; phpmyadmin/src/Navigation/Nodes/Node.php#Node(class ns=PhpMyAdmin\\Navigation\\Nodes)",
+            "edgeSource": "edgeSource=BooleanValueNode"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/AST/DirectiveDefinitionNode.php|Node",
+            "hits": "gql-graphql-php/src/Language/AST/Node.php#Node(class ns=GraphQL\\Language\\AST) ; phpmyadmin/src/Navigation/Nodes/Node.php#Node(class ns=PhpMyAdmin\\Navigation\\Nodes)",
+            "edgeSource": "edgeSource=DirectiveDefinitionNode"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/AST/DirectiveNode.php|Node",
+            "hits": "gql-graphql-php/src/Language/AST/Node.php#Node(class ns=GraphQL\\Language\\AST) ; phpmyadmin/src/Navigation/Nodes/Node.php#Node(class ns=PhpMyAdmin\\Navigation\\Nodes)",
+            "edgeSource": "edgeSource=DirectiveNode"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/AST/DocumentNode.php|Node",
+            "hits": "gql-graphql-php/src/Language/AST/Node.php#Node(class ns=GraphQL\\Language\\AST) ; phpmyadmin/src/Navigation/Nodes/Node.php#Node(class ns=PhpMyAdmin\\Navigation\\Nodes)",
+            "edgeSource": "edgeSource=DocumentNode"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/AST/EnumTypeDefinitionNode.php|Node",
+            "hits": "gql-graphql-php/src/Language/AST/Node.php#Node(class ns=GraphQL\\Language\\AST) ; phpmyadmin/src/Navigation/Nodes/Node.php#Node(class ns=PhpMyAdmin\\Navigation\\Nodes)",
+            "edgeSource": "edgeSource=EnumTypeDefinitionNode"
+          },
+          {
+            "key": "gql-graphql-php/src/Language/AST/EnumTypeExtensionNode.php|Node",
+            "hits": "gql-graphql-php/src/Language/AST/Node.php#Node(class ns=GraphQL\\Language\\AST) ; phpmyadmin/src/Navigation/Nodes/Node.php#Node(class ns=PhpMyAdmin\\Navigation\\Nodes)",
+            "edgeSource": "edgeSource=EnumTypeExtensionNode"
+          }
+        ],
+        "B2a_crossFileSameNs": [
+          {
+            "key": "phpunit/tests/end-to-end/regression/5498/TestCase.php|PHPUnit\\Framework\\TestCase",
+            "hits": "phpunit/src/Framework/TestCase/ErrorLogCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/ExceptionExpectation.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/GlobalStateCapture.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/HookMethodInvoker.php#PHPUnit\\Framework\\TestCase(namespace) ; phpunit/src/Framework/TestCase/OutputBuffer.php#PHPUnit\\Framework\\TestCase(namespace)",
+            "edgeSource": "edgeSource=TestCase"
+          }
+        ]
+      }
+    },
+    "implements": {
+      "edges": 1106,
+      "selfLoops": 0,
+      "emptyTarget": 0,
+      "k0": 518,
+      "multiSymbol": 327,
+      "multiKind": 232,
+      "k1": 622,
+      "k2": 518,
+      "k3": 523,
+      "k1orK2": 622,
+      "k2orK3": 518,
+      "B1_ownerScoped": 0,
+      "B2a_crossFileSameNs": 0,
+      "B2b_crossFileDiffNs": 327,
+      "B3_kindDiffers": 0,
+      "B4_indistinct": 0,
+      "labelledExternal": 0,
+      "labelledExternalKinds": {},
+      "unlabelledUnresolved": 261,
+      "unlabelledTopTargets": {
+        "Rule": 88,
+        "MiddlewareInterface": 45,
+        "IteratorAggregate": 24,
+        "Iterator": 19,
+        "Countable": 18,
+        "RequestHandlerInterface": 8,
+        "Stringable": 7,
+        "RunnerException": 7,
+        "JsonSerializable": 6,
+        "ArrayAccess": 4,
+        "StaticMethodTypeSpecifyingExtension": 4,
+        "TypeSpecifierAwareExtension": 4,
+        "ObjectExporter": 3,
+        "StreamInterface": 3,
+        "ClockInterface": 2,
+        "AfterLastTestMethodErroredSubscriberInterface": 2,
+        "AfterLastTestMethodFailedSubscriberInterface": 2,
+        "BeforeFirstTestMethodErroredSubscriberInterface": 2,
+        "BeforeFirstTestMethodFailedSubscriberInterface": 2,
+        "T": 1,
+        "ResponseFactoryInterface": 1,
+        "ServerRequestFactoryInterface": 1,
+        "UriFactoryInterface": 1,
+        "ResponseInterface": 1,
+        "ServerRequestInterface": 1,
+        "RecursiveIterator": 1,
+        "PluginInterface": 1,
+        "EventSubscriberInterface": 1,
+        "PluginEntryPointInterface": 1,
+        "AfterMethodCallAnalysisInterface": 1
+      },
+      "lowConfidence": 0,
+      "nonStructural": 0,
+      "distinctTargets": 845,
+      "multiSymbolDistinctTargets": 327,
+      "multiKindDistinctTargets": 232,
+      "examples": {
+        "B2b_crossFileDiffNs": [
+          {
+            "key": "phpmyadmin/src/Plugins/ExportPlugin.php|Plugin",
+            "hits": "phpmyadmin/src/Plugins/Plugin.php#Plugin(interface ns=PhpMyAdmin\\Plugins) ; phpmyadmin/src/Server/Plugin.php#Plugin(class ns=PhpMyAdmin\\Server) ; phpunit/tools/.phpstan/vendor/phpstan/extension-installer/src/Plugin.php#Plugin(class ns=PHPStan\\ExtensionInstaller)",
+            "edgeSource": "edgeSource=ExportPlugin"
+          },
+          {
+            "key": "phpmyadmin/src/Plugins/ImportPlugin.php|Plugin",
+            "hits": "phpmyadmin/src/Plugins/Plugin.php#Plugin(interface ns=PhpMyAdmin\\Plugins) ; phpmyadmin/src/Server/Plugin.php#Plugin(class ns=PhpMyAdmin\\Server) ; phpunit/tools/.phpstan/vendor/phpstan/extension-installer/src/Plugin.php#Plugin(class ns=PHPStan\\ExtensionInstaller)",
+            "edgeSource": "edgeSource=ImportPlugin"
+          },
+          {
+            "key": "phpmyadmin/src/Plugins/SchemaPlugin.php|Plugin",
+            "hits": "phpmyadmin/src/Plugins/Plugin.php#Plugin(interface ns=PhpMyAdmin\\Plugins) ; phpmyadmin/src/Server/Plugin.php#Plugin(class ns=PhpMyAdmin\\Server) ; phpunit/tools/.phpstan/vendor/phpstan/extension-installer/src/Plugin.php#Plugin(class ns=PHPStan\\ExtensionInstaller)",
+            "edgeSource": "edgeSource=SchemaPlugin"
+          },
+          {
+            "key": "phpmyadmin/src/WebAuthn/CustomServer.php|Server",
+            "hits": "phpmyadmin/src/Config/Settings/Server.php#Server(class ns=PhpMyAdmin\\Config\\Settings) ; phpmyadmin/src/ConfigStorage/UserGroupLevel.php#Server(enum_member) ; phpmyadmin/src/Export/SeparateFiles.php#Server(enum_member) ; phpmyadmin/src/Plugins/ExportType.php#Server(enum_member) ; phpmyadmin/src/WebAuthn/Server.php#Server(interface ns=PhpMyAdmin\\WebAuthn)",
+            "edgeSource": "edgeSource=CustomServer"
+          },
+          {
+            "key": "phpmyadmin/src/WebAuthn/WebauthnLibServer.php|Server",
+            "hits": "phpmyadmin/src/Config/Settings/Server.php#Server(class ns=PhpMyAdmin\\Config\\Settings) ; phpmyadmin/src/ConfigStorage/UserGroupLevel.php#Server(enum_member) ; phpmyadmin/src/Export/SeparateFiles.php#Server(enum_member) ; phpmyadmin/src/Plugins/ExportType.php#Server(enum_member) ; phpmyadmin/src/WebAuthn/Server.php#Server(interface ns=PhpMyAdmin\\WebAuthn)",
+            "edgeSource": "edgeSource=WebauthnLibServer"
+          },
+          {
+            "key": "phpunit/src/Event/Dispatcher/CollectingDispatcher.php|Dispatcher",
+            "hits": "phpunit/src/Event/Dispatcher/Dispatcher.php#Dispatcher(interface ns=PHPUnit\\Event) ; slim/Slim/Routing/Dispatcher.php#Dispatcher(class ns=Slim\\Routing)",
+            "edgeSource": "edgeSource=CollectingDispatcher"
+          },
+          {
+            "key": "phpunit/src/Event/Events/Application/Finished.php|Event",
+            "hits": "phpmyadmin/src/Triggers/Event.php#Event(enum ns=PhpMyAdmin\\Triggers) ; phpunit/src/Event/Events/Event.php#Event(interface ns=PHPUnit\\Event)",
+            "edgeSource": "edgeSource=Finished"
+          },
+          {
+            "key": "phpunit/src/Event/Events/Application/Started.php|Event",
+            "hits": "phpmyadmin/src/Triggers/Event.php#Event(enum ns=PhpMyAdmin\\Triggers) ; phpunit/src/Event/Events/Event.php#Event(interface ns=PHPUnit\\Event)",
+            "edgeSource": "edgeSource=Started"
+          },
+          {
+            "key": "phpunit/src/Event/Events/Test/AdditionalInformationProvided.php|Event",
+            "hits": "phpmyadmin/src/Triggers/Event.php#Event(enum ns=PhpMyAdmin\\Triggers) ; phpunit/src/Event/Events/Event.php#Event(interface ns=PHPUnit\\Event)",
+            "edgeSource": "edgeSource=AdditionalInformationProvided"
+          },
+          {
+            "key": "phpunit/src/Event/Events/Test/ComparatorRegistered.php|Event",
+            "hits": "phpmyadmin/src/Triggers/Event.php#Event(enum ns=PhpMyAdmin\\Triggers) ; phpunit/src/Event/Events/Event.php#Event(interface ns=PHPUnit\\Event)",
+            "edgeSource": "edgeSource=ComparatorRegistered"
+          },
+          {
+            "key": "phpunit/src/Event/Events/Test/CustomTestMethodInvocationUsed.php|Event",
+            "hits": "phpmyadmin/src/Triggers/Event.php#Event(enum ns=PhpMyAdmin\\Triggers) ; phpunit/src/Event/Events/Event.php#Event(interface ns=PHPUnit\\Event)",
+            "edgeSource": "edgeSource=CustomTestMethodInvocationUsed"
+          },
+          {
+            "key": "phpunit/src/Event/Events/Test/HookMethod/AfterLastTestMethodCalled.php|Event",
+            "hits": "phpmyadmin/src/Triggers/Event.php#Event(enum ns=PhpMyAdmin\\Triggers) ; phpunit/src/Event/Events/Event.php#Event(interface ns=PHPUnit\\Event)",
+            "edgeSource": "edgeSource=AfterLastTestMethodCalled"
+          }
+        ]
+      }
+    },
+    "overrides": {
+      "edges": 2,
+      "selfLoops": 0,
+      "emptyTarget": 0,
+      "k0": 0,
+      "multiSymbol": 0,
+      "multiKind": 0,
+      "k1": 0,
+      "k2": 0,
+      "k3": 0,
+      "k1orK2": 0,
+      "k2orK3": 0,
+      "B1_ownerScoped": 0,
+      "B2a_crossFileSameNs": 0,
+      "B2b_crossFileDiffNs": 0,
+      "B3_kindDiffers": 0,
+      "B4_indistinct": 0,
+      "labelledExternal": 0,
+      "labelledExternalKinds": {},
+      "unlabelledUnresolved": 2,
+      "unlabelledTopTargets": {
+        "A.foo": 1,
+        "ParentConstructorClass.__construct": 1
+      },
+      "lowConfidence": 0,
+      "nonStructural": 0,
+      "distinctTargets": 0,
+      "multiSymbolDistinctTargets": 0,
+      "multiKindDistinctTargets": 0,
+      "examples": {}
+    },
+    "instantiates": {
+      "edges": 13848,
+      "selfLoops": 4,
+      "emptyTarget": 0,
+      "k0": 8541,
+      "multiSymbol": 4083,
+      "multiKind": 1626,
+      "k1": 8548,
+      "k2": 8541,
+      "k3": 8541,
+      "k1orK2": 8548,
+      "k2orK3": 8541,
+      "B1_ownerScoped": 0,
+      "B2a_crossFileSameNs": 184,
+      "B2b_crossFileDiffNs": 3899,
+      "B3_kindDiffers": 0,
+      "B4_indistinct": 0,
+      "labelledExternal": 0,
+      "labelledExternalKinds": {},
+      "unlabelledUnresolved": 1220,
+      "unlabelledTopTargets": {
+        "ReflectionProperty": 250,
+        "ReflectionMethod": 190,
+        "ReflectionClass": 90,
+        "DateTimeImmutable": 75,
+        "XmlLoader": 48,
+        "DateTimeZone": 28,
+        "SplObjectStorage": 23,
+        "SettingsExport": 20,
+        "ArrayObject": 18,
+        "DeferredFuture": 12,
+        "AttributeExtension": 11,
+        "OutOfBoundsException": 10,
+        "CliBuilder": 9,
+        "EventFacade": 9,
+        "DisplayResults": 8,
+        "ResponseRendererStub": 8,
+        "DOMXPath": 8,
+        "DOMDocument": 7,
+        "LogicException": 7,
+        "ZipArchive": 7,
+        "ResponseStub": 7,
+        "ArrayIterator": 7,
+        "PhptTestCase": 7,
+        "DateTime": 6,
+        "InvokedCountMatcher": 6,
+        "TestRunnerWarningTriggered": 6,
+        "TestRunnerNoticeTriggered": 6,
+        "TestRunnerIssueErrorTriggered": 6,
+        "DirectoryIterator": 5,
+        "Request": 5,
+        "MethodDescriptor": 5,
+        "RouteParserStd": 5,
+        "DataGeneratorGroupCountBased": 5,
+        "ReflectionObject": 5,
+        "FileIteratorFacade": 5,
+        "RecursiveIteratorIterator": 4,
+        "Reference": 4,
+        "XMLWriter": 4,
+        "MockGenerator": 4,
+        "TestSkipped": 4,
+        "TestRunnerIssueWarningTriggered": 4,
+        "TestRunnerIssuePhpWarningTriggered": 4,
+        "TestRunnerIssueNoticeTriggered": 4,
+        "TestRunnerIssuePhpNoticeTriggered": 4,
+        "TestRunnerIssueDeprecationTriggered": 4,
+        "TestRunnerIssuePhpDeprecationTriggered": 4,
+        "TestDoxTestResult": 4,
+        "ShouldNotHappenException": 4,
+        "NodeFinder": 4,
+        "mysqli": 3,
+        "UnexpectedValueException": 3,
+        "RpcServer": 3,
+        "RecursiveDirectoryIterator": 3,
+        "Limit": 3,
+        "ReCaptcha": 3,
+        "Expression": 3,
+        "FilesystemLoader": 3,
+        "PublicKeyCredentialUserEntity": 3,
+        "ReflectionFunction": 3,
+        "FrameworkException": 3
+      },
+      "lowConfidence": 0,
+      "nonStructural": 0,
+      "distinctTargets": 12624,
+      "multiSymbolDistinctTargets": 4083,
+      "multiKindDistinctTargets": 1626,
+      "examples": {
+        "B2b_crossFileDiffNs": [
+          {
+            "key": "gql-graphql-php/benchmarks/HugeSchemaBench.php|Schema",
+            "hits": "gql-graphql-php/src/Type/Schema.php#Schema(class ns=GraphQL\\Type) ; phpmyadmin/src/Config/Settings.php#Schema(property) ; phpmyadmin/src/Config/Settings/Schema.php#Schema(class ns=PhpMyAdmin\\Config\\Settings) ; phpmyadmin/src/Plugins/PluginType.php#Schema(enum_member) ; phpmyadmin/src/Tracking/LogType.php#Schema(enum_member)",
+            "edgeSource": "edgeSource=createLazySchema"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/LexerBench.php|Source",
+            "hits": "gql-graphql-php/src/Language/Source.php#Source(class ns=GraphQL\\Language) ; phpunit/src/TextUI/Configuration/Value/Source.php#Source(class ns=PHPUnit\\TextUI\\Configuration) ; phpunit/tests/end-to-end/_files/baseline/generate-baseline-suppressed-with-ignored-suppression/src/Source.php#Source(class ns=PHPUnit\\TestFixture\\Baseline) ; phpunit/tests/end-to-end/_files/baseline/generate-baseline-suppressed/src/Source.php#Source(class ns=PHPUnit\\TestFixture\\Baseline) ; phpunit/tests/end-to-end/_files/baseline/generate-baseline/src/Source.php#Source(class ns=PHPUnit\\TestFixture\\Baseline)",
+            "edgeSource": "edgeSource=setUp"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/OverlappingFieldsCanBeMergedBench.php|Schema",
+            "hits": "gql-graphql-php/src/Type/Schema.php#Schema(class ns=GraphQL\\Type) ; phpmyadmin/src/Config/Settings.php#Schema(property) ; phpmyadmin/src/Config/Settings/Schema.php#Schema(class ns=PhpMyAdmin\\Config\\Settings) ; phpmyadmin/src/Plugins/PluginType.php#Schema(enum_member) ; phpmyadmin/src/Tracking/LogType.php#Schema(enum_member)",
+            "edgeSource": "edgeSource=__construct"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/ScalarOverrideBench.php|Schema",
+            "hits": "gql-graphql-php/src/Type/Schema.php#Schema(class ns=GraphQL\\Type) ; phpmyadmin/src/Config/Settings.php#Schema(property) ; phpmyadmin/src/Config/Settings/Schema.php#Schema(class ns=PhpMyAdmin\\Config\\Settings) ; phpmyadmin/src/Plugins/PluginType.php#Schema(enum_member) ; phpmyadmin/src/Tracking/LogType.php#Schema(enum_member)",
+            "edgeSource": "edgeSource=setUp"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/Utils/SchemaGenerator.php|Schema",
+            "hits": "gql-graphql-php/src/Type/Schema.php#Schema(class ns=GraphQL\\Type) ; phpmyadmin/src/Config/Settings.php#Schema(property) ; phpmyadmin/src/Config/Settings/Schema.php#Schema(class ns=PhpMyAdmin\\Config\\Settings) ; phpmyadmin/src/Plugins/PluginType.php#Schema(enum_member) ; phpmyadmin/src/Tracking/LogType.php#Schema(enum_member)",
+            "edgeSource": "edgeSource=buildSchema"
+          },
+          {
+            "key": "gql-graphql-php/benchmarks/Utils/SchemaGenerator.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=createType"
+          },
+          {
+            "key": "gql-graphql-php/examples/00-hello-world/graphql.php|Schema",
+            "hits": "gql-graphql-php/src/Type/Schema.php#Schema(class ns=GraphQL\\Type) ; phpmyadmin/src/Config/Settings.php#Schema(property) ; phpmyadmin/src/Config/Settings/Schema.php#Schema(class ns=PhpMyAdmin\\Config\\Settings) ; phpmyadmin/src/Plugins/PluginType.php#Schema(enum_member) ; phpmyadmin/src/Tracking/LogType.php#Schema(enum_member)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/examples/00-hello-world/graphql.php|RuntimeException",
+            "hits": "phpunit/src/Event/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\Event) ; phpunit/src/Framework/MockObject/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\Framework\\MockObject) ; phpunit/src/Framework/MockObject/Generator/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\Framework\\MockObject\\Generator) ; phpunit/src/TextUI/Exception/RuntimeException.php#RuntimeException(class ns=PHPUnit\\TextUI)",
+            "edgeSource": "edgeSource=global"
+          },
+          {
+            "key": "gql-graphql-php/examples/01-blog/Blog/Data/DataSource.php|User",
+            "hits": "gql-graphql-php/examples/01-blog/Blog/Data/User.php#User(class ns=GraphQL\\Examples\\Blog\\Data) ; phpmyadmin/src/Dbal/ConnectionType.php#User(enum_member) ; phpunit/tools/.phpstan/vendor/tomasvotruba/type-coverage/packages/type-perfect/tests/Rules/NarrowPublicClassMethodParamTypeRule/Fixture/Generics/SkipPassedGenerics.php#User(class ns=Rector\\TypePerfect\\Tests\\Rules\\NarrowPublicClassMethodParamTypeRule\\Fixture\\Generics)",
+            "edgeSource": "edgeSource=init"
+          },
+          {
+            "key": "gql-graphql-php/examples/01-blog/Blog/Type/ImageType.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=__construct"
+          },
+          {
+            "key": "gql-graphql-php/examples/01-blog/Blog/Type/NodeType.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=resolveNodeType"
+          },
+          {
+            "key": "gql-graphql-php/examples/01-blog/Blog/Type/QueryType.php|Exception",
+            "hits": "phpunit/src/Event/Exception/Exception.php#Exception(interface ns=PHPUnit\\Event) ; phpunit/src/Exception.php#Exception(interface ns=PHPUnit) ; phpunit/src/Framework/Constraint/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework\\Constraint) ; phpunit/src/Framework/Exception/Exception.php#Exception(class ns=PHPUnit\\Framework) ; phpunit/src/Framework/MockObject/Exception/Exception.php#Exception(interface ns=PHPUnit\\Framework\\MockObject)",
+            "edgeSource": "edgeSource=__construct"
+          }
+        ],
+        "B2a_crossFileSameNs": [
+          {
+            "key": "gql-graphql-php/src/Executor/ReferenceExecutor.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=fixResultsIfEmptyArray"
+          },
+          {
+            "key": "gql-graphql-php/src/Utils/Utils.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=undefined"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/ExecutorLazySchemaTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=testSchemaWithConcreteTypeWithPhpFunctionName"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/ExecutorTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=testArgsMapper"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/Promise/AmpFutureAdapterTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=testIsThenableReturnsTrueWhenAnAmpFutureIsGiven"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/Promise/AmpPromiseAdapterTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=testIsThenableReturnsTrueWhenAnAmpPromiseIsGiven"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/Promise/ReactPromiseAdapterTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=testIsThenableReturnsTrueWhenAReactPromiseIsGiven"
+          },
+          {
+            "key": "gql-graphql-php/tests/Executor/Promise/SyncPromiseAdapterTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=testIsThenable"
+          },
+          {
+            "key": "gql-graphql-php/tests/Server/QueryExecutionTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=testPassesRootValueAndContext"
+          },
+          {
+            "key": "gql-graphql-php/tests/Server/ServerConfigTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=testAllowsSettingContext"
+          },
+          {
+            "key": "gql-graphql-php/tests/Type/DefinitionTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=testRejectsAnObjectTypeWithIncorrectlyTypedInterfaces"
+          },
+          {
+            "key": "gql-graphql-php/tests/Type/ScalarSerializationTest.php|stdClass",
+            "hits": "phpunit/tests/unit/Framework/Constraint/Equality/IsEqualCanonicalizingTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualIgnoringCaseTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualTest.php#stdClass(method) ; phpunit/tests/unit/Framework/Constraint/Equality/IsEqualWithDeltaTest.php#stdClass(method)",
+            "edgeSource": "edgeSource=badStringValues"
+          }
+        ]
+      }
+    }
+  }
+}
