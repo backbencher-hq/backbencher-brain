@@ -678,6 +678,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         reservedNameSymbolsSuppressed: 0,
         indexOwnersAdopted: 0,
         indexOwnersExternalToFile: 0,
+        unnamedIndexSkipped: 0,
         containmentRetargeted: 0,
         containmentRetargetSkipped: 0,
       },
@@ -2321,6 +2322,44 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     if (!nameNode) return
     const object = this.firstDescendant(node, "object_reference")
     const tableName = object ? this.referenceLeaf(object, state) : undefined
+
+    // An index the source NEVER NAMES. PostgreSQL writes these freely —
+    // `CREATE INDEX ON hdb_catalog.event_log (trigger_name)` — and the grammar
+    // says so structurally: a `create_index` whose own-name field (`column`) is
+    // absent has no identifier child before its `ON` clause, so `identifiers[0]`
+    // is undefined and `firstIdentifier` walks INTO the `object_reference` and
+    // returns its first identifier instead.
+    //
+    // That returned the SCHEMA QUALIFIER. Measured over the 1,962-file corpus:
+    // 1,486 `create_index` nodes, 8 of them unnamed (0.54%), and the 8 produced
+    // symbols named after a schema — `hdb_catalog` six times across
+    // hasura-engine/server/src-rsr/{init_pg_source.sql,migrations/2_to_3.sql,…},
+    // plus two in boundary/…/68_wh_session_facts.up.sql. So `event_log` was
+    // published as containing a member called `hdb_catalog`, which is a
+    // DECLARATION THAT DOES NOT EXIST in any reading of the source: the index's
+    // real name is chosen by the server at creation time and is not knowable from
+    // the text. The independent oracle in
+    // `validation/m14/fixtures/sql/sql-contains-oracle.mts` is what found this,
+    // by reporting the edge as analyzer-only with the member name equal to a
+    // schema qualifier rather than a declaration.
+    //
+    // Nothing is emitted for it. A synthetic name would be a fabricated symbol; the
+    // `references` edge from index to table would name a symbol that is not
+    // there. The index is still COUNTED, so the omission is a countable number
+    // rather than a silent gap, and the table it indexes is still read by every
+    // other path in this file.
+    let hasOwnName = false
+    for (let i = 0; i < node.childCount; i++) {
+      if (node.fieldNameForChild(i) === "column") {
+        hasOwnName = true
+        break
+      }
+    }
+    if (!hasOwnName) {
+      state.ambiguity.unnamedIndexSkipped++
+      return
+    }
+
     const name = this.identifierName(nameNode, state)
     // The owner, when the table it indexes is already a symbol in this file.
     //
