@@ -44,8 +44,8 @@
         "bytes": 31052
       },
       "src/ast/real-sql-analyzer.ts": {
-        "sha256": "083aea65688d42f944cfbfa1284083498e6087ddf2801746707bb9c443151897",
-        "bytes": 204552
+        "sha256": "1e9f4369477f28b01e8bca64687d92f59f78332929efa7681f7dde62941a0f08",
+        "bytes": 206552
       },
       "src/ast/solidity-reserved-tokens.ts": {
         "sha256": "08285e3d5bee306abad097fc8694a2b4da0455471f3f8cbce5abac3522b93bd2",
@@ -120,7 +120,7 @@
         "bytes": 26693
       }
     },
-    "digest": "1bbeee6d86644ac6d21b9473c72f8c94feea8dcd547d5b163d4e6d7249d3e9b3",
+    "digest": "9fe0223d07efbe4e75f09a71ac54914381da132ad31165083c60b97e63a524c0",
     "parser": null,
     "siblings": {
       "src/ast/real-bash-analyzer.ts": {
@@ -466,11 +466,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:sql",
-      "wallTimeMs": 112.101378,
-      "userCpuMs": 134.493,
-      "systemCpuMs": 5.142,
-      "peakRssBytes": 333410304,
-      "rssDeltaBytes": 3538944,
+      "wallTimeMs": 188.679623,
+      "userCpuMs": 164.052,
+      "systemCpuMs": 19.369,
+      "peakRssBytes": 350703616,
+      "rssDeltaBytes": 9437184,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
