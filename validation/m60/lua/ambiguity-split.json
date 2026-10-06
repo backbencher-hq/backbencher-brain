@@ -1,6 +1,6 @@
 {
   "tool": "lua-ambiguity-split",
-  "commit": "f1cd307df13248ec8a2a0201380dbcbc34d01d30",
+  "commit": "3a12c01188a4bfefdbc5c6952b313ca8eabf400e",
   "corpus": {
     "root": "$HOME/fixtures/repositories",
     "method": "git ls-files '*.lua' per repo, sorted, no cap (deterministic, not random)",
@@ -63,8 +63,8 @@
     "multiSymbol": 163583,
     "multiKind": 81520,
     "B1_lineSettled": 94398,
-    "B2b_fileAbsent": 0,
-    "B2c_noneVisible": 0,
+    "B2b_fileAbsent": 63881,
+    "B2c_noneVisible": 5111,
     "B3_indistinct": 193,
     "visibilityRuleSensitive": 49734,
     "unresolved": 23854,
