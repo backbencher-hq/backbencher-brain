@@ -1878,3 +1878,187 @@ lane's files.
    yields 30,263 edges. Re-running without `--fresh` is a false negative. Prior round's
    artifact already records it; it is repeated here because the verdict is the acceptance
    signal and the resumed form is the one that looks authoritative.
+
+---
+
+## Round: the `extends` TARGET, audited against the source text
+
+### Population, stated before every number
+
+`find <CR> -name '*.scss' -type f | sort | head -600`, `BB_CORPUS_ROOT` default
+`$HOME/fixtures/repositories`. Deterministic — no sampling choice — so a
+before/after pair is a statement about the SAME files. 600 files, 0 parse failures, all
+figures through production `ASTEngine.parseFile`, never `analyze()`, because `analyze()`
+is a per-file unit that skips the pipeline stages (pool-worker, timeouts, truncation,
+enhancements) and a number from it is a number about a different code path.
+
+**Caveat that applies to every figure in this section and to none of the others in this
+document:** consul is **3,042 of the 4,433** admitted files (**68.6%**), so a per-file
+rate over this corpus is largely a statement about consul.
+
+### The oracle, and its stated limitation
+
+`validation/m14/fixtures/scss/scss-extends-resolution.ts` compares every emitted
+`extends` target against the `@extend` text **on that edge's own source line**:
+
+```
+src.slice(src.indexOf("@extend") + 7).split(";")[0]
+```
+
+No parse tree, no shared code with the analyzer, so it cannot be fooled by a grammar bug
+in the analyzer's walk. Two limitations, both load-bearing:
+
+1. It audits **labelling, not recall**. An `@extend` the analyzer never emits is absent
+   from both sides of the comparison. Recall is the 293-edge count, reported separately.
+2. `@extend %a, %b` is one statement the lane can represent with ONE edge, so the oracle
+   accepts a target that is any comma-separated part. "100%" therefore means *the emitted
+   target is one of the names the statement writes*, which is the correct claim for a
+   one-edge-per-statement lane — not "the lane represents every name of a multi-target
+   `@extend`", which it does not.
+
+### What the audit found, and what it cost
+
+| version | `extends` edges | same-file resolution | **oracle: target == source** |
+| --- | --- | --- | --- |
+| pre-fix (`34c20df9a`) | 293 | 48/293 — 16.4% | **265/276 — 96.0%** |
+| + delimiter recovery | 293 | 49/293 — 16.7% | **272/276 — 98.6%** |
+| + byte bound | 293 | 48/293 — 16.4% | **276/276 — 100.0%** |
+
+The edge count is 293 in all three, which is why it is useless as the signal and why the
+oracle was built.
+
+**The same-file column FALLS on the last row, and that is not a regression.**
+`consul/ui/packages/consul-ui/app/components/consul/health-check/list/skin.scss:22` reads
+
+```scss
+%healthcheck-output pre,
+%healthcheck-output pre code {
+  @extend %body-200-regular;
+```
+
+The statement names `%body-200-regular`, declared in an `@use`d module. The pre-bound
+analyzer emitted `%healthcheck-output` — the enclosing rule's own name, declared in THIS
+file, therefore resolving and therefore **wrong**. The bound replaced a wrong answer with
+a right one that happens to bind elsewhere. A metric was being read as a verdict; the
+oracle is the verdict. Per-edge diffing confirms it: **9** edges are re-attributed, **2**
+neutral (both targets real and local), **7** onto the name the source line actually writes,
+**0** onto a wrong name.
+
+### Defect 1 — the delimiter recovery, and why the guard was keyed on the wrong thing
+
+`findDescendant` is breadth-first, and on a broken `@extend` the grammar builds a
+`class_selector` spanning the rest of the rule body:
+
+```
+extend_statement [27]  "@extend %reset; background-color: cv.getVar("
+  ERROR         [27]   "%reset; background-color: cv.getVar("
+    class_selector [27] "%reset; background-color: cv.getVar"
+      placeholder [27]   "%reset"                      <- the real referent
+```
+
+so it returned the `class_selector` at step 4 and not the `placeholder` at step 5, and the
+guard `sel.type === "placeholder"` could not fire. The repair tests the STRING — a
+selector never contains `;`, `{` or `}`, which is a property of the language and so holds
+on whichever node carried the text — and recovers the referent from **inside** the bad node
+by a depth-first walk.
+
+Trimming at the first `;` was measured and rejected: only **6 of 81** unresolved `OTHER`
+targets have a published fragment before it, and those 6 are already emitted separately, so
+a trim duplicates rather than recovers.
+
+**Order matters and the reason is measured.** Read the other way round, the placeholder
+guard also rejects the delimiter case (`isReadablePlaceholder("%block; background-color: …")`
+is false, because `;` is neither `-` nor a word character), the recovery becomes
+unreachable, and `extends` falls **293 → 286**: 7 true edges lost to suppress 7 false ones.
+
+Measured incidence: **7** targets / **7** edges per 600 files — `bulma/docs/_sass/docs/options.scss:114`,
+`bulma/sass/base/skeleton.scss:106`, `bulma/sass/components/breadcrumb.scss:30`,
+`bulma/sass/components/card.scss:77`, `bulma/sass/elements/box.scss:41`,
+`bulma/sass/elements/notification.scss:28`, `bulma/sass/elements/tag.scss:20`. Target SET
+**199 → 193** distinct: 7 fabricated leave, **1** new distinct arrives (`%card-item`), and
+the other 6 recover onto names already present.
+
+### Defect 2 — the search left the statement (pre-existing, and the more expensive one)
+
+The `extend_statement` subtree contains the declarations that FOLLOW the statement. On a
+degenerate `@extend %;` the grammar produces **no** `placeholder` node — the `%` survives
+only as an anonymous token — so the walk fell through to the next declaration's own
+selector node:
+
+```
+extend_statement [61]  "@extend %; background-color: ov.getVar("
+  ERROR         [61]   "%; background-color: ov.getVar("
+    % (anon)     [61]   "%"                    <- the referent, never parsed
+    class_selector [62] ".getVar"              <- the NEXT declaration's selector
+```
+
+published as `extends .bd-quote button -> .getVar`: an inheritance edge pointing into an
+unrelated property value. It reproduces identically on the analyzer **before** defect 1, so
+it predates this round.
+
+A class selector IS a legal `@extend .btn` target, so **no string-shape test separates the
+two cases**. The fix is positional: a candidate must start before the statement's first `;`
+(`extendTargetBound`). It errs toward suppressing — a `;` inside an interpolation would cut
+the region short — and that direction is measured rather than assumed: **0 of the 293**
+`extends` targets carry a `;` at all once interpolation is removed.
+
+### The instrument had the bug, twice, and the controls are why they were found
+
+`scss-delimiter-census.ts`'s `stripInterpolation` drove its inner scan with a `for` whose
+own `i++` ran past the closing brace, so **every interpolation ate one extra character**,
+and when the next thing in the string was another `#{` that one lost its `#` and survived as
+a bare `{…}`:
+
+```
+".mobile .#{iv.$class-prefix}#{iv.$helpers-has-prefix}text-#{$alignment}-mobile"
+  buggy -> ".mobile .{iv.$helpers-has-prefix}text-mobile"   DELIMITER: true   <- FALSE POSITIVE
+  fixed -> ".mobile .text--mobile"                           DELIMITER: false
+```
+
+That reported **36** fabricated `contains` targets out of legitimate `bulma` selectors
+(`bulma/sass/helpers/typography.scss:62`) — from the predicate written specifically to
+prevent that false positive. **558** `contains` targets in this sample carry a brace pair
+and are legitimate: `#{}` is SCSS interpolation and a selector may contain it.
+
+The census now carries a **CONTROL** row: 5 hand-computed inputs through the real
+functions, printed every run, so a future off-by-one reads as a red line instead of as 36
+findings. Its dump mode also called `writeFileSync(path, data)` with no encoding, which
+throws `ERR_INVALID_ARG_VALUE` on the first target string — after the census had printed.
+
+And `scss-extend-recovery-resolution.ts` checks the property its own argument rests on,
+which is how the second instrument bug surfaced: it first tested `;`, `{` and `}` together
+and found **46** published symbol names carrying braces, all of them interpolation
+(`#{iv.$variables-host} .#{iv.$class-prefix}is-skeleton`). The argument is sound only for
+`;`, and it says so in the output rather than asserting it.
+
+### The one `extends` question this round could not close, with its cause
+
+`%skeleton-pulsation` is `@extend`ed 4 times in `bulma/sass/base/skeleton.scss` and
+**declared in that same file** at line 24 — and the lane publishes **no** symbol under that
+name. Before calling that a lane defect, the lane's placeholder publication was measured:
+over 300 corpus files, placeholder declarations published **46/46** when the grammar gives a
+top-level `rule_set` and **20/20** when it nests one inside another rule's block. So the lane
+is not dropping placeholders.
+
+It is the grammar. An `@include` whose argument is a **parenthesised map** derails the parse
+of everything after it — reproduced in 14 lines, and the controls are what make it a finding
+rather than an anecdote:
+
+| input | placeholder `rule_set`s | ERROR nodes |
+| --- | --- | --- |
+| `%ph { … }` | 1 | 1 (on the `@extend` line) |
+| `@include foo(a, b);` then `%ph { … }` | 1 | 1 |
+| `$m: ( "a": 1, );` then `%ph { … }` | 1 | 1 |
+| **`@include cv.register-vars(( "a": #{$b}, ));` then `%ph { … }`** | **0** | **3** |
+
+In `skeleton.scss` the map at line 15 is parsed as a `rule_set` whose `selectors` node holds
+**6** `pseudo_class_selector` children (the map entries), an `ERROR`, and then the real
+declaration as its **7th** child. The lane publishes selectors from a `selectors` node, so it
+publishes the phantom rule and not the declaration that follows it inside the same node.
+
+Not repaired here, and the reason is the brief's own: publishing `%skeleton-pulsation` would
+mean deciding that a `selectors` list which arrived from a map is not a selector list, which
+is a guess about the author's intent and would put a symbol on a construct the grammar says
+does not exist. **Overturn condition:** a tree-sitter-scss release in which
+`@include ns.fn(( … ))` does not swallow the remainder of the file. The lane-side half is
+already measured and is 66/66, so a grammar fix needs no change here.
