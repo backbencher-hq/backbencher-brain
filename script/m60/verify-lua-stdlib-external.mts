@@ -26,7 +26,7 @@
  *      `edgeDigest`, which hashes every edge's (file, type, source, target, line)
  *      and so cannot be moved by metadata. Measured on the whole-corpus draw:
  *
- *        with the rule    219,981 edges  3,509 marked  digest bc0c38b6...
+ *        with the rule    219,981 edges  3,525 marked  digest bc0c38b6...
  *        without          219,981 edges      0 marked  digest bc0c38b6...
  *
  *      The digest is printed on every run, so the second number is reproducible
@@ -80,6 +80,7 @@ function readdirSyncSafe(d: string): string[] { try { return readdirSync(d) } ca
 
 async function main() {
   const rows: Record<string, number> = {}
+  const spansByFile = new Map<string, Map<string, number[]>>()
   const edgeHash = createHash("sha256")
   let files = 0, parseErrors = 0, rels = 0, marked = 0
   const badReceiver: string[] = []
@@ -91,8 +92,19 @@ async function main() {
     try { pf = await parseFile(path.join(CR, rel)) } catch { parseErrors++; continue }
     if (!pf) { parseErrors++; continue }
     files++
-    const declared = new Set<string>()
-    for (const s of (pf.symbols ?? []) as any[]) { const n = String(s?.name ?? ""); if (n) declared.add(n) }
+    // One-sided on the analyzer's own rule: a declaration shadows an edge only if it
+    // appears at or before the edge's line. A file-WIDE test would disagree wherever
+    // a name is declared after the read — the common Lua shape for a module-local
+    // shadow near the bottom of a chunk.
+    const declaredAt = new Map<string, number[]>()
+    for (const s of (pf.symbols ?? []) as any[]) {
+      const n = String(s?.name ?? "")
+      if (!n) continue
+      const arr = declaredAt.get(n) ?? []
+      arr.push(Number(s?.startLine ?? 0))
+      declaredAt.set(n, arr)
+    }
+    spansByFile.set(rel, declaredAt)
     const edges = (pf.relationships ?? []) as any[]
     rels += edges.length
     for (const e of edges) {
@@ -103,7 +115,15 @@ async function main() {
       rows[e.type] = (rows[e.type] ?? 0) + 1
       byReceiver[r] = (byReceiver[r] ?? 0) + 1
       if (!EXPECTED_TABLES.has(r)) badReceiver.push(`${rel}:${e.line_number} ${e.type} receiver=${JSON.stringify(r)}`)
-      if (declared.has(r)) guardViolations.push(`${rel}:${e.line_number} ${e.type} receiver=${r} declared in the same file`)
+      // Lua's own rule: a local is visible FROM ITS DECLARATION LINE. This analyzer
+      // publishes a local's span as its declaration POINT (startLine === endLine), so
+      // requiring the edge to fall inside the span makes every mark fail — which is
+      // what the positive control caught when the guard was written that way.
+      const line = Number(e.line_number ?? 0)
+      const lines = declaredAt.get(r) ?? []
+      if (lines.some(l => l <= 0 || (line > 0 && l <= line))) {
+        guardViolations.push(`${rel}:${e.line_number} ${e.type} receiver=${r} declared at or before this line`)
+      }
     }
   }
 
@@ -141,7 +161,7 @@ async function main() {
   console.log(`marked external: ${marked}   ${JSON.stringify(rows)}`)
   console.log(`by receiver: ${JSON.stringify(Object.entries(byReceiver).sort((a, b) => b[1] - a[1]))}`)
   console.log(`assert 2 — receiver always documented: ${badReceiver.length === 0 ? "PASS" : `FAIL (${badReceiver.length})`}`)
-  console.log(`assert 3 — guard holds (no marked receiver declared locally): ${guardViolations.length === 0 ? "PASS" : `FAIL (${guardViolations.length})`}`)
+  console.log(`assert 3 — guard holds (no marked receiver declared at or before the edge's line): ${guardViolations.length === 0 ? "PASS" : `FAIL (${guardViolations.length})`}`)
   console.log(`assert 5 — positive control fired: ${controlFired ? "PASS" : "FAIL"}  receivers=${JSON.stringify([...ctlReceivers])} localTableFalsePositive=${falsePositive}`)
   if (badReceiver.length) console.log(badReceiver.slice(0, 5).join("\n"))
   if (guardViolations.length) console.log(guardViolations.slice(0, 5).join("\n"))
