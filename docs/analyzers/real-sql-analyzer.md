@@ -471,6 +471,130 @@ so a grammar defect both the auditor and the analyzer accept would be invisible 
 construct probe and the capability battery cover that gap by measuring the grammar's own
 vocabulary rather than agreeing about it.
 
+## PASS 16 — an independent `contains` oracle, and the FABRICATION it found (2026-10-05)
+
+Everything above on this page measured SQL through `parseFile` and through probes the lane
+wrote. This pass adds the first instrument that is not the lane's own reading of the
+analyzer: `validation/m14/fixtures/sql/sql-contains-oracle.mts` re-derives `contains` from
+the grammar's structure, reading nodes and their fields and consulting none of
+`ownerName`, `qualifiedNameFor`, `treeIndexes` or `processNamed*`. It compares in **both**
+directions and splits every residue **by cause**, because an unexplained bucket is a number
+nobody can act on.
+
+### The defect: a schema published as a declaration
+
+`CREATE INDEX ON hdb_catalog.event_log (trigger_name)` — legal PostgreSQL, and hasura-engine
+ships it in `server/src-rsr/init_pg_source.sql` and four of its migrations. The grammar marks
+it structurally: a `create_index` with no own-name field has no identifier child before its
+`ON` clause, so the name lookup fell through to `firstIdentifier`, which walked into the
+`object_reference` and returned the **schema qualifier**.
+
+Measured over the 1,962-file corpus: **1,486 `create_index` nodes, 8 unnamed (0.54%)**, and
+the analyzer published a symbol named `hdb_catalog` plus a `contains` edge saying
+`event_log` contains it. `hdb_catalog` is a schema, so the edge asserts a declaration that
+does not exist while pointing at something that does — the failure a name-resolving consumer
+cannot distinguish from a correct edge.
+
+The fix emits nothing and **counts** it (`ambiguity.unnamedIndexSkipped`), so the omission
+is a declared number rather than a silent gap. Fixture `sqld17-unnamed-index` pins the
+negatives, pins that a **named** index over the same table in the same schema survives, and
+pins a case where the index's own name *equals* its schema qualifier — which only the parse
+fact separates from the bug.
+
+### The comparison, at the full corpus
+
+Artifact: `validation/m14/fixtures/sql/measurements/pass15-contains-oracle.txt`.
+
+| | count |
+| --- | --- |
+| oracle edges | 12,877 |
+| analyzer edges | 12,018 |
+| **agreed** | **11,895** (93.00% of the oracle's edges) |
+| oracle-only | 926 |
+| analyzer-only | 119 |
+
+Oracle-only, by cause:
+
+| cause | n |
+| --- | --- |
+| the owner is not declared in this file — boundary splits one table's creation across files | 456 |
+| `RETURNS TABLE (…)` function: the oracle calls the columns members, the analyzer calls them the function's OUT PARAMETERS, which is what PostgreSQL's `RETURNS TABLE` is | 404 |
+| a composite type's attributes — `CREATE TYPE point AS STRUCT(x REAL, y REAL)` records `fields` on the type symbol and publishes no per-attribute symbol. A decision, not a defect | 47 |
+| a column named after its own table (`useragent.useragent`) | 9 |
+| a name `RESERVED_AS_COLUMN_NAME` declines (`like`, `inherit`, names the grammar could not represent) | 6 |
+| a name carrying embedded quotes and `;` | 4 |
+
+Analyzer-only, by cause:
+
+| cause | n |
+| --- | --- |
+| recovered from an ERROR node — the grammar could not parse the construct and the analyzer read the declaration out of the damage | 117 |
+| the schema-qualifier fabrication above | 1 |
+| residue | 1 |
+
+**Not independent, and this is the limitation that matters:** the oracle walks the *same* wasm
+grammar, so a grammar bug shared by both paths is invisible to it. It is a second
+implementation reading one tree, not a second language. The 117 ERROR-node recoveries are
+exactly where that limitation lives, which is why they are counted as recoveries and not as
+agreement.
+
+### Six defects in the ORACLE, each of which had made a real class read as disagreement
+
+Worth recording because every one of them was an instrument that could not see the thing it
+existed to check — the same shape as the pass-14 `k3` double-increment and the
+`migrate-m12-truth` `split(":")` defect:
+
+| oracle defect | edges it had been misreporting |
+| --- | --- |
+| members sit inside a `constraints` node one level below the body, not in the body's direct children | 43 of 46 analyzer-only in a 100-file sample |
+| a qualified name must be split on the dots **not inside quotes** — `sqld16` pins this as a parse fact, and postgrest's `pgrst_reserved_chars` plus phpmyadmin's `exploit_test.sql` carry names with dots, spaces and `;` | 3 analyzer-only, 11 oracle-only |
+| the analyzer's qualified target was prefixed a second time, turning 100% agreement into 0% | 713 + 759 |
+| the damaged-region classifier tested by NAME, which separated `aoc2022_day17_rocks.id` from `….bits` in one `CREATE TABLE` by coincidence. It now tests by BYTE SPAN | 265 misclassified |
+| `ALTER TABLE … ADD COLUMN` is containment — proxicall's migrations add columns by ALTER and then index them | 12 called "unexplained" |
+| the key was built from the corpus-relative path rather than the file's published name | 713 |
+
+### DERIVATION debt, before and after
+
+| | count |
+| --- | --- |
+| `script/m60/rel-type-coverage-gate.ts` reported | 6 types un-audited (`calls`, `contains`, `exports`, `imports`, `references`, `uses`) |
+| **actually true** | **7 of 7 emitted types compared against nothing** |
+| after `script/m14/sql-truth.ts` | **6 of 7** |
+
+The gate's `audited` set is an **allowlist read out of `differential.ts`**, not a check that
+an oracle exists — and `differential.ts` cannot audit SQL at all:
+
+```
+$ npx tsx script/m14/differential.ts --lang sql --sample 60
+[lane] SKIP sql: no corpus repo mapped in LANG_REPOS and none checked out — declared unrun, not measured
+probe run (--lang sql): measured 0 lane(s) — M14.0.F5 NOT written.
+```
+
+So the gate's 6 was optimistic in the wrong direction, and this pass names the difference
+rather than taking credit for closing it.
+
+After registering the oracle the gate reports **9** for sql, up from 6, and that is correct
+in direction: a per-lane export **wins** over the shared allowlist, so SQL's four inherited
+labels (`extends`, `implements`, `instantiates`, `overrides`) drop out — and they were never
+backed by an oracle, only *named* in a shared list. The residual 9-vs-7 is the gate's
+`emitted` set being **source-derived and over-reporting**: `exports`, `extends` and
+`implements` appear in `real-sql-analyzer.ts` only inside `evidenceClassFor`'s switch, and
+the arbiter measures **0** edges for all three. §8 item.
+
+### The source mutant, and why it needed its own runner
+
+The guard is in **source**, so it cannot be a transform over a parse result: reproducing it
+there means re-deriving the analyzer's own symbol-naming, which would prove nothing about
+it. `script/m60/run-sql-source-mutants.ts` edits `processIndex`, runs the lane, and restores
+the file md5-verified.
+
+Its first run printed `clean: 0 pass / 0 fail` and carried on, because it read only the
+harness's `summary:` line and the harness writes that with a trailing line after it. A
+zero-pass baseline makes every mutant look like it introduced the failures it was credited
+with catching, so a baseline that reports nothing is now refused as the harness failure it
+is. After the fix: **17 pass / 0 fail**, mutant **CAUGHT** by `sqld17`, analyzer md5
+**identical to HEAD** after the run.
+
 ## PASS 15 — the arbiter's exit 1 is a LEAKED TIMER in `engine.ts`, and the trap is not this lane's (2026-10-05)
 
 The pass-15 arbiter walk printed a correct table (`emitted 7/10`, `ruled-sound 3`,
