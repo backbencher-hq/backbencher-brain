@@ -1095,4 +1095,132 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
           : e),
     }),
   },
+
+  // ---------------------------------------------------------------- PS-B16, cause C
+  //
+  // Every revert below re-derives its trigger from the RESULT's own fields, never from a
+  // fixture name, because a name filter stops matching the moment a fixture is renamed and
+  // a mutant that measures one fixture instead of a behaviour is a fixture with extra steps.
+  // The byte predicates duplicate `externalReadingOf` in the analyzer on purpose: a mutant
+  // that imported the analyzer's own helper could not survive the helper being deleted, and
+  // the point of these four is to fail when that helper's LOGIC changes.
+  {
+    id: "powershell/externality-guard-removed",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS-B16 REVERT: the declaration guard is deleted, so a mark is published on SHAPE alone — every Verb-Noun or qualified-looking target, whether or not the emitting file declares it. That is the pre-fix shape rule and it is the mislabel the guard exists to prevent: measured over 1,181 of 1,181 admitted files, the unguarded Verb-Noun reading marks 32,368 live edges of which **7,040 (21.75%) point at a name the EMITTING FILE declares**. `Get-Thing` in externality-psb16 is one of them, declared at line 19 and called at line 26 with a spelling byte-identical to the `Get-ChildItem` on line 13.\n\nCaught by externality-psb16's positive row for `calls -> Get-Thing` at line 26 (`meta.externalTarget: null`) and its forbid row for the same edge with `meta.externalTarget: true`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.target ?? "")
+        if (t.length === 0) return x
+        if (!psByteIsCmdlet(t) && !psHasQualifierByte(t)) return x
+        const { externalTarget, externalVia, noDeclarationInFile, ...meta } = x.metadata ?? {}
+        void externalTarget; void externalVia; void noDeclarationInFile
+        return { ...x, metadata: { ...meta, externalTarget: true, externalVia: psByteIsCmdlet(t) ? "cmdlet" : "qualified" } }
+      }),
+    }),
+  },
+  {
+    id: "powershell/externality-partition-removed",
+    language: "powershell",
+    defectClass: "noise",
+    description:
+      "PS-B16 REVERT, the PAYLOAD shape: both keys are published on every row instead of partitioning them. The fact is identical on both rows — `externalTarget` fires only where the guard passed, so it already implies 'no declaration in this file' — and the duplication is not free: over the same 1,181-file walk the payload counterfactual in `ambiguity-split.mts` prices the partition at **3,216,966 B (+9.23%)** and publishing both on every row at **3,888,591 B (+11.15%)**, so 671,625 B of the lane's relationship payload is the same fact written twice.\n\nCaught by externality-psb16's forbid row for `calls -> Get-ChildItem` with `meta.noDeclarationInFile: true`, and by the positive rows asserting `meta.noDeclarationInFile: null` on the same edges.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const meta = x.metadata ?? {}
+        if (meta.externalTarget === true && meta.noDeclarationInFile === undefined) {
+          return { ...x, metadata: { ...meta, noDeclarationInFile: true } }
+        }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "powershell/externality-quote-exclusion-removed",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS-B16 REVERT: the leading-QUOTE exclusion is deleted, so any target carrying a `.` `\\` `/` or `:` is read as qualified — including the string literals this analyzer publishes as property and variable names. It publishes hashtable keys and command arguments verbatim, so `'Content-Type'` (43 corpus edges), `\"Authorization\"` (18), `'User-Agent'` (14) and `\"it:skip\"` (7) all arrive as names, and a quoted literal is not an identifier. externality-psb16 declares `'Content-Type'` as a property at line 61 precisely so this reading has something to be wrong about.\n\nCaught by externality-psb16's forbid row for `uses -> 'Content-Type'` with `meta.externalTarget: true`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.target ?? "")
+        if (t.length === 0) return x
+        if (t.charCodeAt(0) !== 34 && t.charCodeAt(0) !== 39) return x
+        if (!psHasQualifierByte(t)) return x
+        return { ...x, metadata: { ...(x.metadata ?? {}), externalTarget: true, externalVia: "qualified" } }
+      }),
+    }),
+  },
+  {
+    id: "powershell/externality-scope-exclusion-removed",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS-B16 REVERT: the SCOPE-PREFIX exclusion is deleted, so `global:Helper`, `script:Foo`, `local:Foo`, `private:Foo` and `function:prompt` are marked external. All five name scopes a declaration IN THE EMITTING FILE can bind — `function global:Helper {…}` is ordinary PowerShell, which externality-psb16 writes at line 41 and calls at line 49, so the mark would be falsified by the very file that carries it. 881 corpus edges carry such a prefix. `env:`/`variable:`/`using:` are deliberately NOT in the exclusion set and this mutant leaves them marked: those are runtime tables and the caller's scope.\n\nCaught by externality-psb16's forbid row for `calls -> global:Helper` with `meta.externalTarget: true`, and by the positive row for the same edge asserting `meta.externalTarget: null`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.target ?? "")
+        if (t.length === 0 || !psHasScopePrefix(t, ["global", "script", "local", "private", "function"])) return x
+        return { ...x, metadata: { ...(x.metadata ?? {}), externalTarget: true, externalVia: "qualified" } }
+      }),
+    }),
+  },
+  {
+    id: "powershell/externality-no-declaration-dropped",
+    language: "powershell",
+    defectClass: "undercount",
+    description:
+      "PS-B16 REVERT, the bare-fact arm: every `noDeclarationInFile` key is deleted from every edge. The field is the lane's answer to cause A as well as cause C — of the 70,139 corpus edges that resolve against no published symbol, **41,686 (59.43%)** carry it, and it is the only statement the analyzer can make about a name a file does not declare. Dropping it leaves the edge looking exactly as it did before this change, which is the point of the mutant: an additive key that vanishes is indistinguishable from one that never shipped.\n\nCaught by externality-psb16's positive rows, every one of which asserts a `meta.*` value that this transform removes.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const meta = x.metadata ?? {}
+        if (!("noDeclarationInFile" in meta)) return x
+        const { noDeclarationInFile, ...rest } = meta
+        void noDeclarationInFile
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
 ]
+
+/** PS-B16 — the three byte predicates the four cause-C mutants re-derive. They duplicate
+ *  `externalReadingOf` in the analyzer on purpose: a revert that called the analyzer's own
+ *  helper could not fail when the helper's LOGIC changed, which is the only thing these
+ *  mutants are for. No regex, matching the analyzer's own constraint. */
+const psUpper = (c: number): boolean => c >= 65 && c <= 90
+/** A hyphen with an ASCII uppercase letter on BOTH sides — PowerShell's Verb-Noun spelling. */
+const psByteIsCmdlet = (t: string): boolean => {
+  for (let i = 1; i < t.length; i++) {
+    if (t.charCodeAt(i) === 45 && psUpper(t.charCodeAt(0)) && psUpper(t.charCodeAt(i + 1))) return true
+  }
+  return false
+}
+/** A byte no bare PowerShell identifier has. */
+const psHasQualifierByte = (t: string): boolean => {
+  for (let i = 0; i < t.length; i++) {
+    const c = t.charCodeAt(i)
+    if (c === 46 || c === 92 || c === 47 || c === 58) return true
+  }
+  return false
+}
+/** A case-insensitive `prefix:` match. */
+const psHasScopePrefix = (t: string, prefixes: string[]): boolean => {
+  for (const p of prefixes) {
+    if (t.length <= p.length + 1 || t.charCodeAt(p.length) !== 58) continue
+    let eq = true
+    for (let i = 0; i < p.length; i++) {
+      let c = t.charCodeAt(i)
+      if (c >= 65 && c <= 90) c += 32
+      if (c !== p.charCodeAt(i)) { eq = false; break }
+    }
+    if (eq) return true
+  }
+  return false
+}
