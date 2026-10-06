@@ -55,8 +55,8 @@
 (2,181 files, `parseFile`) and `clean-honesty-gate.ts` (312 files, `analyze()`) are
 different code paths over different corpora, so their totals are not comparable and
 are never mixed in one table. The size of the gap is measured rather than waved at:
-on the **same 312 files**, `parseFile` yields **30,744** relationships and `analyze()`
-**31,246** — a difference of **502 edges (1.7%)**, and it is not spread evenly. The delta
+on the **same 312 files**, `parseFile` yields **30,739** relationships and `analyze()`
+**31,241** — a difference of **502 edges (1.7%)**, and it is not spread evenly. The delta
 is UNCHANGED by either of this lane's two `references` fixes: pass 4's per-node signature
 index and pass 5's `&` separator each made BOTH paths gain the same number of edges — 498
 and 59 respectively — which is itself evidence that the edges are read by the analyzer and
@@ -71,11 +71,11 @@ not by a pipeline stage:
 | `imports` | 1,891 | 1,920 | +29 |
 | `calls` | 3,798 | 3,886 | +88 |
 | `implements` | 712 | 772 | +60 |
-| `exports` | 4,839 | 4,937 | +98 |
-| `contains` | 7,511 | 7,730 | +219 |
+| `exports` | 4,837 | 4,935 | +96 |
+| `contains` | 7,508 | 7,727 | +219 |
 
 Both are reproducible: the arbiter, the firing check and the census independently
-report `calls 3,798 / contains 7,511 / imports 1,891 / exports 4,839 / implements 712`
+report `calls 3,798 / contains 7,508 / imports 1,891 / exports 4,837 / implements 712`
 for the same 312 files, and `parseFile` was run twice with identical totals. The delta
 is therefore **the pipeline stages `analyze()` skips**, not run-to-run noise — which is
 the reason every production figure in this document is the `parseFile` one.
@@ -432,10 +432,10 @@ content-deduplicated corpus (`script/m14/clean-wide-manifest.txt`).
 | `extends` | ❌ not emitted | **RULED** — registered in `script/m14/clean-ruled.ts`; instrument B position census, 0 UNCLASSIFIED of 5,567 declarations; corroborated by instrument A | 0 | — | — | 0 | — | — |
 | `calls` | ✅ EMITTED | — | 3,798 | 108 | 98.9% | 27,485 | 99.9% | 809 |
 | `uses` | ✅ EMITTED | — | 1,457 | 27 | 100.0% | 11,864 | 99.8% | 1 |
-| `contains` | ✅ EMITTED | — | 7,511 | 275 | 100.0% | 57,855 | 100.0% | 0 |
+| `contains` | ✅ EMITTED | — | 7,508 | 275 | 100.0% | 57,855 | 100.0% | 0 |
 | `imports` | ✅ EMITTED | — | 1,891 | 236 | 84.2% | 11,878 | 97.6% | 0 |
 | `references` | ✅ EMITTED | **GAP → implemented in pass 4**, and a **second GAP in pass 5**; an instance member's own `\| C a` published nothing, and a context joined by `&` published only its first conjunct | 10,108 | 275 | 89.0% | 81,534 †† | 99.0% | 55 |
-| `exports` | ✅ EMITTED | — | 4,839 | 304 | 100.0% | 37,126 | 100.0% | 293 |
+| `exports` | ✅ EMITTED | — | 4,837 | 304 | 100.0% | 37,126 | 100.0% | 293 |
 | `implements` | ✅ EMITTED | — | 712 | 103 | 97.2% | 2,990 | 97.3% | 0 |
 | `overrides` | ✅ EMITTED | **GAP → implemented in pass 2**; believed missing at handover | 306 | 11 | 100.0% | 582 | 100.0% | 0 |
 | `instantiates` | ✅ EMITTED | — | 122 | 9 | 100.0% | 1,459 | 99.9% | 0 |
@@ -488,11 +488,36 @@ The `files` column is deliberately absent: the census caps its per-type file set
 400, so any type at the cap reads `400` and the number is not a count. Types below the
 cap: `uses` 366 files, `overrides` 40, `instantiates` 167.
 
-PROD totals: **30,744 relationships, 8,288 symbols, 312/312 files parsed, 0 parse
+PROD totals: **30,739 relationships, 8,285 symbols, 312/312 files parsed, 0 parse
 failures, 0 degraded fallbacks, 0 empty names, 0 empty/unknown kinds, 0 `unknown`
 endpoints, 0 edges without a site line.** WIDE totals: **232,773 edges**. Both read
 through `parseFile`; `script/m14/clean-ontology-census.ts` prints the production entry
 point in its own header so a reader cannot mistake one for the other.
+
+**These totals moved DOWN by 5 since the previous revision of this document, and the
+cause is this lane's own commit `4c850ca97`.** That commit withdrew the phantom `type`
+symbol a signature's argument type produces — `widByPtr :: !WID -> Bool` comes back from
+the grammar as a `type_definition` with no body and a name field holding the first
+argument type. The previous revision of this table was published BEFORE that commit and
+was never re-measured after it, so it carried 3 fabricated symbols and the 5 edges that
+bound to them:
+
+| | before `4c850ca97` | measured at this commit | instrument |
+|---|---:|---:|---|
+| `contains` | 7,511 | **7,508** (−3) | `clean-ontology-census.ts` + the arbiter |
+| `exports` | 4,839 | **4,837** (−2) | same, both agreeing |
+| symbols | 8,288 | **8,285** (−3) | `clean-honesty-gate.ts` |
+| total edges | 30,744 | **30,739** (−5) | same, both agreeing |
+| `analyze()` path total | 31,246 | **31,241** (−5) | `clean-honesty-gate.ts` |
+
+**The arithmetic is the whole argument that this is the fix landing and not a
+regression.** 3 symbols withdrawn, and exactly 3 `contains` (one per withdrawn child) plus
+2 `exports` edges unbound: −5 on both paths, and the `parseFile`/`analyze()` gap stays at
+**502** because both paths lost the same edges. Every other type's count is unchanged to
+the edge, and **every resolution rate is unchanged** (`references` 21.6% intra / 89.0%
+corpus, `imports` 2.2% / 84.2%, `calls` 98.1% / 98.9%, `implements` 53.4% / 97.2%, the
+other four 100.0% / 100.0%) — re-measured, not assumed. A genuine coverage loss would
+have moved resolution, because the withdrawn edges resolved. These did not exist.
 
 `extends` leads the table because it is the only type whose absence is a measurement,
 and a ruling is the row a reader needs first.
@@ -768,6 +793,12 @@ Those are pass 4's numbers and pass 5 then moved all three again — `references
 above is left at its pass-4 state because it is the record of what pass 4 did; the current
 figures are the verdict table's and Q5's. Pass 5's own movement is in
 [`&` is a second spelling of `,`](#the-two-spellings-are-one-construct-pass-5).
+**And 30,744 is itself no longer current**: commit `4c850ca97`, which landed after both
+passes, withdrew 3 phantom symbols and the 5 edges bound to them, so the total is now
+**30,739** — [measured, with the arithmetic, at PROD totals](#prod-totals-30739-relationships-8285-symbols-312312-files-parsed-0-parse). The
+rows below that read 8,288 are pass-4/pass-5 snapshots of the same population and are left
+as the record; no `references` count in them moved, and `references` is what these two
+passes were about.
 | every other type | — | **unchanged to the edge** |
 | symbols, empty names, unknown kinds, unknown endpoints, edges without a line, degraded | 8,288 / 0 / 0 / 0 / 0 / 0 | 8,288 / 0 / 0 / 0 / 0 / 0 |
 | `references` self-edges | 54 | **55** |
@@ -951,6 +982,33 @@ derives no row for, so on a like-for-like rotation pass 5 would be expected to R
 `unexplained` by up to 59 — and this run cannot show that, because the rotation moved too.
 **That expectation is not measured and is not claimed as a result.**
 
+**Two more rotations measured at this commit, and the point is now a range rather than an
+anecdote.** Same command, same analyzer, minutes apart, and the rotation counter now reads
+`rot 2` (the counter lives in a state file outside the repo and was evidently reset between
+rounds, which is itself a reason not to quote any of these as a fixed figure):
+
+| | Clyde | clean-stdlib |
+| --- | --- | --- |
+| rotation | `rot 2` | `rot 2` |
+| tree truth edges | 1,316 | 658 |
+| covered by the analyzer | 875 (66.5%) | 618 (93.9%) |
+| MISSING | **441** | **40** |
+| analyzer edges | 1,384 | 924 |
+| UNEXPLAINED | 661 (47.8%) | 419 (45.3%) |
+| heuristic | **0** | **0** |
+| unexplained by label | `references=478, calls=175, overrides=5, instantiates=3` | `references=200, calls=143, implements=41, overrides=35` |
+
+An earlier invocation in the same session, on the same commit, gave Clyde `MISSING 527` and
+`clean-stdlib MISSING 49`. So Clyde's MISSING has now been observed at **441 / 477 / 492 /
+527** and clean-stdlib's at **23 / 40 / 49** across six runs of one commit — a spread wider
+than any analyzer change this lane has made. Consolidated, the quantities that are **stable
+across every rotation measured here** are the ones worth reading: the lane is RED on both
+repos; `heuristic` is **0** on both; `overrides` is `COMPARED WITH NO TRUTH` on both, with
+0 truth rows; and `overrides`+`instantiates` account for every `MISSING` row printed in the
+per-lane samples on both repos — i.e. the whole `MISSING` population is the
+`declinedInstantiations` family below, not a construct the analyzer fails to read. The
+*rates* move with the sample; the *shape* does not.
+
 **The oracle's declared limitation, stated rather than glossed.** `deriveCleanEdges` is a
 separate walker over the SAME grammar, so a grammar bug present in both paths is
 invisible to it. This lane's 30.1% parse-failure rate (limitation 0 below) is exactly
@@ -1037,7 +1095,7 @@ one the workstream compares against, it is named as WIDE.
 
 ### Q6 — Confident (`evidenceClass` and confidence are right)
 
-Measured over **30,744 edges at PROD (312 files, production `parseFile`)**, re-run at this commit.
+Measured over **30,739 edges at PROD (312 files, production `parseFile`)**, re-run at this commit.
 The previous revision quoted the 2,181-file WIDE population, which could not be re-measured here;
 WIDE's total was 232,773 and its per-type distribution is unchanged for every type except
 `references`, because pass 4 adds edges at 0.95 and touches no other type.
@@ -1046,15 +1104,15 @@ WIDE's total was 232,773 and its per-type distribution is unchanged for every ty
 | --- | --- | --- | --- |
 | `calls` | 0.90 × 3,798 | 0 | `usage_contextual` |
 | `uses` | 0.90 × 1,457 | 0 | `structural` |
-| `contains` | 1.00 × 7,511 | 0 | `structural` |
+| `contains` | 1.00 × 7,508 | 0 | `structural` |
 | `imports` | 1.00 × 1,891 | 0 | `import_based` |
 | `references` | 1.00 × 1,528 · 0.95 × 8,521 | 0 | `reference_qualified` |
-| `exports` | 1.00 × 4,839 | 0 | `structural` |
+| `exports` | 1.00 × 4,837 | 0 | `structural` |
 | `implements` | 1.00 × 712 | 0 | `structural` |
 | `overrides` | 1.00 × 306 | 0 | `reference_qualified` |
 | `instantiates` | 1.00 × 122 | 0 | `structural` |
 
-**Heuristic ratio: 0 of 30,744 edges (0.000%) are below 0.7.** The same ratio holds at WIDE:
+**Heuristic ratio: 0 of 30,739 edges (0.000%) are below 0.7.** The same ratio holds at WIDE:
 0 of 232,773. The honesty contract §4
 requires that ratio to be countable, and it is — as exactly zero. Two honest notes
 attached to that number:
@@ -1146,16 +1204,16 @@ was clean before the doc edits and after them.
 | command | result | exit |
 | --- | --- | --- |
 | `npx tsc --noEmit -p tsconfig.json` | no output | 0 |
-| `npx tsx script/m14/ontology-coverage-gate.ts clean` | `emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0` over 312 admitted files | **0** |
+| `npx tsx script/m14/ontology-coverage-gate.ts clean --fresh` | `walk: 312/312 files (100.0%)  newly walked 312, resumed 0` then `emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0` — **re-run at this commit, `--fresh` is mandatory, see [the arbiter's false 0/10](#what-the-arbiter-reported-and-why-it-was-wrong)** | **0** |
 | `npx tsx script/m14/ontology-coverage-gate.ts --coverage` | 14 lanes can be ruled for, `clean` among them | 0 |
-| `npx tsx script/m14/verify-ruling-tables-registered.ts` | 14 tables on disk, 14 registered, `PASS` | 0 |
+| `npx tsx script/m14/verify-ruling-tables-registered.ts` | **18 tables on disk, 18 registered, `unadjudicated lanes : 0  ()`, `PASS`** — and `clean` is in the on-disk set and in the registry, so this lane is no longer named by any list (§8 item 1, since resolved) | 0 |
 | `npx tsx script/m14/firing-check.ts --files 120 clean` | `9/10 fired, 16416 edges, 120/120 files`, `degraded 0`, 0 parse failures, 0 empty names, 0 unknown kinds, 0 unknown endpoints — **and the digest reads `MISSING:` on every lane, so its `analyzerStableDuringRun: true` is vacuous; see [report item 6](#reported-to-the-supervisor-not-fixed)** | 0 |
-| `npx tsx script/m14/clean-ontology-census.ts` | 312/312 parsed, **30,744** edges, 8,288 symbols, 0 empty names, 0 unknown kinds, 0 unknown endpoints, 0 edges without a line, 0 degraded. `--wide` **ABORTED twice** — see [WIDE is not re-measurable](#wide-is-not-re-measurable-on-this-machine) | 0 |
+| `npx tsx script/m14/clean-ontology-census.ts` | 312/312 parsed, **30,739** edges, 8,285 symbols, 0 empty names, 0 unknown kinds, 0 unknown endpoints, 0 edges without a line, 0 degraded. `--wide` **ABORTED twice** — see [WIDE is not re-measurable](#wide-is-not-re-measurable-on-this-machine) | 0 |
 | `npx tsx script/m14/clean-ontology-census.ts --limit 120` | 120/120 parsed, 16,039 edges — a DIFFERENT 120 files from `firing-check`'s stride sample (first-120-of-sorted vs round-robin-per-repo), which is why the two disagree on totals, and why both populations are named wherever either is quoted | 0 |
 | `npx tsx validation/m14/fixtures/clean/extends-construct-probe.mts` | TRACKED 0 UNCLASSIFIED / WIDE 0 UNCLASSIFIED; instrument A 0 of 39 probed | 0 |
 | `npx tsx validation/m14/fixtures/clean/ampersand-context-probe.mts` | TRACKED 473 contexts, 85 with `&`, conjuncts **62 ADD / 47 DUPLICATE**; WIDE 1,995 contexts, 365 with `&`, **249 ADD / 264 DUPLICATE**; unnamed child types `{&:504, ",":214, \|:1995}` | 0 |
 | `npx tsx validation/m14/fixtures/clean/references-duplicate-probe.mts` | TRACKED 312 files, **10,108** `references` edges, 9,629 distinct (source,target,line) groups, **387** groups with more than one — byte-identical to the `,`-only A/B on both the total and the per-discriminator breakdown | 0 |
-| `bun run script/m14/clean-honesty-gate.ts` | 312 files, 8,288 symbols, **31,246** relationships, **no violations**; `implements.classNotDeclaredHere` **306**, `references.externalTypeOrContext` **7,866** (`analyze()`, see Instruments) | 0 |
+| `bun run script/m14/clean-honesty-gate.ts` | 312 files, 8,285 symbols, **31,241** relationships, **no violations**; `implements.classNotDeclaredHere` **306**, `references.externalTypeOrContext` **7,866** (`analyze()`, see Instruments) | 0 |
 | `bun run script/m14/clean-completeness-gate.ts` | 141 declared named node types, 141 classified, **all checks pass** | 0 |
 | `npx tsx script/m14/clean-mutant-run.ts` | **12 mutants, caught 12/12**, every one made the suite red. The two `&` mutants are caught by `clean/ampersand-class-context` alone and in OPPOSITE directions — `…separator-dropped` fail 0 → 1 with 10 problems, `…repeat-published-per-conjunct` fail 0 → 1 with 4 | 0 |
 | `npx tsx script/m14/run-fixtures.ts --lang clean` | clean: **pass 13, fail 0**, `fixture baseline gate: no regressions` (12 after pass 4 added `instance-member-signature-context`, 13 after pass 5 added `ampersand-class-context`) | 0 |
@@ -1164,7 +1222,7 @@ was clean before the doc edits and after them.
 | `npx tsx validation/m14/fixtures/clean/extends-probe-roles-regen.mts` | idempotent: regeneration leaves the expectation byte-identical, 0 notes dropped | 0 |
 | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=clean` | 4 DERIVATION findings (`contains`, `exports`, `imports`, `uses`), 3 NEW; checks 2/3/4 pass — **and it OVERWRITES the repository-wide results file, see report item 8**; restored with `git checkout --` in the same minute, nothing committed from it | 1 |
 | `bash script/m14/no-regex-gate.sh` | `real-clean-analyzer.ts` contributes **0** of the tree's 4 regex literals (all 4 are `real-svelte-analyzer.ts`), and the census half prints `regex census gate PASSED` | **1** — the script's last line is `sys.exit(1 if rows else 0)` over `src/ast` as a whole, so the exit is **1 because of another lane's file**, not clean's. The previous revision of this row recorded 0, which this script cannot return while any analyzer in scope carries a literal; the per-file attribution above is the part that is clean's to answer |
-| `npx tsx script/m14/differential.ts --lang clean --sample 60` | **RED, exit 6, five runs at this commit** — and the figures MOVE between runs because the gate rotates its 60-file sample (`coldPoolPick`, differential.ts:927). Run A (pre-pass-4): Clyde `truth=1314 covered=787 (59.9%) MISSING=527 \| edges=1322 unexplained=671 (50.8%)`, clean-stdlib `truth=667 covered=618 MISSING=49 \| edges=972 unexplained=482 (49.6%)`. Run B (pre-pass-4): Clyde `truth=1177 covered=700 MISSING=477 \| edges=1214 unexplained=610 (50.2%)`, clean-stdlib `truth=655 covered=606 MISSING=49 \| edges=941 unexplained=462 (49.1%)`. Run C (post-pass-4, rot 22/23): Clyde `truth=1314 covered=787 MISSING=527 \| edges=1322 unexplained=671 (50.8%)`, clean-stdlib `truth=664 covered=615 (92.6%) MISSING=49 \| edges=985 unexplained=488 (49.5%)`. `heuristic=0` and `COMPARED WITH NO TRUTH: overrides` on all five. **Pass 4 RAISED clean-stdlib's `unexplained` 462 → 488 and its edges 941 → 985: the oracle `deriveCleanEdges` has no rule for a member signature's class context, so the 498 new edges are counted as unexplained. That is the correct label given the oracle's coverage and it is a DERIVATION gap, named below.** See [Q3](#q3--correct-an-independent-oracle-agrees). Writes no artifact on a scoped run, by design | **6** |
+| `npx tsx script/m14/differential.ts --lang clean --sample 60` | **RED, exit 6, seven runs at this commit** — and the figures MOVE between runs because the gate rotates its 60-file sample (`coldPoolPick`, differential.ts:927). Run A (pre-pass-4): Clyde `truth=1314 covered=787 (59.9%) MISSING=527 \| edges=1322 unexplained=671 (50.8%)`, clean-stdlib `truth=667 covered=618 MISSING=49 \| edges=972 unexplained=482 (49.6%)`. Run B (pre-pass-4): Clyde `truth=1177 covered=700 MISSING=477 \| edges=1214 unexplained=610 (50.2%)`, clean-stdlib `truth=655 covered=606 MISSING=49 \| edges=941 unexplained=462 (49.1%)`. Run C (post-pass-4, rot 22/23): Clyde `truth=1314 covered=787 MISSING=527 \| edges=1322 unexplained=671 (50.8%)`, clean-stdlib `truth=664 covered=615 (92.6%) MISSING=49 \| edges=985 unexplained=488 (49.5%)`. Runs D/E (this round, rot 2): Clyde `truth=1316 covered=875 (66.5%) MISSING=441 \| edges=1384 unexplained=661 (47.8%)`, clean-stdlib `truth=658 covered=618 (93.9%) MISSING=40 \| edges=924 unexplained=419 (45.3%)`. `heuristic=0` and `COMPARED WITH NO TRUTH: overrides` on all seven. **Clyde MISSING has now been observed at 441/477/492/527 and clean-stdlib's at 23/40/49 across six runs of ONE commit — the spread is wider than any change this lane has made, which is what makes the rotating sample unusable for a per-label claim (§8 item 4 in the Q3 discussion).** **Pass 4 RAISED clean-stdlib's `unexplained` 462 → 488 and its edges 941 → 985: the oracle `deriveCleanEdges` has no rule for a member signature's class context, so the 498 new edges are counted as unexplained. That is the correct label given the oracle's coverage and it is a DERIVATION gap, named below.** See [Q3](#q3--correct-an-independent-oracle-agrees). Writes no artifact on a scoped run, by design | **6** |
 | `bun run script/m14/verify-doc-truth-emissions.ts` | repository `FAIL` (7 FALSE_NEGATIVE / 42 UNDOCUMENTED / 15 NO_CLAIM_TABLE) — **`clean` in none of them**; its row reads 9 types at line 424 and is byte-unchanged by pass 4 | 0 |
 
 **Q3 is red, and the red is not new — but "reproduces to the digit" was wrong and is
@@ -1220,30 +1278,27 @@ than an error — and the `lua`/`r` orphan finding it surfaces is **not** clean'
 
 ## Reported to the supervisor, not fixed
 
-8 findings outside this lane's ownership. Each is stated so it can be applied
-without re-deriving it. None was worked around silently.
+9 findings outside this lane's ownership. Each is stated so it can be applied
+without re-deriving it. None was worked around silently. One of them (1) has since been
+fixed by the supervisor and is kept for the failure mode; the other eight are open.
 
-1. **`script/m14/verify-ruling-tables-registered.ts` cannot see a lane that has shipped
-   a table.** Its `UNADJUDICATED` list is still `["clean","graphql","r","scss"]` after
-   this round added `script/m14/clean-ruled.ts`, and the gate still prints
-   `PASS`. The stale-list check at lines 77-83 tests each entry with `specSuppliesRuling`
-   only — never against the `onDisk` set built at line 33 — so a lane whose spec happens
-   to carry a `RULED` decision passes the staleness check forever. `clean`'s spec
-   carries **no** `RULED` decision (6 decisions, 0 with that status), so the lane slips
-   through on a different accident: the check reads `decisions` under
-   `design_decision`, and if that path ever does match, `clean` will be reported stale
-   for a table it has. Fix: add `if (onDisk.has(lang)) { … exit 1 … }` to the same loop,
-   or drop `clean` from the list. **Not edited** — shared machinery.
-
-   **Re-verified independently at this commit, and the gate's own output states the
-   contradiction inside one invocation**: `unadjudicated lanes (neither table nor spec RULED)
-   : 4  (clean graphql r scss)` on the same run that prints `ruling tables on disk : 14  (bash
-   clean css fsharp json julia lua nim php protobuf sql toml xml zig)` and `registered in arbiter
-   : 14` with the same 14. So the list the file's own header calls "the real remaining work"
-   names a lane that is adjudicated twice over. The `INCOMPLETE LIST` check does cover the
-   opposite direction — a lane with neither source that is ABSENT from the list exits 1 — so
-   the gap is specifically over-inclusion, which is the direction that makes a finished lane
-   look unfinished.
+1. **RESOLVED, by the supervisor, in `11825cff1` — kept here because the failure mode was
+   real and the fix is worth reading.** `script/m14/verify-ruling-tables-registered.ts`
+   used to keep a hand-written `UNADJUDICATED` list and test each entry with
+   `specSuppliesRuling` only, never against the `onDisk` set it had already built. So a
+   lane that HAD shipped `script/m14/clean-ruled.ts` stayed on that list forever, and the
+   gate printed `PASS` on the same run that named it: `unadjudicated lanes … : 4  (clean
+   graphql r scss)` beside `ruling tables on disk : 14` and `registered in arbiter : 14`.
+   `clean`'s spec carries **no** `RULED` decision (6 decisions, 0 with that status), so it
+   slipped through on a second accident — the check read `decisions` under
+   `design_decision`, a path that could have started matching and convicted a finished lane
+   of being stale. The fix replaces the list with the structural check the file's own header
+   argues for: the set of `*-ruled.ts` on disk must EQUAL the set of `RULED_BY_LANG` keys,
+   failing in **either** direction. Re-run at this commit: `18 tables on disk`, `18
+   registered` (bash clean css fsharp graphql json julia lua markdown nim php protobuf r
+   scss sql toml xml zig), `unadjudicated lanes : 0  ()`, `cross-check: 0 lane(s) with no
+   source, all listed — none`, `PASS`, exit 0. **Not edited by this lane** — shared
+   machinery.
 2. **`script/m14/verify-doc-truth-emissions.ts` needs `bun`.** See the gate table above:
    `__dirname` under `npx tsx`, and a 0 exit on the crash. **Not edited.**
 3. **The shared differential still audits no clean oracle for four emitted types.**
@@ -1310,6 +1365,40 @@ without re-deriving it. None was worked around silently.
    write to a per-lane path or refuse to write when the lane set is not the full set.
    **Not edited** — `validation/m60/` is supervisor-owned.
 
+9. **MEASURED THIS ROUND, AND IT IS FLEET-WIDE: every process writes the tree-sitter
+   core to ONE fixed filename in the SHARED `/tmp`, non-atomically, so a concurrent
+   process reads a half-written wasm and the whole run dies.** `src/ast/engine.ts:135-140`
+   does `writeFileSync(path.join(tmpDir, "bb-ts-core.wasm"), coreWasm)` for the first
+   writable dir in `[os.tmpdir(), "/tmp", process.cwd()]`, then hands that path to
+   `initFn({ locateFile })` — which reads it **asynchronously**. The write truncates the
+   file before it fills it, and the path carries no PID and no atomic rename, so any
+   second process doing the same thing in that window reads a prefix. Observed verbatim:
+
+   ```
+   failed to asynchronously prepare wasm: CompileError: WebAssembly.instantiate():
+     section (code 10, "Code") extends past end of the module (length 181644, remaining
+     bytes 63861) @+5351
+   Aborted(CompileError: …)  →  src/ast/engine.ts:148  →  node exits 1
+   ```
+
+   This is not a hypothesis: it killed the first `--fresh` arbiter invocation of this
+   round, and the identical command run 11 minutes later succeeded unchanged, with no
+   edit in between. The arithmetic in the message is the diagnosis — the code section
+   claims 181,644 bytes with 63,861 remaining in a 205,488-byte file. **The file on disk
+   is not corrupt**: after the failure, `/tmp/bb-ts-core.wasm` and
+   `node_modules/web-tree-sitter/tree-sitter.wasm` were both 205,488 bytes with md5
+   `77057bf71325bc9e0e36102da9585c90`, byte-identical, so what the reader saw was a
+   transient prefix of a file that was being rewritten under it. With 12+ lanes running
+   concurrently and every corpus walk initialising the core, this window is hit
+   routinely and it presents as **"the gate failed"**, which is the most expensive way to
+   lose a measurement. Note the per-language grammars already do this correctly —
+   `engine.ts:702-710` writes `<base>_<procTag>.partial` then renames, with a per-process
+   tag — so the fix for the core is the two lines the language path already has: include
+   `process.pid` in the filename and write-then-rename. **Not edited** —
+   `src/ast/engine.ts` is §8. Recorded here because the cost is shared: a lane that hits
+   it has no way to tell a transient infrastructure fault from a real analyzer defect,
+   and the honest response to a red gate is to report it, which this round did.
+
 ## Figures that moved, and why
 
 Nine pass-1 figures no longer reproduce. The corpus did **not** grow — the 312-file set
@@ -1319,7 +1408,7 @@ is the same 312 files — so the movement is the grammar pin moving to **v1.2.8*
 
 | figure | pass 1 recorded | measured now | instrument |
 | --- | --- | --- | --- |
-| symbols (312 files) | 8,336 | **8,288** | `clean-honesty-gate.ts` |
+| symbols (312 files) | 8,336 | **8,285** | `clean-honesty-gate.ts` |
 | relationships (312 files) | 30,558 | **30,689** | `clean-honesty-gate.ts` |
 | `references` (312 files) | 9,568 | **9,559** | `clean-honesty-gate.ts` |
 | `contains` (312 files) | 7,777 | **7,730** | `clean-honesty-gate.ts` |
@@ -1794,3 +1883,189 @@ The remaining 2,407 are `NOT_BOUND` and are dominated by `instance Show Bool whe
 publishing `Bool` as a `class` (1,690) and `printPagePerPage :: !Bool !Bool` publishing
 `Bool` as a `type` (356) — the same withdrawal question as above, and the `type` family is
 still open.
+
+---
+
+## Where an emitted edge actually LANDS, and what that changes about the ambiguity column
+
+The ambiguity section above counts CANDIDATE DECLARATIONS per target. That is not the
+number a consumer of the graph experiences: a consumer reads
+`brain_relationship.target_symbol_id`, which is one symbol or NULL. This section measures
+the second quantity, because a lane optimising candidates when bindings are already right
+is optimising the wrong thing.
+
+Population: **120 Clean files** — the deterministic FIRST 120 of the sorted git-tracked
+`.icl`/`.dcl` admitted list — through production `parseFile` and `indexProjectParallel`,
+32.8 s, **3,831 symbols, 16,246 stored edges, 0 parse errors, 0 timeouts**.
+Instruments: `script/m14/clean-store-resolution.mts`,
+`script/m14/clean-unattached.mts`, `script/m14/clean-unattached-reconcile.mts`.
+Results: `validation/m14/measurements/clean/store-resolution-120.{json,log}`,
+`unattached-shapes-120.{json,log}`, `unattached-reconcile-120.{json,log}`.
+
+### Q5 restated: 10,516 of 10,516 decidable edges land in the source file
+
+| type | edges | unattached | landed in source file | unverifiable |
+|---|---:|---:|---:|---:|
+| `calls` | 2,114 | 0 | 2,108 | 6 |
+| `uses` | 1,330 | 5 | 1,325 | 0 |
+| `contains` | 3,767 | 3 | 3,762 | 2 |
+| `imports` | 691 | 306 | 8 | 377 |
+| `references` | 5,528 | 1,350 | 1,151 | 3,027 |
+| `exports` | 2,599 | 1 | 1,986 | 612 |
+| `implements` | 81 | 16 | 40 | 25 |
+| `overrides` | 14 | 0 | 14 | 0 |
+| `instantiates` | 122 | 0 | 122 | 0 |
+| **ALL** | **16,246** | **1,681** | **10,516** | **4,049** |
+
+**DECIDABLE** = the target is declared in the source's own file, so "landed in the source
+file" is the right answer and the row is decidable. Of those: **landed in the source file
+10,516 (100.0%), landed elsewhere 0 (0.0%)**. There is no wrong-file binding in this lane
+on this population.
+
+That is the answer to the question the 2,181-file candidate split left open. The store's
+own resolution pass ranks a bare target declared in the source file **first**, by
+`(s.file_id = src_file) DESC` (`src/ast/parallel-indexer.ts:4126-4153`). So the
+`B_MODULE` + `C_NAME_CONTRACT` ambiguity — 78.2% of target-side candidates — is candidate
+MULTIPLICITY, and the consumer disambiguates it correctly. **This lane should not spend
+effort on cause A.** The section above reaches the same conclusion by a different route
+(a structural argument that a per-file analyzer cannot know which module is in scope); this
+is the measurement, and it is stronger.
+
+The 4,049 **UNVERIFIABLE** rows are edges whose target the source file does not declare.
+This instrument does not claim to know which module's declaration was meant and does not
+score them. They are printed beside the scored rows so the two are never added.
+
+### The lane's real remaining cost is 1,681 unattached edges, and 328 of those are ineligible
+
+| bucket | edges | share | distinct | meaning |
+|---|---:|---:|---:|---|
+| `BARE_PUBLISHED_HERE` | **0** | 0.0% | 0 | bare target, published by the source file, still unattached — the only bucket this analyzer could have got right and did not |
+| `BARE_PUBLISHED_ELSE` | 9 | 0.6% | 3 | bare target another sample file publishes (`root`, `window`) |
+| `QUALIFIED` | 328 | 20.2% | 182 | target carries `.` or `:` — excluded from the store's pass by its own `WHERE` clause |
+| `UNPUBLISHED` | 1,288 | 79.3% | 41 | nothing in the sample publishes the target or its final segment |
+
+**`BARE_PUBLISHED_HERE` is 0.** Per the round brief's cause-B hypothesis — the edge target
+and the published symbol name are the same symbol spelled two ways, so retargeting the
+edge to the published name recovers it — this bucket is where such edges would appear. It
+is empty, so **cause B is 0 for this lane** and the graphql recipe does not apply. The 174
+`DOTTED_LAST_BARE` `imports` carry `Cocoa.Foundation:NSApplication` and
+`Cocoa.UserDefaults:registerApplicationDefaults`, which is Clean's qualified spelling for
+an item imported from a module; the bare final segment is not declared in the importing
+file, so retargeting would bind the edge to an unrelated same-named symbol elsewhere.
+That is a fabricated edge, which the workstream's one-thing-to-get-right forbids.
+
+`QUALIFIED` is ineligible by construction and no change to this analyzer moves it: the
+pass carries `AND instr(r.target_external,'.')=0 AND instr(r.target_external,':')=0`, and
+Clean spells qualified names `Module:Item` and `Module.Item`.
+
+### Cause C over the FULL corpus: 99.5% of 233,885 edges name a symbol the corpus publishes
+
+The 120-file slice puts 91.2% of unattached targets in `UNPROVEN_EXTERNAL` — the honest
+but weak bucket meaning "nothing in this slice declares it". **That bucket was an artefact
+of the slice.** Re-adjudicated over the full identity dump
+(`/tmp/opencode/clean-abc/identity`, 16 shards, 2,181 files, 62,980 declarations, 29,196
+distinct published names, 233,885 edges — the shards named by the committed
+`ambiguity-split-2181-abc.json`), instrument `script/m14/clean-cause-c-full.mts`:
+
+| bucket | edges | share | distinct | meaning |
+|---|---:|---:|---:|---|
+| `RESOLVABLE` | 232,753 | **99.5%** | 32,661 | the target, or its final segment after `.`/`:`, is a name the corpus publishes |
+| `MODULE_ONLY` | 316 | 0.1% | 119 | the module is a corpus name and the item is not (`Data.Func` 32, `System._Pointer` 22, `Text.GenJSON` 14) |
+| `NOTHING` | 816 | **0.3%** | 323 | neither the target, its final segment, nor its module qualifier is published anywhere in 2,181 files |
+
+The 816 `NOTHING` edges on 323 distinct strings are dependency targets with **0
+declarations under this exact name anywhere in the corpus**: `MaybeError` 37, `TC` 33,
+`StringAppender` 31, `ResponseMessage` 22, `UChar` 19, `LSP.ResponseMessage` 14. This
+instrument does **not** claim they are stdlib — it reports that 2,181 files declare none
+of them, which is the strongest externality claim this corpus supports. Marking them
+external needs a store-level marker and is a §8 item, not an analyzer change.
+
+`MODULE_ONLY` is counted separately from `RESOLVABLE` because retargeting it to the module
+would fabricate an edge: `Data.Func` names a module, not a declaration.
+
+### The unattached COUNT is not reproducible, and the whole spread is `imports`
+
+Four independent indexes of the same 120-file slice
+(`script/m14/clean-unattached-variance.mts`):
+
+| run | edges | unattached | symbols | `brain_import` | imports unattached | references unattached |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 | 16,246 | 1,631 | 3,831 | 597 | 255 | 1,351 |
+| 2 | 16,246 | 1,660 | 3,831 | 597 | 284 | 1,351 |
+| 3 | 16,246 | 1,681 | 3,831 | 597 | 305 | 1,351 |
+| 4 | 16,246 | 1,648 | 3,831 | 597 | 272 | 1,351 |
+
+`edges`, `symbols` and `brain_import` are **bit-stable**. Unattached spread is 50 (3.0% of
+mean 1,655), and per type: `contains` 3/3/3/3, `exports` 1/1/1/1, `implements` 16/16/16/16,
+`references` 1,351 four times, `uses` 5/5/5/5, **`imports` 255/284/305/272**.
+
+**It is not a visibility race.** Index once, then run `runPostProcessing` twice more on the
+same, now-complete database (`script/m14/clean-import-determinism.mts`): imports unattached
+after pass 0/1/2 = `326 → 326 → 326`, `266 → 266 → 266`, `286 → 286 → 286`. **A second and
+third pass resolve nothing.** The pass has converged by pass 0; three indexes of identical
+input converge to three different answers.
+
+**The cause, located by diffing the `exports` `target_symbol_id` column between two runs:
+53 of 2,599 `exports` rows differ, and every differing row is the same name attached to a
+different one of its declarations, the same two files in opposite order.**
+
+```
+run1 NSView       …Clyde/Cocoa/tabview.icl:NSView:14
+run2 NSView       …Clyde/Cocoa/layout.dcl:NSView:82
+run1 TreeElement  …Clyde/outlineviewcontroller.dcl:TreeElement:22
+run2 TreeElement  …Clyde/projdocument.icl:TreeElement:306
+run1 close        …Clyde/Clyde/Console.icl:close:255
+run2 close        …Clyde/Clyde/Process.icl:close:230
+```
+
+Symbol ids are content-addressed (`project:file:name:line`) and stable across runs; what
+varies is the order rows land in the table, because the worker pool flushes in completion
+order, and the resolver's tie-break reads that order.
+
+**Consequence for every number in this lane.** For a bare target with more than one
+declaration, WHICH declaration an edge attaches to is not reproducible. For `imports`, the
+COUNT attached is not reproducible either, because a change in which name wins changes how
+many later rows find a free symbol. Per-type figures for the five stable types are exact;
+any `imports` figure carries roughly ±10%. Both files involved
+(`src/ast/import-resolution.ts`, the resolution passes in `src/ast/parallel-indexer.ts`)
+are shared machinery and are §8 report items. **No file this lane owns is involved** — the
+analyzer's own output is bit-stable across every run measured.
+
+### What the arbiter reported, and why it was wrong
+
+`npx tsx script/m14/ontology-coverage-gate.ts clean` returned **`emitted 0/10`,
+`ruled-without-justification 9`, EXIT=1**, with every emitted type marked
+`RULED-UNJUSTIFIED`, and the header line `walk: 312/312 files (100.0%) newly walked 0,
+resumed 312`.
+
+That is a defect in the gate, not a verdict on the analyzer. `observed` is populated
+**only** inside the resumable walk's per-file `run` callback
+(`script/m14/ontology-coverage-gate.ts:305-320`), and a resumed file never invokes it. A
+fully-resumed walk therefore observes nothing and every type reads `NOT EMITTED`. The walk
+checkpoint is gitignored and already held all 312 ids, so **every invocation of this gate
+for this lane after its first has been reporting `0/10` regardless of the analyzer.**
+
+Removed the checkpoint and re-ran — same 312 admitted files, same corpus, **EXIT=0**:
+
+```
+walk: 312/312 files (100.0%)  newly walked 312, resumed 0
+
+calls         EMITTED   3,798 edges
+uses          EMITTED   1,457
+contains      EMITTED   7,508
+imports       EMITTED   1,891
+references    EMITTED  10,108
+exports       EMITTED   4,837
+extends       RULED-SOUND  construct occurs 0x on the parse tree
+implements    EMITTED     712
+overrides     EMITTED     306
+instantiates  EMITTED     122
+
+emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
+```
+
+This agrees with the committed full-corpus walk (9 fired of 233,885 edges) and with the
+store walk above (9 labels of 16,246 edges). The gate's own header documents `--fresh`
+for exactly this reason and does not warn that its DEFAULT invocation produces a false
+`0/10`. §8 item: `observed` should be checkpointed alongside the file ids, or the gate
+should refuse to print verdicts when `newly walked` is 0.

@@ -4,21 +4,28 @@
   "milestone": "M26",
   "status": "known-gap",
   "checks": 70,
-  "passed": 68,
-  "failed": 2,
+  "passed": 67,
+  "failed": 3,
   "negativeCases": 10,
-  "currentCommit": "c2a31c00882e73d41a25815a9f0a2ebc1aec85bd",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
   "workingTreeRelevantChanges": [
-    "package.json",
-    "src/lsp/cross_language_hover.ts",
-    "src/lsp/impact.ts"
+    "script/m26/verify-closure.ts",
+    "script/m26/verify-content-security.ts",
+    "script/m26/verify-cross-language-hover.ts",
+    "script/m26/verify-evidence-badges.ts",
+    "script/m26/verify-graph-docs.ts",
+    "script/m26/verify-graph-transport.ts",
+    "script/m26/verify-impact-mode.ts",
+    "script/m26/verify-polyglot-e2e.ts",
+    "script/m26/verify-webview-core.ts",
+    "script/m26/verify-webview-harness.ts"
   ],
   "verifierCommand": "npx tsx script/m26/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-30T20:20:26.232Z",
+  "generatedAt": "2026-10-05T22:34:58.950Z",
   "ledger": "validation/m26/results/manifest.json",
   "m25Bar": {
-    "ledgerStatus": "closed",
+    "ledgerStatus": "open",
     "m25GateExit": 1
   },
   "limitations": [
@@ -27,7 +34,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-30T20:20:26.237Z",
-    "contentSha256": "3c51ff2b024326d729e0d1600f5b5dc959e8d0606bae0e85f2b2423f73c1876e"
+    "sealedAt": "2026-10-05T22:34:58.954Z",
+    "contentSha256": "538b7bb18b99e191b093f97cfb1debb59ffa916c712dccd6776574fb66d99213"
   }
 }

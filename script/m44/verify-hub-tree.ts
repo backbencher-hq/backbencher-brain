@@ -30,6 +30,16 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+// The ONE project-identity owner. This gate used to derive the id a SECOND way
+// (`sha1(path.resolve(ws))`), which is the M62 lane-7 defect U1 was already
+// repaired for (script/m44/verify-usages-groups.ts:115-129, 2026-10-05): on
+// macOS `mkdtempSync(tmpdir())` yields `/var/folders/...` while
+// `realpathSync.native` yields `/private/var/folders/...`, so this gate seeded
+// project A, the child server opened project B, and BOTH R3 checks failed with
+// the server's own declared error `bb/graph: workspace is not indexed`. The
+// failure text pointed at the indexer; the cause was a second identity
+// derivation. One owner, imported.
+import { getProjectId } from "../../src/util/project-id.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE_DIR = path.join(ROOT, "validation/m44/results")
@@ -117,8 +127,14 @@ async function makeFixture(): Promise<Fixture> {
     "deep.ts": "export function deep(): void {}\n",
   }
   for (const [rel, content] of Object.entries(files)) writeFileSync(path.join(ws, rel), content)
-  const canonical = path.resolve(ws)
-  const projectId = createHash("sha1").update(canonical).digest("hex").substring(0, 40)
+  const projectId = getProjectId(ws)
+  // A divergence is reported, never asserted away: on a symlinked temp dir the
+  // lexical sha1 and the canonical id legitimately differ, and the number is
+  // printed so a future reader can see whether the platform is one of them.
+  const lexicalId = createHash("sha1").update(path.resolve(ws)).digest("hex").substring(0, 40)
+  if (lexicalId !== projectId) {
+    console.log(`      note: lexical sha1 (${lexicalId.slice(0, 9)}) != canonical (${projectId.slice(0, 9)}) — the temp dir is a symlink here`)
+  }
   mkdirSync(path.join(dataDir, "projects", projectId), { recursive: true })
   process.env.BB_DATA_DIR = dataDir
 
@@ -404,6 +420,13 @@ async function main(): Promise<void> {
       const mutantPath = path.join(ROOT, "validation/m44", `graph-core.u3mutant.${Date.now()}.${Math.floor(Math.random() * 1e6)}.ts`)
       writeFileSync(mutantPath, source)
       try {
+        // LOAD and EVALUATE are two facts. A module that will not import proves
+        // nothing about any law, and this suite once counted that as a catch
+        // (PROVEN: a mutant whose replacement was a bare syntax error reported
+        // "mutant failed to load — counts as detected" and the gate still
+        // printed 6/6 mutants caught). A load failure is now its own check and
+        // it FAILS the gate: an unevaluable mutant is an unearned catch, and
+        // the defect class five lanes in this repo found.
         const m = await import(mutantPath)
         return renderDom((mm: any, d: any) => m.renderHubTree(mm, d), resp)
       } finally {
@@ -435,6 +458,36 @@ async function main(): Promise<void> {
         to: 'el.setAttribute("data-depth", "0")',
         assertion: "AH7-9",
       },
+      // §13.8 named defect 1 — a DUPLICATED SYMBOL. The tree must render each
+      // symbol exactly once per side; a second render double-counts usages
+      // (§13.2). Planted as "every group ALSO emitted at the top level",
+      // duplicating every nested child.
+      {
+        name: "duplicated symbol (a nested group ALSO emitted at the top level)",
+        from: "    if (p.symbolId === rootId || !side.byId.has(p.symbolId)) emit(g, 0, header)\n  }",
+        to: "    if (p.symbolId === rootId || !side.byId.has(p.symbolId)) emit(g, 0, header)\n    else emit(g, 0, header) // the same group a SECOND time at the top level\n  }",
+        assertion: "AH1 rows",
+      },
+      // §13.8 named defect 2 — a FABRICATED NESTING LEVEL. The renderer invents
+      // an intermediate parent node the stored rows never declare and hangs the
+      // REAL child under it, so every deeper level is one level deeper than the
+      // index says.
+      {
+        name: "fabricated nesting level (an invented intermediate parent the stored rows never declare)",
+        from: "      const ordered = [...kids].sort((a, b) => a.file.localeCompare(b.file) || a.name.localeCompare(b.name) || a.symbolId.localeCompare(b.symbolId))\n      for (const kid of ordered) emit(kid, level + 1, wrap)",
+        to: "      const ordered = [...kids].sort((a, b) => a.file.localeCompare(b.file) || a.name.localeCompare(b.name) || a.symbolId.localeCompare(b.symbolId))\n      const phantom = dom.create(\"div\")\n      phantom.addClass(\"bb-hub-tree-node\")\n      phantom.setAttribute(\"data-dir\", side.dir)\n      phantom.setAttribute(\"data-level\", String(level + 1))\n      phantom.setAttribute(\"data-symbol-id\", \"phantom:invented-parent\")\n      phantom.setAttribute(\"data-parent-id\", entry.symbolId)\n      phantom.setAttribute(\"data-parent-name\", entry.name)\n      phantom.setAttribute(\"data-depth\", \"0\")\n      phantom.setAttribute(\"data-clickable\", \"0\")\n      wrap.appendChild(phantom)\n      for (const kid of ordered) emit(kid, level + 2, phantom)",
+        assertion: "AH7-9",
+      },
+      // §13.8 named defect 3 — an UNDECLARED CONTROL. An expander is a control
+      // the model must declare (a group with children); rendering one on a
+      // childless row promises an expansion that does not exist (§13.3: text
+      // that looks clickable but is not is a defect).
+      {
+        name: "undeclared control (an expander on a row the model gives no children)",
+        from: "    const kids = anchorKids.get(entry.symbolId)\n    if (kids && kids.length > 0) {",
+        to: "    const kids = anchorKids.get(entry.symbolId)\n    if (!kids || kids.length === 0) {\n      const spurious = dom.create(\"span\")\n      spurious.addClass(\"bb-hub-expander\")\n      spurious.setAttribute(\"data-action\", \"bb-expand\")\n      row.appendChild(spurious)\n    }\n    if (kids && kids.length > 0) {",
+        assertion: "AH7-9",
+      },
       {
         name: "data-level lies (a nested row declared at the root level)",
         from: 'el.setAttribute("data-level", String(level))',
@@ -443,18 +496,29 @@ async function main(): Promise<void> {
       },
     ]
     for (const d of defects) {
+      // An anchor that no longer matches means the mutant was never planted:
+      // §8.3 silence is guilt, so this is a FAILURE and it says so. It is not a
+      // skip dressed as a pass.
       if (!coreSource.includes(d.from)) {
-        check(`M: ${d.name} (SKIP — anchor not found)`, false, d.from.slice(0, 80))
+        mutant(`${d.name} — ANCHOR DRIFT: the mutant was never planted`, false, `anchor not in graph-core.ts: ${d.from.slice(0, 90)}`)
         continue
       }
+      let doc: any = null
+      let loadError = ""
       try {
-        const doc = await renderWith(coreSource.replace(d.from, d.to))
-        const ff = H.runHubHarness(model, doc, { sectionClass: "bb-hub-tree" })
-        const caughtBy = ff.find((f) => !f.ok)
-        mutant(`${d.name} — harness ${caughtBy ? "caught" : "MISSED"} (${caughtBy?.assertion ?? "no assertion failed"})`, caughtBy !== undefined)
+        doc = await renderWith(coreSource.replace(d.from, d.to))
       } catch (e) {
-        mutant(`${d.name} (mutant failed to load — counts as detected)`, true, String(e).slice(0, 120))
+        loadError = String(e instanceof Error ? e.message : e).slice(0, 140)
       }
+      if (doc === null) {
+        // The gate used to book this as a catch. It is not one: nothing ran, so
+        // no law was exercised. It fails, with the load error named.
+        mutant(`${d.name} — the mutant could not be EVALUATED (load failure is not a catch)`, false, loadError)
+        continue
+      }
+      const ff = H.runHubHarness(model, doc, { sectionClass: "bb-hub-tree" })
+      const caughtBy = ff.find((f) => !f.ok)
+      mutant(`${d.name} — harness ${caughtBy ? "caught" : "MISSED"} (${caughtBy?.assertion ?? "no assertion failed"})`, caughtBy !== undefined)
     }
 
     // M55: R2c's declared error must be FAIL-ABLE. Disabling the placement
@@ -464,24 +528,33 @@ async function main(): Promise<void> {
     {
       const anchor = "if (row.parentSymbolId === undefined || row.parentName === undefined) {"
       if (!coreSource.includes(anchor)) {
-        check("M: placement throw disabled (SKIP — anchor not found)", false, anchor)
+        mutant("placement throw disabled — ANCHOR DRIFT: the mutant was never planted", false, anchor)
       } else {
         const mutantPath = path.join(ROOT, "validation/m44", `graph-core.u3mutant.${Date.now()}.${Math.floor(Math.random() * 1e6)}.ts`)
         writeFileSync(mutantPath, coreSource.replace(anchor, "if (false) {"))
+        let loaded: any = null
+        let loadError = ""
         try {
-          const m = await import(mutantPath)
+          loaded = await import(mutantPath)
+        } catch (e) {
+          loadError = String(e instanceof Error ? e.message : e).slice(0, 140)
+        } finally {
+          try { rmSync(mutantPath, { force: true }) } catch {}
+        }
+        if (loaded === null) {
+          // Same class as above: a module that never loaded exercised R2c zero
+          // times. Booking that as a catch is how a gate reports coverage it
+          // never measured.
+          mutant("placement throw disabled — the mutant could not be EVALUATED (load failure is not a catch)", false, loadError)
+        } else {
           const root = new El("div")
           let threw = false
           try {
-            m.renderHubTree(unnesteable, { create: (t: string) => new El(t), root: () => root })
+            loaded.renderHubTree(unnesteable, { create: (t: string) => new El(t), root: () => root })
           } catch {
             threw = true
           }
           mutant("placement throw disabled (an unnesteable row folds to a phantom parent — R2c catches)", threw === false)
-        } catch (e) {
-          mutant("placement throw disabled (mutant failed to load — counts as detected)", true, String(e).slice(0, 120))
-        } finally {
-          try { rmSync(mutantPath, { force: true }) } catch {}
         }
       }
     }
@@ -508,7 +581,19 @@ async function main(): Promise<void> {
     evidenceFile: "U3.json",
     generatedAt: new Date().toISOString(),
     fixture: { root: "Widget (file-1:Widget)", nesting: "callers: render -> make -> Widget; callees: Widget -> util -> deep; external callee push" },
-    laws: ["R1 data law: every row carries parentSymbolId/parentName; depth-1 rows parent to rendered groups", "R2 render: AH1-9 over the real response", "R2b in-tree truncation marker", "R3 real server over stdio", "R4 five mutants (flatten, double-render, dropped expander, depth lie, level lie)"],
+    laws: [
+      "R1 data law: every row carries parentSymbolId/parentName; depth-1 rows parent to rendered groups",
+      "R2 render: AH1-9 over the real response",
+      "R2b in-tree truncation marker",
+      "R2c an unnesteable row is a DECLARED placement error, never a phantom parent",
+      "R3 real server over stdio, over the ONE project-identity owner (src/util/project-id.ts)",
+      "R4 nine mutants, each EVALUATED: a load failure is not a catch (§6/§8.3). §13.8's three named defects are each planted — duplicated symbol, fabricated nesting level, undeclared control.",
+    ],
+    mutantHonesty: {
+      loadFailureIsACatch: false,
+      note: "A mutant whose module will not import exercises no law. Before this run the harness booked that as a catch and still printed 6/6 — PROVEN by a mutant whose replacement was a bare syntax error. An unevaluable mutant and an anchor that no longer matches are both FAILURES now (§8.3 silence is guilt).",
+      everyMutantCaughtByAssertion: true,
+    },
     limitations: [
       "The traversal recursion (not a cascade fold) produces this fixture's nesting; the cascade fold (depth-0 rows toward root's class members) is asserted at the harness level in V1.",
       "DOM assertions cover structure/classes/data attributes over a stub DOM; the real-editor click/expand leg is E5 (in-editor) over this same DOM contract.",

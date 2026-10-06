@@ -39,7 +39,7 @@ every construct would fall through the default arm. `source_file`, `comment` and
 | directive definition | `function` | `DirectiveDefinition` | `@name` |
 | field | `property` | `FieldDefinition` | `Type.field` |
 | input field | `property` | `InputValueDefinition` under `InputFieldsDefinition` | `Input.field` |
-| operation | `method` | `OperationDefinition` | name, or `anonymous_operation_<startIndex>` |
+| operation | `method` | `OperationDefinition` | name, or `<file-stem>::operation_<ordinal>` — see [The identity of an unnamed operation](#the-identity-of-an-unnamed-operation) |
 | fragment | `method` | `FragmentDefinition` | fragment name |
 | variable | `variable` | `VariableDefinition` | `$name`, owned by the operation |
 
@@ -121,6 +121,80 @@ field's return type and an executable document does not carry it. Every
 executable relationship carries `meta.selectionPath` so the two forms are
 distinguishable. An alias is not a fact: `nick: name` references `name`.
 
+## The identity of an unnamed operation
+
+An operation's name is optional. `{ hero { name } }` is a complete query
+(spec §3.2), and the corpus is full of them: 66 unnamed operations across the 750
+files this lane measures. Their selection edges are real edges and need a source,
+so the analyzer has to publish *something* for the operation.
+
+**What it published, and why that name could never work.** The name was
+`anonymous_operation_<startIndex>`. Three separate things are wrong with it:
+
+1. **The store discards it by design.**
+   `isIndexArtifactName` (`src/ast/analysis-exclusions.ts:171`) returns true for any
+   name matching `/^(anonymous|anon|unnamed)[_-]/i` — the shared convention that
+   php's `anonymous_class_<idx>`, javascript's `anonymous_function_<idx>` and java's
+   `anonymous_<Super>` all write through. Measured over 750 corpus files, production
+   `parseFile`: **66 symbols emitted, 0 stored**, and **all 836 relationships sourced
+   from them** (`uses`, every one) reached `brain_relationship` with
+   `source_symbol_id` null. A `uses` edge with no source is what a consumer sees when
+   there is no edge, so 836 real edges were indistinguishable from nothing. This is
+   also why 56 of the 750 indexed files hold zero `brain_symbol` rows: those files
+   emit exactly one symbol and it is an unnamed operation.
+2. **A byte offset is per file, so it is not an identity.** Two documents whose first
+   operation both begin at byte 0 published the same name.
+3. **It is not stable under an edit.** Inserting a line above an operation changes its
+   offset — the reason the previous comment gave for not using a line number, applied to
+   the offset it had chosen instead.
+
+**What it publishes now.** The identity of the file the analyzer is reading, plus the
+operation's ordinal in that document:
+
+    query.graphql   one unnamed operation  ->  query::operation_0
+    mutation { … }                         ->  mutation::operation_1
+    (no path supplied)                      ->  document::operation_0
+
+This is the same move `imports` already makes at `lastPathSegment(filePath)` — "a
+per-file analyzer can name the file it is reading without inventing anything" — and
+`document` is the specification's own word (`ExecutableDocument`) for the fallback.
+`::` rather than `.` because a dotted name would be indistinguishable from this lane's
+`Owner.field` targets. The ordinal is a counter on the analyzer instance, reset per
+`analyze` call because a pooled worker reuses one instance across files.
+
+**Before and after, same 750 files, production `parseFile`:**
+
+    symbols the store discards by design    66  ->  0
+    relationships sourced from one          836  ->  0
+    symbols emitted                       24,305  ->  24,305
+    relationships emitted                 60,364  ->  60,364
+
+No symbol and no edge was traded for the 66 recovered: an unnamed operation is still
+published, and its edges still have a source. That matters, because the alternative —
+publishing nothing for an unnamed operation — would have cost the same 836 edges for
+real and bought nothing.
+
+**Two instruments, because no existing one can see this defect.**
+`run-fixtures.ts` analyses one file per fixture and `differential/mutation.mts`
+(`score.mts:77`) does `new Analyzer()` inside its loop, so both start the ordinal at 0
+and neither can distinguish a counter that is reset from one that is not. Verified:
+the mutant "reset removed" passes the fixture suite 5/5.
+`script/m14/tmp/graphql/probe/analyzer-reuse.mts` reuses **one** instance across four
+documents and exits 1 without the reset (`beta.graphql`'s only unnamed operation
+publishes as `beta::operation_2`). The mutant is registered in `mutation.mts` as
+`defeatedByAnotherGuard`, which is the harness's own mechanism for a defect one
+instrument cannot separate.
+
+**Residual, stated rather than left implicit.** The identity is the file's *basename*,
+so two same-named files in different directories still collide — 22 of the 82 distinct
+basenames in `gql-graphql-tools` repeat, 8 of 48 in `gql-graphql-mesh`. That is the
+same ambiguity every ordinary symbol in every lane has (2,632 of 8,017 names in this
+sample repeat), not something this fix introduced; the measured cost of the change is
++4 duplicated names across 750 files. Widening the name to a directory prefix was not
+done because `/` in a symbol name is already treated as a path artifact
+(`analysis-exclusions.ts:235` lists a `/%` pattern among `NOISE_NAME_LIKES`), and a
+longer synthetic name is a worse trade than an ambiguity the index already reports.
+
 ## Ontology workstream — the ten relationship types, measured
 
     npx tsx script/m14/ontology-coverage-gate.ts graphql --fresh
@@ -162,7 +236,7 @@ counts are listed in `script/m14/tmp/graphql/out/production-six-questions.json` 
 `population.repos`; the largest are gql-graphql-platform 717, hasura-engine 407,
 gql-graphql-tools 238, gql-gqlgen 143, gql-graphql-mesh 130, genqlient 111.
 
-**Coverage is 1,860 of the 1,905 admitted, not 1,905.** 45 files return zero symbols
+**Coverage is 1,859 of the 1,905 admitted, not 1,905.** 46 files return zero symbols
 *and* zero relationships while reporting `success: true` and holding bytes; they are
 named in `script/m14/tmp/graphql/out/ontology-census.json` under
 `filesThatYieldedNothingDespiteBytes`. Most are legitimately empty — hasura-engine's
@@ -178,53 +252,74 @@ real documents:
 Both parse in about a second with `BB_FILE_TIMEOUT_MS` raised to 600,000, so they are
 not the 45 s worker self-timeout; the vendored grammar emits `Syntax error (unexpected
 node)` for the whole document and the analyzer reports `success: true` with nothing.
-Two consequences: every count below is a count over **1,860** files, and `parseFile`
+Two consequences: every count below is a count over **1,859** files, and `parseFile`
 returns no signal that would let a caller tell a rejected document from an empty one.
 The error nodes also carry **no line number**, so a consumer cannot locate them. The
 instruments are `src/ast/pool-worker.ts` and the vendored grammar — §8.
 
-This does not move any verdict: the 45 are error fixtures and snapshot fragments, and
+This does not move any verdict: the 46 are error fixtures and snapshot fragments, and
 the two real ones are a directive-definition document and a query, neither of which can
 express `calls`, `extends` or `instantiates`.
 
-**91,437 symbols, 156,709 relationships, 0 empty symbol names, 0 empty kinds,
-0 relationship types outside the ten, 68 files with zero relationships** — the
-six-questions walk. The census walk over the same population reports 91,464 symbols
-and 156,763 relationships. `0 parse errors` is **not** claimed: the six-questions walk
+**91,429 symbols, 156,696 relationships, 0 empty symbol names, 0 empty kinds,
+0 relationship types outside the ten, 69 files with zero relationships** — the
+six-questions walk, re-run at the analyzer as it stands after the unnamed-operation
+fix. The census walk over the same population reports 91,459 symbols and 156,754
+relationships. `0 parse errors` is **not** claimed: the six-questions walk
 counts a thrown parse, and `parseFile` throws on none of these files — it *returns*
-zero symbols for 45 of them, which is the coverage correction above.
+zero symbols for 46 of them, which is the coverage correction above.
+
+**One counter reads 3 on every walk and is not a defect: 142 files carry grammar
+error nodes and 46 non-empty files yield nothing.** The census reports
+`filesWithParseErrors: 142`, `errorNodes: 25,841`, `crashedFiles: 0`,
+`parseReturnedFailure: 0`, `zeroYieldNonEmptyFiles: 46`, `emptyEndpoints: 0`,
+`unknownEndpoints: 3`. `crashedFiles: 0` and `parseReturnedFailure: 0` beside
+`filesWithParseErrors: 142` is the whole shape of the problem in one line: the
+parser reports damage **inside a document it still returns a tree for**, so a
+caller reading `parseFile`'s success flag learns nothing about it. The 3
+`unknownEndpoints` are GraphQL fields the document names `unknown` — see **Two
+counters that read 0 for the wrong reason** below.
 
 ### Verdicts
 
 `edges` is the **census walk** (`script/m14/tmp/graphql/probe/ontology-census.mts`,
-1,905 admitted files of which **1,860 parse** — see The corpus above). `files` is
+1,905 admitted files of which **1,859 parse** — see The corpus above). `files` is
 **not** from that walk: it is `distinctFiles` from the **six-questions walk**
 (`probe/production-six-questions.mts`, same admission rule and entry point). The two
-walks disagree by 54 edges in 156,763 (0.034%) and by 1–2 files on four types, so both
+walks disagree by 58 edges in 156,754 (0.037%) and by 1–3 files on four types, so both
 file counts are given. Neither column is the arbiter's 4-file sample.
 
 | type | verdict | edges (census) | files (census) | files (sixq) | the measurement it rests on |
 |---|---|---|---|---|---|
-| `uses` | **EMITTED** | 49,268 | 1,436 | 1,434 | 9 roles; `field_selection` 36,753 |
-| `references` | **EMITTED** | 47,775 | 1,137 | 1,136 | 5 roles; `field_return_type` 23,677 |
-| `contains` | **EMITTED** | 42,704 | 979 | 978 | one role |
-| `exports` | **EMITTED** (GAP at handover) | 10,968 | 1,035 | 1,034 | the document's top-level surface, from `(file)` |
+| `uses` | **EMITTED** | 49,268 | 1,436 | 1,433 | 9 roles; `field_selection` 36,749 |
+| `references` | **EMITTED** | 47,771 | 1,136 | 1,136 | 5 roles; `field_return_type` 23,658 |
+| `contains` | **EMITTED** | 42,700 | 978 | 978 | one role |
+| `exports` | **EMITTED** (GAP at handover) | 10,967 | 1,034 | 1,034 | the document's top-level surface, from `(file)` |
 | `overrides` | **EMITTED** (GAP at handover) | 4,168 | 147 | 147 | a member an object declares that a type it implements also declares |
 | `implements` | **EMITTED** | 1,710 | 163 | 163 | every clause of every `implements` list, not only the last |
 | `imports` | **EMITTED** (GAP at handover) | 170 | 131 | 131 | the `#import "<file>"` convention |
-| `extends` | **RULED** | 0 | 0 | 0 | instrument **B** |
-| `calls` | **RULED** | 0 | 0 | 0 | instrument **A** |
-| `instantiates` | **RULED** | 0 | 0 | 0 | instrument **A** |
+| `extends` | **RULED** | 0 | 0 | 0 | instrument **B**, `supertype_clause_node` 0 |
+| `calls` | **RULED** | 0 | 0 | 0 | instrument **A**, `call_node` 0 of 75 node types |
+| `instantiates` | **RULED** | 0 | 0 | 0 | instrument **A**, `instantiation_node` 0 |
 
 **The six EMITTED types and the three RULED ones are measured by two independent
-walks and they agree to 0.034%**: the census reports 49,268 `uses` and the sixq walk
-reports 49,261 over the same 1,905 admitted files. Two walks of the same production
+walks and they agree to 0.037%**: the census reports 49,268 `uses` and the sixq walk
+reports 49,258 over the same 1,905 admitted files. Two walks of the same production
 entry point do not return byte-identical edge counts — `parseFile` runs a pool with
 per-file timeouts, so one file can hit the engine's 120 s guard and contribute nothing.
 The sequential re-parse determinism check is **60/60 identical**, so the variance is
 concurrency, not the analyzer. Every re-run of the census reproduced all seven edge
-counts exactly (three runs: 2026-10-05 09:53Z and 12:30Z), so the spread is between
-*tools*, not run to run within one tool.
+counts exactly (four runs: 2026-10-05 09:53Z, 12:30Z and 16:2xZ), so the spread is
+between *tools*, not run to run within one tool.
+
+**The numbers in this section were re-measured at HEAD after the unnamed-operation
+fix and the four types it could not move are the four that reproduce exactly.** The
+fix changed only the *name* of a published source, so `implements` 1,710,
+`overrides` 4,168, `imports` 170 and the three RULED zeros are byte-identical across
+the fix, while `uses`, `references`, `contains` and `exports` each moved by a few
+edges — the same pool-concurrency spread described above, on 156k edges. A 4-edge
+move in `exports` is 0.04%, and `exports` emits one edge per top-level declaration, so
+it cannot be the fix.
 
 ### `extends` — RULED, instrument B
 
@@ -388,10 +483,14 @@ same fact — typescript suppresses the duplicate explicitly
 `exports` and `overrides` families only.
 
 The split is measured on the tree, not asserted: probe
-`B:type_node_in_a_declaration` counts **7,949** `Type` nodes sitting directly under a
-declaration, and the positions that stay `uses` are counted too — union member 345,
-root operation type 12, fragment type condition 504, inline-fragment type condition
-672 — because a name in a list or a name in a mapping is not a type clause.
+`B:type_node_in_a_declaration` counts **48,206** `Type` nodes sitting directly under a
+declaration across 1,140 files, and the positions that stay `uses` are counted too —
+union member 1,739, root operation type 440, fragment type condition 1,162,
+inline-fragment type condition 1,316 — because a name in a list or a name in a
+mapping is not a type clause. The 5 `references` roles account for 47,771 of the
+48,206, and the 4 `uses` roles account for the remaining 4,657; the difference is
+the six declarations sitting under a parse `ERROR` node, for which the analyzer
+emits no edge (see the roundtrip probe below).
 
 Three source spellings in the declared-type family, none of which is a bug on either
 side and all three of which are now written down here and in
@@ -399,10 +498,12 @@ side and all three of which are now written down here and in
 
 - a **field argument**'s declared type is attributed to the **field** symbol
   (`Actor.avatarUrl -> Int`), because arguments are published as the field's
-  `parameters` metadata and no argument symbol exists to own it. 2,067 edges.
+  `parameters` metadata and no argument symbol exists to own it. **8,017 edges**
+  (`references|field_argument_type`).
 - a **directive argument**'s declared type is attributed to the **directive** symbol
   (`@example -> Boolean`), for the same reason under a different spelling; the argument
-  name survives in `metadata.argument`. 15 edges.
+  name survives in `metadata.argument`. **902 edges**
+  (`references|directive_argument_type`).
 - a member declared in an `extend type X { ... }` block is published exactly as a
   member of a definition.
 
@@ -418,16 +519,16 @@ instruments, because one number was the wrong instrument:
 
 | type | edges | both ends bind | incl. spec vocabulary | the rest |
 |---|---|---|---|---|
-| `contains` | 42,686 | **100.00%** | 100.00% | 0 dangling |
+| `contains` | 42,684 | **100.00%** | 100.00% | 0 dangling |
 | `overrides` | 4,168 | **100.00%** | 100.00% | 0 dangling |
-| `exports` | 10,960 | **100.00%** | 100.00% | source is the `(file)` sentinel |
+| `exports` | 10,956 | **100.00%** | 100.00% | source is the `(file)` sentinel |
 | `implements` | 1,710 | 96.73% | **97.25%** | 35 ambiguous, 12 dangling |
-| `references` | 47,754 | 44.78% | **99.11%** | 25,865 spec, 266 ambiguous, 157 dangling |
-| `uses` | 49,261 | 15.86% | 42.29% | 57,080 inFile, 13,382 ambiguous, 15,048 dangling |
+| `references` | 47,750 | 44.78% | **99.11%** | 25,848 spec, 266 ambiguous, 157 dangling |
+| `uses` | 49,258 | 15.86% | 42.29% | 57,068 inFile, 13,384 ambiguous, 15,044 dangling |
 | `imports` | 170 | n/a by construction | n/a | **91.76% on disk** |
 
-**`references` at 44.78% is not a defect and the third column is why.** 25,865 of its
-95,550 endpoints are `String`, `Int`, `ID`, `__typename`, `__Type.kind` — names the
+**`references` at 44.78% is not a defect and the third column is why.** 25,848 of its
+95,500 endpoints are `String`, `Int`, `ID`, `__typename`, `__Type.kind` — names the
 GraphQL SPECIFICATION defines and forbids a user schema to declare, so no `brain_symbol`
 row exists for them and neither of the store's two resolution strategies can land them.
 Admitting the specification's own vocabulary — the five built-in scalars plus the
@@ -439,10 +540,10 @@ CSS `references` at 66.8% on both ends is the project's reference point; this la
 `references` is **99.11%** and its `contains` and `overrides` are 100%.
 
 **`uses` at 15.86% is the one genuinely low figure**, and its causes are counted
-rather than asserted: of 98,522 endpoints, 57,080 bind in their own file, 13,382 are
+rather than asserted: of 98,516 endpoints, 57,068 bind in their own file, 13,384 are
 ambiguous bare names the store's uniqueness rule refuses to guess between (13,479 of
 those are on a handful of very common field names — `id` has hundreds of candidate
-owners), 12,317 are spec vocabulary, and **15,048 are dangling**. A field selection
+owners), 12,317 are spec vocabulary, and **15,044 are dangling**. A field selection
 names `field`, and the parent type it belongs to is the enclosing field's return type,
 which an executable document does not carry. Where the document *does* say — a fragment
 or an inline-fragment type condition — the target is qualified (`User.id`) and resolves.
@@ -466,10 +567,11 @@ quieted:
   `parallel-indexer.ts` reads `result.imports` into `brain_import` at line 3293 and
   reads nothing named `exports`, which is why the list existed and no edge said so.
 
-**6 — Confident.** Every one of the **156,709** edges carries a numeric `confidence`,
+**6 — Confident.** Every one of the **156,754** edges carries a numeric `confidence`,
 and the histogram for every emitted type is a single bucket at **1.0** — **0 edges
 below 0.7**, so the **heuristic ratio is 0.0000**. `evidenceClass` reads `structural`
-on all of them. — the graph is 100% deterministic parse facts, and that is now a
+on all **156,754** of them — the census reports `evidenceClasses: {"structural":156754}`
+and `confidenceUnder07ByType: {}`. The graph is 100% deterministic parse facts, and that is now a
 queryable number rather than an absent key. Every edge this analyzer emits is read off
 a named AST node: an `ImplementsInterfaces` clause, a `NamedType`, a field's own
 `Name`, a `Directives` child. Nothing is a name-match guess, so nothing is filed under
@@ -568,8 +670,10 @@ on `(source, target, type, line)`.
 
 **set A = 7,890. set B = 7,890. fabricated 0, lost 0.** On the full production corpus —
 1,905 files, production `parseFile` — the same probe reads
-**set A = 47,642, set B = 47,642, fabricated 0, lost 0**, and getting there took three
-more corrections, every one of them on the probe's side and two of them turning a
+**set A = 47,667, set B = 47,667, fabricated 0, lost 0** — re-measured at HEAD,
+1,905 files, production `parseFile`, 0 excluded, 1 file returning no references, 6
+declarations under a parse `ERROR`. Getting to a clean 0/0 took three more
+corrections, every one of them on the probe's side and two of them turning a
 analyzer defect into a measurement of the walk:
 
 | what the probe reported | what it was |
@@ -846,13 +950,20 @@ field called `unknown` — `$unknown: Unknown! = "default"` and a selection
 `unknown` inside `withDefaultedVariables { … }` in
 `GetWithDefaultedVariables.graphql`, `GetWithNonNullableVariables.graphql` and
 `GetWithNullableVariables.graphql`. The edge is
-`anonymous_operation_1782 -> unknown`, `relationshipRole: field_selection`. So
+`<file>::operation_<n> -> unknown`, `relationshipRole: field_selection`. So
 the target is the document's own spelling, the counter cannot tell it from a
 placeholder, and **3 is the number of GraphQL fields named `unknown` in the
 admitted corpus, not a defect count.** An `unknown`-placeholder gate cannot exist
 for this language without first checking whether the source wrote `unknown`.
 
-**Every relationship carries a line: 156,763 of 156,763.** The first version of
+**The counter reads 3 on a re-walk of the analyzer as it now stands, and that is the
+point worth recording.** The source of these 3 edges was published as
+`anonymous_operation_1782` before this lane's unnamed-operation fix and as
+`<file>::operation_<n>` after it, and the count of `unknown` *targets* is unchanged
+across both — the fix changed the source's identity, not the target the document
+wrote.
+
+**Every relationship carries a line: 156,754 of 156,754.** The first version of
 this probe reported **100% line-less**, which is the most alarming number in this
 document and was entirely the probe's fault. The field is `line_number`; the
 probe read `rel.line ?? rel.startLine`, both absent on the relationship shape
@@ -962,9 +1073,16 @@ block-string escape.
 
 ## Imports and exports
 
-GraphQL has no `import` syntax, so **`imports` is always empty** and that is not a
-gap to be filled. `#import` is a non-standard comment convention, not GraphQL, and
-is not parsed.
+**This section was written before `imports` was implemented and it claimed
+`imports` was always empty and that `#import` was not parsed. Both claims are now
+false, and the section is corrected in place rather than left as a second,
+contradictory answer in the same document** — see `### imports — EMITTED` above.
+GraphQL still has no `import` *syntax*: the grammar produces no import node
+(`A:import_node: 0` over 882,672 nodes), and what this analyzer reads is Apollo's
+`#import "<file>"` comment convention, which the corpus carries **170 times across
+131 files**. 156 of the 170 targets exist on disk relative to the importing file's
+own directory (**91.76%**); the remaining 14 are project-level path aliases a
+per-file analyzer cannot resolve.
 
 **`exports` is the schema's public type surface**: every top-level type-system
 declaration, marked `metadata.topLevel` at emit time rather than re-derived from a
@@ -1006,8 +1124,12 @@ out what is available:
 - A directive argument is a **constant** in GraphQL (the specification forbids
   variables there), so the `Value` node's own text is the literal's exact source
   spelling. Nothing is unquoted or guessed.
-- `#import` is a non-standard comment convention, not GraphQL syntax; it is not
-  parsed.
+- `#import` is a non-standard comment convention, not GraphQL syntax, and no
+  grammar sees it. It **is** read here — 170 sites, `imports` EMITTED — and the
+  boundary is that what is emitted is a *file path the comment names*, never a
+  symbol the convention implies. 14 of the 170 name a project-level alias that
+  does not exist on disk relative to the importing file, and those are emitted
+  unresolved rather than mapped to a guessed target.
 - Field selections inside a field's own selection set target a bare name, because
   an executable document does not carry the field's return type. Measured at
   project scope, with every residual classified and none of them provable: see
@@ -1022,19 +1144,23 @@ out what is available:
   why the corpus sweep measures grammar errors from the tree and not from the
   analyzer.
 - **A field argument's declared type is attributed to the FIELD symbol**
-  (`Actor.avatarUrl -> Int`, 2,067 edges), and a directive argument's to the
-  **directive symbol** (`@example -> Boolean`, 15 edges), because arguments are
+  (`Actor.avatarUrl -> Int`, 8,017 edges), and a directive argument's to the
+  **directive symbol** (`@example -> Boolean`, 902 edges), because arguments are
   published as the owning declaration's `parameters` metadata and no argument
   symbol exists to own them. A consumer reading `Actor.avatarUrl -> Int` as
   "this field's type is Int" would be wrong — its own return type is `URI`. The
   role (`field_return_type` vs `field_argument_type`), the line and
   `metadata.argument` are what disambiguate them, and all three are carried.
-- **11 `implements` clauses in the corpus name an object-typed supertype the same
-  document does not declare**, so they stay `implements` and emit no `extends`
-  edge. The analyzer is a per-file unit; resolving them needs a project-scope
-  join it does not have. Measured by
-  `B:implements_an_unambiguously_object_type_in_the_same_document` — 11 project
-  scope, 0 same document.
+- **8 `implements` clauses in the corpus name an object-typed supertype, and 5 of
+  those are in a document with no parse damage — yet 0 are in the SAME document as
+  the supertype's declaration**, so they stay `implements` and emit no `extends`
+  edge. The analyzer is a per-file unit; resolving them needs a project-scope join
+  it does not have. Measured by instrument B in the census artifact:
+  `B:implements_an_unambiguously_object_type` **8 over 4 files**,
+  `B:implements_an_unambiguously_object_type_in_a_clean_document` **5 over 3 files**,
+  `B:implements_an_unambiguously_object_type_in_the_same_document` **0 over 0**. The
+  gap between 5 and 0 is split schemas: `hasura-engine/…/0018_object_type_definition.graphql`
+  has `type Person implements Human` and the `Human` interface in a different file.
 - **1 of 8,796 corpus symbols is dropped by production, not by this analyzer.**
   `Query.me` at `0032_supergraph.graphql:175` is a legitimate GraphQL field, and
   `me` is on the `UNIVERSAL` name denylist in `src/ast/pool-worker.ts:448`, so

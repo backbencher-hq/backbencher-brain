@@ -32,6 +32,7 @@ import {
 } from "./wave-protocol.ts"
 import { generateWaveDoc } from "./generate-wave-doc.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 let checks = 0
@@ -241,6 +242,7 @@ const result = {
   mutantsTotal,
   currentCommit: execCommit(),
   verifierCommand: "npx tsx script/m29/verify-wave-protocol.ts",
+  ...fingerprintFields(["m29.R1"], ROOT),
   evidenceFile: "R1.json",
   generatedAt: new Date().toISOString(),
   limitations: [

@@ -115,10 +115,25 @@ if (lastSegHits.length) {
     if (byName.has(e.t)) continue
     if (!e.t.includes(".")) continue
     if (!byName.has(e.t.split(".").pop()!)) continue
+    // EXCLUDE import edges from the B bucket.
+    //
+    // The "final segment is a published name" test cannot distinguish "the emitter
+    // misspelled a local symbol" from "this is a module path into an external package".
+    // Both are dotted and both often end in a name that happens to exist somewhere.
+    // Measured false positive on lua: all 129 "recoverable" edges were `imports`
+    // (`luarocks.core.cfg`, `pl.utils`, `penlight.cli`) — external package requires,
+    // not a local symbol with two spellings. Counting them as recoverable would send a
+    // lane to edit a name function and recover nothing.
+    //
+    // An import whose module path is not in the corpus belongs to C, whatever its last
+    // segment happens to be named.
+    if (e.type === "imports" || e.type === "import") continue
     cost.set(e.type, (cost.get(e.type) ?? 0) + 1)
   }
   console.log(`   EDGES recoverable by fixing the name function: ${[...cost.values()].reduce((a, b) => a + b, 0)}`)
   console.log(`   by edge type: ${JSON.stringify(Object.fromEntries([...cost].sort((a, b) => b[1] - a[1])))}`)
+  const importFP = edges.filter((e) => !byName.has(e.t) && e.t.includes(".") && byName.has(e.t.split(".").pop()!) && (e.type === "imports" || e.type === "import")).length
+  if (importFP) console.log(`   NOTE: ${importFP} of those are import edges — external module paths, counted under C, not B`)
   console.log(`   examples: ${lastSegHits.slice(0, 6).map((s) => `"${s}"`).join(" ")}`)
 }
 console.log()

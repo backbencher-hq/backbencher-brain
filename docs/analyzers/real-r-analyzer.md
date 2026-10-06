@@ -257,7 +257,7 @@ before `d2fc8626f`; `instantiates` is unchanged at 3.
 should have carried all along; the measurement and the reasoning are under **R7**
 below.
 
-**The wobble is measured across nine production walks of this same population, and
+**The wobble is measured across ten production walks of this same population, and
 it is a property of the parser, not of the analyzer.** Each row is the sum of that
 run's own ten per-type rows; the artifacts and the runs whose bytes were not kept
 are named so a reader can check them.
@@ -266,7 +266,7 @@ The walks are split into two groups because `d2fc8626f` changed the analyzer bet
 them, and `overrides` is the only type it changed. **Every other column is directly
 comparable across the two groups; `overrides` is not.**
 
-Post-fix — every one of these four rows is backed by an artifact in this repository:
+Post-fix — every one of these five arbiter rows is backed by an artifact in this repository:
 
 | run | instrument | calls | uses | contains | imports | references | exports | extends | implements | overrides | instantiates | total | files lost |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -274,6 +274,15 @@ Post-fix — every one of these four rows is backed by an artifact in this repos
 | 2 | `labels-and-resolution.txt` | 48,233 | 4,810 | 17,634 | 2,095 | 2,137 | 3,592 | 351 | 1,133 | 95 | 3 | 80,083 | 1 |
 | K | `arbiter/arbiter-r-runK-2026-10-05.txt` | 48,098 | 4,801 | 17,627 | 2,088 | 2,130 | 3,588 | 351 | 1,133 | 95 | 3 | 79,914 | 1 |
 | M | `arbiter/arbiter-r-runM-2026-10-05.txt` | 48,096 | 4,789 | 17,617 | 2,093 | 2,135 | 3,588 | 351 | 1,133 | 95 | 3 | 79,900 | 1 |
+| N | `arbiter/arbiter-r-runN-2026-10-05.txt` | 48,037 | 4,799 | 17,584 | 2,091 | 2,133 | 3,557 | 351 | 1,133 | 95 | 3 | 79,783 | 8 |
+
+Run N is the only walk in either group taken with `--fresh`, so it is the only one
+that parsed all 2,184 admitted files inside one process with no checkpoint behind
+it, and the only one independent of the resume defect recorded below. It is also
+the run that lost the most files — 8, against 1 for every other post-fix walk — and
+every one of its ten counts still falls inside the band, which is the strongest
+evidence available here that the wobble is bounded by the file-loss rate rather
+than open-ended.
 
 Pre-fix — `overrides` read 107 in every one of these five, and is not comparable with
 the column above:
@@ -291,7 +300,7 @@ captured to `/tmp` before the artifacts directory existed, so they are named her
 not relied on for a bound.
 
 **`overrides` is the one type in this table with no run-to-run variance at all: 107 in
-five pre-fix walks, 95 in four post-fix walks, with one commit in between and no
+five pre-fix walks, 95 in five post-fix walks, with one commit in between and no
 overlap.** Its edges all live in eight hand-written inheritance test files, and a file
 lost to `memory access out of bounds` contributes none of them, so the loss rate that
 moves every other column cannot move this one. That is what makes the 12-edge drop
@@ -305,36 +314,74 @@ changes. Run 2 lost `usethis/R/badge.R`; run F lost `ggplot2/R/scale-manual.R`,
 `r-testthat/R/expect-equality.R`; run G lost `ggplot2/R/scale-manual.R` and
 `usethis/R/course.R`; run H lost `usethis/R/ci.R` and `usethis/R/citation.R`; run I
 lost `r-testthat/R/expect-invisible.R`; run J lost `r-cli/R/width.R`; run K lost
-`usethis/R/create.R`; run M lost `r-testthat/R/expect-condition.R`. A file that
+`usethis/R/create.R`; run M lost `r-testthat/R/expect-condition.R`; run N lost
+`ggplot2/R/scale-hue.R`, `scale-identity.R`, `scale-linewidth.R`, `scale-manual.R`,
+`scale-shape.R`, `r-cli/R/utils.R`, `r-cli/R/vt.R` and `r-cli/R/width.R`. A file that
 fails to parse contributes no edges, so the totals track the failures. The losses
-cluster — 8 of the 13 across the seven arbiter walks are `usethis` (4) or `r-cli` (4)
+cluster — 9 of the 17 distinct lost files are `usethis` (4) or `r-cli` (5)
 file losses, and `r-rlang`'s 160 files were walked by every run without one loss.
-That clustering is weaker than a previous revision of this document claimed: it said 9
+Run N also settled that `ggplot2` is a family and not one unlucky file: all five of
+its losses are members of the `ggplot2/R/scale-*.R` series, and run N lost four of
+them in a single walk. That clustering is weaker than a previous revision of this
+document claimed: it said 9
 of 11, which had both a wrong numerator (7 at the time, counted file by file from the
 committed artifacts) and a wrong denominator (ten losses were on record when 11 was
 written, run I supplied the eleventh and run J the twelfth). Run I is also the first
-loss outside `usethis`, `r-cli` and `ggplot2`.
+loss outside `usethis`, `r-cli` and `ggplot2`. The per-run, per-file tally is in
+`validation/m14/fixtures/r/arbiter/README.md`.
 
 Every total above is correct for the files its own run walked and none is correct for
 the admitted population as a whole. **The post-fix band for the ten types is
-79,900–80,023 on the four rows whose bytes are all on disk, and 79,900–80,083 once
-`labels-and-resolution.txt` is included; the pre-fix band was 79,756–80,095.** Every
+79,783–80,023 on the five arbiter rows whose bytes are all on disk, and 79,783–80,083
+once the two `*.txt` harnesses are included; the pre-fix band was 79,756–80,095.** Every
 rate in this document inherits that band on its denominator. Run 1 walked all 2,184
 files with **0 parse failures** and 1 degraded parse (`usethis/R/author.R`); runs F
-through M each reported 1 degraded parse, which is the 120-second bomb substituting a
+through N each reported 1 degraded parse, which is the 120-second bomb substituting a
 regex extractor.
 
-Two files are known vulnerable and were lost in two different runs each —
-`ggplot2/R/scale-manual.R` (runs F and G) and `r-cli/R/width.R` (runs F and J) — which
+Two files are known vulnerable and were lost in more than one run each —
+`ggplot2/R/scale-manual.R` (runs F, G and N) and `r-cli/R/width.R` (runs F, J and N) —
+which
 is the evidence that WHICH file the parser dies on is not stable even for a file
 already known to die. Run J is additionally the first run whose `[BB-PARSE-ERR]` file is
 the SAME file the 120-second bomb then hung on, so counting parse-error lines in a
 run's bytes would double that run's loss column.
 
-`extends`, `implements`, `overrides` and `instantiates` are **identical in all seven
-runs**, which says the wobble is confined to the types whose counts are large enough
-to be sensitive to losing a handful of files — not that those four are more correct
-than the others.
+`extends`, `implements` and `instantiates` are **identical in all ten walks**, which
+says the wobble is confined to the types whose counts are large enough
+to be sensitive to losing a handful of files — not that those three are more correct
+than the others. `overrides` was in that group until `d2fc8626f` moved it out by
+changing the code rather than the parse rate; its zero variance is now measured rather
+than assumed, because run N lost eight files and `overrides` stayed at 95.
+
+### A defect that turns this lane's 10/10 into a reported 0/10
+
+Running the arbiter WITHOUT `--fresh` against a checkpoint that already lists all
+2,184 files prints:
+
+```
+walk: 2184/2184 files (100.0%)  newly walked 0, resumed 2184
+calls   RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+...    (all ten rows identical)
+emitted 0/10   ruled-sound 0   FALSIFIED 0   ruled-without-justification 10
+```
+
+Every one of those ten types is EMITTED, on the same tree, minutes earlier — run N in
+the table above is that measurement. The cause is structural, in
+`script/m14/ontology-coverage-gate.ts`: the `observed` map is populated inside the
+`run:` callback handed to `resumableWalk`, and `resumableWalk` never calls `run` for a
+path the checkpoint already holds, so a fully-resumed walk parses zero files and
+observes zero edges. Nothing in the output distinguishes that from a lane that emits
+nothing.
+
+It is worse for this lane specifically. Because `script/m14/r-ruled.ts` is legitimately
+empty, the observed-empty state falls through to the ruling branch, finds no ruling, and
+prints `RULED-UNJUSTIFIED` for all ten — so a resume artifact converts a 10/10 lane into
+one that appears to have ruled on nothing. A lane carrying a populated ruling table does
+not have this failure mode, which means the defect hides on exactly the lanes most
+likely to be re-run. Both files are shared machinery (workstream §8): reported, not
+worked around. The workaround is `--fresh`, which is why run N is the run this lane's
+current numbers rest on.
 
 Integrity on run 1, which walked the whole population: **0** parse failures, **0**
 degraded parses, **0** symbols with an empty name, **0** with an empty or `unknown`
@@ -1146,8 +1193,9 @@ a top-level binding — checked by reading them, not assumed.
 
 ### What the repository's own arbiter says about R
 
-`npx tsx script/m14/ontology-coverage-gate.ts r` admits **747 files** and then
-exits **2** with:
+This section previously recorded a refusal, and it is kept because the refusal is the
+reason the registration exists. Before `script/m14/r-ruled.ts` was written and
+registered, the gate admitted **747 files** and exited **2**:
 
 ```
 ontology coverage gate — no RULING TABLE for r.
@@ -1155,14 +1203,20 @@ Refusing to report: a gate with an empty table would call every un-emitted type
 RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane.
 ```
 
-That refusal is the gate behaving correctly, and it is also the whole problem: the
-R lane's ten verdicts cannot be printed by the repository's own arbiter because
-`RULED_BY_LANG` has no `r` entry, and `script/m14/spec/r-completeness.json` does
-not exist. Both files are shared machinery. The exact change needed is in
-`validation/m14/fixtures/r/rulings.json` under `_report_to_supervisor`; in short,
-`RULED_BY_LANG.r` should be `[]` (all ten types are emitted, so no ruling is
-needed) and a `BD-ontology` decision should be added to a new
-`script/m14/spec/r-completeness.json`.
+That refusal was the gate behaving correctly, and it was also the whole problem: the R
+lane's ten verdicts could not be printed by the repository's own arbiter because
+`RULED_BY_LANG` had no `r` entry and `script/m14/spec/r-completeness.json` did not
+exist. Both are shared machinery, so the fix was a lane-owned file plus a two-line
+registration. `script/m14/r-ruled.ts` now exists and `RULED_BY_LANG` carries `r:
+R_RULED`, and the gate admits **2,184 files** and prints ten `EMITTED` rows. The
+admitted-file count rose from 747 to 2,184 because the corpus itself grew, not because
+the router changed; the run table above is the current population.
+
+The one shared-file change this lane still wants is small and is stated in full in
+`validation/m14/fixtures/r/rulings.json` under `_report_to_supervisor`: a `BD-ontology`
+decision in a new `script/m14/spec/r-completeness.json`. It is not required for the gate
+to pass — the table is checked first and this lane's rows all resolve through it — so it
+is a completeness want rather than a blocker, and it is filed as one.
 
 Two further shared-file facts, measured rather than assumed:
 
@@ -1178,20 +1232,34 @@ Two further shared-file facts, measured rather than assumed:
 
 ### Fixtures and mutants
 
-`validation/m14/fixtures/r/*.expectation.json` — **21 files**, `F01` through
-`F21` — executed by `npx tsx validation/m14/fixtures/r/run-r-fixtures.ts`
-through production `parseFile`, plus the **17**-mutant battery behind
+`validation/m14/fixtures/r/*.expectation.json` — **22 files**, `F01` through
+`F22` — executed by `npx tsx validation/m14/fixtures/r/run-r-fixtures.ts`
+through production `parseFile`, plus the **19**-mutant battery behind
 `--mutants`:
 
 ```
-fixtures: 21 passed, 0 failed
-MUTATION — 17 mutants, each in ONE child running all 21 fixture(s)
-mutants: 17 caught by >=1 of 21 fixture(s), 0 survived by every fixture,
-         0 harness faults, of 17 mutants
+fixtures: 22 passed, 0 failed
+MUTATION — 19 mutants, each in ONE child running all 22 fixture(s); a mutant no fixture rejects fails this run
+mutants: 19 caught by >=1 of 22 fixture(s), 0 survived by every fixture,
+         0 harness faults, of 19 mutants
 analyzer restored: src/ast/real-r-analyzer.ts is byte-identical to its pre-run content
 ```
 
-Four of the seventeen are OUTPUT transforms and thirteen are SOURCE edits, and the
+The restore claim is checked, not asserted: the analyzer is
+`sha256 ecb02eecda7bf54b3996b55a2a6e10d054edd95cdc1c72a73b9d96d82175ea4e`
+before and after the battery, and `git status` on it is clean afterwards. That digest
+is also the one recorded in `validation/m14/fixtures/r/r-cause-a-counterfactual.txt`,
+so the corpus walks that produced the cause A/B/C adjudication ran against this exact
+analyzer.
+
+`F22-redeclared-class-name` is the fixture that pins the `overrides` base-resolution
+change, and four mutants hang off it (`src-overrides-base-is-last-declaration`,
+`src-overrides-base-is-name-union`, `src-overrides-direction`,
+`src-overrides-drops-qualification`). Those four are the reason the 107 → 95 drop is
+attributable to `d2fc8626f` and not to the parser: each mutant reinstates one of the
+two wrong base-resolution rules, and a fixture rejects each.
+
+Four of the nineteen are OUTPUT transforms and fifteen are SOURCE edits, and the
 split is not cosmetic: a gate's whole behaviour is to emit nothing, so no transform of the
 emitted edges can express a defect in one. **Three were no-ops on their
 first version and were refused rather than counted** — one returned its input
@@ -1684,6 +1752,130 @@ anything real R code produces. The superlinear cost there is a characteristic of
 the binding on an input shape that does not occur, not an analyzer defect — but it
 is a real cost and is recorded rather than explained away.
 
+## Incoming resolution — causes A, B and C, adjudicated
+
+`ROUND-BRIEF.md` splits an unresolved/ambiguous target column into three causes and says to
+optimise resolution rather than counts. All three are adjudicated below for R, measured
+before any analyzer edit, so that an edit which does not pay can be declined with numbers
+instead of attempted on the strength of a remedy that reads well.
+
+Instrument: `validation/m14/fixtures/r/r-cause-a-counterfactual.ts`, committed output
+`r-cause-a-counterfactual.txt`. Population: the whole admitted set — **2,184 files across
+16 repositories, no sampling**, corpus set sha256 `953c0314…`, production `parseFile`,
+analyzer sha256 `ecb02eec…`. 79,878 edges, 29,556 symbols, 0 parse failures, 2 files on
+regex fallback.
+
+The instrument scores alternative key spaces **over the same bytes**, so every row below is
+a count over one file set and one analyzer build and the rows are directly comparable.
+
+### B — FORMAT MISMATCH: 0 edges recoverable. The recipe's predicate is unsound in R
+
+`diagnose-incoming.mts`'s B recipe counts a target recoverable when it contains a `.` and
+its final segment is a published name. Over the whole population that is **209 dotted
+targets carrying 2,598 edges** (`r-b-pair-verify.txt`), and the recipe's predicate calls all
+2,598 recoverable. Classified, they are:
+
+| class | pairs | edges | share | same file as the edge | target declared anywhere |
+|---|---|---|---|---|---|
+| INFIX — `is.null`→`null`, `do.call`→`call`, `file.path`→`path` | 170 | 2,488 | 96% | 0 | **0** |
+| LEADING_DOT — `.rows`→`rows` | 21 | 74 | 3% | 1 | 0 |
+| NAMESPACE — `pkg::fn`→`fn` | 18 | 36 | 1% | 0 | 0 |
+
+933 of the 2,598 edges target `is.null`, and the corpus declares `null` in exactly two
+files. Retargeting them resolves 933 `calls` edges onto declarations that never mention
+the target. `targetDeclaredSomewhere` is **0 for all 209 pairs**: nowhere in 2,184 files is
+the dotted form itself published, so there is no positive evidence the two spellings are one
+object. `.` is a legal R identifier character and a leading `.` is the internal-object
+convention, so `.rows` and `rows` are different declarations by the language's own rules.
+**Nothing was changed**, because the recipe would have moved 2,598 edges onto false
+declarations. Overturn: a corpus pair with `targetDeclaredSomewhere = 1` whose two
+declarations share a body. None exists in this population.
+
+### A — NAME IS NOT AN IDENTIFIER: the prescribed fix is a NET LOSS in R
+
+The brief's remedy is "publish an identifier that includes the owner or module". For R the
+owner is the package, and the package is the repository, so the fix specialises to a
+per-repository key. Scored with `incoming-check.ts`'s own test in both columns:
+
+| key space | ambiguous | unresolved |
+|---|---|---|
+| FLAT — what ships today | **11,774** | **24,021** |
+| D2 — per-repository key | **3,541** | **37,810** |
+
+D2 buys 8,233 ambiguous edges and pays **13,789 edges that resolve today becoming
+unresolved**, because the source package declares nothing by that name. It is a net loss on
+the instrument's own two columns, so **the edit was not applied**. The 11,774 partition:
+
+| bucket | edges | meaning |
+|---|---|---|
+| recovered by qualifying the key | 4,424 | the second kind came from *another* package; the source package is kind-clean |
+| lost — ambiguous becomes unresolved | 3,809 | the source package declares nothing by that name |
+| survives any qualification | 3,541 | a genuine two-kind collision *inside* one package |
+
+4,424 + 3,809 + 3,541 = 11,774.
+
+The surviving 3,541 is not a spelling defect. R has no function declaration distinct from a
+variable declaration, so one package can bind `f` to a closure in one file and to a vector
+in another; both are true declarations and one key cannot separate them. Removing *those*
+means choosing one kind for R bindings — the D1 column below — not qualifying a name.
+
+**D1, the kind-collapse bound.** If the function/variable distinction were not published,
+ambiguity would fall 11,774 → **6,625** (−5,149, 43.7%). That is a bound, not a proposal:
+it publishes nothing, and dropping `SymbolKind.Function` is a much larger contract edit than
+the number alone justifies.
+
+**A name-space change provably cannot move the unresolved column.** A per-repository key is
+a *partition* of FLAT, which already indexes every published `name` **and** every published
+`qualifiedName` across all 16 repositories. A target absent from FLAT is therefore absent
+from every one of its partitions, and the instrument confirms it rather than arguing it:
+of 24,021 unresolved edges, **0** have the bare name published in any repository
+(`unresRepoHasBare = 0`). Any proposal claiming a naming fix moves the unresolved column is
+claiming otherwise.
+
+### C — EXTERNAL: 88.6% of the residue, and the marker is not lane-fixable
+
+The same walk buckets the 24,021 unresolved edges over 2,991 distinct target names **by
+target syntax**, so no name list is asserted:
+
+| bucket | edges | names | share | decidable from |
+|---|---|---|---|---|
+| PKG-QUALIFIED | 2,503 | 722 | 10.4% | the target contains `::` or `:::` |
+| DOT-LEADING | 245 | 57 | 1.0% | the target starts with `.` |
+| RESERVED-WORD | 2 | 2 | 0.0% | the target is in `?Reserved` |
+| BARE-RESIDUE | 21,271 | 2,210 | 88.6% | **nothing — not subdivided** |
+
+Three results:
+
+1. **There is no fabricated-edge class.** RESERVED-WORD is 2 edges (`NA`, `next`). R's
+   grammar gives `if`/`for`/`while` their own node types rather than a call with a callee,
+   so the analyzer's call rule cannot reach them. `return` (1,397 edges) and `invisible`
+   (764) are *not* in this bucket because both are real base functions called in call
+   position — those edges are true edges to external symbols, not syntactic artefacts.
+2. **The external marker cannot be an analyzer decision.** Whether `cli` or `utils` is inside
+   the corpus is a fact about the *corpus*, and the analyzer analyses one file: it cannot
+   know which packages the index will contain. Externality must be marked at index time.
+   That is shared machinery (`src/ast/engine.ts` / the indexer), so it is a §8 report item.
+3. **BARE-RESIDUE is left whole on purpose.** Its 21,271 edges are base R, another package
+   or a runtime argument, and nothing in this corpus separates the three: no corpus file
+   *is* base R, and `Rscript` is not installed in this environment, so no authoritative
+   export list can be produced here. A hand-written name list would make the census a
+   statement about that list rather than about R — the substitution
+   `r-ambiguity-split.ts` already refuses. What is needed is **one vendored base-R export
+   list as a shared artifact**: every lane's cause C needs it and no lane can produce it
+   alone.
+
+### One instrument bug, recorded because it read as a finding
+
+The D2 index key was built as `` `${repo}\0${name}` `` — a literal NUL byte, written into
+the file by the editor — while the lookup spelled it `` `${repo}${name}` ``. Every D2 counter
+therefore read 0 and the first run printed "source repo declares nothing by that name
+100.0%", which is indistinguishable from a real finding. One shared `repoKey()` now builds
+both sides, with a separator no repository name or R identifier can contain, so
+`repo + SEP + name` cannot collide the way bare concatenation can (`ab`+`c` against
+`a`+`bc`). **The number in this section is the post-fix number**; the pre-fix run is not
+quoted anywhere.
+
+
 ## Limitations
 
 Declared non-empty because R is Turing-complete, and each entry carries the
@@ -1778,6 +1970,20 @@ number that bounds it rather than an adjective.
   from the edge that the base came from another package. Measured cost: **1
   occurrence** in 2,342 corpus files, so the loss is bounded and named rather
   than fixed.
+- **Cross-package edges cannot be resolved, and a per-package key space would make that
+  worse rather than better.** 13,789 of 79,878 edges name something the source package does
+  not declare, and D2 would move every one of them from resolved to unresolved to buy 8,233
+  fewer ambiguous edges (11,774 → 3,541 against 24,021 → 37,810 unresolved). Measured, not
+  estimated: `r-cause-a-counterfactual.txt`. So the lane publishes a flat key space
+  deliberately, and the 24,021 unresolved edges are the price of the choice rather than an
+  unexamined defect.
+- **External references are not marked, and cannot be from an analyzer.** 21,271 of the
+  24,021 unresolved edges name something no corpus file defines, and whether a given target
+  is inside the corpus is a corpus-level fact a single-file analyzer cannot know. 2,503 of
+  them are decidable from the target string alone (`pkg::fn`), 245 by the leading-dot
+  convention, and the remaining 21,271 are not subdivisible here because this environment
+  has no `Rscript` and therefore no base-R export list. Until an external marker exists at
+  index time, the unresolved column mixes externals with genuine misses.
 - **A class whose name is a runtime expression cannot be published.** 2
   occurrences (`S7/inst/doc/performance.R:68` and `:104`), where the name is a
   `for` variable over generated strings. Correct to omit, but the omission is

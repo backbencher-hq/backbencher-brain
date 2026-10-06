@@ -8,6 +8,8 @@ import { runIndexHealthCheck, type IndexHealthReport } from "../../brain/brain-i
 import { indexProjectParallel, wipeProjectData } from "../../ast/parallel-indexer"
 import { getAnalysisHistory } from "../analysis/run-history"
 import { Config } from "../../config/config"
+import { describeEmbeddingConfig } from "../../setup/setup-show"
+import { buildEmbeddingDiagnosis, renderChainSummary, type EmbeddingDiagnosis } from "../../brain/semantic/embedding-diagnosis"
 
 export interface HealthWarning { code: string; message: string; severity: "warning" | "error" }
 export interface UnifiedHealthOptions {
@@ -173,6 +175,13 @@ export interface UnifiedHealthReport {
   refresh: { requested: boolean; force: boolean; wait: boolean; completed: boolean; durationMs: number | null; processedFiles: number | null; derived: string | null }
   /** M40.A8: effective embedding config + per-field source, per the single documented precedence. */
   effectiveConfig: { baseURL: string; model: string; configured: boolean; sources: { baseURL: string; model: string; apiKey: string } } | null
+  /**
+   * The provider chain and its problems — the same object `bb doctor` and
+   * `bb setup show` print, so all three surfaces answer "which provider am I on
+   * and is it working" identically. Structured (not pre-rendered) so a JSON
+   * consumer reads it without parsing prose; `null` when unavailable.
+   */
+  embeddingChain: EmbeddingDiagnosis | null
   /** Per-language file+symbol counts; always collected, printed only when verbose. */
   languages: Array<{ language: string; files: number; symbols: number }>
   /** Mirrors the request; the formatter prints the verbose sections only when true. */
@@ -580,6 +589,15 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // source of each field, per the single documented precedence (env > file >
   // default). API key value is never printed, only its source.
   let effectiveConfig: UnifiedHealthReport["effectiveConfig"] = null
+  // The chain, from the same builder `bb doctor` and `bb setup show` use. Read
+  // OUTSIDE the verbose gate: `bb health` is the command a script runs to decide
+  // whether embeddings are usable, and a machine consumer wants the structured
+  // verdict in the JSON whether or not a human asked for verbose output. The
+  // human-facing lines are still verbose-only below.
+  let embeddingChain: EmbeddingDiagnosis | null = null
+  try {
+    embeddingChain = buildEmbeddingDiagnosis({ state: describeEmbeddingConfig() })
+  } catch { embeddingChain = null }
   if (options.verbose === true) {
     try {
       const { resolveEmbeddingConfig } = await import("../../config/config")
@@ -1057,6 +1075,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     pathChecks,
     integrity, analysisRuns, refresh,
     effectiveConfig,
+    embeddingChain,
     languages: languageRows,
     verbose: options.verbose === true,
     warnings,
@@ -1252,10 +1271,29 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     if (failing.length > 3) lines.push(`  … and ${failing.length - 3} more non-ok check(s); read integrity.checks[] in the JSON for the full set`)
   }
   // M40.A8: effective embedding config with per-field source (verbose only).
+  // The line below is byte-compatible with what script/m40/verify-a8-config.ts
+  // asserts on; the chain is ADDED after it rather than folded into it, so that
+  // gate keeps pinning the precedence surface it was written for.
   if (report.verbose && report.effectiveConfig) {
     const ec = report.effectiveConfig
     lines.push(`embedding config: ${ec.configured ? "remote provider" : "not configured (local/tfidf fallback)"} — base-url=${ec.baseURL} (source: ${ec.sources.baseURL}), model=${ec.model} (source: ${ec.sources.model}), api-key source: ${ec.sources.apiKey}${ec.configured ? "" : ""}`)
     lines.push(`embedding precedence: env BB_EMBEDDING_* > config file (BB_CONFIG_FILE > bb.json > config.json) > default`)
+    // The same chain `bb doctor` and `bb setup show` print, so a user who runs
+    // `bb health --verbose` to check embeddings is not told a different story
+    // than the one `bb doctor` just gave them.
+    if (report.embeddingChain) {
+      lines.push(`embedding chain: ${report.embeddingChain.disabled ? "disabled (BB_EMBEDDING_DISABLED) — local only" : report.embeddingChain.remoteReady ? "remote ready" : "remote NOT usable"}`)
+      for (const line of renderChainSummary(report.embeddingChain)) lines.push(line)
+      for (const p of report.embeddingChain.problems.filter((x) => !/^No embedding provider is configured/.test(x.message))) {
+        lines.push(`embedding problem: ${p.envVar ? `${p.envVar}: ` : ""}${p.message}`)
+      }
+      for (const f of report.embeddingChain.observedFailures) {
+        lines.push(`embedding failure: ${f.status} ${f.kind} from ${f.baseURL} — ${f.advice}`)
+      }
+      if (report.embeddingChain.tierOrderDisagreement) {
+        lines.push(`embedding warning: ${report.embeddingChain.tierOrderDisagreement.detail}`)
+      }
+    }
   }
   // Verbose sections: per-language breakdown and stale/missing file names — the
   // advertised verbose contract. Omitted entirely unless verbose=true.

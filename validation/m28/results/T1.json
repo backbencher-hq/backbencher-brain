@@ -2,10 +2,10 @@
   "issue": "M28.T1",
   "code": "T1",
   "milestone": "M28",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 24,
-  "passed": 23,
-  "failed": 1,
+  "passed": 24,
+  "failed": 0,
   "mutantsCaught": 2,
   "mutantsTotal": 2,
   "mutantRecords": [
@@ -18,17 +18,17 @@
       "caught": true
     }
   ],
-  "currentCommit": "d1ad94bb83a1eba9ee067ae49575843bb983537e",
+  "currentCommit": "d5c265b3a9a185d0927d2167e0cc562f5092d6e9",
   "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
   "evidenceFile": "T1.json",
-  "generatedAt": "2026-09-30T03:47:35.915Z",
+  "generatedAt": "2026-10-05T02:50:39.694Z",
   "claimLevel": "verified — three MCP read tools over the real indexer's fixture, reusing the IDE components",
   "limitations": [
     "Fixture is java+scala (the M26.A1 polyglot pair); cross-language absence asserted on Warehouse (scala-side symbol with no stored incoming rows)."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-30T03:47:35.915Z",
-    "contentSha256": "62be4a013ec09dd60bd427a8d9529799436f2ce38c7118c8da578b77a27fcc3c"
+    "sealedAt": "2026-10-05T02:50:39.694Z",
+    "contentSha256": "3b8c53c4c1d09ba92dfe25b62a11ca398b8ba558ee1e4c2b25f70ea9f291e581"
   }
 }
