@@ -1951,6 +1951,12 @@ quoted from an earlier round.
 | `BB_NIM_RULED_WORKERS=1 npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | **0** | **session 18: the arbiter's own verdict loop on a patched COPY, and the runner itself needed three fixes before it could run at all.** The verdict is `corpus: 6063 admitted files`, `walk: 6063/6063 files (100.0%)  newly walked 6063, resumed 0`, and **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`** at analyzer `deeab0756e0c4c1f` unchanged across the child's walk (`s18-ruled-gate.txt`). Three runner defects, all found by RUNNING it and all of the same shape — a proof runner demanding a state the shared gate has moved past: (1) the fan-out patch targeted `Array.from({ length: 8 }, () => worker())`, a hand-rolled pool the gate no longer has, so it exited 2 with "worker patch did not apply" on a correctly-wired gate — it now matches `concurrency: 8,` and DETECTS rather than demands; (2) the copy lives in /tmp and the gate's new `await import("./resumable-walk")` did not resolve, `ERR_MODULE_NOT_FOUND` before the corpus was admitted, so nothing was measured; (3) same for the static `from "./differential"`, which the lane-table pattern deliberately cannot match because it requires a `-ruled` suffix |
 | `BB_NIM_BEFORE=<ref> npx tsx validation/m14/fixtures/nim/imports-edge-delta.mts <out>` | **0** | **session 18, new instrument, run twice**: `1475e53d0e528d0a` → `deeab0756e0c4c1f` reads **13,364 → 13,364, delta 0, 0 of 6,063 files differing**; `2426fdda15f9960e` → `deeab0756e0c4c1f` reads **13,365 → 13,365, delta 0, 0 differing**. The module pass adds and removes no `imports` edge anywhere in the corpus, so the census's +1 is walk non-determinism between two CLEAN walks (0 threw, 0 empty-kind on both sides), not an edge the pass created. Each swap is digest-verified and a `finally` restores the tree — the artifact records the digest actually walked beside the one the caller expected, because `HEAD~1` silently became the wrong blob once the pass was itself committed (`s18-imports-edge-delta-{1475e53d,HEAD1}.{txt,json}`) |
 | `npx tsx script/m14/diagnose-incoming.mts nim nim 600 <corpus>` | **0** | **session 18, before and after, same command and same 600 files**: unresolved targets **1,859 → 1,289** (-570, -30.7%); ambiguous targets 1,112 → 1,145 (+33, and the reason is stated below); B's recoverable count **3 → 0** — which is the point, not a null result. The `+33` on ambiguity is the honest cost of the pass: it published 600 module symbols in this window, 36 of which collide by basename, and `submodule.nim` alone is the basename of 16 files. **A gain of 570 resolutions bought with 33 newly ambiguous targets is a trade, and it is reported as one** (`s18-diagnose-BEFORE.txt`, `s18-diagnose-AFTER.txt`) |
+| **`npx tsx script/m14/ontology-coverage-gate.ts nim --fresh`** | **1** | **session 24, three consecutive invocations at `96ef87bb47f63eca`, three different results from the same analyzer on the same 6,063-file corpus** (`s25{a,b,c}-arbiter*.txt`). `--fresh` → exit 1 on `[BB-HANG] parser stuck 120s on nim/lib/std/private/threadtypes.nim — exiting`, table never printed. resume → exit 1, `walk: 6063/6063 (100.0%) newly walked 1552, resumed 4511`, verdict **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, and the log then carries `[BB-HANG] … nimony/tests/nimony/modules/deps/ismain_include.nim`. resume again → exit 1, `walk: 6063/6063 (100.0%) newly walked 0, resumed 6063`, verdict **`emitted 0/10  ruled-sound 3  FALSIFIED 0  ruled-without-justification 7`**. *Limitations* 36 and 44 are these two rows respectively |
+| **`BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>`** | **0** | **session 24, at `96ef87bb47f63eca`** (`s27-census-clean.txt`): 6,063 files, 6,063 parsed, 0 throws, **0 empty names, 0 empty kinds, 0 off-ontology edge types, 8 literal `unknown` endpoints**, **116,127 symbols / 267,266 edges**. Every per-type figure is **byte-identical to the session-18 table above** on a different digest, so it is a reproduction and not a second census. `degradedWalk: null`. The same script at the bare default of 6 workers is **exit 1 and writes nothing under its own name**: 10 empty-kind symbols, all `nimony/bench/gcbench.nim`, whose parse logs `memory access out of bounds` and then hangs 120s (`s26-census.degraded.json`, `s26-census.txt`) |
+| `npx tsx validation/m14/fixtures/nim/oracle-crosscheck.ts <out>` | **0** | **session 24, at `96ef87bb47f63eca`**: 400 of 6,063 every-15th, **MISSING 3 / UNEXPLAINED 26**, all ten compared. Per type, analyzer vs oracle targets — `calls` 2,517 / 2,528 (15 unexplained), `contains` 1,285 / 1,295 (10), `uses` 1,002 / 1,003 (1), `references` 694 / 694 (3 missing), and `imports` 307, `uses` 1,003, `exports` 12, `extends` 22, `implements` 3, `overrides` 1, `instantiates` 134 — **exact on both sides** for the remaining six (`s28-oracle-crosscheck.txt`) |
+| `npx tsx validation/m14/fixtures/nim/verify-mutants.ts` | **0** | **session 24, at `96ef87bb47f63eca`**: **27 nim mutants recorded, 26 run, 26 caught, 0 survived, 1 retired** with its reason printed (`s28-mutants.txt`) |
+| `npx tsx validation/m14/fixtures/nim/verify-analyzer-hygiene-nim.ts` | **1** | **session 24: `ReferenceError: __dirname is not defined in ES module scope` at `script/m14/verify-analyzer-hygiene.ts:27`** — a SHARED file this lane does not own. Not a regression: `session16-hygiene-nim.txt` is the same traceback. *Limitations* 45 |
+| `npx tsx script/m14/differential.ts --lang nim` | **0** | **session 24: `SKIP nim: no corpus repo mapped in LANG_REPOS and none checked out — declared unrun, not measured`**, and `measured 0 lane(s) — M14.0.F5 NOT written`. All ten emitted types are therefore **DERIVATION findings at F5**; the lane-owned `oracle-crosscheck.ts` above is the only thing that audits them (`s28-differential.txt`) |
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **1** | session 18, at `deeab0756e0c4c1f`: `corpus: 6063 admitted files`, `walk: 6063/6063 files (100.0%)`, and the verdict **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`** — printed BEFORE the exit, so the gate's verdict is recorded even though the process then dies on `[BB-HANG] parser stuck 120s on nimony/lib/std/stripes.nim`. That hang is the known robustness finding (*Limitations* 8) and it names a **different file on each run** (`session16-arbiter.txt` names `nim/tests/distinct/typeclassborrow.nim`, this one names `stripes.nim`), which is itself the evidence that it is a heap-exhaustion race rather than one bad input. Exit 1 is the hang, not the verdict (`s18-arbiter.txt`) | session 7, and this row's exit code has MOVED: earlier passes read **2** with `corpus: 6063 admitted files` then `no RULING TABLE for nim`. This pass never reaches the refusal — it prints the header and two `[BB-PARSE-ERR] … memory access out of bounds` lines (`dll/nimhcr_0_6.nim`, `package/stdlib/stdlib.nimble`) and then dies on `[BB-HANG] parser stuck 120s … dll/nimhcr_0_6.nim`. The §8 wiring is unchanged and still the reason the gate would refuse; at 8 workers the shared watchdog now gets there first, so the refusal is no longer the observable outcome. `RULED_BY_LANG` still carries `bash`, `json`, `lua`, `toml` and no `nim` (`session7-arbiter.txt`) |
 | `npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | the arbiter's own verdict loop on a copy: **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 255s, `implements EMITTED 47 edges in 4+ files, e.g. nimony/lib/std/math.nim`. Table rows: 0 |
 | **`BB_NIM_RULED_WORKERS=1 npx tsx validation/m14/fixtures/nim/ruled-gate.ts`** | **0** | **session 11, 519s, at the CURRENT blob `1475e53d0e528d0a`: `emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 6,063 admitted files, and **all ten per-type counts identical to the digit with the current 1-worker census** — `calls` 118,261, `uses` 45,664, `contains` 29,330, `references` 56,445, `imports` 13,364, `instantiates` 2,843, `extends` 627, `exports` 617, `overrides` 67, `implements` 47. Two instruments, zero disagreement, at fan-out 1 (`session11-ruled-gate.txt`) |
@@ -4003,3 +4009,61 @@ quiet machine will cover all 5,227 through the production path.
     `import std / monotimes` with `meta.nimModulePath` keeping the spaces verbatim), and
     the mutation table in limitation 42 records that one of the two is caught and one is
     not.
+44. **The arbiter can print a whole `emitted 10/10 … FALSIFIED 0` table and still exit
+    1, so the exit code is not a statement about the verdict it just printed.**
+    MEASURED, session 24, `s25b-arbiter-resume.txt`. The gate computes its verdict
+    *after* its two whole-corpus instruments (`script/m14/ontology-coverage-gate.ts:332-355`,
+    a raw `web-tree-sitter` re-parse of all 6,063 files for the grammar inventory and the
+    parse-tree construct counts), and only reaches
+    `process.exitCode = falsified.length + unjustified.length === 0 ? 0 : 1` at `:522`
+    once they are done. Those instruments walk the same files a second time with the same
+    WASM parser, so a file that traps the heap traps them too — and `ASTEngine`'s 120s
+    parse self-destruct calls `process.exit()`, which never returns to `:522`. What the
+    supervisor sees is a log containing `emitted 10/10  ruled-sound 0  FALSIFIED 0
+    ruled-without-justification 0` and an exit status of 1, with no line saying which of
+    the two disagreed.
+
+    *Limitations* 36 records the same self-destruct killing the arbiter "before it prints
+    a verdict", which is what session 18 observed. That is now measurably incomplete: the
+    table is in the log. One caveat carried rather than glossed — **stderr is unbuffered
+    and stdout is buffered when both are redirected to one file, so the `[BB-HANG]` line
+    appearing after the summary line in the merged log does NOT place the trap after the
+    verdict.** The code order puts the instruments first; the log order is a buffering
+    artefact. Either way the observable is the same and it is the observable that matters:
+    exit 1 beside a passing table.
+
+    Which file traps **moves between runs**, which is what makes this a trap rather than a
+    bad file list. Three runs, three files: `nim/lib/std/private/strimpl.nim`,
+    `nim/lib/std/private/threadtypes.nim`, `nimony/tests/nimony/modules/deps/ismain_include.nim`.
+    The same corpus also produced four `[BB-PARSE-ERR] … memory access out of bounds`
+    without a hang — `strimpl.nim`, `nim/tests/avr/thello.nim`,
+    `nimterop/nimterop/build/ccompiler.nim`, `nimterop/nimterop/build/conan.nim` — and
+    two more from `census.ts`, `nimony/bench/gcbench.nim` and
+    `nimony/tests/nimony/assembler/tbadnaked.nim`. A corpus with no file the parser
+    survives cannot be walked twice by this gate.
+
+    **This lane's own runner is what produces an exit-0 verdict**, and it does so by
+    removing the mechanism: `ruled-gate.ts` patch 4 disables the 120s self-destruct in the
+    COPY's module body, which is how it reaches `walk 6063/6063 newly walked 6063,
+    resumed 0` and `emitted 10/10  ruled-sound 0  FALSIFIED 0
+    ruled-without-justification 0` at exit 0 in 499s (`s28-ruled-gate.txt`). So the
+    10/10 is measured over a walk of all 6,063 files with nothing excluded, and the unpatched shared
+    gate on the same corpus cannot finish a walk at all. Both halves are recorded because
+    either alone is misleading: a reader who sees only the exit-1 row concludes the lane
+    fails; a reader who sees only the exit-0 row concludes the shared gate can do this.
+45. **`script/m14/verify-analyzer-hygiene.ts` does not run on this branch, so the
+    regex-free criterion has no automated witness here.** EXIT 1, session 24:
+    `ReferenceError: __dirname is not defined in ES module scope` at
+    `script/m14/verify-analyzer-hygiene.ts:27`
+    (`const ROOT = path.resolve(__dirname, "..", "..")`) — the file is loaded as an ES
+    module, where `__dirname` does not exist. Not introduced by this pass: the identical
+    traceback is on record at `session16-hygiene-nim.txt`, so it has been dark for at least
+    two sessions of gate runs. It is a SHARED file, so this lane reports it rather than
+    fixing it.
+
+    The claim it would witness is still supported here, but by a different artifact and
+    on a narrower statement: `npx tsx script/m12/verify-regex-census.ts` is the gate that
+    decides pass/fail, and the lane's own zero-regex claim was re-established by re-running
+    the census after committing the analyzer that removed them (commit `d62782289`). What
+    is **not** currently witnessed is the hygiene script's own checks. That is a gap in the
+    evidence, stated as one, and it is the supervisor's to close.
