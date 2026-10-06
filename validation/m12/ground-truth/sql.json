@@ -147,45 +147,45 @@
       }
     },
     {
-      "id": "rel:Schema.sql:contains:teams:id",
+      "id": "rel:Schema.sql:contains:teams:Schema.sql::teams.id",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema.sql",
       "sourceId": "teams",
-      "targetId": "id",
+      "targetId": "Schema.sql::teams.id",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema.sql:contains:teams:name",
+      "id": "rel:Schema.sql:contains:teams:Schema.sql::teams.name",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema.sql",
       "sourceId": "teams",
-      "targetId": "name",
+      "targetId": "Schema.sql::teams.name",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema.sql:contains:users:id",
+      "id": "rel:Schema.sql:contains:users:Schema.sql::users.id",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema.sql",
       "sourceId": "users",
-      "targetId": "id",
+      "targetId": "Schema.sql::users.id",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema.sql:contains:users:team_id",
+      "id": "rel:Schema.sql:contains:users:Schema.sql::users.team_id",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema.sql",
       "sourceId": "users",
-      "targetId": "team_id",
+      "targetId": "Schema.sql::users.team_id",
       "attributes": {
         "type": "contains"
       }
@@ -202,23 +202,23 @@
       }
     },
     {
-      "id": "rel:Schema.sql:contains:users:email",
+      "id": "rel:Schema.sql:contains:users:Schema.sql::users.email",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema.sql",
       "sourceId": "users",
-      "targetId": "email",
+      "targetId": "Schema.sql::users.email",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema.sql:contains:users:active",
+      "id": "rel:Schema.sql:contains:users:Schema.sql::users.active",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema.sql",
       "sourceId": "users",
-      "targetId": "active",
+      "targetId": "Schema.sql::users.active",
       "attributes": {
         "type": "contains"
       }
@@ -235,12 +235,12 @@
       }
     },
     {
-      "id": "rel:Schema.sql:contains:users:users_team_idx",
+      "id": "rel:Schema.sql:contains:users:Schema.sql::users.users_team_idx",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema.sql",
       "sourceId": "users",
-      "targetId": "users_team_idx",
+      "targetId": "Schema.sql::users.users_team_idx",
       "attributes": {
         "type": "contains"
       }
@@ -301,77 +301,77 @@
       }
     },
     {
-      "id": "rel:Schema.sql:uses:global:users",
+      "id": "rel:Schema.sql:uses:Schema.sql:users",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema.sql",
-      "sourceId": "global",
+      "sourceId": "Schema.sql",
       "targetId": "users",
       "attributes": {
         "type": "uses"
       }
     },
     {
-      "id": "rel:Queries.sql:uses:global:users",
+      "id": "rel:Queries.sql:uses:Queries.sql:users",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Queries.sql",
-      "sourceId": "global",
+      "sourceId": "Queries.sql",
       "targetId": "users",
       "attributes": {
         "type": "uses"
       }
     },
     {
-      "id": "rel:Queries.sql:uses:global:audit_log",
+      "id": "rel:Queries.sql:uses:Queries.sql:audit_log",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Queries.sql",
-      "sourceId": "global",
+      "sourceId": "Queries.sql",
       "targetId": "audit_log",
       "attributes": {
         "type": "uses"
       }
     },
     {
-      "id": "rel:Queries.sql:uses:global:teams",
+      "id": "rel:Queries.sql:uses:Queries.sql:teams",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Queries.sql",
-      "sourceId": "global",
+      "sourceId": "Queries.sql",
       "targetId": "teams",
       "attributes": {
         "type": "uses"
       }
     },
     {
-      "id": "rel:Queries.sql:calls:global:lookup_user",
+      "id": "rel:Queries.sql:calls:Queries.sql:lookup_user",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Queries.sql",
-      "sourceId": "global",
+      "sourceId": "Queries.sql",
       "targetId": "lookup_user",
       "attributes": {
         "type": "calls"
       }
     },
     {
-      "id": "rel:Negative.sql:uses:global:users",
+      "id": "rel:Negative.sql:uses:Negative.sql:users",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Negative.sql",
-      "sourceId": "global",
+      "sourceId": "Negative.sql",
       "targetId": "users",
       "attributes": {
         "type": "uses"
       }
     },
     {
-      "id": "rel:Negative.sql:uses:global:teams",
+      "id": "rel:Negative.sql:uses:Negative.sql:teams",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Negative.sql",
-      "sourceId": "global",
+      "sourceId": "Negative.sql",
       "targetId": "teams",
       "attributes": {
         "type": "uses"
@@ -631,34 +631,34 @@
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:customers:CustomerId",
+      "id": "rel:Schema2.sql:contains:customers:Schema2.sql::customers.CustomerId",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "customers",
-      "targetId": "CustomerId",
+      "targetId": "Schema2.sql::customers.CustomerId",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:customers:email",
+      "id": "rel:Schema2.sql:contains:customers:Schema2.sql::customers.email",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "customers",
-      "targetId": "email",
+      "targetId": "Schema2.sql::customers.email",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:customers:total",
+      "id": "rel:Schema2.sql:contains:customers:Schema2.sql::customers.total",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "customers",
-      "targetId": "total",
+      "targetId": "Schema2.sql::customers.total",
       "attributes": {
         "type": "contains"
       }
@@ -675,34 +675,34 @@
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:customers:idx_customers_email",
+      "id": "rel:Schema2.sql:contains:customers:Schema2.sql::customers.idx_customers_email",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "customers",
-      "targetId": "idx_customers_email",
+      "targetId": "Schema2.sql::customers.idx_customers_email",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:orders:id",
+      "id": "rel:Schema2.sql:contains:orders:Schema2.sql::orders.id",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "orders",
-      "targetId": "id",
+      "targetId": "Schema2.sql::orders.id",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:orders:customer_id",
+      "id": "rel:Schema2.sql:contains:orders:Schema2.sql::orders.customer_id",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "orders",
-      "targetId": "customer_id",
+      "targetId": "Schema2.sql::orders.customer_id",
       "attributes": {
         "type": "contains"
       }
@@ -719,78 +719,78 @@
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:orders:status",
+      "id": "rel:Schema2.sql:contains:orders:Schema2.sql::orders.status",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "orders",
-      "targetId": "status",
+      "targetId": "Schema2.sql::orders.status",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:orders:labels",
+      "id": "rel:Schema2.sql:contains:orders:Schema2.sql::orders.labels",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "orders",
-      "targetId": "labels",
+      "targetId": "Schema2.sql::orders.labels",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:orders:ship_to",
+      "id": "rel:Schema2.sql:contains:orders:Schema2.sql::orders.ship_to",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "orders",
-      "targetId": "ship_to",
+      "targetId": "Schema2.sql::orders.ship_to",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:order_items:id",
+      "id": "rel:Schema2.sql:contains:order_items:Schema2.sql::order_items.id",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "order_items",
-      "targetId": "id",
+      "targetId": "Schema2.sql::order_items.id",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:order_items:order_id",
+      "id": "rel:Schema2.sql:contains:order_items:Schema2.sql::order_items.order_id",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "order_items",
-      "targetId": "order_id",
+      "targetId": "Schema2.sql::order_items.order_id",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:order_items:sku",
+      "id": "rel:Schema2.sql:contains:order_items:Schema2.sql::order_items.sku",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "order_items",
-      "targetId": "sku",
+      "targetId": "Schema2.sql::order_items.sku",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:order_items:oi_order_fk",
+      "id": "rel:Schema2.sql:contains:order_items:Schema2.sql::order_items.oi_order_fk",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "order_items",
-      "targetId": "oi_order_fk",
+      "targetId": "Schema2.sql::order_items.oi_order_fk",
       "attributes": {
         "type": "contains"
       }
@@ -807,33 +807,33 @@
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:order_items:oi_sku_unq",
+      "id": "rel:Schema2.sql:contains:order_items:Schema2.sql::order_items.oi_sku_unq",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "order_items",
-      "targetId": "oi_sku_unq",
+      "targetId": "Schema2.sql::order_items.oi_sku_unq",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema2.sql:contains:order_items:oi_qty_ck",
+      "id": "rel:Schema2.sql:contains:order_items:Schema2.sql::order_items.oi_qty_ck",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
       "sourceId": "order_items",
-      "targetId": "oi_qty_ck",
+      "targetId": "Schema2.sql::order_items.oi_qty_ck",
       "attributes": {
         "type": "contains"
       }
     },
     {
-      "id": "rel:Schema2.sql:references:global:orders",
+      "id": "rel:Schema2.sql:references:Schema2.sql:orders",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Schema2.sql",
-      "sourceId": "global",
+      "sourceId": "Schema2.sql",
       "targetId": "orders",
       "attributes": {
         "type": "references"
@@ -851,55 +851,55 @@
       }
     },
     {
-      "id": "rel:Queries2.sql:uses:global:orders",
+      "id": "rel:Queries2.sql:uses:Queries2.sql:orders",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Queries2.sql",
-      "sourceId": "global",
+      "sourceId": "Queries2.sql",
       "targetId": "orders",
       "attributes": {
         "type": "uses"
       }
     },
     {
-      "id": "rel:Queries2.sql:uses:global:staging",
+      "id": "rel:Queries2.sql:uses:Queries2.sql:staging",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Queries2.sql",
-      "sourceId": "global",
+      "sourceId": "Queries2.sql",
       "targetId": "staging",
       "attributes": {
         "type": "uses"
       }
     },
     {
-      "id": "rel:Queries2.sql:uses:global:order_items",
+      "id": "rel:Queries2.sql:uses:Queries2.sql:order_items",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Queries2.sql",
-      "sourceId": "global",
+      "sourceId": "Queries2.sql",
       "targetId": "order_items",
       "attributes": {
         "type": "uses"
       }
     },
     {
-      "id": "rel:Queries2.sql:references:global:orders",
+      "id": "rel:Queries2.sql:references:Queries2.sql:orders",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Queries2.sql",
-      "sourceId": "global",
+      "sourceId": "Queries2.sql",
       "targetId": "orders",
       "attributes": {
         "type": "references"
       }
     },
     {
-      "id": "rel:Queries2.sql:calls:global:compute_total",
+      "id": "rel:Queries2.sql:calls:Queries2.sql:compute_total",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Queries2.sql",
-      "sourceId": "global",
+      "sourceId": "Queries2.sql",
       "targetId": "compute_total",
       "attributes": {
         "type": "calls"
@@ -926,7 +926,62 @@
       "attributes": {
         "type": "calls"
       }
+    },
+    {
+      "id": "symbol:Negative.sql:1:module:Negative.sql",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.sql",
+      "line": 1,
+      "attributes": {
+        "name": "Negative.sql",
+        "symbolKind": "module"
+      }
+    },
+    {
+      "id": "symbol:Queries.sql:1:module:Queries.sql",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Queries.sql",
+      "line": 1,
+      "attributes": {
+        "name": "Queries.sql",
+        "symbolKind": "module"
+      }
+    },
+    {
+      "id": "symbol:Queries2.sql:1:module:Queries2.sql",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Queries2.sql",
+      "line": 1,
+      "attributes": {
+        "name": "Queries2.sql",
+        "symbolKind": "module"
+      }
+    },
+    {
+      "id": "symbol:Schema.sql:1:module:Schema.sql",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Schema.sql",
+      "line": 1,
+      "attributes": {
+        "name": "Schema.sql",
+        "symbolKind": "module"
+      }
+    },
+    {
+      "id": "symbol:Schema2.sql:1:module:Schema2.sql",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Schema2.sql",
+      "line": 1,
+      "attributes": {
+        "name": "Schema2.sql",
+        "symbolKind": "module"
+      }
     }
   ],
-  "note": "Hand-audited. Schema2/Queries2 were added by the M60 SQL wave and every fact below was checked against the SOURCE line by line, not copied from analyzer output - the analyzer is the thing under test, so reading the truth off it would make the differential circular. These two fixtures also PIN ABSENCES: a user-defined column type must produce NO foreign key (the phantom-FK class), a GRANT/REVOKE grantee must produce NO table edge (the phantom-role class), a SQL builtin must produce NO call edge, and a CTE name must not shadow a QUALIFIED reference. Any of those phantoms appearing is a false positive against this truth."
+  "note": "Hand-audited. Schema2/Queries2 were added by the M60 SQL wave and every fact below was checked against the SOURCE line by line, not copied from analyzer output - the analyzer is the thing under test, so reading the truth off it would make the differential circular. These two fixtures also PIN ABSENCES: a user-defined column type must produce NO foreign key (the phantom-FK class), a GRANT/REVOKE grantee must produce NO table edge (the phantom-role class), a SQL builtin must produce NO call edge, and a CTE name must not shadow a QUALIFIED reference. Any of those phantoms appearing is a false positive against this truth. MIGRATED 2026-10-05 by validation/m14/fixtures/sql/migrate-m12-truth.ts: 13 `global` sources became the file's own module symbol, 22 bare `contains` targets became `<file>::<owner>.<member>`, and 5 file-module symbols were added (one per fixture, line 1). The content was hand-audited and unchanged; only the SPELLING of 35 relationship facts and the presence of the file symbol moved. Both rewrites are functions of the facts' own `file`/`sourceId`/`targetId` fields, so no count, edge or line was read back from `parseFile` and the not-circular property above survives. Each rule carries a measurement: `global` published nothing, so 5,799 emitted edges were deleted at the store (pass13-store-resolution-BEFORE.json), and a bare `contains` target bound only through a same-name pick \u2014 2,512 of 12,106 were bare, and the store's only exact match is the qualified name (pass14-ambiguity-split-AFTER.json)."
 }

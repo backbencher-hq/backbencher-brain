@@ -1,0 +1,754 @@
+{
+  "schemaVersion": 2,
+  "kind": "lua_external_marking",
+  "commit": "a28f280c930dd85ee98a2d6623e69c6b679ccfbe",
+  "corpus": {
+    "root": "$HOME/fixtures/repositories",
+    "method": "git ls-files '*.lua' per repo, sorted, first 5000 per repo (deterministic, not random)",
+    "filesDrawn": 3252,
+    "repos": {
+      "Aporia": 0,
+      "Aqua.jl": 0,
+      "Argu": 0,
+      "Bolero": 0,
+      "Clyde": 0,
+      "DataFrames.jl": 0,
+      "Deedle": 0,
+      "DifferentialEquations.jl": 0,
+      "Documenter.jl": 0,
+      "Exposed": 0,
+      "FSharp.Data": 0,
+      "FSharp.Formatting": 0,
+      "FSharpPlus": 0,
+      "FSharpx.Extras": 0,
+      "Fabulous": 0,
+      "Fake": 0,
+      "Falco": 0,
+      "Flux.jl": 0,
+      "FsAutoComplete": 0,
+      "FsCheck": 0,
+      "FsToolkit.ErrorHandling": 0,
+      "GLM.jl": 0,
+      "Grace": 0,
+      "Graphs.jl": 0,
+      "LanguageServer.jl": 0,
+      "Matrix": 0,
+      "PSScriptAnalyzer": 0,
+      "Paket": 0,
+      "Pkg.jl": 0,
+      "Prelude": 0,
+      "Query.jl": 0,
+      "R6": 0,
+      "S7": 0,
+      "Saturn": 0,
+      "StaticArrays.jl": 0,
+      "afnetworking": 0,
+      "alamofire": 0,
+      "ansible": 0,
+      "apollo-server": 0,
+      "bash-completion": 0,
+      "bigints": 0,
+      "bootstrap": 0,
+      "boundary": 0,
+      "buckaroo": 0,
+      "bulma": 0,
+      "cabal": 0,
+      "caddy": 0,
+      "cargo": 0,
+      "cats-effect": 0,
+      "clean-stdlib": 0,
+      "clj-kondo": 0,
+      "clojure": 0,
+      "cloogle.org": 0,
+      "consul": 0,
+      "core": 0,
+      "cython": 0,
+      "dark": 0,
+      "dart-http": 0,
+      "dart-sdk": 0,
+      "dbeaver": 0,
+      "docker": 2,
+      "dom96-jester": 0,
+      "dplyr": 0,
+      "duckdb": 0,
+      "eastwood": 0,
+      "element-plus": 0,
+      "elixir": 0,
+      "elmish": 0,
+      "equinox": 0,
+      "expecto": 0,
+      "fantomas": 0,
+      "flutter-packages": 0,
+      "fmt": 0,
+      "fsharp": 0,
+      "geb": 0,
+      "ggplot2": 0,
+      "gh-cli": 0,
+      "ghostty": 0,
+      "giraffe": 0,
+      "go-tools": 0,
+      "gql-absinthe": 0,
+      "gql-federation": 0,
+      "gql-genqlient": 0,
+      "gql-gqlgen": 0,
+      "gql-graphql": 0,
+      "gql-graphql-core": 0,
+      "gql-graphql-dotnet": 0,
+      "gql-graphql-eslint": 0,
+      "gql-graphql-mesh": 0,
+      "gql-graphql-php": 0,
+      "gql-graphql-platform": 0,
+      "gql-graphql-tools": 0,
+      "gql-graphql-yoga": 0,
+      "gql-ruby": 0,
+      "gql-saleor": 0,
+      "gql-sangria": 0,
+      "grails-core": 0,
+      "graphql-java": 0,
+      "graphql-js": 0,
+      "graphql-js-full": 0,
+      "graphql-nim": 0,
+      "hasura-engine": 0,
+      "helm": 0,
+      "hledger": 8,
+      "jq": 0,
+      "json_jl": 0,
+      "julia": 0,
+      "kong": 1312,
+      "kotlinx-coroutines": 0,
+      "kubernetes": 0,
+      "lapis": 93,
+      "lazy.nvim": 65,
+      "libxslt": 0,
+      "lodash": 0,
+      "lspsaga.nvim": 44,
+      "luarocks": 162,
+      "luvit": 199,
+      "mojo": 0,
+      "mvdan-sh": 0,
+      "nim": 0,
+      "nim-lang-nimble": 0,
+      "nimony": 0,
+      "nimterop": 0,
+      "nlohmann-json": 1,
+      "nomad": 0,
+      "nvim-cmp": 57,
+      "nvim-lspconfig": 863,
+      "nvim-treesitter": 79,
+      "nvm": 0,
+      "ohmyzsh": 0,
+      "openapi-spec": 0,
+      "otp": 0,
+      "packer": 0,
+      "pb-googleapis": 0,
+      "pb-grpc": 0,
+      "pb-reference": 2,
+      "phoenix": 0,
+      "phpmyadmin": 0,
+      "phpunit": 0,
+      "pico": 0,
+      "plenary.nvim": 113,
+      "postgrest": 0,
+      "powershell": 0,
+      "primer-css": 0,
+      "proxicall": 0,
+      "pyyaml-include": 0,
+      "r-Rcpp": 0,
+      "r-air": 0,
+      "r-cli": 0,
+      "r-pkgdown": 0,
+      "r-rlang": 0,
+      "r-scales": 0,
+      "r-testthat": 0,
+      "r-vctrs": 0,
+      "r-withr": 0,
+      "rack": 0,
+      "rake": 0,
+      "rbenv": 0,
+      "rebar3": 0,
+      "redis": 20,
+      "redwood": 0,
+      "requests": 0,
+      "ripgrep": 1,
+      "riverpod": 0,
+      "rocks.nvim": 51,
+      "sass-spec": 0,
+      "scala3": 0,
+      "sdwebimage": 0,
+      "shadcn-svelte": 0,
+      "shellcheck": 0,
+      "shopify-api-js": 0,
+      "slim": 0,
+      "snacks.nvim": 141,
+      "solidity": 0,
+      "spectre": 0,
+      "sqlalchemy": 0,
+      "sqlite": 0,
+      "suave": 0,
+      "svelte": 0,
+      "swift-nio": 0,
+      "terraform": 0,
+      "terraform-aws-components": 0,
+      "terragrunt": 0,
+      "tflint": 0,
+      "tfsec": 0,
+      "traefik": 0,
+      "tree-sitter-clean": 0,
+      "trouble.nvim": 38,
+      "usethis": 0,
+      "vault": 0,
+      "vega": 0,
+      "vue-core": 0,
+      "vue-element-admin": 0,
+      "wagtail": 0,
+      "water.css": 0,
+      "waypoint": 0,
+      "yq": 1,
+      "zig": 0,
+      "zls": 0
+    },
+    "drawDigest": "502ef2f476c564b821d8d267e6c4302ccf4252ed3f545b3ab22ce47835dbdff3"
+  },
+  "production": {
+    "filesParsed": 3250,
+    "parseErrorFiles": 2,
+    "symbols": 84162,
+    "relationships": 219981,
+    "emptySymbolNames": 0
+  },
+  "rule": "the edge's target is the field of a dot_index_expression/method_index_expression whose receiver is an identifier naming a documented Lua 5.4 standard table, AND this file publishes no symbol under that receiver",
+  "rejectedRule": "target is a bare name in the transcribed Lua 5.4 standard-library surface AND this file publishes no symbol under that name — a name-match guess; the analyzer publishes the FINAL SEGMENT of a member read, so it cannot tell table.insert from a user's own global insert",
+  "byType": {
+    "calls": {
+      "edges": 57473,
+      "markExternal": 2725,
+      "shadowedReceiver": 374,
+      "nameListWouldMark": 13850,
+      "moduleTarget": 0,
+      "scopeLabelTarget": 6,
+      "sameNamedLocal": 4,
+      "unmarkedOther": 54364
+    },
+    "references": {
+      "edges": 40054,
+      "markExternal": 786,
+      "shadowedReceiver": 88,
+      "nameListWouldMark": 1751,
+      "moduleTarget": 0,
+      "scopeLabelTarget": 82,
+      "sameNamedLocal": 45,
+      "unmarkedOther": 39053
+    },
+    "uses": {
+      "edges": 54992,
+      "markExternal": 46,
+      "shadowedReceiver": 16,
+      "nameListWouldMark": 579,
+      "moduleTarget": 0,
+      "scopeLabelTarget": 87,
+      "sameNamedLocal": 133,
+      "unmarkedOther": 54710
+    },
+    "contains": {
+      "edges": 55334,
+      "markExternal": 398,
+      "shadowedReceiver": 13,
+      "nameListWouldMark": 0,
+      "moduleTarget": 0,
+      "scopeLabelTarget": 0,
+      "sameNamedLocal": 111,
+      "unmarkedOther": 54812
+    },
+    "imports": {
+      "edges": 6601,
+      "markExternal": 0,
+      "shadowedReceiver": 0,
+      "nameListWouldMark": 0,
+      "moduleTarget": 6601,
+      "scopeLabelTarget": 0,
+      "sameNamedLocal": 0,
+      "unmarkedOther": 0
+    },
+    "exports": {
+      "edges": 5167,
+      "markExternal": 1,
+      "shadowedReceiver": 0,
+      "nameListWouldMark": 15,
+      "moduleTarget": 0,
+      "scopeLabelTarget": 1,
+      "sameNamedLocal": 0,
+      "unmarkedOther": 5165
+    },
+    "extends": {
+      "edges": 171,
+      "markExternal": 0,
+      "shadowedReceiver": 0,
+      "nameListWouldMark": 0,
+      "moduleTarget": 0,
+      "scopeLabelTarget": 0,
+      "sameNamedLocal": 0,
+      "unmarkedOther": 171
+    },
+    "instantiates": {
+      "edges": 122,
+      "markExternal": 0,
+      "shadowedReceiver": 0,
+      "nameListWouldMark": 0,
+      "moduleTarget": 0,
+      "scopeLabelTarget": 0,
+      "sameNamedLocal": 0,
+      "unmarkedOther": 122
+    },
+    "overrides": {
+      "edges": 67,
+      "markExternal": 0,
+      "shadowedReceiver": 0,
+      "nameListWouldMark": 0,
+      "moduleTarget": 0,
+      "scopeLabelTarget": 0,
+      "sameNamedLocal": 0,
+      "unmarkedOther": 67
+    }
+  },
+  "totals": {
+    "edges": 219981,
+    "markExternal": 3956,
+    "shadowedReceiver": 491,
+    "nameListWouldMark": 16195,
+    "moduleTarget": 6601,
+    "scopeLabelTarget": 176,
+    "sameNamedLocal": 293,
+    "unmarkedOther": 208464
+  },
+  "topMarkedNames": [
+    {
+      "name": "table.insert",
+      "edges": 676
+    },
+    {
+      "name": "table.concat",
+      "edges": 443
+    },
+    {
+      "name": "string.format",
+      "edges": 397
+    },
+    {
+      "name": "table.sort",
+      "edges": 165
+    },
+    {
+      "name": "string.sub",
+      "edges": 131
+    },
+    {
+      "name": "io.open",
+      "edges": 131
+    },
+    {
+      "name": "math.max",
+      "edges": 129
+    },
+    {
+      "name": "math.floor",
+      "edges": 126
+    },
+    {
+      "name": "string.find",
+      "edges": 120
+    },
+    {
+      "name": "table.remove",
+      "edges": 115
+    },
+    {
+      "name": "table.unpack",
+      "edges": 113
+    },
+    {
+      "name": "os.getenv",
+      "edges": 106
+    },
+    {
+      "name": "math.min",
+      "edges": 98
+    },
+    {
+      "name": "string.rep",
+      "edges": 93
+    },
+    {
+      "name": "string.match",
+      "edges": 89
+    },
+    {
+      "name": "string.gsub",
+      "edges": 75
+    },
+    {
+      "name": "string.lower",
+      "edges": 71
+    },
+    {
+      "name": "os.remove",
+      "edges": 67
+    },
+    {
+      "name": "string.byte",
+      "edges": 58
+    },
+    {
+      "name": "string.char",
+      "edges": 43
+    },
+    {
+      "name": "debug.getinfo",
+      "edges": 40
+    },
+    {
+      "name": "math.random",
+      "edges": 37
+    },
+    {
+      "name": "os.time",
+      "edges": 37
+    },
+    {
+      "name": "math.huge",
+      "edges": 36
+    },
+    {
+      "name": "debug.traceback",
+      "edges": 33
+    },
+    {
+      "name": "coroutine.yield",
+      "edges": 31
+    },
+    {
+      "name": "string.upper",
+      "edges": 30
+    },
+    {
+      "name": "io.popen",
+      "edges": 28
+    },
+    {
+      "name": "os.date",
+      "edges": 28
+    },
+    {
+      "name": "os.tmpname",
+      "edges": 27
+    }
+  ],
+  "shadowExamples": [
+    {
+      "file": "kong/kong/cache/warmup.lua",
+      "line": 20,
+      "type": "references",
+      "receiver": "math",
+      "field": "max"
+    },
+    {
+      "file": "kong/kong/cache/warmup.lua",
+      "line": 21,
+      "type": "references",
+      "receiver": "math",
+      "field": "floor"
+    },
+    {
+      "file": "kong/kong/cache/warmup.lua",
+      "line": 20,
+      "type": "contains",
+      "receiver": "math",
+      "field": "max"
+    },
+    {
+      "file": "kong/kong/cache/warmup.lua",
+      "line": 21,
+      "type": "contains",
+      "receiver": "math",
+      "field": "floor"
+    },
+    {
+      "file": "kong/kong/clustering/control_plane.lua",
+      "line": 34,
+      "type": "references",
+      "receiver": "string",
+      "field": "sub"
+    },
+    {
+      "file": "kong/kong/clustering/control_plane.lua",
+      "line": 34,
+      "type": "contains",
+      "receiver": "string",
+      "field": "sub"
+    },
+    {
+      "file": "kong/kong/clustering/data_plane.lua",
+      "line": 209,
+      "type": "calls",
+      "receiver": "math",
+      "field": "random"
+    },
+    {
+      "file": "kong/kong/cmd/utils/prefix_handler.lua",
+      "line": 50,
+      "type": "references",
+      "receiver": "string",
+      "field": "format"
+    },
+    {
+      "file": "kong/kong/cmd/utils/prefix_handler.lua",
+      "line": 93,
+      "type": "calls",
+      "receiver": "io",
+      "field": "open"
+    },
+    {
+      "file": "kong/kong/cmd/utils/prefix_handler.lua",
+      "line": 147,
+      "type": "calls",
+      "receiver": "os",
+      "field": "time"
+    },
+    {
+      "file": "kong/kong/cmd/utils/prefix_handler.lua",
+      "line": 180,
+      "type": "calls",
+      "receiver": "io",
+      "field": "open"
+    },
+    {
+      "file": "kong/kong/cmd/utils/prefix_handler.lua",
+      "line": 203,
+      "type": "calls",
+      "receiver": "io",
+      "field": "open"
+    }
+  ],
+  "scopeLabelExamples": {
+    "references": [
+      {
+        "file": "kong/autodoc/pdk/generate.lua",
+        "line": 40,
+        "type": "references",
+        "source": "global",
+        "target": "file",
+        "declaredHere": false
+      },
+      {
+        "file": "kong/kong/db/init.lua",
+        "line": 304,
+        "type": "references",
+        "source": "DB:cluster_mutex",
+        "target": "owner",
+        "declaredHere": true
+      },
+      {
+        "file": "kong/kong/llm/drivers/shared.lua",
+        "line": 311,
+        "type": "references",
+        "source": "global",
+        "target": "global",
+        "declaredHere": false
+      },
+      {
+        "file": "kong/kong/plugins/aws-lambda/handler.lua",
+        "line": 34,
+        "type": "references",
+        "source": "initialize",
+        "target": "global",
+        "declaredHere": false
+      },
+      {
+        "file": "kong/spec/01-unit/03-conf_loader_spec.lua",
+        "line": 2045,
+        "type": "references",
+        "source": "global",
+        "target": "file",
+        "declaredHere": false
+      },
+      {
+        "file": "kong/spec/01-unit/04-prefix_handler_spec.lua",
+        "line": 69,
+        "type": "references",
+        "source": "global",
+        "target": "file",
+        "declaredHere": false
+      }
+    ],
+    "uses": [
+      {
+        "file": "kong/kong/api/routes/config.lua",
+        "line": 103,
+        "type": "uses",
+        "source": "global",
+        "target": "file",
+        "declaredHere": true
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 60,
+        "type": "uses",
+        "source": "pre_create_private_file",
+        "target": "file",
+        "declaredHere": true
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 363,
+        "type": "uses",
+        "source": "write_env_file",
+        "target": "file",
+        "declaredHere": true
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 405,
+        "type": "uses",
+        "source": "write_single_secret_file",
+        "target": "file",
+        "declaredHere": true
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 853,
+        "type": "uses",
+        "source": "prepare_prefix",
+        "target": "file",
+        "declaredHere": true
+      },
+      {
+        "file": "kong/kong/conf_loader/parse.lua",
+        "line": 479,
+        "type": "uses",
+        "source": "check_and_parse",
+        "target": "file",
+        "declaredHere": true
+      }
+    ],
+    "contains": [
+      {
+        "file": "kong/kong/api/routes/config.lua",
+        "line": 96,
+        "type": "contains",
+        "source": "global",
+        "target": "file",
+        "declaredHere": true
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 362,
+        "type": "contains",
+        "source": "write_env_file",
+        "target": "file",
+        "declaredHere": true
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 404,
+        "type": "contains",
+        "source": "write_single_secret_file",
+        "target": "file",
+        "declaredHere": true
+      },
+      {
+        "file": "kong/kong/cmd/utils/process_secrets.lua",
+        "line": 3,
+        "type": "contains",
+        "source": "global",
+        "target": "file",
+        "declaredHere": true
+      },
+      {
+        "file": "kong/kong/conf_loader/parse.lua",
+        "line": 478,
+        "type": "contains",
+        "source": "check_and_parse",
+        "target": "file",
+        "declaredHere": true
+      },
+      {
+        "file": "kong/kong/db/init.lua",
+        "line": 290,
+        "type": "contains",
+        "source": "cluster_mutex",
+        "target": "owner",
+        "declaredHere": true
+      }
+    ],
+    "calls": [
+      {
+        "file": "kong/spec/02-integration/15-plugins-iterator/01-precedence_spec.lua",
+        "line": 50,
+        "type": "calls",
+        "source": "global",
+        "target": "global",
+        "declaredHere": false
+      },
+      {
+        "file": "nvim-cmp/lua/cmp/init.lua",
+        "line": 353,
+        "type": "calls",
+        "source": "global",
+        "target": "global",
+        "declaredHere": false
+      },
+      {
+        "file": "plenary.nvim/lua/plenary/curl.lua",
+        "line": 239,
+        "type": "calls",
+        "source": "global",
+        "target": "file",
+        "declaredHere": false
+      },
+      {
+        "file": "snacks.nvim/lua/snacks/image/convert.lua",
+        "line": 305,
+        "type": "calls",
+        "source": "Convert:_resolve",
+        "target": "file",
+        "declaredHere": true
+      },
+      {
+        "file": "snacks.nvim/lua/snacks/picker/preview.lua",
+        "line": 60,
+        "type": "calls",
+        "source": "M.preview",
+        "target": "file",
+        "declaredHere": true
+      },
+      {
+        "file": "snacks.nvim/lua/snacks/picker/preview.lua",
+        "line": 340,
+        "type": "calls",
+        "source": "M.git_status",
+        "target": "file",
+        "declaredHere": true
+      }
+    ],
+    "exports": [
+      {
+        "file": "kong/spec/helpers.lua",
+        "line": 82,
+        "type": "exports",
+        "source": "global",
+        "target": "file",
+        "declaredHere": false
+      }
+    ]
+  },
+  "listAgreement": {
+    "note": "the audit's LUA54_BASE and this file's must be the same list, or the two numbers describe different populations",
+    "auditBytes": "[\"_G\",\"_VERSION\",\"abs\",\"acos\",\"arg\",\"asin\",\"assert\",\"atan\",\"bit32\",\"byte\",\"ceil\",\"char\",\"charpattern\",\"clock\",\"close\",\"codepoint\",\"codes\",\"collectgarbage\",\"concat\",\"coroutine\",\"cos\",\"create\",\"date\",\"debug\",\"deg\",\"difftime\",\"dofile\",\"dump\",\"error\",\"execute\",\"exit\",\"exp\",\"find\",\"floor\",\"flush\",\"fmod\",\"format\",\"getenv\",\"gethook\",\"getinfo\",\"getlocal\",\"getmetatable\",\"getregistry\",\"getupvalue\",\"getuservalue\",\"gmatch\",\"gsub\",\"huge\",\"input\",\"insert\",\"io\",\"ipairs\",\"isyieldable\",\"jit\",\"len\",\"lines\",\"load\",\"loadfile\",\"log\",\"lower\",\"match\",\"math\",\"max\",\"maxinteger\",\"min\",\"mininteger\",\"modf\",\"move\",\"next\",\"offset\",\"open\",\"os\",\"output\",\"pack\",\"package\",\"pairs\",\"pcall\",\"pi\",\"popen\",\"print\",\"rad\",\"random\",\"randomseed\",\"rawequal\",\"rawget\",\"rawlen\",\"rawset\",\"read\",\"remove\",\"rename\",\"rep\",\"require\",\"resume\",\"reverse\",\"running\",\"select\",\"sethook\",\"setlocal\",\"setlocale\",\"setmetatable\",\"setupvalue\",\"setuservalue\",\"sin\",\"sort\",\"sqrt\",\"status\",\"stderr\",\"stdin\",\"stdout\",\"string\",\"sub\",\"table\",\"tan\",\"time\",\"tmpfile\",\"tmpname\",\"tointeger\",\"tonumber\",\"tostring\",\"traceback\",\"type\",\"ult\",\"unpack\",\"upper\",\"upvalueid\",\"upvaluejoin\",\"utf8\",\"wrap\",\"write\",\"xpcall\",\"yield\"]",
+    "thisBytes": "[\"_G\",\"_VERSION\",\"abs\",\"acos\",\"arg\",\"asin\",\"assert\",\"atan\",\"bit32\",\"byte\",\"ceil\",\"char\",\"charpattern\",\"clock\",\"close\",\"codepoint\",\"codes\",\"collectgarbage\",\"concat\",\"coroutine\",\"cos\",\"create\",\"date\",\"debug\",\"deg\",\"difftime\",\"dofile\",\"dump\",\"error\",\"execute\",\"exit\",\"exp\",\"find\",\"floor\",\"flush\",\"fmod\",\"format\",\"getenv\",\"gethook\",\"getinfo\",\"getlocal\",\"getmetatable\",\"getregistry\",\"getupvalue\",\"getuservalue\",\"gmatch\",\"gsub\",\"huge\",\"input\",\"insert\",\"io\",\"ipairs\",\"isyieldable\",\"jit\",\"len\",\"lines\",\"load\",\"loadfile\",\"log\",\"lower\",\"match\",\"math\",\"max\",\"maxinteger\",\"min\",\"mininteger\",\"modf\",\"move\",\"next\",\"offset\",\"open\",\"os\",\"output\",\"pack\",\"package\",\"pairs\",\"pcall\",\"pi\",\"popen\",\"print\",\"rad\",\"random\",\"randomseed\",\"rawequal\",\"rawget\",\"rawlen\",\"rawset\",\"read\",\"remove\",\"rename\",\"rep\",\"require\",\"resume\",\"reverse\",\"running\",\"select\",\"sethook\",\"setlocal\",\"setlocale\",\"setmetatable\",\"setupvalue\",\"setuservalue\",\"sin\",\"sort\",\"sqrt\",\"status\",\"stderr\",\"stdin\",\"stdout\",\"string\",\"sub\",\"table\",\"tan\",\"time\",\"tmpfile\",\"tmpname\",\"tointeger\",\"tonumber\",\"tostring\",\"traceback\",\"type\",\"ult\",\"unpack\",\"upper\",\"upvalueid\",\"upvaluejoin\",\"utf8\",\"wrap\",\"write\",\"xpcall\",\"yield\"]"
+  },
+  "notMarked": {
+    "moduleTarget": "an `imports` target is a Lua module, not a declaration. One file cannot tell a sibling module from a luarocks rock: the classb-origin probe measured 2,425 dotted targets whose module file is in the corpus draw against 3,060 whose file is absent. Marking all of them external would assert the second count for the first.",
+    "scopeLabelTarget": "an edge whose target is `global`/`owner`/`file`/`__global__` AND which this file does not declare, so it names this analyzer's own container label. That is a defect; a marker would launder it.",
+    "sameNamedLocal": "a target named `file`/`owner`/`global` that this file DOES declare: an ordinary local. The audit buckets it as a scope label because it tests the name before the file's declarations. Not marked, because it is not external — it is local."
+  },
+  "note": "reported, not gated — exit code is always 0"
+}

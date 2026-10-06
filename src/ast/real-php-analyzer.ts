@@ -1,58 +1,42 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import {
+  PHP_INTERNAL_FUNCTIONS,
+  PHP_INTERNAL_CLASSES,
+  PHP_INTERNAL_CONSTANTS,
+  PHP_LANGUAGE_CONSTRUCTS,
+  phpInternalKind,
+  PHP_INTERNAL_PROVENANCE,
+  type PhpInternalKind,
+} from "./php-internal-symbols"
+
+export { PHP_INTERNAL_FUNCTIONS, PHP_INTERNAL_CLASSES, PHP_INTERNAL_CONSTANTS, PHP_LANGUAGE_CONSTRUCTS, phpInternalKind, PHP_INTERNAL_PROVENANCE }
+export type { PhpInternalKind }
 
 // ============================================================================
-// PHP BUILTINS — global functions filtered from call relationships.
-// Method calls (member/scoped/nullsafe) are NOT filtered: they are user code
-// like `$obj->persist()`, whose leaf targets the scripting-family contract
-// emits. This list covers the common core/extension globals that would
-// otherwise flood every file with self-evident call edges.
+// PHP BUILTINS — global functions filtered from call relationships, plus the reserved
+// keywords, which are the other half of the same question: a callee spelled `isset` is the
+// LANGUAGE, not a program.
+//
+// This was a hand-curated 218-name list until 2026-10-05. It is now derived: the whole
+// internal surface is read from php-src's own declarations by
+// `validation/m14/fixtures/php/internal-symbol-table.mts`, which PARSES php-src's
+// `*.stub.php` files with `parseFile` and reads the reserved keywords from
+// `Zend/zend_language_parser.y`'s token declarations. Measured: 2,389 functions and 92
+// keywords/globals, and every one of the 218 hand-written names is inside the derived table
+// (0 dropped), so this is a superset of the old behaviour and no edge that was filtered
+// before is emitted now.
+//
+// WHY IT IS NOT A LOCAL CONSTANT. `script/m14/differential.ts` imports this export as DATA —
+// `script/m60/php-oracle-independence.ts` classifies the import that way deliberately, with
+// the reason: "a hand-copied list of builtin names drifts, and the drift would fabricate or
+// hide call edges." Both sides must read ONE declaration, so the declaration lives in its own
+// module and both read it. Provenance (php-src commit, file count, per-bucket counts) rides in
+// `PHP_INTERNAL_PROVENANCE` so a consumer never has to trust this comment.
+//
+// Member calls (`$obj->persist()`) are NOT filtered: those are user code.
 // ============================================================================
-export const PHP_BUILTINS = new Set([
-  // String
-  "strlen", "strpos", "stripos", "strrpos", "strstr", "stristr", "substr",
-  "str_replace", "str_ireplace", "strtolower", "strtoupper", "ucfirst", "lcfirst",
-  "ucwords", "trim", "ltrim", "rtrim", "explode", "implode", "join", "str_split",
-  "str_repeat", "str_pad", "sprintf", "vsprintf", "printf", "number_format",
-  "htmlspecialchars", "htmlentities", "html_entity_decode", "addslashes",
-  "stripslashes", "nl2br", "wordwrap", "strval", "intval", "floatval", "boolval",
-  "chr", "ord", "strrev", "strcmp", "strcasecmp", "strncmp", "substr_count",
-  "str_contains", "str_starts_with", "str_ends_with", "parse_str",
-  // Array
-  "count", "sizeof", "array", "array_merge", "array_merge_recursive", "array_keys",
-  "array_values", "array_flip", "array_reverse", "array_push", "array_pop",
-  "array_shift", "array_unshift", "array_map", "array_filter", "array_reduce",
-  "array_walk", "array_slice", "array_splice", "array_search", "array_key_exists",
-  "in_array", "array_unique", "array_combine", "array_column", "range", "sort",
-  "rsort", "asort", "arsort", "ksort", "krsort", "usort", "uasort", "uksort",
-  "compact", "extract", "list", "end", "reset", "next", "prev", "current", "key",
-  "array_sum", "array_product", "array_rand", "array_chunk", "array_pad",
-  "array_fill", "array_fill_keys", "array_diff", "array_intersect", "array_replace",
-  // Type / var
-  "is_array", "is_string", "is_int", "is_integer", "is_float", "is_double",
-  "is_bool", "is_object", "is_callable", "is_null", "is_numeric", "is_scalar",
-  "is_resource", "is_iterable", "is_countable", "gettype", "settype", "get_class",
-  "get_parent_class", "method_exists", "property_exists", "class_exists",
-  "interface_exists", "trait_exists", "function_exists", "enum_exists",
-  "instanceof", "get_class_methods", "get_class_vars", "get_object_vars",
-  "get_debug_type", "get_mangled_object_vars", "var_dump", "var_export",
-  "print_r", "debug_zval_dump", "serialize", "unserialize", "json_encode",
-  "json_decode", "json_last_error", "json_last_error_msg", "is_a", "is_subclass_of",
-  // Math / misc
-  "abs", "min", "max", "round", "floor", "ceil", "pow", "sqrt", "rand", "mt_rand",
-  "srand", "mt_srand", "number_format", "intdiv", "fmod", "exp", "log", "log10",
-  "pi", "getrandmax", "mt_getrandmax",
-  // Control / filesystem / errors
-  "defined", "define", "constant", "exit", "die", "eval", "assert", "trigger_error",
-  "error_log", "set_error_handler", "set_exception_handler", "file_exists",
-  "file_get_contents", "file_put_contents", "fopen", "fclose", "fread", "fwrite",
-  "fgets", "file", "dirname", "basename", "realpath", "is_file", "is_dir", "mkdir",
-  "rmdir", "unlink", "rename", "copy", "glob", "scandir", "chdir", "getcwd",
-  "touch", "chmod", "chown", "filemtime", "filesize", "tempnam", "sys_get_temp_dir",
-  // String interop helpers
-  "preg_match", "preg_match_all", "preg_replace", "preg_replace_callback",
-  "preg_split", "preg_quote", "preg_grep", "preg_last_error", "preg_last_error_msg",
-])
+export const PHP_BUILTINS: ReadonlySet<string> = new Set([...PHP_INTERNAL_FUNCTIONS, ...PHP_LANGUAGE_CONSTRUCTS])
 
 // Type-hint node kinds (parameter and return types).
 const TYPE_NODES = new Set([
@@ -2910,6 +2894,13 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
+    // Cause C of the incoming-side work: an EXTERNAL reference emitted as if it were local.
+    // Labelled, not dropped — see the method's header for why the two halves of this lane
+    // treat `calls` differently from everything else. Placed BEFORE classifyEvidenceTier so a
+    // label and an evidence class travel together on one edge, and after the declared-type
+    // graph so `references` is covered too.
+
+    const externalLabelling = this.labelExternalTargets(symbols, relationships)
     this.classifyEvidenceTier(relationships)
     const frameworks = PHP_FRAMEWORK_ORDER.filter((f) => detectedFrameworks.has(f)).concat(
       [...detectedFrameworks].filter((f) => !PHP_FRAMEWORK_ORDER.includes(f)),
@@ -2928,12 +2919,100 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         framework: frameworks[0],
         patterns: patternList,
         detectedFrameworks: frameworks,
+        /**
+         * The `metadata.external` labelling, counted, so a consumer can verify it without
+         * re-walking the corpus: `labelled` edges carry `metadata.external`, `shadowed` edges
+         * named an internal symbol THAT THIS FILE DECLARES and were therefore deliberately left
+         * unlabelled (PHP's own resolution gives the local declaration precedence). `byKind`
+         * splits the labelled population by which half of php-src's surface the name came from.
+         */
+        externalLabelling,
         frameworkPatterns: frameworks.map((f) => ({
           framework: f,
           patterns: [{ type: "usage", detected: true, description: `${f} usage detected` }],
         })),
       },
     }
+  }
+
+  /**
+   * CAUSE C — mark every relationship whose TARGET php-src itself declares.
+   *
+   * ## The problem, priced
+   *
+   * Over the 5,094-file corpus walk (production `parseFile`,
+   * `validation/m60/php/ambiguity-split.json`), 70,224 edges resolved to no published symbol
+   * and carried no `metadata.external` label at all — the whole unresolved population was
+   * indistinguishable from a local reference. The largest `imports` targets were `sprintf`
+   * 439, `assert` 184, `is_string` 152, `PHP_EOL` 134, `is_array` 132, `in_array` 132; the
+   * largest `instantiates` targets were `ReflectionProperty` 250, `ReflectionMethod` 190,
+   * `ReflectionClass` 90, `DateTimeImmutable` 75, `SplObjectStorage` 23; `references` was
+   * led by `DOMDocument` 47, `DateTimeImmutable` 30, `Countable` 29, `ArrayObject` 22. Every
+   * one of those names is declared by php-src. None of them was in the corpus. They were
+   * counted against php as if php had referenced them.
+   *
+   * ## Why this is ADDITIVE
+   *
+   * It sets one metadata key and removes nothing. The edge count is unchanged by
+   * construction, so a consumer that ignores the key sees exactly the graph it saw before,
+   * and a consumer that reads it can stop scoring externals as failures.
+   *
+   * `calls` is the deliberate exception, and it is not this method: a call to a builtin is
+   * filtered at emission by `PHP_BUILTINS` (`processFunctionCall`), which is the lane's
+   * existing design and the reason the differential oracle reads that same export. Suppressing
+   * there and labelling here is intentional — a `calls -> sprintf` edge carries no information
+   * a reader did not already have, while `extends -> Countable` states that the class honours
+   * PHP's contract and is worth keeping.
+   *
+   * ## THE GUARD, AND WHY IT IS NOT A MEASURED MARGIN
+   *
+   * PHP permits a program to declare a function whose name collides with a builtin
+   * (`function count() {}` is legal), and then every call in that program resolves to the
+   * declaration. So an unqualified check against the php-src table could label a LOCAL edge
+   * external, or (for `calls`) filter a real local edge.
+   *
+   * The guard is therefore not a corpus-level margin that has to be measured and reported: it
+   * is a per-file check against the symbols THIS file publishes, so a name the file itself
+   * declares is never labelled external and never filtered. The property is structural, and
+   * the population it protects is still measured — `labelExternalTargets` returns `shadowed`,
+   * the count of edges whose target is both internal and declared here, which the corpus walk
+   * aggregates. That number is the falsifier for this method: if it is ever large, the guard is
+   * firing on the right edges and the measurement says so.
+   *
+   * ## WHY THE TARGET SIDE ONLY
+   *
+   * A relationship's SOURCE is the declaring context — a function, a class, `global` — and a
+   * source named after an internal symbol is a declaration in this file, not a reference to
+   * php-src. Labelling sources would be a claim about the file, not about externality.
+   */
+  private labelExternalTargets(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): { labelled: number; shadowed: number; byKind: Record<string, number> } {
+    const declaredHere = new Set<string>()
+    for (const s of symbols) {
+      const n = (s as { name?: unknown } | undefined)?.name
+      if (typeof n === "string" && n.length > 0) declaredHere.add(n)
+    }
+    const byKind: Record<string, number> = {}
+    let labelled = 0
+    let shadowed = 0
+    for (const r of relationships) {
+      const t = (r as { target?: unknown }).target
+      if (typeof t !== "string" || t.length === 0) continue
+      const kind = phpInternalKind(t)
+      if (kind === null) continue
+      if (declaredHere.has(t)) {
+        // PHP's own resolution: a declaration in this file wins over the global table.
+        shadowed++
+        continue
+      }
+      const md = ((r as { metadata?: Record<string, unknown> }).metadata ??= {})
+      md.external = kind
+      labelled++
+      byKind[kind] = (byKind[kind] ?? 0) + 1
+    }
+    return { labelled, shadowed, byKind }
   }
 
   /**

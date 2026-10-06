@@ -27,6 +27,29 @@
  *   expectEvidenceClassOnEveryRelationship  LUA-43: no edge may omit its tier
  *   expectEvidenceClasses        the tier PER TYPE, so a tier cannot be silently
  *                                reassigned from `structural` to a weaker word
+ *   expectUnmarkedRelationships  LUA-54: the edge IS published and it does NOT
+ *                                carry `metadata.external`. The four pre-existing
+ *                                sections cannot say this, which is why the section
+ *                                exists rather than a contrivance of `meta.`:
+ *
+ *                                  `forbid` + `meta.external: "true"`  says the edge
+ *                                  must be absent OR marked. It cannot distinguish
+ *                                  'this edge does not exist' from 'this edge
+ *                                  exists and is deliberately not marked', and the
+ *                                  second is the assertion every GUARD case needs.
+ *                                  For `contains` edges — where the source is the
+ *                                  container and there is no member edge at all —
+ *                                  that collapse is the difference between testing
+ *                                  the rule and not testing it.
+ *                                  `expect` + `meta.external: "true"`  says the edge
+ *                                  is published and IS marked, which the section
+ *                                  already expresses.
+ *
+ *                                A row that matches nothing is a FAILURE, for the
+ *                                same reason `expectRelationships` demands >=1
+ *                                match: a guard that stopped guarding would leave
+ *                                these rows vacuous, and the runner says so rather
+ *                                than reporting green.
  *
  * Usage: npx tsx script/m60/run-lua-fixtures.ts [--fixture <name>]
  */
@@ -118,6 +141,26 @@ for (const file of files.sort()) {
       problems.push(
         `forbidRelationships ${row.type} ${row.from ?? "*"} -> ${row.target ?? "*"} L${row.line_number ?? "-"} MATCHED` +
           `${Object.keys(metaConstraints(row)).length ? ` meta{${JSON.stringify(metaConstraints(row))}}` : ""}: ${hit.source} -> ${hit.target} at L${hit.line_number}`,
+      )
+    }
+  }
+  // LUA-54. A positive assertion of ABSENCE, which is the only way to pin a guard:
+  // the edge must exist (so the case was really published and is really being
+  // exercised) and it must NOT carry the mark.
+  for (const row of exp.expectUnmarkedRelationships ?? []) {
+    assertions++
+    const hit = edges.find((e) => relMatches(row, e))
+    if (!hit) {
+      problems.push(
+        `expectUnmarkedRelationships ${row.type} ${row.from ?? "*"} -> ${row.target ?? "*"} L${row.line_number ?? "-"}: ` +
+          `no actual edge matched, so this case was never published and the guard it exists to test is UNTESTED`,
+      )
+      continue
+    }
+    if (hit.metadata?.external === true) {
+      problems.push(
+        `expectUnmarkedRelationships ${row.type} ${row.from ?? "*"} -> ${row.target ?? "*"} L${row.line_number ?? "-"}: ` +
+          `${hit.source} -> ${hit.target} at L${hit.line_number} IS marked external (receiver=${JSON.stringify(hit.metadata?.externalReceiver)})`,
       )
     }
   }

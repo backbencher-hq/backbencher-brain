@@ -1007,6 +1007,92 @@ two L80 rows carry the mutant. That is why the multi-target shape is pinned even
 though the corpus contains none of it. `mutate-lua-node-identity.ts` (wave 1's) is
 still caught, 8 forbid rows.
 
+## 7a. M60 LUA-54 — cause C, and the rule that was rejected instead
+
+`script/m14/incoming-gate.ts` counts an edge `unresolved` unless it resolves to exactly
+one published declaration **or carries a declared external marker**. lua read
+`external 0`: every standard-library edge counted against the lane. The mechanism is an
+additive metadata key and it changes no edge count, which is what makes it the cheapest
+lever on the incoming side and the easiest to abuse — a wrong `external` claim moves a
+name out of `unresolved` without moving anything toward truth, and the arbiter's PASS then
+means less than it did.
+
+### The rule, and the one rejected on measurement
+
+**Shipped.** Mark `external` when the edge's target is the field of a
+`dot_index_expression` / `method_index_expression` whose receiver is an **identifier**
+naming one of the eight documented Lua 5.4 standard tables (`string`, `table`, `math`,
+`io`, `os`, `coroutine`, `debug`, `utf8` — reference manual §6, transcribed into
+`LUA54_TABLES`), **and** this file declares no symbol under that receiver **at or before**
+the edge's line. The receiver, the field, the declaration and the line are all read off
+nodes; the only transcribed input is eight table names.
+
+**Rejected.** "target is a bare name in a transcribed stdlib surface, and this file
+declares nothing under that name." It marks **16,195** of 219,981 edges against the
+shipped rule's 3,525 — **4.1x** — and it is a name-match **guess**. `insert` is in the
+list because `table.insert` is documented; a bare `insert(x)` with no receiver is an
+undefined **global** named `insert`, and Lua 5.4 publishes no such global. The
+measurement that settles it: **0** edge targets a dotted `table.field` spelling anywhere
+in the corpus, because the analyzer publishes the **final segment** of a member read
+(LUA-13), so the name list cannot recover the receiver from the target. Both numbers are
+in `validation/m60/lua/external-marking.json`, measured on the same walk.
+
+### Measured
+
+Production `parseFile`, whole-corpus draw of 3,252 `.lua` files from 199 repos
+(drawDigest `502ef2f4...`), 3,250 parsed, 0 parse failures, 84,162 symbols, 219,981
+relationships:
+
+| type | edges | marked | receiver is a documented table |
+| --- | --- | --- | --- |
+| `calls` | 57,473 | **2,738** | `table` 1,367 · `string` 976 · `math` 455 · `os` 309 · `io` 217 · `coroutine` 110 · `debug` 90 · `utf8` 1 |
+| `references` | 40,054 | **787** | as above |
+| all others | 122,454 | **0** | — |
+| **TOTAL** | **219,981** | **3,525** | 1.6% |
+
+### The edge set did not move
+
+`script/m60/verify-lua-stdlib-external.mts` hashes every edge as
+`(file, type, source, target, line)` — metadata is not in the key, so a metadata-only
+change cannot move it:
+
+```
+with the rule     219,981 edges   3,525 marked   edgeDigest bc0c38b6b77c23cacea92cfc613366cdf14e9699ccc89c56be963a69f21d5608
+without           219,981 edges       0 marked   edgeDigest bc0c38b6b77c23cacea92cfc613366cdf14e9699ccc89c56be963a69f21d5608
+```
+
+The second row is reproducible with `git checkout <pre-LUA-54> -- src/ast/real-lua-analyzer.ts`.
+The oracle agrees independently: `script/m60/lua-truth-oracle.ts` returns
+`truth=61075 observed=107780` at **both** the pre-LUA-54 and post-LUA-54 analyzer — the
+identical result, so the change is neutral to the correctness audit and not merely
+invisible to a digest.
+
+### Two classes deliberately NOT marked
+
+- **`imports` module targets, 6,601 edges.** An `imports` target is a Lua **module**,
+  not a declaration. One file cannot tell a sibling module from a luarocks rock, and
+  `script/m60/classb-origin` measured both populations: **2,425** dotted targets whose
+  module file is in the corpus draw against **3,060** whose file is absent. Marking all
+  6,601 would assert the second count for the first. See R6.
+- **scope-label targets, 176 edges.** And the committed audit's own `scope-label` bucket of
+  469 is **contaminated**: it tests the name before the file's own declarations, so
+  `kong/kong/cmd/utils/prefix_handler.lua:362` `contains write_env_file file` is bucketed
+  as a label when `file` is a local from `local file = io.open(...)`. **293** of the
+  whole-corpus draw's label-named targets are user variables named `file`/`owner`/`global`
+  that the file does declare. A program may name a variable `file`.
+
+### What is still not settled for lua's incoming side
+
+`declared-elsewhere-in-corpus` — a bare name that IS declared somewhere in the corpus but
+collides with more than one declaration — is **55,703 edges** at whole-corpus scale and is
+the largest remaining class. It is cause A, and this lane's measurement says cause A is
+**closed for lua by the language rather than fixable in the front end**: the ambiguity
+class splits three ways and **`genuinelyAmbiguous` is 0 on every one of the ten types** —
+`lexicallyUnique` 1,533 + `lexicallyInnerWins` 19 on `calls` alone, with every candidate
+determined by a line-bounded visibility test. The published NAME cannot express a
+resolution that `startLine`/`endLine`/`scope` already determine; what remains is the
+walker's bare-name rule, which is shared machinery.
+
 ## 8. Declared limitations
 
 Lua is Turing-complete and dynamically typed. For a language in that class a blank
@@ -1119,7 +1205,7 @@ does not do, each with its number.
 
 ## 8a. Reported to the supervisor, not applied here
 
-Five items need a file this lane does not own (§8 of the workstream doc). Each is
+Seven items need a file this lane does not own (§8 of the workstream doc). Each is
 written so it can be applied without re-deriving it.
 
 **R1 — `script/m14/ontology-coverage-gate.ts` measures the WRONG GRAMMAR for lua.** One
@@ -1166,6 +1252,30 @@ hold two edges of one kind between one pair of symbols. It decides the 37 suppre
 `(type, source, target)` with an edge already stored, which `bb_graph` would read as
 duplicates. The analyzer's dedup is unconditional and the option that used to pretend
 otherwise is gone (LUA-53). The decision is a schema owner's.
+
+**R6 — the incoming gate has no bucket for "this type's target is a MODULE".** `imports`
+is **6,601 of 219,981 edges** at whole-corpus scale and **242 of 265** on the gate's
+120-file sample, so it is the single largest `unresolved` class and it can never be closed
+by the analyzer: the target is `require "kong.tools.table"`, a module identifier, and a
+`require` of a sibling file and a `require` of a luarocks rock are the same syntax in the
+file being parsed. `script/m60/incoming-gate.ts` counts an unmarked non-resolving target
+as `unresolved`, so these are charged to the lane forever. **Fix:** one declared
+exception beside `EXTERNAL_KEYS` (incoming-gate.ts:105) — a relationship whose
+`metadata.moduleTarget === true` is a module path and is excluded from `unresolved`, the
+same way `external` is. This lane does not set that key, because doing so would assert the
+3,060-vs-2,425 split it cannot see from one file. The count and the split are measured in
+`validation/m60/lua/external-marking.json`.
+
+**R7 — `validation/m60/results/lua-truth-oracle-kong.json` disagrees with its own command.**
+The committed artifact records `truthEdges 61125 / observedEdges 107827`; a fresh run on
+the same `repo=kong files=1312 parseErrorFiles=1` population returns `61075 / 107780`.
+Two consecutive fresh runs are byte-identical, so the oracle is deterministic and the
+**committed artifact is stale** by 50 truth edges and 47 observed edges. It is **not**
+caused by LUA-54: the oracle returns the identical `truth=61075 observed=107780` at the
+pre-LUA-54 analyzer `458f7ba97`, and TREE-DERIVED truth does not depend on the analyzer at
+all. This lane does not own `validation/m60/results/` and has reverted its regeneration
+rather than committing it. Reported with the command and both numbers so it can be
+re-derived or discarded on a decision rather than an argument.
 
 ## 9. Verification
 
