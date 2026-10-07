@@ -71,6 +71,29 @@ export interface DifferentialResult {
   } | null
 }
 
+// Typed against the ONE site that assigns `measurement.residual`
+// (`script/m12/make-corpus-measure.ts:122`, and the RESIDUAL_EXPECTED constant it
+// builds at :116), not against a plausible shape. An earlier version of this block
+// declared `expected: number` and `erroredFiles: {file, errorNodes, cause?}[]`, which
+// inverted both fields relative to that assignment and bought the appearance of a fix
+// by trading 160 TS2339 for 2 TS2322. Measured, `tsc --noEmit -p tsconfig.scripts.json`
+// on supervisor/loop: 679 errors at HEAD -> 520 with the properties added, and 520
+// would have been 522 with this block wrong. `expected` is the array of expected
+// residual entries; `erroredFiles` is the sorted list of filenames that had errors.
+export interface ResidualBlock {
+  policy: string
+  expected: { file: string; errorNodes: number; cause?: string }[]
+  erroredFiles: string[]
+  hasErrorNoNodeFiles: string[]
+  matches: boolean
+}
+
+export interface CrashSample {
+  file: string
+  error: string
+  repo?: string
+}
+
 export interface OperationMeasurement {
   name: string
   wallTimeMs: number
@@ -85,6 +108,65 @@ export interface OperationMeasurement {
   filesPerSecond: number | null
   symbolsPerSecond: number | null
   relationshipsPerSecond: number | null
+
+  // Corpus-acceptance fields, written by the caller AFTER measureOperation returns.
+  //
+  // These are not a cast and not an index signature. `measureOperation` builds a plain
+  // object literal with the 13 fields above (differential-harness.ts:218) and returns it;
+  // every m12 `*-corpus-measure.ts` instrument then ASSIGNS its own acceptance evidence
+  // onto that same object. The runtime has always carried these fields — the interface
+  // simply declared fewer of them than the callers wrote, so `tsc -p tsconfig.scripts.json`
+  // reported each assignment as TS2339 "Property X does not exist".
+  //
+  // Population of that claim, measured over the `tsc --noEmit -p tsconfig.scripts.json`
+  // error set on supervisor/loop @ 2714c516e: 679 errors in total, of which 186 are
+  // TS2339 and exactly 160 of those name `OperationMeasurement`, across 19 instrument
+  // files, naming 31 distinct properties. Declaring the 31 optional properties is the
+  // truthful description of what those files already do.
+  //
+  // Measured after this change, same command, same tree: 679 -> 518 errors, TS2339
+  // 186 -> 26 with ZERO of the survivors naming `OperationMeasurement`, and TS2322
+  // unchanged at 35 — i.e. the 161 errors removed cost nothing elsewhere. The exit
+  // status is still 2: this file is one of 518, not the last of them.
+  //
+  // Every one is OPTIONAL on purpose: a required field would break the 13-field literal
+  // `measureOperation` constructs, and optionality keeps this a type-only change with no
+  // runtime effect. `unknown[]`/`unknown` appear where the measured assignment sites
+  // genuinely disagree on element shape (errorSamples is `{file,msg}[]` in one instrument
+  // and `string[]` in another) — a narrower type there would be a guess, and this
+  // programme's rule is that a guess that silences the compiler is worse than an error.
+  trackedFiles?: number
+  acceptanceFiles?: number
+  strictAcceptanceFiles?: number
+  cleanFiles?: string[]
+  excludedFiles?: string[]
+  excludedFileCount?: number
+  errorFiles?: number
+  errorSamples?: unknown[]
+  errors?: number
+  parseErrors?: number
+  crashFiles?: number
+  crashSamples?: CrashSample[]
+  grammarLimitationFiles?: number
+  cleanSymbols?: number
+  cleanRelationships?: number
+  cleanErrors?: number
+  passed?: boolean
+  absent?: string[]
+  absentCount?: number
+  declaredNegativeControls?: { file: string; errors: number; verdict: string }[]
+  corpusPolicy?: string
+  complexityPolicy?: string
+  performanceTruth?: string
+  manifest?: unknown
+  manifestPresent?: boolean
+  residual?: ResidualBlock
+  quietLoadTarget?: number
+  loadWaitedMs?: number
+  loadAvg1?: number
+  loadQuiet?: boolean
+  loadAvgRetried?: boolean
+  userCpuMsPerFile?: number | null
 }
 
 const LAYER_ORDER: ValidationLayer[] = [
