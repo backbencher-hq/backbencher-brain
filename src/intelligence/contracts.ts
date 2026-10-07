@@ -233,6 +233,8 @@ export interface SemanticResult {
   language: string
   /** True when the source file changed on disk since indexing — must never be presented as current. */
   stale?: boolean
+  /** M44.W1.1: brain_file id for read-repair mapping (quickAnswer sources). */
+  fileId?: string
 }
 
 export interface SemanticSearchResults {

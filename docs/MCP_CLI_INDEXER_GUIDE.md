@@ -151,6 +151,7 @@ separation is corrected.
 | Command | Purpose |
 |---|---|
 | `bb index <dir>` | Full/incremental project indexing |
+| `bb index <dir> --changed` | Reindex only files changed since the last index (bounded derived pass; the repair the staleness remediation names) |
 | `bb index <dir> --force` | In-place wipe and full rebuild |
 | `bb search <query>` | Symbol retrieval (default listing; `--mode symbols` equals the default), language and limit filters; auto-refreshes stale files within budget before answering and declares it |
 | `bb search --no-auto-refresh <q>` | Answer from the existing index with the staleness footer instead of auto-refreshing (same decision as MCP `refresh=false`) |
@@ -164,6 +165,9 @@ separation is corrected.
 | `bb health [dir] --integrity` | Run the index integrity checks |
 | `bb mcp --dir <dir>` | Start MCP over stdio |
 | `bb tool <name> --args <json>` | Invoke a public tool through shared handlers |
+| `bb watch [dir]` | Keep an indexed project fresh in real time (foreground resident watcher; edits reindex in ~300 ms + bound; Ctrl+C stops). The MCP server auto-starts the same watcher for its project — the intent is recorded at index time, so you never re-activate it per session |
+| `bb watch [dir] --status` | Watch intent + live state: watching since, startup scan, pending/in-flight, last reindex, db + watch-state paths |
+| `bb watch [dir] --stop` | Clear the watch intent so future resident sessions do not auto-watch (a watcher running in another shell stops on its Ctrl+C) |
 | `bb --version` | Print package version |
 
 ### Which status command when
@@ -177,6 +181,7 @@ All five read commands are intentional; they answer different questions.
 | "Is the data trustworthy/current?" | `bb health` | Freshness envelope, embeddings coverage, integrity (opt-in) |
 | "Is my setup broken? Can it be auto-repaired?" | `bb doctor` | Permissions, config, first-run checks (`--fix` applies) |
 | "What exists on this machine? Reclaim space?" | `bb projects` | Registry of all indexed projects + `--remove` |
+| "Is the index being kept fresh right now?" | `bb watch --status` | Watch intent + resident-watcher live state |
 
 ### CLI and MCP parity
 

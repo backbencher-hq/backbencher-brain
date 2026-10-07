@@ -645,6 +645,53 @@ After landing `exports`: corpus 1448 pins, 136 declared failing, clojure 72 pass
 
 Verification of this section's landed files is in §12.
 
+### 11.8 The layer 11.1-11.4 cannot see: objects no ref and no reflog points at
+
+§11.1–11.4 answer "what does a *ref* reach". A `git gc` also deletes something those
+questions never look at: objects that no ref and no reflog points at. `preservation-audit.py
+--dangling` now measures that layer, and the answer is not zero.
+
+```
+no ref and no reflog points at                     8,174 objects   (426.4 MB)
+   commits 1,155   trees 3,569   blobs 3,450
+per (blob, path) pair:
+   path main does not have                        7,208   (snapshot dirs named by tree sha)
+   diverged                                       1,043
+   AHEAD of main's copy                             682   across 465 paths
+   no tree survives                                 219
+   subset of main, superseded                         3
+```
+
+**The 465 paths are not a landing queue, and 462 of them are one thing:** merge-conflict
+artifacts. The filter is cheap — does the blob contain `<<<<<<<` — and it changes the
+reading completely. Worked example: `src/ast/real-lua-analyzer.ts` reads as "ahead by 44
+lines", and those 44 lines are `<<<<<<< HEAD`, `=======`, `>>>>>>> main` repeated with one
+real line among them: a conflicted working tree captured by a snapshot, not a revision.
+
+**Exactly three are clean, and all three compile on main's tree, so they are landed here:**
+
+| path | what the dangling blob adds |
+|---|---|
+| `docs/MCP_CLI_INDEXER_GUIDE.md` | +5 rows: `bb index <dir> --changed`, `bb watch [dir]`, `bb watch --status`, `bb watch --stop`, and the freshness question that maps to the last of them |
+| `src/intelligence/contracts.ts` | +2: `fileId?: string`, "M44.W1.1: brain_file id for read-repair mapping (quickAnswer sources)" |
+| `src/intelligence/search/semantic-search.ts` | +2: the two call sites that thread it (`symbol.fileId`, `row.fileId`) |
+
+Each is a strict extension of main's copy (`numstat` deletions 0 in both directions
+checked), which is what makes them landable without a measurement: nothing main carries
+can be lost by taking them.
+
+**Insurance taken, because a plain `git gc` would have pruned all of this** once the
+reflogs expired: `git config gc.pruneExpire never` in this checkout (local config only; undo
+with `git config --unset gc.pruneExpire`). That is a guard on the *repository*, not a
+claim about the content: 426 MB of this layer is stale snapshots and conflict states, and
+pruning it stays a decision rather than a side effect.
+
+Bound on the claim: the per-(blob, path) verdicts are an upper bound, because one blob can
+sit at many snapshot paths and a verdict that depends on which path is picked is a verdict
+about the picker. That is why the conflict-marker filter is applied to the 465 rather than
+the count being read at face value, and why the three above were each read by hand before
+landing.
+
 ## 12. Verification at the commit that lands §11
 
 ```
@@ -656,6 +703,11 @@ npm run build                               exit 0
 npm run typecheck:scripts                   716 errors, unchanged (the instrument added here
                                                       is Python and outside tsconfig.scripts)
 ```
+
+§11.8's three recovered files were verified on the tree that carries them: `npx tsc --noEmit`
+exit 0, `bun run script/m14/run-fixtures.ts` exit 0 (1448 pins, 136 failing, `fixture
+baseline gate: no regressions`), `bash script/m14/no-regex-gate.sh` exit 0, `npm run build`
+exit 0. No `.ts` file under `script/` changed, so `npm run typecheck:scripts` is untouched.
 
 The suite was run over the tree this section describes, so the four provenance fields of
 `validation/m14/results/M14.0.F3.json` name the parent commit and are re-emitted in the
