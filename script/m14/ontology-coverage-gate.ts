@@ -132,6 +132,32 @@ export type Ruled = {
   describe: string
 }
 
+/**
+ * Preorder walk with an EXPLICIT STACK, in the same order as the recursive form it replaces
+ * (children are pushed in reverse so `pop()` yields them left to right).
+ *
+ * WHY NOT RECURSION. Measured 2026-10-07: the recursive walk died with `Maximum call stack
+ * size exceeded` on `dart-sdk/tests/language/syntax/deep_nesting_statement_test.dart` — a file
+ * dart's own suite keeps in order to exercise deep nesting — and it died AFTER the
+ * 33,692-file walk had completed, so the gate walked the whole corpus and then printed no
+ * table at all. The same recursion sat in two `countOnTree` helpers a few lines below, where
+ * it would have killed Instrument B on a bash or json walk for the same reason. A JS call
+ * stack is bounded by nesting depth; an array is not.
+ *
+ * The visit ORDER is preserved deliberately: the bash probe counts the SECOND declaration of a
+ * name, so pushing children in reverse is what keeps "second" meaning the same occurrence it
+ * meant before. The change cannot move a count.
+ */
+function walkPreorder(root: any, visit: (n: any) => void): void {
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()
+    if (!n) continue
+    visit(n)
+    for (let i = n.childCount - 1; i >= 0; i--) stack.push(n.child(i))
+  }
+}
+
 const BASH_RULED: Ruled[] = [
   {
     type: "extends",
@@ -158,7 +184,7 @@ const BASH_RULED: Ruled[] = [
     // grammar inventory is silent by construction and the count must be semantic.
     countOnTree: (root, fileLabel, hits) => {
       const seen = new Map<string, number>()
-      const visit = (n: any) => {
+      walkPreorder(root, (n: any) => {
         if (n.type === "function_definition") {
           const named = n.namedChildren?.find((c: any) => c.type === "word")
           const name = named?.text
@@ -168,9 +194,7 @@ const BASH_RULED: Ruled[] = [
             if (c === 2) hits.push(`${fileLabel}: ${name} (redefined)`)
           }
         }
-        for (let i = 0; i < n.childCount; i++) visit(n.child(i))
-      }
-      visit(root)
+      })
     },
     describe: "a SECOND declaration of a name already declared in the same file — it replaces the prior one",
   },
@@ -218,7 +242,7 @@ const JSON_RULED: Ruled[] = [
       // and the gate correctly refused to accept my measurement: it said the ruling
       // was falsified by evidence I had manufactured. A probe that matches a SHAPE
       // rather than a ROLE produces a number, and the number is worth nothing.
-      const visit = (n: any) => {
+      walkPreorder(root, (n: any) => {
         if (n.type === "pair") {
           const k = n.childForFieldName?.("key")
           const keyText = String(k?.namedChildren?.find((c: any) => c.type === "string_content")?.text ?? "")
@@ -230,9 +254,7 @@ const JSON_RULED: Ruled[] = [
             }
           }
         }
-        for (let i = 0; i < n.childCount; i++) visit(n.child(i))
-      }
-      visit(root)
+      })
     },
     describe: "a $ref naming another FILE on disk — a file-to-file dependency",
   },
@@ -302,25 +324,56 @@ const observed = new Map<Type, { n: number; files: Set<string> }>()
 // again.
 //
 // So the walk checkpoints. `--fresh` starts over; without it a second run resumes where
-// the last one died, and a file that hangs is recorded as bad and never retried.
+// the last one died, a file that kills the process is retried once in a fresh process and
+// then recorded as abandoned, and every outcome is recorded in a form that distinguishes
+// a real parse from a swallowed crash (see `resumable-walk.ts`).
 const { resumableWalk, resetCheckpoint } = await import("./resumable-walk")
 const CHECKPOINT = `validation/m14/measurements/walk-${LANG}.txt`
 if (process.argv.includes("--fresh")) resetCheckpoint(CHECKPOINT)
 
+// A file whose parse CRASHED does not reject out of `parseFile`: `pool-worker.ts` catches
+// the error, writes `[BB-PARSE-ERR]`, and returns `extractFallback(...)` — a REGEX
+// extraction marked `fallback: true`. Measured 2026-10-07: `ontology-coverage-gate dart`
+// hit `memory access out of bounds` on `dart-sdk/tests/corelib/map_values3_test.dart`,
+// and the file went into the checkpoint as WALKED. Counting those relationships as
+// EMITTED evidence is how a regex edge becomes proof that an analyzer fires, so fallback
+// results are collected in their OWN map and reported as their own population. Files over
+// the 1 MB structural limit land there too, and that is correct — the analyzer did not
+// read those either.
+const observedViaFallback = new Map<Type, { n: number; files: Set<string> }>()
 const walkStats = await resumableWalk(CHECKPOINT, files.length, {
   id: (i) => files[i].abs,
   concurrency: 8,
   run: async (i) => {
     const f = files[i]
     const r: any = await parseFile(f.abs, f.dir)
+    // TWO distinct crash paths reach here and only ONE of them says `fallback`:
+    //   - a WASM trap  -> `pool-worker`'s catch -> `extractFallback`, which sets `fallback: true`
+    //   - the analyzer timing out or blowing the JS stack -> `engine.ts` returns
+    //     `metadata.analysisVersion: "2.0-basic-fallback"` with 0 symbols, 0 relationships,
+    //     and no top-level `fallback` field at all.
+    // Measured on the dart corpus: `deep_nesting_expression_test.dart` and
+    // `deep_nesting_statement_test.dart` return the SECOND shape ("Maximum call stack size
+    // exceeded"). Counting them as measured is not a rounding error — it lets a type read as
+    // NOT EMITTED because the one file exercising it was never analyzed, which is a false
+    // RULED-SOUND. The version string is this codebase's own signature for that path;
+    // `real-sql-analyzer.ts` (a 392 KB schema crossing the same 120 s timeout) and
+    // `real-html-analyzer.ts` both name it, so this is the established idiom rather than a
+    // new convention.
+    const degraded = r?.fallback === true || r?.metadata?.analysisVersion === "2.0-basic-fallback"
+    const sink = degraded ? observedViaFallback : observed
     for (const x of r.relationships ?? []) {
       const t = String(x.type ?? x.relationshipType ?? "").toLowerCase() as Type
       if (!ALL_TYPES.includes(t)) continue
-      const row = observed.get(t) ?? { n: 0, files: new Set<string>() }
+      const row = sink.get(t) ?? { n: 0, files: new Set<string>() }
       row.n++
       if (row.files.size < 4) row.files.add(`${f.repo}/${f.rel}`)
-      observed.set(t, row)
+      sink.set(t, row)
     }
+    if (degraded) {
+      return { degraded: true, reason: `fallback:true (regex extraction) for ${f.repo}/${f.rel}` }
+    }
+    return undefined
   },
 })
 
@@ -338,8 +391,7 @@ const grammarNodeTypes = new Map<string, number>()
 for (const f of files) {
   const t = parser.parse(f.text)
   if (!t) continue
-  const v = (n: any) => { grammarNodeTypes.set(n.type, (grammarNodeTypes.get(n.type) ?? 0) + 1); for (let i = 0; i < n.childCount; i++) v(n.child(i)) }
-  v(t.rootNode)
+  walkPreorder(t.rootNode, (n: any) => { grammarNodeTypes.set(n.type, (grammarNodeTypes.get(n.type) ?? 0) + 1) })
   t.delete?.()
 }
 
@@ -458,18 +510,41 @@ if (RULED_BY_LANG[LANG] === undefined) {
 // SAME edge counts as a complete one over the files it did see — the counts do not know
 // they are smaller — so without this line a 99% walk reports identically to a 100% one and
 // the reader cannot tell. Stated before the table, not in a footnote.
-const walkedPct = walkStats.total === 0 ? 0 : ((walkStats.walked + walkStats.alreadyDone) / walkStats.total) * 100
+// TWO different coverage numbers, and conflating them is the defect this line used to have.
+//
+// The edge counts below come from exactly ONE source: the `run` callback above, which is
+// called only for files THIS run walked. A file settled by an earlier run is SKIPPED by the
+// walk and therefore contributes NO edges — so `alreadyDone` is coverage of the CHECKPOINT,
+// not coverage of the TABLE. The first version of this line added the two together and
+// printed "every edge count below is over 100.0% of the corpus" for a run whose table had
+// seen 10 files: a correct-looking number about the wrong population, which is the one
+// defect this programme keeps paying for.
+//   table coverage = walked                     (files whose edges fed `observed`)
+//   walk coverage  = walked + alreadyDone        (files that need no further walking)
+const tablePct = walkStats.total === 0 ? 0 : (walkStats.walked / walkStats.total) * 100
+const walkPct = walkStats.total === 0 ? 0 : ((walkStats.walked + walkStats.alreadyDone) / walkStats.total) * 100
 console.log(
-  `walk: ${walkStats.walked + walkStats.alreadyDone}/${walkStats.total} files ` +
-    `(${walkedPct.toFixed(1)}%)  newly walked ${walkStats.walked}, resumed ${walkStats.alreadyDone}` +
+  `walk: ${walkStats.walked}/${walkStats.total} files measured in THIS run ` +
+    `(${tablePct.toFixed(1)}% — the files every edge count in the table below is computed from)`,
+)
+console.log(
+  `walk: ${walkStats.walked + walkStats.alreadyDone}/${walkStats.total} files settled in TOTAL ` +
+    `(${walkPct.toFixed(1)}%)  newly walked ${walkStats.walked}, resumed ${walkStats.alreadyDone}` +
     (walkStats.skippedBad > 0 ? `  SKIPPED-BAD ${walkStats.skippedBad}` : ``) +
     (walkStats.partial ? `  PARTIAL` : ``),
 )
+if (walkStats.walked < walkStats.total) {
+  console.log(
+    `      >>> THE TABLE BELOW IS ABOUT ${walkStats.walked} OF ${walkStats.total} FILES. ` +
+      `${walkStats.alreadyDone} file(s) were settled by an earlier run and contribute NO edges this run, ` +
+      `so a type they would have shown cannot be seen to fire. Run with --fresh for a whole-corpus table.`,
+  )
+}
 if (walkStats.partial) {
   console.log(
-    `      every edge count below is over ${walkedPct.toFixed(1)}% of the corpus. ` +
-      `${walkStats.skippedBad} file(s) hang or cannot be parsed and are excluded; re-run to resume, ` +
-      `--fresh to start over. Checkpoint: ${walkStats.checkpoint}`,
+    `      DEGRADED ${walkStats.degraded + walkStats.alreadyDegraded} file(s) were measured by the regex ` +
+      `fallback rather than the analyzer and are excluded from EMITTED; ${walkStats.skippedBad} abandoned. ` +
+      `Checkpoint: ${walkStats.checkpoint}`,
   )
 }
 console.log()
@@ -507,6 +582,31 @@ for (const t of ALL_TYPES) {
     ? `the grammar produced ${grammarNodeTypes.size} distinct node types across the corpus and NONE expresses it`
     : `the construct occurs 0x on the parse tree`
   rows.push({ type: t, status: "RULED-SOUND", detail: `NOT EMITTED; ${basis}. Written ruling: ${ruling.src}` })
+}
+
+// ---------------------------------------------------------------- the population that was ACTUALLY measured
+// Printed BEFORE the table, because a table of ten relationship types is a statement
+// about a population, and this programme's recurring defect is a correct number about the
+// wrong population. `partial` is true if any file was degraded, any file was abandoned, or
+// the run did not reach every file it was offered.
+{
+  // The buckets PARTITION the offered population, so they can be added up and checked:
+  // walked + degraded + alreadyDone + alreadyDegraded + skippedBad === total.
+  const accounted = walkStats.walked + walkStats.degraded + walkStats.alreadyDone + walkStats.alreadyDegraded + walkStats.skippedBad
+  console.log(`walk: ${walkStats.total} offered = ${walkStats.walked} measured by the analyzer (this run) + ${walkStats.alreadyDone} measured by an earlier run + ${walkStats.degraded} DEGRADED (regex fallback, not the analyzer) + ${walkStats.alreadyDegraded} degraded earlier + ${walkStats.skippedBad} abandoned`)
+  console.log(`walk: partial=${walkStats.partial}  retried=${walkStats.retried}  unfinished-from-previous-run=${walkStats.unfinishedFromPreviousRun}  fresh=${walkStats.fresh}  history ${walkStats.untrustedHistory ? "UNTRUSTED (no format header — cannot tell a parse from a swallowed crash)" : "trusted"}`)
+  console.log(`walk: rss ${walkStats.rssMbStart}MB -> ${walkStats.rssMbEnd}MB (${walkStats.rssMbPerKFile >= 0 ? "+" : ""}${walkStats.rssMbPerKFile}MB per 1k files)  checkpoint ${walkStats.checkpoint}`)
+  if (accounted !== walkStats.total) {
+    console.log(`walk: >>> ${walkStats.total - accounted} file(s) were neither measured nor settled — this table is about ${accounted}/${walkStats.total} files.`)
+  }
+  if (observedViaFallback.size > 0) {
+    const rows = [...observedViaFallback.entries()].map(([t, r]) => `${t}=${r.n}`).join(" ")
+    console.log(`walk: >>> excluded from EMITTED — relationship rows produced by the regex fallback, not the analyzer: ${rows}`)
+  }
+  if (walkStats.partial) {
+    console.log(`walk: >>> THIS TABLE IS PARTIAL. Its EMITTED column is evidence about ${walkStats.walked + walkStats.alreadyDone} of ${walkStats.total} files.`)
+  }
+  console.log("")
 }
 
 const w = (s: string, n: number) => (s + " ".repeat(n)).slice(0, n)

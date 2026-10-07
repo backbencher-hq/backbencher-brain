@@ -529,6 +529,102 @@ rows — rather than as analyzer false positives; PHPD33 and PHPD36 the only com
 corrected this round), the full corpus run of the ruling-table proof gate repaired above, and the
 legacy/real-world corpora. None of it is claimed here.
 
+## Round 2 (2026-10-07) — the walk completes over all 33,692 files, and TWO of Round 1's mechanisms were wrong
+
+Round 1 named the right symptom (the walk cannot finish; the checkpoint over-counts) and the
+WRONG cause. Both corrections are stated here rather than quietly fixed, because the wrong
+version is the one a reader would otherwise carry forward.
+
+### Correction 1: the walk does not retain trees, and was never killed by a file
+
+Round 1 blamed "retained WASM trees". Three measurements say otherwise:
+
+- `engine.ts`'s `ASTEngine.parseFile` deletes the tree in a `finally` (the block Round 1
+  itself quoted), so the production path retains nothing per file.
+- A 6,000-file walk through the **production** `parseFile` at the gate's own concurrency: RSS
+  **sawtooths** (445 → 673 MB, peak 980) rather than climbing, under BOTH bun and tsx.
+- The finished 33,692-file walk: RSS **596.1 MB → 501.1 MB, −2.8 MB per 1k files** — it ends
+  *lower* than it started.
+
+The real killer was a **leaked timer in `engine.ts`**. `parseBomb` is armed, then disarmed on
+the line AFTER `parser.parse(content)` — so a parse that THROWS (a WASM trap) skips the
+`clearTimeout`. The guard stayed armed and fired **120 s later, in an unrelated turn of the
+event loop**, printing whatever file that closure held and calling `process.exit(1)`. The file
+it names is only the last parse that threw — which is exactly why the name changed every run
+and why every named file was innocent alone. It killed run 1 at 20,207 files. The fix is a
+`try/finally` around the parse.
+
+The note in Round 1 that "the walk appends a path *before* parsing it" is also wrong: the
+append happened AFTER `run()` resolved, so a hard kill wrote nothing, the same file was
+re-walked and re-killed forever, and the file a run died on could not be named at all.
+
+### Correction 2: the checkpoint's defect is subtler than "records killed files as WALKED"
+
+`parseFile` does not reject when a parse crashes. It catches the error, writes
+`[BB-PARSE-ERR]`, and returns `extractFallback(...)` — **regex** extraction marked
+`fallback: true`. The walk therefore wrote a plain `done` line for a file the analyzer never
+measured, and — the part that made it a measurement defect rather than a bookkeeping one —
+**that file's regex edges were folded into the coverage table as evidence that the analyzer
+emits that relationship.** Measured: `map_values3_test.dart` tripped a WASM trap, was logged
+as `[BB-PARSE-ERR]`, and sat in the checkpoint as an ordinary success.
+
+A SECOND crash path is silent in a different way: the analyzer timing out or blowing the JS
+stack returns `metadata.analysisVersion: "2.0-basic-fallback"` with 0 symbols and **no
+top-level `fallback`**. Two dart files hit it — `deep_nesting_expression_test.dart` and
+`deep_nesting_statement_test.dart`, both `Maximum call stack size exceeded` — and counting
+them as measured lets a type read as NOT EMITTED because the one file exercising it was never
+analyzed. That is a false RULED-SOUND, and the version string is this codebase's own
+signature for the path (`real-sql-analyzer.ts` documents the same 120 s crossing).
+
+### What was fixed (each with its evidence)
+
+| defect | fix | evidence |
+|---|---|---|
+| leaked `parseBomb` kills the walk 120 s after a caught trap | `try/finally` disarm in `engine.ts` | the two runs it killed, and the completed 33,692-file walk after |
+| a swallowed crash is recorded as measured | walker v2: `>id` attempt BEFORE the parse, `id` / `~id` / `!id` outcomes after, `partial` true if any file is degraded | `walk-checkpoint-honesty.ts`, **30 assertions** |
+| the file a run dies on is unknowable | `>` with no outcome = that file; retried once, then recorded `!` with the reason | same fixture, section 3 |
+| regex edges counted as EMITTED | fallback rows collected separately and printed, never added to `observed` | `walk: >>> excluded from EMITTED — calls=11` |
+| a resumed run printed "100.0% of the corpus" over a 10-file table | table coverage (`walked`) reported separately from walk coverage (`walked + alreadyDone`), loudly | run 6 vs run 7 below |
+| recursion died on deep nesting AFTER the walk finished | `walkPreorder` — explicit stack, order-preserving, in all 3 walk sites | the stack trace it replaced |
+| one unfreeable grammar per 500 files | reuse the cached `Language`; share ONE in-flight load, cached inside the loader | `Language.load` = **+2.4 MB, monotonic, `Language.delete` undefined**; probe: **1 grammar over 3,000 files** |
+
+### The proof: the gate completes and states its population
+
+`npx tsx script/m14/ontology-coverage-gate.ts dart --fresh` — exit **0**:
+
+```
+corpus: 33692 admitted files
+walk: 33684/33692 files measured in THIS run (100.0% — the files every edge count below is computed from)
+walk: 33692 offered = 33684 measured by the analyzer (this run) + 0 measured by an earlier run + 8 DEGRADED (regex fallback, not the analyzer) + 0 degraded earlier + 0 abandoned
+walk: partial=true  retried=0  fresh=33692  history trusted
+walk: rss 596.1MB -> 501.1MB (-2.8MB per 1k files)
+emitted 10/10   ruled-sound 0   FALSIFIED 0   ruled-without-justification 0
+```
+
+Whole-corpus edge counts, all ten types EMITTED by the real analyzer: `uses` 1,148,731 ·
+`calls` 636,664 · `contains` 525,695 · `overrides` 154,829 · `instantiates` 151,206 ·
+`imports` 105,086 · `references` 73,041 · `extends` 38,119 · `implements` 12,221 ·
+`exports` 2,030. The 8 degraded files are named and excluded, not silently counted.
+
+**The population fix is not theoretical.** Run 6 (resumed, 10 files walked) reported
+`exports RULED-UNJUSTIFIED — NOT EMITTED and its construct is absent` from a table whose
+header claimed 100.0% of the corpus. Run 7, over 33,684 files, reports `exports EMITTED,
+2,030 edges`. Same corpus, same code, opposite verdict — decided entirely by whether the
+population was stated. That is the defect this round exists to end.
+
+### Honest limits of this round
+
+- The 33,692-file proof run (run 7) ran with the grammar-reuse and load-dedup fixes but
+  **before** the in-flight-cache race fix; the race fix is verified by `parser-reload-probe.ts`
+  (1 grammar over 3,000 files, post-fix), not by run 7.
+- The `rssMbPerKFile` metric is only meaningful over a long walk: run 7's −2.8 MB/1k is real,
+  but a 3,000-file probe reports +124 MB/1k because lazy module loading dominates the first
+  500 files. The plateau (452 → 455 MB from file 1,500 to 3,000) is the honest retention read.
+- 8 of 33,692 files (0.02%) are measured by the regex fallback and carry no analyzer evidence.
+- The traps are not fully deterministic: run 6 degraded 12 files, run 7 degraded 8, so the
+  retry-once policy is doing real work — but a file that degrades twice is now recorded as such
+  rather than retried forever.
+
 ## Totals today
 
 - Outgoing at `10/10 applicable`: **3 of 23** (`dart`, `fsharp`, `php`).
