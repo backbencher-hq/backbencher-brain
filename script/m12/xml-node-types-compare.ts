@@ -115,6 +115,7 @@ const fixtureFiles = readdirSync(FIXTURE_DIR).filter((f) => /\.(xml|xsd)$/i.test
 const fixtureErrors: { file: string; errorNodes: number }[] = []
 for (const file of fixtureFiles) {
   const tree = parser.parse(readFileSync(join(FIXTURE_DIR, file), "utf8"))
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   if (tree.rootNode.hasError) {
     let e = 0
     const walk = (n: any) => { if (n.isError) e++; for (let i = 0; i < n.childCount; i++) walk(n.child(i)) }
@@ -153,6 +154,7 @@ try {
       let src: string
       try { src = readFileSync(abs, "utf8") } catch { continue }
       const tree = parser.parse(src)
+      if (!tree) throw new Error("parser.parse returned no tree (null result)")
       if (tree.rootNode.hasError) corpusErrorFiles++
       const walk = (n: any) => { if (n.isMissing) corpusMissingNodes++; for (let i = 0; i < n.childCount; i++) walk(n.child(i)) }
       walk(tree.rootNode)
@@ -203,7 +205,7 @@ const coverage: { file: string; treeElements: number; symbolElements: number; tr
         const tag = n.children.find((c: any) => c.type === "STag" || c.type === "EmptyElemTag")
         if (tag) for (let i = 0; i < tag.namedChildCount; i++) if (tag.namedChild(i)?.type === "Attribute") attributes++
       }
-      for (let i = 0; i < n.childCount; i++) st.push(n.child(i))
+      for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) st.push(c) }
     }
     t.delete()
     const result: any = analyzer.analyze(treeOf(src).rootNode, src, label) as any

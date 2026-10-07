@@ -23,7 +23,7 @@
  * files, a first-class C# differential corpus for this lane since 2026-09-29)
  * plus incidental .cs files elsewhere. `--root` overrides.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs"
+import { readdirSync, readFileSync, statSync, type Dirent } from "node:fs"
 import { join } from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 import { RealCSharpAnalyzer } from "../../src/ast/real-csharp-analyzer"
@@ -49,7 +49,13 @@ const TYPES_TS_ONLY = "brain_import"
 
 function walkCs(dir: string, out: string[], cap: number, depth = 0): string[] {
   if (out.length >= cap || depth > 12) return out
-  let ents: ReturnType<typeof readdirSync>
+  // `ReturnType<typeof readdirSync>` resolves to the LAST overload of a heavily
+  // overloaded function, which here is the one whose entries are
+  // `Dirent<NonSharedBuffer>` — so `e.name` was a Buffer and `.git`/`.cs` compared
+  // against strings were "unintentional comparison" errors (8 of this file's). The
+  // declaration now names what the call below actually returns for a string path:
+  // a `Dirent<string>[]`, i.e. names are strings, which is what every use assumes.
+  let ents: Dirent<string>[]
   try {
     ents = readdirSync(dir, { withFileTypes: true })
   } catch {

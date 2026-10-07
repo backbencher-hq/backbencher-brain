@@ -243,9 +243,17 @@ const CHANNEL_NOTE: Record<string, string> = {
   [IMPORT_ENUM]: "importer channel imports[] (brain_import TABLE), not a relationship row",
 }
 
-interface ConstructHit { files: number; occurrences: number; samples: string[] }
-
 /**
+ * NOTE: a second, IDENTICAL-NAMED declaration of this interface sat here with
+ * `files: number` (a count) while the one below declares `files: Set<string>` (the
+ * set of files that carry it). TypeScript merges same-named interfaces and keeps
+ * the FIRST declaration's property type, so the number form silently won for the
+ * whole file: `h.files.add(f)`, `new Set<string>()` and `h.files.size` then reported
+ * as `Property does not exist on type 'number'` (11 errors here), and the declaration
+ * that was actually in force was not the one any reader would have looked at. The
+ * stale form is deleted rather than the live one renamed, because the live one is
+ * the one the code and the emitted JSON both use (`files: [...v.files]`).
+ *
  * Count how often a construct that WOULD produce `type` actually occurs in the
  * corpus, by walking the parse tree. This is what turns "HTML has no X" from
  * prose into a falsifiable ruling: a probe finding a non-zero count overturns
