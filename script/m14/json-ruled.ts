@@ -120,7 +120,7 @@ export const JSON_RULED: Ruled[] = [
      * 23 were opened and classified by the shape of their value. Every one is something that
      * spells a constructor without being one:
      *
-     *   15  svelte `tests/parser-*/samples/*/output.json`. `output.json` is an ESTree dump,
+     *   15  svelte `tests/parser-<fixture>/samples/<fixture>/output.json`. `output.json` is an ESTree dump,
      *       so `init` is a DECLARED VARIABLE NAME and its value is the serialized JS node —
      *       `Literal` ×9, `MemberExpression` ×3, `BinaryExpression` ×2, `ArrayExpression` ×1.
      *       An AST node rendered as an object is not instance state
