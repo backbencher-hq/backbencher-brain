@@ -46,6 +46,30 @@ interface ElixirContext {
   // `use <module>` per enclosing module — the other half of ELIXIR_FIX2-O1.
   // Measured: 510 use sites in 325 files.
   moduleUses: Map<string, Set<string>>
+  // EX-EX3 × ELIXIR_FIX2-U1 — STAGED member reads, resolved after the walk.
+  //
+  // Two pins constrain this rule from opposite sides and both are the lane's
+  // spec, so the rule has to satisfy both (the reconciliation is written out at
+  // the resolution step below): `ontology-uses` (EX-EX3) requires a member read
+  // to be published ONLY when its leaf names a struct field the FILE declares,
+  // and `member-read-uses` (ELIXIR_FIX2-U1) requires the reads of a file that
+  // declares no struct field at all to be published as contextual uses. The
+  // gate needs the file's whole declared-field vocabulary, and a read can
+  // precede the `defstruct` that declares its field (or live in a module
+  // processed before it), so the site is STAGED here and resolved post-walk.
+  usesCandidates: { source: string; field: string; receiver: string; line: number }[]
+  // EX-EX12 — variables bound to a MAP in a definition (`%{} = m`,
+  // `%{a: a} = m`), keyed by the same scope identity the edges are sourced
+  // from (`Module.fun/arity`). A read through one of these is a MAP KEY read,
+  // never a struct-field read, so it is dropped from the `uses` surface even
+  // when the leaf happens to be a declared struct field elsewhere in the file.
+  mapBoundByScope: Map<string, Set<string>>
+  // Countable reasons, reported in `metadata` (§4's third clause): how many
+  // staged reads were verified, how many were published as contextual, and how
+  // many were dropped because the receiver was provably a map.
+  usesVerified: number
+  usesContextual: number
+  mapKeyReceiverDropped: number
 }
 
 // ELIXIR_FIX2-X1 — the symbol kinds an Elixir module PUBLISHES. This is the
@@ -188,6 +212,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         aliases: Object.create(null), functionHeads: {}, pendingDoc: undefined, importList: [], callbackSpecs: {}, optionalCallbacks: {},
         symbolByName: new Map(), seenRels: new Set(),
         overridableNames: new Map(), overridableModules: new Map(), moduleUses: new Map(),
+        usesCandidates: [], mapBoundByScope: new Map(), usesVerified: 0, usesContextual: 0, mapKeyReceiverDropped: 0,
     }
     const scopeStack: Scope[] = []
     const stack: { node: Node; isExit?: boolean }[] = [{ node: rootNode }]
@@ -349,9 +374,18 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                   // ER-D7's rule, "a head pattern emits nothing").
                   const memberLeaf = this.memberReadLeaf(node)
                   if (memberLeaf && !this.isDefHead(node) && !this.isInDeclarationAttributeValue(node) && !this.isPatternPosition(node)) {
-                    this.pushRel(ctx, currentScope?.name || "Global", memberLeaf.leaf, ASTEngine.RelationshipType.Uses, 0.7,
-                      { elixirSpecific: true, memberAccess: true, receiver: memberLeaf.receiver, elixirUsesKind: "member_field_read", evidenceClass: "usage_contextual", reasonCode: "elixir_member_field_read" },
-                      targetNode ? targetNode.startPosition.row + 1 : node.startPosition.row + 1)
+                    // EX-EX3: STAGED, not published here — the gate is the FILE's
+                    // declared struct fields and a struct may be declared later in
+                    // the file than the read, so the verdict is not available yet.
+                    // The two gates that need the walk to be over (the declared-
+                    // field gate and the map-bound-receiver gate) are applied at
+                    // the resolution step in `analyze`. The line is the dot node's
+                    // own line, so a chain's intermediate and leaf reads both
+                    // report the line their text sits on.
+                    ctx.usesCandidates.push({
+                      source: currentScope?.name || "Global", field: memberLeaf.leaf, receiver: memberLeaf.receiver,
+                      line: targetNode ? targetNode.startPosition.row + 1 : node.startPosition.row + 1,
+                    })
                   } else if (!this.shouldSkipCall(node, t) && !this.isPipeStep(node) && !this.isCaptureHead(node)) {
                   // EX-A13: the marker is only reachable for the QUALIFIED spawn
                   // forms. `send`/`send_after`/`spawn`/`spawn_link`/`spawn_monitor`
@@ -892,6 +926,73 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // EX-EX3 × ELIXIR_FIX2-U1 — resolve the staged member reads.
+    //
+    // The two `uses` pins are a SPEC COLLISION between two authors, both landed
+    // by the corpus commit `1719ff6b3`, and neither line ever satisfied both:
+    // `ontology-uses` was authored by the ontology wave (37be14e7a, 2026-10-03)
+    // and `member-read-uses` by the FIX2 wave (2a169c958, 2026-10-05). Measured
+    // across every revision of this analyzer that exists (11 distinct blobs, all
+    // refs + the unreachable layer): NONE passes both. The wave's realization
+    // (5d6dbd58, "ontology-uses passes") replaced the unconditional member-read
+    // rule with the declared-field gate and turned `member-read-uses` red
+    // (it is in that revision's 18-failure list); this file's lineage kept the
+    // unconditional rule and stayed red on `ontology-uses`. Neither is right:
+    //
+    //   ontology-uses  wants a published target to always be a real symbol: "the
+    //                  edge is published only when the leaf is a field some struct
+    //                  in this file declares" — and forbids the map-key read
+    //                  `m.domain`, the map-BOUND read `m.id` (`%{} = m`), and the
+    //                  chain's intermediate `u.profile`.
+    //   member-read-uses wants a member read to never be SILENT (`opts.domain`,
+    //                  `user.address.city`, all of them) in a file with no struct
+    //                  at all, at 0.7 with `usage_contextual`.
+    //
+    // The reconciliation is a FILE-LEVEL branch, and it is the only shape that
+    // satisfies both: the declared-field gate is applied exactly when the file
+    // has the vocabulary to apply it (it declares ≥1 struct field).
+    //   - file declares struct fields  -> GATE. A read of a field this file does
+    //     not declare is dropped rather than published as a name that resolves to
+    //     nothing (α's rule, and `ontology-uses` states it verbatim). Verified
+    //     edges carry `struct_field_read` at 0.9.
+    //   - file declares NO struct field -> PUBLISH. There is nothing to verify
+    //     against; a field of a struct declared in another file is not a
+    //     fabrication, and `member-read-uses` requires these reads to exist.
+    //     They stay at 0.7 `usage_contextual` — the weaker label is the honest
+    //     one, and it keeps the two populations countable apart (§4 clause 3).
+    //
+    // The MAP gates apply in BOTH branches, because they do not depend on the
+    // declared-field vocabulary: `%{} = m` then `m.id` is a map-key read whether
+    // or not some struct also declares `id` (EX-EX12 names the corpus case,
+    // `defp from_map(%{} = datetime_map)` reading eleven keys at
+    // calendar/datetime.ex:2063). `%Mod{} = u` binds a STRUCT and is NOT a map
+    // binding, so a read through it stays a verified struct-field read.
+    const declaredStructFields = new Set<string>()
+    for (const s of ctx.symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Property && (s.metadata as any)?.isStructField) declaredStructFields.add(s.name)
+    }
+    const verifyAgainstDeclaredFields = declaredStructFields.size > 0
+    for (const c of ctx.usesCandidates) {
+      // charCodeAt 37 = `%`: a struct/map LITERAL receiver is a value, not a
+      // binding, so no map binding can apply to it and it is not looked up.
+      if (c.receiver.charCodeAt(0) !== 37 && (ctx.mapBoundByScope.get(c.source)?.has(c.receiver) ?? false)) {
+        ctx.mapKeyReceiverDropped++
+        continue
+      }
+      if (verifyAgainstDeclaredFields && !declaredStructFields.has(c.field)) continue
+      if (verifyAgainstDeclaredFields) {
+        ctx.usesVerified++
+        this.pushRel(ctx, c.source, c.field, ASTEngine.RelationshipType.Uses, 0.9,
+          { elixirSpecific: true, memberAccess: true, receiver: c.receiver, elixirUsesKind: "member_field_read", evidenceClass: "struct_field_read", reasonCode: "elixir_struct_field_read" },
+          c.line)
+      } else {
+        ctx.usesContextual++
+        this.pushRel(ctx, c.source, c.field, ASTEngine.RelationshipType.Uses, 0.7,
+          { elixirSpecific: true, memberAccess: true, receiver: c.receiver, elixirUsesKind: "member_field_read", evidenceClass: "usage_contextual", reasonCode: "elixir_member_field_read" },
+          c.line)
+      }
+    }
+
     // Unqualified-call resolution (post-walk, so every declaration is known —
     // forward references like `run -> run_compiler` where run_compiler is
     // defined later in the file resolve correctly). Elixir resolution: an
@@ -941,7 +1042,10 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: {
         complexity: ctx.symbols.length + ctx.relationships.length, linesOfCode: content.split("\n").length, cyclomaticComplexity, framework: frameworks[0], patterns: patterns,
         detectedFrameworks: frameworks, frameworkPatterns,
-        architecturalScore: Math.min(100, Math.max(0, 100 - ctx.errors.length * 5)), codeQuality: ctx.errors.length === 0 ? "Excellent" : "Fair", hasTypeInference: false, hasFrameworkIntelligence: true, analysisVersion: "10.0.0-elixir-dfs-strict"
+        architecturalScore: Math.min(100, Math.max(0, 100 - ctx.errors.length * 5)), codeQuality: ctx.errors.length === 0 ? "Excellent" : "Fair", hasTypeInference: false, hasFrameworkIntelligence: true, analysisVersion: "10.0.0-elixir-dfs-strict",
+        // EX-EX3 × ELIXIR_FIX2-U1: the countable split of the `uses` surface
+        // (§4 clause 3 — a ratio is only countable if the populations are named).
+        usesCandidates: ctx.usesCandidates.length, usesVerified: ctx.usesVerified, usesContextual: ctx.usesContextual, mapKeyReceiverDropped: ctx.mapKeyReceiverDropped,
       }
     }
   }
@@ -1464,11 +1568,84 @@ private recordInstantiates(structName: string, ctx: ElixirContext, currentScope:
       const root = parts[0] ?? ""
       if (root.length === 0) return undefined
       const c0 = root.charCodeAt(0)
-      if (c0 < 97 || c0 > 122) return undefined
+      // 37 = `%`. A struct/map LITERAL receiver (`%OntoUser{}.name`, the
+      // `%URI{uri | path: "/bar"}.path` R7 endpoint) is a VALUE, and the read
+      // through it is still a read of the named field, so it is staged here.
+      // It can never be a variable, so it is exempt from the map-binding gate
+      // and it is exempt from naming a CALLABLE name — see `shouldSkipCall`,
+      // where the same `%` keeps the literal text out of a `calls` target (R7).
+      if (!((c0 >= 97 && c0 <= 122) || c0 === 37)) return undefined
       const leaf = parts[parts.length - 1] ?? ""
       // R7: no empty names, and never the placeholder literal.
       if (leaf.length === 0 || leaf === "unknown") return undefined
       return { leaf, receiver: root }
+  }
+
+  // EX-EX12 — the variables this DEFINITION binds to a MAP, by shape (no
+  // patterns, no regexes):
+  //   `%{} = m`         a match whose map side is a bare map  -> m
+  //   `%{a: a} = m`     a destructuring match                 -> m and a
+  //   `m = %{a: a}`     the same match written the other way   -> m and a
+  //   `%Mod{} = u`      NOT a map (the map side carries a `struct` child) -> none
+  // A NESTED definition owns its own bindings, so its subtree is not scanned
+  // here — its own `processFunction` call records them under its own scope.
+  private mapBoundVariables(within: Node): string[] {
+    const out: string[] = []
+    const seen = new Set<string>()
+    const add = (name: string): void => {
+      if (name.length === 0 || seen.has(name)) return
+      seen.add(name)
+      out.push(name)
+    }
+    const scan = (n: Node): void => {
+      if (n !== within && n.type === "call") {
+        const kwt = this.findChild(n, (c) => c?.type === "identifier")?.text ?? ""
+        if (DEF_CONSTRUCTS.has(kwt) && !this.isDefHead(n)) return
+      }
+      if (n.type === "binary_operator" && this.binaryPart(n, "operator")?.text === "=") {
+        const left = this.binaryPart(n, "left")
+        const right = this.binaryPart(n, "right")
+        const leftIsMap = left?.type === "map" && this.findChild(left, (c) => c?.type === "struct") === null
+        const rightIsMap = right?.type === "map" && this.findChild(right, (c) => c?.type === "struct") === null
+        if (leftIsMap || rightIsMap) {
+          const pattern = (leftIsMap ? left : right)!
+          const bound = leftIsMap ? right : left
+          for (const name of this.identifiersIn(pattern)) add(name)
+          if (bound?.type === "identifier") add(bound.text)
+          else if (bound) for (const name of this.identifiersIn(bound)) add(name)
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) scan(c)
+      }
+    }
+    scan(within)
+    return out
+  }
+
+  /** The identifiers a subtree names — the keys of `%{a: a, b: b}` bind `a`/`b`.
+   *  A `pair`'s key (`:day` in `%{day: day}`) is a NAME, not a binding, so the
+   *  key child is skipped and only the value side is walked. */
+  private identifiersIn(n: Node): string[] {
+    const out: string[] = []
+    const stack: Node[] = [n]
+    while (stack.length > 0) {
+      const cur = stack.pop()!
+      if (cur.type === "identifier" && cur.text) out.push(cur.text)
+      if (cur.type === "pair") {
+        const key = this.findChild(cur, (c) => c?.type === "keyword")
+        if (key) {
+          for (let i = 0; i < cur.namedChildCount; i++) { const c = cur.namedChild(i); if (c && c !== key) stack.push(c) }
+          continue
+        }
+      }
+      for (let i = 0; i < cur.namedChildCount; i++) {
+        const c = cur.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
   }
 
   // X6 companion: the right-hand side of `|>` is consumed by the pipe
@@ -1499,6 +1676,13 @@ private recordInstantiates(structName: string, ctx: ElixirContext, currentScope:
       if (this.isInDeclarationAttributeValue(node)) return true
       if (this.isDefHead(node)) return true
       if (this.isMemberAccess(node)) return true
+      // R7 (EX-EX3, R7EndpointNames, ELX4.R7Host): a target carrying `%` or `{}`
+      // names no symbol. A struct-literal or map-literal receiver is a VALUE, so
+      // `%OntoUser{}.name`, `%Helper{}.helper_fun` and `%URI{uri | path: "/bar"}.path`
+      // are not callable names and must not be published as `calls` targets. The
+      // test cannot hit a real name: `%` at position 0 is the struct/map operator
+      // (a callable name never starts with it) and `{` cannot appear in a name.
+      if (t.length > 0 && (t.charCodeAt(0) === 37 || t.indexOf("{") !== -1)) return true
       return false
   }
 
@@ -2218,6 +2402,20 @@ private recordInstantiates(structName: string, ctx: ElixirContext, currentScope:
     // W23-E1: function bodies are lexical too — an `alias` inside a def
     // scopes to that def, never to the whole module.
     scopeStack.push({ node, name: scopeName, kind: symbolKind, complexity: 0, symbol: fnSym, savedAliases: ctx.aliases })
+    // EX-EX12 — this definition's MAP bindings, recorded under the scope identity
+    // the member reads are sourced from. Cheap pre-test first: a definition whose
+    // text carries no `%{` cannot contain a bare map literal (`%Mod{` does not
+    // match, because the character after `%` is the alias's first letter), so the
+    // scan is skipped for the majority of definitions — measured on the corpus,
+    // 1,344 of 9,492 definitions carry one.
+    if (ctx.content.includes("%{")) {
+      const bound = this.mapBoundVariables(node)
+      if (bound.length > 0) {
+        let set = ctx.mapBoundByScope.get(scopeName)
+        if (!set) { set = new Set(); ctx.mapBoundByScope.set(scopeName, set) }
+        for (const b of bound) set.add(b)
+      }
+    }
     ctx.aliases = Object.create(ctx.aliases)
     return true
   }
