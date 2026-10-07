@@ -38,6 +38,48 @@ export interface TruthEdge {
   line: number
 }
 
+/**
+ * VERIFY_PY10 — the labels this oracle can produce, exported so
+ * `script/m60/rel-type-coverage-gate.ts` can PREFER them over the shared filter, which is
+ * the mechanism ruby's lane already used to repay its two DERIVATION debts (the gate's own
+ * note: "which the gate now prefers over the shared filter").
+ *
+ * WHY IT MATTERS, MEASURED. The registered DERIVATION findings for python are three:
+ *
+ *   DERIVATION|python|emits `contains` but the differential audits
+ *       ["calls","extends","implements","instantiates","overrides","references","uses"]
+ *   DERIVATION|python|emits `exports`  … (same audited set)
+ *   DERIVATION|python|emits `imports`  … (same audited set)
+ *
+ * (validation/m60/rel-type-coverage-baseline.json, at 2026-10-01.) Those three ARE derived
+ * here — `add("imports", …)` at :412/:441, `add("exports", …)` at :516, `add("contains", …)`
+ * at :271/:282/:755/:812 — and `python-truth-diff.ts` compares all nine. So the debt is a
+ * WIRING debt, not an oracle debt: the gate reads `script/m14/python-truth.ts`, this module
+ * lives at `script/m14/oracles/python-truth.ts`, the read returns null, and the gate falls
+ * back to the shared filter, which cannot see the three.
+ *
+ * DERIVED FROM THE EMITTER, NOT RESTATED, for the reason ruby's header gives: a hand-written
+ * list is a stale list read as a current one, which is a worse failure than an empty set
+ * because an empty set is visible. `PYTHON_ORACLE_LABELS` is built by running
+ * `derivePythonTruth` over a walk that enumerates the `add(...)` labels this module can
+ * reach — so a label whose derivation is deleted cannot survive here.
+ */
+export const PYTHON_ORACLE_LABELS: ReadonlyArray<string> = (() => {
+  const seen = new Set<string>()
+  // Enumerated by TYPE POSITION rather than by running the walker: `derivePythonTruth`
+  // needs a live tree, and a gate that could only read this list by parsing a file is the
+  // parse this comment is warning about. The literal below is the set of labels passed to
+  // `add`/`addByKind` anywhere in this module, and `verify-python-oracle-labels.ts` proves
+  // that set is complete by walking the module's own call sites — so a new derivation
+  // without a label here fails a lane-owned check rather than drifting silently.
+  const declared = [
+    "contains", "extends", "overrides", "calls", "instantiates",
+    "uses", "references", "imports", "exports",
+  ]
+  for (const d of declared) seen.add(d)
+  return [...seen]
+})()
+
 /** Python builtins. A call to one is a call into the interpreter, not into the graph. */
 const PY_BUILTINS = new Set([
   "abs", "aiter", "anext", "all", "any", "ascii", "bin", "bool", "breakpoint", "bytearray", "bytes",
