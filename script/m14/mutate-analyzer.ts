@@ -25,6 +25,7 @@ import { NIM_MUTANTS } from "./nim-mutants"
 import { PROTOBUF_MUTANTS } from "./protobuf-mutants"
 import { JSON_MUTANTS } from "./json-mutants"
 import { CLEAN_MUTANTS } from "./clean-mutants"
+import { PHP_MUTANTS } from "./php-mutants"
 import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
 import { SQL_ONTOLOGY_MUTANTS } from "../m60/sql-ontology-mutants"
 import { JULIA_MUTANTS } from "../m60/julia-mutants"
@@ -2426,6 +2427,18 @@ export const MUTANTS: Mutant[] = [
   ...PROTOBUF_MUTANTS,
   ...JSON_MUTANTS,
   ...CLEAN_MUTANTS,
+  // The php lane's registry — MEASURED as orphaned before this line existed, not suspected.
+  // `npx tsx script/m14/verify-orphaned-mutants.ts` reported
+  // `script/m14/php-mutants.ts  PHP_MUTANTS  6  ORPHANED` and FAILED with "3 mutant file(s)
+  // export a registry that mutate-analyzer.ts does not spread … Those mutants have never
+  // run". The php lane had verified all six in its own harness
+  // (`validation/m14/fixtures/php/mutant-check.mts`, which imports these transforms and
+  // evaluates every php expectation against the mutated result), so its OWN numbers were
+  // sound; what was unsound was any reading of the F4 gate as covering this lane. It did
+  // not: zero of the 386 registered mutants were php's, so the gate could not fail for php
+  // while the lane read as a suite with no php reds. Same shape, and same fix, as the
+  // fsharp/css/nim/protobuf/json/clean wiring above.
+  ...PHP_MUTANTS,
   ...POWERSHELL_MUTANTS,
   ...JULIA_MUTANTS,
   ...MARKDOWN_MUTANTS,
@@ -18443,11 +18456,33 @@ export const MUTANTS: Mutant[] = [
   // another file (companion never populated in production). Each mutant
   // re-introduces the silent drop or breaks the guess-tier contract; the
   // external-override fixture pins must kill all of them.
+  // RETIRED (php lane, this round): php/drop-external-override-guess. It is the same
+  // shape the python lane's retirement note above records, reached independently and
+  // MEASURED rather than reasoned about: `BB_MUTANT_ONLY=php/ bun
+  // script/m14/mutate-analyzer.ts` printed `SURVIVED php/drop-external-override-guess
+  // (0 -> 0 failures)` — 0 before, 0 after, while the other 60 php mutants were all
+  // caught. The transform filters an `overrides` edge `AuditService.handle ->
+  // ExternalBase.handle` that the analyzer no longer emits on any php fixture, because
+  // the 0.5 first-parent guess it reproduced was REMOVED from the analyzer (M12.PHP-
+  // OVERRIDE-AUDIT measured that guess 66.7%-false or worse on phpunit@c8d6921f). A
+  // mutant that removes code which is not there cannot fail, so it stayed red for a
+  // contract nobody was still relying on — which is worse than either fixing or
+  // removing it, exactly as the python note above says. The surface is NOT dropped: the
+  // contract is now 'never emit that edge', pinned in the opposite direction by
+  // `php/re-add-external-override-guess`, which INJECTS the fabrication and is CAUGHT by
+  // php/external-override in the same run (0 -> 1 failures). Retired rather than
+  // deleted, with the trigger to restore it: the day an external-base override can be
+  // derived from the tree (index-backed visibility, not a first-parent guess), the
+  // fixture must stop forbidding it and this mutant becomes live again.
   {
     id: "php/drop-external-override-guess",
     language: "php",
     defectClass: "relationship-loss",
-    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — php external-override pin",
+    retired: true,
+    retiredOn: "2026-10-07",
+    retirementReason:
+      "MEASURED NO-OP, not a judgement call: `BB_MUTANT_ONLY=php/ bun script/m14/mutate-analyzer.ts` reports `SURVIVED php/drop-external-override-guess (0 -> 0 failures)` on the shipped analyzer, because the 0.5 first-parent-guess external-base override it removes no longer exists. The defect class it modelled was real when written (a pre-fix analyzer dropped every override whose base was declared in another file); the fix made the GUESS itself the defect, so the direction inverted. Superseded by php/re-add-external-override-guess (CAUGHT, 0 -> 1 failures, by php/external-override), which injects the fabrication and whose fixture forbid rows pin that no unverifiable external base may emit an override at any confidence. RESTORE this mutant — unretire, do not re-add — when an external-base override becomes DERIVABLE (an index-backed base declaration rather than a first-parent guess); php/external-override's forbid rows must be inverted at that same moment, and they are named here so the two moves travel together.",
+    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — php external-override pin. RETIRED this round: the edge it removes is never emitted, so the transform is a no-op and the mutant survived (0 -> 0). See retirementReason; php/re-add-external-override-guess covers the same surface in the other direction.",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
   },
 
@@ -18851,6 +18886,21 @@ async function main() {
   // retired mutant run again and survive — the worst outcome, because the run
   // went red for a pass nobody was still relying on.
   const retired = MUTANTS.filter((m) => m.retired)
+  // ...and this is the REPORTING that comment promises, which was not happening: `retired` was
+  // computed and then used only as a filter, so a retired mutant was excluded in silence and a
+  // run that excludes a pin reads exactly like a run whose pin passed. Measured on the php lane
+  // this round — `php/drop-external-override-guess` survived a scoped run (0 -> 0 failures) and
+  // the retirement that followed left nothing in the output to distinguish "excluded" from
+  // "killed". A retirement with no stated reason is a silent pass, so a missing
+  // `retirementReason` is called out rather than printed as a bare row.
+  if (retired.length) {
+    console.log(`${retired.length} RETIRED mutant(s) - NOT run; each is excluded for a stated reason:`)
+    for (const m of retired) {
+      console.log(`  retired  ${m.id}${m.retiredOn ? `  (retired ${m.retiredOn})` : "  (NO retirement date)"}`)
+      if (!m.retirementReason) console.log(`      BAD-FACT: retired with NO reason stated - a bare retirement is a silent pass`)
+    }
+    console.log("")
+  }
   const selected = MUTANTS.filter((m) => {
     if (m.retired) return false
     // Dev-only iteration filter (unset in gates): BB_MUTANT_ONLY="svelte/" or a full mutant id.
