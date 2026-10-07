@@ -110,8 +110,11 @@ function declAttrAt(n: Node): string | undefined {
   return undefined
 }
 
+// `n.namedChild(0)` is `Node | null` (a child index can also be out of range), so the
+// declared `Node | undefined` return was a claim the expression did not make: the two
+// are unified here, once, instead of at the callers.
 function firstNamed(n: Node): Node | undefined {
-  return n.namedChildCount > 0 ? n.namedChild(0) : undefined
+  return n.namedChildCount > 0 ? (n.namedChild(0) ?? undefined) : undefined
 }
 
 function findDeep(n: Node, pred: (c: Node) => boolean): Node | null {
@@ -139,7 +142,12 @@ function findShallow(n: Node, pred: (c: Node) => boolean): Node | null {
  * quoted atom is a name only when every `.`-separated segment starts uppercase
  * (`:"Elixir.Foo"` yes, `:"foo/bar"` no); a computed name is unreadable.
  */
-function moduleName(args: Node | undefined): string {
+// The three name readers below take `Node | null | undefined` because that is what the
+// call sites hand them (`n.namedChildCount > 1 ? n.namedChild(1) : undefined` is
+// `Node | null | undefined`): both `null` and `undefined` mean "no argument node", and
+// each body's first line already treats them the same way. Narrowing the parameter to
+// `undefined` made eight of those calls type errors for a case the bodies handle.
+function moduleName(args: Node | null | undefined): string {
   if (!args) return ""
   const first = firstNamed(args)
   if (!first) return ""
@@ -169,7 +177,7 @@ function moduleName(args: Node | undefined): string {
 }
 
 /** A directive's module name: its FIRST ARGUMENT'S OWN name, never the clause text. */
-function directiveName(args: Node | undefined): string {
+function directiveName(args: Node | null | undefined): string {
   if (!args) return ""
   const first = firstNamed(args)
   if (!first) return ""
@@ -184,7 +192,7 @@ function directiveName(args: Node | undefined): string {
 }
 
 /** A def head's (name, arity), read off the signature call. */
-function defSignature(args: Node | undefined): { name: string; arity: number } | undefined {
+function defSignature(args: Node | null | undefined): { name: string; arity: number } | undefined {
   if (!args || args.type === "keywords") return undefined
   const sig = firstNamed(args)
   if (!sig) return undefined

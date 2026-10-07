@@ -35,7 +35,26 @@ import { readFileSync, writeFileSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { join } from "node:path"
 
-const arg = (k: string, d?: string): string | undefined => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
+// `arg` used to be typed `(...): string | undefined`, which made all five option
+// constants below `string | undefined` even though every one of them passes a
+// default, and produced eight type errors at their uses (join, readFileSync,
+// writeFileSync, sha, buildParser). The declaration described a case the call
+// sites make impossible. With a default the answer IS a string — and a flag NAMED
+// WITH NO VALUE is a usage error rather than a silent fallback, because this
+// instrument's entire output is a two-build comparison: quietly substituting a
+// different wasm for the one asked for would produce a report indistinguishable
+// from the requested one. (Previously that case returned `undefined`, which failed
+// later with a path-less TypeError instead of naming the flag.)
+const arg = (k: string, d: string): string => {
+  const i = process.argv.indexOf(k)
+  if (i < 0) return d
+  const v = process.argv[i + 1]
+  if (v === undefined || v.startsWith("--")) {
+    console.error(`usage: ${k} needs a value (got ${v === undefined ? "nothing" : v})`)
+    process.exit(2)
+  }
+  return v
+}
 const REPOS = "$HOME/fixtures/repositories"
 const REPO = arg("--repo", "kong")
 const ROOT = join(REPOS, REPO)
