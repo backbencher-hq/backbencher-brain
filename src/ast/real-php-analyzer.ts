@@ -1227,6 +1227,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // --- Nested named functions: the declarations the symbol walk cannot reach ---
+    this.publishNestedNamedFunctions(rootNode, symbols)
+
     // --- Override relationships (implicit PHP overrides) ---
     this.resolveOverrides(symbols, relationships, context)
 
@@ -1254,6 +1257,145 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     return this.result(symbols, relationships, imports, exports, errors, content, rootNode, detectedFrameworks, patterns)
+  }
+
+  /**
+   * PUBLISH a named function declared inside a CALLABLE — the declaration the symbol walk
+   * structurally cannot reach.
+   *
+   * ## The measured population
+   *
+   * Over all 5,094 admitted php files (tree walk, 2026-10-07): **25** `function_definition` nodes
+   * whose path to the program root passes through a callable, in **4** files. Twenty-two are the
+   * recovery casualties of `markdown.php` — already published by the recovery escape, one layer up
+   * — and the remaining **three** are the Slim test-helper idiom:
+   *
+   *   slim/tests/AppTest.php:1563                  `function handle(...)` inside `testInvokeFunctionName`
+   *   slim/tests/CallableResolverTest.php:30       `function testAdvancedCallable(...)` inside `setUpBeforeClass`
+   *   slim/tests/MiddlewareDispatcherTest.php:32   `function testProcessRequest(...)` inside `setUpBeforeClass`
+   *
+   * Both halves of that measurement matter. The 251 helpers phpunit guards with
+   * `if (!function_exists('assertSame')) { function assertSame(...) {...} }` are NOT nested — a
+   * top-level `if` is not a scope — and the ordinary walk publishes all 251 of them (measured; the
+   * first version of this probe asked only "is the parent a `compound_statement`?" and reported 250
+   * false positives in that one file). What the walk cannot reach is a declaration inside a
+   * CALLABLE: those bodies belong to `walkBody`, whose job is call/read edges and scope frames, and
+   * which never publishes symbols.
+   *
+   * ## Why publication is right, and what it is not
+   *
+   * A named function declared in a body enters PHP's GLOBAL function table when the enclosing code
+   * runs, which is why `collectPhpFileScope` already registers it as a file-scope function VALUE for
+   * resolution ("Global effects, visible everywhere regardless of nesting"). Resolution without
+   * publication is precisely the divergence the orphan-endpoint round fixed, and here it costs more
+   * than a missing symbol: `walkBody` keeps emitting edges SOURCED AT the nested name
+   * (`references testProcessRequest -> ServerRequestInterface`, two of them in the Slim file), so the
+   * store carried edges from a declaration it did not hold. Family check, measured against the
+   * pinned grammars: javascript and typescript publish a nested `function innerHelper() {}`; python
+   * and ruby do not — and PHP's semantics are the javascript ones, not the python ones (a Python
+   * `def` in a `def` is a local binding; a PHP `function` in a method is global).
+   *
+   * The KIND is `function` with the file's NAMESPACE as owner, exactly as a top-level function is
+   * published — not `method` of the enclosing class. "Publication must describe the source" (the
+   * recovery round's rule) is what rejects that alternative: the source writes a function, not a
+   * member, and a method symbol would describe the shape of the tree instead.
+   *
+   * ## The two guards, both measured
+   *
+   * 1. A DAMAGED BODY IS LEFT TO THE RECOVERY ESCAPE. A `function_definition` whose body parent
+   *    `hasError` is skipped: those 22 markdown declarations are not nested functions at all, they
+   *    are class members the parser could not close the body over, and the escape publishes them as
+   *    MEMBERS (this is the difference the fixture `php/recovery-swallowed-members` pins with
+   *    `forbidSymbols`). The probe that produced the 25/4 census used exactly this predicate and
+   *    separated the two populations cleanly: `damagedBody=true` for all 22, `false` for all 3.
+   * 2. ALREADY-PUBLISHED NODES ARE SKIPPED BY RANGE, so the escape and this pass cannot both
+   *    publish one declaration.
+   *
+   * ## What this deliberately does NOT do
+   *
+   * It does not re-walk the nested body. That body has ALREADY been walked by the enclosing
+   * callable's `walkBody`, which is why this pass publishes a symbol and emits no edge of its own —
+   * the alternative would emit every call and read inside the nested function twice, a duplicate no
+   * "at least one" fixture row can see. Known and NOT changed here, because it is an attribution
+   * decision rather than a coverage gap: call/read edges inside a nested function's body are
+   * attributed to the ENCLOSING callable (`calls registerHelper -> decorate`, line 82 of the fixture,
+   * where the call really belongs to `nestedHelper`). The fixture records the current behaviour and
+   * does not pin it as correct.
+   */
+  private publishNestedNamedFunctions(rootNode: Node, symbols: ASTEngine.UniversalSymbol[]): void {
+    const published = new Set<string>()
+    for (const s of symbols) {
+      if (s.kind !== ASTEngine.SymbolKind.Function && s.kind !== ASTEngine.SymbolKind.Method) continue
+      published.add(this.rangeKey(s.name, s.range))
+    }
+    const segments = this.namespaceSegments(rootNode)
+    const stack: Array<{ n: Node; ns: string | undefined; encl: string | null }> = [
+      { n: rootNode, ns: undefined, encl: null },
+    ]
+    while (stack.length > 0) {
+      const { n, ns, encl } = stack.pop()!
+      const t = n.type
+      // Namespace in force: the braced form applies to its own subtree, the semicolon form to the
+      // segment its siblings belong to — the same two rules the main walk encodes.
+      let childNs = ns
+      if (t === "namespace_definition") {
+        const nm = this.findChildByType(n, "namespace_name")?.text
+        if (nm && !this.findChildByType(n, "compound_statement")) childNs = nm
+      }
+      if (t === "program") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const child = n.namedChild(i)
+          if (!child) continue
+          const segNs = child.type === "namespace_definition" ? undefined : segments.get(child.startIndex)
+          stack.push({ n: child, ns: segNs ?? ns, encl: null })
+        }
+        continue
+      }
+      let childEncl = encl
+      if (t === "function_definition" || t === "method_declaration") {
+        const nameNode = n.childForFieldName("name")
+        if (t === "function_definition" && encl !== null) {
+          const body = n.childForFieldName("body")
+          const damaged = body ? (body as any).hasError === true : false
+          const name = nameNode?.text
+          if (name && !damaged && !published.has(this.rangeKey(name, this.nodeToRange(n)))) {
+            published.add(this.rangeKey(name, this.nodeToRange(n)))
+            symbols.push({
+              name,
+              kind: ASTEngine.SymbolKind.Function,
+              range: this.nodeToRange(n),
+              visibility: "public",
+              parameters: this.extractParameters(n),
+              returnType: this.extractReturnType(n),
+              complexity: this.calculateNodeComplexity(n),
+              ownerName: childNs,
+              ownerKind: childNs ? ASTEngine.SymbolKind.Namespace : undefined,
+              metadata: {
+                phpSpecific: true,
+                fqn: childNs ? `${childNs}\\${name}` : name,
+                namespace: childNs,
+                nestedIn: encl,
+              },
+            })
+          }
+        }
+        childEncl = nameNode?.text ?? encl
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push({ n: c, ns: childNs, encl: childEncl })
+      }
+    }
+  }
+
+  /**
+   * Identity of a declaration for the already-published guard. `startIndex` when the range carries
+   * it (every range this lane builds does, via `nodeToRange`) — a node offset is exact, where a
+   * line/column pair is only as exact as the positions the tree reports.
+   */
+  private rangeKey(name: string, range: ASTEngine.UniversalSymbol["range"] | undefined): string {
+    const at = range?.startIndex ?? `${range?.startLine ?? ""}:${range?.startColumn ?? ""}`
+    return `${name}\u0000${at}`
   }
 
   /**

@@ -371,6 +371,130 @@ export const PHP_RECOVERY_MUTANTS: Mutant[] = [
   },
 ]
 
+/**
+ * The NESTED NAMED FUNCTION round — `publishNestedNamedFunctions`.
+ *
+ * Four mutants, one per way the rule can be wrong, and every one of them is a reading that was
+ * actually available rather than a hypothetical:
+ *
+ *   drop      the pre-fix state itself (the symbol pass simply does not run);
+ *   as-method the rejected READING the source vetoes: a function written in a method's body
+ *             published as a member of that method's class;
+ *   bare      the second rejected reading: the same declaration published with NO owner, which in
+ *             a namespaced file breaks the ownership rule every other function in the same file
+ *             follows;
+ *   damaged   removing the damage guard, so the class members a broken body swallowed are ALSO
+ *             published as nested globals — the reading that would make `markdown.php`'s 22
+ *             recovered members both members and globals.
+ *
+ * Each transform is written off the RESULT's own metadata (`metadata.nestedIn`, the callable the
+ * declaration sits in; `metadata.recoveredFromBody`, the escape's marker) rather than off names,
+ * so a mutant cannot silently stop matching when the fixture is edited — the failure mode that
+ * left swift/drop-container-subscript-uses surviving for months.
+ */
+const PHP_NESTED_FUNCTION_MUTANTS: Mutant[] = [
+  {
+    id: "php/drop-nested-function-symbols",
+    language: "php",
+    defectClass: "symbol-loss",
+    description:
+      "THE PRE-FIX STATE, faithfully: every nested named function disappears from the store and so do the `contains` edges that give it an owner. Not a hypothetical — it is what all 5,094 admitted files produced before this round, where the only trace of the declaration was an edge SOURCED AT its name (Slim's two `references testProcessRequest -> ...`) or calling it (`calls useHelper -> nestedHelper`). Written off `metadata.nestedIn`, the marker the pass itself sets, so the revert stays faithful to whatever the fixture looks like. Caught by php/nested-named-functions' `expectSymbols`, `expectSymbolCount` and the two `contains` rows.",
+    transform: r => {
+      const nested = (r?.symbols ?? []).filter((s: any) => s.metadata?.nestedIn)
+      if (!nested.length) return r
+      const keys = new Set(nested.map((s: any) => `${String(s.name)}\u0000${String(s.ownerName ?? "")}`))
+      return {
+        ...r,
+        symbols: (r?.symbols ?? []).filter((s: any) => !s.metadata?.nestedIn),
+        relationships: (r?.relationships ?? []).filter(
+          (x: any) => !(String(x.type) === "contains" && keys.has(`${String(x.target)}\u0000${String(x.source ?? "")}`)),
+        ),
+      }
+    },
+  },
+  {
+    id: "php/publish-nested-functions-as-methods",
+    language: "php",
+    defectClass: "fabricated-symbol",
+    description:
+      "THE REJECTED READING the source vetoes: a nested function published as a METHOD of the class whose method declared it. Reproduced generically off the result — the enclosing class is found by looking up the callable the symbol names in `metadata.nestedIn` in the symbol table and taking ITS owner, which is exactly how a reader would resolve it, so no class name is hardcoded. The symbol becomes a member that the source does not declare, and the store gains a `contains NestedHost -> nestedHelper` edge a consumer would use to resolve an inherited call. Caught by php/nested-named-functions' `forbidSymbols` row (ownerName NestedHost) and by its `expectSymbols` row (ownerName must be the namespace).",
+    transform: r => {
+      const syms = (r?.symbols ?? []) as any[]
+      const ownerOfCallable = new Map<string, string>()
+      for (const s of syms) {
+        if (s.kind !== "method" && s.kind !== "function") continue
+        if (s.ownerName) ownerOfCallable.set(String(s.name), String(s.ownerName))
+      }
+      let changed = false
+      const symbols = syms.map((s: any) => {
+        const encl = s.metadata?.nestedIn
+        if (!encl) return s
+        const cls = ownerOfCallable.get(String(encl))
+        if (!cls) return s
+        changed = true
+        return { ...s, kind: "method", ownerName: cls, ownerKind: "class", metadata: { ...(s.metadata ?? {}), mutant: true } }
+      })
+      if (!changed) return r
+      // the containment edge follows the owner, and the namespace's edge goes away
+      const pairs = new Set(symbols.filter((s: any) => s.metadata?.nestedIn).map((s: any) => `${String(s.ownerName)}\u0000${String(s.name)}`))
+      const relationships = (r?.relationships ?? []).filter(
+        (x: any) => !(String(x.type) === "contains" && [...pairs].some((p) => p.endsWith(`\u0000${String(x.target)}`))),
+      )
+      for (const p of pairs) {
+        const [owner, name] = p.split("\u0000")
+        relationships.push({ source: owner, target: name, type: "contains", confidence: 1.0, metadata: { mutant: true } } as any)
+      }
+      return { ...r, symbols, relationships }
+    },
+  },
+  {
+    id: "php/publish-nested-functions-as-bare-globals",
+    language: "php",
+    defectClass: "fabricated-symbol",
+    description:
+      "THE SECOND REJECTED READING: the nested function is published, its `contains` edge is kept, but it carries NO owner. In a namespaced file every top-level function is owned by its namespace, so this makes two function symbols in ONE file follow two ownership rules — and PHP's global-table name for the declaration is `Fixture\\NestedFunctions\\innerValue`, not `innerValue`, so an ownerless symbol is a name no caller can spell. It is also the state a reader would land on by treating \"nested\" as \"file-level but unattached\". Caught by the fixture's `forbidSymbols` row with `ownerName: null` and by its `expectSymbols` ownerName.",
+    transform: r => {
+      const nested = (r?.symbols ?? []).filter((s: any) => s.metadata?.nestedIn && s.ownerName)
+      if (!nested.length) return r
+      const keys = new Set(nested.map((s: any) => `${String(s.name)}\u0000${String(s.ownerName)}`))
+      return {
+        ...r,
+        symbols: (r?.symbols ?? []).map((s: any) =>
+          s.metadata?.nestedIn ? { ...s, ownerName: undefined, ownerKind: undefined, metadata: { ...(s.metadata ?? {}), mutant: true } } : s,
+        ),
+        relationships: (r?.relationships ?? []).filter(
+          (x: any) => !(String(x.type) === "contains" && keys.has(`${String(x.target)}\u0000${String(x.source ?? "")}`)),
+        ),
+      }
+    },
+  },
+  {
+    id: "php/publish-damaged-body-declarations-as-nested-functions",
+    language: "php",
+    defectClass: "double-emission",
+    description:
+      "THE DAMAGE GUARD REMOVED. The pass skips a declaration whose body parent `hasError`, because those 22 markdown.php declarations are class members the parser could not close the body over — MEMBERS, published as members by the recovery escape. Remove the guard and they are published a SECOND time as namespace-owned globals, which is the reading that would make one declaration both a member and a global. Reproduced off the escape's own marker: every symbol with `metadata.recoveredFromBody` gains a namespace-owned twin in the same file, plus the containment edge that follows. Caught by php/recovery-swallowed-members — its `expectSymbolCount` (`swallowedA` exactly 1) and its `forbidSymbols` rows were authored for the escape and catch the duplicate without being touched.",
+    transform: r => {
+      const syms = (r?.symbols ?? []) as any[]
+      const recovered = syms.filter((s: any) => s.metadata?.recoveredFromBody === true && s.ownerName)
+      if (!recovered.length) return r
+      const ns = syms.find((s: any) => s.kind === "namespace")?.name
+      const extra: any[] = []
+      for (const s of recovered) {
+        const owner = ns ?? undefined
+        extra.push({ ...s, kind: "function", ownerName: owner, ownerKind: owner ? "namespace" : undefined, metadata: { ...(s.metadata ?? {}), mutant: true, nestedIn: String(s.ownerName) } })
+      }
+      const relationships = [...(r?.relationships ?? [])]
+      for (const s of extra) {
+        if (!s.ownerName) continue
+        relationships.push({ source: s.ownerName, target: s.name, type: "contains", confidence: 1.0, metadata: { mutant: true } } as any)
+      }
+      return { ...r, symbols: [...syms, ...extra], relationships }
+    },
+  },
+]
+
 PHP_MUTANTS.push(...PHP_RECEIVER_OWNER_MUTANTS)
 PHP_MUTANTS.push(...PHP_PROJECTION_MUTANTS)
 PHP_MUTANTS.push(...PHP_RECOVERY_MUTANTS)
+PHP_MUTANTS.push(...PHP_NESTED_FUNCTION_MUTANTS)
