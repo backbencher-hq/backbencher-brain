@@ -282,6 +282,47 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      else if (type === "module_declaration") {
+        // JLS 7.7 — the module system. This branch did not exist: the analyzer
+        // emitted 0 symbols, 0 relationships and 0 imports on a `module-info.java`,
+        // so Java's own named export mechanism produced no graph at all.
+        //
+        // MEASURED (java-construct-probe.mts, whole corpus, 3,275 `.java` files,
+        // all parsed, 0 failed): 3 `module-info.java` on disk, 3 parsed as
+        // `module_declaration` with root.hasError=false, carrying 24
+        // `exports_module_directive` and 12 `requires_module_directive` nodes.
+        // The strings "module_declaration" and "exports_module_directive" occurred
+        // nowhere in this file before this branch, so those 24 directives were 24
+        // exports edges that did not exist.
+        //
+        // The module NAME is a declaration (JLS 7.7): `module com.google.common`
+        // is the only place that name is written, and another module's
+        // `requires` clause names it. So it is a `Module` symbol.
+        this.emitJavaModuleDeclaration(
+          node,
+          symbols,
+          relationships,
+          (moduleName, range, transitive) => {
+            imports.push({
+              module: moduleName,
+              items: [],
+              isDefault: false,
+              range,
+              // The module system is a real dependency relation and the family
+              // records dependencies on the IMPORTS channel (ImportInfo ->
+              // brain_import), not as `imports` relationship rows. Emitting
+              // `RelationshipType.Imports` edges here would also add a SECOND
+              // un-audited type to this lane: rel-type-coverage-gate.ts reads the
+              // analyzer's constructible types and java's audited set is eight,
+              // so an `imports` edge takes the lane from one DERIVATION finding
+              // to two, for 12 rows, against a type no java oracle checks.
+              metadata: { isModuleRequires: true, ...(transitive ? { transitive: true } : {}) },
+              importType: transitive ? "java-module-requires-transitive" : "java-module-requires",
+            })
+          },
+        )
+      }
+
       else if (
         type === "class_declaration" ||
         type === "record_declaration" ||
@@ -523,6 +564,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Other.Inner) silently repoint the alias. The only symbolMap getter
           // is FQN-keyed (override BFS), so bare keys are informational.
           if (!symbolMap.has(name)) symbolMap.set(name, sym)
+
+          // JLS 4.4: the type parameters this class/interface/record declares are
+          // DECLARATIONS, and until this call they were recorded only as a string
+          // list on the class symbol — while the declared-type walk emitted
+          // `references` edges TO those very strings. The declaration existed as
+          // metadata and every edge naming it pointed at nothing that could ever
+          // resolve. See emitJavaTypeParameterSymbols for the measurement.
+          this.emitJavaTypeParameterSymbols(node, name, kind, type, symbols)
 
           newContext = {
             node,
@@ -822,6 +871,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               else byName.set(name, [sym])
             }
           }
+
+          // JLS 8.4.4 / 4.4: a METHOD's own type parameters (`<T extends Number>
+          // T pick(T a, T b)`) are declarations in exactly the sense the class
+          // case above describes, and they were the same gap: a `references ->
+          // T` edge with nothing behind it.
+          this.emitJavaTypeParameterSymbols(node, name, ASTEngine.SymbolKind.Method, type, symbols)
 
           newContext = {
             node,
@@ -1347,14 +1402,52 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const refSource = parentContext?.name || parentContext?.symbolRef?.name || "global"
         if (kids.length > 0) {
           const recv = kids[0]
-          const recvName = recv.type === "type_identifier" || recv.type === "identifier" ? recv.text : this.extractJavaTypeBaseName(recv)
+          // JD-J16 (2026-10-05, whole-corpus probe): the receiver used to be
+          // named by `extractJavaTypeBaseName`, which returns the node's OWN TEXT
+          // for anything that is not a `generic_type`/`scoped_type_identifier`.
+          // For a receiver that is not a type at all, that text is the whole
+          // construct, so the edge's target was a CALL or a STRING LITERAL:
+          //
+          //   references -> "newArrayList(v3(), v4())"
+          //     android/guava-testlib/.../google/MultimapPutIterableTester.java L51, L64
+          //   references -> "\"com.google.common.\""
+          //     android/guava-tests/test/.../WriteReplaceOverridesTest.java L59
+          //
+          // JLS 15.13 says the first operand of a method reference is an
+          // ExpressionName or a ReferenceType — neither a method invocation nor a
+          // string literal — so these edges named something the language cannot
+          // declare. They survived the production path: pool-worker's
+          // `filterNoiseRelationships` bans `{}`, backticks, angle brackets and
+          // newlines in a target leaf, and a call's text carries none of them.
+          //
+          // MEASURED receiver node types over every `method_reference` in the
+          // corpus (1,117 nodes, 306 files): identifier 1,000, field_access 68,
+          // this 25, method_invocation 13, generic_type 9, string_literal 2.
+          // The two shapes that cannot be a name are named here rather than
+          // pattern-matched, and `identifier` — the shape the differential's
+          // `references:getStatus:String` oracle already audits — is left exactly
+          // as it was, so an audited behaviour does not move.
+          const recvType = recv.type
+          const recvName =
+            recvType === "type_identifier" || recvType === "identifier"
+              ? recv.text
+              : recvType === "scoped_type_identifier" || recvType === "generic_type" || recvType === "field_access"
+                ? this.extractJavaTypeBaseName(recv)
+                : null
           // this::m / super::m are instance-receiver method refs — the receiver
           // is the enclosing instance, not a named type; int[]::new is a
           // primitive-array constructor ref. Neither references a TYPE symbol
           // (probe 2026-09-08: m->this and m->int[] were noise edges).
           const isKeywordReceiver = recvName === "this" || recvName === "super"
-          const isArrayTypeRef = recv.text.endsWith("[]") || recv.type === "array_type"
-          if (recvName && !isKeywordReceiver && !isArrayTypeRef) {
+          const isArrayTypeRef = recv.type === "array_type" || recv.text.endsWith("[]")
+          // `Outer.this::m` (JLS 15.8.4) parses as a `field_access` whose text
+          // ends in `.this`. Its LEAF is the keyword, not a name, and the keyword
+          // is in pool-worker's NOISE_TARGETS — so the row was already being
+          // discarded on the way to the index while the analyzer still published
+          // it. `StandardTable.this` twice in guava's StandardTable.java (L808,
+          // L883) is the measured population.
+          const isQualifiedThis = recvName !== null && (recvName === "this" || recvName.endsWith(".this"))
+          if (recvName && !isKeywordReceiver && !isArrayTypeRef && !isQualifiedThis && this.isJavaNameShape(recvName)) {
             relationships.push({
               source: refSource,
               target: recvName,
@@ -2752,6 +2845,28 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return undefined
   }
 
+  /**
+   * Can this string be a java NAME? Letters, digits, `_`, `$`, and `.` for a
+   * qualified name. No regex (analyzers carry no regex literals, R2 register) —
+   * a character walk, the same shape as the census instrument's.
+   *
+   * Used to refuse an edge whose target is not a name at all, rather than to
+   * invent one. `newArrayList(v3(), v4())` and `"com.google.common."` both fail
+   * it; `V`, `com.google.common.collect`, `ImmutableList.Builder` and
+   * `CollectionFeature.NONE` all pass.
+   */
+  private isJavaNameShape(s: string): boolean {
+    if (!s) return false
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i]
+      const ok =
+        (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") ||
+        c === "_" || c === "$" || c === "."
+      if (!ok) return false
+    }
+    return true
+  }
+
   private extractJavaTypeBaseName(typeNode: Node): string {
     if (typeNode.type === "generic_type") {
       const idNode = this.findChildByType(typeNode, "type_identifier") || this.findChildByType(typeNode, "scoped_type_identifier")
@@ -3108,6 +3223,244 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return params.length > 0 ? params : undefined;
+  }
+
+  /**
+   * JLS 7.7 — a `module-info.java` compilation unit.
+   *
+   * WHAT IS EMITTED, AND WHY ONLY THIS.
+   *
+   *   `module M { … }`        a `Module` symbol. It carries no `ownerName`, so
+   *                           the existing post-pass also lists it in `exports[]`
+   *                           — correct, because `requires M` is how another
+   *                           module names it.
+   *   `exports P;`            an `exports` edge M -> P, plus a `Namespace`
+   *                           symbol for P owned by M. This is the type's whole
+   *                           point: `exports` means "this unit makes that
+   *                           visible to importers", and JLS 7.7.2 is Java's own
+   *                           named version of it. Both endpoints resolve,
+   *                           because both are declared in this one file.
+   *   `requires M2;`          an `imports[]` entry — see the call site for why
+   *                           this channel and not a relationship.
+   *
+   * WHAT IS DELIBERATELY NOT EMITTED, with the measurement that rules each one.
+   * `opens_module_directive`, `provides_module_directive` and
+   * `uses_module_directive` are node types the pinned grammar DOES produce (they
+   * are in tree-sitter-java's node-types), and this corpus contains ZERO of all
+   * three: 0, 0 and 0 nodes over 3,275 files. Java therefore HAS these
+   * constructs and this corpus does not exercise them, which is a different
+   * statement from "Java lacks them" and the reason no label is invented for
+   * them. `opens` grants deep reflective access and is not an export;
+   * `provides` declares a service implementation and `uses` declares a service
+   * consumer. Each of those is a defensible label and none of them can be
+   * checked against a corpus that has never written one — an unverifiable label
+   * on an edge is exactly what the fabrication rule forbids. Recorded as an open
+   * item rather than shipped as a guess.
+   *
+   * The `to` clause of a qualified export (`exports P to M1, M2;`) is read and
+   * carried in metadata. It is not a second `exports` edge: it RESTRICTS who may
+   * read P, and an edge from M to M1 saying "exports" would assert the opposite
+   * of what the clause says.
+   *
+   * Node shapes are probe-verified against the pinned wasm, not assumed
+   * (java-node-shape-probe.mts):
+   *   module_declaration         field `name` -> scoped_identifier | identifier,
+   *                              field `body` -> module_body
+   *   exports_module_directive   FIRST named child is the package; any `to`
+   *                              clause follows the anonymous `to` token
+   *   requires_module_directive  first named child is the module name, UNLESS a
+   *                              `requires_modifier` (`transitive`/`static`)
+   *                              comes first — so the modifier is skipped by node
+   *                              type, never by position
+   */
+  private emitJavaModuleDeclaration(
+    declNode: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    onRequires: (moduleName: string, range: ASTEngine.UniversalSymbol["range"], transitive: boolean) => void,
+  ): void {
+    const nameNode = declNode.childForFieldName("name") || this.findChildByType(declNode, "scoped_identifier") || this.findChildByType(declNode, "identifier")
+    if (!nameNode) return
+    const moduleName = nameNode.text
+    if (!moduleName) return
+
+    symbols.push({
+      name: moduleName,
+      kind: ASTEngine.SymbolKind.Module,
+      range: this.nodeToRange(nameNode),
+      visibility: "public",
+      comments: [],
+      metadata: { nodeType: "module_declaration", isJavaModule: true },
+    })
+
+    const body = declNode.childForFieldName("body") || this.findChildByType(declNode, "module_body")
+    if (!body) return
+
+    // Declared package -> its directive, so a package exported twice (two
+    // directives, or a repeated name) yields one Namespace symbol and one edge
+    // rather than two rows for one declaration.
+    const emittedPackages = new Set<string>()
+    const stack: Node[] = [body]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "exports_module_directive") {
+        const pkgNode = this.findChildByType(n, "scoped_identifier") || this.findChildByType(n, "identifier")
+        if (pkgNode && pkgNode.text && !emittedPackages.has(pkgNode.text)) {
+          const pkgName = pkgNode.text
+          emittedPackages.add(pkgName)
+          symbols.push({
+            name: pkgName,
+            kind: ASTEngine.SymbolKind.Namespace,
+            // The package is named on the `exports` line, not on `module`.
+            range: this.nodeToRange(pkgNode),
+            visibility: "public",
+            ownerName: moduleName,
+            ownerKind: ASTEngine.SymbolKind.Module,
+            metadata: { nodeType: "exports_module_directive", isExportedPackage: true },
+          })
+          relationships.push({
+            source: moduleName,
+            target: pkgName,
+            type: ASTEngine.RelationshipType.Exports,
+            // JLS 7.7.2 is structural syntax: the directive is written, so this
+            // is a parse fact and not a heuristic.
+            confidence: 1.0,
+            // The line the PACKAGE is named on — the directive's own name node.
+            line_number: pkgNode.startPosition.row + 1,
+            metadata: {
+              relationshipType: "module_exports",
+              ...(this.readJavaQualifiedExportTargets(n) ? { qualifiedTo: this.readJavaQualifiedExportTargets(n) } : {}),
+            },
+          })
+        }
+      } else if (n.type === "requires_module_directive") {
+        // Skip the `transitive`/`static` modifier by NODE TYPE: the modifier is
+        // the only named child that is not a name node, so asking for the name
+        // shape is what keeps `requires transitive com.x` from publishing the
+        // module name as "transitive".
+        let modNode: Node | null = null
+        let transitive = false
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "requires_modifier") { transitive = true; continue }
+          if (c.type === "scoped_identifier" || c.type === "identifier") { modNode = c; break }
+        }
+        if (modNode && modNode.text) {
+          onRequires(modNode.text, this.nodeToRange(modNode), transitive)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  /** The `to M1, M2` target list of a qualified export, or null when unqualified. */
+  private readJavaQualifiedExportTargets(directive: Node): string[] | null {
+    const out: string[] = []
+    // The `to` token is ANONYMOUS in this grammar — there is no
+    // `to_module_directive` node, which the whole-corpus probe confirms (0
+    // occurrences, and the node type is absent from the grammar's output). So the
+    // clause boundary is read from the children that follow the package: every
+    // name-shaped node after the first is a target module, and the `,`
+    // separators are anonymous.
+    let seenPackage = false
+    for (let i = 0; i < directive.namedChildCount; i++) {
+      const c = directive.namedChild(i)
+      if (!c) continue
+      const isName = c.type === "scoped_identifier" || c.type === "identifier"
+      if (!isName) continue
+      if (!seenPackage) { seenPackage = true; continue }
+      out.push(c.text)
+    }
+    return out.length > 0 ? out : null
+  }
+
+  /**
+   * JLS 4.4 — publish each DECLARED type variable as a `SymbolKind.Type` symbol.
+   *
+   * WHY. The analyzer already read every one of them: `getJavaGenericParameters`
+   * above put `["K","V"]` on the class symbol's `genericParameters`, and the
+   * declared-type walk emitted a `references` edge to each string it met in a
+   * field type, parameter type, return type, cast or `throws` clause. So the
+   * GRAPH already asserted that `Box` references `K` — and no symbol named `K`
+   * existed anywhere, so the assertion had nothing to bind to. The rule-R7 /
+   * endpoint question ("do both ends resolve to a real symbol?") could not be
+   * answered for those edges at any rate above zero, and the honest cause was
+   * not cross-file reach: the declaration was in the SAME FILE and was simply
+   * never published.
+   *
+   * MEASURED, not assumed (instrument
+   * `validation/m14/measurements/java/java-construct-probe.mts`, whole corpus,
+   * 3,275 `.java` files, all parsed, 0 failed): 9,780 `type_parameter` nodes
+   * over 1,543 files (47.1% of the corpus), 55 distinct declared variable
+   * names. On the 250-file store slice this produced 1,588 `references` rows
+   * naming a declaration that existed nowhere in the index (`V` 815, `K` 773).
+   *
+   * WHY `Type` AND NOT SOMETHING ELSE. `SymbolKind.Type = "type"` is declared
+   * at `src/ast/types.ts:18`, `CONTAINER_TYPES_LOOKUP` in parallel-indexer
+   * already treats `type` as a container kind, and this analyzer's own
+   * evidence classifier at `resolveEnclosingTypeScope` already tests for it.
+   *
+   * THE CONTAINMENT EDGE IS NOT INVENTED HERE. The symbol carries `ownerName`,
+   * so the existing post-pass (`for (const s of symbols) { const _owner =
+   * s.ownerName || s.scope; … }`) emits `owner -> variable` at confidence 1.0
+   * with the variable's own declaration line — one code path for every member,
+   * not a second spelling of containment.
+   *
+   * WHY THE NAME STAYS BARE. A `references -> V` edge names `V`. Publishing
+   * the symbol as `Box.V` would leave every one of those edges unresolved
+   * again, which is the defect being fixed. The cost is honest and recorded:
+   * a class type variable and a method type variable that share a spelling in
+   * one file (`class A<T> { <T> T m(T t) {} }`) are two symbols with one name,
+   * and the store's name resolution picks one. That is a genuine ambiguity, not
+   * a fabrication — both declarations are real, and JLS 6.3 scopes both to the
+   * body that names them.
+   *
+   * The `contains` post-pass skips nothing here: `ownerName` is set, so these
+   * do NOT reach the `exports[]` channel (a type variable is not an importable
+   * top-level unit — `requires Box.V` is not a thing any module can write).
+   */
+  private emitJavaTypeParameterSymbols(
+    declNode: Node,
+    ownerName: string,
+    ownerKind: ASTEngine.SymbolKind,
+    declaredOn: string,
+    symbols: ASTEngine.UniversalSymbol[],
+  ): void {
+    const typeParamsNode = this.findChildByType(declNode, "type_parameters");
+    if (!typeParamsNode) return;
+    for (let i = 0; i < typeParamsNode.namedChildCount; i++) {
+      const tp = typeParamsNode.namedChild(i);
+      if (!tp || tp.type !== "type_parameter") continue;
+      // Probe-verified against the pinned wasm (java-node-shape-probe.mts):
+      // a `type_parameter` has NO `name` field. Its FIRST named child is always
+      // the `type_identifier` holding the variable, and a bound, when written,
+      // follows in a `type_bound` sibling (`<V extends Comparable<? super V>>`).
+      const nameNode = tp.childForFieldName("name") || this.findChildByType(tp, "type_identifier");
+      if (!nameNode) continue;
+      const tpName = nameNode.text;
+      if (!tpName) continue;
+      const bound = this.findChildByType(tp, "type_bound");
+      symbols.push({
+        name: tpName,
+        kind: ASTEngine.SymbolKind.Type,
+        // The VARIABLE's own line, so the symbol and the `contains` edge that
+        // names it cannot disagree (M59 #825's rule, applied to the position).
+        range: this.nodeToRange(nameNode),
+        ownerName,
+        ownerKind,
+        metadata: {
+          nodeType: "type_parameter",
+          isTypeParameter: true,
+          declaredOn,
+          declarationOrder: i,
+          ...(bound ? { bound: bound.text } : {}),
+        },
+      });
+    }
   }
 
   /**

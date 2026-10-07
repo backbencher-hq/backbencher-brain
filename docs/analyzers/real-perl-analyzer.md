@@ -51,16 +51,91 @@ is a lexical and is not emitted.
 
 ## Relationship ontology
 
-| Relationship | Rule | Carries a line |
+The table below was measured, not derived. Source derivation -- counting which
+`RelationshipType.X` symbols appear in the analyzer's text -- answers only whether a
+type is CONSTRUCTIBLE, and claiming coverage from it misled this programme for a
+week. Every count here comes from production `parseFile`
+(`src/ast/pool-worker.ts`) over the DERIVED perl population, and the instrument
+prints the population beside every number:
+
+    bun script/m14/perl-ontology-census.mts --fresh
+
+**The population.** `git ls-files` per repository under
+`$HOME/fixtures/repositories`, files at most 512 KiB, whose
+`detectLanguageFromPath` is `perl` -- the same derivation
+`script/m14/ontology-coverage-gate.ts` uses, so the two instruments describe one
+surface. Measured on this disk: **5,127 admitted files across 27 repositories**,
+of which perl5-core is 1,143, Moose 962, and **705 are inside the `haskell`
+repository** (its perl test fixtures), which no `perl-*` directory glob finds.
+Walk: 5,127/5,127 (100.00%), 0 files threw.
+
+**The two channels are separate and are never added together.** `ParseResult`
+carries `imports: ImportInfo[]` and `exports: ExportInfo[]` on their own
+channels, which the parallel-indexer persists to the `brain_import` table; no
+analyzer in the fleet emits a relationship row typed `imports` or `exports`. A
+type absent from the relationship tally while `imports[]` is non-zero is
+therefore not a defect.
+
+### Verdicts, one per type, each with the number behind it
+
+| Relationship | Verdict | Edges | Files | Rule |
+| --- | --- | --- | --- | --- |
+| `calls` | **EMITTED** | 62,207 | 4,073 | `function_call_expression`, `ambiguous_function_call_expression` and `method_call_expression`; target = the receiver-qualified owner where the source proves one, else the leaf; source = the enclosing sub. Carries the callee node's line. |
+| `contains` | **EMITTED** | 22,535 | 2,328 | one edge per owned member: subs, package globals, `use constant` names, Moose attributes, class fields. Carries the CHILD's name line. |
+| `overrides` | **EMITTED** | 7,894 | 1,135 | a class method whose name the declared base also declares. Carries the OVERRIDING method's own declaration line. |
+| `instantiates` | **EMITTED** | 2,864 | 1,400 | a concrete package invocant on `->new`, or `new` with a named class argument. Carries the invocant node's line. |
+| `extends` | **EMITTED** | 1,767 | 1,345 | `use parent` / `use base` / `use Mojo::Base` (named **or** flag-only), an `@ISA` / `$ISA` assignment, and Moo's `extends 'X'`. Carries the naming node's line. |
+| `uses` | **EMITTED** (was 0) | 922 | 283 | a CODE REFERENCE to a named sub: `\&name` and `\&Pkg::name`. Carries the `varname`'s line. Added 2026-10-05. |
+| `implements` | **EMITTED** | 661 | 402 | Moo `with 'R'` and `use role 'R'`. Carries the naming node's line. |
+| `references` | **EMITTED** (was 0) | 688 | 303 | a class, role or method NAMED IN A QUERY: `->isa('C')`, `->DOES('R')`, `->can('m')`. Carries the queried name's line. Added 2026-10-05. |
+| `imports` | **EMITTED, on the `imports[]` channel** | 21,525 | 3,738 | `use Module ...` and `require Module`; **never** `no`. 0 relationship rows, by design -- see PERLD15's sibling argument in the spec and PERLD12. |
+| `exports` | **EMITTED, on the `exports[]` channel** | 615 | 109 | `@EXPORT`, `@EXPORT_OK` and the `%EXPORT_TAGS` keys. 0 relationship rows, ruled with a measurement in `PERLD15`. |
+
+**8/10 fired on the relationship channel**; 10/10 have a verdict once the two
+separate channels are counted. `uses` and `references` were both `0` at handover
+and both were GAP verdicts -- the language has the construct -- measured by
+`script/m14/perl-construct-probe.mts` and implemented, with the refusals their
+own counts demand (below).
+
+### Ruled, with the measurement that rules it
+
+A ruling with no corpus measurement is a defect, because `overrides` had a prose
+justification for a whole wave and it was wrong. Each of these is falsifiable: a
+probe finding a non-zero count overturns it.
+
+| Construct | Measured | Verdict |
 | --- | --- | --- |
-| `contains` | one edge per owned member: subs, package globals, `use constant` names, Moose attributes, class fields | no, by design |
-| `calls` | `function_call_expression`, `ambiguous_function_call_expression` and `method_call_expression`, target = the receiver-qualified owner where the source proves one, else the leaf; source = the enclosing sub | the callee node |
-| `instantiates` | a concrete package invocant on `->new`, or `new` with a named class argument | the invocant node |
-| `extends` | `use parent` / `use base` / `use Mojo::Base` (named **or** flag-only), an `@ISA` / `$ISA` assignment, and Moo's `extends 'X'` | the naming node |
-| `implements` | Moo `with 'R'` and `use role 'R'` | the argument node |
-| `overrides` | a class method whose name the first declared base also declares | no, by design |
-| imports | `use Module ...` and `require Module`; **never** `no` | |
-| exports | `@EXPORT`, `@EXPORT_OK` and the `%EXPORT_TAGS` keys | |
+| `bless $ref, 'Class::Name'` | **0 sites in 5,127 files** | RULED. No branch is written. Perl's constructor idiom is `bless $self, $class` -- 736 sites -- so the class name is a VARIABLE and the file writes no name to publish. This is what PERLD12's prose said without a number behind it. |
+| `bless $ref, __PACKAGE__` | **0 sites in 5,127 files** | RULED. The analyzer's `PERL_MAGIC_TOKENS` invocant guard is therefore confirmed to guard against a construct this corpus does not contain. Recorded as such rather than as a win. |
+| `UNIVERSAL::isa($x, 'Class')` | **0 sites in 5,127 files** | RULED. The FUNCTION spelling of a query the method spelling already covers, and no branch exists for it: a branch for a construct the corpus does not contain is dead code by this lane's own standard. |
+| `\&{ ... }` / `\&$slot` / `\@LIST` / `\$scalar` | **3,618 sites, 840 files** | REFUSED in `uses`. Nothing is written that names a sub. A sigil-stripping emitter would fabricate 3,618 targets; the rule is a positive `varname` allowlist for that reason. |
+| `->isa($var)` / `->DOES($var)` | **175 sites, 72 files** | REFUSED in `references`. The queried name is a variable, so no name is written. |
+| a member read of a DECLARED Moose attribute | **6 sites, 4 files** | NOT IMPLEMENTED, declared as a limitation. A `uses` label built on "reads a declared member" would be 6 edges, and the 7,890 written-key hash reads would then have to be published as members -- which is the phantom-symbol class this lane removed twice (the phantom `DSN` class, the phantom `use_module` class). Those 7,890 are HASH KEYS. |
+
+### Why `uses` and `references` are two labels and not one
+
+`src/lsp/evidence_tier.ts` rule 3 puts `reference(s)` and `use(s)` in the **same**
+tier (`usage_contextual`), so the tier cannot choose between them and the split
+has to be semantic:
+
+- `uses` -- a symbol named in a **value position**, the thing the code uses. bash
+  files a `$VAR` read this way, ruby an `@ivar` read, python an `obj.attr` read,
+  php a `$this->x` read. In perl: `my $cb = \&helper;` names `helper` and runs
+  nothing.
+- `references` -- a name a **query** tests against, invoking nothing. java files
+  an import, python files `isinstance(x, T)`, php a declared type. In perl:
+  `$self->isa('Other::Class')` invokes `isa` (a real `calls` edge, pinned beside
+  the `references` edge) and names `Other::Class` without invoking it.
+
+Emitting both for one construct would store the same edge under two labels, and
+`bb_graph` counts edges: it would report two independent reasons to change one
+thing. `perl/code-references` pins both sides of that on single lines -- line 36
+carries `calls run -> isa` AND `references run -> Class`, and both are correct,
+because they are two different facts about one line.
+
+Both labels carry `evidenceClass: usage_contextual` and are classified explicitly
+in `classifyEvidenceTier`. Without that they fell through to `inferred`, which
+the legend reserves for a guess, and these are written names rather than guesses.
 
 ### `line_number` (M59.A7)
 
@@ -136,6 +211,232 @@ base lies outside the project keep it, at **0.5** and below the 0.7 consumer
 threshold, so they are counted as suspicion rather than as a claim. The other
 6,111 are withdrawn outright and 1,627 are confirmed at 0.95 by a base that is
 actually in the project.
+
+## The six questions, per already-emitted type
+
+Part 1 of the workstream requires these for a type the analyzer already emits,
+and says explicitly that source derivation answers only the first. Each answer
+below carries the measurement it rests on. **Every edge this lane emits is
+OUTGOING** -- the analyzer of the file being analyzed emits edges whose source is
+a symbol in THAT file, and resolving who points AT an edge is a separate
+subsystem that is not built. So question 5 is answered only for the endpoint this
+layer can see, and that limit is stated rather than scored around.
+
+### 1. `calls` -- 62,207 edges, 4,073 files
+
+| question | answer, with its measurement |
+| --- | --- |
+| **Exists** | yes -- 5 `RelationshipType.*` constructions reach it in the source. |
+| **Fires** | 62,207 edges over the derived 5,127-file population, production `parseFile`. Not a branch that never matches. |
+| **Correct** | **PARTIAL.** The lane's own oracle derives 61,522 and 3,779 of its rows are MISSING, so the two walkers disagree on 6.0% of the label. The dominant residual is `defined &Foo::bar`, where the oracle derives a call and the analyzer deliberately suppresses it. **The oracle is a second walker over the SAME grammar, so a grammar bug is invisible to this comparison** -- that is the harness's declared limitation and it is not claimed as more than it is. |
+| **Labelled** | one defect found and fixed this wave. `&foo(...)` is perl's EXPLICIT-CALL syntax and the emitted target used to keep the sigil: **93 edges in 36 corpus files** read `calls -> &build_sysctl`, `&timediff`, `&print_imp`, none of which is a name the indexer stores. Fixed, and the differential could not have seen it because its oracle reads the same `function` field. |
+| **Resolved** | the SOURCE endpoint resolves within the file. The TARGET endpoint does not, by design: the lane emits `calls` to the NAME and lets the indexer resolve it across files, and 4,570 distinct corpus targets name a method or bareword no definition in the corpus provides. That is a resolution question for a later layer, not an unknown kind. |
+| **Confident** | 0.9 on every edge, `evidenceClass: usage_contextual`, with a machine-readable reason code on every one: `name-only-callee` 26,586 and `dynamic-receiver` 35,651 are the two classes, and they say exactly what is uncertain (whether the callee binds to a sub in this file, an imported sub, or a module-level sub; whether a value receiver's owning class is knowable). **0 edges below 0.7.** |
+| **R7** | 0 endpoints equal to `unknown`, 0 empty endpoints, 0 empty symbol names, 0 unknown `SymbolKind`, 0 relationship types outside the production vocabulary. |
+
+### 2. `contains` -- 22,535 edges, 2,328 files
+
+| question | answer |
+| --- | --- |
+| **Exists** | yes -- emitted in a post-pass over the symbol table. |
+| **Fires** | 22,535 edges, 2,328 files, full population. |
+| **Correct** | the closest agreement in the lane, and it is still not agreement without a caveat. On a 40-file draw the oracle agreed **106 of 106 with 0 MISSING and 0 UNEXPLAINED**. Over the full population the two walkers disagree on 94 MISSING and 1,554 UNEXPLAINED, and the sampled UNEXPLAINED rows are `our` globals inside a package block and Moose attribute forms the oracle's `has` read does not cover. **UNADJUDICATED** whether any of those 1,548 is a mis-attribution; it is the largest open item in this section. Same shared-grammar caveat. |
+| **Labelled** | correct. `contains` is owner -> member and no other label competes for it. |
+| **Resolved** | both endpoints are symbols this lane declared, so this is the one label that resolves at BOTH ends inside the file. `confidence: 1.0` and `evidenceClass: structural`, with no reason code because nothing about it is below 1.0. |
+| **Confident** | 1.0, structural, by construction: membership is a fact about two symbols the same file declares. |
+| **R7** | clean, as above. |
+
+### 3. `overrides` -- 7,894 edges, 1,135 files
+
+| question | answer |
+| --- | --- |
+| **Exists** | yes. |
+| **Fires** | 7,894 edges, 1,135 files. |
+| **Correct** | **NOT AUDITED by any oracle, and this lane cannot audit it**: PERL-MR15's cross-file companion index (`src/ast/override-companion-pass.ts`) is what makes an override resolvable, and a per-file oracle with no companion would report a permanent MISSING for every companion-confirmed edge. Deliberately excluded from `PERL_ORACLE_LABELS` and the reason is in `perl-truth.ts`'s header rather than left implied. |
+| **Labelled** | correct, and it is the lane's ONLY inferred label. |
+| **Resolved** | 1,627 confirmed at 0.95 by a base that is in the project; **7,823 of 7,894 sit below 0.7** and carry `reasonCode: first-parent-guess` -- they are counted as suspicion rather than as a claim, and they are the only sub-0.7 edges in the lane. |
+| **Confident** | **this is the honest weak point of the lane.** Before PERL-MR15, 75.6% of the label was false (6,111 withdrawn, 1,627 confirmed) while every gate was green, because MISSING=0 / unexplained=0 asks whether an edge is EXPLAINABLE from the tree, not whether it is TRUE. Two limits remain: a base that declares NO method never enters the companion, so withdrawal is undecidable for it; and only the FIRST declared base is consulted. |
+| **R7** | clean. |
+
+### 4. `instantiates` -- 2,864 edges, 1,400 files
+
+| question | answer |
+| --- | --- |
+| **Exists** | yes. |
+| **Fires** | 2,864 edges, 1,400 files. |
+| **Correct** | audited by the HARNESS oracle (`derivePerlEdges` in the shared differential, mirrored at `script/m14/tmp/oracle-mirror/differential.ts`), which is in perl's compared-label set. This lane's own oracle deliberately does NOT claim the label: reproducing the analyzer's positive class-receiver allowlist would be copying an inference rather than corroborating one. |
+| **Labelled** | correct, with one measured asymmetry: `\&Foo::bar` is a reference and `Foo->new` is an instantiation, and the `uses` branch added this wave keeps them apart. |
+| **Resolved** | the target is a leaf-qualified `Leaf.constructor`, which resolves inside the file for a package this file declares and otherwise waits for the indexer, as `calls` does. |
+| **Confident** | 0.9, `structural`, reason codes `concrete-invocant` 2,803 / `magic-token-invocant` 34 / `indirect-object-invocation` 23. **0 below 0.7.** |
+| **R7** | clean. The `__PACKAGE__` guard exists so `instantiates -> __PACKAGE__.constructor` is never published; measured at 0 corpus sites for the construct it guards, which is recorded rather than claimed as a win. |
+
+### 5. `extends` -- 1,767 edges, 1,345 files
+
+| question | answer |
+| --- | --- |
+| **Exists** | yes, from five spellings. |
+| **Fires** | 1,767 edges, 1,345 files. |
+| **Correct** | audited by the harness oracle, in the compared set. |
+| **Labelled** | correct. The bare Moose `extends 'X';` is routed through the same `addBase` path as `use parent`, so `extends` cannot be emitted by a route `overrides` cannot see -- that was a real defect (every bare-`extends` class stopped its inheritance graph one hop short) and routing it through `addBase` is why 401 corpus files are now consistent. |
+| **Resolved** | target is the leaf of the base's name; a base declared in another file of the project is not seen by this lane. |
+| **Confident** | 0.9, `structural`, reason codes `use-parent-declaration` 719 / `moo-extends-keyword` 590 / `isa-array` 275 / `mojo-base-declaration` 183. **0 below 0.7.** The self-base guard is measured, not assumed: it compares FULLY QUALIFIED names, because a leaf comparison also fires for `package Foo::Bar; use Mojo::Base 'Other::Bar';`, a real subclass of a different class, and a leaf guard deleted 7 legitimate override edges. |
+| **R7** | clean. |
+
+### 6. `implements` -- 661 edges, 402 files
+
+| question | answer |
+| --- | --- |
+| **Exists** | yes -- two spellings, Moo `with 'R'` and `use role 'R'`. |
+| **Fires** | 661 edges, 402 files. **Note the sample-size lesson**: at NFILES=25 over `perl-mojolicious` this label read 0, and at NFILES=200 over the same repo it still read 0 -- mojo contains no `with`/`use role` at all. It fires only when the sample reaches `perl-moose` (30 at 200 files) or `perl-moo`. A verdict that only holds at one file count, or on one repository, is not a verdict. |
+| **Correct** | audited by the harness oracle, in the compared set. |
+| **Labelled** | correct -- and deliberately distinct from `extends`: a role composition is not inheritance, which is why they are separate labels rather than one "heritage" edge. |
+| **Resolved** | the target is the role's leaf name. |
+| **Confident** | 0.9, `structural`, reason codes `moo-role-composition` 661 and `use-role-composition` 0 over the population. **0 below 0.7.** |
+| **R7** | clean. |
+
+### `uses` and `references`, the two this wave added
+
+Both answer the same six questions the same way, because they were built to:
+
+| question | `uses` (922) | `references` (688) |
+| --- | --- | --- |
+| Exists | a `refgen_expression` branch | a `method_call_expression` sub-branch |
+| Fires | 922 edges, 283 files | 688 edges, 303 files |
+| Correct | the lane's own oracle derives 952 and disagrees on 72 of them; the sampled residual is file-scope package attribution in `t/` files, UNADJUDICATED | the oracle derives 664 and disagrees on 165; same residual shape |
+| Labelled | correct, and the split from `references` is stated in the ontology table above with a fixture pinning both on one line | correct; `calls -> isa` sits beside `references -> Class` on the same line and both are true |
+| Resolved | the target is a sub NAME the file writes. It resolves inside the file when the file declares that sub, and waits for the indexer otherwise -- the same bar `calls` claims | the target is a class/role/method leaf. In perl's idiom the queried class is frequently external, so cross-file resolution is the indexer's |
+| Confident | 0.9, `usage_contextual`, `reasonCode: code-reference` -- "the name is written and bound to the code slot, but whether the slot is ever invoked as a plain call is not decided at this edge" | 0.9, `usage_contextual`, `reasonCode: type-query-literal` -- "the name is written and nothing is invoked, but whether the object satisfies it at runtime is not decided at this edge" |
+| R7 | 0 placeholder endpoints, 0 empty endpoints; 8 forbid pins in `perl/code-references` cover every refusal | as `uses`; `evidenceClass` is pinned on every row, and a mutant that removes the classification dies |
+
+## The DERIVATION debt this lane carried, and what closed it
+
+`script/m60/rel-type-coverage-gate.ts` CHECK 1 (DERIVATION) measures, per lane,
+every relationship type the analyzer **emits** against the set the differential
+**audits**. Run against this lane at HEAD `e73c3e58e` it reported:
+
+    perl  2 un-audited: ["calls","contains"]
+
+Two labels, and they were the two biggest in the lane -- 62,237 and 22,535 edges,
+**84,772 of 97,958 relationship edges (86.5%) stored and compared against
+nothing**. The differential's perl allowlist is `[extends, implements,
+instantiates, overrides]`; `contains` joins it only when
+`PERL_COMPARE_CONTAINS=1` is set in the environment, which no gate sets.
+
+So perl WAS one of the 100 DERIVATION findings, and paying the debt was worth as
+much as adding anything. `script/m14/perl-truth.ts` is the lane's own oracle and
+`script/m14/perl-truth-run.ts` runs it:
+
+    bun script/m14/perl-truth-run.ts --fresh
+
+| label | truth | analyzer | MISSING | UNEXPLAINED |
+| --- | --- | --- | --- | --- |
+| `calls` | 61,522 | 62,207 | 3,779 in 762 files | 3,681 in 533 files |
+| `contains` | 19,657 | 22,535 | 94 in 23 files | 1,554 in 582 files |
+| `uses` | 952 | 922 | 44 in 24 files | 28 in 13 files |
+| `references` | 664 | 688 | 80 in 50 files | 85 in 48 files |
+| **total** | **82,795** | **86,352** | **5,019** | **8,576** |
+
+**This residual is NOT SETTLED and is reported as an open measurement, not as a
+verdict.** Read the two columns as "the two walkers disagree about this many
+edges", and nothing more. Three of the disagreements were bugs in the ORACLE,
+each of which looked exactly like a finding about the analyzer, and finding them
+is the reason this section does not claim agreement:
+
+1. The oracle left `from` undefined at file scope where the analyzer writes
+   `global`. On a 40-file draw that was 304 MISSING and 277 UNEXPLAINED -- one
+   disagreement, spelled twice. `global` is on the indexer's
+   `GENERIC_SOURCE_NAMES` list of recognised synthetic scopes; `unknown` is the
+   R7 placeholder and is banned.
+2. `sub new` is stored as the symbol `constructor`, so the oracle's source
+   spelling had to match or the comparison measures conventions.
+3. `package $opts{class};` and `{ package Module::Build::PodTester; ... }` are
+   STATEMENT-form packages nested inside a sub body. The oracle's scope ran to
+   END OF FILE and swallowed `ACTION_testpodcoverage` -- a top-level sub of
+   `Module::Build::Base` that the analyzer attributes correctly. Fixing the rule
+   to "runs to the end of the enclosing block" removed 2,062 UNEXPLAINED
+   `contains` rows in 655 files, all of them the analyzer being RIGHT.
+
+**What independence this oracle has, and what it does not**, is stated in
+`perl-truth.ts`'s header and repeated here because it is the limit of every
+number in the table above: `contains` is derived from a tree walk over
+declarations and their enclosing package while the analyzer derives it in a
+post-pass over its own symbol array; `calls` is derived from the call nodes'
+children by the oracle's own character scan. They share the **grammar**, so a bug
+inside `tree-sitter-perl` -- a node type that fails to match, a field never
+populated -- is invisible to this comparison exactly as it is to the
+differential. That is the honesty contract's L3 limit and this lane's declared
+harness limitation. It is not papered over.
+
+Three residual SHAPES are named because they are the next round's work, with
+their counts, and because "there is a residual" without naming it is the
+unhelpful version of this sentence:
+
+- **`calls`, 3,779 MISSING.** Dominated by `defined &Foo::bar` -- a DEFINEDNESS
+  TEST on a code slot, which the analyzer deliberately suppresses (its
+  `hasArgumentSyntax` rule, with a measured justification) while the oracle
+  derives it as a call. That suppression is arguably right and arguably a real
+  information loss: the line states that `Foo::bar` must EXIST, which is a
+  reference to a sub and not a call to one, and the honest label for it is
+  `uses` -- the same label `\&Foo::bar` now has. NOT IMPLEMENTED here: telling
+  `defined &foo` from a bare `&foo;` (a real call with the current `@_`) needs a
+  parent-shape test, and guessing it would mislabel calls as references.
+- **`contains`, 1,554 UNEXPLAINED.** The analyzer emits an ownership edge the
+  oracle does not derive -- `our` globals inside a package BLOCK
+  (`contains Try::Tiny::ScopeGuard UNSTABLE_DOLLARAT`) and Moose attribute
+  forms the oracle's `has` read does not cover. Whether each is a real
+  ownership edge or a mis-attribution is UNADJUDICATED; the oracle's `has`
+  derivation covers one argument shape and the analyzer covers several.
+- **`uses` / `references`, residual 100 and 113.** Every sampled row is the
+  FILE-SCOPE PACKAGE attribution inside `t/` files -- `uses|global|mock_bsd_glob`
+  against `uses|File::Glob|mock_bsd_glob`,
+  `references|global|foo` against `references|MojoMonkeyTest|foo`. Both walkers
+  believe they know the enclosing package and disagree; which of them is right
+  needs the file read, not another walker.
+
+## Gates re-run at this wave's HEAD, with their actual results
+
+| gate | command | result |
+| --- | --- | --- |
+| F1 grammar cell | `bun script/m14/audit-analyzer-grammar.ts perl` | **PASS** -- `refs= 55 unknown=0 unknownFields=0`. `refs` rose 53 -> 55 with the two new branches and nothing else moved. |
+| F3 fixtures | `bun script/m14/run-fixtures.ts --lang perl` | **14/14 pass**, one new fixture (`perl/code-references`). A scoped run writes no evidence by design and refuses `--update-baseline`. |
+| F4 mutation (lane-owned) | `bun validation/m14/perl/perl-new-mutants.ts` | **9 mutants, 9 killed, 0 survivors.** The registry at `script/m14/mutate-analyzer.ts` is MASTER-owned and these four rows are REPORTED, not added. |
+| zero-regex | `bun script/m14/tmp/perl-zero-regex.mts` | **5/5 PASS** -- `0 regex literal(s) / RegExp constructor(s) in real-perl-analyzer.ts`, and the same answer from the working tree, HEAD's blob, the debt register and the committed census. |
+| ontology arbiter | `bun script/m14/ontology-coverage-gate.ts perl --fresh` | **emitted 8/10, RULED-SOUND 2, FALSIFIED 0, RULED-UNJUSTIFIED 0** over 5,127/5,127 files. |
+| rel-type DERIVATION | `bun script/m60/rel-type-coverage-gate.ts` | perl at HEAD `e73c3e58e`: `2 un-audited: ["calls","contains"]` -- 84,772 of 97,958 edges (86.5%). At this HEAD: `4 un-audited: ["extends","implements","instantiates","overrides"]`. **The count went UP and the debt went DOWN**, and the gate cannot show the difference: it reads a lane's audited set from `script/m14/differential.ts`, where perl's oracle no longer lives, so the two labels that had NO second opinion at all now have one (this lane's `perl-truth.ts`, 61,522 `calls` and 19,657 `contains` truth rows derived independently), and the four labels the *harness* oracle covers now read as un-audited because the filter it reads lost them. `readOwnOracleLabels` prefers a lane's own export over that filter, which is why the swap happened. Restoring the four would mean either moving `derivePerlEdges` back into the shared file or deriving them here -- and this lane's oracle deliberately does NOT claim `overrides`, because PERL-MR15's cross-file companion is what makes an override resolvable and a per-file oracle would report a permanent MISSING for every confirmed edge. See defect 2 below. |
+| payload / latency | `validation/m14/perl/perl-payload-latency.ts` before and after | unfiltered 1,597.5 -> 1,623.2 KiB (**+1.61%**); un-narrowed/largest-type 1.525x -> **1.550x**; analyze-only 6.65 -> 5.67 ms/file. The 2.5-4.8x band the workstream budgets is **not** regressed. |
+
+### Two defects found OUTSIDE this lane, named and not fixed
+
+1. **`script/m14/ontology-coverage-gate.ts` reports every type UN-EMITTED on a
+   RESUMED walk, while printing a 100% walk.** Reproduced twice, on this lane and
+   after a `--fresh` run had populated `validation/m14/measurements/walk-perl.txt`:
+
+       walk: 5127/5127 files (100.0%)  newly walked 0, resumed 5127
+       calls  RULED-UNJUSTIFIED  NOT EMITTED and its construct is absent
+       ...
+       emitted 0/10   ruled-sound 2   ruled-without-justification 8
+
+   The gate accumulates its `observed` tallies inside `resumableWalk`'s `run`
+   callback, and `resumableWalk` SKIPS any file its checkpoint records as done --
+   so on a resumed run nothing is tallied, and a table that says "0 emitted,
+   every construct absent" is printed with the same confidence and the same
+   coverage line as a real one. `walkStats.partial` is false because
+   `walked + alreadyDone == total`, so the instrument's own honesty guard does not
+   fire either. **Every lane that has ever run this gate twice for the same
+   language has a wrong second answer**, and the wrong direction is the dangerous
+   one: it invites a lane to "fix" eight types that are already emitted.
+   `--fresh` produces the correct table, which is why this lane's verdict above is
+   the `--fresh` run.
+
+2. **`script/m60/rel-type-coverage-gate.ts` reads a lane's audited-label set from
+   `script/m14/differential.ts`, where perl's oracle no longer lives.**
+   `derivePerlEdges` is absent from the shared file and present only in
+   `script/m14/tmp/oracle-mirror/differential.ts`, while
+   `docs/analyzers/real-perl-analyzer.md` states it is in
+   `script/m14/differential.ts`. So the DERIVATION verdict for perl was computed
+   from a filter that no lane's oracle backs. `readOwnOracleLabels` is the
+   documented escape hatch and this lane now uses it; the master may want to move
+   the remaining perl derivation out of the shared file too.
 
 ## The grammar fact that decides this lane
 
@@ -617,6 +918,38 @@ real file; a fixture with ten decision points now reports 11.
 
 ## Honest limitations
 
+- **A code-slot EXISTENCE test (`defined &Foo::bar`) emits no edge at all.** The
+  analyzer's `hasArgumentSyntax` rule suppresses a `&`-sigil callee with no
+  argument list, on the measured ground that suppressing on the `&` alone cost 323
+  truth rows on perl5 while the narrower rule is right for `&foo(@args)`. The
+  residue is that `defined &Foo::bar` states `Foo::bar` must EXIST, which is a
+  reference to a sub and not a call to one, and the honest label for it is `uses`
+  -- the same label `\&Foo::bar` now carries. MEASURED as the dominant shape in
+  the oracle's 3,779 `calls` MISSING rows. NOT IMPLEMENTED here: separating
+  `defined &foo` from a bare `&foo;` (a real call with the current `@_`) needs a
+  parent-shape test, and guessing it would mislabel calls as references.
+- **A member read of a declared Moose attribute is not a `uses` edge.** Measured
+  at **6 sites in 4 files** across the derived 5,127-file population
+  (`script/m14/perl-construct-probe.mts`, `uses.member_read_of_declared_property`),
+  against 7,890 written-key hash reads that are HASH KEYS rather than members. The
+  fixture pins the gap as ABSENT so it cannot be mistaken for an oversight.
+- **An unqualified read of a package global the file itself declares is not a
+  `uses` edge.** Measured at 2 sites per 40 files against 850 declaration sites:
+  perl's package globals are written far more often than they are read, so a
+  branch on that shape would be a large branch over almost nothing.
+- **`uses` and `references` are per-file facts and are resolved per-file.** A code
+  reference to a sub declared in another file of the project, and a queried class
+  that lives outside the project, both wait for the indexer. That is the same bar
+  `calls` claims and it is stated rather than implied.
+- **Every edge this lane emits is OUTGOING.** The analyzer emits edges whose
+  source is a symbol in the file being analyzed; resolving who points AT an edge
+  is a separate subsystem that does not exist yet, so "resolves at both ends"
+  cannot be answered for any label from this layer alone.
+- **The lane's own oracle and the analyzer share the grammar.** `perl-truth.ts`
+  walks the tree independently and applies the declared rules by its own
+  character scan, but a bug inside `tree-sitter-perl` is invisible to that
+  comparison exactly as it is to the shared differential. Its residual is
+  reported as an open measurement, not as agreement.
 - Cross-file override precision needs the optional project companion index, which
   production never supplies. Without it the lane emits the deterministic
   first-parent guess at 0.5 and says so in the reason code, rather than dropping the

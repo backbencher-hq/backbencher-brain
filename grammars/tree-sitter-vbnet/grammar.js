@@ -47,6 +47,9 @@ module.exports = grammar({
     [$.lambda_expression, $.with_expression],
     [$.lambda_expression],
     [$.binary_expression, $.assignment_expression],
+    // `(a)` and `(a, b)` share their whole prefix and differ only at the comma, so
+    // LR(1) has to keep both readings alive until the `,` or the `)` decides it.
+    [$.parenthesized_expression, $.tuple_expression],
     [$._primary_expression, $.select_element],
     [$.with_expression, $.select_element],
     [$.select_clause],
@@ -362,6 +365,7 @@ module.exports = grammar({
         $._literal,
         $.identifier,
         $.parenthesized_expression,
+        $.tuple_expression,
         $.generic_invocation_expression,  // Add this before regular invocation
         $.invocation_expression,
         $.member_access_expression,
@@ -395,6 +399,24 @@ module.exports = grammar({
           optional(field("arguments", $.argument_list))
         )
       ),
+
+    // VB 2017 added TUPLE expressions, and they are a comma list in parentheses:
+    // `Return (i, s.Length)` and `Dim q = (1, 2)`. Upstream's single production
+    // `seq("(", $._expression, ")")` has no comma alternative, so the tuple literal
+    // has NO production at all — the comma becomes an ERROR node and the rest of
+    // the list is dropped, which is what repro-case 27 measures (5 ERROR + 1
+    // MISSING on 24 lines, the MISSING pushed out to source_file scope).
+    //
+    // The TYPE half of the same feature already existed (`tuple_type`, a comma list
+    // of `tuple_element`), so `Function F() As (Integer, Integer)` parsed while
+    // its own body could not. That asymmetry is why a probe that inspects only
+    // declarations concluded the grammar was fine.
+    //
+    // A separate node rather than an extra alternative inside
+    // `parenthesized_expression`, because the two are different constructs: one is
+    // grouping, one is a value, and an analyzer that walks `parenthesized_expression`
+    // should not silently acquire the members of a tuple it was never asked about.
+    tuple_expression: ($) => seq("(", commaSep1($._expression), ")"),
 
     parenthesized_expression: ($) => seq("(", $._expression, ")"),
 

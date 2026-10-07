@@ -134,6 +134,103 @@ interface ScopeEntry {
   node: Node
 }
 
+/** The first whitespace-delimited token of `text`, or "" when there is none. */
+function firstWordOf(text: string): string {
+  let i = 0
+  while (i < text.length && (text[i] === " " || text[i] === "\t" || text[i] === "\n" || text[i] === "\r")) i++
+  const start = i
+  while (i < text.length && !(text[i] === " " || text[i] === "\t" || text[i] === "\n" || text[i] === "\r")) i++
+  return text.slice(start, i)
+}
+
+/** A bare C identifier? Character scan, no pattern (lane gate property P11). */
+function isBareIdentifierText(text: string): boolean {
+  if (text.length === 0) return false
+  const c0 = text[0]
+  if (!((c0 >= "a" && c0 <= "z") || (c0 >= "A" && c0 <= "Z") || c0 === "_")) return false
+  for (let i = 1; i < text.length; i++) {
+    const c = text[i]
+    if (!((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_")) return false
+  }
+  return true
+}
+
+/**
+ * `#989` -- the macro name a `preproc_call` UNDEFINES, or null for anything else.
+ *
+ * tree-sitter-c has no `preproc_undef` node. `grammar.js:162` defines
+ * `preproc_call: directive + optional argument` and `preproc_directive` is one token
+ * matching any `#` plus a word, so `#undef`, `#pragma`, `#include_next` and every
+ * unknown directive arrive as the SAME node type. The directive KEYWORD is therefore
+ * the only discriminator the grammar offers and it is read as text: drop the `#`, skip
+ * spaces and tabs, require the rest to begin with `undef`. The ARGUMENT must then be a
+ * bare identifier, which is what refuses `#pragma pack(1)` and every directive whose
+ * argument is structured.
+ */
+function undefNameOf(call: Node): string | null {
+  const d = call.childForFieldName("directive")
+  if (!d) return null
+  let t = d.text
+  if (t.length === 0 || t[0] !== "#") return null
+  t = t.slice(1)
+  let i = 0
+  while (i < t.length && (t[i] === " " || t[i] === "\t")) i++
+  if (!t.startsWith("undef", i)) return null
+  const arg = call.childForFieldName("argument")
+  const a = arg ? arg.text.trim() : ""
+  return isBareIdentifierText(a) ? a : null
+}
+
+// ---------------------------------------------------------------------------
+// #989 `overrides` -- PREPROCESSOR ARM POSITION.
+//
+// Two facts about C decide whether a redefinition is legal at all, and both are
+// STRUCTURAL, so neither needs a preprocessor evaluator (C-D2):
+//
+//   1. An unconditional second definition of an external identifier is a
+//      constraint violation (C 6.9p5), so in legal C a redefinition lives in two
+//      arms of one `#if`.
+//   2. Which arm a node is in is a property of the PARSE, not of the conditions:
+//      `preproc_if` / `preproc_ifdef` own their true region, `preproc_elif` owns
+//      one middle region, `preproc_else` owns the final one. Counting the
+//      `preproc_elif` / `preproc_else` nodes crossed since the conditional was
+//      entered gives the arm index, and it is right for the shape tree-sitter-c
+//      produces when the `#else` itself HOLDS the `#elif`s: the ancestor path is
+//      then [preproc_else, preproc_elif] and the count is still the arm index.
+//
+// Keyed on the conditional's start index, so two files cannot collide and the map
+// is per-file by construction (the map itself is created per call pair).
+// ---------------------------------------------------------------------------
+
+/** conditional start index -> arm index. arm 0 is the conditional's true region. */
+function preprocConditionalsOf(node: Node): Map<number, number> {
+  const out = new Map<number, number>()
+  let arm = 0
+  let p: Node | null = node.parent
+  while (p) {
+    if (p.type === "preproc_elif" || p.type === "preproc_else") {
+      arm++
+      p = p.parent
+      continue
+    }
+    if (p.type === "preproc_if" || p.type === "preproc_ifdef") {
+      out.set(p.startIndex, arm)
+      arm = 0
+    }
+    p = p.parent
+  }
+  return out
+}
+
+/** Do two nodes sit in DIFFERENT arms of one shared conditional? */
+function sharesConditionalWithDifferentArm(a: Map<number, number>, b: Map<number, number>): boolean {
+  for (const [k, v] of a) {
+    const w = b.get(k)
+    if (w !== undefined && w !== v) return true
+  }
+  return false
+}
+
 // CGD22 (M37 #601): a C keyword can NEVER be a declared name. ERROR recovery
 // glues `else if(...)` fragments into pseudo function_definition shapes whose
 // "declarator" is the keyword itself (resolve.c: three `function "if"`
@@ -1020,6 +1117,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const functionLocals = new Map<string, Set<string>>()
     // #383 payload: call targets per enclosing function
     const qcByFunction = new Map<string, string[]>()
+    // #989 `overrides`: every `function_definition` NODE the single walk reaches, in
+    // source order. Collecting the node here and resolving its name after the walk
+    // keeps one traversal and one name-resolution rule -- resolving the name inline
+    // would duplicate the two shapes the `function_definition` case already knows
+    // (#918's macro-wrapped typed heading and the CGD38 callable test), and two copies
+    // of a name rule are how a lane starts disagreeing with itself.
+    const fnDefNodes: Node[] = []
 
     // #937: same-file `typedef <primitive> <alias>;` and plain `typedef A B;`
     // chains, both rebuilt per file so nothing leaks between analyses.
@@ -1311,36 +1415,107 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // is C-D2 again and is why the resolver returns null rather than a guess.
     const macroValueTexts = new Map<string, string>()
     this.macroValueTexts = macroValueTexts
+    // #989 `exports`, generalised: macros the FILE ITSELF defines to a replacement
+    // list that OPENS with the linkage keyword `extern`. C has no export construct --
+    // there is no keyword, no module and no visibility attribute in the language --
+    // so an `exports` edge in C can only ever describe a CONVENTION, and #963 pinned
+    // that convention to a five-name list (EXPORT_SYMBOL, EXPORT_SYMBOL_GPL,
+    // CURL_EXTERN, REDISMODULE_API, GIT_EXTERN). A list is the same defect every
+    // time: it is right about the five codebases it was written from and silent on
+    // the sixth. Measured over 359 sqlite C/H files: the corpus defines SEVEN marker
+    // names, and the five-name list matches NONE of them, which is why `exports`
+    // fired 0 times on this corpus.
+    //
+    // The structural half of the convention is derivable without a list, and this set
+    // is that half. `#define PUBLIC extern` and `#define PUBLIC extern
+    // __declspec(dllexport)` make the macro's whole contribution to the declaration
+    // be LINKAGE, so every declaration it prefixes is externally linked, i.e.
+    // exported, and the fact needs no knowledge of what the macro is called. Over the
+    // same corpus this is 274 declarations in 2 files -- `CMPP_EXPORT` 161 and
+    // `JIM_EXPORT` 113 -- and both macros are defined to `extern`.
+    //
+    // WHAT IS DELIBERATELY NOT IN THIS SET is the other obvious rule, "the
+    // replacement list is EMPTY". Measured on the same corpus, that rule accepts 58
+    // declarations and at least 52 of them are NOT exports:
+    //
+    //   ext/wasm/libcmpp.c:5256  #define CMPP_PRIVATE static   <- the OPPOSITE
+    //                            marker; its 52 uses are internal linkage
+    //   src/mutex_unix.c:41     #define ALIGN128                <- an alignment
+    //                            attribute; `__attribute__((aligned(128)))` on one
+    //                            branch and nothing on the other
+    //   src/sqliteInt.h:1335    #define SQLITE_WSD              <- thread-local
+    //
+    // An EMPTY macro is indistinguishable from a marker for something else by
+    // STRUCTURE alone: it contributes no tokens, so what it means is decided entirely
+    // by its NAME, which is the fixed list this change is removing. Silence over
+    // invention. The genuine empty-marker case in this corpus is sqlite's own
+    // `SQLITE_API` (`src/sqlite.h.in:75 # define SQLITE_API`) -- and it is
+    // unreachable per-file anyway, because `sqlite3.h` is GENERATED at build time and
+    // no file in the corpus defines `SQLITE_API`, so C-D2 applies to the definition
+    // exactly as it does to every other cross-file fact. Recorded, not published.
+    const linkageMarkerNames = new Set<string>()
+    // #989 `overrides`, second shape: the `#undef` + `#define` redefinition of one
+    // macro, in source order. Filled by the same pre-pass.
+    const macroRedefinitions: Array<{ name: string; row: number; undef: boolean }> = []
     // #939: same-file enumerator values, for `[MAX_FDS]`-shaped dimensions.
     this.enumConstantValues = this.buildEnumConstantValues(rootNode)
     {
       const preStack: Node[] = [rootNode]
+      // The pre-pass is a pre-ORDER walk, so `macroRedefinitions` would come out in
+      // the order the STACK drains it. Source order is what a redefinition sequence
+      // is, so the entries are sorted by start offset before use rather than relying
+      // on traversal order.
+      const preprocOrder: Array<{ idx: number; name: string; row: number; undef: boolean }> = []
       while (preStack.length > 0) {
         const n = preStack.pop()!
         if (n.type === "preproc_def" || n.type === "preproc_function_def") {
-          const nm = n.childForFieldName("name")
-          if (nm && nm.text.trim() && !macroDefOffsets.has(nm.text.trim())) {
-            macroDefOffsets.set(nm.text.trim(), {
-              at: nm.startIndex,
-              kind: n.type === "preproc_function_def" ? "function" : "object",
-            })
-            if (n.type !== "preproc_function_def") objectMacroNames.add(nm.text.trim())
-            allMacroNames.add(nm.text.trim())
-            // #939: the macro's REPLACEMENT text, kept only for object macros. A
-            // function macro's replacement is a parameter list plus a body, and
-            // treating that as a value is how a "dimension" turns into a number
-            // nobody wrote.
-            if (n.type === "preproc_def") {
-              const val = n.childForFieldName("value")
-              if (val && !macroValueTexts.has(nm.text.trim())) macroValueTexts.set(nm.text.trim(), val.text)
+          const nm = this.declaredMacroNameNode(n)
+          if (nm && nm.text.trim()) {
+            const key = nm.text.trim()
+            const val = n.childForFieldName("value")
+            // #989: EVERY `#define` reaches the redefinition chain, including a
+            // second one for a name already in `macroDefOffsets`. The guard below is
+            // "the preprocessor keeps the FIRST definition", which is right for every
+            // consumer of `macroDefOffsets` and exactly wrong here: after an `#undef`
+            // the later `#define` is the live one, and the chain is the whole fact.
+            preprocOrder.push({ idx: n.startIndex, name: key, row: n.startPosition.row + 1, undef: false })
+            if (!macroDefOffsets.has(key)) {
+              macroDefOffsets.set(key, {
+                at: nm.startIndex,
+                kind: n.type === "preproc_function_def" ? "function" : "object",
+              })
+              if (n.type !== "preproc_function_def") objectMacroNames.add(key)
+              allMacroNames.add(key)
+              // #939: the macro's REPLACEMENT text, kept only for object macros. A
+              // function macro's replacement is a parameter list plus a body, and
+              // treating that as a value is how a "dimension" turns into a number
+              // nobody wrote.
+              if (n.type === "preproc_def" && val && !macroValueTexts.has(key)) macroValueTexts.set(key, val.text)
+              // #989: a replacement list whose FIRST TOKEN is the linkage keyword.
+              // `extern` on its own (`#define X extern`) and `extern` with a calling
+              // convention or an attribute behind it (`#define X extern
+              // __declspec(dllexport)`) are the same fact about the macro, and both
+              // are read here. The token test is a character scan on the value node's
+              // own text -- no pattern (lane gate P11).
+              if (val && firstWordOf(val.text) === "extern") linkageMarkerNames.add(key)
             }
           }
+        } else if (n.type === "preproc_call") {
+          // #989: `#undef NAME` is this node type -- tree-sitter-c has no `preproc_undef`
+          // (`grammar.js:162` gives `preproc_call: directive + optional argument`, and
+          // `preproc_directive` matches any `#word`). So the keyword is read from the
+          // directive token and the argument must be a bare identifier, which is what
+          // refuses `#pragma pack(1)`.
+          const undef = undefNameOf(n)
+          if (undef) preprocOrder.push({ idx: n.startIndex, name: undef, row: n.startPosition.row + 1, undef: true })
         }
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
           const c = n.namedChild(i)
           if (c) preStack.push(c)
         }
       }
+      preprocOrder.sort((a, b) => a.idx - b.idx)
+      macroRedefinitions.push(...preprocOrder)
     }
 
     // #934: the AST pre-pass above is NOT the whole macro inventory, and the gap
@@ -1465,6 +1640,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       // --- Scope Management (Enter) ---
       switch (node.type) {
         case "function_definition": {
+          // #989: recorded for the `overrides` post-pass. One push, no name
+          // resolution here -- see `fnDefNodes`.
+          fnDefNodes.push(node)
           // #918: the POINTER-RETURN macro-wrapped heading. Measured on sqlite
           // `ext/wasm/libcmpp.c`: `CMPP__EXPORT(void *, cmpp_mrealloc)(…)` and
           // its five siblings arrive as a function_definition whose `type` field
@@ -1756,7 +1934,18 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   }
                 }
               }
-              if (marker && inArray(EXPORT_MACROS, marker) && node.childForFieldName("declarator")) {
+              // #989: the marker is EITHER one of the five cross-file conventions
+              // #963 pinned by name, OR a macro THIS FILE defines to a replacement
+              // list opening with `extern` -- the structural half of the convention,
+              // derived from the file's own `preproc_def` nodes. See
+              // `linkageMarkerNames` for the measurement that made the list
+              // insufficient (0 of 7 marker names in sqlite) and for the empty-
+              // replacement case that is deliberately NOT here.
+              if (
+                marker &&
+                (inArray(EXPORT_MACROS, marker) || linkageMarkerNames.has(marker)) &&
+                node.childForFieldName("declarator")
+              ) {
                 const idNode = this.exportedDeclarationName(node)
                 // The exported NAME can never be the marker itself; a recovery-split
                 // declaration reaches the marker and must publish nothing.
@@ -2227,7 +2416,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               hasUnsafeStrings = true
             } else if (inArray(SAFE_STRINGS, target)) {
               hasSafeStrings = true
-            } else if (inArray(EXPORT_MACROS, target)) {
+            // #989: the same two-source marker test as the DECLARATION branch -- the
+            // five cross-file conventions, plus a marker this file defines to `extern`.
+            } else if (inArray(EXPORT_MACROS, target) || linkageMarkerNames.has(target)) {
               isKernelExport = true
               // #963: the exported NAME is read from TWO places, because the two
               // conventions put it in two places.
@@ -2747,6 +2938,138 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         line_number: (s.metadata as any)?.nameLine ?? s.range?.startLine,
         metadata: {},
       })
+    }
+
+    // #989 `overrides` -- a SECOND DEFINITION of a name REPLACES the first, and in C
+    // the ONLY legal way to write one is conditional compilation.
+    //
+    // The absence of this edge for the whole pre-#989 history was the `overrides`
+    // defect the ontology gate exists for, on the same reasoning that convicted
+    // bash: `real-bash-analyzer.ts:322` records that bash "has no classes and no
+    // inheritance, so `overrides` has no superclass to point at -- but redefining a
+    // function IS an override in the only sense the language has one", and C has
+    // strictly MORE redefinitions than bash. The C ruling had been prose
+    // ("C-D1: no class hierarchy") and prose is what the gate was written against.
+    //
+    // C is NOT bash, and the difference is the whole rule. An unconditional second
+    // definition of an external identifier is a CONSTRAINT VIOLATION (C 6.9p5), so in
+    // legal C a redefinition exists only across preprocessor arms. The test is
+    // therefore STRUCTURAL: the two definitions must share an enclosing `#if` /
+    // `#ifdef` and sit in DIFFERENT arms of it (`preprocConditionalsOf`).
+    //
+    // What that test refuses, measured over 359 sqlite C/H files
+    // (`script/m14/tmp/c-audit/c-ontology-verdicts.ts`, classes in the artifact):
+    //   25 redefinition pairs in 7 files with no shared conditional. They are two
+    //   different things and neither may be published:
+    //     - PARSE DAMAGE. sqlite's `src/printf.c:76-90` is a Tcl script inside
+    //       `#if 0`, and recovery reads `foreach c {d s g z ...}` as a
+    //       function_definition named `c`. `ext/wasm/libcmpp.c` yields
+    //       `cmpp_tizer` and `cmpp@7932` the same way.
+    //     - LOGICALLY exclusive, structurally not. `src/threads.c:51` (the
+    //       SQLITE_OS_UNIX implementation) and `:146` (the SQLITE_OS_WIN_THREADS
+    //       one) are exclusive because their CONDITIONS contradict, which needs a
+    //       preprocessor evaluator to see -- C-D2. `src/mutex_noop.c:52` and `:188`
+    //       are under `#ifndef SQLITE_DEBUG` and `#ifdef SQLITE_DEBUG`.
+    // Publishing either class would be a fabrication, so the edge is refused and the
+    // loss is stated here rather than counted as coverage.
+    //
+    // The edge runs from the LATER definition to the EARLIER one, so both endpoints
+    // are the same name and the LINES are what distinguish them -- the bash shape,
+    // and `metadata.overridesLine` carries the prior definition's line so a consumer
+    // does not have to infer it. `definitionsInFile` carries the chain length. The
+    // analyzer merges the duplicate Function symbols into one, so the prior
+    // declaration has no symbol of its own; the two LINE numbers are the whole
+    // content of the fact and both are on the edge.
+    {
+      const byName = new Map<string, Array<{ id: Node; node: Node }>>()
+      for (const node of fnDefNodes) {
+        const id = this.overridableDefinitionName(node)
+        if (!id) continue
+        const name = id.text.trim()
+        const arr = byName.get(name)
+        if (arr) arr.push({ id, node })
+        else byName.set(name, [{ id, node }])
+      }
+      for (const [name, defs] of byName) {
+        if (defs.length < 2) continue
+        for (let i = 1; i < defs.length; i++) {
+          const arms = preprocConditionalsOf(defs[i - 1].node)
+          if (!sharesConditionalWithDifferentArm(arms, preprocConditionalsOf(defs[i].node))) continue
+          relationships.push({
+            source: name,
+            target: name,
+            type: ASTEngine.RelationshipType.Overrides,
+            confidence: 1.0,
+            // The line is the LATER definition's name -- the edge's source token,
+            // the same rule every other type in this file follows.
+            line_number: this.nameLine(defs[i].id),
+            metadata: {
+              relationshipType: "c_redefinition",
+              shape: "conditional-redefinition",
+              overridesLine: this.nameLine(defs[i - 1].id),
+              definitionsInFile: defs.length,
+              evidenceClass: "structural",
+            },
+          })
+        }
+      }
+    }
+
+    // #989 `overrides`, SECOND shape: a MACRO redefined by `#undef` then `#define`.
+    //
+    // This one needs no arm test, and the reason is C's own rule rather than a
+    // convenience. C 6.10.3p2 makes an unconditional redefinition of an object-like
+    // macro a CONSTRAINT VIOLATION unless the two replacement lists are identical, so
+    // `#undef X` followed by `#define X <other>` is the sanctioned way to change a
+    // macro's value, and the later definition replaces the earlier one WHENEVER BOTH
+    // ARE REACHED -- which makes the fact unconditional and independent of which
+    // conditional arms the build takes. sqlite's `src/os_setup.h:50-84` is the shape:
+    //
+    //   #if SQLITE_OS_OTHER+1>1
+    //     #  undef SQLITE_OS_UNIX
+    //     #  define SQLITE_OS_UNIX 0
+    //   #endif
+    //
+    // Measured over the same 359 files: 57 pairs in 13 files. `shape` distinguishes
+    // the two shapes on the edge so a consumer can filter, and the FUNCTION shape
+    // above is the one the differential and the M12 truth can be extended with; this
+    // one is a new relation neither has ever audited, which is stated here rather
+    // than presented as covered.
+    //
+    // Deduplicated per (name, later line): a name may be `#undef`ed and redefined
+    // repeatedly, and each REDEFINITION is its own fact about its own line.
+    {
+      const undefed = new Set<string>()
+      const lastDef = new Map<string, number>()
+      const seenMacroOverride = new Set<string>()
+      for (const entry of macroRedefinitions) {
+        if (entry.undef) {
+          undefed.add(entry.name)
+          continue
+        }
+        const prior = lastDef.get(entry.name)
+        if (prior !== undefined && undefed.has(entry.name)) {
+          const key = `${entry.name}::${entry.row}`
+          if (!seenMacroOverride.has(key)) {
+            seenMacroOverride.add(key)
+            relationships.push({
+              source: entry.name,
+              target: entry.name,
+              type: ASTEngine.RelationshipType.Overrides,
+              confidence: 1.0,
+              line_number: entry.row,
+              metadata: {
+                relationshipType: "c_redefinition",
+                shape: "undef-redefine",
+                overridesLine: prior,
+                evidenceClass: "structural",
+              },
+            })
+          }
+        }
+        lastDef.set(entry.name, entry.row)
+        undefed.delete(entry.name)
+      }
     }
 
     // #383 payload attach: calls per enclosing function.
@@ -3312,7 +3635,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                     unresolvableDimensions = true
                   }
                 }
-                declNode = declNode.childForFieldName("declarator") || declNode.namedChild(0)
+                declNode = declNode.childForFieldName("declarator") || this.firstCleanNamedChild(declNode)
               }
 
               // #947: a macro-mediated function pointer publishes NO member, because
@@ -3616,7 +3939,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                     unresolvableDimensions = true
                   }
                 }
-                declNode = declNode.childForFieldName("declarator") || declNode.namedChild(0)
+                declNode = declNode.childForFieldName("declarator") || this.firstCleanNamedChild(declNode)
               }
 
               // #947: a macro-mediated function pointer publishes NO member, because
@@ -4048,8 +4371,60 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
   }
 
+  /**
+   * #991: the macro name a `preproc_def` / `preproc_function_def` DECLARES, or null
+   * when the grammar could not find one.
+   *
+   * `childForFieldName("name")` is not the same question. When the replacement list is a
+   * brace-enclosed, comment-bearing initializer, the grammar loses the macro name and the
+   * `name:` field binds to whatever identifier it finds next:
+   *
+   *     #define CmppLvl_empty_m {  .flags=0U, .lineNo=0U  }
+   *
+   *     preproc_def
+   *       ERROR(identifier, preproc_arg, comment)    <- "CmppLvl_empty_m {" and the body
+   *       name: (identifier)                         <- ".flags"
+   *       value: (preproc_arg)                      <- "=0U, .lineNo=0U}"
+   *
+   * Measured (`script/m14/tmp/c-audit/c-macro-name.ts`, 348 C-routed sqlite files,
+   * 4,472 `#define` nodes): the `name` field matches what the line actually spells in
+   * **4,466** nodes and is a NAME NO `#define` DECLARES in **6** -- `flags`
+   * (libcmpp.c:5520, the line spells `CmppLvl_empty_m`), `cmpp_size_t` (:5362),
+   * `cmpp__ListType_decl` (:5823), and `c` three times (rtree.c:1224, :1230, :1250,
+   * the `#if 0` Tcl-script shape this lane has recorded before).
+   *
+   * The first of the six is the one that matters, and it is worse than a dangling name:
+   * `flags` RESOLVES. It is a real struct member elsewhere in the same file
+   * (`cmpp_flag32_t flags;`, libcmpp.c:448), so a consumer resolving the macro table
+   * lands on a member -- the same failure shape as `exports -> KERNEL_EXPORT` (#963) and
+   * `instantiates -> malloc` (#962), where the target had to be something a consumer can
+   * resolve to something real. It is also what the lane gate's own `P7-no-macro-named-
+   * member` property convicts, with 9 rows in that one file: `cmpp_ctor_opt.flags@L448 is
+   * named after an object-like macro, not a declarator`. The analyzer was right about
+   * the member and wrong about the macro.
+   *
+   * THE TEST IS STRUCTURAL: in all six, an ERROR child of the same
+   * `preproc_def` / `preproc_function_def` sits BEFORE the name field in source order.
+   * That is decidable from the node's own children, with no text and no pattern, and on
+   * this corpus the test and the fabrication coincide exactly -- 6 of 6 and 0 of the
+   * other 4,466. Nothing is recovered: when the name is lost, no symbol is minted and
+   * the read that needed it stays unresolved, which is the direction this lane ranks
+   * acceptable (#983) over publishing a false edge.
+   */
+  private declaredMacroNameNode(node: Node): Node | null {
+    const nm = node.childForFieldName("name")
+    if (!nm) return null
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      if (c.id === nm.id) return nm
+      if (c.isError || c.isMissing) return null
+    }
+    return nm
+  }
+
   private extractMacro(node: Node, symbols: ASTEngine.UniversalSymbol[], isConditional: boolean) {
-    const nameNode = node.childForFieldName("name")
+    const nameNode = this.declaredMacroNameNode(node)
     if (!nameNode || !nameNode.text.trim()) return
 
     const isFunctionLikeMacro = node.type === "preproc_function_def"
@@ -5350,6 +5725,87 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   // --- Safe Shallow Helpers ---
+
+  /**
+   * #989: the name node a `function_definition` DECLARES, or null when the node is
+   * not a definition of a callable.
+   *
+   * The two shapes are the ones the `function_definition` case of the walk already
+   * knows, in the same order it tests them, and that order is load-bearing:
+   *
+   *   1. #918's macro-wrapped TYPED heading, `CMPP__EXPORT(void *, cmpp_realloc)(…)`,
+   *      whose `declarator` field is the PARAMETER list. Tested only after the plain
+   *      route has failed, because the shape probe is the more expensive of the two
+   *      and every ordinary definition takes the plain path.
+   *   2. A declarator chain holding a `function_declarator`. CGD38's rule: a
+   *      `function_definition` whose declarator is a BARE identifier is a
+   *      macro-qualified STRUCT that recovery shaped as a function, and treating it
+   *      as a definition is how `Mem3Global` and `sqlite3AutoExtList` became phantoms.
+   *
+   * A C keyword is refused (CGD22): the same recovery shapes make `function "if"`,
+   * and the `overrides` post-pass keys on the name, so a keyword key would collide
+   * with every other keyword-named recovery in the file.
+   */
+  private overridableDefinitionName(node: Node): Node | null {
+    const rawDecl = node.childForFieldName("declarator")
+    if (rawDecl) {
+      let d: Node | null = rawDecl
+      while (d && d.type !== "function_declarator") d = d.childForFieldName("declarator")
+      if (d) {
+        const id = this.getIdentifierFromDeclarator(rawDecl)
+        if (id) {
+          const t = id.text.trim()
+          if (t && !C_KEYWORDS.has(t)) return id
+        }
+      }
+    }
+    const typed = macroWrappedTypedHeadingShape(node)
+    if (typed && typed.nameNode) {
+      const t = typed.nameNode.text.trim()
+      if (t && !C_KEYWORDS.has(t)) return typed.nameNode
+    }
+    return null
+  }
+
+  /**
+   * #990: the first named child that is not an ERROR or MISSING node, or the first
+   * named child when every one of them is.
+   *
+   * `getIdentifierFromDeclarator` has done this since #916-C, for a reason that is
+   * recorded on that method and is worth repeating because this lane has now
+   * committed the same defect TWICE in two copies of the same walk.
+   *
+   * `char *(SQLITE_CDECL *mprintf)(const char*,...)` is a function-pointer member
+   * whose calling convention is a MACRO. It is not legal C without expansion, so
+   * tree-sitter recovers it as
+   *
+   *     parenthesized_declarator
+   *       ERROR(field_identifier)              <- SQLITE_CDECL, the MACRO
+   *       pointer_declarator declarator: (field_identifier)   <- mprintf, the MEMBER
+   *
+   * `parenthesized_declarator` carries no `declarator` FIELD, so both member-name walks
+   * fell to `namedChild(0)`, which is the ERROR, and then descended into it and
+   * returned the macro. Measured on sqlite `src/sqlite3ext.h` against clang 14: seven
+   * phantom members named `SQLITE_CDECL` on `sqlite3_api_routines` AND the seven real
+   * members (`mprintf`, `xsnprintf`, `test_control`, `db_config`, `log`, `vtab_config`,
+   * `str_appendf`) MISSED -- one walk produced both halves of the same defect, which is
+   * why the phantom count alone would have understated it.
+   *
+   * This is not the #928 class. #928 declined a member because its name was
+   * unrecoverable; here the real member is in the parse, one sibling away, and the
+   * phantom took its place. Nothing is invented: the ERROR subtree is simply not where
+   * a declared name can be read from.
+   *
+   * `?? kids[0]` keeps the old behaviour exactly when EVERY child is damaged, so a file
+   * that is nothing but ERROR still yields whatever it yielded before.
+   */
+  private firstCleanNamedChild(node: Node | null): Node | null {
+    if (!node) return null
+    const kids = (node.namedChildren ?? []).filter((k: Node | null): k is Node => !!k)
+    if (kids.length === 0) return null
+    const clean = kids.find((k: Node) => !k.isError && !k.isMissing)
+    return clean ?? kids[0]
+  }
 
   private getIdentifierFromDeclarator(node: Node | null): Node | null {
     let current = node

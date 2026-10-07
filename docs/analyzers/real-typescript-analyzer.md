@@ -26,6 +26,58 @@
 
 ## Relationship ontology
 
+Per-type verdicts for the ten types, the six questions per emitted type, and the
+DERIVATION status of this lane are in
+[`typescript-ambiguity-sweep.md`](typescript-ambiguity-sweep.md), with the
+instruments under `validation/m14/instruments/typescript/`. Summary of what that
+sweep measured, so this file is not the only place a reader looks:
+
+- **Ten of ten EMITTED**, none RULED, none GAP — per-type counts and file counts
+  over two derived populations (vuejs 400 files, element-plus 400 files).
+- **`firing-check-v2` = 8/10** at NFILES 200 and 400 on element-plus; **7/10** at
+  NFILES 25. The two silent types (`implements`, `overrides`) are silent because
+  that corpus contains 0 of both constructs, which is measured, not assumed.
+- **DERIVATION: this lane emits 8 audited types and 2 unaudited** — `exports`
+  and `imports`. Measured by evaluating `differential.ts`'s own compared-label
+  filter. Both were audited against the differential's own truth builders:
+  `exports` 357/357 covered, `imports` 1125/1125 covered, **0 unexplained** each
+  on element-plus @200 files. What is still missing is the WIRING: adding both
+  labels to the compared-label allowlist in `script/m14/differential.ts` is
+  master-owned and is reported as a need, not made here.
+- **R7: 0 `unknown` endpoints, 0 empty endpoint names, 0 edges below confidence
+  0.7** across both populations.
+- **Two open defects, both measured, neither fixed here** — see
+  [Known limitations of the edges this analyzer emits](#known-limitations-of-the-edges-this-analyzer-emits).
+
+## Known limitations of the edges this analyzer emits
+
+Two, both with numbers, both deliberately left unfixed because each crosses a
+file this lane does not own:
+
+1. **A module-level edge source is a file basename, which is not always an
+   identifier.** `imports`, `exports` and `calls` fall back to `moduleLeafName()`
+   (`path.basename(filePath, extname)`, `:5764`) when an emission site has no
+   enclosing declaration. For `docs/.vitepress/build/crowdin-credentials.ts` that
+   is `crowdin-credentials`, and a `-` cannot appear in a TypeScript identifier,
+   so no declaration anywhere can carry that name. Measured on element-plus,
+   400 files, 22,631 edges: **400 endpoints are not valid identifiers, 321 of
+   them sources** (`imports`/source 210, `exports`/source 59, `calls`/source
+   52), across 89 distinct values in 69 files. Over the 8 files probed by name,
+   0 of 8 basenames is identifier-shaped and 0 of 8 is a published symbol, and
+   97 of 288 edges have an unresolvable source.
+   The edges themselves are true — that module does import that — so they are
+   unattachable rather than fabricated, and the distinction matters for
+   `bb_impact`. This is the JS/TS **family contract**, not a slip:
+   `real-javascript-analyzer.ts:354` does the identical thing, and the comment
+   at `:4491` records the choice as a deliberate earlier fix ("never a `(script)`
+   placeholder no consumer can resolve — JS parity: moduleName"). Repairing it
+   inside one lane would desynchronise the two analyzers.
+2. **`overrides` reports the wrong `evidenceClass`.** It emits
+   `usage_contextual` at 0.95 while every other structurally-derived type on this
+   lane reports `structural`. Its arms abstain unless the base declaration
+   resolves in-file (`if (!baseDecl) continue`, `:5346` and `:5458`), so the edge
+   is derived from in-file structural truth and not from a contextual mention.
+
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
 | calls | ✅ | `call_expression` → callee leaf name (member expressions reduce to leaf: `obj.method()` → `method`); source = enclosing function/method leaf name; builtins filtered (console.*, Object leaf methods); `super()` filtered (language keyword); `this.x()` → leaf `x` | 1.0 |
@@ -33,7 +85,8 @@
 | implements | ✅ | `implements_clause` → each interface leaf name | 1.0 |
 | instantiates | ✅ | `new_expression` → constructor leaf name (with `contains: owner → constructor` complement) | 1.0 |
 | uses | ✅ | type-reference usage inside type positions → referenced type leaf | 1.0 |
-| imports | ✅ | `import_statement`/`import` specifiers → source = module leaf name, target = imported symbol name (named + default + namespace imports) | 1.0 |
+| imports | ✅ | `import_statement`/`import` specifiers → source = module leaf name, target = `<module>:<name>` (named + default + namespace imports); side-effect-only and `require` forms publish `<module>:*` | 1.0 |
+| imports — type-only marker | ✅ | `metadata.isTypeOnly` — `true` for `import type {…}` (anonymous `type` child of the statement) and for the inline TS 4.5+ form `import { type A, B }` (anonymous `type` child of the `import_specifier`); `false` otherwise. Metadata only: no edge added, removed, or re-pointed | 1.0 |
 | exports | ✅ | `export` statements → source = module leaf, target = exported name; `export default` handled | 1.0 |
 | overrides | ✅ | method in derived class whose name matches a base-class method (base resolved via extends heritage) → `Derived.method → Base.method` | 1.0 |
 | references | ✅ | `identifier` usage resolution within the file → referenced symbol leaf | 1.0 |

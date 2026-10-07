@@ -94,12 +94,33 @@ now 0). Not a calls edge, not a construction — a type.
 ### Where a file-level edge's source lives
 
 A module-less file (every `.hrl` header, and a `.erl` before its `-module`)
-attributes its include/behaviour/import edges to `Global` — the same fallback
-the expression paths use (`callSource`). These three sites used to fall back to
-the FILE PATH, so all 290 module-less headers of the pinned corpora hung their
-edges off an absolute checkout path: an identity that changes with the
-checkout, and one no gate could see (F5 compares `label + target` and never
-reads `from`).
+attributes its edges to the FILE PATH — which is what `ownerNameOf`
+(`src/ast/real-erlang-analyzer.ts`) and `currentSource` both return, and which
+`parseFile` supplies as an ABSOLUTE path.
+
+**This section previously claimed the fallback is `Global`, and that is false.**
+`Global` is the string the shared oracle uses
+(`script/m14/oracles/erlang-contains.ts`, `NO_MODULE`); the analyzer never emits
+it. Measured over the 3,939-file census (`validation/m14/tmp/erlang-ontology-census.json`):
+**21,223 `contains` edges, 103 `references`, 13 `exports` and 1 `imports` edge
+carry an absolute checkout path as their SOURCE, and 21,221 symbols carry one as
+their `ownerName`.** That is 21,340 relationship endpoints and 21,221 symbols
+whose identity changes with the checkout directory, on a repository where F5
+compares `label + target` and never reads `from` — which is why nothing has ever
+reported it.
+
+It is NOT fixed here and the reason is stated rather than implied. ER-D32 is a
+reviewed decision with its alternatives recorded (synthesising a module name from
+the filename fabricates a module no compile can produce; an empty owner loses the
+containment of every real declaration), and changing the owner changes
+`ownerName` on 21,221 published symbols and the source of 21,340 edges — a
+store-visible change to a published contract, not a lane-local edit. The cheapest
+correct fix is a PROJECT-RELATIVE path, and the analyzer is not given a project
+root: `parseFile(filePath, projectPath)` exists
+(`src/ast/pool-worker.ts:712`) but `projectPath` is never forwarded into the
+`AnalyzeContext` that reaches `analyze(rootNode, content, filePath, context)`
+(`src/ast/engine.ts:1663`). Filed for the owner; measured here so it is a number
+and not a story.
 
 - Parser: `tree-sitter-erlang`, pinned at `wasm/tree-sitter-erlang.wasm`
 - Language detection: `.erl` -> `erlang` in `language-detection.ts`
@@ -178,11 +199,10 @@ and defines a callback yields ONE symbol whose kind and line are the
 | `uses` | record member read (`S#r.f`, `#r.f`) and record update (`S#r{f=…}`) | java/kotlin member-read parity (ER-D24) |
 | `instantiates` | a record construction outside pattern position | an UPDATE is `uses`, never `instantiates` (ER-D4) |
 | `references` | include / include_lib / import; a `?MACRO` use; a fun VALUE (`fun f/1`, `fun m:f/2`); a type dependency from a `-type`/`-opaque`/`-nominal`/`-spec`/`-callback` body, from a record field's type, and a record named in a type | a qualified TYPE keeps its module (ER-D31) |
-| `extends` / `overrides` | **never** | **Erlang has no inheritance.** Ruled N/A (ER-D34; see `symbol_kind_audit` in `script/m14/spec/erlang-completeness.json`) |
-| `exports` | `-export([f/a])` and `-export_type([t/0])`, one edge per `fa` in the attribute (ER-D40) | the module's public surface, which is a DIFFERENT statement from `contains` ("is a member"). Named at the `fa`'s own line; `-export([?MODULE/0])` resolves `?MODULE` to the module name |
+| `exports` | `-export([f/a])` and `-export_type([t/0])`, one edge per `fa` in the attribute (ER-D40) | the module's public surface, which is a DIFFERENT statement from `contains` ("is a member"). Named at the `fa`'s own line; `-export([?MODULE/0])` resolves `?MODULE` to the module name (ER-D28) and an UPPERCASE name is read as the `var` the grammar types it to be (ER-D42) |
 | `imports` | `-import(Mod, [f/a])` (ER-D41) | the dependency the module pass reads (`brain_import` rows, `dependencies.ts:27-28`), alongside the `references` mention of the same atom |
-| `extends` / `overrides` | **never** | **Erlang has no inheritance.** Ruled N/A |
-| `exports` (as a relationship) | **never** | the language export list is `ExportInfo`; no analyzer in the family emits an exports *relationship* for it |
+| `extends` | **never** | RULED with a measurement — see "The two ruled types, and what rules them" below. ER-D34 recorded it as N/A; the ruling now carries a corpus instrument and a corpus number, which N/A did not |
+| `overrides` | **never** | **GAP** — the construct is real and 2,548 identities wide, and the derivation needs a resolution channel this repository does not give an Erlang file (`.sol` only). The in-file tier and the preprocessor's own `redefine` marker both measure 0 replacements. See "The two ruled types" and the GAP correction below |
 
 `confidence` is 1.0 for structural edges and 0.9 for name-resolved ones. **No
 edge is a heuristic guess** — the corpus dual lens reports a heuristic class of
@@ -209,6 +229,691 @@ edge is a heuristic guess** — the corpus dual lens reports a heuristic class o
   of a record's SHAPE, never an `instantiates` (ER3, the same DECL-ONLY
   boundary as calls).
 - Params/locals never become symbols.
+
+## The ten relationship types, with a number behind each (re-measured 2026-10-04)
+
+The ontology workstream (`docs/analyzers/ONTOLOGY-WORKSTREAM.md`) asks for one
+verdict per (analyzer × type), each carried by a MEASUREMENT, and for the types
+already emitted it asks six questions that source derivation cannot answer.
+
+Everything in this section is measured through the production entry
+(`src/ast/pool-worker.parseFile`) over **3,939 admitted `.erl`/`.hrl` files** —
+otp `36e371a4ef0f` (3,891) + elixir `73b33255188c` (48) — sorted, one parse per
+file, no sampling, no RNG, no clock inside any count
+(`script/m60/erlang-ontology-census.ts`,
+`validation/m14/tmp/erlang-ontology-census.json`). Corpus totals for that run:
+**185,818 symbols, 929,359 relationships, 110 grammar-error files (2.79%), 0
+crashes, 0 unknown symbol kinds, 0 empty names, 0 ownerless members.**
+
+**Re-measured a second time in this wave and every count reproduced to the digit**,
+at a different worker width and after this wave's source edit
+(`validation/m14/tmp/erlang-ontology-census.json`): 185,818 symbols,
+929,359 relationships, 110 grammar-error files, 0 crashes, and all ten per-type
+counts and file counts identical. The determinism claim is therefore measured over
+two runs rather than asserted.
+
+> **The previous version of this section carried numbers that did not describe the
+> analyzer it shipped with.** `exports` was recorded as 57,819 rows, which is the
+> count the analyzer produced BEFORE ER-D42/ER-D43 landed in the same commit, and
+> its `oracle-agreement` row was recorded before the lane oracle gained its
+> `?MODULE`-in-an-export-list rule. Re-running the census against `HEAD~1`'s
+> analyzer reproduced 57,819 to the digit and reproduced every other count exactly,
+> which is how the staleness was caught: **one label differed from HEAD and nothing
+> else did, and the label was the one the commit message was claiming to have fixed.**
+> The oracle-agreement row is a second, independent instance of the same shape — the
+> committed artifact's oracle section is 48 rows away from the oracle in the same
+> commit — so this section is regenerated, not edited. The instrument also had a
+> determinism claim it did not honour (below), and that is fixed too.
+
+The shared arbiter `script/m14/ontology-coverage-gate.ts` **refuses to report for
+erlang**: its `RULED_BY_LANG` table carries `bash` and `json` only, so the gate
+exits 2 with "no RULING TABLE for erlang" — correctly, because a gate with an empty
+table would call every un-emitted type unjustified, which is a verdict about the
+table and not about the lane. That file is master-owned, so this section is the
+lane's half of the same measurement over the same corpus. Re-confirmed at this
+commit: exit 2, 3,939 admitted files, no RULING TABLE.
+
+> **A second, unrelated defect in that shared gate, found this wave.** It counts
+> emissions with `String(x.type ?? x.relationshipType ?? "")` against
+> `ALL_TYPES = ["calls","uses","contains","imports","references","exports","extends","implements","overrides","instantiates"]`
+> — but `RelationshipType.Imports` serializes as **`brain_import`**
+> (`src/ast/types.ts:69`, `Imports = "brain_import"`), which is not in that list.
+> So the shared gate cannot see an Erlang `imports` edge and would report the type
+> as not emitted on a lane that emits 300 of them. The census maps it explicitly and
+> says so; the shared gate does not. Reported, not fixed — master-owned.
+
+| type | verdict | count | files | where it comes from |
+|---|---|---|---|---|
+| `calls` | **EMITTED** | 424,081 | 3,152 | `call` in an evaluation context; local calls resolve against the file's declared NAME/ARITY set (ER-D45), remote calls keep `module:function` |
+| `references` | **EMITTED** | 187,010 | 3,164 | include/include_lib paths, `-import` mentions, macro uses, fun values, type dependencies |
+| `contains` | **EMITTED** | 182,162 | 3,847 | module → its records/macros/types/functions/callbacks; record → its fields |
+| `uses` | **EMITTED** | 58,082 | 965 | record member read (`S#r.f`) and record update (`S#r{f=…}`) |
+| `exports` | **EMITTED** | 64,354 | 3,079 | one `exports` edge per `fa` in `-export` / `-export_type` |
+| `instantiates` | **EMITTED** | 12,798 | 1,053 | `record_expr` outside pattern position; an UPDATE is `uses`, never `instantiates` |
+| `implements` | **EMITTED** | 572 | 550 | `-behaviour(B)` |
+| `imports` | **EMITTED** | 300 | 238 | `-import(Mod, [f/a])` (ER-D41) |
+| `extends` | **RULED** | 0 | 0 | instrument A + instrument B, below |
+| `overrides` | **GAP** — construct real, 2,548 identities, not derivable from one file | 0 | 0 | the cross-file channel does not exist for `.erl`; the in-file and preprocessor tiers measure 0 replacements (probes below). **This is a correction**: the previous version of this row read `RULED in-file · REPORTED cross-file`, and `RULED` is the wrong verdict by the workstream's own definition — a type is RULED only when the construct **never occurs**, and this one occurs 2,548 times |
+
+### `overrides` is a GAP, not a RULED verdict, and the label was wrong for a whole wave
+
+`docs/analyzers/ONTOLOGY-WORKSTREAM.md` allows exactly three verdicts. `RULED` requires
+"a written reason **AND a corpus measurement** proving the construct that would produce
+it **never occurs**". The behaviour-callback supply construct occurs **2,548 times**
+(B7, below). So the type cannot be RULED whatever the plumbing argument is, and calling
+it RULED asserts a falsehood about Erlang while looking like a completed piece of work.
+The verdict is **GAP**: the language has the construct, and this analyzer does not read it.
+
+What is implemented, and what is not, is unchanged by the label: no `overrides` edge is
+emitted, because no derivation of one exists from inside `analyze(rootNode, content,
+filePath)` — see "The one thing that has to change first" for the three master-owned
+edits, each verified by reading the file rather than by inference.
+
+### What the instrument does and does not promise
+
+Eight workers parse concurrently, so **"the first N examples collected" is a race.**
+Two runs over the same corpus at the same commit produced different `exampleFiles`,
+different `examplesSourceOnly` and a different `placeholders.examples` head, while
+every COUNT agreed — and the previous version of this file claimed "two runs agree to
+the digit", which was false about the part a reader looks at when a number surprises
+them. Both halves are now separated and both are true:
+
+* **every COUNT is deterministic** — sorted file list, one parse per file, every file
+  taken exactly once by a shared cursor, no RNG, no sampling unless `--sample`, no
+  clock read inside any count. Two consecutive runs now differ in exactly one leaf,
+  the `at` timestamp;
+* **every EXAMPLE LIST is deterministic too** — collected unordered, then sorted by
+  (corpus file, line, text) before printing. `exampleFiles` names the first six
+  DISTINCT files in corpus order, where it used to print one file name once per edge
+  and therefore repeat a single name six times while saying nothing about which files.
+
+The `at` field is metadata, not a verdict, and is expected to differ.
+
+### The six questions, per emitted type
+
+**(a) FIRES** — a non-zero count from the production entry on real corpus files: the
+`count` and `files` columns above. Nothing in that table is derived from the source;
+every one of the eight is a measured production run.
+
+**(b) ORACLE AGREES** — a second walker over the **same grammar**. A grammar bug both
+walkers inherit is invisible to this comparison by construction, so these numbers
+bound *implementation disagreement* and nothing more; a shared-grammar defect would
+agree with itself here and disagree with the language. The oracle set is the union of
+the shared `differential.deriveErlangEdges` and the lane's own
+`oracles/erlang-contains.ts` + `oracles/erlang-exports-imports.ts`, so three
+walkers' worth of independence, still one grammar. Both comparison rules are reported:
+the harness rule (`label + normTarget(target)`, which `differential.ts` grades on)
+and the exact-target rule (what a consumer reading the raw target sees). In this run
+the two rules agree on `unexplained` for every type, so one column is shown.
+
+| type | truth targets | analyzer targets | MISSING | unexplained | coverage (harness rule) | coverage (exact target) |
+|---|---|---|---|---|---|---|
+| `calls` | 130,923 | 130,021 | 902 | 713 | 99.31% | 99.31% |
+| `uses` | 11,187 | 11,087 | 100 | 0 | 99.11% | 99.11% |
+| `contains` | 158,920 | 158,867 | 53 | 981 | 99.97% | 99.97% |
+| `imports` | 287 | 287 | 0 | 0 | **100.00%** | **100.00%** |
+| `references` | 35,715 | 35,538 | 177 | 7,458 | 99.50% | 99.50% |
+| `exports` | 55,150 | 55,134 | 16 | 0 | 99.97% | 99.97% |
+| `implements` | 572 | 572 | 0 | 0 | **100.00%** | **100.00%** |
+| `instantiates` | 5,269 | 4,365 | 904 | 0 | 82.84% | 82.84% |
+
+**Every one of these disagreements is now attributed to a named cause, and in five of
+the six classes the cause is the ORACLE, not the analyzer.** The previous version named
+three; this pass attributes all of them, because an unattributed `unexplained` is the
+gate's word for a confident fabrication and leaving 713 of them unexplained is leaving
+a defect class open.
+
+1. **`calls`, 902 MISSING / 713 unexplained — both directions attributed.**
+   *MISSING* (the oracle derives it, the analyzer does not) over a 400-file stride-9
+   sample of the same corpus: **pattern position 2,824 · type syntax 1,290 · macro
+   body 126 · attribute head 20 · not declared in this file 13 · UNEXPLAINED 2**, and
+   the two are `?MODULE:new` in `epp_SUITE_data/pmod.erl` and `wxe_util:rec` in
+   `wx/api_gen/wx_extra/wxListCtrl.erl` — the two grammar-damaged classes of ER-D38,
+   where emitting nothing is the documented and correct behaviour. So the MISSING class
+   is ER-D3/ER-D7/ER-D11/ER-D23 plus the damaged files, and **0 rows are unexplained.**
+   *Unexplained* (the analyzer emits it, the oracle does not): over the same sample,
+   **228 of 228** sit in files the oracle cannot name — `ad_expiring_account.erl` has
+   no `-module` at all and `file_SUITE.erl` writes `-module(?FILE_SUITE)`, and the
+   oracle's local-call gate requires a readable module name (`modName &&`), so it
+   derives no local calls there at all. That is ER-D34/ER-D32: the analyzer attributes
+   such a file to its path and still resolves its locals, which is right.
+   **This class is what ER-D45 was found by**, and it is the reason `unexplained`
+   moved 755 → 713 while `MISSING` did not move at all.
+2. **`contains`, 981 unexplained / 53 missing.** `contains` is in the shared
+   audited-label set (`differential.ts:23238`) and the lane's oracle
+   `script/m14/oracles/erlang-contains.ts` EXISTS — and is **imported at
+   `differential.ts:55` and never called**. Measured on the shared differential's own
+   60-file otp draw at this commit: `COMPARED WITH NO TRUTH: contains (1665
+   comparable, 0 truth)` with all 1,665 in `unexplained`. So the lane's LARGEST class
+   is audited by an allowlist entry with nothing behind it, which is precisely the
+   "audited but never produced" shape `overrides` was in for haskell. The derivation
+   itself measures **99.97%** under the harness rule when it is run, so the oracle is
+   sound and the WIRING is missing. The 981 that survive when it IS run are two
+   oracle-side gaps, each verified by running both oracles on the named file:
+   a **`-callback`-only member** (`z.erl`: `-module(z).` + `-callback z() -> term().`
+   yields analyzer `contains z -> z` and **both** oracles empty), and a **macro whose
+   name is a quoted atom** (`asn1_records.hrl`: the analyzer publishes 142 `contains`
+   targets, the lane oracle 140, and the difference is exactly `'COMPLETE_ENCODE'`
+   and `'TLV_DECODE'`). A callback and a quoted macro ARE members of the module, so
+   the analyzer is right and both oracles are short.
+3. **`instantiates`, 904 MISSING.** The shared oracle's pattern-position rule
+   (`differential.ts`, `inHead`) recognises a clause HEAD and stops. It does not
+   recognise a **case/receive/try arm pattern** or a **match's left side**, so it
+   derives `instantiates` for `#wx{event=#wxClose{}} ->` in a `receive`
+   (`otp/lib/wx/examples/simple/hello.erl:61`) and for `{ok, #file_info{…}} =
+   file:read_file_info(…)` (`otp/lib/stdlib/test/tar_SUITE.erl:317`). The analyzer
+   emits nothing for either, which is correct (ER-D7/ER-D4: a pattern is a MATCH).
+   A fixer who "repaired" these 904 rows would introduce 904 wrong edges.
+4. **`references`, 177 MISSING / 7,458 unexplained.** The unexplained bulk is the ER3
+   narrowing itself: the shared oracle derives a type dependency for every atom it
+   meets, and the analyzer emits only APPLIED names.
+   `validation/m14/results/erlang-er3-corpus-census.json` measured the old rule at
+   4,043 OTP / 244 rebar3 rows whose own site line does not apply the name it cites,
+   and 0 after the narrowing. The MISSING 177 are macro-body calls and include-path
+   targets the filter drops (below).
+5. **`exports`, 16 MISSING, 0 unexplained.** All 16 are rows the shared sanitizer in
+   `src/ast/pool-worker.ts` deletes on the way out of `parseFile` — quoted atoms and
+   OTP's sentence-length test-function names. Measured and attributed in "What
+   `parseFile` does not deliver" below. The lane oracle and the analyzer agree on
+   every row that survives; the loss is in neither of them.
+6. **`uses`, 100 MISSING / 0 unexplained.** The oracle's `inHead` stops at a clause
+   head, so it misses a member read or update inside a **match's left side**, which
+   is a pattern (ER-D7).
+
+**(c) LABELLED** — the metadata discriminator each class carries, histogrammed over the
+whole corpus. A class with two discriminators has two shapes a consumer can tell apart;
+a class with `(none)` gives it no way to.
+
+```
+calls         local function call=221,783   remote function call=202,298
+uses          record member read=33,053     record field update=25,029
+contains      (none)=182,162                imports (none)=300
+references    macro use=121,946  type reference=56,382  fun value reference=4,500  (none)=4,182
+exports       export=62,140                 export_type=2,214
+instantiates  (none)=12,798                 implements  OTP behaviour callback implementation=572
+```
+
+`contains`, `imports` and `instantiates` carry no discriminator. For `contains`
+and `instantiates` that is defensible — one shape each — and `imports` has exactly
+one form in Erlang (`-import`), so the `(none)` is honest rather than a gap. The
+one class where a discriminator WOULD earn its keep is `exports`, and it has one:
+`meta.exportForm` separates `export` from `export_type`, which is what keeps a
+consumer from reading a published TYPE as a published function. `calls` splits
+local from remote, and after ER-D45 both halves mean the same thing: every local
+edge now names a `(name, arity)` the file declares.
+
+**(d) BOTH ENDPOINTS RESOLVE** — every endpoint checked against the symbol set the
+SAME file publishes. An endpoint naming a module or a type declared in another file
+cannot bind here and is not a defect, so it is named as its own class rather than
+counted as a pass or a failure.
+
+```
+type          both ends bind   source binds / target is external   target-only   neither
+contains      160,894 (88.3%)  35                                   21,231        2
+exports        63,953 (99.3%)  384                                   12            5
+calls         225,420 (53.2%) 198,632                               13           16
+uses           31,387 (54.0%)  26,695                                0            0
+instantiates    4,295 (33.6%)  8,501                                0            2
+references     69,463 (37.1%) 117,388                               33          126
+imports            3 ( 1.0%)      296                                  0            1
+implements         3 ( 0.5%)      569                                  0            0
+```
+
+`implements` and `imports` sit near 0% **by construction**: the target is another
+module's name by definition, and this is a per-file measurement. The number to read
+is not "does it resolve" but "is the target a name at all" — `-behaviour(B)` where
+`B` is written in the file, never synthesised.
+
+**(e) CONFIDENT** — the full histogram for the whole corpus is two values wide per
+class and **nothing erlang emits is below 0.7**:
+
+```
+calls 0.9:424,081     uses 1:58,082      contains 1:182,162    imports 1:300
+references 0.9:61,247 / 1:125,763        exports 1:64,354      implements 1:572
+instantiates 1:12,798
+```
+
+So no erlang edge is a heuristic, and none needs a reason code under the confidence
+rule. The 0.9 on `calls` and on include-style `references` is the name-resolved tier
+(a remote callee is a real name in the source, but the module half is not resolved
+to a symbol here) — a declared tier, not a guess.
+
+**(f) R7 — no placeholder endpoints.** 0 unknown symbol kinds, 0 empty names, 0
+invented sentinel names, 0 ownerless members across 185,818 symbols. On the
+RELATIONSHIP side there is one large class and it is reported rather than hidden:
+**21,344 endpoints whose source is an absolute checkout path** (`contains` 21,223,
+`references` 103, `exports` 17, `imports` 1), and **21,221 symbols** carrying one as
+their `ownerName` — the same defect seen from each end, which is ER-D32's
+file-path owner meeting `parseFile`'s absolute path. Three smaller classes were
+measured and reviewed, and the sentinel figure is restated because the previous
+version of this section reported **40** under a three-name list that also counted
+`undefined`; the census's own six-name list (`unknown`, `anonymous`,
+`<anonymous>`, `??`, `TODO`, `UNKNOWN`) measures **69** endpoints — `target:sentinel`
+50, `source:sentinel` 19 — plus **7** `source:windows-path`. The two figures are not
+comparable and neither is wrong; the list is named so a reader can tell:
+
+* **69 endpoints named `unknown`/`anonymous`/`TODO`. Reviewed and legitimate**:
+  those are ordinary Erlang atoms and function names. `otp/lib/diameter/src/base/diameter_traffic.erl:1225`
+  defines `unknown/1` as a two-clause predicate and `otp/lib/ssl/test/ssl_cipher_suite_SUITE.erl:283`
+  defines `anonymous/0`; `otp/lib/kernel/src/socket.erl:1876` writes
+  `-type sctp_operation_error() :: unknown`, where the name is the atom literal. The
+  R7 sentinel list is written for languages where a symbol called `unknown` can only
+  be a fallback, and the probe that found these is what flagged the list as wrong for
+  this language. Reported rather than suppressed.
+* **7 endpoints containing a backslash.** Quoted Erlang atoms, not paths —
+  `'COMPLETE_ENCODE'`, `'#=@: difficult_case_name_äöå'` — so the probe's `windows-path`
+  class is a false positive on a quoted atom. On the symbol side the same probe reports
+  `name:windows-path` 14 and `ownerName:windows-path` 2, and the SAME names are the rows
+  the shared sanitizer deletes; see below.
+* `ownerName` empty on 3,666 symbols: those are `module` symbols, which correctly have
+  no owner.
+
+### What `parseFile` does not deliver, and the two places that is decided
+
+`parseFile` is not a pass-through. It runs every relationship through
+`filterNoiseRelationships` in `src/ast/pool-worker.ts`, and **that filter is not
+Erlang-aware for quoted atoms**: an Erlang quoted atom is a real function name and
+may contain anything the language allows. `script/m60/erlang-parsefile-drop.ts` runs
+both paths per file over the whole corpus and keys both sides by `pushRel`'s own
+identity, so a same-line multi-arity pair is two rows on each side and the comparison
+is fair. See `validation/m14/tmp/erlang-parsefile-drop.json` for the per-rule
+attribution; the short form is in the wave report.
+
+The second place is the STORE. ER-D43 widened the analyzer's edge key so that
+`-export([start/0, start/1])` on one line publishes two rows, and the census counts
+that as **+6,535 rows**. The store's own identity does not carry the arity —
+`src/ast/parallel-indexer.ts` builds
+`relId = ${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine}` and inserts
+with `INSERT OR IGNORE` — and both rows have the same target NAME and the same line.
+`script/m60/erlang-exports-store-multiplicity.ts` measures this through the real
+indexer on three shapes that separate the hypotheses: **A** same name, same line, two
+arities; **B** same name, two lines, two arities; **C** two names, one line. Result:
+A collapses, B and C do not. **So the recovered multiplicity is a `parseFile` fact and
+not a graph fact**, and the fix belongs to the store's key, which is master-owned.
+The analyzer is NOT reverted over it: the parse-level rows are strictly more faithful
+than the rows they replaced, and every consumer that reads `parseFile` sees them.
+
+### The two ruled types, and what rules them
+
+`script/m60/erlang-construct-probe.ts`, over the same 3,939 files, one parse each
+(`validation/m14/tmp/erlang-construct-probe.json`). It applies the two instruments
+the shared gate's header names, and the choice of instrument is decided by the
+question, not by convenience. Every number in this subsection was re-measured at this
+commit and each reproduced the recorded value.
+
+**`extends` — RULED.** The pinned wasm's OWN tables, which is instrument A (a grammar
+inventory, not a corpus walk — a walk can only see what the corpus exercises):
+
+| what | measurement |
+|---|---|
+| named node types the wasm's table DEFINES | 137 (132 distinct) of 338 total, plus 152 anonymous |
+| **abstract supertype / subtype edges the grammar declares** | **NONE** — this is the grammar's own account of "this production IS-A that one", and it is empty |
+| field names the grammar declares | 52 |
+| of 23 inheritance-shaped node types probed (`class_declaration`, `interface_declaration`, `trait_declaration`, `inheritance_specifier`, `extends_clause`, `superclass`, `mixin`, `subclass`, …) | **0** are in the table, **0** are produced by the corpus |
+| of the 52 field names, any matching `/^(super\|base\|parent\|extend\|inherit\|implements\|subtype\|ancestor)/i` | **0** |
+| distinct node types observed on the corpus | 127 |
+
+Instrument B, for a language that might spell the construct as an ATTRIBUTE instead of
+a node type: **0 occurrences** of `-extends` / `-inherits` / `-subclass` /
+`-parent_module` / `-base_module` / `-include_class` / `-of_type` in 3,939 files.
+
+And the nearest thing Erlang HAS, counted rather than asserted: **2,992 type
+declarations in 279 files apply another type the same file declares.** That is a type
+DEPENDENCY and it is published as `references` (ER-D10, narrowed by ER3 to applied
+names only). Publishing it as `extends` would put a fabricated edge on every map field
+key and every atom literal — the pre-ER3 rule produced 4,043 such rows on OTP whose own
+site line does not apply the name it cites.
+
+**`overrides` — RULED in-file, REPORTED cross-file, NOT EMITTED.** This is the type
+the ontology gate exists for, so the ruling is stated as a set of measurements with the
+construct that would overturn each one:
+
+| candidate construct | measurement | why it is not an `overrides` edge |
+|---|---|---|
+| an attribute publishing a definition as REPLACEABLE (Elixir's `defoverridable`) | **0** occurrences in 3,939 files | nothing marks a definition replaceable, so no row can say which definition replaces which |
+| a node type whose name carries `overrid`/`replace` | 0 of the 132 named types, except OTP's binary `ssr_definition` / `ssr_replacement` compile directives and their 6 `replacement_*` guard forms, which select a binary-comprehension backend | a compile-time codegen switch, not a member |
+| one `(name, arity)` declared in more than one preprocessor region | **87** sites in 46 files: **79 mutually exclusive `-ifdef`/`-else` branches, 8 same-macro `-ifdef` guards with no `-else`, 0 unconditional redefinitions** | Erlang's own compiler rejects two unconditional declarations of one identity, so the only legal cause is conditional compilation — and exactly ONE body survives preprocessing. Nothing replaces anything. The multiplicity is already published as `meta.clauseCount`, so the fact is not lost |
+| a `-callback` declared AND the same identity defined in ONE file | **33** sites in 20 files | ER-D30 merges the pair into ONE symbol on purpose, so the edge would be `f → f`: a self-loop carrying no information |
+| **a `-behaviour(B)` module supplying a callback B declares** | **378** `-callback` declarations in 83 files from **79** modules; **572** `-behaviour` sites in 550 files across 50 distinct behaviours; **43** behaviours whose callbacks are in this corpus; **560 of 572** implementation files match at least one of B's callback identities; **2,548** identities supplied by exact name AND arity (276 published in those behaviours) | **THE CONSTRUCT IS REAL AND LARGE. It is deliberately not published, and the reason is a fact about this repository rather than about Erlang.** The only production channel for cross-file member resolution is `AnalyzeContext.projectIndex`, and `src/ast/parallel-indexer.ts:1300` registers exactly one extension for it: `PROJECT_INDEX_EXTENSIONS = { ".sol": "solidity" }`. No `.erl` entry, so an arity-carrying index is never built. The two channels that DO exist carry a `Set<string>` of bare NAMES — `src/ast/override-context.ts:85` adds `s.name`, `src/ast/project-index.ts:313` adds `childForFieldName("name")` — and the batch indexer only runs the companion pass for `["perl", "python"]` (`parallel-indexer.ts`, the `for (const companionLang of …)` loop), so an Erlang companion is never built even in memory. Erlang's callback identity is name AND arity, because that is what OTP checks: `Module:behaviour_info(callbacks)` is compared against the module's exported `f/A` pairs. A name-only match would publish `code_change/2` as implementing `code_change/3`, at a confidence a reader cannot discount — and this repository has already measured that failure mode on another lane: 75.6% of perl's `overrides` edges are withdrawn once a companion exists (`src/ast/override-companion-pass.ts`) |
+
+The last row is why this is not written as a flat RULED. Every other lane that
+publishes a member-level supply edge does it **in-file** — Clojure's
+`(defprotocol P (m [this]))` with `(extend-type T P (m …))` in one file, and
+Haskell's `class C m` with `instance C T where m` in one file — which is why neither
+of them needs an index. Erlang's in-file tier is the 33 sites above, and all 33
+collapse to a self-loop. The cross-file tier is 2,548 identities and needs a channel
+that exists for Solidity only.
+
+Implementing it anyway would produce edges under the fixture harness and **zero in
+production**, which is the same "audited but never produced" defect in the opposite
+direction. So the class is reported with its size, the master-owned changes that would
+unlock it are named in the wave report, and the fixture
+`erlang/ontology-no-inheritance` pins that the edges are absent.
+
+### A fourth and fifth candidate the previous ruling never probed: the preprocessor's OWN override marker
+
+The eight probes above are all probes of FUNCTIONS. Erlang has a **second declaration
+namespace** — the preprocessor's — and the preprocessor has its own explicit
+replaceability marker, which is the same role Elixir's `defoverridable` plays. If that
+marker is exercised in the corpus, the in-file tier is not 33 self-loops and the ruling
+above is wrong. It is not exercised, and the measurement is a new instrument:
+`script/m60/erlang-override-construct-probe.ts`
+(`validation/m14/tmp/erlang-override-construct-probe.json`), same 3,939 files, one parse
+each, tree-level, no code shared with the analyzer.
+
+**The marker's authority is OTP's own preprocessor, which is in the corpus.**
+`otp/lib/stdlib/src/epp.erl`:
+
+```erlang
+-type macros() :: [atom() | {atom(), term()} | {atom(), term(), 'redefine'}].
+
+scan_define_2(Arity, Def, {_,_,Key}=Mac, From, #epp{macs=Ms}=St) ->
+    case Ms of
+        #{Key:=Defs} when is_list(Defs) ->
+            case proplists:is_defined(Arity, Defs) of
+                true -> epp_reply(From, {error,{loc(Mac),epp,{redefine,Key}}}),
+                ...
+```
+
+Two facts fall out of that, and the second one is the load-bearing one:
+
+1. a second `-define` of an already-defined name is a **compile error**, unless the
+   earlier definition carried the third argument — the `'redefine'` tag;
+2. the dictionary is keyed **per arity**: `scan_define_2` takes an `Arity` argument and
+   tests `proplists:is_defined(Arity, Defs)`. So a macro's identity is `(name, arity)`,
+   exactly as a function's is.
+
+| probe | count | files | what it decides |
+|---|---|---|---|
+| **M1** the `'redefine'` opt-in — `-define(NAME/A, V, true)`, the grammar's `replacement_guard_and` under a `pp_define` | **88** | **44** | the construct is **declared** 88 times, so "Erlang has no override marker" would be false |
+| **M2** a replacement whose FIRST definition carried M1, same preprocessor branch | **0** | **0** | the marker is never **exercised** in one file |
+| **M2** the same, two branches of ONE `-ifdef`/`-else` | 53 | 8 | not a redefinition: one body survives preprocessing |
+| **M2** the same, two INDEPENDENT conditionals | 516 | 114 | **undecidable** without the `-D` flags the analyzer is not given; counted, not classified |
+| **M2** a same-branch duplicate with NO marker | **0** | **0** | `epp` rejects these; none exists |
+| **M3** `-undef(NAME)` — `pp_undef` | 26 | 12 | the preprocessor's **removal** operator; it is not a replacement, and no label here fits it |
+| **M4** an includer re-defining a macro its project-local `-include`d header defines | **0** | **0**, of **1,610** resolvable include pairs (302 ambiguous, 100 absent) | the one cross-file tier that needs **no** project index, because an `.erl` and its header share one preprocessing context |
+| **M5** `-compile({parse_transform, M})` | 5 | 4 | a parse transform names a **module**, not the declarations it rewrites — there is no endpoint to attach |
+
+So the preprocessor tier is RULED: 88 declarations of replaceability and **zero**
+replacements, in one file or across an include. `-undef` is a removal and `parse_transform`
+has no member to name.
+
+**Three measurement bugs this probe made and corrected, recorded because each one produced
+a confident number that was wrong:**
+
+- **Keying macros by NAME.** The first version reported **221** same-branch
+  redefinitions in 83 files and **1** cross-file replacement in
+  `otp/lib/diameter/test/diameter_watchdog_SUITE.erl:102` — where
+  `-define(INFO(T), …)` at arity 1 replaces a header's `-define(INFO(), …)` at arity 0.
+  Those are two macros, and 221 and 1 were the size of an `overrides` edge class. Keyed by
+  `(name, arity)`, as `epp` keys it, both fall to **0**.
+- **A region model that could not tell two conditionals apart.** `-ifdef`/`-else`/`-endif`
+  are flat sibling markers here, so a region key of branch-index alone gives two SIBLING
+  `-ifdef` blocks the same key. That reported `otp/lib/kernel/test/code_SUITE_data/other.erl`'s
+  `-ifdef(VERSION_1)` and `-ifdef(VERSION_2)` blocks, each defining `VERSION/0`, as an
+  unconditional redefinition — a compile error — when it is a pair of version-guarded
+  bodies. Each conditional now carries a unique id.
+- **A byte offset compared against a line number.** The region stamp was keyed on
+  `d.startIndex` (a character offset) against a marker's `startIndex` via an accidental
+  comparison with `d.line`, so every form fell through to the final stamp, every region
+  came out equal, and the mutually-exclusive split measured **0** while confidently
+  reporting a redefinition. Two different units on either side of a comparison: the
+  number means nothing and looks like a number.
+
+The marker was also verified to be unambiguous in context, since `replacement_guard_and` is
+OTP's binary-replacement operator too: under a `pp_define` the three-argument form is the
+only producer (`-define(A, (1 andalso 2)).` gives `paren_expr`, `-define(A, r(<<1:8>>) andalso <<2>>).`
+gives `binary_op_expr`), so 88 is the marker and not the binary syntax.
+
+### The one thing that has to change first (master-owned, each verified by reading it)
+
+Three files, all outside this lane:
+
+| file | what it says today | verified at |
+|---|---|---|
+| `script/m14/differential.ts:55` | imports `deriveErlangContainsTruth`, and **never calls it** — `grep -n deriveErlangContainsTruth script/m14/differential.ts` returns exactly one line, the import | measured, below |
+| `script/m14/differential.ts:23238` | `...(lang === "erlang" ? ["contains"] : [])` — the label is in the audited set with nothing behind it | measured, below |
+| `src/ast/parallel-indexer.ts:1300` | `PROJECT_INDEX_EXTENSIONS = { ".sol": "solidity" }` — the only arity-carrying cross-file channel, and `.erl` is not registered | read |
+| `src/ast/parallel-indexer.ts` | `for (const companionLang of ["perl", "python"])` — the companion pass is never built for Erlang even in memory | read |
+| `src/ast/override-context.ts:85` / `src/ast/project-index.ts:313` | both build a `Set<string>` of bare **names** (`s.name`, `childForFieldName("name")`) — neither can express `(name, arity)`, and Erlang's callback identity is `(name, arity)` because that is what OTP checks: `Module:behaviour_info(callbacks)` is compared against the module's exported `f/A` pairs | read |
+
+A name-only match would publish `code_change/2` as implementing `code_change/3` at a
+confidence a reader cannot discount, and this repository has already measured that failure
+mode on another lane: **75.6% of perl's `overrides` edges are withdrawn** once a companion
+exists (`src/ast/override-companion-pass.ts`). So the plumbing gap is a real constraint on
+the label's correctness, not an excuse — but it is a constraint about **this repository**,
+and a GAP is the verdict it produces, not a RULED one.
+
+## DERIVATION: the two labels that were emitted and compared against nothing
+
+`script/m60/rel-type-coverage-gate.ts` CHECK 1 (DERIVATION) reports, at HEAD and
+after this wave:
+
+```
+erlang  2 un-audited: ["exports","imports"]
+```
+
+Both labels are EMITTED (**64,354** and 300 rows over the census corpus). Both have no
+oracle derivation in the shared harness. That is the gate's own phrase for the state
+where a defect in the class is invisible, and 64,354 rows is not a small class to leave
+unaudited. CHECK 2 (reachability), CHECK 3 (unfiltered-default agreement) and CHECK 4
+(every enum value constructed by some analyzer) are clean for erlang.
+
+**Running that gate with `--langs=erlang` overwrites the shared evidence file.**
+`validation/m60/results/rel-type-coverage.json` held 20 lanes; a scoped run replaced it
+with erlang alone and deleted 1,419 lines, and the gate exited 0 having said
+`evidence: validation/m60/results/rel-type-coverage.json`. Reported, not fixed — the
+file is master-owned, and I restored it from `HEAD` after the run. A gate that
+silently narrows shared evidence when handed one lane cannot be used to audit one lane
+without that side effect.
+
+It is worse than an unaudited class for one of the two, because **the lane's own spec
+says otherwise**. `script/m14/spec/erlang-completeness.json` ER-D40 states of `exports`:
+
+> "the oracle derives the same set from the same declaration, so the two sides agree
+> without either one having to guess."
+
+No such derivation existed. `deriveErlangEdges` in `differential.ts` reads
+`import_attribute` and pushes `references`; there is no `export_attribute` case
+anywhere in it. The comment described a resolution the code did not perform — and the
+comment is what a reader would have checked instead of the code.
+
+**What the lane owns**, in lane-owned files:
+
+* `script/m14/oracles/erlang-exports-imports.ts` — the derivation. One `exports` row
+  per `fa` in `-export` / `-export_type`, one `imports` row per `-import` naming the
+  MODULE. It reads the `fa`'s three name spellings (`atom`, `var` for an UPPERCASE
+  name, `macro_call_expr` for `?MODULE`), resolves `?MODULE` to the module, and refuses
+  any other macro there rather than naming a member after a preprocessor constant. Two
+  forms are deliberately NOT rows and say why in the header: `-include` (a textual
+  inclusion, already `references`) and `-compile({parse_transform, …})` (nothing comes
+  into scope by name).
+* `script/m14/verify-erlang-ontology-oracle.ts` — what makes it an instrument rather
+  than an assertion. Three checks over the lane's 27 fixtures plus a stride-sampled 253
+  corpus files: **agreement**, **reachability** (the oracle emits rows, so agreement is
+  not vacuous — the state `overrides` was in for haskell), and **ability to fail**
+  (three deliberately broken copies of the derivation, each of which must turn the same
+  check red). At this commit: `exports` truth 3,830 / analyzer 3,828, MISSING 2,
+  unexplained 0, identity-mismatch 0; `imports` truth 24 / analyzer 24, MISSING 0,
+  unexplained 0, identity-mismatch 0; **3 of 3 broken copies detected**; CHECKS 2 and 3
+  PASS. **CHECK 1 FAILS on those 2 rows**, and it is right to: they are the
+  `pool-worker` sanitizer deleting `'\x{aaa}memory'` and `'func-\x{400}'`, so this lane
+  gate is reporting a defect outside the lane rather than hiding it.
+
+**The wiring is master's and is not done here.** Two edits in `script/m14/differential.ts`
+clear CHECK 1 for erlang: the `lang === "erlang" ? ["contains"] : []` term in the
+audited-label filter at line 23238 needs `["exports","imports"]` added, and
+`deriveErlangExportsTruth` needs importing and calling beside the existing
+`deriveErlangEdges(root)` at line 22969. Until both land, CHECK 1 keeps reporting the
+two labels, and that report is CORRECT — the lane has the derivation and the shared
+harness does not consume it.
+### And the third: `contains`, audited by an allowlist entry with nothing behind it
+
+Not a DERIVATION finding — `rel-type-coverage-gate.ts` reports erlang `contains` as
+audited, because `differential.ts:23238` adds it. But `differential.ts:55` imports
+`deriveErlangContainsTruth` from `script/m14/oracles/erlang-contains.ts` and **never
+calls it** (`grep -n deriveErlangContainsTruth script/m14/differential.ts` returns one
+line, the import — re-checked this wave, still one line). Measured on the shared
+differential's own 60-file otp draw at this commit:
+
+```
+[otp] erlang: COMPARED WITH NO TRUTH: contains (1652 comparable, 0 truth)
+[otp] erlang: files=60 tree-truth=5142 covered=5111 (99.4%) MISSING=31 | analyzer-edges=3909 unexplained=1727 (44.2%) heuristic=0 hash=bab70bc0f59198e3 | unexplained-by-label: contains=1652,references=75
+  1 lane(s) COMPARED A LABEL WITH NO TRUTH — the published coverage for those labels is not coverage
+```
+
+The committed version of this row said 1,665 comparable and 42.7%, taken when the
+corpus draw also covered `rebar3`. **`rebar3` and `cowboy` are no longer on this
+machine** (`$HOME/fixtures/repositories/` holds neither), and
+`differential.ts`'s `LANG_REPOS.erlang` is still `rebar3`, so the erlang differential
+now only runs with an explicit `--repo`. The census corpus (otp + elixir) is
+unaffected and reproduced exactly twice, so the difference is the draw, not the
+analyzer.
+
+So the lane's largest class is compared against an empty truth set, and 44.2% of the
+lane's edges on that draw are reported `unexplained` — which the harness is right to
+call a confident fabrication and wrong to attribute to the analyzer, because the
+oracle exists, is sound (99.97% under the harness rule when it is run, measured in
+the table above), and is simply not wired. That is a master-owned one-line fix and it
+is the single highest-value erlang item in this report.
+
+With `corpusPath` supplied locally **for the measurement only, and the master-owned
+file restored byte-for-byte afterwards** (`git diff` empty), the lane's own surface
+audit runs and reports, on 60 files / 17,285 edges:
+
+```
+=== erlang — rebar3 + otp — 60 file(s), 17285 edge(s), 2873 symbol(s), 59 file(s) with edges (98.3%)
+  lines         no line: 0 (none) | line 0: 0
+  seam keys     edges missing a key: 0 (none)
+  names         not a name / not in source: 0
+  ghost targets 0
+  parse errors  0
+```
+
+The gate is broken for **every** lane, though, and that is a finding rather than a
+workaround — see the wave report.
+
+
+### What the rulings and the fixes are pinned by
+
+`validation/m14/fixtures/erlang/ontology-no-inheritance.erl` carries every construct
+the probe measured as a candidate — a `-callback` satisfied in the same file, a
+`-behaviour` module supplying a callback, two mutually exclusive `-ifdef` bodies, a
+type applying another type — and **forbids the `overrides` and `extends` labels
+outright**, with type-only forbid rows so the assertion does not depend on guessing
+which endpoints a wrong implementation would pick.
+
+`validation/m14/fixtures/erlang/arity-local-resolution.erl` carries ER-D45: an arity
+that matches (`get(key, D)` against a declared `get/2`), an auto-import at another
+arity (`get(D)` — `erlang:get/1`, the process dictionary), and a BIF whose name is
+absent (`setelement/3`). The middle row is the one that failed 618 times.
+
+`validation/m14/fixtures/erlang/arity-distinct-calls.erl` carries ER-D44: three
+`endColumn` pins read off the pinned grammar's `fun_decl` extents, so the range cannot
+silently regress to the `function_clause` that is one character shorter.
+
+`script/m14/erlang-ontology-mutants.ts` holds **11** mutants — nine prefixed
+`ontology/` for the ten relationship types and what would manufacture an edge the
+language cannot express, two prefixed `symbols/` for the lane's symbol-surface defects —
+each a faithful reproduction of a reading a reasonable reader would reach for, and all
+**11** are caught. A twelfth was REMOVED because it did not reproduce its own defect; the
+removal and the new harness that replaced it are below.
+
+`script/m14/erlang-source-revert.ts` holds **3** source reverts for the mutation class a
+result transform cannot express, and all **3** are caught by a NAMED fixture.
+
+| mutant | reproduces | caught by |
+|---|---|---|
+| `ontology/overrides-callback-satisfied-in-one-file` | a `-callback` its own file defines is an override | `ontology-no-inheritance` |
+| `ontology/overrides-behaviour-callback-supply` | `-behaviour` + a matching name is a member-level override | `ontology-no-inheritance` |
+| `ontology/overrides-preprocessor-alternative-body` | two `-ifdef` bodies is a redefinition | `ontology-no-inheritance` |
+| `ontology/extends-from-type-dependency` | a type applying another type is a subtype relation | 7 fixtures |
+| `ontology/extends-from-include` | `-include` is inheritance | `attrs-er3`, `callsite-lines-825` |
+| `ontology/extends-relabel-implements` | `-behaviour` is `extends`, not `implements` | 5 fixtures |
+| `ontology/exports-drop-type-form` | `-export_type` can be published under the plain form | 2 fixtures |
+| `ontology/exports-uppercase-name-dropped` | ER-D42 regression | `macros-er3` |
+| `ontology/exports-same-line-multi-arity-collapsed` | ER-D43 regression | `arity-exports` |
+| `ontology/imports-dropped` | ER-D41 regression | `export-import-macro-er3` |
+| `symbols/function-range-ends-on-clause` | ER-D44 regression — the range ends on the `function_clause`, which is one character short | `arity-distinct-calls` |
+
+`--self-test` inverts one mutant's expectation and requires the runner to report it as a
+SURVIVOR and exit non-zero, so a green run of that script is evidence the loop works and
+not evidence the mutants die. **Re-measured 2026-10-04: 11/11 CAUGHT** (down from 12 — the
+twelfth was removed, below), and `--self-test` exits 1 with
+`1 SURVIVOR(S): ontology/overrides-callback-satisfied-in-one-file`.
+
+### One of the twelve was not reproducing its defect, and the harness could not tell
+
+`symbols/local-call-gated-on-bare-name` (ER-D45) was registered as a **result transform**,
+which mutates the analyzer's output. That is the right instrument for a rule that filters
+or relabels rows and **the wrong instrument for a defect whose symptom is a row that was
+never produced** — which ER-D45 is, because the bare-name gate emitted *more* `calls`
+edges than the arity-exact gate does (`get(D)` beside a local `get/2`). A faithful
+reproduction has to *add* an edge the post-fix analyzer correctly withholds, and no result
+transform can see a site that produced nothing.
+
+What it did instead was filter **out** local call edges whose `metadata.callArity` matched
+no declared arity — a no-op for every correctly-emitted edge, except where a file declares
+one name at several arities: `fold(fun(X, Y) -> X + Y end, 0)` in
+`erlang/arity-distinct-calls` is arity 2, the file declares `fold/2` **and** `fold/3`, so
+the filter read the arity-3 declaration as a mismatch and deleted a valid edge. The runner
+then printed
+
+```
+CAUGHT  symbols/local-call-gated-on-bare-name   caught by: erlang/arity-distinct-calls
+```
+
+which is **indistinguishable in the output from a faithful kill**. It was caught by a
+different bug and pinned a different behaviour, while the fixture that does pin ER-D45 —
+`erlang/arity-local-resolution`, added by the same wave — was never touched by it.
+Measured directly, by reverting the gate in the analyzer source:
+
+```
+bare-name gate:  erlang/arity-local-resolution FAIL, erlang/arity-distinct-calls PASS
+```
+
+That is the honesty contract's §7 red-team case (a check that passes for a reason
+nobody stated), and it survived because "CAUGHT" looks the same either way. It is removed
+from the result-transform registry, with the removal recorded in the file's own header.
+
+### `script/m14/erlang-source-revert.ts` — the class a result transform cannot express
+
+A **source** revert: rewrite the analyzer's own gate, run the fixture battery in a **child
+process** (ESM caches the module by URL, so an in-process re-import would keep the old
+analyzer and the check would measure nothing while reporting a pass), restore the bytes,
+and require a **named** fixture to fail. Three properties make it a measurement:
+
+1. the needle must be **present** — `find` absent is a MISS, not a skip, because a revert
+   that silently matches nothing asserts nothing;
+2. the **named** fixture must fail — `expectFailure` names the fixture whose assertion is
+   supposed to catch this, so "the run went red somewhere" cannot pass for it;
+3. the restore is **re-read and compared**, a backup sibling path is printed before the
+   swap, and `process.on("exit")` restores too.
+
+**Re-measured 2026-10-04: 3/3 CAUGHT, 0 missed**; `--self-test` exits **1** with
+`1 MISS(ES): symbols/local-call-gated-on-bare-name`.
+
+| revert | what it turns back | fixtures that went red | named fixture |
+|---|---|---|---|
+| `symbols/local-call-gated-on-bare-name` | `declaredFnKeys.has(fnKey(name, arity))` → "does this file declare the name at **any** arity" | `erlang/arity-local-resolution` | FAIL as required |
+| `symbols/function-range-initial-from-clause` | `nodeToRange(declNode)` → `nodeToRange(clause ?? declNode)` | `erlang/arity-distinct-calls`, `erlang/clause-merge-range` | FAIL as required |
+| `symbols/function-range-merge-from-clause` | `extendRange(symbol, node)` → `extendRange(symbol, clause ?? node)` | `erlang/clause-merge-range` | FAIL as required |
+
+**And writing it found a fix with no fixture.** ER-D44 has two halves — the symbol's
+**construction** range and the **merge** range — and only the first was pinned. On this
+grammar every `;`-separated clause opens its own `fun_decl` and the `;` is a child of the
+EARLIER one (`pick(0) -> zero;` is `fun_decl` [32,48) and `pick(X) -> X.` is `fun_decl`
+[49,62), against `function_clause` [32,47) and [49,61)), so every multi-clause function IS
+the merge path. `erlang/arity-distinct-calls` declares only **single**-clause functions, so
+reverting the merge left every fixture passing — the revert was written, it MISSED, and
+that is how the gap surfaced.
+
+`erlang/clause-merge-range` closes it: two clauses, two clauses whose last clause ends a
+line it does not start, and **three** clauses of one `(name, arity)`, with every end read
+off the pinned grammar's `fun_decl` extents rather than off analyzer output —
+`pick/1` [1038,1078) endColumn 10, `head/1` [1218,1267) endColumn 15, `wide/2`
+[1360,1431) endColumn 12, and `expectSymbolCount` = 1 each so a reader asking for `wide`
+finds one function rather than three. 28/28 lane fixtures pass with it.
 
 ## What produces NO edge (the noise contract)
 
@@ -375,7 +1080,7 @@ cowboy@c965d1a, 4,326 `.erl` files — not a sample.
 | files | 4,617 read (`.erl` AND `.hrl`), 4,617 examined, 139 grammar errors (3.01%), **0 unexamined** |
 | symbols | 209,247 |
 | relationships | 1,032,785 |
-| relationship types emitted | `calls`, `references`, `contains`, `uses`, `instantiates`, `implements` |
+| relationship types emitted | `calls`, `references`, `contains`, `uses`, `exports`, `instantiates`, `implements`, `imports` — 8 of the ontology's 10, counted through `parseFile` over 3,939 corpus files (see "The ten relationship types, with a number behind each") |
 | dual lens vs an independently written oracle | **0** unexplained, **0** missing, **0** line mismatches, **0** symbol mismatches |
 | unknown symbols through the production entry | 4,617 files, **0** unknown kinds, **0** empty names, **0** invented sentinel names, **0** ownerless members, all 26 symbol-free files accounted for with 0 suspect |
 | parse-error taxonomy | **20 named causes, 0 unclassified**; 112 of the 139 failing files are not defects in anything |
@@ -447,6 +1152,101 @@ attributed: the main walk is a single DFS, the pre-pass reads the top level
 rather than re-walking the tree, each type declaration's reference walk covers
 only its own subtree, and the pattern test climbs to the nearest boundary. No
 nested loop over symbols.
+
+### Payload and latency for the relationship-ontology wave (2026-10-04)
+
+The workstream's rule is that adding edges is not free downstream: `bb_graph`'s
+UN-NARROWED `relationshipTypes` default is 2.5-4.8x a filtered answer, so the lane's own
+check is re-run after every change and a regressed budget is REPORTED, never
+re-baselined. `script/m60/erlang-lane-payload.ts`, 200 files (every 19th of 3,939
+admitted), BEFORE and AFTER in SEPARATE PROCESSES — which is the design the performance
+record above requires, because an in-process A/B once inverted the ratio here.
+
+The BEFORE row is produced by `--analyzer <path>`, which restores a named analyzer
+source over the lane's file for the duration of the run and puts the committed bytes
+back in an `exit` hook, with a sibling backup written first and its path printed so a
+kill is recoverable. That flag was in this script's header and **was not implemented**,
+so the previous wave's BEFORE row was a manual file swap — and a manual swap that gets
+killed leaves the worktree holding the wrong analyzer with no marker, which is one way
+a stale artifact gets committed.
+
+| metric | BEFORE (HEAD~ analyzer) | AFTER (ER-D44/45 wave) | AFTER (this wave) | delta |
+|---|---|---|---|---|
+| relationships | 38,814 | 38,807 | **38,807** | 0 — this wave adds no edge |
+| payload, all labels, median/file | 9,632 B (9.41 KiB) | 9,632 B (9.41 KiB) | **9.4 KiB** | unchanged |
+| payload, `calls` only, median/file | 3.54 KiB | 3.52 KiB | **3.5 KiB** | -0.02 KiB |
+| un-narrowed / filtered | 2.66x | 2.68x | **2.68x** | **+0.00 — no budget regressed** |
+| latency median / p95 | 12.03 / 207.42 ms | 6.59 / 113.16 ms | **39.87 / 494.80 ms** | NOT INTERPRETABLE |
+
+`script/m60/erlang-lane-payload.ts --label AFTER-VERIFY --out validation/m14/tmp/erlang-lane-payload-AFTER-VERIFY.json`, 200 files (every 19th of 3,939
+admitted), 6,987 symbols, per-label `calls=18892 references=7898 contains=6801 uses=2497
+exports=2394 instantiates=276 implements=32 imports=17`.
+
+**The ratio is the budget and it did not move.** The lane has recorded 2.57x (before
+ER-D42/43) and 2.68x (after), so 2.68x is inside the band already reported and no budget
+was re-baselined.
+
+**The latency row is still not a measurement of anything.** This wave's change adds no
+edge and removes a `Set` insert and a dead method; none of that is in a loop whose cost
+moves a median by 45%. The two runs sat on a host carrying ~10 load average with 4 GiB
+available of 15, and the same host produced a WASM `memory access out of bounds` in the
+census instrument at 8 workers (below). The honest reading is unchanged: **this lane has
+no usable latency budget on a shared host at this load**, and the row is kept precisely
+so a reader does not mistake it for a result.
+
+**The latency row is not a measurement of this change and is not offered as one.** The
+two runs sat on a host carrying fifteen sibling lanes with a load average of 18-20, and
+the AFTER row happened to be taken during a quieter stretch. The change adds one `Set`
+insert in the pre-pass and one `Set` lookup per local call, and changes a range's end
+node; none of those is in a loop whose cost moves a median by 45%. The honest reading is
+that this lane has no usable latency budget on a shared host at this load, and the row
+is kept precisely so a reader does not mistake it for a result.
+
+**The ratio moved 2.66x -> 2.68x, against the budget.** It moved because the FILTERED
+side is `calls` and the ER-D44/45 wave removed 7 `calls` edges, while the all-labels figure
+is a MEDIAN and 7 edges do not move a median. The lane has recorded 2.57x (before ER-D42/43)
+and 2.66x (after), so 2.68x is inside the band this lane has already reported and no
+budget was re-baselined.
+
+### The instrument itself needed a fix to be repeatable
+
+`script/m60/erlang-ontology-census.ts` ran 8 concurrent `parseFile` workers, each holding
+its own tree-sitter WASM instance. On this host at 4 GiB available it died three times with
+
+```
+[BB-PARSE-ERR] erlang | …/simple_1_SUITE.erl  | memory access out of bounds
+[BB-PARSE-ERR] erlang | …/refine_bug1.erl     | memory access out of bounds
+[BB-PARSE-ERR] erlang | …/refine_failing.erl | memory access out of bounds
+[BB-HANG] parser stuck 120s on … — exiting
+```
+
+**A different file each run**, which is the signature of a resource ceiling and not of a
+grammar fault — a fault in the grammar names the same file every time. At
+`--workers 2` the same 3,939 files parsed with **0** parse errors and **0** crashes, and
+every count reproduced to the digit against the 8-worker run. The worker count is now an
+argument (`--workers N`) and the header says why. A lane census that reports a different
+crash count per run cannot support a claim of the shape this document makes, and the
+honest fix was to make the instrument's width explicit rather than to quote whichever
+number a run produced.
+
+## What the line-by-line read found (M14 §6 dual lens, item 1)
+
+A full read of all 2,293 lines found **two members that nothing reads**, both removed:
+
+| member | what it was | how it survived |
+| --- | --- | --- |
+| `calleeNameNode(call)` | a private method with a full doc comment describing "the `atom` that is a DIRECT child of the `remote`" | never called — `grep -c` returns 1, the definition. `tsconfig.json` sets `noUnusedLocals: false`, so nothing complained |
+| `ErlangContext.declaredNames` | a `Set<string>` of bare function names, written on every `fun_decl` in the pre-pass | written, never read, once ER-D45 moved the gate to `declaredFnKeys`. Its comment claimed it was "kept for the name-level questions", which is a statement about a use that did not exist |
+
+Both are the failure the gate cannot see: a member that is populated costs a `Set`
+insert per function declaration on every file in every project and asserts nothing.
+`declaredFnKeys` now carries the comment that explains why the bare name is not enough,
+and the source-revert harness reproduces the bare-name rule against today's state rather
+than against the deleted field — a revert that reintroduced `declaredNames` would fail to
+typecheck rather than to reproduce the defect, which is a red harness measuring nothing.
+
+No behavioural change: the census reproduced all ten per-type counts and the corpus
+totals across the edit, and 28/28 fixtures pass.
 
 ## Corpus validation
 
@@ -551,8 +1351,8 @@ The contract above was therefore re-implemented against its own surviving spec
 | Witness | Result |
 | --- | --- |
 | `bun script/m14/run-fixtures.ts --lang erlang` | **9/9 PASS** (was 0/9) |
-| `bun script/m14/verify-erlang-identity.ts` | PASS — 4 functions, 2 export arities, call-site arity + site lines on local and remote calls, **13/13 output mutations CAUGHT** |
-| `BB_MUTANT_ONLY="erlang/" bun script/m14/mutate-analyzer.ts` | **20/20 CAUGHT** (9 recovered + 11 re-authored for the ER2 surface), each by its intended fixture |
+| `bun script/m14/verify-erlang-identity.ts` | **FAILING AT HEAD, and it was already failing before this wave** — `checkIdentity` asserts `source.slice(startIndex, endIndex) === "pick(0) -> zero;\npick(X) -> X."`, but `endIndex` is tree-sitter's EXCLUSIVE end and every analyzer's `nodeToRange` publishes it that way (`real-erlang-analyzer.ts:2254`, and identically in `real-elixir-analyzer.ts:1881`), so the correct expectation excludes the final `.`. Re-measured with only that one assertion corrected: PASS, **19/19 output mutations CAUGHT** (this table said 13). The script is master-owned and is reported, not fixed |
+| `BB_MUTANT_ONLY="erlang/" bun script/m14/mutate-analyzer.ts` | **54/54 CAUGHT** at this wave (this table said 20/20 — the registry has grown since), each by its intended fixture. A further **10/10** ontology mutants live lane-side in `script/m14/erlang-ontology-mutants.ts`, with a `--self-test` that inverts one expectation and requires the runner to report it as a SURVIVOR |
 | `bun script/m60/lane-surface-audit.ts --lang erlang --limit 60` | **0 unlined of 8,645 edges** (was 5,951/5,951 unlined); labels calls/contains/references/uses/instantiates/implements; 0 ghosts |
 | `bun script/m14/differential.ts --lang erlang` | **rebar3 3,328/3,328 covered, MISSING 0, unexplained 0** · **otp 4,585/4,585, MISSING 0, unexplained 0** — with `uses` and `references` now COMPARED kinds |
 | `bun script/m14/verify-corpus-census.ts --lang erlang` | PASS files=60 err=1 types=102 blind=0 |

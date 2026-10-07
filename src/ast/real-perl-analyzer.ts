@@ -92,6 +92,15 @@ export const PERL_BUILTINS = new Set([
  *                        the same-named method (in-file or companion index)
  *   first-parent-guess   the base does not declare it anywhere visible; the edge
  *                        is the deterministic first-parent guess
+ *   code-reference      the target is a sub named by a CODE REFERENCE (`\&name`),
+ *                        so the name is written and bound to the code slot, but
+ *                        whether the slot is ever invoked as a plain call is not
+ *                        decided at this edge
+ *   type-query-literal  the target is a class / role / method named as a LITERAL
+ *                        inside a runtime query (`->isa('C')`, `->DOES('R')`,
+ *                        `->can('m')`), so the name is written and nothing is
+ *                        invoked, but whether the object satisfies it at runtime
+ *                        is not decided at this edge
  */
 export const PERL_REASON_CODES = {
   nameOnlyCallee: "name-only-callee",
@@ -107,6 +116,8 @@ export const PERL_REASON_CODES = {
   baseDeclaresMethod: "base-declares-method",
   firstParentGuess: "first-parent-guess",
   magicTokenInvocant: "magic-token-invocant",
+  codeReference: "code-reference",
+  typeQueryLiteral: "type-query-literal",
 } as const
 
 /** Stable alias used across the analyzer. */
@@ -645,7 +656,23 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       callNode?: Node,
       builtinProbe?: string,
     ) => {
-      const probe = builtinProbe ?? target
+      // `&foo(...)` is perl's EXPLICIT-CALL syntax and `foo(...)` is the same
+      // invocation of the same sub, so the `&` is sigil, not part of the name. The
+      // emitted target used to keep it, and the measured cost was 93 `calls` edges
+      // in 36 corpus files whose target was `&build_sysctl`, `&timediff`,
+      // `&print_imp` -- none of which is a name the indexer stores, because the
+      // symbol is `build_sysctl`. Every one of those edges was unresolvable at the
+      // target end by construction, and no gate could see it: the label was right,
+      // the count matched, and the differential derives its target from the same
+      // `function` field this reads.
+      //
+      // The strip happens BEFORE the builtin probe and before the emitted target, so
+      // `&print(...)` is suppressed as the builtin it is. Measured on the corpus:
+      //   go-stdlib/src/syscall/mksysctl_openbsd.pl:166 -> &build_sysctl
+      //   otp/lib/snmp/bin/snmp-v2tov1.pl:52             -> &print_imp
+      //   perl5-core/Benchmark.pm:724                    -> &timediff
+      const named = target.startsWith("&") ? target.slice(1) : target
+      const probe = builtinProbe ?? named
       if (!target || PERL_BUILTINS.has(probe) || probe === "use" || probe === "no") return
       // A callee whose name starts with `&` is a CODE-SLOT REFERENCE, not an
       // invocation — UNLESS it carries an argument list, because `&foo(@args)`
@@ -663,7 +690,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (target.startsWith("&") && !hasArgumentSyntax(callNode ?? calleeNode)) return
       addRelationship(
         state.functionName || state.ownerName || state.packageName || "global",
-        this.leafName(target),
+        this.leafName(named),
         ASTEngine.RelationshipType.Calls,
         { reasonCode: dynamicReceiver ? REASON.dynamicReceiver : REASON.nameOnlyCallee },
         0.9,
@@ -819,6 +846,66 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             const kind = name === "ISA" ? ASTEngine.SymbolKind.Variable : this.isAllCapsName(name) ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable
             addSymbol(name, kind, variable, state, { perlDeclType: declaration, sigil: variable.type, ...(name === "ISA" ? { isInheritanceVariable: true } : {}) }, state.packageName || undefined)
           }
+          break
+        }
+
+        case "refgen_expression": {
+          // `\&name` / `\&Package::name` -- perl's CODE REFERENCE. The sub is named
+          // as a VALUE and nothing is invoked, which is a different fact from a call
+          // and the reason this is not filed under `calls`: `$cb = \&helper;` runs
+          // nothing, and a graph that reads it as a call says `helper` was executed.
+          //
+          // It is a `uses` edge because that is what `uses` is in every other lane:
+          // a symbol named in a VALUE position. bash files a `$VAR` read that way,
+          // ruby an `@ivar` read, python an `obj.attr` read, php a `$this->x` read.
+          // The engine's own tier rule agrees on the tier (src/lsp/evidence_tier.ts
+          // rule 3: `reference(s)`/`use(s)` -> usage_contextual), so the two labels
+          // are separated on semantics instead: `uses` is a value this code USES,
+          // `references` is a name a query NAMES. That split is what keeps the two
+          // from being the same edge under two labels.
+          //
+          // WHY IT WAS 0 EDGES BEFORE THIS BRANCH. Nothing walked a
+          // `refgen_expression`, and the grammar puts `\&helper` under a `function`
+          // node with an `&` token -- which is the same shape as perl's EXPLICIT
+          // CALL syntax `&helper(...)`, so the `function` field alone cannot separate
+          // them. The discriminator is the `varname`: a code reference carries one,
+          // and a reference to a computed slot (`\&$cb`, `\&{"Pkg::sub"}`, `\@array`)
+          // does not. Measured over the derived population (5,127 files):
+          // 1,267 `\&name` and 278 `\&Pkg::name` sites against 3,618 sites whose
+          // target is NOT a written name -- so a text-shaped emitter would have
+          // fabricated 3,618 targets, and the count is the reason the rule is a
+          // positive `varname` allowlist rather than "strip a sigil and hope".
+          //
+          // `\&name(...)` is perl's "take a reference to a CALL", and the call is
+          // filed as a `calls` edge by the ordinary function-call branch. It needs no
+          // suppression here: the grammar types the `&name(...)` child as
+          // `function_call_expression`, not `function`, so the lookup below finds
+          // nothing. Measured on the grammar's own output, not assumed --
+          //   `\&helper`     refgen_expression > function         > varname
+          //   `\&helper(1)`  refgen_expression > function_call_expression > function > varname
+          const fnNode = this.findChildByType(node, "function")
+          if (!fnNode) break
+          const varname = this.findChildByType(fnNode, "varname")
+          if (!varname) break
+          // EXACTLY one named child under the `function` node: the varname. Anything
+          // else is a compound form (`&{...}`, `&($x)`) whose target is computed, and
+          // its named child is not a `varname` at all -- so this is a second guard on
+          // the same rule, not a new one.
+          if (fnNode.namedChildCount !== 1) break
+          const name = varname.text
+          if (!name || !this.isWrittenCalleeName(name)) break
+          const leaf = this.leafName(name)
+          const source = state.functionName || state.ownerName || state.packageName || "global"
+          // A self-reference (`\&run` inside `sub run`) is true of the source and
+          // useless in a graph: the edge would be the only one in the label that
+          // makes it reflexive. Same reasoning as the self-base guard below.
+          if (leaf === source) break
+          // The qualifier is recorded but not used as the target. `\&Pkg::helper`
+          // and `\&helper` in one sub are ONE edge to `helper`, exactly as two calls
+          // to the same leaf are one edge; the package the name carried is not lost,
+          // it is in the metadata where a reader can ask for it.
+          const qualifier = name.includes("::") ? name.slice(0, name.lastIndexOf("::")) : undefined
+          addRelationship(source, leaf, ASTEngine.RelationshipType.Uses, { reasonCode: REASON.codeReference, ...(qualifier ? { qualifiedAs: name, qualifier } : {}) }, 0.9, varname)
           break
         }
 
@@ -1172,6 +1259,61 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               addCall(method, state, methodNode ?? node, true, node, method)
             }
           }
+          // A class / role / method NAMED IN A QUERY rather than invoked.
+          // `UNIVERSAL` exposes exactly three such queries and all three take the
+          // name as an argument, so the query IS the method call:
+          //
+          //   $obj->isa('Class')    does this object satisfy this class
+          //   $obj->DOES('Role')    does it satisfy this role
+          //   $obj->can('method')   does this method exist
+          //
+          // None of them invokes anything, which is why the target cannot be a
+          // `calls` edge (`calls -> isa` would say a sub named `isa` ran), and
+          // why the name cannot be a `uses` edge either: `uses` is a value the
+          // code uses, and this is a name a query tests against. It is a
+          // `references` edge -- the same label python's analyzer emits for its
+          // identical construct, `isinstance(x, T)`.
+          //
+          // The name must be WRITTEN. `$obj->isa($class)` and
+          // `$obj->can($method)` pass a variable, so the file states no name at
+          // all and publishing one would invent a symbol. Measured over the
+          // derived population (5,127 files): 341 literal `isa`, 11 literal
+          // `DOES`, 512 literal `can`, against 170 `isa($var)` and 5
+          // `DOES($var)` sites that are deliberately refused.
+          //
+          // `UNIVERSAL::isa($x, 'C')` -- the FUNCTION spelling of the same query --
+          // is measured at 0 sites in 5,127 files, so there is no branch for it
+          // here: a branch for a construct the corpus does not contain is dead
+          // code by this lane's own standard, and the ruling is recorded with its
+          // count instead.
+          if (method === "isa" || method === "DOES" || method === "can") {
+            const args = this.argumentNodes(node)
+            const named = this.fieldNodes(node, "arguments").filter((a) => a.isNamed)
+            const first = named[0] ?? args[0]
+            const queried = this.literalNameIn(first)
+            if (queried && this.isWrittenCalleeName(queried) && !PERL_MAGIC_TOKENS.has(queried)) {
+              const leaf = this.leafName(queried)
+              const source = state.functionName || state.ownerName || state.packageName || "global"
+              // Two self-reference shapes, both true of the source and useless in a
+              // graph, so both are refused -- the same rule the self-base guard
+              // applies to `extends`:
+              //   `$self->can('run')` inside `sub run`            leaf === source
+              //   `$self->isa('My::Class')` in `package My::Class`  queried === package
+              const selfByMethod = leaf === source
+              const selfByPackage = state.packageName !== "" && queried === state.packageName
+              if (!selfByMethod && !selfByPackage) {
+                const nameNode = this.queriedNameNode(first) ?? first
+                addRelationship(
+                  source,
+                  leaf,
+                  ASTEngine.RelationshipType.References,
+                  { reasonCode: REASON.typeQueryLiteral, query: method },
+                  0.9,
+                  nameNode,
+                )
+              }
+            }
+          }
           break
         }
       }
@@ -1351,6 +1493,16 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (type === "calls") {
         md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      // `uses` and `references` are named by `src/lsp/evidence_tier.ts` rule 3
+      // as `usage_contextual`, and this lane's own reason codes say why they are
+      // not structural: a code reference names a sub it does not invoke, and a
+      // type query names a class it does not test at this layer. Without these
+      // two branches both labels fell through to `inferred`, which is the tier
+      // for "a guess" -- and these are not guesses, they are written names.
+      if (type === "uses" || type === "references") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.7 ? "usage_contextual" : "inferred"
         continue
       }
       if (type === "overrides") { md.evidenceClass = "inferred"; continue }
@@ -1797,6 +1949,42 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private isOption(value: string): boolean {
     return value.length > 0 && value[0] === "-"
+  }
+
+  /**
+   * The NAME an argument node writes, and only when it writes one literally.
+   *
+   * `'Class::Name'` and `Class::Name` are names. `$class`, `@classes` and
+   * `"Pkg::$sub"` are not: the file states no name, so an edge built on one
+   * would name a symbol the source never mentions. The interpolation test is
+   * character comparison on the literal's own text, never a pattern -- the
+   * grammar exposes the unquoted body under `content`, so there is nothing to
+   * unquote here and nothing to strip.
+   *
+   * Returns undefined for every other node type, which is the refusal the
+   * measured counts depend on: 170 `isa($var)` and 5 `DOES($var)` sites in
+   * 5,127 files resolve to nothing rather than to a guess.
+   */
+  private literalNameIn(node: Node | undefined): string | undefined {
+    if (!node) return undefined
+    if (node.type !== "string_literal" && node.type !== "bareword" && node.type !== "package" && node.type !== "autoquoted_bareword") return undefined
+    // An INTERPOLATED literal is only a name when nothing was interpolated into
+    // it -- the same rule `namesAClass` already applies, for the same reason.
+    if (node.text.includes("$")) return undefined
+    const content = node.childForFieldName("content") ?? this.findChildByType(node, "string_content")
+    const text = String(content?.text ?? node.text ?? "").trim()
+    return text.length ? text : undefined
+  }
+
+  /**
+   * The node a queried name is WRITTEN on, so the edge's `line_number` is the
+   * line that names it and not the line the call starts on (M59.A7: the line
+   * comes from the node that NAMES the edge). `literalNameIn` already decided
+   * the name exists; this only locates it.
+   */
+  private queriedNameNode(node: Node | undefined): Node | undefined {
+    if (!node) return undefined
+    return node.childForFieldName("content") ?? this.findChildByType(node, "string_content") ?? this.findChildByType(node, "varname") ?? node
   }
 
   private stripSigil(name: string): string {

@@ -248,3 +248,251 @@ previously missed because the type parses as `generic_type`; +511 corpus relatio
 ## Issue
 
 Closes M12.02 (GitHub issue #141).
+## ONTOLOGY WORKSTREAM 2026-10-05 — ENDPOINT_RESOLVE_JAVA
+
+### Baseline REPRODUCED at 33c7557ca, independent of the analyzer's later history
+
+Re-ran the mandated instrument on 2026-10-05 at HEAD `b22f221ed` with
+`src/ast/real-java-analyzer.ts` byte-identical to the main checkout's
+(`diff -q` → identical), so the numbers below are a re-measurement, not a
+restatement of the earlier run:
+
+    NFILES=200 bun script/m14/firing-check-v2.mjs JAVA
+
+`JAVA 8/10  200/200 parsed  imports[] 2089  silent: imports exports`
+`counts: calls:8272  references:7482  contains:2257  uses:653  overrides:489  instantiates:430  extends:178  implements:66`
+
+Every per-type count reproduced to the edge. Wall 13.8 s, exit 0.
+
+### DERIVATION finding: java carries exactly ONE, and it is `exports`
+
+`bun script/m60/rel-type-coverage-gate.ts --langs=java`, at HEAD:
+
+    CHECK 1 — DERIVATION: every emitted type has an oracle derivation
+      java         1 un-audited: ["exports"]
+      1 findings in 1 lanes
+    baseline: 104 recorded, 1 NEW, 104 repaid
+
+The audited set it EVALUATES out of `script/m14/differential.ts`'s own filter
+expression is eight labels — `calls contains references uses extends implements
+overrides instantiates` (differential.ts:23153 / 23186 / 23287) — and the
+analyzer emits exactly those eight on this corpus. The ninth constructible type,
+`exports`, has no oracle.
+
+**A second gate disagrees, and it is wrong about java.** `verify-oracle-coverage.ts`
+prints java's compared set as `calls,contains,references,uses` (4). Its
+`comparedLabels()` only recognises a `? [ … ] :` **ternary**; java's four extra
+labels are produced by **spread** inside an array literal
+(`["extends","implements","instantiates", ...(cond ? ["overrides"] : []), …]`),
+which that scanner cannot see. The same header already declares it cannot see
+dynamically derived labels; here it is silent about statically-derived ones.
+Both numbers are recorded so a reader is not surprised by either.
+
+`exports` is also the type with a proven GAP below, so the DERIVATION debt and
+the GAP land on the same type. Paying the GAP down does **not** pay the debt:
+an oracle is `script/m14/differential.ts`, master-owned. Reported, not edited.
+
+### Baseline: firing-check-v2, production path, NFILES=200
+
+    cd $HOME/backbencher-brain && NFILES=200 bun script/m14/firing-check-v2.mjs JAVA
+
+| field | value |
+| --- | --- |
+| corpus | `fixtures/repositories/java-lib` (guava; 3,275 `.java` on disk) |
+| files sampled / parsed | 200 / 200 |
+| relationship-channel types fired | **8/10** — `calls extends implements uses contains references overrides instantiates` |
+| silent | `imports`, `exports` |
+| per-type counts | `calls:8272  references:7482  contains:2257  uses:653  overrides:489  instantiates:430  extends:178  implements:66` |
+| `imports[]` (separate channel) | **2089** across 200/200 files |
+| exit | 0 |
+
+The two silent types are channel facts, not edge facts — both are measured next.
+
+### Question 5 (Resolved) — analyzer-side, same-file universe, NFILES=200
+
+Instrument: `script/m14/tmp/javawork-census.mts` (lane-owned, no regex). Production path
+(`getParser -> parse -> analyze`). Population derived by walk, **not** a hand-written list:
+3,275 `.java` files exist under `fixtures/repositories/java-lib`; 200 code-bearing files
+sampled (6.1%), all 200 parsed, 0 failed, 2,457 symbols. Resolution ladder mirrors
+`parallel-indexer.ts:3427-3441` (bare name, leaf, `endsWith(":<name>")`, `endsWith(".<name>")`,
+qualified name) applied to **the analyzer's own symbol set for that file**.
+
+| type | edges | both ends resolve (same file) | src unresolved | tgt unresolved | empty name | `unknown` endpoint | files |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| calls | 8,272 | 1,161 (14.0%) | 0 | 7,111 | 0 | 0 | 176 |
+| uses | 653 | 188 (28.8%) | 0 | 465 | 0 | 0 | 90 |
+| contains | 2,257 | **2,257 (100.0%)** | 0 | 0 | 0 | 0 | 195 |
+| imports | 0 | — | — | — | — | — | 0 |
+| references | 7,482 | 199 (2.7%) | 0 | 7,283 | 0 | 0 | 200 |
+| exports | 0 | — | — | — | — | — | 0 |
+| extends | 178 | 12 (6.7%) | 0 | 166 | 0 | 0 | 154 |
+| implements | 66 | 0 (0.0%) | 0 | 66 | 0 | 0 | 45 |
+| overrides | 489 | **489 (100.0%)** | 0 | 0 | 0 | 0 | 88 |
+| instantiates | 430 | 100 (23.3%) | 0 | 330 | 0 | 0 | 75 |
+
+Channels: `imports[]` **2,089** ImportInfo in 200/200 files; `exports[]` **200** ExportInfo in
+200/200 files. **Zero `exports` RELATIONSHIP edges** on this corpus.
+
+**This table is a lower bound, not the store's answer.** Every type whose target is a name in
+another file (`references` naming `com.google.common.annotations.GwtCompatible`,
+`instantiates` naming `TreeSet`, `implements` naming `TestSetGenerator`) is *correctly* resolved
+by the index and unreadable here, because the analyzer is per-file and its symbol set is one
+file. The store-level measurement is a separate instrument and is reported separately. What this
+table does establish without ambiguity: **no empty endpoint names, and zero `unknown`
+placeholder endpoints, in 19,827 edges.**
+
+### BLOCKER FOUND OUTSIDE THIS LANE — `parallel-indexer.ts` cannot store a single symbol
+
+Running the production index path (`indexProjectParallel`) over 250 corpus `.java` files
+fails **every** batch with:
+
+    [ERROR] [parallel-indexer] storeResults failed {"error":"near \"VALUES\": syntax error","batchSize":20}
+    [ERROR] [parallel-indexer] parallel indexing failed {"error":"no index for project ... — post-processing
+      derives from indexed symbols; run bb index first"}
+    src/ast/parallel-indexer.ts:5279
+
+Cause, located: `src/ast/parallel-indexer.ts:2163-2165` — the `insertSymbol` statement carries
+**two stacked `VALUES` clauses**, one with 31 placeholders and one with 30:
+
+    (id, project_id, file_id, name, ..., source_text, scope_kind, is_declaration, super_types, time_created, time_updated)
+    VALUES (?, ?, ... 31 ...)          <- parallel-indexer.ts:2164
+    VALUES (?, ?, ... 30 ...)          <- parallel-indexer.ts:2165
+
+An `INSERT ... VALUES (...) VALUES (...)` is a syntax error in SQLite, so every `insertSymbol`
+prepare/`.run()` raises and the batch rolls back. The result is **0 symbol rows and 0
+relationship rows for the whole project**, which is why post-processing then throws
+"no index for project" at :5279.
+
+Introduced by `455c02631 merge: relationship-ontology master line into main, squashed to stay
+pushable`. Verified by counting the 31-placeholder `VALUES` line per revision: `origin/main`
+has **1**, `05071f69a` and every commit from `455c02631` onward has **2**.
+
+**This is not a java-lane defect and this lane did not fix it.** `src/ast/parallel-indexer.ts`
+is master-owned. The lane worked around it by indexing through a patched COPY outside the repo
+(`/tmp/opencode/javawork/mirror/src/ast/parallel-indexer.ts`, which drops only the 30-placeholder
+line and leaves every other byte identical), and reports the store numbers that copy produced.
+
+**Consequence for the programme beyond java:** with this defect at HEAD, *no* lane can produce a
+stored-resolution measurement, and any gate that indexes a project reads an empty DB. If
+`bb_graph` / `bb_impact` numbers were quoted from a run made after `455c02631`, they describe an
+empty graph.
+
+### STORE-LEVEL endpoint resolution — 250-file slice, production `indexProjectParallel`
+
+Instrument: `script/m14/tmp/javawork-index-query.mts`; indexing done by
+`script/m14/tmp/javawork-index-census.mts`. Read back from `brain_relationship`.
+Indexed through the patched indexer copy (see the blocker above) — the HEAD indexer
+stores nothing at all.
+
+`sanity: brain_file=250 brain_symbol=2983 brain_relationship=25787 brain_import=2703`
+`indexed: files=250 success=250 errors=0 rels=25787 imports=2703`
+
+| type | rows stored | BOTH ends bound to a symbol row | src unresolved | tgt unresolved | files in slice |
+| --- | --- | --- | --- | --- | --- |
+| calls | 10,837 | 8,707 (80.3%) | 0 | 2,130 | 250 |
+| uses | 737 | 665 (90.2%) | 0 | 72 | 250 |
+| contains | 2,975 | 2,871 (96.5%) | 0 | 104 | 250 |
+| imports | **0** | — | — | — | `brain_import` = 2,703 |
+| references | 9,696 | 2,670 (27.5%) | 0 | 7,026 | 250 |
+| exports | **0** | — | — | — | — |
+| extends | 268 | 254 (94.8%) | 0 | 14 | 250 |
+| implements | 95 | 68 (71.6%) | 0 | 27 | 250 |
+| overrides | 657 | 657 (100.0%) | 0 | 0 | 250 |
+| instantiates | 522 | 228 (43.7%) | 0 | 294 | 250 |
+
+**OVERALL: 16,120 of 25,787 stored rows have both endpoints bound to a symbol row (62.5%).**
+
+`src unresolved = 0 for every type` — the source half is fully resolved on all 25,787 rows.
+**The entire remainder is on the TARGET side.** Zero rows carry the `unknown` placeholder in
+either `*_external` column.
+
+### What the unresolved remainder actually names (top targets per type, from the DB)
+
+- **calls** (2,130): `assertEquals` 489, `assertTrue` 256, `assertFalse` 216, `assertThrows` 215,
+  `addTest` 66, `emptySet` 65. These are JUnit-4 calls to a superclass declared in a file OUTSIDE
+  this 250-file slice. Correct behaviour for a partial slice — the target is not unresolved in
+  guava, it is unresolved in the slice.
+- **references** (7,026): **`V` 815, `K` 773**, then `String` 524, `Entry` 520, `List` 398,
+  `Collection` 238. The type-variable rows are a real analyzer defect (below); the JDK rows are
+  the external-library remainder.
+- **instantiates** (294): `ArrayList` 100, `HashSet` 23, `EqualsTester` 15,
+  `UnsupportedOperationException` 12, `TreeSet` 11, `TreeMap` 11 — same slice-boundary shape.
+- **contains** (104): `anonymous_TestStringSortedMapGenerator` 11,
+  `anonymous_TestStringListGenerator` 11, `anonymous_Stimulus` 9 — anonymous-class names, whose
+  symbols the store's artifact filter refuses.
+- **extends** (14): `RuntimeException` 4, `Exception` 4, `TestCase` 2, `Error` 1 — JDK/outside-slice.
+- **implements** (27): `TestMapGenerator` 7, `Serializable` 7, `Comparator` 4, `Comparable` 3.
+- **uses** (72): `length` 37, `RUNTIME` 7, `array` 6 — JDK field reads and constants outside the slice.
+
+### Confidence distribution, every type (honesty contract §4)
+
+| type | confidences present | rows in the heuristic band (<1.0) |
+| --- | --- | --- |
+| calls | 0.7 ×10,754; 0.8 ×44; 1.0 ×39 | 10,798 of 10,837 (**99.6%**) |
+| uses | 0.6 ×581; 1.0 ×156 | 581 of 737 (78.8%) |
+| contains | 1.0 ×2,975 | 0 |
+| references | 0.9 ×2,747; 0.95 ×6,949 | **9,696 of 9,696 (100%)** |
+| extends | 1.0 ×268 | 0 |
+| implements | 1.0 ×95 | 0 |
+| overrides | 0.5 ×625; 0.9 ×9; 1.0 ×23 | 634 of 657 (**96.5%**) |
+| instantiates | 0.95 ×522 | **522 of 522 (100%)** |
+
+So **21,231 of 25,787 stored java rows (82.3%) are heuristic, not fact.** `references` and
+`instantiates` are 100% heuristic; `overrides` is 96.5% heuristic and 625 of its 657 rows sit at
+the **0.5** first-parent-guess tier, below `patterns.ts`'s 0.7 threshold. This is not a
+discrepancy with the documented model — it is the documented model, and it means "java has
+10/10 relationship types" is a statement about *labels present*, not about *facts stored*.
+
+### JOB 2 — construct probes over the WHOLE java corpus (3,275 files, not a sample)
+
+Instrument: `script/m14/tmp/javawork-construct-probe.mts`. Population derived by walk over
+`fixtures/repositories/java-lib`; **every** `.java` file in it, no file-count cutoff. Node
+tallies from a tree-sitter walk, no source-text matching.
+
+#### PROBE A — Java HAS an explicit exports construct (JPMS, JLS 7.7.2). Verdict: **GAP**.
+
+| measurement | count |
+| --- | --- |
+| `module-info.java` files on disk | **3** |
+| …that the grammar parses as `module_declaration` | **3** (root `hasError=false` on all) |
+| `exports_module_directive` nodes | **24** |
+| `requires_module_directive` nodes | 12 |
+| `provides_module_directive` / `opens_module_directive` / `uses_module_directive` | 0 / 0 / 0 |
+| `exports` RELATIONSHIPS the analyzer emitted on those 3 files | **0** |
+| symbols the analyzer emitted on those 3 files | **0** |
+| `exports[]` channel entries on those 3 files | **0** |
+
+Sample of what is being missed (`guava/src/module-info.java`):
+`exports com.google.common.collect;` `exports com.google.common.cache;` … 16 directives in
+that one file. The three files are `guava/src/module-info.java`,
+`guava-testlib/src/module-info.java`, `futures/failureaccess/src/module-info.java`.
+
+**This is a GAP, not a ruling.** The construct exists (24 parse to the node type the grammar
+names for it), the analyzer reads none of it — the strings `module_declaration`,
+`exports_module_directive` and `module-info` occur **nowhere** in `src/ast/real-java-analyzer.ts`
+— and it is Java's own named export mechanism. `exports` is silent in the firing-check not
+because Java lacks the construct but because this corpus's exports live in 3 files that the
+`exports` emitter never looks at. The 24 directives are 0 edges today.
+
+#### PROBE B — Java HAS a declared-type construct (JLS 4.4 type parameters). Verdict: **GAP**.
+
+| measurement | count |
+| --- | --- |
+| files containing a `type_parameter` node | **1,543** of 3,275 (47.1%) |
+| `type_parameter` nodes total | **9,780** |
+| symbols the analyzer published with kind `type` | **0** |
+| `references` edges whose target is a single capital letter | **44,057** |
+
+Breakdown of the 44,057: `V` 12,550 · `K` 10,992 · `E` 8,549 · `T` 4,596 · `C` 2,096 ·
+`N` 1,922 · `R` 855 · `B` 297 · `A` 269 · `X` 219 · `F` 149 · `U` 137 · `S` 124 · `I` 108 ·
+`L` 94 · `M` 90.
+
+The analyzer records the declaration as a **string list** — `genericParameters: ["K","V"]` on
+the class symbol — and then emits `references` edges *to* those strings without ever publishing
+them as symbols. On the 250-file store slice that produced `references -> V` **815** rows and
+`references -> K` **773** rows with `target_symbol_id IS NULL`, i.e. 1,588 of 2,670 unresolved
+`references` targets (59.5%) name a declaration that does not exist anywhere in the index.
+
+`SymbolKind.Type` is not a fiction: `src/ast/types.ts:18` defines `Type = "type"`, and the
+analyzer's own evidence-class classifier at `real-java-analyzer.ts:2748` already tests
+`s.kind === SymbolKind.Type`, so the kind is reachable from this file and simply never produced.

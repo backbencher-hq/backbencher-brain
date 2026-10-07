@@ -86,6 +86,27 @@ const RUST_FRAMEWORK_PRIORITY: string[] = [
 // type's own spelling rides `metadata.implementedType`.
 const RUST_UNNAMED_IMPL = "anonymous_impl"
 
+/**
+ * R7 (M60 standing rule), the SOURCE half: the family spelling for "this
+ * FILE/MODULE is the source of the edge".
+ *
+ * `metadata.fileLevel: true` is the M60/#910 contract for a module-level edge
+ * whose source is the importing FILE rather than a symbol, and
+ * `parallel-indexer.ts:3481` acts on exactly that flag — it rewrites the row's
+ * `source_external` to the project-relative path and keeps the analyzer's own
+ * spelling in `metadata.scopeName`, so nothing is discarded. Six lanes publish
+ * this edge shape today (c, graphql, nim, php, powershell, zig) and the LSP
+ * file-level reader keys on the rewritten column
+ * (`src/lsp/graph_request.ts`, `relationship_type IN ('imports','exports')`).
+ *
+ * It replaces the literal `"global"`, which named no declaration: measured over
+ * the 110-file ripgrep corpus it was the source of 100% of `exports` rows (140)
+ * and 83% of `imports` rows (503 of 610), and because `global` is not on the
+ * store's `SYMBOL_NAME_DENYLIST` the store did not degrade it — it wrote
+ * `source_external = "global"`, which no reader can join on.
+ */
+const RUST_FILE_SOURCE = "(file)"
+
 interface RustContext {
   tree: { rootNode: Node }
   content: string
@@ -96,6 +117,18 @@ interface RustContext {
   exports: ASTEngine.ExportInfo[]
   metadata: Partial<ASTEngine.FileMetadata>
   emittedUses: Set<string>
+  /**
+   * R7: edges REFUSED because no declaration owns them, keyed by relationship
+   * type. Countable rather than silent — the honesty contract §4 requires a
+   * heuristic's share of the graph to be a queryable number, and an omission is
+   * the same kind of decision: it is how much of the language this analyzer
+   * declines to name.
+   */
+  unattributed: Map<string, number>
+  /** `uses` edges whose source is a token inside an unexpanded macro argument.
+   *  Published because the honesty contract §4 requires a heuristic's share of the
+   *  graph to be a queryable number rather than a vibe. */
+  macroArgumentReads: number
   // M59.A7 (#825): the constructor candidate carries the 1-based line of the
   // node that NAMES the type it constructs — the edge is emitted in a deferred
   // pass (after the symbol table exists), long after the node is in hand.
@@ -125,6 +158,41 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     return node.startPosition.row + 1
   }
 
+  /**
+   * R7, the SYMBOL-level half: the name of the declaration that owns an edge, or
+   * `null` when there is none.
+   *
+   * The old expression at six call sites was `parent?.name || "global"`, and the
+   * fallback was the literal the rule exists to forbid: over the 110-file ripgrep
+   * corpus it put `global` into 1,169 edge endpoints. Measured causes, by the
+   * enclosing node at the edge's own line (`script/incoming-rust/rust-r7-origin.ts`):
+   *
+   *   443 `imports`  file-scope `use_declaration`      -> no enclosing declaration
+   *   350 `calls`    file-scope `macro_invocation` body -> no enclosing declaration
+   *   140 `exports`  a `pub` item, whose OWN name is the target
+   *   108 `uses`     a `const` initializer             -> the const declares it
+   *   60  `imports`  a `use` inside a function body    -> no enclosing declaration
+   *   16  `calls`    a `const` initializer
+   *   36  `uses`     file-scope `macro_invocation` body
+   *
+   * Two of those have a real owner and are fixed by handing the const/static
+   * symbol back to the walk. Three genuinely have none, and for those the rule's
+   * own words govern: "When a fallback has nothing truthful to say the honest
+   * state is ABSENCE, not the string 'unknown'". So the caller OMITS the edge and
+   * records the omission in `metadata.unattributedEdges`, which is what makes the
+   * loss countable rather than invisible.
+   */
+  private edgeSource(parent: ASTEngine.UniversalSymbol | null): string | null {
+    const n = parent?.name
+    return n && n.length > 0 ? n : null
+  }
+
+  /** Record one refused edge and return `null`, for `const s = this.edgeSource(p); if (!s) return`. */
+  private noOwner(ctx: RustContext, type: string): null {
+    ctx.unattributed.set(type, (ctx.unattributed.get(type) ?? 0) + 1)
+    return null
+  }
+
   public analyze(
     rootNode: Node,
     content: string,
@@ -152,6 +220,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         frameworkPatterns: [],
       },
       emittedUses: new Set<string>(),
+      unattributed: new Map<string, number>(),
+      macroArgumentReads: 0,
       pendingInstantiations: [],
       awaitedCalls: new Set<number>(),
     }
@@ -217,7 +287,17 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         currentParent = this.handleFunction(node, ctx, parent) ?? parent
       } else if (node.type === "enum_item") {
         currentParent = this.handleEnum(node, ctx, parent) ?? parent
-      } else if (node.type === "let_declaration" || node.type === "const_item" || node.type === "static_item") {
+      } else if (node.type === "const_item" || node.type === "static_item") {
+        // R7: a `const`/`static` DECLARES a name, and its initializer is code that
+        // runs under that name. The walk used to discard the symbol here, so every
+        // read inside the initializer fell through to the `global` fallback: 108
+        // `uses` rows in ONE ripgrep file (`crates/core/flags/defs.rs:47-`,` the
+        // `FLAGS` array of `&dyn Flag` bindings) and 21 `calls` rows across three
+        // files. `let_declaration` stays out of it on purpose -- M11.11's closure
+        // boundary: a local binding declares nothing outside its body, so it must
+        // not become an owner for the walk either.
+        currentParent = this.handleVariable(node, ctx, parent) ?? parent
+      } else if (node.type === "let_declaration") {
         this.handleVariable(node, ctx, parent)
       } else if (node.type === "use_declaration") {
         this.handleUseDeclaration(node, ctx, parent)
@@ -259,10 +339,16 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           field.text.trim() &&
           node.parent?.type !== "call_expression"
         ) {
-          const source = parent?.name || "global"
-          const relKey = `${source}::uses::${field.text}`
-          if (!ctx.emittedUses.has(relKey)) {
-            ctx.emittedUses.add(relKey)
+          // R7: no enclosing declaration names this read (a field access in a
+          // file-scope macro-invocation body). Absence, counted in
+          // metadata.unattributedEdges — not the literal "global". The walk
+          // CONTINUES either way: this is a guard on the PUSH, not on the
+          // traversal, so a nested field expression below still gets its own edge.
+          const source = this.edgeSource(parent)
+          if (!source) {
+            this.noOwner(ctx, "uses:field_expression")
+          } else if (!ctx.emittedUses.has(`${source}::uses::${field.text}`)) {
+            ctx.emittedUses.add(`${source}::uses::${field.text}`)
             ctx.relationships.push({
               source,
               target: field.text,
@@ -289,8 +375,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           // "Self" and emitted `instantiates -> "Self"`, a name no symbol has.
           let leaf: string | null = this.stripGenerics(typeNode.text).split("::").filter(Boolean).pop() ?? typeNode.text
           if (leaf === "Self") leaf = this.enclosingImplType(node)
-          if (leaf) {
-            const source = parent?.name || "global"
+          const source = leaf ? this.edgeSource(parent) : null
+          if (leaf && source) {
             ctx.relationships.push({
               source,
               target: leaf,
@@ -300,6 +386,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
               ...(this.nodeLine(typeNode) ? { line_number: this.nodeLine(typeNode)! } : {}),
               metadata: { relationshipType: "struct_literal", isConstructor: true },
             })
+          } else if (leaf) {
+            this.noOwner(ctx, "instantiates")
           }
         }
       } else if (node.type === "macro_invocation") {
@@ -463,8 +551,10 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           const left = c.namedChild(0)
           for (const leaf of boundNames(left)) {
             if (!leaf.text || genericParams.has(leaf.text)) continue
+            const boundSource = this.edgeSource(parent)
+            if (!boundSource) { this.noOwner(ctx, "references"); continue }
             ctx.relationships.push({
-              source: parent?.name || "global",
+              source: boundSource,
               target: leaf.text,
               type: ASTEngine.RelationshipType.References,
               // M59.A7 (#825): the bound's own line.
@@ -603,6 +693,22 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.emitRustModuleSurface(rootNode, ctx)
     this.emitRustTraitOverrides(rootNode, ctx)
 
+    // R7: how much of this file's graph DECLINES to name an owner. Published
+    // rather than kept in a log, because the honesty contract §4 requires the
+    // heuristic share of a graph to be a queryable number, and an omission is the
+    // same class of decision as a low-confidence edge — it is graph this analyzer
+    // declines to assert. Absent (not an empty object) when nothing was refused,
+    // so a consumer can tell "nothing was refused" from "this analyzer does not
+    // measure it".
+    if (ctx.macroArgumentReads > 0) {
+      ;(ctx.metadata as Record<string, unknown>).macroArgumentReads = ctx.macroArgumentReads
+    }
+    if (ctx.unattributed.size > 0) {
+      ;(ctx.metadata as Record<string, unknown>).unattributedEdges = Object.fromEntries(
+        [...ctx.unattributed.entries()].sort((a, b) => a[0].localeCompare(b[0])),
+      )
+    }
+
     // #419-D evidence tiers on EVERY edge.
     this.classifyEvidenceTier(ctx.relationships)
 
@@ -649,7 +755,10 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       return out
     }
-    const push = (source: string, leafNode: Node, gparams: Set<string>): void => {
+    const push = (source: string | null, leafNode: Node, gparams: Set<string>): void => {
+      // R7: a declaration with no name owns nothing, and naming its source with a
+      // literal is the defect. The omission is counted so the loss is a number.
+      if (!source) { this.noOwner(ctx, "references"); return }
       let target = leafNode.text
       if (!target || target === "Self") {
         const resolved = this.enclosingImplType(leafNode)
@@ -694,7 +803,12 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       // read gate) — never collect type mentions from them.
       if (t === "macro_definition") continue
       if (t === "function_item") {
-        const src = this.extractIdentifier(n, "name") ?? "global"
+        // R7: `?? "global"` is replaced by `?? noOwner(...)`, which is null, and
+        // `push` refuses a null source. Every one of these node types carries a
+        // `name` field in the pinned grammar, so the fallback was unreachable —
+        // but an unreachable placeholder is still a placeholder waiting for the
+        // grammar to change, and R7 is about the name, not about reachability.
+        const src = this.extractIdentifier(n, "name") ?? this.noOwner(ctx, "references")
         const gparams = genericParamsOf(n)
         const params = n.childForFieldName("parameters")
         if (params) {
@@ -709,7 +823,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         const ret = n.childForFieldName("return_type")
         for (const leaf of collectLeaves(ret)) push(src, leaf, gparams)
       } else if (t === "struct_item" || t === "union_item") {
-        const src = this.extractIdentifier(n, "name") ?? "global"
+        const src = this.extractIdentifier(n, "name") ?? this.noOwner(ctx, "references")
         const gparams = genericParamsOf(n)
         // Field types are the non-name direct children of each
         // field_declaration (the name is field_identifier-typed, never
@@ -749,7 +863,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       } else if (t === "enum_item") {
-        const src = this.extractIdentifier(n, "name") ?? "global"
+        const src = this.extractIdentifier(n, "name") ?? this.noOwner(ctx, "references")
         const gparams = genericParamsOf(n)
         // Struct-variant fields behave like struct fields; tuple-variant
         // fields (`V(Point)`) are bare type children of
@@ -781,7 +895,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       } else if (t === "type_item" || t === "associated_type") {
-        const src = this.extractIdentifier(n, "name") ?? "global"
+        const src = this.extractIdentifier(n, "name") ?? this.noOwner(ctx, "references")
         const gparams = genericParamsOf(n)
         // The aliased type is the last named child that is not the name
         // itself nor the parameter list (a valueless `type Item;`
@@ -891,7 +1005,16 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
         ...(line ? { line_number: line } : {}),
-        metadata: { rustSpecific: true, relationshipType: kind, symbolKind },
+        metadata: {
+          rustSpecific: true,
+          relationshipType: kind,
+          symbolKind,
+          // R7 / M60 #910: an export is published BY the module, so a file-scope
+          // export names the FILE as its source. Without this the store wrote
+          // `source_external = "global"` and the row was unreachable from the
+          // one reader that displays file-level exports.
+          ...(source === RUST_FILE_SOURCE ? { fileLevel: true } : {}),
+        },
       })
     }
 
@@ -902,10 +1025,19 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         // The enclosing inline module, outermost first — the same walk the R1
         // read surface uses, so an `imports` source and a `calls` source agree.
         const mods = this.enclosingMods(n)
-        const source = mods.length > 0 ? mods[mods.length - 1] : "global"
+        // R7: the importer of a `use` path is the MODULE that writes it, and at
+        // file scope that module is the file. `"(file)"` is the family's declared
+        // spelling for that (real-graphql-analyzer.ts:1045) and `fileLevel: true`
+        // is the M60/#910 flag the store acts on — it rewrites `source_external`
+        // to the project-relative path, which is the column
+        // src/lsp/graph_request.ts's file-level reader joins on. The previous
+        // literal `"global"` was the source of 503 of 610 ripgrep `imports` rows
+        // and is not a name any declaration has.
+        const atFileScope = mods.length === 0
+        const source = atFileScope ? RUST_FILE_SOURCE : mods[mods.length - 1]
         const isPublic = this.isUnrestrictedPublic(n)
         // A `pub use` publishes its RE-BINDS; everything else publishes nothing.
-        const exportSource = isPublic && mods.length === 0 ? "global" : null
+        const exportSource = isPublic && atFileScope ? RUST_FILE_SOURCE : null
         for (const row of this.rustImportRows(n)) {
           const key = `${source}::imports::${row.module}`
           // The names this path makes importable THROUGH this file, recorded
@@ -969,6 +1101,9 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
               relationshipType: "use_declaration",
               modulePath: row.module,
               moduleKind: row.kind,
+              // R7 / M60 #910: the source of a file-scope dependency is the
+              // IMPORTING FILE, and this flag is what makes the store write it.
+              ...(atFileScope ? { fileLevel: true } : {}),
               // The names the declaration brings into scope. Carried, not
               // emitted as edges: a binding is not a dependency, and the same
               // binding is re-declared by every file that imports it.
@@ -994,7 +1129,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `metadata.modulePath` for the one case that is not (`pub mod`, which is
     // itself a top-level unit and needs no owner).
     for (const e of ctx.exports) {
-      publishExport("global", e.name, e.range?.startLine, "public_item", String(e.type ?? ""))
+      publishExport(RUST_FILE_SOURCE, e.name, e.range?.startLine, "public_item", String(e.type ?? ""))
     }
   }
 
@@ -1044,7 +1179,21 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     const splitLeaf = (full: string): { module: string; item: string } => {
       const parts = full.split("::")
       if (parts.length < 2) return { module: full, item: full }
-      return { module: parts.slice(0, -1).join("::"), item: parts[parts.length - 1] }
+      const prefix = parts.slice(0, -1).join("::")
+      const item = parts[parts.length - 1]
+      // R7: a two-segment path rooted at a Rust PATH KEYWORD is the one case
+      // where the prefix is not a dependency name. `use super::util;` and
+      // `use crate::flags::Flag;` split to `super` and `crate` — and `super`,
+      // `crate` and `self` are not crates and not modules, they are RELATIVE
+      // ANCHORS. Publishing one as the `imports` target named a keyword no
+      // declaration has: 69 rows over 97 ripgrep files (36 `super`, 33 `crate`).
+      // The prefix only names a dependency when it has a segment of its own
+      // (`a::b` in `a::b::C`, `crate::flags` in `crate::flags::Flag`), so the
+      // whole written path is the honest target for the bare-root case.
+      if (prefix === "super" || prefix === "crate" || prefix === "self") {
+        return { module: full, item }
+      }
+      return { module: prefix, item }
     }
     const pushLeafPath = (full: string | null, alias: string | null, at: Node, kind: string): void => {
       if (!full) return
@@ -2508,19 +2657,45 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     if (!ok) return
 
-    const source = parent?.name || "global"
+    // R7: this read resolves to a name but no declaration owns the READ. Over the
+    // 110-file ripgrep corpus this fired 205 times in tests/feature.rs alone and
+    // 36 distinct times in total once the (source,target) dedupe collapsed them —
+    // every one inside the `token_tree` of a file-scope `macro_invocation`
+    // (`rgtest!(f1_sjis, |dir: Dir, mut cmd: TestCommand| { .. })`), which is
+    // where a name is resolvable but unowned. Absence, counted: the old fallback
+    // wrote the literal "global" here.
+    const source = this.edgeSource(parent)
+    if (!source) { this.noOwner(ctx, "uses:identifier_read"); return }
     const relKey = `${source}::uses::${name}`
     if (ctx.emittedUses.has(relKey)) return
     ctx.emittedUses.add(relKey)
+    // THE MACRO-ARGUMENT CAVEAT, priced rather than asserted. A name inside a
+    // macro invocation's `token_tree` is not an expression this file evaluates:
+    // tree-sitter-rust deliberately leaves the argument unparsed, because whether
+    // it becomes a read depends on the macro's expansion, which this analyzer
+    // does not perform. The lane already DECIDED (RUST-MR, rust/macro-callee-read)
+    // that a macro's arguments are reads and keep publishing them, and that
+    // decision is kept — but it was published at confidence 1.0, which claims the
+    // expansion is known. It is not. So the edge is published BELOW the 0.7
+    // threshold with a machine-readable reason code, which is what
+    // docs/M14-HONESTY-CONTRACT.md §4 requires of any edge under 1.0: a reason
+    // code, and a ratio a consumer can compute. 36 of 29,660 ripgrep edges
+    // (0.12%) are this class, counted by `metadata.macroArgumentReads`.
+    const inMacroArgument = this.hasAncestor(node, "macro_invocation", null)
     ctx.relationships.push({
       source,
       target: name,
       type: ASTEngine.RelationshipType.Uses,
-      confidence: 1.0,
+      confidence: inMacroArgument ? 0.6 : 1.0,
       // M59.A7 (#825): the identifier's own line.
       ...(this.nodeLine(node) ? { line_number: this.nodeLine(node)! } : {}),
-      metadata: { relationshipType: "identifier_usage", nodeType: node.type },
+      metadata: {
+        relationshipType: "identifier_usage",
+        nodeType: node.type,
+        ...(inMacroArgument ? { macroArgument: true, reasonCode: "unexpanded-macro-argument" } : {}),
+      },
     })
+    if (inMacroArgument) ctx.macroArgumentReads++
   }
 
   /** True when `node` sits under an ancestor of one of `types` before
@@ -2581,7 +2756,13 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
-  private handleVariable(node: Node, ctx: RustContext, parent: ASTEngine.UniversalSymbol | null): void {
+  /** Returns the symbol it created, so a `const`/`static` can own its own
+   *  initializer's reads (R7). `null` when it declares nothing. */
+  private handleVariable(
+    node: Node,
+    ctx: RustContext,
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     let patternNode = node.childForFieldName("pattern")
     if (!patternNode) {
       for (let i = 0; i < node.namedChildCount; i++) {
@@ -2592,7 +2773,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
     }
-    if (!patternNode) return
+    if (!patternNode) return null
 
     const name = patternNode.text
 
@@ -2602,7 +2783,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // R12 (rust extreme review): the blank identifier declares nothing —
     // `const _ : u32 = 0;` (valid Rust) minted a `_` Variable symbol
     // (GO5/Z8 class). Reads already skip blanks; extraction must too.
-    if (name === "_") return
+    if (name === "_") return null
 
     // Module/impl-level const/static/let are declarations; function-local
     // `let` bindings are execution artifacts (noise), not declaration sites.
@@ -2622,9 +2803,23 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the exclusion made that claim false at the site level. `let` keeps the
     // skip (M11.11's closure boundary, and a local binding genuinely declares
     // nothing outside its body).
-    if (node.type === "let_declaration" && parent && (parent.kind === ASTEngine.SymbolKind.Function || parent.kind === ASTEngine.SymbolKind.Method)) {
-      return
-    }
+    // M11.11's closure boundary, now TOTAL rather than a test of the immediate
+    // parent. A `let` binds inside the block that contains it and declares
+    // nothing outside that block, so it publishes no symbol — whatever encloses
+    // it. Rust has no module-level `let`, so the old test
+    // (`parent.kind === Function|Method`) was a narrower spelling of the same
+    // rule, and it stopped being true the moment a `const`/`static` became an
+    // owner (R7, two commits up): a function-local
+    //
+    //   static CHOICES: LazyLock<Vec<String>> = LazyLock::new(|| {
+    //       let mut aliases = grep::printer::hyperlink_aliases();
+    //
+    // in ripgrep's `crates/core/flags/defs.rs:3106` then published `aliases` as
+    // a Variable owned by CHOICES, because the immediate parent was a constant
+    // rather than the function it sits in. Measured: 3 spurious symbols over
+    // 5,150, all of exactly that shape, found by diffing the symbol inventory
+    // file by file before and after the R7 change.
+    if (node.type === "let_declaration") return null
 
     const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Variable, node, parent, { type: node.type })
     ctx.symbols.push(symbol)
@@ -2637,6 +2832,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         isType: false,
       })
     }
+    return symbol
   }
 
   private handleUseDeclaration(node: Node, ctx: RustContext, parent: ASTEngine.UniversalSymbol | null): void {
@@ -2933,7 +3129,12 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (!target) return
 
-    const source = parent?.name || "global"
+    // R7: 350 ripgrep call sites sit in a file-scope `macro_invocation` body
+    // (`rgtest!(..) |dir: Dir, mut cmd: TestCommand| { .. }` in tests/ and fuzz/),
+    // where Rust declares nothing that owns them. Absence, counted; the old
+    // fallback wrote the literal "global" and the store could not attribute it.
+    const source = this.edgeSource(parent)
+    if (!source) { this.noOwner(ctx, "calls:call_expression"); return }
 
     const metadata: Record<string, any> = { qualified }
     // Awaited call sites carry the isAwait marker on the canonical edge
@@ -3087,7 +3288,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (!macroName) return
 
-    const source = parent?.name || "global"
+    // R7: same rule as the call edge above — a macro invocation written at file
+    // scope owns nothing, and the invocation's own `calls -> macroName` row below
+    // is the fact that IS nameable.
+    const source = this.edgeSource(parent)
+    if (!source) { this.noOwner(ctx, "calls:macro_invocation"); return }
 
     const metadata: Record<string, any> = { macroInvocation: true }
     // Awaited macros (foo!().await) carry isAwait on the single macro edge.

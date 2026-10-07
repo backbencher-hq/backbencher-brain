@@ -376,11 +376,349 @@ the ten types, so the honest level for those two is L1.
 
 ---
 
+## AMBIGUITY_FLEET — the per-edge endpoint census, 2026-10-05
+
+### What this section measures
+
+For every edge the production path emits, does **both** endpoints bind to a real
+declared symbol? Four failure classes are counted separately and never folded
+into one figure: an endpoint spelled as an **unknown**, an **empty string**, an
+R7 **placeholder literal**, and a **name no symbol declares**.
+
+Instrument: `validation/m14/go/go-ambiguity-census.ts`, three passes —
+`--index` (raw grammar, no analyzer: every declaration per package directory),
+`--edges` (`ASTEngine.parseFile` → `getAnalyzer("go")` → `RealGoAnalyzer.analyze`,
+one production call per file), `--merge`. Shardable at `--shard=i/n` because a
+single process does not survive this corpus. **No regular expression appears in
+the instrument**; every name decision is a `Set`/`Map` lookup, `split`,
+`lastIndexOf`, `indexOf("/")` or string equality against a fixed vocabulary.
+
+Artifacts: `validation/m14/measurements/go-ambiguity-draw-uncapped.json` (the
+headline draw) and `go-ambiguity-draw-512kb.json` (the size-capped variant; the
+delta is measured and reported below). Both are the compact form; the full
+per-file class vectors are intermediate and re-derivable with
+`GO_AMBIGUITY_COMPACT=0`.
+
+### The population, and why two draws of it
+
+Derived from disk by a recursive `readdir` walk with the production
+`detectLanguageFromPath` rule — never a hand-written file list. Every exclusion
+is counted and printed by the instrument.
+
+| draw | admitted `.go` | excluded | parse failures | edges | files with ≥1 edge |
+| --- | --- | --- | --- | --- | --- |
+| **no cap (headline)** | **10,530** | 111 `testdata/` dirs only | 0 | 1,114,304 | 9,348 |
+| 512 KB cap (variant) | 10,521 | 111 `testdata/` dirs + **9 files over 512 KB** | 0 | 1,026,839 | 9,341 |
+
+Both passes see the same files inside a draw: a file the index pass could not
+parse after three attempts is excluded from the edge pass too and counted, and
+on both draws that count is **0**, so no name is scored "declared nowhere"
+merely because the index never saw its file.
+
+**The cap was a measurement defect and re-running found it.** The lane's
+historical draw rule caps files at 512 KB. On an endpoint-*resolution* census
+that cap is not neutral: it removes the files with the most declarations.
+
+| | capped | un-capped | delta |
+| --- | --- | --- | --- |
+| distinct declarations in the index | 141,149 | **179,230** | +38,081 |
+| `uses` ambiguous edges | 27,837 | **1,061** | −26,776 (96.2%) |
+| `uses` AMBIGUITY RATE | 0.1233 | **0.0041** | |
+| ALL TYPES AMBIGUITY RATE | 0.0625 | **0.0335** | |
+
+Four of the 9 excluded files are the Go compiler's generated tables —
+`src/cmd/compile/internal/ssa/ssaop/opGen.go` alone is 4.2 MB and declares on
+the order of 9,000 operation constants — and the compiler's own files reference
+them, so 26,776 edges pointed at a real declaration the capped index could not
+see. **The un-capped draw is the headline and the capped draw is published beside
+it**, because the capped figure is the one the lane's other instruments were
+drawn on and a reader comparing them needs to see the difference rather than
+inherit it.
+
+### The AMBIGUITY RATE, per relationship type, un-capped draw
+
+`AMBIGUITY RATE` = edges with at least one endpoint that binds to no declared
+name ÷ edges emitted. **Two rates, both printed, neither suppressed.** A module
+path is not a declaration and a file path is not a declaration, so the *strict*
+column counts them as non-resolving; the *contract* column excepts a module path
+on an `imports` **target**, which is what that label's own contract says it is.
+An `imports` **source** that is a file path is not excepted — that is the
+analyzer reporting the file had no package clause.
+
+| type | edges | ambiguous | **rate** | by-contract | **contract-rate** | files | files + ambiguous |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `calls` | 309,634 | 3,512 | **0.0113** | 0 | 0.0113 | 7,243 | 270 |
+| `uses` | 258,692 | 1,061 | **0.0041** | 0 | 0.0041 | 6,298 | 307 |
+| `references` | 160,150 | 1,795 | **0.0112** | 0 | 0.0112 | 6,953 | 660 |
+| `exports` | 233,047 | 71 | **0.0003** | 0 | 0.0003 | 5,955 | 36 |
+| `contains` | 96,504 | 103 | **0.0011** | 0 | 0.0011 | 4,237 | 27 |
+| `imports` | 30,524 | 30,524 | **1.0000** | 30,507 | 0.0006 | 6,912 | 6,912 |
+| `instantiates` | 22,364 | 279 | **0.0125** | 0 | 0.0125 | 3,748 | 146 |
+| `extends` | 1,788 | 13 | **0.0073** | 0 | 0.0073 | 691 | 7 |
+| `implements` | 1,512 | 0 | **0.0000** | 0 | 0.0000 | 357 | 0 |
+| `overrides` | 89 | 0 | **0.0000** | 0 | 0.0000 | 32 | 0 |
+| **ALL TYPES** | **1,114,304** | **37,358** | **0.0335** | 30,507 | **0.0061** | 9,348 | 7,087 |
+
+Three of those numbers are structural rather than incidental.
+
+- `implements` and `overrides` are the only types whose **both** endpoints are
+  declarations the same file writes, and they score 0/1,512 and 0/89. Nothing
+  about them is ambiguous, at any rung.
+- `imports` is the mirror image: **30,522 of 30,524 targets are module paths**,
+  which the label's own contract says are not symbols, and its strict rate of
+  1.0000 measures that contract rather than the lane. Its **17 non-contract
+  edges are real**: 15 sources spelled `module` and 2 empty-string targets.
+- `imports` and `exports` are the only types whose SOURCE is ever a package
+  identity rather than a declaration, and on this draw the identity that trips
+  R7's vocabulary is the package **name**: the source is
+  `packageName || filePath` (`real-go-analyzer.ts:338` for imports, `:456` for
+  exports), and `src/cmd/vendor/golang.org/x/mod/module` is a real Go package
+  whose name is literally `module`. Measured, not inferred: pointing the same
+  census at that directory alone (2 files) emits 15 `imports` edges and 28
+  `exports` edges, and **every one of the 43 is ambiguous with the source spelled
+  `module`** — which reproduces both placeholder counts exactly and localises
+  them to two files.
+
+### The four classes, counted separately (un-capped draw)
+
+Endpoint counts, not edge counts; an edge with two non-resolving endpoints is
+counted once in the rate and twice here, which is why the column does not sum to
+the rate's numerator.
+
+| class | endpoints | where |
+| --- | --- | --- |
+| **empty string** | **2** | `imports` targets only. Zero on the other nine types. |
+| **unknown spelling** | **51** | `uses` 38 (target), `references` 7 (source), `exports` 4 (target), `contains` 2 (target) |
+| **placeholder literal** | **2,186** | by type below |
+| **undeclared name** | **4,627** | `calls` 3,237 · `references` 783 · `uses` 509 · `exports` 32 · `instantiates` 39 · `contains` 19 (source) · `references` 6 (source) · `extends` 2 (source) |
+| *(not a defect: module path)* | *30,522* | `imports` targets |
+
+The undeclared-name tail is concentrated and mechanical, not diffuse: the
+compiler's generated rewrite tables reference ~9,000 operation constants from
+the file that declares them, and this is a per-file analyzer whose targets are
+leaf names. The instrument prints the name histogram to the terminal and keeps
+it **out** of the artifact — it is real go-stdlib identifiers, and the honesty
+lint scans `validation/m14/**` case-insensitively.
+
+### R7 placeholder endpoints, and where the vocabulary is wrong
+
+Every placeholder-classified endpoint, by token and side, from the instrument's
+fixed R7 vocabulary (which is why no corpus identifier appears here):
+
+| type | endpoints | breakdown |
+| --- | --- | --- |
+| `references` | 1,005 | src `global` 877 · `None` 57 · `_` 46 · `none` 1 · `null` 1 \| tgt `_` 21 · `None` 2 |
+| `uses` | 515 | src `global` 430 · `_` 52 · `None` 4 \| tgt `global` 13 · `None` 6 · `none` 3 · `module` 2 · `NULL` 2 · `null` 2 · `_` 1 |
+| `calls` | 276 | src `global` 141 · `None` 81 · `_` 45 · `null` 1 \| tgt `None` 7 · `_` 1 |
+| `instantiates` | 247 | src `global` 236 · `_` 6 · `None` 2 \| tgt `None` 3 |
+| `contains` | 82 | tgt `None` 52 · `_` 7 · `module` 2 · `global` 1 \| src `_` 19 · `None` 1 |
+| `exports` | 35 | src `module` 28 · `_` 1 \| tgt `None` 5 · `NULL` 1 |
+| `imports` | 15 | src `module` 15 |
+| `extends` | 11 | src `_` 11 |
+
+**Every token in R7's vocabulary is a legal Go identifier, and every one of them
+is declared somewhere in this corpus.** Measured against the census's own
+declaration index: `module` is declared in 2 package directories, `None` in 7,
+`global` in 10, `none` in 3, `null` in 2, `NULL` in 1, and `_` is written in 614
+files. The instrument therefore looks each placeholder-classified endpoint up in
+the index as well and records the rung it lands on, and the artifact carries it:
+
+| | endpoints | answered file-local | answered in package | corpus-only | answered by nothing |
+| --- | --- | --- | --- | --- | --- |
+| placeholder | 2,186 | 861 | 508 | 1,285 | 0 |
+| unknown spelling | 51 | — | — | — | — (31 answered file-local or package) |
+
+The 2,186 placeholder endpoints by token, from the artifact:
+
+| token | total | source side | target side |
+| --- | --- | --- | --- |
+| `global` | 1,698 | 1,684 | 14 |
+| `None` | 220 | 145 | 75 |
+| `_` | 210 | 180 | 30 |
+| `module` | 47 | 43 | 4 |
+| `null` | 4 | 2 | 2 |
+| `none` | 4 | 1 | 3 |
+| `NULL` | 3 | 0 | 3 |
+
+That table has to be read per token, because "a declaration answers to this
+spelling" means three different things:
+
+1. **`global` — 1,698 endpoints — a sentinel, not a name.** The analyzer
+   publishes the literal `"global"` when it cannot attribute an edge to a
+   declaration (`real-go-analyzer.ts:758`, `:4849`, `:4863`). A file that happens
+   to declare something *called* `global` makes the spelling match without making
+   the source attributable, so a rung answer here is not evidence of resolution.
+   This is the largest placeholder class and it is the analyzer telling the truth
+   about its own boundary — the same boundary GO36/GOD11 were opened for.
+2. **`module` — 47 endpoints — the vocabulary is wrong about this corpus.**
+   `golang.org/x/mod/module` is a real package in `src/cmd/vendor`, so 43
+   `exports`/`imports` **sources** spelled `module` and 4 targets spelled `module`
+   are **attributable, and 43 of the 47 answer file-locally**. Nothing is wrong
+   with the analyzer here; R7's placeholder list collides with a package name.
+3. **`None` / `none` / `null` / `NULL` — 231 endpoints — real cross-package
+   leaves.** `src/simd/archsimd`, `src/syscall`, `src/vendor/.../asn1` and
+   `src/runtime` declare them. 220 of the 231 are `None`. They are target-side
+   leaves, which is this lane's recorded convention, not debris.
+4. **`_` — 210 endpoints — Go's blank identifier, which names nothing by
+   definition.** The census index does add `_` to a file's name set from
+   `var_spec`/`const_spec` children, so 210 of the 861 "answered file-local"
+   placeholder answers are that index artifact and must not be read as
+   resolution. Subtracting them leaves 651 file-local answers.
+
+### The six questions, re-answered on the whole corpus
+
+Q1–Q3 are unchanged from the VERIFY_GO2 table above and are not re-measured
+here; **Q4, Q5 and Q6 are re-measured on all 1,114,304 edges** instead of on a
+2,000-file draw, because this instrument had the whole population in hand.
+
+| type | 1 exists | 2 fires (edges / files) | 3 oracle agrees | 4 labelled (metadata key set) | 5 both endpoints resolve | 6 confident / R7 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `calls` | yes | 309,634 / 7,243 | as VERIFY_GO2 (10,206 oracle / 10,061 analyzer / 7,441 agree, recall 0.580) | one shape, 309,634 | src 100% file-local; tgt 3,237 undeclared of 309,634 | conf 0.8 on 100%, `usage_contextual`; **0 reason codes** |
+| `uses` | yes | 258,692 / 6,298 | as VERIFY_GO2 (recall 0.320) | three shapes: 207,093 / 50,945 / 654 | src 100% file-local; tgt 509 undeclared | conf 0.7 ×207,093 · 0.8 ×654 · 1.0 ×50,945; **207,747 sub-1.0, 0 reason codes** |
+| `references` | yes | 160,150 / 6,953 | as VERIFY_GO2 (recall 0.687) | two shapes: 101,620 / 58,530 | src 99.98% file-local; tgt 783 undeclared | conf 0.95 on 100%, `reference_qualified`; **160,150 sub-1.0, 0 reason codes** |
+| `exports` | yes | 233,047 / 5,955 | see DERIVATION below | one shape, 233,047 | **both ends 100% file-local**; 71 placeholder/undeclared endpoints, 43 of which are the real package `module` | conf 1.0 on 100%, `structural` — Go's rule is syntactic and total, so 1.0 needs no reason code |
+| `contains` | yes | 96,504 / 4,237 | as VERIFY_GO2 (recall 0.937) | one shape carrying **no metadata beyond `evidenceClass`** | both ends 99.98% file-local | conf 1.0 on 100%, `structural` |
+| `imports` | yes | 30,524 / 6,912 | as VERIFY_GO2 (recall 1.000) | one shape, 30,524 | tgt is a module path by the edge's own `metadata.isImport` marker, not by its spelling | conf 0.9 on 100%, `import_based`; **30,524 sub-1.0, 0 reason codes** |
+| `instantiates` | yes | 22,364 / 3,748 | as VERIFY_GO2 | two shapes: 18,720 constructor-shaped · 3,644 composite-literal | src 98.9% file-local; tgt 39 undeclared | conf 0.8 ×18,720 · **0.6 ×3,644 — the only sub-0.7 population in the lane**; 0 reason codes |
+| `extends` | yes | 1,788 / 691 | as VERIFY_GO2 (recall 0.579) | two shapes: 1,534 struct embed · 254 interface embed | both ends 98.8% file-local | conf 0.8 on 100%, `inferred`; 1,788 sub-1.0, 0 reason codes |
+| `implements` | yes | 1,512 / 357 | as VERIFY_GO2 (0 oracle rows) | one shape | **every edge local > local** | conf 1.0 on 1,512, `structural` |
+| `overrides` | yes | 89 / 32 | see DERIVATION below | one shape carrying all six keys | **every edge local > local** | conf 0.95 on 100%, `usage_contextual`; **89/89 carry a `reasonCode`** |
+
+Q5, stated as the share of edges carrying a non-declaring endpoint on each side,
+because "resolves" and "resolves file-locally" are different numbers and only the
+first is a defect count:
+
+| type | source non-declaring | target non-declaring | of which undeclared |
+| --- | --- | --- | --- |
+| `calls` | 268 = 0.09% | 3,269 = 1.06% | 3,237 |
+| `uses` | 486 = 0.19% | 576 = 0.22% | 509 |
+| `references` | 995 = 0.62% | 806 = 0.50% | 783 |
+| `exports` | 29 = 0.01% | 42 = 0.02% | 32 |
+| `contains` | 39 = 0.04% | 64 = 0.07% | 0 |
+| `imports` | 15 = 0.05% | 30,524 = 100% (module paths, by contract) | 0 |
+| `instantiates` | 244 = 1.09% | 42 = 0.19% | 39 |
+| `extends` | 13 = 0.73% | 0 = 0% | 0 |
+| `implements` | 0 | 0 | 0 |
+| `overrides` | 0 | 0 | 0 |
+
+So: **the two types whose every edge is `local > local` are `implements`
+(1,512) and `overrides` (89); `contains` has zero undeclared endpoints on either
+side; and the three leaf-name types sit between 98.9% and 99.8% resolvable**,
+the remainder being declarations this single-file analyzer was not given the file
+for. `imports` is the one type whose targets are 100% non-symbols, and that is
+its label's contract rather than a defect.
+
+Q6, restated because the figure above it was wrong when first written: **the
+lane's honesty-contract §4 debt is 732,207 of 1,114,304 edges (65.7%)** carrying
+a sub-1.0 confidence and no machine-readable reason code — `calls` 309,634,
+`uses` 207,747, `references` 160,150, `imports` 30,524, `instantiates` 22,364,
+`extends` 1,788. `overrides` is the only type that complies (89/89), and
+`exports`/`contains`/`implements` need none at 1.0. Not fixed here: minting
+reason codes at six push sites changes what every consumer sees and is its own
+commit — the same conclusion the previous round reached on a 2,000-file draw,
+now with the whole-corpus denominator.
+
+### DERIVATION — the gate says clean, the differential still does not audit it
+
+`script/m60/rel-type-coverage-gate.ts --langs=go`, run against a scratch root so
+the shared 46-lane artifact was not overwritten:
+
+```
+CHECK 1 — DERIVATION: every emitted type has an oracle derivation
+  clean
+CHECK 2 — REACHABILITY: every emitted type is in the traversal default
+  clean
+CHECK 3 — AGREEMENT:    clean
+CHECK 4 — ENUM:         clean
+```
+
+**Go has left the 100-DERIVATION-findings set, and the mechanism is worth
+stating precisely, because the gate reading and the substantive reading differ.**
+The gate reads a lane's audited set from `script/m14/go-truth.ts` when one
+exists, and that module now publishes `GO_ORACLE_LABELS` with all ten labels
+plus an independent `deriveGoExports` and `deriveGoOverrides`. **But
+`script/m14/differential.ts` never imports that module.** It still calls six
+`deriveGo*` oracles for go, none of them the new pair, and its compared-label
+filter still excludes go from the `overrides` disjunct with the comment
+*"GO41: the go analyzer emits zero of them"* — a statement that stopped being
+true when the ontology round landed. So for `exports` and `overrides` the
+substantive condition is unchanged: **233,047 + 89 = 233,136 edges — 20.9% of the
+1,114,304 the lane publishes — are emitted and compared against nothing by the
+shared differential.** The oracle exists; the wiring does not. Both files are
+MASTER-owned (`script/m14/**`); reported, not changed.
+
+### Edges are OUTGOING only
+
+Every edge in this census leaves the file the analyzer was given. Nothing here
+answers "who points AT this symbol": resolving incoming edges is a separate
+subsystem (the `incoming-check` class of instrument), it is not built, and this
+census cannot see it. The endpoint ladder measures whether the **target** of an
+outgoing edge binds to a declaration; a declaration that nothing in this corpus
+points at still scores as resolved.
+
+### Gates re-run for this section, 2026-10-05
+
+Every gate that speaks to this lane, with what it printed. Quoted with a path,
+per honesty contract §1: the harness emits pass/fail, not the agent.
+
+| gate | result | where it ran |
+| --- | --- | --- |
+| `firing-check-v2.mjs GO`, NFILES=200 | **10/10**, 200/200 parsed, `imports[]` 781 in 183 files | `validation/m14/go/go-firing-check-v2-NFILES200.txt` |
+| `firing-check-v2.mjs GO`, NFILES=800 | **10/10**, 800/800 parsed, `imports[]` 3758 in 706 files | same file, second block |
+| `go-ambiguity-census.ts --index` ×8 + `--index-merge` | 10,530 files parsed, **0 failed**, 1,185 package dirs, 179,230 distinct names | terminal; the index is intermediate |
+| `go-ambiguity-census.ts --edges` ×8 + `--merge` | 10,530 parsed / 0 failed, 1,114,304 relationships | `go-ambiguity-draw-uncapped.json` |
+| the same at the 512 KB cap | 10,521 parsed / 0 failed, 1,026,839 relationships | `go-ambiguity-draw-512kb.json` |
+| `run-fixtures.ts --lang go` | **23 pass / 0 fail**, baseline gate reports no regressions | terminal; a scoped run writes no milestone evidence |
+| `validation/m14/go/go-mutant-run.ts` (new this round) | baseline 23/0/0 problems, **8 of 8 mutants caught, 0 survivors** | terminal |
+| `audit-analyzer-grammar.ts` | `go PASS refs=56 unknown=0 unknownFields=0` | terminal; the earlier figure of 54 did not reproduce. **This gate rewrites `validation/m14/results/M14.0.F1.json`** (issueId at `script/m14/audit-analyzer-grammar.ts:704`) — commit pointer, timestamp, `dead-literal-gate` 43/45 → 42/45 languages, and a `sql` adjudication row for a lane this branch does not own. Reverted here; reported |
+| `go-oracle.ts 400` | every per-type figure reproduces the committed `go-oracle-400.json`, `imports` back to 1304/1304/1304 recall 1.000 after the double-count fix | `go-oracle.ts` |
+| `differential.ts --lang go --repo go-stdlib --sample 120` | truth hash `8dc1132194b93790`, tree-truth 6,662, covered 6,642 (99.7%), MISSING 20, analyzer-edges 4,427, unexplained 16 | terminal — a scoped run refuses a lane-scoped artifact id |
+| `rel-type-coverage-gate.ts --langs=go` | CHECK 1 DERIVATION **clean**, CHECKS 2/3/4 clean | scratch root, so the shared 46-lane artifact was not overwritten |
+| `go-payload-latency.ts` | 400 files, 32,519 relationships, 7,238,323 B un-narrowed, ratio 2.781, 126.9 ms/file | see the note below |
+
+**The payload row is on a different draw than either figure this document already
+records**, and the difference is the corpus, not the analyzer: `cobra` is no
+longer on this box, and the recovered `go-corpus-files.ts` excludes `vendor`.
+Both earlier rows (27,397 relationships / 6,110,571 B, and 25,841 / 5,715,497 B)
+are on the go-stdlib+cobra draw, this one is on go-stdlib alone with `vendor`
+excluded, so the three numbers are not comparable to each other and none of them
+is a regression against a prior value. **AMBIGUITY_FLEET adds no edges and
+changes no edge**, so there is nothing to regress: the lane's payload is what it
+was. No budget is declared for this lane — `validation/m60/analyzer-budget-register.json`
+records go as `unscorable`, severity 5, status open — so no green budget was
+regressed and nothing was re-baselined.
+
+### What this section does not settle
+
+- **Whether the undeclared 4,627 endpoints mean the analyzer is wrong.** They are
+  real references to declarations outside the file, concentrated in the
+  compiler's generated tables. Deciding that needs a consumer-side measurement
+  (does `bb_graph`/`bb_impact` resolve them), which is not this lane's
+  subsystem.
+- **Whether `contains` needs more metadata.** It carries no key beyond
+  `evidenceClass` on 96,504 edges, so a consumer cannot tell a struct field from
+  an interface method from a method. Not wrong; not distinguishable.
+- **The `imports` off-enum question is CLOSED, not open any more.** This file
+  said above that `RelationshipType.Imports` serialises to `"brain_import"`.
+  `src/ast/types.ts:83` now reads `Imports = "imports"`, the divergence the
+  previous round reported is fixed in the MASTER-owned file, and go's 30,524
+  import edges are produced under a value that *is* in the canonical enum.
+- **Grammar-version drift.** 54 node-type references, `audit-analyzer-grammar.ts`
+  reports 0 unknown, and the wasm is still not registered in
+  `validation/m14/grammar-pins.json`.
+
+---
+
 ## Relationship ontology
 
-Ten types, one row each. `RelationshipType.Imports` serialises to `"brain_import"`
-(`src/ast/types.ts`), which is why it reads as `imports` in prose and as `brain_import` on the
-wire. Every count below is **measured through the production `parseFile` entry** on a stated
+Ten types, one row each. **Corrected 2026-10-05:** this section used to say
+`RelationshipType.Imports` serialises to `"brain_import"` (`src/ast/types.ts`),
+which is why it read as `imports` in prose and as `brain_import` on the wire.
+`src/ast/types.ts:83` now reads `Imports = "imports"`, the three-enum divergence
+is closed, and every count below is measured on that corrected tree — so go's
+import edges are produced under a value that **is** in the canonical enum and the
+"off-enum" label that appeared in the VERIFY_GO2 table above is retired. Every
+count is **measured through the production `parseFile` entry** on a stated
 draw, and every verdict is EMITTED / RULED / GAP with the measurement behind it.
 
 | Relationship | Emitted? | How resolved | Confidence |

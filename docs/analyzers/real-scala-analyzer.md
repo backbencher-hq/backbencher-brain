@@ -185,3 +185,180 @@ over the (tiny) hierarchy. No O(n²) or per-symbol O(n) scans.
 ## Issue
 
 Closes M12.05 (GitHub issue #144).
+
+---
+
+# Ontology workstream — DERIV_EXPORTS_SCALA (addendum, 2026-10-05)
+
+Verdicts here are per ONTOLOGY-WORKSTREAM.md: EMITTED needs a production-path
+count and the files; RULED needs a reason **and** a corpus measurement; GAP needs
+the language's construct and then an implementation.
+
+## Baseline — firing-check-v2, production path, NFILES=200
+
+    cd $HOME/backbencher-brain && NFILES=200 bun script/m14/firing-check-v2.mjs DERIV_EXPORTS_SCALA
+
+    SCALA  8/10  200/200 parsed   silent: imports exports
+    imports[] 649 in 148 files
+    counts: calls:7222 references:4181 contains:2544 uses:1696
+            instantiates:1178 extends:234 overrides:131 implements:20
+
+Sample: code-bearing `.scala` from `fixtures/repositories/scala` (dotty, 18,965
+`.scala` files on disk). First two sampled: `project/VersionUtil.scala`,
+`project/Versions.scala`.
+
+`imports` absent from the relationship tally while `imports[]` is 649 is **not** a
+defect — `ParseResult` carries imports on a separate channel (`types.ts:206-216`)
+and `parallel-indexer` writes them to the `brain_import` TABLE, never to
+`brain_relationship` rows (REVIEW-2026-10-04.md §1). `imports` is judged on that
+channel. `exports` is a relationship-channel type and IS silent — that is the gap.
+
+## scala IS among the DERIVATION findings — three of the 104
+
+`validation/m60/rel-type-coverage-baseline.json` (at 2026-10-01) holds 104
+DERIVATION findings across 38 lanes. `scala` holds **3** of them:
+
+    DERIVATION|scala|emits `contains`   but the differential audits ["calls","extends","implements","instantiates","overrides"]
+    DERIVATION|scala|emits `references` but the differential audits ["calls","extends","implements","instantiates","overrides"]
+    DERIVATION|scala|emits `uses`       but the differential audits ["calls","extends","implements","instantiates","overrides"]
+
+So 3 of the 8 relationship-channel types this analyzer emits are stored and
+compared against nothing. At the NFILES=200 baseline those three classes are
+**references 4181 + uses 1696 + contains 2544 = 8,421 of 17,406 edges = 48.4%**
+of everything the analyzer publishes. This is a first-class part of the job,
+because an unverified edge ships a bug invisibly.
+
+Confirmed the wiring problem before touching anything: `readOwnOracleLabels()`
+in `script/m60/rel-type-coverage-gate.ts:186` prefers `script/m14/<lang>-truth.ts`
+over the shared filter, but `script/m14/differential.ts` consumes lane oracles by
+PER-LANE hardcoded import (`:23040` fsharp, `:738` zig, `:48` clojure). Creating
+`script/m14/scala-truth.ts` without a `differential.ts` adapter would make the gate
+delete all three findings while nothing audits them — a repayment in name only.
+Not done; reported to master instead.
+
+## Whole-population census — 18,965/18,965 files, production path
+
+    bun script/m14/tmp/scala3-ontology-census-v2.mts plan
+    # 64 shards, 8 at a time:
+    bun script/m14/tmp/scala3-ontology-census-v2.mts shard <i> 64      # x64
+    bun script/m14/tmp/scala3-ontology-census-v2.mts merge 64
+
+Corpus: `fixtures/repositories/scala` (dotty), 18,965 `.scala`/`.sbt` files
+discovered by directory walk. **Covered 18,965 — missed 0, read/parse fail 0,
+analyze threw 0, size-capped 0.** 513 files carry a tree-sitter ERROR/MISSING node
+(2,380 nodes) and **513 of the 513 published a diagnostic**.
+
+Population note, because it decides what a 200-file draw can see: **15,701 of the
+18,965 files (82.8%) are under `tests/`** — dotty's own negative/positive test
+sources. `compiler/` is 722 and `library/` is 894. A draw that starts in
+`project/` (which is what NFILES=200 does) is 35 files of build definition.
+
+### The per-type table, whole population
+
+| type | verdict | edges | files | distinct (src,tgt) | target resolves (corpus name set) | conf | R7 placeholder endpoints |
+|---|---|---|---|---|---|---|---|
+| calls | EMITTED | 219,550 | 11,451 | 107,534 | 212,686 (96.9%) | 0.9 | 21 |
+| references | EMITTED | 292,174 | 17,250 | 230,459 | 254,251 (87.0%) | 0.9 | 894 |
+| contains | EMITTED | 181,373 | 16,127 | 161,939 | 181,373 (100.0%) | 1.0 | 283 |
+| uses | EMITTED | 59,799 | 7,370 | 58,603 | 51,400 (86.0%) | 0.9 | 9 |
+| instantiates | EMITTED | 59,148 | 8,753 | 35,615 | 55,611 (94.0%) | 0.9 | 14 |
+| extends | EMITTED | 21,753 | 7,965 | 18,438 | 19,519 (89.7%) | 1.0 | 0 |
+| overrides | EMITTED | 14,231 | 2,565 | 13,526 | 0 (0.0%) — see below | 0.9 / unset | 0 |
+| implements | EMITTED | 4,453 | 818 | 4,392 | 4,289 (96.3%) | 1.0 | 0 |
+| imports | GAP (carrier note) | 0 on relationships | 0 | 0 | — | — | — |
+| exports | **GAP** | 0 on relationships | 0 | 0 | — | — | — |
+
+Total: **852,481 relationship edges, 233,490 symbols, 73,072 distinct symbol
+names.** Off-vocabulary relationship types emitted: **0** — every edge the analyzer
+publishes carries one of the ten production values (`engine.ts:445-466`).
+
+### `overrides` resolves at 0.0% against symbol NAMES, and that is a shape not a defect
+
+`overrides` targets are **owner-qualified**: `AutoPlugin.requires` (190),
+`Iterator.hasNext` (157), `Foo___.f` (120). The corpus symbol names are BARE
+(`requires`, `hasNext`, `f`), so a name-set lookup returns 0 for every one of the
+14,231. The leaf of each target is a real declaration — the shape is
+`DeclaringParent.member`, which is the shape `override-context.ts` produces
+deliberately. The honest reading is that the number in this column measures "does the
+target equal a published bare name", which is the wrong question for `overrides`; the
+right one is measured separately below.
+
+### R7: 1,221 edges carry a placeholder-LITERAL-shaped endpoint, and the set needs adjudicating
+
+Blanket-`Set` count (spelling list `_ * ? unknown n/a null nil TODO - -- ???`):
+`references '?'` 876, `contains '*'` 121, `contains '-'` 113, `contains '--'` 16,
+`contains '?'` 12, `instantiates '_'` 10, `calls '--'` 10, `references '*'` 8,
+`uses '_'` 8, `calls 'unknown'` 7, and 60 more across 22 spellings.
+
+**This number is an upper bound and I will not report it as 1,221 defects.** `*`,
+`-` and `--` are LEGAL Scala method names (`def *(x: T)`, `def unary_-`), so a
+`contains` edge `Foo -> *` can name a real symbol, and `?` is legal in Scala 3. Rule
+R7 forbids a placeholder that NAMES NOTHING; it does not forbid a legal operator
+identifier. Each spelling is adjudicated by locating the declaration it claims to
+name — see the adjudication section below.
+
+### `imports` — 23,776 on its own channel, 0 on the relationship channel, and this is NOT a gap
+
+`imports[]` = **23,776 `ImportInfo` in 8,252 files**, against **23,776
+`import_declaration` nodes in 8,252 files** measured by the grammar probe: exactly
+1.000 per declaration, no sample. 23,769 carry a non-empty module path and **7 carry
+an empty one**. 27,457 items across them; `alias` is populated on 0 and
+`isNamespace` on 0.
+
+`imports` is absent from the relationship channel because
+`parallel-indexer.ts:2169` writes it to the `brain_import` TABLE. Two independent
+consumers confirm the channel is the real one: `import-resolution.ts:381` selects
+`import_path` from `brain_import`, and `graph-engine.ts:45` lists `imports` in
+`DEFAULT_REL_TYPES` where a traversal reads the union of both. **Verdict on the
+imports carrier: EMITTED, 1.000 per declaration.**
+
+### `exports` — a GAP, and the analyzer already computes the data and then throws it away
+
+Three separate measurements converge:
+
+1. **The construct exists.** `export_declaration` = **277 nodes in 158 files**;
+   the `export` token = 277 in 158. `namespace_selectors` 2,610/1,563,
+   `as_renamed_identifier` 289/184, `arrow_renamed_identifier` 697/446,
+   `namespace_wildcard` 10,974/5,021.
+2. **The analyzer produces an export surface — on a channel nobody persists.**
+   `exports[]` = **47,350 `ExportInfo` in 18,737 files**, 0 empty names, 8
+   placeholder-shaped names. Grepped every writer: **no code path inserts
+   `ExportInfo` anywhere.** `pool-worker.ts:1110` and `engine.ts:1801` only forward
+   it.
+3. **Consumers ask for `exports` as a RELATIONSHIP.** `graph-engine.ts:45` lists it
+   in `DEFAULT_REL_TYPES`; `parallel-indexer.ts:3451` and `:3463` carry a
+   dedicated defensive filter `if (relType === "exports")`; and
+   `import-resolution.ts:404` selects
+   `brain_relationship ... WHERE relationship_type = 'exports' AND target_external IS NOT NULL`
+   to build the export surface. That query returns **nothing** for a Scala project,
+   because 0 rows of that type are ever written.
+
+So Scala HAS the construct (277 measured declarations), the analyzer reads it well
+enough to name 47,350 exports, and the export surface is dropped at the persistence
+boundary. That is a GAP, and it is the same shape as the 15-of-20-lanes `exports`
+finding in REVIEW-2026-10-04.md §4.
+
+## Two MEASURED dead branches in the main walk
+
+The single-pass walk pushes only `namedChild(i)`
+(`real-scala-analyzer.ts:572-577`), so a branch keyed on an **anonymous token** can
+never match. Probing over ALL children rather than named children is what separates
+these two from the live ones:
+
+| branch | line | token in corpus | pattern flag it sets | files with the flag |
+|---|---|---|---|---|
+| `node.type === "override"` | :496 | `override` token: **10,897 nodes / 2,245 files** | `Override/Polymorphism` | **0 — never published** |
+| `node.type === "using"` | :473 | `using` token: **15,236 nodes / 3,789 files** | `Using Clauses (Scala 3)` | **0 — never published** |
+
+Neither flag appears in the 29 `metadata.patterns` the analyzer actually published
+over the whole corpus. The constructs are NOT missing — `overrides` publishes 14,231
+relationships through `collectModifiers` (:1099-1112), which reads `childCount`, not
+`namedChildCount`, so it sees the token. Only the two **pattern flags** are dead.
+This is exactly the shape source-derivation cannot see: both branches are
+constructible, both are reachable in the source, and neither can ever fire.
+
+Sibling live flags for contrast, same census: `opaque_modifier` 458/323 ->
+`Opaque Types (Scala 3)` 323 files; `derives_clause` 298/88 -> `Derives` 88;
+`inline_modifier` 6,456/2,145 -> `Inline Methods (Scala 3)` 2,190 (also set by
+`transparent_modifier` 663/361); `export_declaration` 277/158 -> `Exports (Scala 3)`
+158. Flag count and construct file count agree, which is what a live branch looks like.

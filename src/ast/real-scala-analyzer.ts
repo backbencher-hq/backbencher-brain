@@ -394,6 +394,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         patternsObj["Extension Methods (Scala 3)"] = true
       } else if (node.type === "export_declaration") {
         patternsObj["Exports (Scala 3)"] = true
+        this.handleExportClause(node, relationships, currentParent)
       } else if (node.type === "match_expression") {
         patternsObj["Case Classes & Pattern Matching"] = true
       } else if (node.type === "for_expression") {
@@ -1383,6 +1384,32 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // text. Measured 2 rows on a 2000-file scala3 draw.
         const name = stripScalaQuoting(name0)
         if (!name || name === "throws") return
+        // SCALA4 (R7): a WILDCARD is not a type name. `Class[?]` and `Class[_]` parse
+        // as generic_type > type_arguments > type_identifier("?" / "_"), so the walk
+        // below reached the wildcard and published it as a referenced TYPE. Measured
+        // over the whole corpus through production parseFile (18,965 files):
+        //
+        //   compiler/src/dotty/tools/dotc/config/Properties.scala:24
+        //       protected def pickJarBasedOn: Class[?]     -> references `?`
+        //   library/src/scala/collection/ArrayOps.scala:1037, 1236
+        //   compiler/src/dotty/tools/backend/sjs/JSCodeGen.scala:1239, 1457
+        //
+        // 878 `references` endpoints were a placeholder literal resolving to NO symbol
+        // this run published — 874 spelled `?`, and every one of them named nothing.
+        // An endpoint that names nothing cannot be resolved, hovered or followed, so
+        // the edge is the same class rule R7 bans, reached by a route nobody had walked:
+        // not by inventing a name but by MISTAKING the wildcard for one. SCALA3 closed
+        // the same class for `exports` (`export p.{x => _, _}` publishing `*`).
+        //
+        // THE FIX IS POSITIONAL, and the corpus says why. 17 other `?` targets DO
+        // resolve, because `def ?` is a legal Scala predicate — and they arrive through
+        // `method_value` (a capitalized receiver, a field_expression), NOT through a
+        // type position. 193 `*` targets also resolve: `def *(x: Byte): Int` is
+        // declared six times over in library/src/scala/Char.scala. A literal ban here
+        // would delete 210 real edges; refusing the wildcard only where it IS a
+        // wildcard cannot. Enumerated, not pattern-matched, because each spelling was
+        // checked against what the grammar can put in a type position.
+        if (name === "?" || name === "_") return
         if (out.some((x) => x.name === name)) return
         out.push({ name, line: n.startPosition.row + 1 })
       }
@@ -1700,6 +1727,31 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const emitUse = (n: Node, target: string, nameNode?: Node): void => {
       if (!target) return
+      // SCALA4 (R7): `_` is not a legal Scala identifier — it is the wildcard and the
+      // placeholder, never a declaration — so an edge naming it names nothing. The
+      // grammar nevertheless emits it as an `identifier`, in exactly the shapes this
+      // walk reads:
+      //
+      //   repl/src/dotty/tools/repl/AbstractFileClassLoader.scala:86-92
+      //       case s"java.$_" => super.loadClass(name)        (7 of the 8)
+      //   tests/pending/run/t7715.scala:21
+      //       case rx"${_} by ${I(b)}" => b
+      //   project/scripts/bisect.scala:261
+      //       case s"$major.$minor.$patch-$_" => …
+      //
+      // `interpolation` with an `identifier` child is exactly the `$name` form, and `_`
+      // parses the same way as any other identifier, so the first version of this walk
+      // published `uses loadClass -> _`. Measured over the whole corpus through
+      // production parseFile: 8 such edges, all of them in files with ZERO parse
+      // diagnostics — this is not the fuzz corpus, these are ordinary repl and build
+      // scripts.
+      //
+      // Only `_` is refused. `*` and `?` are legal Scala method names (`def *`,
+      // `def ?`) and this walk legitimately targets them; `unknown` is a legal `val`
+      // name (library/test/scala/collection/IterableTest.scala:89 declares one) and
+      // banning it here would delete a real edge. The literal set is enumerated
+      // because each one was checked against what the language can declare.
+      if (target === "_") return
       // SCD1 (JAD1/KAD1 family contract): assignment LHS is a WRITE, not a
       // read. `h.value = 5` previously emitted uses h. Both write shapes are
       // gated (probe-verified): `=` parses as assignment_expression (LHS =
@@ -2561,6 +2613,275 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Type, node, parent, { isTypeAlias: true })
     symbols.push(symbol)
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Scala 3 EXPORT CLAUSE -> `exports` relationships.
+  //
+  // The lane handover recorded `exports` as silent and the census measured the
+  // construct present: `export_declaration` — 277 nodes in 158 files of the
+  // 18,965-file population (script/m14/tmp/scala3-ontology-census.ts), e.g.
+  // compiler/src/dotty/tools/dotc/core/Flags.scala, library/src/scala/
+  // NamedTuple.scala. So this is a GAP, not an absence, and a prose ruling
+  // ("Scala has no export construct") would have been wrong on 277 measured
+  // nodes — the ontology gate's founding premise.
+  //
+  // THE RECONSTRUCTION, and why child position cannot do it. The natural first
+  // rule — "everything before the last named child is the qualifier, the last
+  // named child is the selection" — is wrong on real corpus shapes, measured in
+  // script/m14/tmp/scala3-export-reconstruct-census.mts:
+  //
+  //   * `export toppingPrice.apply, crustPrice.apply, crustPrice.unlift`
+  //     (tests/neg/i20511-1.scala) parses with SIX `field: path` children and
+  //     NO selection node at all. The positional rule reads the qualifier as
+  //     "toppingPrice.apply.crustPrice.apply.crustPrice" — three unrelated
+  //     exportees fused into one nonsense path. The FIELD is what separates
+  //     them: a `,` terminates the exportee and the path children after it
+  //     begin the next one.
+  //   * the anonymous `.` between path segments does NOT consistently carry
+  //     `field: path` (it does between two path segments, it does NOT before a
+  //     selection node), so it has to be skipped by node type, not by field.
+  //
+  // With that, the rule reconstructs 277 of 277 declarations and produces 280
+  // exportees. The first version of the rule reconstructed 90 of 277; the
+  // 187 it missed were all wildcards and selector lists, which is why the
+  // coverage number is printed rather than asserted.
+  //
+  // WHAT AN EDGE IS. A Scala 3 export clause re-publishes members of another
+  // object under the enclosing declaration's own name. So the edge reads
+  //     <enclosing declaration>  exports  <exported name>
+  // which is the same shape makefile/python/zig emit (module -> name) and the
+  // shape parallel-indexer's file-level `exports` section expects. The
+  // QUALIFIER is carried in metadata rather than glued into the target: it is
+  // the SOURCE path of the member, not part of the name the export publishes,
+  // and gluing it would produce targets no symbol in the graph is named by.
+  //
+  // CONFIDENCE. 1.0 on a NAMED exportee: the name is written in the clause, so
+  // there is nothing inferred. A wildcard exportee (`export X._`, 133 of the
+  // 277 declarations) names no member, so an edge naming one would be
+  // fabricated; it is published at 0.7 with `reasonCode: "export-wildcard"` and
+  // an `isWildcard` flag, which makes it countable as a heuristic per
+  // M14-HONESTY-CONTRACT §4 rather than silently indistinguishable from the
+  // named ones.
+  //
+  // ENDPOINT RESOLUTION. The source is the enclosing declaration's name, which
+  // is a symbol the same walk publishes, so it resolves. The target is a member
+  // name that is usually NOT a symbol in this file (it lives on the qualifier's
+  // object), so it resolves externally or not at all — which is the same
+  // position every `references` import edge is already in, and is why the
+  // qualifier goes in metadata where a consumer can still find it.
+  private handleExportClause(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
+  ): void {
+    interface Exportee { prefix: string[]; selKind: string; src: Node; names: string[]; exportedAs?: string }
+
+    const SELECTION_TYPES = new Set(["namespace_selectors", "namespace_wildcard", "as_renamed_identifier"])
+    const exportees: Exportee[] = []
+    let pathParts: string[] = []
+    // The NODE each path segment came from. Without it the line of a plain
+    // `export a.b` edge would be the declaration's first line rather than the
+    // line `b` is written on, which is the class #825 closed everywhere else in
+    // this file.
+    let pathNodes: Node[] = []
+
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c) return // an unreadable child: publish nothing rather than guess
+      const t = c.type
+      const field = node.fieldNameForChild(i) ?? ""
+
+      if (t === "export") continue
+      if (t === ",") {
+        // A comma ends the exportee. `export a.b, c.d` is two exportees, and the
+        // path children after the comma start the next one.
+        if (pathParts.length === 0) continue
+        const leaf = pathParts.pop()!
+        const leafNode = pathNodes.pop() ?? c
+        exportees.push({ prefix: pathParts, selKind: "identifier", src: leafNode, names: [leaf] })
+        pathParts = []
+        pathNodes = []
+        continue
+      }
+      // The separator between path segments is never a name, and it does not
+      // consistently carry `field: path` (it does between two path segments,
+      // it does not before a selection node), so it is skipped by node type.
+      if (t === ".") continue
+      // scala3's semanticdb `.expect.scala` format parks an ASSERTION comment
+      // in the qualifier (`export decode/*->...Codec#decode.*/._`) and in the
+      // selector list. A comment names nothing; treating it as a segment would
+      // publish the comment text as a path.
+      if (c.isNamed && t === "block_comment") continue
+
+      if (c.isNamed && SELECTION_TYPES.has(t)) {
+        if (field !== "") continue // a selection is never a path segment
+        if (t === "namespace_wildcard") {
+          // `export X._` / `export X.*` — no member is named.
+          exportees.push({ prefix: pathParts.slice(), selKind: t, src: c, names: [] })
+        } else if (t === "namespace_selectors") {
+          // One edge PER SELECTOR, each on the line that selector is written
+          // on. A single shared `src` would put every name of a multi-line
+          // `export Target.{ alpha,\n beta,\n gamma }` on the `export`
+          // line, which is the class #825 closed everywhere else in this file:
+          // `alpha` is written on line 3, not line 2.
+          const picked: Array<{ name: string; node: Node; exportedAs?: string }> = []
+          // A `_` / `*` selector INSIDE a selector list means "the rest of this
+          // object's members" — `export printUnit.{status => _, _}`
+          // (tests/pos/reference/exports.scala:21) exports `status` and then
+          // everything else on printUnit. It names no member, so it must not
+          // become a target: the first version published `Copier exports *` at
+          // confidence 1.0, and `*` is not a legal Scala identifier, so that
+          // edge had an endpoint nothing could ever resolve. The same class as
+          // the `unknown` placeholder banned by rule R7
+          // (validation/m60/ledger.json), reached by a different route.
+          // It becomes a wildcard exportee on the QUALIFIER instead, which is
+          // the scope the clause really does re-publish.
+          let innerWildcard = false
+          for (let j = 0; j < c.namedChildCount; j++) {
+            const s = c.namedChild(j)
+            if (!s || (s.isNamed && s.type === "block_comment")) continue
+            if (s.type === "namespace_wildcard") { innerWildcard = true; continue }
+            const nm = this.exportSelectorName(s)
+            if (nm === null) continue
+            // A selector can rename too: `export p.{ epsilon as eps }`.
+            const alias = this.exportSelectorAlias(s)
+            picked.push({ name: nm, node: s, ...(alias && alias !== "*" ? { exportedAs: alias } : {}) })
+          }
+          for (const pk of picked) {
+            exportees.push({ prefix: pathParts.slice(), selKind: t, src: pk.node, names: [pk.name], ...(pk.exportedAs ? { exportedAs: pk.exportedAs } : {}) })
+          }
+          if (innerWildcard && pathParts.length > 0) {
+            exportees.push({ prefix: pathParts.slice(), selKind: "namespace_wildcard", src: c, names: [] })
+          }
+        } else {
+          // `x as y` — the SOURCE member is the first identifier; `as _` means
+          // "no rename", so the published name stays the source name.
+          const srcNode = c.namedChild(0)
+          const srcName = srcNode ? this.exportSelectorName(srcNode) : null
+          if (srcName !== null) {
+            const alias = this.exportSelectorAlias(c)
+            exportees.push({ prefix: pathParts.slice(), selKind: t, src: srcNode ?? c, names: [srcName], ...(alias && alias !== "*" ? { exportedAs: alias } : {}) })
+          }
+        }
+        pathParts = []
+        pathNodes = []
+        continue
+      }
+
+      if (field === "path") {
+        if (c.isNamed) { pathParts.push(c.text); pathNodes.push(c) }
+        continue
+      }
+      return // an unrecognised child: publish nothing rather than a guess
+    }
+    if (pathParts.length > 0) {
+      const leaf = pathParts.pop()!
+      const leafNode = pathNodes.pop() ?? node
+      exportees.push({ prefix: pathParts, selKind: "identifier", src: leafNode, names: [leaf] })
+    }
+    if (exportees.length === 0) return
+
+    // The SOURCE endpoint. An export clause with no enclosing declaration is a
+    // TOP-LEVEL export — legal Scala 3, and 39 of the 277 measured declarations
+    // are one (tests/pos/i11141.scala, tests/pos/i13476.scala and the
+    // package-level exports in tests/neg/package-export/package.scala). Those
+    // publish no owner symbol to point at, so they are sourced at the same
+    // file-scope sentinel the rest of this analyzer uses, "(script)" — never at
+    // a fabricated type name.
+    const source = parent?.name ?? "(script)"
+    const seen = new Set<string>()
+
+    for (const e of exportees) {
+      const qualifier = e.prefix.join(".")
+      if (e.names.length === 0) {
+        // A wildcard exportee: the clause re-publishes EVERY member of the
+        // qualifier, and no member is written. The edge is real (this
+        // declaration does export that object's surface) but it names a scope,
+        // not a symbol, so it is a heuristic edge and says so.
+        if (qualifier.length === 0) continue
+        const key = `${source}|${qualifier}|*`
+        if (seen.has(key)) continue
+        seen.add(key)
+        relationships.push({
+          source,
+          target: qualifier,
+          type: ASTEngine.RelationshipType.Exports,
+          confidence: 0.7,
+          line_number: e.src.startPosition.row + 1,
+          metadata: { isExportClause: true, isWildcard: true, reasonCode: "export-wildcard", exportKind: "all_members", evidenceClass: "structural" },
+        })
+        continue
+      }
+      for (const nm of e.names) {
+        // `as y` renames on export: the PUBLISHED name is the alias.
+        const published = e.exportedAs ?? nm
+        const target = stripScalaQuoting(published)
+        if (target.length === 0 || target === "throws") continue
+        // Rule R7 in its general form (validation/m60/ledger.json): no edge
+        // endpoint may be a placeholder literal. `_` and `*` are the spellings
+        // Scala uses for "no name here", and `unknown` is this repository's
+        // banned placeholder; a target equal to any of them names nothing.
+        // Enumerated, not pattern-matched, because each one was checked against
+        // what the grammar can declare.
+        if (target === "_" || target === "*" || target === "unknown" || target === "?") continue
+        const key = `${source}|${target}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        relationships.push({
+          source,
+          target,
+          type: ASTEngine.RelationshipType.Exports,
+          confidence: 1.0,
+          // M59 (#825): the exported name is written in the clause, so the line
+          // is where that NAME is written — the selector's own line inside a
+          // selector list, the leaf segment's own line for `export a.b`, and
+          // never the declaration's first line.
+          line_number: e.src.startPosition.row + 1,
+          metadata: {
+            isExportClause: true,
+            exportKind: e.exportedAs ? "renamed" : "named",
+            ...(qualifier.length > 0 ? { exportFrom: qualifier } : {}),
+            ...(e.exportedAs ? { exportedAs: stripScalaQuoting(e.exportedAs) } : {}),
+            evidenceClass: "structural",
+          },
+        })
+      }
+    }
+  }
+
+  /** The RENAMING alias one selector publishes, or null when it does not
+   *  rename. `x as y` / `x => y` publish `y`; `x as _` / `x => _` publish `x`,
+   *  which is why `_` and `*` are never returned as an alias. */
+  private exportSelectorAlias(sel: Node): string | null {
+    const t = sel.type
+    if (t !== "as_renamed_identifier" && t !== "arrow_renamed_identifier") return null
+    if (sel.namedChildCount < 2) return null
+    const last = sel.namedChild(sel.namedChildCount - 1)
+    if (!last) return null
+    const txt = last.text
+    // `_` is the "no rename" spelling, not a name anybody can spell.
+    if (txt === "_" || txt === "*") return null
+    return this.exportSelectorName(last)
+  }
+
+  /** The member name ONE selector contributes, or null when it contributes
+   *  none. `as`/`=>` forms contribute their SOURCE name; the alias is read
+   *  separately so the caller can record the rename. */
+  private exportSelectorName(sel: Node): string | null {
+    const t = sel.type
+    if (t === "identifier" || t === "operator_identifier" || t === "type_identifier") return sel.text
+    if (t === "generic_type") {
+      // `export defaults.{given Ring[Int]}` — the exported TYPE is its head.
+      const head = sel.namedChild(0)
+      return head ? this.exportSelectorName(head) : null
+    }
+    if (t === "as_renamed_identifier" || t === "arrow_renamed_identifier") {
+      const src = sel.namedChild(0)
+      return src ? this.exportSelectorName(src) : null
+    }
+    if (t === "namespace_wildcard") return "*"
+    return null
   }
 
   private handleGiven(

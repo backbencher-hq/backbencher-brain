@@ -92,6 +92,7 @@
 
 import type { Node, Tree } from "web-tree-sitter"
 import * as path from "path"
+import { createRequire } from "node:module"
 import { ASTEngine } from "./engine"
 
 // The three embedded-block delegates are loaded LAZILY and INDEPENDENTLY, and
@@ -353,46 +354,96 @@ function firstToken(text: string): string {
 }
 
 // ============================================================================
+// LOOKUP TABLES AND MAPS — every one on a NULL prototype.
+// ============================================================================
+//
+// WHY. Every vocabulary below is keyed by a string THE DOCUMENT SUPPLIES: a tag
+// name, a `<link rel>` token, a `<param name>`, an attribute name, an `id`. On a
+// plain object literal such a lookup answers `Object.prototype.<key>` for any key
+// the table does not declare, and the caller cannot tell that from a real entry.
+// A tag name is an arbitrary author-chosen string, so this is a reachable input,
+// not a malformed one.
+//
+// MEASURED, on this lane's own corpus (1,185 git-tracked html documents across 24
+// repositories, `validation/m14/probes/html/construct-probe.mts` §4):
+//
+//   1 document, 4 elements — `RESOURCE_RULES["constructor"]` is the `Object`
+//   FUNCTION, so `rules.length` is 1 (its arity), `rules[0]` is `undefined`, and
+//   the loop dereferences `undefined.attr`. The file is
+//   `csharp-sample/extensions/copilot/src/platform/parser/test/node/fixtures/chatSetup.ts.getStructure.html`
+//   — a TypeScript code-dump fixture with `<CONSTRUCTOR>` at line 174 — and it is
+//   88,229 bytes. Production `parseFile` reports
+//   `analyzer timeout, returning basic parse result … "undefined is not an object
+//   (evaluating 'rule.attr')"` and the document publishes ZERO symbols, ZERO
+//   relationships and no metadata at all, while every other document over 4 KiB in
+//   the same draw publishes both. One file, and the whole document is gone.
+//
+//   The truthiness tables fail the same way WITHOUT throwing, which is why they
+//   are fixed here too and not only the one site that crashes: `SEMANTIC_ELEMENTS
+//   ["tostring"]`, `INTERACTIVE_ELEMENTS["tostring"]` and `FORM_ELEMENTS["valueof"]`
+//   are all truthy, so `<tostring>` counts as a landmark, an interactive control
+//   AND a form element — three wrong facts and a wrong `semanticScore`, published
+//   without an error anywhere.
+//
+// The handle maps need it for a second reason: `obj["__proto__"] = v` on a plain
+// object writes the PROTOTYPE rather than a key, so `<div id="__proto__">` made
+// `handleToSymbol["__proto__"]` answer `Object.prototype` instead of `undefined`
+// and started the duplicate-suffix walk from `Object.prototype`. Measured: 0
+// occurrences of an `id`/`name` handle that is an inherited member across 1,185
+// documents — recorded as NOT-YET-REACHED rather than as absent, because the
+// corpus is not the input space and a tag name is author-chosen.
+/** A lookup table with no prototype, so an undeclared key answers `undefined`
+ *  instead of `Object.prototype[key]`. */
+function table<V>(entries: Record<string, V>): Record<string, V> {
+  return Object.assign(Object.create(null) as Record<string, V>, entries)
+}
+
+/** A per-call map keyed by a document-supplied string. Same reason as `table`. */
+function map<V>(): Record<string, V> {
+  return Object.create(null) as Record<string, V>
+}
+
+// ============================================================================
 // ELEMENT VOCABULARIES
 // ============================================================================
 
-const SEMANTIC_ELEMENTS: Record<string, boolean> = {
+const SEMANTIC_ELEMENTS: Record<string, boolean> = table<boolean>({
   "header": true, "nav": true, "main": true, "section": true, "article": true,
   "aside": true, "footer": true, "h1": true, "h2": true, "h3": true, "h4": true,
   "h5": true, "h6": true, "figure": true, "figcaption": true, "time": true,
   "data": true, "mark": true, "details": true, "summary": true, "dialog": true,
   "meter": true, "progress": true, "search": true, "address": true, "hgroup": true,
-}
+})
 
-const INTERACTIVE_ELEMENTS: Record<string, boolean> = {
+const INTERACTIVE_ELEMENTS: Record<string, boolean> = table<boolean>({
   "button": true, "input": true, "select": true, "textarea": true, "a": true,
   "details": true, "summary": true, "dialog": true, "menu": true, "option": true,
   "optgroup": true, "label": true, "fieldset": true, "output": true, "area": true,
-}
+})
 
-const FORM_ELEMENTS: Record<string, boolean> = {
+const FORM_ELEMENTS: Record<string, boolean> = table<boolean>({
   "form": true, "input": true, "select": true, "textarea": true, "button": true,
   "fieldset": true, "legend": true, "label": true, "datalist": true,
   "optgroup": true, "option": true, "output": true, "meter": true, "progress": true,
-}
+})
 
 /** Elements whose content is NOT rendered where it is written (scope barriers). */
-const TEMPLATE_BARRIERS: Record<string, boolean> = { "template": true, "slot": true }
+const TEMPLATE_BARRIERS: Record<string, boolean> = table<boolean>({ "template": true, "slot": true })
 
 /** `<link rel>` values that fetch a real subresource. `preconnect` and
  *  `dns-prefetch` name a HOST for a connection warm-up, not a document — the
  *  pre-fix analyzer mirrored both into `imports`, so `bb` claimed a dependency on
  *  `/f.ico`-style hints that nothing serves. */
-const LINK_FETCHABLE_RELS: Record<string, boolean> = {
+const LINK_FETCHABLE_RELS: Record<string, boolean> = table<boolean>({
   "stylesheet": true, "icon": true, "shortcut icon": true, "apple-touch-icon": true,
   "apple-touch-icon-precomposed": true, "mask-icon": true, "manifest": true,
   "preload": true, "prefetch": true, "preload-stylesheet": true, "modulepreload": true,
   "import": true, "subresource": true, "alternate": true, "canonical": true,
-}
+})
 
 /** The `resourceType` a fetchable `<link rel>` is recorded under, so an edge
  *  says WHAT it loads rather than only that a link exists. */
-const LINK_RESOURCE_TYPES: Record<string, string> = {
+const LINK_RESOURCE_TYPES: Record<string, string> = table<string>({
   "stylesheet": "stylesheet",
   "icon": "icon",
   "shortcut icon": "icon",
@@ -406,12 +457,12 @@ const LINK_RESOURCE_TYPES: Record<string, string> = {
   "import": "import",
   "alternate": "alternate",
   "canonical": "canonical",
-}
+})
 
 /** `<param name>` values that make the param's `value` a real resource. */
-const PARAM_RESOURCE_NAMES: Record<string, boolean> = {
+const PARAM_RESOURCE_NAMES: Record<string, boolean> = table<boolean>({
   "movie": true, "src": true, "url": true, "codebase": true, "archive": true,
-}
+})
 
 /** Directives that make a template CONDITIONAL — html's decision points, and
  *  therefore the honest basis for a cyclomatic number that is not a constant. */
@@ -542,7 +593,7 @@ function refreshContentUrl(content: string): string {
   return inner
 }
 
-const RESOURCE_RULES: Record<string, ResourceRule[]> = {
+const RESOURCE_RULES: Record<string, ResourceRule[]> = table<ResourceRule[]>({
   script: [
     { attr: "src", resourceType: "script", import: true },
     // SVG2 spells a script's source `href`, not `src`. Inside `<svg>` that is the
@@ -582,7 +633,27 @@ const RESOURCE_RULES: Record<string, ResourceRule[]> = {
   audio: [{ attr: "src", resourceType: "audio", import: true }],
   track: [{ attr: "src", resourceType: "track", import: true }],
   embed: [{ attr: "src", resourceType: "embed", import: true }],
-  object: [{ attr: "data", resourceType: "object", import: true }],
+  // `<object data>` names the resource itself; `<object archive>` names the
+  // ADDITIONAL resources needed to instantiate it, and the HTML specification
+  // defines it as a SPACE-separated list of URIs — the same shape as `<a ping>`
+  // and for the same reason (several per attribute, no descriptor, no comma).
+  //
+  // It was missing, and the carrier census found it rather than the ontology gate:
+  // `script/m14/verify-carrier-census.ts` reports `object@archive` as UNREVIEWED at
+  // 4 occurrences in 2 documents, and a carrier nobody has ruled is a carrier
+  // nobody has decided about. Measured on the tree over 1,699 corpus documents
+  // (aspnetcore/src/Mvc/test/Mvc.FunctionalTests/compiler/resources/
+  // RazorWebSite.UrlResolution.Index.html and its .Encoded.html twin):
+  //
+  //   object@archive   4 occurrences, 2 files   — 3 real URLs, 1 Razor artifact
+  //
+  // That is a small population and the verdict does not pretend otherwise; the
+  // construct is real, it occurs, and the rule for it is one table row. It is a
+  // FETCH like `data`, so it takes the same shape and the same `import` mirror.
+  object: [
+    { attr: "data", resourceType: "object", import: true },
+    { attr: "archive", resourceType: "object-archive", import: true, valueList: "space" },
+  ],
   input: [{ attr: "src", resourceType: "input-image", import: true }],
   iframe: [{ attr: "src", resourceType: "iframe", import: true }],
   frame: [{ attr: "src", resourceType: "frame", import: true }],
@@ -644,15 +715,91 @@ const RESOURCE_RULES: Record<string, ResourceRule[]> = {
   // a recorded fact and an implied one.
   body: [{ attr: "background", resourceType: "legacy-background", import: true }],
   table: [{ attr: "background", resourceType: "legacy-background", import: true }],
-}
+})
 
 /** `<input type=submit|image formaction=…>` is a form endpoint, and `type` decides
  *  which of the four `formaction` owners this is — so the rule is keyed on it. */
-const FORM_ACTION_INPUT_TYPES: Record<string, boolean> = { submit: true, image: true }
+const FORM_ACTION_INPUT_TYPES: Record<string, boolean> = table<boolean>({ submit: true, image: true })
 
 /** The `formaction` rule for a submit/image `<input>`, as a table row so the
  *  emission path is identical to every other carrier (one code path, not two). */
 const INPUT_FORMACTION_RULE: ResourceRule = { attr: "formaction", resourceType: "form-action", link: true }
+
+/**
+ * THE IDREF CLASS — attributes whose HTML content model is a space-separated list
+ * of element IDs, and which are therefore REFERENCES into the document's own
+ * address space rather than resources, navigations or controls.
+ *
+ * WHY THIS TABLE IS NEW, and why it is a third answer rather than a variant of
+ * the resource table. `RESOURCE_RULES` covers attributes that name a DOCUMENT:
+ * something the browser fetches, or navigates to, or posts to. These name an
+ * ELEMENT: the browser resolves each token through `getElementById` and, when it
+ * resolves, wires one element's accessible name/description, the control it
+ * belongs to, or its table header scope to another element in the same document.
+ * That is a reference in the sense the graph means everywhere else — css's
+ * `references` is a `var()` read of a name in scope, scss's is a `$var` read,
+ * rust's and typescript's are type references — and it is emphatically not a
+ * fetch, so `uses`/`import_based` would misdescribe it.
+ *
+ * MEASURED before it was written, because the ruling is only reachable with a
+ * number (`validation/m14/probes/html/construct-probe.mts` §1, over the same
+ * 1,185 git-tracked documents / 24 repositories): 19 sites carrying 19 ID
+ * tokens, of which **17 resolve** to an element in the same document. Three
+ * carriers carry every one — `aria-labelledby` 6, `aria-describedby` 6,
+ * `aria-controls` 4 — plus `list` (2 sites, 1 resolving) and `form`
+ * (1 site, 0 resolving). Eight further attributes in the class occur ZERO times
+ * (`aria-details`, `aria-errormessage`, `aria-owns`, `aria-flowto`,
+ * `td@headers`, `th@headers`, `img@ismap`), which is why the whole class is
+ * declared here rather than the three that happen to fire: a census that only
+ * records today's hits is how a carrier goes missing for a whole wave, which is
+ * the shape of the `overrides` defect the ontology gate exists to catch.
+ *
+ * 17 edges over 1,185 documents is a small class and it is published as one. A
+ * probe finding a non-zero count is what makes the ruling testable, and this one
+ * was non-zero, so it is not a ruling.
+ *
+ * `aria-controls` and `aria-owns` are excluded from that table's `tag`-scoped
+ * rows on purpose: they are wildcard, like `aria-labelledby`, and are declared as
+ * such below rather than being enumerated per host element — the HTML content
+ * model does not restrict them to one host and a table that pretended it did
+ * would be a table that goes stale the moment an author uses a newer host.
+ *
+ * NOT INCLUDED: `slot="name"`. It is a real assignment — to a `<slot name>` in a
+ * shadow root — and it is deliberately not read, for two measured reasons. The
+ * `slot` element's `name` is not one of this document's identity attributes, so
+ * there is no symbol to resolve it to; and the target lives in another tree
+ * (the shadow root), so an edge would cross a document boundary to a node that is
+ * not in the graph. Recording it would be a placeholder endpoint in exactly the
+ * shape R7 forbids. It is listed here so the omission is a decision on the page
+ * rather than a hole in it.
+ */
+interface IdrefRule {
+  attr: string
+  /** `""` = any element, as the HTML content model states for the aria-* class. */
+  tag: string
+  /** The `kind` recorded on the deferred reference, so the edge says WHICH
+   *  association it is rather than only that a token was found. */
+  kind: string
+}
+const IDREF_RULES: IdrefRule[] = [
+  { tag: "", attr: "aria-labelledby", kind: "aria-labelledby" },
+  { tag: "", attr: "aria-describedby", kind: "aria-describedby" },
+  { tag: "", attr: "aria-details", kind: "aria-details" },
+  { tag: "", attr: "aria-errormessage", kind: "aria-errormessage" },
+  { tag: "", attr: "aria-controls", kind: "aria-controls" },
+  { tag: "", attr: "aria-owns", kind: "aria-owns" },
+  { tag: "", attr: "aria-flowto", kind: "aria-flowto" },
+  { tag: "", attr: "aria-activedescendant", kind: "aria-activedescendant" },
+  { tag: "td", attr: "headers", kind: "table-header" },
+  { tag: "th", attr: "headers", kind: "table-header" },
+  // The form owner and the datalist an input offers. Both name an element in the
+  // same document through its `id`, which is why they are here and not in the
+  // resource table: nothing is fetched and nothing is navigated to.
+  { tag: "", attr: "form", kind: "form-owner" },
+  { tag: "", attr: "list", kind: "datalist" },
+  // `<output for>` names the controls whose value the output reports.
+  { tag: "output", attr: "for", kind: "output-for" },
+]
 
 /** What `emitResource` decided, so the caller can keep its document metrics exact
  *  without the emitter reaching back into the walk. */
@@ -660,7 +807,7 @@ type ResourceOutcome = "fetch" | "fragment" | "navigation" | "external" | "scrip
 
 /** Tag names whose own `class`/`id`-less presence still carries meaning for the
  *  metrics. Kept as data so the census can read the analyzer's own vocabulary. */
-const HEADING_ELEMENTS: Record<string, boolean> = { h1: true, h2: true, h3: true, h4: true, h5: true, h6: true }
+const HEADING_ELEMENTS: Record<string, boolean> = table<boolean>({ h1: true, h2: true, h3: true, h4: true, h5: true, h6: true })
 
 export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
@@ -718,7 +865,12 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // and no edge at all, so a 16-symbol page published 16 disconnected roots
     // and a document-level `<link>` edge sourced from an unjoinable external
     // string that no symbol could ever resolve to.
-    const usedNames: Record<string, number> = { [moduleName]: 1 }
+    // Null-prototype for the reason `table()` states: an element may carry
+    // `id="__proto__"`, and on a plain object that writes the prototype rather
+    // than a key, so `usedNames[handle]` would answer `Object.prototype` and
+    // every duplicate-suffix probe below would walk out of its own range.
+    const usedNames = map<number>()
+    usedNames[moduleName] = 1
     symbols.push({
       name: moduleName,
       kind: ASTEngine.SymbolKind.Module,
@@ -737,8 +889,8 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `id`/`name` → the FIRST symbol registered under that handle. getElementById
     // returns the first match, so a reference resolves to the first and only the
     // first; `ambiguousCounts` lets the edge say so when a second exists.
-    const handleToSymbol: Record<string, string> = {}
-    const ambiguousHandles: Record<string, boolean> = {}
+    const handleToSymbol = map<string>()
+    const ambiguousHandles = map<boolean>()
 
     // Deferred in-document references: `{label for=…}` and `href="#…"`. Resolved
     // after the walk so a FORWARD reference (a link to an id declared later) is
@@ -769,8 +921,8 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     let customElementCount = 0
     let templateFragmentCount = 0
     let lastHeadingLevel = 0
-    const frameworks: Record<string, boolean> = { HTML5: true }
-    const insights: Record<string, boolean> = {}
+    const frameworks: Record<string, boolean> = table<boolean>({ HTML5: true })
+    const insights = map<boolean>()
 
     // --- Single-pass DFS ------------------------------------------------------
     // `nearestNamed` is the closest ANCESTOR that became a symbol; an element
@@ -817,12 +969,41 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           if (tagName.indexOf("-") !== -1 && tagName !== "annotation-xml") {
             customElementCount++
-            // A custom element's tag name is its COMPONENT NAME — the one thing in
-            // a plain-HTML document that a graph can join against a JS class
-            // definition of the same name. That is an `instantiates`-shaped fact
-            // about a tag, not a styling hint.
-            frameworks["Web Components"] = true
-            insights["Custom elements declared as web components"] = true
+            // A hyphen makes a tag a POTENTIAL custom element under the HTML
+            // spec's own naming rule. It does not make it a REGISTERED one, and
+            // the difference is measured, not stylistic.
+            //
+            // This block used to assert `frameworks["Web Components"] = true` and
+            // the insight "Custom elements declared as web components", on the
+            // reasoning that the tag name is "the one thing in a plain-HTML
+            // document that a graph can join against a JS class definition of
+            // the same name". Registration is `customElements.define(name,
+            // class)` in a JavaScript file — a CROSS-FILE fact this analyzer
+            // cannot see from a document. Measured over 1,652 corpus documents
+            // (script/m14/html-custom-element-join.ts):
+            //
+            //   2,010 hyphenated-tag occurrences, 1,005 distinct tag names, in
+            //   10 of 1,652 documents — and 0 of them in a file whose tag any
+            //   indexed js/ts file registers. 0 distinct
+            //   customElements.define("<name>", …) names exist in the corpus.
+            //   2,000 of the 2,010 are two generated Razor stress fixtures
+            //   (1,000 levels of <elem-N>, testing the compiler's recursion
+            //   limit); the remaining 10 are five vuejs example pages whose
+            //   <demo-grid>/<tree-item>/<transition-group> are Vue components
+            //   registered through Vue.createApp, plus one svelte SSR
+            //   expected-output fixture.
+            //
+            // So the old claim was a made-up framework detection on a page that
+            // uses none — the same defect class as the `Targeted/ID-Styling`
+            // name this analyzer's own header records removing. A file that
+            // merely CONTAINS a hyphenated tag now says so, in words that are
+            // true, and stops claiming a platform it cannot demonstrate.
+            //
+            // The COUNT is kept and the count is sound: the spec's term for a
+            // hyphenated tag is a potential custom element, and `framework` is
+            // still published as "HTML5" unconditionally below because that is
+            // what the document IS regardless of its contents.
+            insights["Custom-element-shaped tags present (registration is a cross-file fact this analyzer cannot see)"] = true
           }
 
           // --- html's real decision points, for a cyclomatic number that is
@@ -1013,13 +1194,13 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
 
           // --- IN-DOCUMENT REFERENCES ---------------------------------------
-          // `<label for>` and a fragment href are REAL references in the
-          // document's address space, which is exactly why `id`/`name` are the
-          // identity attributes. They are DEFERRED so a forward reference (a
-          // link to an id declared further down) resolves as well as a backward
-          // one — HTML allows both, and the pre-fix analyzer resolved labels
-          // through an `idMap` it had already finished building, so a label
-          // pointing at a LATER input silently emitted nothing.
+          // `<label for>`, an IDREF-class attribute and a fragment href are REAL
+          // references in the document's address space, which is exactly why
+          // `id`/`name` are the identity attributes. They are DEFERRED so a
+          // forward reference (a link to an id declared further down) resolves as
+          // well as a backward one — HTML allows both, and the pre-fix analyzer
+          // resolved labels through an `idMap` it had already finished building,
+          // so a label pointing at a LATER input silently emitted nothing.
           if (tagName === "label") {
             const forAttr = attrs["for"]
             if (forAttr && forAttr.length > 0) {
@@ -1027,10 +1208,35 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
                 source: frame.nearestNamed,
                 handle: forAttr,
                 kind: "label",
+                rel: "uses",
                 line: lineOf("for"),
               })
             } else {
               counters.labelWithoutFor++
+            }
+          }
+          // The IDREF class: one deferred entry per ID token, because the content
+          // model is a LIST and each token is a separate reference — `aria-labelledby
+          // = "first last"` names two elements, and collapsing them into one edge
+          // would lose one of the two facts the attribute states. The tokens are
+          // split by ASCII whitespace with the same cursor the scheme helper uses,
+          // so the value is read exactly as the HTML tokenizer would.
+          for (let ir = 0; ir < IDREF_RULES.length; ir++) {
+            const rule = IDREF_RULES[ir]
+            if (rule.tag.length > 0 && rule.tag !== tagName) continue
+            const raw = attrs[rule.attr]
+            if (raw === undefined || raw.length === 0) continue
+            const line = lineOf(rule.attr)
+            const owner = currentId
+            let start = 0
+            for (let i = 0; i <= raw.length; i++) {
+              const atEnd = i === raw.length
+              const c = atEnd ? 32 : raw.charCodeAt(i)
+              if (!(c === 32 || c === 9 || c === 10 || c === 13 || c === 12)) continue
+              if (i > start) {
+                deferred.push({ source: owner, handle: raw.slice(start, i), kind: rule.kind, rel: "references", line })
+              }
+              start = i + 1
             }
           }
           if (tagName === "input") {
@@ -1117,9 +1323,36 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const ref = deferred[i]
       const target = handleToSymbol[ref.handle]
       // An unresolved handle emits NOTHING: a label pointing at a control that
-      // does not exist, or an anchor to a missing id, is not a reference. This is
-      // the same honesty rule the pre-fix analyzer had and kept.
+      // does not exist, an anchor to a missing id, or an `aria-labelledby` naming
+      // an id this document never declares, is not a reference. This is the same
+      // honesty rule the pre-fix analyzer had and kept, and it is what keeps the
+      // IDREF class from becoming a graph of dangling names: measured over 1,185
+      // corpus documents the class carries 19 ID tokens and 2 of them do not
+      // resolve, and those 2 emit nothing rather than a placeholder target.
       if (target === undefined) continue
+      if (ref.rel === "references") {
+        // The IDREF class. Confidence 1.0, and the reason it is not 0.9: both ends
+        // are symbols in this document, the token was read from the element's own
+        // attribute, and the resolution rule is `getElementById` — the same rule
+        // the label association and the internal anchor already claim 1.0 under.
+        // The 0.9 tier is for an OBSERVED hyperlink, where the target is a
+        // document this analyzer never parsed; nothing here is of that kind.
+        relationships.push({
+          source: ref.source,
+          target,
+          type: ASTEngine.RelationshipType.References,
+          confidence: 1.0,
+          line_number: ref.line,
+          metadata: {
+            htmlSpecific: true,
+            isIdref: true,
+            idrefKind: ref.kind,
+            evidenceClass: "structural",
+            ...(ambiguousHandles[ref.handle] ? { ambiguousTarget: true } : {}),
+          },
+        })
+        continue
+      }
       if (ref.kind === "label") {
         relationships.push({
           source: ref.source,
@@ -1203,7 +1436,7 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (hasExternalStyle) insights["External styling linked"] = true
     }
     if (hasForm) insights["Contains user input forms"] = true
-    if (customElementCount > 0) insights["Custom elements utilized"] = true
+    if (customElementCount > 0) insights["Custom-element-shaped tags present; registration not observable from this document"] = true
     if (templateFragmentCount > 0) insights["Deferred template fragments present"] = true
     if (baseHrefCount > 0) insights["Base URL rewrites relative resource resolution"] = true
     if (counters.externalLinkCount > 0) insights["Outbound cross-origin navigation (recorded, not graphed)"] = true
@@ -1213,7 +1446,7 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (semanticCount > 0) patterns.push("Semantic HTML5 Structure")
     if (ariaCount > 0) patterns.push("ARIA Accessibility Enhancements")
     if (addressableCount > 0) patterns.push("Addressable DOM Identity")
-    if (customElementCount > 0) patterns.push("Web Component Usage")
+    if (customElementCount > 0) patterns.push("Custom-element-shaped tag usage")
 
     const detectedFrameworks: string[] = []
     for (const f in frameworks) detectedFrameworks.push(f)
@@ -1377,7 +1610,7 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // it names — resolves exactly as a backward one does. Pre-fix this was
         // emitted as an edge whose target was the literal text `#orders`, which
         // joins to no symbol and to no file.
-        deferred.push({ source, handle: fragment, kind: "anchor", line })
+        deferred.push({ source, handle: fragment, kind: "anchor", rel: "uses", line })
         return "fragment"
       }
       // A fetch-only carrier holding a fragment is an authoring error; the target
@@ -1429,6 +1662,14 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // would claim `structural` for a link that was merely written down.
         confidence: 0.9,
         line_number: line,
+        // Honesty contract §4.1: a relationship below 1.0 must carry a
+        // MACHINE-READABLE reason code, and the only justification this tier had
+        // was the comment above. Measured over this lane's corpus (1,185
+        // git-tracked documents, `validation/m14/probes/html/ontology-census.mts`):
+        // 60,285 html-native edges sit at this tier — 59,953 `navigation` and 332
+        // `form-action` — and not one carried a field a consumer or an audit could
+        // read. The code makes the tier machine-checkable without re-reading the
+        // analyzer: a consumer filtering "observed, not derived" reads a field.
         metadata: {
           htmlSpecific: true,
           resourceType: rule.resourceType,
@@ -1437,6 +1678,7 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // materially different fact from "the user can click away".
           isFormEndpoint: rule.navigation !== true,
           evidenceClass: "usage_contextual",
+          confidenceReason: "observed-hyperlink-not-derived",
         },
       })
       return "navigation"
@@ -1512,7 +1754,7 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const startIndices = (context.htmlEmbeddedStartIndices ?? []) as number[]
     // Resolved ONCE per merge, per language, each behind its own guard: a module
     // that fails to load disables only the blocks it would have served.
-    const delegates: Record<string, any> = {}
+    const delegates = map<any>()
     const delegateFor = (lang: string): any | null => {
       if (delegates[lang] !== undefined) return delegates[lang]
       let instance: any = null
@@ -1522,6 +1764,33 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // whole analyzer async for a benefit the engine already provides (it
         // resolves every analyzer through its own loader). The indirection is
         // deliberate — it is what makes the failure local instead of fatal.
+        //
+        // THE THREE LITERAL SPECIFIERS ARE LOAD-BEARING. esbuild can only inline a
+        // delegate into the `dist/` bundle if the `require` argument is a string it
+        // can read at build time, so the calls below are written out rather than
+        // routed through `require(SPECIFIERS[lang])`; the latter would leave a
+        // runtime call resolving against `dist/`, where the delegates do not exist
+        // as files, and the seam would die in the one place it currently works.
+        //
+        // WHICH IS THE POINT OF THE `catch` BENEATH IT. `require` is a CommonJS
+        // global and this package is `"type": "module"`, so under Node it does not
+        // exist in an ESM module at all — only under Bun, and only after a bundler
+        // has rewritten the call. Measured on this lane's assigned corpus with
+        // `--entry=worker` (the entry `audit:pipeline`, `audit:cluster`,
+        // `audit:consistency` and `script/m60/payload-matrix.ts` all run through):
+        // 22 of vuejs's 25 documents published
+        // `metadata.unavailableEmbeddedLangs: ["js"]`, and
+        // `packages/vue/__tests__/e2e/hydration-strat-idle.html` fell from
+        // 11 symbols / 31 relationships to 2 / 2. Under `bun run` the same 25
+        // documents publish the blocks. So two REGISTERED GATES were measuring a
+        // payload production never emits, and the seam's own disclosure field made
+        // the loss read as a property of the DOCUMENTS rather than of the runtime.
+        //
+        // `createRequire(import.meta.url)` is the repo's own idiom for this
+        // (`pool-worker.ts:12`, `engine.ts`, `framework-detectors.ts`,
+        // `parallel-indexer.ts`) and is reached ONLY when the first form is
+        // unavailable, so the bundle keeps inlining the three delegates statically
+        // and the shipped payload is unchanged.
         const mod =
           lang === "css"
             ? require("./real-css-analyzer")
@@ -1536,7 +1805,24 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
               : mod.RealJavaScriptAnalyzer
         instance = typeof cls === "function" ? new cls() : null
       } catch {
-        instance = null
+        try {
+          const nodeRequire = createRequire(import.meta.url)
+          const mod =
+            lang === "css"
+              ? nodeRequire("./real-css-analyzer")
+              : lang === "ts" || lang === "tsx"
+                ? nodeRequire("./real-typescript-analyzer")
+                : nodeRequire("./real-javascript-analyzer")
+          const cls =
+            lang === "css"
+              ? mod.RealCssAnalyzer
+              : lang === "ts" || lang === "tsx"
+                ? mod.RealTypeScriptAnalyzer
+                : mod.RealJavaScriptAnalyzer
+          instance = typeof cls === "function" ? new cls() : null
+        } catch {
+          instance = null
+        }
       }
       if (instance === null) unavailable.push(lang)
       delegates[lang] = instance
@@ -1605,7 +1891,33 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: {
               htmlSpecific: true,
               isEmbeddedCode: true,
+              // ORIGIN DISCLOSURE (2026-10-05, measured). This row was the ONE
+              // merged row that carried no `htmlEmbedded` tag and no
+              // `embeddedLineOffset`, while the symbols at :1585, the delegate
+              // relationships at :1633 and the imports at :1652 all carried
+              // both. Measured on vuejs through the production path: of 921
+              // delegate rows, 676 carried `htmlEmbedded === true` and 245 did
+              // not — and 245 is the seam-created `contains` class.
+              //
+              // The consequence is not cosmetic. The header of this method
+              // claims "Every shifted row is tagged htmlEmbedded: true"; an
+              // auditor who takes that as the origin test concludes these rows
+              // are html's OWN, which is exactly the delegation question this
+              // lane exists to answer honestly, and gets it backwards for a
+              // quarter of the merged graph. html-origin-census.ts answers the
+              // same question WITHOUT this tag — by differencing the
+              // production path against the seam switched off — and the two
+              // numbers have to agree or one of them is wrong.
+              //
+              // `htmlSpecific: true` on a delegate-created edge is also a lie of
+              // the same shape: the row is not a fact about HTML's grammar, it
+              // is a fact about the javascript inside a `<script>`. It stays,
+              // because it is what tells a consumer the edge arrived through the
+              // html module — but `htmlEmbedded` is what tells them WHERE it was
+              // written, and that was missing.
+              htmlEmbedded: true,
               embeddedLang: lang,
+              embeddedLineOffset: lineOffset,
               evidenceClass: "structural",
             },
           })
@@ -1655,13 +1967,76 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       for (const e of (sub.exports ?? []) as any[]) {
         if (e.range) e.range = { ...e.range, startLine: e.range.startLine + lineOffset, endLine: e.range.endLine + lineOffset }
+        // ORIGIN DISCLOSURE (2026-10-05, measured). The exports channel was the
+        // ONLY merged channel with no embedded-origin marker of any kind: not
+        // `htmlEmbedded`, not `embeddedLang`, not the offset. Measured on vuejs
+        // through the production path: 72 `exports[]` rows in 1 file, 0 of them
+        // html's own, and every one of them indistinguishable from a hypothetical
+        // html-authored export. That matters because it is the measurement the
+        // lane's own doc got wrong — it read "markup has no module surface,
+        // therefore 0 exports" over 1,200 files, and the truth is that the
+        // inline-JS delegate contributed every export row while html
+        // contributed none. The claim was right for the wrong reason and the
+        // graph could not tell.
+        //
+        // ExportInfo has no `metadata` field in types.ts, so the marker is added
+        // under the interface's own index signature rather than a new type. It
+        // is read by no consumer today; it exists so a consumer CAN tell.
+        // BOTH halves of the same treatment the symbols and the imports got, and
+        // both were missing here.
+        //
+        // 1. LABEL. Every other channel this seam merges is stamped
+        //    `htmlEmbedded`/`embeddedLang`/`embeddedLineOffset`, so a consumer can
+        //    tell a delegate's row from the document's own. `exports` was the one
+        //    channel that was not. Measured on this lane's corpus: 604 rows over
+        //    1,185 documents, every one of them unstamped and every one naming a
+        //    CSS SELECTOR (`body`, `.item`, `polygon`, `:root`) — because
+        //    `real-css-analyzer.ts` publishes a top-level rule as an `exports` row
+        //    and `pool-worker.ts` forwards `ParseResult.exports` whole, so those rows
+        //    reach the index with no owner at all. An html file therefore claims to
+        //    export `body`.
+        //
+        //    The defect survived a wave because this analyzer CONSTRUCTS no
+        //    `exports` at all, which is true — so a reader auditing
+        //    `real-html-analyzer.ts` sees no `exports` emission anywhere in it and
+        //    no reason to look at the seam. A delegated row that does not name its
+        //    source is invisible to exactly the reader who could fix it.
+        //
+        //    The row is still MERGED rather than dropped: the CSS lane's contract to
+        //    publish a rule as an export is that lane's to defend, and dropping it
+        //    here would delete another lane's payload from this lane's files. What
+        //    this lane owes the index is an OWNER on every row it forwards.
+        //
+        // 2. COORDINATES. A delegate's range is BLOCK-RELATIVE in lines AND in
+        //    bytes, and only the lines were shifted — the same asymmetry the
+        //    symbols and imports have not had since the seam was written, because
+        //    they were shifted in both axes from the start.
+        if (e.range) {
+          e.range = {
+            ...e.range,
+            startLine: e.range.startLine + lineOffset,
+            endLine: e.range.endLine + lineOffset,
+            startIndex: typeof e.range.startIndex === "number" ? e.range.startIndex + byteOffset : e.range.startIndex,
+            endIndex: typeof e.range.endIndex === "number" ? e.range.endIndex + byteOffset : e.range.endIndex,
+          }
+        }
+        e.metadata = { ...(e.metadata ?? {}), htmlEmbedded: true, embeddedLang: lang, embeddedLineOffset: lineOffset }
         exports.push(e)
       }
 
-      // A delegate's errors are BLOCK-relative; shifting them keeps a consumer's
-      // error list in one coordinate system (the M49 H4 lesson on the svelte seam).
+      // A delegate's errors are BLOCK-relative in lines and in bytes, for the same
+      // reason as every other channel above.
       for (const er of (sub.errors ?? []) as any[]) {
-        if (er.range) er.range = { ...er.range, startLine: er.range.startLine + lineOffset, endLine: er.range.endLine + lineOffset }
+        if (er.range) {
+          er.range = {
+            ...er.range,
+            startLine: er.range.startLine + lineOffset,
+            endLine: er.range.endLine + lineOffset,
+            startIndex: typeof er.range.startIndex === "number" ? er.range.startIndex + byteOffset : er.range.startIndex,
+            endIndex: typeof er.range.endIndex === "number" ? er.range.endIndex + byteOffset : er.range.endIndex,
+          }
+        }
+        er.metadata = { ...(er.metadata ?? {}), htmlEmbedded: true, embeddedLang: lang, embeddedLineOffset: lineOffset }
         errors.push(er)
       }
     }
@@ -1717,8 +2092,8 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * case-INSENSITIVE; the grammar hands them over verbatim.
    */
   private extractElementAttributes(node: Node): { attrs: Record<string, string>; lines: Record<string, number> } {
-    const attrs: Record<string, string> = {}
-    const lines: Record<string, number> = {}
+    const attrs = map<string>()
+    const lines = map<number>()
     const startTag = this.getStartTag(node)
     if (!startTag) return { attrs, lines }
     for (let j = 0; j < startTag.childCount; j++) {
@@ -1894,7 +2269,9 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * emitted symbol) simply do not accumulate further.
    */
   private accumulateSubtreeSizes(symbols: ASTEngine.UniversalSymbol[]): void {
-    const totals: Record<string, number> = {}
+    // Null-prototype: the keys here are element handles, so `id="__proto__"` is a
+    // reachable document and would otherwise write the prototype instead of a key.
+    const totals = map<number>()
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
       totals[s.name] = typeof s.complexity === "number" ? s.complexity : 1
@@ -1998,7 +2375,12 @@ interface Frame {
 interface DeferredReference {
   source: string
   handle: string
-  kind: "label" | "anchor"
+  /** `label` / `anchor` for the `uses` classes, or the IDREF rule's `kind`. */
+  kind: string
+  /** WHICH label the resolved edge carries. `uses` is the lane's ratified label
+   *  for a form-control association and a navigation; `references` is the
+   *  address-space naming class (css `var()`, scss `$var`, a type reference). */
+  rel: "uses" | "references"
   line: number
 }
 

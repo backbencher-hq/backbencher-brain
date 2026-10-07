@@ -309,6 +309,19 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
+    // CLJ-D53: the namespace each `exports` row belongs to, pushed in the same
+    // order as the row itself. `ExportInfo` carries no owner (it is a shared
+    // type and this lane does not get to change it), and an `exports`
+    // RELATIONSHIP is the pair — without this the edge's source would have to be
+    // the file's LAST `ns` form, which is wrong for the 4 corpus files that
+    // declare two namespaces and puts the module on the wrong side of the edge.
+    const exportNamespaces: string[] = []
+    /** CLJ-D53: one entry per protocol-method IMPLEMENTATION — the type it is
+     *  supplied for, the protocol(s) of that type's form, the method name and the
+     *  line. A candidate, not an edge: the post-loop turns it into one only when
+     *  this file also DECLARES that method on one of those protocols, which is
+     *  the same class-side pre-pass the Haskell lane applies to `instance`. */
+    const overrideCandidates: Array<{ type: string; protos: string[]; method: string; line: number; form: string }> = []
     const errors: ASTEngine.ParseError[] = []
 
     const frameworks: Record<string, boolean> = {}
@@ -364,6 +377,21 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     let activeFunction: ASTEngine.UniversalSymbol | null = null
 
     let totalCyclomaticComplexity = 0
+
+    // CLJ-D57: every READER-CONDITIONAL subtree's byte range, recorded while the
+    // walk visits it. It exists for the `overrides` rule below and for one reason:
+    // `#?(:clj (defn f [] 1) :cljs (defn f [] 2))` is ONE definition seen from two
+    // platforms, not a definition that overrides another, so a redefinition count
+    // that ignored the conditional would invent an override on every .cljc file
+    // that branches a definition — the most ordinary idiom in the language.
+    const readCondRanges: Array<{ start: number; end: number }> = []
+    const readCondOf = (pos: number): number => {
+      for (let i = 0; i < readCondRanges.length; i++) {
+        const r = readCondRanges[i]!
+        if (pos >= r.start && pos <= r.end) return r.start
+      }
+      return 0
+    }
 
     if (rootNode.hasError) {
       errors.push({
@@ -730,6 +758,28 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // that previously vanished (aliases unregistered, imports unrecorded, and
     // every `s/join` call left dangling). Top-level forms quote their specs
     // (`'[x :as y]`, `'(pkg Cls)`), so a quoting_lit is unwrapped first.
+
+    /**
+     * ONTOLOGY (CLJ-D53): the `imports` relationship for one dependency
+     * declaration. `require` / `use` / `import` / `require-macros` are the only
+     * way this language states a dependency, so the `imports` label and the
+     * libspec are the same fact — emitted here, at the site the alias table and
+     * the `references` edge are already decided, so the two labels cannot drift
+     * onto different endpoint sets. That overlap is deliberate and is the shape
+     * the C family already uses (`imports` AND `references` for one `#include`):
+     * `imports` asserts a DECLARATION, `references` asserts a RESOLUTION.
+     *
+     * A self-require is a lexical no-op (ELXD8) and is skipped on both labels,
+     * so the pair stays symmetric. Confidence 1.0 with `evidenceClass:
+     * "structural"`: the construct is the directive itself and its line is the
+     * directive's own, so there is nothing to infer.
+     */
+    const pushImport = (fromNs: string, lib: string, line: number, extra?: Record<string, unknown>) => {
+      if (!fromNs || !lib || fromNs === lib) return
+      pushRel(fromNs, lib, ASTEngine.RelationshipType.Imports, 1.0,
+        { clojureSpecific: true, isLibraryDep: true, isImport: true, evidenceClass: "structural", ...(extra ?? {}) }, line)
+    }
+
     const handleLibNode = (rawNode: Node) => {
       const spec = rawNode.type === "quoting_lit" ? (rawNode.namedChild(0) ?? rawNode) : rawNode
       if (spec.type === "read_cond_lit" || spec.type === "splicing_read_cond_lit") {
@@ -769,7 +819,21 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           libNameNode = inner
         }
-        const libName = symName(libNameNode)
+        const libName = libNameNode && libNameNode.type === "str_lit"
+          // CLJ-D58: ClojureScript names a JavaScript module with a STRING —
+          // `(:require ["dayjs" :as dayjs])` in clj-kondo's
+          // `corpus/shadow_cljs/dot_alias.cljs` — and `symName` returned the
+          // node's text, so the alias table, the `references` edge and (from
+          // CLJ-D53) the `imports` edge all carried `"dayjs"` WITH ITS QUOTES.
+          // That is R10's `literal` class: the whole target is a quoted string,
+          // and no language in this family declares such a symbol. It was
+          // already on clojure's conviction register at 5 sites; CLJ-D53 would
+          // have taken it to 8 by publishing the same bad name under a second
+          // label. The specifier is the string's VALUE, so the value is what is
+          // read — the same read `stripDocstringText` already makes for a
+          // docstring, and for the same reason.
+          ? stripDocstringText(libNameNode.text)
+          : symName(libNameNode)
         if (!libName) return
         let alias = ""
         let referNames: string[] = []
@@ -851,6 +915,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             if (subAlias) namespaceAliases[subAlias] = full
             if (full !== currentNamespace) pushRel(currentNamespace, full, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, part.startPosition.row + 1)
+            pushImport(currentNamespace, full, part.startPosition.row + 1)
           }
         }
         if (alias) namespaceAliases[alias] = libName
@@ -864,6 +929,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           // a self-loop references edge (F5-cert: corpus/invalid_arity/order.clj
           // and clj-kondo node.clj both carry self-qualified require sites).
           if (libName !== currentNamespace) pushRel(currentNamespace, libName, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, (libNameNode ?? spec).startPosition.row + 1)
+          pushImport(currentNamespace, libName, (libNameNode ?? spec).startPosition.row + 1)
           for (const [needle, fw] of REQUIRED_LIB_PATTERNS) {
             if (libName.startsWith(needle)) frameworks[fw] = true
           }
@@ -878,6 +944,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         const pkg = symName(pkgNode)
         if (!pkg) return
         if (pkg !== currentNamespace) pushRel(currentNamespace, pkg, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true, isImport: true }, (pkgNode ?? spec).startPosition.row + 1)
+        pushImport(currentNamespace, pkg, (pkgNode ?? spec).startPosition.row + 1)
         for (let k = 1; k < spec.namedChildCount; k++) {
           const cls = spec.namedChild(k)
           if (!cls) continue
@@ -898,6 +965,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
             }
             if (full !== currentNamespace) pushRel(currentNamespace, full, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, cls.startPosition.row + 1)
+            pushImport(currentNamespace, full, cls.startPosition.row + 1)
           } else if (cls.type === "sym_lit") {
             imports.push({ module: pkg, items: [symName(cls)], type: "named", isExternal: true, line: cls.startPosition.row + 1 })
             patterns["Java Interoperability"] = true
@@ -908,6 +976,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (libName) {
           imports.push({ module: libName, items: ["*"], type: "named", isExternal: true, line: spec.startPosition.row + 1 })
           if (libName !== currentNamespace) pushRel(currentNamespace, libName, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, spec.startPosition.row + 1)
+          pushImport(currentNamespace, libName, spec.startPosition.row + 1)
           for (const [needle, fw] of REQUIRED_LIB_PATTERNS) {
             if (libName.startsWith(needle)) frameworks[fw] = true
           }
@@ -915,20 +984,103 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // ── CLJ-D53: the protocol a method implementation belongs to ───────────
+    // The one thing `methodImplOwner` cannot answer: an owner is a TYPE, and an
+    // `overrides` edge needs the PROTOCOL whose method this implementation
+    // supplies. Reading it here — rather than inferring it from the owner — is
+    // what keeps the edge's target a method the file can actually show exists.
+    //
+    // `reify` and `proxy` are absent by measurement, not by omission: neither
+    // produces a NAMED type, so the edge's source would be an invented
+    // identity. 683 of the 922 protocol-method implementations in the 633-file
+    // corpus are inside a `reify`.
+    const protocolsOfExtendingForm = (parent: Node, parentForm: string): string[] => {
+      if (!parent) return []
+      const out: string[] = []
+      if (parentForm === "extend-protocol") {
+        const p = symName(parent.namedChild(1))
+        return p ? [p] : []
+      }
+      if (parentForm === "defrecord" || parentForm === "deftype") {
+        // the protocol symbols are the SYMBOL children after the fields vector
+        let sawFields = false
+        for (let i = 2; i < parent.namedChildCount; i++) {
+          const c = parent.namedChild(i)
+          if (!c) continue
+          if (!sawFields) { if (c.type === "vec_lit") sawFields = true; continue }
+          if (c.type === "sym_lit") { const n = symName(c); if (n) out.push(n) }
+        }
+        return out
+      }
+      if (parentForm === "extend-type") {
+        for (let i = 2; i < parent.namedChildCount; i++) {
+          const c = parent.namedChild(i)
+          if (c && c.type === "sym_lit") { const n = symName(c); if (n) out.push(n) }
+        }
+        return out
+      }
+      // `reify` / `proxy`: the protocol symbols are there, but the type is not.
+      return []
+    }
+
+    // CLJ-D59: `nil` IS A TYPE in `extend-protocol`, and it parses as a `nil_lit`
+    // rather than a `sym_lit`. `(extend-protocol P nil (m [_] …))` extends P to
+    // nil — `(satisfies? P nil)` is true — so `nil` is the type the following
+    // method group is supplied for.
+    //
+    // Reading only `sym_lit` made the backward walk in `methodImplOwner` skip past
+    // the `nil_lit` and land on the PROTOCOL, so the method was attributed to the
+    // very protocol it implements. Measured over the 633-file corpus that
+    // published `overrides P.m -> P.m` — 8 edges, 4.30% of the type, and every one
+    // a self-edge, which is the shape this lane's own ontology ruling calls
+    // inexpressible ("a self-loop carrying no information, which the
+    // differential's own `push` refuses for any non-`calls` label"). It also gave
+    // the method SYMBOL the wrong container: `coll-reduce` was published with
+    // `ownerName: clojure.core.CollReduce`, colliding with the protocol's own
+    // declaration of that name and being folded into it by the CLJ-D33 dedupe.
+    // And the type-level `implements nil -> P` edge was absent entirely, because
+    // the same reader required a `sym_lit`.
+    //
+    // The sites: `core/protocols.clj` ×3 (`CollReduce`, `InternalReduce`,
+    // `Datafiable`), `core/reducers.clj`, `data.clj`, `java/io.clj` ×2,
+    // `clj-kondo/corpus/defprotocol.clj`.
+    const typeNameOf = (n: Node | null): string => {
+      if (!n) return ""
+      if (n.type === "nil_lit") return "nil"
+      // CLJ-D54's direction applied to a TYPE name: a decoration is not part of a
+      // name. `(deftype ^{:doc "x"} Foo [] …)` reached `symName` before this
+      // reader existed and came back as the whole `^{:doc "x"}Foo`, so the owner
+      // was a string nothing can resolve. Reading through the metadata to the
+      // symbol is strictly better, and returning "" for a node that is neither a
+      // symbol nor a `nil` is what makes "cannot name this type" visible to the
+      // caller instead of arriving as a decorated mess.
+      if (n.type === "meta_lit") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const inner = typeNameOf(n.namedChild(i))
+          if (inner) return inner
+        }
+        return ""
+      }
+      if (n.type !== "sym_lit") return ""
+      return symName(n)
+    }
+
     // C9: the owner of a method implementation — the record/type name for
-    // defrecord/deftype, the nearest preceding symbol for extend-protocol
+    // defrecord/deftype, the nearest preceding type for extend-protocol
     // (the TYPE before the impl group; the protocol is child 1), the named
     // type for extend-type, and the enclosing context for reify/proxy
     // (anonymous types have no name of their own).
     const methodImplOwner = (implNode: Node, parentForm: string): string => {
       const parent = implNode.parent
       if ((parentForm === "defrecord" || parentForm === "deftype" || parentForm === "extend-type") && parent) {
-        return symName(parent.namedChild(1))
+        return typeNameOf(parent.namedChild(1))
       }
       if (parentForm === "extend-protocol") {
+        // CLJ-D59: stop at a TYPE node — a `sym_lit` or the `nil_lit` above — not
+        // at a symbol, or the walk runs past `nil` onto the protocol head.
         let prev = implNode.previousNamedSibling
-        while (prev && prev.type !== "sym_lit") prev = prev.previousNamedSibling
-        return prev ? symName(prev) : ""
+        while (prev && prev.type !== "sym_lit" && prev.type !== "nil_lit") prev = prev.previousNamedSibling
+        return prev ? typeNameOf(prev) : ""
       }
       return activeFunction ? activeFunction.name : currentNamespace
     }
@@ -1145,6 +1297,12 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (node.type === "dis_expr") continue
+      // CLJ-D57: record the conditional's span on the way through. The walk does
+      // not special-case this node (its children are ordinary forms), so the hook
+      // is here rather than in a branch that would have to re-push them.
+      if (node.type === "read_cond_lit" || node.type === "splicing_read_cond_lit") {
+        readCondRanges.push({ start: node.startIndex, end: node.endIndex })
+      }
       // CLJ-D5 (adversarial F5): metadata is compile-time DATA — never walked.
       // `^{:doc (meta-fn)}` fabricated `calls meta-fn` before this; metadata
       // occupies no execution position (the #881 head rule) and its values are
@@ -1421,6 +1579,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push(modSym)
           attachDocs(modSym, node, "always")
           exports.push({ name: currentNamespace, kind: ASTEngine.SymbolKind.Module, range: this.nodeToRange(node), visibility: "public" })
+          exportNamespaces.push(currentNamespace)
 
           // require / use / import / require-macros clauses. `refer-clojure`
           // is NOT fed through the libspec handler (adversarial F2): its
@@ -1486,6 +1645,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           attachDocs(funcSymbol, node, "fn")
           if (isMacro) patterns["Metaprogramming"] = true
           exports.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), visibility: isPrivate ? "private" : "public" })
+          exportNamespaces.push(currentNamespace)
         }
         // ── deftest (clojure.test) ───────────────────────────────────────
         // The test body is a function: calls inside it were dropped entirely
@@ -1523,6 +1683,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           attachDocs(protoSym, node, "always")
           patterns["Protocol-based Polymorphism"] = true
           exports.push({ name, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node), visibility: typeVisibility })
+          exportNamespaces.push(currentNamespace)
           // protocol method signatures: (method-name [this arg ...])
           for (let i = 2; i < node.namedChildCount; i++) {
             const m = node.namedChild(i)
@@ -1566,6 +1727,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push(ifaceSym)
           attachDocs(ifaceSym, node, "always")
           exports.push({ name, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node), visibility: typeVisibility })
+          exportNamespaces.push(currentNamespace)
           for (let i = 2; i < node.namedChildCount; i++) {
             const m = node.namedChild(i)
             if (!m || m.type !== "list_lit") continue
@@ -1594,6 +1756,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push(classSym)
           attachDocs(classSym, node, "always")
           exports.push({ name, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), visibility: typeVisibility })
+          exportNamespaces.push(currentNamespace)
 
           // fields vector — the first direct vec_lit child (a docstring may
           // sit at index 2; adversarial F16: `(defrecord Foo "doc" [x y] …)`
@@ -1651,13 +1814,18 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
             const proto = resolveQualified(symName(node.namedChild(1)))
             for (let i = 2; i < node.namedChildCount; i++) {
               const c = node.namedChild(i)
-              if (c && c.type === "sym_lit" && proto) {
-                pushRel(symName(c), proto, ASTEngine.RelationshipType.Implements, 0.85, { clojureSpecific: true, isExtendProtocol: true }, c.startPosition.row + 1)
+              // CLJ-D59: read the child as a TYPE, so `nil` — the one type this
+              // form accepts that is not a `sym_lit` — is named. `(extend-protocol
+              // P nil (m [_] …))` states that nil implements P, and the edge saying
+              // so was absent from every file that wrote it.
+              const type = typeNameOf(c)
+              if (type && proto) {
+                pushRel(type, proto, ASTEngine.RelationshipType.Implements, 0.85, { clojureSpecific: true, isExtendProtocol: true }, c!.startPosition.row + 1)
               }
             }
             patterns["Protocol-based Polymorphism"] = true
           } else if (formName === "extend-type") {
-            const typeName = symName(node.namedChild(1))
+            const typeName = typeNameOf(node.namedChild(1))
             for (let i = 2; i < node.namedChildCount; i++) {
               const c = node.namedChild(i)
               if (c && c.type === "sym_lit") {
@@ -1682,6 +1850,83 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
             patterns["Java Interoperability"] = true
           }
         }
+        // ── CLJ-D58: `gen-class` / `gen-interface` — the AOT CLASS-GENERATION HOOK ──
+        //
+        // The second place a Clojure program writes a supertype, and it was not
+        // read. `proxy` is the runtime one; `gen-class` is the compile-time one, and
+        // its options NAME the type relations in full:
+        //
+        //   (gen-class :name a.b.Gen :extends java.util.ArrayList :implements [I J])
+        //   (gen-interface :name a.b.GI :extends [a.b.Base])
+        //
+        // MEASURED, not suspected. The parse-tree probe (`script/m14/tmp/
+        // clj4-ontology-census.ts`, instrument B) counts the construct across the
+        // whole corpus: **3 `gen-class :extends` sites and 2 `gen-class :implements`
+        // sites** — clojure/test/clojure/test_clojure/annotations/java_8.clj:75,
+        // java_9.clj:75, genclass/examples.clj:48 (:extends) and examples.clj:21,59
+        // (:implements). clj-kondo and core.async: **0**. Three sites is a small
+        // number and it is not a small finding: it is the difference between
+        // "Clojure names a superclass only in `proxy`" (the claim this file made for
+        // months, and the reason `extends` looked complete) and the truth. A ruling
+        // measured at 0 is a ruling; a claim nobody probed is a memory.
+        //
+        // THE SOURCE IS THE NAMESPACE, and it is the CLJ-D48 anchor rather than a new
+        // convention: `gen-class` is a top-level directive with no enclosing function,
+        // so `activeFunction ?? currentNamespace` is the same expression the reify and
+        // proxy branches already use and the same one the truth oracle anchors on.
+        // The GENERATED class is not minted as a symbol: `:name a.b.Gen` is a class
+        // the AOT compiler emits, not a var this file defines, so a `Class` symbol for
+        // it would claim the namespace defines something it only describes. Its name
+        // rides in metadata instead (`genClassName`), which is where a consumer that
+        // wants it looks.
+        //
+        // `:extends` is a bare symbol on `gen-class` and a VECTOR on `gen-interface`;
+        // `:implements` is always a vector. Read by ROLE, not by position, because the
+        // options appear in any order and `:name` is optional.
+        else if (formName === "gen-class" || formName === "gen-interface") {
+          const ctxName = activeFunction ? activeFunction.name : currentNamespace
+          const topMeta = activeFunction ? {} : { isTopLevel: true }
+          // TWO PHASES, because the options may appear in ANY order and `genClassName`
+          // is provenance for the edge rather than decoration: reading `:name` in the
+          // same pass that emits would leave it off every edge of a form written
+          // `:extends` first. A single pass collects the option nodes, a second reads
+          // them, and the whole form is a handful of children either way.
+          let genName = ""
+          let extendsNode: Node | null = null
+          let implementsNode: Node | null = null
+          for (let i = 1; i < node.namedChildCount; i++) {
+            const k = node.namedChild(i)
+            if (!k || k.type !== "kwd_lit") continue
+            const kw = k.childForFieldName("name")?.text || ""
+            const val = node.namedChild(i + 1)
+            if (!val) continue
+            if (kw === "name" && val.type === "sym_lit") genName = symName(val)
+            else if (kw === "extends") extendsNode = val
+            else if (kw === "implements") implementsNode = val
+          }
+          const genMeta = { clojureSpecific: true, isGenClass: true, ...(genName ? { genClassName: genName } : {}), ...topMeta }
+          if (extendsNode) {
+            // `:extends` is a bare symbol on `gen-class` and a VECTOR on
+            // `gen-interface`; both spellings mean the same relation.
+            const targets: Node[] = extendsNode.type === "vec_lit"
+              ? Array.from({ length: extendsNode.namedChildCount }, (_, k2) => extendsNode.namedChild(k2)).filter((x): x is Node => !!x && x.type === "sym_lit")
+              : (extendsNode.type === "sym_lit" ? [extendsNode] : [])
+            for (const c of targets) {
+              const superName = resolveQualified(symName(c))
+              if (superName) pushRel(ctxName, superName, ASTEngine.RelationshipType.Extends, 0.8, genMeta, c.startPosition.row + 1)
+            }
+            patterns["Java Interoperability"] = true
+          }
+          if (implementsNode && implementsNode.type === "vec_lit") {
+            for (let k2 = 0; k2 < implementsNode.namedChildCount; k2++) {
+              const c = implementsNode.namedChild(k2)
+              if (!c || c.type !== "sym_lit") continue
+              const iface = resolveQualified(symName(c))
+              if (iface) pushRel(ctxName, iface, ASTEngine.RelationshipType.Implements, 0.85, genMeta, c.startPosition.row + 1)
+            }
+          }
+          if (genName) patterns["AOT Compilation"] = true
+        }
         // ── defmulti / defmethod ─────────────────────────────────────────
         else if (formName === "defmulti") {
           const name = symName(node.namedChild(1)) || "unknown"
@@ -1694,6 +1939,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           attachDocs(multiSym, node, "always")
           patterns["Multimethods"] = true
           exports.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), visibility: "public" })
+          exportNamespaces.push(currentNamespace)
         } else if (formName === "defmethod") {
           const multiName = symName(node.namedChild(1)) || "unknown"
           // The method impl shares the multimethod's var (Clojure semantics:
@@ -1728,6 +1974,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
             symbols.push(varSym)
             attachDocs(varSym, node, "def")
             exports.push({ name, kind: ASTEngine.SymbolKind.Variable, range: this.nodeToRange(node), visibility: varVisibility })
+            exportNamespaces.push(currentNamespace)
           }
         }
         // ── declare (CLJ-D23) ─────────────────────────────────────────────
@@ -1844,6 +2091,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
             activeFunction = sym
             attachDocs(sym, node, "fn")
             exports.push({ name, kind: inferredKind, range: this.nodeToRange(node), visibility })
+            exportNamespaces.push(currentNamespace)
           }
         }
         // ── spec forms ───────────────────────────────────────────────────
@@ -1907,6 +2155,15 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
               symbols.push(methodSym)
               activeFunction = methodSym
+              // CLJ-D53: the OVERRIDES candidate. Recorded here because this is
+              // the only place that knows all three of the method's name, the
+              // type it is supplied for, and the protocol whose shape it must
+              // match; the JOIN happens in the post-loop, against the protocol
+              // methods this same file declares. See `protocolsOfExtendingForm`.
+              const implProtos = protocolsOfExtendingForm(node.parent, parentForm)
+              if (implProtos.length > 0 && owner) {
+                overrideCandidates.push({ type: owner, protos: implProtos, method: mName, line: node.startPosition.row + 1, form: parentForm })
+              }
             }
           }
         }
@@ -2222,9 +2479,9 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // ── CLJ-D34: the IMPLICIT namespace is still a namespace ───────────────
     // A Clojure file with no `ns`/`in-ns` form is evaluated in the ambient
     // namespace, and `user` is its conventional name. Representing that is
-    // strictly more complete than not: without a namespace symbol the harness's
+    // strictly more faithful than not: without a namespace symbol the harness's
     // export invariant could not tell that `undeclared-fn` belongs to a
-    // namespace at all, and reported a perfectly ordinary top-level definition
+    // namespace at all, and reported an ordinary top-level definition
     // as an unresolvable export. The module symbol carries the file's first line
     // — the namespace exists from the top of the file, which is exactly what
     // "ambient" means.
@@ -2239,6 +2496,67 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       symbols.push(implicitNs)
       exports.push({ name: currentNamespace, kind: ASTEngine.SymbolKind.Module, range: implicitNs.range, visibility: "public" })
+      exportNamespaces.push(currentNamespace)
+    }
+
+    // ── CLJ-D57 (R7): a def-family form with NO NAME defines nothing ───────
+    // `(s/defn)` — no name, no arglist, no body — in clj-kondo's
+    // `corpus/schema/defs.clj` published a symbol literally called `unknown`,
+    // a `contains` edge into it, and (with CLJ-D53) an `exports` edge into it:
+    // a placeholder LITERAL in a name-bearing field and at two edge endpoints,
+    // which is the standing rule R7. CLJ-D35 ruled the same way for
+    // `(s/fdef 1 :args)`, whose argument is a literal rather than an absence;
+    // this is the same defect with the name missing entirely.
+    //
+    // The fix is the general one and it is ONE place, not six: the six def-family
+    // branches each compute `symName(node.namedChild(1)) || "unknown"`, and
+    // changing that expression in six branches would have re-indented six long
+    // bodies and risked each one. The sweep below runs after the walk and before
+    // `contains`/`exports` are emitted, so those two passes never see the
+    // placeholder, and it drops any edge that already names it.
+    //
+    // It is a sweep and not a skip-in-the-branch on purpose: an absence is
+    // cheaper to guarantee than an absence spread over six sites, and a name that
+    // is not a name cannot be a symbol whatever produced it.
+    const PLACEHOLDER_NAMES = new Set(["unknown", "unnamed", "anonymous", "<unknown>"])
+    {
+      const isPlaceholder = (n: unknown): boolean => typeof n !== "string" || n.trim() === "" || PLACEHOLDER_NAMES.has(n.trim().toLowerCase())
+      let droppedSymbols = 0
+      for (let i = symbols.length - 1; i >= 0; i--) {
+        if (isPlaceholder(symbols[i]!.name)) { symbols.splice(i, 1); droppedSymbols++ }
+      }
+      // The EXPORT ROWS were pushed during the walk from the same nameless
+      // forms, so dropping the symbol is not enough: the row is the source the
+      // `exports` edge is built from, and the census found exactly that residue —
+      // `contains` at 0 placeholders and `exports` at 1, from the same
+      // `(s/defn)` in `corpus/schema/defs.clj`.
+      for (let i = exports.length - 1; i >= 0; i--) {
+        if (isPlaceholder(exports[i]!.name)) exports.splice(i, 1)
+      }
+      // Any edge already pushed that names one. `pushRel` recorded a warning for
+      // an EMPTY endpoint; a placeholder endpoint was silently accepted, which is
+      // why it survived the corpus.
+      let droppedEdges = 0
+      for (let i = relationships.length - 1; i >= 0; i--) {
+        const r = relationships[i]!
+        if (isPlaceholder(r.source) || isPlaceholder(r.target)) {
+          if (isPlaceholder(r.source) || isPlaceholder(r.target)) {
+            errors.push({
+              message: `Placeholder relationship endpoint dropped (CLJ-D57): ${r.type} "${r.source}" -> "${r.target}"`,
+              line: (r.line_number ?? 0) > 0 ? r.line_number : undefined,
+              severity: "warning",
+            } as any)
+          }
+          relationships.splice(i, 1); droppedEdges++
+        }
+      }
+      // A dropped symbol cannot stay the walking context of a later edge: the
+      // symbol object survives in `activeFunction`, so an edge inside a malformed
+      // nameless form would still publish the placeholder as its source.
+      if (droppedSymbols > 0) {
+        const live = new Set(symbols.map((s) => s as object))
+        if (activeFunction && !live.has(activeFunction as object)) activeFunction = null
+      }
     }
 
     // ── Post-loop: contains for owned symbols ─────────────────────────────
@@ -2315,6 +2633,124 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       pushRel(s.ownerName!, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range.startLine)
     }
 
+    // ── CLJ-D59: `overrides` — a SECOND DEFINITION OF A NAME, WHICH REPLACES THE FIRST ──
+    //
+    // Clojure has no classes and therefore no superclass method to override, and the
+    // lane ruled `overrides` inapplicable on exactly that prose for a whole wave. The
+    // workstream's rule is that a prose justification is not a ruling: the construct
+    // has to be probed, and a probe with a non-zero count falsifies the ruling. So it
+    // was probed, on the tree, over the whole corpus:
+    //
+    //   redefinition (a second real definition of one namespace-level name in one
+    //   file)                                   **84 sites in 82 files**
+    //   defmethod on the same multimethod         233 sites — RULED, see below
+    //   a record/type method sharing a protocol method's name
+    //                                              300 sites — RULED, see below
+    //   with-redefs / alter-var-root               36 sites — RULED, see below
+    //   declare after a definition                  70 sites — RULED, see below
+    //
+    // The first row is the same shape the bash lane measured (57 sites) and the same
+    // semantic: a later `def` of a name the file already defined REPLACES the earlier
+    // var, and that is an override in the only sense this language has one. The edge is
+    // shaped like bash's for the same reason — `namespace -> name`, with the PRIOR
+    // declaration's line in metadata — because the two endpoints of the fact have the
+    // same NAME (bash: `print_msg -> print_msg`) and the line is what tells them
+    // apart. A self-loop edge would be unauditable; this is not one, and `contains`
+    // already gives a consumer the member to navigate to.
+    //
+    // WHAT IS DELIBERATELY NOT AN OVERRIDE, each with its number:
+    //
+    //   `defmethod` (233). It INSERTS a dispatch entry: Clojure's own definition is
+    //   `(alter-var-root multifn assoc dispatch-val method)`, which mutates the
+    //   multimethod var's dispatch table and does not rebind or replace any
+    //   definition. There is nothing being overridden, and the source and target would
+    //   be the same var identity — an edge the graph cannot express as a relation
+    //   between two things. The impl symbols are still emitted (line-distinct, so the
+    //   body's calls attribute correctly) — that is the `defmethod-forms` fixture, and
+    //   it is unaffected by this ruling.
+    //
+    //   A record/type method whose name equals a protocol method's (300). That is an
+    //   interface-method IMPLEMENTATION, and it is already emitted as `implements`
+    //   from the record to the protocol (444 corpus edges, oracle-clean at 100.00%).
+    //   A protocol method is an ABSTRACT declaration with no body, so no
+    //   implementation replaces it; and the protocol is nearly always declared in
+    //   ANOTHER namespace, where a per-file analyzer cannot resolve the target at all
+    //   — an edge that cannot resolve is a dangling edge.
+    //
+    //   `with-redefs` (14) and `alter-var-root` (22). A DYNAMIC rebinding with a
+    //   lexical extent: the var is restored when the form exits, and the replacement
+    //   is a value, not a definition. There is no definition being replaced, so there
+    //   is no override.
+    //
+    //   `declare` after a definition (70). `(declare x)` interns a var with NO body;
+    //   CLJ-D23 already ruled that a forward declaration is not a definition, and a
+    //   promise issued after the fact overrides nothing. It is excluded on both sides
+    //   of the rule below for the same reason `contains` excludes it.
+    //
+    // THE READER CONDITIONAL IS NOT A REDEFINITION (CLJ-D57). `#?(:clj (defn f …)
+    // :cljs (defn f …))` is ONE definition seen from two platforms; the reader picks
+    // one and the other is never evaluated, so nothing replaces anything. Grouping by
+    // the enclosing conditional's offset is what keeps the ordinary .cljc idiom out
+    // of this count, and it is the same transparency CLJ-D2 gave the ns clauses.
+    const isNsLevelDefinition = (s: ASTEngine.UniversalSymbol): boolean => {
+      if (!s.ownerName) return false
+      if (s.metadata?.isAnonymous === true) return false
+      if (s.metadata?.isForwardDeclaration === true || s.metadata?.isSpec === true) return false
+      // A `defmethod` impl is not a definition of the multimethod's var (CLJ-D59):
+      // it is a dispatch entry, and the lane's own probe counts 233 of them as a
+      // DIFFERENT construct from a redefinition.
+      if (s.metadata?.isMethodImpl === true) return false
+      // NAMESPACE-LEVEL, and the test is the owner's own scope rather than a name
+      // list: a top-level form's owner IS the namespace in force where it was written
+      // (`scope === ownerName`), while a protocol method's owner is the protocol and a
+      // record field's owner is the record (`scope = ns.Proto`, `ownerName = Proto`).
+      // Reading it this way is also what makes a TWO-namespace file work: both
+      // namespaces' definitions are namespace-level, and each is keyed by its own
+      // namespace, so a name defined in each is not a redefinition of the other.
+      if (s.ownerName !== s.scope) return false
+      return s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Variable ||
+        s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface
+    }
+    // Grouped TWICE, and the second grouping is the CLJ-D57 point: a reader
+    // conditional's branches are ONE definition, so the unit is a GROUP of forms
+    // under one conditional, not a form. `#?(:clj (defn f …) :cljs (defn f …))` is
+    // ONE definition seen from two platforms — the reader evaluates one branch and
+    // never reads the other, so nothing replaces anything — while `#?(:clj (defn f …))`
+    // followed by a bare `(defn f …)` really is a redefinition, and the two land in
+    // different groups. Grouping by form alone reported the ordinary .cljc idiom as an
+    // override on every file that branches a definition.
+    const nsDefGroups = new Map<string, Array<{ groupId: string; syms: ASTEngine.UniversalSymbol[] }>>()
+    for (const s of symbols) {
+      if (!isNsLevelDefinition(s)) continue
+      // THE GROUP KEY, and the `0` case is the whole point: no enclosing conditional
+      // means every form is its own definition, so the key must be unique per form. A
+      // shared sentinel would collapse `(defn f …) (defn f …)` — a real
+      // redefinition — into one group and report nothing, which is the opposite
+      // failure from the one CLJ-D57 fixed.
+      const cond = readCondOf(s.range.startIndex ?? 0)
+      const groupId = cond !== 0 ? `c${cond}` : `f${s.range.startIndex ?? 0}`
+      const key = `${s.ownerName}->${s.name}`
+      let byCond = nsDefGroups.get(key)
+      if (!byCond) { byCond = []; nsDefGroups.set(key, byCond) }
+      const existing = byCond.find((g) => g.groupId === groupId)
+      if (existing) existing.syms.push(s)
+      else byCond.push({ groupId, syms: [s] })
+    }
+    for (const byCond of nsDefGroups.values()) {
+      if (byCond.length < 2) continue
+      const ordered = byCond
+        .map((g) => g.syms.reduce((a, b) => (a.range.startLine <= b.range.startLine ? a : b)))
+        .sort((a, b) => a.range.startLine - b.range.startLine)
+      const first = ordered[0]!
+      for (let i = 1; i < ordered.length; i++) {
+        const later = ordered[i]!
+        pushRel(later.ownerName!, later.name, ASTEngine.RelationshipType.Overrides, 1.0, {
+          clojureSpecific: true, evidenceClass: "structural", redefinition: true,
+          overridesLine: first.range.startLine, definitionCount: ordered.length,
+        }, later.range.startLine)
+      }
+    }
+
     // ── exports (ns-level public symbols) ─────────────────────────────────
     const exportedKinds = new Set([
       ASTEngine.SymbolKind.Function, ASTEngine.SymbolKind.Variable,
@@ -2322,6 +2758,9 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     ])
     const seenExports = new Set<string>()
     const finalExports: ASTEngine.ExportInfo[] = []
+    /** the namespace each surviving export belongs to, index-aligned with
+     *  `finalExports` — the pair is the `exports` edge's two endpoints. */
+    const finalExportNs: string[] = []
     // CLJ-D38: A SPEC ANNOTATION IS NOT A SECOND PUBLIC ENTITY.
     //
     // `(s/fdef my-inc :args …)` then `(defn my-inc [x] …)` produced TWO exports
@@ -2356,16 +2795,160 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (seenExports.has(key)) continue
         seenExports.add(key)
         finalExports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
+        // The namespace this var belongs to: its own owner, which for every
+        // top-level form is the namespace it was declared in — so a file with
+        // two `ns` forms attributes each export to the namespace that declared
+        // it rather than to the file's last one.
+        //
+        // CLJ-D60: a MODULE symbol carries NO `ownerName`, so the `=== ""` test
+        // was false for it and `undefined` went into this array. The edge pass
+        // resolved it with `?? currentNamespace` — the FILE'S LAST namespace — so
+        // every file with two `ns`/`in-ns` forms published one namespace
+        // exporting another: `exports temp-ns -> clojure.test-clojure.ns-libs`,
+        // `exports cond-without-else2 -> cond-without-else1`,
+        // `exports useprotocol -> defprotocol`. Measured 40 edges over 21 files.
+        // A module's own NAME is the namespace it names, so that is the namespace
+        // an export "of" it belongs to — and `ns === e.name` below then refuses
+        // the edge exactly as it refuses a Module row.
+        finalExportNs.push(s.ownerName ? s.ownerName : s.kind === ASTEngine.SymbolKind.Module ? s.name : currentNamespace)
       }
     }
-    for (const e of exports) {
+    for (let _i = 0; _i < exports.length; _i++) {
+      const e = exports[_i]!
+      // A PRIVATE var is not part of the namespace's public surface, so it is
+      // not in the export set. The relationship half below depends on this, and
+      // the relationship is the half every graph consumer reads: emitting
+      // `exports clj.fixture.exports -> private-fn` would publish a private
+      // function as a module's API, which is the one thing the label cannot
+      // mean. (The rows that used to reach here carried `visibility: "private"`
+      // — 415 functions and 68 variables over the 143-file clojure corpus.)
+      if (e.visibility && e.visibility !== "public") continue
       const key = `${e.name}|${e.kind}`
       if (seenExports.has(key)) continue
       seenExports.add(key)
       finalExports.push(e)
+      finalExportNs.push(exportNamespaces[_i] ?? currentNamespace)
     }
     exports.length = 0
     exports.push(...finalExports)
+
+    // ── CLJ-D53: the `exports` RELATIONSHIP ────────────────────────────────
+    // An `(ns …)` form's public interned vars ARE the namespace's exports, and
+    // Clojure states that with no keyword at all — which is exactly why a
+    // grammar inventory cannot see the construct and why this edge was absent
+    // for a whole wave: `require` is visible, "what this file publishes" is not
+    // a thing the grammar spells.
+    //
+    // The `ExportInfo[]` above was already the derived set, and NOTHING indexes
+    // it: `ParseResult.exports` is passed through `engine.ts` and read by no
+    // consumer, while `src/lsp/graph_usages.ts`, `graph_request.ts` and
+    // `bb_graph`'s traversal all read the `exports` RELATIONSHIP rows out of
+    // `brain_relationship`. So the export surface existed, was correct, and was
+    // invisible to every graph consumer — measured at 628 `ns` forms and 4,961
+    // public defs over 633 corpus files.
+    //
+    // Emitted from `finalExports`, so it inherits that pass's exclusions exactly:
+    // no `(declare …)` (CLJ-D23), no spec annotation that a definition
+    // displaces (CLJ-D38), no private var, and one edge per surviving name.
+    const exportEdgeSeen = new Set<string>()
+    for (let _i = 0; _i < finalExports.length; _i++) {
+      const e = finalExports[_i]!
+      const ns = finalExportNs[_i] ?? currentNamespace
+      if (!ns || !e.name) continue
+      // A namespace does not export itself. `(ns a.b)` used to produce
+      // `exports a.b -> a.b`, which is a self-loop carrying no information —
+      // and the `Module` row above is how the module reaches the graph at all,
+      // as a SYMBOL, which is what `contains` and every traversal already use.
+      if (ns === e.name) continue
+      const key = `${ns}->${e.name}`
+      if (exportEdgeSeen.has(key)) continue
+      exportEdgeSeen.add(key)
+      pushRel(ns, e.name, ASTEngine.RelationshipType.Exports, 1.0,
+        { clojureSpecific: true, isNamespaceExport: true, evidenceClass: "structural" }, e.range?.startLine ?? 0)
+    }
+
+    // ── CLJ-D53: the `overrides` RELATIONSHIP ──────────────────────────────
+    // The analyzer doc ruled this type inapplicable because `defmethod` shares
+    // the multimethod's var identity, so source and target would be identical.
+    // That is true of `defmethod` and it was generalised to the language, which
+    // is the same move the Bash lane's prose ruling made and the reason
+    // `ontology-coverage-gate.ts` exists. Clojure's protocol system is the
+    // construct: `(defprotocol P (m [this]))` DECLARES `m`, and
+    // `(extend-type T P (m [this] …))` SUPPLIES it — two distinct var
+    // identities, the same shape as a Java class implementing an interface
+    // method and the shape the Haskell lane publishes as
+    // `overrides T.m -> P.m`.
+    //
+    // The join is deliberately the STRICT one, and it is what decides how many
+    // edges exist: only a method the SAME FILE declares on a protocol it also
+    // names is published. An implementation of a protocol from another file, of
+    // a method that protocol does not declare, and the 683 `reify`
+    // implementations with no named type are all excluded. Measured over 633
+    // corpus files: 922 implementations considered, 239 published.
+    //
+    // Clojure writes a type FULLY QUALIFIED at the use and UNQUALIFIED at the
+    // declaration (`(defprotocol Seqable …)` then `(deftype … clojure.lang.Seqable
+    // …)`), so the protocol is matched on its last segment when — and only
+    // when — the file declares exactly one protocol under that simple name.
+    // Joining on the written string alone loses 6 of the 239.
+    const protoDeclares = new Map<string, Set<string>>()
+    for (const s of symbols) {
+      if (!(s.metadata?.isProtocolMethod || s.metadata?.isInterfaceMethod)) continue
+      const owner = s.ownerName
+      if (!owner) continue
+      let set = protoDeclares.get(owner)
+      if (!set) { set = new Set(); protoDeclares.set(owner, set) }
+      set.add(s.name)
+    }
+    /** simple name -> the protocol names this file declares under it */
+    const protoBySimple = new Map<string, string[]>()
+    for (const pn of protoDeclares.keys()) {
+      const seg = pn.indexOf(".") >= 0 ? pn.slice(pn.lastIndexOf(".") + 1) : pn
+      const cur = protoBySimple.get(seg)
+      if (cur) cur.push(pn); else protoBySimple.set(seg, [pn])
+    }
+    const overrideSeen = new Set<string>()
+    for (const cand of overrideCandidates) {
+      // resolve the protocol: written name first, then the unique last segment
+      let proto = ""
+      for (const p of cand.protos) {
+        if (protoDeclares.has(p)) { proto = p; break }
+        if (p.indexOf(".") < 0) continue
+        const cands = protoBySimple.get(p.slice(p.lastIndexOf(".") + 1)) ?? []
+        if (cands.length === 1) { proto = cands[0]!; break }
+      }
+      if (!proto) continue
+      const declares = protoDeclares.get(proto)
+      if (!declares || !declares.has(cand.method)) continue
+      const src = `${cand.type}.${cand.method}`
+      const tgt = `${proto}.${cand.method}`
+      // CLJ-D59: a non-`calls` edge whose two ends are the same name carries no
+      // information, and the lane's own ruling says so — the `exports` pass above
+      // refuses `ns === e.name` for exactly this reason. Before `nil` was read as
+      // a type, an `(extend-protocol P nil (m …))` group walked back onto the
+      // protocol head and published `overrides P.m -> P.m`; this is the second
+      // place that class is refused, so a future reader that cannot name the type
+      // loses the edge instead of publishing a self-edge.
+      if (src === tgt) continue
+      // A qualified spelling of the same protocol is the SAME var: `extend-type`
+      // can name `clojure.core/Inst` where the declaration says `Inst`. One
+      // edge per (source, target), never two spellings of one fact.
+      const key = `${src}->${tgt}`
+      if (overrideSeen.has(key)) continue
+      overrideSeen.add(key)
+      // Both endpoints are member identities, so the spelling carries the
+      // separator the members themselves carry — the same `Owner.member` form the
+      // Haskell and Java lanes publish, and the same `.` the lane already writes
+      // in `scope` for every protocol and record member.
+      pushRel(src, tgt, ASTEngine.RelationshipType.Override, 1.0,
+        {
+          clojureSpecific: true, evidenceClass: "structural",
+          isProtocolMethodOverride: true,
+          isReify: cand.form === "reify", isProxy: cand.form === "proxy",
+          isExtendType: cand.form === "extend-type", isExtendProtocol: cand.form === "extend-protocol",
+          isRecord: cand.form === "defrecord", isType: cand.form === "deftype",
+        }, cand.line)
+    }
 
     let pureCount = 0
     let funcCount = 0

@@ -93,9 +93,72 @@ The enum has 11 distinct values. This is what the analyzer does with **each** of
 | `exports` | **never emitted, and correctly so.** Ruby has no module-level export construct — every constant and method in a module is public unless `private_constant` / `private` says otherwise — so there is nothing for an `exports` edge to name. Minority construct: 3 of 14, and of the OO lanes only java emits it, at one site. |
 | `Dependency` / `Related` | enum aliases of `uses` / `references`, not separate types. |
 
-**So all 11 are accounted for: 8 constructed, `imports` carried through the ImportInfo family with a
-measurement, `exports` correctly empty by language law. No type is missing.** The family matrix and the
-production-path measurement are in `script/m14/tmp/rb-rel-type-census.ts` and the review §12.
+## Relationship ontology — handover state, 2026-10-05, re-measured
+
+### Handover baseline: production-path firing check
+
+`NFILES=200 bun script/m14/firing-check-v2.mjs RUBY`, corpus
+`fixtures/repositories/ruby`, 200/200 parsed: **8/10 fired**, `imports[] 214 in 120 files`,
+silent `imports exports`.
+
+Two facts about that instrument that this lane's own numbers confirm, because they are
+recorded here rather than taken on trust:
+
+- **The silent `imports` is not a gap.** `ParseResult` (`src/ast/types.ts:206-216`) carries
+  `imports: ImportInfo[]` on a channel separate from `relationships`, and
+  `parallel-indexer.ts:2169` persists it to the `brain_import` TABLE. `firing-check.mjs`
+  (v1) tallies only `res.relationships` and compares against the `types.ts` value
+  `brain_import`, a string no emitter produces, so it is structurally unable to observe an
+  import. This lane's 200-file corpus census re-measures the pairing directly: **118 import
+  records and 118 `references` edges across the same 100 files**, one for one.
+- **The score moves with `NFILES`, so it is re-run at more than one value.** The instrument's
+  own header records Ruby scoring 1/10 at `NFILES=25` and 8/10 at `NFILES=200` on this
+  corpus, because 25 drew only `enc/trans/*-tbl.rb` encoding data tables.
+
+### `ruby` is NOT one of the 100 DERIVATION findings
+
+`bun script/m60/rel-type-coverage-gate.ts --langs=ruby`: CHECK 1 DERIVATION **clean**, CHECK 2
+REACHABILITY clean (traversal default is 10 of 10), CHECK 3 AGREEMENT clean, CHECK 4 ENUM clean,
+`baseline: 104 recorded, 0 NEW, 104 repaid`. Every type this analyzer emits has an independent
+oracle derivation, so nothing here is stored and compared against nothing.
+
+### The ontology arbiter exits 2 for ruby, and the reason is narrower than it prints
+
+`bun script/m14/ontology-coverage-gate.ts ruby` exits 2 with:
+
+> `ontology coverage gate — no RULING SOURCE for ruby.` … `Neither RULED_BY_LANG.ruby nor
+> script/m14/spec/ruby-completeness.json supplies one.`
+
+`script/m14/spec/ruby-completeness.json` **does exist** and carries **25 `RULED` decisions**
+(RUBD1-RUBD15, RB-A-RB-K, M3710-COMPANION) — so the message's second clause is misleading. The
+gate's guard (`script/m14/ontology-coverage-gate.ts:409-417`) does not ask whether the spec file
+exists; it asks whether `rulingFor()` finds a ruling for **any un-emitted type**, and
+`rulingFor` (line 330-369) requires a `status: "RULED"` decision whose `resolution` both mentions
+the type name and passes a `/ontology|emits|excluded|type/` keyword filter. Measured over the
+spec:
+
+| un-emitted type | decisions mentioning it | gate verdict |
+|---|---|---|
+| `exports` | **0** | `RULED-UNJUSTIFIED` |
+| `imports` | **0** | `RULED-UNJUSTIFIED` |
+
+The one decision whose text contains the string `export` is **RUBD13**, and it is about a
+different thing entirely — `exported isRubyStaticSuperclassName`, a helper the analyzer and the
+oracle share. So the arbiter is right for the wrong-stated reason: **the lane has never ruled
+either of its two silent types.** That is the finding, and it is repairable in this lane's own
+tree — `script/m14/spec/ruby-completeness.json` is per-language and the gate names it as the
+lane-owned place for a ruling. The rulings are added below.
+
+`RULED_BY_LANG` inside `ontology-coverage-gate.ts` is a shared file and was **not** edited; it
+is master's to change.
+
+### The two ruled types, and what the previous ruling for `exports` was missing
+
+The `exports` row above carried a **prose** justification — "Ruby has no module-level export
+construct" — and no measurement. That is the exact shape the ontology gate exists for: prose
+alone is not a ruling. It is re-derived from the parse tree below rather than restated.
+
+<!-- DERIV_EXPORTS_RUBY4 verdicts land here as each is measured -->
 
 ### What a consumer actually receives
 
