@@ -160,6 +160,12 @@ export namespace ASTEngine {
   
   // Track parse operations per language to recreate parsers and prevent WASM memory leaks
   const parseCount = new Map<string, number>()
+  /**
+   * In-flight grammar loads, so N concurrent first-callers share ONE `Language.load`
+   * instead of each building a grammar instance that can never be released. See the
+   * measurement at the 500-file recreation in `getParser`.
+   */
+  const grammarLoads = new Map<string, Promise<any>>()
 
   // Initialize Tree-sitter core (shared across all languages)
   const treeSitterCore = lazy(async () => {
@@ -900,7 +906,19 @@ export namespace ASTEngine {
       const p = parsers.get(language)!
       try { if (typeof p.delete === "function") p.delete() } catch {}
       parsers.delete(language)
-      languages.delete(language)
+      // NOTE: NOT `languages.delete(language)`.
+      //
+      // Measured 2026-10-07 (dart): web-tree-sitter 0.25.9 exposes `Parser.delete`,
+      // `Tree.delete` and `TreeCursor.delete`, and NO `Language.delete` — and each
+      // `Language.load` of the dart grammar adds ~2.4 MB of RSS that never comes back
+      // (10 consecutive loads: 97 MB -> 121 MB, monotonic; `typeof language.delete` is
+      // `undefined`). Dropping the grammar here forced the miss path below to load a NEW
+      // one every 500 files, so a mitigation whose comment reads "prevents WASM memory
+      // accumulation" was ITSELF accumulating ~2.4 MB per 500 files and could never
+      // release it — about 160 MB over the dart gate's 33,692-file walk, against the
+      // ~160 MB the whole process starts with. The PARSER is recreated, which is what
+      // that comment is actually about; the grammar is reused, which is all the memory
+      // model allows.
       parserUsage.delete(language)
       parseCount.set(language, 0)
     }
@@ -1200,22 +1218,73 @@ export namespace ASTEngine {
       const fs = require("fs")
       wasmBuffer = new Uint8Array(fs.readFileSync(languageWasmPath))
     }
-    let languageGrammar: any
-    try {
-      if (!wasmBuffer) throw new Error(`WASM buffer is undefined for ${language}`)
-      languageGrammar = await Promise.race([
-        new Promise<any>((resolve, reject) => {
-          try { resolve(Language.load(wasmBuffer)) }
-          catch (e) { reject(e) }
-        }),
-        new Promise<never>((_, r) => setTimeout(() => r(new Error("load timeout")), 10000)),
-      ])
-    } catch (e: any) {
-      throw new Error(`Language.load failed for ${language}: ${e?.message || String(e)}`)
+    // Reuse the grammar already cached for this language: it IS the same grammar, and a
+    // second instance costs another ~2.4 MB that can never be freed (see the note at the
+    // 500-file recreation above).
+    //
+    // Then share ONE in-flight load between concurrent misses. The previous code let every
+    // concurrent caller load its own grammar, and `parsers.set` below kept exactly one, so
+    // the rest were orphaned AND permanently unfreeable. Measured in the dart gate's own
+    // log: EIGHT "language parser loaded" lines inside a single second, then clusters of
+    // three at every recreation.
+    let languageGrammar: any = languages.get(language)
+    if (!languageGrammar) {
+      try {
+        if (!wasmBuffer) throw new Error(`WASM buffer is undefined for ${language}`)
+        let inflight = grammarLoads.get(language)
+        if (!inflight) {
+          // The grammar is cached INSIDE the loader, the moment it resolves, and that is
+          // load-bearing rather than tidy. Caching it in the winner's post-await code
+          // instead leaves a window — between the promise settling (when the `finally`
+          // below drops the in-flight entry) and the winner reaching its own
+          // `languages.set` — in which the other concurrent callers find NO in-flight
+          // promise and NO cached grammar, and each starts its own load. Measured on the
+          // dart corpus: one new unfreeable grammar (~2.4 MB) at every 500-file parser
+          // recreation, i.e. the leak survived the first attempt at this fix. Resolving
+          // the grammar into the cache before any waiter can resume closes the window.
+          inflight = (async () => {
+            const g = await Promise.race([
+              new Promise<any>((resolve, reject) => {
+                try { resolve(Language.load(wasmBuffer)) }
+                catch (e) { reject(e) }
+              }),
+              new Promise<never>((_, r) => setTimeout(() => r(new Error("load timeout")), 10000)),
+            ])
+            languages.set(language, g)
+            // Logged ONLY when a grammar is ACTUALLY allocated, which is a different fact
+            // from the `language parser loaded` line at the end of this function — that
+            // one also fires on each of the intentional once-per-500-files parser
+            // RECREATIONS. Counting it as "grammar loads" measures parser churn and
+            // reports the retention fix as broken when it is not (or, worse, the reverse:
+            // it hides a grammar reload behind an expected recreation). This line is what
+            // makes "this walk allocated N grammars" countable from the output.
+            log.info("language grammar allocated", { language })
+            return g
+          })()
+          grammarLoads.set(language, inflight)
+          // A rejected load must not become an unhandled rejection, and the entry must not
+          // outlive the attempt or a later miss would await a settled promise forever.
+          inflight.catch(() => {}).finally(() => grammarLoads.delete(language))
+        }
+        languageGrammar = await inflight
+      } catch (e: any) {
+        throw new Error(`Language.load failed for ${language}: ${e?.message || String(e)}`)
+      }
     }
 
     const parser = new Parser()
     parser.setLanguage(languageGrammar)
+
+    // Reconcile before caching: if another caller cached a parser for this language while
+    // this one was awaiting the grammar, keep ONE and delete ours. `parsers.set` on its own
+    // silently overwrote the other, leaving it unreachable and never deleted — the parser
+    // half of the same orphan the grammar dedup above removes for grammars.
+    const existing = parsers.get(language) as Parser | undefined
+    if (existing && existing !== parser) {
+      try { if (typeof parser.delete === "function") parser.delete() } catch {}
+      parserUsage.set(language, Date.now())
+      return existing
+    }
 
     languages.set(language, languageGrammar)
     parsers.set(language, parser)
@@ -1596,8 +1665,33 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
       process.exit(1)
     }, 120000)
 
-    const tree = parser.parse(content)
-    clearTimeout(parseBomb)
+    // The guard MUST be disarmed on the throw path, not only the success path.
+    //
+    // MEASURED 2026-10-07 (dart whole-corpus walk, `ontology-coverage-gate dart`):
+    // `parser.parse()` on `dart-sdk/tests/corelib/map_values3_test.dart` threw a WASM
+    // trap (`memory access out of bounds`). The throw skipped the `clearTimeout` that
+    // used to sit on the next line, so the guard stayed ARMED; 120 s later it fired in
+    // an unrelated turn of the event loop, printed THAT file's path — a file whose parse
+    // had already been caught upstream, measured by the regex fallback and recorded as
+    // WALKED — and called `process.exit(1)`. That single leaked timer killed a
+    // 20,207-file corpus walk.
+    //
+    // It was read for three days as "the corpus contains a poison file that hangs the
+    // parser", and the reason the reading survived is that the file the guard NAMES is
+    // not the file the guard was reacting to: it is only the last parse that threw, which
+    // is why the named file changed from run to run and parsed cleanly when tried alone.
+    // A timer armed by a caught error must not outlive the error, so the disarm moved into
+    // `finally`.
+    //
+    // This does NOT make the guard able to interrupt a real hang: `parser.parse()` is
+    // synchronous C/WASM and blocks the event loop, so the timer still cannot fire DURING
+    // it. The throw path is the one that mattered, and it is now closed.
+    let tree: Tree | null
+    try {
+      tree = parser.parse(content)
+    } finally {
+      clearTimeout(parseBomb)
+    }
     if (!tree) {
       throw new Error(`Failed to parse file: ${filePath}`)
     }
