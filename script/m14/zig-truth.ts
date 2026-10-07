@@ -613,7 +613,12 @@ export function deriveZigReferenceEdges(root: any): { label: string; from: strin
   }
   const edges: { label: string; from: string; target: string; line?: number }[] = []
   const seen = new Set<string>()
-  const push = (target: string, from: string) => {
+  // `target` is `string | null` because `leaf()` returns null for a declared type it
+  // cannot name (an `error_type`, a container LITERAL, a `labeled_type_expression`) and
+  // four call sites hand its result straight in. The body has always defended against
+  // exactly that (`String(target ?? "")`, then `if (!t) return`), so the parameter said
+  // less than the function does; the declaration now matches the callers and the guard.
+  const push = (target: string | null, from: string) => {
     const t = String(target ?? "")
     if (!t) return
     // Z57: the builtin exclusion must be name-based ONLY when the name is not also
@@ -836,7 +841,13 @@ function zigPlainAssignment(n: any): boolean {
 export function deriveZigEdgesWithSource(
   root: any,
 ): { label: string; from: string; target: string; line: number }[] {
-  const edges: { label: string; from: string; target: string }[] = []
+  // `line` is REQUIRED, and it is what both pushes into this array write: `calls` at
+  // the call pass and `uses` at the member-read pass each carry
+  // `line: (n.startPosition?.row ?? 0) + 1`. The signature above (`:843`) already
+  // declares it required; this local did not, so the two pushes were
+  // "'line' does not exist in type" errors and the return was a type the function's
+  // own signature rejected.
+  const edges: { label: string; from: string; target: string; line: number }[] = []
   const seenCalls = new Set<string>()
   const seenUses = new Set<string>()
   // ZGD1/ZGD5/ZGD5b oracle mirroring (zig wave M37 #600): F5 previously only

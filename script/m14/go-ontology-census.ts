@@ -57,6 +57,16 @@ const ALL_TYPES = ["calls", "uses", "contains", "imports", "references", "export
 type Type = (typeof ALL_TYPES)[number]
 const SAMPLE_CAP = 6
 
+// Overloads, because the return type depends on whether the caller supplied a
+// default: the implementation below returns `process.argv[i + 1]` only when the
+// flag is present AND followed by a word, so with a default it ALWAYS returns a
+// string (the valueless case falls through to the `--flag=value` form and then to
+// the default). Declaring one signature made `MODE` `string | undefined` and
+// produced two errors where it is written into a `mode: string` field. `argOf("--out")`
+// — the one caller with no default, which then tests the value — keeps widely
+// typed, so nothing here is asserted.
+function argOf(flag: string, dflt: string): string
+function argOf(flag: string): string | undefined
 function argOf(flag: string, dflt?: string): string | undefined {
   const i = process.argv.indexOf(flag)
   if (i !== -1 && i + 1 < process.argv.length) return process.argv[i + 1]
@@ -351,6 +361,14 @@ type TreeFacts = {
   pkgScopeDecls: Map<string, { kind: string; line: number; exported: boolean }>
   /** receiver -> the methods declared on it in this file, with line numbers */
   pkgScopeMethods: Map<string, Array<{ name: string; line: number }>>
+  /** receiver -> the method NAMES declared on it in this file, keyed for lookup.
+   *  Not a duplicate of `pkgScopeMethods`: that one is the declaration list (name
+   *  plus line) used to report where a method came from, while this one is the set
+   *  the promotion and cross-file resolution passes query by receiver. The type did
+   *  not declare it while the initialiser wrote it and nine sites read it —
+   *  `info.methodsByRecv` is a `Map<string, Set<string>>` at every one of them
+   *  (`get(rl) ?? new Set<string>()`, then `set(rl, s)`). */
+  methodsByRecv: Map<string, Set<string>>
   /** type -> embedded type leaves declared in THIS file */
   embedsByType: Map<string, string[]>
   /** type -> embedded leaf -> the SPELLED import qualifier (`io.Reader` -> `io`).
