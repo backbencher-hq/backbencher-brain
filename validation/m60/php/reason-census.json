@@ -1,0 +1,483 @@
+{
+  "instrument": "validation/m14/fixtures/php/reason-census.mts",
+  "entryPoint": "parseFile (src/ast/pool-worker.ts)",
+  "corpusRoot": "$HOME/fixtures/repositories",
+  "reposScanned": 199,
+  "admittedPopulation": 5094,
+  "filesMeasured": 5094,
+  "sampled": false,
+  "requestedFiles": 0,
+  "filesAnalyzed": 5094,
+  "parseFailures": 0,
+  "parserErrorFiles": 12,
+  "symbolsPublished": 40266,
+  "edgesSeen": 350367,
+  "typesSeen": 10,
+  "targetClasses": {
+    "ambiguous:multiple-declarations": 126342,
+    "resolved:unique": 109553,
+    "variable-in-this-file": 58238,
+    "external:bare-name-outside-population": 39825,
+    "external:namespace-outside-population": 6678,
+    "external:php-internal-function": 4764,
+    "external:php-internal-class": 2566,
+    "external:php-internal-constant": 2094,
+    "no-declaration:file-path": 204,
+    "placeholder:language-keyword": 61,
+    "no-declaration:dynamic-callee": 19,
+    "external:php-language-construct": 14,
+    "declared-on-anonymous-class": 9
+  },
+  "sourceClasses": {
+    "source:published:unique": 219804,
+    "source:published:ambiguous": 100669,
+    "source:global": 29891,
+    "source:declared-on-anonymous-class": 3
+  },
+  "perType": {
+    "calls": {
+      "edges": 103190,
+      "target": {
+        "resolved:unique": 31269,
+        "external:bare-name-outside-population": 29998,
+        "no-declaration:dynamic-callee": 19,
+        "ambiguous:multiple-declarations": 41622,
+        "variable-in-this-file": 139,
+        "external:php-language-construct": 2,
+        "placeholder:language-keyword": 2,
+        "external:php-internal-function": 138,
+        "declared-on-anonymous-class": 1
+      },
+      "source": {
+        "source:published:unique": 73265,
+        "source:global": 342,
+        "source:published:ambiguous": 29583
+      }
+    },
+    "uses": {
+      "edges": 155016,
+      "target": {
+        "variable-in-this-file": 58075,
+        "resolved:unique": 35520,
+        "ambiguous:multiple-declarations": 57727,
+        "external:bare-name-outside-population": 2206,
+        "external:php-internal-constant": 1407,
+        "external:php-internal-function": 2,
+        "declared-on-anonymous-class": 8,
+        "placeholder:language-keyword": 59,
+        "external:php-language-construct": 12
+      },
+      "source": {
+        "source:published:unique": 102680,
+        "source:global": 775,
+        "source:published:ambiguous": 51561
+      }
+    },
+    "contains": {
+      "edges": 35112,
+      "target": {
+        "resolved:unique": 19901,
+        "ambiguous:multiple-declarations": 15211
+      },
+      "source": {
+        "source:published:unique": 26718,
+        "source:published:ambiguous": 8394
+      }
+    },
+    "imports": {
+      "edges": 28630,
+      "target": {
+        "no-declaration:file-path": 204,
+        "external:namespace-outside-population": 6678,
+        "resolved:unique": 8802,
+        "external:php-internal-class": 953,
+        "ambiguous:multiple-declarations": 6199,
+        "external:php-internal-function": 4624,
+        "external:bare-name-outside-population": 470,
+        "external:php-internal-constant": 687,
+        "variable-in-this-file": 13
+      },
+      "source": {
+        "source:global": 28630
+      }
+    },
+    "instantiates": {
+      "edges": 13848,
+      "target": {
+        "external:php-internal-class": 1024,
+        "resolved:unique": 8275,
+        "external:bare-name-outside-population": 1876,
+        "variable-in-this-file": 10,
+        "ambiguous:multiple-declarations": 2663
+      },
+      "source": {
+        "source:global": 87,
+        "source:published:unique": 9328,
+        "source:published:ambiguous": 4433
+      }
+    },
+    "references": {
+      "edges": 10296,
+      "target": {
+        "external:bare-name-outside-population": 4312,
+        "resolved:unique": 4531,
+        "external:php-internal-class": 456,
+        "variable-in-this-file": 1,
+        "ambiguous:multiple-declarations": 996
+      },
+      "source": {
+        "source:published:unique": 4325,
+        "source:published:ambiguous": 5968,
+        "source:declared-on-anonymous-class": 3
+      }
+    },
+    "extends": {
+      "edges": 3110,
+      "target": {
+        "external:bare-name-outside-population": 620,
+        "external:php-internal-class": 50,
+        "resolved:unique": 814,
+        "ambiguous:multiple-declarations": 1626
+      },
+      "source": {
+        "source:published:unique": 2599,
+        "source:published:ambiguous": 511
+      }
+    },
+    "implements": {
+      "edges": 1106,
+      "target": {
+        "external:php-internal-class": 83,
+        "resolved:unique": 391,
+        "external:bare-name-outside-population": 343,
+        "ambiguous:multiple-declarations": 289
+      },
+      "source": {
+        "source:published:unique": 887,
+        "source:published:ambiguous": 219
+      }
+    },
+    "exports": {
+      "edges": 57,
+      "target": {
+        "resolved:unique": 48,
+        "ambiguous:multiple-declarations": 9
+      },
+      "source": {
+        "source:global": 57
+      }
+    },
+    "overrides": {
+      "edges": 2,
+      "target": {
+        "resolved:unique": 2
+      },
+      "source": {
+        "source:published:unique": 2
+      }
+    }
+  },
+  "topUnresolvedByType": {
+    "calls": [
+      [
+        "assertSame",
+        4569
+      ],
+      [
+        "__",
+        3315
+      ],
+      [
+        "assertStringContainsString",
+        1071
+      ],
+      [
+        "backquote",
+        794
+      ],
+      [
+        "addResult",
+        632
+      ],
+      [
+        "reveal",
+        562
+      ],
+      [
+        "assertTrue",
+        552
+      ],
+      [
+        "assertInstanceOf",
+        472
+      ],
+      [
+        "prophesize",
+        452
+      ],
+      [
+        "assertFalse",
+        451
+      ]
+    ],
+    "uses": [
+      [
+        "expected",
+        1258
+      ],
+      [
+        "_POST",
+        1033
+      ],
+      [
+        "i",
+        958
+      ],
+      [
+        "actual",
+        761
+      ],
+      [
+        "dbiDummy",
+        705
+      ],
+      [
+        "_SESSION",
+        676
+      ],
+      [
+        "node",
+        583
+      ],
+      [
+        "html",
+        430
+      ],
+      [
+        "PHP_EOL",
+        413
+      ],
+      [
+        "double",
+        362
+      ]
+    ],
+    "contains": [],
+    "imports": [
+      [
+        "sprintf",
+        439
+      ],
+      [
+        "PHPUnit\\Framework\\Attributes\\CoversClass",
+        427
+      ],
+      [
+        "__",
+        346
+      ],
+      [
+        "PhpMyAdmin\\Http\\ServerRequest",
+        226
+      ],
+      [
+        "PhpMyAdmin\\ResponseRenderer",
+        217
+      ],
+      [
+        "PhpMyAdmin\\Http\\Response",
+        207
+      ],
+      [
+        "PhpMyAdmin\\Routing\\Route",
+        195
+      ],
+      [
+        "assert",
+        184
+      ],
+      [
+        "is_string",
+        152
+      ],
+      [
+        "PHPUnit\\Framework\\TestCase",
+        144
+      ]
+    ],
+    "instantiates": [
+      [
+        "ReflectionProperty",
+        250
+      ],
+      [
+        "ReflectionMethod",
+        190
+      ],
+      [
+        "stdClass",
+        152
+      ],
+      [
+        "ReflectionClass",
+        90
+      ],
+      [
+        "DateTimeImmutable",
+        75
+      ],
+      [
+        "BoolPropertyItem",
+        71
+      ],
+      [
+        "Exception",
+        60
+      ],
+      [
+        "LogicalNot",
+        60
+      ],
+      [
+        "XmlLoader",
+        48
+      ],
+      [
+        "IsType",
+        37
+      ]
+    ],
+    "references": [
+      [
+        "Info",
+        287
+      ],
+      [
+        "ServerRequest",
+        232
+      ],
+      [
+        "Response",
+        211
+      ],
+      [
+        "ResponseRenderer",
+        211
+      ],
+      [
+        "ServerRequestInterface",
+        167
+      ],
+      [
+        "ResponseInterface",
+        137
+      ],
+      [
+        "Throwable",
+        135
+      ],
+      [
+        "Scope",
+        128
+      ],
+      [
+        "ClassMethod",
+        125
+      ],
+      [
+        "DatabaseInterface",
+        118
+      ]
+    ],
+    "extends": [
+      [
+        "TestCase",
+        130
+      ],
+      [
+        "Subscriber",
+        95
+      ],
+      [
+        "ValidationRule",
+        36
+      ],
+      [
+        "ValidatorTestCase",
+        35
+      ],
+      [
+        "Metadata",
+        31
+      ],
+      [
+        "Node",
+        25
+      ],
+      [
+        "RuntimeException",
+        19
+      ],
+      [
+        "TransformationsPlugin",
+        18
+      ],
+      [
+        "TestBase",
+        18
+      ],
+      [
+        "Exception",
+        16
+      ]
+    ],
+    "implements": [
+      [
+        "Rule",
+        88
+      ],
+      [
+        "InvocableController",
+        58
+      ],
+      [
+        "MiddlewareInterface",
+        45
+      ],
+      [
+        "IteratorAggregate",
+        24
+      ],
+      [
+        "Iterator",
+        19
+      ],
+      [
+        "Countable",
+        18
+      ],
+      [
+        "ValueNode",
+        8
+      ],
+      [
+        "RequestHandlerInterface",
+        8
+      ],
+      [
+        "Stringable",
+        7
+      ],
+      [
+        "RunnerException",
+        7
+      ]
+    ],
+    "exports": [],
+    "overrides": []
+  },
+  "defectRows": [],
+  "unexplainedRows": [],
+  "unexplainedTotal": 0,
+  "elapsedSec": 190.886
+}
