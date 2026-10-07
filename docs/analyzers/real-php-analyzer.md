@@ -210,22 +210,33 @@ coverage honestly means populating the companion index, not guessing.
 
 ## Verification evidence
 
-- Independent manual ground truth: `validation/m12/ground-truth/php.json` — **precision 0.930,
-  5 FP, 0 FN** (`bun script/m12/verify-analyzer.ts php`, measured 2026-10-07). This line claimed
-  `precision 1.000 … 0 FP` and that claim is FALSE on the current tree. The 5 false positives are
-  the M60 NAMESPACE-CONTAINMENT edges (`contains App\Base:BaseService` and
-  `App\Service:{Auditable,Loggable,Status,UserService}`), and the reason is the second half of a
-  real defect rather than a matcher quirk: `validation/m12/ground-truth/php.json` contains ZERO
-  `contains` rows (last touched 2026-09-29, `3c8128c1e`), so the analyzer emits a relationship
-  kind the ground truth cannot adjudicate at all. The row is corrected here and the re-baseline
-  is QUEUED (TIER 0.3), not quietly dropped: a precision claim over a truth file missing a whole
-  relationship kind is a claim about the truth file, not about the analyzer.
+- Independent manual ground truth: `validation/m12/ground-truth/php.json` — **precision 1.000,
+  recall 1.000, 73 facts, 0 FP, 0 FN, `earliestFailingLayer=none`**
+  (`bun script/m12/verify-analyzer.ts php`, measured 2026-10-07). This line read `0.930, 5 FP`
+  earlier the same day, and the SAME 1.000 was claimed before that — the difference is what the
+  number rests on. The 5 false positives were the M60 NAMESPACE-CONTAINMENT edges
+  (`contains App\Base:BaseService` and `App\Service:{Auditable,Loggable,Status,UserService}`),
+  and the cause was the truth file, not the analyzer: it was last touched 2026-09-29 (`3c8128c1e`)
+  and its 66 facts covered NINE of the ten kinds — no namespace row shape at all — so the analyzer
+  emitted a relationship the audit could not adjudicate. Five rows were added with their source
+  citations (`namespace App\Base;` @ line 2, `class BaseService` @ line 4) and the rule they
+  encode is the M60 one already pinned by `validation/m14/fixtures/php/namespace-containment`.
+  The TENTH kind was covered the same way: a file-scope `define('BASE_PREFIX', 'base')` appended
+  to `BaseService.php` (`exports` was the one type with no truth row — and the one whose ruling
+  this lane FALSIFIED, PHPD33), which added its `constant` symbol fact and its
+  `exports global -> BASE_PREFIX` fact. Nothing was removed to make the number move: the truth
+  file is 71 → 73 facts and the analyzer emitted every one of them.
 - Fixtures: `validation/m12/fixtures/php/{BaseService,Service,Negative}.php`,
-  and `validation/m14/fixtures/php/` — **26 pass / 0 fail** (`bun run script/m14/run-fixtures.ts
+  and `validation/m14/fixtures/php/` — **27 pass / 0 fail** (`bun run script/m14/run-fixtures.ts
   --lang php`, measured 2026-10-07). The counts in this line and in the lane's own harness header
   had drifted (`22` here, `23/23` there, `19` before that), which is why the number is now stated
-  with its command.
-- Mutants: **63 registered for `php/`, all 63 caught, 0 survivors**
+  with its command. The +1 is `php/nested-named-functions`, authored before its fix.
+- Every endpoint of every edge classified by reason: **`unexplained = 0`, 350,367 endpoints**
+  (`bun validation/m14/fixtures/php/reason-census.mts`, measured 2026-10-07) — the committed
+  authority for the lane's central claim, with its artifact at
+  `validation/m60/php/reason-census.json`. Before this round the same claim rested on a
+  gitignored scratch file, i.e. on one session in one checkout.
+- Mutants: **67 registered for `php/`, all 67 caught, 0 survivors**
   (`BB_MUTANT_ONLY=php/ bun script/m14/mutate-analyzer.ts`, measured 2026-10-07). This line said
   `50`, and the count is not the interesting part of the correction: until 2026-10-07 the php
   registry itself was ORPHANED — `script/m14/verify-orphaned-mutants.ts` read
@@ -1655,3 +1666,127 @@ defect; recorded because it changes the exit code a supervisor reads.
   statement about the newly-walked files only.
 - **Cross-file `overrides` at project scale**, because
   `AnalyzeContext.overrideCompanion` is still never populated in production.
+---
+
+## Round: the reason census as an artifact, and nested named functions (2026-10-07)
+
+### 1. `unexplained = 0` stopped being a session result
+
+The lane's central claim — every endpoint of every edge either resolves to exactly one published
+declaration or names a reason the language makes unavoidable — was measured in a **gitignored
+scratch file**. That makes it a statement about one session on one checkout. It is now an
+instrument:
+
+```
+bun validation/m14/fixtures/php/reason-census.mts --out validation/m60/php/reason-census.json
+```
+
+Whole admitted population, production `parseFile`, 3m20s. Result on 2026-10-07, all 5,094 files:
+**350,367 endpoints, 0 in a class this census cannot name**, from BOTH sides.
+
+| target class | edges | share |
+|---|---|---|
+| `ambiguous:multiple-declarations` | 126,342 | 36.06% |
+| `resolved:unique` | 109,553 | 31.27% |
+| `variable-in-this-file` | 58,238 | 16.62% |
+| `external:bare-name-outside-population` | 39,825 | 11.37% |
+| `external:namespace-outside-population` | 6,678 | 1.91% |
+| `external:php-internal-{function,class,constant}` | 9,424 | 2.69% |
+| `no-declaration:{file-path,dynamic-callee}` | 223 | 0.06% |
+| `placeholder:language-keyword` | 61 | 0.02% |
+| `external:php-language-construct` | 14 | 0.00% |
+| `declared-on-anonymous-class` (M37.13) | 9 | 0.00% |
+| **`declared-in-tree-not-published`** | **0** | **0%** |
+
+Source side: `source:published:{unique,ambiguous}` 320,473 · `source:global` 29,891 ·
+`source:declared-on-anonymous-class` 3 · **`source:unexplained` 0** ·
+**`source:declared-in-tree-not-published` 0**.
+
+Three things about that table are the round's actual content.
+
+**The defect class is reachable, and that is checked before the corpus is walked.** The
+instrument runs a self-test over synthetic inputs first — 15 target probes and 10 source probes,
+driven through the SAME functions the walk calls — including one probe that MUST land in
+`unexplained`. A classifier that cannot produce its own defect class would report `unexplained = 0`
+for everything, which is why the probe exists and why a failed probe exits 3 rather than printing a
+table.
+
+**Two of the four classes the census reported were the instrument's own bugs, and both were caught
+by running it rather than by reading it.** (a) The source ladder asked "does this file's tree
+declare the name?" BEFORE asking "did anything publish it?" — and every source of an edge inside a
+declaration is by construction a name the file declares, so the first whole-population run filed
+**3,568 of 3,689** edges of `markdown.php` as `source:declared-in-tree-not-published` while the
+store held every one of those symbols. Resolution is now asked first, on both sides, and the
+both-declared-AND-published case is a probe. (b) The anonymous-class detector looked for an
+`object_creation_expression` with a `class` child, which the pinned grammar never produces — the
+node is `anonymous_class` — so every member of every anonymous class was being filed as a defect.
+Measured on phpunit's `ExporterTest.php` alone: `export`, `handles`, `__construct`,
+`$representation`. A walk that cannot see anonymous classes makes M37.13 look like a bug.
+
+**The census costs 3m20s and says where the minutes go** (`parseFile` 149.7s · tree walk 15.1s ·
+classify 1.3s · population scan 9.5s). The population scan was 64.9s of a 91.7s run until it was
+fixed: it read EVERY candidate file to hand `detectLanguageFromPath` its optional `content`
+argument, which is consulted only for a file with no extension or a `.h` header. Path-only routing
+took the census from "too slow to re-measure" to a run that fits in a coffee break.
+
+### 2. The last shape of `DECLARED_IN_TREE_NOT_PUBLISHED`: a function declared inside a callable
+
+`php/recovery-swallowed-members` closed the damaged-tree half of this bucket (PHPD36). The
+**undamaged** half is a named `function` written inside another callable — PHPUnit's and Slim's
+test-helper idiom — which the symbol walk cannot reach because callable bodies belong to
+`walkBody`, whose job is call/read edges and scope frames and which publishes no symbols. The
+store then holds edges SOURCED AT a declaration it does not hold: two `references` from
+`testProcessRequest` in `slim/tests/MiddlewareDispatcherTest.php`.
+
+Whole-population tree walk: **25** such declarations in **4** files. Twenty-two are `markdown.php`'s
+recovery casualties (members, not nested functions — PHPD36); the remaining three are the shape:
+
+| file | declaration | enclosed by |
+|---|---|---|
+| `slim/tests/AppTest.php:1563` | `function handle(...)` | `testInvokeFunctionName` |
+| `slim/tests/CallableResolverTest.php:30` | `function testAdvancedCallable(...)` | `setUpBeforeClass` |
+| `slim/tests/MiddlewareDispatcherTest.php:32` | `function testProcessRequest(...)` | `setUpBeforeClass` |
+
+**The first probe was wrong, and correcting it was most of the work.** It asked only "is the
+declaration's parent a `compound_statement`?" and read 280 hits — **250 of them in one file**,
+phpunit's `src/Framework/Assert/Functions.php`, whose 251 assert helpers are guarded by
+`if (!function_exists('assertSame')) { function assertSame(...) {...} }` at FILE level. A top-level
+`if` is not a scope, and the ordinary walk publishes all 251 (measured: 252 symbols, 251 of them
+functions). The rule is a CALLABLE node between the declaration and the program root, and the
+damage predicate that separates the two populations is the declaration's body parent carrying
+`hasError` (`true` for all 22 markdown declarations, `false` for all 3 Slim ones).
+
+The fix publishes them as KIND `function` owned by the file's NAMESPACE — exactly as a top-level
+function — from a pass that does **not** re-walk the nested body, because that body has already
+been walked by the enclosing callable's `walkBody` and re-walking it would emit every call and read
+inside it a second time under the nested name. Full reasoning, the two rejected readings and the
+family check (javascript/typescript publish a nested `function innerHelper() {}`; python/ruby do
+not, and PHP's global-function semantics are the javascript ones) are in PHPD37.
+
+Measured delta, all 5,094 files, production path, before/after with the same instrument:
+
+| quantity | before | after |
+|---|---|---|
+| `edgesTotal` | 350,364 | **350,367** (+3, all `contains`) |
+| `RESOLVED_UNIQUE` | 129,061 | **129,064** (+3) |
+| `perType.contains` | 35,109 | **35,112** |
+| published names | 21,222 | **21,224** |
+| member (owner, name) pairs | 32,552 | **32,555** (+3) |
+| `DECLARED_IN_TREE_NOT_PUBLISHED` | 12 | **10** |
+
+and **zero delta in every other bucket and every other edge type** — no new ambiguity, no changed
+source attribution, `calls` and `uses` identical to the digit. That last line is the difference
+between resolving edges and inventing them.
+
+Evidence: `validation/m14/fixtures/php/nested-named-functions.php` + `.expectation.json` (authored
+before the fix; pre-fix state measured at 6 symbols / 10 edges against 8 / 12 after, with two
+`expectRelationshipCount` rows that fail if the body is ever walked twice) and four mutants, all
+caught — `php/drop-nested-function-symbols` (the pre-fix state), `php/publish-nested-functions-as-methods`
+and `php/publish-nested-functions-as-bare-globals` (the rejected readings),
+`php/publish-damaged-body-declarations-as-nested-functions` (the damage guard removed).
+
+**Known and NOT changed, recorded with its count rather than blessed:** call/read edges inside a
+nested function's body are attributed to the ENCLOSING callable — `calls registerHelper -> decorate`
+on the fixture, where the call is written in `nestedHelper`'s body. It is an attribution decision,
+not an unexplained endpoint (the enclosing callable is published, so the census is silent about it),
+and the fixture records the behaviour without pinning it as correct.

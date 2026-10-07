@@ -711,6 +711,85 @@ walker recovered only ~13% (14,044 -> 12,259 ms at 31,905 nodes), so the accesso
 in the ~590-line per-node body, not in the walk: **that is the next dart task, and it is
 attributed to a surface an existing optimisation pattern in this repo already solves.**
 
+## PHP round 2 (2026-10-07) — the reason census is now an artifact, and the last defect shape is closed
+
+### 1. `unexplained = 0` was a session result; it is now a commit
+
+Round 1's headline rested on a gitignored scratch file, which makes it a claim about one checkout
+rather than an artifact. It is now
+`validation/m14/fixtures/php/reason-census.mts` → `validation/m60/php/reason-census.json`, whole
+admitted population, production `parseFile`, **3m20s**:
+
+> **350,367 endpoints, 0 in a class the census cannot name — on BOTH sides.**
+> target `declared-in-tree-not-published` **0** · source `declared-in-tree-not-published` **0** ·
+> source `unexplained` **0**.
+
+The instrument checks itself before it walks: **15 target probes + 10 source probes** through the
+SAME functions the corpus walk calls, including one that must land in `unexplained` (a classifier
+that cannot produce its own defect class reports zero for everything). A failed probe exits 3.
+
+**Both of the classes it reported on its first run were the instrument's bugs, and both were caught
+by running it, not by reading it.** (a) The source ladder asked "does this file declare the name?"
+before "did anything publish it?" — and every source inside a declaration is a name its own file
+declares, so it filed **3,568 of 3,689** `markdown.php` edges as a defect class while the store held
+all of those symbols. (b) The anonymous-class detector looked for an `object_creation_expression`
+with a `class` child, which the pinned grammar never produces (`anonymous_class` is the node), so
+every anonymous-class member was filed as a defect — phpunit's `ExporterTest.php` alone produced
+four. **A walk that cannot see anonymous classes makes M37.13 look like a bug.**
+
+Its population scan was **64.9s of a 91.7s run** — it read every candidate file to hand
+`detectLanguageFromPath` a `content` argument that is consulted only for extensionless files and
+`.h` headers. Path-only routing took it to 9.5s. A 3-minute instrument that says where its minutes
+go is one that can be re-run; the previous one could not.
+
+### 2. The last `DECLARED_IN_TREE_NOT_PUBLISHED` shape: a function declared inside a callable — **FIXED, 3 declarations, 0 remaining**
+
+Whole-population tree walk: **25** `function_definition` nodes with a callable between them and the
+program root, in 4 files. **22 are `markdown.php`'s recovery casualties** (members, not nested
+functions — PHPD36, already published as members). The other **3** are Slim's test-helper idiom, and
+they were FOUND BY THE CENSUS, not by inspection: two `references` edges from `testProcessRequest`
+whose SOURCE was a declaration the store did not hold.
+
+`node_type` is `function_definition`; the full decision is **PHPD37**. The short form: publish as
+kind `function` owned by the file's namespace, from a pass that does NOT re-walk the nested body
+(that body is already walked by the enclosing callable, and re-walking it double-emits every call
+and read inside it). The two rejected readings are pinned as `forbidSymbols` rows: a `method` of the
+enclosing class, and an ownerless global.
+
+**The probe that found the population was itself wrong first, and the correction is the measurement:**
+its first rule — "the declaration's parent is a `compound_statement`" — read 280 hits, **250 of them
+in ONE file**: phpunit's `src/Framework/Assert/Functions.php`, whose 251 assert helpers are guarded
+by `if (!function_exists('assertSame')) { function assertSame(...) {...} }` at FILE level, which is
+NOT a scope and which the ordinary walk publishes correctly (measured: 252 symbols, 251 functions).
+
+**Delta, all 5,094 files, same instrument before/after:** edges 350,364 → **350,367** (+3, all
+`contains`) · resolved unique 129,061 → **129,064** · `perType.contains` 35,109 → **35,112** ·
+published names 21,222 → **21,224** · `(owner, name)` member pairs 32,552 → **32,555** ·
+`DECLARED_IN_TREE_NOT_PUBLISHED` 12 → **10** · **and ZERO delta in every other bucket and every
+other type.** `calls` and `uses` unchanged to the digit — that is the difference between resolving
+edges and inventing them.
+
+Fixtures **27 pass / 0 fail** (the +1 authored BEFORE the fix: pre-fix 6 symbols / 10 edges against
+8 / 12 after, with two `expectRelationshipCount` rows that fail if the body is ever walked twice).
+Mutants: **67 registered, all 67 caught, 0 survivors** (`BB_MUTANT_ONLY=php/`), the four new ones
+being the pre-fix state, the two rejected readings, and the damage guard removed.
+
+**Known and NOT blessed, with its count:** a call/read edge inside a nested function's body is
+attributed to the ENCLOSING callable (`calls registerHelper -> decorate`, one edge on the fixture,
+written in `nestedHelper`'s body). It is an attribution decision, not an unexplained endpoint — the
+enclosing callable is published, so the census is silent about it by construction — and the fixture
+records the behaviour without pinning it as correct.
+
+### 3. What round 2 did NOT change
+
+`ambiguous:multiple-declarations` is **126,342** and untouched — it is the incoming/cause-A axis and
+the largest remaining item, not a regression. The three types with no independent oracle
+(`contains`, `imports`, `exports`) are still pinned by fixtures rather than verified by a second
+route; `validation/m12/ground-truth/php.json` still has zero `contains` rows (precision reads 0.930
+with 5 FPs, all of them that gap); the lane's gates still carry the hardcoded `ROOT`; and the
+external block is still a boundary of the POPULATION (this corpus has no WordPress, no Symfony, no
+Laravel).
+
 ## Totals today
 
 - Outgoing at `10/10 applicable`: **3 of 23** (`dart`, `fsharp`, `php`).
@@ -718,11 +797,18 @@ attributed to a surface an existing optimisation pattern in this repo already so
 - Ruleable lanes: **23 of 23 — 20 by a corpus-measured table, 3 by a SPEC prose ruling
   (`hcl make yaml`)**, from `script/m14/verify-ruling-tables-registered.ts`'s own two lists.
   Unadjudicated: **0** (was reported as 4; refuted above with the command that says zero).
-- **php's outgoing is now measured to `unexplained = 0`**: of 350,364 edges, 129,061 resolve
-  uniquely, 155,752 are ambiguous (the incoming/cause-A axis, untouched), 44,558 + 19 + 204 + 128
-  name a local variable, a path, a keyword or a dynamic callee, 21,515 name php internals or
-  namespaces outside the population, and **5** are now reasoned one by one (anonymous-class
-  members, M37.13) instead of named as defects. The two fixes in this round moved 1 orphan
-  `contains` endpoint to 0 and 19 declared-but-unpublished `calls` edges to 0, and changed NO
-  other bucket.
+- **php's outgoing is `unexplained = 0` as a RE-RUNNABLE ARTIFACT, not a session result**: of
+  350,367 endpoints, 109,553 resolve uniquely, 126,342 are ambiguous (the incoming/cause-A axis,
+  untouched), 58,238 are variables in their own file, 46,503 name php internals or namespaces
+  outside the population, 39,825 name a bare name no admitted file declares, 223 a path or a
+  dynamic callee, 61 a language keyword, 14 a construct, **9 an M37.13 anonymous-class member**, and
+  **0** are in a class the census cannot name — target defect 0, source defect 0, source
+  unexplained 0. Round 1's two fixes moved 1 orphan `contains` endpoint to 0 and 19
+  declared-but-unpublished `calls` edges to 0; round 2's nested-function fix moved 3 declarations
+  into the store (+3 symbols, +3 `contains`, +3 resolved) and emptied the last defect class.
+  **No bucket was ever moved by inventing an edge**: `calls` 103,190 and `uses` 155,016 are
+  unchanged across both rounds, to the digit.
+  `bun validation/m14/fixtures/php/reason-census.mts` · artifact
+  `validation/m60/php/reason-census.json` · 27 fixtures pass / 0 fail · 67 mutants caught / 0
+  survived · PHPD36 + PHPD37 record the two rounds' decisions.
 - Zero regexes: **yes** (18 → 0; laptop A's handoff records they have not matched this).
