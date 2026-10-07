@@ -1,0 +1,569 @@
+{
+  "at": "2026-10-05T04:18:39.181Z",
+  "lane": "VUE_MERGE2",
+  "mode": "prod",
+  "corpus": {
+    "root": "$HOME/fixtures/repositories",
+    "repo": "element-plus",
+    "tracked": 1009,
+    "admitted": 1009,
+    "limit": 0
+  },
+  "files": {
+    "parsed": 1009,
+    "failed": 0,
+    "emptySymbols": 0,
+    "totalSymbols": 6157,
+    "totalRelationships": 20632,
+    "filesWithDelegatedRows": 734,
+    "corpusSymbolNames": 3011
+  },
+  "payload": {
+    "relationshipBytes": 4310880,
+    "symbolBytes": 5721079,
+    "importBytes": 328148,
+    "totalBytes": 10360107,
+    "wallMs": 35981,
+    "filesPerSec": 0,
+    "relationshipsPerSec": 0
+  },
+  "channels": {
+    "imports": {
+      "count": 3685,
+      "kinds": {
+        "named": 3375,
+        "default": 283,
+        "alias": 27
+      },
+      "examples": [
+        "docs/.vitepress/vitepress/components/common/vp-link.vue: ?:withBase, ?:isExternal",
+        "docs/.vitepress/vitepress/components/common/vp-markdown.vue: ?:computed, ?:MarkdownIt",
+        "docs/.vitepress/vitepress/components/common/vp-theme-toggler.vue: ?:nextTick, ?:ref, ?:watch",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue: ?:computed, ?:nextTick, ?:onMounted",
+        "docs/.vitepress/vitepress/components/doc-content/vp-table-of-content.vue: ?:computed, ?:useToc, ?:sponsorLocale",
+        "docs/.vitepress/vitepress/components/doc-content/vp-page-nav.vue: ?:withBase, ?:ArrowLeft, ?:ArrowRight",
+        "docs/.vitepress/vitepress/components/doc-content/vp-page-footer.vue: ?:VPEditLink",
+        "docs/.vitepress/vitepress/components/doc-content/vp-edit-link.vue: ?:useEditLink"
+      ]
+    },
+    "exports": {
+      "count": 25
+    }
+  },
+  "rawLabels": [
+    {
+      "label": "calls",
+      "count": 7130,
+      "files": 4,
+      "example": "vp-markdown -[calls]-> computed"
+    },
+    {
+      "label": "imports",
+      "count": 3685,
+      "files": 4,
+      "example": "vp-link -[imports]-> vitepress:withBase"
+    },
+    {
+      "label": "references",
+      "count": 3621,
+      "files": 4,
+      "example": "beforeChange -[references]-> switchRef"
+    },
+    {
+      "label": "uses",
+      "count": 3216,
+      "files": 4,
+      "example": "vp-link -[uses]-> href"
+    },
+    {
+      "label": "instantiates",
+      "count": 2346,
+      "files": 4,
+      "example": "a11y-tag -[instantiates]-> el-tag"
+    },
+    {
+      "label": "contains",
+      "count": 631,
+      "files": 4,
+      "example": "vp-link -[contains]-> href"
+    },
+    {
+      "label": "exports",
+      "count": 2,
+      "files": 1,
+      "example": "ElStep -[exports]-> StepItemState"
+    },
+    {
+      "label": "extends",
+      "count": 1,
+      "files": 1,
+      "example": "ActivityType -[extends]-> Partial"
+    }
+  ],
+  "types": {
+    "calls": {
+      "verdict": "EMITTED",
+      "count": 7130,
+      "files": 674,
+      "fileExamples": [
+        "docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "docs/.vitepress/vitepress/components/common/vp-markdown.vue"
+      ],
+      "examples": [
+        "vp-markdown -[calls]-> computed",
+        "vp-markdown -[calls]-> replace",
+        "vp-markdown -[calls]-> replace",
+        "vp-markdown -[calls]-> render",
+        "vp-theme-toggler -[calls]-> ref",
+        "vp-theme-toggler -[calls]-> ref"
+      ],
+      "resolved": {
+        "both": 1091,
+        "src": 7100,
+        "tgt": 1091,
+        "pctBoth": 15.3,
+        "corpusTgt": 1785,
+        "pctCorpusTgt": 25
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 1,
+        "genericEndpoint": 60,
+        "selfLoop": 66
+      },
+      "seam": {
+        "delegated": 7130,
+        "vueOwn": 0
+      },
+      "sourceKind": {
+        "delegated:component": 7100,
+        "delegated:other": 30
+      },
+      "confidence": {
+        "0.9": 7130
+      },
+      "evidenceClass": {
+        "usage_contextual": 7130
+      },
+      "line": {
+        "withLine": 7130,
+        "withoutLine": 0
+      }
+    },
+    "extends": {
+      "verdict": "EMITTED",
+      "count": 1,
+      "files": 1,
+      "fileExamples": [
+        "docs/examples/timeline/custom-node.vue"
+      ],
+      "examples": [
+        "ActivityType -[extends]-> Partial"
+      ],
+      "resolved": {
+        "both": 0,
+        "src": 1,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 1,
+        "vueOwn": 0
+      },
+      "sourceKind": {
+        "delegated:component": 1
+      },
+      "confidence": {
+        "1": 1
+      },
+      "evidenceClass": {
+        "structural": 1
+      },
+      "line": {
+        "withLine": 1,
+        "withoutLine": 0
+      }
+    },
+    "implements": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "uses": {
+      "verdict": "EMITTED",
+      "count": 3216,
+      "files": 716,
+      "fileExamples": [
+        "docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "docs/.vitepress/vitepress/components/common/vp-theme-toggler.vue"
+      ],
+      "examples": [
+        "vp-link -[uses]-> href",
+        "vp-link -[uses]-> noIcon",
+        "vp-markdown -[uses]-> parsed",
+        "vp-theme-toggler -[uses]-> darkMode",
+        "vp-theme-toggler -[uses]-> beforeChange",
+        "vp-source-code -[uses]-> visible"
+      ],
+      "resolved": {
+        "both": 3048,
+        "src": 3215,
+        "tgt": 3048,
+        "pctBoth": 94.8,
+        "corpusTgt": 3199,
+        "pctCorpusTgt": 99.5
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 3,
+        "genericEndpoint": 229,
+        "selfLoop": 18
+      },
+      "seam": {
+        "delegated": 386,
+        "vueOwn": 2830
+      },
+      "sourceKind": {
+        "vue-own": 2830,
+        "delegated:component": 385,
+        "delegated:other": 1
+      },
+      "confidence": {
+        "0.95": 2830,
+        "0.85": 352,
+        "0.9": 34
+      },
+      "evidenceClass": {
+        "usage_contextual": 3216
+      },
+      "line": {
+        "withLine": 3216,
+        "withoutLine": 0
+      }
+    },
+    "imports": {
+      "verdict": "EMITTED",
+      "count": 3685,
+      "files": 716,
+      "fileExamples": [
+        "docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "docs/.vitepress/vitepress/components/common/vp-markdown.vue"
+      ],
+      "examples": [
+        "vp-link -[imports]-> vitepress:withBase",
+        "vp-link -[imports]-> ../../utils:isExternal",
+        "vp-markdown -[imports]-> vue:computed",
+        "vp-markdown -[imports]-> markdown-it:MarkdownIt",
+        "vp-theme-toggler -[imports]-> vue:nextTick",
+        "vp-theme-toggler -[imports]-> vue:ref"
+      ],
+      "resolved": {
+        "both": 0,
+        "src": 3685,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 1,
+        "genericEndpoint": 3,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 3685,
+        "vueOwn": 0
+      },
+      "sourceKind": {
+        "delegated:component": 3685
+      },
+      "confidence": {
+        "1": 3685
+      },
+      "evidenceClass": {
+        "import_based": 3685
+      },
+      "line": {
+        "withLine": 3685,
+        "withoutLine": 0
+      }
+    },
+    "exports": {
+      "verdict": "EMITTED",
+      "count": 2,
+      "files": 1,
+      "fileExamples": [
+        "packages/components/steps/src/item.vue",
+        "packages/components/steps/src/item.vue"
+      ],
+      "examples": [
+        "ElStep -[exports]-> StepItemState",
+        "ElStep -[exports]-> IStepsInject"
+      ],
+      "resolved": {
+        "both": 2,
+        "src": 2,
+        "tgt": 2,
+        "pctBoth": 100,
+        "corpusTgt": 2,
+        "pctCorpusTgt": 100
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 2,
+        "vueOwn": 0
+      },
+      "sourceKind": {
+        "delegated:component": 2
+      },
+      "confidence": {
+        "1": 2
+      },
+      "evidenceClass": {
+        "structural": 2
+      },
+      "line": {
+        "withLine": 2,
+        "withoutLine": 0
+      }
+    },
+    "contains": {
+      "verdict": "EMITTED",
+      "count": 631,
+      "files": 163,
+      "fileExamples": [
+        "docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue"
+      ],
+      "examples": [
+        "vp-link -[contains]-> href",
+        "vp-link -[contains]-> noIcon",
+        "vp-markdown -[contains]-> content",
+        "vp-source-code -[contains]-> visible",
+        "vp-source-code -[contains]-> source",
+        "version-tag -[contains]-> version"
+      ],
+      "resolved": {
+        "both": 631,
+        "src": 631,
+        "tgt": 631,
+        "pctBoth": 100,
+        "corpusTgt": 631,
+        "pctCorpusTgt": 100
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 1,
+        "genericEndpoint": 69,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 292,
+        "vueOwn": 339
+      },
+      "sourceKind": {
+        "vue-own": 339,
+        "delegated:component": 292
+      },
+      "confidence": {
+        "1": 631
+      },
+      "evidenceClass": {
+        "structural": 631
+      },
+      "line": {
+        "withLine": 631,
+        "withoutLine": 0
+      }
+    },
+    "references": {
+      "verdict": "EMITTED",
+      "count": 3621,
+      "files": 376,
+      "fileExamples": [
+        "docs/.vitepress/vitepress/components/common/vp-theme-toggler.vue",
+        "docs/.vitepress/vitepress/components/common/vp-theme-toggler.vue",
+        "docs/.vitepress/vitepress/components/common/vp-theme-toggler.vue",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue"
+      ],
+      "examples": [
+        "beforeChange -[references]-> switchRef",
+        "beforeChange -[references]-> latestTransitionId",
+        "switchRef -[references]-> SwitchInstance",
+        "setupFolding -[references]-> sourceRef",
+        "setupFolding -[references]-> locale",
+        "setupFolding -[references]-> CHEVRON_SVG"
+      ],
+      "resolved": {
+        "both": 2139,
+        "src": 3385,
+        "tgt": 2143,
+        "pctBoth": 59.1,
+        "corpusTgt": 2173,
+        "pctCorpusTgt": 60
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 2,
+        "genericEndpoint": 79,
+        "selfLoop": 18
+      },
+      "seam": {
+        "delegated": 3607,
+        "vueOwn": 14
+      },
+      "sourceKind": {
+        "delegated:component": 3371,
+        "delegated:other": 236,
+        "vue-own": 14
+      },
+      "confidence": {
+        "0.8": 2066,
+        "0.95": 1462,
+        "0.9": 93
+      },
+      "evidenceClass": {
+        "reference_qualified": 3621
+      },
+      "line": {
+        "withLine": 3621,
+        "withoutLine": 0
+      }
+    },
+    "overrides": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "instantiates": {
+      "verdict": "EMITTED",
+      "count": 2346,
+      "files": 877,
+      "fileExamples": [
+        "docs/.vitepress/vitepress/components/dev/a11y-tag.vue",
+        "docs/.vitepress/vitepress/components/dev/deprecated-tag.vue",
+        "docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "docs/.vitepress/vitepress/components/common/vp-link.vue"
+      ],
+      "examples": [
+        "a11y-tag -[instantiates]-> el-tag",
+        "deprecated-tag -[instantiates]-> el-tag",
+        "vp-link -[instantiates]-> ElIcon",
+        "vp-link -[instantiates]-> i-ri-external-link-line",
+        "vp-markdown -[instantiates]-> MarkdownIt",
+        "vp-theme-toggler -[instantiates]-> ClientOnly"
+      ],
+      "resolved": {
+        "both": 8,
+        "src": 2346,
+        "tgt": 8,
+        "pctBoth": 0.3,
+        "corpusTgt": 131,
+        "pctCorpusTgt": 5.6
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 2,
+        "genericEndpoint": 11,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 9,
+        "vueOwn": 2337
+      },
+      "sourceKind": {
+        "vue-own": 2337,
+        "delegated:component": 9
+      },
+      "confidence": {
+        "1": 9,
+        "0.95": 2337
+      },
+      "evidenceClass": {
+        "usage_contextual": 2337,
+        "structural": 9
+      },
+      "line": {
+        "withLine": 2346,
+        "withoutLine": 0
+      }
+    }
+  },
+  "parseFailures": []
+}

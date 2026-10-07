@@ -1,0 +1,320 @@
+{
+  "instrument": "script/incoming-java/census.ts",
+  "lane": "INCOMING_JAVA",
+  "repoHead": "b0b3c05eb5b448e1d3a8c298f434e7b6f56a55bd",
+  "corpus": {
+    "dir": "$HOME/fixtures/repositories/java-lib",
+    "rev": "72dd370d951967fe97756ecaaa938c7cb5bcbc28",
+    "filesEnumerated": 3275,
+    "analyzed": 3275,
+    "failed": 0
+  },
+  "enumLabels": [
+    "calls",
+    "extends",
+    "implements",
+    "uses",
+    "brain_import",
+    "exports",
+    "contains",
+    "references",
+    "overrides",
+    "instantiates"
+  ],
+  "labelsOutsideEnum": {},
+  "perType": {
+    "calls": {
+      "n": 262870,
+      "verdict": "EMITTED",
+      "files": [
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/BaseComparable.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java"
+      ],
+      "resolution": {
+        "resolved": 55135,
+        "srcAmb": 0,
+        "tgtAmb": 207735,
+        "neither": 0
+      },
+      "confidence": {
+        "1": 1217,
+        "0.7": 260628,
+        "0.8": 1025
+      },
+      "evidenceClass": {
+        "usage_contextual": 262870
+      },
+      "relationshipType": {
+        "absent": 261653,
+        "constructor_invocation": 1217
+      },
+      "missingLine": 0
+    },
+    "uses": {
+      "n": 19691,
+      "verdict": "EMITTED",
+      "files": [
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/BaseComparable.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/ConcurrentMapTestSuiteBuilder.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/ConcurrentNavigableMapTestSuiteBuilder.java"
+      ],
+      "resolution": {
+        "resolved": 10505,
+        "srcAmb": 0,
+        "tgtAmb": 9186,
+        "neither": 0
+      },
+      "confidence": {
+        "1": 6194,
+        "0.6": 13497
+      },
+      "evidenceClass": {
+        "usage_contextual": 19691
+      },
+      "relationshipType": {
+        "absent": 19691
+      },
+      "missingLine": 0
+    },
+    "contains": {
+      "n": 83761,
+      "verdict": "EMITTED",
+      "files": [
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AnEnum.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/BaseComparable.java"
+      ],
+      "resolution": {
+        "resolved": 83761,
+        "srcAmb": 0,
+        "tgtAmb": 0,
+        "neither": 0
+      },
+      "confidence": {
+        "1": 83761
+      },
+      "evidenceClass": {
+        "structural": 83761
+      },
+      "relationshipType": {
+        "absent": 83761
+      },
+      "missingLine": 0
+    },
+    "imports": {
+      "n": 0,
+      "verdict": "SILENT",
+      "files": [],
+      "resolution": null,
+      "confidence": {},
+      "evidenceClass": {},
+      "relationshipType": {},
+      "missingLine": 0
+    },
+    "references": {
+      "n": 221127,
+      "verdict": "EMITTED",
+      "files": [
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AnEnum.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/BaseComparable.java"
+      ],
+      "resolution": {
+        "resolved": 52462,
+        "srcAmb": 66,
+        "tgtAmb": 168599,
+        "neither": 0
+      },
+      "confidence": {
+        "0.9": 40015,
+        "0.95": 181112
+      },
+      "evidenceClass": {
+        "import_based": 38923,
+        "reference_qualified": 182204
+      },
+      "relationshipType": {
+        "absent": 38923,
+        "declared_type": 157220,
+        "class_literal": 9646,
+        "throws_type": 4202,
+        "instanceof_check": 1864,
+        "cast_target": 7249,
+        "array_creation": 931,
+        "method_reference_receiver": 1092
+      },
+      "missingLine": 0
+    },
+    "exports": {
+      "n": 0,
+      "verdict": "SILENT",
+      "files": [],
+      "resolution": null,
+      "confidence": {},
+      "evidenceClass": {},
+      "relationshipType": {},
+      "missingLine": 0
+    },
+    "extends": {
+      "n": 4248,
+      "verdict": "EMITTED",
+      "files": [
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/ConcurrentMapTestSuiteBuilder.java"
+      ],
+      "resolution": {
+        "resolved": 1000,
+        "srcAmb": 0,
+        "tgtAmb": 3248,
+        "neither": 0
+      },
+      "confidence": {
+        "1": 4248
+      },
+      "evidenceClass": {
+        "structural": 4248
+      },
+      "relationshipType": {
+        "extends": 4054,
+        "extends_interface": 194
+      },
+      "missingLine": 0
+    },
+    "implements": {
+      "n": 1940,
+      "verdict": "EMITTED",
+      "files": [
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/BaseComparable.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/DerivedTestIteratorGenerator.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/Helpers.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/ListTestSuiteBuilder.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/MapTestSuiteBuilder.java"
+      ],
+      "resolution": {
+        "resolved": 176,
+        "srcAmb": 0,
+        "tgtAmb": 1764,
+        "neither": 0
+      },
+      "confidence": {
+        "1": 1940
+      },
+      "evidenceClass": {
+        "structural": 1940
+      },
+      "relationshipType": {
+        "implements": 1940
+      },
+      "missingLine": 0
+    },
+    "overrides": {
+      "n": 19909,
+      "verdict": "EMITTED",
+      "files": [
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/BaseComparable.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java"
+      ],
+      "resolution": {
+        "resolved": 19764,
+        "srcAmb": 145,
+        "tgtAmb": 0,
+        "neither": 0
+      },
+      "confidence": {
+        "1": 2244,
+        "0.5": 17452,
+        "0.9": 213
+      },
+      "evidenceClass": {
+        "inferred": 17452,
+        "structural": 2244,
+        "usage_contextual": 213
+      },
+      "relationshipType": {
+        "method_override": 19909
+      },
+      "missingLine": 0
+    },
+    "instantiates": {
+      "n": 21327,
+      "verdict": "EMITTED",
+      "files": [
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/ConcurrentMapTestSuiteBuilder.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/ConcurrentNavigableMapTestSuiteBuilder.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java",
+        "android/guava-testlib/src/com/google/common/collect/testing/FeatureSpecificTestSuiteBuilder.java"
+      ],
+      "resolution": {
+        "resolved": 5768,
+        "srcAmb": 0,
+        "tgtAmb": 15559,
+        "neither": 0
+      },
+      "confidence": {
+        "0.95": 21327
+      },
+      "evidenceClass": {
+        "structural": 21327
+      },
+      "relationshipType": {
+        "instantiates": 21327
+      },
+      "missingLine": 0
+    }
+  },
+  "r7": {
+    "unknownSource": 8,
+    "unknownTarget": 0,
+    "emptySource": 0,
+    "emptyTarget": 0,
+    "placeholderEndpoint": 70,
+    "examples": [
+      "placeholder target \"none\" @ android/guava-testlib/src/com/google/common/testing/ArbitraryInstances.java calls",
+      "placeholder target \"none\" @ android/guava-tests/test/com/google/common/base/CharMatcherTest.java calls",
+      "placeholder target \"none\" @ android/guava-tests/test/com/google/common/base/CharMatcherTest.java calls",
+      "placeholder target \"none\" @ android/guava-tests/test/com/google/common/base/CharMatcherTest.java calls",
+      "placeholder target \"none\" @ android/guava-tests/test/com/google/common/base/CharMatcherTest.java calls",
+      "placeholder target \"none\" @ android/guava-tests/test/com/google/common/base/CharMatcherTest.java calls"
+    ]
+  }
+}

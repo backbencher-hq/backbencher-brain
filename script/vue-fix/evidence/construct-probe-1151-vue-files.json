@@ -1,0 +1,270 @@
+{
+  "corpora": [
+    "vuejs",
+    "vue-element-admin",
+    "element-plus"
+  ],
+  "files": 1151,
+  "filesWithScript": 897,
+  "blocks": 897,
+  "vueTreesWithError": 1,
+  "nonVueFilesSkipped": 2563,
+  "scriptLangs": {
+    "ts": 769,
+    "js": 122,
+    "tsx": 10
+  },
+  "constructs": [
+    {
+      "construct": "script:top-level-declaration",
+      "count": 5546,
+      "files": 783,
+      "examples": [
+        "vuejs/packages-private/sfc-playground/src/App.vue: const replRef = ref<InstanceType<typeof Repl>>()",
+        "vuejs/packages-private/sfc-playground/src/App.vue: const setVH = () => {",
+        "vuejs/packages-private/sfc-playground/src/App.vue: const useSSRMode = ref(false)",
+        "vuejs/packages-private/sfc-playground/src/App.vue: const DEFAULT_TYPESCRIPT_VERSION = '6.0.3'"
+      ]
+    },
+    {
+      "construct": "script:import-statement",
+      "count": 2533,
+      "files": 805,
+      "examples": [
+        "vuejs/packages-private/sfc-playground/src/App.vue: import Header from './Header.vue'",
+        "vuejs/packages-private/sfc-playground/src/App.vue: import { Repl, useStore, SFCOptions, useVueImportM",
+        "vuejs/packages-private/sfc-playground/src/App.vue: import Monaco from '@vue/repl/monaco-editor'",
+        "vuejs/packages-private/sfc-playground/src/App.vue: import { ref, watchEffect, onMounted, computed, wa"
+      ]
+    },
+    {
+      "construct": "template:event-handler",
+      "count": 1277,
+      "files": 363,
+      "examples": [
+        "vuejs/packages-private/sfc-playground/src/App.vue: @toggle-theme=\"toggleTheme\"",
+        "vuejs/packages-private/sfc-playground/src/App.vue: @toggle-prod=\"toggleProdMode\"",
+        "vuejs/packages-private/sfc-playground/src/App.vue: @toggle-ssr=\"toggleSSR\"",
+        "vuejs/packages-private/sfc-playground/src/App.vue: @toggle-autosave=\"toggleAutoSave\""
+      ]
+    },
+    {
+      "construct": "sfc:script-setup",
+      "count": 757,
+      "files": 757,
+      "examples": [
+        "vuejs/packages-private/sfc-playground/src/App.vue: lang=ts",
+        "vuejs/packages-private/sfc-playground/src/Header.vue: lang=ts",
+        "vuejs/packages-private/sfc-playground/src/VersionSelect.vue: lang=ts",
+        "vuejs/packages-private/vite-debug/App.vue: lang=js"
+      ]
+    },
+    {
+      "construct": "template:slot",
+      "count": 441,
+      "files": 213,
+      "examples": [
+        "element-plus/docs/.vitepress/vitepress/components/doc-content/vp-table-of-content.vue: #sub-link",
+        "element-plus/docs/.vitepress/vitepress/components/globals/overview.vue: #header",
+        "element-plus/docs/.vitepress/vitepress/components/globals/overview.vue: #default",
+        "element-plus/docs/.vitepress/vitepress/components/globals/vp-api-typing.vue: #content"
+      ]
+    },
+    {
+      "construct": "sfc:style-block",
+      "count": 360,
+      "files": 350,
+      "examples": [
+        "vuejs/packages-private/sfc-playground/src/App.vue: <style>",
+        "vuejs/packages-private/sfc-playground/src/Header.vue: <style>",
+        "vuejs/packages-private/sfc-playground/src/VersionSelect.vue: <style>",
+        "vuejs/packages-private/vite-debug/App.vue: <style>"
+      ]
+    },
+    {
+      "construct": "script:export-statement",
+      "count": 146,
+      "files": 145,
+      "examples": [
+        "vue-element-admin/src/App.vue: export default {",
+        "vue-element-admin/src/components/BackToTop/index.vue: export default {",
+        "vue-element-admin/src/components/Breadcrumb/index.vue: export default {",
+        "vue-element-admin/src/components/Charts/Keyboard.vue: export default {"
+      ]
+    },
+    {
+      "construct": "script:export-default",
+      "count": 144,
+      "files": 144,
+      "examples": [
+        "vue-element-admin/src/App.vue: object export default {",
+        "vue-element-admin/src/components/BackToTop/index.vue: object export default {",
+        "vue-element-admin/src/components/Breadcrumb/index.vue: object export default {",
+        "vue-element-admin/src/components/Charts/Keyboard.vue: object export default {"
+      ]
+    },
+    {
+      "construct": "script:export-default-object",
+      "count": 144,
+      "files": 144,
+      "examples": [
+        "vue-element-admin/src/App.vue: export default {",
+        "vue-element-admin/src/components/BackToTop/index.vue: export default {",
+        "vue-element-admin/src/components/Breadcrumb/index.vue: export default {",
+        "vue-element-admin/src/components/Charts/Keyboard.vue: export default {"
+      ]
+    },
+    {
+      "construct": "sfc:script-plain",
+      "count": 144,
+      "files": 144,
+      "examples": [
+        "vue-element-admin/src/App.vue: lang=js",
+        "vue-element-admin/src/components/BackToTop/index.vue: lang=js",
+        "vue-element-admin/src/components/Breadcrumb/index.vue: lang=js",
+        "vue-element-admin/src/components/Charts/Keyboard.vue: lang=js"
+      ]
+    },
+    {
+      "construct": "call:defineOptions",
+      "count": 131,
+      "files": 131,
+      "examples": [
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-theme-toggler.vue: defineOptions({ inheritAttrs: false })",
+        "element-plus/packages/components/affix/src/affix.vue: defineOptions({\n  name: COMPONENT_NAME,\n})",
+        "element-plus/packages/components/alert/src/alert.vue: defineOptions({\n  name: 'ElAlert',\n})",
+        "element-plus/packages/components/anchor/src/anchor-link.vue: defineOptions({\n  name: 'ElAnchorLink',\n})"
+      ]
+    },
+    {
+      "construct": "script:function-declaration",
+      "count": 128,
+      "files": 44,
+      "examples": [
+        "vuejs/packages-private/sfc-playground/src/App.vue: toggleProdMode",
+        "vuejs/packages-private/sfc-playground/src/App.vue: toggleSSR",
+        "vuejs/packages-private/sfc-playground/src/App.vue: toggleAutoSave",
+        "vuejs/packages-private/sfc-playground/src/App.vue: reloadPage"
+      ]
+    },
+    {
+      "construct": "template:dynamic-is",
+      "count": 82,
+      "files": 51,
+      "examples": [
+        "vue-element-admin/src/layout/components/Sidebar/Link.vue: :is=\"type\"",
+        "vue-element-admin/src/views/dashboard/index.vue: :is=\"currentRole\"",
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-link.vue: :is=\"href ? 'a' : 'span'\"",
+        "element-plus/docs/.vitepress/vitepress/components/globals/icons.vue: :is=\"component\""
+      ]
+    },
+    {
+      "construct": "script:interface",
+      "count": 70,
+      "files": 67,
+      "examples": [
+        "element-plus/docs/.vitepress/vitepress/components/globals/vp-changelog.vue: Release",
+        "element-plus/docs/examples/autocomplete/autocomplete-template.vue: LinkItem",
+        "element-plus/docs/examples/autocomplete/autocomplete.vue: RestaurantItem",
+        "element-plus/docs/examples/autocomplete/custom-header-footer.vue: LinkItem"
+      ]
+    },
+    {
+      "construct": "call:defineExpose",
+      "count": 68,
+      "files": 68,
+      "examples": [
+        "element-plus/packages/components/affix/src/affix.vue: defineExpose({\n  /** @description update affix sta",
+        "element-plus/packages/components/anchor/src/anchor.vue: defineExpose({\n  scrollTo,\n})",
+        "element-plus/packages/components/autocomplete/src/autocomplete.vue: defineExpose({\n  /** @description the index of the",
+        "element-plus/packages/components/badge/src/badge.vue: defineExpose({\n  /** @description badge content */"
+      ]
+    },
+    {
+      "construct": "call:inject",
+      "count": 57,
+      "files": 48,
+      "examples": [
+        "element-plus/packages/components/anchor/src/anchor-link.vue: inject(anchorKey)",
+        "element-plus/packages/components/avatar/src/avatar.vue: inject(avatarGroupContextKey, undefined)",
+        "element-plus/packages/components/breadcrumb/src/breadcrumb-item.vue: inject(breadcrumbKey, undefined)",
+        "element-plus/packages/components/cascader-panel/src/menu.vue: inject(CASCADER_PANEL_INJECTION_KEY)"
+      ]
+    },
+    {
+      "construct": "sfc:external-src-attribute",
+      "count": 40,
+      "files": 24,
+      "examples": [
+        "vuejs/packages-private/sfc-playground/src/Header.vue: src=\"/logo.svg\"",
+        "vue-element-admin/src/views/dashboard/admin/components/BoxCard.vue: src=\"https://wpimg.wallstcn.com/e7d23d71-cf19-4b90-a1cc-f56a",
+        "vue-element-admin/src/views/error-log/index.vue: src=\"https://wpimg.wallstcn.com/360e4842-4db5-42d0-b078-f9a8",
+        "vue-element-admin/src/views/error-page/404.vue: src=\"@/assets/404_images/404.png\""
+      ]
+    },
+    {
+      "construct": "call:provide",
+      "count": 39,
+      "files": 34,
+      "examples": [
+        "element-plus/packages/components/anchor/src/anchor.vue: provide(anchorKey, {\n  ns,\n  direction: props.dire",
+        "element-plus/packages/components/breadcrumb/src/breadcrumb.vue: provide(breadcrumbKey, props)",
+        "element-plus/packages/components/button/src/button-group.vue: provide(\n  buttonGroupContextKey,\n  reactive({\n   ",
+        "element-plus/packages/components/cascader-panel/src/index.vue: provide(\n  CASCADER_PANEL_INJECTION_KEY,\n  reactiv"
+      ]
+    },
+    {
+      "construct": "script:type-alias",
+      "count": 30,
+      "files": 25,
+      "examples": [
+        "element-plus/docs/.vitepress/vitepress/components/globals/icons.vue: CategoriesItem",
+        "element-plus/docs/.vitepress/vitepress/components/globals/vp-api-function.vue: ParamType",
+        "element-plus/docs/examples/config-provider/dialog.vue: GlobalConfig",
+        "element-plus/docs/examples/scrollbar/manual-scroll.vue: Arrayable"
+      ]
+    },
+    {
+      "construct": "options:mixins-option",
+      "count": 9,
+      "files": 9,
+      "examples": [
+        "vue-element-admin/src/components/Charts/Keyboard.vue: mixins: [resize]",
+        "vue-element-admin/src/components/Charts/LineMarker.vue: mixins: [resize]",
+        "vue-element-admin/src/components/Charts/MixChart.vue: mixins: [resize]",
+        "vue-element-admin/src/layout/components/Sidebar/SidebarItem.vue: mixins: [FixiOSBug]"
+      ]
+    },
+    {
+      "construct": "call:defineSlots",
+      "count": 3,
+      "files": 3,
+      "examples": [
+        "element-plus/packages/components/mention/src/mention.vue: defineSlots<\n  InputInstance['$slots'] & {\n    hea",
+        "element-plus/packages/components/table/src/table-column/index.vue: defineSlots<{\n  default?: (props: {\n    row: T\n   ",
+        "element-plus/packages/components/transfer/src/transfer.vue: defineSlots<{\n  default?: (props: { option: T }) ="
+      ]
+    },
+    {
+      "construct": "call:defineModel",
+      "count": 1,
+      "files": 1,
+      "examples": [
+        "vuejs/packages-private/sfc-playground/src/VersionSelect.vue: defineModel()"
+      ]
+    }
+  ],
+  "absent": [
+    "script:class-with-superclass",
+    "script:class-with-implements",
+    "script:class-with-both",
+    "script:member-of-subclass",
+    "script:override-modifier",
+    "script:enum",
+    "script:decorator",
+    "script:export-default-class",
+    "options:extends-option",
+    "options:provide-option",
+    "options:inject-option"
+  ]
+}

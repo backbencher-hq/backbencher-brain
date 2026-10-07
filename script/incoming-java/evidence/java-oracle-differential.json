@@ -1,0 +1,276 @@
+{
+  "instrument": "script/incoming-java/oracle.ts",
+  "lane": "INCOMING_JAVA",
+  "corpus": {
+    "dir": "java-lib",
+    "rev": "72dd370d951967fe97756ecaaa938c7cb5bcbc28",
+    "filesEnumerated": 3275,
+    "analyzed": 3275,
+    "failures": 0
+  },
+  "caveat": "Both walkers read the same tree-sitter-java wasm. Measures implementation divergence, not grammar correctness.",
+  "derives": {
+    "calls": "method_invocation (non-stdlib root) + explicit_constructor_invocation",
+    "uses": "field_access reads (write excluded) + array_access reads + bare reads of a declared member",
+    "contains": "owner -> nested/member declaration name",
+    "imports": "import_declaration path + JPMS requires_module_directive",
+    "references": "every named type in a declared/param/local/catch/throw/return type clause + class literal + cast + instanceof",
+    "exports": "JPMS exports_module_directive + Spring MVC mapping annotations composed with the class base route",
+    "extends": "superclass clause + an interface's extends_interfaces (JLS 9.1.3)",
+    "implements": "a class's super_interfaces",
+    "overrides": "in-file signature match up the hierarchy BFS (JLS 8.4.8.1), private ancestors skipped",
+    "instantiates": "object_creation_expression base type (JLS 15.9 — the ONLY way an object is created)"
+  },
+  "normalisation": {
+    "N1_ownerQualification": {
+      "fired": 271501,
+      "note": "a bare member name as a source is qualified to `Owner.name` when exactly ONE declared type owns it"
+    },
+    "N2_importSource": {
+      "fired": 38746,
+      "note": "an import-derived references edge sourced at the package (or `root`) is re-sourced to the file's primary type, which is the analyzer's documented post-pass"
+    },
+    "N3_ctorLabel": {
+      "fired": 8902,
+      "note": "java's CONSTRUCTOR symbol is NAMED `constructor` and carries ownerName, so a source spelled `Owner.constructor` on one side and the bare `constructor` on the other is the same declaration"
+    },
+    "N4_anonScope": {
+      "fired": 4103,
+      "note": "an anonymous class body (`new X() { ... }`) opens a scope named `anonymous_X`, contained by the enclosing declaration — the analyzer pushes one, and its members attribute to it"
+    }
+  },
+  "tableA_raw": {
+    "calls": {
+      "truth": 170205,
+      "tp": 1570,
+      "fp": 159453,
+      "fn": 168635
+    },
+    "uses": {
+      "truth": 20755,
+      "tp": 6120,
+      "fp": 13557,
+      "fn": 14635
+    },
+    "contains": {
+      "truth": 75321,
+      "tp": 72361,
+      "fp": 3560,
+      "fn": 2960
+    },
+    "imports": {
+      "truth": 38923,
+      "tp": 0,
+      "fp": 0,
+      "fn": 38923
+    },
+    "references": {
+      "truth": 147195,
+      "tp": 22105,
+      "fp": 114298,
+      "fn": 125090
+    },
+    "exports": {
+      "truth": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0
+    },
+    "extends": {
+      "truth": 4224,
+      "tp": 4224,
+      "fp": 0,
+      "fn": 0
+    },
+    "implements": {
+      "truth": 1915,
+      "tp": 1915,
+      "fp": 0,
+      "fn": 0
+    },
+    "overrides": {
+      "truth": 2040,
+      "tp": 1949,
+      "fp": 15288,
+      "fn": 91
+    },
+    "instantiates": {
+      "truth": 17707,
+      "tp": 1091,
+      "fp": 15462,
+      "fn": 16616
+    }
+  },
+  "tableB_normalised": {
+    "calls": {
+      "truth": 170205,
+      "emitted": 161023,
+      "tp": 145140,
+      "fp": 15883,
+      "fn": 12952,
+      "ambiguousOwner": 10665
+    },
+    "uses": {
+      "truth": 20755,
+      "emitted": 19677,
+      "tp": 17063,
+      "fp": 2614,
+      "fn": 1904,
+      "ambiguousOwner": 3596
+    },
+    "contains": {
+      "truth": 75321,
+      "emitted": 75921,
+      "tp": 74840,
+      "fp": 1081,
+      "fn": 300,
+      "ambiguousOwner": 13320
+    },
+    "imports": {
+      "truth": 38923,
+      "emitted": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 38923,
+      "ambiguousOwner": 0
+    },
+    "references": {
+      "truth": 147195,
+      "emitted": 136403,
+      "tp": 127014,
+      "fp": 9389,
+      "fn": 12091,
+      "ambiguousOwner": 11564
+    },
+    "exports": {
+      "truth": 0,
+      "emitted": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "ambiguousOwner": 0
+    },
+    "extends": {
+      "truth": 4224,
+      "emitted": 4224,
+      "tp": 4224,
+      "fp": 0,
+      "fn": 0,
+      "ambiguousOwner": 1189
+    },
+    "implements": {
+      "truth": 1915,
+      "emitted": 1915,
+      "tp": 1915,
+      "fp": 0,
+      "fn": 0,
+      "ambiguousOwner": 846
+    },
+    "overrides": {
+      "truth": 2040,
+      "emitted": 17237,
+      "tp": 1949,
+      "fp": 15288,
+      "fn": 139,
+      "ambiguousOwner": 0
+    },
+    "instantiates": {
+      "truth": 17707,
+      "emitted": 16553,
+      "tp": 14357,
+      "fp": 2196,
+      "fn": 1898,
+      "ambiguousOwner": 1524
+    }
+  },
+  "overridesGuessTier": 12490,
+  "fpExamples": {
+    "calls": [
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java AbstractIteratorTester -> checkArgument",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java AbstractIteratorTester -> hasNext",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java AbstractIteratorTester -> iterator",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java AbstractIteratorTester -> cycle"
+    ],
+    "uses": [
+      "android/guava-testlib/src/com/google/common/collect/testing/SpliteratorTester.java forEach -> counter",
+      "android/guava-testlib/src/com/google/common/collect/testing/TestsForListsInJavaUtil.java create -> elements",
+      "android/guava-testlib/src/com/google/common/collect/testing/TestsForListsInJavaUtil.java size -> length",
+      "android/guava-testlib/src/com/google/common/collect/testing/TestsForListsInJavaUtil.java get -> elements"
+    ],
+    "contains": [
+      "android/guava-testlib/src/com/google/common/collect/testing/IteratorFeature.java IteratorFeature -> UNMODIFIABLE",
+      "android/guava-testlib/src/com/google/common/collect/testing/IteratorFeature.java IteratorFeature -> MODIFIABLE",
+      "android/guava-testlib/src/com/google/common/collect/testing/SortedMapTestSuiteBuilder.java SortedMapTestSuiteBuilder.NoRecurse -> getImpliedFeatures",
+      "android/guava-testlib/src/com/google/common/collect/testing/SpliteratorTester.java SpliteratorTester.SpliteratorDecompositionStrategy -> forEach"
+    ],
+    "imports": [],
+    "references": [
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java IteratorOperation.execute -> ListIterator",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java IteratorOperation.execute -> Object",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java IteratorOperation.execute -> E",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java Stimulus.executeAndCompare -> Iterator"
+    ],
+    "exports": [],
+    "extends": [],
+    "implements": [],
+    "overrides": [
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java AbstractCollectionTestSuiteBuilder.getTesters -> PerCollectionSizeTestSuiteBuilder.getTesters",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java AbstractCollectionTester.actualContents -> AbstractContainerTester.actualContents",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java AbstractCollectionTester.resetContainer -> AbstractContainerTester.resetContainer",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java AbstractContainerTester.setUp -> AbstractTester.setUp"
+    ],
+    "instantiates": [
+      "android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java indexOfEntryWithValue -> IllegalArgumentException",
+      "android/guava-testlib/src/com/google/common/collect/testing/Helpers.java remove -> UnsupportedOperationException",
+      "android/guava-testlib/src/com/google/common/collect/testing/Helpers.java setValue -> UnsupportedOperationException",
+      "android/guava-testlib/src/com/google/common/collect/testing/NavigableSetTestSuiteBuilder.java order -> ArrayList"
+    ]
+  },
+  "fnExamples": {
+    "calls": [
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java PermittedMetaException.constructor -> super",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java UnknownElementException.constructor -> super",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java MultiExceptionListIterator.constructor -> addAll",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java MultiExceptionListIterator.constructor -> reverse"
+    ],
+    "uses": [
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java AbstractIteratorTester -> features",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java AbstractIteratorTester -> startIndex",
+      "android/guava-testlib/src/com/google/common/collect/testing/BaseComparable.java BaseComparable -> s",
+      "android/guava-testlib/src/com/google/common/collect/testing/ListIteratorTester.java ListIteratorTester.ListIteratorTester -> KNOWN_ORDER"
+    ],
+    "contains": [
+      "android/guava-testlib/src/com/google/common/collect/testing/TestsForListsInJavaUtil.java TestsForListsInJavaUtil.create -> anonymous_AbstractList",
+      "android/guava-testlib/src/com/google/common/collect/testing/TestsForListsInJavaUtil.java anonymous_TestStringListGenerator.create -> anonymous_AbstractList",
+      "android/guava-testlib/src/com/google/common/collect/testing/TestsForListsInJavaUtil.java TestsForListsInJavaUtil.create -> anonymous_AbstractSequentialList",
+      "android/guava-testlib/src/com/google/common/collect/testing/TestsForListsInJavaUtil.java anonymous_TestStringListGenerator.create -> anonymous_AbstractSequentialList"
+    ],
+    "imports": [
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java root -> java.util.Arrays.asList",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java root -> com.google.common.annotations.GwtIncompatible",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java root -> com.google.common.collect.testing.testers.CollectionAddAllTester",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java root -> com.google.common.collect.testing.testers.CollectionAddTester"
+    ],
+    "references": [
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java ArrayWithDuplicate.constructor -> E",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java anonymous_PermittedMetaException.isPermitted -> Exception",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java anonymous_PermittedMetaException.isPermitted -> UnsupportedOperationException",
+      "android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java anonymous_PermittedMetaException.isPermitted -> IllegalStateException"
+    ],
+    "exports": [],
+    "extends": [],
+    "implements": [],
+    "overrides": [
+      "android/guava-testlib/src/com/google/common/collect/testing/google/ListMultimapTestSuiteBuilder.java MultimapGetGenerator.MultimapGetGenerator -> MultimapGetGenerator.MultimapGetGenerator",
+      "android/guava-testlib/src/com/google/common/collect/testing/google/ListMultimapTestSuiteBuilder.java MultimapGetGenerator.constructor -> MultimapGetGenerator.MultimapGetGenerator",
+      "android/guava-testlib/src/com/google/common/collect/testing/google/ListMultimapTestSuiteBuilder.java MultimapAsMapGetGenerator.MultimapAsMapGetGenerator -> MultimapAsMapGetGenerator.MultimapAsMapGetGenerator",
+      "android/guava-testlib/src/com/google/common/collect/testing/google/ListMultimapTestSuiteBuilder.java MultimapAsMapGetGenerator.constructor -> MultimapAsMapGetGenerator.MultimapAsMapGetGenerator"
+    ],
+    "instantiates": [
+      "android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java MapKeySetGenerator.constructor -> SampleElements",
+      "android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java MapValueCollectionGenerator.constructor -> SampleElements",
+      "android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java MapValueCollectionGenerator.indexOfEntryWithValue -> IllegalArgumentException",
+      "android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java anonymous_Comparator.indexOfEntryWithValue -> IllegalArgumentException"
+    ]
+  }
+}

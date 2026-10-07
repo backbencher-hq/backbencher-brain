@@ -1,0 +1,11 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
+const ROOT = path.resolve(import.meta.dirname, "..", "..");
+const engine: any = await import(path.join(ROOT, "src/ast/engine"));
+const f = path.join(ROOT, process.argv[2]);
+const res: any = await engine.ASTEngine.parseFile(f, fs.readFileSync(f, "utf8"));
+console.log("SYMBOLS:");
+for (const s of res.symbols ?? []) console.log(`  L${s.range.startLine} ${s.kind} "${s.name}" owner="${s.ownerName ?? "-"}"`);
+console.log("uses edges:");
+for (const r of res.relationships ?? []) if (r.type === "uses") console.log(`  L${r.line_number} ${r.source} -> ${r.target}  form=${r.metadata?.linkForm ?? "-"} anchor=${r.metadata?.anchor ?? "-"} linkLine=${r.metadata?.linkLine ?? "-"} class=${r.metadata?.evidenceClass}`);
+console.log("patterns:", JSON.stringify(res.metadata?.patterns ?? []));

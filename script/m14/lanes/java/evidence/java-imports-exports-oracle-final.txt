@@ -1,0 +1,35 @@
+[INFO] [09:04:10] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [09:04:10] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [09:07:19] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [09:07:19] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [09:07:19] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [09:07:19] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [09:07:19] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [09:07:19] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [09:07:19] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+JAVA IMPORT/EXPORT ORACLE (EXPORTS_JAVA2)
+corpus java-lib: 3275 .java files on disk (derived by readdir), measuring 3275, 188676 ms, 8 workers
+parse/analyze failures: 0
+oracle rows: imports 38935 · exports 3229
+analyzer rows typed imports/exports: 38935 / 3229
+
+INDEPENDENCE LIMIT: both walkers load the same tree-sitter-java wasm, so a bug IN THE GRAMMAR is invisible to this oracle exactly as it is to the shared differential. This measures implementation divergence, not grammar correctness.
+
+type      truth   emitted     TP     FP     FN   precision   recall   line-agree  conf-agree
+----------------------------------------------------------------------------------------------------------------
+imports   38935     38935  38935      0      0   1.0000   1.0000   38935/38935        38935/38935
+     META guava-testlib/src/module-info.java -> com.google.common.testlib|java.logging  oracle[module_requires_dependency|||] analyzer[module_requires_dependency|module_directive||]
+     META guava-testlib/src/module-info.java -> com.google.common.testlib|com.google.common  oracle[module_requires_dependency|||] analyzer[module_requires_dependency|module_directive||]
+     META guava-testlib/src/module-info.java -> com.google.common.testlib|junit  oracle[module_requires_dependency|||] analyzer[module_requires_dependency|module_directive||]
+     META guava-testlib/src/module-info.java -> com.google.common.testlib|com.google.errorprone.annotations  oracle[module_requires_dependency|||] analyzer[module_requires_dependency|module_directive||]
+     META guava-testlib/src/module-info.java -> com.google.common.testlib|com.google.j2objc.annotations  oracle[module_requires_dependency|||] analyzer[module_requires_dependency|module_directive||]
+     META guava-testlib/src/module-info.java -> com.google.common.testlib|org.jspecify  oracle[module_requires_dependency|||] analyzer[module_requires_dependency|module_directive||]
+exports    3229      3229   3229      0      0   1.0000   1.0000   3229/3229        3229/3229
+
+DERIVATION DEBT FOR THIS LANE, restated against the measurement above:
+  exports  and  imports  are NOT in the shared differential's java audited set
+  (["calls","contains","extends","implements","instantiates","overrides","references","uses"]),
+  which is why this oracle exists. Registering it needs a one-line change to a MASTER-owned file:
+  script/m60/rel-type-coverage-gate.ts reads a lane's own audited set from
+  script/m14/<lang>-truth.ts when that file exports ORACLE_LABELS (gate lines 186-201).
+  script/m14/** is MASTER-owned, so this lane did not create it.
