@@ -1790,3 +1790,50 @@ nested function's body are attributed to the ENCLOSING callable — `calls regis
 on the fixture, where the call is written in `nestedHelper`'s body. It is an attribution decision,
 not an unexplained endpoint (the enclosing callable is published, so the census is silent about it),
 and the fixture records the behaviour without pinning it as correct.
+### 3. The ambiguity ceiling, priced before anything was implemented
+
+`ambiguous:multiple-declarations` is the largest class the census reports — **126,342 endpoints,
+36.06%** — and it is the one the lane has never been able to size. Counting it is not the same as
+knowing whether it can be closed, so the same run now asks, for every ambiguous endpoint, WHICH
+STAGE would leave exactly one candidate, under a stated order: the SOUND filters first (the
+`metadata.owner` channel, then the type's callable/type-kind rule), then the PREFERENCES (same file,
+then the file's own namespace).
+
+| stage | endpoints | share of ambiguous |
+|---|---|---|
+| **still ambiguous after every lever** | **80,539** | **63.75%** |
+| resolved by `+ same-file preference` | 16,484 | 13.05% |
+| **emptied by the OWNER filter** | **15,791** | **12.50%** |
+| resolved by `+ namespace preference` | 8,183 | 6.48% |
+| resolved by `filters (owner + kind)` | 3,172 | 2.51% |
+| emptied by the KIND filter | 2,173 | 1.72% |
+
+Three sentences are the finding.
+
+**No lever reaches most of it.** 63.75% of the lane's ambiguity survives the owner channel, the
+kind rule, same-file preference and namespace preference applied together — `uses` 48,839,
+`calls` 21,052, `imports` 4,509, `contains` 2,783 — and the top names say why: `metadata` (6,477),
+`value`, `result`, `config`, `message`, `name`, `response`, `configuration`. These are generic
+member names read off a receiver whose TYPE is not known (`$response->metadata`), and no
+resolution rule over a name index can decide them. It is a type-inference wall, not a naming one,
+and it is now a number instead of an intuition.
+
+**`emptied-by-*` is not a resolution, and 17,964 endpoints are in it.** 15,791 of them are emptied
+by the OWNER filter — the edge carries `metadata.owner` and NO candidate carries that owner, which
+makes them inherited or foreign members, the same family as the lane's existing *cause A* — and
+2,173 are emptied by the KIND filter, i.e. the name is published but not as anything the type can
+legally point at (`calls` to a name published only as a `property`). Folding either into "closed"
+would have been the easy, wrong reading: the first turns an ambiguity into an unresolved endpoint
+and the second is a defect-adjacent signal about the edge, not about the store.
+
+**A preference changes a resolution; a filter narrows one.** Only 3,172 endpoints are resolved by
+sound narrowing. The 24,667 that the two preferences would resolve are the risky half — each one
+replaces today's N-way ambiguity with one named declaration, and this lane has already measured what
+that looks like when it goes wrong: a bare-name fix that resolved +225 edges and was, on inspection,
+a cross-repo collision. So the preferences stay unpriced-as-features until each has its own
+fixture, mutant and before/after, and the artifact carries that caveat in the data rather than in
+this paragraph.
+
+The lever section costs 88 s of the run (4m48 vs 3m20) and every stage it reports is driven by the
+same self-test the classifier is: six lever probes, so a stage that never fires and a stage that
+always fires cannot look alike in the table.

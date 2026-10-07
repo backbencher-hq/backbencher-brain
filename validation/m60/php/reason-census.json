@@ -1,5 +1,115 @@
 {
   "instrument": "validation/m14/fixtures/php/reason-census.mts",
+  "ambiguityLevers": {
+    "ambiguousEndpoints": 126342,
+    "order": "sound filters (owner channel, then the type's callable/kind rule), then preferences (same file, then the file's namespace)",
+    "stages": {
+      "still-ambiguous": 80539,
+      "filters+same-file": 16484,
+      "emptied-by-owner": 15791,
+      "filters+namespace": 8183,
+      "filters": 3172,
+      "emptied-by-kind": 2173
+    },
+    "filterKinds": {
+      "calls": [
+        "function",
+        "method",
+        "constructor"
+      ],
+      "instantiates": [
+        "class",
+        "enum",
+        "trait",
+        "struct"
+      ],
+      "extends": [
+        "class",
+        "interface",
+        "enum"
+      ],
+      "implements": [
+        "interface"
+      ],
+      "overrides": [
+        "method",
+        "constructor"
+      ],
+      "contains": [
+        "method",
+        "property",
+        "constant",
+        "enum_member",
+        "constructor"
+      ],
+      "exports": [
+        "constant"
+      ],
+      "imports": [
+        "class",
+        "interface",
+        "trait",
+        "enum",
+        "function",
+        "constant"
+      ],
+      "references": [
+        "class",
+        "interface",
+        "trait",
+        "enum",
+        "type",
+        "constant",
+        "property"
+      ],
+      "uses": [
+        "function",
+        "method",
+        "property",
+        "constant",
+        "enum_member",
+        "variable"
+      ]
+    },
+    "stillAmbiguousByType": {
+      "uses": 48839,
+      "calls": 21052,
+      "imports": 4509,
+      "contains": 2783,
+      "instantiates": 1394,
+      "extends": 1177,
+      "references": 699,
+      "implements": 86
+    },
+    "topStillAmbiguousNames": {
+      "metadata": 6477,
+      "value": 2520,
+      "result": 2175,
+      "config": 1985,
+      "message": 1934,
+      "name": 1301,
+      "dbi": 1234,
+      "response": 1221,
+      "configuration": 1190,
+      "method": 1167,
+      "TestCase": 1118,
+      "type": 1108,
+      "test": 1054,
+      "settings": 1010,
+      "table": 775,
+      "query": 702,
+      "telemetryInfo": 695,
+      "schema": 690,
+      "asArray": 651,
+      "className": 596,
+      "node": 556,
+      "db": 545,
+      "PHPUnit\\Framework\\Attributes\\Small": 527,
+      "getName": 515,
+      "willReturn": 509
+    },
+    "caveat": "A CEILING, NOT A RESULT: the stages are rules this lane has NOT adopted, priced before anything is implemented. Every stage that would resolve by PREFERENCE changes a resolution rather than adding one, so each needs the whole-population before/after plus fixtures — and the +225 resolved edges this lane once measured from a bare-name fix were a cross-repo collision, not coverage."
+  },
   "entryPoint": "parseFile (src/ast/pool-worker.ts)",
   "corpusRoot": "$HOME/fixtures/repositories",
   "reposScanned": 199,
@@ -479,5 +589,5 @@
   "defectRows": [],
   "unexplainedRows": [],
   "unexplainedTotal": 0,
-  "elapsedSec": 190.886
+  "elapsedSec": 278.475
 }

@@ -780,7 +780,38 @@ written in `nestedHelper`'s body). It is an attribution decision, not an unexpla
 enclosing callable is published, so the census is silent about it by construction — and the fixture
 records the behaviour without pinning it as correct.
 
-### 3. What round 2 did NOT change
+### 3. The ambiguity ceiling, priced before anything is implemented
+
+`ambiguous:multiple-declarations` is 126,342 endpoints (36%), and the lane could not say whether
+any of it is closable. The census now asks WHICH STAGE would leave exactly one candidate for each
+of them, under a stated order — the sound filters first (owner channel, then the type's
+callable/kind rule), then the preferences (same file, then the file's own namespace):
+
+| stage | endpoints | share |
+|---|---|---|
+| **still ambiguous after EVERY lever** | **80,539** | **63.75%** |
+| resolved by the same-file preference | 16,484 | 13.05% |
+| **emptied by the owner filter** | **15,791** | **12.50%** |
+| resolved by the namespace preference | 8,183 | 6.48% |
+| resolved by the sound filters | 3,172 | 2.51% |
+| emptied by the kind filter | 2,173 | 1.72% |
+
+**A type-inference wall, now a number**: the survivors are `uses` 48,839, `calls` 21,052,
+`imports` 4,509, `contains` 2,783, and their top names are `metadata` (6,477), `value`, `result`,
+`config`, `message`, `response` — generic member reads off a receiver whose type nothing knows. No
+rule over a name index decides those.
+
+**17,964 endpoints are not resolutions at all**: 15,791 emptied by the OWNER filter (the edge names
+an owner, no candidate carries it — inherited or foreign members, the cause-A family) and 2,173
+emptied by the KIND filter (the name is published, but not as anything the type can point at).
+Counting either as "closed" would be the easy and wrong reading.
+
+Only 3,172 endpoints fall to sound narrowing; the 24,667 the two preferences would resolve each
+REPLACE a resolution, which is the change shape that once produced a measured +225 that was a
+cross-repo collision. They stay unpriced as features until each has its own fixture, mutant and
+before/after, and the artifact carries the caveat in its data.
+
+### 4. What round 2 did NOT change
 
 `ambiguous:multiple-declarations` is **126,342** and untouched — it is the incoming/cause-A axis and
 the largest remaining item, not a regression. The three types with no independent oracle
