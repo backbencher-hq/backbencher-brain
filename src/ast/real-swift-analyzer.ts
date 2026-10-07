@@ -39,13 +39,12 @@ import { findDeclaringParent, type OverrideCompanion } from "./override-context"
 //       stdlib raw-value type in first slot (String/Int/...)
 //       (`enum E: String, Codable` -> implements E -> Codable)
 //     - calls:    member calls resolve to the LEAF target (`users.first` ->
-//       `first`, `[1,2].map` -> `map`); source = enclosing method. Bare
-//       builtins (print/String/Int/...) are filtered (C# BuiltinsAreFiltered
-//       precedent).
+//       `first`); source = enclosing method. Bare builtins (print/String/
+//       Int/...) are filtered (C# BuiltinsAreFiltered precedent).
 //     - instantiates: bare CAPITALIZED call `User(...)` -> instantiates ONLY
 //       (no calls edge — Swift construction syntax, Java `new Foo()` analog)
-//     - uses:     ONLY `self.` member reads (Swift's `this`), source = the
-//       enclosing TYPE, target = field leaf. Type references emit nothing.
+//     - uses:     ONLY `self.` member READS (Swift's `this`), source = the
+//       enclosing METHOD, target = field leaf. Type references emit nothing.
 //     - overrides: qualified `Owner.method -> Parent.method`, resolved via
 //       the class hierarchy + shared companion index (Java/C# M12.02-03
 //       semantics)
@@ -60,6 +59,16 @@ import { findDeclaringParent, type OverrideCompanion } from "./override-context"
 //       interface is NOT emitted: a Swift file declares no module, so no
 //       file-level construct can name the publisher. Measured, not asserted —
 //       see docs/analyzers/swift-ontology-measurements.md.
+//     - imports: the SAME import statement as a MODULE dependency, under the
+//       family's first-class module-dependency label (c `#include`, go import
+//       path, php `use`/require, haskell FFI entity). Target is the MODULE
+//       (first dotted segment), so a scoped `import let WinSDK.IPPROTO_IP`
+//       names `WinSDK` and carries the scoped item in metadata.
+//     - exports: Swift's API surface — a FILE-SCOPE declaration whose access
+//       level is public/open/package. A module re-export (`@_exported
+//       import M`) is published on the `imports` edge instead, because a
+//       MODULE is not a symbol and the family's export invariant requires an
+//       export name to resolve to a top-level symbol.
 // ============================================================================
 
 // Stdlib raw-value types of a raw-representable enum (`enum E: String, Codable`).
@@ -81,6 +90,40 @@ const MEMBER_OWNER_KINDS = new Set([
   ASTEngine.SymbolKind.Enum,
   ASTEngine.SymbolKind.Actor,
   ASTEngine.SymbolKind.Extension,
+])
+
+// ----------------------------------------------------------------------------
+// EXPORT-LEVEL ACCESS MODIFIERS (Swift `exports`, ONTOLOGY wave)
+// ----------------------------------------------------------------------------
+// Swift has no `export` keyword. What it has is an ACCESS LEVEL: a declaration
+// marked `public` (or `open`, or `package`) is part of its module's interface
+// and a declaration that is not is not. That IS this language's export
+// construct, and the corpus says it is common — 5,751 file-scope declarations
+// across a 3,656-file draw (11.04% of the 52,113 file-scope declarations),
+// measured by script/m14/swift-import-export-probe.ts.
+//
+// Measured at the same draw, by that probe:
+//   public 5,708 · open 43 (all classes — `open` is class-only in Swift) ·
+//   internal 1,325 (explicit) · (no modifier) 43,368 · fileprivate 195 ·
+//   private 1,470
+// `private` / `fileprivate` / `internal` and the no-modifier default are the
+// ABSENCE of export, so they are not in this set. `package` is here because
+// Swift 5.9 defines it and `getVisibility` recognises it — but MEASURED HONESTY:
+// the pinned grammar (npm tree-sitter-swift 0.7.1) CANNOT REDUCE IT. All six
+// synthetic shapes (`package func`, `package struct`, `package var`,
+// `package typealias`, `package enum`, `package class`) parse to an ERROR while
+// `public func` reduces cleanly, and the corpus probe finds 0 `package`
+// visibility_modifier nodes in 3,656 files. So the `package` branch of this
+// rule is a declared grammar-version boundary, NOT a measured one: it cannot
+// fire on this corpus and this lane does not claim it does.
+const SWIFT_EXPORT_LEVELS = new Set(["public", "open", "package"])
+
+// The anonymous SCOPE-KIND tokens Swift's `import` grammar admits between the
+// `import` keyword and the path (`import struct Foundation.URLSession`). The
+// grammar's own token names, read by handleImport's importScopeKind.
+const SWIFT_IMPORT_SCOPE_KINDS = new Set([
+  "struct", "class", "enum", "func", "var", "let",
+  "typealias", "protocol", "actor", "macro",
 ])
 
 // Bare stdlib calls that carry no semantic edge (C# BuiltinsAreFiltered
@@ -234,6 +277,10 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const inFileKinds = new Map<string, string>()
     this.collectDeclaredKinds(rootNode, inFileKinds)
 
+    // The PROJECT's cross-file declaration tables, when a caller supplied one.
+    // See `crossFileTables` for what it reads and why it is inert when absent.
+    const cross = this.crossFileTables(context, classHierarchy)
+
     const emittedCalls = new Set<string>()
     // #942: per-(source, leaf) CALL SITE counts. `emittedCalls` dedupes the
     // relationship list to one edge per (source, label, target), so two sites
@@ -279,7 +326,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         newParentSymbol = this.handleProtocol(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy)
         if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (curr.type === "class_declaration") {
-        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, context?.typeKinds as Map<string, string> | undefined, superByClass)
+        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, cross.kinds, superByClass)
         if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (curr.type === "ERROR" && this.isNominalRecovery(curr)) {
         // SW-D23 (#940): the pinned grammar fails to REDUCE some nominal
@@ -292,7 +339,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         // read from the tokens alone — the kind is the same anonymous keyword
         // token SWIFTD1 already decides by, the name is the recovery's own
         // name node — never from source text.
-        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, context?.typeKinds as Map<string, string> | undefined, superByClass)
+        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, cross.kinds, superByClass)
         if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (curr.type === "function_declaration" || curr.type === "protocol_function_declaration") {
         newParentSymbol = this.handleFunction(curr, symbols, relationships, parentSymbol, overrideTasks, context?.overrideCompanion)
@@ -707,7 +754,182 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion)
+    // ----------------------------------------------------------------------------
+    // ONTOLOGY: `imports` — the module dependency, under its own label.
+    //
+    // The `references` edge above is UNCHANGED and stays: the differential's
+    // swift oracle derives `references: root -> <spelled path>` (differential.ts
+    // deriveSwiftEdges, the import_declaration branch), so removing or relabelling
+    // it here would be a change this lane cannot make (the oracle and
+    // validation/m14/differential-baseline.json are master-owned) and would be a
+    // silent product regression for every consumer that reads `references`.
+    //
+    // So this lane ADDS the family's first-class module-dependency label beside
+    // it rather than moving the fact. That is the bash BD9 precedent — bash emits
+    // `imports` AND `references` from one `source`/`.` construct with different
+    // markers (`isSourceImport` vs `isSourceDependency`) — and it is what makes
+    // Swift's module dependency answerable by the kind bb_graph actually groups
+    // on: src/lsp/graph_request.ts reads rows typed `imports` with both endpoints
+    // NULL and `source_external = <file>` into the file-level `dependencies`
+    // section, which is "what does this file import". `fileLevel: true` is what
+    // makes the parallel-indexer put the IMPORTING FILE in `source_external`
+    // instead of the placeholder string `root` (the M60/#910 contract).
+    //
+    // Two lanes argue against carrying both labels for one fact (go's R10 note
+    // and ruby's "a third time under a second label"). R10's argument is about
+    // SEPARATORS — `net/http`, `github.com/…/cmp` — that no Go declaration can
+    // contain; Swift's module specifier is a bare capitalized identifier, so
+    // R10 does not bite here. The stronger form of their point (one fact, one
+    // edge) is nonetheless correct, and resolving it needs the swift oracle and
+    // the baseline changed together: REPORTED to master, not done here.
+    // ----------------------------------------------------------------------------
+    const emittedImports = new Set<string>()
+    // How many SCOPED imports of each module this file makes. The edge is one per
+    // MODULE (pinned: `import Foundation` plus `import struct
+    // Foundation.URLSession` is one `imports Foundation`), so when a module is
+    // scoped N>1 times the edge's `scopedItem` — a single-valued field copied
+    // from the first statement that mentioned the module — names one of N and
+    // reads as if it named all of them.
+    //
+    // Measured on the corpus before this rule (swift-nio + alamofire + apple/swift
+    // tracked files): 25 (file, module) pairs scope-import one module 2+ times,
+    // and the largest is swift-nio's Sources/NIOCore/BSDSocketAPI.swift with 37
+    // scoped `WinSDK` imports. So the partial field was not a corner case.
+    //
+    // The rule: `scopedItem` is published only when the module has EXACTLY ONE
+    // scoped import in the file. Above that it is dropped and the count is
+    // published instead, because a field that is silently partial is worse than a
+    // field that is absent. Nothing is lost — every statement keeps its own
+    // `ImportInfo` row with its own `scopedItem`, which is the per-statement
+    // record and is unchanged by this.
+    const scopedImportsPerModule = new Map<string, number>()
+    for (const imp of imports) {
+      const imd = (imp.metadata ?? {}) as Record<string, any>
+      const im = typeof imd.module === "string" ? imd.module : null
+      if (!im || imd.isScopedImport !== true) continue
+      scopedImportsPerModule.set(im, (scopedImportsPerModule.get(im) ?? 0) + 1)
+    }
+    for (const imp of imports) {
+      const md = (imp.metadata ?? {}) as Record<string, any>
+      const moduleName = typeof md.module === "string" && md.module ? md.module : null
+      if (!moduleName || emittedImports.has(moduleName)) continue
+      emittedImports.add(moduleName)
+      const scopedHere = scopedImportsPerModule.get(moduleName) ?? 0
+      const edgeMd: Record<string, any> = {
+        ...md,
+        // `isImport` is the MARKER the completeness section-B inventory reads,
+        // so the kind is claimed twice over (go GO precedent) and the evidence
+        // tier stays import_based.
+        isImport: true,
+        isModuleDependency: true,
+        // #910: the importer is this FILE, so the indexer must be told this is
+        // a file-level edge rather than a scope placeholder named `root`.
+        fileLevel: true,
+      }
+      if (scopedHere > 1) {
+        delete edgeMd.scopedItem
+        edgeMd.scopedItemCount = scopedHere
+      }
+      relationships.push({
+        type: ASTEngine.RelationshipType.Imports,
+        source: "root",
+        target: moduleName,
+        isExternal: true,
+        weight: 0.9,
+        confidence: 1.0,
+        // The MODULE NAME's own line (handleImport records the name node's
+        // range), the same site the references edge names.
+        ...(typeof imp.range?.startLine === "number" ? { line_number: imp.range.startLine } : {}),
+        metadata: edgeMd,
+      })
+    }
+
+    // ----------------------------------------------------------------------------
+    // ONTOLOGY: `exports` — Swift's API surface.
+    //
+    // Two of the language's own constructs, both measured (see
+    // SWIFT_EXPORT_LEVELS above and swift-import-export-probe.ts):
+    //
+    //   E1 API SURFACE — a FILE-SCOPE declaration (`ownerName` unset) whose
+    //      access level is public/open/package. Ownership is the filter, not
+    //      indentation: a member's export is reached through its type's export,
+    //      so emitting `exports` for a member would restate a `contains` edge
+    //      under a second label (go GO7 / clean's `ownerName !== undefined`
+    //      exclusion, same rule).
+    //      EXTENSIONS ARE EXCLUDED, and the reason is measurable rather than
+    //      stylistic: an extension symbol is named after the EXTENDED type
+    //      (`public extension ByteBufferInches`), so `exports root ->
+    //      ByteBufferInches` would name a type whose own declaration is in
+    //      another file, or — `public extension Int` — a stdlib type this file
+    //      does not declare at all. The measured cost of excluding them is 54
+    //      file-scope `public extension` sites in a 3,656-file draw.
+    //      Uniqueness: first occurrence wins (go GO7's export-uniqueness
+    //      invariant — two rows for one name would double the target surface).
+    //
+    //   E2 MODULE RE-EXPORT — `@_exported import M` is Swift's own spelling for
+    //      "this module re-exports M": 58 occurrences over the same draw
+    //      (swift-nio's own Sources/NIO/Exports.swift and Sources/NIOFS/
+    //      Exports.swift are umbrella files built entirely from it).
+    //
+    //      MEASURED, AND DELIBERATELY NOT AN EDGE. The harness's export
+    //      invariant requires every export name to resolve to a TOP-LEVEL
+    //      SYMBOL — `export(s) … do not resolve to a top-level symbol
+    //      (membership rides Contains)` — and a MODULE is not a symbol: Swift's
+    //      `import M` binds a module into scope, and the run-fixtures gate
+    //      failed this rule on the first run of this very fixture, which is the
+    //      measurement rather than an argument. A module re-export is therefore
+    //      published where it is true and where a consumer can bind it: as an
+    //      `imports` edge carrying `isModuleReExport: true`, and as
+    //      `metadata` on the ImportInfo row. Inventing a symbol to satisfy the
+    //      edge is the fabrication the workstream forbids.
+    //
+    // Confidence 1.0 for E1: each is stated outright by a token on the
+    // declaration — the access-level modifier itself. There is no inference in
+    // the rule, so it needs no reason code.
+    // ----------------------------------------------------------------------------
+    const exportedNames = new Set<string>()
+    for (const s of symbols) {
+      if (s.ownerName) continue
+      if (s.kind === ASTEngine.SymbolKind.Extension) continue
+      if (!s.visibility || !SWIFT_EXPORT_LEVELS.has(s.visibility)) continue
+      if (!s.name || exportedNames.has(s.name)) continue
+      const exportName = s.name
+      exportedNames.add(exportName)
+      exports.push({
+        name: exportName,
+        kind: s.kind,
+        range: s.range,
+        visibility: s.visibility,
+        metadata: { exportForm: "access_level", accessLevel: s.visibility },
+      })
+      relationships.push({
+        type: ASTEngine.RelationshipType.Exports,
+        source: "root",
+        target: exportName,
+        isExternal: true,
+        weight: 1,
+        confidence: 1.0,
+        // The DECLARATION's own line — the same site a `contains` edge for this
+        // symbol would name, so a reader checking the export checks the
+        // declaration.
+        ...(typeof s.range?.startLine === "number" ? { line_number: s.range.startLine } : {}),
+        metadata: {
+          exportForm: "access_level",
+          accessLevel: s.visibility,
+          // #910: the exporter is this FILE.
+          fileLevel: true,
+        },
+      })
+    }
+
+    this.resolveOverrides(
+      overrideTasks,
+      classHierarchy,
+      symbolMap,
+      relationships,
+      context?.overrideCompanion ?? cross.companion,
+      cross.getParents(classHierarchy),
+    )
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -1649,13 +1871,107 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
   // Override resolution (Java/C# shared machinery)
   // ==========================================================================
 
+  /**
+   * The PROJECT's cross-file declaration tables, read from
+   * `AnalyzeContext.projectIndex` when a caller supplied one.
+   *
+   * WHY THIS EXISTS, WITH THE NUMBER. `overrides` resolves in three passes
+   * (exact in-file BFS -> companion-verified declaring parent -> first-parent
+   * guess at confidence 0.5). Pass 2 needs BOTH a companion (owner -> declared
+   * members) and a way to walk bases it cannot see in this file. Measured over
+   * the 1,256-file draw with `script/m14/swift-overrides-premise-probe.ts`:
+   *
+   *     tier                        edges  parent declares the method
+   *     pass1 in-file (1.0)            71            71  (100.0%)
+   *     pass3 first-parent (0.5)      210            87  ( 41.4%)
+   *
+   * so the guess's premise — "the first hierarchy parent declares the method" —
+   * fails for 123 of 210 edges (58.6%). swift-nio shows the mechanism:
+   * `final class PipeChannel: BaseStreamSocketChannel<PipePair>` overriding
+   * `connectSocket`, where `connectSocket` is declared two levels up, on
+   * `BaseSocketChannel` (Sources/NIOPosix/BaseSocketChannel.swift:479). The
+   * guess names the DIRECT base, which does not declare it.
+   *
+   * Pass 2 could not fix that, and the reason is a wiring fact rather than a
+   * logic one: Pass 2 reads `context.overrideCompanion`, and
+   * `src/ast/parallel-indexer.ts` builds the batch companion only for the
+   * languages its `PROJECT_INDEX_EXTENSIONS` map lists — today `".sol"` — so no
+   * Swift caller has ever supplied one. `src/ast/pool-worker.ts`'s `parse_batch`
+   * supplies `context.projectIndex` instead, and the Dart lane already reads
+   * that channel (`dartCompanionFor`). This method is the Swift equivalent: it
+   * reads the channel production is designed to fill, so the moment the indexer
+   * is told to build an index for `.swift`, this lane needs no further change.
+   *
+   * ADDITIVE AND INERT WHEN ABSENT. With no `projectIndex` — a single-file
+   * parse, every fixture, the differential — `companion` is undefined, `kinds`
+   * is `context.typeKinds` exactly as before, and `getParents` returns the
+   * per-file hierarchy, so output is byte-identical to before this method
+   * existed. Nothing here decides anything on its own: it only supplies the
+   * cross-file answers the file cannot see.
+   */
+  private crossFileTables(
+    context: ASTEngine.AnalyzeContext | undefined,
+    classHierarchy: Map<string, string[]>,
+  ): {
+    companion: OverrideCompanion | undefined
+    kinds: Map<string, string> | undefined
+    getParents: (local: Map<string, string[]>) => (typeName: string) => readonly string[]
+  } {
+    const pi: any = (context as any)?.projectIndex
+    const kinds = (context?.typeKinds as Map<string, string> | undefined)
+      ?? (pi?.typeKinds instanceof Map ? (pi.typeKinds as Map<string, string>) : undefined)
+    if (!pi || !(pi.typeMembers instanceof Map) || !(pi.typeBases instanceof Map)) {
+      // No project index: exactly the pre-existing per-file behaviour.
+      return { companion: undefined, kinds, getParents: (local) => (t: string) => local.get(t) ?? [] }
+    }
+
+    // Companion = owner -> its OWN members plus every ancestor's, so
+    // `findDeclaringParent`'s breadth-first search can settle on the ancestor
+    // that really declares the method instead of the nearest base. Computed
+    // lazily per owner and memoised: a file asks about a handful of owners, and
+    // recomputing a transitive closure per question would be the O(n^2) the
+    // complexity envelope forbids.
+    const cache = new Map<string, Set<string>>()
+    const closure = (owner: string, seen: Set<string> = new Set()): Set<string> => {
+      const hit = cache.get(owner)
+      if (hit) return hit
+      const out = new Set<string>()
+      if (seen.has(owner)) return out
+      seen.add(owner)
+      for (const m of (pi.typeMembers.get(owner) ?? []) as Iterable<string>) out.add(m)
+      for (const b of (pi.typeBases.get(owner) ?? []) as string[]) {
+        for (const m of closure(b, seen)) out.add(m)
+      }
+      cache.set(owner, out)
+      return out
+    }
+    const companion = new Map<string, Set<string>>()
+    for (const owner of pi.typeMembers.keys() as Iterable<string>) companion.set(owner, closure(owner))
+
+    return {
+      companion,
+      kinds,
+      // The project's bases first, the file's own second: a type declared in
+      // THIS file is authoritative here, and a type the file never mentions can
+      // only come from the index.
+      getParents: (local) => (t: string) => {
+        const localParents = local.get(t)
+        if (localParents && localParents.length > 0) return localParents
+        const projectParents = pi.typeBases.get(t) as string[] | undefined
+        return projectParents && projectParents.length > 0 ? projectParents : []
+      },
+    }
+  }
+
   private resolveOverrides(
     tasks: OverrideTask[],
     classHierarchy: Map<string, string[]>,
     symbolMap: Map<string, ASTEngine.UniversalSymbol>,
     relationships: ASTEngine.UniversalRelationship[],
     companion?: OverrideCompanion,
+    getParents?: (typeName: string) => readonly string[],
   ) {
+    const parentsOf = getParents ?? ((t: string) => classHierarchy.get(t) ?? [])
     for (const task of tasks) {
       let targetFqn: string | null = null
 
@@ -1680,15 +1996,12 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           targetFqn = potentialTargetFqn
           break
         }
-        const pH = classHierarchy.get(parentName)
-        if (pH) {
-          for (let i = 0; i < pH.length; i++) queue.push(pH[i])
-        }
+        for (const next of parentsOf(parentName)) queue.push(next)
       }
 
       // Pass 2: cross-file declaring-parent resolution via the companion.
       if (!targetFqn && companion && ownerH && ownerH.length > 0) {
-        const declaring = findDeclaringParent(task.methodName, ownerH, companion, (t) => classHierarchy.get(t) ?? [])
+        const declaring = findDeclaringParent(task.methodName, ownerH, companion, parentsOf)
         if (declaring) {
           targetFqn = `${declaring}.${task.methodName}`
           // Companion-verified declaring parent — high confidence, below
@@ -1896,10 +2209,10 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     if (moduleName) {
       // M59.A7: the range is the MODULE NAME's site, not the whole import
-      // declaration — an attribute on its own line (`@testable\nimport Alamofire`)
-      // made the declaration start one line above the `import`, so the
-      // references edge claimed a line holding only `@testable` (measured on
-      // alamofire Tests/ProtectedTests.swift).
+      // declaration — an attribute on its own line (`@testable
+      // \nimport Alamofire`) made the declaration start one line above the
+      // `import`, so the references edge claimed a line holding only
+      // `@testable` (measured on alamofire Tests/ProtectedTests.swift).
       const site = moduleNode ?? node
       const range = {
         startLine: site.startPosition.row + 1,

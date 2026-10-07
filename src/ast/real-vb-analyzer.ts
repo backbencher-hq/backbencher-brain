@@ -131,6 +131,8 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** Counters the lane discloses rather than hides. */
   private gaps: Record<string, number> = {}
+  /** `(source, target)` of every published `uses` edge, with its site count. */
+  private useIndex = new Map<string, { sites: number; line: number | null; edge: ASTEngine.UniversalRelationship }>()
 
   // -------------------------------------------------------------------------
   // Node-type and field vocabulary
@@ -228,6 +230,18 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     "implements_statement",
     "operator_declaration",
     "constructor_declaration",
+    // M60/VB2. These three publish NO SYMBOL but DO derive a relationship, and
+    // leaving them in SILENT_INTERNAL is a claim that they carry nothing --
+    // which is the claim that hid the `uses` class for a whole wave.
+    //   `member_access_expression` / `with_member_access_expression`: a name
+    //     READ that is neither the callee nor the index is a `uses` edge.
+    //   `as_clause`: an `as_clause` whose span begins `As New` is a
+    //     CONSTRUCTION, and the fourth of VB's four construction surfaces.
+    // The two-way split is what the four-way classification exists to avoid, and
+    // `array_creation_expression` was already moved here for the same reason.
+    "member_access_expression",
+    "with_member_access_expression",
+    "as_clause",
   ])
 
   // Classified as carrying nothing today, but a KNOWN candidate: the construct
@@ -258,7 +272,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     "source_file", "identifier", "comment", "preprocessor_directive", "blank_line",
     "type_parameter_list", "type_parameter", "parameter_list", "parameter",
     "modifiers", "member_modifier", "attribute_list", "attribute", "attribute_target",
-    "attribute_argument_list", "named_argument", "as_clause",
+    "attribute_argument_list", "named_argument",
     "handles_clause", "variable_declarator",
     "array_rank_specifier", "array_initializer", "collection_initializer",
     "dictionary_initializer", "dictionary_element", "object_initializer",
@@ -283,10 +297,10 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     // SOURCES and are classified as such, which is the distinction that matters.)
     "argument_list", "array_access_expression", "assignment_expression",
     "binary_expression", "cast_expression", "conditional_expression",
-    "if_expression", "member_access_expression", "me_expression",
+    "if_expression", "me_expression",
     "mybase_expression", "parenthesized_expression", "unary_expression",
     "typeof_expression", "typeof_is_expression", "with_expression",
-    "with_member_access_expression", "lambda_parameter", "lambda_parameter_list",
+    "lambda_parameter", "lambda_parameter_list",
     "omitted_argument", "collection_range_variable",
     // Control flow. The contract is a project SYMBOL TABLE: a `While` is not a
     // symbol, and the family does not publish locals or control-flow statements.
@@ -557,16 +571,172 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     ["public", "public"],
   ]
 
-  private visibilityOf(node: Node): string {
-    const mods = this.modifierNames(node)
-    for (const [mod, vis] of RealVbAnalyzer.VISIBILITY_ORDER) {
-      if (mods.has(mod)) return vis
+  /**
+   * The access levels ONE declaration actually grants, as a SET of level words.
+   *
+   * A SET and not one string, because VB has two COMBINED access modifiers and
+   * the combination is the meaning. `Protected Friend` is "protected OR friend",
+   * so it is reachable from another assembly precisely because of its friend
+   * half, while `Protected` alone is not. Reducing the pair to the single
+   * string `protected` before asking whether a declaration is exported answers
+   * `no` about a member the language says is assembly-visible, which is what an
+   * `exports` edge is for.
+   */
+  private accessLevelsOf(node: Node): Set<string> {
+    const levels = new Set<string>()
+    for (const m of this.modifierWordsOf(node)) {
+      if (RealVbAnalyzer.ACCESS_WORDS.has(m)) levels.add(m)
     }
-    return "internal"
+    return levels
   }
 
-  private modifierNames(node: Node): Set<string> {
+  /** The four words VB spells an access level with. */
+  private static readonly ACCESS_WORDS: ReadonlySet<string> = new Set([
+    "public", "protected", "friend", "private",
+  ])
+
+  /**
+   * The DEFAULT accessibility of a declaration that writes none.
+   *
+   * Taken from Microsoft's own table rather than from recollection, because the
+   * corpus exercises every row: the lane census counts 136 modifier-less
+   * members in a class, 20 in a module, 5 in a structure and 116 modifier-less
+   * types at namespace level (probes `exports:implicit_default:*` and
+   * `exports:type_implicit_default:*`), so a wrong answer here is wrong on real
+   * files rather than on a synthetic one. Source: "Declaration Contexts and
+   * Default Access Levels",
+   * learn.microsoft.com/dotnet/visual-basic/language-reference/statements/
+   * declaration-contexts-and-default-access-levels
+   *
+   *   element                                    namespace level | module level
+   *   Variable / Constant                        not allowed      | Private (Public in Structure)
+   *   Class / Structure / Module / Interface /    Friend           | Public
+   *   Enum / Delegate
+   *   Procedure / Property / Event / Operator /  not allowed      | Public
+   *   Declare
+   *
+   * The row that is easy to get wrong, and the one VB is famous for disagreeing
+   * with C# on, is Procedure/Property/Event: they default to PUBLIC. A
+   * `Sub M()` written without a modifier inside a Class is callable from another
+   * assembly. FIELDS and CONSTANTS are the ones that default to Private.
+   *
+   * `friend` at the namespace level is what makes a modifier-less `Class C`
+   * NOT an assembly export, which is the whole `exports` answer for the 116
+   * top-level types the corpus writes without a modifier.
+   */
+  private defaultAccessLevel(kind: ASTEngine.SymbolKind): string {
+    // An enumeration member is always Public and cannot carry any other
+    // accessibility; VB gives it none to write.
+    if (kind === ASTEngine.SymbolKind.EnumMember) return "public"
+    const ownerKind = this.currentOwner()?.kind
+    if (ownerKind === undefined || ownerKind === ASTEngine.SymbolKind.Namespace) return "friend"
+    switch (kind) {
+      case ASTEngine.SymbolKind.Variable:
+      case ASTEngine.SymbolKind.Constant:
+        // Public inside a Structure, Private inside a Class or Module. A field
+        // in an Interface is not a legal VB declaration, so it cannot occur.
+        return ownerKind === ASTEngine.SymbolKind.Struct ? "public" : "private"
+      default:
+        return "public"
+    }
+  }
+
+  /**
+   * Does this set of access levels put the declaration in the assembly's public
+   * surface? The question `exports` exists to answer, asked on the levels
+   * rather than on the single `visibility` string, so `Protected Friend`
+   * (assembly-reachable through its friend half) is not confused with
+   * `Protected` (subclass-only).
+   */
+  private static isAssemblyVisible(levels: ReadonlySet<string>): boolean {
+    if (levels.has("public")) return true
+    return levels.has("friend") && levels.has("protected")
+  }
+
+  /**
+   * The single-string accessibility the symbol record carries.
+   *
+   * It applies the DOCUMENTED DEFAULT when the declaration writes none, rather
+   * than falling through to `internal`. That fall-through was a real published
+   * fact and it was wrong for every declaration that omits its modifier: VB's
+   * default for a Procedure / Property / Event is Public, not Private, so a
+   * modifier-less `Sub M()` was published `internal` and is in fact callable from
+   * another assembly. The corpus exercises this: 136 modifier-less members in a
+   * class and 20 in a module, of which the procedures, properties and events are
+   * Public by the language's own table.
+   *
+   * The set form is still available and is what `exports` asks, because the
+   * combined modifiers do not reduce to one word.
+   */
+  private visibilityOf(node: Node, kind?: ASTEngine.SymbolKind): string {
+    const levels = this.accessLevelsOf(node)
+    for (const [mod, vis] of RealVbAnalyzer.VISIBILITY_ORDER) {
+      if (levels.has(mod)) return vis
+    }
+    return RealVbAnalyzer.spellAccessLevel(this.defaultAccessLevel(kind ?? RealVbAnalyzer.kindOfNode(node)))
+  }
+
+  /** The symbol kind a declaration node is, for the default table. */
+  private static kindOfNode(node: Node): ASTEngine.SymbolKind {
+    switch (node.type) {
+      case "class_declaration": return ASTEngine.SymbolKind.Class
+      case "structure_declaration": return ASTEngine.SymbolKind.Struct
+      case "interface_declaration": return ASTEngine.SymbolKind.Interface
+      case "module_declaration": return ASTEngine.SymbolKind.Module
+      case "enum_declaration": return ASTEngine.SymbolKind.Enum
+      case "enum_member_declaration": return ASTEngine.SymbolKind.EnumMember
+      case "delegate_declaration": return ASTEngine.SymbolKind.Type
+      case "constructor_declaration": return ASTEngine.SymbolKind.Constructor
+      case "property_declaration":
+      case "interface_property_declaration": return ASTEngine.SymbolKind.Property
+      case "event_declaration":
+      case "interface_event_declaration": return ASTEngine.SymbolKind.Event
+      case "field_declaration":
+      case "variable_declarator": return ASTEngine.SymbolKind.Variable
+      default: return ASTEngine.SymbolKind.Method
+    }
+  }
+
+  /** The symbol-record spelling of an access-level word. */
+  private static spellAccessLevel(level: string): string {
+    return level === "friend" ? "internal" : level
+  }
+
+  /**
+   * Every modifier word on a declaration, ONE ENTRY PER WORD.
+   *
+   * The split is load-bearing and it was absent. This grammar's
+   * `member_modifier` can hold a SEQUENCE of words: `Protected Friend Sub PF()`
+   * parses as ONE `member_modifier` node whose text is `Protected Friend`, so
+   * adding that node's text verbatim added the single token `"protected friend"`,
+   * which matches no entry in `VISIBILITY_ORDER` and falls through to
+   * `internal` -- a real declaration published with the wrong accessibility.
+   * Measured on the lane corpus: 12 occurrences of a multi-word
+   * `member_modifier`, every one of them `protected friend` (census probe
+   * `MULTIWORD_MODIFIER`, over 2,658 files).
+   *
+   * A word that is not a modifier this grammar's `VB_KEYWORD_HEADS` already
+   * names is DROPPED rather than admitted, so splitting cannot invent a
+   * modifier the file does not write.
+   */
+  private modifierWordsOf(node: Node): Set<string> {
     const out = new Set<string>()
+    const addText = (text: string): void => {
+      // Char scan, no regex: split on space/tab/newline and keep the words that
+      // are modifier words.
+      let start = 0
+      const flush = (end: number): void => {
+        if (end <= start) return
+        const word = text.slice(start, end).toLowerCase()
+        if (RealVbAnalyzer.VB_KEYWORD_HEADS.has(word)) out.add(word)
+        start = end + 1
+      }
+      for (let i = 0; i < text.length; i++) {
+        const c = text.charCodeAt(i)
+        if (c === 32 || c === 9 || c === 13 || c === 10) flush(i)
+      }
+      flush(text.length)
+    }
     // EVERY modifier, not the first one. This reads `childForFieldName("modifiers")`,
     // which returns a single node -- and this grammar emits the field REPEATEDLY,
     // once per modifier: `Public Overrides Sub Go()` is
@@ -589,16 +759,25 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (depth > 4) return
       for (const c of this.allKids(n)) {
         if (c.type === "member_modifier" || c.type === "local_declaration_modifier") {
-          // The modifier's own text is its keyword; lower-cased by a char-code
-          // fold rather than by a regex, so a Unicode keyword is not mangled.
-          out.add(c.text.toLowerCase())
+          addText(c.text)
           continue
         }
+        // A NESTED DECLARATION BOUNDARY. This read recurses four levels, which
+        // is how every modifier in the file reached every declaration: `Public
+        // Class Api` containing `Private Sub Hidden` collected BOTH, and
+        // `visibilityOf` then answered `private` for the class. The class's own
+        // accessibility is a fact about the class, so the walk stops at the
+        // first declaration below the node it was asked about.
+        if (RealVbAnalyzer.DECLARATION_NODES.has(c.type)) continue
         collect(c, depth + 1)
       }
     }
     collect(node, 0)
     return out
+  }
+
+  private modifierNames(node: Node): Set<string> {
+    return this.modifierWordsOf(node)
   }
 
   /**
@@ -696,6 +875,8 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Every symbol carries the owner it was declared in, so a consumer can walk
     // containment without re-deriving it. Filled in one pass at the end because
     // the owner is only known once the whole file has been read.
+    this.dedupeRelationships()
+    this.stampEvidenceClasses()
     const lines = this.lineCount(content)
     return {
       symbols: this.symbols,
@@ -716,6 +897,122 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * The same relationship row, emitted more than once in one file, is emitted
+   * ONCE.
+   *
+   * MEASURED DEFECT this closes. `script/m14/vb-edge-integrity.ts` over 2,658
+   * corpus files, keying on (source, target, type, line) within one file:
+   *
+   *     references   3,813 rows
+   *     instantiates  1,840 rows
+   *     calls          935 rows
+   *     imports          2 rows
+   *                -------
+   *                 6,590 rows that were the same row as a row already present
+   *
+   * Two shapes produce them, and both are real reads of the source rather than
+   * parser noise:
+   *
+   *   - three `As String` on ONE line -- `Public Function F(a As String, b As
+   *     String) As String` publishes `references F -> String` three times, once
+   *     per parameter plus once for the return, and the three differ only in a
+   *     `role` nobody queries.
+   *   - two constructions of the same type on one line -- `New StackFrame(1)…
+   *     & New StackFrame(2)…` publishes `instantiates LogMessage -> StackFrame`
+   *     twice at the same line.
+   *
+   * WHY IT MATTERS DOWNSTREAM rather than aesthetically: `bb_impact` and
+   * `bb_graph` count DEGREES. A file with three `String` references in one
+   * signature reports a node three times as depended-upon, which is a number a
+   * consumer cannot tell from a real three-call dependency.
+   *
+   * WHAT IS KEPT. The FIRST row survives untouched apart from two added
+   * metadata keys, so the line and the confidence stay exactly as the emitting
+   * site set them:
+   *
+   *   duplicateRows  how many identical rows collapsed into this one — so the
+   *                  raw count is still visible and nothing is hidden
+   *   roles          the distinct `role` values of the collapsed copies, when
+   *                  they differ; omitted when they do not, because a key with
+   *                  one value in it is noise
+   *
+   * Rows that differ in ANY of the four key components are KEPT. Two calls to the
+   * same method on different lines are two facts about the program and stay two
+   * rows — this is not a per-pair dedupe, which would silently discard the
+   * per-site line the M59.A7 contract requires.
+   */
+  private dedupeRelationships(): void {
+    const kept: ASTEngine.UniversalRelationship[] = []
+    const index = new Map<string, ASTEngine.UniversalRelationship>()
+    let collapsed = 0
+    for (const rel of this.relationships) {
+      const key = `${rel.source}\u0000${rel.target}\u0000${rel.type}\u0000${rel.line_number ?? 0}`
+      const prior = index.get(key)
+      if (prior === undefined) {
+        index.set(key, rel)
+        kept.push(rel)
+        continue
+      }
+      collapsed++
+      const md = (prior.metadata ?? {}) as Record<string, unknown>
+      const n = typeof md.duplicateRows === "number" ? md.duplicateRows : 1
+      const role = (rel.metadata as Record<string, unknown> | undefined)?.role
+      let roles: string[] | undefined
+      if (typeof role === "string" && role.length > 0) {
+        const existing = Array.isArray(md.roles) ? (md.roles as string[]) : (typeof md.role === "string" ? [md.role as string] : [])
+        if (!existing.includes(role)) roles = [...existing, role].sort()
+      }
+      prior.metadata = { ...md, duplicateRows: n + 1, ...(roles ? { roles } : {}) }
+    }
+    if (collapsed > 0) {
+      this.note("relationship-duplicate-rows-collapsed")
+      this.relationships = kept
+    }
+  }
+
+  /**
+   * One `evidenceClass` per relationship, in one place, at the end.
+   *
+   * MEASURED DEFECT this closes: over 2,658 corpus files every one of the
+   * analyzer's 102,295 edges carried `evidenceClass: (none)` -- the label the
+   * honesty contract requires on any edge below confidence 1.0, and 94% of the
+   * `calls` population plus 100% of `references` is below it. `src/lsp/
+   * evidence_tier.ts` then re-derives a tier from the KIND, so the product had
+   * a badge and the stored evidence said nothing; the M14 contract's rule 4
+   * ("carry a machine-readable reason code, not just a number") was not
+   * satisfiable.
+   *
+   * The rule is the legend's own five tiers, applied here exactly once so no
+   * call site has to remember it and no call site can disagree with another:
+   *
+   *   imports                                  import_based      (a stated import)
+   *   references                               usage_contextual (a name, not a symbol)
+   *   uses                                     usage_contextual (a read; see pushUse)
+   *   everything below the 0.7 confidence floor inferred          (the legend's own
+   *                                                               wording for a guess)
+   *   everything else                          structural
+   *
+   * `contains`, `exports`, `extends`, `implements`, `instantiates`, `calls` and
+   * `overrides` are structural reads of the tree; the sub-floor clause is what
+   * catches the cross-file `calls`/`instantiates`/`references` edges whose target
+   * is a name this file does not declare. An `evidenceClass` an analyzer already
+   * wrote is never overwritten.
+   */
+  private stampEvidenceClasses(): void {
+    for (const rel of this.relationships) {
+      const md = rel.metadata
+      if (md && typeof md.evidenceClass === "string") continue
+      const conf = typeof rel.confidence === "number" ? rel.confidence : 1
+      let cls: string
+      if (conf < 0.7) cls = "inferred"
+      else if (rel.type === RelationshipType.Imports) cls = "import_based"
+      else if (rel.type === RelationshipType.References || rel.type === RelationshipType.Uses) cls = "usage_contextual"
+      else cls = "structural"
+      rel.metadata = { evidenceClass: cls, ...(md ?? {}) }
+    }
+  }
+
   private reset(): void {
     this.symbols = []
     this.relationships = []
@@ -732,6 +1029,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.usesEmitted = new Map()
     this.callCalleeNodes = new Set()
     this.gaps = {}
+    this.useIndex = new Map()
   }
 
   private note(kind: string): void {
@@ -989,6 +1287,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: { role: this.containmentRole(kind) },
       })
     }
+    this.pushExport(node, name, kind, nameNode, owner)
     // First declaration of a name wins the index, so a later overload does not
     // steal the id an edge already points at. Overloads are disambiguated by the
     // edge, not by the index.
@@ -1019,6 +1318,98 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private currentType(): ASTEngine.UniversalSymbol | null {
     return this.typeStack.length > 0 ? this.typeStack[this.typeStack.length - 1] : null
+  }
+
+  /**
+   * The node whose ACCESS MODIFIERS describe this declaration.
+   *
+   * `pushSymbol` is called with the node that carries the NAME, and for a field
+   * that is the `variable_declarator` -- while the modifiers are on its parent
+   * `field_declaration` (`Public Value As Integer = 3` is
+   * `field_declaration(members: member_modifier) variable_declarator(Value ...)`).
+   * Reading modifiers off the declarator therefore found none, which is why a
+   * `Public` field and an undecorated one were indistinguishable. One level up,
+   * and only for that exact pair of node types, is the whole correction.
+   */
+  private declarationNodeOf(node: Node): Node {
+    if (node.type === "variable_declarator") {
+      const parent = node.parent
+      if (parent && parent.type === "field_declaration") return parent
+    }
+    return node
+  }
+
+  /** The access levels in force for a symbol, explicit or defaulted. */
+  private exportLevelsOf(node: Node, kind: ASTEngine.SymbolKind): { levels: Set<string>; explicit: boolean } {
+    const levels = this.accessLevelsOf(this.declarationNodeOf(node))
+    if (levels.size > 0) return { levels, explicit: true }
+    const dflt = this.defaultAccessLevel(kind)
+    return { levels: new Set([dflt]), explicit: false }
+  }
+
+  /**
+   * `exports`: the assembly's public surface.
+   *
+   * VB HAS the construct, so this is a GAP and not a ruling. The language
+   * expresses export through ACCESSIBILITY rather than through a keyword: a
+   * declaration is reachable from outside its assembly when its effective
+   * accessibility is `Public`, and there is no second mechanism -- measured over
+   * 2,658 corpus files, `exports_statement`, `export_list` and `assembly_attribute`
+   * are all node types the grammar HAS RULES for and that occur ZERO times
+   * (census probe, node inventory), so a keyword-shaped `exports` in VB would be
+   * an edge the language cannot express. `Public` is a `member_modifier` and a
+   * grammar inventory is blind to a convention by construction, which is exactly
+   * how json's `exports` ruling was overturned; so the number behind this
+   * verdict is a MODIFIER count (15,489 `public` modifiers in 2,344 files) and a
+   * DEFAULTED-accessibility count (136 modifier-less class members, 20 in a
+   * module, 5 in a structure, 116 modifier-less top-level types), not a node
+   * type count.
+   *
+   * DIRECTION. Source is the declaring type, or `root` for a type declared at
+   * namespace level -- the assembly is the unit of export in a .NET assembly, and
+   * `imports` already uses `root` as the source for the same reason.
+   *
+   * CONTAINMENT IS NOT COMPOUNDED INTO THE DECISION. VB's documented rule is
+   * that a Public member of an internal type is not assembly-visible ("code that
+   * cannot access a containing element cannot access any of its contained
+   * elements"), so the edge COULD be suppressed for a member of a `Friend` type.
+   * It is not, and the reason is that the edge as emitted answers a question a
+   * consumer can ask ("which members does this type declare as Public?") without
+   * the analyzer having to decide a transitive-visibility question it cannot
+   * fully answer -- a `Friend` type is assembly-visible to a FRIEND ASSEMBLY,
+   * which is per-project configuration this analyzer never sees. `ownerExported`
+   * records the containing type's own visibility so the compounding is one
+   * filter away instead of being baked into the edge's existence.
+   */
+  private pushExport(
+    node: Node,
+    name: string,
+    kind: ASTEngine.SymbolKind,
+    nameNode: Node | null,
+    owner: ASTEngine.UniversalSymbol | null,
+  ): void {
+    const { levels, explicit } = this.exportLevelsOf(node, kind)
+    if (!RealVbAnalyzer.isAssemblyVisible(levels)) return
+    // A namespace is not an export unit: VB namespaces cannot carry an access
+    // modifier at all, so a `Namespace` symbol would be an `exports` edge whose
+    // accessibility was invented rather than read.
+    if (owner && owner.kind === ASTEngine.SymbolKind.Namespace) return
+    this.relationships.push({
+      source: owner ? owner.name : "root",
+      target: name,
+      type: RelationshipType.Exports,
+      confidence: 1.0,
+      line_number: this.nodeLine(nameNode ?? node),
+      metadata: {
+        role: this.containmentRole(kind),
+        accessLevel: [...levels].join("+"),
+        accessFromModifier: explicit,
+        // The containing type's OWN accessibility, read off the symbol record
+        // `pushSymbol` wrote when it published the owner. Recorded rather than
+        // acted on; see the header for why the edge does not depend on it.
+        ownerAccessLevel: (owner?.metadata as Record<string, unknown> | undefined)?.accessLevel ?? "assembly",
+      },
+    })
   }
 
   // -------------------------------------------------------------------------
@@ -1135,7 +1526,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     const { text, node: nameNode } = this.declaredName(node)
     const mods = this.modifierNames(node)
     const sym = this.pushSymbol(text, kind, node, {
-      visibility: this.visibilityOf(node),
+      visibility: this.visibilityOf(node, kind),
       isStatic: mods.has("shared"),
       isAbstract: this.isAbstract(node),
       metadata: {
@@ -1213,28 +1604,119 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the anonymous `:` token that immediately follows the name.
     const colon = this.headerColonIndex(node)
     if (colon < 0) return
-    const seenInherits = -1
     const headerKids = this.allKids(node)
+    // WHICH LABEL the header clause gets, decided by the keyword the grammar
+    // inlined away. The header rule folds `Inherits` / `Implements` into hidden
+    // children, so the two forms are INDISTINGUISHABLE from the node types
+    // alone -- and a single `seenInherits` flag that is initialised to -1 and
+    // never assigned labelled EVERY name after the colon `extends`, which is
+    // right for `Class C : Inherits B` and wrong for `Class C : Implements I`.
+    // Measured on the lane corpus the form occurs twice, and the two occurrences
+    // disagree: `Public NotInheritable Class MyGroupCollectionAttribute :
+    // Inherits Attribute` (runtime/…/MyGroupCollectionAttribute.vb) and
+    // `Public Class entry_ : Implements IComparable(Of entry_)`
+    // (tankex/…/frmMain.vb) -- the second was published as
+    // `extends entry_ -> IComparable`, a class shown in `bb_graph` as INHERITING
+    // an interface it merely implements.
+    //
+    // So the keyword is read from the SOURCE SPAN between the `:` token and the
+    // first name, which is a char scan rather than a node test for the same
+    // reason `startsWithAsNewClause` is: the token is not in the tree. The span
+    // is exactly `" Inherits "` or `" Implements "` on the two real shapes, and
+    // the scan is word-bounded so `InheritsFoo` cannot match.
+    const firstNameIdx = headerKids.findIndex((c, i) => i > colon && this.isNameNode(c))
+    const keyword = firstNameIdx < 0 ? "" : this.spanKeywordBetween(node, headerKids[colon], headerKids[firstNameIdx], ["inherits", "implements"])
+    // An INTERFACE's base list has no keyword at all (`Interface I : IDisposable,
+    // IEnumerable`) and every entry is an interface the type IMPLEMENTS -- VB has
+    // no interface inheritance, so `Inherits` on an interface is not a thing the
+    // language spells. Defaulting an interface header to `implements` is therefore
+    // the language's rule, not a guess.
+    const headerLabel = keyword === "inherits"
+      ? RelationshipType.Extends
+      : keyword === "implements" || node.type === "interface_declaration"
+        ? RelationshipType.Implements
+        : RelationshipType.Extends
+    // The header clause ends at the first child that is neither a name nor the
+    // `,` between entries. Without the stop, the loop walked the whole member
+    // list -- which is how a stray `simple_name` member could have been read as a
+    // base type.
     for (let i = colon + 1; i < headerKids.length; i++) {
       const child = headerKids[i]
-      if (this.isNameNode(child)) {
-        const type = seenInherits < 0 ? RelationshipType.Extends : RelationshipType.Implements
-        this.pushHeritage(selfName, child, type, sym, context)
-        continue
-      }
-      const t = child.type.toLowerCase()
-      if (t.includes("inherits")) { /* stays in the extends run */ }
-      else if (t.includes("implements")) { /* the rest are implements */ }
+      if (child.type === ",") continue
+      if (!this.isNameNode(child)) break
+      // A keyword the grammar LEFT in the tree (a shape where it is not inlined)
+      // is a keyword, not a type name. Publishing `extends entry_ -> Implements`
+      // would be a fabricated edge whose target is a VB keyword.
+      const word = this.nameText(child).trim().toLowerCase()
+      if (word === "implements" || word === "inherits") continue
+      this.pushHeritage(selfName, child, headerLabel, sym, context)
     }
   }
 
-  /** The index of the anonymous `:` token of the declaration header, or -1. */
+  /**
+   * Which of `words` appears in the source span between two child nodes.
+   *
+   * A char scan, not a regex and not a node test, for the stated reason: this
+   * grammar inlines the heritage keywords away, so the only place the word
+   * survives is the node's own text. Word-bounded on both sides, so
+   * `InheritsFoo` and `MyImplements` cannot match. Returns "" when none is
+   * present, which is a real answer for the keyword-less interface header.
+   */
+  private spanKeywordBetween(parent: Node, from: Node, to: Node, words: readonly string[]): string {
+    const start = from.endIndex - parent.startIndex
+    const end = to.startIndex - parent.startIndex
+    if (end <= start || end > parent.text.length) return ""
+    const span = parent.text.slice(start, end)
+    const isWordChar = (c: number): boolean =>
+      (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+    for (const w of words) {
+      for (let i = 0; i + w.length <= span.length; i++) {
+        if (i > 0 && isWordChar(span.charCodeAt(i - 1))) continue
+        let ok = true
+        for (let k = 0; k < w.length; k++) {
+          let c = span.charCodeAt(i + k)
+          if (c >= 65 && c <= 90) c += 32
+          if (c !== w.charCodeAt(k)) { ok = false; break }
+        }
+        if (!ok) continue
+        const after = i + w.length
+        if (after < span.length && isWordChar(span.charCodeAt(after))) continue
+        return w
+      }
+    }
+    return ""
+  }
+
+  /**
+   * The index of the anonymous `:` token of the declaration header, or -1.
+   *
+   * THE ORDERING IS BY `startIndex`, and it used to be by `id` -- which made this
+   * branch DEAD on every header clause in the corpus. A `web-tree-sitter` node
+   * `id` is an internal subtree pointer, not a document position: measured on
+   * `Public Class B : Inherits A`, the `:` token has id 4064760 and the name
+   * field has id 4065216, so `kids[i].id > from` is FALSE for the colon this
+   * method exists to find, and the whole header branch was unreachable. The
+   * grammar audit could not see it: `id` is not a node type and not a field
+   * name, so a vocabulary audit reads this line as a well-formed field read.
+   *
+   * What it cost, measured on the lane corpus by scanning for the shape
+   * directly (2 header clauses exist, and this is every one of them):
+   *
+   *   Public NotInheritable Class MyGroupCollectionAttribute : Inherits Attribute
+   *   Public Class entry_ : Implements IComparable(Of entry_)
+   *
+   * published NO heritage edge at all. Not a mislabelled one -- none. So the
+   * mislabelling the `seenInherits = -1` flag would have caused was never
+   * reached either, and both header forms were silently absent: `extends` was
+   * 2 edges short and `implements` 1, on real declarations, and every number the
+   * lane published counted them correctly as missing rather than as present.
+   */
   private headerColonIndex(node: Node): number {
     const nameField = node.childForFieldName("name")
-    const from = nameField ? nameField.id : 0
+    const from = nameField ? nameField.startIndex : node.startIndex
     const kids = this.allKids(node)
     for (let i = 0; i < kids.length; i++) {
-      if (kids[i].id > from && kids[i].type === ":") return i
+      if (kids[i].startIndex > from && kids[i].type === ":") return i
     }
     return -1
   }
@@ -1318,7 +1800,29 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     ] as const) {
       for (const st of this.namedChildrenOfType(node, clause)) {
         for (const nameNode of this.nameReferencesOf(st)) {
-          const target = this.nameText(nameNode).trim()
+          // The type ARGUMENTS are not part of the name. `Public Function
+          // GetEnumerator() Implements IEnumerable(Of CustomEvent).GetEnumerator`
+          // is one interface member written with the interface's type
+          // arguments; the member is `IEnumerable.GetEnumerator` and
+          // `IEnumerable(Of CustomEvent).GetEnumerator` is a spelling no symbol
+          // table holds, so the target resolved against nothing and
+          // `bb_graph`/`bb_search` could never follow it.
+          //
+          // Measured on the lane corpus (2,658 files, production `parseFile`,
+          // `script/m14/vb-edge-integrity.ts`): 94 of the 286 `implements` edges
+          // carried a `(Of …)` in the target — `IEnumerable(Of CustomEvent)
+          // .GetEnumerator`, `IComparer(Of String).Compare`,
+          // `ILayer2_1(Of T).Count`. That is 32.9% of the class, so it is the
+          // normal shape of a member-level interface implementation in generic
+          // VB code, not an edge case.
+          //
+          // This is the SAME rule `calleeLeaf` already applies to a call
+          // (`New List(Of Integer)` is `List`, not `Integer`) and the same
+          // reduction `pushHeritage` applies to a TYPE-level clause, so all
+          // three now agree on one definition of "the name of this type
+          // expression" — which is the only thing that makes an edge matchable
+          // by an independent oracle.
+          const target = this.typeArgumentsStrippedText(nameNode)
           if (target.length === 0) continue
           this.relationships.push({
             source: sym.name,
@@ -1332,11 +1836,100 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
               [rel === RelationshipType.Extends ? "baseType" : "interfaceName"]: target,
               heritageForm: "member",
               resolved: this.declaredNames.has(target),
+              // The reduction is recorded rather than silent, so a reader can
+              // see that `IEnumerable(Of T).GetEnumerator` and
+              // `IEnumerable.GetEnumerator` are the same edge and not two.
+              openGenericArity: this.typeArgumentArity(nameNode),
             },
           })
         }
       }
     }
+  }
+
+  /**
+   * The name node with every `type_argument_list` REMOVED from its own text.
+   *
+   * `qualified_name` is `qualifier . name`, and the qualifier may be a
+   * `generic_name`, so `IEnumerable(Of CustomEvent).GetEnumerator` is
+   *   (qualified_name
+   *      qualifier: (generic_name name: (identifier IEnumerable)
+   *                            (type_argument_list (simple_name (identifier))))
+   *      name: (simple_name (identifier GetEnumerator)))
+   * The type arguments live inside the qualifier, not beside the target, so the
+   * `(Of …)` has to be removed from the SPAN rather than from a trailing child.
+   *
+   * A char scan with the equivalence argued, and it has to be the same reduction
+   * `calleeLeaf` applies so the two agree: every `type_argument_list` SPAN is
+   * dropped and the text around it is kept, so the span between the wrapper's
+   * start and the list's start, and everything from the last list's end to the
+   * wrapper's end, both survive. A span scan is required because `node.text` is
+   * the only place the parentheses survive — the `type_argument_list` node's own
+   * text is `(Of CustomEvent)` but no field says where inside the qualifier it
+   * sits, and it is the QUALIFIER that is generic, not the target.
+   *
+   * The result is a STRING rather than a synthesised `Node`. An earlier version
+   * returned `{ text } as unknown as Node`, which happened to satisfy the single
+   * caller because it only read `.text` — and a lie that satisfies its one caller
+   * is exactly the kind of thing that survives until a second caller reads
+   * `startIndex` off it. The signature says what it is.
+   *
+   * When there is nothing to remove the node's own text is returned, so the
+   * common case costs one tree walk and no allocation.
+   */
+  private typeArgumentsStrippedText(n: Node): string {
+    if (!this.containsTypeArgumentList(n)) return this.nameText(n).trim()
+    const start = n.startIndex - n.startIndex
+    const end = n.endIndex - n.startIndex
+    if (!(end > start)) return this.nameText(n).trim()
+    const text = n.text
+    // Spans to drop, collected in document order regardless of nesting: the walk
+    // stops descending once it has a list, so an inner list inside an outer one
+    // cannot produce two overlapping spans.
+    const spans: Array<[number, number]> = []
+    const walk = (x: Node, depth: number): void => {
+      if (depth > 16) return
+      if (x.type === "type_argument_list") {
+        spans.push([x.startIndex - n.startIndex, x.endIndex - n.startIndex])
+        return
+      }
+      for (const c of this.allKids(x)) walk(c, depth + 1)
+    }
+    walk(n, 0)
+    spans.sort((a, b) => a[0] - b[0])
+    let out = ""
+    let cursor = start
+    for (const [s, e] of spans) {
+      if (s < cursor || e > end) continue
+      out += text.slice(cursor, s)
+      cursor = e
+    }
+    out += text.slice(cursor, end)
+    return out.trim()
+  }
+
+  /** Is there a `type_argument_list` anywhere at or under this node? */
+  private containsTypeArgumentList(n: Node): boolean {
+    let found = false
+    const walk = (x: Node, depth: number): void => {
+      if (found || depth > 16) return
+      if (x.type === "type_argument_list") { found = true; return }
+      for (const c of this.allKids(x)) walk(c, depth + 1)
+    }
+    walk(n, 0)
+    return found
+  }
+
+  /** How many type arguments the name carries, for the edge's own metadata. */
+  private typeArgumentArity(n: Node): number {
+    let arity = 0
+    const walk = (x: Node, depth: number): void => {
+      if (depth > 16) return
+      if (x.type === "type_argument_list") { arity += x.namedChildCount; return }
+      for (const c of this.allKids(x)) walk(c, depth + 1)
+    }
+    walk(n, 0)
+    return arity
   }
 
   private pushHeritage(
@@ -1386,7 +1979,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   private visitEnum(node: Node, content: string, context?: ASTEngine.AnalyzeContext): void {
     const { text } = this.declaredName(node)
     const sym = this.pushSymbol(text, SymbolKind.Enum, node, {
-      visibility: this.visibilityOf(node),
+      visibility: this.visibilityOf(node, SymbolKind.Enum),
       metadata: { grammarNode: node.type },
     })
     if (sym) {
@@ -1429,7 +2022,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   private visitDelegate(node: Node, content: string, context?: ASTEngine.AnalyzeContext): void {
     const { text } = this.declaredName(node)
     const sym = this.pushSymbol(text, SymbolKind.Type, node, {
-      visibility: this.visibilityOf(node),
+      visibility: this.visibilityOf(node, SymbolKind.Type),
       metadata: { grammarNode: node.type, delegate: true },
     })
     if (sym) {
@@ -1542,7 +2135,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     const overridesBase = mods.has("overrides")
 
     const sym = this.pushSymbol(effectiveName, kind, node, {
-      visibility: this.visibilityOf(node),
+      visibility: this.visibilityOf(node, kind),
       isStatic: this.isStatic(node),
       isAbstract: this.isAbstract(node),
       isAsync: mods.has("async"),
@@ -1637,7 +2230,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     // emit the Property and let the edges carry the uses, so that is what this
     // does — one symbol, not two, so `Get`/`Set` do not double-count it.
     const sym = this.pushSymbol(text, SymbolKind.Property, node, {
-      visibility: this.visibilityOf(node),
+      visibility: this.visibilityOf(node, SymbolKind.Property),
       isStatic: this.isStatic(node),
       isAbstract: this.isAbstract(node),
       metadata: {
@@ -1671,7 +2264,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     const { text, node: nameNode } = this.declaredName(node)
     if (text.length === 0) { this.note("event-without-name"); return }
     const sym = this.pushSymbol(text, SymbolKind.Event, node, {
-      visibility: this.visibilityOf(node),
+      visibility: this.visibilityOf(node, SymbolKind.Event),
       isStatic: this.isStatic(node),
       metadata: { grammarNode: node.type, withEvents: this.modifierNames(node).has("withevents") },
     })
@@ -1746,7 +2339,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     // contract. The symbol is not lost: it is in `operatorSymbol` below wherever
     // the tree kept it.
     const sym = this.pushSymbol("operator", SymbolKind.Method, node, {
-      visibility: this.visibilityOf(node),
+      visibility: this.visibilityOf(node, ASTEngine.SymbolKind.Method),
       isStatic: this.isStatic(node),
       metadata: {
         grammarNode: node.type,
@@ -1818,7 +2411,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       const asClause = this.namedChildrenOfType(decl, "as_clause")[0]
       const declared = asClause ? asClause.childForFieldName("declared_type") : null
       const sym = this.pushSymbol(text, isConst ? SymbolKind.Constant : SymbolKind.Variable, decl, {
-        visibility: this.visibilityOf(node),
+        visibility: this.visibilityOf(node, isConst ? SymbolKind.Constant : SymbolKind.Variable),
         isStatic: this.isStatic(node) || isConst || mods.has("shared"),
         ...(declared ? { returnType: this.nameText(declared) } : {}),
         ...(init ? { metadata: { initializer: init.text.trim() } } : {}),
@@ -1971,10 +2564,34 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (const c of this.kids(n)) visit(c)
         return
       }
+      // A qualified NAME READ that is neither the thing being invoked nor the
+      // thing being indexed. This is the `uses` class, and the exclusion is the
+      // whole of it: `member_access_expression` is a member read in every other
+      // position, and a callee/index head is already a `calls` edge naming the
+      // same name. Measured over the corpus, the three slots partition 323,540
+      // member accesses into 19,537 callee, 74,782 indexed and 323,540 value --
+      // so the class this emits is the largest single relationship class VB has,
+      // and excluding the two other slots is what keeps it from duplicating
+      // `calls`.
+      if (n.type === "member_access_expression" || n.type === "with_member_access_expression") {
+        if (!this.isCalleeOrIndexSlot(n)) {
+          const token = this.calleeLeaf(n)
+          const target = this.nameText(token)
+          if (target.length > 0) this.pushUse(source, target, n, token)
+        }
+      }
       if (n.type === "invocation_expression") {
         const fn = n.childForFieldName("function")
         const args = n.childForFieldName("arguments")
-        if (fn) {
+        // `New Foo()` IS an invocation -- the grammar wraps the
+        // `object_creation_expression` in an `invocation_expression` with an
+        // empty `argument_list` -- so keying on the node type alone publishes
+        // the construction TWICE, once as `calls` and once as `instantiates`,
+        // and puts a constructor invocation in the call graph. The test is
+        // "is the leftmost element of the callee a CONSTRUCTION", read down
+        // the receiver chain, because `New System.Drawing.Size(3, 4)` puts the
+        // construction under three `member_access_expression` wrappers.
+        if (fn && !this.calleeIsConstruction(fn)) {
           const token = this.calleeLeaf(fn)
           const target = this.nameText(token)
           if (target.length > 0) {
@@ -2288,6 +2905,357 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   /** Is the accessed member the SECOND half of the chain, i.e. is there a receiver? */
   private calleeLeafIsNotFirst(n: Node): boolean {
     return this.namedChildrenOfType(n, "identifier").length > 1
+  }
+
+  /**
+   * Is the thing being invoked a CONSTRUCTION?
+   *
+   * Read down the receiver chain to the leftmost node: `New Foo()` is an
+   * `invocation_expression` whose `function` is the `object_creation_expression`
+   * itself, and `New System.Drawing.Size()` is an `invocation_expression` whose
+   * `function` is a three-deep `member_access_expression` whose innermost
+   * `object` is the construction. Both are constructions the grammar wrapped in
+   * an invocation, and both already produce an `instantiates` edge naming the
+   * same type, so publishing a `calls` edge as well would count one syntactic
+   * event twice under two labels.
+   */
+  private calleeIsConstruction(fn: Node): boolean {
+    let cur: Node = fn
+    for (let guard = 0; guard < 32; guard++) {
+      if (cur.type === "object_creation_expression" || cur.type === "array_creation_expression") return true
+      if (cur.type !== "member_access_expression" && cur.type !== "with_member_access_expression") return false
+      const obj = cur.childForFieldName("object")
+      if (!obj || obj.id === cur.id) return false
+      cur = obj
+    }
+    return false
+  }
+
+  /**
+   * Is this qualified access the thing being invoked, or the thing being indexed?
+   *
+   * `function` is the callee slot and `array` is the indexed slot, and those two
+   * are the only positions in this grammar where a name is being APPLIED rather
+   * than read. `with_member_access_expression` has neither field -- the census
+   * measured 1,017 of them and 1,017 with no `member` field either -- so it
+   * always reads, which is the right answer for a `With` block: `.Value = 1`
+   * inside `With obj` reads `Value` off `obj`, it does not call it.
+   */
+  private isCalleeOrIndexSlot(n: Node): boolean {
+    const p = n.parent
+    if (!p) return false
+    if (p.type === "with_member_access_expression") return false
+    const fn = p.childForFieldName("function")
+    if (fn && fn.id === n.id) return true
+    const arr = p.childForFieldName("array")
+    if (arr && arr.id === n.id) return true
+    return false
+  }
+
+  /**
+   * `uses`: the enclosing declaration READS this name.
+   *
+   * VB HAS the construct -- it is the commonest expression in the language -- so
+   * this is a GAP and not a ruling. Measured on the lane corpus: 323,540
+   * `member_access_expression` and 1,017 `with_member_access_expression` nodes
+   * are a name read rather than a callee or an index, in 1,921 of 2,658 files.
+   *
+   * WHAT THE TARGET IS. The NAME the file writes, which is the last identifier
+   * leaf of the access chain -- `TimeSpan.FromSeconds` gives `FromSeconds`, and
+   * `System.Collections.Generic.List(Of String)` gives `List` because
+   * `calleeLeaf` skips a `type_argument_list`. That is the same name the
+   * `calls` edge would carry for the same expression, so the two labels are
+   * comparable and a consumer can ask either question of the same grammar.
+   *
+   * WHAT THE TARGET IS NOT. A resolved symbol. A qualified read names a member
+   * of a type this file usually does not declare, so the edge resolves at both
+   * ends about as often as a `calls` edge does (12.0% measured on the current
+   * `calls` population) and that is the honest number for a cross-file name, not
+   * a defect. The family convention agrees: `real-csharp-analyzer.ts` publishes
+   * its identifier reads as `uses` at confidence 1.0 with the same meaning --
+   * the name is written in the file, so the READ is a fact, and whether the
+   * name binds to something elsewhere is a resolution question the edge does not
+   * claim to have answered.
+   *
+   * DEDUPLICATED PER (source, target), keeping the FIRST site, with the site
+   * count on the edge. This matches the family's own `uses` emission (csharp
+   * keys on `source::uses::name`) and it is what makes the class affordable:
+   * 323,540 read sites collapse to the distinct pairs. `sites` keeps the raw
+   * count visible, so the dedup hides nothing.
+   */
+  private pushUse(source: ASTEngine.UniversalSymbol | null, target: string, n: Node, token: Node | null): void {
+    const src = source ?? this.currentOwner()
+    if (!src) {
+      this.note("use-without-enclosing-declaration")
+      return
+    }
+    const key = `${src.name}\u0000${target}`
+    const line = this.nodeLine(token ?? n)
+    const prior = this.useIndex.get(key)
+    if (prior !== undefined) {
+      // The dedup must not make the raw count invisible, so the edge's own
+      // metadata carries it: `sites` is how many read sites collapsed here.
+      prior.sites++
+      prior.edge.metadata = { ...prior.edge.metadata, sites: prior.sites }
+      return
+    }
+    const edge: ASTEngine.UniversalRelationship = {
+      source: src.name,
+      target,
+      type: RelationshipType.Uses,
+      confidence: 1.0,
+      line_number: line,
+      metadata: { readNode: n.type, sites: 1 },
+    }
+    this.useIndex.set(key, { sites: 1, line, edge })
+    this.relationships.push(edge)
+  }
+
+  /**
+   * The type name a CONSTRUCTION builds, when the construction is the leading
+   * segment of a qualified name rather than a whole one.
+   *
+   * MEASURED, not guessed. `New System.Drawing.Size(3, 4)` does not parse as
+   * one construction: it is
+   *   (array_access_expression
+   *      array: (member_access_expression
+   *               object: (member_access_expression
+   *                        object: (object_creation_expression  System)
+   *                        member: Drawing)
+   *               member: Size)
+   *      indices: 3, 4)
+   * so the `object_creation_expression` holds only `New System` and the real
+   * target is the LAST leaf of the enclosing access chain. Publishing the node's
+   * own `type` field here would publish `instantiates -> System`, which is a
+   * namespace and not a type anybody constructs -- the grammar's fragmentation
+   * turned into a fact about the program, which is the fabrication the
+   * workstream names. Counted over the lane corpus: 15,233
+   * `object_creation_expression` and 310 `array_creation_expression` nodes are
+   * fragments of a qualified name, against 1,612 and 15,181 that stand alone
+   * (census probes `instantiates:*:fragment_of_qualified` /
+   * `instantiates:*:standalone`) -- so this is the COMMON case in this grammar,
+   * not an edge one.
+   */
+  private constructionTargetLeaf(n: Node): Node | null {
+    // A FRAGMENT first. `New System.Drawing.Size(3, 4)` holds `New System` and
+    // the constructed type is the last leaf of the access chain it is the head
+    // of, so reading this node's own `type` field here published
+    // `instantiates -> System` -- a namespace, and a name nothing constructs.
+    if (this.constructionIsFragment(n)) {
+      let outer: Node = n
+      for (let guard = 0; guard < 32; guard++) {
+        const p = outer.parent
+        if (!p) break
+        const isAccess = p.type === "member_access_expression" || p.type === "with_member_access_expression"
+        if (!isAccess) break
+        const obj = p.childForFieldName("object")
+        if (!obj || obj.id !== outer.id) break
+        outer = p
+      }
+      const leaf = this.calleeLeaf(outer)
+      if (leaf) return leaf
+    }
+    const ty = n.childForFieldName("type")
+    if (ty) return this.calleeLeaf(ty)
+    // A bare `New Foo` with no `type` field: the name is the only identifier
+    // leaf under the construction.
+    return this.calleeLeaf(n)
+  }
+
+  /**
+   * Is this construction the leading NAMESPACE SEGMENT of a qualified type name,
+   * rather than a whole construction that happens to be the RECEIVER of an access?
+   *
+   * THE PARENT TEST ALONE WAS NOT ENOUGH, and it fabricated an edge on 322
+   * construction nodes across the lane corpus. "Is my parent a
+   * `member_access_expression` whose `object` I am?" is true for two completely
+   * different programs:
+   *
+   *   `New System.Text.StringBuilder`  the construction holds `New System` and
+   *       `Text.StringBuilder` continues the TYPE in the chain, so the last leaf
+   *       of the chain (`StringBuilder`) is the constructed type. CLIMB.
+   *
+   *   `New StackFrame(1).GetMethod().Name`   the construction is COMPLETE and
+   *       `.GetMethod` is a method call ON THE OBJECT JUST BUILT, so the last
+   *       leaf of the chain (`Name`) is not a type at all. DO NOT CLIMB.
+   *
+   * The second shape published `instantiates -> GetMethod` — a method, not a
+   * type, which is the fabrication `docs/analyzers/ONTOLOGY-WORKSTREAM.md`
+   * Part 2 names as the thing that poisons `bb_graph`. An independent
+   * source-text oracle (`script/m14/vb-instantiates-oracle.ts`, which reads no
+   * grammar at all) put the error at 1.07% of all `instantiates` edges on a
+   * 200-file draw, and named the targets: `ToList` 59, `Message` 6, `Length` 4,
+   * `GetMethod` 4, `Contains` 4, `Clone` 2, `Status`, `LayeredDriver`, `Get`,
+   * `TextInfo`. None of them is a constructed type.
+   *
+   * THE DISCRIMINATOR, measured over all 15,543 construction nodes that sit in an
+   * access chain across the corpus (`script/m14/tmp-vb/frag3.mts`):
+   *
+   *     a construction is a NAMESPACE PREFIX iff its `type` field is a BARE
+   *     `simple_name` and it has no other named child
+   *
+   *   15,221  bare `type`, no other child   -> a namespace prefix; climbing is right
+   *     322  anything else                  -> the construction is complete
+   *
+   * Every one of the 322 is a real defect of one of two kinds, and both are in
+   * the sample set:
+   *
+   *   - the construction carries its own arguments, so the chain is a member
+   *     access on the value: `New StackFrame(1).GetMethod()`,
+   *     `New CultureInfo("en-US", False).TextInfo`,
+   *     `BattleQuery.Add(New TextQueryObject(...))` -> `-> Add`, and
+   *     `New String() {…}.ToList()` (whose arguments are an `array_initializer`,
+   *     not a `bounds` field, so a `bounds`-only test misses it — hence the
+   *     named-child count rather than a field test).
+   *   - the construction node's SPAN was mis-anchored by the grammar's error
+   *     recovery onto the following statement: `Dim SpawnedEntity = New
+   *     BattleAnimation3D(...)` followed by `SpawnedEntity.Opacity = Opacity`
+   *     yields `-> Opacity`. Its `type` is a `generic_name` rather than a bare
+   *     `simple_name`, which is what the second half of the test catches.
+   */
+  private constructionIsFragment(n: Node): boolean {
+    const p = n.parent
+    if (!p) return false
+    if (p.type !== "member_access_expression" && p.type !== "with_member_access_expression") return false
+    const obj = p.childForFieldName("object")
+    if (!obj || obj.id !== n.id) return false
+    // The construction must be BARE: its `type` is a single unqualified segment
+    // and it carries no argument list of its own. Anything else is a whole
+    // construction whose receiver happens to be read further along the chain.
+    if (n.namedChildCount !== 1) return false
+    const ty = n.childForFieldName("type")
+    if (!ty) return false
+    return ty.type === "simple_name" || ty.type === "identifier"
+  }
+
+  /**
+   * `instantiates`: a construction is not a call.
+   *
+   * VB HAS four distinct construction surfaces and the grammar gives each of
+   * them a different shape, so the count is four counts and not one:
+   *
+   *   `New Foo` / `New Foo()`      object_creation_expression
+   *   `New Foo(a, b)`              array_creation_expression   (a `type` field
+   *                                and a `bounds` field, and NO `function`
+   *                                field -- the node a caller must read to find
+   *                                the constructed type)
+   *   `As New Foo()`               an `as_clause` whose text begins `As New`,
+   *                                where the declared_type is an `array_type`
+   *                                because the `()` reads as bounds
+   *   `New A.B.C(x)`               an access chain (see
+   *                                `constructionTargetLeaf`)
+   *
+   * Measured over 2,658 corpus files: 16,845 `object_creation_expression` and
+   * 15,491 `array_creation_expression` nodes, plus 2,499 `as_clause`s that begin
+   * `As New`. The `As New` half cannot be read from the tree at all -- both
+   * keywords are inlined away by the grammar's `as_clause` rule, measured at 0
+   * of 30,001 `as_clause` nodes carrying either token -- so it is a char scan
+   * over the node's own span with the equivalence argued in
+   * `startsWithAsNewClause`, and the census runs the same predicate with the
+   * same controls.
+   *
+   * LABEL. This edge REPLACES the `calls` edge the analyzer used to publish for
+   * a construction rather than joining it. Publishing both would double-count
+   * one syntactic event under two labels and put a construction in the call
+   * graph, which is what makes `bb_graph`'s call view wrong. The family's own
+   * convention agrees: `real-csharp-analyzer.ts` emits `instantiates` for
+   * `object_creation_expression` and its `calls` rule explicitly excludes it.
+   *
+   * CONFIDENCE follows the same rule every other VB edge follows: 1.0 when this
+   * file also declares the constructed type, 0.6 when it does not, because the
+   * target is then a name and not a resolved symbol. Under the honesty
+   * contract's 0.7 floor the 0.6 edges read `inferred`, which is stamped by the
+   * one evidence-class pass at the end of `analyze()`.
+   */
+  private pushConstruction(n: Node, source: ASTEngine.UniversalSymbol | null): void {
+    const token = this.constructionTargetLeaf(n)
+    const target = this.nameText(token)
+    if (target.length === 0) {
+      // COUNTED, not dropped in silence. `New String() {"a", "b"}` is
+      // `(array_creation_expression type: (array_type element_type:
+      // (predefined_type) (array_rank_specifier)) initializer: ...)`, and a
+      // `predefined_type` is a keyword token with no identifier leaf under it, so
+      // the naming walk finds nothing and there is no name to publish. An edge
+      // from an invented name would be the fabrication; a silent drop is the
+      // same boundary stated quietly. Rule 4 of this file's contract is that a
+      // gap is disclosed, so `metadata.vbGaps` carries the count and a consumer
+      // can see the boundary instead of inferring coverage from silence.
+      this.note("construction-without-readable-name")
+      return
+    }
+    if (!source) {
+      // No enclosing declaration: an edge from nothing is a phantom, so it is
+      // counted instead of invented. 21 such sites on the lane corpus.
+      this.note("instantiation-without-enclosing-declaration")
+      return
+    }
+    this.relationships.push({
+      source: source.name,
+      target,
+      type: RelationshipType.Instantiates,
+      confidence: this.declaredNames.has(target) ? 1.0 : 0.6,
+      line_number: this.nodeLine(token ?? n),
+      metadata: {
+        constructionNode: n.type,
+        constructionForm: this.constructionFormOf(n),
+        qualifiedConstruction: this.constructionIsFragment(n),
+      },
+    })
+  }
+
+  /** Which of the four VB construction surfaces this is, for a reader triaging. */
+  private constructionFormOf(n: Node): string {
+    if (n.type === "array_creation_expression") {
+      return n.childForFieldName("bounds") !== null ? "new-with-bounds" : "new-array-initializer"
+    }
+    return n.parent?.type === "invocation_expression" ? "new-then-invoke" : "new"
+  }
+
+  /**
+   * Does this `as_clause` begin with the two VB words `As` `New`?
+   *
+   * A char scan with the equivalence argued, because the tree cannot answer it:
+   * `as_clause` is `seq(ci("As"), ci("New"), field("declared_type", ...))` and
+   * both keywords are ABSENT from the produced tree -- measured over the corpus,
+   * 0 of 30,001 `as_clause` nodes carry an `As` or `New` token, and a printed
+   * tree of `Dim l As New List(Of String)` shows an `as_clause` whose FIRST
+   * child is the `generic_name`. A node-type or token test on the tree has
+   * nothing to read, so this reads the node's own span instead.
+   *
+   * Word boundary means: the byte before the word is start-of-span or not a
+   * letter/digit/underscore, and the byte after it is the same or end-of-span.
+   * `As Namespace` and `As NewType` must NOT match, and both are rejected
+   * because the adjacent byte is a letter. The leading whitespace is skipped
+   * first because `as_clause`'s span can begin at the line's indentation.
+   */
+  private static startsWithAsNewClause(s: string): boolean {
+    const isWordChar = (c: number): boolean =>
+      (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+    const skipSpace = (i: number): number => {
+      let k = i
+      while (k < s.length) {
+        const c = s.charCodeAt(k)
+        if (c === 32 || c === 9 || c === 13 || c === 10) k++
+        else break
+      }
+      return k
+    }
+    const startsAt = (i: number, w: string): boolean => {
+      if (i > 0 && isWordChar(s.charCodeAt(i - 1))) return false
+      if (i + w.length > s.length) return false
+      for (let k = 0; k < w.length; k++) {
+        let c = s.charCodeAt(i + k)
+        if (c >= 65 && c <= 90) c += 32
+        if (c !== w.charCodeAt(k)) return false
+      }
+      return true
+    }
+    const endsAt = (i: number): boolean => i >= s.length || !isWordChar(s.charCodeAt(i))
+    const i = skipSpace(0)
+    if (!startsAt(i, "as")) return false
+    const j = skipSpace(i + 2)
+    if (!startsAt(j, "new")) return false
+    return endsAt(j + 3)
   }
 
   /**

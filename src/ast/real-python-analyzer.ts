@@ -114,6 +114,20 @@ interface PythonContext {
   functionSymbolIndex: Record<string, number>
   // O(1) instantiates check: names of in-file declared classes/enums
   declaredTypes: Set<string>
+  /**
+   * INCOMING_PY: the ROOT module of every import this file declares.
+   *
+   * Seeded by the SAME pre-pass that seeds `declaredTypes`, so it costs no additional
+   * walk — `preScan` already visits every node in the file and this is one `split` per
+   * import statement. It exists so `calls` can tell an EXTERNAL member apart from a
+   * dispatch through a receiver it cannot follow: `os.path.join` names `os.path`, a
+   * module attribute chain this file imported, and a consumer holding the imports can
+   * reach `join` through it; `recv.join` names a local whose type is written down
+   * nowhere. Both publish a leaf named `join`, and without this set the reason code
+   * cannot tell them apart — which would make the code assert "no static target" about
+   * the one shape that HAS one.
+   */
+  importRoots: Set<string>
   seenRels: Set<string>
   // (class\u001fattr) — one Property per instance attribute per class (PYD1)
   instanceAttrs: Set<string>
@@ -214,6 +228,21 @@ export const PYTHON_BUILTINS = new Set([
  * `this` are ordinary identifiers and simply do not occur in this corpus.) So the change
  * is zero-delta on 5,363 of 5,364 files and fixes the 5,364th.
  */
+
+/**
+ * INCOMING_PY / M14 §4 — the reason a `references` edge is at 0.95 rather than 1.0,
+ * keyed by the annotation POSITION the name was written in.
+ *
+ * Declared as a table rather than inlined at the push site because the position is
+ * already an input to that call and a table is the only spelling that cannot drift
+ * from the field it mirrors: `metadata.relationshipType` and `metadata.reasonCode`
+ * are both derived from `relType`, one lookup apart.
+ */
+const PY_REFERENCE_REASON: Record<string, string> = {
+  declared_type: "annotation-type",
+  return_type: "return-annotation",
+  instanceof_check: "instanceof-check",
+}
 
 /**
  * The python framework trigger surface (#747).
@@ -353,6 +382,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       patterns: {},
       functionSymbolIndex: {},
       declaredTypes: new Set(),
+      importRoots: new Set(),
       seenRels: new Set(),
       instanceAttrs: new Set(),
       currentModule: moduleName,
@@ -381,6 +411,22 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (n.type === "class_definition") {
         const nameNode = this.findChildByType(n, "identifier")
         if (nameNode?.text) ctx.declaredTypes.add(nameNode.text)
+      }
+      // INCOMING_PY — the import vocabulary, gathered in the walk that was already
+      // happening. `import a.b as c` roots at `a`; `from .m import x` names no package
+      // (a leading dot is not a root) and contributes nothing, exactly as
+      // `noteFramework` already rules.
+      if (n.type === "import_statement" || n.type === "import_from_statement") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "import" || c.text === "import") continue
+          if (c.type !== "dotted_name" && c.type !== "relative_import" && c.type !== "aliased_import") continue
+          if (c.text.startsWith(".")) continue
+          const first = c.type === "aliased_import" ? (c.childForFieldName("name") ?? c.namedChild(0)) : c
+          const root = first?.text.split(".")[0]
+          if (root) ctx.importRoots.add(root)
+        }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
@@ -1634,6 +1680,27 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const left = node.namedChild(0)
     if (!left) return
 
+    // INCOMING_PY: A TARGET WITH NO NAME IS NOT A SYMBOL.
+    //
+    // tree-sitter is error-tolerant and hands an `assignment` a named child even when
+    // the text before `=` is not an identifier at all. `Int DEFINITIONS ::= BEGIN` —
+    // ASN.1 notation, which the `otp` corpus carries under a `.py` extension in 29
+    // files — parses as an assignment whose LHS is a zero-width, EMPTY identifier, and
+    // both the module-Variable path and the class-Property path published it:
+    //
+    //     { name: "", kind: "variable", startLine: 27, startIndex: 731, endIndex: 731 }
+    //
+    // A symbol whose name is the empty string is not a weak symbol, it is a node that
+    // joins to nothing and can be counted, displayed and matched by every consumer
+    // downstream — and the workstream's completion condition names empty names as a
+    // failure alongside unknown symbols. Measured over the 679-file INCOMING_PY
+    // corpus, `extractAssignment` published 2 of them, both in
+    // `otp/lib/asn1/examples/Int.py`; a guard on the name removes exactly those two
+    // and changes nothing else, because the tree carries no other name for them.
+    //
+    // The honest state is ABSENCE (R7's rule), not `""`.
+    if (left.text.length === 0) return
+
     // Instance attribute write: `self.host = ...` inside a method. The LHS is
     // an `attribute` node (object + attr), NOT an identifier — the pre-M14
     // code required `left.type === "identifier"` and therefore never reached
@@ -1691,26 +1758,50 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // that has nothing to do with the author. A list and a tuple are the same
       // declaration to every tool that reads `__all__`, including `from mod import *`.
       const right = node.childForFieldName("right") ?? node.namedChild(node.namedChildCount - 1)
-      if (right && (right.type === "list" || right.type === "tuple")) {
-        for (let i = 0; i < right.namedChildCount; i++) {
-          const child = right.namedChild(i)
+      // INCOMING_PY: `expression_list` is the THIRD spelling, and it was the one still
+      // missing. PY-14 added `tuple`; the grammar has a separate node for a bare
+      // comma-separated RHS with no brackets at all:
+      //
+      //     __all__ = "a", "b"          -> (expression_list (string) (string))
+      //
+      // which is a legal module-level export declaration — `from mod import *` honours
+      // it identically to the bracketed spellings — and published NOTHING, because the
+      // allowlist read `list` or `tuple` and `expression_list` is neither. Measured on
+      // CPython 3.10's own stdlib: `__all__` is assigned in 238 files and **9 of them
+      // use this spelling** (`asyncio/coroutines.py` line 1 is
+      // `__all__ = 'coroutine', 'iscoroutinefunction', 'iscoroutine'`), so 3.8% of the
+      // standard library's declared public surfaces were invisible for a reason that
+      // has nothing to do with the author. On the pinned fixtures corpus the count is
+      // **0** — no `__all__` there uses this shape — and that is reported as 0 rather
+      // than folded into the stdlib number, because a measurement from outside the
+      // pinned corpus is a different measurement.
+      //
+      // `__all__ = (a + b + [...])` — a concatenation — stays a declared boundary, as
+      // does a comprehension: neither has a statically knowable member list.
+      const dunderAllContainer = right
+        ? (right.type === "list" || right.type === "tuple" || right.type === "expression_list") ? right : undefined
+        : undefined
+      if (dunderAllContainer) {
+        const form = dunderAllContainer.type
+        for (let i = 0; i < dunderAllContainer.namedChildCount; i++) {
+          const child = dunderAllContainer.namedChild(i)
           if (child && child.type === "string") {
             const exportName = this.unquote(child)
             if (exportName) {
               // `form` records WHICH `__all__` spelling declared this name, alongside the
-              // same fact on the relationship edge. `list` and `tuple` are one declaration
-              // to `from mod import *`, so this is provenance rather than meaning — and it
-              // is what lets PY-14's revert be expressed as a shape instead of as a list
-              // of fixture strings.
-              ctx.exports.push({ name: exportName, type: "list_item", form: right.type })
+              // same fact on the relationship edge. `list`, `tuple` and a bare
+              // `expression_list` are one declaration to `from mod import *`, so this is
+              // provenance rather than meaning — and it is what lets PY-14's revert be
+              // expressed as a shape instead of as a list of fixture strings.
+              ctx.exports.push({ name: exportName, type: "list_item", form })
               this.pushRel(ctx, ctx.moduleName, exportName, ASTEngine.RelationshipType.Exports, 1.0, {
                 pythonSpecific: true,
-                // WHICH SPELLING declared the export. `list` and `tuple` are the same
-                // declaration to `from mod import *`, so the edge is the same either way —
-                // but a reader triaging a surface wants to know that a module declares it
+                // WHICH SPELLING declared the export. All three are the same declaration
+                // to `from mod import *`, so the edge is the same either way — but a
+                // reader triaging a surface wants to know that a module declares it
                 // twice in two forms, and it gives the mutant harness a way to express
                 // PY-14's revert generically instead of by naming fixture strings.
-                dunderAllForm: right.type,
+                dunderAllForm: form,
               }, this.nodeLine(child))
             }
           }
@@ -1886,13 +1977,58 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Instantiates, 0.9, {
         pythonSpecific: true,
         qualified: fullCallee,
+        // M14 §4: a sub-1.0 confidence must carry a machine-readable reason code, and
+        // for python the reason is worth naming because it is the whole narrowing —
+        // the class is one THIS parse declared, so the callee is its constructor and not
+        // merely something that happens to be spelled with a capital.
+        reasonCode: "in-file-class-constructor",
       }, this.nodeLine(calleeLeaf))
       return
     }
 
+    // INCOMING_PY — WHY THE TARGET IS NOT DISPATCHABLE, in machine-readable form.
+    //
+    // This is the lane's whole subject. Python resolves a callee at RUNTIME through the
+    // receiver's type and the MRO, so `self.m()` names a method whose defining class is
+    // a fact about the caller of `m`, not about this file. The lane was already emitting
+    // the honest NAME (PY-11: dropping it loses the fact), but it emitted the name with
+    // nothing saying WHICH of the three situations produced it, and a consumer reading
+    // `calls f -> g` cannot tell a call it can trust from a call it cannot.
+    //
+    // M14 §4 is the contract that says so: any relationship at confidence < 1.0 must
+    // carry a reason code, not just a number. Measured before this line over the
+    // 679-file INCOMING_PY corpus: 29,877 `calls` edges at 0.9, **0 of them carrying a
+    // reason code**. The partition those codes express, measured on the same corpus:
+    //
+    //   in-file-callee        the leaf names a symbol this parse declared
+    //   dispatch-on-parameter `self.m()` / `cls.m()` — the receiver is the implicit
+    //                        first parameter, so the target class is decided by
+    //                        whoever constructed the instance. NO static target.
+    //   dispatch-on-receiver  `recv.m()` where recv is a local or a parameter — the
+    //                        receiver's type is not written down. NO static target.
+    //   external-member-call  `os.path.m()` — the receiver is rooted at a module THIS
+    //                        file imported, so the member is reachable through the
+    //                        import edge even though its definition is not in view.
+    //   bare-name-callee      `f(...)` — the name is a value, and may equally be a
+    //                        module global, an injected dependency, or `from x import *`.
+    //
+    // `external-member-call` is separated from `dispatch-on-receiver` because they are
+    // opposite facts and merging them makes the code lie in one direction: `os.path.join`
+    // HAS a reachable target (the import says so) and calling it unrecoverable would
+    // teach a consumer to discard the edges it should follow.
+    //
+    // The edge is still emitted in every case, because the name IS what the source
+    // wrote; what changes is that the uncertainty is now a field rather than an
+    // absence, and `bb_graph` can decline to walk an edge it cannot justify.
+    const dispatchClass = fullCallee.includes(".")
+      ? (fullCallee.startsWith("self.") || fullCallee.startsWith("cls.")
+          ? "dispatch-on-parameter"
+          : ctx.importRoots.has(fullCallee.split(".")[0]!) ? "external-member-call" : "dispatch-on-receiver")
+      : "bare-name-callee"
     this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Calls, 0.9, {
       pythonSpecific: true,
       qualified: fullCallee,
+      reasonCode: dispatchClass,
     }, this.nodeLine(calleeLeaf))
   }
 
@@ -2010,6 +2146,22 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // survive the collection.
     const collectTypeNodes = (n: Node, out: Node[]): void => {
       if (n.type === "identifier") {
+        // INCOMING_PY: an identifier with NO TEXT names nothing, and an edge endpoint
+        // that names nothing is worse than a weak one — it is a row every consumer can
+        // count, join and display while pointing at no node. tree-sitter recovers a
+        // zero-width identifier wherever the grammar is damaged, and an error-tolerant
+        // parse of non-python under a `.py` extension produces those by the hundred:
+        // `small SmallInt ::= 17` (ASN.1, `otp/lib/asn1/examples/Int.py`) parses as an
+        // assignment AND as a `type` clause holding an empty identifier, which
+        // published `references asn2 -> ` — a real relationship row with an empty
+        // target. `pushRel`'s `if (!source || !target) return` guard cannot catch it,
+        // because this walk builds its rows directly and never goes through it.
+        //
+        // The honest state is ABSENCE: there is no type name in the source, so there is
+        // no reference to publish. Measured over the 679-file INCOMING_PY corpus with
+        // the R7 half of `script/m60/python-resolution-census.ts` widened to convict an
+        // EMPTY value as well as a placeholder literal.
+        if (n.text.length === 0) return
         if (!PRIMITIVES.has(n.text) && !out.some((x) => x.text === n.text)) out.push(n)
         return
       }
@@ -2018,6 +2170,36 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         const c = n.namedChild(i)
         if (c) collectTypeNodes(c, out)
       }
+    }
+
+    /**
+     * INCOMING_PY — the QUALIFIER an annotated type was written with, or nothing.
+     *
+     * `def f(t: pa.Table)` names the type `Table` and writes the qualifier `pa`. The
+     * leaf is the target, which is right; the qualifier is what makes it findable, and
+     * it was discarded exactly as `unittest.TestCase` was on `extends` and `pa.Table`
+     * was on `uses`. Measured over the 679-file INCOMING_PY corpus before this line,
+     * **1,498 `references` edges, 331 (22.1%) resolved in-file, 553 (36.9%) through an
+     * import, and 614 (41.0%) to nothing** — the worst in-file ratio of any type the
+     * lane emits, and the annotation case is where it is cheapest to fix because the
+     * qualifier is a PARENT of the identifier, not a sibling of it.
+     *
+     * `dotted_name` and `attribute` are the two nodes a qualified type annotation
+     * parses as (a parameter annotation gives `attribute`, a `dotted_name` where the
+     * grammar emits one), and in both the identifier this collector reaches is the
+     * LAST named child — the same leaf convention `callLeafName` and `baseClassLeaf`
+     * already use, and for the same reason: `pa.Table` names `Table`. Returns undefined
+     * for a bare identifier, which is most annotations and gains nothing by being
+     * spelled, and for the RECEIVER identifier of the chain, which is a module alias
+     * rather than the type being named.
+     */
+    const typeQualifier = (n: Node): string | undefined => {
+      const p = n.parent
+      if (!p || (p.type !== "dotted_name" && p.type !== "attribute")) return undefined
+      if (p.namedChildCount === 0) return undefined
+      const leaf = p.namedChild(p.namedChildCount - 1)
+      if (!leaf || leaf.startIndex !== n.startIndex || leaf.endIndex !== n.endIndex) return undefined
+      return p.text
     }
 
     const resolveSource = (start: Node): string => {
@@ -2070,13 +2252,32 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           const key = `${source}|${t}|${relType}`
           if (emitted.has(key)) continue
           emitted.add(key)
+          const qualifier = typeQualifier(tn)
           relationships.push({
             source,
             target: t,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.95,
             ...(this.nodeLine(tn) ? { line_number: this.nodeLine(tn)! } : {}),
-            metadata: { relationshipType: relType },
+            // INCOMING_PY / M14 §4: `relationshipType` already said WHICH annotation
+            // position the name was written in, and it is exactly the reason the edge is
+            // at 0.95 rather than 1.0 — an annotation is a claim by the author about a
+            // type, and a claim is not a declaration. Measured over the 679-file corpus
+            // before this line: 1,498 `references` edges at 0.95, 0 with a reason code.
+            // `reasonCode` mirrors the position so the code is queryable on its own,
+            // and the two can never drift because they are set from one variable.
+            //
+            // `qualified` is the qualifier the annotation was written with (`pa.Table`),
+            // when it had one — same field, same meaning and same reason as `extends`'
+            // and `uses`'. It goes INSIDE metadata, which is where the other three put
+            // it: `calls` has carried `metadata.qualified` since PY-11, and a field
+            // that lives at the top level on one type and in metadata on another is two
+            // fields with one name, which is a consumer bug waiting to happen.
+            metadata: {
+              relationshipType: relType,
+              reasonCode: PY_REFERENCE_REASON[relType] ?? "declared-type",
+              ...(qualifier ? { qualified: qualifier } : {}),
+            },
           })
         }
       }
@@ -2265,7 +2466,15 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           return inFile || !!overrideCompanion?.get(b)?.has(s.name)
         })
         if (declaring) {
-          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${declaring}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, {}, s.range?.startLine)
+          // INCOMING_PY / M14 §4: 0.95 is below 1.0, so this edge owes a reason code
+          // like every other one, and the reason it carries is the strongest claim the
+          // lane makes: the target is not a guess about a module it has not read, it is
+          // the first base in MRO order that DECLARES this method — a fact about code
+          // in front of it. Measured over the 679-file INCOMING_PY corpus before this
+          // line: 670 `overrides` edges below 1.0 and 81 of them (the verified tier)
+          // carried no reason code, so a consumer could not tell a verified MRO edge
+          // from the `first-parent-guess` tier except by reading the confidence.
+          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${declaring}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, { reasonCode: "mro-base-declares-method" }, s.range?.startLine)
           continue
         }
         // `object.__init__` is the one external override that is a FACT and not a
