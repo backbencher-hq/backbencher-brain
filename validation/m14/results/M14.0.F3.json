@@ -290,8 +290,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "20bed43562dd6613a449b517c51f38e14701a9a9",
-  "committedAt": "2026-10-07T16:14:25-04:00",
+  "commit": "1551d3a942f31253984682d14964ec32fafd35e2",
+  "committedAt": "2026-10-07T16:20:29-04:00",
   "data": {
     "details": [
       {
@@ -8580,8 +8580,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-07T20:18:45.767Z",
-  "regeneratedAtCommit": "20bed43562dd6613a449b517c51f38e14701a9a9",
+  "regeneratedAt": "2026-10-07T20:20:49.754Z",
+  "regeneratedAtCommit": "1551d3a942f31253984682d14964ec32fafd35e2",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
