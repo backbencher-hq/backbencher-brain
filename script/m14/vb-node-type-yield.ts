@@ -135,6 +135,7 @@ async function main() {
   const typeInFile = new Map<string, string[]>()
   for (const f of files) {
     const tree = parser.parse(readFileSync(f, "utf8"))
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     const stack: any[] = [tree.rootNode]
     const seen = new Set<any>()
     const found: string[] = []
@@ -185,6 +186,7 @@ async function main() {
   for (const f of chosen) {
     const src = readFileSync(f, "utf8")
     const tree = parser.parse(src)
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     const stack: any[] = [tree.rootNode]
     const seen = new Set<any>()
     while (stack.length) {

@@ -114,7 +114,7 @@ async function measure(label: string, Cls: any): Promise<Arm> {
     try { content = readFileSync(f, "utf8") } catch { continue }
     let res: any
     try {
-      const tree = parser.parse(content, f)
+      const tree = parser.parse(content)
       if (!tree) continue
       res = new (Cls as any)().analyze(tree.rootNode, content, f)
       tree.delete?.()

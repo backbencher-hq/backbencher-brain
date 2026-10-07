@@ -305,7 +305,7 @@ const stats = await resumableWalk(CHECKPOINT, all.length, {
     } catch {
       const { getParser } = await import("../../src/ast/engine")
       const parser = await getParser("kotlin")
-      const tree_ = await parser.parse(readFileSync(abs, "utf8"), abs)
+      const tree_ = await parser.parse(readFileSync(abs, "utf8"))
       if (tree_) {
         const counts = new Map<string, number>()
         walk(tree_.rootNode, (n) => {

@@ -196,7 +196,8 @@ async function worker() {
     try {
       content = readFileSync(p, "utf8")
       const parser = await getParser("java")
-      const pr = await parser.parse(content, p)
+      const pr = await parser.parse(content)
+      if (!pr) throw new Error("parser.parse returned no tree (null result)")
       rootNode = pr.rootNode
     } catch {
       parseFailures++

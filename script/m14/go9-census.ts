@@ -121,7 +121,13 @@ const inc = (m: Map<any, number>, k: any) => m.set(k, (m.get(k) || 0) + 1)
 const { getParser } = await import(`${REPO}/src/ast/engine.ts`)
 const { RelationshipType } = await import(`${REPO}/src/ast/types.ts`)
 const { RealGoAnalyzer } = await import(`${REPO}/src/ast/real-go-analyzer.ts`)
-const ENUM = [...new Set(Object.values(RelationshipType)) as string[]]
+// Was `[...new Set(Object.values(RelationshipType)) as string[]]`: the `as string[]`
+// was an assertion on a value TS had typed `unknown[]` (the enum comes through a
+// computed dynamic import, and TS 5.9 types `Object.values(any)` as `unknown[]`),
+// which TS 5.9 then rejected as a likely-mistake conversion (TS2352). Stating the
+// element type at the source — `Object.values<string>` — says the same thing where
+// it can be checked against the enum, instead of re-typing the result after the fact.
+const ENUM = [...new Set(Object.values<string>(RelationshipType))]
 
 const files = pickFiles(DIR, NFILES)
 if (!files.length) { console.error(`NO CORPUS under ${DIR}`); process.exit(1) }

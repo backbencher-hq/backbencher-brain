@@ -104,7 +104,7 @@ for (const abs of files) {
   let content: string
   try { content = readFileSync(abs, "utf8") } catch { filesFailed++; continue }
   let tree: any
-  try { tree = await parser.parse(content, abs) } catch { filesFailed++; continue }
+  try { tree = await parser.parse(content) } catch { filesFailed++; continue }
   const truth = deriveVbTruth(tree.rootNode)
   const res: any = new RealVbAnalyzer().analyze(tree.rootNode, content, abs)
   filesOk++

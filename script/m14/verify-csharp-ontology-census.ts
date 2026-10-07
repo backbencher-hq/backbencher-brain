@@ -155,7 +155,16 @@ async function main() {
 
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
   const { RealCSharpAnalyzer } = await import(path.join(ROOT, "src/ast/real-csharp-analyzer.ts"))
-  const PROD = [...new Set(Object.values(ASTEngine.RelationshipType))]
+  // `Object.values<string>`: this module is loaded through a COMPUTED specifier
+  // (`await import(path.join(ROOT, ...))`), which TypeScript cannot resolve, so the
+  // namespace arrives as `any`. TS 5.9's `Object.values(o: {}): unknown[]` overload
+  // then makes PROD an `unknown[]`, which surfaced as ten errors at its USES below
+  // (`tallies.set(t, ...)`, `t.padEnd`, `payload.types[t]`) and not at this line.
+  // Every RelationshipType member is string-initialised (src/ast/engine.ts:582+), so
+  // the element type is stated once here. It is not a blanket cast: the same
+  // instantiation over a value whose type is known to be `Record<string, unknown>`
+  // is a compile error, so it can only help where the type was erased.
+  const PROD = [...new Set(Object.values<string>(ASTEngine.RelationshipType))]
   const analyzer = new RealCSharpAnalyzer()
 
   const tallies = new Map<string, Tally>()

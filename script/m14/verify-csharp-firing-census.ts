@@ -102,7 +102,8 @@ async function main() {
       continue
     }
     try {
-      const pr = await parser.parse(content, f)
+      const pr = await parser.parse(content)
+      if (!pr) throw new Error("parser.parse returned no tree (null result)")
       const res = new RealCSharpAnalyzer().analyze(pr.rootNode as any, content, f)
       parsed++
       // Count the parse tree's own error nodes directly. The analyzer's warning

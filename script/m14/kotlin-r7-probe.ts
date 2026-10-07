@@ -46,7 +46,8 @@ for (const rel of TARGETS) {
   const abs = path.join(REPO, rel)
   console.log(`\n${"=".repeat(100)}\n${rel}`)
   const src = readFileSync(abs, "utf8")
-  const tree = await parser.parse(src, abs)
+  const tree = await parser.parse(src)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const lines: string[] = []
   dump(tree.rootNode, 0, lines)
   // Print only the subtrees that carry a name-ish or markup-ish node, so the

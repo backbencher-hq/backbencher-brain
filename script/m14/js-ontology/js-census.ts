@@ -386,7 +386,7 @@ async function main() {
     let content: string
     try { content = readFileSync(f, "utf8") } catch { parseFailed++; continue }
     let pr: any
-    try { pr = await parser.parse(content, f) } catch { parseFailed++; continue }
+    try { pr = await parser.parse(content) } catch { parseFailed++; continue }
     parsed++
     censusConstructs(pr.rootNode, constructs)
     const res: any = new RealJavaScriptAnalyzer().analyze(pr.rootNode, content, f)

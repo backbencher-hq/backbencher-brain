@@ -95,7 +95,7 @@ for (const rel of files) {
   let content: string
   try { content = readFileSync(p, "utf8") } catch { parseFail++; continue }
   let tree: any
-  try { tree = await parser.parse(content, p) } catch { parseFail++; continue }
+  try { tree = await parser.parse(content) } catch { parseFail++; continue }
   if (!tree) { parseFail++; continue }
   let res: any
   try { res = new RealKotlinAnalyzer().analyze(tree.rootNode, content, p) } catch (e) {

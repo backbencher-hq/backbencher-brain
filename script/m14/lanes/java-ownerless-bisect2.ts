@@ -97,6 +97,7 @@ async function main() {
   const realBrace = lastBraceIndex(src)
   const parser = await getParser("java")
   const base = parser.parse(src)
+  if (!base) throw new Error("parser.parse returned no tree (null result)")
 
   const cls = findFirst(base.rootNode, "class_declaration")!
   let clsBody: any = null

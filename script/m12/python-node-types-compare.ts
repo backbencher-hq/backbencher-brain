@@ -15,6 +15,7 @@ let errFiles = 0
 for (const f of files) {
   const src = await Bun.file(f).text()
   const tree = parser.parse(src)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const walk = (n: any) => {
     emitted.add(n.type)
     for (let i = 0; i < n.namedChildCount; i++) walk(n.namedChild(i))

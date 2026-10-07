@@ -19,6 +19,7 @@ for (const f of files) {
   total++
   try {
     const tree = parser.parse(src)
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     const rootNode = tree.rootNode
     let errs = 0
     const walk = (n: any) => {

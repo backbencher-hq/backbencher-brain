@@ -47,7 +47,12 @@ const EXT = [".clj", ".cljs", ".cljc"]
 
 const { parseFile } = await import(`${REPO}/src/ast/pool-worker.ts`)
 const { ASTEngine } = await import(`${REPO}/src/ast/engine.ts`)
-const PROD = [...new Set(Object.values(ASTEngine.RelationshipType))]
+// `Object.values<string>`: the module is loaded by a computed specifier
+// (`await import(`${REPO}/...`)`), so the namespace is `any` and TS 5.9 types
+// `Object.values(any)` as `unknown[]` — the seven errors this caused are at PROD's
+// uses (relTally.get(t), t.padEnd), not here. RelationshipType members are all
+// string-initialised (src/ast/engine.ts:582+).
+const PROD = [...new Set(Object.values<string>(ASTEngine.RelationshipType))]
 
 // ── derived population ─────────────────────────────────────────────────────
 function deriveFiles(root: string): string[] {

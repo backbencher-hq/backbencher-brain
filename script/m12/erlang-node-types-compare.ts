@@ -34,6 +34,7 @@ async function main() {
   const emitted = new Set<string>()
   for (const f of files) {
     const tree = parser.parse(readFileSync(f, "utf8"))
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     const visit = (n: any) => {
       emitted.add(n.type)
       for (let i = 0; i < n.childCount; i++) visit(n.child(i))
@@ -42,6 +43,7 @@ async function main() {
   }
   for (const f of ["validation/m12/fixtures/erlang/Service.erl", "validation/m12/fixtures/erlang/Negative.erl", "validation/m11/fixtures/fp/worker.erl"]) {
     const tree = parser.parse(readFileSync(`${ROOT}/${f}`, "utf8"))
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     const visit = (n: any) => {
       emitted.add(n.type)
       for (let i = 0; i < n.childCount; i++) visit(n.child(i))

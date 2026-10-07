@@ -25,6 +25,7 @@ const files = readdirSync("validation/m12/fixtures/markdown").filter((file) => /
 for (const file of files) {
   const input = readFileSync(`validation/m12/fixtures/markdown/${file}`, "utf8")
   const tree = parser.parse(input)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const stack: any[] = [tree.rootNode]
   while (stack.length > 0) {
     const node = stack.pop()!
@@ -50,6 +51,7 @@ const observedInline = new Set<string>()
 for (const file of files) {
   const input = readFileSync(`validation/m12/fixtures/markdown/${file}`, "utf8")
   const tree = parser.parse(input)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const stack: any[] = [tree.rootNode]
   const inlineTexts: string[] = []
   while (stack.length > 0) {

@@ -253,7 +253,7 @@ for (const f of files) {
   let res: any
   try {
     const parser = await getParser("java")
-    const tree = parser.parse(content, f)
+    const tree = parser.parse(content)
     if (!tree) { failures.push({ file: fl, why: "parse returned null" }); continue }
     res = analyzer.analyze(tree.rootNode as any, content, f) as any
     inventoryGrammar(tree.rootNode as any)

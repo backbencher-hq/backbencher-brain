@@ -54,6 +54,7 @@ async function main() {
   const src = readFileSync(FILE, "utf8")
   const parser = await getParser("java")
   const tree = parser.parse(src)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
 
   // Walk every method_declaration with an explicit path + sibling index.
   const methods: { line: number; name: string; path: string; sib: string }[] = []

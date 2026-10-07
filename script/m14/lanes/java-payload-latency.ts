@@ -113,7 +113,8 @@ async function measure(label: string, Cls: any): Promise<Arm> {
     try { content = readFileSync(f, "utf8") } catch { continue }
     let res: any
     try {
-      const pr = await parser.parse(content, f)
+      const pr = await parser.parse(content)
+      if (!pr) throw new Error("parser.parse returned no tree (null result)")
       res = new Cls().analyze(pr.rootNode, content, f)
     } catch { continue }
     relationships += (res.relationships ?? []).length

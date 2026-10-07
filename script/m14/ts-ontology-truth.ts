@@ -751,7 +751,8 @@ async function worker() {
         // therefore invisible to the comparison, and the report says so instead
         // of claiming more than this harness can support.
         const parser = await getParser("typescript")
-        const tree = await parser.parse(content, f.abs)
+        const tree = await parser.parse(content)
+        if (!tree) throw new Error("parser.parse returned no tree (null result)")
         const o: any = await oracleFor(tree.rootNode, content, f.abs)
         oracleVisited += o.visited
         oracleFiles++
