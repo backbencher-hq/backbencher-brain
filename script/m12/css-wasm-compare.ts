@@ -38,8 +38,11 @@ async function main() {
   const newOnly: string[] = []
   const both: string[] = []
   for (const f of files) {
-    const o = oldParser.parse(f.src).rootNode.hasError
-    const n = newParser.parse(f.src).rootNode.hasError
+    const oldTree = oldParser.parse(f.src)
+    const newTree = newParser.parse(f.src)
+    if (!oldTree || !newTree) throw new Error("parser.parse returned no tree (null result)")
+    const o = oldTree.rootNode.hasError
+    const n = newTree.rootNode.hasError
     if (o) oldErr++
     if (n) newErr++
     if (o && !n) oldOnly.push(f.name)

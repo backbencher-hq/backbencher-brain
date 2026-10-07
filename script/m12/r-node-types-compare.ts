@@ -24,13 +24,17 @@ const walk = (node: any) => {
   }
 }
 for (const file of [...files, "validation/m12/fixtures/r/Base.R", "validation/m12/fixtures/r/Service.R", "validation/m12/fixtures/r/Negative.R"]) {
-  walk(parser.parse(await Bun.file(file).text()).rootNode)
+  const fixtureTree = parser.parse(await Bun.file(file).text())
+  if (!fixtureTree) throw new Error("parser.parse returned no tree (null result)")
+  walk(fixtureTree.rootNode)
 }
 // Corpus coverage is supplemented with a deterministic grammar-shape probe;
 // uncommon constructs such as `repeat` must be tested even if dplyr does not
 // use them in its tracked sources.
 const shapeProbe = "f <- function(x) { if (x) y <- 1 else y <- 2; for (i in x) y <- i; while (x) y <- 1; repeat break; x$a; ~x }"
-walk(parser.parse(shapeProbe).rootNode)
+const probeTree = parser.parse(shapeProbe)
+if (!probeTree) throw new Error("parser.parse returned no tree (null result)")
+walk(probeTree.rootNode)
 const missing = [...refs].filter((ref) => !emitted.has(ref)).sort()
 console.log(`analyzer refs=${refs.size} emitted=${emitted.size} files=${files.length + 4} parseErrors=${parseErrors}`)
 console.log(`missing=${missing.length ? missing.join(",") : "none"}`)

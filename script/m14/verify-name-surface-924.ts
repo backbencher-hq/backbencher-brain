@@ -406,7 +406,9 @@ async function main(): Promise<void> {
           if (bad) rustViolations.push({ file: rel, lang: "rust", check: "R2-symbol-name-is-a-rust-name", detail: `${String(s.kind)} ${JSON.stringify(String(s.name ?? "").slice(0, 80))} — ${bad}` })
         }
         // R3: the same files, the PRE-FIX impl-target rule.
-        const root = (await ASTEngine.getParser("rust" as any)).parse(src).rootNode
+        const rustTree = (await ASTEngine.getParser("rust" as any)).parse(src)
+        if (!rustTree) throw new Error("parser.parse returned no tree (null result)")
+        const root = rustTree.rootNode
         for (const t of prefixRustImplNames(root)) {
           rustPreTargets++
           const bad = rustNameDefect(t)
@@ -525,7 +527,9 @@ async function main(): Promise<void> {
           if (bad) goViolations.push({ file: rel, lang: "go", check: "G2-symbol-name-is-a-go-name", detail: `${String(s.kind)} ${JSON.stringify(String(s.name ?? "").slice(0, 80))} — ${bad}` })
         }
         // G1's self-test: the retired spellings, re-derived from the tree.
-        const goRoot = (await ASTEngine.getParser("go" as any)).parse(src).rootNode
+        const goTree = (await ASTEngine.getParser("go" as any)).parse(src)
+        if (!goTree) throw new Error("parser.parse returned no tree (null result)")
+        const goRoot = goTree.rootNode
         for (const t of prefixGoTargets(goRoot)) {
           goPreTargets++
           const bad = goNameDefect(t)
