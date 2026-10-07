@@ -46,7 +46,7 @@
 | calls | ✅ | `call` nodes in body position with function sources. Alias-resolved qualified module calls (`Repo.get` with `alias MyApp.Repo` → `MyApp.Repo.get`); same-module calls stay leaf (`add_bid`); pipelines (`|>`) call the piped target. Resolution rules: qualified calls emit when the receiver is capitalized (a module/alias) — lowercase receivers are dynamic dispatch (`module.manifests()`) and emit nothing; unqualified calls emit ONLY when the target is declared in the enclosing module/class (checked post-walk against the full declaration set, so forward references resolve) — Kernel builtins (`length`, `is_*`, `function_exported?`) and imported functions are not local symbols and produce no edge. Exclusions: special forms (case/cond/quote/unquote/...), def signature heads, an attribute's own NAME and the declaration attributes (EX-D25 — a code-valued attribute is NOT excluded), member access (`order.side`), quoted code. Self-recursion IS emitted (Rust `calls find -> find` analog) | 1.0 |
 | instantiates | ✅ | (a) `%Struct{...}` literals in body position (`instantiates new -> MyApp.User`) — never for `Map.put`-style module calls, never for pattern-position structs in a def head; plain `%{}` emits nothing. (b) `struct(User, attrs)` (ELXD19). (c) **`raise Mod` / `raise Mod, msg` / `reraise Mod, stack` (EX-D17)** — the same construction through `Kernel.raise`'s exception entry point, so it is an `instantiates` edge and never a call; 401 alias-named sites in 200 files of elixir@024beb1b carried no edge before the fix. A `__MODULE__` first argument resolves to the enclosing module; a bare `raise "msg"`, a bound exception, or a computed module name is **silent** (no static target to name). Self-construction (`raise __MODULE__` in the module's own body) is suppressed with the rest of the X class | 0.9 |
 | references | ✅ | module dependencies only: `use`/`import`/`alias`/`require` → `references module -> dep` (the FP-family module-dep contract, Clojure ns → required libs). A multi-alias expands one dependency per member (`alias Foo.{Bar, Baz}`, ELXD20) and **EX-D26 (2026-09-29)** widened the member filter to `identifier` nodes, so lowercase FUNCTION aliases (`alias Helper.{make, name}`) publish `references -> Helper.make` / `-> Helper.name` and register the local name; a bare call through such an alias then resolves (`make()` → `calls -> Helper.make`). Measured 0 sites in 938 files of the six corpora — a latent hole, fixed because it is one predicate wide. Body identifiers emit NOTHING (the old 47-edge references flood is removed) | 0.9 |
-| uses | ✅ | **EX-EX3 × ELIXIR_FIX2-U1, reconciled (2026-10-07) — see §12** a MEMBER FIELD READ: a `call` whose target is a `dot`, with **no** `arguments` child, whose receiver is a lowercase variable or a `%`-literal (`%OntoUser{}.name`). Uppercase receiver = a module, so the same node shape is a remote reference and stays `calls` (Go's rule verbatim: "selectors that are the callee of a call_expression are skipped — the calls edge handles them"). Excluded with reasons: quoted block, def signature head, DECLARATION attribute value, `->` pattern position (ER-D7: a head pattern emits nothing). Two labels, deliberately countable apart: **`struct_field_read` at 0.9** when the file declares the field (gated on the declared-struct-field vocabulary, map-bound receivers dropped), **`usage_contextual` at 0.7** when the file declares no struct field at all, so there is nothing to verify against. The pre-reconciliation FIX2 measurement (2,117 edges / 180 files, 96.43% of 2,244 construct sites, all at 0.7) is kept in §4 as the record of what that rule published; §12 has the current numbers and the collision they answer | 0.9 / 0.7 |
+| uses | ✅ | **EX-EX3 × ELIXIR_FIX2-U1, reconciled (2026-10-07) — see §12** a MEMBER FIELD READ: a `call` whose target is a `dot`, with **no** `arguments` child, whose receiver is a lowercase variable or a `%`-literal (`%OntoUser{}.name`). Uppercase receiver = a module, so the same node shape is a remote reference and stays `calls` (Go's rule verbatim: "selectors that are the callee of a call_expression are skipped — the calls edge handles them"). Excluded with reasons: quoted block, def signature head, DECLARATION attribute value, `->` pattern position (ER-D7: a head pattern emits nothing). Two labels, deliberately countable apart: **`struct_field_read` at 0.9** when the file declares the field (gated on the declared-struct-field vocabulary, map-bound receivers dropped), **`usage_contextual` at 0.7** when the file declares no struct field at all, so there is nothing to verify against. A second producer of `uses` exists — the `use` directive, the language's mixin application, `isMixin: true` / `via: "use"` / `structural` at 0.9, one edge per dependency (§13). The pre-reconciliation FIX2 measurement (2,117 edges / 180 files, 96.43% of 2,244 construct sites, all at 0.7) is kept in §4 as the record of what that rule published; §12 has the current numbers and the collision they answer | 0.9 / 0.7 |
 | exports | ✅ | **ELIXIR_FIX2-X2 (2026-10-05)** what the module PUBLISHES. Elixir has no `export` keyword — the language draws the surface with the DEFINITION FORM: `def`/`defmacro`/`defguard`/`defdelegate`/`@type`/`@opaque`/`@callback`/`defstruct`/a nested `defmodule` are reachable from outside the file; `defp`/`defmacrop`/`defguardp`/`@typep` are not. Measured 5,076 edges / 420 files (whole 601-file corpus, after ELIXIR_FIX2-P6 removed 6 edges that named an un-nameable module's members). The private half is the falsifier: 7,918 `defp`-family + 41 `@typep` corpus sites that an "is it a function" rule would publish. NOT published: a struct `Property` (membership rides `contains`, the exports-family ruling), an ownerless symbol (no owner to publish from), `owner === name` (the EX-L3 self-loop). `res.exports` (the ExportInfo LIST) is a different channel and is unchanged | 1.0 |
 | overrides | ⚠ GAP-in-the-language, DOES NOT FIRE on this corpus | **ELIXIR_FIX2-O1/O2 (2026-10-05)** Elixir HAS the construct: `defoverridable` (26 corpus sites / 14 files) and `super(...)` (17 / 4), and the analyzer read NEITHER before. It reads both now and publishes only the shape with two DISTINCT endpoints — a file that both DECLARES a provider N (with `defoverridable`) and `use`s N, which measures **0 sites in 601 files**. Not published, each with its measurement: `use N` in another file + any `def f` (a FABRICATION — most defs in a `use N` module are new, 510 `use` sites / 325 files); `defoverridable f: 1` + a later `def f` in the SAME module (17 sites / 3 files — a real override, but this lane merges a multi-clause head into ONE symbol so both endpoints are the same string: 17 self-loops carrying no graph information); a def name repeated across two modules in one file (21 / 9, and not an override at all). Fixture `use-defoverridable` is where the branch fires | 0.9 |
 
@@ -657,6 +657,9 @@ emission-time, because a read can precede the `defstruct` that declares its fiel
 `metadata` on the result carries the countable split: `usesCandidates`,
 `usesVerified`, `usesContextual`, `mapKeyReceiverDropped`.
 
+`uses` has a SECOND producer, added the same day and measured in §13: the `use`
+directive, which is the language's mixin application rather than a member read.
+
 ### Measurement — elixir corpus (568 files), before → after
 
 | | before | after |
@@ -694,3 +697,37 @@ confined to this rule. The portable part of the result is the resolution column:
 PASS — the first revision of this analyzer where both hold at once. Lane: 65 pass /
 17 fail → **66 / 16**; whole-corpus fixtures 136 → 135 declared failures, no lane
 regressed.
+
+## 13. `use` → `uses` (mixin application) — emitted, and the LABEL two pins disagree about
+
+`use Mod` is Elixir's mixin application: `Mod.__using__(opts)` runs inside the using
+module and injects code into it, which is the claim the relationship family records as
+`uses` (dart's `class A extends B with M1, M2`, css's `@include` of a `@mixin`). It is
+published ALONGSIDE the `references` edge the same directive already produced — not as
+a relabelling, because the module-dependency statement is what the module view reads —
+with `isMixin: true`, `via: "use"`, `evidenceClass: "structural"` and
+`reasonCode: elixir_use_mixin_application`. One edge per dependency at that
+dependency's own name-bearing line, so the brace group `use UsesMixin.{Grouped,
+AlsoGrouped}` publishes its two members at their own line and never the group text,
+and a self-directive publishes neither edge (ELXD8).
+
+| | |
+| --- | --- |
+| corpus (568 files), `uses` edges | 1,630 → **2,142** |
+| — `structural` (this rule) | 0 → 512 |
+| files with `uses` edges | 159 → 395 |
+| endpoints resolving file-local | 36.1% → **39.6%** |
+| endpoints resolving project-wide | 70.3% → **77.4%** |
+| the other nine audited types | byte-identical |
+
+`uses-mixin-forms` passes (5 `uses` rows + both `references` rows). `elx4-uses-mixin`
+does NOT, and the reason is a LABEL disagreement rather than missing edges: its three
+`uses` rows require `meta.evidenceClass: "usage_contextual"` for the same directive,
+and its `references` row requires `reference_qualified` where the dependency edge
+carries `structural_inference`. The rule states `structural` because a directive's text
+*names* the module — the evidence is syntax, not context — and `usage_contextual` is
+the `pushRel` default, which that pin's wave recorded without changing. The four
+findings are left visible instead of smoothed over: which label the lane publishes for
+a directive is the owner's call, and the third instance in this group (`references`, in
+the same pin) points at a vocabulary question rather than at this analyzer's reading of
+the language.
