@@ -1146,6 +1146,42 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    /**
+     * PS36 — a bare assignment's RIGHT-HAND SIDE is a read.
+     *
+     * `emitVariableReads` with one extra stop: it does NOT descend into a command
+     * invocation. `$b = Get-Thing -Name $a` already publishes `uses -> a` from the
+     * argument reader, carrying `isArgumentReference` and the argument's own line;
+     * reading it again from here republished the same source|type|target|line FIRST
+     * (this pass runs on the enclosing `assignment_expression`, which the switch reaches
+     * before the command nested inside it) and the dedupe discarded the richer row. For
+     * `New-Object` that cost the `isDynamicTypeName`/`viaNewObject` marking that
+     * `new-object-variable-psb14` pins on four rows.
+     *
+     * Nothing is lost by stopping at the command boundary: the command's own case walks
+     * the same subtree in the same visit, immediately after this one returns.
+     */
+    const emitAssignmentReads = (node: Node) => {
+      const work: Node[] = [node]
+      while (work.length > 0) {
+        const n = work.pop()!
+        // `command`, not `command_expression`: the node this pinned grammar builds for
+          // an invocation is `command`, and `command_expression` appears NOWHERE in it.
+          // Written as the wrong name the guard never fired, which is how the
+          // `new-object-variable-psb14` rows were still being pre-empted.
+          if (n.type === "command" || n.type === "command_expression") continue
+        if (n.type === "variable" || n.type === "braced_variable" || n.type === "member_access") {
+          emitVariableReads(n, true, "isAssignmentRead")
+          continue
+        }
+        if (n.type === "script_block_expression" || n.type === "named_block") continue
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (c) work.push(c)
+        }
+      }
+    }
+
     const isBranch = (type: string) =>
       type === "if_statement" ||
       type === "elseif_clause" ||
@@ -1901,16 +1937,86 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             const memberAccess = findDescendant(left, "member_access", 14)
             if (memberAccess) {
               emitMemberUses(memberAccess, "write")
-              break
+              // NOT a `break`, and that is the whole reason the `else` exists. It used
+              // to be a `break`, which silently disabled the right-hand-side read below
+              // for EVERY member write: `$cfg.Value = $other` published `uses -> cfg.Value`
+              // (the write) and nothing at all for `$other` (the read). The two are
+              // independent facts about one line, so both must be published. The `else`
+              // preserves exactly what the `break` was protecting: once the member
+              // branch has matched there is no `variable` node to declare, so
+              // `declareSymbol` stays this branch's job only.
+            } else {
+              const varNode = findDescendantVariable(left)
+              if (varNode && !isQualified(varNode.text)) {
+                const line = varNode.startPosition.row + 1
+                // PS8 — a suppressed name (an automatic variable) is not a
+                // declaration, so it must not become a contained child either.
+                // `$this.Name = $x` was publishing `contains Class -> this`.
+                declareSymbol(varNode.text, ASTEngine.SymbolKind.Variable, varNode, line, { isVariable: true })
+              }
             }
-            const varNode = findDescendantVariable(left)
-            if (varNode && !isQualified(varNode.text)) {
-              const line = varNode.startPosition.row + 1
-              // PS8 — a suppressed name (an automatic variable) is not a
-              // declaration, so it must not become a contained child either.
-              // `$this.Name = $x` was publishing `contains Class -> this`.
-              declareSymbol(varNode.text, ASTEngine.SymbolKind.Variable, varNode, line, { isVariable: true })
-            }
+          }
+          // PS36 — the RIGHT-HAND SIDE is a read, and it was published nowhere. `$b = $a`
+          // declared `$b` and said nothing about `$a`, while `$c = "$a"` published
+          // `uses -> a` through the interpolation reader and `$e = Get-Thing -Name $a`
+          // published it through the argument reader — so a variable's visibility in the
+          // graph depended on which syntax on the same line happened to mention it, which
+          // is not a property of the language.
+          //
+          // Measured before the fix on a deterministic 120-file stride of the 1,181
+          // admitted files (`validation/m14/fixtures/powershell/assignment-read-probe.mts`):
+          // 699 bare right-hand-side variable reads, of which **61 (8.73%) had a `uses`
+          // edge and 638 (91.27%) had none**. Top missing targets: r 47, true 37, null 31,
+          // false 27, item 20, actual 19, params 15, _ 10 — the automatic ones are inside
+          // `emitVariableReads`' own guard and the rest are ordinary project variables.
+          //
+          // `skipBlocks` is TRUE, and for the same reason the argument reader passes true:
+          // an `element_access` in the right-hand side (`$names[$i]`) must yield the KEY
+          // only, because the element-access case publishes that and reading the RECEIVER
+          // beside it is the pre-PS9 shape `member-reads-psb5` forbids by name. A script
+          // block in the right-hand side is a SCOPE and is read by the frame walker.
+          //
+          // Overlaps with the interpolation and argument readers are not a hazard, but
+          // only where those readers run on the SAME subtree. `addRel` dedupes on
+          // source|type|target|line, so two passes publishing the same read produce one
+          // row — the FIRST writer's metadata survives and the second is dropped. That
+          // makes ordering load-bearing wherever a dedicated reader exists, and it is
+          // why this pass reads only the `pipeline` RHS: the `command_expression` inside
+          // it is walked by the switch anyway, and its arguments are already read with
+          // `isArgumentReference` (and, for `New-Object`, with `isDynamicTypeName`).
+          //
+          // `skipBlocks` alone is NOT enough for that. `emitVariableReads` recurses
+          // GENERICALLY, so handed a `pipeline` it walks straight through
+          // `command_expression > command_elements > variable` and republishes the
+          // argument as a plain `isAssignmentRead`. Because this switch visits
+          // `assignment_expression` BEFORE the `command_expression` nested inside it,
+          // this pass writes FIRST, and `addRel`'s dedupe on source|type|target|line
+          // then DROPS the dedicated row — so `$d = New-Object "$typeName"` lost
+          // `isDynamicTypeName`/`viaNewObject` and kept only `isAssignmentRead`. Caught
+          // by `new-object-variable-psb14` losing all four of its expected rows.
+          //
+          // So the walk stops at the COMMAND boundary. A command invocation's arguments
+          // belong to the argument reader, which is where their metadata comes from, and
+          // this pass measured no candidate behind that boundary to justify the overlap:
+          // `assignment-read-probe.mts` excludes any candidate carrying a
+          // `command_elements` ancestor from its own population, for the same reason.
+          //
+          // NODE IDENTITY IS COMPARED BY BYTE SPAN, NOT BY `===`. `namedChild(i)`
+          // returns a FRESH wrapper object on every call, so `child === left` is false
+          // even for the identical node — measured, `a === b` is false while `a.id ===
+          // b.id` and `a.startIndex === b.startIndex`. Comparing wrappers therefore
+          // silently read the LEFT-HAND SIDE as if it were the right: `$a = New-Object
+          // $typeName` published `uses -> a` for a variable it is defining, which is a
+          // write and not a read. That is a fabricated edge of exactly the kind the
+          // contract forbids, and the same `===` mistake would have read every
+          // `assignement_operator` as a bare operand.
+          const operator = findFirstChild(node, "assignement_operator")
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const child = node.namedChild(i)
+            if (!child || child.type === "assignement_operator") continue
+            if (child.type === "left_assignment_expression") continue
+            if (child.type !== "pipeline") continue
+            emitAssignmentReads(child)
           }
           break
         }
