@@ -4565,8 +4565,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const packageName = ctx.packageStack.join(".")
     if (!packageName) return
     // Clause 5, read from the file the analyzer was handed: `.kts` is a property
-    // of the FILE, not of any declaration in it.
-    if (/\.kts$/i.test(ctx.currentFile)) return
+    // of the FILE, not of any declaration in it. Suffix test, not a regex: an
+    // analyzer may not match source text, and `script/m14/no-regex-gate.sh` was
+    // reporting this as the only regex left in any of the 48 analyzers.
+    if (ctx.currentFile.toLowerCase().endsWith(".kts")) return
     const placement = this.kotlinDeclarationPlacement(root, ctx.content.split("\n").length)
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
