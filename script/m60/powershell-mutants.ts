@@ -1188,6 +1188,69 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
       }),
     }),
   },
+  {
+    id: "powershell/drop-assignment-reads",
+    language: "powershell",
+    defectClass: "relationship-loss",
+    description:
+      "PS36 REVERT: every `uses` edge carrying `isAssignmentRead` is deleted, i.e. a bare assignment publishes nothing for its right-hand side again. Measured before the fix on a deterministic 120-file stride of the 1,181 admitted files: 699 bare right-hand-side variable reads, of which **61 (8.73%)** had a `uses` edge and **638 (91.27%)** had none. Written generically off the result's own field rather than off a fixture name, so it keeps biting when the fixture is renamed or a new one is added.",
+    transform: psDropRelType("uses", (rel: any) => psHas(rel, "isAssignmentRead", true)),
+  },
+  {
+    id: "powershell/assignment-read-pre-empts-new-object",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS36 REVERT, the OVERLAP arm: the `command` stop in `emitAssignmentReads` is deleted, so the assignment reader descends into a command invocation and republishes each argument as a plain `isAssignmentRead`. This is NOT an edge-count change, which is why it needs its own mutant: `addRel` dedupes on source|type|target|line, so the republished row REPLACES the dedicated one rather than adding to it. The defect is therefore a LOSS OF THE DEDICATED KEYS, and that is what this transform re-derives — an argument read sitting on an assignment line gives up its own metadata.\n\nThe defect shipped once: `$d = New-Object \"$typeName\"` kept `isAssignmentRead` and lost `isDynamicTypeName` + `viaNewObject`, and `new-object-variable-psb14` lost all four of its expected rows as a result. A revert that merely deleted the edges would be caught by `powershell/drop-assignment-reads`; only the metadata assertion separates the two, which is why both exist.\n\nLIMITATION, stated because it is a real narrowing: this harness transforms analyzer OUTPUT, never analyzer source, so it cannot literally re-run the source-side revert. What is faithful is the OBSERVABLE SHAPE — the keys the revert costs — not the control flow that costs them. The source-side proof is the fixture failure itself, recorded in the commit that fixed it.",
+    transform: (r: any) => {
+      // The set of lines carrying an assignment to a variable: the lines where the
+      // assignment reader and the argument reader overlap, measured off the result's
+      // own symbol table rather than off a fixture name.
+      const assignmentLines = new Set<number>()
+      for (const s of r.symbols ?? []) {
+        if (s.kind !== "Variable") continue
+        const l = s.line ?? s.range?.start?.line
+        if (typeof l === "number") assignmentLines.add(l)
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const meta = x.metadata ?? {}
+          if (!("isArgumentReference" in meta)) return x
+          if (!assignmentLines.has(x.line_number)) return x
+          const {
+            isArgumentReference, isDynamicTypeName, isScopedEnvironmentRead,
+            externalTarget, externalVia, ...rest
+          } = meta
+          void isArgumentReference; void isDynamicTypeName
+          void isScopedEnvironmentRead; void externalTarget; void externalVia
+          return { ...x, metadata: { ...rest, isAssignmentRead: true } }
+        }),
+      }
+    },
+  },
+  {
+    id: "powershell/assignment-read-reads-the-left",
+    language: "powershell",
+    defectClass: "fabrication",
+    description:
+      "PS36 REVERT, the FABRICATION arm, and the worst of the three: the right-hand side is read as if the left-hand side were excluded by NODE TYPE rather than by identity, so the LHS is read too and `$a = New-Object $typeName` publishes `uses -> a` for the variable it is DEFINING. A write is not a read, and an edge asserting a read of a variable at the moment of its declaration is exactly the fabricated edge the contract forbids — it is counted `unexplained` by the oracle and poisons `bb_graph` and `bb_impact`, where it reads as a self-loop.\n\nThis defect was MEASURED, not hypothesised: `namedChild(i)` returns a fresh wrapper object per call, so the original `child === left` guard was false for every child and never excluded anything (a.id === b.id and a.startIndex === b.startIndex while a === b is false). Transformed here as 'every `uses` edge whose target is the variable the same file declares on the assignment's own line becomes an assignment read', which is the observable shape.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const meta = x.metadata ?? {}
+        if (!("isVariableReference" in meta)) return x
+        // The LHS declaration shares the assignment's line, so a same-file Variable
+        // symbol on this edge's line whose name equals the target is the fabrication.
+        const declaredHere = (r.symbols ?? []).some(
+          (s: any) => s.kind === "Variable" && s.name === x.target &&
+            (s.line === x.line_number || s.range?.start?.line === x.line_number),
+        )
+        if (!declaredHere) return x
+        return { ...x, metadata: { ...meta, isAssignmentRead: true } }
+      }),
+    }),
+  },
 ]
 
 /** PS-B16 — the three byte predicates the four cause-C mutants re-derive. They duplicate
