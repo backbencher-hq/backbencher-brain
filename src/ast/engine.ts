@@ -23,6 +23,50 @@ const require = createRequire(import.meta.url)
 
 const log = Log.create({ service: "ast-engine" })
 
+// SUPERVISOR (m60 disk-leak). Grammar temp files this process created, removed on exit.
+//
+// Why exit and not immediately: `resolveWasm` must RETURN the path, because the caller
+// still has to hand it to `Language.load`. Unlinking inside `resolveWasm` deletes the
+// file out from under that load.
+//
+// Why exit is safe: `trackWasmTemp` is only ever called with a path whose name carries
+// this process's own `pid_hrtime` tag, so no other process on the machine can be holding
+// it open. The original reason for skipping the unlink — "another process may still be
+// reading it" — describes a shared name, and the shared name is exactly what the tag
+// replaced. Deleting at exit therefore cannot recreate the truncation bug that the tag
+// was introduced to fix.
+//
+// Failure to unlink is swallowed on purpose: this is housekeeping, and a temp file that
+// outlives the attempt must never be able to fail a parse.
+const wasmTemps = new Set<string>()
+let wasmCleanupHooked = false
+
+function trackWasmTemp(p: string): void {
+  wasmTemps.add(p)
+  if (wasmCleanupHooked) return
+  wasmCleanupHooked = true
+  const sweep = () => {
+    for (const f of wasmTemps) {
+      try {
+        require("fs").unlinkSync(f)
+      } catch {
+        // already gone, or never created — nothing to do
+      }
+    }
+    wasmTemps.clear()
+  }
+  process.on("exit", sweep)
+  // SIGINT/SIGTERM run `exit` handlers only when the default disposition is in play.
+  // A corpus walk killed by the watchdog takes SIGTERM, so without this the sweep is
+  // exactly the case that never runs.
+  for (const sig of ["SIGINT", "SIGTERM"] as const) {
+    process.on(sig, () => {
+      sweep()
+      process.exit(0)
+    })
+  }
+}
+
 // Universal AST Engine - Core intelligence for ANY programming language
 // Based on ProxiCall Brain architecture but designed for universal code understanding
 
@@ -798,10 +842,26 @@ export namespace ASTEngine {
           // rename is atomic within a filesystem, so a reader sees either no file
           // or the whole grammar — never a truncated one.
           fs.renameSync(tmp, final)
-          // Best-effort cleanup. Another process may still be reading it, so this
-          // deliberately does NOT unlink: the per-process tag already makes an
-          // unbounded tmpdir growth the only cost, and deleting a file another
-          // process is mid-load on would recreate the original bug.
+          // SUPERVISOR (m60 disk-leak). The per-process tag above means NO other
+          // process can be reading this file: the name is unique to this pid. The
+          // comment that used to sit here declined to unlink for exactly the opposite
+          // reason ("another process may still be reading it"), which stopped being
+          // true the moment the tag was added — so the unlink was dropped and the
+          // consequence was never re-examined.
+          //
+          // It cost 21.12 GB: 9,180 orphaned files of ~1.4 MB each in /tmp, because
+          // every corpus walk is a fresh short-lived tsx process that materialises the
+          // grammar and then exits without removing it. Measured, not estimated:
+          //   8,250 of them older than 60 minutes, i.e. owned by dead processes
+          //   0 open file descriptors anywhere in /proc/*/fd referencing any of them
+          // Deleting them moved / from 13 GB free (98% full) to 56 GB free. A full disk
+          // is what kills agents mid-measurement in this programme, twice recorded.
+          //
+          // Unlinking HERE would be wrong — the caller still has to Language.load() the
+          // path we are about to return. Registering for exit is the right lifetime:
+          // exclusive ownership means no other process can need the file once we are
+          // gone, and unlinking at exit is exactly when the orphans get collected.
+          trackWasmTemp(final)
           return final
             } catch (e) {
       log.debug("resolveWasm: temp file fallback failed", { error: (e as Error)?.message })

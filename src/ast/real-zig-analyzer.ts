@@ -1542,13 +1542,34 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // declared-type class, which already publishes `references (declared-type) ->
         // Build` for the same text.
         //
-        // The fix walks the path: a field_expression is in a type position when ANY
+// The fix walks the path: a field_expression is in a type position when ANY
         // ancestor — through the dotted chain only, stopping at anything that could
-        // make it a value — is a parameter, a container field, or a function\u0027s
+        // make it a value — is a parameter, a container field, or a function's
         // declared return type. The walk is deliberately bounded by the value
         // contexts the analyzer already knows (call, block, assignment,
         // declaration-with-value, struct literal), because a type path that reaches
         // one of those is a VALUE read whatever its base looks like.
+        //
+        // Z68 (pass 27): `variable_declaration` is in VALUE_BOUNDARY because an
+        // assignment LHS parses as one (ZGD1), so the walk returned FALSE there and a
+        // variable's own TYPE ANNOTATION was published as a `uses` RUNTIME READ. That
+        // is the Z38 defect one position lower: Z38 removed it for parameters, return
+        // types and container fields, and Z16 had already added `variable_declaration`
+        // to the declared-type collector, so the fact was carried TWICE — once as
+        // `references (declared_type)` and once, wrongly, as `uses`.
+        //
+        //   var annotated: c.Foo = .{};   uses -> Foo        references -> Foo
+        //   var wrapped: ?c.Bar = null;   uses -> Bar        references -> Bar
+        //   var inferred = annotated.baz;  uses -> baz        (nothing — correct)
+        //
+        // The discriminator is the grammar's `type` FIELD, read through the SAME
+        // `typeFieldOf` the declared-type pass uses, so the pass that suppresses the
+        // duplicate and the pass that carries the fact cannot drift apart. Measured at
+        // 300 stride-sampled corpus files by `receiver-truth.mts`: 442 `uses` edges sit
+        // on a variable's type annotation, every one of them a duplicate.
+        //
+        // Arriving through the INITIALIZER is still a value read, which is why the
+        // ancestor test is on the annotation node rather than on the declaration.
         const isTypePosition = (() => {
           const VALUE_BOUNDARY = new Set([
             "call_expression", "block", "block_expression", "arguments",
@@ -1559,13 +1580,20 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             "if_expression", "switch_expression", "while_expression", "for_expression",
           ])
           let cur: Node | null = p
+          let arrivedFrom: Node | null = n
           let hops = 0
           while (cur && hops < 8) {
             if (
               cur.type === "parameter" || cur.type === "container_field" ||
               cur.type === "function_declaration" || cur.type === "function_signature"
             ) return true
+            // must precede the VALUE_BOUNDARY test: a variable_declaration IS in that
+            // set, so the boundary would otherwise answer before this could.
+            if (cur.type === "variable_declaration") {
+              return this.zigArrivedAtTypeAnnotation(cur, arrivedFrom)
+            }
             if (VALUE_BOUNDARY.has(cur.type)) return false
+            arrivedFrom = cur
             cur = cur.parent
             hops++
           }
@@ -2408,6 +2436,36 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!hit || !hit.external) return null
     segments.reverse()
     return { target: `${root}.${segments.join(".")}`, alias: root, module: hit.module }
+  }
+
+  /**
+   * Did `from` reach `decl` (a `variable_declaration`) THROUGH its type annotation?
+   *
+   * True for `var x: c.Foo = ...` and `var x: ?c.Bar = null`, false for the two
+   * positions that are value reads: the initializer (`var x = v.baz`) and the
+   * assignment LHS that also parses as a declaration. The test is an ANCESTRY test
+   * rather than an identity test because the grammar's `type` field is the whole
+   * wrapped path — `?c.Bar` is one `field_expression` — so an inner segment of the
+   * chain reaches the declaration from a DESCENDANT of that node.
+   *
+   * It reads the same `type` field the declared-type collector reads, so the pass
+   * that suppresses the duplicate `uses` and the pass that carries the fact as
+   * `references (declared_type)` are keyed off one node by construction. `var d =
+   * v.baz` has no `type` field at all, which is why the initializer is excluded
+   * here and not by a name test.
+   */
+  private zigArrivedAtTypeAnnotation(decl: Node, from: Node | null): boolean {
+    const annotation = this.typeFieldOf(decl)
+    if (!annotation || !from) return false
+    let cur: Node | null = from
+    let hops = 0
+    while (cur && hops++ < 8) {
+      if (cur.id === annotation.id) return true
+      const parent: Node | null = cur.parent
+      if (!parent || parent.id === decl.id) return false
+      cur = parent
+    }
+    return false
   }
 
   /**

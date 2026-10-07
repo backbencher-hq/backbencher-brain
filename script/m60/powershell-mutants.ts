@@ -1095,4 +1095,195 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
           : e),
     }),
   },
+
+  // ---------------------------------------------------------------- PS-B16, cause C
+  //
+  // Every revert below re-derives its trigger from the RESULT's own fields, never from a
+  // fixture name, because a name filter stops matching the moment a fixture is renamed and
+  // a mutant that measures one fixture instead of a behaviour is a fixture with extra steps.
+  // The byte predicates duplicate `externalReadingOf` in the analyzer on purpose: a mutant
+  // that imported the analyzer's own helper could not survive the helper being deleted, and
+  // the point of these four is to fail when that helper's LOGIC changes.
+  {
+    id: "powershell/externality-guard-removed",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS-B16 REVERT: the declaration guard is deleted, so a mark is published on SHAPE alone — every Verb-Noun or qualified-looking target, whether or not the emitting file declares it. That is the pre-fix shape rule and it is the mislabel the guard exists to prevent: measured over 1,181 of 1,181 admitted files, the unguarded Verb-Noun reading marks 32,368 live edges of which **7,040 (21.75%) point at a name the EMITTING FILE declares**. `Get-Thing` in externality-psb16 is one of them, declared at line 19 and called at line 26 with a spelling byte-identical to the `Get-ChildItem` on line 13.\n\nCaught by externality-psb16's positive row for `calls -> Get-Thing` at line 26 (`meta.externalTarget: null`) and its forbid row for the same edge with `meta.externalTarget: true`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.target ?? "")
+        if (t.length === 0) return x
+        if (!psByteIsCmdlet(t) && !psHasQualifierByte(t)) return x
+        const { externalTarget, externalVia, noDeclarationInFile, ...meta } = x.metadata ?? {}
+        void externalTarget; void externalVia; void noDeclarationInFile
+        return { ...x, metadata: { ...meta, externalTarget: true, externalVia: psByteIsCmdlet(t) ? "cmdlet" : "qualified" } }
+      }),
+    }),
+  },
+  {
+    id: "powershell/externality-partition-removed",
+    language: "powershell",
+    defectClass: "noise",
+    description:
+      "PS-B16 REVERT, the PAYLOAD shape: both keys are published on every row instead of partitioning them. The fact is identical on both rows — `externalTarget` fires only where the guard passed, so it already implies 'no declaration in this file' — and the duplication is not free: over the same 1,181-file walk the payload counterfactual in `ambiguity-split.mts` prices the partition at **3,216,966 B (+9.23%)** and publishing both on every row at **3,888,591 B (+11.15%)**, so 671,625 B of the lane's relationship payload is the same fact written twice.\n\nCaught by externality-psb16's forbid row for `calls -> Get-ChildItem` with `meta.noDeclarationInFile: true`, and by the positive rows asserting `meta.noDeclarationInFile: null` on the same edges.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const meta = x.metadata ?? {}
+        if (meta.externalTarget === true && meta.noDeclarationInFile === undefined) {
+          return { ...x, metadata: { ...meta, noDeclarationInFile: true } }
+        }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "powershell/externality-quote-exclusion-removed",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS-B16 REVERT: the leading-QUOTE exclusion is deleted, so any target carrying a `.` `\\` `/` or `:` is read as qualified — including the string literals this analyzer publishes as property and variable names. It publishes hashtable keys and command arguments verbatim, so `'Content-Type'` (43 corpus edges), `\"Authorization\"` (18), `'User-Agent'` (14) and `\"it:skip\"` (7) all arrive as names, and a quoted literal is not an identifier. externality-psb16 declares `'Content-Type'` as a property at line 61 precisely so this reading has something to be wrong about.\n\nCaught by externality-psb16's forbid row for `uses -> 'Content-Type'` with `meta.externalTarget: true`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.target ?? "")
+        if (t.length === 0) return x
+        if (t.charCodeAt(0) !== 34 && t.charCodeAt(0) !== 39) return x
+        if (!psHasQualifierByte(t)) return x
+        return { ...x, metadata: { ...(x.metadata ?? {}), externalTarget: true, externalVia: "qualified" } }
+      }),
+    }),
+  },
+  {
+    id: "powershell/externality-scope-exclusion-removed",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS-B16 REVERT: the SCOPE-PREFIX exclusion is deleted, so `global:Helper`, `script:Foo`, `local:Foo`, `private:Foo` and `function:prompt` are marked external. All five name scopes a declaration IN THE EMITTING FILE can bind — `function global:Helper {…}` is ordinary PowerShell, which externality-psb16 writes at line 41 and calls at line 49, so the mark would be falsified by the very file that carries it. 881 corpus edges carry such a prefix. `env:`/`variable:`/`using:` are deliberately NOT in the exclusion set and this mutant leaves them marked: those are runtime tables and the caller's scope.\n\nCaught by externality-psb16's forbid row for `calls -> global:Helper` with `meta.externalTarget: true`, and by the positive row for the same edge asserting `meta.externalTarget: null`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.target ?? "")
+        if (t.length === 0 || !psHasScopePrefix(t, ["global", "script", "local", "private", "function"])) return x
+        return { ...x, metadata: { ...(x.metadata ?? {}), externalTarget: true, externalVia: "qualified" } }
+      }),
+    }),
+  },
+  {
+    id: "powershell/externality-no-declaration-dropped",
+    language: "powershell",
+    defectClass: "undercount",
+    description:
+      "PS-B16 REVERT, the bare-fact arm: every `noDeclarationInFile` key is deleted from every edge. The field is the lane's answer to cause A as well as cause C — of the 70,139 corpus edges that resolve against no published symbol, **41,686 (59.43%)** carry it, and it is the only statement the analyzer can make about a name a file does not declare. Dropping it leaves the edge looking exactly as it did before this change, which is the point of the mutant: an additive key that vanishes is indistinguishable from one that never shipped.\n\nCaught by externality-psb16's positive rows, every one of which asserts a `meta.*` value that this transform removes.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const meta = x.metadata ?? {}
+        if (!("noDeclarationInFile" in meta)) return x
+        const { noDeclarationInFile, ...rest } = meta
+        void noDeclarationInFile
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "powershell/drop-assignment-reads",
+    language: "powershell",
+    defectClass: "relationship-loss",
+    description:
+      "PS36 REVERT: every `uses` edge carrying `isAssignmentRead` is deleted, i.e. a bare assignment publishes nothing for its right-hand side again. Measured before the fix on a deterministic 120-file stride of the 1,181 admitted files: 699 bare right-hand-side variable reads, of which **61 (8.73%)** had a `uses` edge and **638 (91.27%)** had none. Written generically off the result's own field rather than off a fixture name, so it keeps biting when the fixture is renamed or a new one is added.",
+    transform: psDropRelType("uses", (rel: any) => psHas(rel, "isAssignmentRead", true)),
+  },
+  {
+    id: "powershell/assignment-read-pre-empts-new-object",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS36 REVERT, the OVERLAP arm: the `command` stop in `emitAssignmentReads` is deleted, so the assignment reader descends into a command invocation and republishes each argument as a plain `isAssignmentRead`. This is NOT an edge-count change, which is why it needs its own mutant: `addRel` dedupes on source|type|target|line, so the republished row REPLACES the dedicated one rather than adding to it. The defect is therefore a LOSS OF THE DEDICATED KEYS, and that is what this transform re-derives — an argument read sitting on an assignment line gives up its own metadata.\n\nThe defect shipped once: `$d = New-Object \"$typeName\"` kept `isAssignmentRead` and lost `isDynamicTypeName` + `viaNewObject`, and `new-object-variable-psb14` lost all four of its expected rows as a result. A revert that merely deleted the edges would be caught by `powershell/drop-assignment-reads`; only the metadata assertion separates the two, which is why both exist.\n\nLIMITATION, stated because it is a real narrowing: this harness transforms analyzer OUTPUT, never analyzer source, so it cannot literally re-run the source-side revert. What is faithful is the OBSERVABLE SHAPE — the keys the revert costs — not the control flow that costs them. The source-side proof is the fixture failure itself, recorded in the commit that fixed it.",
+    transform: (r: any) => {
+      // The set of lines carrying an assignment to a variable: the lines where the
+      // assignment reader and the argument reader overlap, measured off the result's
+      // own symbol table rather than off a fixture name.
+      const assignmentLines = new Set<number>()
+      for (const s of r.symbols ?? []) {
+        if (s.kind !== "Variable") continue
+        const l = s.line ?? s.range?.start?.line
+        if (typeof l === "number") assignmentLines.add(l)
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const meta = x.metadata ?? {}
+          if (!("isArgumentReference" in meta)) return x
+          if (!assignmentLines.has(x.line_number)) return x
+          const {
+            isArgumentReference, isDynamicTypeName, isScopedEnvironmentRead,
+            externalTarget, externalVia, ...rest
+          } = meta
+          void isArgumentReference; void isDynamicTypeName
+          void isScopedEnvironmentRead; void externalTarget; void externalVia
+          return { ...x, metadata: { ...rest, isAssignmentRead: true } }
+        }),
+      }
+    },
+  },
+  {
+    id: "powershell/assignment-read-reads-the-left",
+    language: "powershell",
+    defectClass: "fabrication",
+    description:
+      "PS36 REVERT, the FABRICATION arm, and the worst of the three: the right-hand side is read as if the left-hand side were excluded by NODE TYPE rather than by identity, so the LHS is read too and `$a = New-Object $typeName` publishes `uses -> a` for the variable it is DEFINING. A write is not a read, and an edge asserting a read of a variable at the moment of its declaration is exactly the fabricated edge the contract forbids — it is counted `unexplained` by the oracle and poisons `bb_graph` and `bb_impact`, where it reads as a self-loop.\n\nThis defect was MEASURED, not hypothesised: `namedChild(i)` returns a fresh wrapper object per call, so the original `child === left` guard was false for every child and never excluded anything (a.id === b.id and a.startIndex === b.startIndex while a === b is false). Transformed here as 'every `uses` edge whose target is the variable the same file declares on the assignment's own line becomes an assignment read', which is the observable shape.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const meta = x.metadata ?? {}
+        if (!("isVariableReference" in meta)) return x
+        // The LHS declaration shares the assignment's line, so a same-file Variable
+        // symbol on this edge's line whose name equals the target is the fabrication.
+        const declaredHere = (r.symbols ?? []).some(
+          (s: any) => s.kind === "Variable" && s.name === x.target &&
+            (s.line === x.line_number || s.range?.start?.line === x.line_number),
+        )
+        if (!declaredHere) return x
+        return { ...x, metadata: { ...meta, isAssignmentRead: true } }
+      }),
+    }),
+  },
 ]
+
+/** PS-B16 — the three byte predicates the four cause-C mutants re-derive. They duplicate
+ *  `externalReadingOf` in the analyzer on purpose: a revert that called the analyzer's own
+ *  helper could not fail when the helper's LOGIC changed, which is the only thing these
+ *  mutants are for. No regex, matching the analyzer's own constraint. */
+const psUpper = (c: number): boolean => c >= 65 && c <= 90
+/** A hyphen with an ASCII uppercase letter on BOTH sides — PowerShell's Verb-Noun spelling. */
+const psByteIsCmdlet = (t: string): boolean => {
+  for (let i = 1; i < t.length; i++) {
+    if (t.charCodeAt(i) === 45 && psUpper(t.charCodeAt(0)) && psUpper(t.charCodeAt(i + 1))) return true
+  }
+  return false
+}
+/** A byte no bare PowerShell identifier has. */
+const psHasQualifierByte = (t: string): boolean => {
+  for (let i = 0; i < t.length; i++) {
+    const c = t.charCodeAt(i)
+    if (c === 46 || c === 92 || c === 47 || c === 58) return true
+  }
+  return false
+}
+/** A case-insensitive `prefix:` match. */
+const psHasScopePrefix = (t: string, prefixes: string[]): boolean => {
+  for (const p of prefixes) {
+    if (t.length <= p.length + 1 || t.charCodeAt(p.length) !== 58) continue
+    let eq = true
+    for (let i = 0; i < p.length; i++) {
+      let c = t.charCodeAt(i)
+      if (c >= 65 && c <= 90) c += 32
+      if (c !== p.charCodeAt(i)) { eq = false; break }
+    }
+    if (eq) return true
+  }
+  return false
+}
