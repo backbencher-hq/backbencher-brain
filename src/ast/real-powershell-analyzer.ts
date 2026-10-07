@@ -1901,16 +1901,52 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             const memberAccess = findDescendant(left, "member_access", 14)
             if (memberAccess) {
               emitMemberUses(memberAccess, "write")
-              break
+              // NOT a `break`, and that is the whole reason the `else` exists. It used
+              // to be a `break`, which silently disabled the right-hand-side read below
+              // for EVERY member write: `$cfg.Value = $other` published `uses -> cfg.Value`
+              // (the write) and nothing at all for `$other` (the read). The two are
+              // independent facts about one line, so both must be published. The `else`
+              // preserves exactly what the `break` was protecting: once the member
+              // branch has matched there is no `variable` node to declare, so
+              // `declareSymbol` stays this branch's job only.
+            } else {
+              const varNode = findDescendantVariable(left)
+              if (varNode && !isQualified(varNode.text)) {
+                const line = varNode.startPosition.row + 1
+                // PS8 — a suppressed name (an automatic variable) is not a
+                // declaration, so it must not become a contained child either.
+                // `$this.Name = $x` was publishing `contains Class -> this`.
+                declareSymbol(varNode.text, ASTEngine.SymbolKind.Variable, varNode, line, { isVariable: true })
+              }
             }
-            const varNode = findDescendantVariable(left)
-            if (varNode && !isQualified(varNode.text)) {
-              const line = varNode.startPosition.row + 1
-              // PS8 — a suppressed name (an automatic variable) is not a
-              // declaration, so it must not become a contained child either.
-              // `$this.Name = $x` was publishing `contains Class -> this`.
-              declareSymbol(varNode.text, ASTEngine.SymbolKind.Variable, varNode, line, { isVariable: true })
-            }
+          }
+          // PS36 — the RIGHT-HAND SIDE is a read, and it was published nowhere. `$b = $a`
+          // declared `$b` and said nothing about `$a`, while `$c = "$a"` published
+          // `uses -> a` through the interpolation reader and `$e = Get-Thing -Name $a`
+          // published it through the argument reader — so a variable's visibility in the
+          // graph depended on which syntax on the same line happened to mention it, which
+          // is not a property of the language.
+          //
+          // Measured before the fix on a deterministic 120-file stride of the 1,181
+          // admitted files (`validation/m14/fixtures/powershell/assignment-read-probe.mts`):
+          // 699 bare right-hand-side variable reads, of which **61 (8.73%) had a `uses`
+          // edge and 638 (91.27%) had none**. Top missing targets: r 47, true 37, null 31,
+          // false 27, item 20, actual 19, params 15, _ 10 — the automatic ones are inside
+          // `emitVariableReads`' own guard and the rest are ordinary project variables.
+          //
+          // `skipBlocks` is TRUE, and for the same reason the argument reader passes true:
+          // an `element_access` in the right-hand side (`$names[$i]`) must yield the KEY
+          // only, because the element-access case publishes that and reading the RECEIVER
+          // beside it is the pre-PS9 shape `member-reads-psb5` forbids by name. A script
+          // block in the right-hand side is a SCOPE and is read by the frame walker.
+          //
+          // Overlaps with the interpolation and argument readers are not a hazard: `addRel`
+          // dedupes on source|type|target|line, so the same read published twice is one row.
+          const operator = findFirstChild(node, "assignement_operator")
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const child = node.namedChild(i)
+            if (!child || child === operator || child === left) continue
+            emitVariableReads(child, true, "isAssignmentRead")
           }
           break
         }
