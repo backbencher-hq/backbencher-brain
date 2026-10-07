@@ -114,7 +114,9 @@ for (const root of roots) {
     let text: string
     try { text = readFileSync(abs, "utf8") } catch { continue }
     let root_: Node | null = null
-    try { root_ = (await parser.parse(text)).rootNode; filesParsed++ } catch { filesFailed++; continue }
+    // The try/catch already classifies a parse failure (filesFailed), so a null tree
+    // belongs to that count rather than to a TypeError inside the dereference.
+    try { const tree = await parser.parse(text); if (!tree) throw new Error("parser.parse returned no tree (null result)"); root_ = tree.rootNode; filesParsed++ } catch { filesFailed++; continue }
     if (!root_) { filesFailed++; continue }
     n++
     if (root_.hasError) parseErrorFiles.push(abs)

@@ -236,7 +236,9 @@ for (const f of files) {
   }
   const first = normalised.charAt(0)
   const moduleScope = first >= "0" && first <= "9" ? `_${normalised}` : normalised
-  const truth = derivePythonTruth(parser.parse(content).rootNode, moduleScope)
+  const tree = parser.parse(content)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
+  const truth = derivePythonTruth(tree.rootNode, moduleScope)
   const truthKeys = new Set<string>()
   for (const e of truth) {
     if (!TYPES.includes(e.type as any)) continue
