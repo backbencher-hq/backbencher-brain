@@ -148,22 +148,22 @@ the fold satisfies the newer one:
 fixture-lane gate: 48 fixture director(ies), every one named in LANGS
 summary: {"vb":{"pass":1,"fail":3}, … , "graphql":{"pass":5,"fail":0}, …}
 fixture baseline gate: no regressions
-135 fixture(s) FAIL — these are honest defect findings, not harness errors
+136 fixture(s) FAIL — these are honest defect findings, not harness errors
 ```
 
-1447 pins run; 135 fail. The corpus grew from 1238 pins to 1447 (+209) in this pass, and
+1447 pins run; 136 fail. The corpus grew from 1238 pins to 1447 (+209) in this pass, and
 the same run regenerated `validation/m14/fixture-baseline.json` through `--update-baseline`,
 which is a **claim-level change and is stated as one**: three lanes were previously gated
 (javascript 0, elixir 0, nim 0) and the other 45 had no recorded number. The file now
 carries the measured count for all 48 lanes, so any lane that grows a failing pin trips
-the gate. Nothing was silenced: 135 is larger than the 47 that failed before the lane
+the gate. Nothing was silenced: 136 is larger than the 47 that failed before the lane
 evidence landed, because 236 pin files (211 new, 25 replaced) from lanes main does not
 satisfy are now on main and failing, where before they were not on main at all.
 
 Per-lane declared failures:
 
 ```
-vb 3, vue 5, svelte 9, typescript 5, java 11, groovy 20, kotlin 6, scala 5, c 4,
+vb 3, vue 5, svelte 9, typescript 6, java 11, groovy 20, kotlin 6, scala 5, c 4,
 cpp 6, rust 3, python 10, go 2, csharp 4, swift 4, objc 5, lua 3, ruby 1, perl 8,
 elixir 17, make 2, html 1, scss 1   (25 lanes with 0)
 ```
@@ -225,7 +225,7 @@ Run at the commit this note was pushed with:
 |---|---|---|
 | types | `npx tsc --noEmit -p tsconfig.json` | exit 0 |
 | build | `npm run build` | exit 0 |
-| fixtures | `bun run script/m14/run-fixtures.ts` | exit 0, 1447 pins, 135 declared failing, `fixture baseline gate: no regressions` |
+| fixtures | `bun run script/m14/run-fixtures.ts` | exit 0, 1447 pins, 136 declared failing, `fixture baseline gate: no regressions` |
 | no regex in analyzers | `bash script/m14/no-regex-gate.sh` | exit 0 — 0 usages, 48 of 48 analyzers in scope, and the census agrees with HEAD (0 unclassified, 0 mislocated) |
 | main is forward-only | `bash .tools/main-forward-guard.sh` | `guard: OK — remote main is an ancestor of local main` |
 
@@ -251,7 +251,41 @@ regenerated on 2026-10-05) and reports zero now, because the landed ruby revisio
 already replaced its `/\\/g` with a split/join and the last real one — kotlin's
 `/\.kts$/i` file-name test, older than the fold — is a suffix test in `6deea761c`.
 
-## 8. Method notes that a later reader will want
+## 8. Content that existed only in this checkout
+
+The archive tag in §1 covers every **remote** ref. It does not cover commits that were
+never pushed, and there were 1331 of those: commits reachable from a local branch and
+from no remote ref. 189 of them carry a tree the remote does not have, and across them
+408 blob paths differ from main. That is a second population from the one §2 measures,
+and it is the one a reader would miss — the earlier evidence pass enumerated remote refs,
+so a file that lived only in a local branch was never even a candidate for landing.
+
+What happened to the 408, by class:
+
+| class | paths | what was done |
+|---|---|---|
+| lane-scoped (`script/**`, `validation/**`, `docs/analyzers/**`, `reviews/**`) | 284 | the newest version was landed — 117 of them were new to the tree, the rest the earlier pass had already written |
+| analyzer revisions, `src/ast/**` | 51 | **not landed**: each is a behavior change, and these revisions are exactly the candidates §2 measured against their lane's pins. Landing one now would undo a measurement, not add work |
+| the website redesign, `website/src/**` | 39 | **not landed**: an in-progress front-end on its own branch (`website/redesign-2026`), not lane work |
+| generated censuses, `validation/m60\|m12/results/**` | 34 | **not landed** by the rule that generated data never enters git; the largest is `java-ontology-census-before.json` at 160 MB, with thirteen ~11 MB shards beside it |
+
+One landing in that pass was caught and undone before it was committed: the newest
+commit touching `package.json` among all refs is a lane commit from 2026-10-04, and
+landing it would have dropped `prepack`, `verify:m27`, `verify:m28`, `verify:m55` and
+five `*:surface` scripts from a file that is not lane-owned — the same class of revert
+the union ledger flags for `analyzer/GRAMMAR_FIX_VB`'s `engine.ts`. A file's newest
+commit is not evidence that its content is newer than main's when the branch it sits on
+forked earlier; §2's pin measurement is the check for analyzer files, and this is the
+lesson applied to everything else.
+
+Also stated plainly, because it bounds the guarantee: after this pass the only content
+in this checkout that is not on the remote and not on main is the three not-landed
+classes above. Deleting the **local** branches would take those with it — generated
+censuses (policy), the website branch (its own concern), and 51 analyzer-revision bodies
+whose behavior §2 measured and rejected. Pushing them is a decision for the owner, not a
+side effect of this pass: the censuses are 391 MB uncompressed.
+
+## 9. Method notes that a later reader will want
 
 * A source count is never evidence in this programme; the only valid instrument is
   `script/m14/firing-check-v2.mjs`, which runs the production path
