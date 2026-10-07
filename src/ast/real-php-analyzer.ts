@@ -588,6 +588,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       ns: string | undefined
       inFunction: string | undefined
       scope: PhpValueScope
+      /** Set by the RECOVERY-ESCAPE (see `pushRecoveredBodyDeclarations`): this callable was
+       *  recovered from a body the parser could not close, so its owner is the class (or the
+       *  namespace) rather than the method it was nested inside. */
+      recoveredFromBody?: boolean
     }
     // PHP2 file scope: prescanned top-level bindings (uniform — valid code
     // declares before use; hoisted functions resolve regardless of order).
@@ -606,7 +610,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack: Frame[] = [{ node: rootNode, owner: undefined, ownerKind: undefined, ns: undefined, inFunction: undefined, scope: fileScope }]
 
     while (stack.length > 0) {
-      const { node, owner, ownerKind, ns, inFunction, scope } = stack.pop()!
+      const { node, owner, ownerKind, ns, inFunction, scope, recoveredFromBody } = stack.pop()!
       const type = node.type
 
       if (type === "namespace_definition") {
@@ -888,9 +892,20 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const fnName = nameNode.text
         const parameters = this.extractParameters(node)
         const returnType = this.extractReturnType(node)
+        // RECOVERY-ESCAPE, half 2 of 2 (half 1 is the skip in `walkBody`, and the measurements
+        // are in `pushRecoveredBodyDeclarations`). A `function_definition` the escape recovered
+        // from a CLASS member's damaged body is written where a class member is written — the
+        // source spells it in the class body between members — so it publishes as a METHOD of
+        // that class rather than as a global function. Publishing it as a function would
+        // describe the damaged tree; php/error-recovery's contract ('the declarations AROUND it
+        // still publish, INCLUDING THE ONES AFTER IT') describes the SOURCE. The kind is the
+        // whole of the difference: ownership (`ownerName`) and the containment edge that follows
+        // are the same either way, which is why the alternative reading is pinned by the
+        // fixture's `forbidSymbols` rows rather than left to this comment.
+        const escapedMember = recoveredFromBody === true && this.isClassLikeOwnerKind(ownerKind)
         symbols.push({
           name: fnName,
-          kind: ASTEngine.SymbolKind.Function,
+          kind: escapedMember ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
           range: this.nodeToRange(node),
           visibility: "public",
           parameters,
@@ -904,11 +919,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // nothing at all.
           ownerName: owner ?? ns,
           ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
-          metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${fnName}` : fnName, namespace: ns },
+          metadata: escapedMember
+            ? { phpSpecific: true, isMethod: true, isMagicMethod: fnName.startsWith("__"), recoveredFromBody: true }
+            : { phpSpecific: true, fqn: ns ? `${ns}\\${fnName}` : fnName, namespace: ns },
         })
         const body = node.childForFieldName("body")
         if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, fnName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
         this.walkCallableHeader(node, symbols, relationships, imports, owner, ns, fnName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
+        if (body) this.pushRecoveredBodyDeclarations(body, stack, owner, ownerKind, ns, scope)
         this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope, true)
         continue
       }
@@ -965,6 +983,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const body = node.childForFieldName("body")
         if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, methodName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
         this.walkCallableHeader(node, symbols, relationships, imports, owner, ns, methodName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
+        // RECOVERY-ESCAPE — the members the parser could not close this body over. See
+        // `pushRecoveredBodyDeclarations`.
+        if (body) this.pushRecoveredBodyDeclarations(body, stack, owner, ownerKind, ns, scope)
         this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope, true)
         continue
       }
@@ -1648,7 +1669,19 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)
-        if (child) stack.push({ n: child, parent: n, scope: childScope })
+        if (!child) continue
+        // RECOVERY-ESCAPE, half 1 of 2 (half 2 is `pushRecoveredBodyDeclarations`, called by the
+        // `function_definition`/`method_declaration` branches; the measurements that justify the
+        // rule are in its header). A callable sitting DIRECTLY in a body the parser could not
+        // close is not a nested function — it is the next member of the class, recovered into
+        // the wrong parent. The escape publishes it and walks its subtree as the declaration it
+        // is, so descending into it HERE as well would emit every call and read inside it TWICE:
+        // once attributed to the damaged method and once to the member itself. The skip is
+        // restricted to the ENTRY node's own children (`n === node`), so a declaration nested
+        // inside a deeper statement of the same damaged body keeps the old, single walk — that
+        // shape is not published by the escape and skipping it here would LOSE its edges.
+        if (n === node && this.recoveryMisnestedCallable(node, child)) continue
+        stack.push({ n: child, parent: n, scope: childScope })
       }
     }
   }
@@ -2000,6 +2033,105 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * belong to no value rule — but defaults, const initializers and
    * attribute arguments genuinely read (consts/globals via file frame).
    */
+  /** Class-like owners: a recovered declaration under one of these publishes as a MEMBER. */
+  private isClassLikeOwnerKind(kind: ASTEngine.SymbolKind | undefined): boolean {
+    return kind === ASTEngine.SymbolKind.Class || kind === ASTEngine.SymbolKind.Interface ||
+      kind === ASTEngine.SymbolKind.Trait || kind === ASTEngine.SymbolKind.Enum
+  }
+
+  /**
+   * RECOVERY MIS-NESTING — the ONE predicate the recovery-escape rests on, asked by both halves
+   * of it so they cannot drift apart: `walkBody` skips this child when the escape will publish
+   * it, and `pushRecoveredBodyDeclarations` publishes exactly what `walkBody` skips. A predicate
+   * answered differently by the two halves is either a lost subtree (skipped, never published)
+   * or a doubled one (published, still walked).
+   *
+   * True when `child` is a DIRECT child of `body` that is a NAMED callable declaration and
+   * `body` is a `compound_statement` the parser errored inside.
+   *
+   * WHY THE PARENT MUST BE DAMAGED, and why this is not a general "nested functions are
+   * members" rule: in a body the parser read correctly, a nested `function` really is a nested
+   * function — PHP hoists it as a GLOBAL when the enclosing code runs, this lane already models
+   * that for resolution (`collectPhpFileScope` registers it as a file-scope function value), and
+   * publishing such a declaration as a class member would be a fabrication. The rule fires only
+   * where the tree is known to be wrong about structure, which is the case the lane's own
+   * `php/error-recovery` contract already speaks to: "the declarations AROUND it still publish,
+   * INCLUDING THE ONES AFTER IT — degradation is PARTIAL, not total".
+   *
+   * WHY THE NAME IS REQUIRED: the escape publishes by pushing a frame, and a frame for a
+   * nameless callable would publish nothing while the skip above had already stopped the only
+   * other walk over its subtree — a silent LOSS of every call and read inside it, which is the
+   * failure mode this whole lane treats as worse than a missing symbol.
+   *
+   * MEASURED, on the shape that produced it: `FSharp.Formatting/csharp/MarkdownSharpTests/source/
+   * php/markdown.php:910` writes PHP-8-REMOVED curly-brace offset syntax
+   * (`$level = $matches[2]{0} == '=' ? 1 : 2;`), the grammar errors there, and the enclosing
+   * method's body is left open — `method_declaration _doHeaders_callback_setext 905-1575 >
+   * compound_statement 905-1575 > the next twenty members`. Twenty declarations in one file, and
+   * the corpus's ENTIRE residue in the lane's `DECLARED_IN_TREE_NOT_PUBLISHED` bucket: 19 `calls`
+   * edges naming methods this file declares and the store never received. Bisected rather than
+   * guessed: replacing that one expression with `$matches[2][0]` moves 11 of 12 members back to
+   * direct children of the declaration_list (nested 9 -> 0), while the file's OTHER legacy offset
+   * (`switch ($token{0})` at 1560) does not — the two damage sites have different effects, only
+   * the first swallows, and a rule keyed on "the file has errors" rather than on this shape would
+   * have fired on both.
+   *
+   * WHY THIS PREDICATE AND NOT THE ESCAPE'S WHOLE TYPE SET: the skip it answers for may only
+   * cover a declaration whose subtree the escape then WALKS. A callable's subtree is walked by
+   * its own frame (params, body), so skipping it here loses nothing. A `const_declaration` or
+   * `property_declaration` is different: their branches publish symbols from the declaration and
+   * never walk the initialiser, so the VALUE's reads live only in this walk — skipping them here
+   * would silently drop them. Those two are therefore published WITHOUT being skipped
+   * (`pushRecoveredBodyDeclarations`), which adds symbols and leaves every edge exactly where it
+   * already was. One predicate for the paired halves, one list for the publish-only half.
+   */
+  private recoveryMisnestedCallable(body: Node, child: Node): boolean {
+    if (child.type !== "function_definition" && child.type !== "method_declaration") return false
+    if (body.type !== "compound_statement" || !body.hasError) return false
+    return child.childForFieldName("name") !== null
+  }
+
+  /**
+   * RECOVERY-ESCAPE, half 2 of 2 — publish the declarations recovery nested into the wrong
+   * parent. See `recoveryMisnestedCallable` for the predicate, the measurements and the scope,
+   * and the skip in `walkBody` for the other half.
+   *
+   * Frames are pushed with the CURRENT owner, so a swallowed declaration inside a class member's
+   * body becomes a member of that class (the source writes it in the class body), and one inside
+   * a top-level function's body becomes a top-level function under the namespace in force — the
+   * same reading at both levels, which is what makes this one rule and not two. `inFunction` is
+   * cleared so the declaration's own body attributes its edges to ITS name rather than to the
+   * damaged method it was nested in; that attribution is the reason the escape consumes the
+   * subtree in `walkBody` instead of leaving it to two walks.
+   *
+   * Returns the number of declarations escaped, so a caller could report it. It is NOT wired to a
+   * pattern or a metadata counter: an aggregate nobody reads is the shape this lane keeps
+   * finding, and the per-file evidence lives in `validation/m14/fixtures/php/
+   * recovery-swallowed-members.*` plus the corpus audit instead.
+   */
+  private pushRecoveredBodyDeclarations(
+    body: Node,
+    stack: { node: Node; owner: string | undefined; ownerKind: ASTEngine.SymbolKind | undefined; ns: string | undefined; inFunction: string | undefined; scope: PhpValueScope; recoveredFromBody?: boolean }[],
+    owner: string | undefined,
+    ownerKind: ASTEngine.SymbolKind | undefined,
+    ns: string | undefined,
+    scope: PhpValueScope,
+  ): number {
+    if (!body.hasError) return 0
+    let pushed = 0
+    for (let i = body.namedChildCount - 1; i >= 0; i--) {
+      const child = body.namedChild(i)
+      if (!child) continue
+      // Publish-only declarations: no skip in `walkBody`, because their branches do not walk the
+      // initialiser and this walk is the only reader of the value (see the predicate's header).
+      const publishOnly = child.type === "const_declaration" || child.type === "property_declaration"
+      if (!publishOnly && !this.recoveryMisnestedCallable(body, child)) continue
+      stack.push({ node: child, owner, ownerKind, ns, inFunction: undefined, scope, recoveredFromBody: true })
+      pushed++
+    }
+    return pushed
+  }
+
   private pushNonBodyChildren(
     node: Node,
     stack: { node: Node; owner: string | undefined; ownerKind: ASTEngine.SymbolKind | undefined; ns: string | undefined; inFunction: string | undefined; scope: PhpValueScope }[],
