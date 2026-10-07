@@ -424,7 +424,11 @@ M41/M45 video hero still exists), not off content.
    main's has been compared by content: the 4 that strictly extend main were landed or
    refused by the compiler, and the rest were measured and refused or identified as stale
    snapshots (10.3). Deleting them leaves `origin` as `main` plus tags. Not done here: it
-   is destructive, external, and not a side effect a code pass should take.
+   is destructive, external, and not a side effect a code pass should take. What the
+   deletion would have cost besides objects — the **names** — is now recorded:
+   `docs/analyzers/REMOTE-REFS-2026-10-07.tsv` lists all 460 non-HEAD refs with their
+   tip SHA, date, subject, and whether the tag covers the tip. The tag's message names no
+   branches, so before that file the mapping lived only in the remote's refs.
 2. **The 341.5 MB of generated java census JSON** (10.1). Pushing it would put generated
    data in the remote object store, which the programme's rule forbids; not pushing it
    means the local `refs/original/**` refs are the last place it lives. Either way it is
