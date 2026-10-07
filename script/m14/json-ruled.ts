@@ -99,12 +99,57 @@ export const JSON_RULED: Ruled[] = [
      * So the probe asks the only question that could mean "a construction happened": does a
      * document that DECLARES TYPES — by a `class` string, or by LSP's
      * `{"kind":"reference","name":X}` literal — contain a constructor-named key whose value is
-     * an OBJECT, i.e. an instance's state rather than a parameter list? Measured: 0 over
-     * 11,713 admitted files. duckdb declares constructors in exactly the documents that
-     * declare types, and every one of them is an array of parameter names.
+     * an OBJECT, i.e. an instance's state rather than a parameter list? duckdb declares
+     * constructors in exactly the documents that declare types, and every one of them is an
+     * array of parameter names.
      *
-     * **Overturn condition:** ≥1 such pair. The probe fires the moment a type-declaring
-     * document carries a constructor-named key bound to an object.
+     * ## The population this 0 covers, stated because it is SMALL
+     *
+     * The rule has a precondition, so "0 occurrences" is a fact about the documents that
+     * satisfy the precondition, not about every admitted document. Both numbers, from
+     * `validation/m14/fixtures/json/instantiates-population.ts` over the 13,951-file admitted
+     * population:
+     *
+     *   admitted files the walk reached                      13,951
+     *   documents passing the `declaresTypes` precondition        26   (0.186%)
+     *   constructions inside those 26 documents                   0
+     *
+     * The complement is not 0, and hiding it would make this ruling exactly the thin thing
+     * the round brief says is worse than no ruling. Ungated — every constructor-named key
+     * bound to an object anywhere in the corpus, across 15 files — there are **23**, and all
+     * 23 were opened and classified by the shape of their value. Every one is something that
+     * spells a constructor without being one:
+     *
+     *   15  svelte `tests/parser-<fixture>/samples/<fixture>/output.json`. `output.json` is an ESTree dump,
+     *       so `init` is a DECLARED VARIABLE NAME and its value is the serialized JS node —
+     *       `Literal` ×9, `MemberExpression` ×3, `BinaryExpression` ×2, `ArrayExpression` ×1.
+     *       An AST node rendered as an object is not instance state
+     *    4  a JSON Schema / swagger `properties` map whose key is a property named `init` and
+     *       whose value is `{"$ref": …}` — waypoint's `server.swagger.json` ×3, vega's
+     *       `vega-schema.json` ×1. A `$ref` to a schema is a pointer, not an instance
+     *    2  tree-sitter-clean `src/grammar.json` and `src/node-types.json`: a grammar RULE
+     *       named `constructor`, value `{"type":"PATTERN","value":"[A-Z][a-zA-Z0-9_'`]*"}` and
+     *       a parse-table row's `fields` map
+     *    1  hasura-engine `…/event-triggers/…/delete.json` — `new` inside `$.event.data`,
+     *       which is HTTP request-body test data
+     *    1  terraform `…/data_read/plan.json` — a `module_call` named `create` describing an
+     *       operation
+     *
+     * So the precondition is load-bearing rather than decorative: it removes 23 pairs, and
+     * every removed pair was inspected and none is a construction. A corpus of 13,951 JSON
+     * documents carrying ZERO constructions is the expected result — JSON is a data
+     * interchange format with no construction operation — and this measures that rather than
+     * asserting it.
+     *
+     * **Overturn condition:** ≥1 pair that a CORRECT implementation would call
+     * `instantiates`. Concretely the probe fires the moment a type-declaring document
+     * carries a constructor-named key bound to an object, and the ungated complement is
+     * re-inspected whenever the corpus grows. This is satisfiable by a correct
+     * implementation — the corpus already holds the near-misses above, so one genuine
+     * instance-state object in one of the 26 type-declaring documents would trip it — which
+     * is the test the brief applies to a ruling's condition. It is NOT satisfied by the 23
+     * classified pairs, and a claim that those should emit an edge would be a claim about
+     * ESTree dumps and JSON Schema, not about construction.
      */
     countOnTree: (root, fileLabel, hits) => {
       const unquote = (t: string): string => {

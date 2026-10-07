@@ -4188,3 +4188,180 @@ declared inputs changed since pinned commits, naming `script/m14/differential.ts
 `src/ast/analysis-exclusions.ts` — files every lane changes. One check also reports that the
 freshness rule flags **every** artifact and therefore cannot distinguish current from stale.
 Pre-existing aggregate drift across 26 lanes, not this lane's work; it names no dart file.
+
+### A fifteenth pass: the oracle question is answered, and `MISSING` is priced
+
+Fourteen passes reported a per-type verdict from the lane's own census and recorded,
+in the same breath, that the oracle had never been run. This pass runs it, and then
+spends its remainder on the one number that was previously a bare count.
+
+#### Question 3 (Correct), which had no evidence at all
+
+```
+$ npx tsx script/m14/differential.ts --lang dart
+[proxicall] dart: files=60 tree-truth=6295 covered=6194 (98.4%) MISSING=101 | analyzer-edges=5681 unexplained=0 (0%) heuristic=0 hash=7a07ec3f32242908
+[dart-http] dart: files=60 tree-truth=2277 covered=2263 (99.4%) MISSING=14 | analyzer-edges=2106 unexplained=0 (0%) heuristic=0 hash=bc95ba8a87ca1bbc
+```
+
+| corpus | files | tree-truth | covered | cov | MISSING | analyzer edges | UNEXPLAINED | heuristic |
+|---|---|---|---|---|---|---|---|---|
+| proxicall | 60 | 6,295 | 6,194 | 98.4% | 101 | 5,681 | **0** | 0 |
+| dart-http | 60 | 2,277 | 2,263 | 99.4% | 14 | 2,106 | **0** | 0 |
+| **TOTAL** | **120** | **8,572** | **8,457** | **98.66%** | **115** | **7,787** | **0** | **0** |
+
+Population: 2 corpora x 60 files, the harness's own default draw. That is not this
+file's 600-file census and the two are not merged. proxicall is measured at its PINNED
+tree because its live checkout is dirty. Full log:
+`validation/m14/measurements/dart-differential-120.txt`.
+
+`UNEXPLAINED = 0` over 7,787 analyzer edges is the fabricated-edge verdict, and it is
+the one figure here that cannot be argued: every edge this analyzer published on those
+120 files is corroborated by an oracle written independently of it.
+
+**The limit, stated rather than glossed.** The oracle is a second walker over the same
+tree-sitter grammar, so a bug in the GRAMMAR is invisible to both paths and this number
+does not speak to it. Question 3 is answered against the analyzer, not against
+tree-sitter.
+
+#### `MISSING = 115` was a bare count, and it is now a function of one variable
+
+The harness prints 12 samples per lane. Every sample was a cross-file `overrides` —
+a shape, not a cause. `validation/m14/measurements/dart-missing-index-scope-ab.txt`
+prices it against **project-index scope**, with the drawn file set pinned.
+
+Pinning took three attempts and two were wrong, which is worth recording because the
+failure is reusable:
+
+- `coldPoolPick` (differential.ts:930) draws `rot${rotations[laneKey]+1}` from a pool
+  that PREFERS never-sampled files, so consecutive runs draw different files BY
+  DESIGN (#760). My first pair drew different files (`hash 7a07ec3f` vs `2c398d00`,
+  `rot 1` vs `rot 2`) and showed `MISSING 101 → 48`. That was rotation. Discarded. The
+  harness prints `hash=` for exactly this reason.
+- Setting `DART_SDK` alone changed nothing, byte for byte, because the SDK-library
+  index block (differential.ts:21904) is nested inside `if (depsMode !== "none")`
+  (opened at 21872) and `--dart-deps` defaults to `none`. A path with no flag indexes
+  nothing. Kept as a no-op control.
+
+Pinning is a fresh `BB_M14_WORK` per arm, since the pool state is
+`${BB_M14_WORK}/m14-f5-cold-pool.json` (differential.ts:902).
+
+| same 120 files, both arms | A (default) | B (`--dart-deps=direct`) | delta |
+|---|---|---|---|
+| proxicall index | 4,465 types | 13,940 types | 3.1x |
+| dart-http index | 1,012 types | 3,671 types | 3.6x |
+| proxicall truth | 6,295 | 6,369 | +74 |
+| dart-http truth | 2,277 | 2,282 | +5 |
+| proxicall **covered** | 6,194 | 6,194 | **+0** |
+| dart-http **covered** | 2,263 | 2,263 | **+0** |
+| proxicall MISSING | 101 | 175 | +74 |
+| dart-http MISSING | 14 | 19 | +5 |
+| **ANALYZER EDGES** | **7,787** | **7,787** | **+0** |
+| **UNEXPLAINED** | **0** | **0** | **+0** |
+| drawn-set hash, proxicall | `7a07ec3f32242908` | `7a07ec3f32242908` | identical |
+| drawn-set hash, dart-http | `bc95ba8a87ca1bbc` | `bc95ba8a87ca1bbc` | identical |
+
+Arm B adds 2,506 indexed files (2,027 direct dependencies + 479 Dart SDK libraries).
+The analyzer is handed that index at differential.ts:22092, and its published edge
+count does not move by one. `covered` is unchanged to the digit; `MISSING` rises by
+exactly the number of newly-derivable rows.
+
+#### Two candidate causes eliminated, one of them the fix I was about to make
+
+**The closures do not diverge.** The oracle receives `projectIndex.__closedMembers`
+(differential.ts:21925); the analyzer builds its own via `dartCompanionFor()` from
+`typeMembers` + `typeBases` (real-dart-analyzer.ts:273-293). Two constructions of one
+concept, so a disagreement would have explained the shape.
+`validation/m14/fixtures/dart/companion-divergence.ts` measured them over 399
+pub-cache packages plus the SDK's 479-file lib tree — 10,789 files, 35,206 types,
+**757,408 member comparisons, 0 disagreements.** Both expose `Equatable.props`.
+
+**The analyzer is not missing `GpsData.props`.** `GpsData.props` is a getter
+(`kind=property`), so the deliberate `Object` retarget
+(real-dart-analyzer.ts:1602-1620) cannot account for it — `props` is not one of
+Object's five own members. Running production `RealDartAnalyzer` on
+`proxicall/lib/models/oms/location_data.dart` against an index carrying
+`equatable-2.1.0` (`validation/m14/fixtures/dart/gpsdata-props-why.ts`):
+
+| leg | edges | `GpsData.props` | `GpsData.toString` |
+|---|---|---|---|
+| NO INDEX | 6 overrides | `-> Equatable.props` **0.8** (Pass 3, first parent) | `-> Object.toString` **0.8** (retarget) |
+| WITH INDEX | 6 overrides | `-> Equatable.props` **0.95** (Pass 2, exposer) | `-> Equatable.toString` **0.95** |
+| ORACLE, same tree + companion | 6 overrides | `-> Equatable.props` | `-> Equatable.toString` |
+
+All three agree, label for label, on all six. **No change to
+`src/ast/real-dart-analyzer.ts` is warranted on this evidence**, which is the useful
+outcome: the obvious patch would have been wrong.
+
+#### One `MISSING` class IS a two-contract disagreement, and both contracts are written down
+
+`dart-http/pkgs/cupertino_http/lib/src/cupertino_web_socket.dart:15` declares
+`class ConnectionException extends WebSocketException` with `@override String
+toString()`. The oracle names the nearest base that **exposes** the member
+(`WebSocketException.toString`); the analyzer names `Object.toString`, by an explicit
+rule at real-dart-analyzer.ts:1602-1620 that retargets every `@override` of one of
+Object's five own members to `Object` whenever the first heritage parent is not Object.
+**That retarget is unconditional on what the index knows**, so arm B cannot move it.
+Both rules are documented and both are defensible — the analyzer's prefers naming a
+declaration that provably exists over one that may not. They are two contracts, not
+one contract and one bug, so this is not counted as a defect.
+
+#### An inconsistency between two of my own measurements, left open
+
+If the analyzer emits `GpsData.props -> Equatable.props` in BOTH arms — which the
+table above says it does — then in arm A, where `equatable` is not in the index, the
+row is published at confidence 0.8 with no truth row to match it. The harness's own
+comment (differential.ts:21846) says such a row "shows up as UNEXPLAINED rather than
+agreed", and arm A measured `unexplained = 0`.
+
+Two readings fit: either `location_data.dart` was not among the 60 drawn files in arm
+A, or the harness does not count this row the way its comment describes. I cannot
+separate them without the harness's draw and matching internals, which are shared
+machinery. **Recorded as unresolved rather than resolved in whichever direction is
+convenient.**
+
+#### Gates re-run at this commit
+
+| command | result |
+|---|---|
+| `npx tsc --noEmit -p tsconfig.json` | exit 0 |
+| `npx tsx script/m14/run-fixtures.ts --lang dart` | **21 pass, 0 fail** |
+| `npx tsx script/m14/differential.ts --lang dart` | **exit 0**, UNEXPLAINED 0 (new — never run in 14 passes) |
+| `npx tsx script/m14/ontology-coverage-gate.ts dart` | **exit 1, RangeError, no table** — §8.1, unchanged |
+| `npx tsx script/m14/verify-honesty.ts` | not re-run this pass; the previous pass recorded 37 failures, none naming a dart file |
+
+#### Declared limitations of this pass
+
+- **The oracle is a second walker over the same grammar.** `UNEXPLAINED = 0` is
+  evidence against the analyzer, not against tree-sitter's Dart grammar.
+- **120 files, not 600.** The differential's population is the harness's own draw and
+  is smaller than this file's census. The two answer different questions.
+- **The index-scope A/B is one variable on one pinned draw.** It prices 79 rows on 120
+  files; it does not establish what the same variable does at 600 files or at the
+  corpus's 33,692.
+- **`--dart-deps=direct` indexes 2,027 files, not all 324 resolved packages.** The
+  `--dart-deps=all` arm was not run; at ~30 min per corpus it would enlarge the truth
+  population further and this pass does not claim to know by how much.
+- **The 78 non-`toString` rows are NOT claimed fixable.** Their size and their
+  dependence on index scope are measured; their individual causes are not identified,
+  and one probe (`gpsdata-props-why.ts`) shows at least one of them is already emitted
+  by the analyzer.
+- **No millisecond figure is claimed.** `loadavg` was 29-30 throughout from other lanes.
+  Every quantity above is a count.
+
+#### Section 8 — additions from this pass
+
+**8.5 `script/m14/differential.ts` — the Dart SDK library index is unreachable without
+a flag that also costs 2,027 extra parses.** The `dartSdkLibDir()` block at line 21904
+sits inside `if (depsMode !== "none")` (21872), so `dart:core` / `dart:async` / `dart:io`
+bases stay unresolved on every default run even when `DART_SDK` is set correctly. The
+harness's own else-branch text says so: "no dart-sdk/lib — dart:core/dart:async/dart:io
+bases stay unresolved". Moving that block out of the `depsMode` guard would give every
+dart run the SDK's 479 files at no additional parse cost, since the index is already
+being built. Not edited here: shared machinery, and it changes the measured numbers of
+every other dart run.
+
+**8.6 `script/m14/differential.ts` — the default dart run's `MISSING` and `UNEXPLAINED`
+cannot both be read as they are labelled.** See the open inconsistency above. Either a
+0.8-confidence row is not counted as UNEXPLAINED, or the sample list names files outside
+the measured set. Whichever it is, a lane reading `unexplained = 0` off a default run
+is reading a number whose definition the run does not print.

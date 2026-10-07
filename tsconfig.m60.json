@@ -1,0 +1,24 @@
+{
+  // WHY THIS FILE EXISTS
+  //
+  // `tsconfig.scripts.json` is the project that type-checks the instruments, and its
+  // `include` is `script/m14/**` + `script/m12/**`. `script/m60` — where the current
+  // round's instruments actually live, 169 .ts files — is therefore NOT type-checked by
+  // `npm run typecheck:scripts`, except for the 8 files those two subdirectories happen to
+  // import.
+  //
+  // So a green `typecheck:scripts` is compatible with errors being present in the newest
+  // instruments. This project asks the question the shipped one does not, and its answer is
+  // recorded in validation/m14/measurements/scripts-typecheck-baseline.md.
+  //
+  // It is a QUESTION, not a gate: nothing in package.json runs it, and it is not wired into
+  // CI. Adding it to package.json would turn 139 existing errors into a red build on day
+  // one, which is why this is a file and not a script until the debt is retired.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["script/m60/**/*.ts"],
+  "exclude": ["node_modules", "dist", "script/m60/tmp"]
+}
