@@ -39,8 +39,11 @@ async function main() {
   const both: string[] = []
   for (const f of sample) {
     const src = readFileSync(`${ROOT}/${f}`, "utf8")
-    const o = oldParser.parse(src).rootNode.hasError
-    const n = newParser.parse(src).rootNode.hasError
+    const oldTree = oldParser.parse(src)
+    const newTree = newParser.parse(src)
+    if (!oldTree || !newTree) throw new Error("parser.parse returned no tree (null result)")
+    const o = oldTree.rootNode.hasError
+    const n = newTree.rootNode.hasError
     if (o) oldErr++
     if (n) newErr++
     if (o && !n) oldOnly.push(f)
