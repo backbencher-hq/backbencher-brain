@@ -65,6 +65,66 @@ function getObjectKeysLength(obj: any): number {
 }
 
 /**
+ * VERIFY_GO9 — the reason an edge is published BELOW 1.0, per
+ * `<relationshipType>|<metadata.relationshipType>`.
+ *
+ * docs/M14-HONESTY-CONTRACT.md section 4: "Any relationship or symbol emitted
+ * with `confidence < 1.0` must (1) carry a machine-readable reason code (not
+ * just a number)". Measured over `go-stdlib` at NFILES=200 through the
+ * production path on 2026-10-04, before this table existed:
+ *
+ *   calls       6,718 rows @0.8   no reasonCode
+ *   uses        3,390 rows @0.7/0.8   no reasonCode
+ *   references  2,812 rows @0.95  no reasonCode
+ *   instantiates   855 rows @0.6/0.8  no reasonCode
+ *   imports       781 rows @0.9   no reasonCode
+ *   extends        41 rows @0.8   no reasonCode
+ *   overrides       4 rows @0.95  HAS one (promotion shadowing)
+ *
+ * 14,597 rows below 1.0, one type compliant. `*` is the fallback key for a
+ * type whose edges all share one reason (imports carries no label).
+ *
+ * Each value names WHY the number is below 1.0 — the unresolved step in the
+ * inference — not what the edge is called. `metadata.relationshipType`
+ * already says what it is called; repeating that would be a restatement, and
+ * section 4 asks for the reason.
+ */
+const GO_SUB_UNIT_REASON: Record<string, string> = {
+  // The callee's LEAF name is recorded; the receiver or package that owns it is
+  // not, and a leaf is a per-file-analyzer limit rather than a property of the
+  // call. Measured endpoint resolution: 19.4% of `calls` targets bind to a
+  // symbol in the same file.
+  "calls|go_function_call": "callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file",
+  "calls|go_package_scope_call": "callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file",
+  // A selector read names the FIELD leaf. Whether the receiver is the declared
+  // type, an embedded one, or an interface value is not resolved here.
+  "uses|go_selector_use": "field_leaf_read_whose_receiver_type_is_not_resolved_per_file",
+  // Channel send/receive records the channel's leaf name; the direction is in
+  // `operationType` and the element type is not read.
+  "uses|go_channel_operation": "channel_leaf_read_without_its_element_type",
+  // A declared/return type position records the type's leaf. Measured: 32.0% of
+  // `references` targets bind within the file.
+  "references|declared_type": "declared_type_leaf_whose_declaring_file_is_out_of_scope",
+  "references|return_type": "declared_type_leaf_whose_declaring_file_is_out_of_scope",
+  // `struct { E }` promotes E's method set. Go has no inheritance declaration,
+  // so the edge records a promotion that the compiler resolves, not an
+  // extends-clause the author wrote.
+  "extends|go_struct_embedding": "promotion_by_embedding_not_a_declared_supertype",
+  "extends|go_interface_embedding": "interface_method_set_inclusion_not_a_declared_supertype",
+  // The target is an import PATH (`net/http`, `encoding/json`), which names a
+  // module and not any symbol this analyzer can bind.
+  "imports|*": "target_is_a_module_path_not_a_symbol",
+  // A composite literal's type is a real declared type, read from the tree.
+  "instantiates|go_composite_literal_construction": "type_read_from_a_composite_literal_whose_declaration_may_be_in_another_file",
+  // PascalCase naming is Go's constructor CONVENTION with no declaration behind
+  // it. Measured false-positive class: `instantiates bitSizeError -> Itoa` at
+  // src/strconv/number.go:285 is `strconv.Itoa`, a formatting function whose
+  // name merely starts upper-case.
+  "instantiates|go_instantiation": "pascal_case_name_is_a_constructor_convention_with_no_declaration",
+  "instantiates|go_package_scope_instantiation": "pascal_case_name_is_a_constructor_convention_with_no_declaration",
+}
+
+/**
  * GO26 (round 5): the ONE Go framework vocabulary for this analyzer.
  *
  * The file previously carried TWO of them, written independently:
@@ -576,6 +636,44 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (t === "instantiates") { md.evidenceClass = "structural"; continue }
       md.evidenceClass = "usage_contextual"
+    }
+    // VERIFY_GO9 — contract section 4, requirement 1. Every relationship with
+    // confidence < 1.0 must carry a machine-readable reason code, not just the
+    // number. Measured over go-stdlib at NFILES=200 through the production path
+    // before this block existed: 14,597 rows sat below 1.0 with NO reasonCode —
+    // 6,718 calls, 3,390 uses, 2,812 references, 855 instantiates, 781 imports,
+    // 41 extends — and only `overrides` (4 rows) satisfied the rule. A
+    // sub-1.0 edge with no stated reason is indistinguishable from a bug to
+    // every downstream consumer, which is what section 4 exists to prevent.
+    //
+    // WHY A TABLE HERE RATHER THAN 20 EDITED PUSH SITES: `evidenceClass` above
+    // already reads every edge from one place, so a second per-edge judgement
+    // belongs beside it. The alternative — a reasonCode literal at each push
+    // site — puts the same six facts in twenty places, and the census below is
+    // the check that the table stayed complete.
+    //
+    // Each code states the reason the edge is below 1.0, not a restatement of
+    // the label. `go_instantiation` is the sharpest case: `instantiates
+    // bitSizeError -> Itoa` at src/strconv/number.go:285 is `strconv.Itoa`,
+    // whose name is PascalCase and whose purpose is formatting. The code says
+    // the name is a convention, which is why the edge is 0.6 and not a fact.
+    for (const r of relationships) {
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      // DEFENSIVE, and measured to be so: every key in GO_SUB_UNIT_REASON names
+      // a site that publishes BELOW 1.0, so deleting this guard changes no
+      // emitted row. That was tried — it is an EQUIVALENT MUTANT and
+      // go/sub-unit-reason-codes cannot kill it, because no (type, label) pair
+      // in this analyzer is published at both 1.0 and below 1.0 and so there is
+      // no row a blanket stamp would alter. The guard stays to make the
+      // invariant explicit rather than incidental; script/m14/go9-census.ts
+      // checks the observable half (a confidence-1.0 row must carry no code).
+      if (conf >= 1.0) continue
+      const md = r.metadata ?? (r.metadata = {})
+      if (typeof md.reasonCode === "string" && md.reasonCode.length) continue
+      const t = String(r.type ?? "")
+      const label = String(md.relationshipType ?? "")
+      const code = GO_SUB_UNIT_REASON[`${t}|${label}`] ?? GO_SUB_UNIT_REASON[`${t}|*`]
+      if (code) md.reasonCode = code
     }
   }
 

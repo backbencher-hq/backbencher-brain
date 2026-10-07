@@ -140,8 +140,15 @@ interface ErlangContext {
 
   // ---- pre-pass products (forward-reference resolution) ----
   funDecls: Map<number, FunDeclInfo>
-  /** Bare function names — the forward-reference gate for a local call. */
-  declaredNames: Set<string>
+  /**
+   * "name/arity" identities this file declares — the local-call gate (ER-D45).
+   *
+   * This WAS a `Set<string>` of bare names, which is a different function whenever the
+   * arities differ; see `processCall`. The set is now built alongside the map and is
+   * what the gate reads, so a reader does not have to reconstruct why the bare name is
+   * not enough from the call site alone.
+   */
+  declaredFnKeys: Set<string>
   /**
    * "name/arity" -> how many `function_clause` nodes in this file carry that
    * identity. Erlang has one function per (name, arity), so the FILE-WIDE tally
@@ -201,7 +208,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       patterns: {},
       seenRels: new Set(),
       funDecls: new Map(),
-      declaredNames: new Set(),
+      declaredFnKeys: new Set(),
       clauseCountByKey: new Map(),
       fnBranches: new Map(),
       specs: new Map(),
@@ -618,8 +625,8 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
             macroHead: head.macroHead,
             startIndex: node.startIndex,
           })
-          ctx.declaredNames.add(head.name)
           const key = this.fnKey(head.name, head.arity)
+          ctx.declaredFnKeys.add(key)
           ctx.clauseCountByKey.set(key, (ctx.clauseCountByKey.get(key) ?? 0) + clauses.length)
           if (head.macroHead) ctx.stats.macroHeadDecls++
         }
@@ -1233,7 +1240,19 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `clauseCount` permanently 1.
     let symbol = ctx.functionSymbolByKey.get(key)
     if (symbol) {
-      this.extendRange(symbol, clause ?? node)
+      // ER-D44 (measured 2026-10-04): the RANGE ends on the `fun_decl`, not on its
+      // `function_clause`. The two nodes differ by exactly the clause-terminating `.`:
+      // for `pick(X) -> X.` the grammar gives `fun_decl` [85,98) and `function_clause`
+      // [85,97), so extending to the clause dropped the final character of every
+      // function in the corpus. `source.slice(startIndex, endIndex)` therefore returned
+      // `pick(0) -> zero;\npick(X) -> X` — the text a consumer reads back for the symbol —
+      // with the `.` missing, and the lane's own `script/m14/verify-erlang-identity.ts`
+      // asserted the correct string and failed. The START is identical on both nodes
+      // (measured on every shape in the corpus: the clause opens where the fun_decl
+      // opens), so this changes the end and nothing else. It also makes the range
+      // correct for a `fun_decl` that holds SEVERAL `;`-joined clauses, where the first
+      // clause's end is nowhere near the declaration's.
+      this.extendRange(symbol, node)
       // ER-D30: when a module both DECLARES a callback and DEFINES it — a
       // behaviour with a default implementation, the `tftp_logger` shape — the
       // DEFINITION decides the kind. The pre-ER3 order dependence was real: the
@@ -1336,7 +1355,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
     return {
       name,
       kind: ASTEngine.SymbolKind.Function,
-      range: this.nodeToRange(clause ?? declNode),
+      range: this.nodeToRange(declNode),
       ownerName: this.ownerNameOf(ctx),
       ownerKind: ASTEngine.SymbolKind.Module,
       parameters: params,
@@ -1506,11 +1525,30 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
 
-    // A local call resolves only when the callee is DECLARED in this file. That
-    // one gate keeps every BIF (`length/1`, `self/0`, `is_record/2`) and every
-    // auto-imported function out of the call graph.
+    // A local call resolves only when the callee is DECLARED in this file, and
+    // ER-D2 makes that declaration a (name, ARITY) pair: `countArgs` is the one counter
+    // for a clause head and for a call site, so the two are directly comparable.
+    //
+    // ER-D45 (measured 2026-10-04): this gate used to test the BARE NAME. That is a
+    // different function whenever the arities differ, and Erlang has enough
+    // auto-imported BIFs whose NAME collides with a local declaration of another arity
+    // for it to matter — `get/1` (the process dictionary) beside a local `get/2`,
+    // `setelement/3` beside a local `setelement/1`, `module/0`, `type/0`, `sort/1`,
+    // `binary_part/2,3`, `restriction/3`. Measured over the 3,939-file corpus:
+    // **618 published `calls` edges in 40 files pointed at a name/arity the file does
+    // not declare**, every one of them an edge to a BIF dressed as a local call
+    // (`rec_env.erl:65` publishes `calls -> get` for `get(new_key_calls)`, and the
+    // file's only `get` is `get/2`). The shared oracle gates on `name/arity`
+    // (`differential.ts`, `declared.has(`${callee.text}/${arity}`)`), which is why
+    // 755 `calls` rows sat in `unexplained` and nobody could say why: the analyzer was
+    // right about the arity it recorded in `metadata.callArity` and wrong about the
+    // arity it resolved against.
+    //
+    // The BIF exclusion the name-only gate was there for is KEPT and is now exact: a
+    // call whose (name, arity) is not declared here is not a local call, whether the
+    // name is absent from the file (`length/1`, `self/0`) or present at another arity.
     if (callee.type !== "atom" || !callee.text) return
-    if (!ctx.declaredNames.has(callee.text)) return
+    if (!ctx.declaredFnKeys.has(this.fnKey(callee.text, arity))) return
     this.pushRel(
       ctx,
       source,
@@ -1929,6 +1967,18 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `S#state{count = S#state.count + 1}` the update and the inner read share
    * (source, target, line), and because the outer node is visited first its
    * "record field update" edge is the one that survives.
+   *
+   * ER-D43 (measured 2026-10-03): the PUBLISHED IDENTITY is part of identity too. An
+   * `exports` edge publishes a module's interface, and the interface is keyed by
+   * `name/arity` (ER-D2), so `-export([start/0, start/1, complete/1, complete/0])` on
+   * ONE line is four publications. The key carried `callArity` — which an `exports` edge
+   * does not set — and `line`, which is the same line for all four, so the second
+   * publication of each name was dropped and the module's interface was published at half
+   * its real size with no error and no counter. 340 sites in a 204-file corpus draw;
+   * `otp/lib/asn1/examples/test_driver.erl:10` and
+   * `otp/lib/common_test/src/ct_doctest.erl:318` are two of them. `metadata.arity` is set
+   * on the `exports` edge and on nothing else, so reading it here widens the key for that
+   * one label and changes no other.
    */
   private pushRel(
     ctx: ErlangContext,
@@ -1939,7 +1989,8 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
     metadata: Record<string, any> = {},
     line?: number,
   ) {
-    const key = `${source}|${type}|${target}|${line ?? ""}|${metadata.callArity ?? ""}`
+    const publishedIdentity = metadata.callArity ?? metadata.arity ?? ""
+    const key = `${source}|${type}|${target}|${line ?? ""}|${publishedIdentity}`
     if (ctx.seenRels.has(key)) return
     ctx.seenRels.add(key)
     ctx.relationships.push({
@@ -2071,27 +2122,28 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
   // Node readers
   // ==========================================================================
   /**
-   * A callee's NAME node: the `atom` that is a DIRECT child of the `remote`.
-   * `undefined` when there is no `remote` and the callee is not the first named
-   * child — the dynamic case, where no statically nameable callee exists
-   * (ER-D23). Shared by the call path and the type-reference path so both read
-   * a remote the same way.
-   */
-  private calleeNameNode(call: Node): Node | undefined {
-    const remote = this.getChildByType(call, "remote")
-    if (!remote) return call.namedChild(0) ?? undefined
-    return this.getChildByType(remote, "atom")
-  }
-
-  /**
    * `name/arity` from an `fa`, with the NAME's line (M59).
    *
-   * ER-D28: `-export([?MODULE/0])` is how OTP test suites export the function
-   * their `?MODULE() -> …` clause declares — the `fa`'s name child is a
-   * `macro_call_expr`, not an `atom`, so the pre-ER3 reader dropped the export
-   * entirely (3 corpus sites). `?MODULE` expands to the module atom, so the
-   * entry resolves exactly like the clause head does. Any other macro in an
-   * `fa` needs expansion and is refused.
+   * An `fa`'s name has THREE spellings in this grammar and a reader that takes only the
+   * first loses rows SILENTLY — no error, no counter, and the label simply has fewer
+   * members than the file publishes:
+   *
+   *   atom               `-export([run/0])`
+   *   macro_call_expr    `-export([?MODULE/0])` — ER-D28: how OTP test suites export the
+   *                      function their `?MODULE() -> …` clause declares. `?MODULE`
+   *                      expands to the module atom, so the entry resolves exactly like
+   *                      the clause head does. Any other macro in an `fa` needs expansion
+   *                      and is refused.
+   *   var                `-export([HEAD/1])` — ER-D42, measured 2026-10-03. An
+   *                      identifier beginning with an UPPERCASE letter is a VARIABLE in
+   *                      Erlang, so the grammar types it `var`, not `atom`, and this
+   *                      reader required `atom`. Every all-caps export name was therefore
+   *                      dropped: `-export([HEAD/1])` in the lane's own
+   *                      `macros-er3.erl` fixture produced no `exports` row at all, and the
+   *                      fixture did not catch it because nothing pinned the row. A macro
+   *                      is a real Erlang function name here — `-define(HEAD(X), X).` plus
+   *                      `-export([HEAD/1])` is ordinary code — so the name is read and the
+   *                      arity with it.
    */
   private readFa(fa: Node, moduleName?: string): { name: string; arity: number; line: number } | undefined {
     const nameNode = this.getChildByType(fa, "atom")
@@ -2104,6 +2156,12 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       const at = this.getChildByType(macro!, "var") ?? this.getChildByType(macro!, "atom")
       return { name: moduleName, arity, line: (at ?? macro!).startPosition.row + 1 }
     }
+    // ER-D42: an UPPERCASE name is a `var` in this grammar, and it is a real function
+    // name here. Read AFTER the `?MODULE` branch so `?MODULE` — which is also a `var`
+    // under its `macro_call_expr` — keeps resolving to the module and not to the literal
+    // text "MODULE".
+    const varNode = this.getChildByType(fa, "var")
+    if (varNode?.text) return { name: varNode.text, arity, line: varNode.startPosition.row + 1 }
     return undefined
   }
 

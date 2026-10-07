@@ -110,6 +110,56 @@ removed with the literal, so neither can become a ghost.
 **No `dependencies` relationship is emitted** for Clojure: the `references` edges with
 `isLibraryDep` ARE the dependency graph (a library is a namespace, and a namespace is a symbol).
 
+### MEASURED ONTOLOGY — every one of the 10 types, with the instrument's population
+
+`script/m14/clojure-ontology-census.ts`, over **clj-kondo, the whole derived population**:
+444 `.clj`/`.cljs`/`.cljc` files discovered by walk (extension test, no hand-written file list),
+444 attempted, **444 parsed, 0 failed**, 4,280 symbols, 21,247 relationships. The population is
+printed by the instrument beside every count, because a count over a population nobody can see is
+the shape the honesty contract calls a correct number about the wrong population.
+
+`ParseResult` (`src/ast/types.ts:221-231`) carries **three** channels — `relationships[]`,
+`imports[]` and `exports[]`. `script/m14/firing-check-v2.mjs` reports two of them. A verdict that
+reads only the relationship channel is a verdict about the wrong channel, so this lane's census
+reads all three and the table names the channel each row came from.
+
+| # | type | verdict | channel | count | files (examples) |
+|---|---|---|---|---|---|
+| 1 | `calls` | **EMITTED** | relationship | **13,417** | 367 of 444 — `.circleci/script/docker.clj`, `analysis/script/private_vars.cljs` |
+| 2 | `references` | **EMITTED** | relationship | **4,089** | 341 of 444 — `.clj-kondo/hooks/one_of.clj`, `inlined/…/utils.cljs` |
+| 3 | `contains` | **EMITTED** | relationship | **2,967** | 369 of 444 — `.clj-kondo/imports/babashka/sci/sci/core.clj` |
+| 4 | `uses` | **EMITTED** | relationship | **485** | 64 of 444 — `.sbx/repl.clj`, `benchmarks/bench.clj` |
+| 5 | `instantiates` | **EMITTED** | relationship | **168** | 63 of 444 — `corpus/aliased_namespaces/interop.cljc` |
+| 6 | `implements` | **EMITTED** | relationship | **117** | 23 of 444 — `corpus/defrecord.clj`, `corpus/record_protocol_metadata.clj` |
+| 7 | `extends` | **EMITTED** | relationship | **4** | 3 of 444 — `src/clj_kondo/impl/analysis/java.clj`, `src/clj_kondo/impl/cache.clj` |
+| 8 | `imports` | **EMITTED** | **imports[]** | **1,644** | 343 of 444 |
+| 9 | `exports` | **GAP → EMITTED** (see below) | `exports[]` 3,068 → **relationship** | 3,068 / 444 files → see §`exports` | — |
+| 10 | `overrides` | **GAP → EMITTED** (see below) | relationship | 0 → see §`overrides` | — |
+
+**firing-check-v2 score, read as the instrument reads it: 7/10, silent `imports exports overrides`.**
+That is a statement about the relationship channel plus the `imports[]` channel, not 7 of 10
+verdicts: `imports` fires 1,644 times on a channel the tally does not read, and `exports` fired
+3,068 times on a channel v2 does not read either. Reproduced at NFILES=200 on this corpus with
+`BB_REPO` pointed at this worktree; at the whole 444-file population the score is the same 7/10,
+so unlike the Ruby 1/10-at-NFILES=25 case this lane's score does not move with the sample size.
+**The instrument refuses the lane name `DERIV_EXPORTS_CLOJ3`** (exit 2, "no lane matches") —
+`resolveLane` matches `CLOJ`/`CLJ`/`CLOJURE`, and the branch name shares no token with any of
+them. Re-run with `CLOJURE`.
+
+#### `imports` — EMITTED, and the handover note "silent on imports" was a channel error
+
+`imports` is never a `brain_relationship` row. `ParseResult.imports` is written by
+`parallel-indexer.ts` to the **`brain_import` TABLE**. The handover treated "absent from the
+relationship tally" as a defect; the relationship tally was never the right instrument for this
+type. The construct is read in full: 1,644 `ImportInfo` across 343 of 444 files.
+
+#### Outgoing only
+
+Every edge this analyzer emits starts at the file being analyzed. **Nothing resolves who points
+AT an edge's target.** That is the incoming-edge subsystem, and it does not exist. So a
+`references` edge tells you what this file reads and never what reads it, and `bb_impact`'s
+reverse direction is not answerable from this lane's output alone.
+
 ## Supported constructs
 
 - Namespace declaration with `require`/`use`/`import`/`require-macros` clauses, reader-conditional

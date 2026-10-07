@@ -360,3 +360,93 @@ edges, 0 unlined, 23,379 token-checked, 0 INCONSISTENT.
   the committed wasm, passes on this one) and mutant
   `objc/publish-unterminated-declaration`; record
   `reviews/m60-743-objc-grammar-macro-specifier.md`.
+
+---
+
+# Ontology census — DERIV_EXPORTS_OBJC3, 2026-10-05
+
+Branch `analyzer/DERIV_EXPORTS_OBJC3`. Handover state: **MEASURED 8/10, silent
+on imports and exports**. Every number below is a count from a named instrument
+over a named corpus, produced on this branch. Source reading answers only whether
+a type is constructible; it never answers whether it fires.
+
+## 0. Baseline, measured before any change
+
+**`firing-check-v2` at NFILES=200 — 8/10, and both silent types need a channel
+answer before they need a verdict.**
+
+```
+$ cd $HOME/backbencher-brain && NFILES=200 bun script/m14/firing-check-v2.mjs OBJC
+selected lane(s): OBJ_C  (from OBJC)
+OBJ_C         8/10  153/153 parsed · imports[] 517 in 153 files
+   fired:  calls extends implements uses contains references overrides instantiates
+   silent: imports exports
+   counts: uses:9295  calls:8033  contains:2196  overrides:603  references:515
+           instantiates:507  extends:52  implements:20
+```
+
+Read against the instrument's own DEFECT 3 correction: `imports` travels on
+`ParseResult.imports` (`src/ast/types.ts:206-216`), a separate channel from
+`res.relationships`, and **517 across 153 of 153 sampled files** is non-zero. So
+`imports` is not measured-silent; it is measured on the other channel.
+`exports` has no such excuse yet — that is what this lane has to settle.
+
+**The instrument cannot be invoked with this lane's own name.** Measured:
+
+```
+$ NFILES=200 bun script/m14/firing-check-v2.mjs DERIV_EXPORTS_OBJC3
+FIRING-CHECK v2: no lane matches "DERIV_EXPORTS_OBJC3".
+exit 2
+```
+
+`resolveLane` (`script/m14/firing-check-v2.mjs:180`) has no rule for a digit
+suffix: `DERIV_EXPORTS_OBJC3` uppercases to `OBJC3` for the ALIAS lookup (step 2,
+tokens include `OBJC3` not `OBJC`), `OBJC3` is not a key, and no key starts with
+`OBJC3`. Worse, `OBJC` alone is ALSO ambiguous by a different route —
+`resolveLane("OBJ_C")` returned the **C** lane:
+
+```
+$ NFILES=200 bun script/m14/firing-check-v2.mjs OBJ_C
+selected lane(s): C  (from OBJ_C)      <-- wrong lane, and it reported 6/10
+```
+
+Step 4 of `resolveLane` matches `want.startsWith(n)` over normalized keys;
+`OBJ_C` normalizes to `OBJC`, which is a prefix of nothing, but the alias table's
+`C` entry plus `ALIAS.C = "C"` is consulted at step 2 over the token split on
+`_`, and `_` is a delimiter — so `OBJ_C` splits into tokens `OBJ` and `C`, and
+`C` resolves. The exit-2 guard caught the unambiguous failure and the *score*
+from the wrong lane (`6/10`, silent `extends implements exports overrides`) is a
+plausible-looking number about the wrong analyzer. Both defects are in
+`script/m14/**`, which this lane does not own; they are reported, not fixed.
+
+**This lane's sampling population is 153 files and cannot grow.** The instrument's
+lane row for this analyzer is `exts: [".m"]`, and `$HOME/fixtures/repositories/objc`
+holds exactly 153 `.m` files (sdwebimage + afnetworking). So NFILES=200 samples
+the whole `.m` population. The brief's warning that file count moves the score is
+real in general (Ruby 1/10 at 25 vs 8/10 at 200) but cannot bite this lane
+through the `.m` channel: at 200 there is nothing left to draw. What the
+instrument cannot see is the **207 `.h`** files in the same corpus — headers are
+52% of what production admits, and they are outside the instrument's extension
+list entirely. Every number in this section that claims to describe "the lane"
+below is measured over the ROUTER's admitted universe instead, through production
+`parseFile`.
+
+**objective-c IS among the 100 DERIVATION findings, on four types.**
+`validation/m60/rel-type-coverage-baseline.json` lines 68-71:
+
+```
+DERIVATION|objective-c|emits `calls`      but the differential audits ["extends","implements","instantiates","overrides"]
+DERIVATION|objective-c|emits `contains`   but the differential audits ["extends","implements","instantiates","overrides"]
+DERIVATION|objective-c|emits `references` but the differential audits ["extends","implements","instantiates","overrides"]
+DERIVATION|objective-c|emits `uses`       but the differential audits ["extends","implements","instantiates","overrides"]
+```
+
+Four types whose edges are stored and compared against nothing. That is the
+first-class half of this lane's job and it is settled in §3 below.
+
+**These edges are OUTGOING only.** Every analyzer emits edges FROM the file being
+analyzed. Nothing here resolves who points AT an Objective-C symbol; reverse
+resolution is a separate subsystem that does not exist yet, so every "unresolved
+target" count in §2 is unresolved in the FORWARD direction (the name is not
+declared in the emitting file or anywhere in the corpus) and says nothing about
+incoming edges.

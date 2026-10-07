@@ -41,6 +41,13 @@ grammar errors or missing tokens**.
 
 ## Relationship ontology
 
+> **The `uses` row below is STALE and says so at the end of this block.** It reads
+> "❌ (not emitted)". That was true in M12.07 and stopped being true at CS-R1: bare
+> identifier value reads and member-access reads have both been emitted since, and
+> the 2026-09-28 round corrected the row in prose further down this file rather than
+> here. Read the table below, then the "CS3 ontology" section for the measured
+> per-type verdicts, which supersede every "Emitted?" cell in it.
+
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
 | calls | ✅ | `invocation_expression` → leaf method name (`obj.Method(...)` → `Method`, `Task.FromResult(...)` → `FromResult`); source = enclosing method; **single pass** (no duplicates) | 0.9 |
@@ -48,11 +55,13 @@ grammar errors or missing tokens**.
 | implements | ✅ | class base-list entries that are known interfaces (in-file or companion) plus all entries after the first when unknown (deterministic C# rule: a base class, if any, is listed first; the rest are necessarily interfaces); qualified names resolved by leaf (`BaseService.Entity` → `Entity` in the companion) | 1.0 |
 | instantiates | ✅ | `object_creation_expression` (`new Foo(...)` → `Foo`) and `implicit_object_creation_expression` (target-typed `new()` — the type is resolved purely from the enclosing `variable_declarator`/`property_declaration` type) | 0.95 |
 | overrides | ✅ | `override` modifier (C# keyword) + enclosing class supertypes → owner-qualified source, declaring-parent target via companion (`override-context.ts`, shared with Java/Kotlin/Scala/Groovy); without context → first hierarchy parent (deterministic per-file default) | 1.0 |
-| uses | ❌ (not emitted) | C# member-access reads are covered at call level; not materialized as separate `uses` edges in M12.07 (matching the Java-family `uses` only for field-access in Java fixtures; C# keeps the contract minimal) | — |
+| uses | ❌ (not emitted) — **STALE, see CS-R1** | C# member-access reads are covered at call level; not materialized as separate `uses` edges in M12.07 (matching the Java-family `uses` only for field-access in Java fixtures; C# keeps the contract minimal) | — |
 | references | ✅ | **three families, and the target is a NAME in all of them.** (1) `using_directive` → the module path as written; for an ALIAS whose target is a type, the module is the type's **name** (D3) and each type argument is published as its own `references` edge marked `using_type_argument` / `reference_qualified`. (2) the declared-type graph (R9) — a written type name, a qualified name's **leaf**, and a generic's base **and every argument** (D1). (3) nothing else | 0.9 |
 | contains | ✅ | owner → owned members via `ownerName` (namespace → types, class → members, enum → members) | 1.0 |
 | depends | ✅ | imports → References | 0.9 |
 | field_access | ❌ (not emitted) | covered at call level; not materialized as separate edges | — |
+| **exports** | ✅ **added 2026-10-05 (M60 CS3)** | one edge per **top-level `public` type**: `source` = the owning namespace symbol, or the file-scope spelling `global` when the file declares no namespace; `target` = the type's own name. Derived from `visibility === "public"` on the symbol table, one loop after `contains`, reusing `contains`'s owner derivation and name-bearing line | 1.0, `evidenceClass: structural` |
+| imports | ➖ **separate channel, not a relationship** | `using_directive` → `res.imports[]` (`ImportInfo[]`), which `parallel-indexer.ts` writes to the **`brain_import` TABLE**; the same directive also emits a `references` edge marked `isImport: true` so the dependency is on the relationship channel too. `RelationshipType.Imports` names the table, not a row type — see `docs/analyzers/REVIEW-2026-10-04.md` §1 | 0.9 on the `references` edge |
 
 ## Supported constructs
 
@@ -1126,3 +1135,461 @@ The one remaining slice is the **bare-identifier `uses` half** — 617 rows, 2.4
 `identifier_usage` — which needs lexical resolution to re-derive and is therefore still gated by
 its fixture and mutants alone, with that limit written into the allowlist rather than left to be
 discovered as unexplained rows. Lifting it is a one-line change once the derivation lands.
+
+---
+
+# CS3 ontology round — 2026-10-05, every one of the ten types with a number behind it
+
+Branch `analyzer/CORPUS_CS3`. Read
+`docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Part 1 first; this section is the lane's
+answer to it. Two instruments, both lane-owned and both printing their population
+before any tally:
+
+| instrument | what it is |
+|---|---|
+| `validation/m14/fixtures/csharp/probe-cs3-ontology-census.ts` | all ten types across **three channels** (`res.relationships`, `res.imports[]`, `res.exports[]`), through production `parseFile` |
+| `validation/m14/fixtures/csharp/probe-cs3-exports-oracle.ts` | an **independent tree derivation** for `exports`, plus the six questions for every label |
+| `validation/m14/fixtures/csharp/probe-cs3-exports-construct.ts` | the `exports` CONSTRUCT census, instrument A (grammar inventory) and instrument B (tree count) |
+
+## 0. The corpus, and the handover was wrong about it
+
+The handover said *"NO C# CORPUS on this disk"*, and
+`docs/analyzers/REVIEW-2026-10-04.md` Defect B records the same claim
+(`csharp-sample` absent). Measured on this disk:
+
+| repo | `.cs` files | what it is |
+|---|---|---|
+| `roslyn-cs` | **18,236** | `dotnet/roslyn` @ `bb79a699`, git-tracked, 620 MB |
+| `vbnet-samples` | **3,042** | hand-written application C# |
+| `powershell` | **1,276** | **generated** cmdlet code — a torture test, a poor *language* corpus (monomorphic, short names); kept because it stresses the analyzer, not because it describes C# |
+| `aspnetcore` | **10,687** | `dotnet/aspnetcore` @ `dc8b384c`, cloned during this round, 281 MB |
+
+`aspnetcore` was absent although this file's own differential coverage table names
+it as one of four C# corpora, so it was re-acquired with
+`git clone --depth 1 --filter=blob:none`. `dotnet/roslyn` alone would have been a
+**misleading** corpus for this round and §1 below is why.
+
+## 1. Per-type verdicts
+
+`EMITTED` = production `parseFile` produced it, with a count and the files.
+`RULED` = a written reason AND a corpus measurement. `GAP` = the language has the
+construct; implemented.
+
+| type | verdict | count / files, and the measurement |
+|---|---|---|
+| `calls` | **EMITTED** | 400 files per corpus — roslyn **10,272**, aspnetcore **10,204**, vbnet-samples **1,830**, powershell **10,981**. e.g. `roslyn-cs/eng/ensure-sources-synced.cs:21 global -> MainAsync` |
+| `uses` | **EMITTED** | roslyn **8,416**, aspnetcore **6,363**, vbnet-samples **1,419**, powershell **12,688**. Two halves: field access (conf 0.7, `csharp_field_access`) and bare identifier (conf 1.0, `identifier_usage`) |
+| `contains` | **EMITTED** | roslyn **4,806**, aspnetcore **3,880**, vbnet-samples **1,790**, powershell **9,268** |
+| `references` | **EMITTED** | roslyn **10,827**, aspnetcore **4,453**, vbnet-samples **1,922**, powershell **9,243**. `evidenceClass` splits `import_based` 3,760 / `reference_qualified` 7,067 on roslyn |
+| `extends` | **EMITTED** | roslyn **325**, aspnetcore **157**, vbnet-samples **80**, powershell **416** |
+| `instantiates` | **EMITTED** | roslyn **799**, aspnetcore **2,236**, vbnet-samples **1,204**, powershell **3,132** |
+| `implements` | **EMITTED** | roslyn **4**, aspnetcore **92**, vbnet-samples **44**, powershell **103** |
+| `overrides` | **EMITTED** | roslyn **747**, aspnetcore **154**, vbnet-samples **74**, powershell **574** |
+| `exports` | **GAP → EMITTED** | **0 → 275** (aspnetcore 400), **340** (vbnet 400), **440** (powershell 400), **61** (roslyn 400). Independent tree derivation reconciles **0 MISSING / 0 unexplained** on three of four corpora; the fourth is adjudicated in §4 |
+| `imports` | **EMITTED, on the `imports[]` channel** | roslyn **3,760** in 397/400 files; aspnetcore **1,081**/303; vbnet **885**/334; powershell **1,929**/388. `RelationshipType.Imports` names the `brain_import` **TABLE**, not a relationship row — see `REVIEW-2026-10-04.md` §1. `imports` is **not** a fabricated edge and **not** a defect |
+
+**Relationship channel: 9 of 10.** The tenth, `imports`, is carried on the channel
+the schema gives it, which is the arrangement `firing-check-v2` reports separately
+for exactly this reason.
+
+## 2. `exports` — the construct, measured before the rule existed
+
+C# has no `export` keyword. Its export surface is the `public` accessibility
+modifier on a top-level type.
+
+**Instrument A** (grammar inventory), 300 roslyn files: **282 distinct node types**
+produced, and **NONE** of the eight export-declaration node types a module language
+would have (`export_statement`, `export_declaration`, `export_specifier`,
+`module_export`, `visibility_modifier`, `export_list`, `pub_item`, `export`). So the
+grammar route is closed and instrument A alone is the wrong probe.
+
+**Instrument B** (tree count, where a string literal cannot fake a `modifier`):
+
+| corpus | files | type declarations | **top-level `public`** | `internal` | `(none)` | `private` | `file` |
+|---|---|---|---|---|---|---|---|
+| roslyn | 300 | 333 | **0** | 303 | 6 | 18 | 0 |
+| aspnetcore | 400 | 520 | **275** | 150 | 21 | 50 | 0 |
+| vbnet-samples | 400 | 461 | **340** | 34 | 54 | 18 | 1 |
+
+**The roslyn row is why this could not be ruled, and why one corpus would have
+been a wrong answer.** `dotnet/roslyn` is a compiler: its implementation assemblies
+declare 303 of 333 top-level types `internal` and **zero** `public`. A rule keyed on
+`public` measures **0** there and reads as RULED. That is corpus starvation in a new
+shape — `docs/analyzers/FIRING-CHECK.md` records Ruby at 1/10 on `NFILES=25` and
+8/10 at 200 for the same reason. Two further families were needed before the number
+meant anything.
+
+### Why top-level public TYPES, and not the three wider populations
+
+Counted on the same draw, not chosen by taste (aspnetcore column):
+
+| rule | edges | verdict |
+|---|---|---|
+| **R1 top-level `public` type** | **275** | **implemented** |
+| R2 every `public` type incl. nested | 299 | rejected — a nested public type is reached through its outer type, which `contains` already carries, and its export PATH (`Outer.Nested`) is not expressible as a target without inventing a qualified name |
+| R3 R2 + every `public` member | 1,986 | rejected — `contains` again with a modifier attached; 7.2× the edges for no new graph question, and member visibility already rides `brain_symbol.visibility` (`schema-ddl.ts:66`) |
+| R0 top-level AND namespace-free AND not `file` | 420 | this is what `res.exports[]` carries **today**, and on roslyn it carries 302 rows that are all `internal` — see §6 |
+
+### The rule, and the two halves of it that a count cannot check
+
+`public` and only `public`. `extractVisibility` already normalises the two C#
+modifiers that must never reach an export surface: `file` maps to `private` (CS-B4),
+and a top-level type with **no** modifier leaves `visibility` undefined — which is
+correct, because C#'s default accessibility for a top-level type declaration is
+`internal`. So an unannotated type is excluded by requiring the **literal value**,
+not by supplying a default.
+
+`source` is `ownerName` — the namespace symbol, or the lane's existing file-scope
+spelling `global` — the same string `contains` derives one loop earlier, so both
+endpoints resolve at exactly the rate `contains` does rather than at a new rate
+needing its own measurement. `global` is the FILE, not a placeholder; rule R7 bans
+the literal `unknown`, which appears nowhere.
+
+Confidence 1.0, `evidenceClass: structural`. **A new branch was added to
+`classifyEvidenceTier`**: `exports` previously fell through to `usage_contextual`,
+which is the class `calls`/`uses` carry because the BINDING they denote is not
+written in the file. Both halves of an `exports` claim are written — the `public`
+keyword and the name. Same pairing as lua's module-surface export edge (LUA-42).
+
+### A defect in the first version of this rule, caught by measurement
+
+The first predicate was `ownerKind === Namespace ? ownerName : "global"`, which
+accepts every **nested** public type and gives it the file-scope source — claiming
+`Outer.Nested` is a global-scope export. On aspnetcore it emitted **299 against
+275** real top-level public types: **24 fabricated rows**, exactly the R2−R1 gap the
+construct census had already counted. **The count matched a plausible number while
+the set was wrong**, which is the failure mode a count-only check cannot see. Fixed:
+the predicate now requires the owner to be a namespace *or* to be absent, which is
+the grammar's nesting and not a heuristic. Pinned by
+`csharp/public-type-exports` and re-proved by mutant
+`csharp/exports-nested-as-global`.
+
+## 3. The six questions, per already-emitted type
+
+Measured with `probe-cs3-exports-oracle.ts`, aspnetcore, 400 files, production
+`parseFile`. **Scope, stated because it bounds every resolution number: analyzers
+emit OUTGOING edges from the file being analyzed, and resolving who points AT you
+is a separate subsystem that is not built.** So "resolves" can only mean "binds to
+a symbol THIS FILE declares"; an external target is a true edge and is not counted
+as a defect. The test is leaf-aware, because the analyzer publishes `Owner.Member`
+on both halves of an `overrides` edge.
+
+| label | edges | src resolves | tgt resolves | conf ≥ 0.7 | conf < 0.7 | placeholder `unknown` | empty endpoint |
+|---|---|---|---|---|---|---|---|
+| calls | 10,204 | 97.4% | 17.5% | 100.0% | 0 | 0 | 0 |
+| contains | 3,880 | 100.0% | 100.0% | 100.0% | 0 | 0 | 0 |
+| **exports** | **275** | **99.3%** | **100.0%** | **100.0%** | **0** | **0** | **0** |
+| extends | 157 | 100.0% | 1.3% | 100.0% | 0 | 0 | 0 |
+| implements | 92 | 79.3%¹ | 1.1% | 100.0% | 0 | 0 | 0 |
+| instantiates | 2,236 | 99.3% | 6.0% | 100.0% | 0 | 0 | 0 |
+| overrides | 154 | 100.0% | 100.0% | 100.0% | 0 | 0 | 0 |
+| references | 4,453 | 99.4% | 6.1% | 100.0% | 0 | 0 | 0 |
+| uses | 6,363 | 96.9% | 30.7% | 100.0% | 0 | 0 | 0 |
+
+¹ the aspnetcore run for `implements` measured 100.0% src; the roslyn run measured
+79.3%. Both are reported rather than the flattering one.
+
+Answered one question at a time, because they fail independently:
+
+**(1) EXISTS.** Every type above is `Constructible` — the `RelationshipType`
+symbols are in the source. That is the ONLY question source-derivation answers, and
+it is why this section exists.
+
+**(2) FIRES.** Yes, for all nine, with the counts in §1, measured on three
+independent corpora through `parseFile`. `implements` at **4** on roslyn is the
+smallest class in the lane and it fires on aspnetcore at 92, so it is not a
+roslyn-shaped dead branch.
+
+**(3) CORRECT.** `script/m14/differential.ts` audits seven labels for csharp —
+`calls, contains, references, uses, extends, implements, instantiates` — plus
+`overrides` on the C923 interface-member form. Measured at 120 files per corpus
+on a **pinned sample** (the cold-pool state file snapshotted and restored around
+each arm, because two runs of unchanged code report different samples by design):
+
+| corpus | tree-truth | covered | MISSING | unexplained | sample hash |
+|---|---|---|---|---|---|
+| aspnetcore | 6,582 | 6,582 (100%) | **0** | 2 (`uses`) | `1c0168321128fdf9` |
+| roslyn-cs | 6,228 | 6,228 (100%) | **0** | 4 (`references`) | `c807007a1a2a6324` |
+| vbnet-samples | 2,788 | 2,788 (100%) | **0** | 0 | `0928c5d5c0c1c2cf` |
+| powershell | 19,410 | 19,410 (100%) | **0** | 0 | `0a7127b03507b651` |
+
+Every figure is **identical before and after** this round's change and every sample
+hash matches arm for arm. The 2 and 4 unexplained rows are present at baseline
+`e73c3e58e`.
+
+**THE HARNESS'S LIMIT, said plainly rather than claimed away: the oracle is a second
+walker over the SAME grammar, so a grammar bug shared by both paths is invisible to
+both.** What it can catch is an analyzer rule disagreeing with the language rule,
+and that is the class of the 24-row fabrication in §2. The same limit applies to
+this round's own `exports` oracle, which is written from the C# rule and shares no
+table with the analyzer but does share the grammar.
+
+**(4) LABELLED.** Right type, not a neighbour, for the seven audited labels: the
+differential compares `label + source + target`, so a mislabel is a MISSING row plus
+an unexplained row, and there are **0** of each on three of four corpora. The
+fourth corpus's 6 rows are `references` on roslyn and `uses` on aspnetcore, both
+present at baseline. `exports` is labelled by construction — it is a distinct
+`RelationshipType` and the fixture pins `meta.relationshipType` on it. The one
+label-adjacency worth naming: `overrides` and `implements` both derive from a base
+list, and the discriminator is CSD12's rule (unknown external index-0 `I`-prefixed
+PascalCase → `implements`; a struct's every base → `implements`).
+
+**(5) RESOLVED.** In the table above. `contains` and `exports` resolve at 100% of
+their targets and ~100% of their sources; `overrides` resolves at 100%/100%; the low
+target rates on `calls` (17.5%), `extends` (1.3%), `implements` (1.1%),
+`references` (6.1%), `instantiates` (6.0%) and `uses` (30.7%) are **external
+targets** — `Microsoft.Build.Utilities.Task`, `System.Text.Json`, `Trim` — which is
+what a single-file analyzer must emit. **The missing half is the cross-file and
+incoming subsystem, which does not exist**, so this number cannot be raised by
+analyzer work and is stated as a bound rather than a defect.
+
+**(6) CONFIDENT.** No edge in the lane is below the 0.7 floor: `heuristic(<0.7)` is
+**0.0%** for all nine labels. But the honest reading is finer than that number:
+`uses` splits **4,870 at confidence 0.7 with `evidenceClass: inferred`** and 1,493 at
+1.0 `usage_contextual` on aspnetcore — so **73% of the `uses` class sits exactly AT
+the floor and is classed `inferred`**, which `src/lsp/evidence_tier.ts` defines as
+"a guess … treat as a hint, never as fact". The other labels: `calls` 0.9
+`usage_contextual` (10,174) + 0.95 (30); `references` 0.9, split `import_based`
+1,081 / `reference_qualified` 3,372; `instantiates` 0.95 `structural`; `extends`,
+`implements`, `contains`, `overrides`, `exports` all 1.0 `structural`. Every
+`evidenceClass` value emitted is one of the five declared tiers
+(`src/lsp/evidence_tier.ts` `EVIDENCE_TIERS`) — verified by inspection of the
+per-label evidenceClass histograms the probe prints.
+
+**Rule R7 and the standing rules.** `unknown` endpoints: **0** across the 27,814
+relationships of aspnetcore 400 (the nine rows of the table above, summed). Empty endpoints: **0**. Empty symbol names: **0**.
+Empty or `unknown` `SymbolKind`: **0** (measured over 4,356 symbols).
+
+## 4. The one MISSING row, and it is not an analyzer defect
+
+The `exports` oracle reconciles **0 MISSING / 0 unexplained** on aspnetcore (274
+distinct pairs), vbnet-samples (340) and powershell (440). On roslyn it reports
+**truth 62 / emitted 61 / MISSING 1**.
+
+The MISSING row is
+`Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.ConditionalExpressionInStringInterpolation`
+→ `CSharpAddParenthesesAroundConditionalExpressionInInterpolatedStringCodeFixProviderTests`.
+
+**Adjudicated:** that target name is **87 characters**. `pool-worker.ts`
+`filterNoiseRelationships` contains
+
+    if (leaf.length > 80 || leaf.length < 1) return false
+
+so the edge is deleted between the analyzer and the store. The analyzer emits it.
+Measured, analyzer output vs `parseFile` output over the same 400 files:
+
+| corpus | contains | exports | extends | instantiates | uses | total dropped |
+|---|---|---|---|---|---|---|
+| roslyn | 9 | 1 | 1 | 1 | 5 | **18** |
+| aspnetcore | 31 | 0 | 0 | 0 | 0 | **31** |
+
+It deletes real `contains namespace -> LongClassName` edges too, and it deleted them
+before this round — 9 and 31 of them, on roslyn and aspnetcore, on **nine labels
+including `extends` and `instantiates`**. `pool-worker.ts` is shared machinery this
+lane does not own, so the need is **reported**, not patched (§8).
+
+## 5. DERIVATION: csharp IS in the debt, with one finding
+
+`npx tsx script/m60/rel-type-coverage-gate.ts --langs=csharp`, measured on this
+branch:
+
+    CHECK 1 — DERIVATION: every emitted type has an oracle derivation
+      csharp       1 un-audited: ["overrides"]
+    baseline: 104 recorded, 1 NEW, 104 repaid
+    REGRESSIONS (not in the recorded debt):
+      DERIVATION|csharp|emits `overrides` but the differential audits
+      ["calls","contains","extends","implements","instantiates","references","uses"]
+
+**One finding: `overrides`.** `differential.ts` excludes it from csharp's compared
+set on BOTH sides — the truth side at `differential.ts:22718`
+(`if (e.label === "overrides") continue`) and the analyzer-side allowlist at
+line 23153 (`lang !== "csharp" && …`). The exclusion is symmetric and
+`script/m14/verify-csharp-overrides-symmetry.ts` re-confirms it: *"excluded on BOTH
+sides … the two can never disagree."* So the class is neither verified nor wrong —
+it is **outside the gate**, which is the state that reads most like coverage.
+
+This file's 2026-09-28 section records `overrides` as having joined the compared set
+at 13,221/13,221. The shared file today does not do that. The two statements cannot
+both describe the current tree, and the tree is the one that runs.
+
+**This round's `exports` edges add a SECOND potential finding and the lane
+mitigated what it could.** `exports` is outside csharp's compared set, so the new
+edges are emitted and compared against nothing — which is the debt the workstream
+says to pay DOWN. `differential.ts` is the master's, so the lane did not wire it.
+What the lane DID do is supply everything a safe shared edit needs:
+
+1. an **independent tree derivation** reconciling 0/0 on three corpora
+   (`probe-cs3-exports-oracle.ts`) — a second walker over the same grammar, so the
+   same declared limit applies;
+2. a **fixture** with 19 expect rows, 10 forbid rows and an exact count;
+3. **nine mutants**, all caught (`ab-cs3-exports-mutants.ts`).
+
+Until `differential.ts` gains the truth push and the allowlist entry **in one
+commit**, `exports` is a DERIVATION finding with lane-owned evidence behind it.
+That is stated rather than assumed away.
+
+## 6. `res.exports[]` reaches nothing — measured, and NOT changed here
+
+`ParseResult.exports` is optional (`src/ast/types.ts:223`). `pool-worker.ts` now
+forwards it (`exports: (parsed as any).exports ?? []` — the M60 LUA-14 fix). This
+analyzer populates it: **400 rows in 392 of 400 roslyn files**, **419 in 392
+aspnetcore**, **131 in 110 vbnet**, **3 in 3 powershell**.
+
+**And nothing reads it.** `src/brain/schema-ddl.ts` has `brain_symbol`,
+`brain_relationship`, `brain_import`, `brain_file`, … and **no export table**;
+`parallel-indexer.ts` contains no read of `result.exports` — its only `exports`
+mentions are `relType === "exports"` checks for RELATIONSHIP rows. So the channel
+computes a fact, crosses two boundaries, and lands in nothing. That is the same
+defect shape as the M60 LUA-14 note one layer further out: the worker was fixed and
+the persister never learned the field.
+
+**Why this round did not "fix" it by deleting the channel:** CS-B4 and the M49 rule
+gate it with a fixture for a different reason — the channel is the RESOLVABLE-NAME
+set (namespace-free top-level declarations), and F3 rejects an export that resolves
+to no top-level symbol. It is a coherent contract answering a different question
+from the `exports` RELATIONSHIP, and the two must not be confused:
+
+| | `res.exports[]` | `exports` relationship |
+|---|---|---|
+| question | which names in this file resolve to a top-level symbol | what this assembly publishes |
+| gate | F3 name resolution (CS-B4 / M49) | the `public` keyword at top level |
+| roslyn 300 files | 302 rows | **0** rows |
+| aspnetcore 400 files | 420 rows | 275 rows |
+
+**The roslyn column is the finding.** The channel's 302 rows there are all
+`internal`, because it never asked about visibility — it publishes
+`visibility || "public"`, and a top-level type with no modifier is `internal` by the
+C# default. So the channel's name "exports" does not mean exports on the corpus
+where it matters most. That is **reported**, not fixed: the `|| "public"` default is
+pinned by CS-B4's fixture and changing it needs that pin re-authored, which is lane
+work this round did not have a measurement-driven reason to force.
+
+## 7. Gates, re-run on this branch, with their actual results
+
+| gate | command | result |
+|---|---|---|
+| F3 fixtures | `bun script/m14/run-fixtures.ts --lang csharp` | **19 / 19 pass, 0 fail** (18 pre-existing + `csharp/public-type-exports`); `fixture baseline gate: no regressions` |
+| F4 mutants | `npx tsx validation/m14/fixtures/csharp/ab-cs3-exports-mutants.ts` | **9 / 9 caught** (lane-owned; §5) |
+| F1 grammar | `npx tsx script/m14/audit-analyzer-grammar.ts csharp` | **PASS — refs=107, unknown=0, unknownFields=0**. The whole-programme run is red on **three other lanes** (`cpp` 2, `rust` 2, `sql` 1 unregistered literals) — not csharp's |
+| no-regex | `bun script/m14/verify-csharp-no-regex.ts --file <f>` on all **6** lane files | **PASS each** — 0 regex literals, 0 unclassified regex-capable calls, **0 runtime `RegExp` constructions**. Found and fixed 3 real regex uses in this lane's own probes, written this round |
+| line numbers | `bun script/m14/verify-csharp-line-numbers.ts --list <200 roslyn files> --lang csharp` | **PASS** — 14,767 relationships, **0 out of bounds**, 66 null lines, all 66 on synthesized names (`constructor`/`Finalize`), which the gate states is correct |
+| symbols | `bun script/m14/verify-csharp-symbols.ts --list <200 roslyn files>` | **FAIL — 2 rows**, and this file's 2026-09-29 gate table claims PASS. **PRE-EXISTING**: reproduced identically at baseline `e73c3e58e`. §9 |
+| overrides symmetry | `bun script/m14/verify-csharp-overrides-symmetry.ts` | **PASS** — exclusion symmetric on both sides |
+| oracle regressions | `bun script/m14/verify-csharp-oracle-regressions.ts` | **PASS** — CS-D9 / CS-D10b |
+| DERIVATION | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=csharp` | **1 finding**: `overrides`. §5 |
+| payload | `probe-cs3-payload-latency.ts`, 200 aspnetcore files, pinned list | 13,824 → **13,954** (+0.94%), every other label **+0** |
+| latency | `probe-cs3-exports-cost.ts`, interleaved, 5 reps | exports pass **0.230 ms median** over 1,396 symbols = **0.003%** of analyze. §8 |
+| differential | `bun script/m14/differential.ts --lang csharp --sample 120 --repo <r>`, pinned pool | 4 corpora, 100% covered, **MISSING=0**, unexplained **2/4/0/0**, identical before and after |
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | **0 errors** for this file (and for the project) |
+
+## 8. Reported, not fixed — everything outside this lane
+
+1. **`script/m14/firing-check-v2.mjs` cannot measure csharp at all.** C# is not in
+   its `LANES` table (lines 42–64) and its `ALIAS` map carries `CSHARP: null`
+   (line 178), so `NFILES=200 bun script/m14/firing-check-v2.mjs CORPUS_CS3` exits 2
+   with "no lane matches". The lane is unreachable by name **and** by corpus. One
+   `LANES` entry (`CSHARP: ["csharp", "real-csharp-analyzer", "aspnetcore", [".cs"]]`)
+   plus a `SIGNAL[".cs"]` entry would make the briefed command produce a number for
+   every future csharp agent. **This is the single highest-value shared edit in this
+   report**, because without it the lane's headline instrument is unrunnable and the
+   next agent will re-derive the corpus and the three-channel split from scratch.
+2. **`firing-check-v2` does not read `res.exports[]`.** It tallies
+   `res.relationships` and `res.imports` only, so a lane that publishes exports
+   scores as silent on `exports` by an instrument that never looks there. Any 10/10
+   claim made with it would be wrong about this lane in one direction and about
+   lua/go/dart in another.
+3. **`pool-worker.ts` `filterNoiseRelationships`' 80-character leaf cap** — §4.
+   Measured 18 dropped edges on 400 roslyn files, 31 on 400 aspnetcore, across
+   `contains`, `exports`, `extends`, `instantiates` and `uses`. It is a length cap
+   standing in for a validity check, and the names it deletes are legal C#
+   identifiers.
+4. **`differential.ts`: `exports` and `overrides` are outside csharp's compared
+   set** — §5. `exports` needs the truth push **and** the allowlist entry in one
+   commit; `overrides` needs the `continue` at 22718 and the allowlist entry
+   removed together, which the C923 comment already warns about.
+5. **`differential.ts`: `script/m14/csharp-ruled.ts` does not exist**, so
+   `ontology-coverage-gate csharp` has no `RULED_BY_LANG` entry and reads
+   `imports` as `RULED-UNJUSTIFIED`. The ruling is written and measured (§1) and
+   needs one table entry plus one import; it is in `script/m14/**`, which is the
+   master's. **Without it the arbiter the workstream names cannot return a verdict
+   for this lane.**
+6. **`verify-csharp-no-regex.ts` is a SILENT PASS under `npx tsx`.** It ends with
+   `if (import.meta.main) await main()`. Under `npx tsx` the module loads as
+   CommonJS, `import.meta.main` is `undefined`, `main()` never runs and the script
+   exits **0 printing nothing**. Verified: `npx tsx … --file <f>` → exit 0, no
+   output; `bun … --file <f>` → exit 0, full report. Any agent reaching for
+   `npx tsx` gets a green that means nothing, on the exact claim the gate exists to
+   make. One line — `process.argv[1]?.endsWith(...)`, the pattern
+   `run-fixtures.ts` already uses in the same directory.
+7. **`run-fixtures.ts --lang=<x>` silently runs EVERY lane.** The parser reads
+   `--lang` followed by a SPACE, so `--lang=csharp` leaves `argLangs` at all 46
+   lanes; the run then hits the fixture-lane gate and exits 6 on `r` and `lua`,
+   printing what reads like a csharp problem. Not csharp's, but it costs the next
+   agent a debugging round.
+8. **The `fixture-lane gate` in `run-fixtures.ts` exits 6 for EVERYONE** while `r`
+   and `lua` are unregistered — 30 expectation files that no runner lane claims.
+   Any full F3 run is blocked.
+9. **`deriveCSharpBareUses` has no independent oracle** — the lane's own 2026-09-28
+   section records this as "the one remaining slice" (617 rows, 2.4% of output at
+   the time; **4,870 of 6,363 `uses` edges on aspnetcore 400 are at confidence 0.7
+   with `evidenceClass: inferred`**). It is now the largest unoracled class in the
+   lane by a wide margin, and the honest reading of §3(6) is that 73% of it is
+   heuristic.
+10. **Two `powershell` files fault the C# wasm parser**
+    (`engine/remoting/host/RemoteHostMethodInfo.cs`,
+    `engine/remoting/server/ServerMethodExecutor.cs` — `[BB-PARSE-ERR] … memory
+    access out of bounds`), and the first of them also **hangs `parseFile` past its
+    120 s guard, which exits the process**. `script/m14/ontology-coverage-gate.ts
+    csharp` therefore cannot complete in one run on this corpus: the first attempt
+    died at 2,061 of 22,508 admitted files and only the resumable walk saved the
+    second attempt. The gate's own comment says a single poison file "costs one
+    file rather than the whole measurement", which held; the hang cost 20 minutes.
+
+## 9. Two pre-existing defects this lane did NOT fix, named
+
+**A conversion operator's symbol name is a two-word string the file never writes.**
+`public static explicit operator CSharpAnalyzerOptionsProvider(…)` is published as
+name `"explicit CSharpAnalyzerOptionsProvider"` — with a SPACE. Measured on 200
+roslyn files: **2 symbols** whose name is not written at their own range, which is
+why `verify-csharp-symbols` is FAIL (§7). That name is not a legal C# identifier and
+no consumer can resolve it by name. It is not a new defect: **reproduced identically
+at baseline `e73c3e58e`**, and it is a **deliberate mirrored convention** — CSD3
+names operators by identity, and `deriveCSharpContains` in `differential.ts`
+(lines 7983–7999) reproduces the same spelling from the same grammar fields
+specifically so the two halves reconcile. Changing one side alone desyncs a
+master-owned oracle, and the file says so in both places. **The fix belongs in one
+commit across both files**, and the obvious candidate spelling is Roslyn's own
+(`Symbol.Name` for a conversion operator is `op_Explicit` / `op_Implicit`, a legal
+identifier and stable). Not done here, and named rather than half-done.
+
+**A dead branch in `classifyEvidenceTier`.** `if (type === "imports") { md.evidenceClass = "import_based"; continue }`
+can never be true in this analyzer: the file contains **no** push of
+`RelationshipType.Imports`, and imports travel on `res.imports[]`. Measured by
+reading every `RelationshipType.*` site in the file — 16 sites, none of them
+`Imports`. Left in place as one line of defensive symmetry with the seven labels
+that do fire; named because "a branch that never matches is dead code" is exactly
+the question §3(2) asks about the other nine.
+
+## 10. What this lane could NOT settle, and precisely why
+
+1. **Cross-file and incoming edge resolution.** §3(5) can only measure in-file
+   resolution. Deciding who points AT a symbol needs an index-wide pass and the
+   subsystem is not built, so no analyzer change can move those numbers and no
+   claim is made about them.
+2. **`overrides` correctness.** It is excluded from the differential on both sides,
+   symmetrically, so nothing in the repository adjudicates it. The lane's own
+   2026-09-28 measurement (642/642 override edges naming a member declared in the
+   same file, 0 fabrications, over 400 roslyn files) is the only evidence and it is
+   from a different round; it was not re-run here because the instrument for it is
+   not lane-owned and re-deriving it privately would be the third time this
+   programme has produced a confident number from a private reimplementation of
+   harness internals (the lane doc records two such failures).
+3. **The bare-identifier `uses` half.** Gated by fixture and mutants alone, as
+   §8 item 9 states. No independent derivation exists and writing one needs lexical
+   resolution this round did not attempt.
+4. **Whether `exports` should also be wired into `differential.ts`.** §5 says what
+   a safe edit needs and §8 item 4 says who makes it. Whether to widen a
+   27,000-line contended harness to admit a lane label is the master's call, and the
+   answer may legitimately be no.
+5. **`verify-csharp-symbols`' 2 rows and the 80-character leaf cap** are named, not
+   closed. Both are outside what one round can land without a shared-file edit.

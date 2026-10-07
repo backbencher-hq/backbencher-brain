@@ -113,20 +113,237 @@ clean corpus.
 | syntax errors | ✅ | ERROR/MISSING nodes pushed as warning `ParseError` (never silently dropped) |
 | decorators/attributes | ✅ | `annotation` nodes → pattern flags (`@Override`, `@Test`, `@Transactional`, etc.) |
 
-## Relationship ontology
+## Relationship ontology — measured verdicts (M60, analyzer/GROOVY)
 
-| Relationship type | Emitted? | How resolved | Confidence model |
-| --- | --- | --- | --- |
-| calls | ✅ | `method_invocation` → `name` field; command-chain `juxt` invocations; source = enclosing method; **single pass** (no duplicate edges — the old analyzer emitted every call twice) | 0.9 |
-| extends | ✅ | `extends_clause`/`superclass` → type child (class → class) | 1.0 |
-| implements | ✅ | `implements_clause`/`type_list` → type children (class → interface/trait) | 1.0 |
-| instantiates | ✅ | `object_creation_expression` (`new Type(...)`) → Instantiates | 0.9 |
-| overrides | ✅ | `@Override` annotation + enclosing class supertypes → owner-qualified source, declaring-parent target via companion index (`override-context.ts`, shared with Java/Kotlin); without context → first hierarchy parent (deterministic per-file default) | 0.9 |
-| uses | ✅ | `field_access` → leaf identifier (`this.field`, `obj.field` → the field); resolved against declared symbols | 0.7 |
-| references | ✅ | imports → source `root`, target = dotted module path | 0.9 |
-| contains | ✅ | owner → owned members via `ownerName` only (top-level declarations never self-contain) | 1.0 |
-| depends | ✅ | imports → References | 0.9 |
-| field_access | ✅ | `field_access` → leaf identifier (property reads/writes materialized as `uses`) | 0.7 |
+Every row below is a MEASUREMENT through the production entry
+(`src/ast/pool-worker.ts` `parseFile`, which is what `parallel-indexer` stores),
+over **all 2,825 tracked `*.groovy`/`*.gradle` files** of the pinned corpus
+`$HOME/fixtures/repositories/groovy`, in **15 shards of 200 with none
+lost** (`script/m60/groovy-ontology-census.ts --from N --max 200`). The shard flag
+exists because the engine's per-file watchdog kills the whole process on a
+wall-clock timeout, which on a shared box truncates a single-pass corpus run
+silently.
+
+The `project-resolved` column is question 5 with the right denominator: both
+endpoints resolved against the WHOLE PROJECT's 24,640 distinct symbol names rather
+than the same file's (`script/m60/groovy-project-resolution-census.ts`, which
+reports both figures and states in its own header why the per-file number is the
+wrong denominator for most of this graph — an `extends` target is usually declared
+in another file, and an `imports` target is a dotted module path by construction).
+
+| Relationship type | Emitted? | Corpus edges | Files | project-resolved | Confidence (measured) |
+| --- | --- | --- | --- | --- | --- |
+| calls | ✅ | 82,994 | 2,515 | 55.7% | 0.70 ×82,878 · 1.00 ×116 |
+| uses | ✅ | 19,764 | 1,565 | 49.2% | 0.60 ×18,830 · 0.90 ×668 · 1.00 ×266 |
+| contains | ✅ | 27,267 | 2,490 | 100.0% | 1.00 |
+| imports | ✅ | 10,596 | 2,373 | 99.2% | 0.90 |
+| references | ✅ | 10,858 | 2,377 | 98.8% | 0.90 ×10,617 · 0.95 ×241 |
+| exports | ✅ | 4,350 | 2,505 | 82.9% | 1.00 |
+| extends | ✅ | 1,123 | 871 | 72.0% | 1.00 |
+| implements | ✅ | 379 | 202 | 61.2% | 1.00 |
+| overrides | ✅ | 872 | 288 | 100.0% | 0.50 ×805 · 1.00 ×67 |
+| instantiates | ✅ | 12,054 | 1,250 | 27.2% | 0.95 |
+
+Run-to-run variance, disclosed because the numbers above are compared against a
+before-run: the pool's per-file `analyzer timeout` fallback returns a degraded
+result under load, so a second pass over the same 2,825 files at the same commit
+moved `contains` by 36 of 27,267 (0.13%), `overrides` by 14 of 872 (1.6%) and
+`imports` by 25 of 10,596 (0.24%). The only delta this change can cause is in
+`uses` (−115 edges on the same file set, and +1.4 points of project-wide
+resolution), because `collectFieldAccessUses` emits nothing but `uses`.
+
+**All ten types are EMITTED.** None is RULED and none is outstanding: the two that
+were missing at handover (`imports`, `exports`) are real Groovy constructs, were
+implemented, and are measured above.
+
+| Relationship type | How resolved |
+| --- | --- |
+| calls | `method_invocation` → `name` field; command-chain `juxt_function_call`; `leading_dot_call`; `explicit_constructor_invocation` (`super`/`this`, honest literal target). Source = the enclosing method, or the `(script)` sentinel at script level. **Single pass** — no duplicate edges. |
+| extends | `superclass` → type child (class/trait → class); `extends_interfaces` → type children (interface → interface). |
+| implements | `super_interfaces` → type children (class/trait → interface/trait). |
+| instantiates | `object_creation_expression` (`new Type(...)`), with `type_identifier`, `generic_type` or `scoped_type_identifier` receivers. |
+| overrides | `@Override`, or an un-annotated instance method; three resolution tiers recorded in `metadata.reasonCode` — `exact-in-file` (1.0), `companion-index` (0.85), `first-parent-guess` (0.5). |
+| uses | `field_access` → leaf identifier; `array_access` reads; `leading_dot_call` member reads; GString interpolation reads. A receiver that is not a plain name yields **no** source and the read is attributed to the enclosing method (see the receiver section below). |
+| references | import MENTIONS (target = the dotted module path) plus declared-type references, qualified names only (see the qualification rule below). |
+| imports | one dependency per `import_declaration`, in all five Groovy forms, named in `metadata.relationshipType`: `single_type`, `on_demand_type`, `static_member`, `static_on_demand`. The `as` alias stays metadata and is never the target. |
+| exports | the importable units a file publishes — top-level types and top-level script methods — **sourced at the PACKAGE**, so `exports.source + "." + exports.target` reconstructs exactly the dotted name an `imports` edge targets. Two language-rule gates, each measured: a named package (a default-package type has no importable name; 270 of the 2,825 corpus files declare no package) and `visibility === "public"` (measured: 3,689 top-level types with no modifier written — Groovy's default is public — 39 written `public`, 5 `private`, 1 `protected`; the gate costs 6 rows and saves 6 fabrications). |
+| contains | owner → owned symbol via `ownerName`; top-level declarations never self-contain. |
+
+### The two rules narrower than the family, and what each costs
+
+Both are deliberate. Both are counted here rather than left in a comment, because a
+narrowing that is not counted reads as coverage.
+
+1. **`references` declared types are QUALIFIED-ONLY.** `collectDeclaredTypeRefs`
+   drops every bare type name (`if (!t.name.includes(".")) continue`). Measured with
+   `script/m60/groovy-bare-type-ref-census.ts` over all 2,825 files: 47,302
+   declared-type positions visited, **158 qualified names written against 24,049
+   bare names refused** — 50.8% of positions — of which **29.6% are followable** (a
+   type declared in the same file, 950, or imported by a dotted path whose leaf
+   matches, 6,239); the other 16,860 name a JDK/stdlib/Gradle type this corpus
+   cannot bind. The lane's stated reason is its hand-audited truth: 79 relationship
+   rows with **no bare target anywhere in them**. The java analyzer emits bare names
+   deliberately, with the defect that made it do so named in its own comment
+   (`GormProperties.java -> String`, `Opcodes.java -> Integer`). Two committed
+   contracts disagree and the adjudication belongs to the owner.
+2. **A `uses` read at script level is sourced at the receiver variable.** A read
+   with no enclosing class or method takes the receiver's own name as its source,
+   and this lane does not publish locals as symbols. That is why `uses` resolves at
+   47.8% project-wide while `contains` resolves at 100%, and it produces 166
+   `uses X -> X` self-edges corpus-wide (`args -> args`, `__parts -> __parts`) where
+   the receiver and the leaf share a name. Named for the record; not changed, because
+   the alternative (`(script)`) is a family-wide vocabulary decision (GAD2/M14.1).
+
+### `overrides` is mostly a guess on this corpus, and the number says so
+
+Corpus-wide **805 of 872 `overrides` edges (92.3%) are `first-parent-guess` at
+confidence 0.50** — the tier-3 fallback that fires when an `@Override` method's
+parent lives in another file and no companion index is supplied. Only 67 edges
+(7.7%) reach `exact-in-file` at 1.0. That is the honest shape of the construct on a
+large codebase (Groovy scripts and Gradle build logic inherit from types this corpus
+does not contain), and the tier exists so these never contaminate thresholded
+analysis — `patterns.ts` filters at ≥ 0.7. Reported rather than presented as
+verified override resolution.
+
+### A name recovered from source text instead of from the node (M60)
+
+`collectFieldAccessUses` took both endpoints of a `uses` edge out of
+`node.text.split(".")`: the receiver from the first segment and the member from the
+last. That is correct only while both are bare identifiers, and three ordinary
+Groovy shapes are not — for the receiver:
+
+| written | receiver node | pre-fix SOURCE |
+| --- | --- | --- |
+| `new File(dir).canonicalFile` | `object_creation_expression` | `new File(dir)` |
+| `verdicts[0].rev` | `array_access` | `verdicts[0]` |
+| `(m).label` | `parenthesized_expression` | `(m)` |
+
+— and one for the member. A member can be written as a **string literal**, which is
+the Gradle DSL's spelling of a dotted property key:
+
+| written | `field` node | pre-fix TARGET |
+| --- | --- | --- |
+| `buildModel.properties.'maven.compiler.release'` | `character_literal` | `release'` |
+
+Measured over all 2,825 files by `script/m60/groovy-r7-census.ts`, whose endpoint
+classes are counted in five buckets rather than two (see its header for why a single
+"does it look like a name?" test is wrong in three directions at once). Before the
+fix, the `punctuated` bucket — an endpoint carrying a character that appears in no
+name this lane or the language writes — held **32 rows in the first 60 files** of
+`uses` alone; the count is deliberately held apart from the `(script)` sentinel count
+so the two populations are never added into one reassuring total.
+
+The receiver is now read from the node's `object` field and the member from its
+`field` field. A receiver that is not a name yields **no** source, the read being
+attributed to the enclosing method — the rule the walk already applied to a receiver
+it could not resolve. This is the defect the `calls` walk was already fixed for
+(`buildGroovyQualifiedCall`'s comment records `db.list(user).collect` being stored
+whole); the read walk kept the raw split, so the two walks disagreed about what a
+receiver is in the same file.
+
+Pinned by `groovy/receiver-not-a-name` (8 expectations, 5 forbids) and guarded by
+three mutants, all caught: `groovy/receiver-text-fragment` restores the split and its
+failure output names `new File(dir)`, `verdicts[0]` and `(m)`;
+`groovy/leaf-text-slice` restores the text-sliced member;
+`groovy/receiver-as-source` is the plausible wrong fix — source the read at the
+receiver — which leaves every expected row in place and is invisible to an
+expect-only matcher.
+
+### A quoted CALLEE is left alone, on purpose, and here is the count
+
+The same defect has a third member, and it is **measured, implemented, and reverted**
+because two committed pins state the opposite on purpose. A callee can be a string
+literal and the Gradle and Spock DSLs write one constantly:
+`'Foo.groovy'('println "Hello"')` (src/spec/test/builder/FileTreeBuilderTest.groovy),
+`"$name"(value)` (src/main/groovy/groovy/cli/internal/CliBuilderInternal.groovy),
+`'/500'(to: …)` and `'*'(to: …)` (Grails UrlMappings). The pinned grammar puts the
+literal straight in the `name` field, so the published `calls` target carries its
+quotes.
+
+`groovy/quoted-callee-paren-call-841` expects `calls MappingCfg -> "'/500'"`,
+`-> "'in'"`, `-> "'*'"`, `-> "'user-type'"` and `-> '"double"'`, and its own rationale
+gives the reason: *"a quoted callee that is not an identifier at all — the reason
+this is a grammar rule and not a name normalization"*. `groovy/grammar-round3-841`
+expects `calls dispatch -> "\"$entry.key\""`. `*` is not a name any normalisation
+could produce, so the pin's argument stands on its own terms, and re-authoring
+either expectation to match new output is what `docs/M14-HONESTY-CONTRACT.md` §5.2
+forbids. So the endpoint keeps the written form,
+`metadata.groovyCallExpression` carries it as well, and the count is reported
+instead: **1,045 `calls` targets in the `punctuated` class over all 2,825 files**.
+Recorded at the emission site and here as an open question for the owner.
+
+### Honesty contract §4.1 is unmet on this lane, and on every JVM lane
+
+§4.1 requires every relationship emitted at `confidence < 1.0` to carry a
+machine-readable reason code, not just a number. Measured over all 2,825 files, this
+lane's sub-1.0 population is:
+
+| type | sub-1.0 edges | of those, carrying a `reasonCode` |
+| --- | --- | --- |
+| calls | 82,878 | **0** |
+| uses | 19,498 | **0** |
+| imports | 10,596 | **0** |
+| references | 10,858 | **0** |
+| instantiates | 12,054 | **0** |
+| overrides | 805 | **805** (`first-parent-guess`) |
+
+So `overrides` complies and the other five do not — **142,884 sub-1.0 edges with no
+reason code**, which is why "how much of this graph is guesswork" is not a queryable
+number for groovy today. This is NOT lane-specific and NOT fixed here: `grep` shows
+`reasonCode` appears 4 times in `src/ast/real-groovy-analyzer.ts` and 5 times in each
+of `real-java-analyzer.ts`, `real-kotlin-analyzer.ts`, `real-scala-analyzer.ts` and
+`real-python-analyzer.ts`, and in every one of those files it is used **only** on the
+`overrides` path. Emitting codes on `calls`/`uses`/`imports`/`references`/
+`instantiates` would make groovy an outlier with five extra metadata keys per edge and
+no family agreement behind it, which is a repository decision, not a lane fix. Reported
+with the count so the decision has a number in it.
+
+### R7 census — what is clean and what is deliberate
+
+The before/after on the identical file set, from `script/m60/groovy-r7-census.ts`
+run against the same 600 files both times:
+
+| endpoint class `punctuated` | before | after |
+| --- | --- | --- |
+| `uses` (any endpoint) | **66** | **0** |
+| `calls` (target) | 22 | 22 |
+
+`calls` is unchanged because the quoted-callee change was reverted — see the section
+above. The 30 `punctuated` `uses` endpoints that remain over all 2,825 files are
+**GPath operator names**, written literally in Groovy source as `*`, `**`, `@attr`,
+`@id`, `@url` (src/spec/test/UserGuideXmlSlurperTest.groovy,
+src/test/groovy/groovy/xml/GpathSyntaxTestSupport.groovy, gradle/idea.gradle). They
+are names in the DSL Groovy embeds, not defects, and they are counted in their own
+bucket rather than hidden.
+
+What the same census reports over all 2,825 files:
+
+- **Empty-named symbols: 0.** The analyzer refuses and counts them instead
+  (`metadata.emptyNameRefusals` = 11 corpus-wide, every one the `@Unparsed`
+  annotation shape the pinned grammar reads as `name: (MISSING identifier)`).
+- **`unknown` as a target: exactly 1**, and it is a true positive —
+  `src/spec/test/SyntaxTest.groovy:806`, `assert colors.unknown == null`. A Groovy
+  property genuinely named `unknown`. The census's `target === "unknown"` heuristic
+  is wrong in this one case and the source line settles it.
+- **Punctuated endpoints that are the written form, kept deliberately:** 206 `calls`
+  targets (the quoted/GString callees of the Gradle, Spock, Grails and markup DSLs —
+  `'Foo.groovy'(…)`, `"$name"(…)`, `'/500'(to: …)`, `'(Box)'`, `'static'`), 9 `contains`
+  and 12 `instantiates` endpoints that are Spock feature-method names containing `#`
+  or a backslash in their string (`should handle \\r\\n line feeds correctly`), and the
+  30 GPath operators above. A handful of the 206 are grammar misparses rather than DSL
+  callees — `calls testArgWith -> "[0]"`, `calls testZeroArgMethodCallInTheMiddleOfTheChain -> "check()"`,
+  `calls start -> "doStart()"` — and are left for the same reason the quoted callee is:
+  the shape is pinned by `groovy/grammar-round3-841` and `groovy/quoted-callee-paren-call-841`.
+- **Documented sentinel endpoints.** `calls` 8,353 `(script)` sources, plus 92
+  `super` and 25 `this` TARGETS which are the deliberate honest literal of
+  `explicit_constructor_invocation` (pinned by `groovy/ctor-delegation`, which also
+  forbids resolving them to a parent type). `instantiates` 1,016 `(script)` sources,
+  `references` 117, `imports` 73, `uses` 18.
+- **Residual, reported rather than hidden:** 33 `calls` + 11 `uses` + 3 `contains`
+  edges whose TARGET is the literal `root`; 1 `calls` + 4 `uses` + 1 `contains`
+  whose target is `self`; 28 `uses` rows whose SOURCE is `this`. These are the
+  GAD2 pre-unification sentinels surviving on real sites and are R7 findings the
+  owner should see.
 
 ## Supported constructs
 

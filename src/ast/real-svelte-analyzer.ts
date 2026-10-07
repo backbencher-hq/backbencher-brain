@@ -47,7 +47,7 @@ import { RealTypeScriptAnalyzer } from "./real-typescript-analyzer"
 function shiftMetadataLineMirrors(md: Record<string, unknown> | undefined, lineOffset: number): void {
   if (!md || lineOffset === 0) return
   for (const [k, v] of Object.entries(md)) {
-    if (!/line/i.test(k)) continue
+    if (!keyCarriesALine(k)) continue
     if (typeof v === "number") md[k] = v + lineOffset
     else if (Array.isArray(v) && v.some((x) => typeof x === "number")) {
       md[k] = v.map((x) => (typeof x === "number" ? x + lineOffset : x))
@@ -120,6 +120,45 @@ const SVELTE_RUNES = new Set([
 // PURE-STRING HELPERS (regex-free)
 // ============================================================================
 
+/**
+ * Values that are SPELLED like identifiers and are accepted by `isIdentifier`, but are
+ * not names anything can be called ON.
+ *
+ * R7, standing rule, measured. `isIdentifier` tests the first character against
+ * `[A-Za-z_$]`, so `null`, `undefined`, `true`, `false`, `NaN`, `Infinity` and `this` all
+ * pass it. Two real corpus files hand the analyzer exactly that:
+ *
+ *   svelte/packages/svelte/tests/runtime-legacy/samples/component-events-nullish/main.svelte
+ *       <Widget on:click={null} {logs} />
+ *   svelte/packages/svelte/tests/runtime-runes/samples/undefined-event-handler/main.svelte
+ *       <button onmouseenter={undefined}></button>
+ *
+ * Both produced a `calls` edge whose TARGET was the literal — `calls
+ * component-events-nullish -> null` and `calls undefined-event-handler -> undefined`. That
+ * is the fabrication class the workstream calls the most expensive mistake available: an
+ * edge naming a value where the ontology means a callable, so `bb_impact` would report
+ * that editing a symbol named `null` breaks a component. It is also the standing rule's
+ * own shape — a placeholder-literal edge endpoint — and it survived a differential because
+ * the oracle's mirrored handler rule has the same acceptance set: both sides emitted the
+ * same wrong edge, so they agreed.
+ *
+ * SCOPE, stated rather than implied: this filters the HANDLER and INVOKED-CARRIER
+ * extraction only. A member genuinely named `unknown` still emits, and two corpus files
+ * declare one: `css/samples/omit-scoping-attribute-class-dynamic/input.svelte` has
+ * `export let unknown = 'whatever'` and
+ * `runtime-runes/samples/proxy-coercive-assignment-warning/main.svelte` has
+ * `const unknown = (node) => …`. Those are the user's own bindings, an edge to them is
+ * faithful, and R7 is about ANALYZER-SUPPLIED placeholders rather than about a source
+ * identifier that happens to collide with one. Measured over the whole 6,439-file corpus
+ * by `script/m14/svelte-r7-probe.mts`: 12 placeholder-literal sites, of which 10 are
+ * those two files' faithful `unknown` bindings and 2 were these handler literals.
+ *
+ * The first two entries are JavaScript keywords and can never be a binding at all; the
+ * rest are globals a name could shadow, and a handler named after one is a call to nothing
+ * this file declares, which is the same fabrication by another route.
+ */
+const NON_CALLABLE_LITERALS = new Set(["null", "undefined", "true", "false", "NaN", "Infinity", "this"])
+
 function isIdentifier(text: string): boolean {
   if (text.length === 0) return false
   const first = text[0]
@@ -129,6 +168,53 @@ function isIdentifier(text: string): boolean {
     if (!((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_" || c === "$")) return false
   }
   return true
+}
+
+/**
+ * `{#await promise then value}` / `{#await promise as value}` — split the head
+ * fragment into the PROMISE expression and everything after the `then`/`as`
+ * keyword. Returns undefined when the fragment carries no such keyword, which
+ * is the `{:then}`/block form.
+ *
+ * A char walk, and deliberately the same accept set as the pattern it replaces:
+ * the keyword must be preceded by a whitespace run and followed by a whitespace
+ * run, so `sometimes` (`then` with no leading space) and `has` (`as` not at a
+ * word start) do NOT match — `has` in particular, because a promise named `as`
+ * is the only thing that would be lost and Svelte has no such binding.
+ * `head` is everything before the keyword's whitespace run; `matchLength` is
+ * the length of the whole match, so `text.slice(matchLength)` is the remainder.
+ */
+export function splitAwaitHead(text: string): { head: string; matchLength: number } | undefined {
+  const isSpace = (c: string): boolean => c === " " || c === "\t" || c === "\n" || c === "\r"
+  let i = 0
+  while (i < text.length) {
+    if (!isSpace(text[i])) {
+      i++
+      continue
+    }
+    const wsStart = i
+    while (i < text.length && isSpace(text[i])) i++
+    const kwStart = i
+    let kwLen = 0
+    if (text.startsWith("then", i)) kwLen = 4
+    else if (text.startsWith("as", i)) kwLen = 2
+    if (kwLen > 0 && i + kwLen < text.length && isSpace(text[i + kwLen])) {
+      let after = i + kwLen
+      while (after < text.length && isSpace(text[after])) after++
+      return { head: text.slice(0, wsStart), matchLength: after }
+    }
+    i = kwStart + 1
+  }
+  return undefined
+}
+
+/**
+ * `key` names a LINE (`decoratorLine`, `line`, `decoratorLines`) as a
+ * case-insensitive substring test, with no pattern literal. Only the KEY NAME
+ * is examined; the value's type is decided by the caller.
+ */
+function keyCarriesALine(key: string): boolean {
+  return key.toLowerCase().indexOf("line") >= 0
 }
 
 /**
@@ -542,6 +628,12 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             // and the callable leaf is what a `calls` edge can name.
             const leaf = rest.includes(".") ? rest.slice(rest.lastIndexOf(".") + 1) : rest
             if (!leaf) continue
+            // Same rule as the handler extraction, for the same reason: `use:null` names a
+            // value, and a `calls` edge naming a value is the fabrication class. Note this
+            // filters the DIRECTIVE'S OWN NAME, not its argument — `use:action={null}`
+            // still emits `calls -> action`, because the framework invokes the name written
+            // in the attribute and the argument's value does not change what is invoked.
+            if (NON_CALLABLE_LITERALS.has(leaf)) continue
             seenDirectiveCalls.add(`${leaf}@${attr.startPosition.row + 1}`)
             directiveCalls.push({
               leaf,
@@ -619,7 +711,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             const attachIdx = kids.findIndex((k) => k.type === "ERROR" && k.text === "attach")
             if (attachIdx < 0) continue
             const nameTok = kids[attachIdx + 1]
- if (!nameTok || !/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(nameTok.text)) continue
+            if (!nameTok || !isIdentifier(nameTok.text)) continue
             const afterText = (kids[attachIdx + 2]?.text ?? "}").trim()
             if (afterText !== "}" && afterText !== "(") continue
             const attachHandler = nameTok.text
@@ -1058,8 +1150,25 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (n.type === "assignment_pattern") {
         const left = n.childForFieldName?.("left") ?? n.namedChild(0)
         if (left) take(left)
+      } else if (n.type === "object_assignment_pattern") {
+        // `{ a = default }` binds `a`; `default` is a VALUE, not a binding.
+        //
+        // This node used to be grouped with the container patterns below, which
+        // published BOTH children — so a default that names another binding made
+        // that binding a prop. Measured on
+        // `shadcn-svelte/docs/src/lib/registry/ui/chart/chart-container.svelte`,
+        // whose `let { id = uid, … } = $props()` published the module-level
+        // `const uid = $props.id()` as a component Property
+        // (`isSvelteProp: true`, `contains chart-container -> uid`), and because
+        // the same name list drives the merge dedupe, the delegate's correct
+        // `uid` Constant was DROPPED — one binding, two false facts and the true
+        // declaration lost. Found by the lane's own truth
+        // (script/m14/svelte-truth.ts), which derives ownership from the
+        // grammar and disagreed on exactly these edges.
+        const left = n.childForFieldName?.("left") ?? n.childForFieldName?.("pattern") ?? n.namedChild(0)
+        if (left) take(left)
       } else if (
-        n.type === "object_assignment_pattern" ||
+        n.type === "object_assignment_pattern_deprecated" ||
         n.type === "object_pattern" ||
         n.type === "array_pattern"
       ) {
@@ -1235,8 +1344,25 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * Is the bi-th <script> block marked context="module"? Module-block
-   * exports are module-level API - they must NOT become component props.
+   * Is the bi-th <script> block a MODULE block? Module-block exports are
+   * module-level API - they must NOT become component props.
+   *
+   * Svelte spells this two ways and BOTH are real: `context="module"` and the
+   * bare `module` attribute (the Svelte 3/4 shorthand, still what the corpus
+   * writes - `sv-addons/registry/template/src/lib/registry/ui/button/button.svelte`
+   * opens `<script lang="ts" module>`). The old predicate compared the whole
+   * start-tag TEXT for the literal `context="module"`, so every bare-`module`
+   * block was read as an INSTANCE block: its exports became component props
+   * (ownerName = the component, plus a `contains` edge) and the `exports[]`
+   * channel stayed empty. Measured on the 200-file sample: exports[] 0 rows,
+   * and the 22 `exports` edges all arrived from the JS delegate's own
+   * `export const` handling rather than from the module API they are.
+   *
+   * Both spellings are now read STRUCTURALLY, off the attribute nodes: an
+   * `attribute` whose `attribute_name` is `context` with value `module`, or one
+   * whose `attribute_name` is `module` with no value. No pattern literal, and a
+   * single-quoted `context='module'` is now found for the same reason the
+   * double-quoted one always was: by construction, not by spelling.
    */
   private isModuleContextBlock(rootNode: Node, index: number): boolean {
     // Document-order scan - a LIFO stack walk visits later siblings first,
@@ -1256,7 +1382,25 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     const block = blocks[index]
     if (!block) return false
     const startTag = this.findChildByType(block, "start_tag")
-    return !!startTag && /context=["']module["']/.test(startTag.text)
+    if (!startTag) return false
+    for (let i = 0; i < startTag.namedChildCount; i++) {
+      const attr = startTag.namedChild(i)
+      if (!attr || attr.type !== "attribute") continue
+      const name = this.attributeName(attr)
+      if (name === "module") return true
+      if (name === "context" && this.attributeValue(attr) === "module") return true
+    }
+    return false
+  }
+
+  /** The `attribute_value` text of an attribute, however it is quoted. */
+  private attributeValue(attr: Node): string {
+    const value = this.findChildByType(attr, "attribute_value")
+    if (value) return value.text
+    const quoted = this.findChildByType(attr, "quoted_attribute_value")
+    if (!quoted) return ""
+    const inner = this.findChildByType(quoted, "attribute_value")
+    return inner ? inner.text : ""
   }
 
   private isExported(exportInfos: ASTEngine.ExportInfo[], name: string): boolean {
@@ -1442,14 +1586,14 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       // the promise expression is everything up to then/as; then/catch vars
       // shadow. Simpler: collect all identifiers but drop the then/catch vars
       // (already added to childShadowed), and only the promise survives.
-      const m = /^(.*?)\s+(?:then|as)\s+/.exec(text)
-      const promiseExpr = m ? m[1] : text
+      const m = splitAwaitHead(text)
+      const promiseExpr = m ? m.head : text
       this.collectIdentifiersFromText(promiseExpr, out, shadowed, firstLine)
       // M4 (review wave): the INLINE then/as vars (`then value` with no
       // then_block node) were never registered — {value} later leaked as a
       // member use. Register the remainder as template-local bindings.
       if (m) {
-        const rest = text.slice(m[0].length)
+        const rest = text.slice(m.matchLength)
         this.collectShadowNames(rest, shadowed)
       }
     }
@@ -1622,20 +1766,19 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         i = end
       }
     }
-    // Bare-identifier check
-    if (isIdentifier(text)) return { name: text, line: at(0) }
+    // Bare-identifier check. A literal that merely LOOKS like an identifier is not a
+    // handler name — see NON_CALLABLE_LITERALS, and the two corpus files that produced
+    // `calls -> null` and `calls -> undefined` before this test existed.
+    if (isIdentifier(text) && !NON_CALLABLE_LITERALS.has(text)) return { name: text, line: at(0) }
     // Dotted member leaf: `on:click={box.open}` binds the method reference -
     // the CALLABLE LEAF is the last segment. (Previously emitted nothing.)
     const parts = text.split(".")
     if (parts.length > 1 && parts.every((p) => isIdentifier(p))) {
       const leaf = parts[parts.length - 1]
+      if (NON_CALLABLE_LITERALS.has(leaf)) return undefined
       return { name: leaf, line: at(text.lastIndexOf(leaf)) }
     }
     return undefined
-  }
-
-  private onHandlerLeaf(attr: Node): string | undefined {
-    return this.onHandlerCall(attr)?.name
   }
 
   /**
@@ -1713,16 +1856,6 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   private attributeName(attr: Node): string {
     const name = this.findChildByType(attr, "attribute_name")
     return name ? name.text : ""
-  }
-
-  /**
-   * M59 (#825): the `line_number` for a relationship, from the node that SPELLS
-   * the name the edge is about. Same contract as the java/TS/JS analyzers: the
-   * line belongs to the name, and a construct with no name-bearing node gets
-   * NOTHING rather than `0` (unknown must be absent, never a number).
-   */
-  private lineField(nameNode: Node | null | undefined): { line_number?: number } {
-    return nameNode ? { line_number: nameNode.startPosition.row + 1 } : {}
   }
 
   private offsetRange(

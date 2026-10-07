@@ -526,7 +526,32 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           // qualified_calls key (and the J1 owner-qualification it depends on)
           // keys on `ownerKind === Class`, so a container owner must not
           // promote an object-literal member into the owner-qualified form.
-          const classOwner = scopeOwnerName(scopeStack)
+          //
+          // M60/JD3-CLOSURE (2026-10-03): an OBJECT LITERAL's member belongs to
+          // the literal, and never to the class that lexically encloses it. The
+          // order below used to consult `scopeOwnerName` FIRST, and that is a
+          // class-scope lookup, so it answered for every object literal nested
+          // inside a class body too:
+          //
+          //   class C { m() { const api = { run() {}, stop() {} }; return api } }
+          //
+          // published `contains C -> run` and `contains C -> stop`, discarding a
+          // binding the file writes in plain sight — and at MODULE scope the very
+          // same literal published `contains api -> run`, so one construct gave
+          // two answers depending on where it was written. The differential's
+          // oracle already declines these rows: its `contains` rule asks whether
+          // the container is NAMEABLE, and a `new Proxy({}, { get(){}, has(){} })`
+          // argument is not, so the 2 rows it published for
+          // `svelte/src/legacy/legacy-client.js` registered as UNEXPLAINED
+          // fabrications at confidence 1.0 rather than as the mis-attribution they
+          // are. JD3's closure note claimed `containerOwnerName` superseded
+          // `scopeOwnerName`; it superseded it only where no class scope existed.
+          //
+          // So the literal case is decided FIRST and the class scope is not a
+          // fallback for it: a literal with no binding has no owner, which is
+          // the honest silence the module-scope path already took.
+          const inObjectLiteral = node.parent?.type === "object"
+          const classOwner = inObjectLiteral ? undefined : scopeOwnerName(scopeStack)
           const owner = classOwner ?? containerOwnerName(node)
           const isConstructor = name === "constructor"
           const isAccessor = this.hasToken(node, "get") || this.hasToken(node, "set")
@@ -1396,7 +1421,48 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Declared/checked type references (M14): JavaScript has no type
     // annotations, but instanceof checks reference a type by name — the one
     // unambiguous type-usage signal the grammar carries.
-    this.extractInstanceofRefs(rootNode, relationships)
+    this.extractInstanceofRefs(rootNode, relationships, moduleName)
+
+    // R7, RUNTIME half — measured on 13,202 admitted corpus files: 2,037 rows
+    // (0.57% of 356,490) carried an EMPTY source or target. Every one came from
+    // tree-sitter's ERROR RECOVERY producing a zero-length node:
+    //
+    //   uses  <- ""   a bare read of an `identifier` node whose text is "",
+    //                 which is what the grammar hands back for TypeScript syntax
+    //                 in a `.js` file (`var xs2: typeof moduleA[] = [moduleA]`,
+    //                 `public bar(x: string[]): void;`)                    1,934
+    //   uses  <- ""   a member-chain SEGMENT whose property node is missing
+    //                 (`throw undefined.`, `super.`, `new A2().`)              87
+    //   uses  <- ""   a `template_substitution` with an empty `${ }`             5
+    //   uses  "" -> x an EMPTY SOURCE: the source expression read
+    //                 `method ?? owner ?? moduleName`, and `??` falls through only
+    //                 null/undefined, so a zero-length `method` won           7
+    //   calls <- ""   a callee node the recovery left empty (`new A2().()`)      3
+    //   exports <- "" a CJS surface path segment that is empty (`exports. = 1`) 1
+    //
+    // An edge whose endpoint is the empty string names nothing. It cannot be
+    // resolved, hovered, or followed by any consumer, and every such consumer
+    // that counts names gets a row for a name no file contains — which is the
+    // whole of standing rule R7. The differential's TRUTH side already applies
+    // exactly this guard (`script/m14/differential.ts`, M60/SDJ-17: "an edge with
+    // an empty endpoint names nothing — it cannot be resolved, hovered or
+    // followed"), so before this the comparison was ASYMMETRIC: the truth could
+    // not assert an unnameable edge and the analyzer could publish one.
+    //
+    // It is a TERMINAL guard rather than a check per emission site on purpose.
+    // Nineteen sites push edges and a twentieth added tomorrow would be the one
+    // that forgets, and the census that found these 2,037 rows is a separate
+    // program that must be re-run to notice. One place cannot be forgotten.
+    //
+    // The number is not a corpus artefact to be waved away: on `svelte` (3,447
+    // real JavaScript files, 0 parse errors) and `lodash` (51 files, 0 parse
+    // errors) the same measurement is 0 and 0. It fires only where the input is
+    // not JavaScript, and dropping the row is right there too — the row is a
+    // statement about the grammar's error recovery, not about the program.
+    for (let i = relationships.length - 1; i >= 0; i--) {
+      const r = relationships[i]
+      if (!r.source || !r.target) relationships.splice(i, 1)
+    }
 
     this.classifyEvidenceTier(relationships)
 
@@ -1989,7 +2055,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "shorthand_property_identifier":
         case "shorthand_property_identifier_pattern":
         case "identifier":
-          out.push({ name: n.text, node: n })
+          // R7, runtime half, SYMBOL side. A zero-length `identifier` — which is
+          // what the grammar hands back for a RESERVED WORD used as a binding,
+          // since ECMAScript has no such declaration — used to be pushed as a
+          // symbol named `""`. Measured: 32 symbols named `""` over 115,356 on
+          // the 13,202-file corpus, every one a module-scope destructuring in a
+          // TypeScript baseline that binds `while` / `return` / `this` /
+          // `continue` / `if` / `debugger`. `svelte` (6,228 symbols) and `lodash`
+          // (899) both measure 0, so this fires only where the input is not
+          // JavaScript — but a symbol whose name is the empty string is a row
+          // every consumer can match and no file contains, which is the whole of
+          // R7. A binding with no writable name is not a binding.
+          if (n.text) out.push({ name: n.text, node: n })
           break
         case "pair_pattern": {
           // { key: value } — the VALUE side binds (key is the property read)
@@ -2329,7 +2406,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
    * function/class. The right operand lexes as identifier (expression
    * position), so no type_identifier filtering applies.
    */
-  private extractInstanceofRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+  private extractInstanceofRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[], moduleName: string): void {
     const emitted = new Set<string>()
     const resolveSource = (start: Node): string => {
       let p: Node | null = start.parent
@@ -2347,12 +2424,29 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (let i = 0; i < p.namedChildCount; i++) {
             const c = p.namedChild(i)
             if (!c) continue
-            if (c.type === "identifier" || c.type === "property_identifier") return c.text
+            // `||` and not `??`: an error-recovered declaration can carry a
+            // zero-length identifier as its name, and `??` would treat that
+            // empty string as a found source and publish an edge FROM it.
+            if ((c.type === "identifier" || c.type === "property_identifier") && c.text) return c.text
           }
         }
         p = p.parent
       }
-      return "global"
+      // R7: this used to `return "global"`, and the literal named a symbol no
+      // file in the corpus contains — measured firing on REAL JavaScript, not
+      // only on recovery residue: 14 rows across lodash's 51 ES5 files and 1 on
+      // svelte. The lane's own convention for "this read belongs to the module"
+      // The lane's own convention for "this read belongs to the module" is
+      // `method || owner || moduleName`, and every other emitter here already
+      // uses it (`extractExportRelationships` sources `exports` at
+      // `moduleName`; the `uses` walk falls back to `moduleName` last). `||`
+      // rather than `??` so a zero-length recovered name cannot win. The
+      // differential matches label+target only, so this changes no compared
+      // number — and the ORACLE carries the identical `let source = "global"`
+      // (`script/m14/differential.ts`, deriveJavaScriptEdges), which is why the
+      // shared source never showed up as a disagreement. Reported, not fixed:
+      // that file is the master's.
+      return moduleName
     }
     const walk = (n: Node): void => {
       if (n.type === "binary_expression") {
@@ -2510,7 +2604,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           while (root && root.type === "member_expression") root = root.childForFieldName("object")
           const head = root && root.type === "identifier" ? root.text : ""
           if (head && head !== "this" && head !== "super") {
-            const recvSource = method ?? owner ?? moduleName
+            const recvSource = method || owner || moduleName
             const recvKey = `${recvSource}.#${head}`
             if (!seen.has(recvKey)) {
               seen.add(recvKey)
@@ -2574,7 +2668,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // ById(x)`), a non-symbol in the graph. The call itself already
                 // carries the calls edge.
                 if (head && head !== "this" && head !== "super" && cur?.type === "identifier") {
-                  const rootSource = method ?? owner ?? moduleName
+                  const rootSource = method || owner || moduleName
                 const rootKey = `${rootSource}.#${head}`
                 if (!seen.has(rootKey)) {
                   seen.add(rootKey)
@@ -2602,7 +2696,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // next to `Store -> count` — two sources for one member, one
                 // class. Outside a class there is no method either, so fall
                 // back to the owner, then the module.
-                const source = method ?? owner ?? moduleName
+                const source = method || owner || moduleName
                 // M49 W13: a PRIVATE segment's natural key (`${source}.` +
                 // `#x`) is byte-identical to the bare-read/chain-root key of
                 // the plain identifier `x` (`${source}.#` + `x`), so a bare
@@ -2689,7 +2783,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isExportSpecifier = p7?.type === "export_specifier"
           const isBindingSite = isImportBinding || isParamBinding || isPatternBinding || isExportSpecifier
           if (!isCallee && !isWrite2 && !isDeclName && !isPropKey && !isMemberPart && !isPropName && !isLabel && !isShorthandProp && !isJsxName && !isBindingSite) {
-            const bSource = method ?? owner ?? moduleName
+            const bSource = method || owner || moduleName
             const bKey = `${bSource}.#${txt}`
             if (!seen.has(bKey)) {
               seen.add(bKey)
@@ -2746,7 +2840,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (inCalleeOrWritePosition(c)) continue
               // JSD2: template reads attribute to the enclosing function
               // (the calls-walk owner), never the receiver/type placeholder.
-              const src2 = method ?? owner ?? moduleName
+              const src2 = method || owner || moduleName
               const key = `${src2}.${c.text}`
               if (!seen.has(key)) {
                 seen.add(key)
