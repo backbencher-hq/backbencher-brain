@@ -625,6 +625,92 @@ population was stated. That is the defect this round exists to end.
   retry-once policy is doing real work — but a file that degrades twice is now recorded as such
   rather than retried forever.
 
+## Round 3 (2026-10-07) — dart's incoming side, measured over the WHOLE corpus for the first time
+
+Round 1/2 gave dart a whole-corpus OUTGOING table. The incoming side was still a
+**600-file sample**, and the programme already knows what that costs: on `sql`, going from
+600 files to the corpus moved `uses` 71% -> 5.0% and `references` 32% -> 1.3%. So it was
+re-measured, whole corpus, before any further analyzer work:
+
+```
+npx tsx script/m14/incoming-gate.ts dart dart 33692      # 28 min, exit 1 (FAIL)
+population: 33692 parsed of 33692 sampled (6 repos)
+parse failures: 0   degraded (regex fallback): 2
+endpoint keys indexed: name + 571,213 qualifiedName aliases
+
+type          edges    resolved  amb(decl)  amb(kind)  unresolved
+calls         636,743   158,467    326,009     177,888     152,267
+uses        1,148,799   168,796    750,722     492,892     229,267
+contains      525,735   163,674    361,993     133,245          68
+imports       105,109         0          0           0     105,109
+references     73,041    37,111     35,930      15,091           0
+exports         2,030         0          0           0       2,030
+extends        38,125    14,275     16,076       8,951       7,773
+implements     12,221     5,003      5,872       3,467       1,340
+overrides     154,835    42,360      5,568         564     106,907
+instantiates  151,229    52,189     49,759      28,084      49,281
+TOTAL       2,847,867   641,875  1,551,929     860,182     654,042
+VERDICT: FAIL — 1,551,929 ambiguous + 654,042 unresolved of 2,847,867 edges
+```
+
+**22.5% of dart's 2,847,867 edges resolve to exactly one declaration.** The rest is the
+worklist, and it splits into four named causes rather than one:
+
+1. **`overrides` 106,907 unresolved (69% of the type)** — by far the largest single
+   unresolved class, and the least like "cause A". An override target is published
+owner-qualified (`StatefulWidget.build`), so a base class from outside the corpus (the
+   Flutter framework is **0 files** — see the corpus gap above), or a base declared in
+   another package, leaves the edge with nothing to bind. This is the one worth attacking
+   first: it is 16.3% of ALL dart edges, one type, one mechanism.
+2. **`imports` 105,109 unresolved (100%) and `exports` 2,030 (100%)** — the shared enum
+   blocker: `src/ast/types.ts` declares `Imports = "brain_import"` while the analyzers emit
+   the literal `"imports"`, so these edges are invisible to every consumer. Not dart-owned;
+   shared with php and fsharp.
+3. **Ambiguity, `amb(decl)` 1,551,929** — the bare-name population (cause A): `build` in 3
+   places, `close` in 2, `_createProfile` in 2. 571,213 qualifiedName aliases are already
+   indexed, so a lane that publishes FILE-SCOPED qualified names and targets that path is
+   measured rather than ambiguous — that is the lever, and `uses` (750,722) is where it pays.
+4. **`calls`/`uses` unresolved 381,534** — stdlib and SDK names (`setUpAll`, `expect`,
+   `startsWith`, `http`, `drain`) that are legitimately outside the corpus and carry **no**
+   external marker: `external 0` on every row. The gate accepts a declared marker
+   (`isExternal`/`stdlibModule`/…); dart declares none, so its stdlib reads as broken.
+
+All four are stated with their population. A single "unresolved" number would have hidden
+that `overrides` is 16% of the graph and that `contains` is already essentially clean (68
+unresolved out of 525,735).
+
+### And the gate that produced this could not fail
+
+`incoming-gate.ts` printed `VERDICT: FAIL` for this run and exited **0**. Its own header
+says it exists because `incoming-check` "cannot fail: it has no `exitCode` assignment and no
+threshold" — but the arbiter's exit was `process.exit(v.pass || rep.degraded > 0 ? 0 : 1)`,
+which by precedence is `v.pass || (rep.degraded > 0)`: **any run with one degraded file
+exits 0.** Two degraded files turned a FAIL over 2.2M bad edges into success for anything
+that reads an exit code. Fixed: FAIL exits 1, and a PASS over a degraded population also
+exits 1, because a PASS is a claim about the population. (Also: the second crash signature
+`2.0-basic-fallback` is now counted as degraded here, not as parsed.)
+
+### The deep-nesting crash, fixed — and the cost that remains measured
+
+The dart SDK's own stress fixtures were 2 of the 8 degraded files, because the analyzer's
+`processNode` recursed once per tree level and `deep_nesting_statement_test.dart` is a tree
+of depth **20,004**. `RangeError: Maximum call stack size exceeded`, 500 identical frames,
+all in one function. It is now an explicit-stack preorder walk with the child list
+materialised once per node (`namedChildren`) — the recursion is gone, the expression fixture
+went from crash to **150 ms**, and the dart fixture suite is still 22 pass / 0 fail.
+
+What remains is COST, and it is now attributed rather than guessed: the statement fixture
+completes in **455,824 ms**, still past the engine's 120 s analyzer budget, and a scaling
+series (truncated slices of the same file, 3,905 -> 31,905 nodes) is **quadratic in node
+count**: 0.056 -> 0.384 ms/node. `node --cpu-prof` puts **92% of the run inside
+web-tree-sitter's own accessors** (`ts_node__child` 63.8%, `ts_node_child_with_descendant`
+28.3%) and **0.3% in the analyzer's JavaScript** — and the sql lane already documented that
+mechanism (`real-sql-analyzer.ts`: every property access returns a FRESH wrapper, so
+`namedChild(0) === namedChild(0)` is false). Materialising the child list once in the new
+walker recovered only ~13% (14,044 -> 12,259 ms at 31,905 nodes), so the accessor storm is
+in the ~590-line per-node body, not in the walk: **that is the next dart task, and it is
+attributed to a surface an existing optimisation pattern in this repo already solves.**
+
 ## Totals today
 
 - Outgoing at `10/10 applicable`: **3 of 23** (`dart`, `fsharp`, `php`).

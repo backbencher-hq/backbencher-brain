@@ -1839,13 +1839,27 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       return owner
     }
 
-    const processNode = (
+    // VISITS ONE NODE and RETURNS what its children inherit — it does not descend.
+    //
+    // The descent used to be a self-call in the tail, and that is what the dart corpus
+    // broke: measured 2026-10-07, `deep_nesting_statement_test.dart` is a tree of depth
+    // **20,004** and `deep_nesting_expression_test.dart` **10,005** (probe:
+    // `validation/m14/fixtures/dart/deep-nesting-stack.ts`), and the recursion threw
+    // `RangeError: Maximum call stack size exceeded` with the frame at the old line 2434
+    // repeating 500 times — the entire stack, on one file. The engine caught it and
+    // returned `2.0-basic-fallback` with 0 symbols, so the dart SDK's own deep-nesting
+    // fixtures were 2 of the 8 files the whole-corpus coverage gate could not measure. A JS
+    // call stack is bounded by depth and this corpus contains 20,004.
+    //
+    // Nothing above the tail changed: no early `return`, and `prev`/`prevOwner` keep the
+    // meaning they had (the parent's values, captured before this node's own resolution).
+    const visitNode = (
       n: Node,
       current: string | null,
       owner: string | null,
       locals: Set<string>,
       insideCollected: boolean,
-    ): void => {
+    ): [string | null, string | null, Set<string>, boolean] => {
       const prev = current
       const prevOwner = owner
       const t = n.type
@@ -2429,13 +2443,52 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.collectTypeMention(n, callSource, relationships, visibleTypes, fileTypes)
       }
 
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const child = n.namedChild(i)
-        if (child) processNode(child, current, owner, childLocals, childInsideCollected)
-      }
+      // What this node's children inherit. `current`/`owner` are this node's resolved
+      // values and `childLocals`/`childInsideCollected` its merged sets — exactly the four
+      // arguments the recursive form passed down.
+      return [current, owner, childLocals, childInsideCollected]
+    }
 
-      current = prev
-      owner = prevOwner
+    /**
+     * The walk: a PREORDER descent over an explicit stack.
+     *
+     * Same traversal, same order, no call frames. The order is load-bearing rather than
+     * tidy, which is why children are pushed in reverse so `pop()` yields them
+     * left-to-right: the body reads `previousNamedSibling` and compares `current === prev`
+     * (the sibling-signature rule), so a different visit order would change what the
+     * analyzer reports on ordinary code, not just on this fixture.
+     */
+    const processNode = (
+      root: Node,
+      current: string | null,
+      owner: string | null,
+      locals: Set<string>,
+      insideCollected: boolean,
+    ): void => {
+      const work: Array<[Node, string | null, string | null, Set<string>, boolean]> = [
+        [root, current, owner, locals, insideCollected],
+      ]
+      while (work.length > 0) {
+        const [n2, cur, own, loc, inside] = work.pop()!
+        const [cur2, own2, loc2, inside2] = visitNode(n2, cur, own, loc, inside)
+        // MATERIALISE THE CHILD LIST ONCE, then iterate it. Indexing `n2.namedChild(i)` in
+        // a loop is a trap rather than a style choice, and it is the reason this file cost
+        // 7.6 minutes: `node --cpu-prof` on a 31,905-node slice put **92% of the run inside
+        // tree-sitter's own accessors** (`ts_node__child` 63.8%, `ts_node_child_with_descendant`
+        // 28.3%) and only 0.3% in this analyzer's JavaScript. web-tree-sitter 0.25 returns a
+        // FRESH wrapper on every property access, so the child list cached on a wrapper is
+        // built and discarded per iteration — the sql lane recorded the same mechanism at
+        // `real-sql-analyzer.ts` ("every property access returns a FRESH wrapper", verified:
+        // `namedChild(0) === namedChild(0)` is false, `.id` is equal).
+        //
+        // `namedChildren` builds that list ONCE for this node, which is the whole fix; the
+        // walk stays a preorder in child order because the array is pushed in reverse.
+        const kids: (Node | null)[] = n2.namedChildren ?? []
+        for (let i = kids.length - 1; i >= 0; i--) {
+          const child = kids[i]
+          if (child) work.push([child, cur2, own2, loc2, inside2])
+        }
+      }
     }
 
     processNode(node, null, null, new Set<string>(), false)

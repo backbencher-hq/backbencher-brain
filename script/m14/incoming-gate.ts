@@ -281,7 +281,15 @@ async function measure(lang: string, ext: string, maxFiles: number) {
     // A degraded parse substitutes a regex extractor whose symbols carry no `kind` and
     // whose edges sit below 0.7 confidence. Counting it publishes a number about the
     // fallback, not about the analyzer — so it is named and the run is REFUSED (exit 1).
-    if (r.fallback === true) {
+    // TWO crash signatures, and only one of them is a `fallback` field:
+    //   - a WASM trap      -> `pool-worker`'s catch -> `extractFallback`, `fallback: true`
+    //   - the analyzer dying (a 120 s crossing, or a blown JS stack) -> `engine.ts` returns
+    //     `metadata.analysisVersion: "2.0-basic-fallback"` with 0 symbols and NO `fallback`.
+    // Measured 2026-10-07 on the dart corpus: both deep_nesting_*_test.dart files take the
+    // second path (`Maximum call stack size exceeded`). Counting them as parsed would let
+    // this gate PASS on a population that includes files no analyzer ever read — and this
+    // gate's whole purpose is that a PASS means "over THIS population".
+    if (r.fallback === true || r.metadata?.analysisVersion === "2.0-basic-fallback") {
       degraded++
       degradedFiles.push(f)
     }
@@ -578,4 +586,27 @@ if (JSON_OUT) {
 }
 
 if (rep.parsed === 0) process.exit(2)
-process.exit(v.pass || rep.degraded > 0 ? 0 : 1)
+// A DEGRADED POPULATION MAY CLAIM NEITHER A PASS, NOR AN EXCUSE FROM A FAIL.
+//
+// This line read `process.exit(v.pass || rep.degraded > 0 ? 0 : 1)`, which by operator
+// precedence is `v.pass || (rep.degraded > 0)` — so ANY run containing a single degraded
+// file exited 0. Measured 2026-10-07: the whole-corpus dart run printed
+// `VERDICT: FAIL — 1551929 ambiguous + 654042 unresolved of 2847867 edges` with 2 degraded
+// files and exited **0**. That is the exact defect this file's header says it exists to
+// end: "a measurement with no arbiter is not a gate; it is a log line." A shell, a CI job,
+// or `script/m14/run-all-gates.sh` reads the exit code, not the prose.
+//
+// The two states are not interchangeable, so they no longer share a branch: FAIL exits 1,
+// and a PASS over a degraded population ALSO exits 1, because a PASS is a claim about the
+// population and a file the analyzer never read is not in it. (`incoming-check` counted
+// those files as parsed; this gate now refuses to.) The reason is printed either way.
+if (!v.pass) process.exit(1)
+if (rep.degraded > 0) {
+  console.error(
+    `incoming gate: ${rep.degraded} of ${rep.parsed} file(s) were NOT measured by the analyzer ` +
+      `(regex fallback, or the analyzer's own 2.0-basic-fallback), so a PASS over this population ` +
+      `is not claimable: ${rep.degradedFiles.slice(0, 5).join(", ")}`,
+  )
+  process.exit(1)
+}
+process.exit(0)
