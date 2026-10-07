@@ -1,0 +1,15 @@
+analyzer class: RealVueAnalyzer
+has extractSfcScriptBlocks: function
+
+=== vuejs: 11 .vue files (population: every .vue under $HOME/fixtures/repositories/vuejs, readdir walk, sorted, no signal filter) ===
+[INFO] [00:08:45] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [00:08:45] [ast-engine] language parser loaded {"language":"vue","wasmPath":"/tmp/bb-wasm_tree-sitter-vue_tree-sitter-vue.wasm_959552_5vii2q"}
+[INFO] [00:08:45] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm"}
+[INFO] [00:08:45] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+  ok: A=11 B=11 C=11   threw: A=0 B=0 C=0
+  A no-ctx     rel=    10 imports[]=    0 symbols=   11  instantiates
+               instantiates:10
+  B parseFile  rel=   169 imports[]=   17 symbols=   66  calls contains imports instantiates references uses
+               calls:69 uses:32 imports:25 references:21 contains:12 instantiates:10
+  C ctx        rel=   169 imports[]=   17 symbols=   66  calls contains imports instantiates references uses
+               calls:69 uses:32 imports:25 references:21 contains:12 instantiates:10

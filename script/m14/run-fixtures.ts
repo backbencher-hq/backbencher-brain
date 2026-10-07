@@ -73,6 +73,13 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   dart: { wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart" },
   swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
   objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
+  // Laptop B's lanes. Both were already routed by language-detection.ts (`r: "r"`,
+  // `lua: "lua"`) and their analyzers and wasm exist in the tree, but the fixture
+  // runner had no lane for them — so validation/m14/fixtures/{r,lua} held 35
+  // expectation files that NOTHING executed. The gate that caught it (fixture-lane
+  // gate) is the one added for exactly this defect class; this is the fix it asked for.
+  r: { wasm: "tree-sitter-r.wasm", analyzerFile: "real-r-analyzer", className: "RealRAnalyzer", ext: "r" },
+  lua: { wasm: "tree-sitter-lua.wasm", analyzerFile: "real-lua-analyzer", className: "RealLuaAnalyzer", ext: "lua" },
   // M60 julia wave. A lane that cannot fail is decoration: the language was named in
   // language-detection.ts and dispatched in engine.ts — so the website advertised it —
   // while being absent from this map, which is the gate that would have caught the four

@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-05T17:14:26.049Z",
+  "corpus": {
+    "repos": [
+      "vuejs"
+    ],
+    "admittedVueFiles": 11,
+    "commits": {
+      "$HOME/fixtures/repositories/vuejs": "4ab865a848a1da3d10fb674f857e5fff13094644"
+    },
+    "rule": "sorted git ls-files, .vue only, <=512KB, detectLanguageFromPath==vue"
+  },
+  "shapeA_noContext": {
+    "fired": [
+      "instantiates"
+    ],
+    "tally": {
+      "instantiates": 10
+    },
+    "symbols": 11,
+    "importsChannel": 0,
+    "exportsChannel": 0
+  },
+  "shapeB_parseFile": {
+    "fired": [
+      "calls",
+      "uses",
+      "imports",
+      "contains",
+      "references",
+      "instantiates"
+    ],
+    "tally": {
+      "instantiates": 10,
+      "calls": 69,
+      "references": 21,
+      "imports": 25,
+      "uses": 32,
+      "contains": 12
+    },
+    "symbols": 66,
+    "importsChannel": 25,
+    "exportsChannel": 0
+  },
+  "perType": [
+    {
+      "type": "calls",
+      "a": 0,
+      "b": 69,
+      "verdict": "fires only WITH the seam"
+    },
+    {
+      "type": "extends",
+      "a": 0,
+      "b": 0,
+      "verdict": "fires on neither shape"
+    },
+    {
+      "type": "implements",
+      "a": 0,
+      "b": 0,
+      "verdict": "fires on neither shape"
+    },
+    {
+      "type": "uses",
+      "a": 0,
+      "b": 32,
+      "verdict": "fires only WITH the seam"
+    },
+    {
+      "type": "imports",
+      "a": 0,
+      "b": 25,
+      "verdict": "fires only WITH the seam"
+    },
+    {
+      "type": "exports",
+      "a": 0,
+      "b": 0,
+      "verdict": "fires on neither shape"
+    },
+    {
+      "type": "contains",
+      "a": 0,
+      "b": 12,
+      "verdict": "fires only WITH the seam"
+    },
+    {
+      "type": "references",
+      "a": 0,
+      "b": 21,
+      "verdict": "fires only WITH the seam"
+    },
+    {
+      "type": "overrides",
+      "a": 0,
+      "b": 0,
+      "verdict": "fires on neither shape"
+    },
+    {
+      "type": "instantiates",
+      "a": 10,
+      "b": 10,
+      "verdict": "fires WITHOUT the seam"
+    }
+  ],
+  "note": "shape A reproduces script/m14/firing-check-v2.mjs:247 verbatim; shape B is the production entry. The delta is what the SFC seam (engine.ts:1587-1619) contributes."
+}

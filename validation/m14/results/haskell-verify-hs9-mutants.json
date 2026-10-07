@@ -1,0 +1,112 @@
+{
+  "generatedBy": "script/m14/tmp/hs9-mutants.ts",
+  "lane": "VERIFY_HS9",
+  "at": "2026-10-05T02:24:21.389Z",
+  "note": "Lane-owned harness. `script/m14/mutate-analyzer.ts` is master-owned, so these mutants are NOT in the canonical M14.0.F4 run; the mechanism is identical (real analyzer wrapped by a result transform, run through the real fixture runner via the exported runLang). MASTER'S NEED: fold these 13 into MUTANTS so the canonical F4 counts them.",
+  "baseline": {
+    "fixturesPass": 2,
+    "fixturesFail": 0,
+    "problems": 0
+  },
+  "mutantsRun": 12,
+  "caught": 12,
+  "survived": 0,
+  "log": [
+    {
+      "mutant": "haskell-vh9/drop-operator-calls",
+      "defectClass": "relationship-loss",
+      "caught": true,
+      "caughtBy": "haskell/operator-application",
+      "baseProblems": 0,
+      "mutProblems": 5
+    },
+    {
+      "mutant": "haskell-vh9/drop-infix-constructor-instantiates",
+      "defectClass": "relationship-loss",
+      "caught": true,
+      "caughtBy": "haskell/operator-application",
+      "baseProblems": 0,
+      "mutProblems": 3
+    },
+    {
+      "mutant": "haskell-vh9/drop-ticked-constructor-instantiates",
+      "defectClass": "relationship-loss",
+      "caught": true,
+      "caughtBy": "haskell/operator-application",
+      "baseProblems": 0,
+      "mutProblems": 1
+    },
+    {
+      "mutant": "haskell-vh9/operator-call-mislabelled-as-instantiates",
+      "defectClass": "relationship-mislabelling",
+      "caught": true,
+      "caughtBy": "haskell/operator-application",
+      "baseProblems": 0,
+      "mutProblems": 5
+    },
+    {
+      "mutant": "haskell-vh9/type-position-operator-fabricates",
+      "defectClass": "fabrication",
+      "caught": true,
+      "caughtBy": "haskell/operator-application",
+      "baseProblems": 0,
+      "mutProblems": 1
+    },
+    {
+      "mutant": "haskell-vh9/pattern-infix-constructor-fabricates",
+      "defectClass": "fabrication",
+      "caught": true,
+      "caughtBy": "haskell/operator-application",
+      "baseProblems": 0,
+      "mutProblems": 1
+    },
+    {
+      "mutant": "haskell-vh9/pattern-ticked-constructor-fabricates",
+      "defectClass": "fabrication",
+      "caught": true,
+      "caughtBy": "haskell/operator-application",
+      "baseProblems": 0,
+      "mutProblems": 1
+    },
+    {
+      "mutant": "haskell-vh9/operator-definition-head-self-calls",
+      "defectClass": "fabrication",
+      "caught": true,
+      "caughtBy": "haskell/operator-application",
+      "baseProblems": 0,
+      "mutProblems": 2
+    },
+    {
+      "mutant": "haskell-vh9/undeclared-operator-resolves",
+      "defectClass": "fabrication",
+      "caught": true,
+      "caughtBy": "haskell/operator-application",
+      "baseProblems": 0,
+      "mutProblems": 4
+    },
+    {
+      "mutant": "haskell-vh9/operator-edge-line-absent",
+      "defectClass": "payload-loss",
+      "caught": true,
+      "caughtBy": "haskell/operator-application",
+      "baseProblems": 0,
+      "mutProblems": 7
+    },
+    {
+      "mutant": "haskell-vh9/operator-edge-per-set-dedupe",
+      "defectClass": "relationship-collapse",
+      "caught": true,
+      "caughtBy": "haskell/operator-application",
+      "baseProblems": 0,
+      "mutProblems": 2
+    },
+    {
+      "mutant": "haskell-vh9/operator-evidence-class-structural",
+      "defectClass": "evidence-class",
+      "caught": true,
+      "caughtBy": "haskell/operator-application",
+      "baseProblems": 0,
+      "mutProblems": 2
+    }
+  ]
+}

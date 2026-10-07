@@ -1,0 +1,14 @@
+{
+  "corpusRoot": "$HOME/fixtures/vb-corpus",
+  "admitted": 2658,
+  "drawn": 2658,
+  "slowThresholdMs": 500,
+  "engineBombMs": 120000,
+  "totalWallMs": 357675,
+  "meanMs": 134.6,
+  "medianMs": 58,
+  "slowFileCount": 134,
+  "overBudgetFiles": [],
+  "trappedFiles": [],
+  "fallbackFileCount": 0
+}

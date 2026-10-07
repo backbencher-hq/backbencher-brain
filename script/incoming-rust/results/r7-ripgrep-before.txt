@@ -1,0 +1,245 @@
+R7 audit — 110 files (1857 KB) in [ripgrep]
+  population: files = every path `git ls-files` reports for the corpus repo whose detected language is rust; derived, not hand-written
+  symbols 5150 · empty symbol names 0 · empty/unknown symbol kinds 0 · parse failures 0
+  placeholder literals checked (34): unknown <unknown> * module global root program <unnamed> unnamed anonymous anonymous_impl <anonymous> self Self this super crate mod null nil undefined none None default placeholder <placeholder> n/a N/A <none> ? - ? external External
+  declared synthetics (permitted, reported separately): anonymous_impl
+  !! 1 corpus file(s) DECLARE a symbol literally named `global`, so the placeholder is not unique in this corpus:
+       ripgrep/crates/ignore/src/gitignore.rs (1 declaration)
+
+SOURCE endpoints over all types (29660 edges):
+  placeholder           1280  4.3%
+  modulePath              13  0.0%
+  file:unique          19024  64.1%
+  file:ambiguous        8251  27.8%
+  dotted:both           1011  3.4%
+  absent                  81  0.3%
+
+TARGET endpoints over all types (29660 edges):
+  placeholder            228  0.8%
+  modulePath             291  1.0%
+  file:unique           7351  24.8%
+  file:ambiguous        6750  22.8%
+  dotted:both            928  3.1%
+  dotted:neither          83  0.3%
+  repo:declared         8553  28.8%
+  absent                5476  18.5%
+
+type           edges files  src:ph src:empty  tgt:ph tgt:empty tgt:absent
+-------------------------------------------------------------------------
+calls          17083    96     426         0      71         0       4392
+uses            3207    86     155         0      47         0         60
+contains        3809    70       3         0      41         0          5
+imports          610    97     503         0      69         0         96
+references      2928    84      33         0       0         0        847
+exports          140    39     140         0       0         0          0
+extends            7     3       0         0       0         0          5
+implements       252    44       2         0       0         0         71
+overrides       1011    44       0         0       0         0          0
+instantiates     613    52      18         0       0         0          0
+-------------------------------------------------------------------------
+
+calls: 17083 edges / 96 files
+  placeholder endpoints: source 426 · target 71 — names global x377, default x105, none x13, null x1, root x1
+  files carrying a placeholder endpoint: 46 — ripgrep/crates/cli/src/decompress.rs, ripgrep/crates/cli/src/process.rs, ripgrep/crates/core/flags/complete/mod.rs, ripgrep/crates/core/flags/defs.rs, ripgrep/crates/core/flags/doc/help.rs, ripgrep/crates/core/flags/doc/man.rs
+  empty endpoints: source 0 · target 0
+  target classes: placeholder 71 · file:unique 3540 · file:ambiguous 2171 · repo:declared 6909 · absent 4392
+  confidence: {"1":17083} (under 0.7: 0) · evidenceClass: {"usage_contextual":17083}
+  top absent targets: assert_eq x1167, assert x771, join x327, vec x251, iter x132, to_string x121, keyword:union x83, push_str x79, map_err x51, is_some x48
+  empty: 
+  placeholder: ripgrep/crates/cli/src/decompress.rs default | ripgrep/crates/cli/src/decompress.rs default | ripgrep/crates/cli/src/decompress.rs default
+  synthetic: 
+  file:unique: 
+  file:ambiguous: 
+  dotted:both: 
+  dotted:ownerOnly: 
+  dotted:neither: 
+  modulePath: 
+  routePath: 
+  use:bound: 
+  repo:declared: 
+  absent: ripgrep/build.rs var | ripgrep/build.rs var | ripgrep/build.rs to_str
+
+uses: 3207 edges / 86 files
+  placeholder endpoints: source 155 · target 47 — names global x144, None x37, root x10, default x9, null x1, none x1
+  files carrying a placeholder endpoint: 22 — ripgrep/crates/core/flags/defs.rs, ripgrep/crates/core/flags/hiargs.rs, ripgrep/crates/core/flags/lowargs.rs, ripgrep/crates/ignore/src/gitignore.rs, ripgrep/crates/ignore/src/incremental.rs, ripgrep/crates/ignore/src/lib.rs
+  empty endpoints: source 0 · target 0
+  target classes: placeholder 47 · file:unique 1616 · file:ambiguous 1161 · repo:declared 323 · absent 60
+  confidence: {"1":1497,"0.9":1710} (under 0.7: 0) · evidenceClass: {"usage_contextual":3207}
+  top absent targets: keyword:union x11, collect x9, Seq x9, PathBuf x8, sub x5, status x5, BString x4, OsString x2, Arc x2, time x2
+  empty: 
+  placeholder: ripgrep/crates/core/flags/defs.rs global | ripgrep/crates/core/flags/defs.rs global | ripgrep/crates/core/flags/defs.rs global
+  synthetic: 
+  file:unique: 
+  file:ambiguous: 
+  dotted:both: 
+  dotted:ownerOnly: 
+  dotted:neither: 
+  modulePath: ripgrep/crates/cli/src/pattern.rs io::Error | ripgrep/crates/searcher/src/sink.rs io::Error
+  routePath: 
+  use:bound: 
+  repo:declared: 
+  absent: ripgrep/crates/cli/src/hostname.rs cast | ripgrep/crates/core/flags/complete/zsh.rs collect | ripgrep/crates/core/flags/config.rs OsString
+
+contains: 3809 edges / 70 files
+  placeholder endpoints: source 3 · target 41 — names default x26, root x5, None x5, none x3, anonymous_impl x3, null x1
+  files carrying a placeholder endpoint: 23 — ripgrep/crates/cli/src/decompress.rs, ripgrep/crates/core/flags/lowargs.rs, ripgrep/crates/core/search.rs, ripgrep/crates/globset/src/fnv.rs, ripgrep/crates/globset/src/glob.rs, ripgrep/crates/globset/src/lib.rs
+  empty endpoints: source 0 · target 0
+  target classes: placeholder 41 · file:unique 1877 · file:ambiguous 1886 · absent 5
+  confidence: {"1":3809} (under 0.7: 0) · evidenceClass: {"structural":3809}
+  top absent targets: keyword:union x5
+  empty: 
+  placeholder: ripgrep/crates/cli/src/decompress.rs default | ripgrep/crates/cli/src/decompress.rs default | ripgrep/crates/core/flags/lowargs.rs null
+  synthetic: 
+  file:unique: 
+  file:ambiguous: 
+  dotted:both: 
+  dotted:ownerOnly: 
+  dotted:neither: 
+  modulePath: ripgrep/crates/cli/src/human.rs std::io::Error | ripgrep/crates/cli/src/pattern.rs io::Error | ripgrep/crates/cli/src/process.rs io::Error
+  routePath: 
+  use:bound: 
+  repo:declared: 
+  absent: 
+
+imports: 610 edges / 97 files
+  placeholder endpoints: source 503 · target 69 — names global x503, super x36, crate x33
+  files carrying a placeholder endpoint: 97 — ripgrep/build.rs, ripgrep/crates/cli/src/decompress.rs, ripgrep/crates/cli/src/escape.rs, ripgrep/crates/cli/src/hostname.rs, ripgrep/crates/cli/src/human.rs, ripgrep/crates/cli/src/lib.rs
+  empty endpoints: source 0 · target 0
+  target classes: placeholder 69 · modulePath 291 · file:unique 37 · file:ambiguous 11 · repo:declared 106 · absent 96
+  confidence: {"1":610} (under 0.7: 0) · evidenceClass: {"import_based":610}
+  top absent targets: grep_matcher x21, termcolor x11, grep_searcher x8, regex_syntax x6, ffi x5, globset x5, grep_regex x5, anyhow x4, regex_automata x3, walkdir x3
+  empty: 
+  placeholder: ripgrep/build.rs global | ripgrep/crates/cli/src/decompress.rs global | ripgrep/crates/cli/src/decompress.rs global
+  synthetic: 
+  file:unique: 
+  file:ambiguous: 
+  dotted:both: 
+  dotted:ownerOnly: 
+  dotted:neither: 
+  modulePath: ripgrep/build.rs std::process | ripgrep/crates/cli/src/decompress.rs std::fs | ripgrep/crates/cli/src/decompress.rs std::process
+  routePath: 
+  use:bound: 
+  repo:declared: 
+  absent: ripgrep/crates/cli/src/decompress.rs ffi | ripgrep/crates/cli/src/decompress.rs globset | ripgrep/crates/cli/src/wtr.rs termcolor
+
+references: 2928 edges / 84 files
+  placeholder endpoints: source 33 · target 0 — names default x26, global x3, none x3, root x1
+  files carrying a placeholder endpoint: 20 — ripgrep/crates/cli/src/decompress.rs, ripgrep/crates/core/flags/lowargs.rs, ripgrep/crates/core/search.rs, ripgrep/crates/globset/src/fnv.rs, ripgrep/crates/globset/src/glob.rs, ripgrep/crates/globset/src/lib.rs
+  empty endpoints: source 0 · target 0
+  target classes: file:unique 173 · file:ambiguous 880 · repo:declared 1028 · absent 847
+  confidence: {"0.9":2928} (under 0.7: 0) · evidenceClass: {"import_based":2928}
+  top absent targets: Option x254, Vec x133, String x109, PathBuf x42, W x25, Formatter x18, Arc x17, OsStr x16, OsString x15, Hir x15
+  empty: 
+  placeholder: ripgrep/crates/cli/src/decompress.rs default | ripgrep/crates/cli/src/decompress.rs default | ripgrep/crates/core/flags/lowargs.rs default
+  synthetic: 
+  file:unique: 
+  file:ambiguous: 
+  dotted:both: 
+  dotted:ownerOnly: 
+  dotted:neither: 
+  modulePath: 
+  routePath: 
+  use:bound: 
+  repo:declared: 
+  absent: ripgrep/crates/cli/src/decompress.rs Vec | ripgrep/crates/cli/src/decompress.rs String | ripgrep/crates/cli/src/decompress.rs PathBuf
+
+exports: 140 edges / 39 files
+  placeholder endpoints: source 140 · target 0 — names global x140
+  files carrying a placeholder endpoint: 39 — ripgrep/crates/cli/src/decompress.rs, ripgrep/crates/cli/src/escape.rs, ripgrep/crates/cli/src/hostname.rs, ripgrep/crates/cli/src/human.rs, ripgrep/crates/cli/src/lib.rs, ripgrep/crates/cli/src/pattern.rs
+  empty endpoints: source 0 · target 0
+  target classes: file:unique 47 · file:ambiguous 93
+  confidence: {"1":140} (under 0.7: 0) · evidenceClass: {"structural":140}
+  empty: 
+  placeholder: ripgrep/crates/cli/src/decompress.rs global | ripgrep/crates/cli/src/decompress.rs global | ripgrep/crates/cli/src/decompress.rs global
+  synthetic: 
+  file:unique: 
+  file:ambiguous: 
+  dotted:both: 
+  dotted:ownerOnly: 
+  dotted:neither: 
+  modulePath: 
+  routePath: 
+  use:bound: 
+  repo:declared: 
+  absent: 
+
+extends: 7 edges / 3 files
+  placeholder endpoints: source 0 · target 0
+  empty endpoints: source 0 · target 0
+  target classes: repo:declared 2 · absent 5
+  confidence: {"1":7} (under 0.7: 0) · evidenceClass: {"structural":7}
+  top absent targets: Send x2, UnwindSafe x1, RefUnwindSafe x1, Sized x1
+  empty: 
+  placeholder: 
+  synthetic: 
+  file:unique: 
+  file:ambiguous: 
+  dotted:both: 
+  dotted:ownerOnly: 
+  dotted:neither: 
+  modulePath: 
+  routePath: 
+  use:bound: 
+  repo:declared: 
+  absent: ripgrep/crates/core/flags/mod.rs Send | ripgrep/crates/core/flags/mod.rs UnwindSafe | ripgrep/crates/core/flags/mod.rs RefUnwindSafe
+
+implements: 252 edges / 44 files
+  placeholder endpoints: source 2 · target 0 — names anonymous_impl x2
+  files carrying a placeholder endpoint: 1 — ripgrep/crates/matcher/src/lib.rs
+  empty endpoints: source 0 · target 0
+  target classes: file:unique 18 · file:ambiguous 8 · repo:declared 155 · absent 71
+  confidence: {"1":252} (under 0.7: 0) · evidenceClass: {"structural":252}
+  top absent targets: Display x17, Serialize x10, From x9, FromStr x6, Iterator x4, Drop x3, Read x2, Write x2, WriteColor x2, Visitor x2
+  empty: 
+  placeholder: ripgrep/crates/matcher/src/lib.rs anonymous_impl | ripgrep/crates/matcher/src/lib.rs anonymous_impl
+  synthetic: 
+  file:unique: 
+  file:ambiguous: 
+  dotted:both: 
+  dotted:ownerOnly: 
+  dotted:neither: 
+  modulePath: ripgrep/crates/cli/src/human.rs std::io::Error | ripgrep/crates/cli/src/pattern.rs io::Error | ripgrep/crates/cli/src/process.rs io::Error
+  routePath: 
+  use:bound: 
+  repo:declared: 
+  absent: ripgrep/crates/cli/src/decompress.rs Read | ripgrep/crates/cli/src/human.rs Display | ripgrep/crates/cli/src/human.rs From
+
+overrides: 1011 edges / 44 files
+  placeholder endpoints: source 0 · target 0
+  empty endpoints: source 0 · target 0
+  target classes: dotted:both 928 · dotted:neither 83
+  confidence: {"1":48,"0.85":963} (under 0.7: 0) · evidenceClass: {"usage_contextual":963,"structural":48}
+  empty: 
+  placeholder: 
+  synthetic: 
+  file:unique: 
+  file:ambiguous: 
+  dotted:both: ripgrep/crates/cli/src/decompress.rs DecompressionMatcherBuilder.default | ripgrep/crates/cli/src/decompress.rs Default.default | ripgrep/crates/cli/src/decompress.rs DecompressionMatcher.default
+  dotted:ownerOnly: 
+  dotted:neither: ripgrep/crates/cli/src/decompress.rs Read.read | ripgrep/crates/cli/src/human.rs Display.fmt | ripgrep/crates/cli/src/human.rs From.from
+  modulePath: 
+  routePath: 
+  use:bound: 
+  repo:declared: 
+  absent: 
+
+instantiates: 613 edges / 52 files
+  placeholder endpoints: source 18 · target 0 — names default x15, none x2, global x1
+  files carrying a placeholder endpoint: 15 — ripgrep/crates/cli/src/decompress.rs, ripgrep/crates/core/search.rs, ripgrep/crates/globset/src/glob.rs, ripgrep/crates/ignore/src/gitignore.rs, ripgrep/crates/ignore/src/incremental.rs, ripgrep/crates/index/src/literal.rs
+  empty endpoints: source 0 · target 0
+  target classes: file:unique 43 · file:ambiguous 540 · repo:declared 30
+  confidence: {"0.8":613} (under 0.7: 0) · evidenceClass: {"usage_contextual":613}
+  empty: 
+  placeholder: ripgrep/crates/cli/src/decompress.rs default | ripgrep/crates/cli/src/decompress.rs default | ripgrep/crates/core/search.rs default
+  synthetic: 
+  file:unique: 
+  file:ambiguous: 
+  dotted:both: 
+  dotted:ownerOnly: 
+  dotted:neither: 
+  modulePath: 
+  routePath: 
+  use:bound: 
+  repo:declared: 
+  absent: 
+EXIT=0

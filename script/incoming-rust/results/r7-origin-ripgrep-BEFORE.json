@@ -1,0 +1,598 @@
+{
+ "population": {
+  "root": "$HOME/fixtures/repositories",
+  "repos": [
+   "ripgrep"
+  ],
+  "files": 110
+ },
+ "edgesTotal": 29660,
+ "placeholderEdges": 1462,
+ "filesWithPlaceholder": 101,
+ "edgesWithNoLine": 0,
+ "parseFailures": [],
+ "byType": {
+  "imports": 572,
+  "calls": 497,
+  "uses": 202,
+  "exports": 140,
+  "contains": 44,
+  "references": 33,
+  "instantiates": 18,
+  "implements": 2
+ },
+ "byOwner": {
+  "source_file": 882,
+  "const_item": 122,
+  "struct_item": 76,
+  "function_item": 358,
+  "mod_item": 44,
+  "enum_item": 17,
+  "trait_item": 6,
+  "impl_item": 3
+ },
+ "buckets": [
+  {
+   "type": "imports",
+   "side": "src",
+   "name": "global",
+   "owner": "source_file",
+   "edges": 443,
+   "files": [
+    "ripgrep/crates/cli/src/decompress.rs",
+    "ripgrep/crates/cli/src/escape.rs",
+    "ripgrep/crates/cli/src/hostname.rs",
+    "ripgrep/crates/cli/src/lib.rs",
+    "ripgrep/crates/cli/src/pattern.rs"
+   ]
+  },
+  {
+   "type": "calls",
+   "side": "src",
+   "name": "global",
+   "owner": "source_file",
+   "edges": 359,
+   "files": [
+    "ripgrep/crates/core/flags/complete/mod.rs",
+    "ripgrep/crates/core/flags/doc/help.rs",
+    "ripgrep/crates/core/flags/doc/man.rs",
+    "ripgrep/crates/core/logger.rs",
+    "ripgrep/crates/core/messages.rs"
+   ]
+  },
+  {
+   "type": "uses",
+   "side": "src",
+   "name": "global",
+   "owner": "const_item",
+   "edges": 108,
+   "files": [
+    "ripgrep/crates/core/flags/defs.rs"
+   ]
+  },
+  {
+   "type": "exports",
+   "side": "src",
+   "name": "global",
+   "owner": "struct_item",
+   "edges": 71,
+   "files": [
+    "ripgrep/crates/cli/src/decompress.rs",
+    "ripgrep/crates/cli/src/human.rs",
+    "ripgrep/crates/cli/src/pattern.rs",
+    "ripgrep/crates/cli/src/process.rs",
+    "ripgrep/crates/globset/src/glob.rs"
+   ]
+  },
+  {
+   "type": "imports",
+   "side": "src",
+   "name": "global",
+   "owner": "function_item",
+   "edges": 60,
+   "files": [
+    "ripgrep/build.rs",
+    "ripgrep/crates/cli/src/hostname.rs",
+    "ripgrep/crates/cli/src/human.rs",
+    "ripgrep/crates/cli/src/lib.rs",
+    "ripgrep/crates/cli/src/wtr.rs"
+   ]
+  },
+  {
+   "type": "calls",
+   "side": "tgt",
+   "name": "default",
+   "owner": "function_item",
+   "edges": 58,
+   "files": [
+    "ripgrep/crates/cli/src/decompress.rs",
+    "ripgrep/crates/cli/src/process.rs",
+    "ripgrep/crates/core/flags/defs.rs",
+    "ripgrep/crates/core/flags/lowargs.rs",
+    "ripgrep/crates/core/flags/parse.rs"
+   ]
+  },
+  {
+   "type": "calls",
+   "side": "src",
+   "name": "default",
+   "owner": "function_item",
+   "edges": 47,
+   "files": [
+    "ripgrep/crates/cli/src/decompress.rs",
+    "ripgrep/crates/core/flags/lowargs.rs",
+    "ripgrep/crates/core/search.rs",
+    "ripgrep/crates/globset/src/fnv.rs",
+    "ripgrep/crates/globset/src/glob.rs"
+   ]
+  },
+  {
+   "type": "uses",
+   "side": "tgt",
+   "name": "None",
+   "owner": "function_item",
+   "edges": 37,
+   "files": [
+    "ripgrep/crates/ignore/src/lib.rs",
+    "ripgrep/crates/printer/src/color.rs",
+    "ripgrep/crates/printer/src/standard.rs",
+    "ripgrep/crates/searcher/src/line_buffer.rs"
+   ]
+  },
+  {
+   "type": "uses",
+   "side": "src",
+   "name": "global",
+   "owner": "source_file",
+   "edges": 36,
+   "files": [
+    "ripgrep/fuzz/fuzz_targets/fuzz_glob.rs",
+    "ripgrep/tests/binary.rs",
+    "ripgrep/tests/feature.rs",
+    "ripgrep/tests/index/basic.rs",
+    "ripgrep/tests/index/disallowed.rs"
+   ]
+  },
+  {
+   "type": "imports",
+   "side": "tgt",
+   "name": "super",
+   "owner": "mod_item",
+   "edges": 35,
+   "files": [
+    "ripgrep/crates/cli/src/escape.rs",
+    "ripgrep/crates/cli/src/hostname.rs",
+    "ripgrep/crates/cli/src/human.rs",
+    "ripgrep/crates/cli/src/pattern.rs",
+    "ripgrep/crates/core/flags/config.rs"
+   ]
+  },
+  {
+   "type": "exports",
+   "side": "src",
+   "name": "global",
+   "owner": "function_item",
+   "edges": 30,
+   "files": [
+    "ripgrep/crates/cli/src/decompress.rs",
+    "ripgrep/crates/cli/src/escape.rs",
+    "ripgrep/crates/cli/src/hostname.rs",
+    "ripgrep/crates/cli/src/human.rs",
+    "ripgrep/crates/cli/src/lib.rs"
+   ]
+  },
+  {
+   "type": "imports",
+   "side": "tgt",
+   "name": "crate",
+   "owner": "source_file",
+   "edges": 28,
+   "files": [
+    "ripgrep/crates/cli/src/lib.rs",
+    "ripgrep/crates/core/flags/hiargs.rs",
+    "ripgrep/crates/globset/src/glob.rs",
+    "ripgrep/crates/globset/src/lib.rs",
+    "ripgrep/crates/globset/src/serde_impl.rs"
+   ]
+  },
+  {
+   "type": "contains",
+   "side": "tgt",
+   "name": "default",
+   "owner": "function_item",
+   "edges": 26,
+   "files": [
+    "ripgrep/crates/cli/src/decompress.rs",
+    "ripgrep/crates/core/flags/lowargs.rs",
+    "ripgrep/crates/core/search.rs",
+    "ripgrep/crates/globset/src/fnv.rs",
+    "ripgrep/crates/globset/src/glob.rs"
+   ]
+  },
+  {
+   "type": "references",
+   "side": "src",
+   "name": "default",
+   "owner": "function_item",
+   "edges": 26,
+   "files": [
+    "ripgrep/crates/cli/src/decompress.rs",
+    "ripgrep/crates/core/flags/lowargs.rs",
+    "ripgrep/crates/core/search.rs",
+    "ripgrep/crates/globset/src/fnv.rs",
+    "ripgrep/crates/globset/src/glob.rs"
+   ]
+  },
+  {
+   "type": "instantiates",
+   "side": "src",
+   "name": "default",
+   "owner": "function_item",
+   "edges": 15,
+   "files": [
+    "ripgrep/crates/cli/src/decompress.rs",
+    "ripgrep/crates/core/search.rs",
+    "ripgrep/crates/globset/src/glob.rs",
+    "ripgrep/crates/index/src/literal.rs",
+    "ripgrep/crates/printer/src/json.rs"
+   ]
+  },
+  {
+   "type": "exports",
+   "side": "src",
+   "name": "global",
+   "owner": "source_file",
+   "edges": 15,
+   "files": [
+    "ripgrep/crates/cli/src/lib.rs",
+    "ripgrep/crates/cli/src/wtr.rs",
+    "ripgrep/crates/ignore/src/overrides.rs",
+    "ripgrep/crates/ignore/src/types.rs",
+    "ripgrep/crates/index/src/lib.rs"
+   ]
+  },
+  {
+   "type": "calls",
+   "side": "src",
+   "name": "global",
+   "owner": "const_item",
+   "edges": 12,
+   "files": [
+    "ripgrep/crates/core/flags/doc/help.rs",
+    "ripgrep/crates/printer/src/hyperlink/aliases.rs"
+   ]
+  },
+  {
+   "type": "exports",
+   "side": "src",
+   "name": "global",
+   "owner": "enum_item",
+   "edges": 12,
+   "files": [
+    "ripgrep/crates/globset/src/lib.rs",
+    "ripgrep/crates/ignore/src/lib.rs",
+    "ripgrep/crates/ignore/src/walk.rs",
+    "ripgrep/crates/index/src/literal.rs",
+    "ripgrep/crates/matcher/src/lib.rs"
+   ]
+  },
+  {
+   "type": "calls",
+   "side": "tgt",
+   "name": "none",
+   "owner": "function_item",
+   "edges": 11,
+   "files": [
+    "ripgrep/crates/core/flags/hiargs.rs",
+    "ripgrep/crates/core/search.rs",
+    "ripgrep/crates/ignore/src/incremental.rs",
+    "ripgrep/crates/regex/src/literal.rs",
+    "ripgrep/crates/searcher/src/testutil.rs"
+   ]
+  },
+  {
+   "type": "uses",
+   "side": "src",
+   "name": "default",
+   "owner": "function_item",
+   "edges": 9,
+   "files": [
+    "ripgrep/crates/core/flags/lowargs.rs",
+    "ripgrep/crates/printer/src/standard.rs",
+    "ripgrep/crates/printer/src/summary.rs",
+    "ripgrep/crates/searcher/src/line_buffer.rs",
+    "ripgrep/crates/searcher/src/searcher/mmap.rs"
+   ]
+  },
+  {
+   "type": "uses",
+   "side": "tgt",
+   "name": "root",
+   "owner": "function_item",
+   "edges": 9,
+   "files": [
+    "ripgrep/crates/ignore/src/gitignore.rs",
+    "ripgrep/crates/ignore/src/incremental.rs",
+    "ripgrep/tests/util.rs"
+   ]
+  },
+  {
+   "type": "calls",
+   "side": "src",
+   "name": "global",
+   "owner": "function_item",
+   "edges": 6,
+   "files": [
+    "ripgrep/crates/ignore/src/gitignore.rs"
+   ]
+  },
+  {
+   "type": "exports",
+   "side": "src",
+   "name": "global",
+   "owner": "trait_item",
+   "edges": 6,
+   "files": [
+    "ripgrep/crates/ignore/src/walk.rs",
+    "ripgrep/crates/matcher/src/lib.rs",
+    "ripgrep/crates/searcher/src/sink.rs"
+   ]
+  },
+  {
+   "type": "imports",
+   "side": "tgt",
+   "name": "crate",
+   "owner": "mod_item",
+   "edges": 5,
+   "files": [
+    "ripgrep/crates/globset/src/glob.rs",
+    "ripgrep/crates/globset/src/serde_impl.rs",
+    "ripgrep/crates/ignore/src/dir.rs",
+    "ripgrep/crates/ignore/src/incremental.rs",
+    "ripgrep/crates/searcher/src/searcher/glue.rs"
+   ]
+  },
+  {
+   "type": "contains",
+   "side": "tgt",
+   "name": "None",
+   "owner": "enum_item",
+   "edges": 5,
+   "files": [
+    "ripgrep/crates/ignore/src/lib.rs",
+    "ripgrep/crates/printer/src/color.rs",
+    "ripgrep/crates/printer/src/standard.rs",
+    "ripgrep/crates/searcher/src/line_buffer.rs"
+   ]
+  },
+  {
+   "type": "contains",
+   "side": "tgt",
+   "name": "root",
+   "owner": "struct_item",
+   "edges": 4,
+   "files": [
+    "ripgrep/crates/ignore/src/gitignore.rs",
+    "ripgrep/crates/ignore/src/incremental.rs",
+    "ripgrep/tests/util.rs"
+   ]
+  },
+  {
+   "type": "exports",
+   "side": "src",
+   "name": "global",
+   "owner": "mod_item",
+   "edges": 4,
+   "files": [
+    "ripgrep/crates/ignore/src/lib.rs",
+    "ripgrep/crates/searcher/src/sink.rs"
+   ]
+  },
+  {
+   "type": "references",
+   "side": "src",
+   "name": "global",
+   "owner": "function_item",
+   "edges": 3,
+   "files": [
+    "ripgrep/crates/ignore/src/gitignore.rs"
+   ]
+  },
+  {
+   "type": "contains",
+   "side": "tgt",
+   "name": "none",
+   "owner": "function_item",
+   "edges": 3,
+   "files": [
+    "ripgrep/crates/ignore/src/incremental.rs",
+    "ripgrep/crates/regex/src/literal.rs",
+    "ripgrep/crates/searcher/src/searcher/mod.rs"
+   ]
+  },
+  {
+   "type": "references",
+   "side": "src",
+   "name": "none",
+   "owner": "function_item",
+   "edges": 3,
+   "files": [
+    "ripgrep/crates/ignore/src/incremental.rs",
+    "ripgrep/crates/regex/src/literal.rs",
+    "ripgrep/crates/searcher/src/searcher/mod.rs"
+   ]
+  },
+  {
+   "type": "instantiates",
+   "side": "src",
+   "name": "none",
+   "owner": "function_item",
+   "edges": 2,
+   "files": [
+    "ripgrep/crates/ignore/src/incremental.rs",
+    "ripgrep/crates/regex/src/literal.rs"
+   ]
+  },
+  {
+   "type": "implements",
+   "side": "src",
+   "name": "anonymous_impl",
+   "owner": "impl_item",
+   "edges": 2,
+   "files": [
+    "ripgrep/crates/matcher/src/lib.rs"
+   ]
+  },
+  {
+   "type": "contains",
+   "side": "src",
+   "name": "anonymous_impl",
+   "owner": "function_item",
+   "edges": 2,
+   "files": [
+    "ripgrep/crates/matcher/src/lib.rs"
+   ]
+  },
+  {
+   "type": "calls",
+   "side": "src",
+   "name": "none",
+   "owner": "function_item",
+   "edges": 2,
+   "files": [
+    "ripgrep/crates/regex/src/literal.rs",
+    "ripgrep/crates/searcher/src/searcher/mod.rs"
+   ]
+  },
+  {
+   "type": "exports",
+   "side": "src",
+   "name": "global",
+   "owner": "const_item",
+   "edges": 2,
+   "files": [
+    "ripgrep/tests/hay.rs"
+   ]
+  },
+  {
+   "type": "imports",
+   "side": "tgt",
+   "name": "super",
+   "owner": "source_file",
+   "edges": 1,
+   "files": [
+    "ripgrep/crates/core/flags/defs.rs"
+   ]
+  },
+  {
+   "type": "uses",
+   "side": "tgt",
+   "name": "null",
+   "owner": "function_item",
+   "edges": 1,
+   "files": [
+    "ripgrep/crates/core/flags/hiargs.rs"
+   ]
+  },
+  {
+   "type": "calls",
+   "side": "tgt",
+   "name": "null",
+   "owner": "function_item",
+   "edges": 1,
+   "files": [
+    "ripgrep/crates/core/flags/hiargs.rs"
+   ]
+  },
+  {
+   "type": "contains",
+   "side": "tgt",
+   "name": "null",
+   "owner": "struct_item",
+   "edges": 1,
+   "files": [
+    "ripgrep/crates/core/flags/lowargs.rs"
+   ]
+  },
+  {
+   "type": "contains",
+   "side": "tgt",
+   "name": "global",
+   "owner": "function_item",
+   "edges": 1,
+   "files": [
+    "ripgrep/crates/ignore/src/gitignore.rs"
+   ]
+  },
+  {
+   "type": "instantiates",
+   "side": "src",
+   "name": "global",
+   "owner": "function_item",
+   "edges": 1,
+   "files": [
+    "ripgrep/crates/ignore/src/gitignore.rs"
+   ]
+  },
+  {
+   "type": "uses",
+   "side": "src",
+   "name": "root",
+   "owner": "function_item",
+   "edges": 1,
+   "files": [
+    "ripgrep/crates/ignore/src/incremental.rs"
+   ]
+  },
+  {
+   "type": "calls",
+   "side": "tgt",
+   "name": "root",
+   "owner": "function_item",
+   "edges": 1,
+   "files": [
+    "ripgrep/crates/ignore/src/incremental.rs"
+   ]
+  },
+  {
+   "type": "contains",
+   "side": "tgt",
+   "name": "root",
+   "owner": "function_item",
+   "edges": 1,
+   "files": [
+    "ripgrep/crates/ignore/src/incremental.rs"
+   ]
+  },
+  {
+   "type": "references",
+   "side": "src",
+   "name": "root",
+   "owner": "function_item",
+   "edges": 1,
+   "files": [
+    "ripgrep/crates/ignore/src/incremental.rs"
+   ]
+  },
+  {
+   "type": "contains",
+   "side": "src",
+   "name": "anonymous_impl",
+   "owner": "impl_item",
+   "edges": 1,
+   "files": [
+    "ripgrep/crates/matcher/src/lib.rs"
+   ]
+  },
+  {
+   "type": "uses",
+   "side": "src",
+   "name": "none",
+   "owner": "function_item",
+   "edges": 1,
+   "files": [
+    "ripgrep/crates/searcher/src/searcher/mod.rs"
+   ]
+  }
+ ]
+}

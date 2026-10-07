@@ -13,7 +13,7 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (43/45 languages pass)",
+      "description": "per-literal shrink-only register with reasons (42/45 languages pass)",
       "id": "dead-literal-gate",
       "status": "pass"
     },
@@ -24,8 +24,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "a235c3fac52e196c25f3145750b229a1bcd51950",
-  "committedAt": "2026-10-03T16:13:26-04:00",
+  "commit": "1348aecdc6ac457fc2f282712acbe4a295fd0978",
+  "committedAt": "2026-10-05T20:47:41-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -39,6 +39,11 @@
             "from": 0,
             "lang": "rust",
             "to": 2
+          },
+          {
+            "from": 0,
+            "lang": "sql",
+            "to": 1
           }
         ],
         "ok": false,
@@ -63,15 +68,22 @@
             "context": "real-rust-analyzer.ts:comparison",
             "kind": "type",
             "lang": "rust",
-            "line": 1915,
+            "line": 2428,
             "literal": "bare_function_type"
           },
           {
             "context": "real-rust-analyzer.ts:comparison",
             "kind": "type",
             "lang": "rust",
-            "line": 1915,
+            "line": 2428,
             "literal": "parenthesized_type"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "sql",
+            "line": 667,
+            "literal": "index"
           }
         ]
       },
@@ -133,7 +145,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 238,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 33,
+        "referencedTypeLiterals": 31,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -171,7 +183,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 288,
         "referencedFieldLiterals": 14,
-        "referencedTypeLiterals": 77,
+        "referencedTypeLiterals": 79,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -258,7 +270,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 133,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 37,
+        "referencedTypeLiterals": 41,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -277,7 +289,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 91,
+        "referencedTypeLiterals": 92,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -333,8 +345,8 @@
         "oracleFieldCount": 28,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 512,
-        "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 65,
+        "referencedFieldLiterals": 2,
+        "referencedTypeLiterals": 70,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -353,7 +365,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 213,
         "referencedFieldLiterals": 12,
-        "referencedTypeLiterals": 54,
+        "referencedTypeLiterals": 56,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -429,7 +441,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 123,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 14,
+        "referencedTypeLiterals": 15,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -533,7 +545,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 28,
         "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 6,
+        "referencedTypeLiterals": 7,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -570,8 +582,8 @@
         "oracleFieldCount": 22,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 128,
-        "referencedFieldLiterals": 8,
-        "referencedTypeLiterals": 23,
+        "referencedFieldLiterals": 9,
+        "referencedTypeLiterals": 25,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -668,7 +680,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 407,
         "referencedFieldLiterals": 6,
-        "referencedTypeLiterals": 79,
+        "referencedTypeLiterals": 82,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -788,12 +800,12 @@
         "unknownNodeTypes": [
           {
             "context": "real-rust-analyzer.ts:comparison",
-            "line": 1915,
+            "line": 2428,
             "literal": "bare_function_type"
           },
           {
             "context": "real-rust-analyzer.ts:comparison",
-            "line": 1915,
+            "line": 2428,
             "literal": "parenthesized_type"
           }
         ],
@@ -831,7 +843,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 188,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 24,
+        "referencedTypeLiterals": 27,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -850,14 +862,20 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 823,
         "referencedFieldLiterals": 5,
-        "referencedTypeLiterals": 43,
-        "status": "pass",
+        "referencedTypeLiterals": 48,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 667,
+            "literal": "index"
+          }
+        ],
         "waivedFindings": [
           {
             "justification": "M14 grammar audit (real-sql-analyzer.ts:58, the SQL_KEYWORDS set): a SQL KEYWORD in a keyword table, not a parse-tree node reference. `table` is the reserved word the guard exists to recognise, and the audit's `X.type === \"lit\"` / set-literal heuristic reports set members the way it reports node types. Waived, not fixed — deleting the keyword would change behaviour, and the swift `String` entry is the same shape (a type-name table, waived with a justification).",
-            "line": 423,
+            "line": 617,
             "literal": "table"
           }
         ],
@@ -998,7 +1016,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 65,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 8,
+        "referencedTypeLiterals": 13,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1024,7 +1042,7 @@
         "waivedFindings": [
           {
             "justification": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code.",
-            "line": 5684,
+            "line": 5746,
             "literal": "default_export_expression"
           }
         ],
@@ -1126,7 +1144,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 275,
         "referencedFieldLiterals": 3,
-        "referencedTypeLiterals": 50,
+        "referencedTypeLiterals": 51,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1140,10 +1158,10 @@
       }
     },
     "summary": {
-      "fail": 2,
+      "fail": 3,
       "languagesAudited": 45,
-      "pass": 43,
-      "totalUnknownReferences": 4
+      "pass": 42,
+      "totalUnknownReferences": 5
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1171,9 +1189,9 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-10-03T20:37:11.301Z",
-  "regeneratedAtCommit": "a235c3fac52e196c25f3145750b229a1bcd51950",
-  "runtime": "node v26.3.0",
+  "regeneratedAt": "2026-10-06T00:54:49.290Z",
+  "regeneratedAtCommit": "1348aecdc6ac457fc2f282712acbe4a295fd0978",
+  "runtime": "node v20.19.5",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
 }

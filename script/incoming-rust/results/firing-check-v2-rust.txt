@@ -1,0 +1,54 @@
+########## NFILES=25 ##########
+selected lane(s): RUST  (from RUST)
+firing-check v2 (lane copy)   REPO=/tmp/opencode/wt/R7_AUDIT_FLEET   corpus=$HOME/fixtures/repositories   NFILES=25   sampling=code-bearing
+production vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
+types.ts vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
+in types.ts but NOT produced: (none)
+produced but NOT in types.ts: (none)
+
+  [1/1] RUST         10/10  25/25 parsed  imports[] 76  (all ten)
+lane          types  note
+------------------------------------------------------------------------------------------------
+RUST           10/10  25/25 parsed · imports[] 76 in 19 files
+   fired:  calls extends implements uses imports exports contains references overrides instantiates
+   e.g. tests/multiline.rs  tests/util.rs
+   counts: calls:3614  contains:1053  overrides:788  uses:634  references:297  implements:109  imports:102  instantiates:37  exports:9  extends:5
+
+=== SUMMARY (relationship channel only — imports[] reported separately) ===
+10/10  RUST          silent: -
+########## NFILES=50 ##########
+selected lane(s): RUST  (from RUST)
+firing-check v2 (lane copy)   REPO=/tmp/opencode/wt/R7_AUDIT_FLEET   corpus=$HOME/fixtures/repositories   NFILES=50   sampling=code-bearing
+production vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
+types.ts vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
+in types.ts but NOT produced: (none)
+produced but NOT in types.ts: (none)
+
+  [1/1] RUST         10/10  50/50 parsed  imports[] 175  (all ten)
+lane          types  note
+------------------------------------------------------------------------------------------------
+RUST           10/10  50/50 parsed · imports[] 175 in 42 files
+   fired:  calls extends implements uses imports exports contains references overrides instantiates
+   e.g. tests/multiline.rs  tests/util.rs
+   counts: calls:7327  contains:1839  uses:1280  references:1021  overrides:841  imports:235  instantiates:225  implements:147  exports:33  extends:5
+
+=== SUMMARY (relationship channel only — imports[] reported separately) ===
+10/10  RUST          silent: -
+########## NFILES=200 ##########
+selected lane(s): RUST  (from RUST)
+firing-check v2 (lane copy)   REPO=/tmp/opencode/wt/R7_AUDIT_FLEET   corpus=$HOME/fixtures/repositories   NFILES=200   sampling=code-bearing
+production vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
+types.ts vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
+in types.ts but NOT produced: (none)
+produced but NOT in types.ts: (none)
+
+  [1/1] RUST         10/10  108/108 parsed  imports[] 449  (all ten)
+lane          types  note
+------------------------------------------------------------------------------------------------
+RUST           10/10  108/108 parsed · imports[] 449 in 98 files
+   fired:  calls extends implements uses imports exports contains references overrides instantiates
+   e.g. tests/multiline.rs  tests/util.rs
+   counts: calls:16733  contains:3809  uses:3171  references:2928  overrides:1011  imports:614  instantiates:613  implements:252  exports:140  extends:7
+
+=== SUMMARY (relationship channel only — imports[] reported separately) ===
+10/10  RUST          silent: -

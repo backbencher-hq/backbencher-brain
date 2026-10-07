@@ -1,0 +1,142 @@
+js-census  corpus=svelte  files on disk=3447  analyzed=3447
+[INFO] [22:47:55] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [22:47:55] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+
+parsed=3447  failed=0  errorFiles=0  errorNodes=0
+symbols=6261  emptySymbolNames=0
+kinds: method:2606  function:1896  property:731  constant:625  variable:301  class:53  constructor:49
+imports[] channel: 5981 edges in 3317 files (with named items: 3317)
+   benchmarking/analyze-compiler-profile.js -> module=node:fs items=1 [fs]
+   benchmarking/benchmarks/compiler/index.js -> module=./parser.bench.js items=1 [parser_benchmarks]
+   benchmarking/benchmarks/compiler/parser.bench.js -> module=../../../packages/svelte/src/compiler/phases/1-parse/index.js items=1 [parse]
+   benchmarking/benchmarks/reactivity/index.js -> module=node:fs items=1 [fs]
+   benchmarking/benchmarks/reactivity/sbench.js -> module=../../utils.js items=1 [fastest_test]
+   benchmarking/benchmarks/reactivity/tests/clean_effects.bench.js -> module=node:assert items=1 [assert]
+
+=== RELATIONSHIP CHANNEL — per production type (10) ===
+type          fired  edges  files  srcResolved  tgtResolved  tgtBuiltin  empty  placeholder
+calls         YES     31973   3371       27679        4530          0      0           0
+extends       YES        15     14          13           1          0      0           0
+implements    no          0      0           0           0          0      0           0
+uses          YES     31270   2544       29647        2006          0      0           3
+imports       YES      7121   3317         823        1991          0      0           0
+exports       YES      4857   3404         227        1596          0      0           0
+contains      YES       659     63         651         659          0      0           0
+references    YES        26     15          25           4          0      0           0
+overrides     YES        52      7          49          49          0      0           0
+instantiates  YES       140     72         102          47          0      0           0
+fired (relationship channel): 9/10
+imports on its own channel: YES (5981 edges / 3317 files)
+
+--- calls (31973 edges) ---
+   confidence: 0.9:31973
+   evidenceClass/reasonCode: usage_contextual:31973
+   files: benchmarking/analyze-compiler-profile.js, benchmarking/benchmarks/compiler/parser.bench.js, benchmarking/benchmarks/reactivity/index.js, benchmarking/benchmarks/reactivity/sbench.js, benchmarking/benchmarks/reactivity/tests/clean_effects.bench.js, benchmarking/benchmarks/reactivity/tests/kairo_avoidable.bench.js, benchmarking/benchmarks/reactivity/tests/kairo_broad.bench.js, benchmarking/benchmarks/reactivity/tests/kairo_broad_block.bench.js
+   e.g. benchmarking/analyze-compiler-profile.js: analyze-compiler-profile -> resolve (c=0.9)
+   e.g. benchmarking/analyze-compiler-profile.js: analyze-compiler-profile -> fileURLToPath (c=0.9)
+   e.g. benchmarking/analyze-compiler-profile.js: analyze_compiler_profiles -> join (c=0.9)
+   e.g. benchmarking/analyze-compiler-profile.js: analyze_compiler_profiles -> sort (c=0.9)
+   e.g. benchmarking/analyze-compiler-profile.js: analyze_compiler_profiles -> filter (c=0.9)
+
+--- extends (15 edges) ---
+   confidence: 1:15
+   evidenceClass/reasonCode: structural:15
+   files: packages/svelte/scripts/process-messages/templates/compile-errors.js, packages/svelte/scripts/process-messages/templates/compile-warnings.js, packages/svelte/src/compiler/errors.js, packages/svelte/src/compiler/migrate/index.js, packages/svelte/src/compiler/warnings.js, packages/svelte/src/internal/client/constants.js, packages/svelte/src/internal/client/dom/elements/custom-element.js, packages/svelte/src/reactivity/date.js
+   e.g. packages/svelte/scripts/process-messages/templates/compile-errors.js: InternalCompileError -> Error (c=1)
+   e.g. packages/svelte/scripts/process-messages/templates/compile-warnings.js: InternalCompileWarning -> CompileDiagnostic (c=1)
+   e.g. packages/svelte/src/compiler/errors.js: InternalCompileError -> Error (c=1)
+   e.g. packages/svelte/src/compiler/migrate/index.js: MigrationError -> Error (c=1)
+   e.g. packages/svelte/src/compiler/warnings.js: InternalCompileWarning -> CompileDiagnostic (c=1)
+
+--- uses (31270 edges) ---
+   confidence: 0.6:30530  0.85:740
+   evidenceClass/reasonCode: usage_contextual:31270
+   files: benchmarking/analyze-compiler-profile.js, benchmarking/benchmarks/compiler/index.js, benchmarking/benchmarks/compiler/parser.bench.js, benchmarking/benchmarks/reactivity/index.js, benchmarking/benchmarks/reactivity/sbench.js, benchmarking/benchmarks/reactivity/tests/clean_effects.bench.js, benchmarking/benchmarks/reactivity/tests/kairo_avoidable.bench.js, benchmarking/benchmarks/reactivity/tests/kairo_broad.bench.js
+   e.g. benchmarking/analyze-compiler-profile.js: analyze-compiler-profile -> path (c=0.6)
+   e.g. benchmarking/analyze-compiler-profile.js: analyze-compiler-profile -> meta (c=0.6)
+   e.g. benchmarking/analyze-compiler-profile.js: analyze-compiler-profile -> url (c=0.6)
+   e.g. benchmarking/analyze-compiler-profile.js: analyze_compiler_profiles -> path (c=0.6)
+   e.g. benchmarking/analyze-compiler-profile.js: analyze_compiler_profiles -> run_dir (c=0.6)
+   R7 PLACEHOLDER-LITERAL ENDPOINTS: 3
+      packages/svelte/src/compiler/phases/2-analyze/css/utils.js: gather_possible_values -> UNKNOWN  x1
+      packages/svelte/src/compiler/phases/2-analyze/css/utils.js: get_possible_values -> UNKNOWN  x1
+      packages/svelte/src/compiler/phases/scope.js: constructor -> UNKNOWN  x1
+   reserved/host-global spellings (NOT R7 placeholders): NaN:2  arguments:27  null:7  this:5  globalThis:9
+
+--- imports (7121 edges) ---
+   confidence: 0.6:464  1:6657
+   evidenceClass/reasonCode: import_based:7121
+   files: benchmarking/analyze-compiler-profile.js, benchmarking/benchmarks/compiler/index.js, benchmarking/benchmarks/compiler/parser.bench.js, benchmarking/benchmarks/reactivity/index.js, benchmarking/benchmarks/reactivity/sbench.js, benchmarking/benchmarks/reactivity/tests/clean_effects.bench.js, benchmarking/benchmarks/reactivity/tests/kairo_avoidable.bench.js, benchmarking/benchmarks/reactivity/tests/kairo_broad.bench.js
+   e.g. benchmarking/analyze-compiler-profile.js: analyze-compiler-profile -> node:fs:fs (c=1)
+   e.g. benchmarking/analyze-compiler-profile.js: analyze-compiler-profile -> node:path:path (c=1)
+   e.g. benchmarking/analyze-compiler-profile.js: analyze-compiler-profile -> node:url:fileURLToPath (c=1)
+   e.g. benchmarking/benchmarks/compiler/index.js: index -> ./parser.bench.js:parser_benchmarks (c=1)
+   e.g. benchmarking/benchmarks/compiler/parser.bench.js: parser.bench -> ../../../packages/svelte/src/compiler/phases/1-parse/index.js:parse (c=1)
+   reserved/host-global spellings (NOT R7 placeholders): #client/constants:DESTROYING:1  #client/constants:STATE_SYMBOL:1  ../../../context.js:component_context:1  ../../../context.js:mark_as_component:1  ../../../reactivity/effects.js:effect:1  ../../../reactivity/effects.js:render_effect:1  ../../../runtime.js:active_effect:1  ../../../runtime.js:untrack:1
+
+--- exports (4857 edges) ---
+   confidence: 1:4857
+   evidenceClass/reasonCode: structural:4857
+   files: benchmarking/analyze-compiler-profile.js, benchmarking/benchmarks/compiler/index.js, benchmarking/benchmarks/compiler/parser.bench.js, benchmarking/benchmarks/reactivity/index.js, benchmarking/benchmarks/reactivity/sbench.js, benchmarking/benchmarks/reactivity/tests/clean_effects.bench.js, benchmarking/benchmarks/reactivity/tests/kairo_avoidable.bench.js, benchmarking/benchmarks/reactivity/tests/kairo_broad.bench.js
+   e.g. benchmarking/analyze-compiler-profile.js: analyze-compiler-profile -> analyze_compiler_profiles (c=1)
+   e.g. benchmarking/benchmarks/compiler/index.js: index -> compiler_benchmarks (c=1)
+   e.g. benchmarking/benchmarks/compiler/parser.bench.js: parser.bench -> parser_benchmarks (c=1)
+   e.g. benchmarking/benchmarks/reactivity/index.js: index -> reactivity_benchmarks (c=1)
+   e.g. benchmarking/benchmarks/reactivity/sbench.js: sbench -> sbench_create_signals (c=1)
+   reserved/host-global spellings (NOT R7 placeholders): this:1  null:1  bind_this:1
+
+--- contains (659 edges) ---
+   confidence: 1:659
+   evidenceClass/reasonCode: structural:659
+   files: eslint.config.js, packages/svelte/scripts/process-messages/templates/compile-errors.js, packages/svelte/scripts/process-messages/templates/compile-warnings.js, packages/svelte/src/compiler/errors.js, packages/svelte/src/compiler/migrate/index.js, packages/svelte/src/compiler/phases/1-parse/acorn.js, packages/svelte/src/compiler/phases/1-parse/index.js, packages/svelte/src/compiler/phases/1-parse/remove_typescript_nodes.js
+   e.g. eslint.config.js: no_compiler_imports -> create (c=1)
+   e.g. packages/svelte/scripts/process-messages/templates/compile-errors.js: InternalCompileError -> message (c=1)
+   e.g. packages/svelte/scripts/process-messages/templates/compile-errors.js: InternalCompileError -> #diagnostic (c=1)
+   e.g. packages/svelte/scripts/process-messages/templates/compile-errors.js: InternalCompileError -> constructor (c=1)
+   e.g. packages/svelte/scripts/process-messages/templates/compile-errors.js: InternalCompileError -> toString (c=1)
+
+--- references (26 edges) ---
+   confidence: 0.95:26
+   evidenceClass/reasonCode: reference_qualified:26
+   files: benchmarking/profile-compiler.js, packages/svelte/src/compiler/migrate/index.js, packages/svelte/src/compiler/phases/scope.js, packages/svelte/src/internal/client/dev/validation.js, packages/svelte/src/internal/client/dom/elements/events.js, packages/svelte/src/internal/client/dom/operations.js, packages/svelte/src/internal/client/error-handling.js, packages/svelte/src/internal/client/render.js
+   e.g. benchmarking/profile-compiler.js: global -> Error (c=0.95)
+   e.g. packages/svelte/src/compiler/migrate/index.js: migrate -> MigrationError (c=0.95)
+   e.g. packages/svelte/src/compiler/phases/scope.js: binary -> right (c=0.95)
+   e.g. packages/svelte/src/internal/client/dev/validation.js: validate_snippet_args -> Node (c=0.95)
+   e.g. packages/svelte/src/internal/client/dom/elements/events.js: event -> HTMLMediaElement (c=0.95)
+
+--- overrides (52 edges) ---
+   confidence: 0.5:52
+   evidenceClass/reasonCode: inferred:52
+   files: packages/svelte/scripts/process-messages/templates/compile-errors.js, packages/svelte/src/compiler/errors.js, packages/svelte/src/internal/client/dom/elements/custom-element.js, packages/svelte/src/reactivity/map.js, packages/svelte/src/reactivity/set.js, packages/svelte/src/reactivity/url-search-params.js, packages/svelte/src/reactivity/url.js
+   e.g. packages/svelte/scripts/process-messages/templates/compile-errors.js: InternalCompileError.toString -> Error.toString (c=0.5)
+   e.g. packages/svelte/src/compiler/errors.js: InternalCompileError.toString -> Error.toString (c=0.5)
+   e.g. packages/svelte/src/internal/client/dom/elements/custom-element.js: SvelteElement.addEventListener -> HTMLElement.addEventListener (c=0.5)
+   e.g. packages/svelte/src/internal/client/dom/elements/custom-element.js: SvelteElement.removeEventListener -> HTMLElement.removeEventListener (c=0.5)
+   e.g. packages/svelte/src/reactivity/map.js: SvelteMap.has -> Map.has (c=0.5)
+
+--- instantiates (140 edges) ---
+   confidence: 0.95:140
+   evidenceClass/reasonCode: structural:140
+   files: benchmarking/utils.js, packages/svelte/scripts/process-messages/templates/compile-errors.js, packages/svelte/scripts/process-messages/templates/compile-warnings.js, packages/svelte/src/compiler/errors.js, packages/svelte/src/compiler/migrate/index.js, packages/svelte/src/compiler/phases/1-parse/acorn.js, packages/svelte/src/compiler/phases/1-parse/index.js, packages/svelte/src/compiler/phases/1-parse/state/element.js
+   e.g. benchmarking/utils.js: with_cpu_profile -> Session (c=0.95)
+   e.g. packages/svelte/scripts/process-messages/templates/compile-errors.js: constructor -> CompileDiagnostic (c=0.95)
+   e.g. packages/svelte/scripts/process-messages/templates/compile-errors.js: e -> InternalCompileError (c=0.95)
+   e.g. packages/svelte/scripts/process-messages/templates/compile-warnings.js: w -> InternalCompileWarning (c=0.95)
+   e.g. packages/svelte/src/compiler/errors.js: constructor -> CompileDiagnostic (c=0.95)
+
+=== GRAMMAR-LEVEL CONSTRUCT CENSUS (independent of the analyzer) ===
+AST nodes visited: 525063
+class_declaration: 53   class expression: 8
+class_heritage (the ONLY construct an `extends` edge can come from): 13
+distinct heritage bases: 9 -> Error, CompileDiagnostic, Date, Map, ReactiveValue, Set, URLSearchParams, URL, HTMLButtonElement
+classes with an in-file declared base: 0
+in-file same-name member matches (the population `overrides` could be derived from): 0
+node types containing "implements"/"interface": (none, in any file)
+import_statement: 5865   export_statement: 4676
+CJS require(): 0   module.exports assignment: 0
+new_expression: 1103   call_expression: 32270
+instanceof checks: 31   decorator nodes: 0   jsx elements: 0
+private #members: 46   accessors: 58   static members: 15
+
+wrote /tmp/opencode/js-svelte.json

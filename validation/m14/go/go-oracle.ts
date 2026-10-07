@@ -44,6 +44,17 @@ const WANT = Number(process.argv[2] || 140)
 const CORPUS_ROOT = process.argv[3] || "$HOME/fixtures/repositories/go-stdlib"
 const ENUM_VALUES: string[] = [...new Set(Object.values(RelationshipType))]
 const OFF_ENUM_IMPORTS = "imports"
+// `src/ast/types.ts` was corrected on 2026-10-05: `Imports` read
+// `"brain_import"` and now reads `"imports"`. `OFF_ENUM_IMPORTS` was the
+// workaround for the old divergence — the analyzer emitted a string that was not
+// an enum value, so the oracle kept a separate bucket for it. The correction
+// makes that string an enum value, so `[...ENUM_VALUES, OFF_ENUM_IMPORTS]` now
+// contains `"imports"` TWICE and every imports row was compared and counted
+// twice: the 400-file run reported oracle 2608 / analyzer 2608 / agree 2608
+// where the pre-correction run reported 1304 / 1304 / 1304. Deduplicating the
+// iteration list is the whole fix; the two sides are each deduped separately, so
+// agreement was never wrong — only the counts were doubled.
+const TYPES_ITERATED: string[] = [...new Set([...ENUM_VALUES, OFF_ENUM_IMPORTS])]
 
 type Edge = [string, string]
 
@@ -689,7 +700,7 @@ async function main(): Promise<void> {
   const sample = [...strideSample(lib, libWant), ...strideSample(test, WANT - libWant)]
 
   const perType: Record<string, { oracleTotal: number; analyzerTotal: number; agree: number; oracleOnly: number; analyzerOnly: number; oracleOnlyFiles: string[]; analyzerOnlyFiles: string[] }> = {}
-  for (const v of [...ENUM_VALUES, OFF_ENUM_IMPORTS]) {
+  for (const v of TYPES_ITERATED) {
     perType[v] = { oracleTotal: 0, analyzerTotal: 0, agree: 0, oracleOnly: 0, analyzerOnly: 0, oracleOnlyFiles: [], analyzerOnlyFiles: [] }
   }
   let compared = 0
@@ -742,7 +753,7 @@ async function main(): Promise<void> {
       if (ty === "instantiates") instantiatesEdges.add(`${src}|${dst}`)
     }
 
-    for (const ty of [...ENUM_VALUES, OFF_ENUM_IMPORTS]) {
+    for (const ty of TYPES_ITERATED) {
       const o = dedupe(oracle.edges.get(ty) || [])
       const a = dedupe(analyzerByType.get(ty) || [])
       const oSet = new Set(o.map(key))
@@ -774,20 +785,20 @@ async function main(): Promise<void> {
   L(`shared-grammar caveat: this oracle walks the SAME wasm through the SAME Node API,`)
   L(`so a grammar or binding defect both paths share is invisible here. It can refute, not confirm.`)
   L("")
-  for (const ty of [...ENUM_VALUES, OFF_ENUM_IMPORTS]) {
+  for (const ty of TYPES_ITERATED) {
     const s = perType[ty]
     const denom = s.oracleTotal + s.analyzerOnly
     const recall = denom > 0 ? s.agree / denom : -1
-    L(`${(ty === OFF_ENUM_IMPORTS ? `${ty} (off-enum)` : ty).padEnd(22)} oracle ${String(s.oracleTotal).padStart(6)}  analyzer ${String(s.analyzerTotal).padStart(6)}  agree ${String(s.agree).padStart(6)}  oracle-only ${String(s.oracleOnly).padStart(5)}  analyzer-only ${String(s.analyzerOnly).padStart(5)}  recall ${recall < 0 ? "n/a" : recall.toFixed(3)}`)
+    L(`${ty.padEnd(22)} oracle ${String(s.oracleTotal).padStart(6)}  analyzer ${String(s.analyzerTotal).padStart(6)}  agree ${String(s.agree).padStart(6)}  oracle-only ${String(s.oracleOnly).padStart(5)}  analyzer-only ${String(s.analyzerOnly).padStart(5)}  recall ${recall < 0 ? "n/a" : recall.toFixed(3)}`)
   }
   L("")
   L("oracle-only examples (analyzer MISSED these):")
-  for (const ty of [...ENUM_VALUES, OFF_ENUM_IMPORTS]) {
+  for (const ty of TYPES_ITERATED) {
     for (const s of perType[ty].oracleOnlyFiles) L(`  ${ty}: ${s}`)
   }
   L("")
   L("analyzer-only examples (analyzer PUBLISHED these, oracle did not expect):")
-  for (const ty of [...ENUM_VALUES, OFF_ENUM_IMPORTS]) {
+  for (const ty of TYPES_ITERATED) {
     for (const s of perType[ty].analyzerOnlyFiles) L(`  ${ty}: ${s}`)
   }
   L("")
