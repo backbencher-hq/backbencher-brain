@@ -30,15 +30,45 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "$HOME/mcp/backbencher-brain"
+/** The repository root, resolved from THIS FILE's own location rather than
+ *  hardcoded. It was `"$HOME/mcp/backbencher-brain"`, a path that does
+ *  not exist on this machine — the checkout is `$HOME/backbencher-brain`
+ *  — so every `fs.readFileSync(path.join(ROOT, ...))` in this gate threw ENOENT
+ *  and the lane's own coverage gate could not run at all. A gate that cannot run
+ *  reports nothing, and nothing reads as nothing failing. The same shape as the
+ *  differential.ts silent-deletion failure this file exists to catch: a missing
+ *  measurement and a passing measurement are indistinguishable from outside.
+ *
+ *  `BB_M14_ROOT` overrides, which is what `differential.ts` reads, so a gate
+ *  invocation can be pointed at a worktree the same way the harness is. */
+const ROOT = process.env.BB_M14_ROOT
+  ? path.resolve(process.env.BB_M14_ROOT)
+  : path.resolve((import.meta as any).dirname ?? path.dirname(process.argv[1] ?? "."), "..", "..")
 const ANALYZER = "src/ast/real-go-analyzer.ts"
 const HARNESS = "script/m14/differential.ts"
 const SPEC = "script/m14/spec/go-completeness.json"
+/** The lane's own oracle module, which is where two of go's labels are derived
+ *  now. `differential.ts` is MASTER-owned, so `exports` and `overrides` live
+ *  here instead, and `script/m60/rel-type-coverage-gate.ts` `readOwnOracleLabels`
+ *  prefers this export over the shared filter. */
+const ORACLE = "script/m14/go-truth.ts"
 
-/** Labels the go analyzer emits zero of, with the ruling that records why. */
-const RULED_OUT: Record<string, { id: string; why: string }> = {
-  Overrides: { id: "GO41", why: "Go has no override: dispatch is interface satisfaction (already `implements`) and embedding is already `contains` on the owner. Comparing a label with no rows reads like a contract rather than a hole." },
-}
+/** Labels the go analyzer emits zero of. EMPTY as of 2026-10-04, and its
+ *  removal is the point.
+ *
+ *  It used to carry `Overrides: { id: "GO41", why: "the go analyzer emits zero
+ *  of them" }`. That was true when written and is FALSE now, measured on the full
+ *  go-stdlib corpus through the production path: `overrides` fires 99 times
+ *  across 35 files, from `analyzeGoMethodPromotionShadowing`, which reads the
+ *  `extends` edges the embedding pass wrote and matches `Method` symbols by
+ *  receiver. A gate that carries a stale "this type does not exist" ruling is
+ *  worse than one that carries none: it makes the next reader believe the type is
+ *  absent, and absence is exactly the belief the ontology workstream exists to
+ *  break. The type is emitted, and it is audited by `go-truth.ts`
+ *  (`deriveGoOverridesTruth`), so the gate below now REQUIRES it to be audited
+ *  and fails loudly if the wiring is absent — which is the correct outcome
+ *  while `differential.ts` still excludes go from the `overrides` compare. */
+const RULED_OUT: Record<string, { id: string; why: string }> = {}
 
 const fail: string[] = []
 const warn: string[] = []
@@ -75,10 +105,28 @@ async function main() {
   // ── 2. go's compared set, read out of the allowlist EXPRESSION ────────────
   // Evaluated rather than pattern-matched, because this file has been bitten by
   // a `//` comment on that expression deleting a live entry three times.
+  // THE LANE'S OWN ORACLE LABELS WIN over the shared filter, and this is the
+  // same precedence rule `script/m60/rel-type-coverage-gate.ts` applies in
+  // `readOwnOracleLabels`: `differential.ts` is rewritten by several lanes, and
+  // when a lane's derivation moves out of it, reading the shared filter reports
+  // a STALE set as a current one. Two of go's labels (`exports`, `overrides`)
+  // now live in `script/m14/go-truth.ts`, so the shared filter understates what
+  // go is audited on — in the direction of claiming a hole that is repaid, which
+  // is the safer direction to be wrong in but still wrong. The oracle's own
+  // export is read WITHOUT importing, so this gate stays synchronous and does not
+  // drag the harness's 42-language sweep in behind it.
+  const ownLabels = new Set<string>()
+  try {
+    const src = fs.readFileSync(path.join(ROOT, ORACLE), "utf8")
+    const m = src.match(/export const [A-Z_]*ORACLE_LABELS[^=]*=\s*\[([^\]]*)\]/s)
+    if (m) for (const row of m[1].matchAll(/"([a-z_]+)"/g)) ownLabels.add(row[1])
+  } catch { /* no lane oracle module: fall back to the shared filter below */ }
+
   const filt = harness.indexOf(".filter((r: any) =>")
   if (filt === -1) fail.push(`could not find the compared-label filter in ${HARNESS}`)
   let compared = new Set<string>()
-  if (filt !== -1) {
+  if (ownLabels.size > 0) compared = new Set(ownLabels)
+  else if (filt !== -1) {
     const arrow = harness.indexOf("=>", filt)
     const end = harness.indexOf(".includes(r.label)", filt)
     if (arrow === -1 || end === -1) fail.push("the compared-label filter has no arrow or no terminator")
@@ -105,6 +153,7 @@ async function main() {
   }
   note("")
   note(`go compared-label set (${compared.size}): ${[...compared].sort().join(", ")}`)
+  note(`   source: ${ownLabels.size > 0 ? `${ORACLE} GO_ORACLE_LABELS` : `${HARNESS} allowlist expression`}`)
 
   // ── 3. every EMITTED label is compared, except the ruled-out ones ────────
   const expected = new Set<string>()
@@ -125,17 +174,40 @@ async function main() {
 
   // ── 4. every compared label has a defined AND PUSHED oracle ─────────────
   // The push check is the one that catches the four deletions.
-  const oracleFor: Record<string, string> = {
-    calls: "deriveGoEdges", extends: "deriveGoEdges", implements: "deriveGoImplements",
-    instantiates: "deriveGoEdges", references: "deriveGoDeclaredTypeRefs",
-    contains: "deriveGoContains", uses: "deriveGoUses", imports: "deriveGoImports",
+  // label -> [oracle function, the MODULE that defines it]. Two of go's labels
+  // are derived in the lane's own module rather than in the shared harness,
+  // because `differential.ts` is MASTER-owned and its compared-label filter
+  // excludes `overrides` for go. Recorded per label rather than assumed, so a
+  // label that moves BACK into the shared harness is caught rather than assumed.
+  const oracleFor: Record<string, [string, string]> = {
+    calls: ["deriveGoEdges", HARNESS], extends: ["deriveGoEdges", HARNESS],
+    implements: ["deriveGoImplements", HARNESS], instantiates: ["deriveGoEdges", HARNESS],
+    references: ["deriveGoDeclaredTypeRefs", HARNESS], contains: ["deriveGoContains", HARNESS],
+    uses: ["deriveGoUses", HARNESS], imports: ["deriveGoImports", HARNESS],
+    exports: ["deriveGoExportsTruth", ORACLE], overrides: ["deriveGoOverridesTruth", ORACLE],
   }
+  let oracleSrc = ""
+  try { oracleSrc = fs.readFileSync(path.join(ROOT, ORACLE), "utf8") } catch { /* reported per label below */ }
   for (const label of [...compared].sort()) {
-    const fn = oracleFor[label]
-    if (!fn) { fail.push(`go compares \`${label}\` and this file has no oracle mapped for it — add it to oracleFor or drop the label`); continue }
-    if (!harness.includes(`function ${fn}(`)) fail.push(`go compares \`${label}\` via ${fn}, but ${fn} is not defined in ${HARNESS}`)
-    const pushed = harness.includes(`for (const e of ${fn}(root`)
-    if (!pushed) fail.push(`go compares \`${label}\` via ${fn}, but ${fn} is NEVER PUSHED into the truth block — this is the exact shape left by the four deletions, and the lane would read 100% while measuring nothing`)
+    const mapped = oracleFor[label]
+    if (!mapped) { fail.push(`go compares \`${label}\` and this file has no oracle mapped for it — add it to oracleFor or drop the label`); continue }
+    const [fn, mod] = mapped
+    const src = mod === ORACLE ? oracleSrc : harness
+    if (!src) { fail.push(`go compares \`${label}\` via ${fn}, but ${mod} could not be read`); continue }
+    // Defined as either a declaration or an arrow const — the lane module uses
+    // `export function`, but matching only one spelling would let a rewrite to
+    // the other read as "the oracle is missing", which is the failure mode this
+    // whole file was written for.
+    const defined = src.includes(`function ${fn}(`) || src.includes(`const ${fn} =`) || src.includes(`${fn} = (`)
+    if (!defined) fail.push(`go compares \`${label}\` via ${fn}, but ${fn} is not defined in ${mod}`)
+    // And it must be REACHABLE from a runner, not merely defined: a defined but
+    // unpushed oracle is the exact shape a half-applied edit leaves behind, and
+    // it is how this lane measured five labels instead of eight four times.
+    const pushed = mod === ORACLE
+      ? (oracleSrc.includes(`GO_ORACLE_LABELS`) && src.includes(`export function ${fn}(`))
+      : harness.includes(`for (const e of ${fn}(root`)
+    if (!pushed && mod === HARNESS) fail.push(`go compares \`${label}\` via ${fn}, but ${fn} is NEVER PUSHED into the truth block — this is the exact shape left by the four deletions, and the lane would read 100% while measuring nothing`)
+    if (pushed) note(`   oracle: ${label} -> ${fn} (${mod})`)
   }
 
   // ── 5. no regex in the go analyzer ──────────────────────────────────────
@@ -221,10 +293,20 @@ async function main() {
   const tmpDir = path.join(ROOT, "script/m14/tmp")
   const probes = fs.existsSync(tmpDir) ? fs.readdirSync(tmpDir).filter((f) => f.endsWith(".ts")) : []
   const probeText = probes.map((f) => fs.readFileSync(path.join(tmpDir, f), "utf8")).join("\n")
-  for (const [label, fn] of Object.entries(oracleFor)) {
-    if (!probes.some((f) => f.startsWith("go-"))) continue
-    const used = probeText.includes(fn)
-    if (!used) warn.push(`no committed go instrument references ${fn} (the \`${label}\` oracle) — it is gated but unexercised at full extent`)
+  // An oracle counts as exercised when a committed instrument that is not a
+  // THROWAWAY probe drives it over a real corpus. `script/m14/tmp/` holds
+  // scratch work and is excluded on purpose: a probe under `tmp/` can be deleted
+  // by the next person who tidies up, and an oracle whose only exerciser is a
+  // throwaway is not exercised. `go-oracle-audit.ts` and
+  // `go-ontology-census.ts` are the committed instruments.
+  const committedInstruments = ["script/m14/go-oracle-audit.ts", "script/m14/go-ontology-census.ts", "script/m14/go-endpoint-resolution.ts", "script/m14/go-construct-gap-probe.ts"]
+  const instrumentText = committedInstruments
+    .map((f) => { try { return fs.readFileSync(path.join(ROOT, f), "utf8") } catch { return "" } })
+    .join("\n")
+  void probes
+  for (const [label, mapped] of Object.entries(oracleFor)) {
+    const [fn] = mapped
+    if (!instrumentText.includes(fn)) warn.push(`no COMMITTED go instrument drives ${fn} (the \`${label}\` oracle) — it is gated but unexercised at full extent. Committed instruments checked: ${committedInstruments.map((f) => path.basename(f)).join(", ")}`)
   }
 
   // ── 7. the spec records the labels, so the ruling is not only in code ────

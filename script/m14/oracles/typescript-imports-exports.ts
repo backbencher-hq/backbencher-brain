@@ -60,7 +60,32 @@ function stringContent(node: any): string | undefined {
   const inner = text.slice(1, -1)
   // Only the escapes that change WHICH module or name is named. `\n` in a path is
   // not a thing, and decoding it would invent a module that no specifier names.
-  return inner.replace(/\\(.)/g, (_m, c: string) => (c === "n" ? "\n" : c === "t" ? "\t" : c))
+  //
+  // Written as an explicit scan rather than `inner.replace(/\\(.)/g, ...)`: the
+  // lane runs under a standing rule of NO REGEX anywhere in its analyzer, census
+  // scripts and oracles, and this was the only one left in this file. The scan
+  // reads the same language as the pattern it replaces — a backslash consumes the
+  // next character, and an unrecognised escape yields that character itself —
+  // and a trailing lone backslash is carried through rather than dropped, which
+  // is what a replace-with-no-match would also do.
+  let out = ""
+  for (let i = 0; i < inner.length; i++) {
+    const c = inner[i]
+    if (c !== "\\") {
+      out += c
+      continue
+    }
+    const next = inner[i + 1]
+    if (next === undefined) {
+      out += c
+      continue
+    }
+    if (next === "n") out += "\n"
+    else if (next === "t") out += "\t"
+    else out += next
+    i++
+  }
+  return out
 }
 
 /** The first `string` child of a node, which is where a specifier lives. */

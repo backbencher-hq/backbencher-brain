@@ -339,6 +339,26 @@ const R1 = cls("R1", "REPORTED, not gated: a class/struct node that ends before 
   false)
 
 /**
+ * R16: two DIFFERENT LABELS on one (source, target) pair. Reported, not gated.
+ *
+ * This is the measurement D3's key change moves rather than deletes. Each label
+ * has its own pair space — `contains X->m` is ownership, `references X->m` is a
+ * declaration that mentions the type `m`, `calls X->m` is a call — so one pair
+ * carrying several labels is several TRUE facts, not a duplicate row. #917 gave
+ * `references` a second construct (the declared-type graph), which is what
+ * first produced these; measured 47 across 38 distinct pairs over 587 files,
+ * against 0 under the (source,type,target) key both before and after.
+ *
+ * Reported rather than gated because the honest reading is not yet decided: a
+ * consumer asking "does X own m" gets one answer and a consumer asking "what
+ * types does X's declaration mention" gets another, and whether a surface should
+ * see both is a question for the graph contract, not for a defect register.
+ */
+const R16 = cls("R16", "REPORTED, not gated: two labels on one (source, target) pair",
+  "Each relationship label has its own pair space, so this is several true facts rather than a duplicate row. See D3's key note for the two-key measurement. Gating it would mean inventing a rule about which labels may share a pair, and no such rule is written down anywhere in the project.",
+  false)
+
+/**
  * D13: a read inside a friend function DEFINITION is attributed to the enclosing class.
  *
  * Stated HERE, independently of the analyzer's three D13 helpers
@@ -570,13 +590,42 @@ for (const repo of REPOS) {
       }
     }
     // D3 — contains + references only, per file. `calls` excluded by contract.
+    //
+    // THE KEY IS (source, TYPE, target), and that is the lane's OWN documented
+    // correction, not a preference. `real-cpp-analyzer.md` records: "The first cut
+    // of the defect register conflated the two and reported 29,708 duplicates;
+    // the corrected measurement is 928, and the distinction is pinned by
+    // `cpp/one-edge-per-pair-959`". A pair is one fact only WITHIN a label —
+    // `sax_event_consumer contains string` (the class has a member named
+    // `string`) and `sax_event_consumer references string` (a member DECLARED
+    // with type `string`) are two facts about the same two names, and each
+    // label has its own pair space, which is how the analyzer dedups them.
+    //
+    // Measured 2026-10-05 over 587 derived files (cpp-example + cpp-sample), on
+    // the same tree and with the two keys side by side:
+    //     BASE (2d09ef5d3)   tight 0   loose 0
+    //     HEAD (#917)        tight 0   loose 47 across 38 distinct pairs
+    // Every one of the 47 is a CROSS-LABEL pair, and #917 is what created the
+    // second label — so a loose key turns a new, true edge into a gate failure.
+    // The cross-label measurement is not thrown away: it is R16 below, reported
+    // and not gated, so the new information is visible rather than silenced.
     const pairN = new Map<string, number>()
+    const labelPairN = new Map<string, Set<string>>()
     for (const x of (r.relationships ?? []) as any[]) {
       if (x.type !== "contains" && x.type !== "references") continue
-      const k = `${x.source} ${x.target}`
+      const k = `${x.source} ${x.type} ${x.target}`
       const n = (pairN.get(k) ?? 0) + 1
       pairN.set(k, n)
       if (n === 2) add(D3, `${x.type}:${x.source}->${x.target}`, { repo, file: rel, line: x.line_number, source: x.source, target: x.target })
+      const pk = `${x.source} ${x.target}`
+      let labels = labelPairN.get(pk)
+      if (!labels) { labels = new Set(); labelPairN.set(pk, labels) }
+      labels.add(x.type)
+    }
+    for (const [pk, labels] of labelPairN) {
+      if (labels.size < 2) continue
+      const parts = pk.split(" ")
+      add(R16, [...labels].sort().join("+") + ":" + parts[0] + "->" + parts.slice(1).join(" "), { repo, file: rel, labels: [...labels].sort() })
     }
     // D7 — assert on the OUTPUT: no specifier that carries a name in the grammar
     // may be published under the `anonymous` sentinel, and a displaced enum name
@@ -807,7 +856,7 @@ for (const repo of REPOS) {
       pendingAnon.length = 0
     }
   }
-  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} D8=${D8.n} D9=${D9.n} D10=${D10.n} D11=${D11.n} D13=${D13.n} D14=${D14.n} D15=${D15.n} R1=${R1.n} R2=${R2.n}\n`)
+  process.stderr.write(`${repo} done files=${files} R16=${R16.n} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} D8=${D8.n} D9=${D9.n} D10=${D10.n} D11=${D11.n} D13=${D13.n} D14=${D14.n} D15=${D15.n} R1=${R1.n} R2=${R2.n}\n`)
 }
 
 // D10 — the engine's own byte cap. Counted by the engine, not by this script, so
@@ -828,16 +877,81 @@ try {
 // D6 — the analyzer's own source, by the same shape the repo's census records.
 try {
   const src = readFileSync(path.join(process.cwd(), "src/ast/real-cpp-analyzer.ts"), "utf8")
+  // COMMENTS ARE NOT CODE, and a line scanner that cannot tell the difference
+  // reports the same false positive twice over. Measured on 2026-10-05: two
+  // one-line `/** … */` doc comments in real-cpp-analyzer.ts read to the previous
+  // scanner as two regex literals — `/** Nodes whose `type` FIELD is a
+  // declaration's type. */` is `/ … /` as far as it is concerned — and took D6
+  // from 0 to 2 in a file that contains no regex at all. That is the failure
+  // mode the M12 census header already names for the text-scan predecessor
+  // ("a gate that reports 187 where the truth is 5 trains its readers to ignore
+  // it"), one class smaller.
+  //
+  // So: a line inside a block comment, or a comment-only line, contributes
+  // NOTHING. What remains scanable is a line with code on it, which is exactly
+  // what the contract claims to measure ("the analyzer's own source uses a
+  // regex"). The state machine below is a character walk, not a regex.
   const hits: any[] = []
-  src.split("\n").forEach((l, i) => {
-    const m = l.match(/\/(?:[^/\\\n]|\\.)+\/[gimsuy]*/g)
-    if (!m) return
-    for (const mm of m) {
-      const at = l.indexOf(mm)
-      const before = l.slice(0, at).trimEnd().slice(-1)
-      if (at === 0 || /[(,=:[!&|?{};+\-*%<>~^]$/.test(before)) hits.push({ line: i + 1, source: mm, text: l.trim().slice(0, 90) })
+  let inBlock = false
+  const lines = src.split("\n")
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i]
+    // strip a block comment span and a line comment, keeping CODE only
+    let code = ""
+    let j = 0
+    while (j < raw.length) {
+      if (inBlock) {
+        if (raw.charCodeAt(j) === 42 && raw.charCodeAt(j + 1) === 47) { inBlock = false; j += 2; continue }
+        j++
+        continue
+      }
+      const c0 = raw.charCodeAt(j)
+      const c1 = raw.charCodeAt(j + 1)
+      if (c0 === 47 && c1 === 47) break // `//` to end of line
+      if (c0 === 47 && c1 === 42) { inBlock = true; j += 2; continue } // `/*`
+      if (c0 === 34 || c0 === 39 || c0 === 96) {
+        // copy a string/template literal verbatim so a `/` inside it is not code
+        const q = raw[j]
+        code += q; j++
+        while (j < raw.length) {
+          if (raw.charCodeAt(j) === 92) { code += raw[j] + (raw[j + 1] ?? ""); j += 2; continue }
+          code += raw[j]
+          if (raw[j] === q) { j++; break }
+          j++
+        }
+        continue
+      }
+      code += raw[j]; j++
     }
-  })
+    if (!code.trim()) continue
+    // the literal scan itself, unchanged in shape: a `/` that opens a body and a
+    // `/` that closes it, with optional flags
+    let k = 0
+    while (k < code.length) {
+      if (code[k] !== "/") { k++; continue }
+      let body = ""
+      let m = k + 1
+      let closed = false
+      while (m < code.length) {
+        const ch = code[m]
+        if (ch === "\\") { body += ch + (code[m + 1] ?? ""); m += 2; continue }
+        if (ch === "\n") break
+        if (ch === "/" && body.length > 0) { closed = true; break }
+        body += ch; m++
+      }
+      const before = code.slice(0, k).trimEnd().slice(-1)
+      const opens = k === 0 || "([,=:[!&|?{};+-*%<>~^".includes(before)
+      if (closed && opens && body.length > 0 && body !== "*") {
+        let flags = ""
+        let f = m + 1
+        while (f < code.length && "gimsuy".includes(code[f])) { flags += code[f]; f++ }
+        hits.push({ line: i + 1, source: "/" + body + "/" + flags, text: raw.trim().slice(0, 90) })
+        k = f
+        continue
+      }
+      k++
+    }
+  }
   D6.n = hits.length
   D6.sites = hits.slice(0, SAMPLE)
 } catch { D6.n = -1 }
