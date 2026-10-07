@@ -459,3 +459,185 @@ gate: no regressions`), `bash script/m14/no-regex-gate.sh` exit 0 (0 usages),
 `npx tsc --noEmit` exit 0, `npm run build` exit 0, `npm run typecheck:scripts` 716 errors
 against a 717-error baseline with 0 new. That last gate **fails before this pass and
 still fails** — it is listed so a later reader does not attribute it to these three files.
+
+---
+
+## 11. Third pass, 2026-10-07: the loss surface as objects, and the analyzer/doc answer
+
+§10 measured commits and paths. This pass asks the question the owner actually asked —
+*what would be lost* — and answers it with an instrument, not an argument:
+`script/m14/preservation-audit.py` (re-runnable; `PRESERVATION_AUDIT_OUT=<path>` writes
+the JSON behind these tables). Two questions, because a commit that touches a path later
+than main is not content main lacks.
+
+### 11.1 Reachability: what is here and nowhere else
+
+```
+non-commit objects reachable from all local refs (212 heads, 244 refs/original,
+    1 refs/rescue, 26 tags, 2 remotes)                       96,470
+non-commit objects reachable from origin (main + 4 archive tags) 96,165
+only here                                                        305
+  ... of which trees                                             285
+  ... of which blobs                                              20  at 17 file paths
+```
+
+The 20 blobs are the whole answer to "what would vanish if this checkout did":
+
+| blobs | paths | what they are |
+|---|---|---|
+| 19 | 16 | the java census dumps of §10.1 — 344.6 MB, which `e759f0322` ("untrack 326 MB of generated M60 census output — it blocked the push") and `6faf9bd52` removed from tracking on 2026-10-04 before the rewrite removed them from main's history |
+| 1 | 1 | `src/ast/real-c-analyzer.ts` blob `91cefd0760` |
+
+The 285 trees are the pre-rewrite lineage's own trees; every blob they reference is either
+on origin or one of these 20, so they carry no content of their own. Packed, the 305
+objects weigh **273.8 MB** — that number decides 11.6 item 1.
+
+### 11.2 The one off-origin analyzer revision cannot lose anything
+
+`91cefd0760` is `refs/rescue/PERL4/real-c-analyzer-wip` (commit `8eb6983a8`, 2026-10-04,
+"rescue: real-c-analyzer.ts WIP recovered from an accidental stash pop"), +128/-17 over its
+parent `8b11b3ea89`. It is the only non-census blob in the checkout that no origin ref can
+produce, so it is worth the paragraph:
+
+* its base blob `502a4cd47` **is** reachable from origin — checked, not assumed;
+* of the 127 lines its commit added, **126 are present verbatim in main's
+  `real-c-analyzer.ts` under its own numbering**, and the 127th is the same condition it
+  re-wrapped across four lines;
+* the substance is the C3 marker-class rule: `EXPORT_BOUNDARY_WORDS` (main line 230),
+  `isExportMarker` (main line 240), applied at main line 3234 — and main carries the
+  `#989` `linkageMarkerNames` work that this rescue predates.
+
+So the rescue is a snapshot of a rule main holds, taken before main finished it. Nothing
+is dropped by leaving it where it is.
+
+### 11.3 Per-file accounting: every analyzer revision and every doc revision
+
+Every blob revision of a path, across every local ref, against the object set origin can
+produce:
+
+| population | files | distinct revisions | off-origin |
+|---|---|---|---|
+| `src/ast/real-*-analyzer.ts` | 48 | 1,402 | **1** (11.2) |
+| `docs/**` | 287 | 2,276 | **0** |
+
+And the same population answered the landing way — is the newest revision of each path
+the one main has? For every `src/ast/real-*-analyzer.ts` that appears at all, the answer is
+yes: the newest revision **is** main's blob (11 paths, plus `taint-analyzer.ts` and the
+`worktree-snapshots/**` copies). The only `src/**` paths where a branch side holds lines
+main lacks are six files from the 2026-10-01 archive snapshot `640cb93c6`
+(`tool-registry.ts`, `edit-engine.ts`, `visualization-engine.ts`,
+`cross-language-migration-assistant.ts`, `dependency-graph-visualizer.ts`) and
+`src/ast/pool-worker.ts` from `a31cfea84` — snapshot carriers, not lane revisions.
+
+### 11.4 The paths whose newest revision is not main's newest commit
+
+3,975 paths, in seven verdicts. "Branch side later" compares committer dates, so a
+snapshot that merely has a later date is not thereby newer work:
+
+| verdict | paths | branch side later | meaning |
+|---|---|---|---|
+| in-sync | 2,367 | — | the later commit carries the blob main has: nothing to land |
+| absent-both | 510 | — | the newest commit touching the path deleted it, on both sides: renames |
+| not-on-main | 942 | 873 | main never had the path; a ref has it. 840 are `script/**`\+`validation/m14/**` probes, dumps and `tmp/`, 66 are `wasm/wasm/**` from a snapshot, 98 are root-level dumps and logs |
+| deleted-branch | 13 | 0 | main has it, the branch removed it: not a loss |
+| superseded-stale | 10 | — | main's blob strictly contains the branch blob (`numstat` deletions 0 the other way) |
+| **strict-extension** | **2** | 1 | the branch blob adds lines and drops none |
+| diverged | 131 | 54 | both sides hold lines the other lacks |
+
+The two strict extensions are the entire additive backlog: `script/m14/clojure-truth.ts`
+(+150/-0, the CLJ-D64 `overrides` oracle §10.3 refused on a `TS2345`) and
+`script/m14/tmp/scala-ovr-2side.ts` (+6/-0, inside `tmp/`). Of the 131 diverged, 77 are from
+before main's last touch of the path; the 54 that are later are dominated by `tmp/` probes,
+the six pins §10.3 already measured and refused, four `*.expectation.json` pins not yet
+measured, three `script/m14/spec/*-completeness.json`, and the stale java replica
+`1e88c7279` (`mutate-analyzer.ts`, `differential.ts`).
+
+**The subset that is analyzer work, not probe debris**, named here so the next fold does
+not have to re-derive it:
+
+* **19 fixture pins main never had** — `clojure/{decl-name,exports,override,qualified-type}`,
+  `cpp/{declared-type-references-917,imports-edge-917,qualified-alias-917}`,
+  `csharp/{ctor-init-callee,error-baselist-heritage,preproc-baselist-heritage}`,
+  `erlang/{evidence-class-er3,export-all-er4,export-all-negative-er4}`,
+  `rust/{nested-group-import-paths,struct-variant-fields}`,
+  `python/protocol-conformance`, `ruby/ontology-factory-and-names`,
+  `c/exports-visibility-attribute-992`, `objc/ontology-imports-and-exports`. A pin is a
+test: if main's analyzer already emits the construct it passes and strengthens the corpus;
+if it does not, it fails and the baseline gate counts it, which is why each one has to be
+run scoped before it lands. That is the next fold, and it is mechanical.
+* **17 instruments main never had**, none of them under `tmp/`: rust 7
+  (`rust-truth.ts`, `rust-oracle-census.mts`, `rust-oracle-audit.ts`,
+  `rust-instantiates-probe.mts`, `rust-struct-variant-probe.mts`,
+  `rust-import-path-probe.mts`, `rust-nested-group-probe.mts`), csharp 4
+  (`csharp-ontology-verdicts.ts`, `csharp-corpus-kind-index.ts`,
+  `csharp-overrides-labelling-probe.ts`, `csharp-preproc-baselist-probe.ts`), clojure 2
+  (`clojure-ontology-truth.ts`, `clj-ontology-gate.ts`), typescript 3
+  (`ts-callee-shape-probe.mts`, `ts-callee-unwrap-differential.mts`,
+  `ts-lane-firing-check.mjs`), svelte 1 (`svelte-firing-census.ts`, which is 0 bytes on the
+  remote — noted in §9's pass, still 0).
+* **1 doc main never had**: `docs/analyzers/INCOMING-RUST-AUDIT.md` (7,404 B, `31cf5cf89`,
+  2026-10-06). The two other docs §8 listed as unlanded are renames, not gaps: main's
+  `real-julia-analyzer.md` says "renamed from `julia.md`, 2026-10-03" and
+  `real-make-analyzer.md` names its own old `real-makefile-analyzer.md`; `DOC-TRUTH-EMISSIONS.md:95`
+  records the second one's absence on purpose. One stale citation is left over from the
+  julia rename — `docs/indexing/performance.md:54` cites `docs/analyzers/julia.md:166` —
+  which is prose debt, not lost work.
+
+### 11.5 Recovery, as commands, for anything above
+
+```
+# a path as of the archive tag, or as of any recorded branch tip (the TSV holds the SHA)
+git show archive/all-lanes-2026-10-07:<path>
+git show <sha-from-REMOTE-REFS-2026-10-07.tsv>:<path>
+git ls-tree -r --name-only <sha> | grep '<name>'      # find where a path lived
+
+# recreate a deleted branch under its own name
+git push origin <sha>:refs/heads/<name>
+
+# the one blob no origin ref can produce
+git cat-file blob 91cefd0760 > /tmp/real-c-analyzer.rescue.ts
+
+# the account behind this section, re-derived from scratch in ~10s
+python3 script/m14/preservation-audit.py
+PRESERVATION_AUDIT_OUT=/tmp/preservation.json python3 script/m14/preservation-audit.py
+```
+
+### 11.6 What is left, as decisions rather than tasks
+
+1. **The 273.8 MB local-only lineage.** Everything in it is either reproducible (the
+   censuses, from generators on main) or already in main in substance (the C rescue).
+   Options, in the order this note recommends them: leave it local and out of git, since
+   the programme's own commits removed it to unblock a push; or bundle it to a path
+   outside the repository for a copy that survives this checkout; or push a preservation
+   ref to `origin` (a 273.8 MB push of data main deliberately does not carry). This is the
+   owner's call, not a side effect of any pass.
+2. **The 19 pins and 17 instruments** of 11.4 — the concrete answer to "nothing left
+   behind". Each pin is one scoped run; each passing pin is permanent coverage of a
+   construct a lane measured. The instruments land behind
+   `npm run typecheck:scripts`, which fails at 716 today.
+3. **`script/m14/clojure-truth.ts`** — the last strict extension, refused only because
+   main's `TruthEdge` requires `type` and `line` and the branch's `deriveClojureOverridesTruth`
+   fills neither. Adapting it is a small, bounded edit, and it is the clojure lane's
+   `overrides` oracle.
+4. **The elixir lane's 17 declared failures** remain the largest single group (§10.5 item 3).
+
+Verification of this section's landed files is in §12.
+
+## 12. Verification at the commit that lands §11
+
+```
+bun run script/m14/run-fixtures.ts          exit 0   (1447 pins, 136 failing,
+                                                      fixture baseline gate: no regressions)
+bash script/m14/no-regex-gate.sh            exit 0   (0 usages)
+npx tsc --noEmit                            exit 0
+npm run build                               exit 0
+npm run typecheck:scripts                   716 errors, unchanged (the instrument added here
+                                                      is Python and outside tsconfig.scripts)
+```
+
+The suite was run over the tree this section describes, so the four provenance fields of
+`validation/m14/results/M14.0.F3.json` name the parent commit and are re-emitted in the
+second commit of the pair — the same two-step §10 landed with. The instrument itself is
+Python in `script/m14/`, which `tsconfig.scripts.json` does not include, so it cannot move
+the 716-error count in either direction; that is why the count is quoted rather than the
+gate, which fails before this pass and still fails.
