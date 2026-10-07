@@ -298,3 +298,143 @@ side effect of this pass: the censuses are 391 MB uncompressed.
   Unset them (`unset https_proxy http_proxy HTTPS_PROXY HTTP_PROXY all_proxy ALL_PROXY`)
   for anything that talks to `origin`, and check the push landed rather than trusting the
   exit code. `.tools/main-forward-guard.sh` refuses a non-fast-forward push to `main`.
+
+---
+
+## 10. Second pass, 2026-10-07: the measurement at blob level, and what is left to decide
+
+§8 enumerated local branches. This pass asks the same question of **every local ref
+namespace** (heads, tags, `refs/original/**`, `refs/rescue`) against the **actual remote**
+(`git ls-remote origin`: 461 refs, 270 distinct tips) rather than against the local mirror.
+Three results, each re-runnable.
+
+### 10.1 Nothing in this checkout is off `origin` except 16 generated files
+
+```
+local refs (all namespaces)          940
+local-only commits                   931     (reachable from a local ref, from no remote ref)
+  ... whose whole tree is absent     189     (the pre-rewrite `refs/original/**` lineage)
+paths those 189 commits touch        534
+  ... whose NEWEST revision is
+      absent from origin              16
+```
+
+The 16 are `validation/m60/results/java-ontology-census-before.json` (159.9 MB),
+`java-imports-exports-oracle.json` (18.8 MB) and the thirteen
+`java-ontology-shards/s*.json` — **341.5 MB**, all of it generated census data, which the
+programme's rule keeps out of git. Worked example for the `refs/original` class:
+`refs/original/refs/heads/analyzer/ELIXIR4` differs from `origin/analyzer/ELIXIR4` by
+exactly those 16 paths and nothing else, so the filter-branch backup lineage carries no
+lane work that the remote lacks.
+
+Read the other way: **of the 534 paths only local refs touch, 518 have their newest
+revision already on `origin`.**
+
+### 10.2 The archive tag covers every remote ref but `main` itself
+
+Re-measured against `git ls-remote`, not the mirror — one uncovered ref in 461:
+
+```
+NOT COVERED refs/heads/main e2a7fc6c8
+uncovered count: 1
+```
+
+The tag predates the 2026-10-07 landings, so `main` is not its ancestor. Nothing else
+needs it: every other ref on the remote is an ancestor. That is the state a branch
+deletion is judged against — deleting all 456 branches loses no commit, and (per 10.1)
+no blob either.
+
+### 10.3 What of the branch-side content main is behind: 139 paths, and their verdicts
+
+For every path any pushed ref touches, the newest commit that touches it on the branch
+side was compared with main's. **139 paths** are touched later on a branch than on main.
+Comparing **blobs** rather than dates removes most of them:
+
+| | paths | verdict |
+|---|---|---|
+| the branch-side commit carries the **same blob** main has | 80 | nothing to land — the commit is later, the content is identical |
+| lane instruments, `script/**` | 45 | four are strict extensions — three landed, one refused by the compiler (below); 41 diverge |
+| pins, `validation/m14/fixtures/**` | 6 | all measured, all refused (below) |
+| generated measurements/results | 6 | not landed: generated data rule |
+| other | 2 | `node_modules` from a replica snapshot; `M14.0.F6.json` (below) |
+
+**Landed — three revisions that strictly extend what main has** (`git diff --numstat`
+shows additions only, so nothing main carries can be lost):
+
+| path | added | what it is |
+|---|---|---|
+| `script/m14/oracles/python-truth.ts` | +42 | exports `PYTHON_ORACLE_LABELS` so `script/m60/rel-type-coverage-gate.ts` can prefer them over the shared filter |
+| `script/m14/spec/python-completeness.json` | +7 | verdict `PY-D8` — `implements` RULED, with the instruments and the counts behind it |
+| `script/m14/spec/javascript-completeness.json` | +57 | verdicts `JSD33`, `JSD34` — two RULED records and their falsifiers |
+
+The python oracle landing repairs a live import: `script/m14/python-truth.ts:37` asks for
+`PYTHON_ORACLE_LABELS`, which main's copy of that oracle did not export. `npm run
+typecheck:scripts` reads 717 errors before and 716 after — **0 new, 1 fixed**.
+
+**Refused by the compiler gate.** `script/m14/clojure-truth.ts` (+150 lines, the CLJ-D64
+`overrides` oracle) does not compile in main's tree: the new
+`deriveClojureOverridesTruth` pushes `{ source, target }` where `TruthEdge` requires
+`type` and `line` — `TS2345` at `clojure-truth.ts:2349:18`. It is the same class of
+refusal as the 23 analyzer revisions in §6, and it stays on the archive tag.
+
+**Refused by measurement — the six pins.** Each candidate breaks the pin it belongs to
+against main's analyzer, so landing it would convert a PASS into a declared failure:
+
+| pin | lane | candidate result |
+|---|---|---|
+| `csharp/callsite-lines-825` | csharp 24 pins | breaks itself |
+| `csharp/payload-and-complexity` | csharp 24 pins | breaks itself |
+| `html/scope-barriers-and-references` | html 18 pins | breaks itself |
+| `vb/declaration-shapes` | vb 4 pins | breaks itself |
+| `elixir/framework-forms` | elixir 82 pins | breaks itself |
+| `elixir/import-only-forms` | elixir 82 pins | breaks itself |
+
+**Refused by measurement — the three analyzer revisions.** `src/ast/*` had three paths
+where a branch side is later than main: `real-lua-analyzer.ts`, `real-nim-analyzer.ts`,
+`real-sql-analyzer.ts`. Every distinct revision of each file was written to the analyzer
+path and run against its own lane scoped:
+
+| lane | revisions in refs | main | best branch side | result |
+|---|---|---|---|---|
+| lua | 28 | 10/13 | newest six all 10/13 | equal; `797a38204` breaks `lua/override-shapes`, `c79a45b54` breaks that and `lua/extends-supertype` |
+| nim | 20 | 13/13 | newest five all 13/13 | equal; `30b834201` breaks `nim/module-target` |
+| sql | 23 | 17/17 | `e024f1a95` 17/17 | equal; `29d4facdf` breaks `sql/sqld17-unnamed-index`, four older revisions break 6–11 pins |
+
+No revision dominates what main carries, so none was landed — the same rule §2 applied.
+
+**Refused as stale, not as worse.** The large divergences all come from snapshot refs:
+`1e88c7279` (`origin/archive/replica-java-lane-m48-recovery`), `335418a58`
+(`origin/archive/replica-js-audit-m48-recovery`) and `01af32ff6`
+(`origin/archive/stash-nim-2026-10-05`, a stash's index commit). They are later in date
+and *older* in content — main's `script/m14/mutate-analyzer.ts` is 1,202,187 B against
+the replica's 780,867 B, and `differential.ts` 1,343,015 B against 1,147,609 B. Landing
+by commit date here would be a revert; this is the case §8 predicted in the abstract.
+
+### 10.4 The website is not a gap, and §8's third row is withdrawn
+
+`git diff main origin/website/redesign-2026 -- website` is empty: main carries the
+redesign byte for byte. §8 listed the website as *not landed*; that was read off
+path-presence on stale replica refs (`origin/archive/replica-*-m48-recovery`, where the
+M41/M45 video hero still exists), not off content.
+
+### 10.5 What is left, and it is two decisions for the owner
+
+1. **Deleting the 456 remote branches.** Every one of them is an ancestor of
+   `archive/all-lanes-2026-10-07` (§1), and every branch-side revision that is later than
+   main's has been compared by content: the 4 that strictly extend main were landed or
+   refused by the compiler, and the rest were measured and refused or identified as stale
+   snapshots (10.3). Deleting them leaves `origin` as `main` plus tags. Not done here: it
+   is destructive, external, and not a side effect a code pass should take.
+2. **The 341.5 MB of generated java census JSON** (10.1). Pushing it would put generated
+   data in the remote object store, which the programme's rule forbids; not pushing it
+   means the local `refs/original/**` refs are the last place it lives. Either way it is
+   regenerable, and the decision is the owner's, not this pass's.
+3. **Not a decision, a count:** main still declares 136 failing fixtures across 23 lanes
+   §4, and the elixir lane's 17 are the largest single group. That is the next fold.
+
+Verification of the three landed files, at the commit this section is pushed with:
+`bun run script/m14/run-fixtures.ts` exit 0 (1447 pins, 136 failing, `fixture baseline
+gate: no regressions`), `bash script/m14/no-regex-gate.sh` exit 0 (0 usages),
+`npx tsc --noEmit` exit 0, `npm run build` exit 0, `npm run typecheck:scripts` 716 errors
+against a 717-error baseline with 0 new. That last gate **fails before this pass and
+still fails** — it is listed so a later reader does not attribute it to these three files.
