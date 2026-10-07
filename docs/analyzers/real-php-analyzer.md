@@ -1805,11 +1805,32 @@ then the file's own namespace).
 | stage | endpoints | share of ambiguous |
 |---|---|---|
 | **still ambiguous after every lever** | **107,313** | **63.44%** |
-| **emptied by the OWNER filter** | **25,402** | **15.02%** |
+| **resolved by the owner channel via the class's ANCESTORS** | **24,223** | **14.32%** |
 | resolved by `+ same-file preference` | 20,368 | 12.04% |
 | resolved by `+ namespace preference` | 10,188 | 6.02% |
 | emptied by the KIND filter | 3,129 | 1.85% |
 | resolved by `filters (owner + kind)` | 2,756 | 1.63% |
+| emptied by the OWNER filter | 1,179 | 0.70% |
+
+
+**The largest lever is the only one that is not a preference.** 24,223 endpoints (14.32%) would
+resolve by walking the enclosing class's ANCESTORS — `$this->persist($record)` written in a subclass
+whose parent declares `persist` is not a guess about which of N candidates was meant, it is PHP's own
+method resolution, and the ancestors come from the store's own `extends`/`implements` edges, so
+nothing is inferred about a class the graph does not connect. It also nearly EMPTIES the class it
+acts on: 25,402 endpoints were emptied by the owner filter and only **1,179** remain emptied after
+the ancestor walk, i.e. **95.4% of the members whose owner publishes nothing are inherited members
+whose parent the store already holds**, and the residue is the genuine external boundary — a parent
+outside the population.
+
+Trait use is deliberately NOT in the map, which makes 24,223 a LOWER bound: `uses` is also how every
+ordinary value read is spelled (`save -> record`), so a heritage map that accepted it would be
+mostly noise, and the two edges that are real trait flattens cannot be told apart at this level.
+
+Everything else in the table is smaller AND riskier. The same-file preference (20,368) and the
+namespace preference (10,188) each REPLACE a resolution rather than narrow one, and the sound
+filters cover 2,756 — four times less than the inheritance rule, which is why the inheritance rule
+is the next change worth making and the preferences are not.
 
 Three sentences are the finding.
 

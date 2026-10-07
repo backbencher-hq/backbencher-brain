@@ -19,11 +19,12 @@
     "order": "sound filters (owner channel, then the type's callable/kind rule), then preferences (same file, then the file's namespace)",
     "stages": {
       "still-ambiguous": 107313,
-      "emptied-by-owner": 25402,
+      "owner+inherited": 24223,
       "filters+same-file": 20368,
       "filters+namespace": 10188,
       "emptied-by-kind": 3129,
-      "filters": 2756
+      "filters": 2756,
+      "emptied-by-owner": 1179
     },
     "filterKinds": {
       "calls": [
@@ -600,5 +601,5 @@
   "defectRows": [],
   "unexplainedRows": [],
   "unexplainedTotal": 0,
-  "elapsedSec": 219.513
+  "elapsedSec": 155.411
 }

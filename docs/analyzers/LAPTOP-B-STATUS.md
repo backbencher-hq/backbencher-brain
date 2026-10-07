@@ -790,11 +790,23 @@ callable/kind rule), then the preferences (same file, then the file's own namesp
 | stage | endpoints | share |
 |---|---|---|
 | **still ambiguous after EVERY lever** | **107,313** | **63.44%** |
-| **emptied by the owner filter** | **25,402** | **15.02%** |
+| **resolved by the owner channel via the class's ANCESTORS** | **24,223** | **14.32%** |
 | resolved by the same-file preference | 20,368 | 12.04% |
 | resolved by the namespace preference | 10,188 | 6.02% |
 | emptied by the kind filter | 3,129 | 1.85% |
 | resolved by the sound filters | 2,756 | 1.63% |
+| emptied by the owner filter | 1,179 | 0.70% |
+
+**The largest lever is the only one that is not a preference**: 24,223 endpoints (14.32%)
+resolve by walking the enclosing class's ancestors — `$this->persist()` in a subclass whose parent
+declares `persist` is PHP's own resolution, and the ancestors come from the store's own
+`extends`/`implements` edges. It also nearly empties the class it acts on: 25,402 were emptied by the
+owner filter and only **1,179** stay emptied after the walk, so **95.4% of the members whose owner
+publishes nothing are inherited members whose parent the store already holds**, and the residue is
+the genuine external boundary. Trait use is deliberately out of the map, which makes 24,223 a LOWER
+bound. The same-file (20,368) and namespace (10,188) preferences are smaller AND riskier, because
+each REPLACES a resolution instead of narrowing one.
+
 
 **A type-inference wall, now a number**: the survivors are `uses` 48,839, `calls` 21,052,
 `imports` 4,509, `contains` 2,783, and their top names are `metadata` (6,477), `value`, `result`,
