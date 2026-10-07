@@ -229,14 +229,25 @@ other 22 lanes need.
 
 ## Blocked / pending
 
-1. **The enum blocker — affects every lane, both laptops.** `src/ast/types.ts` declares
-   `Imports = "brain_import"` while sixteen analyzers emit the literal `"imports"`, which
-   is not a value of the enum, and ~50 call sites compare against
-   `RelationshipType.Imports`. Import edges are invisible to every consumer and nothing
-   turns red. Queued: `ENUM_HARD_FIX`, then `ENUM_SWEEP`. **No lane can reach a verified
-   ten before this lands** — it is why `imports` shows `E` in the gate's grid and still
-   delivers nothing.
-2. **Four unadjudicated lanes**: `clean`, `graphql`, `r`, `scss`.
+1. ~~**The enum blocker — affects every lane, both laptops.**~~ **REFUTED 2026-10-07, on the
+   current tree, by the file itself.** `src/ast/types.ts:84` reads `Imports = "imports"` (the
+   change landed in `3ebe0fb38`), and the comment above it records the same refutation from
+   the other side: `"brain_import"` exists in no `src/` comparison anywhere. The second half
+   of the claim is false too — **no analyzer imports `RelationshipType` from `./types`**; they
+   all reach it through `ASTEngine` (`src/ast/engine.ts`), which is the same enum object. A
+   blocker that was queued as `ENUM_HARD_FIX` + a 16-lane `ENUM_SWEEP` would have edited
+   correct code in sixteen lanes. Re-check with two commands, one line:
+   `sed -n '84p' src/ast/types.ts` and
+   `grep -rn 'RelationshipType' src/ast/*.ts | grep -v engine | head`.
+2. ~~**Four unadjudicated lanes**: `clean`, `graphql`, `r`, `scss`.~~ **REFUTED 2026-10-07**
+   by the instrument this list names: `npx tsx script/m14/verify-ruling-tables-registered.ts`
+   prints `unadjudicated lanes (neither table nor spec RULED) : 0`, with **20 ruling tables on
+   disk and 20 registered** (`bash clean css dart fsharp graphql json julia lua markdown nim php
+   powershell protobuf r scss sql toml xml zig`) and `PASS — every ruling table on disk is
+   registered, and every registration resolves`. `clean`, `graphql`, `r` and `scss` each have a
+   table. The four names came from an older run whose condition no longer holds; the row is kept
+   struck through rather than deleted, because a blocker list that loses rows silently cannot be
+   trusted to have lost only the false ones.
 3. **83 emitted-but-never-audited type-instances** (table above).
 4. **Incoming resolves in 0 of 23 lanes.** Whole-corpus, the worst are `f#` 40,791
    ambiguous, `zig` 19,962, `powershell` 18,665, `nim` 12,491, `lua` 7,409, `xml` 6,007.
@@ -244,7 +255,11 @@ other 22 lanes need.
    N declarations, so it cannot be reduced by emitting fewer edges.
 5. **`calls` unresolved is real, not sampling** — on `sql` it stayed 36% at both 30 and
    400 files, while `uses` (71% → 5.0%) and `references` (32% → 1.3%) were sampling bias.
-6. **Two instruments disagree on 11 of 23 lanes** (see the note under the grid).
+6. **Two instruments disagree — recomputed 14 of 23 lanes on 2026-10-07, not 11** (see the
+   note under the grid; the row-by-row comparison is of the grid's `E` against the coverage
+   gate's fired count, `json` 9 vs 1, `sql`/`nim`/`r`/`powershell` 10 vs 5–8 among them). The
+   `11` is left visible under the grid rather than overwritten there, because the two numbers
+   are from two readings of two artifacts and the second reader should be able to see both.
 7. **Waiting on nothing external.** The three LSP branches are 0 commits ahead of `main`
    and `main` already carries `ide/vscode`, `ide/helix`, `ide/lsp4ij/bb-lsp`. Across all
    384 unmerged `origin` branches the union of paths `main` lacks is 2,066 files, and
@@ -350,9 +365,182 @@ Whether the fix lands in a dart-owned file or in the shared gate (`script/m14/`,
 `resumable-walk.ts`) is checked before editing, because php and fsharp are being worked in
 parallel and a shared-file change has to be one owner's.
 
+## PHP round 1 (2026-10-07) — the store deleted legal symbols, and recovery mis-nested a class body
+
+Whole-corpus measurements, production entry point, all **5,094** admitted php files, 0 fallbacks.
+Every number below is a delta against a re-run of the same instrument on the tree before the
+round, so "+22" is a difference between two measurements and not a count from a log.
+
+### 1. The symbol filter refused php names, not php declarations — **FIXED, 1 orphan edge → 0**
+
+The projection (`src/ast/pool-worker.ts`, `keepSymbol`) refused php symbols **by NAME**
+(`RESERVED = { php: new Set(["self", "parent"]) }`) with no reference to the kind or the owner,
+while the analyzer kept emitting the `contains` edges that name those members. `self` and
+`parent` are **semi-reserved** in php 7+: illegal as a top-level declaration name (`class parent
+{}` is a parse error) and perfectly legal as a method, a property or a class constant. So the
+rule deleted legal members and left edges with no endpoint. Whole corpus: exactly **one** such
+edge existed — `contains Node -> parent` at `phpmyadmin/src/Navigation/Nodes/Node.php:54`
+(`public Node|null $parent = null;`) — the lane's only orphan endpoint in 350,342 edges.
+
+The fix exempts php **member kinds with an owner**; a class, interface, trait, enum, namespace or
+top-level function named `parent`/`self` is still refused, which is the half that cannot be
+written as valid php and is therefore pinned by an injectable mutant.
+
+| | before | after |
+|---|---|---|
+| `contains` target not published | 1 | **0** |
+| declared-in-tree-not-published edges | 248 | **24** |
+| resolved unique | 128,795 | 129,020 **(+225)** |
+
+**Why no fixture caught it, and why that is structural**: `script/m14/run-fixtures.ts:728`
+evaluates every fixture with `analyzer.analyze()` **directly** (it says so at its own `:518`), so
+a rule in the PROJECTION is invisible to all 26 php fixtures and to all 53 php mutants — every
+one of them stops one layer above the rule. Hence `validation/m14/fixtures/php/
+orphan-endpoint-gate.mts`, which imports `parseFile` (the production path) and fails on a
+`contains` target its own file did not publish; it carries a control that refuses to report if
+its classifier cannot separate a published target from an orphan. Current reading: **26 fixtures,
+294 symbols, 242 contains edges, STRICT orphaned contains targets 0**, control PASS.
+
+**The +225 is reported with a caveat rather than as a win.** 225 bare-name resolutions appeared
+because the name `parent` now has exactly one published declaration — mostly `uses parent` in
+`gql-graphql-php`'s `Visitor.php`/`VisitorTest.php` flipping from ambiguous to resolved. Those
+edges are in OTHER repositories and resolve to `Node::parent`, a different repo's property. This
+is cause A (name scoping) showing through a fix, not a resolution the fix earned, and it is
+recorded so nobody reads +225 as coverage.
+
+### 2. Recovery mis-nests, so the members after a damaged statement were invisible — **FIXED, 19 edges → 0**
+
+`FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php` writes **PHP-8-removed
+curly-brace offset syntax** at line 910: `$level = $matches[2]{0} == '=' ? 1 : 2;`. The pinned
+grammar errors there, and the recovery does not merely mark a node — it leaves the enclosing
+method's body OPEN, so every following declaration becomes a `function_definition` **nested
+inside** `method_declaration _doHeaders_callback_setext 905-1575`. That one file was the whole of
+the 19 remaining `calls` edges in the audit's `DECLARED_IN_TREE_NOT_PUBLISHED` bucket: `doLists`,
+`processListItems`, `makeCodeSpan`, `prepareItalicsAndBold`, `formParagraphs`, `encodeAttribute`,
+`encodeAmpsAndAngles`, `encodeEmailAddress`, `handleSpanToken` — all real class members, called
+from inside their own class, absent from the store.
+
+**This is a CONTRACT VIOLATION, not a named limit**, and the contract was already written in this
+lane: `php/error-recovery` states that for a file the parser cannot fully read, "the declarations
+AROUND it still publish, INCLUDING THE ONES AFTER IT — degradation is PARTIAL, not total". That
+fixture covers the shape where recovery MARKS a node; no fixture covered the shape where recovery
+MIS-NESTS one.
+
+Bisected rather than argued: replacing that ONE expression with `$matches[2][0]` moves 11 of 12
+members back to direct children of the `declaration_list` and drops the nested count 9 → 0, while
+the file's other legacy offset (`switch ($token{0})` at 1560) does not — so the two damage sites
+differ, and a rule keyed on "the file has errors" would have fired on both. The fix is ONE
+predicate asked by TWO paired halves: publish the mis-nested callables (as MEMBERS of the class the
+source writes them in), and stop the damaged body's own walk from descending into them, or every
+call inside them is emitted twice under two sources. `const`/`property` declarations are published
+by the same escape but NOT skipped, because their branches never walk their initialisers and the
+body walk is the only reader of those values.
+
+| | before | after |
+|---|---|---|
+| declared-in-tree-not-published | 24 | **5** |
+| resolved unique | 129,020 | 129,061 **(+41)** |
+| edges total | 350,342 | 350,364 **(+22)** |
+| published names | 21,200 | 21,222 **(+22)** |
+| ambiguous / external / no-declaration / placeholder | — | **0 delta** |
+
+The +41 is exactly 19 (the `calls` edges that now resolve) + 22 (the new `contains` edges for the
+22 recovered declarations). The +22 edges are ALL `contains` (`contains` 35,087 → 35,109) and
+**`calls` 103,190 and `uses` 155,016 are unchanged to the digit** — the fix published declarations
+and fabricated no edge. That is what makes the instrument a verification rather than a report:
+a fix that resolved edges by inventing them would move those two numbers.
+
+Fixture `php/recovery-swallowed-members` (authored BEFORE the fix, with the pre-fix state measured
+and recorded in it: **4 symbols / 9 edges**, against 8 / 13 after). Three mutants pin the decision
+and all three are caught: the pre-fix state, the rejected reading (a recovered member published as
+a GLOBAL function), and HALF the fix (the paired skip removed), which is caught only by the
+fixture's `expectRelationshipCount` rows — `calls swallowedB -> swallowedA` exactly once,
+`calls damaged -> swallowedB` exactly ZERO. That last mutant **SURVIVED the lane's own harness
+while the production gate CAUGHT it**, and the difference was scope: `mutant-check.mts` checked no
+count section at all. Two harnesses disagreeing about one mutant is a defect in the smaller one,
+so its scope was extended and it now reads `all 11 mutants caught, 0 problems`.
+
+### 3. The residue: 5 edges, each with a NAMED reason — unexplained = 0
+
+| edges | target | reason (named, counted) |
+|---|---|---|
+| 1 | `calls -> findAllForUserEntity` (`WebauthnLibServer.php:136`) | declared on an **anonymous class** (`:345`), which this lane RULES unpublishable — M37.13: "the class has no nameable symbol, so no method symbol is fabricated". Counter-precedent, recorded rather than settled: java's family convention publishes `anonymous_<Super>`. Decision open. |
+| 1 | `uses -> representation` (`ExporterTest.php:104`) | a property of that same anonymous class, same ruling. |
+| 3 | `uses -> representation` (`:77`, `:88`, `:94`) | reads of a **PARAMETER** named `representation` — a variable in the file, never a published symbol. The audit's bucket label over-counts these three; the refined buckets belong in the committed instrument (TIER 3.3), not in a hand-written exception. |
+
+So the lane's store-vs-analyzer divergence is now **0 unexplained edges and 5 reasoned ones**, and
+neither remaining group needs a change to the analyzer to be *explained* — what is missing is a
+DECISION about anonymous-class members.
+
+### 4. Mutant wiring — the php registry had never run
+
+`npx tsx script/m14/verify-orphaned-mutants.ts` reported
+`script/m14/php-mutants.ts  PHP_MUTANTS  6  ORPHANED` and failed the gate with "Those mutants have
+never run": **zero of the 386 registered mutants were php's**, so the F4 gate could not fail for
+this lane while the lane read as a suite with no php reds. The lane's own harness had verified all
+six, so its numbers were sound — the claim that was unsound was any reading of F4 as covering php.
+Now wired (`WIRED`, 394 reachable), and the php slice reads **63 mutants, 63 caught, 0 survived,
+exit 0**.
+
+Two more findings from the same pass, both other lanes' to act on and neither touched here:
+
+- `php/drop-external-override-guess` **SURVIVED** (`0 -> 0 failures`): the 0.5 first-parent guess it
+  removes no longer exists, so the transform is a no-op that stayed red for a contract nobody
+  relied on. Retired with a stated reason and a restore trigger; the surface is pinched in the
+  other direction by `php/re-add-external-override-guess` (CAUGHT, `0 -> 1`).
+- The runner's own comment promised that retired mutants are "REPORTED rather than skipped in
+  silence", and the code computed the retired list and never printed it — so an excluded pin was
+  indistinguishable from a killed one. Printing it immediately surfaced a bare retirement in
+  another lane: `sql/sweep-stops-at-a-declaration-RETIRED-unfixtureable` has `retired: true` and
+  NO `retirementReason`, which now prints as `BAD-FACT`.
+
+### 5. The ruling-table proof gate could not run at all — **anchor repaired**
+
+`validation/m14/fixtures/php/ruled-gate.ts` is the only instrument that proves the lane's RULED
+rows against the corpus, and it had been failing on its own patch list:
+
+```
+ruled-gate: PATCH DID NOT APPLY — patch 2 — the map entry
+  looking for: const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED
+```
+
+Measured: that inline form exists in **neither** the working tree **nor** `HEAD` — the object was
+reformatted to one key per line, so the anchor could never match and the php ruling table has never
+been proof-run by its own gate. The anchor was the DECLARATION LINE only, which no lane addition,
+key reorder or reformat can break; the patch list now applies and the patched copy is written
+(`BB_PHP_RULED_SKIP_GATE=1`, copy verified to contain `php: PHP_RULED`). It is the same defect the
+swift lane recorded when a hardcoded mutant string silently stopped matching: **a check anchored to
+a formatting choice is a check that expires without failing.**
+
+The gate's own report item — "amend PHPD33's `resolution`" — is now discharged: PHPD33 was `RULED`
+("no `exports` kind for php, deliberately") while the analyzer has emitted `exports` since the
+define-exports round, and the premise it rested on ("PHP has no syntax to key on") was falsified by
+`define()` at file scope. PHPD33 is now `FIXED` with the reversal and its numbers recorded, and
+PHPD36 (new) records the recovery-escape decision. The gate's FULL corpus run is queued:
+`BB_PHP_RULED_WORKERS=2 npx tsx validation/m14/fixtures/php/ruled-gate.ts`.
+
+### What is NOT done in php
+
+Ambiguity is untouched (155,752 edges, 44.5%), the three missing oracles (`contains`/`imports`/
+`exports` = 63,774 edges, 18.2%), external naming, the four structural-limit labels, the runnable
+gates (24 scripts still hardcode a `ROOT` that does not exist on this checkout), the 5 remaining
+`verify-analyzer` false positives (now recorded as a stale GROUND TRUTH — it has zero `contains`
+rows — rather than as analyzer false positives; PHPD33 and PHPD36 the only completeness rows
+corrected this round), the full corpus run of the ruling-table proof gate repaired above, and the
+legacy/real-world corpora. None of it is claimed here.
+
 ## Totals today
 
 - Outgoing at `10/10 applicable`: **3 of 23** (`dart`, `fsharp`, `php`).
 - Outgoing at `N/N applicable` **with incoming resolving**: **0 of 23**.
-- Ruleable lanes: **19 of 23**. Unadjudicated: **4**.
+- Ruleable lanes: **23 of 23 — 20 by a corpus-measured table, 3 by a SPEC prose ruling
+  (`hcl make yaml`)**, from `script/m14/verify-ruling-tables-registered.ts`'s own two lists.
+  Unadjudicated: **0** (was reported as 4; refuted above with the command that says zero).
+- **php's outgoing is now measured to `unexplained = 0`**: of 350,364 edges, 129,061 resolve
+  uniquely, 155,752 are ambiguous (the incoming/cause-A axis, untouched), 44,558 + 19 + 204 + 128
+  name a local variable, a path, a keyword or a dynamic callee, 21,515 name php internals or
+  namespaces outside the population, and **5** are now reasoned one by one (anonymous-class
+  members, M37.13) instead of named as defects. The two fixes in this round moved 1 orphan
+  `contains` endpoint to 0 and 19 declared-but-unpublished `calls` edges to 0, and changed NO
+  other bucket.
 - Zero regexes: **yes** (18 → 0; laptop A's handoff records they have not matched this).

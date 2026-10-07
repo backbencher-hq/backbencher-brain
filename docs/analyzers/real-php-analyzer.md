@@ -210,13 +210,30 @@ coverage honestly means populating the companion index, not guessing.
 
 ## Verification evidence
 
-- Independent manual ground truth: `validation/m12/ground-truth/php.json` —
-  **66 facts, precision 1.000, recall 1.000, 0 FP, 0 FN**
-  (`bun script/m12/verify-analyzer.ts php`)
+- Independent manual ground truth: `validation/m12/ground-truth/php.json` — **precision 0.930,
+  5 FP, 0 FN** (`bun script/m12/verify-analyzer.ts php`, measured 2026-10-07). This line claimed
+  `precision 1.000 … 0 FP` and that claim is FALSE on the current tree. The 5 false positives are
+  the M60 NAMESPACE-CONTAINMENT edges (`contains App\Base:BaseService` and
+  `App\Service:{Auditable,Loggable,Status,UserService}`), and the reason is the second half of a
+  real defect rather than a matcher quirk: `validation/m12/ground-truth/php.json` contains ZERO
+  `contains` rows (last touched 2026-09-29, `3c8128c1e`), so the analyzer emits a relationship
+  kind the ground truth cannot adjudicate at all. The row is corrected here and the re-baseline
+  is QUEUED (TIER 0.3), not quietly dropped: a precision claim over a truth file missing a whole
+  relationship kind is a claim about the truth file, not about the analyzer.
 - Fixtures: `validation/m12/fixtures/php/{BaseService,Service,Negative}.php`,
-  and `validation/m14/fixtures/php/` (**22 pass / 0 fail** as of the last run;
-  this document previously said 19, which had drifted)
-- Mutants: **50 registered for `php/`, all 50 caught** (0 survivors). Five were added by the
+  and `validation/m14/fixtures/php/` — **26 pass / 0 fail** (`bun run script/m14/run-fixtures.ts
+  --lang php`, measured 2026-10-07). The counts in this line and in the lane's own harness header
+  had drifted (`22` here, `23/23` there, `19` before that), which is why the number is now stated
+  with its command.
+- Mutants: **63 registered for `php/`, all 63 caught, 0 survivors**
+  (`BB_MUTANT_ONLY=php/ bun script/m14/mutate-analyzer.ts`, measured 2026-10-07). This line said
+  `50`, and the count is not the interesting part of the correction: until 2026-10-07 the php
+  registry itself was ORPHANED — `script/m14/verify-orphaned-mutants.ts` read
+  `PHP_MUTANTS 6 ORPHANED` and failed with "Those mutants have never run", so ZERO of the shared
+  registry's mutants were php's and the F4 gate could not fail for this lane. The eleven mutants
+  this round added (keyword-named members, the recovery-escape and its rejected readings) are
+  caught; the count is stated with the command for the same reason as the fixtures above. Five
+  were added by the
   M60 master-review round: `error-report-dropped` and `error-recovery-stops` (the two halves of
   the malformed-file contract), `typed-class-const-dropped` (a capability the corpora cannot
   exercise — see below), and `override-fires-without-base-method` /
