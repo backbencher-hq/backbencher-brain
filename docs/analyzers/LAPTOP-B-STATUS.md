@@ -266,6 +266,90 @@ npx tsx script/m14/verify-ruling-tables-registered.ts     # the unadjudicated li
 Then write the cell, and commit the measurement that justifies it — one verdict per
 commit. `N/A` requires the same evidence as `R`; it is never a shortcut.
 
+## Round 1 (2026-10-07) — the whole-corpus walk cannot complete, and its checkpoint lies
+
+**This blocks every whole-corpus dart number, so it comes first.** No analyzer change can
+be scored until the walk finishes.
+
+`npx tsx script/m14/ontology-coverage-gate.ts dart` over the **33,692 admitted files** of
+the dart corpus does not reach its table. It prints no measurement at all:
+
+```
+[BB-PARSE-ERR] dart | .../is_postfix_completion_applicable_test.dart | memory access out of bounds
+[BB-HANG] parser stuck 120s on .../is_postfix_completion_applicable_test.dart — exiting
+
+re-run (resumes):
+[BB-PARSE-ERR] dart | .../issue53209_2/main_lib.dart | memory access out of bounds
+[BB-HANG] parser stuck 120s on .../issue53209_2/main_lib.dart — exiting
+```
+
+### The named file is innocent, twice over
+
+| run | file named | size | parsed ALONE in a fresh process |
+|---|---|---|---|
+| 1 | `is_postfix_completion_applicable_test.dart` | 43 lines / 1,198 bytes | **clean** — 4 symbols, 20 rels |
+| 2 | `pkg/front_end/.../issue53209_2/main_lib.dart` | a few lines | **clean** — 4 symbols, 5 rels |
+
+A **different** file each run, and each one parses perfectly by itself. A content defect
+cannot do that. This is why the lane's nine "hang runs" each ended by naming an innocent
+file: the named file is the messenger, and the accumulator is the walk.
+
+### The accumulator is retained WASM trees — measured, not argued
+
+`script/m14/tmp/wasm-tree-retention.ts` on the same corpus, same order, one parser, with a
+canary every N parses:
+
+| mode | RSS @1,000 | RSS @2,000 | peak @2,600 | shape |
+|---|---|---|---|---|
+| **leak** (parse, keep rootNode, never delete) | 449 MB | 741 MB | **878 MB** | monotonic |
+| **free** (`tree.delete()` after each file) | 126 MB | 135 MB | **139 MB** | flat |
+
+6.3x less memory, and flat instead of climbing — about **0.29 MB retained per file**. The
+mechanism is web-tree-sitter's: it allocates each `Tree` in the WASM heap and **only
+`tree.delete()` returns it — there is no finaliser**, so one un-deleted tree per file
+accumulates until `ts_malloc` cannot grow and the instance traps with `memory access out of
+bounds`. The dart lane hit this ceiling; the walk is 33,692 files long.
+
+**The rust lane already found and documented exactly this**, in `fbf950a35 fix(rust):
+release every wasm tree — the sweep died at 5,000 files, not at one bad file`: "ALL 7,773
+rustc files parse perfectly one at a time", recycling the parser did **not** fix it, RSS was
+monotonic rather than sawtooth, and the remedy was a `tree.delete()` in a `finally`. It also
+recorded the trap I am in: *"these tools print their report at the END, so heap exhaustion
+produced NO OUTPUT AT ALL — indistinguishable from 'this corpus has no data'."*
+
+Production is immune to this, and that was read rather than assumed: `engine.ts:2152`
+deletes the tree in a `finally` ("🚨 CRITICAL MEMORY FIX"), and `parallel-indexer`'s worker
+`exit` handler respawns a fresh worker with a fresh heap. **This is an INSTRUMENT defect** —
+which is why the measurement layer dies and the analyzers do not.
+
+### The checkpoint silently records killed files as WALKED
+
+`validation/m14/measurements/walk-dart.txt` right now: **17,396 lines, all bare paths,
+`0` marked bad** — i.e. **51.6% of 33,692**. Both files that killed the parser appear in it
+as **completed**. That is the design working as written: the walk appends a path *before*
+parsing it, so the log survives the hard `process.exit()` a 120s hang performs — "each line
+was already on disk before the thing that could kill us began". The consequence is not the
+one intended: **a file that kills the process is recorded as walked and is never retried**,
+so the completed set over-counts and the effective population erodes by one file per death.
+The `!` bad-marker is reserved for parse errors, and was never written here.
+
+So every "N of N files" figure from this instrument is currently unsound in two ways: the
+walk has not covered the corpus (51.6%), and some of the coverage it claims is a file it
+never read.
+
+### Next, in order
+
+1. Release the tree in the walk's own path (a `finally`, mirroring rust) and prove the gate
+   completes over all 33,692 files and prints its table.
+2. Decide the checkpoint question honestly: a file recorded done-but-never-parsed must be
+   distinguishable from one actually walked, or the corpus population is not a fact.
+3. Only then measure the dart baseline (fired / ruled / applicable + incoming) that round 1
+   was blocked on.
+
+Whether the fix lands in a dart-owned file or in the shared gate (`script/m14/`,
+`resumable-walk.ts`) is checked before editing, because php and fsharp are being worked in
+parallel and a shared-file change has to be one owner's.
+
 ## Totals today
 
 - Outgoing at `10/10 applicable`: **3 of 23** (`dart`, `fsharp`, `php`).
