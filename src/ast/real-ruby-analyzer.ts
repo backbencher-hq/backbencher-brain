@@ -44,6 +44,89 @@ function isAsciiWhitespace(code: number): boolean {
 const FILE_SCOPE_OWNER = "Global"
 
 /**
+ * The ONE reopen-identity rule, for every site that has to name a class or
+ * module the way the symbol table does.
+ *
+ * `class M::Inner` and `module M; class Inner` declare the same type, so the
+ * graph must give them one identity: name = the LEAF, owner = the scope path
+ * RELATIVE TO THE ENCLOSING owner. RUBD13 promised that and it held by accident
+ * for two-segment names, where the first and last `::` coincide; for three or
+ * more they do not, and `class Admin::Announcements::DistributionsController`
+ * split on the first separator produced a symbol named
+ * `Announcements::DistributionsController` owned by `Admin` while the nested
+ * spelling produced `DistributionsController` under Admin > Announcements. The
+ * file's own `leafName` split on lastIndexOf, so the analyzer carried two rules
+ * that disagreed.
+ *
+ * Extracted because a THIRD reader needed it: the private-constant pre-pass
+ * below has to name the same owner to match a `private_constant :X` against the
+ * constant it hides, and a fourth copy of a rule that decides symbol IDENTITY is
+ * how the two existing copies came to disagree. One function, three callers.
+ */
+function rubyReopenIdentity(rawName: string, enclosingOwner: string | undefined): { name: string; owner: string | undefined } {
+  const sepIdx = rawName.lastIndexOf("::")
+  if (sepIdx < 0) return { name: rawName, owner: enclosingOwner }
+  const name = rawName.substring(sepIdx + 2)
+  const scopeOwner = rawName.substring(0, sepIdx)
+  // An ABSOLUTE reopen names no scope at all: `class ::ReceiverClass` has an EMPTY
+  // prefix, so it is a top-level declaration, not a member of a class called "".
+  // The prefix used to be used verbatim, so the owner became the empty string —
+  // which is truthy, so the symbol kept an owner and the `contains` pass published
+  // an edge whose SOURCE was "" (spec/ruby/core/exception/receiver_spec.rb:5).
+  // An empty owner is also worse than a missing one: it resolves to no symbol and
+  // reads as though it named one.
+  if (scopeOwner.length === 0) return { name, owner: enclosingOwner }
+  return { name, owner: enclosingOwner ? `${enclosingOwner}::${scopeOwner}` : scopeOwner }
+}
+
+/**
+ * The FILE as a graph unit: its basename with the extension removed.
+ *
+ * A require is a file-to-file fact, and the `imports` edge's whole value over the
+ * `references` edge it sits beside is that its SOURCE names the importing FILE
+ * rather than a scope sentinel (`parallel-indexer.ts` reads
+ * `metadata.fileLevel === true` and binds `source_external` to the project-
+ * relative path for exactly this reason). Python (`moduleName`), Dart
+ * (`moduleName`) and bash (`scriptName`) all name the file the same way, and the
+ * weak part of the convention is the same for all three: two files can share a
+ * stem. That is recorded as a limitation rather than papered over, because the
+ * alternative — the `Global` sentinel — names no unit at all.
+ *
+ * An empty basename (a caller that passes no path) falls back to the declared
+ * file-scope owner rather than publishing an edge with an empty source.
+ */
+function rubyFileUnitName(filePath: string | undefined): string {
+  if (!filePath) return FILE_SCOPE_OWNER
+  // Character scan, no regex (R1: this file carries zero regex literals and zero
+  // `new RegExp`, and that is a property of the construction rather than a lint).
+  // The first version used `filePath.replace(/\\/g, "/")`, which put the file's
+  // only regular expression back — one token, and it would have taken the lane's
+  // standing regex-census figure from 0 to 1 without changing a single edge.
+  let end = filePath.length
+  while (end > 0) {
+    const c = filePath.charCodeAt(end - 1)
+    if (c === 47 /* / */ || c === 92 /* \ */) break
+    end--
+  }
+  const tail = filePath.substring(end)
+  if (tail.length === 0) return FILE_SCOPE_OWNER
+  const dot = tail.lastIndexOf(".")
+  let stem = dot > 0 ? tail.substring(0, dot) : tail
+  // A stem that still carries a DOT (`foo.bar.rb`) is rewritten, and this is not
+  // cosmetic: `parallel-indexer`'s export filter drops an `exports` edge whose
+  // source matches `/^[a-z][a-z0-9_.]*$/` AND contains a dot, because that is the
+  // JS/TS `module.exports.a` shape. So a dotted source would be silently deleted
+  // on the way to the index — an edge published, stored nowhere, and invisible to
+  // every check except a payload census.
+  if (stem.indexOf(".") >= 0) {
+    let out = ""
+    for (let i = 0; i < stem.length; i++) out += stem[i] === "." ? "_" : stem[i]
+    stem = out
+  }
+  return stem.length > 0 ? stem : FILE_SCOPE_OWNER
+}
+
+/**
  * The one name this analyzer publishes Rails under (#749).
  *
  * It used to be two: `detectedFrameworks` was pushed `"Ruby on Rails"` while
@@ -161,6 +244,23 @@ export const RUBY_BUILTINS = new Set([
   "delegate", "delegate_missing_to",
   "event", "transition", "state_machine",
   "module_function", "using",
+  // Module-level visibility MODIFIER METHODS. `private_constant :X` is not a
+  // keyword in this grammar — it is an ordinary `call` on Module — and it was
+  // missing from this list, so it published `calls <owner> -> private_constant`:
+  // an edge whose target is a stdlib method no project declares, which is the same
+  // shape as every other entry above and the reason they are here. Found by the
+  // oracle-agreement suite, whose negative case asserts the modifier is not a
+  // call: the oracle suppressed it (it lists both names among its visibility
+  // modifiers) and the analyzer did not, and the analyzer is the side whose
+  // suppression list IS the contract — `RUBY_BUILTINS` is a list of things the
+  // payload does not carry as call targets, not a judgement about Ruby.
+  //
+  // The DECLARATION side is not lost: `private_constant`'s effect on the export
+  // surface is read by `collectPrivateConstants`. So the pair is the same shape as
+  // `attr_reader` (declares a member, no call edge) and `module_function`
+  // (declares, no call edge). Measured on the corpus: 142 `private_constant` and
+  // 2 `public_constant` sites.
+  "private_constant", "public_constant",
   "ruby2_keywords", "no_touching",
 ])
 
@@ -294,119 +394,6 @@ export const RAILS_MACRO_METHODS = new Set([
 ])
 
 // ============================================================================
-// RAKE — `task :name do … end` is a NAMED, INVOKABLE UNIT
-// ============================================================================
-//
-// A Rakefile parsed clean and reported 0 symbols, and the file was still counted
-// in the index, so it read as covered. That is the worst shape this codebase has:
-// a file that looks indexed and contributes nothing. Measured on a Rakefile with
-// three tasks and a plain `a.rb` alongside: Rakefile 0 symbols, a.rb 2.
-//
-// The cause is structural, not a parsing failure. Rake's DSL is a method CALL
-// with a block — `task :test do … end` is a `call` node — while this analyzer
-// declares symbols from `class`, `module`, `method` and `singleton_method`
-// nodes. Nothing matched, so nothing was emitted.
-//
-// Everything below reads the tree. No regex: a task name is a `pair`'s `key`
-// field, a `simple_symbol`, or a `string` depending on which of Rake's three
-// declaration forms was used, and `namespace` is a `call` whose block holds the
-// tasks it prefixes.
-
-/** The basename of a path, without regex (char scan, as elsewhere in this file). */
-function basenameOf(filePath: string): string {
-  const norm = filePath.indexOf("\\") !== -1 ? filePath.replace(/\\/g, "/") : filePath
-  const slash = norm.lastIndexOf("/")
-  return slash === -1 ? norm : norm.slice(slash + 1)
-}
-
-/**
- * Whether this file is a Rake DEFINITION file, which is what makes `task`
- * mean Rake's DSL rather than an application method of the same name.
- *
- * Gated on the filename deliberately. The node shape alone (`task` + a symbol +
- * a block) is suggestive but not conclusive: a Rails app may define its own
- * `task` helper, and reporting its call sites as Rake tasks would fabricate
- * symbols. `Rakefile` and `*.rake` is the same rule `rake` itself applies, and
- * it is the one the router already uses to send these files to this analyzer.
- */
-function isRakeDefinitionFile(filePath: string): boolean {
-  const base = basenameOf(filePath)
-  if (base === "Rakefile" || base === "rakefile") return true
-  return base.length > 5 && base.endsWith(".rake")
-}
-
-/**
- * The task name a `task` call declares, or null if this call is not a task
- * declaration.
- *
- * Rake accepts three forms for the task name, and they are three different node
- * shapes — measured on the grammar:
- *
- *   task :test do            → simple_symbol   `:test`
- *   task default: %i[a b]    → pair, `key`     `default`
- *   task :build => [:a]      → pair, `key`     `:build`
- *   task("ci") { }           → string          `ci`
- *
- * The `:` prefix is Ruby symbol syntax, not part of the task's name, so it is
- * dropped: `rake -T` lists `test`, and the symbol should match.
- */
-function rakeTaskName(callNode: Node): string | null {
-  const args = callNode.childForFieldName("arguments")
-  if (!args || args.namedChildCount === 0) return null
-  const first = args.namedChild(0)
-  if (!first) return null
-  let raw: string | null = null
-  if (first.type === "pair") {
-    const key = first.childForFieldName("key")
-    raw = key ? key.text : null
-  } else if (first.type === "simple_symbol" || first.type === "string") {
-    raw = first.text
-  }
-  if (raw === null || raw.length === 0) return null
-  // A `string` node's text INCLUDES its delimiters, so `task("release")` would
-  // otherwise be indexed under the name `"release"` — quotes included — which
-  // matches nothing `rake -T` prints and nothing a user would search for.
-  let name = raw
-  if (name.length >= 2 && name.charCodeAt(0) === 34 /* " */ && name.charCodeAt(name.length - 1) === 34) {
-    name = name.slice(1, -1)
-  }
-  if (name.length === 0) return null
-  // Drop Ruby's leading `:` from a symbol literal. Both `:test` and `test` then
-  // name the same task, which is what `rake -T` and every Rake error message use.
-  return name.charCodeAt(0) === 58 /* ':' */ ? name.slice(1) : name
-}
-
-/** The `desc "…"` immediately above a task, used as the task's documentation. */
-function rakeTaskDescription(callNode: Node): string | undefined {
-  const prev = callNode.previousNamedSibling
-  if (!prev || prev.type !== "call") return undefined
-  if (prev.childForFieldName("method")?.text !== "desc") return undefined
-  const args = prev.childForFieldName("arguments")
-  if (!args || args.namedChildCount === 0) return undefined
-  const first = args.namedChild(0)
-  if (!first || first.type !== "string") return undefined
-  const inner = first.text.slice(1, -1)
-  return inner.length > 0 ? inner : undefined
-}
-
-/** The `namespace :x do … end` a task sits inside, for `x:task` naming. */
-function rakeNamespaceName(callNode: Node): string | null {
-  if (callNode.childForFieldName("method")?.text !== "namespace") return null
-  const args = callNode.childForFieldName("arguments")
-  if (!args || args.namedChildCount === 0) return null
-  const first = args.namedChild(0)
-  if (!first || (first.type !== "simple_symbol" && first.type !== "string")) return null
-  const raw = first.text
-  // Same delimiter handling as a task name: a `string` node's text carries its
-  // quotes, and `namespace "db"` would otherwise prefix tasks with `"db`.
-  const name = raw.length >= 2 && raw.charCodeAt(0) === 34 && raw.charCodeAt(raw.length - 1) === 34
-    ? raw.slice(1, -1)
-    : raw
-  if (name.length === 0) return null
-  return name.charCodeAt(0) === 58 ? name.slice(1) : name
-}
-
-// ============================================================================
 // MAIN ANALYZER
 // ============================================================================
 export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -464,9 +451,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Visibility tracking: private/protected state markers
     // Call source: the nearest enclosing method/function name
     const visibilityOverrides = new Map<string, string>()
-    // Computed once per file, not per node: it reads the PATH, so it cannot
-    // change during a traversal.
-    const isRakeFile = isRakeDefinitionFile(filePath)
     const stack: {
       node: Node
       owner: string | undefined
@@ -476,21 +460,35 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Set when this frame is INSIDE the block of an anonymous dynamic class
       // (`anon = Class.new(Base) do ... end`). See the assignment branch.
       anonBinding?: string
-      // Set when this frame is inside a Rake `namespace :x do … end`, so a task
-      // declared there is named `x:task` the way `rake -T` lists it. Only ever
-      // set for a Rake definition file.
-      rakeNamespace?: string
+      /**
+       * Set on every frame INSIDE a `singleton_class` body, and reset by a nested
+       * class or module. A method declared there belongs to ONE object's singleton,
+       * so it is never part of the file's importable surface — which is a fact the
+       * symbol table cannot express, because `class << obj` (a LOCAL receiver) has
+       * no owner to record, and because `private def m` wraps the def in a `call`
+       * whose frame push hardcoded `isSingleton: false`, losing the flag.
+       *
+       * It exists because the export surface asked a question the payload could not
+       * answer: `class << obj; private def coerce(n); end; end`
+       * (spec/ruby/core/integer/divide_spec.rb) published a `Function` symbol named
+       * `coerce` with NO owner, and an ownerless Function reads as a top-level
+       * method, so the export pass published `exports <file> -> coerce` for a
+       * private singleton method of a local object. Eleven such edges across the
+       * corpus, found by the oracle census rather than by a fixture.
+       */
+      inSingletonClass: boolean
     }[] = [{
       node: rootNode,
       owner: undefined,
       ownerKind: undefined,
       visibility: "public",
       isSingleton: false,
+      inSingletonClass: false,
     }]
 
     while (stack.length > 0) {
       const frame = stack.pop()!
-      const { node, owner, ownerKind, visibility, isSingleton, anonBinding } = frame
+      const { node, owner, ownerKind, visibility, isSingleton, anonBinding, inSingletonClass } = frame
       const type = node.type
 
       // --- Class ---
@@ -506,24 +504,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // scope is kept verbatim (`A::B`) — identical reopen spellings merge,
         // matching how nested owners are compared by string elsewhere.
         const rawName = nameNode.text
-        // LAST `::`, not the first. RUBD13 promised that a reopen and the nested
-        // spelling are ONE identity, and for `class M::Inner` the first and last
-        // separator coincide, so the ruling held by accident. For three or more
-        // segments they do not: `class Admin::Announcements::DistributionsController`
-        // split on the FIRST `::` produced a symbol NAMED
-        // `Announcements::DistributionsController` owned by `Admin`, while the
-        // nested spelling `module Admin; module Announcements; class
-        // DistributionsController` produces name `DistributionsController` under
-        // the chain Admin > Announcements. The two spellings therefore never
-        // unified, which is the exact failure RUBD13 was filed to prevent — and
-        // the file's OWN `leafName` helper splits on lastIndexOf, so the
-        // analyzer carried two rules that disagreed.
-        // Measured over 1,200 files: 58 non-leaf class/module names
-        // (mastodon 32, rails 26, rubocop 0).
+        // LAST `::`, not the first, and the prefix resolved RELATIVE TO the
+        // enclosing owner -- `rubyReopenIdentity`, the one copy of that rule.
+        const { name, owner: effOwner } = rubyReopenIdentity(rawName, owner)
         const sepIdx = rawName.lastIndexOf("::")
-        const name = sepIdx >= 0 ? rawName.substring(sepIdx + 2) : rawName
-        const scopeOwner = sepIdx >= 0 ? rawName.substring(0, sepIdx) : undefined
-        const effOwner = scopeOwner ? (owner ? `${owner}::${scopeOwner}` : scopeOwner) : owner
 
         const superClass = this.extractSuperclass(node)
         const isRailsModel = this.isRailsModelName(superClass)
@@ -542,6 +526,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             superClass,
             isRailsModel,
             isRailsController,
+            // A class declared inside a `class << obj` body lands on that object's
+            // SINGLETON, so no consumer can reach it by name. The module branch
+            // below carries the same marker for the same reason, and the export
+            // pass reads it for both.
+            ...(inSingletonClass ? { declaredInSingletonClass: true } : {}),
             // Full declaration path for reopen spellings (`Rake::NameSpace`)
             // so consumers that want the lexical path can recover it even
             // though the identity is leaf+owner (php-family precedent).
@@ -590,6 +579,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
               // class with a real name, so the anonymous binding does not
               // carry into it.
               anonBinding: undefined,
+              // Nor does a singleton-class scope: `class << obj; class K; end;
+              // end` declares K in the file, not on obj's singleton.
+              inSingletonClass: false,
             })
             if (this.isNoArgumentVisibilityMarker(child)) {
               bodyVisibility = child.text
@@ -612,7 +604,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             // `call`, so only that type is matched here (`command` /
             // `command_call` are not node types it can produce).
             if (sc && sc.type === "call") {
-              stack.push({ node: sc, owner, ownerKind, visibility, isSingleton: false })
+              stack.push({ node: sc, owner, ownerKind, visibility, isSingleton: false, inSingletonClass })
             }
           }
         }
@@ -623,29 +615,27 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "module") {
         const nameNode = node.childForFieldName("name")
         if (!nameNode) continue
-        // Same reopen normalization as class (`module A::B` ≡ nested
-        // `module A; module B`) — RUBD13, master-review 2026-09.
+        // Same reopen identity as the class branch above, for the same reason,
+        // through the SAME function: `module A::B::C` is one identity with
+        // `module A; module B; module C`, with the prefix resolved relative to
+        // the enclosing owner (`module Outer; module Inner::Deep` names
+        // `Outer::Inner::Deep`).
         const rawName = nameNode.text
-        // Same LAST-separator rule as the class branch above, for the same
-        // reason: `module A::B::C` must be the same identity as
-        // `module A; module B; module C`.
+        const { name, owner: effOwner } = rubyReopenIdentity(rawName, owner)
         const sepIdx = rawName.lastIndexOf("::")
-        const name = sepIdx >= 0 ? rawName.substring(sepIdx + 2) : rawName
-        const scopeOwner = sepIdx >= 0 ? rawName.substring(0, sepIdx) : undefined
-        // The prefix is a path RELATIVE TO THE CURRENT SCOPE, so it resolves
-        // against the enclosing owner rather than replacing it.
-        // `module Outer; module Inner::Deep` names `Outer::Inner::Deep`, and
-        // `scopeOwner ?? owner` produced the bare `Inner` — an owner that looks
-        // top-level for a module three levels down, which is how the two
-        // spellings still failed to unify even after the leaf fix.
-        const effOwner = scopeOwner ? (owner ? `${owner}::${scopeOwner}` : scopeOwner) : owner
 
         const sym: ASTEngine.UniversalSymbol = {
           name,
           kind: ASTEngine.SymbolKind.Module,
           range: this.nodeToRange(node),
           ownerName: effOwner,
-          metadata: { ...(sepIdx >= 0 ? { fqn: rawName } : {}) },
+          metadata: {
+            ...(sepIdx >= 0 ? { fqn: rawName } : {}),
+            // A module declared inside a `class << obj` body lands on that object's
+            // singleton; the class branch above carries the same marker for the
+            // same reason.
+            ...(inSingletonClass ? { declaredInSingletonClass: true } : {}),
+          },
         }
         symbols.push(sym)
         const body = this.findChild(node, "body_statement")
@@ -664,6 +654,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
               visibility: bodyVisibility,
               isSingleton: false,
               anonBinding: undefined,
+              inSingletonClass: false,
             })
             if (this.isNoArgumentVisibilityMarker(child)) {
               bodyVisibility = child.text
@@ -702,6 +693,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             // this method actually belongs to: the method is defined in the
             // block of an anonymous dynamic class bound to `anonBinding`.
             ...(anonBinding ? { anonymousScopeBinding: anonBinding } : {}),
+            // ...and that the method belongs to ONE object's singleton, which is
+            // not the same statement: `ownerName` can be right while the method
+            // is still unreachable by any name from outside.
+            ...(inSingletonClass ? { declaredInSingletonClass: true } : {}),
           },
         }
         symbols.push(sym)
@@ -761,6 +756,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
               visibility: bodyVisibility,
               isSingleton: true,
               anonBinding: undefined,
+              inSingletonClass: true,
             })
             if (this.isNoArgumentVisibilityMarker(child)) bodyVisibility = child.text
           }
@@ -793,6 +789,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: {
             isSingleton: true,
             ...(anonBinding ? { anonymousScopeBinding: anonBinding } : {}),
+            ...(inSingletonClass ? { declaredInSingletonClass: true } : {}),
           },
         }
         symbols.push(sym)
@@ -856,7 +853,14 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           const c = node.namedChild(i)
           if (!c) continue
           if (c.type === "identifier") { names.push(c.text); nameNodes.push(c) }
-          else if (c.type === "simple_symbol") { names.push(this.stripSymbolColon(c.text)); nameNodes.push(c) }
+          else if (c.type === "simple_symbol") {
+            // `alias :"a \"b\"" old` names a method the analyzer can only state if
+            // the escape resolves — `rubyNameFromLiteral`, the one rule every
+            // name-publishing site uses. A name it declines is skipped rather than
+            // published with a backslash in it.
+            const n = this.rubyNameFromLiteral(c)
+            if (n !== undefined && n.length > 0) { names.push(n); nameNodes.push(c) }
+          }
         }
         if (names.length === 2) {
           relationships.push({
@@ -883,88 +887,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // recursion below: a declaration call's ARGUMENTS may themselves hold
       // calls (`require File.expand_path(...)`) which must still surface.
       if (type === "call") {
-        // --- Rake DSL: `task :name do … end` and `namespace :x do … end` ---
-        // Handled BEFORE processCall, because a task is a declaration, not a
-        // call site: it is a named invokable unit with a body, and reporting it
-        // only as a call would leave a Rakefile contributing nothing.
-        if (isRakeFile) {
-          const nsHere = rakeNamespaceName(node)
-          if (nsHere !== null) {
-            // The namespace is a NAMED, INVOKABLE unit in its own right —
-            // `rake db:migrate` is what a user types — so it is emitted as a
-            // symbol rather than being only a name prefix.
-            //
-            // It has to be a real symbol, not just an `ownerName`: `contains`
-            // is resolved by looking the owner up by name, so an `ownerName` of
-            // `db` with no `db` symbol makes the containment unresolvable and it
-            // is silently DROPPED at persist time. Emitting the namespace is
-            // what makes the grouping survive into the graph.
-            const enclosingNs = frame.rakeNamespace
-            symbols.push({
-              name: enclosingNs ? `${enclosingNs}:${nsHere}` : nsHere,
-              kind: ASTEngine.SymbolKind.Module,
-              range: this.nodeToRange(node),
-              // No `ownerName`, for the same reason a task does not set one: the
-              // persist layer derives containment from the qualified name, so
-              // `db:schema` already yields `db --contains--> db:schema`.
-              metadata: { rakeNamespace: true },
-            })
-            // Carry the prefix into the block. The block's children are pushed
-            // below with the frame they already have plus this namespace.
-            const blk = node.childForFieldName("block")
-            if (blk) {
-              for (let i = blk.namedChildCount - 1; i >= 0; i--) {
-                const child = blk.namedChild(i)
-                if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding, rakeNamespace: enclosingNs ? `${enclosingNs}:${nsHere}` : nsHere })
-              }
-            }
-            continue
-          }
-          if (node.childForFieldName("method")?.text === "task") {
-            const taskName = rakeTaskName(node)
-            // A task with no block is a declaration of dependencies only
-            // (`task :default => [:build]`). It still names a unit `rake -T`
-            // will list once something defines it, so it is reported — with an
-            // empty body rather than being dropped.
-            if (taskName !== null) {
-              const qualified = frame.rakeNamespace ? `${frame.rakeNamespace}:${taskName}` : taskName
-              const description = rakeTaskDescription(node)
-              const block = node.childForFieldName("block")
-              const sym: ASTEngine.UniversalSymbol = {
-                name: qualified,
-                kind: ASTEngine.SymbolKind.Function,
-                range: this.nodeToRange(node),
-                // `ownerName` is deliberately NOT set. The persist layer already
-                // derives containment from the qualified name — a `db:migrate`
-                // symbol gets a `db --contains--> db:migrate` edge from its name
-                // alone. Setting `ownerName: "db"` as well produced that edge
-                // TWICE, measured: 2 identical `contains` rows for one task.
-                //
-                // The namespace is still a real emitted symbol (see the
-                // `namespace` branch below), so the edge resolves to something
-                // that exists rather than dangling.
-                docstring: description,
-                complexity: block ? this.calculateNodeComplexity(block) : 1,
-                metadata: { rakeTask: true },
-              }
-              symbols.push(sym)
-            }
-            // The task BODY is still traversed, so the calls inside it
-            // (`sh "pytest"`, `puts`) keep producing relationships exactly as
-            // they did before tasks were recognised. Only the task DECLARATION
-            // is handled here; its interior is ordinary Ruby.
-            for (let i = node.namedChildCount - 1; i >= 0; i--) {
-              const child = node.namedChild(i)
-              if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding, rakeNamespace: frame.rakeNamespace })
-            }
-            continue
-          }
-        }
         this.processCall(node, symbols, relationships, imports, metadata,
           owner, undefined, visibilityOverrides, anonBinding)
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding, rakeNamespace: frame.rakeNamespace })
+          if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding, inSingletonClass })
         }
         continue
       }
@@ -975,7 +902,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "program") {
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false })
+          if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false, inSingletonClass })
         }
         continue
       }
@@ -1035,6 +962,54 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
               // The symbol above IS this name in this file, so the body's
               // member edges and member symbols attribute to it.
               factoryOwner = left.text
+              // `K = Class.new(Base)` DECLARES A SUPERCLASS, and the lane doc has
+              // carried the extends edge for it as owed since the m60 round:
+              // "`Class.new(Base)` superclass edges are not emitted. The symbol
+              // is the core fix; the extends edge for a factory base is still
+              // owed." Ruby states the relationship in the call — `Class.new`
+              // takes the superclass as its first argument and the resulting
+              // class really does inherit from it — so the construct EXISTS and
+              // this is a GAP inside an already-emitted type, not a ruling.
+              // Measured over the corpus (rb-factory-define-probe.ts, the engine's
+              // own getParser): `K = Class.new(<constant>)` 16 sites in 16 files
+              // per the full 7,499-file sweep.
+              //
+              // RESTRICTED TO `Class.new`, and the restriction is the correctness
+              // of the rule rather than a caution about it. `Struct.new(:a, :b)`
+              // and `Data.define(:a, :b)` take MEMBER NAMES as their first
+              // argument and have no superclass parameter at all, so a rule
+              // accepting any factory receiver would publish
+              // `extends Car -> wheels` for `Car = Struct.new(:wheels, :doors)`.
+              // The ratio is what decides it: 29 member-name factories to 4 real
+              // bases per 1,874-file stride, so a general rule would fabricate
+              // about seven edges for every one it got right. A base that is a
+              // CALL (`Class.new(base_for(x))`) is refused for the reason
+              // `isStaticSuperclassName` exists — the concrete base is unknowable
+              // — and measured at 0 over the corpus.
+              const factoryBaseNode = this.factorySuperclassNode(right)
+              const factoryBase = factoryBaseNode ? factoryBaseNode.text.trim() : undefined
+              if (factoryBase && this.isStaticSuperclassName(factoryBase)) {
+                relationships.push({
+                  source: left.text,
+                  target: this.leafName(factoryBase),
+                  type: ASTEngine.RelationshipType.Extends,
+                  confidence: 1.0,
+                  // #825: the base type's own node names the edge, which is the
+                  // first argument of the factory call.
+                  line_number: this.nodeLine(factoryBaseNode),
+                  metadata: {
+                    // Both ends are WRITTEN — the constant on the left and the
+                    // constant in the call — so this is structural evidence with
+                    // no inferred name, unlike `instantiates`'
+                    // `resolvedTarget: "enclosing-class"`. What the edge ASSERTS is
+                    // `Class.new`'s documented meaning, which is Ruby rather than
+                    // this file, and there is no `superclass` clause on the line
+                    // for a reader to check; the mechanism is recorded so that is
+                    // visible rather than implied.
+                    definedBy: "Class.new",
+                  },
+                })
+              }
             } else if (owner) {
               symbols.push({
                 name: left.text,
@@ -1061,7 +1036,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // are still surfaced. The assignment node was not otherwise recursed.
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner: factoryOwner ?? owner, ownerKind, visibility, isSingleton: false, anonBinding: anonBindingForFrames })
+          if (child) stack.push({ node: child, owner: factoryOwner ?? owner, ownerKind, visibility, isSingleton: false, anonBinding: anonBindingForFrames, inSingletonClass })
         }
         continue
       }
@@ -1102,17 +1077,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // inside an anonymous block — which is to say, every member, since
           // the block body is itself a level — went out unmarked and the first
           // implementation of this marker marked nothing at all.
-          //
-          // `rakeNamespace` is carried for the same reason and was the same
-          // bug: a Rake `namespace :db do … end` block's only named child is a
-          // `body_statement` wrapper, which lands HERE rather than in the call
-          // handler, so dropping the prefix at this line renamed every task in a
-          // namespace from `db:migrate` to `migrate`. Verified: with the carry,
-          // `namespace :db` + `task :migrate` emits `db:migrate`.
-          //
-          // Any context added to the frame type must be added HERE too, or it
-          // is silently discarded at the first level of descent.
-          if (child) childFrames.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding, rakeNamespace: frame.rakeNamespace })
+          if (child) childFrames.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding, inSingletonClass })
         }
         for (const cf of childFrames) stack.push(cf)
       }
@@ -1124,6 +1089,159 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!symbol.ownerName) continue
       const override = visibilityOverrides.get(`${symbol.ownerName}\u0000${symbol.name}`)
       if (override) symbol.visibility = override as any
+    }
+
+    // --- Exports: the file's IMPORTABLE UNITS ---
+    //
+    // Ruby states no export, so the construct is a CONVENTION, and the reasoning
+    // that would rule it out is the one this repository has already overturned
+    // once: json's `exports` was ruled on "no export_statement node", and a
+    // grammar cannot see a convention. What the language DOES state is
+    // visibility — `private`, `protected`, `public`, `private_constant` — which
+    // is a measured vocabulary (counts in the lane doc), not an assumed one.
+    //
+    // The SHAPE is not this lane's to invent. `run-fixtures.ts` carries the M49
+    // exports-family invariant on every fixture of every language
+    // (reviews/jvm-closure-audit.md, "exports-fork verdict"):
+    //
+    //   1. export names must be UNIQUE — a duplicate cannot identify its
+    //      provider (java/groovy overloads emitted ["Svc","greet","greet"]);
+    //   2. every export name must resolve to a TOP-LEVEL symbol — "an importable
+    //      unit, i.e. a name an importer can bind", admitting ownerless
+    //      file-scope units and namespace/module-owned ones, and REJECTING
+    //      type-owned members with the words "membership rides Contains". That
+    //      asymmetry IS the ruling.
+    //
+    // An earlier draft of this pass exported every public member of every class
+    // and failed all nine ruby fixtures on both clauses, which is the gate doing
+    // its job: it encodes that `import Cls` binds a type and never a bare member,
+    // and Ruby has no syntax that binds a bare member of a class either. So the
+    // surface is Ruby's TOP-LEVEL declarations — the names `require_relative`
+    // puts in the loading file's scope:
+    //
+    //   `class K` / `module M` / `K = Struct.new(…)` / `CONST = v` / `def m`
+    //
+    // and it does NOT include a class member (that is `contains`), a nested type
+    // (that is `contains`), or `def self.m` at file scope — `self` there is
+    // `main`, whose singleton belongs to the loading process and is unreachable
+    // from any other file, so it is a member of nothing a consumer can bind.
+    //
+    // The overlap with `contains` is therefore ZERO BY CONSTRUCTION, not by
+    // assertion: `contains` is emitted only for a symbol that HAS an ownerName,
+    // and every export is ownerless by this rule. That is what makes the second
+    // label worth its bytes here — it names the top-level surface, which no
+    // other edge in the payload names at all.
+    //
+    // The edge source is the FILE's unit (its basename without the extension),
+    // which is the python (`moduleName`) and dart (`moduleName`) shape for the
+    // same role. It is a path-derived convention and is DECLARED on the edge as
+    // `resolvedTarget: "file-unit"`, mirroring the `resolvedTarget:
+    // "enclosing-class"` marker `instantiates` already uses for a name implied
+    // rather than written. The weakness is shared with those two lanes and is
+    // recorded as a limitation: two files can share a stem.
+    // GATED on the raw text, and the gate is the cheap direction. Measured on the
+    // stride sample, the ungated pre-pass cost 25% of analyze throughput
+    // (61.5 -> 49.1 files/s in the A/B, p95 59.6 -> 74.0 ms) for a construct that
+    // appears in 73 of 7,500 corpus files. A substring test over the source cannot
+    // MISS a `private_constant` — a tree can only contain one if the identifier
+    // appears in the text — and a false positive (the word inside a comment or a
+    // heredoc) costs one walk that finds nothing. The direction of the error is
+    // therefore "walk when you did not have to", never "skip one you needed".
+    const privateConstants = content.indexOf("private_constant") >= 0
+      ? this.collectPrivateConstants(rootNode)
+      : new Map<string, Set<string>>()
+    const fileUnit = rubyFileUnitName(filePath)
+    const exportedNames = new Set<string>()
+    let exportDuplicate = 0
+    let exportPrivateConstant = 0
+    let exportUnnameable = 0
+    let exportMainSingleton = 0
+    let exportSingletonMember = 0
+    for (const s of symbols) {
+      // TOP-LEVEL ONLY, per the ruling above. An owned symbol is a member.
+      if (s.ownerName) continue
+      if (s.kind !== ASTEngine.SymbolKind.Class &&
+          s.kind !== ASTEngine.SymbolKind.Module &&
+          s.kind !== ASTEngine.SymbolKind.Constant &&
+          s.kind !== ASTEngine.SymbolKind.Function) continue
+      const name = String(s.name ?? "")
+      // R7: a name that names nothing is not an export. Empty, whitespace, or a
+      // template (`"#{…}"`), the last of which a macro argument can still carry.
+      if (name.length === 0 || name.trim().length === 0 || name.indexOf("#{") >= 0) {
+        exportUnnameable++
+        continue
+      }
+      // `def self.m` at file scope is a singleton method on `main`: it is not
+      // reachable from another file, so it is not an importable unit.
+      if (s.isStatic) {
+        exportMainSingleton++
+        continue
+      }
+      // Anything declared inside a `class << obj` body belongs to that ONE
+      // object's singleton and is unreachable by name from outside — a method
+      // (`obj` is usually a local, so an ownerless Function reads exactly like a
+      // top-level one) and a TYPE alike (`module PathAttr` inside
+      // `class << Tempfile`, lib/tempfile.rb:599, is a constant on Tempfile's
+      // singleton class, not a top-level one). The reader is
+      // `metadata.declaredInSingletonClass`, set from a frame flag rather than from
+      // `isStatic`, because `private def m` wraps the def in a `call` whose frame
+      // push hardcoded `isSingleton: false`.
+      if (s.metadata?.declaredInSingletonClass === true) {
+        exportSingletonMember++
+        continue
+      }
+      // `private_constant :X` removes X from the surface a consumer reaches by
+      // name, whatever X's kind: the idiom is overwhelmingly a hidden error or
+      // warning CLASS, and a factory-declared type (`Hidden = Struct.new(:b)`) is
+      // a constant binding like any other. Gating this on the Constant kind was
+      // the first version, and it exported exactly the factories a file declares
+      // unexportable — found by the ontology fixture's own negative.
+      // 142 `private_constant` and 2 `public_constant` sites in the corpus.
+      const hidden = privateConstants.get(FILE_SCOPE_OWNER)
+      if (hidden?.has(name)) {
+        exportPrivateConstant++
+        continue
+      }
+      // A reopen (`class K` twice in one file) or a factory that also has a
+      // `class K` is ONE importable unit, so the list names it once.
+      if (exportedNames.has(name)) {
+        exportDuplicate++
+        continue
+      }
+      exportedNames.add(name)
+      exports.push({
+        name,
+        type: "export_surface",
+        kind: s.kind,
+        range: s.range,
+        metadata: { unit: fileUnit, unitKind: "file", definedBy: s.metadata?.definedBy },
+      })
+      relationships.push({
+        source: fileUnit,
+        target: name,
+        type: ASTEngine.RelationshipType.Exports,
+        confidence: 1.0,
+        line_number: s.range?.startLine,
+        metadata: {
+          // The unit name comes from the PATH, not from a declaration in the
+          // file. Declared, so a consumer can tell an inferred unit from a
+          // written one — the same convention `instantiates` uses.
+          resolvedTarget: "file-unit",
+          exportKind: s.kind,
+        },
+      })
+    }
+    metadata.exportsExcluded = {
+      duplicateReopen: exportDuplicate,
+      privateConstant: exportPrivateConstant,
+      unnameable: exportUnnameable,
+      mainSingleton: exportMainSingleton,
+      singletonMember: exportSingletonMember,
+      // Owned symbols are refused by RULE (the exports-family ruling), not by a
+      // filter that could drift, so this is a constant rather than a count. It is
+      // stated here so a reader does not have to infer it from the absence of a
+      // number.
+      memberByContains: "owned symbols are containment, not importable units",
     }
 
     // --- Override relationships ---
@@ -1216,6 +1334,24 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
     }
+
+    // `exports` and `contains` share no (source, target) pair, and that is a
+    // property of the RULES rather than a hope: `contains` is emitted only for a
+    // symbol with an ownerName, and the exports-family ruling admits only
+    // ownerless symbols. The count is still computed, because a rule that claims
+    // zero overlap and is never measured is exactly the kind of claim this
+    // repository keeps finding wrong. One linear pass over the containment pairs.
+    const containsPairs = new Set<string>()
+    for (const r of relationships) {
+      if (r.type === ASTEngine.RelationshipType.Contains) containsPairs.add(`${r.source}\u0000${r.target}`)
+    }
+    let exportDuplicateOfContains = 0
+    for (const r of relationships) {
+      if (r.type === ASTEngine.RelationshipType.Exports && containsPairs.has(`${r.source}\u0000${r.target}`)) {
+        exportDuplicateOfContains++
+      }
+    }
+    metadata.exportsOverlappingContains = exportDuplicateOfContains
 
     // Evidence-tier classification (managed-OO family contract — swift/dart/
     // csharp/objc/php precedent; M14 section D requires >=2 distinct
@@ -1729,6 +1865,116 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   // ========================================================================
+  // LOAD FACTS — one `require`-family site, THREE surfaces
+  // ========================================================================
+
+  /**
+   * Everything a receiverless `require` / `require_relative` / `load` /
+   * `autoload` of a literal path states. One function because the four call
+   * sites this replaces were four copies of the same three pushes, and the
+   * `references`/`imports` PAIR is exactly the kind of thing that must not be
+   * half-applied: an earlier round of this file already lost a fix to a branch
+   * that claimed a rule "already existed" above the code that implemented it.
+   *
+   *   1. `ImportInfo` — the brain_import row. Reaches the file-dependency engine.
+   *   2. `references` — "this file mentions this path". Source is the declared
+   *      file-scope owner. Pinned by three committed fixtures; unchanged.
+   *   3. `imports` — "this file DEPENDS ON this path". The same target, a second
+   *      label, and the reason is not cosmetic:
+   *
+   *        - it is the label the dependency surfaces and `bb_graph`/`bb_impact`/
+   *          `bb_migrate` read. A graph query that narrows to `imports` sees
+   *          nothing for ruby today, so "ruby has no file dependencies" is
+   *          answerable from the graph and it is false.
+   *        - `metadata.fileLevel` is what makes the SOURCE bind to the importing
+   *          FILE: `parallel-indexer.ts` binds `source_external` to the
+   *          project-relative path when the source names no symbol and the edge
+   *          declares `fileLevel`. The `references` edge does not declare it, so
+   *          its source stays the scope sentinel and no surface can answer "what
+   *          does this file require".
+   *
+   *      bash emits the same pair for `source` (`isSourceImport` +
+   *      `isSourceDependency` on the same normalized path), so this is the family
+   *      precedent and not a ruby invention.
+   *
+   * The TARGET is the bare require path, not the `<path>:<item>` form the
+   * js/python/dart lanes use. That is a property of the language, not a choice:
+   * `require "json/parser"` names a FILE and Ruby has no syntax for requiring one
+   * member of it, so there is no item to write after a colon. The consequence is
+   * measured and declared: `import-resolution.ts` only considers `imports` rows
+   * whose target contains a `:`, so these rows reach the graph and the dependency
+   * engine but NOT that resolver. Inventing a `:*` suffix would buy admission to
+   * a pass that then refuses `*` by design ("namespace-star-no-single-target") —
+   * bytes and a target string that is not a path, for nothing.
+   */
+  private pushLoadFacts(
+    node: Node,
+    arg: Node,
+    cleanText: string,
+    methodName: string,
+    relationships: ASTEngine.UniversalRelationship[],
+    imports: ASTEngine.ImportInfo[],
+  ): void {
+    // R7: a name that names nothing is not published. `require ''` and `load ""`
+    // are legal Ruby — the test suite uses them to assert the failure
+    // (test/ruby/test_settracefunc.rb:2594) — and they name no file, so the edge
+    // would carry an EMPTY target. One site, and it was published under BOTH
+    // labels; the full-corpus oracle census is what found it, because the oracle's
+    // `push` refuses an empty target by construction and so could never agree with
+    // an edge that has one. The pre-existing `references` forbid on an empty target
+    // (the FIX-12 defect) did not catch it either, for the same reason: that forbid
+    // is written against a target that a BROKEN expression receiver produced, and
+    // here the receiver is absent and the string is empty.
+    if (cleanText.length === 0) return
+    imports.push({
+      module: cleanText,
+      names: [],
+      range: this.nodeToRange(node),
+      isWildcard: true,
+      metadata: { requireMethod: methodName },
+    })
+    relationships.push({
+      // GAD2 twin (groovy wave, standing rule): the require edge's
+      // source used a hardcoded "root" while calls/uses/instan-
+      // tiates at the same top level use "Global" — two sentinels
+      // for one role in one file. Unified on "Global" (the pinned
+      // convention; no fixture ever pinned "root") — and now unified
+      // through FILE_SCOPE_OWNER, which is what made the SECOND
+      // divergent spelling ("unknown", four sites: alias,
+      // alias_method, mixin, association) visible at all.
+      source: FILE_SCOPE_OWNER,
+      target: cleanText,
+      type: ASTEngine.RelationshipType.References,
+      confidence: 0.9,
+      // #825: the required path's string node names the edge.
+      line_number: this.nodeLine(arg),
+      metadata: { requireMethod: methodName },
+    })
+    relationships.push({
+      source: FILE_SCOPE_OWNER,
+      target: cleanText,
+      type: ASTEngine.RelationshipType.Imports,
+      confidence: 1.0,
+      line_number: this.nodeLine(arg),
+      metadata: {
+        requireMethod: methodName,
+        // The importer is the FILE, not a scope — see the note above.
+        fileLevel: true,
+        // HOW the path is resolved, which is decidable per method and is the
+        // only classification that is a fact rather than a guess:
+        // `require_relative` is relative to the requiring file by definition, so
+        // its target is a path in the project; a bare `require` is resolved
+        // against `$LOAD_PATH`, which can name a gem OR a project file, so its
+        // target's location is unknown. `is_external` is therefore NOT set:
+        // parallel-indexer reads it to keep external packages out of internal
+        // resolution, and asserting `false` for a load-path require would be a
+        // claim this file cannot make.
+        resolution: methodName === "require_relative" ? "file-relative" : "load-path",
+      },
+    })
+  }
+
+  // ========================================================================
   // CALL PROCESSOR — resolves a single `call` node
   // ========================================================================
   private processCall(
@@ -1851,30 +2097,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             // Measured: 217 sites (rails 208, rubocop 9, mastodon 0) per
             // fixtures/repositories.
             if (cleanText.indexOf("#{") >= 0) continue
-            imports.push({
-              module: cleanText,
-              names: [],
-              range: this.nodeToRange(node),
-              isWildcard: true,
-              metadata: { requireMethod: methodName },
-            })
-            relationships.push({
-              // GAD2 twin (groovy wave, standing rule): the require edge's
-              // source used a hardcoded "root" while calls/uses/instan-
-              // tiates at the same top level use "Global" — two sentinels
-              // for one role in one file. Unified on "Global" (the pinned
-              // convention; no fixture ever pinned "root") — and now unified
-              // through FILE_SCOPE_OWNER, which is what made the SECOND
-              // divergent spelling ("unknown", four sites: alias,
-              // alias_method, mixin, association) visible at all.
-              source: FILE_SCOPE_OWNER,
-              target: cleanText,
-              type: ASTEngine.RelationshipType.References,
-              confidence: 0.9,
-              // #825: the required path's string node names the edge.
-              line_number: this.nodeLine(arg),
-              metadata: { requireMethod: methodName },
-            })
+            this.pushLoadFacts(node, arg, cleanText, methodName, relationships, imports)
           }
         }
       }
@@ -1896,22 +2119,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             // Same rule as the require family above, and this is the branch whose
             // comment claimed the rule already existed.
             if (cleanText.indexOf("#{") >= 0) continue
-            imports.push({
-              module: cleanText,
-              names: [],
-              range: this.nodeToRange(node),
-              isWildcard: true,
-              metadata: { requireMethod: methodName },
-            })
-            relationships.push({
-              source: FILE_SCOPE_OWNER,
-              target: cleanText,
-              type: ASTEngine.RelationshipType.References,
-              confidence: 0.9,
-              // #825: the required path's string node names the edge.
-              line_number: this.nodeLine(arg),
-              metadata: { requireMethod: methodName },
-            })
+            this.pushLoadFacts(node, arg, cleanText, methodName, relationships, imports)
           }
         }
       }
@@ -1976,8 +2184,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Bare strings are legal attribute names too (`attr_reader
           // "name"`); the grammar types them `string`, not simple_symbol.
           if (arg && (arg.type === "simple_symbol" || arg.type === "string")) {
-            let propName = this.stripSymbolColon(arg.text)
-            if (arg.type === "string") propName = this.stripQuotes(arg.text)
+            // `rubyNameFromLiteral` so an escape inside the literal is resolved
+            // rather than published, and a name it declines is skipped — the same
+            // rule `define_method` uses, for the same reason.
+            const propName = this.rubyNameFromLiteral(arg)
+            if (propName === undefined || propName.length === 0) continue
             symbols.push({
               name: propName,
               kind: ASTEngine.SymbolKind.Property,
@@ -1993,34 +2204,53 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // --- define_method ---
+    //
+    // ARGUMENT 0 AND ONLY ARGUMENT 0. `Module#define_method` has the signature
+    // `define_method(symbol, method = nil, &block)`, so the NAME is the first
+    // argument and a second literal argument is the method BODY, written as a
+    // string, an UnboundMethod or a proc.
+    //
+    // The branch used to take the first `simple_symbol`/`string` argument it
+    // found, wherever that was — which is argument 0 only when the name is a
+    // literal. When the name is a VARIABLE there is no literal at position 0 and
+    // the scan fell through to the body:
+    //
+    //   assert_raise(TypeError) { cl.class_eval { define_method(name, "") } }
+    //     test/-ext-/symbol/test_inadvertent_creation.rb:65
+    //
+    // `stripQuotes('""')` is the empty string, so the analyzer published a Method
+    // symbol named `""` and `contains` published an edge whose TARGET was the
+    // empty string. No reading makes a zero-length string name a member, so that
+    // is an R7 violation outright, and the oracle could not catch it: its `push`
+    // refuses an empty target by construction, so an edge carrying one can never
+    // produce a disagreement to investigate. Measured by the full-corpus R7
+    // sweep (rb-r7-triage.ts): 2 empty-named symbols and 2 `contains` edges with
+    // an empty target, all on that one file, source `TestInadvertent`.
+    //
+    // The fix is the SIGNATURE, not a guard against an empty body: reading
+    // argument 0 makes `define_method(name, "")` and `define_method(name, other)`
+    // both silent, which is the correct answer for a name known only at runtime
+    // and is the same silence `define_method(some_var)` already got.
     if (methodName === "define_method") {
       const args = this.findChild(node, "argument_list")
-      if (args) {
-        const _nc19 = args.namedChildCount
-        for (let i = 0; i < _nc19;
- i++) {
-          const arg = args.namedChild(i)
-          if (arg && (arg.type === "simple_symbol" || arg.type === "string")) {
-            let name = this.stripSymbolColon(arg.text)
-            if (arg.type === "string") name = this.stripQuotes(arg.text)
-            // `define_method("#{sym}?")` names a method only at RUNTIME — the
-            // argument is a TEMPLATE, not a name, and the graph gained a symbol
-            // literally called `#{sym}?` that resolves to no method in any file.
-            // R7's placeholder-name doctrine: a symbol name must name something.
-            // The method is unknowable statically, so nothing is emitted, which
-            // is the same silence `define_method(some_var)` already gets.
-            // Measured: 7 symbols in 4 files per 1,200 (rails).
-            if (name.indexOf("#{") >= 0) break
-            symbols.push({
-              name,
-              kind: ASTEngine.SymbolKind.Method,
-              range: this.nodeToRange(arg),
-              ownerName: owner,
-              visibility: "public" as any,
-              metadata: { isDynamicMethod: true },
-            })
-            break
-          }
+      const nameArg = args && args.namedChildCount > 0 ? args.namedChild(0) : null
+      if (nameArg && (nameArg.type === "simple_symbol" || nameArg.type === "string")) {
+        // `define_method("#{sym}?")` names a method only at RUNTIME — the
+        // argument is a TEMPLATE, not a name, and the graph gained a symbol
+        // literally called `#{sym}?` that resolves to no method in any file.
+        // R7's placeholder-name doctrine: a symbol name must name something.
+        // Measured: 19 template-name sites in 11 files per 1,874-file stride on
+        // CRuby, all still silent.
+        const name = this.rubyNameFromLiteral(nameArg)
+        if (name !== undefined && name.length > 0 && name.indexOf("#{") < 0) {
+          symbols.push({
+            name,
+            kind: ASTEngine.SymbolKind.Method,
+            range: this.nodeToRange(nameArg),
+            ownerName: owner,
+            visibility: "public" as any,
+            metadata: { isDynamicMethod: true },
+          })
         }
       }
       return
@@ -2035,7 +2265,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = 0; i < args.namedChildCount && names.length < 2; i++) {
           const arg = args.namedChild(i)
           if (arg && (arg.type === "simple_symbol")) {
-            names.push(this.stripSymbolColon(arg.text))
+            // One name rule for every site that publishes a method name — see
+            // `rubyNameFromLiteral`.
+            const n = this.rubyNameFromLiteral(arg)
+            if (n === undefined || n.length === 0) continue
+            names.push(n)
             argNodes.push(arg)
           }
         }
@@ -2102,8 +2336,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             // are 20 of the 22 violations over all 8,528 files — `contains -> name`
             // and `contains -> role` claiming a class contains its own parameter.
             if (arg && (arg.type === "simple_symbol" || arg.type === "string")) {
-              let name = this.stripSymbolColon(arg.text)
-              if (arg.type === "string") name = this.stripQuotes(arg.text)
+              // One name rule for every site that publishes a member name — see
+              // `rubyNameFromLiteral`.
+              const name = this.rubyNameFromLiteral(arg)
+              if (name === undefined || name.length === 0) continue
               // `anonBinding` set => this macro is written inside the block of
               // an anonymous dynamic class, so the association belongs to a
               // class with NO name — not to `owner`, which is only the lexical
@@ -2140,7 +2376,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (args && args.namedChildCount > 0) {
           const firstArg = args.namedChild(0)
           if (firstArg && (firstArg.type === "simple_symbol")) {
-            const scopeName = this.stripSymbolColon(firstArg.text)
+            // One name rule for every site that publishes a member name — see
+            // `rubyNameFromLiteral`.
+            const scopeName = this.rubyNameFromLiteral(firstArg)
+            if (scopeName === undefined || scopeName.length === 0) return
             symbols.push({
               name: scopeName,
               kind: ASTEngine.SymbolKind.Method,
@@ -2316,6 +2555,140 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+ * The NAME a `simple_symbol` or `string` literal declares, or `undefined` when
+ * the analyzer cannot state it.
+ *
+ * ## Why this exists
+ *
+ * `stripQuotes` removes the OUTER quotes and stops there, so a Ruby escape inside
+ * the literal survives into the published name. Ruby's
+ * `define_method("test_safe_load_marshal String \"hello\" ivar")` defines a method
+ * whose name is `test_safe_load_marshal String "hello" ivar` — with a plain quote,
+ * no backslash — and the analyzer published the name with the backslash still in
+ * it. That name matches no method in the program, and it propagated: the symbol
+ * carried it, `contains` carried it, and `overrides` carried it again as
+ * `TestCase.<that name>`. Measured by the full-corpus R7 sweep: 19 distinct
+ * escaped names, 14 `contains` edges and 14 `overrides` edges with a quote in a
+ * target, every one in test/rubygems/test_gem_safe_marshal.rb — generated
+ * round-trip test methods, so the names are real but the escapes were not
+ * resolved.
+ *
+ * ## The escape set, and why it is closed
+ *
+ * The corpus says which escapes occur, and the inventory is four pairs:
+ *
+ *   \"  56      \\  21      \x  21      \u  1
+ *
+ * `\"`, `\\` and the single-character control escapes resolve to text a name can
+ * carry, so they are resolved here and the name is published correct. `\x` and
+ * `\u` are NOT resolved, and that is a decision rather than an omission: `\x61`
+ * is the BYTE 0x61 and `\u{3042}` is a non-ASCII character, so resolving them
+ * would publish a name built from raw bytes or a non-Latin script — a string that
+ * no consumer can bind and that the parallel-indexer's own name filters would
+ * then treat as garbage. A name this analyzer cannot state is not published,
+ * which is the same doctrine the `#{…}` template refusal above applies and the
+ * reason that refusal exists.
+ *
+ * So the rule is: resolve the escapes that yield a name, refuse the name when it
+ * carries an escape that does not. `\q` — an escape Ruby does not define at all
+ * — takes the same path, and returns `undefined` rather than passing the backslash
+ * through.
+ *
+ * ## Character scan, no pattern
+ *
+ * The escapes are matched by character code against a switch, and the scan walks
+ * the string once. A table keyed on a substring would be a lookup dressed as a
+ * parse; this reads the backslash, then the character it escapes, and decides on
+ * those two codes.
+ */
+private rubyNameFromLiteral(node: Node): string | undefined {
+  const raw = node.text
+  let s = raw
+  if (node.type === "string") {
+    s = this.stripQuotes(raw)
+  } else {
+    s = this.stripSymbolColon(raw)
+  }
+  if (s.indexOf("\\") < 0) return s
+
+  let out = ""
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (c !== 92 /* backslash */) { out += s[i]; continue }
+    if (i + 1 >= s.length) return undefined   // a trailing backslash: not a name
+    const e = s[i + 1]
+    // Resolvable: the escaped character stands for itself.
+    if (e === "\\" || e === '"' || e === "'" || e === "#") { out += e; i++; continue }
+    // Ruby's named control escapes. A newline or a tab inside a symbol name is
+    // what Ruby itself produces, so the published name matches.
+    if (e === "a") { out += "\x07"; i++; continue }
+    if (e === "b") { out += "\b"; i++; continue }
+    if (e === "e") { out += "\x1b"; i++; continue }
+    if (e === "f") { out += "\f"; i++; continue }
+    if (e === "n") { out += "\n"; i++; continue }
+    if (e === "r") { out += "\r"; i++; continue }
+    if (e === "s") { out += " "; i++; continue }
+    if (e === "t") { out += "\t"; i++; continue }
+    if (e === "v") { out += "\v"; i++; continue }
+    if (e === "0") { out += "\0"; i++; continue }
+    // Everything else — \x \u \c \C \M, octal, and any escape Ruby does not
+    // define — is a name this analyzer declines to state.
+    return undefined
+  }
+  return out
+}
+
+/**
+   * The node that NAMES the base of a `K = Class.new(Base)` factory, or null.
+   *
+   * Only `Class.new` counts, and only when the base is the FIRST argument and is
+   * written as a constant or a scope path. `Struct.new(:a, :b)` and
+   * `Data.define(:a, :b)` take member names there, not a superclass — neither
+   * class has a superclass parameter — so recognising them as a base would
+   * fabricate an `extends` edge against a symbol name. `Module.new` takes no
+   * argument at all, which the method check below also rules out.
+   *
+   * The RHS may wrap the call (`Class.new(Base) { … }.new`, which
+   * `dynamicClassFactoryKind` already recurses through), so the search for the
+   * `Class.new` head repeats the same bounded walk rather than assuming the call
+   * sits at the top. The recursion is bounded by the grammar: the inner node it
+   * recurses into must itself be a `.new` call whose own receiver is a constant.
+   */
+  private factorySuperclassNode(rhs: Node | null): Node | null {
+    if (!rhs) return null
+    let callNode: Node | null = rhs.type === "call" ? rhs : null
+    if (!callNode) {
+      for (let i = 0; i < rhs.namedChildCount; i++) {
+        const c = rhs.namedChild(i)
+        if (c && c.type === "call") { callNode = c; break }
+      }
+    }
+    if (!callNode) return null
+    const methodNode = callNode.childForFieldName("method")
+    if (!methodNode || methodNode.text !== "new") return null
+    let receiver: string | undefined
+    for (let i = 0; i < callNode.namedChildCount; i++) {
+      const c = callNode.namedChild(i)
+      if (!c) continue
+      if (c.id === methodNode.id) break
+      if (c.type === "constant" || c.type === "scope_resolution") { receiver = c.text; continue }
+      // Any other leading child means the receiver is an expression, whose
+      // concrete class is unknowable. Recurse into a nested `.new` and take the
+      // INNER call's base only when the inner call is itself a `Class.new` —
+      // the same bounded shape `dynamicClassFactoryKind` walks.
+      if (c.type === "call") return this.factorySuperclassNode(c)
+      return null
+    }
+    if (receiver !== "Class") return null
+    const args = this.findChild(callNode, "argument_list")
+    if (!args || args.namedChildCount === 0) return null
+    const first = args.namedChild(0)
+    if (!first) return null
+    if (first.type !== "constant" && first.type !== "scope_resolution") return null
+    return first
+  }
+
+  /**
    * If `node` is a `X.new`/`X.define` call on a class-factory receiver,
    * return "Class" (Struct/Data/Class) or "Module" (Module.new); else null.
    * Receiver must be the bare constant (RHS of the assignment may wrap in
@@ -2337,8 +2710,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!callNode) return null
     const methodNode = callNode.childForFieldName("method")
     if (!methodNode) return null
-    const methodName = methodNode.text
-    if (methodName !== "new" && methodName !== "define") return null
+    let methodName = methodNode.text
     let receiver: string | undefined
     const _nc23 = callNode.namedChildCount
     for (let i = 0; i < _nc23;
@@ -2348,16 +2720,113 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!child) continue
       if (child.type === "constant" || child.type === "scope_resolution") {
         receiver = child.text
+      } else if (!receiver && child.type === "call" && (methodName === "new" || methodName === "define")) {
+        // `.new` / `.define` APPLIED TO A FACTORY BLOCK — `K =
+        // Class.new(Base) { … }.new`, which is how a class with a block body and
+        // an instance built from it is written, and CRuby ships it
+        // (bootstraptest/runner.rb:84 `BT = Class.new(bt) do … end.new`).
+        //
+        // The outer call's receiver is a CALL node, not a constant, so the guard
+        // above found no receiver and the factory went UNRECOGNISED. Two facts
+        // were then wrong and neither announced itself: the LHS `K` got no symbol
+        // at all, so nothing in the graph named the class, and the block's
+        // members kept the FILE as their owner — which makes them read as
+        // top-level methods, and a top-level method is what the export surface
+        // publishes. Found by the oracle census: `exports -> BT` missing while
+        // four of its members came out as file-level exports.
+        //
+        // The recursion is bounded by the grammar's own shape rather than by a
+        // depth counter: the inner call must itself be a factory, which requires
+        // a CONSTANT receiver, and a constant receiver has no call child to
+        // recurse into.
+        const inner = this.dynamicClassFactoryKind(child)
+        if (inner) return inner
       }
     }
     if (!receiver) return null
+    if (methodName !== "new" && methodName !== "define") return null
     const leaf = receiver.split("::").filter(Boolean).pop() ?? receiver
     if (leaf === "Module" && methodName === "new") return "Module"
     if ((leaf === "Struct" || leaf === "Data" || leaf === "Class") && (methodName === "new" || methodName === "define")) return "Class"
     return null
   }
 
-  /** Extract superclass from class node — pure char scan, no regex */
+/**
+   * The constants a scope removes from its public surface with
+   * `private_constant :A, :B`, keyed by the OWNER NAME THE SYMBOL TABLE USES.
+   *
+   * Ruby's constant visibility has its own keyword and the method family does not,
+   * so the lexical `visibility` this file tracks for methods says nothing about a
+   * constant — a `private_constant :VERSION` member would otherwise be published
+   * as part of the export surface, which is precisely the members the language
+   * declares unexported. Measured on the corpus: 142 sites in 73 files.
+   *
+   * It is collected in its own walk rather than in `processCall` because it needs
+   * the ENCLOSING SCOPE, and threading a map through `walkBody` /
+   * `walkMethodBody` / `walkParamDefaults` / `processCall` — eight signatures and
+   * eight call sites — to carry one set is a large diff in a hot file for a small
+   * fact. The scope rule it needs is the same one the main walk uses, so it calls
+   * `rubyReopenIdentity` rather than restating it: a second copy of the reopen
+   * rule is exactly how the two existing copies came to disagree.
+   *
+   * Keyed by the same owner string the export pass reads off `ownerName`, and
+   * missing a scope costs a wrong edge, so the walk descends into every node type
+   * rather than only the ones a declaration can sit under.
+   */
+  private collectPrivateConstants(root: Node): Map<string, Set<string>> {
+    const out = new Map<string, Set<string>>()
+    const stack: Array<{ node: Node; owner: string | undefined }> = [{ node: root, owner: undefined }]
+    while (stack.length > 0) {
+      const { node, owner } = stack.pop()!
+      const type = node.type
+      let nextOwner = owner
+      if (type === "class" || type === "module" || type === "singleton_class") {
+        const nameNode = node.childForFieldName("name")
+        if (nameNode) nextOwner = rubyReopenIdentity(nameNode.text, owner).name
+        // A `singleton_class` names no new unit: `class << self` is still the
+        // enclosing class, and its body belongs to that class.
+        if (type === "singleton_class") nextOwner = owner
+      } else if (type === "call") {
+        const methodNode = node.childForFieldName("method")
+        if (methodNode?.text === "private_constant") {
+          const args = this.findChild(node, "argument_list")
+          if (args) {
+            const key = owner ?? FILE_SCOPE_OWNER
+            let set = out.get(key)
+            if (!set) {
+              set = new Set<string>()
+              out.set(key, set)
+            }
+            for (let i = 0; i < args.namedChildCount; i++) {
+              const arg = args.namedChild(i)
+              if (!arg) continue
+              if (arg.type === "simple_symbol" || arg.type === "string") {
+              // The SAME name rule the export pass reads its names through, so a
+              // `private_constant :"A \"B\""` hides the name the symbol table
+              // actually holds. A name the rule declines hides nothing, which is
+              // the safe direction: the export surface then names a unit the
+              // modifier could not have removed.
+              const n = this.rubyNameFromLiteral(arg)
+              if (n !== undefined && n.length > 0) set.add(n)
+            }
+            // An IDENTIFIER argument names a local, not a constant, and a
+            // template names nothing at all (R7) — both are refused, exactly as
+            // the association-macro branch refuses them.
+            }
+          }
+        }
+      }
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push({ node: child, owner: nextOwner })
+      }
+    }
+    return out
+  }
+
+  /**
+   * Extract superclass from class node — pure char scan, no regex
+   */
   /**
    * The node that NAMES the base type of a `class X < Base` declaration: the
    * first named child of the `superclass` node, i.e. `Base` as written. The
@@ -2507,7 +2976,15 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       const type = r.type ?? r.relationshipType ?? ""
       const md: any = r.metadata ?? {}
       if (type === "contains") { md.evidenceClass = "structural"; continue }
-      if (type === "imports" || type === "exports" || type === "references") { md.evidenceClass = "import_based"; continue }
+      // `imports` and `references` are import_based: they are read off a path
+      // literal in a load directive. `exports` is NOT, and it was grouped here by
+      // the label list alone — a rule that classified by NAME. A ruby `exports`
+      // edge is derived from a declaration plus a visibility decision, both of
+      // which the analyzer computed from the tree, so it is structural evidence.
+      // The grouping only ever affected ruby (this method is a private member of
+      // this analyzer), and ruby emitted no `exports` edge before this wave.
+      if (type === "imports" || type === "references") { md.evidenceClass = "import_based"; continue }
+      if (type === "exports") { md.evidenceClass = "structural"; continue }
       if (type === "calls" || type === "uses") {
         md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
         continue

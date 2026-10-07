@@ -1,0 +1,378 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-05T17:31:57.134Z",
+  "corpus": {
+    "repos": [
+      "element-plus",
+      "vue-element-admin",
+      "vuejs"
+    ],
+    "admittedVueFiles": 1151,
+    "commits": {
+      "$HOME/fixtures/repositories/element-plus": "3e07b0c6771f0e8470cc24e6dd5bc68ab53088e7",
+      "$HOME/fixtures/repositories/vue-element-admin": "6858a9ad67483025f6a9432a926beb9327037be3",
+      "$HOME/fixtures/repositories/vuejs": "4ab865a848a1da3d10fb674f857e5fff13094644"
+    },
+    "rule": "sorted git ls-files, .vue only, <=512KB"
+  },
+  "runtime": {
+    "filesCompared": 1151,
+    "parseFail": 0
+  },
+  "symbolMetadataKeys": {
+    "isConst": {
+      "published": 2653,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-theme-toggler.vue",
+        "element-plus/docs/.vitepress/vitepress/components/demo/vp-source-code.vue"
+      ]
+    },
+    "isVueComponent": {
+      "published": 1151,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-theme-toggler.vue"
+      ]
+    },
+    "isSfc": {
+      "published": 1151,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-theme-toggler.vue"
+      ]
+    },
+    "synthesized": {
+      "published": 1027,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-theme-toggler.vue"
+      ]
+    },
+    "identityFromFileStem": {
+      "published": 957,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-theme-toggler.vue"
+      ]
+    },
+    "isDestructured": {
+      "published": 628,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/doc-content/vp-edit-link.vue",
+        "element-plus/docs/.vitepress/vitepress/components/doc-content/vp-page-nav.vue",
+        "element-plus/docs/.vitepress/vitepress/components/full-screen/vp-translation.vue"
+      ]
+    },
+    "isAsync": {
+      "published": 626,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/doc-content/vp-table-of-content.vue",
+        "element-plus/docs/.vitepress/vitepress/components/full-screen/vp-translation.vue",
+        "element-plus/docs/.vitepress/vitepress/components/globals/icons.vue"
+      ]
+    },
+    "isArrowFunction": {
+      "published": 518,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/doc-content/vp-table-of-content.vue",
+        "element-plus/docs/.vitepress/vitepress/components/full-screen/vp-translation.vue",
+        "element-plus/docs/.vitepress/vitepress/components/globals/icons.vue"
+      ]
+    },
+    "contractSource": {
+      "published": 249,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "element-plus/docs/.vitepress/vitepress/components/demo/vp-source-code.vue",
+        "element-plus/docs/.vitepress/vitepress/components/full-screen/vp-menu.vue"
+      ]
+    },
+    "method": {
+      "published": 243,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "vue-element-admin/src/components/BackToTop/index.vue",
+        "vue-element-admin/src/components/Breadcrumb/index.vue",
+        "vue-element-admin/src/components/Charts/Keyboard.vue"
+      ]
+    },
+    "isDataKey": {
+      "published": 227,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "vue-element-admin/src/components/BackToTop/index.vue",
+        "vue-element-admin/src/components/Breadcrumb/index.vue",
+        "vue-element-admin/src/components/Charts/Keyboard.vue"
+      ]
+    },
+    "moduleName": {
+      "published": 194,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/packages/components/alert/src/alert.vue",
+        "element-plus/packages/components/anchor/src/anchor-link.vue",
+        "element-plus/packages/components/anchor/src/anchor.vue"
+      ]
+    },
+    "isProp": {
+      "published": 179,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "element-plus/docs/.vitepress/vitepress/components/demo/vp-source-code.vue",
+        "element-plus/docs/.vitepress/vitepress/components/globals/vp-api-enum.vue"
+      ]
+    },
+    "isProvided": {
+      "published": 117,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/packages/components/anchor/src/anchor.vue",
+        "element-plus/packages/components/button/src/button-group.vue",
+        "element-plus/packages/components/cascader-panel/src/index.vue"
+      ]
+    },
+    "isScriptSetupComponent": {
+      "published": 115,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/packages/components/alert/src/alert.vue",
+        "element-plus/packages/components/anchor/src/anchor-link.vue",
+        "element-plus/packages/components/anchor/src/anchor.vue"
+      ]
+    },
+    "isGenerator": {
+      "published": 108,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/globals/parallax-home.vue",
+        "element-plus/docs/.vitepress/vitepress/components/navbar/vp-search.vue",
+        "element-plus/docs/.vitepress/vitepress/components/vp-demo.vue"
+      ]
+    },
+    "isScriptSetup": {
+      "published": 86,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/common/vp-markdown.vue",
+        "element-plus/docs/.vitepress/vitepress/components/demo/vp-source-code.vue",
+        "element-plus/docs/.vitepress/vitepress/components/full-screen/vp-menu.vue"
+      ]
+    },
+    "isOptionsData": {
+      "published": 82,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "vue-element-admin/src/components/BackToTop/index.vue",
+        "vue-element-admin/src/components/Breadcrumb/index.vue",
+        "vue-element-admin/src/components/Charts/Keyboard.vue"
+      ]
+    },
+    "isOptionsComponent": {
+      "published": 79,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/packages/components/collection/src/collection-item.vue",
+        "element-plus/packages/components/dropdown/src/dropdown-item-impl.vue",
+        "element-plus/packages/components/dropdown/src/dropdown-item.vue"
+      ]
+    },
+    "isEmit": {
+      "published": 70,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/full-screen/vp-menu.vue",
+        "element-plus/docs/.vitepress/vitepress/components/full-screen/vp-translation.vue",
+        "element-plus/docs/.vitepress/vitepress/components/sidebar/vp-sidebar-link.vue"
+      ]
+    },
+    "isLifecycleHook": {
+      "published": 64,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "vue-element-admin/src/components/BackToTop/index.vue",
+        "vue-element-admin/src/components/Breadcrumb/index.vue",
+        "vue-element-admin/src/components/Charts/Keyboard.vue"
+      ]
+    },
+    "computed": {
+      "published": 61,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "vue-element-admin/src/components/DragSelect/index.vue",
+        "vue-element-admin/src/components/ErrorLog/index.vue",
+        "vue-element-admin/src/components/HeaderSearch/index.vue"
+      ]
+    },
+    "isAccessor": {
+      "published": 57,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/docs/.vitepress/vitepress/components/navbar/vp-search.vue",
+        "element-plus/docs/.vitepress/vitepress/components/vp-demo.vue",
+        "element-plus/docs/examples/cascader/dynamic-loading.vue"
+      ]
+    },
+    "isWatcher": {
+      "published": 23,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "vue-element-admin/src/components/Breadcrumb/index.vue",
+        "vue-element-admin/src/components/Dropzone/index.vue",
+        "vue-element-admin/src/components/HeaderSearch/index.vue"
+      ]
+    },
+    "isSetup": {
+      "published": 9,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/packages/components/dropdown/src/dropdown-item-impl.vue",
+        "element-plus/packages/components/dropdown/src/dropdown-item.vue",
+        "element-plus/packages/components/dropdown/src/dropdown-menu.vue"
+      ]
+    },
+    "accessorKind": {
+      "published": 1,
+      "survived": 0,
+      "rate": "0.0%",
+      "samples": [
+        "element-plus/packages/components/cascader-panel/src/menu.vue"
+      ]
+    }
+  },
+  "symbolTotals": {
+    "distinctKeys": 26,
+    "occurrences": 10675,
+    "survived": 0,
+    "rate": "0.0%"
+  },
+  "relationshipMetadataKeys": {
+    "evidenceClass": {
+      "published": 5754,
+      "survived": 5754,
+      "rate": "100.0%"
+    },
+    "isComponentUsage": {
+      "published": 2662,
+      "survived": 2662,
+      "rate": "100.0%"
+    },
+    "isTemplateExpression": {
+      "published": 2470,
+      "survived": 2470,
+      "rate": "100.0%"
+    },
+    "sfcDelegated": {
+      "published": 615,
+      "survived": 615,
+      "rate": "100.0%"
+    },
+    "sfcLineOffset": {
+      "published": 615,
+      "survived": 615,
+      "rate": "100.0%"
+    },
+    "calleeExpression": {
+      "published": 587,
+      "survived": 587,
+      "rate": "100.0%"
+    },
+    "isFieldAccess": {
+      "published": 25,
+      "survived": 25,
+      "rate": "100.0%"
+    },
+    "bareRead": {
+      "published": 20,
+      "survived": 0,
+      "rate": "0.0%"
+    },
+    "isOptionsApi": {
+      "published": 7,
+      "survived": 7,
+      "rate": "100.0%"
+    },
+    "contractModule": {
+      "published": 7,
+      "survived": 7,
+      "rate": "100.0%"
+    },
+    "unresolved": {
+      "published": 7,
+      "survived": 7,
+      "rate": "100.0%"
+    },
+    "isPropContract": {
+      "published": 5,
+      "survived": 5,
+      "rate": "100.0%"
+    },
+    "chainRoot": {
+      "published": 4,
+      "survived": 0,
+      "rate": "0.0%"
+    },
+    "jsxElement": {
+      "published": 3,
+      "survived": 3,
+      "rate": "100.0%"
+    },
+    "isEmitContract": {
+      "published": 2,
+      "survived": 2,
+      "rate": "100.0%"
+    },
+    "callReceiver": {
+      "published": 2,
+      "survived": 0,
+      "rate": "0.0%"
+    }
+  },
+  "relationshipTotals": {
+    "distinctKeys": 16,
+    "occurrences": 12785,
+    "survived": 12759,
+    "rate": "99.8%"
+  },
+  "seam": "src/ast/pool-worker.ts symbol-metadata allowlist (isDeclaration + 13 css + 9 markdown + 4 bash keys)",
+  "instrument": "analyze() with a hand-built SFC seam vs pool-worker parseFile(); no regex"
+}

@@ -1,0 +1,433 @@
+{
+  "lane": "VUE_FIX",
+  "mode": "prod",
+  "corpus": {
+    "root": "$HOME/fixtures/repositories",
+    "repo": "element-plus",
+    "tracked": 1009,
+    "admitted": 400,
+    "limit": 400
+  },
+  "files": {
+    "parsed": 400,
+    "failed": 0,
+    "emptySymbols": 0,
+    "totalSymbols": 1187,
+    "totalRelationships": 3567,
+    "filesWithDelegatedRows": 222
+  },
+  "channels": {
+    "imports": {
+      "count": 622,
+      "kinds": {
+        "named": 518,
+        "default": 100,
+        "alias": 4
+      },
+      "examples": [
+        "docs/.vitepress/vitepress/components/common/vp-link.vue: ?:withBase, ?:isExternal",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue: ?:computed, ?:nextTick, ?:onMounted",
+        "docs/.vitepress/vitepress/components/common/vp-theme-toggler.vue: ?:nextTick, ?:ref, ?:watch",
+        "docs/.vitepress/vitepress/components/common/vp-markdown.vue: ?:computed, ?:MarkdownIt",
+        "docs/.vitepress/vitepress/components/doc-content/vp-page-footer.vue: ?:VPEditLink",
+        "docs/.vitepress/vitepress/components/doc-content/vp-page-nav.vue: ?:withBase, ?:ArrowLeft, ?:ArrowRight",
+        "docs/.vitepress/vitepress/components/doc-content/vp-table-of-content.vue: ?:computed, ?:useToc, ?:sponsorLocale",
+        "docs/.vitepress/vitepress/components/full-screen/vp-menu-link.vue: ?:usePlaygroundPreview, ?:VPLink, ?:Link"
+      ]
+    },
+    "exports": {
+      "count": 0
+    }
+  },
+  "types": {
+    "calls": {
+      "verdict": "EMITTED",
+      "count": 852,
+      "files": 193,
+      "fileExamples": [
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue"
+      ],
+      "examples": [
+        "vp-source-code -[calls]-> computed",
+        "vp-source-code -[calls]-> decodeURIComponent",
+        "vp-source-code -[calls]-> ref",
+        "vp-source-code -[calls]-> useLang",
+        "vp-source-code -[calls]-> computed",
+        "setupFolding -[calls]-> querySelector"
+      ],
+      "resolved": {
+        "both": 33,
+        "src": 852,
+        "tgt": 33,
+        "pctBoth": 3.9
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 3,
+        "selfLoop": 1
+      },
+      "seam": {
+        "delegated": 852,
+        "vueOwn": 0
+      },
+      "sourceKind": {
+        "delegated:component": 852
+      },
+      "confidence": {
+        "0.9": 852
+      },
+      "evidenceClass": {
+        "usage_contextual": 852
+      },
+      "line": {
+        "withLine": 852,
+        "withoutLine": 0
+      }
+    },
+    "extends": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "implements": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "uses": {
+      "verdict": "EMITTED",
+      "count": 597,
+      "files": 216,
+      "fileExamples": [
+        "docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue"
+      ],
+      "examples": [
+        "vp-link -[uses]-> href",
+        "vp-link -[uses]-> noIcon",
+        "vp-source-code -[uses]-> visible",
+        "vp-source-code -[uses]-> decoded",
+        "vp-theme-toggler -[uses]-> darkMode",
+        "vp-theme-toggler -[uses]-> beforeChange"
+      ],
+      "resolved": {
+        "both": 589,
+        "src": 597,
+        "tgt": 589,
+        "pctBoth": 98.7
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 32,
+        "selfLoop": 3
+      },
+      "seam": {
+        "delegated": 30,
+        "vueOwn": 567
+      },
+      "sourceKind": {
+        "vue-own": 567,
+        "delegated:component": 30
+      },
+      "confidence": {
+        "0.95": 567,
+        "0.85": 30
+      },
+      "evidenceClass": {
+        "usage_contextual": 597
+      },
+      "line": {
+        "withLine": 597,
+        "withoutLine": 0
+      }
+    },
+    "brain_import": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "exports": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "contains": {
+      "verdict": "EMITTED",
+      "count": 86,
+      "files": 43,
+      "fileExamples": [
+        "docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue"
+      ],
+      "examples": [
+        "vp-link -[contains]-> href",
+        "vp-link -[contains]-> noIcon",
+        "vp-source-code -[contains]-> visible",
+        "vp-source-code -[contains]-> source",
+        "vp-markdown -[contains]-> content",
+        "version-tag -[contains]-> version"
+      ],
+      "resolved": {
+        "both": 86,
+        "src": 86,
+        "tgt": 86,
+        "pctBoth": 100
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 12,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 37,
+        "vueOwn": 49
+      },
+      "sourceKind": {
+        "vue-own": 49,
+        "delegated:component": 37
+      },
+      "confidence": {
+        "1": 86
+      },
+      "evidenceClass": {
+        "structural": 86
+      },
+      "line": {
+        "withLine": 86,
+        "withoutLine": 0
+      }
+    },
+    "references": {
+      "verdict": "EMITTED",
+      "count": 244,
+      "files": 77,
+      "fileExamples": [
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue",
+        "docs/.vitepress/vitepress/components/demo/vp-source-code.vue"
+      ],
+      "examples": [
+        "setupFolding -[references]-> sourceRef",
+        "setupFolding -[references]-> locale",
+        "setupFolding -[references]-> CHEVRON_SVG",
+        "sourceRef -[references]-> HTMLElement",
+        "code -[references]-> HTMLElement",
+        "foldDepths -[references]-> HTMLElement"
+      ],
+      "resolved": {
+        "both": 131,
+        "src": 237,
+        "tgt": 131,
+        "pctBoth": 53.7
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 3,
+        "selfLoop": 1
+      },
+      "seam": {
+        "delegated": 244,
+        "vueOwn": 0
+      },
+      "sourceKind": {
+        "delegated:component": 237,
+        "delegated:other": 7
+      },
+      "confidence": {
+        "0.8": 106,
+        "0.95": 138
+      },
+      "evidenceClass": {
+        "reference_qualified": 244
+      },
+      "line": {
+        "withLine": 244,
+        "withoutLine": 0
+      }
+    },
+    "overrides": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "instantiates": {
+      "verdict": "EMITTED",
+      "count": 1166,
+      "files": 337,
+      "fileExamples": [
+        "docs/.vitepress/vitepress/components/dev/deprecated-tag.vue",
+        "docs/.vitepress/vitepress/components/dev/a11y-tag.vue",
+        "docs/.vitepress/vitepress/components/common/vp-link.vue",
+        "docs/.vitepress/vitepress/components/common/vp-link.vue"
+      ],
+      "examples": [
+        "deprecated-tag -[instantiates]-> el-tag",
+        "a11y-tag -[instantiates]-> el-tag",
+        "vp-link -[instantiates]-> ElIcon",
+        "vp-link -[instantiates]-> i-ri-external-link-line",
+        "vp-theme-toggler -[instantiates]-> ClientOnly",
+        "vp-theme-toggler -[instantiates]-> el-switch"
+      ],
+      "resolved": {
+        "both": 0,
+        "src": 1166,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 4,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 1,
+        "vueOwn": 1165
+      },
+      "sourceKind": {
+        "vue-own": 1165,
+        "delegated:component": 1
+      },
+      "confidence": {
+        "1": 1,
+        "0.95": 1165
+      },
+      "evidenceClass": {
+        "usage_contextual": 1165,
+        "structural": 1
+      },
+      "line": {
+        "withLine": 1166,
+        "withoutLine": 0
+      }
+    }
+  },
+  "parseFailures": []
+}

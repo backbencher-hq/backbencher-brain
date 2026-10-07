@@ -1,0 +1,453 @@
+{
+  "instrument": "script/incoming-java/probe.ts",
+  "lane": "INCOMING_JAVA",
+  "corpus": {
+    "dir": "java-sample",
+    "rev": "500158f732419217507c7656904b8e6aa1bcc0d6",
+    "filesEnumerated": 50,
+    "parsed": 50,
+    "failures": 0
+  },
+  "grammarNodeTypes": 136,
+  "grammarNodeTypeNames": [
+    "!",
+    "!=",
+    "\"",
+    "&&",
+    "(",
+    ")",
+    "*",
+    "+",
+    "++",
+    ",",
+    "-",
+    "->",
+    ".",
+    ":",
+    "::",
+    ";",
+    "<",
+    "=",
+    "==",
+    ">",
+    "?",
+    "@",
+    "[",
+    "]",
+    "abstract",
+    "annotation",
+    "annotation_argument_list",
+    "argument_list",
+    "array_type",
+    "assignment_expression",
+    "asterisk",
+    "binary_expression",
+    "block",
+    "block_comment",
+    "boolean_type",
+    "cast_expression",
+    "catch",
+    "catch_clause",
+    "catch_formal_parameter",
+    "catch_type",
+    "class",
+    "class_body",
+    "class_declaration",
+    "class_literal",
+    "condition",
+    "constructor_body",
+    "constructor_declaration",
+    "continue",
+    "continue_statement",
+    "decimal_integer_literal",
+    "dimensions",
+    "element_value_array_initializer",
+    "element_value_pair",
+    "else",
+    "enhanced_for_statement",
+    "escape_sequence",
+    "expression_statement",
+    "extends",
+    "extends_interfaces",
+    "false",
+    "field_access",
+    "field_declaration",
+    "final",
+    "finally",
+    "finally_clause",
+    "for",
+    "for_statement",
+    "formal_parameter",
+    "formal_parameters",
+    "generic_type",
+    "identifier",
+    "if",
+    "if_statement",
+    "implements",
+    "import",
+    "import_declaration",
+    "instanceof",
+    "instanceof_expression",
+    "int",
+    "integral_type",
+    "interface",
+    "interface_body",
+    "interface_declaration",
+    "lambda_expression",
+    "line_comment",
+    "local_variable_declaration",
+    "long",
+    "marker_annotation",
+    "method_declaration",
+    "method_invocation",
+    "method_reference",
+    "modifiers",
+    "new",
+    "null_literal",
+    "object_creation_expression",
+    "package",
+    "package_declaration",
+    "parenthesized_expression",
+    "private",
+    "program",
+    "protected",
+    "public",
+    "resource",
+    "resource_specification",
+    "return",
+    "return_statement",
+    "scoped_identifier",
+    "scoped_type_identifier",
+    "static",
+    "string_fragment",
+    "string_literal",
+    "super_interfaces",
+    "superclass",
+    "ternary_expression",
+    "this",
+    "throw",
+    "throw_statement",
+    "throws",
+    "true",
+    "try",
+    "try_statement",
+    "try_with_resources_statement",
+    "type_arguments",
+    "type_bound",
+    "type_identifier",
+    "type_list",
+    "type_parameter",
+    "type_parameters",
+    "unary_expression",
+    "update_expression",
+    "variable_declarator",
+    "void_type",
+    "wildcard",
+    "{",
+    "||",
+    "}"
+  ],
+  "constructs": {
+    "calls": {
+      "nodesOnTree": 1611,
+      "filesWithIt": 35,
+      "nodeTypesThatWouldExpressIt": [
+        "method_invocation",
+        "explicit_constructor_invocation",
+        "method_reference"
+      ],
+      "absentFromGrammar": [
+        "explicit_constructor_invocation"
+      ],
+      "describe": "a call site",
+      "examples": [
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+          "line": 33,
+          "detail": "method_invocation"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicRuntimeHints.java",
+          "line": 29,
+          "detail": "method_invocation"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicRuntimeHints.java",
+          "line": 29,
+          "detail": "method_invocation"
+        }
+      ]
+    },
+    "uses": {
+      "nodesOnTree": 131,
+      "filesWithIt": 25,
+      "nodeTypesThatWouldExpressIt": [
+        "field_access",
+        "array_access"
+      ],
+      "absentFromGrammar": [
+        "array_access"
+      ],
+      "describe": "a member read",
+      "examples": [
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java",
+          "line": 36,
+          "detail": "field_access"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java",
+          "line": 44,
+          "detail": "field_access"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java",
+          "line": 48,
+          "detail": "field_access"
+        }
+      ]
+    },
+    "contains": {
+      "nodesOnTree": 326,
+      "filesWithIt": 45,
+      "nodeTypesThatWouldExpressIt": [
+        "class_body",
+        "interface_body",
+        "enum_body",
+        "field_declaration",
+        "method_declaration",
+        "constructor_declaration"
+      ],
+      "absentFromGrammar": [
+        "enum_body"
+      ],
+      "describe": "a member declaration",
+      "examples": [
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+          "line": 30,
+          "detail": "class_body"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+          "line": 32,
+          "detail": "method_declaration"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicRuntimeHints.java",
+          "line": 25,
+          "detail": "class_body"
+        }
+      ]
+    },
+    "imports": {
+      "nodesOnTree": 475,
+      "filesWithIt": 45,
+      "nodeTypesThatWouldExpressIt": [
+        "import_declaration",
+        "requires_module_directive"
+      ],
+      "absentFromGrammar": [
+        "requires_module_directive"
+      ],
+      "describe": "an import declaration, or a module requires clause (JLS 7.7.1)",
+      "examples": [
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+          "line": 19,
+          "detail": "import_declaration"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+          "line": 20,
+          "detail": "import_declaration"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+          "line": 21,
+          "detail": "import_declaration"
+        }
+      ]
+    },
+    "references": {
+      "nodesOnTree": 2749,
+      "filesWithIt": 50,
+      "nodeTypesThatWouldExpressIt": [
+        "type_identifier",
+        "scoped_type_identifier",
+        "scoped_identifier"
+      ],
+      "absentFromGrammar": [],
+      "describe": "a named type or path",
+      "examples": [
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+          "line": 17,
+          "detail": "scoped_identifier"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+          "line": 17,
+          "detail": "scoped_identifier"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+          "line": 17,
+          "detail": "scoped_identifier"
+        }
+      ]
+    },
+    "exports": {
+      "nodesOnTree": 0,
+      "filesWithIt": 0,
+      "nodeTypesThatWouldExpressIt": [
+        "exports_module_directive",
+        "opens_module_directive"
+      ],
+      "absentFromGrammar": [
+        "exports_module_directive",
+        "opens_module_directive"
+      ],
+      "describe": "a module exports/opens clause (JLS 7.7.2) — a LITERAL keyword",
+      "examples": []
+    },
+    "extends": {
+      "nodesOnTree": 8,
+      "filesWithIt": 8,
+      "nodeTypesThatWouldExpressIt": [
+        "superclass"
+      ],
+      "absentFromGrammar": [],
+      "describe": "a superclass clause",
+      "examples": [
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/model/NamedEntity.java",
+          "line": 31,
+          "detail": "superclass"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/model/Person.java",
+          "line": 29,
+          "detail": "superclass"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/owner/Owner.java",
+          "line": 50,
+          "detail": "superclass"
+        }
+      ]
+    },
+    "implements": {
+      "nodesOnTree": 9,
+      "filesWithIt": 9,
+      "nodeTypesThatWouldExpressIt": [
+        "super_interfaces",
+        "extends_interfaces"
+      ],
+      "absentFromGrammar": [],
+      "describe": "a super-interface clause",
+      "examples": [
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicRuntimeHints.java",
+          "line": 25,
+          "detail": "super_interfaces"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java",
+          "line": 33,
+          "detail": "super_interfaces"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/owner/OwnerRepository.java",
+          "line": 36,
+          "detail": "extends_interfaces"
+        }
+      ]
+    },
+    "overrides": {
+      "nodesOnTree": 283,
+      "filesWithIt": 45,
+      "nodeTypesThatWouldExpressIt": [
+        "method_declaration",
+        "annotation"
+      ],
+      "absentFromGrammar": [],
+      "describe": "a method declaration, optionally @Override-annotated",
+      "examples": [
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+          "line": 29,
+          "detail": "annotation"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+          "line": 32,
+          "detail": "method_declaration"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/PetClinicRuntimeHints.java",
+          "line": 27,
+          "detail": "method_declaration"
+        }
+      ]
+    },
+    "instantiates": {
+      "nodesOnTree": 96,
+      "filesWithIt": 30,
+      "nodeTypesThatWouldExpressIt": [
+        "object_creation_expression"
+      ],
+      "absentFromGrammar": [],
+      "describe": "a `new` expression (JLS 15.9 — the ONLY way a java object is created)",
+      "examples": [
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/owner/Owner.java",
+          "line": 70,
+          "detail": "object_creation_expression"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/owner/Owner.java",
+          "line": 161,
+          "detail": "object_creation_expression"
+        },
+        {
+          "file": "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java",
+          "line": 66,
+          "detail": "object_creation_expression"
+        }
+      ]
+    }
+  },
+  "moduleInfo": {
+    "files": 0,
+    "fileExamples": [],
+    "moduleDeclarations": 0,
+    "exportsDirectives": 0,
+    "exportsTo": [],
+    "exportsExamples": [],
+    "opensDirectives": 0,
+    "opensExamples": [],
+    "requiresDirectives": 0,
+    "requiresTo": [],
+    "requiresExamples": [],
+    "provides": 0,
+    "uses": 0
+  },
+  "reflection": {
+    "reflectiveInvocation": 0,
+    "reflectiveFiles": [],
+    "classLiteral": 50,
+    "classLiteralFiles": 18,
+    "reflectImport": 0,
+    "reflectImportFiles": [],
+    "methodHandleLookup": 0,
+    "forNameLiteralArg": 0,
+    "forNameNonLiteralArg": 0,
+    "examples": [],
+    "forNameExamples": []
+  },
+  "springRoute": {
+    "mappingAnnotations": 18,
+    "files": 6
+  }
+}

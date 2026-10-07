@@ -1,0 +1,41 @@
+JAVA LANE MUTANTS (EXPORTS_JAVA2)
+analyzer: src/ast/real-java-analyzer.ts (190198 bytes)
+fixtures: 55 expectation files over 55 .java inputs (derived by readdir)
+
+BASELINE (clean tree): 50 pass / 5 fail
+  pre-existing failures: bare-member-read-uses, ctor-delegation, ctor-value-injection, declaration-lines-825, record-varargs-compact-ctor
+
+id   verdict                          what
+------------------------------------------------------------------------------------------------------------------------------------------------------
+I1    DEAD                             delete the `imports` relationship emitted for an import_declaration (revert to `
+                                       -> new FAIL: import-dependency-edges, import-flag-node-types
+I2    DEAD                             drop metadata.fileLevel — the ONE flag that gives the row the storage shape bb_g
+                                       -> new FAIL: import-dependency-edges
+I3    EQUIVALENT                       read `isStatic` from the declaration's TEXT again instead of the `static` node t
+                                       -> no fixture can distinguish it, and none should pretend to — measured: 0 disagreements over 38,923 corpus import declarations (java-import-flag-equivalence.ts)
+I4    DEAD                             label a type-on-demand import as single_type — the two JLS forms become indistin
+                                       -> new FAIL: import-dependency-edges
+I5    DEAD                             emit `imports` at 0.9 (the `references` tier) instead of 1.0 — a written declara
+                                       -> new FAIL: import-dependency-edges
+I6    DEAD                             drop the JPMS `requires` MODULE DEPENDENCY edge (`imports`), keeping only the `r
+                                       -> new FAIL: module-info-directives
+I7    DEAD                             point the JPMS requires guard at a role the grammar never produces — the dead-br
+                                       -> new FAIL: module-info-directives
+I8    EQUIVALENT                       read isAsterisk/isStatic from child TEXT as well as node type, so a target whose
+                                       -> no fixture can distinguish it, and none should pretend to — measured: 0 disagreements over 38,923 corpus import declarations (java-import-flag-equivalence.ts)
+E1    DEAD                             flatten the exports confidence tier to a flat 1.0 — package-private top-level ty
+                                       -> new FAIL: exports-public-top-level-types
+E2    DEAD                             drop the reasonCode the honesty contract requires of any sub-1.0 edge
+                                       -> new FAIL: exports-public-top-level-types
+I9    DEAD                             let `imports` fall through to the catch-all evidenceClass — the tier for a call 
+                                       -> new FAIL: import-dependency-edges
+E4    DEAD                             the export-set guard tests the grammar node type but NOT `!ownerName` — every NE
+                                       -> new FAIL: anonymous-and-multihop-overrides, exports-public-top-level-types, exports-top-level-types-only, initializer-calls, inner-class-instantiation, method-ref-receiver-names, nested-types, override-key-parameter-lists, record-pattern-refs, root-segment-builtin-filter
+E5    SURVIVED                         the export-set guard tests `!ownerName` but NOT the node type — every MEMBER who
+                                       -> 50 pass / 5 fail — identical to the clean baseline
+E3    DEAD                             publish the 0.6 package-private tier as `uses` instead of `exports` — a mislabel
+                                       -> new FAIL: exports-public-top-level-types, exports-top-level-types-only
+
+11 dead · 2 equivalent · 1 survived · 0 site-moved · 14 total
+EQUIVALENT mutants are recorded, not counted as kills. Their equivalence is measured, not assumed.
+SURVIVORS ARE FINDINGS: each one is a behaviour the java fixtures do not pin.

@@ -1,0 +1,127 @@
+JAVA ONTOLOGY CENSUS (EXPORTS_JAVA2)
+corpus: java-lib   .java files on disk: 3275   measured: 3275   sampling: ALL (lexicographic)
+production vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
+
+[INFO] [06:08:26] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [06:08:27] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:08:37] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:08:52] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:09:03] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:09:10] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:09:30] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:09:56] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:10:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:10:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:10:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:10:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:10:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:10:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [06:10:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+measured 3275 files in 99594 ms   parse/analyze failures 0   symbols 87050   relationships 638455
+files with zero symbols: 48   files with an ERROR node: 13
+imports[] channel: 38923 entries in 3245 files
+exports[]  channel: 3289 entries in 3227 files   (of those files, 0 declare no package)
+symbol-level R7 runtime: empty names 0   placeholder names 4   parameter type "unknown" 4
+   android/guava-tests/test/com/google/common/escape/ArrayBasedCharEscaperTest.java: symbol named "unknown" kind=property
+   android/guava-tests/test/com/google/common/escape/ArrayBasedUnicodeEscaperTest.java: symbol named "unknown" kind=property
+   guava-tests/test/com/google/common/escape/ArrayBasedCharEscaperTest.java: symbol named "unknown" kind=property
+   guava-tests/test/com/google/common/escape/ArrayBasedUnicodeEscaperTest.java: symbol named "unknown" kind=property
+export-set visibility: public:2565 (none):718 private:6
+off-enum relationship types observed: (none)
+
+=== RELATIONSHIP CHANNEL — per type ===
+type            count     NAME ends  resolved   badShape  placeholder   confidence                     evidenceClass
+--------------------------------------------------------------------------------------------------------------------------------------------
+calls          262870     525740  60.5% (317826)        0           0   0.7:260628 1:1217 0.8:1025     usage_contextual:262870
+extends          4248       8496  61.7% (5244)        0           0   1:4248                         structural:4248
+implements       1940       3880  54.5% (2116)        0           0   1:1940                         structural:1940
+uses            19691      39382  76.7% (30196)        0           0   0.6:13497 1:6194               usage_contextual:19691
+imports             0        --        --       --         --   (NEVER EMITTED on this corpus)
+exports          3243       6486  51.0% (3310)        0           0   1:2519 0.6:724                 structural:3243
+contains        83761     167518  100.0% (167518)        0           4   1:83761                        structural:83761
+references     221466     442932  53.1% (235036)        0           0   0.95:181435 0.9:39995 1:36     reference_qualified:182507 import_based:38959
+overrides       19909      39818  100.0% (39818)        0           0   0.5:17452 1:2244 0.9:213       inferred:17452 structural:2244 usage_contextual:213
+instantiates    21327      42654  63.4% (27030)        0           0   0.95:21327                     structural:21327
+--------------------------------------------------------------------------------------------------------------------------------------------
+fired on the RELATIONSHIP channel: 9/10   silent: imports
+
+=== per-type detail (files, examples, hygiene) ===
+
+calls: 262870 edges in 4+ files
+  files: android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentMapTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentNavigableMapTestSuiteBuilder.java
+  e.g.:  getTesters -> asList   |   using -> usingGenerator   |   createDerivedSuites -> createDerivedSuites
+  endpoint classes: NAME:525740
+
+extends: 4248 edges in 4+ files
+  files: android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentMapTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentNavigableMapTestSuiteBuilder.java
+  e.g.:  AbstractCollectionTestSuiteBuilder -> PerCollectionSizeTestSuiteBuilder   |   CollectionTestSuiteBuilder -> AbstractCollectionTestSuiteBuilder   |   ConcurrentMapTestSuiteBuilder -> MapTestSuiteBuilder
+  endpoint classes: NAME:8496
+
+implements: 1940 edges in 4+ files
+  files: android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java, android/guava-testlib/src/com/google/common/collect/testing/DerivedTestIteratorGenerator.java, android/guava-testlib/src/com/google/common/collect/testing/Helpers.java
+  e.g.:  ReserializedCollectionGenerator -> TestCollectionGenerator   |   MapEntrySetGenerator -> TestSetGenerator   |   MapEntrySetGenerator -> DerivedGenerator
+  endpoint classes: NAME:3880
+
+uses: 19691 edges in 4+ files
+  files: android/guava-testlib/src/com/google/common/collect/testing/ConcurrentMapTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentNavigableMapTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java, android/guava-testlib/src/com/google/common/collect/testing/DerivedTestIteratorGenerator.java
+  e.g.:  ConcurrentMapTestSuiteBuilder -> TESTERS   |   getTesters -> TESTERS   |   MapEntrySetGenerator -> mapGenerator
+  endpoint classes: NAME:39382
+
+exports: 3243 edges in 4+ files
+  files: android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentMapTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentNavigableMapTestSuiteBuilder.java
+  e.g.:  com.google.common.collect.testing -> AbstractCollectionTestSuiteBuilder   |   com.google.common.collect.testing -> CollectionTestSuiteBuilder   |   com.google.common.collect.testing -> ConcurrentMapTestSuiteBuilder
+  endpoint classes: NAME:6486
+
+contains: 83761 edges in 4+ files
+  files: android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentMapTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentNavigableMapTestSuiteBuilder.java
+  e.g.:  AbstractCollectionTestSuiteBuilder -> getTesters   |   CollectionTestSuiteBuilder -> using   |   CollectionTestSuiteBuilder -> createDerivedSuites
+  endpoint classes: NAME:167518 PLACEHOLDER_LITERAL:4
+  R7 placeholder literals: "unknown"×4
+     android/guava-tests/test/com/google/common/escape/ArrayBasedCharEscaperTest.java: "unknown" in anonymous_ArrayBasedCharEscaper -> unknown
+     android/guava-tests/test/com/google/common/escape/ArrayBasedUnicodeEscaperTest.java: "unknown" in anonymous_ArrayBasedUnicodeEscaper -> unknown
+     guava-tests/test/com/google/common/escape/ArrayBasedCharEscaperTest.java: "unknown" in anonymous_ArrayBasedCharEscaper -> unknown
+
+references: 221466 edges in 4+ files
+  files: android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentMapTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentNavigableMapTestSuiteBuilder.java
+  e.g.:  AbstractCollectionTestSuiteBuilder -> java.util.Arrays.asList   |   AbstractCollectionTestSuiteBuilder -> com.google.common.annotations.GwtIncompatible   |   AbstractCollectionTestSuiteBuilder -> com.google.common.collect.testing.testers.CollectionAddAllTester
+  endpoint classes: NAME:442932
+
+overrides: 19909 edges in 4+ files
+  files: android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentMapTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentNavigableMapTestSuiteBuilder.java
+  e.g.:  AbstractCollectionTestSuiteBuilder.getTesters -> PerCollectionSizeTestSuiteBuilder.getTesters   |   CollectionTestSuiteBuilder.createDerivedSuites -> AbstractCollectionTestSuiteBuilder.createDerivedSuites   |   ReserializedCollectionGenerator.samples -> TestCollectionGenerator.samples
+  endpoint classes: NAME:39818
+
+instantiates: 21327 edges in 4+ files
+  files: android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentMapTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/ConcurrentNavigableMapTestSuiteBuilder.java, android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java
+  e.g.:  using -> CollectionTestSuiteBuilder   |   createDerivedSuites -> ArrayList   |   createDerivedSuites -> ReserializedCollectionGenerator
+  endpoint classes: NAME:42654
+
+=== INSTRUMENT A: grammar inventory over 3275 files ===
+distinct node types produced: 222
+JPMS node types — the constructs decision G5 declared out of scope:
+  module_declaration                          3  PRESENT
+  requires_module_directive                  12  PRESENT
+  requires_transitive_module_directive        0  ABSENT from every tree
+  exports_module_directive                   24  PRESENT
+  opens_module_directive                      0  ABSENT from every tree
+  uses_module_directive                       0  ABSENT from every tree
+  provides_module_directive                   0  ABSENT from every tree
+  to_module                                   0  ABSENT from every tree
+  from_module                                 0  ABSENT from every tree
+
+=== INSTRUMENT B: parse-tree construct counts ===
+module-info.java file          occurrences     3   files 3
+module_declaration             occurrences     3   files 3
+     futures/failureaccess/src/module-info.java: module (unnamed)
+     guava-testlib/src/module-info.java: module (unnamed)
+     guava/src/module-info.java: module (unnamed)
+exports_module_directive       occurrences    24   files 3
+     futures/failureaccess/src/module-info.java: exports com.google.common.util.concurrent.internal
+     guava-testlib/src/module-info.java: exports com.google.common.util.concurrent.testing
+     guava-testlib/src/module-info.java: exports com.google.common.testing
+     guava-testlib/src/module-info.java: exports com.google.common.escape.testing
+     guava-testlib/src/module-info.java: exports com.google.common.collect.testing.testers
+requires_module_directive      occurrences    12   files 2
+
+=== full node-type inventory (sorted by count) ===
+identifier:1010055  ):392937  (:392937  .:354813  argument_list:289226  method_invocation:266366  type_identifier:243992  ;:235037  ,:216593  scoped_identifier:157470  decimal_integer_literal:114394  }:99860  {:99860  expression_statement:95486  ":95144  escape_sequence:86386  <:79595  block:78490  modifiers:78070  >:77126  type_arguments:69362  generic_type:68289  formal_parameters:63900  string_fragment:60482  =:60467  @:59124  method_declaration:55226  variable_declarator:53432  marker_annotation:51640  string_literal:47572  public:44030  local_variable_declaration:42221  formal_parameter:39144  import_declaration:38923  import:38923  return_statement:33901  return:33901  integral_type:32417  binary_expression:30793  new:27160  static:26092  void_type:24263  field_access:22167  line_comment:22063  block_comment:21682  object_creation_expression:21327  int:19534  ]:18104  [:18104  class:16657  ?:14345  assignment_expression:13258  private:13132  final:13080  wildcard:12692  extends:12479  dimensions:11576  condition:11066  class_body:10830  field_declaration:10280  class_literal:10272  if:10197  if_statement:10193  type_parameter:9780  throws:7730  annotation:7484  annotation_argument_list:7484  +:7476  null_literal:7359  array_type:7314  cast_expression:7249  this:7222  boolean_type:6972  for:6897  type_parameters:6748  ::6489  enum_constant:6482  class_declaration:6385  -:6157  lambda_expression:5833  ->:5833  array_creation_expression:5737  unary_expression:5688  long:5675  character_literal:5088  annotated_type:5032  hex_integer_literal:4972  parenthesized_expression:4892  array_access:4803  type_bound:4790  array_initializer:4678  super:4591  ==:4523  superclass:4054  byte:3906  update_expression:3886  true:3841  false:3827  enhanced_for_statement:3768  constructor_declaration:3700  constructor_body:3700  protected:3608  ++:3566  program:3275  package_declaration:3272  package:3272  floating_point_type:3228  throw:3189  throw_statement:3185  for_statement:3129  decimal_floating_point_literal:2985  double:2479  scoped_type_identifier:2397  !=:2394  else:2267  try:2206  char:2110  try_statement:2100  !:1933  *:1880  type_list:1879  instanceof_expression:1864  instanceof:1864  abstract:1837  catch_clause:1759  catch_formal_parameter:1759  catch_type:1759  catch:1759  element_value_pair:1708  super_interfaces:1707  implements:1707  ternary_expression:1653  &&:1650  dimensions_expr:1532  explicit_constructor_invocation:1217  short:1192  method_reference:1117  :::1117  switch_block_statement_group:1024  switch_label:1024  &:1003  while:965  +=:956  element_value_array_initializer:934  case:889  while_statement:873  ||:863  spread_parameter:860  ...:860  >=:827  float:749  <=:735  /:718  <<:666  finally_clause:631  finally:631  synchronized:575  synchronized_statement:509  |:496  interface_declaration:452  interface_body:452  interface:452  transient:450  enum_declaration:400  enum_body:400  enum:400  break_statement:394  break:394  --:320  inferred_parameters:302  enum_body_declarations:301  ^=:236  switch_expression:225  switch_block:225  switch:225  >>>:220  ^:213  default:206  extends_interfaces:172  %:170  continue_statement:165  continue:165  volatile:161  annotation_type_declaration:140  annotation_type_body:140  @interface:140  >>:124  ~:124  resource:108  -=:108  try_with_resources_statement:106  resource_specification:106  *=:94  do_statement:92  do:92  static_initializer:85  |=:74  ERROR:54  annotation_type_element_declaration:48  labeled_statement:44  <<=:34  >>=:34  &=:32  hex_floating_point_literal:32  >>>=:30  exports_module_directive:24  exports:24  /=:16  native:16  requires_module_directive:12  requires:12  octal_integer_literal:10  requires_modifier:10  assert_statement:6  assert:6  constant_declaration:4  module_declaration:3  module_body:3  module:3  transitive:3  strictfp:2  %=:2

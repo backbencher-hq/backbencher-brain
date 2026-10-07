@@ -1,0 +1,28 @@
+{
+  "generatedBy": "script/m14/tmp/hs9-oracle-operator.ts (200-file draw artifact)",
+  "lane": "VERIFY_HS9",
+  "corpus": "$HOME/fixtures/repositories/haskell",
+  "corpusHead": "54381079 (GHC)",
+  "filesDrawn": 200,
+  "parsed": 200,
+  "msElapsed": 94626,
+  "shapesCompared": [
+    "calls/operator-application",
+    "instantiates/infix-constructor",
+    "instantiates/ticked-constructor"
+  ],
+  "independence": "separate walker; re-derives declared operators, local operator binders, position gates and callable attribution from the tree. It reads the SAME grammar, so a grammar bug shared by both paths is invisible here \u2014 this measures RULE agreement, not grammar correctness.",
+  "truthEdges": 1069,
+  "matched": 1069,
+  "missingInAnalyzer": 0,
+  "unexplainedInAnalyzer": 0,
+  "precision": 1,
+  "recall": 1,
+  "byLabel": {
+    "truth/calls": 377,
+    "truth/instantiates": 692
+  },
+  "missSamples": [],
+  "extraSamples": [],
+  "note": "Scoping note: this is the 200-file DRAW, not the full corpus. The full-corpus figure is in haskell-verify-hs9-oracle.json."
+}

@@ -1,0 +1,67 @@
+{
+  "corpusRoot": "$HOME/fixtures/vb-corpus",
+  "drawn": 2658,
+  "total": 30087,
+  "tally": {
+    "SUPPORTED": 30084,
+    "WRONG-LINE": 0,
+    "NOT-IN-FILE": 0,
+    "BRACKETED": 3
+  },
+  "byRole": {
+    "eventType": {
+      "SUPPORTED": 2,
+      "WRONG-LINE": 0,
+      "NOT-IN-FILE": 0,
+      "BRACKETED": 0
+    },
+    "fieldType": {
+      "SUPPORTED": 12109,
+      "WRONG-LINE": 0,
+      "NOT-IN-FILE": 0,
+      "BRACKETED": 2
+    },
+    "parameter": {
+      "SUPPORTED": 12615,
+      "WRONG-LINE": 0,
+      "NOT-IN-FILE": 0,
+      "BRACKETED": 1
+    },
+    "propertyType": {
+      "SUPPORTED": 3067,
+      "WRONG-LINE": 0,
+      "NOT-IN-FILE": 0,
+      "BRACKETED": 0
+    },
+    "returnType": {
+      "SUPPORTED": 2291,
+      "WRONG-LINE": 0,
+      "NOT-IN-FILE": 0,
+      "BRACKETED": 0
+    }
+  },
+  "notInFileTargets": {},
+  "samples": [
+    {
+      "verdict": "BRACKETED",
+      "file": "pcl/Plain Craft Launcher 2/Controls/MySliderDot.xaml.vb",
+      "line": 77,
+      "source": "Public GetHintText As [Delegate]",
+      "target": "[Delegate]"
+    },
+    {
+      "verdict": "BRACKETED",
+      "file": "pcl/Plain Craft Launcher 2/Controls/MySlider.xaml.vb",
+      "line": 81,
+      "source": "Public GetHintText As [Delegate]",
+      "target": "[Delegate]"
+    },
+    {
+      "verdict": "BRACKETED",
+      "file": "tankex/!_Tank Exporter/visual_importer/vis_main.vb",
+      "line": 197,
+      "source": "Public Function PrettyPrint(XML As [String]) As [String]",
+      "target": "[String]"
+    }
+  ]
+}

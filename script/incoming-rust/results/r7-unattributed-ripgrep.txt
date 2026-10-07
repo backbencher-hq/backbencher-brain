@@ -1,0 +1,17 @@
+unattributed-edge reachability — 110 files in [ripgrep]
+  24808 edges · 9 files refused >=1 edge · 101 files refused none · parse failures 0
+
+site (emission path)                refusals   files
+----------------------------------------------------
+uses:identifier_read                     935       9
+                                    ripgrep/fuzz/fuzz_targets/fuzz_glob.rs (2)
+                                    ripgrep/tests/binary.rs (86)
+                                    ripgrep/tests/feature.rs (205)
+calls:macro_invocation                   350       9
+                                    ripgrep/fuzz/fuzz_targets/fuzz_glob.rs (1)
+                                    ripgrep/tests/binary.rs (29)
+                                    ripgrep/tests/feature.rs (82)
+
+Sites absent from this table fired 0 times over the population above. That is a
+reachability measurement, not a coverage claim: a branch the corpus cannot reach
+is DEAD for this corpus, and a fixture cannot pin what no input produces.

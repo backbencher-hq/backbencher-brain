@@ -1,0 +1,102 @@
+SVELTE_FIX2 — INSTRUMENT FIDELITY PROOF for script/m14/svelte-firing-v2.mjs
+Date: 2026-10-05. Machine: / (42 G free).
+
+WHY THIS FILE EXISTS
+  The briefed instrument, script/m14/firing-check-v2.mjs, hardcodes
+    const REPO = "$HOME/backbencher-brain"
+  so it can only ever measure whichever analyzer the MAIN CHECKOUT carries. A lane
+  branch's work is invisible to it. script/m14/** is the supervisor's file, so this
+  lane did not edit it; it made a lane copy whose only functional change is that one
+  constant, and PROVED the copy is faithful instead of asserting it.
+
+PROOF 1 — SOURCE. Normalising the single differing line out of both files leaves only
+an added comment block and one added `import`; no logic differs.
+
+  $ sed 's#^const REPO = .*#const REPO = X#' script/m14/firing-check-v2.mjs > shared.norm
+  $ sed 's#^const REPO = .*#const REPO = X#' script/m14/svelte-firing-v2.mjs > lane.norm
+  $ diff shared.norm lane.norm
+  34a35
+  > import { fileURLToPath } from "node:url"
+  35a37,49
+  > // LANE COPY ... (comment block only)
+  exit 1  -- i.e. additions at lines 35 and 37-49, ZERO deletions and ZERO modified
+              lines. Every algorithm, table, LANES entry, SIGNAL entry, ALIAS entry,
+              resolveLane branch, both tallies and every printed line is unchanged.
+
+PROOF 2 — BEHAVIOUR. Both instruments, same analyzer (the main checkout's, at
+e73c3e58e), same corpus, same NFILES. stdout must be byte-identical.
+
+  $ cd $HOME/backbencher-brain
+  $ NFILES=200 bun script/m14/firing-check-v2.mjs SVELTE_FIX2 2>/dev/null > fid-shared.txt
+  $ cd /tmp/opencode/wt/SVELTE_FIX2
+  $ NFILES=200 BB_REPO=$HOME/backbencher-brain \
+      bun script/m14/svelte-firing-v2.mjs SVELTE_FIX2 2>/dev/null > fid-lane.txt
+  $ diff fid-shared.txt fid-lane.txt
+  (no output)  exit 0  -- BYTE-IDENTICAL
+
+Both runs, same result, which is the pre-fix baseline this lane inherited:
+  3/10  calls contains instantiates   silent: extends implements uses imports exports
+       references overrides   imports[] 0 in 0 files
+
+POPULATION DECLARATION (M14 honesty contract, "an instrument must declare the
+population it covered")
+  The instrument prints its own parameters, so the population is checkable:
+  NFILES=200, sampling=code-bearing, corpus=$HOME/fixtures/repositories,
+  corpus dir for this lane = shadcn-svelte, extensions = .svelte.
+  It prints `parsed/files` (200/200) and the first two sampled paths, so a reader can
+  see WHAT was sampled, not only how many.
+
+WHAT THE TWO INSTRUMENTS ACTUALLY DISAGREE ABOUT
+  Not the sampling — the sampling is identical and byte-verified. They differ in
+  WHICH PATH they call, and that difference is the whole finding:
+
+    firing-check-v2.mjs:146-147,253
+        const { getParser } = await import(`${REPO}/src/ast/engine.ts`)
+        const pr = await parser.parse(content, f)
+        const res = new Cls().analyze(pr.rootNode, content, f)   // <-- NO 4th arg
+
+    engine.ts:1592-1623  (inside ASTEngine.parseFile)
+        if ((language === "vue" || language === "svelte") && tree?.rootNode) {
+          ... sfcScriptTrees / sfcScriptLines / sfcScriptCols / sfcScriptLangs
+          context = { ...context, sfcScriptTrees, ... }
+        }
+
+  The SFC seam — which pre-parses every <script> body with the JS/TS/TSX grammar —
+  lives INSIDE ASTEngine.parseFile. The instrument never calls parseFile, so it calls
+  analyze() with context === undefined, so at real-svelte-analyzer.ts:739
+
+        const scriptTrees: Tree[] = context?.sfcScriptTrees ?? []
+
+  is [], and the ENTIRE script half of the analyzer is skipped: no script sub-parse,
+  no imports[], no exports[], no script symbols, no script calls, no runes, no $props.
+  What survives is the template pass alone, which can only ever produce
+  instantiates + on:/render/directive calls + snippet contains. That is exactly the
+  3/10 it prints.
+
+  Production does not take this path. src/ast/pool-worker.ts:833 calls
+      engineModule.ASTEngine.parseFile(filePath, content, context)
+  and that is the path every indexed symbol and relationship in the brain comes from.
+  The workstream doc says so too: "EMITTED — production parseFile (from
+  src/ast/pool-worker.ts, NOT analyze())".
+
+  So for an SFC analyzer the instrument labelled "production path
+  (getParser -> parse -> analyze)" is measuring a path production does not take. It is
+  a correct number about the wrong population — the shape M14's honesty contract calls
+  the most dangerous kind of number.
+
+MEASURED CONSEQUENCE, same 200 files, same corpus, same sampler, only the path differs
+  via analyze() with no context  (firing-check-v2.mjs)
+      3/10   imports[] 0 in 0 files
+  via ASTEngine.parseFile       (script/m14/svelte-census.mts, PRODUCTION)
+      8/10   imports[] 7214 rows in 1838 files
+
+  This falsifies the handover's stated defect — "SVELTE is 3/10 with imports[] = 0 —
+  the JS/TS delegation emits no import edges" — as an INSTRUMENT artifact. The
+  delegation does emit import edges. Per-type numbers for both paths are in
+  script/m14/svelte-ontology-verdicts.md.
+
+AFFECTED LANES (reported to master, not fixed here)
+  Any analyzer whose facts come from the SFC seam is invisible to the v2 seam-less
+  path. From the shared script's own table, VUE 1/10 silent on `contains` and SVELTE
+  3/10 are the two SFC lanes; both are suspect for the same reason. This lane's
+  measurement covers SVELTE only and makes no claim about VUE.

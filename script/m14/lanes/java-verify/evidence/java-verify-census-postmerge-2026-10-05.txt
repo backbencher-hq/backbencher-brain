@@ -1,0 +1,111 @@
+JAVA ONTOLOGY CENSUS (VERIFY_JAVA9)
+corpus repo: java-lib
+population: 3275 .java files on disk · MEASURED 3275 · sampling: ALL (lexicographic)
+denominator (10, engine.ts RelationshipType): calls extends implements uses imports exports contains references overrides instantiates
+
+[INFO] [12:36:40] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [12:36:40] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:37:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:37:43] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:38:15] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:38:36] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:39:17] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:39:48] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+MEASURED 3275/3275 files · 197357 ms · 87050 symbols · 0 failures
+
+=== CHANNEL TALLY (all three, separately) ===
+relationships[] : 677376 edges over 13 files
+imports[]       : 38923 in 3245 files
+exports[]       : 3229 in 3227 files
+
+=== PER-TYPE (relationship channel) ===
+fired  (10/10): calls extends implements uses imports exports contains references overrides instantiates
+silent      : (none)
+imports verdict uses the imports[] channel: EMITTED (38923)
+exports  verdict: relationship 3229, exports[] 3229
+
+| type | edges | files | confidence | evidenceClass | in-file resolve | not-a-name | placeholder | R7 unknown | sub-1.0 no reasonCode |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| calls | 262870 | 6+ | 0.7:260628 0.8:1025 1:1217 | usage_contextual:262870 | 60.5% (317826/525740) | 0 | 0 | 0 | 261653 |
+| extends | 4248 | 6+ | 1:4248 | structural:4248 | 60.8% (5169/8496) | 0 | 0 | 0 | 0 |
+| implements | 1940 | 6+ | 1:1940 | structural:1940 | 54.5% (2114/3880) | 0 | 0 | 0 | 0 |
+| uses | 19691 | 6+ | 0.6:13497 1:6194 | usage_contextual:19691 | 76.7% (30196/39382) | 0 | 0 | 0 | 13497 |
+| imports | 38935 | 6+ | 1:38935 | import_based:38935 | 0.0% (0/77870) | 0 | 0 | 0 | 0 |
+| exports | 3229 | 6+ | 0.6:718 1:2511 | structural:3229 | 50.0% (3229/6458) | 0 | 0 | 0 | 0 |
+| contains | 83761 | 6+ | 1:83761 | structural:83761 | 100.0% (167518/167518) | 0 | 4 | 4 | 0 |
+| references | 221466 | 6+ | 0.9:39995 0.95:181435 1:36 | import_based:38959 reference_qualified:182507 | 53.0% (234657/442932) | 0 | 0 | 0 | 221430 |
+| overrides | 19909 | 6+ | 0.5:17452 0.9:213 1:2244 | inferred:17452 structural:2244 usage_contextual:213 | 0.0% (0/39818) | 0 | 0 | 0 | 0 |
+| instantiates | 21327 | 6+ | 0.95:21327 | structural:21327 | 63.2% (26958/42654) | 0 | 0 | 0 | 21327 |
+
+=== FILES per type (first 6) ===
+calls        android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java
+extends      android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java
+implements   android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java  android/guava-testlib/src/com/google/common/collect/testing/BaseComparable.java  android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java  android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java  android/guava-testlib/src/com/google/common/collect/testing/DerivedTestIteratorGenerator.java  android/guava-testlib/src/com/google/common/collect/testing/Helpers.java
+uses         android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java  android/guava-testlib/src/com/google/common/collect/testing/BaseComparable.java
+imports      android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java
+exports      android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java
+contains     android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java
+references   android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java
+overrides    android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractTester.java
+instantiates android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java  android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java  android/guava-testlib/src/com/google/common/collect/testing/CollectionTestSuiteBuilder.java  android/guava-testlib/src/com/google/common/collect/testing/ConcurrentMapTestSuiteBuilder.java  android/guava-testlib/src/com/google/common/collect/testing/ConcurrentNavigableMapTestSuiteBuilder.java
+
+=== R7 / hygiene detail ===
+calls: 261653 sub-1.0 edges with NO metadata.reasonCode (honesty contract §4)  e.g. android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java: calls getTesters->asList conf=0.7 | android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java: calls resetContainer->resetContainer conf=0.7 | android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java: calls resetCollection->resetContainer conf=0.7
+uses: 13497 sub-1.0 edges with NO metadata.reasonCode (honesty contract §4)  e.g. android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java: uses createArrayWithDuplicateElement->elements conf=0.6 | android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java: uses createArrayWithDuplicateElement->length conf=0.6 | android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java: uses add->SUPPORTS_ADD conf=0.6
+contains: R7 endpoint 'unknown' x4  e.g. android/guava-tests/test/com/google/common/escape/ArrayBasedCharEscaperTest.java: contains endpoint=unknown | android/guava-tests/test/com/google/common/escape/ArrayBasedUnicodeEscaperTest.java: contains endpoint=unknown | guava-tests/test/com/google/common/escape/ArrayBasedCharEscaperTest.java: contains endpoint=unknown
+references: 221430 sub-1.0 edges with NO metadata.reasonCode (honesty contract §4)  e.g. android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java: references AbstractCollectionTestSuiteBuilder->java.util.Arrays.asList conf=0.9 | android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java: references AbstractCollectionTestSuiteBuilder->com.google.common.annotations.GwtIncompatible conf=0.9 | android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java: references AbstractCollectionTestSuiteBuilder->com.google.common.collect.testing.testers.CollectionAddAllTester conf=0.9
+instantiates: 21327 sub-1.0 edges with NO metadata.reasonCode (honesty contract §4)  e.g. android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java: instantiates createArrayWithDuplicateElement->ArrayWithDuplicate conf=0.95 | android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java: instantiates getOrderedElements->ArrayList conf=0.95 | android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java: instantiates getOrderedElements->ArrayList conf=0.95
+
+=== exports[] channel, visibility distribution (JLS 6.5.5.1 / 7.6) ===
+(none):718  public:2511
+export-set kinds: class:3006  enum:44  interface:179
+
+=== INSTRUMENT A — grammar inventory over the measured corpus ===
+distinct node types the grammar produced: 222
+  class_declaration                    6385
+  interface_declaration                452
+  enum_declaration                     400
+  record_declaration                   0
+  annotation_type_declaration          140
+  import_declaration                   38923
+  package_declaration                  3272
+  module_declaration                   3
+  module_directive                     0
+  exports_module_directive             24
+  requires_module_directive            12
+  opens_module_directive               0
+  uses_module_directive                0
+  provides_module_directive            0
+  superclass                           4054
+  super_interfaces                     1707
+  extends_interfaces                   172
+  object_creation_expression           21327
+  method_invocation                    266366
+  super_constructor_invocation         0
+  explicit_constructor_invocation      1217
+  lambda_expression                    5833
+  method_reference                     1117
+  marker_annotation                    51640
+  annotation                           7484
+  absent from this corpus: record_declaration, module_directive, opens_module_directive, uses_module_directive, provides_module_directive, super_constructor_invocation
+
+=== INSTRUMENT B — parse-tree construct counts (silent types) ===
+  package_declaration               3272 occurrences in 3272 files   PRESENT
+      e.g. android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java: package com.google.common.collect.testing;  android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java: package com.google.common.collect.testing;  android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java: package com.google.common.collect.testing;
+  import_declaration               38923 occurrences in 3245 files   PRESENT
+      e.g. android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java: static import static java.util.Arrays.asList;  android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java: import com.google.common.annotations.GwtIncompatible;  android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java: import com.google.common.collect.testing.testers.CollectionAddAllTester;
+  module_declaration                   3 occurrences in 3 files   PRESENT
+      e.g. futures/failureaccess/src/module-info.java: module  guava-testlib/src/module-info.java: module  guava/src/module-info.java: module
+  exports_module_directive            24 occurrences in 3 files   PRESENT
+      e.g. futures/failureaccess/src/module-info.java: exports com.google.common.util.concurrent.internal;  guava-testlib/src/module-info.java: exports com.google.common.collect.testing;  guava-testlib/src/module-info.java: exports com.google.common.collect.testing.features;
+  requires_module_directive           12 occurrences in 2 files   PRESENT
+      e.g. guava-testlib/src/module-info.java: requires java.logging;  guava-testlib/src/module-info.java: requires transitive com.google.common;  guava-testlib/src/module-info.java: requires transitive junit;
+  opens_module_directive               0 occurrences in 0 files   ABSENT
+  uses_module_directive                0 occurrences in 0 files   ABSENT
+  provides_module_directive            0 occurrences in 0 files   ABSENT
+  top_level_type_public             2511 occurrences in 2511 files   PRESENT
+      e.g. android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java:class_declaration AbstractCollectionTestSuiteBuilder  android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java:class_declaration AbstractCollectionTester  android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java:class_declaration AbstractContainerTester
+  top_level_type_not_public          718 occurrences in 717 files   PRESENT
+      e.g. android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java:class_declaration AbstractIteratorTester  android/guava-testlib/src/com/google/common/collect/testing/IgnoreJRERequirement.java:annotation_type_declaration IgnoreJRERequirement  android/guava-testlib/src/com/google/common/collect/testing/Platform.java:class_declaration Platform
+  nested_type                       4148 occurrences in 1086 files   PRESENT
+      e.g. android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java:class_declaration ArrayWithDuplicate  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java:class_declaration PermittedMetaException  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java:class_declaration UnknownElementException

@@ -883,7 +883,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
             },
           })
           const fieldNameNode = this.firstChildOfType(node, "Name")
-          addRelationship(owner.name, fieldName, ASTEngine.RelationshipType.Contains, this.lineOf(fieldNameNode ?? node), "contains", {
+          addRelationship(owner.name, ownerSymbol, ASTEngine.RelationshipType.Contains, this.lineOf(fieldNameNode ?? node), "contains", {
             ...(inExtension ? { extension: true } : {}),
           })
           // The member list of `owner.name`, for the `overrides` post-pass. Recorded
@@ -955,10 +955,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
               ...(this.directiveMetadata(directivesOf(node))),
             },
           })
-          // Target the PUBLISHED name, not the qualified `ownerSymbol`. This arm
-          // publishes `name: fieldName` while the edge targeted `${owner.name}.${fieldName}`,
-          // so emitter and publisher disagreed on the symbol's identity.
-          addRelationship(owner.name, fieldName, ASTEngine.RelationshipType.Contains, this.lineOf(this.firstChildOfType(node, "Name") ?? node), "contains", {
+          addRelationship(owner.name, ownerSymbol, ASTEngine.RelationshipType.Contains, this.lineOf(this.firstChildOfType(node, "Name") ?? node), "contains", {
             ...(inExtension ? { extension: true } : {}),
           })
           // `color: Color = RED` — the node states its own type, so the value's

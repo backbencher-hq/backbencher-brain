@@ -1,0 +1,3720 @@
+{
+ "instrument": "script/vue-merge/vue-ontology-census-prod.ts",
+ "entry": "ASTEngine.parseFile (the call pool-worker.ts:833 makes)",
+ "at": "2026-10-05T04:12:59.958Z",
+ "corpus": "vue-element-admin",
+ "population": {
+  "filesFound": 131,
+  "filesParsed": 131,
+  "filesFailed": 0,
+  "definition": "every .vue under $HOME/fixtures/repositories/vue-element-admin, readdir walk, node_modules/.git excluded, sorted"
+ },
+ "types": [
+  "calls",
+  "contains",
+  "exports",
+  "extends",
+  "implements",
+  "imports",
+  "instantiates",
+  "overrides",
+  "references",
+  "uses"
+ ],
+ "counts": {
+  "calls": 781,
+  "contains": 826,
+  "exports": 121,
+  "extends": 9,
+  "implements": 0,
+  "imports": 197,
+  "instantiates": 342,
+  "overrides": 0,
+  "references": 0,
+  "uses": 2093
+ },
+ "filesPerType": {
+  "calls": 92,
+  "contains": 112,
+  "exports": 121,
+  "extends": 9,
+  "implements": 0,
+  "imports": 87,
+  "instantiates": 102,
+  "overrides": 0,
+  "references": 0,
+  "uses": 112
+ },
+ "importsChannel": {
+  "rows": 195,
+  "files": 87
+ },
+ "exportsChannel": {
+  "rows": 121,
+  "files": 121
+ },
+ "symbols": {
+  "total": 996,
+  "unknownKind": 0,
+  "emptyName": 0,
+  "placeholder": 0
+ },
+ "parseErrors": 0,
+ "hasErrorFiles": 0,
+ "failures": [],
+ "wallMs": 6422,
+ "table": [
+  {
+   "type": "calls",
+   "count": 781,
+   "files": 92,
+   "fileList": [
+    "src/components/ImageCropper/index.vue (68)",
+    "src/components/ThemePicker/index.vue (55)",
+    "src/views/permission/role.vue (41)",
+    "src/components/Dropzone/index.vue (40)",
+    "src/views/table/complex-table.vue (39)",
+    "src/layout/components/TagsView/index.vue (38)",
+    "src/components/Tinymce/index.vue (29)",
+    "src/components/UploadExcel/index.vue (27)",
+    "src/views/example/components/ArticleDetail.vue (25)",
+    "src/components/MarkdownEditor/index.vue (22)",
+    "src/views/dashboard/admin/components/TodoList/index.vue (21)",
+    "src/views/login/index.vue (17)",
+    "src/components/Breadcrumb/index.vue (15)",
+    "src/components/HeaderSearch/index.vue (13)",
+    "src/views/table/drag-table.vue (13)",
+    "src/components/JsonEditor/index.vue (12)",
+    "src/components/Sticky/index.vue (12)",
+    "src/components/DndList/index.vue (11)",
+    "src/components/Tinymce/components/EditorImage.vue (11)",
+    "src/components/Charts/Keyboard.vue (10)",
+    "src/components/RightPanel/index.vue (10)",
+    "src/views/excel/select-excel.vue (10)",
+    "src/components/BackToTop/index.vue (9)",
+    "src/views/excel/export-excel.vue (9)",
+    "src/views/excel/merge-header.vue (9)",
+    "src/components/Upload/SingleImage.vue (8)",
+    "src/components/Upload/SingleImage2.vue (8)",
+    "src/components/Upload/SingleImage3.vue (8)",
+    "src/views/dashboard/admin/components/TodoList/Todo.vue (8)",
+    "src/components/DragSelect/index.vue (7)",
+    "src/components/MDinput/index.vue (7)",
+    "src/views/dashboard/admin/components/LineChart.vue (7)",
+    "src/views/zip/index.vue (7)",
+    "src/components/Charts/MixChart.vue (6)",
+    "src/components/Pagination/index.vue (6)",
+    "src/components/Screenfull/index.vue (6)",
+    "src/components/SizeSelect/index.vue (6)",
+    "src/views/table/inline-edit-table.vue (6)",
+    "src/components/Charts/LineMarker.vue (5)",
+    "src/views/dashboard/admin/components/BarChart.vue (5)",
+    "src/views/dashboard/admin/components/PieChart.vue (5)",
+    "src/views/dashboard/admin/components/RaddarChart.vue (5)",
+    "src/views/dashboard/admin/components/TransactionTable.vue (5)",
+    "src/views/pdf/download.vue (5)",
+    "src/views/qiniu/upload.vue (5)",
+    "src/layout/components/Navbar.vue (4)",
+    "src/layout/components/Settings/index.vue (4)",
+    "src/layout/components/Sidebar/Item.vue (4)",
+    "src/layout/components/Sidebar/SidebarItem.vue (4)",
+    "src/layout/components/TagsView/ScrollPane.vue (4)",
+    "src/views/components-demo/dnd-list.vue (4)",
+    "src/views/login/auth-redirect.vue (4)",
+    "src/views/tab/components/TabPane.vue (4)",
+    "src/views/components-demo/count-to.vue (3)",
+    "src/views/example/list.vue (3)",
+    "src/views/permission/components/SwitchRoles.vue (3)",
+    "src/views/profile/index.vue (3)",
+    "src/layout/index.vue (2)",
+    "src/views/clipboard/index.vue (2)",
+    "src/views/components-demo/dropzone.vue (2)",
+    "src/views/components-demo/mixin.vue (2)",
+    "src/views/components-demo/sticky.vue (2)",
+    "src/views/dashboard/index.vue (2)",
+    "src/views/error-page/401.vue (2)",
+    "src/views/guide/index.vue (2)",
+    "src/views/login/components/SocialSignin.vue (2)",
+    "src/views/redirect/index.vue (2)",
+    "src/views/table/dynamic-table/components/FixedThead.vue (2)",
+    "src/components/ErrorLog/index.vue (1)",
+    "src/components/Hamburger/index.vue (1)",
+    "src/components/Kanban/index.vue (1)",
+    "src/components/SvgIcon/index.vue (1)",
+    "src/layout/components/Sidebar/Link.vue (1)",
+    "src/layout/components/Sidebar/index.vue (1)",
+    "src/views/components-demo/drag-dialog.vue (1)",
+    "src/views/components-demo/json-editor.vue (1)",
+    "src/views/components-demo/markdown.vue (1)",
+    "src/views/dashboard/admin/components/BoxCard.vue (1)",
+    "src/views/dashboard/admin/components/PanelGroup.vue (1)",
+    "src/views/dashboard/editor/index.vue (1)",
+    "src/views/example/components/Dropdown/Comment.vue (1)",
+    "src/views/example/components/Dropdown/Platform.vue (1)",
+    "src/views/example/components/Dropdown/SourceUrl.vue (1)",
+    "src/views/excel/components/AutoWidthOption.vue (1)",
+    "src/views/excel/components/BookTypeOption.vue (1)",
+    "src/views/excel/components/FilenameOption.vue (1)",
+    "src/views/excel/upload-excel.vue (1)",
+    "src/views/icons/index.vue (1)",
+    "src/views/permission/page.vue (1)",
+    "src/views/profile/components/Account.vue (1)",
+    "src/views/tab/index.vue (1)",
+    "src/views/theme/index.vue (1)"
+   ],
+   "distinctPairs": 565,
+   "bothEndpointsResolve": 166,
+   "sourceOnly": 524,
+   "targetOnly": 7,
+   "neitherResolves": 84,
+   "resolvePct": 21.3,
+   "confidences": {
+    "0.9": 781
+   },
+   "evidenceClasses": {
+    "usage_contextual": 781
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "delegated-js-ts": 781
+   },
+   "examples": [
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "mounted",
+     "target": "addEventListener",
+     "line": 48,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "calleeExpression": "window.addEventListener",
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "beforeDestroy",
+     "target": "removeEventListener",
+     "line": 51,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "calleeExpression": "window.removeEventListener",
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "beforeDestroy",
+     "target": "clearInterval",
+     "line": 53,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "calleeExpression": "clearInterval",
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "backToTop",
+     "target": "setInterval",
+     "line": 65,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "calleeExpression": "setInterval",
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "backToTop",
+     "target": "floor",
+     "line": 66,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "calleeExpression": "Math.floor",
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "backToTop",
+     "target": "easeInOutQuad",
+     "line": 66,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "calleeExpression": "this.easeInOutQuad",
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    }
+   ]
+  },
+  {
+   "type": "contains",
+   "count": 826,
+   "files": 112,
+   "fileList": [
+    "src/components/ImageCropper/index.vue (63)",
+    "src/views/table/complex-table.vue (34)",
+    "src/layout/components/TagsView/index.vue (24)",
+    "src/components/Dropzone/index.vue (23)",
+    "src/components/MDinput/index.vue (23)",
+    "src/components/Tinymce/index.vue (23)",
+    "src/views/permission/role.vue (20)",
+    "src/components/MarkdownEditor/index.vue (17)",
+    "src/components/Sticky/index.vue (17)",
+    "src/views/components-demo/count-to.vue (17)",
+    "src/views/login/index.vue (17)",
+    "src/views/example/components/ArticleDetail.vue (16)",
+    "src/components/HeaderSearch/index.vue (14)",
+    "src/components/UploadExcel/index.vue (14)",
+    "src/components/BackToTop/index.vue (13)",
+    "src/views/dashboard/admin/components/TodoList/index.vue (13)",
+    "src/components/Pagination/index.vue (12)",
+    "src/components/DndList/index.vue (11)",
+    "src/views/dashboard/admin/components/LineChart.vue (11)",
+    "src/views/excel/export-excel.vue (11)",
+    "src/views/excel/select-excel.vue (11)",
+    "src/views/table/drag-table.vue (11)",
+    "src/components/RightPanel/index.vue (10)",
+    "src/components/Tinymce/components/EditorImage.vue (10)",
+    "src/components/Charts/Keyboard.vue (9)",
+    "src/components/Charts/LineMarker.vue (9)",
+    "src/components/Charts/MixChart.vue (9)",
+    "src/components/Upload/SingleImage.vue (9)",
+    "src/components/Upload/SingleImage2.vue (9)",
+    "src/components/Upload/SingleImage3.vue (9)",
+    "src/views/components-demo/markdown.vue (9)",
+    "src/views/zip/index.vue (9)",
+    "src/components/Breadcrumb/index.vue (8)",
+    "src/components/Screenfull/index.vue (8)",
+    "src/layout/components/TagsView/ScrollPane.vue (8)",
+    "src/views/dashboard/admin/components/BarChart.vue (8)",
+    "src/views/dashboard/admin/components/PieChart.vue (8)",
+    "src/views/dashboard/admin/components/RaddarChart.vue (8)",
+    "src/views/dashboard/admin/components/TodoList/Todo.vue (8)",
+    "src/views/excel/merge-header.vue (8)",
+    "src/views/table/inline-edit-table.vue (8)",
+    "src/components/ThemePicker/index.vue (7)",
+    "src/views/example/list.vue (7)",
+    "src/views/tab/components/TabPane.vue (7)",
+    "src/components/SvgIcon/index.vue (6)",
+    "src/layout/components/Sidebar/SidebarItem.vue (6)",
+    "src/views/components-demo/avatar-upload.vue (6)",
+    "src/views/components-demo/drag-dialog.vue (6)",
+    "src/views/components-demo/sticky.vue (6)",
+    "src/views/tab/index.vue (6)",
+    "src/views/table/dynamic-table/components/FixedThead.vue (6)",
+    "src/components/JsonEditor/index.vue (5)",
+    "src/components/Share/DropdownMenu.vue (5)",
+    "src/components/SizeSelect/index.vue (5)",
+    "src/layout/components/Settings/index.vue (5)",
+    "src/views/clipboard/index.vue (5)",
+    "src/views/components-demo/dnd-list.vue (5)",
+    "src/views/components-demo/drag-kanban.vue (5)",
+    "src/views/error-page/401.vue (5)",
+    "src/views/excel/upload-excel.vue (5)",
+    "src/views/pdf/download.vue (5)",
+    "src/views/profile/index.vue (5)",
+    "src/views/qiniu/upload.vue (5)",
+    "src/views/theme/index.vue (5)",
+    "src/components/DragSelect/index.vue (4)",
+    "src/components/ErrorLog/index.vue (4)",
+    "src/components/Kanban/index.vue (4)",
+    "src/components/PanThumb/index.vue (4)",
+    "src/layout/components/Sidebar/Link.vue (4)",
+    "src/layout/components/Sidebar/Logo.vue (4)",
+    "src/layout/components/Sidebar/index.vue (4)",
+    "src/views/components-demo/mixin.vue (4)",
+    "src/views/dashboard/admin/components/TransactionTable.vue (4)",
+    "src/views/example/components/Dropdown/Platform.vue (4)",
+    "src/views/excel/components/BookTypeOption.vue (4)",
+    "src/views/guide/index.vue (4)",
+    "src/views/icons/index.vue (4)",
+    "src/views/components-demo/drag-select.vue (3)",
+    "src/views/dashboard/admin/index.vue (3)",
+    "src/views/dashboard/index.vue (3)",
+    "src/views/permission/directive.vue (3)",
+    "src/views/table/dynamic-table/components/UnfixedThead.vue (3)",
+    "src/components/Hamburger/index.vue (2)",
+    "src/components/TextHoverEffect/Mallki.vue (2)",
+    "src/layout/components/AppMain.vue (2)",
+    "src/layout/components/Navbar.vue (2)",
+    "src/layout/components/Sidebar/Item.vue (2)",
+    "src/layout/index.vue (2)",
+    "src/views/components-demo/back-to-top.vue (2)",
+    "src/views/components-demo/dropzone.vue (2)",
+    "src/views/components-demo/json-editor.vue (2)",
+    "src/views/components-demo/tinymce.vue (2)",
+    "src/views/dashboard/admin/components/BoxCard.vue (2)",
+    "src/views/dashboard/editor/index.vue (2)",
+    "src/views/documentation/index.vue (2)",
+    "src/views/example/components/Dropdown/Comment.vue (2)",
+    "src/views/example/components/Dropdown/SourceUrl.vue (2)",
+    "src/views/excel/components/AutoWidthOption.vue (2)",
+    "src/views/excel/components/FilenameOption.vue (2)",
+    "src/views/login/components/SocialSignin.vue (2)",
+    "src/views/permission/components/SwitchRoles.vue (2)",
+    "src/views/profile/components/Account.vue (2)",
+    "src/views/profile/components/Activity.vue (2)",
+    "src/views/profile/components/Timeline.vue (2)",
+    "src/views/components-demo/split-pane.vue (1)",
+    "src/views/dashboard/admin/components/PanelGroup.vue (1)",
+    "src/views/error-log/components/ErrorTestB.vue (1)",
+    "src/views/error-page/404.vue (1)",
+    "src/views/login/auth-redirect.vue (1)",
+    "src/views/permission/page.vue (1)",
+    "src/views/profile/components/UserCard.vue (1)",
+    "src/views/redirect/index.vue (1)"
+   ],
+   "distinctPairs": 809,
+   "bothEndpointsResolve": 826,
+   "sourceOnly": 0,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 100,
+   "confidences": {
+    "1": 826
+   },
+   "evidenceClasses": {
+    "structural": 826
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "contains-pass": 826
+   },
+   "examples": [
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "BackToTop",
+     "target": "visibilityHeight",
+     "line": 13,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural"
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "BackToTop",
+     "target": "backPosition",
+     "line": 17,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural"
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "BackToTop",
+     "target": "customStyle",
+     "line": 21,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural"
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "BackToTop",
+     "target": "transitionName",
+     "line": 35,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural"
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "BackToTop",
+     "target": "data",
+     "line": 40,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural"
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "BackToTop",
+     "target": "visible",
+     "line": 42,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural"
+     }
+    }
+   ]
+  },
+  {
+   "type": "exports",
+   "count": 121,
+   "files": 121,
+   "fileList": [
+    "src/App.vue (1)",
+    "src/components/BackToTop/index.vue (1)",
+    "src/components/Breadcrumb/index.vue (1)",
+    "src/components/Charts/Keyboard.vue (1)",
+    "src/components/Charts/LineMarker.vue (1)",
+    "src/components/Charts/MixChart.vue (1)",
+    "src/components/DndList/index.vue (1)",
+    "src/components/DragSelect/index.vue (1)",
+    "src/components/Dropzone/index.vue (1)",
+    "src/components/ErrorLog/index.vue (1)",
+    "src/components/Hamburger/index.vue (1)",
+    "src/components/HeaderSearch/index.vue (1)",
+    "src/components/ImageCropper/index.vue (1)",
+    "src/components/JsonEditor/index.vue (1)",
+    "src/components/Kanban/index.vue (1)",
+    "src/components/MDinput/index.vue (1)",
+    "src/components/MarkdownEditor/index.vue (1)",
+    "src/components/Pagination/index.vue (1)",
+    "src/components/PanThumb/index.vue (1)",
+    "src/components/RightPanel/index.vue (1)",
+    "src/components/Screenfull/index.vue (1)",
+    "src/components/Share/DropdownMenu.vue (1)",
+    "src/components/SizeSelect/index.vue (1)",
+    "src/components/Sticky/index.vue (1)",
+    "src/components/SvgIcon/index.vue (1)",
+    "src/components/TextHoverEffect/Mallki.vue (1)",
+    "src/components/ThemePicker/index.vue (1)",
+    "src/components/Tinymce/components/EditorImage.vue (1)",
+    "src/components/Tinymce/index.vue (1)",
+    "src/components/Upload/SingleImage.vue (1)",
+    "src/components/Upload/SingleImage2.vue (1)",
+    "src/components/Upload/SingleImage3.vue (1)",
+    "src/components/UploadExcel/index.vue (1)",
+    "src/layout/components/AppMain.vue (1)",
+    "src/layout/components/Navbar.vue (1)",
+    "src/layout/components/Settings/index.vue (1)",
+    "src/layout/components/Sidebar/Item.vue (1)",
+    "src/layout/components/Sidebar/Link.vue (1)",
+    "src/layout/components/Sidebar/Logo.vue (1)",
+    "src/layout/components/Sidebar/SidebarItem.vue (1)",
+    "src/layout/components/Sidebar/index.vue (1)",
+    "src/layout/components/TagsView/ScrollPane.vue (1)",
+    "src/layout/components/TagsView/index.vue (1)",
+    "src/layout/index.vue (1)",
+    "src/views/charts/keyboard.vue (1)",
+    "src/views/charts/line.vue (1)",
+    "src/views/charts/mix-chart.vue (1)",
+    "src/views/clipboard/index.vue (1)",
+    "src/views/components-demo/avatar-upload.vue (1)",
+    "src/views/components-demo/back-to-top.vue (1)",
+    "src/views/components-demo/count-to.vue (1)",
+    "src/views/components-demo/dnd-list.vue (1)",
+    "src/views/components-demo/drag-dialog.vue (1)",
+    "src/views/components-demo/drag-kanban.vue (1)",
+    "src/views/components-demo/drag-select.vue (1)",
+    "src/views/components-demo/dropzone.vue (1)",
+    "src/views/components-demo/json-editor.vue (1)",
+    "src/views/components-demo/markdown.vue (1)",
+    "src/views/components-demo/mixin.vue (1)",
+    "src/views/components-demo/split-pane.vue (1)",
+    "src/views/components-demo/sticky.vue (1)",
+    "src/views/components-demo/tinymce.vue (1)",
+    "src/views/dashboard/admin/components/BarChart.vue (1)",
+    "src/views/dashboard/admin/components/BoxCard.vue (1)",
+    "src/views/dashboard/admin/components/LineChart.vue (1)",
+    "src/views/dashboard/admin/components/PanelGroup.vue (1)",
+    "src/views/dashboard/admin/components/PieChart.vue (1)",
+    "src/views/dashboard/admin/components/RaddarChart.vue (1)",
+    "src/views/dashboard/admin/components/TodoList/Todo.vue (1)",
+    "src/views/dashboard/admin/components/TodoList/index.vue (1)",
+    "src/views/dashboard/admin/components/TransactionTable.vue (1)",
+    "src/views/dashboard/admin/index.vue (1)",
+    "src/views/dashboard/editor/index.vue (1)",
+    "src/views/dashboard/index.vue (1)",
+    "src/views/documentation/index.vue (1)",
+    "src/views/error-log/components/ErrorTestA.vue (1)",
+    "src/views/error-log/components/ErrorTestB.vue (1)",
+    "src/views/error-log/index.vue (1)",
+    "src/views/error-page/401.vue (1)",
+    "src/views/error-page/404.vue (1)",
+    "src/views/example/components/ArticleDetail.vue (1)",
+    "src/views/example/components/Dropdown/Comment.vue (1)",
+    "src/views/example/components/Dropdown/Platform.vue (1)",
+    "src/views/example/components/Dropdown/SourceUrl.vue (1)",
+    "src/views/example/create.vue (1)",
+    "src/views/example/edit.vue (1)",
+    "src/views/example/list.vue (1)",
+    "src/views/excel/components/AutoWidthOption.vue (1)",
+    "src/views/excel/components/BookTypeOption.vue (1)",
+    "src/views/excel/components/FilenameOption.vue (1)",
+    "src/views/excel/export-excel.vue (1)",
+    "src/views/excel/merge-header.vue (1)",
+    "src/views/excel/select-excel.vue (1)",
+    "src/views/excel/upload-excel.vue (1)",
+    "src/views/guide/index.vue (1)",
+    "src/views/icons/index.vue (1)",
+    "src/views/login/auth-redirect.vue (1)",
+    "src/views/login/components/SocialSignin.vue (1)",
+    "src/views/login/index.vue (1)",
+    "src/views/pdf/download.vue (1)",
+    "src/views/permission/components/SwitchRoles.vue (1)",
+    "src/views/permission/directive.vue (1)",
+    "src/views/permission/page.vue (1)",
+    "src/views/permission/role.vue (1)",
+    "src/views/profile/components/Account.vue (1)",
+    "src/views/profile/components/Activity.vue (1)",
+    "src/views/profile/components/Timeline.vue (1)",
+    "src/views/profile/components/UserCard.vue (1)",
+    "src/views/profile/index.vue (1)",
+    "src/views/qiniu/upload.vue (1)",
+    "src/views/redirect/index.vue (1)",
+    "src/views/tab/components/TabPane.vue (1)",
+    "src/views/tab/index.vue (1)",
+    "src/views/table/complex-table.vue (1)",
+    "src/views/table/drag-table.vue (1)",
+    "src/views/table/dynamic-table/components/FixedThead.vue (1)",
+    "src/views/table/dynamic-table/components/UnfixedThead.vue (1)",
+    "src/views/table/dynamic-table/index.vue (1)",
+    "src/views/table/inline-edit-table.vue (1)",
+    "src/views/theme/index.vue (1)",
+    "src/views/zip/index.vue (1)"
+   ],
+   "distinctPairs": 107,
+   "bothEndpointsResolve": 0,
+   "sourceOnly": 121,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0,
+   "confidences": {
+    "1": 121
+   },
+   "evidenceClasses": {
+    "structural": 121
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "delegated-js-ts": 121
+   },
+   "examples": [
+    {
+     "file": "src/App.vue",
+     "source": "App",
+     "target": "default",
+     "line": 8,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "isDefault": true,
+      "evidenceClass": "structural",
+      "sfcDelegated": true,
+      "sfcLineOffset": 6
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "BackToTop",
+     "target": "default",
+     "line": 10,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "isDefault": true,
+      "evidenceClass": "structural",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    },
+    {
+     "file": "src/components/Breadcrumb/index.vue",
+     "source": "index",
+     "target": "default",
+     "line": 15,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "isDefault": true,
+      "evidenceClass": "structural",
+      "sfcDelegated": true,
+      "sfcLineOffset": 11
+     }
+    },
+    {
+     "file": "src/components/Charts/Keyboard.vue",
+     "source": "Keyboard",
+     "target": "default",
+     "line": 9,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "isDefault": true,
+      "evidenceClass": "structural",
+      "sfcDelegated": true,
+      "sfcLineOffset": 4
+     }
+    },
+    {
+     "file": "src/components/Charts/LineMarker.vue",
+     "source": "LineMarker",
+     "target": "default",
+     "line": 9,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "isDefault": true,
+      "evidenceClass": "structural",
+      "sfcDelegated": true,
+      "sfcLineOffset": 4
+     }
+    },
+    {
+     "file": "src/components/Charts/MixChart.vue",
+     "source": "MixChart",
+     "target": "default",
+     "line": 9,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "isDefault": true,
+      "evidenceClass": "structural",
+      "sfcDelegated": true,
+      "sfcLineOffset": 4
+     }
+    }
+   ]
+  },
+  {
+   "type": "extends",
+   "count": 9,
+   "files": 9,
+   "fileList": [
+    "src/components/Charts/Keyboard.vue (1)",
+    "src/components/Charts/LineMarker.vue (1)",
+    "src/components/Charts/MixChart.vue (1)",
+    "src/layout/components/Sidebar/SidebarItem.vue (1)",
+    "src/layout/index.vue (1)",
+    "src/views/dashboard/admin/components/BarChart.vue (1)",
+    "src/views/dashboard/admin/components/LineChart.vue (1)",
+    "src/views/dashboard/admin/components/PieChart.vue (1)",
+    "src/views/dashboard/admin/components/RaddarChart.vue (1)"
+   ],
+   "distinctPairs": 9,
+   "bothEndpointsResolve": 0,
+   "sourceOnly": 9,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0,
+   "confidences": {
+    "0.9": 9
+   },
+   "evidenceClasses": {
+    "usage_contextual": 9
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "options-api": 9
+   },
+   "examples": [
+    {
+     "file": "src/components/Charts/Keyboard.vue",
+     "source": "Keyboard",
+     "target": "resize",
+     "line": 10,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isMixin": true,
+      "isOptionsApi": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "src/components/Charts/LineMarker.vue",
+     "source": "LineMarker",
+     "target": "resize",
+     "line": 10,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isMixin": true,
+      "isOptionsApi": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "src/components/Charts/MixChart.vue",
+     "source": "MixChart",
+     "target": "resize",
+     "line": 10,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isMixin": true,
+      "isOptionsApi": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "src/layout/components/Sidebar/SidebarItem.vue",
+     "source": "SidebarItem",
+     "target": "FixiOSBug",
+     "line": 37,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isMixin": true,
+      "isOptionsApi": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "src/layout/index.vue",
+     "source": "Layout",
+     "target": "ResizeMixin",
+     "line": 34,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isMixin": true,
+      "isOptionsApi": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "src/views/dashboard/admin/components/BarChart.vue",
+     "source": "BarChart",
+     "target": "resize",
+     "line": 13,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isMixin": true,
+      "isOptionsApi": true,
+      "evidenceClass": "usage_contextual"
+     }
+    }
+   ]
+  },
+  {
+   "type": "implements",
+   "count": 0,
+   "files": 0,
+   "fileList": [],
+   "distinctPairs": 0,
+   "bothEndpointsResolve": 0,
+   "sourceOnly": 0,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0,
+   "confidences": {},
+   "evidenceClasses": {},
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {},
+   "examples": []
+  },
+  {
+   "type": "imports",
+   "count": 197,
+   "files": 87,
+   "fileList": [
+    "src/views/example/components/ArticleDetail.vue (11)",
+    "src/views/dashboard/admin/index.vue (9)",
+    "src/layout/index.vue (8)",
+    "src/views/table/complex-table.vue (8)",
+    "src/layout/components/Navbar.vue (7)",
+    "src/views/permission/role.vue (7)",
+    "src/views/excel/export-excel.vue (6)",
+    "src/components/ImageCropper/index.vue (5)",
+    "src/layout/components/Sidebar/SidebarItem.vue (5)",
+    "src/views/components-demo/mixin.vue (5)",
+    "src/views/profile/index.vue (5)",
+    "src/components/Tinymce/index.vue (4)",
+    "src/layout/components/Sidebar/index.vue (4)",
+    "src/views/dashboard/admin/components/BarChart.vue (3)",
+    "src/views/dashboard/admin/components/BoxCard.vue (3)",
+    "src/views/dashboard/admin/components/LineChart.vue (3)",
+    "src/views/dashboard/admin/components/PieChart.vue (3)",
+    "src/views/dashboard/admin/components/RaddarChart.vue (3)",
+    "src/views/dashboard/editor/index.vue (3)",
+    "src/views/dashboard/index.vue (3)",
+    "src/views/excel/merge-header.vue (3)",
+    "src/views/icons/index.vue (3)",
+    "src/views/permission/directive.vue (3)",
+    "src/components/Charts/Keyboard.vue (2)",
+    "src/components/Charts/LineMarker.vue (2)",
+    "src/components/Charts/MixChart.vue (2)",
+    "src/components/HeaderSearch/index.vue (2)",
+    "src/components/JsonEditor/index.vue (2)",
+    "src/components/MarkdownEditor/index.vue (2)",
+    "src/components/RightPanel/index.vue (2)",
+    "src/layout/components/TagsView/index.vue (2)",
+    "src/views/clipboard/index.vue (2)",
+    "src/views/components-demo/avatar-upload.vue (2)",
+    "src/views/components-demo/dnd-list.vue (2)",
+    "src/views/error-log/index.vue (2)",
+    "src/views/example/list.vue (2)",
+    "src/views/excel/select-excel.vue (2)",
+    "src/views/guide/index.vue (2)",
+    "src/views/login/index.vue (2)",
+    "src/views/table/drag-table.vue (2)",
+    "src/views/table/dynamic-table/index.vue (2)",
+    "src/views/zip/index.vue (2)",
+    "src/components/Breadcrumb/index.vue (1)",
+    "src/components/DndList/index.vue (1)",
+    "src/components/DragSelect/index.vue (1)",
+    "src/components/Dropzone/index.vue (1)",
+    "src/components/Kanban/index.vue (1)",
+    "src/components/Pagination/index.vue (1)",
+    "src/components/Screenfull/index.vue (1)",
+    "src/components/SvgIcon/index.vue (1)",
+    "src/components/ThemePicker/index.vue (1)",
+    "src/components/Upload/SingleImage.vue (1)",
+    "src/components/Upload/SingleImage2.vue (1)",
+    "src/components/Upload/SingleImage3.vue (1)",
+    "src/components/UploadExcel/index.vue (1)",
+    "src/layout/components/Settings/index.vue (1)",
+    "src/layout/components/Sidebar/Link.vue (1)",
+    "src/views/charts/keyboard.vue (1)",
+    "src/views/charts/line.vue (1)",
+    "src/views/charts/mix-chart.vue (1)",
+    "src/views/components-demo/back-to-top.vue (1)",
+    "src/views/components-demo/count-to.vue (1)",
+    "src/views/components-demo/drag-dialog.vue (1)",
+    "src/views/components-demo/drag-kanban.vue (1)",
+    "src/views/components-demo/drag-select.vue (1)",
+    "src/views/components-demo/dropzone.vue (1)",
+    "src/views/components-demo/json-editor.vue (1)",
+    "src/views/components-demo/markdown.vue (1)",
+    "src/views/components-demo/split-pane.vue (1)",
+    "src/views/components-demo/sticky.vue (1)",
+    "src/views/components-demo/tinymce.vue (1)",
+    "src/views/dashboard/admin/components/PanelGroup.vue (1)",
+    "src/views/dashboard/admin/components/TodoList/index.vue (1)",
+    "src/views/dashboard/admin/components/TransactionTable.vue (1)",
+    "src/views/documentation/index.vue (1)",
+    "src/views/error-page/401.vue (1)",
+    "src/views/example/create.vue (1)",
+    "src/views/example/edit.vue (1)",
+    "src/views/excel/upload-excel.vue (1)",
+    "src/views/pdf/download.vue (1)",
+    "src/views/permission/page.vue (1)",
+    "src/views/profile/components/UserCard.vue (1)",
+    "src/views/qiniu/upload.vue (1)",
+    "src/views/tab/components/TabPane.vue (1)",
+    "src/views/tab/index.vue (1)",
+    "src/views/table/inline-edit-table.vue (1)",
+    "src/views/theme/index.vue (1)"
+   ],
+   "distinctPairs": 197,
+   "bothEndpointsResolve": 0,
+   "sourceOnly": 197,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0,
+   "confidences": {
+    "1": 185,
+    "0.6": 12
+   },
+   "evidenceClasses": {
+    "import_based": 197
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "delegated-js-ts": 197
+   },
+   "examples": [
+    {
+     "file": "src/components/Breadcrumb/index.vue",
+     "source": "index",
+     "target": "path-to-regexp:pathToRegexp",
+     "line": 13,
+     "confidence": 1,
+     "evidenceClass": "import_based",
+     "meta": {
+      "declaredName": "default",
+      "declaredKind": "default",
+      "evidenceClass": "import_based",
+      "sfcDelegated": true,
+      "sfcLineOffset": 11
+     }
+    },
+    {
+     "file": "src/components/Charts/Keyboard.vue",
+     "source": "Keyboard",
+     "target": "echarts:echarts",
+     "line": 6,
+     "confidence": 1,
+     "evidenceClass": "import_based",
+     "meta": {
+      "declaredName": "default",
+      "declaredKind": "default",
+      "evidenceClass": "import_based",
+      "sfcDelegated": true,
+      "sfcLineOffset": 4
+     }
+    },
+    {
+     "file": "src/components/Charts/Keyboard.vue",
+     "source": "Keyboard",
+     "target": "./mixins/resize:resize",
+     "line": 7,
+     "confidence": 1,
+     "evidenceClass": "import_based",
+     "meta": {
+      "declaredName": "default",
+      "declaredKind": "default",
+      "evidenceClass": "import_based",
+      "sfcDelegated": true,
+      "sfcLineOffset": 4
+     }
+    },
+    {
+     "file": "src/components/Charts/LineMarker.vue",
+     "source": "LineMarker",
+     "target": "echarts:echarts",
+     "line": 6,
+     "confidence": 1,
+     "evidenceClass": "import_based",
+     "meta": {
+      "declaredName": "default",
+      "declaredKind": "default",
+      "evidenceClass": "import_based",
+      "sfcDelegated": true,
+      "sfcLineOffset": 4
+     }
+    },
+    {
+     "file": "src/components/Charts/LineMarker.vue",
+     "source": "LineMarker",
+     "target": "./mixins/resize:resize",
+     "line": 7,
+     "confidence": 1,
+     "evidenceClass": "import_based",
+     "meta": {
+      "declaredName": "default",
+      "declaredKind": "default",
+      "evidenceClass": "import_based",
+      "sfcDelegated": true,
+      "sfcLineOffset": 4
+     }
+    },
+    {
+     "file": "src/components/Charts/MixChart.vue",
+     "source": "MixChart",
+     "target": "echarts:echarts",
+     "line": 6,
+     "confidence": 1,
+     "evidenceClass": "import_based",
+     "meta": {
+      "declaredName": "default",
+      "declaredKind": "default",
+      "evidenceClass": "import_based",
+      "sfcDelegated": true,
+      "sfcLineOffset": 4
+     }
+    }
+   ]
+  },
+  {
+   "type": "instantiates",
+   "count": 342,
+   "files": 102,
+   "fileList": [
+    "src/views/example/components/ArticleDetail.vue (18)",
+    "src/views/table/complex-table.vue (15)",
+    "src/views/components-demo/mixin.vue (11)",
+    "src/views/dashboard/admin/index.vue (11)",
+    "src/layout/components/Navbar.vue (10)",
+    "src/views/profile/index.vue (9)",
+    "src/views/components-demo/sticky.vue (8)",
+    "src/views/login/index.vue (8)",
+    "src/views/permission/role.vue (8)",
+    "src/components/ErrorLog/index.vue (7)",
+    "src/views/example/list.vue (7)",
+    "src/views/excel/export-excel.vue (7)",
+    "src/views/theme/index.vue (7)",
+    "src/layout/index.vue (6)",
+    "src/views/components-demo/drag-dialog.vue (6)",
+    "src/views/example/components/Dropdown/Comment.vue (6)",
+    "src/views/table/inline-edit-table.vue (6)",
+    "src/layout/components/Sidebar/SidebarItem.vue (5)",
+    "src/views/error-page/401.vue (5)",
+    "src/views/example/components/Dropdown/Platform.vue (5)",
+    "src/views/example/components/Dropdown/SourceUrl.vue (5)",
+    "src/views/excel/select-excel.vue (5)",
+    "src/views/tab/index.vue (5)",
+    "src/views/zip/index.vue (5)",
+    "src/components/HeaderSearch/index.vue (4)",
+    "src/components/SizeSelect/index.vue (4)",
+    "src/layout/components/Sidebar/index.vue (4)",
+    "src/views/clipboard/index.vue (4)",
+    "src/views/components-demo/markdown.vue (4)",
+    "src/views/dashboard/admin/components/BoxCard.vue (4)",
+    "src/views/dashboard/admin/components/PanelGroup.vue (4)",
+    "src/views/excel/merge-header.vue (4)",
+    "src/views/icons/index.vue (4)",
+    "src/views/permission/directive.vue (4)",
+    "src/views/profile/components/Account.vue (4)",
+    "src/views/profile/components/UserCard.vue (4)",
+    "src/views/tab/components/TabPane.vue (4)",
+    "src/views/table/drag-table.vue (4)",
+    "src/views/table/dynamic-table/components/FixedThead.vue (4)",
+    "src/views/table/dynamic-table/components/UnfixedThead.vue (4)",
+    "src/components/Charts/LineMarker.vue (3)",
+    "src/components/Tinymce/components/EditorImage.vue (3)",
+    "src/views/components-demo/avatar-upload.vue (3)",
+    "src/views/components-demo/drag-select.vue (3)",
+    "src/views/dashboard/admin/components/TransactionTable.vue (3)",
+    "src/views/excel/upload-excel.vue (3)",
+    "src/views/profile/components/Activity.vue (3)",
+    "src/views/profile/components/Timeline.vue (3)",
+    "src/components/Breadcrumb/index.vue (2)",
+    "src/layout/components/Settings/index.vue (2)",
+    "src/layout/components/TagsView/index.vue (2)",
+    "src/views/components-demo/back-to-top.vue (2)",
+    "src/views/dashboard/editor/index.vue (2)",
+    "src/views/error-log/index.vue (2)",
+    "src/views/excel/components/AutoWidthOption.vue (2)",
+    "src/views/excel/components/BookTypeOption.vue (2)",
+    "src/views/guide/index.vue (2)",
+    "src/views/nested/menu1/index.vue (2)",
+    "src/views/nested/menu1/menu1-1/index.vue (2)",
+    "src/views/nested/menu1/menu1-2/index.vue (2)",
+    "src/views/pdf/index.vue (2)",
+    "src/views/permission/components/SwitchRoles.vue (2)",
+    "src/views/table/dynamic-table/index.vue (2)",
+    "src/App.vue (1)",
+    "src/components/DndList/index.vue (1)",
+    "src/components/DragSelect/index.vue (1)",
+    "src/components/Dropzone/index.vue (1)",
+    "src/components/Kanban/index.vue (1)",
+    "src/components/MarkdownEditor/index.vue (1)",
+    "src/components/Pagination/index.vue (1)",
+    "src/components/Screenfull/index.vue (1)",
+    "src/components/ThemePicker/index.vue (1)",
+    "src/components/Tinymce/index.vue (1)",
+    "src/components/Upload/SingleImage.vue (1)",
+    "src/components/Upload/SingleImage2.vue (1)",
+    "src/components/Upload/SingleImage3.vue (1)",
+    "src/components/UploadExcel/index.vue (1)",
+    "src/layout/components/AppMain.vue (1)",
+    "src/layout/components/Sidebar/Logo.vue (1)",
+    "src/layout/components/TagsView/ScrollPane.vue (1)",
+    "src/views/charts/keyboard.vue (1)",
+    "src/views/charts/line.vue (1)",
+    "src/views/charts/mix-chart.vue (1)",
+    "src/views/components-demo/count-to.vue (1)",
+    "src/views/components-demo/dnd-list.vue (1)",
+    "src/views/components-demo/drag-kanban.vue (1)",
+    "src/views/components-demo/dropzone.vue (1)",
+    "src/views/components-demo/json-editor.vue (1)",
+    "src/views/components-demo/split-pane.vue (1)",
+    "src/views/components-demo/tinymce.vue (1)",
+    "src/views/dashboard/admin/components/TodoList/index.vue (1)",
+    "src/views/documentation/index.vue (1)",
+    "src/views/example/create.vue (1)",
+    "src/views/example/edit.vue (1)",
+    "src/views/excel/components/FilenameOption.vue (1)",
+    "src/views/login/components/SocialSignin.vue (1)",
+    "src/views/nested/menu1/menu1-2/menu1-2-1/index.vue (1)",
+    "src/views/nested/menu1/menu1-2/menu1-2-2/index.vue (1)",
+    "src/views/nested/menu1/menu1-3/index.vue (1)",
+    "src/views/nested/menu2/index.vue (1)",
+    "src/views/permission/page.vue (1)",
+    "src/views/qiniu/upload.vue (1)"
+   ],
+   "distinctPairs": 330,
+   "bothEndpointsResolve": 1,
+   "sourceOnly": 341,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0.3,
+   "confidences": {
+    "0.95": 342
+   },
+   "evidenceClasses": {
+    "usage_contextual": 335,
+    "structural": 7
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "template-usage": 335,
+    "delegated-js-ts": 7
+   },
+   "examples": [
+    {
+     "file": "src/App.vue",
+     "source": "App",
+     "target": "router-view",
+     "line": 3,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isComponentUsage": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "src/components/Breadcrumb/index.vue",
+     "source": "index",
+     "target": "el-breadcrumb",
+     "line": 2,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isComponentUsage": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "src/components/Breadcrumb/index.vue",
+     "source": "index",
+     "target": "el-breadcrumb-item",
+     "line": 4,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isComponentUsage": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "src/components/Charts/LineMarker.vue",
+     "source": "initChart",
+     "target": "LinearGradient",
+     "line": 135,
+     "confidence": 0.95,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural",
+      "sfcDelegated": true,
+      "sfcLineOffset": 4
+     }
+    },
+    {
+     "file": "src/components/Charts/LineMarker.vue",
+     "source": "initChart",
+     "target": "LinearGradient",
+     "line": 169,
+     "confidence": 0.95,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural",
+      "sfcDelegated": true,
+      "sfcLineOffset": 4
+     }
+    },
+    {
+     "file": "src/components/Charts/LineMarker.vue",
+     "source": "initChart",
+     "target": "LinearGradient",
+     "line": 203,
+     "confidence": 0.95,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural",
+      "sfcDelegated": true,
+      "sfcLineOffset": 4
+     }
+    }
+   ]
+  },
+  {
+   "type": "overrides",
+   "count": 0,
+   "files": 0,
+   "fileList": [],
+   "distinctPairs": 0,
+   "bothEndpointsResolve": 0,
+   "sourceOnly": 0,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0,
+   "confidences": {},
+   "evidenceClasses": {},
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {},
+   "examples": []
+  },
+  {
+   "type": "references",
+   "count": 0,
+   "files": 0,
+   "fileList": [],
+   "distinctPairs": 0,
+   "bothEndpointsResolve": 0,
+   "sourceOnly": 0,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0,
+   "confidences": {},
+   "evidenceClasses": {},
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {},
+   "examples": []
+  },
+  {
+   "type": "uses",
+   "count": 2093,
+   "files": 112,
+   "fileList": [
+    "src/components/ImageCropper/index.vue (254)",
+    "src/layout/components/TagsView/index.vue (96)",
+    "src/views/table/complex-table.vue (93)",
+    "src/views/permission/role.vue (89)",
+    "src/components/ThemePicker/index.vue (71)",
+    "src/components/Dropzone/index.vue (66)",
+    "src/views/example/components/ArticleDetail.vue (66)",
+    "src/components/UploadExcel/index.vue (61)",
+    "src/components/Tinymce/index.vue (58)",
+    "src/components/Tinymce/components/EditorImage.vue (50)",
+    "src/views/dashboard/admin/components/TodoList/index.vue (49)",
+    "src/components/HeaderSearch/index.vue (43)",
+    "src/components/MDinput/index.vue (42)",
+    "src/views/login/index.vue (42)",
+    "src/layout/components/TagsView/ScrollPane.vue (40)",
+    "src/components/MarkdownEditor/index.vue (33)",
+    "src/components/DndList/index.vue (32)",
+    "src/components/RightPanel/index.vue (29)",
+    "src/components/Sticky/index.vue (29)",
+    "src/components/BackToTop/index.vue (28)",
+    "src/views/components-demo/count-to.vue (27)",
+    "src/views/table/drag-table.vue (27)",
+    "src/views/excel/select-excel.vue (24)",
+    "src/components/Breadcrumb/index.vue (23)",
+    "src/components/Upload/SingleImage3.vue (23)",
+    "src/components/Pagination/index.vue (22)",
+    "src/views/excel/export-excel.vue (22)",
+    "src/components/Upload/SingleImage.vue (21)",
+    "src/views/dashboard/admin/components/TodoList/Todo.vue (21)",
+    "src/components/Upload/SingleImage2.vue (19)",
+    "src/components/Charts/Keyboard.vue (18)",
+    "src/views/zip/index.vue (18)",
+    "src/layout/components/Sidebar/SidebarItem.vue (17)",
+    "src/components/Charts/MixChart.vue (16)",
+    "src/layout/components/Sidebar/index.vue (16)",
+    "src/layout/index.vue (16)",
+    "src/views/excel/merge-header.vue (16)",
+    "src/views/table/inline-edit-table.vue (16)",
+    "src/components/DragSelect/index.vue (15)",
+    "src/views/dashboard/admin/components/LineChart.vue (15)",
+    "src/layout/components/Settings/index.vue (14)",
+    "src/views/qiniu/upload.vue (14)",
+    "src/components/Charts/LineMarker.vue (13)",
+    "src/components/JsonEditor/index.vue (13)",
+    "src/components/SizeSelect/index.vue (13)",
+    "src/views/components-demo/markdown.vue (13)",
+    "src/views/tab/index.vue (13)",
+    "src/components/Screenfull/index.vue (12)",
+    "src/views/example/list.vue (12)",
+    "src/views/dashboard/admin/components/RaddarChart.vue (10)",
+    "src/views/error-page/401.vue (10)",
+    "src/views/tab/components/TabPane.vue (10)",
+    "src/components/SvgIcon/index.vue (9)",
+    "src/views/components-demo/avatar-upload.vue (9)",
+    "src/views/dashboard/admin/components/BarChart.vue (9)",
+    "src/views/dashboard/admin/components/PieChart.vue (9)",
+    "src/views/excel/upload-excel.vue (9)",
+    "src/views/table/dynamic-table/components/FixedThead.vue (9)",
+    "src/layout/components/AppMain.vue (8)",
+    "src/layout/components/Sidebar/Link.vue (8)",
+    "src/views/permission/components/SwitchRoles.vue (8)",
+    "src/components/ErrorLog/index.vue (7)",
+    "src/components/Kanban/index.vue (7)",
+    "src/components/Share/DropdownMenu.vue (7)",
+    "src/layout/components/Navbar.vue (7)",
+    "src/views/components-demo/drag-dialog.vue (7)",
+    "src/views/components-demo/mixin.vue (7)",
+    "src/views/dashboard/admin/components/TransactionTable.vue (7)",
+    "src/views/icons/index.vue (7)",
+    "src/components/PanThumb/index.vue (6)",
+    "src/layout/components/Sidebar/Item.vue (6)",
+    "src/views/clipboard/index.vue (6)",
+    "src/views/components-demo/dropzone.vue (6)",
+    "src/views/components-demo/sticky.vue (6)",
+    "src/views/dashboard/admin/index.vue (6)",
+    "src/views/pdf/download.vue (6)",
+    "src/views/theme/index.vue (6)",
+    "src/views/components-demo/dnd-list.vue (5)",
+    "src/views/example/components/Dropdown/Platform.vue (5)",
+    "src/views/excel/components/BookTypeOption.vue (5)",
+    "src/views/login/auth-redirect.vue (5)",
+    "src/views/profile/index.vue (5)",
+    "src/layout/components/Sidebar/Logo.vue (4)",
+    "src/views/components-demo/drag-kanban.vue (4)",
+    "src/views/example/components/Dropdown/Comment.vue (4)",
+    "src/views/example/components/Dropdown/SourceUrl.vue (4)",
+    "src/views/excel/components/AutoWidthOption.vue (4)",
+    "src/views/excel/components/FilenameOption.vue (4)",
+    "src/views/guide/index.vue (4)",
+    "src/views/redirect/index.vue (4)",
+    "src/components/Hamburger/index.vue (3)",
+    "src/components/TextHoverEffect/Mallki.vue (3)",
+    "src/views/components-demo/json-editor.vue (3)",
+    "src/views/permission/directive.vue (3)",
+    "src/views/permission/page.vue (3)",
+    "src/views/profile/components/Account.vue (3)",
+    "src/views/profile/components/Activity.vue (3)",
+    "src/views/components-demo/drag-select.vue (2)",
+    "src/views/components-demo/split-pane.vue (2)",
+    "src/views/dashboard/admin/components/BoxCard.vue (2)",
+    "src/views/dashboard/admin/components/PanelGroup.vue (2)",
+    "src/views/dashboard/index.vue (2)",
+    "src/views/login/components/SocialSignin.vue (2)",
+    "src/views/profile/components/UserCard.vue (2)",
+    "src/views/table/dynamic-table/components/UnfixedThead.vue (2)",
+    "src/views/components-demo/back-to-top.vue (1)",
+    "src/views/components-demo/tinymce.vue (1)",
+    "src/views/dashboard/editor/index.vue (1)",
+    "src/views/documentation/index.vue (1)",
+    "src/views/error-log/components/ErrorTestB.vue (1)",
+    "src/views/error-page/404.vue (1)",
+    "src/views/profile/components/Timeline.vue (1)"
+   ],
+   "distinctPairs": 1824,
+   "bothEndpointsResolve": 866,
+   "sourceOnly": 1091,
+   "targetOnly": 23,
+   "neitherResolves": 113,
+   "resolvePct": 41.4,
+   "confidences": {
+    "0.6": 1629,
+    "0.95": 449,
+    "0.85": 15
+   },
+   "evidenceClasses": {
+    "usage_contextual": 2093
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "delegated-js-ts": 1644,
+    "template-expression": 449
+   },
+   "examples": [
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "BackToTop",
+     "target": "Number",
+     "line": 14,
+     "confidence": 0.6,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isFieldAccess": true,
+      "bareRead": true,
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "BackToTop",
+     "target": "Object",
+     "line": 22,
+     "confidence": 0.6,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isFieldAccess": true,
+      "bareRead": true,
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "BackToTop",
+     "target": "String",
+     "line": 36,
+     "confidence": 0.6,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isFieldAccess": true,
+      "bareRead": true,
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "mounted",
+     "target": "window",
+     "line": 48,
+     "confidence": 0.6,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isFieldAccess": true,
+      "bareRead": true,
+      "callReceiver": true,
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "mounted",
+     "target": "handleScroll",
+     "line": 48,
+     "confidence": 0.6,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isFieldAccess": true,
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    },
+    {
+     "file": "src/components/BackToTop/index.vue",
+     "source": "beforeDestroy",
+     "target": "window",
+     "line": 51,
+     "confidence": 0.6,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isFieldAccess": true,
+      "bareRead": true,
+      "callReceiver": true,
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 8
+     }
+    }
+   ]
+  }
+ ],
+ "perFile": [
+  {
+   "file": "src/App.vue",
+   "symbols": 1,
+   "relationships": 2,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "exports": 1
+   },
+   "componentClass": "App",
+   "kinds": "class"
+  },
+  {
+   "file": "src/components/BackToTop/index.vue",
+   "symbols": 14,
+   "relationships": 51,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "calls": 9,
+    "exports": 1,
+    "uses": 28,
+    "contains": 13
+   },
+   "componentClass": "BackToTop",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Breadcrumb/index.vue",
+   "symbols": 9,
+   "relationships": 50,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2,
+    "imports": 1,
+    "calls": 15,
+    "exports": 1,
+    "uses": 23,
+    "contains": 8
+   },
+   "componentClass": "index",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Charts/Keyboard.vue",
+   "symbols": 10,
+   "relationships": 41,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "extends": 1,
+    "imports": 2,
+    "calls": 10,
+    "exports": 1,
+    "uses": 18,
+    "contains": 9
+   },
+   "componentClass": "Keyboard",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Charts/LineMarker.vue",
+   "symbols": 10,
+   "relationships": 34,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "extends": 1,
+    "imports": 2,
+    "calls": 5,
+    "instantiates": 3,
+    "exports": 1,
+    "uses": 13,
+    "contains": 9
+   },
+   "componentClass": "LineMarker",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Charts/MixChart.vue",
+   "symbols": 10,
+   "relationships": 35,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "extends": 1,
+    "imports": 2,
+    "calls": 6,
+    "exports": 1,
+    "uses": 16,
+    "contains": 9
+   },
+   "componentClass": "MixChart",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/DndList/index.vue",
+   "symbols": 12,
+   "relationships": 57,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 11,
+    "exports": 1,
+    "uses": 32,
+    "contains": 11
+   },
+   "componentClass": "DndList",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/DragSelect/index.vue",
+   "symbols": 5,
+   "relationships": 29,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 7,
+    "exports": 1,
+    "uses": 15,
+    "contains": 4
+   },
+   "componentClass": "DragSelect",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Dropzone/index.vue",
+   "symbols": 25,
+   "relationships": 132,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "imports": 1,
+    "calls": 40,
+    "instantiates": 1,
+    "exports": 1,
+    "uses": 66,
+    "contains": 23
+   },
+   "componentClass": "index",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/ErrorLog/index.vue",
+   "symbols": 5,
+   "relationships": 20,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 7,
+    "calls": 1,
+    "exports": 1,
+    "uses": 7,
+    "contains": 4
+   },
+   "componentClass": "ErrorLog",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/GithubCorner/index.vue",
+   "symbols": 1,
+   "relationships": 0,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {},
+   "componentClass": "index",
+   "kinds": "class"
+  },
+  {
+   "file": "src/components/Hamburger/index.vue",
+   "symbols": 3,
+   "relationships": 7,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "calls": 1,
+    "exports": 1,
+    "uses": 3,
+    "contains": 2
+   },
+   "componentClass": "Hamburger",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/HeaderSearch/index.vue",
+   "symbols": 18,
+   "relationships": 77,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "imports": 2,
+    "calls": 13,
+    "exports": 1,
+    "uses": 43,
+    "contains": 14
+   },
+   "componentClass": "HeaderSearch",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/ImageCropper/index.vue",
+   "symbols": 65,
+   "relationships": 391,
+   "imports": 5,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "imports": 5,
+    "calls": 68,
+    "exports": 1,
+    "uses": 254,
+    "contains": 63
+   },
+   "componentClass": "index",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/JsonEditor/index.vue",
+   "symbols": 7,
+   "relationships": 33,
+   "imports": 8,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "imports": 2,
+    "calls": 12,
+    "exports": 1,
+    "uses": 13,
+    "contains": 5
+   },
+   "componentClass": "JsonEditor",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Kanban/index.vue",
+   "symbols": 5,
+   "relationships": 15,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 1,
+    "exports": 1,
+    "uses": 7,
+    "contains": 4
+   },
+   "componentClass": "DragKanbanDemo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/MDinput/index.vue",
+   "symbols": 25,
+   "relationships": 73,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "calls": 7,
+    "exports": 1,
+    "uses": 42,
+    "contains": 23
+   },
+   "componentClass": "MdInput",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/MarkdownEditor/index.vue",
+   "symbols": 22,
+   "relationships": 76,
+   "imports": 5,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "imports": 2,
+    "calls": 22,
+    "instantiates": 1,
+    "exports": 1,
+    "uses": 33,
+    "contains": 17
+   },
+   "componentClass": "MarkdownEditor",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Pagination/index.vue",
+   "symbols": 13,
+   "relationships": 43,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 6,
+    "exports": 1,
+    "uses": 22,
+    "contains": 12
+   },
+   "componentClass": "Pagination",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/PanThumb/index.vue",
+   "symbols": 5,
+   "relationships": 11,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "exports": 1,
+    "uses": 6,
+    "contains": 4
+   },
+   "componentClass": "PanThumb",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/components/RightPanel/index.vue",
+   "symbols": 12,
+   "relationships": 52,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "imports": 2,
+    "calls": 10,
+    "exports": 1,
+    "uses": 29,
+    "contains": 10
+   },
+   "componentClass": "RightPanel",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Screenfull/index.vue",
+   "symbols": 9,
+   "relationships": 29,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 6,
+    "exports": 1,
+    "uses": 12,
+    "contains": 8
+   },
+   "componentClass": "Screenfull",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Share/DropdownMenu.vue",
+   "symbols": 6,
+   "relationships": 13,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "exports": 1,
+    "uses": 7,
+    "contains": 5
+   },
+   "componentClass": "DropdownMenu",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/SizeSelect/index.vue",
+   "symbols": 6,
+   "relationships": 29,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "calls": 6,
+    "exports": 1,
+    "uses": 13,
+    "contains": 5
+   },
+   "componentClass": "index",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Sticky/index.vue",
+   "symbols": 18,
+   "relationships": 59,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "calls": 12,
+    "exports": 1,
+    "uses": 29,
+    "contains": 17
+   },
+   "componentClass": "Sticky",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/SvgIcon/index.vue",
+   "symbols": 7,
+   "relationships": 18,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "imports": 1,
+    "calls": 1,
+    "exports": 1,
+    "uses": 9,
+    "contains": 6
+   },
+   "componentClass": "SvgIcon",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/components/TextHoverEffect/Mallki.vue",
+   "symbols": 3,
+   "relationships": 6,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "exports": 1,
+    "uses": 3,
+    "contains": 2
+   },
+   "componentClass": "Mallki",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/components/ThemePicker/index.vue",
+   "symbols": 12,
+   "relationships": 136,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 55,
+    "exports": 1,
+    "uses": 71,
+    "contains": 7
+   },
+   "componentClass": "index",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/components/Tinymce/components/EditorImage.vue",
+   "symbols": 11,
+   "relationships": 75,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 3,
+    "calls": 11,
+    "exports": 1,
+    "uses": 50,
+    "contains": 10
+   },
+   "componentClass": "EditorSlideUpload",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Tinymce/index.vue",
+   "symbols": 26,
+   "relationships": 116,
+   "imports": 4,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 4,
+    "calls": 29,
+    "exports": 1,
+    "uses": 58,
+    "contains": 23
+   },
+   "componentClass": "Tinymce",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/components/Upload/SingleImage.vue",
+   "symbols": 10,
+   "relationships": 41,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 8,
+    "exports": 1,
+    "uses": 21,
+    "contains": 9
+   },
+   "componentClass": "SingleImageUpload",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Upload/SingleImage2.vue",
+   "symbols": 10,
+   "relationships": 39,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 8,
+    "exports": 1,
+    "uses": 19,
+    "contains": 9
+   },
+   "componentClass": "SingleImageUpload2",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/Upload/SingleImage3.vue",
+   "symbols": 10,
+   "relationships": 43,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 8,
+    "exports": 1,
+    "uses": 23,
+    "contains": 9
+   },
+   "componentClass": "SingleImageUpload3",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/components/UploadExcel/index.vue",
+   "symbols": 15,
+   "relationships": 105,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 27,
+    "exports": 1,
+    "uses": 61,
+    "contains": 14
+   },
+   "componentClass": "index",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/layout/components/AppMain.vue",
+   "symbols": 3,
+   "relationships": 12,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "exports": 1,
+    "uses": 8,
+    "contains": 2
+   },
+   "componentClass": "AppMain",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/layout/components/Navbar.vue",
+   "symbols": 3,
+   "relationships": 31,
+   "imports": 7,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 10,
+    "imports": 7,
+    "calls": 4,
+    "exports": 1,
+    "uses": 7,
+    "contains": 2
+   },
+   "componentClass": "Navbar",
+   "kinds": "class,method"
+  },
+  {
+   "file": "src/layout/components/Settings/index.vue",
+   "symbols": 6,
+   "relationships": 27,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2,
+    "imports": 1,
+    "calls": 4,
+    "exports": 1,
+    "uses": 14,
+    "contains": 5
+   },
+   "componentClass": "index",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/layout/components/Sidebar/Item.vue",
+   "symbols": 3,
+   "relationships": 13,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "calls": 4,
+    "exports": 1,
+    "uses": 6,
+    "contains": 2
+   },
+   "componentClass": "MenuItem",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/layout/components/Sidebar/Link.vue",
+   "symbols": 5,
+   "relationships": 15,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "imports": 1,
+    "calls": 1,
+    "exports": 1,
+    "uses": 8,
+    "contains": 4
+   },
+   "componentClass": "Link",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/layout/components/Sidebar/Logo.vue",
+   "symbols": 5,
+   "relationships": 10,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "exports": 1,
+    "uses": 4,
+    "contains": 4
+   },
+   "componentClass": "SidebarLogo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/layout/components/Sidebar/SidebarItem.vue",
+   "symbols": 7,
+   "relationships": 39,
+   "imports": 5,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 5,
+    "extends": 1,
+    "imports": 5,
+    "calls": 4,
+    "exports": 1,
+    "uses": 17,
+    "contains": 6
+   },
+   "componentClass": "SidebarItem",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/layout/components/Sidebar/index.vue",
+   "symbols": 5,
+   "relationships": 30,
+   "imports": 4,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "imports": 4,
+    "calls": 1,
+    "exports": 1,
+    "uses": 16,
+    "contains": 4
+   },
+   "componentClass": "index",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/layout/components/TagsView/ScrollPane.vue",
+   "symbols": 10,
+   "relationships": 54,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "calls": 4,
+    "exports": 1,
+    "uses": 40,
+    "contains": 8
+   },
+   "componentClass": "ScrollPane",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/layout/components/TagsView/index.vue",
+   "symbols": 26,
+   "relationships": 163,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2,
+    "imports": 2,
+    "calls": 38,
+    "exports": 1,
+    "uses": 96,
+    "contains": 24
+   },
+   "componentClass": "index",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/layout/index.vue",
+   "symbols": 3,
+   "relationships": 36,
+   "imports": 4,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 6,
+    "extends": 1,
+    "imports": 8,
+    "calls": 2,
+    "exports": 1,
+    "uses": 16,
+    "contains": 2
+   },
+   "componentClass": "Layout",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/charts/keyboard.vue",
+   "symbols": 1,
+   "relationships": 3,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "exports": 1
+   },
+   "componentClass": "KeyboardChart",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/charts/line.vue",
+   "symbols": 1,
+   "relationships": 3,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "exports": 1
+   },
+   "componentClass": "LineChart",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/charts/mix-chart.vue",
+   "symbols": 1,
+   "relationships": 3,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "exports": 1
+   },
+   "componentClass": "MixChart",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/clipboard/index.vue",
+   "symbols": 6,
+   "relationships": 20,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "imports": 2,
+    "calls": 2,
+    "exports": 1,
+    "uses": 6,
+    "contains": 5
+   },
+   "componentClass": "ClipboardDemo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/components-demo/avatar-upload.vue",
+   "symbols": 7,
+   "relationships": 21,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 3,
+    "imports": 2,
+    "exports": 1,
+    "uses": 9,
+    "contains": 6
+   },
+   "componentClass": "AvatarUploadDemo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/components-demo/back-to-top.vue",
+   "symbols": 3,
+   "relationships": 7,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2,
+    "imports": 1,
+    "exports": 1,
+    "uses": 1,
+    "contains": 2
+   },
+   "componentClass": "BackToTopDemo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/components-demo/count-to.vue",
+   "symbols": 18,
+   "relationships": 50,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 3,
+    "exports": 1,
+    "uses": 27,
+    "contains": 17
+   },
+   "componentClass": "CountToDemo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/components-demo/dnd-list.vue",
+   "symbols": 6,
+   "relationships": 18,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 2,
+    "calls": 4,
+    "exports": 1,
+    "uses": 5,
+    "contains": 5
+   },
+   "componentClass": "DndListDemo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/components-demo/drag-dialog.vue",
+   "symbols": 7,
+   "relationships": 22,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 6,
+    "imports": 1,
+    "calls": 1,
+    "exports": 1,
+    "uses": 7,
+    "contains": 6
+   },
+   "componentClass": "DragDialogDemo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/components-demo/drag-kanban.vue",
+   "symbols": 6,
+   "relationships": 12,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "exports": 1,
+    "uses": 4,
+    "contains": 5
+   },
+   "componentClass": "DragKanbanDemo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/components-demo/drag-select.vue",
+   "symbols": 4,
+   "relationships": 10,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 3,
+    "imports": 1,
+    "exports": 1,
+    "uses": 2,
+    "contains": 3
+   },
+   "componentClass": "DragSelectDemo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/components-demo/dropzone.vue",
+   "symbols": 3,
+   "relationships": 13,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 2,
+    "exports": 1,
+    "uses": 6,
+    "contains": 2
+   },
+   "componentClass": "DropzoneDemo",
+   "kinds": "class,method"
+  },
+  {
+   "file": "src/views/components-demo/json-editor.vue",
+   "symbols": 4,
+   "relationships": 9,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 1,
+    "exports": 1,
+    "uses": 3,
+    "contains": 2
+   },
+   "componentClass": "JsonEditorDemo",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/views/components-demo/markdown.vue",
+   "symbols": 11,
+   "relationships": 29,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "imports": 1,
+    "calls": 1,
+    "exports": 1,
+    "uses": 13,
+    "contains": 9
+   },
+   "componentClass": "MarkdownDemo",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/views/components-demo/mixin.vue",
+   "symbols": 5,
+   "relationships": 30,
+   "imports": 5,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 11,
+    "imports": 5,
+    "calls": 2,
+    "exports": 1,
+    "uses": 7,
+    "contains": 4
+   },
+   "componentClass": "ComponentMixinDemo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/components-demo/split-pane.vue",
+   "symbols": 2,
+   "relationships": 6,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "exports": 1,
+    "uses": 2,
+    "contains": 1
+   },
+   "componentClass": "SplitpaneDemo",
+   "kinds": "class,method"
+  },
+  {
+   "file": "src/views/components-demo/sticky.vue",
+   "symbols": 7,
+   "relationships": 24,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 8,
+    "imports": 1,
+    "calls": 2,
+    "exports": 1,
+    "uses": 6,
+    "contains": 6
+   },
+   "componentClass": "StickyDemo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/components-demo/tinymce.vue",
+   "symbols": 3,
+   "relationships": 6,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "exports": 1,
+    "uses": 1,
+    "contains": 2
+   },
+   "componentClass": "TinymceDemo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/dashboard/admin/components/BarChart.vue",
+   "symbols": 10,
+   "relationships": 27,
+   "imports": 3,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "extends": 1,
+    "imports": 3,
+    "calls": 5,
+    "exports": 1,
+    "uses": 9,
+    "contains": 8
+   },
+   "componentClass": "BarChart",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/views/dashboard/admin/components/BoxCard.vue",
+   "symbols": 3,
+   "relationships": 13,
+   "imports": 3,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "imports": 3,
+    "calls": 1,
+    "exports": 1,
+    "uses": 2,
+    "contains": 2
+   },
+   "componentClass": "BoxCard",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/dashboard/admin/components/LineChart.vue",
+   "symbols": 13,
+   "relationships": 38,
+   "imports": 3,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "extends": 1,
+    "imports": 3,
+    "calls": 7,
+    "exports": 1,
+    "uses": 15,
+    "contains": 11
+   },
+   "componentClass": "LineChart",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/dashboard/admin/components/PanelGroup.vue",
+   "symbols": 2,
+   "relationships": 10,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "imports": 1,
+    "calls": 1,
+    "exports": 1,
+    "uses": 2,
+    "contains": 1
+   },
+   "componentClass": "PanelGroup",
+   "kinds": "class,method"
+  },
+  {
+   "file": "src/views/dashboard/admin/components/PieChart.vue",
+   "symbols": 9,
+   "relationships": 27,
+   "imports": 3,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "extends": 1,
+    "imports": 3,
+    "calls": 5,
+    "exports": 1,
+    "uses": 9,
+    "contains": 8
+   },
+   "componentClass": "PieChart",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/dashboard/admin/components/RaddarChart.vue",
+   "symbols": 10,
+   "relationships": 28,
+   "imports": 3,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "extends": 1,
+    "imports": 3,
+    "calls": 5,
+    "exports": 1,
+    "uses": 10,
+    "contains": 8
+   },
+   "componentClass": "RaddarChart",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/views/dashboard/admin/components/TodoList/Todo.vue",
+   "symbols": 9,
+   "relationships": 38,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "calls": 8,
+    "exports": 1,
+    "uses": 21,
+    "contains": 8
+   },
+   "componentClass": "Todo",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/dashboard/admin/components/TodoList/index.vue",
+   "symbols": 17,
+   "relationships": 86,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 21,
+    "exports": 1,
+    "uses": 49,
+    "contains": 13
+   },
+   "componentClass": "index",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/views/dashboard/admin/components/TransactionTable.vue",
+   "symbols": 5,
+   "relationships": 21,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 3,
+    "imports": 1,
+    "calls": 5,
+    "exports": 1,
+    "uses": 7,
+    "contains": 4
+   },
+   "componentClass": "TransactionTable",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/dashboard/admin/index.vue",
+   "symbols": 5,
+   "relationships": 30,
+   "imports": 9,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 11,
+    "imports": 9,
+    "exports": 1,
+    "uses": 6,
+    "contains": 3
+   },
+   "componentClass": "DashboardAdmin",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/views/dashboard/editor/index.vue",
+   "symbols": 3,
+   "relationships": 10,
+   "imports": 3,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2,
+    "imports": 3,
+    "calls": 1,
+    "exports": 1,
+    "uses": 1,
+    "contains": 2
+   },
+   "componentClass": "DashboardEditor",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/dashboard/index.vue",
+   "symbols": 4,
+   "relationships": 11,
+   "imports": 3,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "imports": 3,
+    "calls": 2,
+    "exports": 1,
+    "uses": 2,
+    "contains": 3
+   },
+   "componentClass": "Dashboard",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/documentation/index.vue",
+   "symbols": 3,
+   "relationships": 6,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "exports": 1,
+    "uses": 1,
+    "contains": 2
+   },
+   "componentClass": "Documentation",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/error-log/components/ErrorTestA.vue",
+   "symbols": 1,
+   "relationships": 1,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "exports": 1
+   },
+   "componentClass": "ErrorTestA",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/error-log/components/ErrorTestB.vue",
+   "symbols": 2,
+   "relationships": 3,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "exports": 1,
+    "uses": 1,
+    "contains": 1
+   },
+   "componentClass": "ErrorTestB",
+   "kinds": "class,method"
+  },
+  {
+   "file": "src/views/error-log/index.vue",
+   "symbols": 1,
+   "relationships": 5,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2,
+    "imports": 2,
+    "exports": 1
+   },
+   "componentClass": "ErrorLog",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/error-page/401.vue",
+   "symbols": 6,
+   "relationships": 24,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 5,
+    "imports": 1,
+    "calls": 2,
+    "exports": 1,
+    "uses": 10,
+    "contains": 5
+   },
+   "componentClass": "Page401",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/error-page/404.vue",
+   "symbols": 2,
+   "relationships": 3,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "exports": 1,
+    "uses": 1,
+    "contains": 1
+   },
+   "componentClass": "Page404",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/views/example/components/ArticleDetail.vue",
+   "symbols": 18,
+   "relationships": 137,
+   "imports": 9,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 18,
+    "imports": 11,
+    "calls": 25,
+    "exports": 1,
+    "uses": 66,
+    "contains": 16
+   },
+   "componentClass": "ArticleDetail",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/views/example/components/Dropdown/Comment.vue",
+   "symbols": 3,
+   "relationships": 14,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 6,
+    "calls": 1,
+    "exports": 1,
+    "uses": 4,
+    "contains": 2
+   },
+   "componentClass": "Comment",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/views/example/components/Dropdown/Platform.vue",
+   "symbols": 5,
+   "relationships": 16,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 5,
+    "calls": 1,
+    "exports": 1,
+    "uses": 5,
+    "contains": 4
+   },
+   "componentClass": "Platform",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/example/components/Dropdown/SourceUrl.vue",
+   "symbols": 3,
+   "relationships": 13,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 5,
+    "calls": 1,
+    "exports": 1,
+    "uses": 4,
+    "contains": 2
+   },
+   "componentClass": "SourceUrl",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/views/example/components/Warning.vue",
+   "symbols": 1,
+   "relationships": 0,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {},
+   "componentClass": "Warning",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/example/create.vue",
+   "symbols": 1,
+   "relationships": 3,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "exports": 1
+   },
+   "componentClass": "CreateArticle",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/example/edit.vue",
+   "symbols": 1,
+   "relationships": 3,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "exports": 1
+   },
+   "componentClass": "EditForm",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/example/list.vue",
+   "symbols": 8,
+   "relationships": 32,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 7,
+    "imports": 2,
+    "calls": 3,
+    "exports": 1,
+    "uses": 12,
+    "contains": 7
+   },
+   "componentClass": "ArticleList",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/excel/components/AutoWidthOption.vue",
+   "symbols": 3,
+   "relationships": 10,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2,
+    "calls": 1,
+    "exports": 1,
+    "uses": 4,
+    "contains": 2
+   },
+   "componentClass": "AutoWidthOption",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/views/excel/components/BookTypeOption.vue",
+   "symbols": 5,
+   "relationships": 13,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2,
+    "calls": 1,
+    "exports": 1,
+    "uses": 5,
+    "contains": 4
+   },
+   "componentClass": "BookTypeOption",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/excel/components/FilenameOption.vue",
+   "symbols": 3,
+   "relationships": 9,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "calls": 1,
+    "exports": 1,
+    "uses": 4,
+    "contains": 2
+   },
+   "componentClass": "FilenameOption",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/views/excel/export-excel.vue",
+   "symbols": 12,
+   "relationships": 56,
+   "imports": 6,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 7,
+    "imports": 6,
+    "calls": 9,
+    "exports": 1,
+    "uses": 22,
+    "contains": 11
+   },
+   "componentClass": "ExportExcel",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/excel/merge-header.vue",
+   "symbols": 9,
+   "relationships": 41,
+   "imports": 3,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "imports": 3,
+    "calls": 9,
+    "exports": 1,
+    "uses": 16,
+    "contains": 8
+   },
+   "componentClass": "MergeHeader",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/excel/select-excel.vue",
+   "symbols": 12,
+   "relationships": 53,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 5,
+    "imports": 2,
+    "calls": 10,
+    "exports": 1,
+    "uses": 24,
+    "contains": 11
+   },
+   "componentClass": "SelectExcel",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/excel/upload-excel.vue",
+   "symbols": 6,
+   "relationships": 20,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 3,
+    "imports": 1,
+    "calls": 1,
+    "exports": 1,
+    "uses": 9,
+    "contains": 5
+   },
+   "componentClass": "UploadExcel",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/guide/index.vue",
+   "symbols": 5,
+   "relationships": 15,
+   "imports": 3,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2,
+    "imports": 2,
+    "calls": 2,
+    "exports": 1,
+    "uses": 4,
+    "contains": 4
+   },
+   "componentClass": "Guide",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/icons/index.vue",
+   "symbols": 5,
+   "relationships": 20,
+   "imports": 3,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "imports": 3,
+    "calls": 1,
+    "exports": 1,
+    "uses": 7,
+    "contains": 4
+   },
+   "componentClass": "Icons",
+   "kinds": "class,method"
+  },
+  {
+   "file": "src/views/login/auth-redirect.vue",
+   "symbols": 2,
+   "relationships": 11,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "calls": 4,
+    "exports": 1,
+    "uses": 5,
+    "contains": 1
+   },
+   "componentClass": "AuthRedirect",
+   "kinds": "class,method"
+  },
+  {
+   "file": "src/views/login/components/SocialSignin.vue",
+   "symbols": 3,
+   "relationships": 8,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "calls": 2,
+    "exports": 1,
+    "uses": 2,
+    "contains": 2
+   },
+   "componentClass": "SocialSignin",
+   "kinds": "class,method"
+  },
+  {
+   "file": "src/views/login/index.vue",
+   "symbols": 18,
+   "relationships": 87,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 8,
+    "imports": 2,
+    "calls": 17,
+    "exports": 1,
+    "uses": 42,
+    "contains": 17
+   },
+   "componentClass": "Login",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/nested/menu1/index.vue",
+   "symbols": 1,
+   "relationships": 2,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2
+   },
+   "componentClass": "index",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/nested/menu1/menu1-1/index.vue",
+   "symbols": 1,
+   "relationships": 2,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2
+   },
+   "componentClass": "index",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/nested/menu1/menu1-2/index.vue",
+   "symbols": 1,
+   "relationships": 2,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2
+   },
+   "componentClass": "index",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/nested/menu1/menu1-2/menu1-2-1/index.vue",
+   "symbols": 1,
+   "relationships": 1,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1
+   },
+   "componentClass": "index",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/nested/menu1/menu1-2/menu1-2-2/index.vue",
+   "symbols": 1,
+   "relationships": 1,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1
+   },
+   "componentClass": "index",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/nested/menu1/menu1-3/index.vue",
+   "symbols": 1,
+   "relationships": 1,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1
+   },
+   "componentClass": "index",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/nested/menu2/index.vue",
+   "symbols": 1,
+   "relationships": 1,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1
+   },
+   "componentClass": "index",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/pdf/download.vue",
+   "symbols": 6,
+   "relationships": 18,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "imports": 1,
+    "calls": 5,
+    "exports": 1,
+    "uses": 6,
+    "contains": 5
+   },
+   "componentClass": "download",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/pdf/index.vue",
+   "symbols": 1,
+   "relationships": 2,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2
+   },
+   "componentClass": "index",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/permission/components/SwitchRoles.vue",
+   "symbols": 3,
+   "relationships": 16,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2,
+    "calls": 3,
+    "exports": 1,
+    "uses": 8,
+    "contains": 2
+   },
+   "componentClass": "SwitchRoles",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/views/permission/directive.vue",
+   "symbols": 4,
+   "relationships": 14,
+   "imports": 3,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "imports": 3,
+    "exports": 1,
+    "uses": 3,
+    "contains": 3
+   },
+   "componentClass": "DirectivePermission",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/permission/page.vue",
+   "symbols": 2,
+   "relationships": 8,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 1,
+    "exports": 1,
+    "uses": 3,
+    "contains": 1
+   },
+   "componentClass": "PagePermission",
+   "kinds": "class,method"
+  },
+  {
+   "file": "src/views/permission/role.vue",
+   "symbols": 22,
+   "relationships": 166,
+   "imports": 3,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 8,
+    "imports": 7,
+    "calls": 41,
+    "exports": 1,
+    "uses": 89,
+    "contains": 20
+   },
+   "componentClass": "role",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/views/profile/components/Account.vue",
+   "symbols": 3,
+   "relationships": 11,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "calls": 1,
+    "exports": 1,
+    "uses": 3,
+    "contains": 2
+   },
+   "componentClass": "Account",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/profile/components/Activity.vue",
+   "symbols": 5,
+   "relationships": 9,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 3,
+    "exports": 1,
+    "uses": 3,
+    "contains": 2
+   },
+   "componentClass": "Activity",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/views/profile/components/Timeline.vue",
+   "symbols": 3,
+   "relationships": 7,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 3,
+    "exports": 1,
+    "uses": 1,
+    "contains": 2
+   },
+   "componentClass": "Timeline",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/profile/components/UserCard.vue",
+   "symbols": 2,
+   "relationships": 9,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "imports": 1,
+    "exports": 1,
+    "uses": 2,
+    "contains": 1
+   },
+   "componentClass": "UserCard",
+   "kinds": "class,property"
+  },
+  {
+   "file": "src/views/profile/index.vue",
+   "symbols": 6,
+   "relationships": 28,
+   "imports": 5,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 9,
+    "imports": 5,
+    "calls": 3,
+    "exports": 1,
+    "uses": 5,
+    "contains": 5
+   },
+   "componentClass": "Profile",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/qiniu/upload.vue",
+   "symbols": 6,
+   "relationships": 27,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "imports": 1,
+    "calls": 5,
+    "exports": 1,
+    "uses": 14,
+    "contains": 5
+   },
+   "componentClass": "upload",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/redirect/index.vue",
+   "symbols": 2,
+   "relationships": 8,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "calls": 2,
+    "exports": 1,
+    "uses": 4,
+    "contains": 1
+   },
+   "componentClass": "index",
+   "kinds": "class,method"
+  },
+  {
+   "file": "src/views/tab/components/TabPane.vue",
+   "symbols": 8,
+   "relationships": 27,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "imports": 1,
+    "calls": 4,
+    "exports": 1,
+    "uses": 10,
+    "contains": 7
+   },
+   "componentClass": "TabPane",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/tab/index.vue",
+   "symbols": 8,
+   "relationships": 27,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 5,
+    "imports": 1,
+    "calls": 1,
+    "exports": 1,
+    "uses": 13,
+    "contains": 6
+   },
+   "componentClass": "Tab",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/table/complex-table.vue",
+   "symbols": 37,
+   "relationships": 190,
+   "imports": 5,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 15,
+    "imports": 8,
+    "calls": 39,
+    "exports": 1,
+    "uses": 93,
+    "contains": 34
+   },
+   "componentClass": "ComplexTable",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/views/table/drag-table.vue",
+   "symbols": 12,
+   "relationships": 58,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "imports": 2,
+    "calls": 13,
+    "exports": 1,
+    "uses": 27,
+    "contains": 11
+   },
+   "componentClass": "DragTable",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/table/dynamic-table/components/FixedThead.vue",
+   "symbols": 9,
+   "relationships": 22,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "calls": 2,
+    "exports": 1,
+    "uses": 9,
+    "contains": 6
+   },
+   "componentClass": "FixedThead",
+   "kinds": "class,constant,method,property"
+  },
+  {
+   "file": "src/views/table/dynamic-table/components/UnfixedThead.vue",
+   "symbols": 4,
+   "relationships": 10,
+   "imports": 0,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 4,
+    "exports": 1,
+    "uses": 2,
+    "contains": 3
+   },
+   "componentClass": "UnfixedThead",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/table/dynamic-table/index.vue",
+   "symbols": 1,
+   "relationships": 5,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2,
+    "imports": 2,
+    "exports": 1
+   },
+   "componentClass": "DynamicTable",
+   "kinds": "class"
+  },
+  {
+   "file": "src/views/table/inline-edit-table.vue",
+   "symbols": 9,
+   "relationships": 38,
+   "imports": 1,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 6,
+    "imports": 1,
+    "calls": 6,
+    "exports": 1,
+    "uses": 16,
+    "contains": 8
+   },
+   "componentClass": "InlineEditTable",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/theme/index.vue",
+   "symbols": 7,
+   "relationships": 21,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 7,
+    "imports": 1,
+    "calls": 1,
+    "exports": 1,
+    "uses": 6,
+    "contains": 5
+   },
+   "componentClass": "Theme",
+   "kinds": "class,method,property"
+  },
+  {
+   "file": "src/views/zip/index.vue",
+   "symbols": 10,
+   "relationships": 42,
+   "imports": 2,
+   "exports": 1,
+   "errors": 0,
+   "byType": {
+    "instantiates": 5,
+    "imports": 2,
+    "calls": 7,
+    "exports": 1,
+    "uses": 18,
+    "contains": 9
+   },
+   "componentClass": "ExportZip",
+   "kinds": "class,method,property"
+  }
+ ]
+}

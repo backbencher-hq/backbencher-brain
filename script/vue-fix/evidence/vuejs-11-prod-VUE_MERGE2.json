@@ -1,0 +1,520 @@
+{
+  "at": "2026-10-05T04:16:02.366Z",
+  "lane": "VUE_MERGE2",
+  "mode": "prod",
+  "corpus": {
+    "root": "$HOME/fixtures/repositories",
+    "repo": "vuejs",
+    "tracked": 11,
+    "admitted": 11,
+    "limit": 0
+  },
+  "files": {
+    "parsed": 11,
+    "failed": 0,
+    "emptySymbols": 0,
+    "totalSymbols": 66,
+    "totalRelationships": 169,
+    "filesWithDelegatedRows": 4,
+    "corpusSymbolNames": 59
+  },
+  "payload": {
+    "relationshipBytes": 33479,
+    "symbolBytes": 56377,
+    "importBytes": 2096,
+    "totalBytes": 91952,
+    "wallMs": 3181,
+    "filesPerSec": 0,
+    "relationshipsPerSec": 0
+  },
+  "channels": {
+    "imports": {
+      "count": 25,
+      "kinds": {
+        "default": 10,
+        "named": 15
+      },
+      "examples": [
+        "packages-private/sfc-playground/src/App.vue: ?:Header, ?:Repl, ?:useStore",
+        "packages-private/sfc-playground/src/VersionSelect.vue: ?:onMounted, ?:ref, ?:Copy",
+        "packages-private/sfc-playground/src/Header.vue: ?:computed, ?:ReplStore, ?:downloadProject",
+        "packages-private/vite-debug/App.vue: ?:ref"
+      ]
+    },
+    "exports": {
+      "count": 0
+    }
+  },
+  "rawLabels": [
+    {
+      "label": "calls",
+      "count": 69,
+      "files": 4,
+      "example": "App -[calls]-> ref"
+    },
+    {
+      "label": "uses",
+      "count": 32,
+      "files": 4,
+      "example": "App -[uses]-> store"
+    },
+    {
+      "label": "imports",
+      "count": 25,
+      "files": 4,
+      "example": "App -[imports]-> ./Header.vue:Header"
+    },
+    {
+      "label": "references",
+      "count": 21,
+      "files": 3,
+      "example": "toggleProdMode -[references]-> productionMode"
+    },
+    {
+      "label": "contains",
+      "count": 12,
+      "files": 2,
+      "example": "VersionSelect -[contains]-> pkg"
+    },
+    {
+      "label": "instantiates",
+      "count": 10,
+      "files": 3,
+      "example": "App -[instantiates]-> Header"
+    }
+  ],
+  "types": {
+    "calls": {
+      "verdict": "EMITTED",
+      "count": 69,
+      "files": 4,
+      "fileExamples": [
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue"
+      ],
+      "examples": [
+        "App -[calls]-> ref",
+        "setVH -[calls]-> setProperty",
+        "App -[calls]-> addEventListener",
+        "App -[calls]-> setVH",
+        "App -[calls]-> ref",
+        "App -[calls]-> parse"
+      ],
+      "resolved": {
+        "both": 6,
+        "src": 69,
+        "tgt": 6,
+        "pctBoth": 8.7,
+        "corpusTgt": 7,
+        "pctCorpusTgt": 10.1
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 2,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 69,
+        "vueOwn": 0
+      },
+      "sourceKind": {
+        "delegated:component": 69
+      },
+      "confidence": {
+        "0.9": 69
+      },
+      "evidenceClass": {
+        "usage_contextual": 69
+      },
+      "line": {
+        "withLine": 69,
+        "withoutLine": 0
+      }
+    },
+    "extends": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "implements": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "uses": {
+      "verdict": "EMITTED",
+      "count": 32,
+      "files": 4,
+      "fileExamples": [
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue"
+      ],
+      "examples": [
+        "App -[uses]-> store",
+        "App -[uses]-> productionMode",
+        "App -[uses]-> useSSRMode",
+        "App -[uses]-> autoSave",
+        "App -[uses]-> theme",
+        "App -[uses]-> toggleTheme"
+      ],
+      "resolved": {
+        "both": 32,
+        "src": 32,
+        "tgt": 32,
+        "pctBoth": 100,
+        "corpusTgt": 32,
+        "pctCorpusTgt": 100
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 1,
+        "vueOwn": 31
+      },
+      "sourceKind": {
+        "vue-own": 31,
+        "delegated:component": 1
+      },
+      "confidence": {
+        "0.95": 31,
+        "0.85": 1
+      },
+      "evidenceClass": {
+        "usage_contextual": 32
+      },
+      "line": {
+        "withLine": 32,
+        "withoutLine": 0
+      }
+    },
+    "imports": {
+      "verdict": "EMITTED",
+      "count": 25,
+      "files": 4,
+      "fileExamples": [
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue"
+      ],
+      "examples": [
+        "App -[imports]-> ./Header.vue:Header",
+        "App -[imports]-> @vue/repl:Repl",
+        "App -[imports]-> @vue/repl:useStore",
+        "App -[imports]-> @vue/repl:SFCOptions",
+        "App -[imports]-> @vue/repl:useVueImportMap",
+        "App -[imports]-> @vue/repl/monaco-editor:Monaco"
+      ],
+      "resolved": {
+        "both": 0,
+        "src": 25,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 25,
+        "vueOwn": 0
+      },
+      "sourceKind": {
+        "delegated:component": 25
+      },
+      "confidence": {
+        "1": 25
+      },
+      "evidenceClass": {
+        "import_based": 25
+      },
+      "line": {
+        "withLine": 25,
+        "withoutLine": 0
+      }
+    },
+    "exports": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "contains": {
+      "verdict": "EMITTED",
+      "count": 12,
+      "files": 2,
+      "fileExamples": [
+        "packages-private/sfc-playground/src/VersionSelect.vue",
+        "packages-private/sfc-playground/src/VersionSelect.vue",
+        "packages-private/sfc-playground/src/Header.vue",
+        "packages-private/sfc-playground/src/Header.vue"
+      ],
+      "examples": [
+        "VersionSelect -[contains]-> pkg",
+        "VersionSelect -[contains]-> label",
+        "Header -[contains]-> toggle-theme",
+        "Header -[contains]-> toggle-ssr",
+        "Header -[contains]-> toggle-prod",
+        "Header -[contains]-> toggle-autosave"
+      ],
+      "resolved": {
+        "both": 12,
+        "src": 12,
+        "tgt": 12,
+        "pctBoth": 100,
+        "corpusTgt": 12,
+        "pctCorpusTgt": 100
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 12
+      },
+      "sourceKind": {
+        "vue-own": 12
+      },
+      "confidence": {
+        "1": 12
+      },
+      "evidenceClass": {
+        "structural": 12
+      },
+      "line": {
+        "withLine": 12,
+        "withoutLine": 0
+      }
+    },
+    "references": {
+      "verdict": "EMITTED",
+      "count": 21,
+      "files": 3,
+      "fileExamples": [
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue"
+      ],
+      "examples": [
+        "toggleProdMode -[references]-> productionMode",
+        "toggleSSR -[references]-> useSSRMode",
+        "toggleAutoSave -[references]-> autoSave",
+        "toggleAutoSave -[references]-> AUTO_SAVE_STORAGE_KEY",
+        "reloadPage -[references]-> replRef",
+        "toggleTheme -[references]-> theme"
+      ],
+      "resolved": {
+        "both": 16,
+        "src": 21,
+        "tgt": 16,
+        "pctBoth": 76.2,
+        "corpusTgt": 16,
+        "pctCorpusTgt": 76.2
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 21,
+        "vueOwn": 0
+      },
+      "sourceKind": {
+        "delegated:component": 21
+      },
+      "confidence": {
+        "0.8": 16,
+        "0.95": 5
+      },
+      "evidenceClass": {
+        "reference_qualified": 21
+      },
+      "line": {
+        "withLine": 21,
+        "withoutLine": 0
+      }
+    },
+    "overrides": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "instantiates": {
+      "verdict": "EMITTED",
+      "count": 10,
+      "files": 3,
+      "fileExamples": [
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/VersionSelect.vue",
+        "packages-private/sfc-playground/src/Header.vue"
+      ],
+      "examples": [
+        "App -[instantiates]-> Header",
+        "App -[instantiates]-> Repl",
+        "VersionSelect -[instantiates]-> Copy",
+        "Header -[instantiates]-> VersionSelect",
+        "Header -[instantiates]-> Sun",
+        "Header -[instantiates]-> Moon"
+      ],
+      "resolved": {
+        "both": 0,
+        "src": 10,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 9,
+        "pctCorpusTgt": 90
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 10
+      },
+      "sourceKind": {
+        "vue-own": 10
+      },
+      "confidence": {
+        "0.95": 10
+      },
+      "evidenceClass": {
+        "usage_contextual": 10
+      },
+      "line": {
+        "withLine": 10,
+        "withoutLine": 0
+      }
+    }
+  },
+  "parseFailures": []
+}
