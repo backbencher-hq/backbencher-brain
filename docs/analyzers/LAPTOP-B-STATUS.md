@@ -789,12 +789,12 @@ callable/kind rule), then the preferences (same file, then the file's own namesp
 
 | stage | endpoints | share |
 |---|---|---|
-| **still ambiguous after EVERY lever** | **80,539** | **63.75%** |
-| resolved by the same-file preference | 16,484 | 13.05% |
-| **emptied by the owner filter** | **15,791** | **12.50%** |
-| resolved by the namespace preference | 8,183 | 6.48% |
-| resolved by the sound filters | 3,172 | 2.51% |
-| emptied by the kind filter | 2,173 | 1.72% |
+| **still ambiguous after EVERY lever** | **107,313** | **63.44%** |
+| **emptied by the owner filter** | **25,402** | **15.02%** |
+| resolved by the same-file preference | 20,368 | 12.04% |
+| resolved by the namespace preference | 10,188 | 6.02% |
+| emptied by the kind filter | 3,129 | 1.85% |
+| resolved by the sound filters | 2,756 | 1.63% |
 
 **A type-inference wall, now a number**: the survivors are `uses` 48,839, `calls` 21,052,
 `imports` 4,509, `contains` 2,783, and their top names are `metadata` (6,477), `value`, `result`,
@@ -810,6 +810,29 @@ Only 3,172 endpoints fall to sound narrowing; the 24,667 the two preferences wou
 REPLACE a resolution, which is the change shape that once produced a measured +225 that was a
 cross-repo collision. They stay unpriced as features until each has its own fixture, mutant and
 before/after, and the artifact carries the caveat in its data.
+
+### 3b. The incoming direction, whole population, for the first time — and its hole has ONE cause
+
+Measured by the same census over the same 350,367 edges: of php's 40,266 published declarations,
+**21,144 (52.51%) are reached by at least one resolving edge** and **14,371 (35.69%) are NAMED BY
+EDGES AND REACHED BY NONE**. The hole's causes were enumerated per declaration rather than counted
+per pair: **all 14,371 are named by `ambiguous:multiple-declarations` edges and by nothing else** —
+no mixed bucket, no external class, no keyword. 4,751 are named by nothing at all, and the four
+buckets sum to the population (a control asserts it).
+
+So php's incoming side is not a missing reverse walk and not a second defect: **it is the outgoing
+ambiguity seen from the declarations**, which means the 63.44% that survives every lever is the
+incoming ceiling to the endpoint. The ledger's php incoming row came from a 30-file and a 600-file
+sampler; this replaces it with the population.
+
+The same section exposed the census's third self-found bug, and it corrected the tables above: the
+walk classified each file against the store as it stood when that file was reached, so declarations
+published by a LATER file were invisible to an EARLIER one. Two-passing it (index, then classify)
+took **29,181 endpoints out of `external:bare-name-outside-population`** and 5,142 out of
+`external:namespace-outside-population` and into `resolved`/`ambiguous`, which is the bias direction
+that flatters a lane: it made the CORPUS boundary look larger than it is. The corrected numbers agree
+with the lane's independent whole-population audit to the digit (bare-name 10,644, namespace 1,536),
+which the biased run did not.
 
 ### 4. What round 2 did NOT change
 
@@ -829,17 +852,26 @@ Laravel).
   (`hcl make yaml`)**, from `script/m14/verify-ruling-tables-registered.ts`'s own two lists.
   Unadjudicated: **0** (was reported as 4; refuted above with the command that says zero).
 - **php's outgoing is `unexplained = 0` as a RE-RUNNABLE ARTIFACT, not a session result**: of
-  350,367 endpoints, 109,553 resolve uniquely, 126,342 are ambiguous (the incoming/cause-A axis,
-  untouched), 58,238 are variables in their own file, 46,503 name php internals or namespaces
-  outside the population, 39,825 name a bare name no admitted file declares, 223 a path or a
-  dynamic callee, 61 a language keyword, 14 a construct, **9 an M37.13 anonymous-class member**, and
-  **0** are in a class the census cannot name — target defect 0, source defect 0, source
-  unexplained 0. Round 1's two fixes moved 1 orphan `contains` endpoint to 0 and 19
-  declared-but-unpublished `calls` edges to 0; round 2's nested-function fix moved 3 declarations
-  into the store (+3 symbols, +3 `contains`, +3 resolved) and emptied the last defect class.
-  **No bucket was ever moved by inventing an edge**: `calls` 103,190 and `uses` 155,016 are
-  unchanged across both rounds, to the digit.
+  350,367 endpoints, 115,660 resolve uniquely, 169,156 are ambiguous (the cause-A axis, untouched),
+  44,641 are variables in their own file, 10,644 name a bare name no admitted file declares, 8,457
+  name php internals, 1,536 a namespace outside the population, 204 a path, 19 a dynamic callee, 45
+  a language keyword, 13 a construct, **5 an M37.13 anonymous-class member**, and **0** are in a
+  class the census cannot name — target defect 0, source defect 0, source unexplained 0. Round 1's
+  two fixes moved 1 orphan `contains` endpoint to 0 and 19 declared-but-unpublished `calls` edges
+  to 0; round 2's nested-function fix moved 3 declarations into the store (+3 symbols, +3
+  `contains`, +3 resolved) and emptied the last defect class. **No bucket was ever moved by
+  inventing an edge**: `calls` 103,190 and `uses` 155,016 are unchanged across both rounds, to the
+  digit. Caveat that cost a re-run: the first version of this table was measured SINGLE-PASS, i.e.
+  each file classified against the store as it stood when reached, and it read 29,181 more
+  bare-name and 5,142 more namespace-outside endpoints than the two-pass run does; the corrected
+  numbers are the ones that agree with the lane's independent audit to the digit.
+- **php's INCOMING is measured for the first time over the whole population**: of 40,266
+  declarations, 21,144 are reached by a resolving edge and **14,371 are named by edges that never
+  arrive**, and every one of those 14,371 is named by `ambiguous:multiple-declarations` and nothing
+  else. The incoming hole is the outgoing ambiguity seen from the declarations, not a second
+  defect and not a missing reverse walk.
   `bun validation/m14/fixtures/php/reason-census.mts` · artifact
   `validation/m60/php/reason-census.json` · 27 fixtures pass / 0 fail · 67 mutants caught / 0
-  survived · PHPD36 + PHPD37 record the two rounds' decisions.
+  survived · precision 1.000 over a truth file that now covers all ten types · PHPD36 + PHPD37
+  record the two rounds' decisions.
 - Zero regexes: **yes** (18 → 0; laptop A's handoff records they have not matched this).

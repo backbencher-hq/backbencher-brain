@@ -1686,16 +1686,19 @@ Whole admitted population, production `parseFile`, 3m20s. Result on 2026-10-07, 
 
 | target class | edges | share |
 |---|---|---|
-| `ambiguous:multiple-declarations` | 126,342 | 36.06% |
-| `resolved:unique` | 109,553 | 31.27% |
-| `variable-in-this-file` | 58,238 | 16.62% |
-| `external:bare-name-outside-population` | 39,825 | 11.37% |
-| `external:namespace-outside-population` | 6,678 | 1.91% |
-| `external:php-internal-{function,class,constant}` | 9,424 | 2.69% |
-| `no-declaration:{file-path,dynamic-callee}` | 223 | 0.06% |
-| `placeholder:language-keyword` | 61 | 0.02% |
-| `external:php-language-construct` | 14 | 0.00% |
-| `declared-on-anonymous-class` (M37.13) | 9 | 0.00% |
+| `ambiguous:multiple-declarations` | 169,156 | 48.28% |
+| `resolved:unique` | 115,660 | 33.01% |
+| `variable-in-this-file` | 44,641 | 12.74% |
+| `external:bare-name-outside-population` | 10,644 | 3.04% |
+| `external:php-internal-function` | 4,498 | 1.28% |
+| `external:php-internal-constant` | 2,085 | 0.60% |
+| `external:php-internal-class` | 1,861 | 0.53% |
+| `external:namespace-outside-population` | 1,536 | 0.44% |
+| `no-declaration:file-path` | 204 | 0.06% |
+| `placeholder:language-keyword` | 45 | 0.01% |
+| `no-declaration:dynamic-callee` | 19 | 0.01% |
+| `external:php-language-construct` | 13 | 0.00% |
+| `declared-on-anonymous-class` (M37.13) | 5 | 0.00% |
 | **`declared-in-tree-not-published`** | **0** | **0%** |
 
 Source side: `source:published:{unique,ambiguous}` 320,473 · `source:global` 29,891 ·
@@ -1801,12 +1804,12 @@ then the file's own namespace).
 
 | stage | endpoints | share of ambiguous |
 |---|---|---|
-| **still ambiguous after every lever** | **80,539** | **63.75%** |
-| resolved by `+ same-file preference` | 16,484 | 13.05% |
-| **emptied by the OWNER filter** | **15,791** | **12.50%** |
-| resolved by `+ namespace preference` | 8,183 | 6.48% |
-| resolved by `filters (owner + kind)` | 3,172 | 2.51% |
-| emptied by the KIND filter | 2,173 | 1.72% |
+| **still ambiguous after every lever** | **107,313** | **63.44%** |
+| **emptied by the OWNER filter** | **25,402** | **15.02%** |
+| resolved by `+ same-file preference` | 20,368 | 12.04% |
+| resolved by `+ namespace preference` | 10,188 | 6.02% |
+| emptied by the KIND filter | 3,129 | 1.85% |
+| resolved by `filters (owner + kind)` | 2,756 | 1.63% |
 
 Three sentences are the finding.
 
@@ -1837,3 +1840,53 @@ this paragraph.
 The lever section costs 88 s of the run (4m48 vs 3m20) and every stage it reports is driven by the
 same self-test the classifier is: six lever probes, so a stage that never fires and a stage that
 always fires cannot look alike in the table.
+
+### 4. The census's third self-found bug: it classified each file against a partial store
+
+Found while adding the incoming direction, and it changed the table above — so it is stated rather
+than patched over. The walk classified each file's edges against the publication index **as it stood
+when that file was reached**, so a declaration published by a LATER file was invisible to an EARLIER
+one. A single pass cannot see that: every class it printed was internally consistent. What exposed
+it was asking a DIFFERENT question of the same data (does any edge REACH a declaration?), where the
+contradiction showed up as 119 `variable-in-this-file` and 56 `external:bare-name-outside-population`
+edges counted as naming declarations they could not have named at the time.
+
+The fix is two passes — PASS 1 parses every file, indexes its symbols and keeps every edge in minimal
+form; PASS 2 walks the trees and classifies against the COMPLETE index — and its effect on the table
+is exactly the direction you would expect from a store that was too small: **29,181 endpoints left
+`external:bare-name-outside-population`, 5,142 left `external:namespace-outside-population`, and
+`resolved`/`ambiguous` grew by 6,107 and 42,814.** The class that shrank is the one that reads as a
+boundary of the CORPUS rather than as work, which is why the bias flattered the lane.
+
+The corrected numbers are also the ones that agree with the lane's **independent** whole-population
+audit: 10,644 bare-name and 1,536 namespace-outside are audit4's numbers to the digit, and its
+internals (8,444) match 8,457 across the four internal classes. The biased run was the outlier, and
+the two-pass run costs nothing extra — the tree phase is 11.6s because it was never the expensive
+half (parseFile 193.9s of the 3m52 run).
+
+### 5. The incoming direction, measured over the whole population for the first time
+
+The lane's incoming row came from a 30-file and a 600-file SAMPLER, and the programme's ledger
+records "incoming resolves in 0 of 23 lanes". The same run now answers it from the declarations, over
+every edge, with four buckets that exhaust the population (a control asserts their sum):
+
+| bucket | declarations | share |
+|---|---|---|
+| reached by ≥1 resolving edge | 21,144 | 52.51% |
+| — of them, reached AND named by an unresolved edge | 3,794 | 9.42% |
+| — of them, reached with no competing writer | 17,350 | 43.09% |
+| **NAMED BUT REACHED BY NONE — the incoming hole** | **14,371** | **35.69%** |
+| neither reached nor named | 4,751 | 11.80% |
+
+**The hole has exactly ONE cause**: all 14,371 declarations are named by edges whose class is
+`ambiguous:multiple-declarations`, and by nothing else — no `mixed` bucket, no external, no keyword.
+That is the finding the direction needed: php's incoming side is not a missing reverse walk and not a
+second defect; **it is the outgoing ambiguity seen from the other end**. Which means the 63.44% of
+the lever table above is not only the outgoing ceiling — it is, to the endpoint, the incoming one.
+
+Two smaller facts the section pins. 17,350 declarations are reached without any competing writer —
+public symbols with a single caller, which is what a healthy graph looks like at its edges. And 542
+edges resolve with no single identity: `overrides` is the one resolver that accepts a (owner, name)
+key with one OR MORE publishers (`keyed >= 1`) while every other resolver asks for exactly one, so
+the number is that looseness surfacing rather than a store defect — a consistency metric this
+instrument prints instead of hiding.
