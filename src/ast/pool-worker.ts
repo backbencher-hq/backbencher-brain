@@ -579,7 +579,36 @@ export function keepSymbol(s: any, lang: string): boolean {
     // `program` is reserved in Haskell/Elm-ish contexts; it is a SQL column name.
     sql: new Set(["program"]),
   }
-  if (RESERVED[lang]?.has(name)) return false
+  if (RESERVED[lang]?.has(name)) {
+    // …except where the language makes the word SEMI-RESERVED, and php does.
+    //
+    // PHP 7.0 made `self`, `parent` and the rest of the keyword list usable as
+    // METHOD, PROPERTY and CLASS-CONSTANT names, because a member is reached
+    // through its owner and can never be confused with the type position the
+    // keyword occupies. The name-only test above predates that distinction and
+    // deletes real members.
+    //
+    // MEASURED COST, whole admitted php population (5,094 files, 350,342 edges,
+    // production `parseFile`, 0 fallbacks): the only edge in the lane that names a
+    // declaration the store does not hold is `contains Node -> parent` in
+    // `phpmyadmin/src/Navigation/Nodes/Node.php:54` — `public Node|null $parent = null;`
+    // — deleted here while the analyzer kept emitting the containment.
+    // `validation/m14/fixtures/php/orphan-endpoint-gate.mts` is the gate that sees it
+    // (the fixture runner calls `analyze()` directly at `run-fixtures.ts:728`, so no
+    // fixture can observe this file): 5 orphaned `contains` targets in
+    // `keyword-member-names.php` before this change, 0 after. 98 corpus declarations
+    // are named `$parent`/`$self`; 0 methods or classes are.
+    //
+    // The exemption is deliberately narrow in two directions: it needs a member KIND,
+    // and it needs an OWNER, so it cannot resurrect a tree-sitter artifact that has
+    // neither — and a class, interface, trait, enum, namespace or top-level function
+    // named `parent`/`self` is still refused, which is what php actually reserves
+    // (`class parent {}` is a parse error, so that half can only be exercised by the
+    // injectable mutant `php/drop-keyword-named-members`).
+    const PHP_MEMBER_KINDS = new Set(["method", "property", "constant", "enum_member"])
+    const isPhpMember = lang === "php" && PHP_MEMBER_KINDS.has(String(s.kind)) && Boolean(s.ownerName)
+    if (!isPhpMember) return false
+  }
   return true
 }
 
