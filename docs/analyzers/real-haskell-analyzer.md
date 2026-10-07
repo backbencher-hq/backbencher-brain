@@ -1,5 +1,13 @@
 # real-haskell-analyzer.md
 
+> **VERIFY_HS9 (2026-10-04) — independent re-derivation of the 10-type verdict.**
+> This lane re-derived every type from scratch (no HASKELL lane summary read).
+> Corpus: `$HOME/fixtures/repositories/haskell` = **GHC** at
+> `54381079`, 14,039 `.hs` files (2,900 ≥ 1 KB). NOTE the corpus identity changed
+> under this lane: the doc below registers against `cabal` + `hledger`, both
+> absent from this box since 2026-09-29; what is here now is the GHC source tree,
+> which is neither corpus. See `## VERIFY_HS9 — verdict table` at the foot.
+
 ## Language
 
 - Analyzer file: `src/ast/real-haskell-analyzer.ts`
@@ -353,3 +361,349 @@ line pins; per-set fails exactly the two second-site pins + both count pins).
 M12 identity unaffected: **77/77, precision/recall 1.000, earliest failing
 layer `none`** (the line is payload, not identity —
 `validation/m12/results/haskell-differential.json` re-pinned fresh).
+
+## VERIFY_HS9 — measurement log (appended 2026-10-04)
+
+### Step 0 — firing-check-v2, two file counts (before any analyzer change)
+
+`script/m14/firing-check-v2.mjs` run unmodified from the main checkout. NOTE the
+lane-name convention does not select this lane: the script's selector is
+`only.toUpperCase() === k || only.toUpperCase().startsWith(k)` over its own LANES
+keys, so `VERIFY_HS9` matches **no** lane and prints an empty table with
+`unmeasured: none` — a silent no-op that reads like a pass. `HASKELL` is the
+correct argument.
+
+| NFILES | parsed | fired | silent | imports[] | relTally top |
+| --- | --- | --- | --- | --- | --- |
+| 200 | 200/200 | **9/10** | `brain_import` | 248 in 102 files | contains:1169 calls:411 **imports:248** instantiates:231 implements:144 exports:99 uses:78 overrides:60 |
+| 40 | 40/40 | **9/10** | `brain_import` | 28 in 18 files | contains:180 **imports:28** calls:14 implements:13 uses:12 exports:7 instantiates:5 overrides:4 |
+
+`references` fires (in the fired list, below the top-8 cutoff at both counts).
+
+**The `brain_import` silence is a SPELLING artefact, not a construct gap**, and
+the two programme instruments disagree on the spelling:
+
+- `src/ast/engine.ts:454` `ASTEngine.RelationshipType.Imports = "imports"` — the
+  value the analyzer writes, and the value `script/m14/ontology-coverage-gate.ts`
+  names as canonical (`ALL_TYPES` there is
+  `calls uses contains imports references exports extends implements overrides instantiates`).
+- `src/ast/types.ts:69` `RelationshipType.Imports = "brain_import"` — the value
+  `firing-check-v2.mjs` tallies against (`ALL = Object.values(RelationshipType)`).
+
+So this analyzer emits the import relationship type under the name
+`ontology-coverage-gate.ts` looks for, and `firing-check-v2.mjs` scores it
+missing because it reads a different enum. Measured count of the Haskell import
+relationship edges on the NFILES=200 draw: **248**, in 102 of 200 files, and the
+`imports: ImportInfo[]` channel independently reports **248** in 102 files.
+
+Not a Haskell-lane fix: `engine.ts` and `types.ts` are master-owned and 6+ other
+lanes emit the same `"imports"` string. Reported to master in the VERIFY_HS9
+report as an instrument inconsistency.
+
+### Step 1 — the census instrument, and one bug in it worth recording
+
+`script/m14/tmp/hs9-census.ts` walks the corpus in sorted order (so the draw does
+not depend on `readdir` order, which `firing-check-v2` does depend on) through the
+production path — `getParser` → `parse` → `RealHaskellAnalyzer.analyze` — and
+records per type: count, files, `evidenceClass` distribution, confidence
+distribution, and BOTH endpoints' resolution, where "resolves" is answered by an
+AST check (the file's declared symbol names from the analyzer's own symbol list,
+plus an independent tree walk for `local_binds`/`let`/`let_in` binders) rather
+than by a string shape.
+
+The tally maps in that instrument are `Object.create(null)`, and that is not
+styling. `SymbolKind.Constructor` is the string `"constructor"`, which on a bare
+object literal resolves to the **inherited** `Object.prototype.constructor`
+function, so `b[k] || 0` reads that function and `fn + 1` stringifies it. Measured
+before the fix: the constructor bucket read
+`function Object() { [native code] }111…` (168 concatenations). A plain-object
+tally map silently miscounts precisely one of the kinds under study. Any other
+instrument in this repo that tallies by a bare key — including any that counts
+`constructor`, `toString`, `valueOf` or `constructor` as an edge label — has the
+same trap.
+
+### Step 2 — construct probe, 60-file draw (`hs9-construct-probe.ts`)
+
+| # | construct the language HAS | measurement on 60 files |
+| --- | --- | --- |
+| P1 | grammar node inventory | **116 distinct node types** emitted |
+| P2 | an infix application whose operator is declared in the SAME file | **116 call sites / 11 distinct operators** |
+| P3 | a declaration signature naming a type | **2,056 signatures, 448 distinct type names, 60/60 files** |
+| P4 | a `header` with NO `exports` child (implicit export-everything) | **2 of 58 headers** (full-corpus figure pending) |
+| P5 | an instance method whose class is NOT declared in the file | **473 of 477** instance method bodies |
+
+**P2 is a live defect in an emitted type, not a new type.** The analyzer already
+publishes operator DEFINITIONS as callable symbols — `processFunction` and
+`collectDeclaredFunctions` both name `a +.+ b = …` as the callable `+.+` — but
+`processInfix` only handles `infix_id` (backtick) and `$`, so a use of a
+locally declared operator has no `calls` edge at all. The graph therefore
+publishes `+.+` as a callable with zero callers in the file that defines it.
+Measured operators on the 60-file draw: `<>` 11, `=:` 42, `==` 37, `<` 4, `<=` 2,
+`>=` 2, `>` 2, `===` 4, `.+.` 2, `<*>` 6, `>>=` 4.
+
+Resolution note for P2 (why name-based resolution is sound here, not a guess):
+Haskell resolves an unqualified name lexically and a module's own top-level
+declaration — or class method — SHADOWS the implicit `Prelude` import, so an
+unqualified `x == y` in a module that declares `==` is that module's `==`. This
+is the same rule `resolveCallableTarget` already applies to plain variables.
+
+**P5 is the measured ceiling of `overrides` under single-file resolution**: the
+class→methods pre-pass is file-local, so an instance of an IMPORTED class emits no
+`overrides` edge. 473 of 477 instance method bodies on this draw are in that
+state. Not fixable in this lane — resolving an imported class needs the module
+graph, the subsystem that does not exist yet.
+
+### Step 3 — the M12 per-analyzer differential is RED at HEAD, and its committed artifact says otherwise
+
+`bun script/m12/verify-analyzer.ts haskell`, analyzer unmodified, live at
+`25c9a43ed`:
+
+```
+expected=77 observedResolved=81 TP=70 FP=11 FN=7 unknown=0 unsupported=0
+precision=0.864 recall=0.909  earliestFailingLayer=ast_extraction
+```
+
+The committed artifact `validation/m12/results/haskell-differential.json` records
+`passed: true`, `truePositive: 75`, `falsePositive: 2`, `precision 0.974`. The
+live run and the committed artifact disagree, and every one of the 18 live
+disagreements has the same cause: **the M60-HK wave changed this analyzer's
+emission contract and the M12 ground truth was not moved with it.**
+
+| live verdict | edge | truth file says | analyzer emits | since |
+| --- | --- | --- | --- | --- |
+| FN ×4 | module import | `references` | `imports` | M60-HK relabel (2,119 of 2,126 `references` were module imports) |
+| FP ×4 | module import | — | `imports` | same relabel |
+| FP ×5 | `exports Service -> OrderBook/User/addBid/lookupUser/submitOrder` | not in truth | emitted | implicit export-everything |
+| FP ×1 | `overrides User.serialize -> Serializable.serialize` | not in truth | emitted | M60-HK overrides |
+| FN ×1 | `contains User -> serialize` | expected | not emitted | instance method re-parented to its CLASS (`Serializable`), so `User` no longer contains it |
+| FN+FP | `symbol:Service.hs:24:User` | `class` | `instance` | `SymbolKind.Instance` (master-owned enum addition) |
+
+Two of those are **factually right on the analyzer's side and wrong in the truth
+file** (the `imports` relabel and the `SymbolKind.Instance` change), and one is a
+real behaviour change the truth never learned (`contains User -> serialize` no
+longer fires because an instance's methods are owned by the CLASS it instantiates
+— that re-parenting is the M60-HK fix, and the truth still asserts the old shape).
+
+`validation/m12/**` is master-owned, so nothing here was edited: the artifact was
+restored with `git checkout` immediately after the run. The lane's own record of
+the run is in the commit message. **Master's need:** re-pin
+`validation/m12/ground-truth/haskell.json` against the M60-HK contract, or the
+lane's L1/L2 differential evidence is stale in a way that reads as a pass.
+
+### Step 4 — two gaps closed: operator application, infix/ticked constructor application
+
+Both were measured as constructs the language HAS and the analyzer did not read.
+Neither adds a relationship TYPE — both fill in a shape of a type already
+emitted, which is why the type table below does not move.
+
+**G1 — `calls`: a locally declared operator's application sites.** The analyzer
+publishes operator DEFINITIONS as callable symbols (`processFunction` and
+`collectDeclaredFunctions` both name `a +.+ b = …` as the callable `+.+`), and
+`processInfix` read only `infix_id` (backtick) and `$`. So a file that defines an
+operator published that operator with **zero callers in its own file**.
+
+**G2 — `instantiates`: infix and ticked CONSTRUCTOR application.** `a :+: b` for
+`data Expr = Lit :+: Expr` is construction; `x `Cons` y` is construction. Both
+parse to node types the walk reached and nothing read (`constructor_operator` as
+an `infix` operator, a `constructor` child of an `infix_id`), so both emitted
+nothing.
+
+Shapes, from `script/m14/tmp/hs9-opshape-probe.ts` (60-file draw, AST-side):
+
+| shape | count | verdict |
+| --- | --- | --- |
+| `EXP/infix:operator` | 3,140 | of these **86** name an operator this file declares |
+| `EXP/infix:constructor_operator` | **111** | construction → G2 |
+| `EXP/infix_id:constructor` | **9** | ticked construction → G2 |
+| `EXP/prefix_id:operator` | **22** | `(<+>) a b` → G1 |
+| `EXP/prefix_id:constructor_operator` | **3** | `(:+:) a b` → G2 |
+| `TYP/infix:operator` | **29** | TYPE level — must emit nothing |
+| `PAT/infix:constructor_operator` | **98** | pattern — must emit nothing |
+
+**The position test is load-bearing, not defensive.** `infix` is ONE node type for
+THREE syntactic positions in the pinned grammar — `_exp_infix`
+(`grammar/exp.js:353`), `_pat_infix` (`grammar/pat.js:99`) and `_type_infix`
+(`grammar/type.js:116`) are all aliased to `infix`, and all three use the field
+names `left_operand` / `operator` / `right_operand`. A type-level operator is a
+bare `operator` node exactly like an expression's. Those 29 TYP rows are sites an
+operator-only test would have turned into 29 fabricated calls.
+
+**Resolution is sound by Haskell's own rule, not by assumption.** Haskell
+resolves an unqualified name lexically and a module's own top-level declaration —
+or class method — shadows the implicit `Prelude` import, so in a module that
+declares `==`, `x == y` IS that module's `==` (the alternative would be an
+ambiguous-occurrence error). This is `resolveCallableTarget`, the same function
+plain-variable calls already use, applied to an operator name.
+
+**Sections are deliberately not emitted.** `(x +)` is a PARTIAL application: it
+builds a function value and performs no call. `(<+>) a b` is a full application
+and is emitted. The line is full-vs-partial, stated here rather than left to a
+reader of the code. Measured cost of that choice: 18 `right_section:operator` +
+0 `left_section:operator` sites on the 60-file draw, of which none can be counted
+without also counting the Prelude operators they mostly name.
+
+**Before/after — one instrument, the same 200-file sorted draw**
+(`hs9-census.ts`, `BB_ANALYZER` pointing the SAME census at the pre-change tree
+at `25c9a43ed` and at the new one):
+
+| type | before | after | delta | files before/after |
+| --- | --- | --- | --- | --- |
+| calls | 18,113 | 18,439 | **+326** | 183 / 183 |
+| instantiates | 10,707 | 11,331 | **+624** | 175 / 180 |
+| contains | 10,635 | 10,635 | 0 | 200 / 200 |
+| imports | 3,872 | 3,872 | 0 | 200 / 200 |
+| exports | 3,606 | 3,606 | 0 | 181 / 181 |
+| implements | 693 | 693 | 0 | 99 / 99 |
+| uses | 515 | 515 | 0 | 85 / 85 |
+| overrides | 43 | 43 | 0 | 5 / 5 |
+| extends | 7 | 7 | 0 | 5 / 5 |
+| references | 1 | 1 | 0 | 1 / 1 |
+| symbols | 11,793 | 11,793 | 0 | — |
+
+Of the +624: **505** are infix-constructor applications, **119** are ticked
+constructors. No other type moved and no symbol count moved, which is what a
+fill-in of an existing type's shapes should look like.
+
+**Every new edge read by hand** (`hs9-newedge-verify.ts`, prints the cited
+source line beside each edge):
+
+```
+brokenTest  -> =:    gen_ci.hs:445   brokenTest test _why = "BROKEN_TESTS" =: test
+partition_args -> :  GHC.hs:1009     partition_args args ((arg,Nothing):srcs) objs
+blockCons   -> BCons Block.hs:105    BMiddle{} -> n `BCons` b
+oneShotId.rhs -> App Ids.hs:308       Var body `App` Var x'
+```
+
+**Negative control** (`hs9-defhead-check.ts`): an operator DEFINITION head must
+never emit. 89 definition heads inspected on the draw; 46 of them are the only
+operator on their line (the other 43 share a line with a genuine call —
+`op1 == op2 = primOpTag op1 == primOpTag op2` has the head and a real self-call
+on one line, which the FIRST version of this control miscounted as 33 leaks);
+**0 leaks**. Self-recursion is emitted, which is the lane's existing contract:
+`op1 == op2 = … op1 == op2` yields `calls == -> ==`.
+
+**Evidence class corrected in the same change.** The 624 new `instantiates` edges
+first left as `structural`, because `classifyEvidenceTier` recognises usage-site
+constructions by flag name and the two new flags were not in the list. That is
+the same defect the lane already fixed once for qualified constructors (HSD16,
+"all usage-site edges"). After the fix the distribution on the draw is
+`usage_contextual` for all 11,331 — measured, not asserted.
+
+### Step 5 — fixture + mutation proof for the new shapes
+
+`validation/m14/fixtures/haskell/operator-application.hs` (116 lines) with a
+hand-derived expectation file: **16 symbol pins, 14 relationship pins, 2 count
+pins, 14 forbids, 1 complexity pin.** Every shape was read out of the pinned
+grammar with `script/m14/tmp/hs9-ast-dump.ts` BEFORE the expectation file was
+written, and the fixture parses with `hasError=false` — the shapes are
+
+```
+a :+: b        match → infix → operator: constructor_operator
+a `Snoc` xs    match → infix → infix_id → constructor
+(<+>) x 1      match → apply → prefix_id → operator
+(.+.) :: ...   signature → name: prefix_id → operator
+```
+
+Pins: a locally declared operator's application is `calls` from FOUR positions
+(plain RHS, guard, case branch, forward-referenced prefix application); an infix
+constructor's application is `instantiates`; a ticked constructor's application is
+`instantiates`. The two guard sites share source and target and differ only by
+line, which is why there is a **count pin** (`calls combine -> .+. equals 2`): a
+per-set dedupe-key regression collapses them silently.
+
+Forbids — each is a failure the new rule could plausibly make: an operator
+DEFINITION head is not a call (HSD19 applied to operator heads); a PATTERN-position
+infix or ticked constructor constructs nothing (HSD14 applied to the new shapes); a
+TYPE-position operator whose spelling is also a value operator in the same file
+emits nothing; `++`, `intercalate`, `replicate`, `>` are not targets because this
+file does not declare them; and no raw head text becomes a symbol.
+
+**The harness caught two errors in my own fixture, which is the point of it:**
+the export list named `sizeOf`, which I had not defined — the runner's export
+invariant (`an exported name must resolve to a symbol`) failed the fixture, so
+`sizeOf` now exists and carries a second ticked-constructor shape; and I had
+pinned `instantiates uncons -> Nothing` from `uncons End = Nothing`, where the
+analyzer is RIGHT and I was wrong — a bare constructor with no arguments is not an
+`apply`, so there is no application to record. The pin was removed, not the
+behaviour. `combine`'s complexity is pinned at the measured 3 after my assumed 1
+was falsified.
+
+**Mutation proof — 12 mutants, 12 caught**
+(`script/m14/tmp/hs9-mutants.ts`, artifact
+`validation/m14/results/haskell-verify-hs9-mutants.json`). One mutant per
+behaviour, each description naming the pin that must kill it:
+
+| mutant | what it breaks | problems |
+| --- | --- | --- |
+| drop-operator-calls | 4 calls pins + the count pin | 5 |
+| drop-infix-constructor-instantiates | 2 pins + the count pin | 3 |
+| drop-ticked-constructor-instantiates | the ticked pin | 1 |
+| operator-call-mislabelled-as-instantiates | all 4 operator-call pins | 5 |
+| type-position-operator-fabricates | the type-position forbid | 1 |
+| pattern-infix-constructor-fabricates | the pattern forbid | 1 |
+| pattern-ticked-constructor-fabricates | the ticked pattern forbid | 1 |
+| operator-definition-head-self-calls | both definition-head forbids | 2 |
+| undeclared-operator-resolves | all 4 Prelude forbids | 4 |
+| operator-edge-line-absent | every pin in the group | 7 |
+| operator-edge-per-set-dedupe | the count pin | 2 |
+| operator-evidence-class-structural | the 2 evidenceClass pins | 2 |
+
+The mechanism is the shared harness's: the real analyzer, wrapped by a result
+transform, run through the real fixture runner via the exported `runLang`.
+`script/m14/mutate-analyzer.ts` is master-owned, so these 12 are NOT in the
+canonical `M14.0.F4` run — `script/m14/fsharp-mutants.ts` is the precedent for a
+lane keeping its mutants beside it. **Master's need:** fold them into `MUTANTS`.
+
+### Step 6 — an INDEPENDENT oracle for the new shapes, and what it cost the F5 row
+
+`script/m14/tmp/hs9-oracle-operator.ts` derives the three new shapes from the
+tree without calling the analyzer: it re-derives the file's declared operators,
+its lexical operator binders, the position gates and the callable attribution
+itself. Comparison is on **source AND target AND line**.
+
+**Before/after on the F5 differential, the SAME 300 files** (isolated empty cold
+pool per side so both draws are rotation 1 and the sample hash is identical,
+`d4c2a7c97b5506f2`):
+
+| | before (`25c9a43ed`) | after | delta |
+| --- | --- | --- | --- |
+| tree-truth | 502 | 502 | 0 |
+| covered | 501 (99.8 %) | 501 (99.8 %) | 0 |
+| MISSING | 1 | 1 | 0 |
+| analyzer-edges | 380 | 395 | +15 |
+| unexplained | 19 (5.0 %) | **33 (8.4 %)** | **+14** |
+| unexplained `overrides` | 19 | 19 | 0 |
+| unexplained `calls` | 0 | **7** | +7 |
+| unexplained `instantiates` | 0 | **7** | +7 |
+
+**This lane's F5 row is now 14 edges redder, and that is the honest state.**
+`deriveHaskellEdges` in `script/m14/differential.ts` reads `apply`, `infix` and
+`record` heads and handles `infix_id` and `$`; it derives neither an operator
+application nor an infix/ticked constructor application, so the new edges land in
+`unexplained` — which the harness counts as confident fabrication at confidence
+0.9. It is NOT fixed by lowering confidence below 0.7: an edge measured to be a
+real call, downgraded so a gate stays green, is exactly the dishonesty the M14
+contract exists to prevent. **Master's need:** wire `hs9-oracle-operator.ts`'s
+`deriveOperatorTruth` into `deriveHaskellEdges` (master-owned).
+
+Note also what the same run prints, and that it is not new:
+`haskell: COMPARED WITH NO TRUTH: overrides (19 comparable, 0 truth)` — the
+harness's own words for the DERIVATION finding below.
+
+**Oracle agreement, measured: precision 1.000, recall 1.000 on 1,069 edges**
+(200-file draw, artifact `validation/m14/results/haskell-verify-hs9-oracle-200.json`).
+
+Getting there took two corrections, and **both were defects in my oracle, not in
+the analyzer** — which is the dual-lens lesson applied to my own instrument:
+
+| version | precision | recall | what was wrong |
+| --- | --- | --- | --- |
+| 1 | 0.493 | 0.529 | no scoped-local identity: truth said `jobVariables`, the analyzer said `job.jobVariables`. Every sampled disagreement was that one rule. |
+| 2 | 0.878 | 0.969 | two gaps: the oracle's pattern test lacked the `pattern_guard` clause, so it derived 34 constructions from `ns@(_:_) <- filter …` in a guard; and a ticked constructor's `infix_id` is the operator FIELD, not a sibling, so the oracle never derived those. |
+| 3 | 0.878 | 0.969 | local operator binders were keyed by the BLOCK node, so a use site never consulted them: 8 edges lost in `AArch64/Instr.hs`, where `mkSpillInstr`'s `where a .&~. b = …` at 501 is in scope for its guards at 484 — the analyzer was right. |
+| 4 | **1.000** | **1.000** | binders keyed by the enclosing CALLABLE frame, `pattern_guard` clause added. |
+
+The shared-grammar caveat applies and is not papered over: the oracle reads the
+same tree-sitter-haskell grammar, so a grammar bug common to both paths is
+invisible to this comparison. It measures RULE agreement — position gates, name
+resolution, attribution, label — and claims nothing about the grammar.

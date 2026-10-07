@@ -84,6 +84,26 @@ const GROOVY_DECLARATION_TYPES = new Set([
 ])
 
 /**
+ * DERIV_EXPORTS_GROOVY3 — the node types that declare a TYPE, and therefore the
+ * only declarations Groovy can make importable.
+ *
+ * Groovy's compilation model has no module, no `exports` clause and no
+ * package-private visibility: a top-level type in a `.groovy` compilation unit
+ * is importable by every other compilation unit on the classpath. That is the
+ * whole export surface, so the node types below ARE the surface.
+ *
+ * `trait` and `record` are here on purpose. They are Groovy's own declaration
+ * forms (`trait Audited`, `record Point(int x, int y)`) and both are
+ * importable; a list written from SymbolKind would drop them, because this lane
+ * maps a trait to `Interface` and a record to `Class` — kinds that also name
+ * nested and anonymous forms, neither of which is importable.
+ */
+const TOP_LEVEL_TYPE_NODES = new Set([
+  "class_declaration", "interface_declaration", "trait_declaration",
+  "enum_declaration", "record_declaration", "annotation_type_declaration",
+])
+
+/**
  * #896 — the groovy walk state. `analyze` owns traversal; the `handleX`
  * methods own extraction. Nothing else is shared between them.
  */
@@ -249,16 +269,108 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       const s = symbols[i]
       // G3 (member half REVERSED, M49 JVM-closure exports-family ruling —
       // java JAD3 reversal is the twin; see reviews/jvm-closure-audit.md):
-      // exports = importable units — top-level types and top-level
-      // functions only. Groovy imports types and static members, never
-      // bare member names; membership rides Contains (Greeter->greet).
-      // G7 (anon exclusion) is unaffected: anonymous classes are never
-      // top-level, so the !s.ownerName guard excludes them structurally —
+      // exports = importable units.
+      //
+      // DERIV_EXPORTS_GROOVY3 — the guard is now the CONJUNCTION, and both
+      // halves were separately false. `!ownerName` alone assumes "no owner"
+      // means "top-level type", and on this corpus that admits every top-level
+      // METHOD and PROPERTY of a script, which is not an importable unit:
+      // `import foo.Bar.baz` does not compile in Groovy, because a top-level
+      // `def baz() {}` in a .groovy file is a method of the SCRIPT CLASS.
+      // Measured with instrument C over the corpus: 3,148 top-level TYPE
+      // declarations across 2,550 files, and 609 top-level MEMBERS across 52
+      // files that the old guard published as exports. That is the same defect
+      // class the java lane closed at the same time (14 fabricated `exports`
+      // edges, all methods), and it is invisible to a count: the surface was
+      // larger, not smaller.
+      //
+      // The node type is read from `metadata.nodeType` rather than from a
+      // SymbolKind list because Groovy maps `trait` and `record` onto kinds
+      // that also name nested/other forms, and a kind-based list would call
+      // them non-types. G7 (anon exclusion) is unaffected: an anonymous class
+      // is never top-level, so the !ownerName half excludes it structurally —
       // the explicit isAnonymousClass check stays as belt-and-braces.
-      if (!s.metadata?.isAnonymousClass && !s.metadata?.isPhantom && !s.ownerName) {
+      if (!s.metadata?.isAnonymousClass && !s.metadata?.isPhantom && !s.ownerName && TOP_LEVEL_TYPE_NODES.has(String(s.metadata?.nodeType ?? ""))) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
     }
+
+    // ── DERIV_EXPORTS_GROOVY3 — the `exports` PUBLICATION edge ───────────────
+    //
+    // WHAT GROOVY HAS, measured rather than argued (three instruments over the
+    // full 2,817-file corpus; the numbers are in
+    // validation/m14/measurements/groovy-census/census.json):
+    //
+    //   grammar inventory   266 distinct node types the pinned wasm produces.
+    //                        NONE of them contains "export"; the file-scope
+    //                        anonymous-token vocabulary is EMPTY, so `export`
+    //                        and `open` are not even TOKENS in this grammar.
+    //                        There is no JPMS-style `module` declaration and no
+    //                        `exports` clause.
+    //   parse-tree count    3,148 top-level type declarations / 2,550 files;
+    //                        609 top-level members / 52 files (now excluded);
+    //                        ZERO private or protected top-level types
+    //                        anywhere in the corpus.
+    //
+    // So the export CONSTRUCT is absent and the export SURFACE is a convention:
+    // a top-level type in a .groovy compilation unit is importable by any other
+    // compilation unit on the classpath. That convention IS the construct, and
+    // this analyzer was already collecting it — into `exports[]`, which
+    // `engine.ts:1831` and `pool-worker.ts:1196` forward and which NOTHING in
+    // src/ reads back. The consumer that wants it,
+    // `src/ast/import-resolution.ts:404-419`, builds the project-wide export
+    // surface from `brain_relationship` rows with
+    // `relationship_type = 'exports'`, not from the array. So the surface
+    // existed in the parse result and in no edge, in no table and in no graph.
+    //
+    // SOURCE IS THE PACKAGE, which is what owns a top-level type in Groovy, on
+    // the java lane's measured precedent. Measured here: 2,551 of 2,817 files
+    // declare a package (C:package_declaration, 2,551 nodes in 2,551 files), so
+    // 266 files have none. A file with no package has nothing truthful to name
+    // as the exporter — and inventing one is the fabrication the workstream
+    // forbids — so NO edge is emitted for those and the count is accumulated in
+    // `metadata.exportsWithNoPackage` for the reader rather than papered over.
+    //
+    // CONFIDENCE, and the tier that does not fire on this corpus. Groovy's rule
+    // for a top-level type is that it is importable; unlike Java there is no
+    // package-private case to discount, and the measurement agrees: 0 of 3,148
+    // top-level types corpus-wide carry `private` or `protected`. The
+    // non-public arm is kept because the GRAMMAR admits the modifier on a
+    // top-level type, so deleting it would make a legal Groovy declaration
+    // unpublishable the moment one appears — but it is measured at 0
+    // occurrences here and is reported as 0 rather than described as working.
+    let exportsWithNoPackage = 0
+    if (exports.length > 0) {
+      const published = new Set<string>()
+      for (let i = 0; i < exports.length; i++) {
+        const e = exports[i]
+        const target = e.name
+        if (!target) continue
+        // Name-first-wins: a duplicate name cannot identify which provider the
+        // edge names, and a second row asserting the same pair is noise.
+        if (published.has(target)) continue
+        published.add(target)
+        const isPublic = e.visibility !== "private" && e.visibility !== "protected"
+        if (!walk.currentPackage) { exportsWithNoPackage++; continue }
+        relationships.push({
+          source: walk.currentPackage,
+          target,
+          type: ASTEngine.RelationshipType.Exports,
+          confidence: isPublic ? 1.0 : 0.6,
+          // M59 (#825): the exported DECLARATION's own line — the name is
+          // written there, not at whatever construct encloses it. Absent rather
+          // than 0 when the symbol carried no range (#823).
+          ...(e.range?.startLine ? { line_number: e.range.startLine } : {}),
+          metadata: {
+            relationshipType: "groovy_exportable_unit",
+            exportForm: isPublic ? "public_top_level_type" : "non_public_top_level_type",
+            ...(isPublic ? {} : { reasonCode: "non_public_top_level_type" }),
+            symbolKind: String(e.kind ?? ""),
+          },
+        })
+      }
+    }
+
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -281,6 +393,13 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // happen, which is worth knowing even when the symbol list looks clean.
         emptyNameRefusals: walk.emptyNameRefusals ?? 0,
         currentPackage: walk.currentPackage,
+        // DERIV_EXPORTS_GROOVY3: exportable units this file HAS but did not
+        // publish as an edge, because it declares no package and so has no
+        // truthful exporter to name. Zero means every exportable unit in the
+        // file reached the graph; non-zero is the count of export surface a
+        // reader of the relationship table cannot see, and it is reported
+        // rather than absorbed. Measured over the corpus: 266 of 2,817 files.
+        exportsWithNoPackage,
         framework: fw.framework,
         detectedFrameworks: fw.detected,
         analysisVersion: "5.0.0-groovy-pure-ast",
@@ -371,6 +490,61 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             // M59 (#825): the line the imported MODULE is named on (java's rule).
         ...this.lineField(nameNode, node),
         metadata: { isGroovyImport: true, isWildcard },
+      })
+
+          // ── DERIV_EXPORTS_GROOVY3 — the `imports` DEPENDENCY edge ──────────
+          //
+          // What this edge is for. The consumer of this kind is `bb_graph`'s
+          // per-file `dependencies` section, and its SQL is exact
+          // (src/lsp/graph_request.ts:291-297):
+          //
+          //   WHERE relationship_type = 'imports'
+          //     AND source_symbol_id IS NULL AND target_symbol_id IS NULL
+          //     AND source_external = ?      <- the root node's FILE PATH
+          //
+          // `classifyFileLevel` (src/lsp/graph_usages.ts:103-107) then throws on
+          // any relationship_type outside {imports, exports}, so there is no
+          // second path to the same answer. Before this edge the whole import
+          // story reached `imports[]` and the brain_import TABLE and NOTHING
+          // else: measured over the corpus, 10,587 `import_declaration` nodes,
+          // 10,587 `imports[]` entries, and 0 `imports` relationships — so the
+          // one surface whose entire job is "what does this file import" had
+          // nothing to return for any of the 2,369 files that import
+          // something. See script/m14/lanes/groovy-store-roundtrip.ts for the
+          // round-trip that measured it against the consumer.
+          //
+          // WHY BOTH LABELS SURVIVE. `imports` is the DEPENDENCY (a module this
+          // file needs) and `references` is the MENTION (the dotted path, which
+          // is what the reference-resolution surface joins against). Dropping
+          // either loses a question. This is the family rule, not a local
+          // preference: erlang states the same pairing for its `-import`.
+          //
+          // `fileLevel: true` is the flag that produces the required STORAGE
+          // shape: parallel-indexer.ts:3479-3485 writes `source_external` =
+          // the file's repo-relative path and leaves `source_symbol_id` NULL
+          // exactly when the source resolves to no symbol in this file. c,
+          // php, nim and powershell set it; groovy had no fileLevel concept,
+          // which is precisely why no groovy row could ever match. The source
+          // below is the package (or the lane's `(script)` sentinel), a name no
+          // declaration in the file carries, so the non-resolution is the
+          // intended path and not a fallback.
+          //
+          // 1.0, not 0.9: the import declaration NAMES its module in the
+          // grammar, so the dependency is written in the source rather than
+          // inferred from a use site.
+      relationships.push({
+        source: s.currentPackage || "(script)",
+        target: moduleName,
+        type: ASTEngine.RelationshipType.Imports,
+        confidence: 1.0,
+        ...this.lineField(nameNode, node),
+        metadata: {
+          relationshipType: isStatic ? "static_member_import" : isWildcard ? "type_on_demand_import" : "single_type_import",
+          isGroovyImport: true,
+          isWildcard,
+          isStatic,
+          fileLevel: true,
+        },
       })
     }
   }
@@ -1124,6 +1298,16 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
       if (t === "references") {
         md.evidenceClass = (md.isGroovyImport || md.isImport) ? "import_based" : "reference_qualified"
+        continue
+      }
+      // DERIV_EXPORTS_GROOVY3: an `imports` edge asserts a DEPENDENCY, and the
+      // dependency is WRITTEN in the source — the import declaration names its
+      // module — so the tier is `import_based`, the same tier `references`
+      // already gets for the mention half of the same declaration. Before this
+      // arm the type fell through to the `usage_contextual` default, which
+      // claimed a written declaration was a contextual usage.
+      if (t === "imports") {
+        md.evidenceClass = "import_based"
         continue
       }
       if (t === "extends" || t === "implements") {

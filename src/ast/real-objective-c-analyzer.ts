@@ -83,6 +83,36 @@ const OBJC_FRAMEWORK_PATTERNS: Record<string, string[]> = {
   Foundation: ["base_library"],
 }
 
+// OBJCD9 (M60 DERIV_EXPORTS_OBJC): the export markers Objective-C/C declarations
+// actually carry.
+//
+// A member of this set is compared against `node.text` of a `storage_class_specifier`
+// — a NAMED node type the grammar emits — so the test is over the grammar's own
+// output, not a pattern in source text (lane rule 1).
+//
+// WHY A CLOSED SET IS HONEST HERE AND A CONVENTION WOULD NOT BE. The corpus
+// census (script/m60/objc-exports-census.ts, 322 admitted files, 211,430 nodes)
+// counted every candidate export spelling the grammar could carry:
+// FOUNDATION_EXPORT 98 declarations in 18 files, `extern` 1; `attribute_specifier`
+// 0 and `visibility_specification` 1; export-named `preproc_def` 0 of 24. So
+// FOUNDATION_EXPORT and `extern` are the two this corpus uses, and the set says
+// so with a measurement rather than a recollection.
+//
+// "Every declaration in a header is public" is deliberately NOT in this set and
+// produces no edge: that is the umbrella-header + module-map CONVENTION, not a
+// declaration, and 162 of 169 corpus headers would each manufacture an edge per
+// symbol. A convention the grammar cannot see must not be turned into a graph
+// edge; it is declared as a limitation with the count attached.
+const OBJC_EXPORT_MARKERS: ReadonlySet<string> = new Set([
+  // Foundation's spelling of `extern __attribute__((visibility("default")))` —
+  // the marker every framework header uses for its published surface.
+  "FOUNDATION_EXPORT",
+  // C's own keyword for external linkage. One occurrence in the corpus, and the
+  // grammar has a node type for it, so leaving it out would be the arbitrary
+  // choice rather than the principled one.
+  "extern",
+])
+
 export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -613,7 +643,12 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           // globals (`static NSString * k = ...`) nest the name under a
           // pointer_declarator, so a direct-child lookup misses them. Bare
           // declarators without initializers (`static NSArray * g;`) bind
-          // the same way; prototypes (function_declarator) never bind.
+          // the same way.
+          //
+          // A PROTOTYPE binds its name too (C parity: `collectBoundLocals`
+          // in real-c-analyzer.ts lists `function_declarator`), and it is
+          // symbolized as a FUNCTION rather than a variable — see the
+          // function_declarator arm below.
           //
           // An UNTERMINATED declaration publishes nothing (see
           // isUnterminatedDeclaration): it has no declarator, so the only
@@ -621,27 +656,90 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           // either way — the walk below is driven by this branch's return
           // state, not by the loop — so nothing nested is skipped.
           if (!isUnterminatedDeclaration(node)) {
+            // The export marker slot, read once for the whole declaration: an
+            // Objective-C/C export marker (`FOUNDATION_EXPORT`, `extern`) is a
+            // NAMED `storage_class_specifier` the grammar emits, which is what
+            // makes the `exports` edge declaration-backed rather than a spelling
+            // matched in source text.
+            let exportMarker: string | null = null
+            for (let si = 0; si < node.namedChildCount; si++) {
+              const sc = node.namedChild(si)
+              if (!sc || sc.type !== "storage_class_specifier") continue
+              const st = sc.text.trim()
+              if (OBJC_EXPORT_MARKERS.has(st)) { exportMarker = st; break }
+            }
             for (let di = 0; di < node.namedChildCount; di++) {
               const dc = node.namedChild(di)
               if (!dc) continue
               let dname: string | null = null
+              // OBJCD9 (M60 DERIV_EXPORTS_OBJC): a declarator chain that reaches
+              // a `function_declarator` is a function PROTOTYPE, whatever wraps
+              // it — `void f(int);` (bare) or `NSString * f(NSDictionary *d);`
+              // (pointer). The pre-fix arm list knew only the wrappers and had no
+              // function_declarator case at all, which cost two different things
+              // measured over the 322-file admitted universe by
+              // script/m60/objc-prototype-defect.ts and
+              // script/m60/objc-proto-label.ts: 8 of 8 bare prototypes published
+              // NO symbol at all, and 13 pointer-returning prototypes published
+              // as `variable`. 21 of the corpus's 23 file-scope prototypes were
+              // wrong or absent. Handed the same three prototypes, RealCAnalyzer
+              // publishes 3 functions and this analyzer published none, so the
+              // grammar is not the difference — the objc grammar inherits
+              // upstream tree-sitter-c 0.24.1 and parses them identically.
+              const isPrototype =
+                dc.type === "function_declarator" ||
+                ((dc.type === "pointer_declarator" || dc.type === "array_declarator" ||
+                  dc.type === "parenthesized_declarator" || dc.type === "attributed_declarator") &&
+                  this.declaratorChainHasFunctionDeclarator(dc))
               if (dc.type === "init_declarator") {
                 dname = this.declaratorName(dc)
               } else if (dc.type === "identifier") {
                 dname = dc.text
-              } else if (dc.type === "pointer_declarator" || dc.type === "array_declarator" ||
+              } else if (isPrototype || dc.type === "pointer_declarator" || dc.type === "array_declarator" ||
                          dc.type === "parenthesized_declarator" || dc.type === "attributed_declarator") {
                 dname = this.declaratorName(dc)
               }
               if (dname) {
                 symbols.push({
                   name: dname,
-                  kind: ASTEngine.SymbolKind.Variable,
+                  kind: isPrototype ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Variable,
                   range: this.getRange(node),
-                  metadata: { objcSpecific: true },
+                  metadata: isPrototype
+                    ? { objcSpecific: true, isCFunctionPrototype: true }
+                    : { objcSpecific: true },
                 })
-                // OC-E: file-scope names are resolvable read targets.
+                // OC-E: file-scope names are resolvable read targets. A
+                // prototype's name is one too — `cb = helper` decay needs it, and
+                // the C analyzer binds `function_declarator` names for the same
+                // reason (C parity, measured on the same three prototypes).
                 globals.add(dname)
+                // OBJCD9 (second half): an export MARKER is a declaration of
+                // external linkage, so the declared name is an export. Shape is
+                // the house one for a language with no module keyword —
+                // `<file-scope source> -> <exported name>`, as go
+                // (`packageName -> name`), python (`moduleName -> name`) and
+                // typescript (`moduleLeafName -> name`) do. It is deliberately
+                // NOT the C sibling's `<name> -> <macro>`: that shape's TARGET is
+                // the marker, which names no symbol anywhere, so one of the two
+                // endpoints could never resolve. Here both do — the target is a
+                // symbol in this file, and `fileLevel` is what lets the store name
+                // the importing FILE on the source half (the same key c and
+                // powershell set for exactly this situation).
+                if (exportMarker) {
+                  relationships.push({
+                    source: "root",
+                    target: dname,
+                    type: ASTEngine.RelationshipType.Exports,
+                    confidence: 1.0,
+                    line_number: this.nodeLine(node),
+                    metadata: {
+                      isObjCExport: true,
+                      relationshipType: "objc_exported_declaration",
+                      exportMarker,
+                      fileLevel: true,
+                    },
+                  })
+                }
               }
             }
           }
@@ -1346,6 +1444,34 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * OBJCD9: does this declarator subtree reach a `function_declarator`?
+   *
+   * A declaration is a function PROTOTYPE when its declarator chain contains one,
+   * whatever wraps it: `void f(int)` nests the declarator bare, `NSString * f(d)`
+   * nests it under a `pointer_declarator`. The wrapper is a return type, not a
+   * different kind of thing, and the pre-fix arm list read the wrapper as if it
+   * were. Structural — `node.type` and a pre-order walk — with no text test and
+   * no regex.
+   */
+  private declaratorChainHasFunctionDeclarator(node: Node): boolean {
+    const stack: Node[] = [node]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 10000) {
+      const c = stack.pop()!
+      if (c.type === "function_declarator") return true
+      // A parameter_list holds parameter_declarations whose OWN declarators are
+      // function POINTERS (`void f(void (*cb)(int))`). Those are not the
+      // declaration's function-ness, so the walk stops at the parameter list.
+      if (c.type === "parameter_list") continue
+      for (let i = c.namedChildCount - 1; i >= 0; i--) {
+        const ch = c.namedChild(i)
+        if (ch) stack.push(ch)
+      }
+    }
+    return false
+  }
+
+  /**
    * OBJCD5: the defining name of a function_definition — the first
    * function_declarator in document order that is NOT inside the body
    * (compound_statement), then its first identifier child. Handles the
@@ -1391,6 +1517,37 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
    * forName:(NSString*)name` -> top-level children are identifier
    * "storeImage", method_parameter, identifier "forName", method_parameter.
    * A keyword gets ':' when the NEXT named sibling is a method_parameter.
+   *
+   * A selector is that keyword chain and NOTHING ELSE. The grammar also puts a
+   * method's TRAILING ANNOTATION MACROS at the method node's top level as bare
+   * identifiers with no `method_parameter` after them:
+   *
+   *   method_declaration "- (instancetype)initWithBaseURL:(NSURL *)url
+   *                           sessionConfiguration:(NSURLSessionConfiguration *)c
+   *                           NS_DESIGNATED_INITIALIZER;"
+   *     identifier        "initWithBaseURL"
+   *     method_parameter  ":(NSURL *)url"
+   *     identifier        "sessionConfiguration"
+   *     method_parameter  ":(NSURLSessionConfiguration *)c"
+   *     identifier        "NS_DESIGNATED_INITIALIZER"   <- an annotation, not a keyword
+   *
+   * Concatenating every top-level identifier published
+   * `initWithBaseURL:sessionConfiguration:NS_DESIGNATED_INITIALIZER` — a symbol
+   * no class in the world declares, and an `overrides` TARGET
+   * (`AFURLSessionManager.<that name>`) that resolves to nothing. Measured over
+   * the admitted universe by script/m60/objc-selector-integrity.ts before this
+   * fix: 79 method nodes in 29 files (NS_REFINED_FOR_SWIFT 62,
+   * NS_DESIGNATED_INITIALIZER 15, NS_SWIFT_NOTHROW 2) and 109 fabricated
+   * `overrides` targets.
+   *
+   * So the chain STOPS at the first bare identifier: after a keyword it is an
+   * annotation; with no keyword seen it is the zero-argument selector and
+   * anything after it is an annotation too. The alternative reading — a bare
+   * identifier BEFORE the keywords is the selector — is not a guess: the same
+   * probe counted the shapes of all 2,891 method nodes and `bareThenKeyword` is
+   * 0, `bareOnlyMulti` 0, `keywordChain` 1,595, `singleBare` 1,217,
+   * `bareAfterKeyword` 79. The rule is the grammar's, and the census is what
+   * would refute it.
    */
   private fullMethodSelector(node: Node): string {
     let sel = ""
@@ -1399,9 +1556,12 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const c = node.namedChild(i)
       if (!c) continue
       if (c.type === "identifier") {
-        sel += c.text
         const next = i + 1 < count ? node.namedChild(i + 1) : null
-        if (next && next.type === "method_parameter") sel += ":"
+        if (next && next.type === "method_parameter") { sel += c.text + ":"; continue }
+        // No parameter follows: a zero-argument selector only if nothing has been
+        // collected yet, otherwise a trailing annotation. Either way the chain ends.
+        if (sel === "") sel = c.text
+        break
       }
     }
     return sel

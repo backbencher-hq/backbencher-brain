@@ -66,6 +66,68 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   private typeStack: ASTEngine.UniversalSymbol[] = []
   /** Member names of each type in this file, for unqualified call targets. */
   private memberNames = new Map<string, string[]>()
+  /**
+   * Names this file declares CALLABLE — a method, a property, a constructor, an
+   * operator or a delegate — and therefore names that cannot be an array index.
+   *
+   * This set exists because a VB call WITH ARGUMENTS is an `array_access_expression`
+   * in this grammar, so "is `Foo(1)` a call or an index?" has no syntactic answer
+   * and the only non-fabricating answer is: it is a call if `Foo` is something
+   * this file declares it could call. See `collectBodyEdges`.
+   */
+  private callablesInFile = new Set<string>()
+  /**
+   * Names this file declares as a VARIABLE or FIELD, used to keep a statement-level
+   * `arr(0)` from being published as a call. A local array is the one index shape
+   * that also looks like a call statement, and this is what excludes it.
+   */
+  private variablesInFile = new Set<string>()
+  /**
+   * Callables whose DECLARED TYPE is an array (`As T()`), because VB lets you index
+   * the result of a call: `SomePropertyReturningAnArray(0)` is legal and is an
+   * index, not a call. Read off the declaration's own `as_clause` -> `array_type`.
+   */
+  private arrayValuedInFile = new Set<string>()
+  /**
+   * Names bound by a LOCAL declaration. See `precollectDeclarations` for why a local
+   * has to be excluded from the statement-level call signal: `Dim s3() As Decimal`
+   * then a bare `s3(4)` is an index, and publishing it as a call is fabrication.
+   */
+  private localsInFile = new Set<string>()
+  /**
+   * `(source -> target)` pairs already published as `uses`, holding the EARLIEST
+   * site line seen for each — for the per-file dedup. A Map rather than a Set
+   * because "earliest" has to be compared, not just recorded.
+   */
+  private usesEmitted = new Map<string, { key: string; line_number: number | null }>()
+  /**
+   * Node ids of the CALLEE EXPRESSIONS this walk published a `calls` edge for.
+   *
+   * `uses` is defined as a value read that is NEITHER A CALL NOR A WRITE, so a
+   * member access this walk already called must not also be published as a read —
+   * otherwise one site carries two labels and the `calls` tally and the `uses`
+   * tally each count rows the other one already has.
+   *
+   * Why the ids and not a re-derived climb: the exclusion used to re-derive
+   * callee position by walking UP the tree, and the climb cannot see this grammar's
+   * argument-bearing call, because there is no invocation node to climb to.
+   *
+   *     obj.M()     ->  invocation_expression(function: member_access)   climb works
+   *     obj.M(3)    ->  array_access_expression                         climb stops here
+   *                       member_access_expression
+   *                     return_statement
+   *
+   * So `obj.M(3)` was published as BOTH `calls -> M` and `uses -> M`. Measured over
+   * 400 files of roslyn-vb: 1,816 `uses` edges across 180 files carried both labels,
+   * 11.16% of the 16,276 `uses` edges in that sample (`script/m14/vb-uses-call-overlap.ts`).
+   *
+   * Recording the id where the decision is MADE is also the direction that cannot
+   * recur: a second copy of the callee test is a second thing to get wrong, and it
+   * had already been wrong once. Ordering is not a hazard — `collectBodyEdges`
+   * descends top-down, so a member access is always reached after its own enclosing
+   * call node.
+   */
+  private callCalleeNodes = new Set<number>()
 
   /** Counters the lane discloses rather than hides. */
   private gaps: Record<string, number> = {}
@@ -116,6 +178,23 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     "interface_method_declaration",
     "interface_property_declaration",
     "interface_event_declaration",
+  ])
+
+  /**
+   * The node types that are STRUCTURE inside a type body rather than code in it:
+   * the declaration's own attributes and modifiers, its heritage clauses, its type
+   * parameter list and its name. Everything else that is not a declaration and
+   * appears directly in a type body is code that type executes, and is where a body
+   * edge comes from. See `dispatchBody`.
+   */
+  private static readonly TYPE_BODY_STRUCTURE: ReadonlySet<string> = new Set([
+    "attribute_list", "attribute", "attribute_target", "attribute_argument_list",
+    "named_argument", "member_modifier", "modifiers", "local_declaration_modifier",
+    "inherits_statement", "implements_statement", "inherits_member_clause", "implements_member_clause",
+    "type_parameter_list", "type_parameter", "type_parameter_constraints_clause",
+    "parameter_list", "parameter", "as_clause", "identifier", "simple_name",
+    "comment", "preprocessor_directive", "blank_line", "option_statement", "option_statements",
+    "global_attribute_section", "end_statement", "implements_clause", "inherits_clause",
   ])
 
   /** Nodes the grammar produces that carry no symbol of their own: they are
@@ -347,6 +426,16 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
         const inner = this.nc(cur, 0)
         if (inner && inner.type === "identifier") return inner
         return cur
+      }
+      if (cur.type === "nullable_type") {
+        // `As SyntaxToken?` is a `nullable_type` whose only other child is the `?`.
+        // Without this the `references` target was the literal string
+        // "SyntaxToken?" — not a name in the file, not navigable, and unmatchable
+        // by any oracle. Found by the lane's own differential, which derived
+        // `references -> TryGetLastToken -> SyntaxToken` and reported the analyzer's
+        // `SyntaxToken?` as an UNEXPLAINED edge.
+        const inner = this.nc(cur, 0)
+        if (inner && inner.id !== cur.id) { cur = inner; continue }
       }
       if (cur.type === "array_type") {
         // `Private _t As New Timers.Timer()` puts an `array_type` in
@@ -585,6 +674,23 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata?: Partial<ASTEngine.FileMetadata> } {
     this.reset()
 
+    // A DECLARATION PRE-PASS, and it is not an optimisation — it is a correctness
+    // fix for an ordering bug the lane's own oracle found.
+    //
+    // `callablesInFile` answers "is this name something this file declares it could
+    // call?", and it was populated as `pushSymbol` ran, which is DOCUMENT ORDER.
+    // VisualBasicAnalyzerOptionsProvider.vb declares the private function
+    // `GetOption` at line 59 and the properties that CALL it at lines 29, 35, 41,
+    // 47 and 53 — every one of them before the declaration it calls. So all five
+    // call sites failed the resolvability test, were counted as
+    // `index-or-call-ambiguous`, and published nothing. The oracle derived
+    // `calls -> PreferredModifierOrder -> GetOption` and reported five MISSING rows
+    // that were entirely this.
+    //
+    // A pre-pass removes the order dependence by removing the order: every
+    // declaration in the file is read before any body is walked.
+    this.precollectDeclarations(rootNode)
+
     this.walk(rootNode, content, context)
 
     // Every symbol carries the owner it was declared in, so a consumer can walk
@@ -619,11 +725,107 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.ownerStack = []
     this.typeStack = []
     this.memberNames = new Map()
+    this.callablesInFile = new Set()
+    this.variablesInFile = new Set()
+    this.arrayValuedInFile = new Set()
+    this.localsInFile = new Set()
+    this.usesEmitted = new Map()
+    this.callCalleeNodes = new Set()
     this.gaps = {}
   }
 
   private note(kind: string): void {
     this.gaps[kind] = (this.gaps[kind] ?? 0) + 1
+  }
+
+  /**
+   * Read every declaration in the file BEFORE any body is walked, so the three
+   * resolvability sets do not depend on where a declaration sits relative to its
+   * use. See the `analyze()` note for the measured defect this removes.
+   *
+   * The node set is the same one `pushSymbol` acts on, and the array-ness of a
+   * declaration is read off its own `as_clause` -> `array_type` rather than off its
+   * text, so `SomePropertyReturningAnArray(0)` is recognised as an index and not a
+   * call. One extra tree walk per file; the cost is in the lane's
+   * payload/latency instrument.
+   */
+  private precollectDeclarations(root: Node): void {
+    const CALLABLE: ReadonlySet<string> = new Set([
+      "method_declaration", "constructor_declaration", "property_declaration",
+      "operator_declaration", "interface_method_declaration", "interface_property_declaration",
+      "declare_statement",
+    ])
+    const VARIABLE: ReadonlySet<string> = new Set(["field_declaration"])
+    /** The statement nodes a LOCAL variable is bound by. */
+    const LOCAL_BINDING: ReadonlySet<string> = new Set([
+      "declaration_statement", "local_declaration_modifier", "dim_statement",
+    ])
+    // Iterative, not recursive: roslyn-vb carries markup inside verbatim strings
+    // that nests deeper than the JS call stack, and a recursive walker dies on it.
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop() as Node
+      if (CALLABLE.has(n.type)) {
+        const field = n.childForFieldName("name")
+        if (field) {
+          const token = this.namingToken(field, field.text)
+          const name = this.nameText(token ?? field)
+          if (name.length > 0) {
+            this.callablesInFile.add(name)
+            if (this.isArrayValued(n)) this.arrayValuedInFile.add(name)
+          }
+        }
+      } else if (n.type === "constructor_declaration") {
+        this.callablesInFile.add("constructor")
+      } else if (n.type === "delegate_declaration") {
+        const field = n.childForFieldName("name")
+        if (field) {
+          const token = this.namingToken(field, field.text)
+          const name = this.nameText(token ?? field)
+          if (name.length > 0) this.callablesInFile.add(name)
+        }
+      }
+      if (VARIABLE.has(n.type)) {
+        for (const d of this.namedChildrenOfType(n, "variable_declarator")) {
+          const { text } = this.declaredName(d)
+          if (text.length > 0) this.variablesInFile.add(text)
+        }
+      }
+      // A LOCAL IS NOT A CALLABLE AND NOT AN ARRAY-IN-FIELD. `Dim s3() As Decimal`
+      // followed by a bare `s3(4)` is an INDEX, and the statement-level call signal
+      // published it as `calls -> S3` — 4 fabricated call edges per 200 files, all of
+      // them inside roslyn-vb's own `Sub S1(Optional x As Decimal = -1E-25D)` test
+      // markup. A local name is therefore excluded from the statement-level signal,
+      // which is the conservative direction: it can lose a real call to a delegate
+      // local, and it cannot invent one.
+      if (LOCAL_BINDING.has(n.type)) {
+        for (const d of this.namedChildrenOfType(n, "variable_declarator")) {
+          const { text } = this.declaredName(d)
+          if (text.length > 0) this.localsInFile.add(text)
+        }
+      }
+      if (n.type === "for_each_statement" || n.type === "using_statement") {
+        const ctrl = n.childForFieldName("control")
+        if (ctrl) {
+          const { text } = this.declaredName(ctrl)
+          if (text.length > 0) this.localsInFile.add(text)
+        }
+      }
+      for (const c of this.kids(n)) stack.push(c)
+    }
+  }
+
+  /** Does this declaration's `as_clause` declare an ARRAY type? */
+  private isArrayValued(node: Node): boolean {
+    const asClause = this.namedChildrenOfType(node, "as_clause")[0]
+    if (!asClause) return false
+    const declared = asClause.childForFieldName("declared_type")
+    if (!declared) return false
+    if (declared.type === "array_type") return true
+    for (const c of this.kids(declared)) {
+      if (c.type === "array_type" || c.type === "array_rank_specifier") return true
+    }
+    return false
   }
 
   // -------------------------------------------------------------------------
@@ -644,7 +846,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       case "constructor_declaration":
       // An interface method has the SAME shape as a class method -- `name`,
       // `parameters`, `as_clause` -- and no body, so the visitor is reused
-      // unchanged. The one thing it must not do is invent a body: `collectCalls`
+      // unchanged. The one thing it must not do is invent a body: `collectBodyEdges`
       // and the member-heritage read both walk children, and an interface member
       // has none to walk.
       case "interface_method_declaration":
@@ -655,9 +857,60 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       case "interface_event_declaration": return this.visitEvent(node, content, context)
       case "operator_declaration": return this.visitOperator(node, content, context)
       case "field_declaration": return this.visitField(node, content)
+      // AN `ERROR` NODE IS CODE THE GRAMMAR COULD NOT CLASSIFY, and it is often a
+      // SIBLING of the declaration whose body it used to be.
+      //
+      // Measured: UseCompoundAssignment/Utilities.vb's
+      // `ImmutableArray.Create((A,B,C), (D,E,F), ...)` initializer leaves a
+      // `field_declaration` spanning rows 9-12 and puts rows 12-19 in ERROR siblings
+      // beside it. Nothing else visits them, so 24 member reads in that one file
+      // were unreachable — and the lane's differential derived all 24 and reported
+      // them MISSING, which is how a grammar's recovery cost 24 edges in the index
+      // and no gate could see it.
+      //
+      // Dispatching an ERROR node is the fix that generalises: its declaration-
+      // shaped children go to `walk` and everything else is body code attributed to
+      // the enclosing declaration, which is what it is.
+      case "ERROR": return this.visitRecovery(node, content, context)
       default: break
     }
     for (const child of this.kids(node)) this.walk(child, content, context)
+  }
+
+  /**
+   * Dispatch an `ERROR` node: declaration-shaped children to their own visitors,
+   * everything else as body code of the enclosing declaration.
+   */
+  private visitRecovery(node: Node, content: string, context?: ASTEngine.AnalyzeContext): void {
+    // The SAME code a type body is read with. An `ERROR` node and a type body differ
+    // only in whether the grammar could name what is inside them, and the readings
+    // they support are the same: a declaration goes to its own visitor, a statement
+    // is code of the enclosing declaration. Two implementations would be two things
+    // to keep in step for no reason.
+    this.dispatchBody(node, content, context)
+  }
+
+  /**
+   * Does this node, or anything under it, declare a symbol? Early-exits on the first
+   * one found.
+   *
+   * The first version carried a `if (cur.id === n.id) continue` guard so the walk
+   * would not re-test the node it started from — and that guard also SKIPPED THE
+   * START NODE'S CHILDREN, so it answered "is this node itself a declaration?" for
+   * every node and "is there a declaration below?" for none. It reported false for
+   * `type_declaration_in_type`, whose only child is a `class_declaration`, and the
+   * 168 such nodes across 60 of 403 sampled files were then dispatched as body code
+   * and never reached `visitType` — 6 missing `contains`, 1 missing `extends` and 6
+   * missing `overrides` in one file, which is how the differential found it.
+   */
+  private hasDeclarationDescendant(n: Node): boolean {
+    const stack: Node[] = [n]
+    while (stack.length > 0) {
+      const cur = stack.pop() as Node
+      if (RealVbAnalyzer.DECLARATION_NODES.has(cur.type)) return true
+      for (const c of this.kids(cur)) stack.push(c)
+    }
+    return false
   }
 
   /** The nearest enclosing namespace or type, for `ownerName`. */
@@ -720,7 +973,13 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     // stopped at the class. Found by the F5 differential, not by a fixture. Doing
     // it in one place is the fix that cannot recur — there is no longer a
     // visitor that can forget.
-    if (owner) {
+    // A CONTAINMENT EDGE FROM A THING TO ITSELF IS NOT A CONTAINMENT. It appears
+    // where the grammar's recovery parses source that lives inside a VERBATIM STRING
+    // — roslyn-vb's own test files embed VB source in string literals, and
+    // `Public Enum Color ... End Enum` inside one recovers into declarations whose
+    // owner's recorded name equals their own. Measured: 6 per 200 files, all of them
+    // `contains -> Color -> Color`, `contains -> C -> C`, and none of them navigable.
+    if (owner && owner.name !== name) {
       this.relationships.push({
         source: owner.name,
         target: name,
@@ -734,6 +993,21 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     // steal the id an edge already points at. Overloads are disambiguated by the
     // edge, not by the index.
     if (!this.index.has(name)) this.index.set(name, sym)
+    // WHAT THIS NAME CAN BE CALLED AS. Read here, once, rather than per call site,
+    // because the question `array_access_expression` forces is "is this name
+    // something this file declares it could call?" and the answer is a property of
+    // the DECLARATION, not of the use.
+    if (kind === ASTEngine.SymbolKind.Method || kind === ASTEngine.SymbolKind.Constructor ||
+        kind === ASTEngine.SymbolKind.Property) {
+      this.callablesInFile.add(name)
+    }
+    if (kind === ASTEngine.SymbolKind.Variable) this.variablesInFile.add(name)
+    if (kind === ASTEngine.SymbolKind.Type && sym.metadata?.delegate === true) {
+      this.callablesInFile.add(name)
+    }
+    // NOTE: the array-valued test lives in `precollectDeclarations` and NOT here.
+    // It used to sit here, which made it order-dependent for the same reason the
+    // callable set was: a callable declared after its use had not been recorded yet.
     const ownerType = this.currentType()
     if (ownerType) {
       let list = this.memberNames.get(ownerType.name)
@@ -836,6 +1110,26 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     return true
   }
 
+  /**
+   * Dispatch a type's or a module's BODY: declarations to their own visitors,
+   * structure to nothing, and everything else as body code of the type.
+   *
+   * This is what recovered 24 member reads in UseCompoundAssignment/Utilities.vb and
+   * the whole class declaration in
+   * VisualBasicRemoveUnnecessaryPragmaSuppressionsDiagnosticAnalyzer.vb: the
+   * grammar's recovery leaves a type body's statements as DIRECT children of the
+   * type, outside any declaration, and nothing was reading them. A type that
+   * executes code publishes nothing about what it executes.
+   */
+  private dispatchBody(node: Node, content: string, context?: ASTEngine.AnalyzeContext): void {
+    for (const child of this.kids(node)) {
+      if (RealVbAnalyzer.DECLARATION_NODES.has(child.type)) { this.walk(child, content, context); continue }
+      if (RealVbAnalyzer.TYPE_BODY_STRUCTURE.has(child.type)) continue
+      if (this.hasDeclarationDescendant(child)) { this.dispatchBody(child, content, context); continue }
+      this.collectBodyEdges(child, null)
+    }
+  }
+
   private visitType(node: Node, content: string, context?: ASTEngine.AnalyzeContext): void {
     const kind = RealVbAnalyzer.typeKindOf(node.type)
     const { text, node: nameNode } = this.declaredName(node)
@@ -860,7 +1154,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (sym) this.visitHeritage(node, text, sym, context)
 
-    for (const child of this.kids(node)) this.walk(child, content, context)
+    this.dispatchBody(node, content, context)
     if (sym) {
       this.typeStack.pop()
       this.ownerStack.pop()
@@ -1055,6 +1349,10 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     const token = this.namingToken(nameNode, nameNode.text)
     const target = this.nameText(token ?? nameNode)
     if (target.length === 0) return
+    // A TYPE THAT INHERITS FROM ITSELF IS NOT INHERITANCE. Same source as the
+    // self-`contains` case: `Class A : ... Inherits A` recovered out of a string
+    // literal. Measured: 1 per 200 files, `extends -> A -> A`.
+    if (target === selfName) { this.note("self-heritage"); return }
     const inFile = this.declaredNames.has(target)
     this.relationships.push({
       source: selfName,
@@ -1094,6 +1392,15 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (sym) {
       this.typeStack.push(sym)
       this.ownerStack.push(sym)
+      // THE ENUM'S UNDERLYING TYPE. `Public Enum Color As Byte` names `Byte` in an
+      // `as_clause` on the declaration, and nothing read it: `visitEnum` pushed the
+      // enum and its members and never looked at the type, so the one type name an
+      // enum declaration carries in VB.NET was published nowhere. The lane's
+      // differential derived `references -> Color -> Byte` (and `SByte`, `Long`,
+      // `Integer`, `ULong`) and reported 15 rows per 200 files MISSING.
+      const enumAsClause = this.namedChildrenOfType(node, "as_clause")[0]
+      const enumDeclared = enumAsClause ? enumAsClause.childForFieldName("declared_type") : null
+      if (enumDeclared) this.pushTypeReference(sym, enumDeclared, "enumUnderlyingType")
     }
     // Each member carries the line of the name it writes, and a `value` read off
     // the initializer when the grammar kept it as an expression.
@@ -1267,7 +1574,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.ownerStack.push(sym)
     this.visitMemberHeritage(node, sym, context)
     if (this.modifierNames(node).has("overrides")) this.pushOverride(node, null, sym, this.currentOwner())
-    this.collectCalls(node, sym)
+    this.collectBodyEdges(node, sym)
     for (const child of this.kids(node)) this.walk(child, content, context)
     this.ownerStack.pop()
   }
@@ -1355,7 +1662,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.ownerStack.push(sym)
     this.visitMemberHeritage(node, sym, context)
     if (this.modifierNames(node).has("overrides")) this.pushOverride(node, null, sym, this.currentOwner())
-    this.collectCalls(node, sym)
+    this.collectBodyEdges(node, sym)
     for (const child of this.kids(node)) this.walk(child, content, context)
     this.ownerStack.pop()
   }
@@ -1447,8 +1754,25 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       },
     })
     if (!sym) return
-    const owner = this.currentOwner()
+    // AN OPERATOR HAS PARAMETERS AND THEY WERE NOT BEING READ. `visitMethod` and
+    // `visitProperty` both call `readParameters`, `visitOperator` did not, so
+    // `Public Shared Narrowing Operator CType(provider As AnalyzerOptionsProvider)`
+    // published its own parameter and no `references` edge for its type. The lane's
+    // differential derived `references -> operator -> AnalyzerOptionsProvider` and
+    // reported it MISSING, which is how a whole signature goes unrecorded because
+    // one visitor out of five forgot a line the other four have.
+    const opParams = node.childForFieldName("parameters")
+    if (opParams) this.readParameters(opParams, sym)
+    const opAs = this.namedChildrenOfType(node, "as_clause")[0]
+    if (opAs) {
+      const declared = opAs.childForFieldName("declared_type")
+      if (declared) {
+        sym.returnType = this.nameText(declared)
+        this.pushTypeReference(sym, declared, "operatorReturnType")
+      }
+    }
     this.ownerStack.push(sym)
+    this.collectBodyEdges(node, sym)
     for (const child of this.kids(node)) this.walk(child, content, context)
     this.ownerStack.pop()
   }
@@ -1510,18 +1834,68 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (declared) this.pushTypeReference(sym, declared, "fieldType")
     }
     // A field with an initializer can call a constructor: `= New Foo()`.
-    this.collectCalls(node, null)
+    this.collectBodyEdges(node, null)
   }
 
   // -------------------------------------------------------------------------
-  // Calls and type references
+  // Calls, instantiations, member reads and type references
   // -------------------------------------------------------------------------
 
   /**
-   * Every call site in a subtree becomes a `calls` edge, stamped with the line of
-   * the node that NAMES the callee.
+   * Every body edge in a subtree: `calls`, `instantiates` and `uses`, all stamped
+   * with the line of the node that NAMES the thing.
    *
-   * Three things are decided here and each is a real question:
+   * ## THE CALL SHAPE THIS GRAMMAR ACTUALLY PRODUCES, and why `calls` was silent
+   *
+   * Measured through the pinned wasm, minimal repro, tree-only:
+   *
+   *     Foo()      ->  invocation_expression
+   *     Foo(1)     ->  array_access_expression        <- with ARGUMENTS
+   *     obj.Foo(1) ->  array_access_expression
+   *     a(i)       ->  array_access_expression        <- an INDEX
+   *     New Foo(1) ->  array_creation_expression
+   *
+   * **A VB call with arguments is an `array_access_expression`, and this analyzer
+   * read only `invocation_expression`.** Every argument-bearing call in the
+   * language was therefore un-published. Measured over 636 corpus files:
+   *
+   *     invocation_expression            5,120   (the only shape read, before)
+   *     array_access_expression         21,392   (not read at all)
+   *
+   * A 100-line file published 3 call edges from ~46 member accesses and calls. The
+   * F5 differential could not see it: the lane's oracle block was removed from
+   * `script/m14/differential.ts` (the lane has 4 DERIVATION findings — calls,
+   * contains, imports, references — which is the gate's word for "compared against
+   * nothing"), and a whole-corpus COUNT cannot see a missing class of edge either,
+   * because the counts stayed healthy.
+   *
+   * ## WHY NOT EVERY `array_access_expression` IS A CALL
+   *
+   * The grammar cannot tell `Foo(1)` (a call) from `a(i)` (an index). Emitting an
+   * edge for all of them would be a fabricated call edge, which the workstream
+   * calls out as the most expensive mistake available. So two SIGNALS are
+   * required, and a site with neither is COUNTED in `vbGaps` rather than guessed:
+   *
+   *   A. The callee names something THIS FILE DECLARES CALLABLE -- a method, a
+   *      property, a constructor, an operator or a delegate -- and that declaration
+   *      is NOT array-valued. An index needs an array, so a name this file declares
+   *      as a method is a call and cannot be an index. The array-valued exclusion is
+   *      read off the declaration's own `as_clause` -> `array_type`, because
+   *      `SomePropertyReturningAnArray(0)` is legal VB and would otherwise be
+   *      published as a call to an array.
+   *
+   *   B. The node is the WHOLE content of an `expression_statement` -- a call
+   *      statement -- AND the callee name is not a variable/field this file
+   *      declares. VB has no statement-level index expression, so a parenthesised
+   *      name at statement level is a call; excluding the file's own variables
+   *      removes the `arr(0)` case where `arr` is declared locally.
+   *
+   * Measured over 636 files: 11,269 of the 21,392 carry at least one signal. The
+   * other 10,123 are counted as `index-or-call-ambiguous` and stay un-emitted,
+   * because guessing between an index and a call is exactly the fabrication the
+   * ontology forbids.
+   *
+   * ## WHAT ELSE IS DECIDED HERE, each a real question
    *
    *  - WHICH node names the callee. For `a.b.C(1)` the callee is the `C` leaf, so
    *    the edge is stamped on the line `C` is written on, not the line the
@@ -1531,10 +1905,27 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
    *  - WHEN there is no source, there is no edge. A call in a field initializer
    *    has no enclosing method, and an edge from nothing is a phantom — so it is
    *    counted as a gap instead of invented.
+   *  - `uses` DEDUPLICATES per (source, target) per file, keeping the FIRST site.
+   *    That is the family's own choice for this label (csharp's CS-D4 field-access
+   *    edge does exactly this) and it is a payload decision as much as a semantic
+   *    one: 536,141 member reads exist in the corpus and `uses` at one edge per
+   *    site would more than double this lane's whole graph.
    */
-  private collectCalls(scope: Node, owner: ASTEngine.UniversalSymbol | null): void {
+  private collectBodyEdges(scope: Node, owner: ASTEngine.UniversalSymbol | null): void {
     const source = owner ?? this.currentOwner()
+    const scopeId = scope.id
     const visit = (n: Node): void => {
+      // A NESTED DECLARATION IS NOT PART OF THIS BODY. A type declared inside a
+      // method's body is walked separately by `walk`, which dispatches to its own
+      // visitor and gives it its own `ownerStack` frame — so reading its body here
+      // would publish every call and every read inside the nested type TWICE, once
+      // attributed to the nested member and once attributed to the method that
+      // happens to contain it. The recursion continues so nested shapes are still
+      // visited, but no edge is derived for them at this level.
+      if (n.id !== scopeId && RealVbAnalyzer.DECLARATION_NODES.has(n.type)) {
+        for (const c of this.kids(n)) visit(c)
+        return
+      }
       // A CONSTRUCTION IS A CALL, and the grammar does not agree on one node type
       // for it. `New Box()` is an `invocation_expression` whose `function` is an
       // `object_creation_expression`; `New Box(1, 2)` -- any construction WITH
@@ -1547,10 +1938,9 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       // field -- so the rule is stated once and both are read the same way. There
       // is no `array_initializer` test and no "is this really an array" filter,
       // because the grammar cannot tell the two apart and guessing would be worse
-      // than saying what the node says: `New Integer(10)` really does call
-      // `Integer`'s constructor, and it is published as a call to `Integer` at
-      // 0.6 because this file does not declare it. That is the same honest
-      // confidence an unresolved cross-file call already carries.
+      // than saying what the node says: `New Integer(10)` really does construct an
+      // `Integer()`, and it is published as a call to `Integer` at 0.6 because this
+      // file does not declare it.
       if (n.type === "array_creation_expression") {
         const ty = n.childForFieldName("type")
         const token = ty ? this.calleeLeaf(ty) : null
@@ -1570,6 +1960,13 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
               constructionNode: n.type,
             },
           })
+          // `instantiates` is the family's OTHER name for the same site: csharp
+          // publishes `object_creation_expression` as `instantiates` and leaves the
+          // `calls` edge to the invocation shape. A construction is both -- it calls
+          // the constructor and it creates a value of the type -- and emitting both
+          // is what lets bb_graph answer "what does this method construct" without
+          // inferring it from a call edge's `constructed` flag.
+          this.pushInstantiation(source, target, token ?? ty ?? n, n.type)
         }
         for (const c of this.kids(n)) visit(c)
         return
@@ -1597,17 +1994,300 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
                   calleeIsQualified: fn.type === "member_access_expression",
                   callLine: this.nodeLine(token ?? fn),
                   constructed: fn.type === "object_creation_expression",
+                  ...(fn.type === "object_creation_expression" ? { constructionNode: fn.type } : {}),
                 },
               })
+              if (fn.type === "object_creation_expression") {
+                this.pushInstantiation(source, target, token ?? fn, fn.type)
+              }
+              // The callee EXPRESSION is what `uses` must not also publish as a
+              // read. Recorded here, where the call was decided, so there is one
+              // decision rather than a second re-derivation of it.
+              this.callCalleeNodes.add(fn.id)
             } else {
               this.note("call-without-enclosing-declaration")
             }
           }
         }
       }
+      // A BARE `object_creation_expression`, which is what `As New T(...)` in a
+      // field or property declaration produces: it is not wrapped in an
+      // invocation_expression, so neither branch above reaches it, and it was
+      // therefore not a `calls` edge either.
+      if (n.type === "object_creation_expression") {
+        const ty = n.childForFieldName("type")
+        const token = ty ? this.calleeLeaf(ty) : null
+        const target = this.nameText(token)
+        if (source && target.length > 0) {
+          this.relationships.push({
+            source: source.name,
+            target,
+            type: RelationshipType.Calls,
+            confidence: this.declaredNames.has(target) ? 1.0 : 0.6,
+            line_number: this.nodeLine(token ?? ty ?? n),
+            metadata: {
+              argumentCount: n.namedChildCount > 1 ? n.namedChildCount - 1 : 0,
+              calleeIsQualified: false,
+              callLine: this.nodeLine(token ?? ty ?? n),
+              constructed: true,
+              constructionNode: n.type,
+            },
+          })
+          this.pushInstantiation(source, target, token ?? ty ?? n, n.type)
+        }
+      }
+      // AN ARGUMENT-BEARING CALL, which this grammar calls an
+      // `array_access_expression`. See the class-level note for why two signals
+      // are required and what happens to the rest.
+      if (n.type === "array_access_expression") {
+        // THE CALLEE IS THE FIRST NAMED CHILD, not the last identifier leaf under
+        // the node. `calleeLeaf(n)` on the whole node returns the last identifier in
+        // the subtree, which for `ImmutableArray.Create(BC36556)` is `BC36556` — an
+        // ARGUMENT — and the edge would be published as `calls -> BC36556`. The
+        // lane's own oracle found this on its first run, by deriving the same
+        // `calls -> FixableDiagnosticIds -> BC36556` row and reporting it MISSING,
+        // which is how a second walker earning its keep actually looks.
+        //
+        // `calleeLeaf` is still the right tool for the callee EXPRESSION, because a
+        // qualified callee (`obj.M(args)`) puts `obj` first and `M` last inside it.
+        const calleeNode = this.nc(n, 0)
+        const token = calleeNode ? this.calleeLeaf(calleeNode) : null
+        const target = this.nameText(token)
+        if (target.length > 0) {
+          const argCount = n.namedChildCount > 1 ? n.namedChildCount - 1 : 0
+          const viaDeclaration = this.callablesInFile.has(target) && !this.arrayValuedInFile.has(target)
+          const viaStatement = this.isStatementLevelCall(n) &&
+            !this.variablesInFile.has(target) && !this.localsInFile.has(target)
+          if (viaDeclaration || viaStatement) {
+            if (source) {
+              this.relationships.push({
+                source: source.name,
+                target,
+                type: RelationshipType.Calls,
+                confidence: viaDeclaration && this.declaredNames.has(target) ? 1.0 : 0.7,
+                line_number: this.nodeLine(token ?? n),
+                metadata: {
+                  argumentCount: argCount,
+                  calleeIsQualified: calleeNode?.type === "member_access_expression",
+                  callLine: this.nodeLine(token ?? n),
+                  constructed: false,
+                  // `callShape` names the node the grammar gave this call, because
+                  // `array_access_expression` is not what a reader expects to see on
+                  // a `calls` edge and a consumer filtering on the node type would
+                  // otherwise conclude the edge is an index.
+                  callShape: n.type,
+                  callSignal: viaDeclaration ? "callee-declared-callable-in-file" : "call-statement",
+                },
+              })
+              // Same as the invocation branch above: `uses` must not republish the
+              // member this walk has just called. `obj.M(3)` reaches this branch as
+              // an `array_access_expression`, which is the shape the climb in
+              // `isCalleePosition` used to walk straight past.
+              if (calleeNode) this.callCalleeNodes.add(calleeNode.id)
+            } else {
+              this.note("call-without-enclosing-declaration")
+            }
+          } else {
+            // Counted, never guessed: this is `a(i)` OR `Foo(i)` and the grammar
+            // cannot say which. Naming the number is what makes the limit visible.
+            this.note("index-or-call-ambiguous")
+          }
+        }
+      }
+      // A MEMBER READ, which is the family's `uses`: a value read that is neither a
+      // call nor a write. go's GO1, csharp's CS-D4 and csharp's CS-R1 all define it
+      // that way, and it is what answers "what does this method touch".
+      //
+      // GRAMMAR FACT, measured: `member_access_expression` has NO `name` field and
+      // NO `expression` field in this grammar -- its children are positional
+      // (`identifier`, the anonymous `.`, `identifier`). Reading
+      // `childForFieldName("name")` returns `undefined` on every one of them, and
+      // an analyzer written against the C# shape silently emits nothing. The
+      // accessed member is the LAST identifier leaf, which is `calleeLeaf`.
+      if (n.type === "member_access_expression" || n.type === "with_member_access_expression") {
+        const leaf = this.calleeLeaf(n)
+        const target = this.nameText(leaf)
+        if (source && target.length > 0 && !this.isCalleePosition(n) && !this.isAssignmentLhs(n) &&
+            !this.inAttributePosition(n)) {
+          const key = `${source.name}->${target}`
+          const line = this.nodeLine(leaf ?? n)
+          // THE DEDUP KEEPS THE EARLIEST SITE LINE, not the first one visited.
+          //
+          // "First visited" is a property of the WALK, not of the file: this walk
+          // descends in document order while an oracle that walks the same tree with
+          // an explicit stack descends in reverse, so "the first site" is a
+          // different line in each and the two disagree on 70 of 500 `uses` edges
+          // about a line number while agreeing about every edge. The MINIMUM line is
+          // a property of the FILE, so both sides land on it and the comparison is
+          // about the decisions rather than about the traversal.
+          const prior = this.usesEmitted.get(key)
+          if (prior === undefined) {
+            this.usesEmitted.set(key, { key, line_number: line })
+            this.relationships.push({
+              source: source.name,
+              target,
+              type: RelationshipType.Uses,
+              confidence: this.declaredNames.has(target) ? 0.9 : 0.7,
+              line_number: line,
+              metadata: {
+                relationshipType: "vb_member_read",
+                readKind: n.type,
+                receiverIsQualified: this.calleeLeafIsNotFirst(n),
+                // The reason code the honesty contract §4 requires for any
+                // confidence below 1.0: without it, 0.7 is a number with no
+                // machine-readable reason attached.
+                resolvedInFile: this.declaredNames.has(target),
+              },
+            })
+          } else if (line !== null && line < (prior.line_number ?? Number.MAX_SAFE_INTEGER)) {
+            // An EARLIER site for a pair already published: re-stamp the existing
+            // edge rather than adding a second one, so the dedup stays one edge per
+            // (source, target) and the line it carries is the earliest site in the
+            // file rather than the first one this walk happened to reach.
+            prior.line_number = line
+            this.relineUses(key, line)
+          }
+        }
+      }
       for (const c of this.kids(n)) visit(c)
     }
     visit(scope)
+  }
+
+  /** One `instantiates` edge, sourced at the declaration that constructs. */
+  private pushInstantiation(
+    source: ASTEngine.UniversalSymbol,
+    target: string,
+    nameNode: Node,
+    nodeType: string,
+  ): void {
+    this.relationships.push({
+      source: source.name,
+      target,
+      type: RelationshipType.Instantiates,
+      confidence: this.declaredNames.has(target) ? 1.0 : 0.6,
+      line_number: this.nodeLine(nameNode),
+      metadata: {
+        isNew: true,
+        constructedType: target,
+        // `New Integer(10)` is an ARRAY construction and the grammar reports it as
+        // `array_creation_expression`. Recording that rather than hiding it is the
+        // difference between "instantiates Integer" being a fact a reader can check
+        // and being a claim they have to take on trust.
+        constructionNode: nodeType,
+        constructsArray: nodeType === "array_creation_expression",
+        resolvedInFile: this.declaredNames.has(target),
+      },
+    })
+  }
+
+  /** Re-stamp an already-published `uses` edge with an earlier site line. */
+  private relineUses(key: string, line: number): void {
+    for (const r of this.relationships) {
+      if (r.type !== RelationshipType.Uses) continue
+      if (`${r.source}->${r.target}` === key) { r.line_number = line; return }
+    }
+  }
+
+  /**
+   * Is this `array_access_expression` the whole content of an expression
+   * statement? `CheckMemberAndReportDiagnostic(context, member)` is a CALL
+   * statement; `x = a(i)` is an index inside an assignment. VB has no
+   * statement-level index expression, so the shape decides — and the caller adds
+   * the second half of the test (the callee is not one of this file's own
+   * variables), which is what removes `arr(0)`.
+   */
+  private isStatementLevelCall(n: Node): boolean {
+    const p = n.parent
+    if (!p) return false
+    if (p.type !== "expression_statement") return false
+    return p.namedChildCount === 1
+  }
+
+  /**
+   * Is this member access (or the chain above it) the CALLEE of an invocation?
+   *
+   * `obj.M()` is `invocation_expression(function: member_access_expression)`. And
+   * `obj.M(args)` — the shape this grammar produces for a call WITH arguments — is
+   * an `array_access_expression` whose first named child is the member access, so
+   * the climb has to pass through `array_access_expression` as well or every
+   * chained call's leading segment is published as a read of the wrong member.
+   */
+  private isCalleePosition(n: Node): boolean {
+    // The decision this walk already MADE, not a second derivation of it. See
+    // `callCalleeNodes`: for `obj.M(3)` this grammar emits an
+    // `array_access_expression` with no invocation node above it, so the climb this
+    // method used to do walked out of the call shape and reported "not a callee"
+    // for a member that had just been published as one.
+    if (this.callCalleeNodes.has(n.id)) return true
+    let a: Node | null = n
+    for (let i = 0; a !== null && i < 12; i++) {
+      // Explicit annotation: with web-tree-sitter's recursive `Node.parent` typing the
+      // inferred type of `p` becomes circular through the `a = p` assignment, so tsc
+      // reports TS7022. The annotation is type-only and changes no behaviour.
+      const p: Node | null = a.parent
+      if (!p) return false
+      if (p.type === "member_access_expression" || p.type === "with_member_access_expression" ||
+          p.type === "array_access_expression" || p.type === "parenthesized_expression") {
+        a = p
+        continue
+      }
+      if (p.type === "invocation_expression") {
+        const fn = p.childForFieldName("function")
+        return fn !== null && fn !== undefined && fn.id === a.id
+      }
+      return false
+    }
+    return false
+  }
+
+  /**
+   * Is this identifier on the LEFT of an assignment? `this.count = 0` is a write,
+   * not a read — the family's SCD1 contract, shared by java JAD1, kotlin KAD1 and
+   * scala SCD1. Containment is by SPAN, so `this.count = this.count + 1` keeps its
+   * right-hand read.
+   */
+  private isAssignmentLhs(n: Node): boolean {
+    let a: Node | null = n.parent
+    for (let i = 0; a !== null && i < 6; i++) {
+      if (a.type === "member_access_expression" || a.type === "with_member_access_expression" ||
+          a.type === "identifier" || a.type === "array_access_expression") {
+        a = a.parent
+        continue
+      }
+      break
+    }
+    if (!a) return false
+    if (a.type !== "assignment_expression" && a.type !== "assignment_statement") return false
+    const left = a.childForFieldName("left") ?? a.childForFieldName("target")
+    if (!left) return false
+    return left.startIndex <= n.startIndex && left.endIndex >= n.endIndex
+  }
+
+  /**
+   * Is this member access inside an ATTRIBUTE rather than inside code?
+   *
+   * `<Obsolete(MefConstruction.ImportingConstructorMessage, True)>` on a
+   * constructor is read by the COMPILER at type-load time, not by the constructor,
+   * so `uses -> constructor -> ImportingConstructorMessage` is not a read the
+   * constructor performs. The lane's differential reported exactly these three rows
+   * as UNEXPLAINED, on three separate corpus files.
+   */
+  private inAttributePosition(n: Node): boolean {
+    let a: Node | null = n.parent
+    for (let i = 0; a !== null && i < 6; i++) {
+      if (a.type === "attribute_list" || a.type === "attribute" ||
+          a.type === "attribute_argument_list" || a.type === "global_attribute_section") return true
+      if (a.type === "identifier" || a.type === "simple_name" || a.type === "qualified_name" ||
+          a.type === "global_qualified_name" || a.type === "generic_name") { a = a.parent; continue }
+      return false
+    }
+    return false
+  }
+
+  /** Is the accessed member the SECOND half of the chain, i.e. is there a receiver? */
+  private calleeLeafIsNotFirst(n: Node): boolean {
+    return this.namedChildrenOfType(n, "identifier").length > 1
   }
 
   /**
@@ -1618,6 +2298,18 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
    * between the same pair is noise a consumer has to filter.
    */
   private pushTypeReference(from: ASTEngine.UniversalSymbol, typeNode: Node, role: string): void {
+    // A TUPLE IS NOT A TYPE NAME, so there is nothing for a `references` edge to
+    // name. `As (ExpressionSyntax, SyntaxToken, ExpressionSyntax)` and
+    // `As Function(assembly As Assembly, typeName As String)` are both `tuple_type`
+    // in this grammar, and both were published as the WHOLE parenthesised text --
+    // a target that is not a name in the file, not navigable, and unmatchable by an
+    // oracle. The lane's differential derived the element types instead and
+    // reported the whole-text rows as UNEXPLAINED, which is the right verdict on
+    // them. Counted rather than dropped silently.
+    if (typeNode.type === "tuple_type") {
+      this.note("tuple-type-has-no-single-name")
+      return
+    }
     const token = this.namingToken(typeNode, typeNode.text)
     const target = this.nameText(token ?? typeNode)
     if (target.length === 0) return

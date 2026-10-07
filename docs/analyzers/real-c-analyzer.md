@@ -43,82 +43,377 @@
 | syntax errors | ✅ | ERROR/missing nodes surfaced as warnings; counted in `parseErrors` |
 | decorators/attributes | ✅ | `static`/`inline`/`extern` storage-class metadata on functions/variables |
 
-## Relationship ontology
+## Relationship ontology — C_FIX2 wave, measured 2026-10-05
 
-The distinct types the analyzer **actually emits** over the 2,498-file corpus
-(`validation/m12/results/c-corpus-census.json`, `relTypes` merged):
+> **This section replaces two tables that contradicted each other.** The previous version
+> carried the per-type table TWICE — once saying `instantiates` ✅ 5 and once saying ❌ 0,
+> once saying `exports` ✅ 957 and once saying "0 on this corpus" — and both cited
+> `validation/m12/results/c-corpus-census.json`, which is a curl/libgit2/redis corpus.
+> Neither table was a measurement of the corpus this lane is registered against. Every
+> number below is over **sqlite**, which is `LANG_REPOS.c = "sqlite"`
+> (`script/m14/differential.ts:444`), re-measured this wave.
 
-| type | emitted | count | metadata.relationshipType |
-| --- | --- | --- | --- |
-| `calls` | ✅ | 199,929 | `c_function_call` |
-| `uses` | ✅ | 86,948 | `field_access` · `identifier_usage` (the pre-#960 split 53,995 / 20,334 predates the write-ruling and no longer sums to the total) |
-| `contains` | ✅ | 17,343 | — (container → member; #985 removed 53 macro-named phantoms) |
-| `references` | ✅ | 10,538 | `type_reference` |
-| `imports` | ✅ | 10,993 | `include_dependency` |
-| `exports` | ✅ | 957 | `module_export` (kernel + userspace markers, #963) |
-| `instantiates` | ✅ | 5 (#962) | `instantiates` → the allocated TYPE |
-| `extends` / `implements` / `overrides` | ❌ **N/A — see below** | 0 | — |
+### The population, because a count that does not name one is not a number
 
-**`instantiates` IS emitted (#962), and this section previously said it was not.**
-The allocator branches count `malloc`/`calloc`/`realloc`/`kmalloc`/`vmalloc` and
-`free`/`kfree`/`vfree`, set `metadata.usesMalloc` on the enclosing function, and
-raise the `Dynamic Memory Management` pattern — and a comment in the code
-recorded why the edge had been removed: "malloc allocates BYTES, not a named type
-— an `Instantiates` edge to the literal 'malloc' could never resolve to a type
-symbol and was pure noise (removed; allocation tracking lives in metadata +
-patterns)." That reasoning was right about the target and wrong about the
-consequence, exactly as #963's `exports` defect was: across all 25 M12 truths that
-pin an `instantiates` edge the target is always a TYPE (`Point`, `HashMap`,
-`List`, `User`, `MemoryStorage`, …), and C's `-> malloc` was the only non-type
-target in the family. #962 restored the relation and reads the target from the
-**cast** and from **`sizeof`**, which disagree in practice about which carries the
-type. Only a type declared in the same file qualifies (C-D2), so the corpus
-carries 5 such edges and the M12 truth row for `buffer_create` is recorded as
-`rel:Module.c:instantiates:buffer_create:Buffer` with `unmetUnder: C-D2`.
+**348 of sqlite's 359 derived `.c`/`.h` files.** The other 11 never reach the C analyzer:
+`language-detection.ts:200-215` treats `.h` as ambiguous and decides it by matching NINE
+C++ markers against the file's first 64 KiB **of text**, one of which is
+`\b(?:virtual|override|constexpr|explicit)\b`. `src/vdbe.h:14` reads *"This header defines
+the interface to the virtual database engine"* — in a `/** … */` block — and the file is
+analyzed by `RealCppAnalyzer`. Measured and bisected in
+`script/m14/tmp/c-audit/c-header-routing.ts`, with the analyzer's presence **patched**
+rather than inferred: 11 of 42 headers routed to `cpp`, and 2,976 of their relationships
+carry none of the C lane's `metadata.relationshipType` discriminators.
 
-**`exports` was ALSO dead for a target-shaped reason, and #963 fixed it the same
-way.** See #963 below — the pre-#963 edge pointed at a synthesised constant
-`KERNEL_EXPORT` written in no source file anywhere.
-| `calls` | ✅ | 200,105 | `c_function_call` |
-| `uses` | ✅ | 74,129 | `field_access` 53,995 · `identifier_usage` 20,334 |
-| `contains` | ✅ | 16,938 | — (container → member) |
-| `references` | ✅ | 10,471 | `type_reference` |
-| `imports` | ✅ | 10,993 | `include_dependency` |
-| `exports` | ✅ | 0 on this corpus | `linux_kernel_export` (Linux `EXPORT_SYMBOL*`) |
-| `instantiates` | ❌ **N/A — see below** | 0 | — |
-| `extends` / `implements` / `overrides` | ❌ **N/A — see below** | 0 | — |
+Two consequences, both of which invalidate numbers this file previously quoted:
 
-**`instantiates` is not emitted, and this page previously said it was.** The
-allocator branches count `malloc`/`calloc`/`realloc`/`kmalloc`/`vmalloc` and
-`free`/`kfree`/`vfree`, set `metadata.usesMalloc` on the enclosing function, and
-raise the `Dynamic Memory Management` pattern — and a comment in the code records
-why the edge is gone: "malloc allocates BYTES, not a named type — an
-`Instantiates` edge to the literal 'malloc' could never resolve to a type symbol
-and was pure noise (removed; allocation tracking lives in metadata + patterns)."
-The row above is the truth; the earlier ontology table contradicted the code it
-documented.
+- `contains` is **6,147** over the C-routed files and **8,577** over all 359. The
+  2,430-edge difference is the C++ analyzer's. Every `contains` figure this lane printed
+  through `census.ts` and `c-ontology-verdicts.ts` is over the 8,577 population.
+- The `contains global -> X` rows the shared ontology gate's P4 property would convict
+  are **1,058 and every one of them is from a cpp-routed file**. On the C-routed
+  population the count is **0**, and the analyzer's own rule ("never `global contains X`")
+  holds. The 1,058 are a **C++ lane** finding, not this lane's.
 
-**`extends` / `implements` / `overrides` are N/A by ruling, not by omission** — C
-has no class heritage. Recorded as spec decision `C-D1`.
+### Per-type verdict
 
-The types the language's semantics ALLOW but the analyzer does not emit, and why:
-a `uses` edge for a *computed* dispatch (`handlers[i]()` — `target` is
-deliberately empty) and for a parenthesized callee (`(Unit)(x)` cast,
-`(*fp)(x)` deref). Both rulings are in the code with their measured reasons, and
-both are the family contract with cpp rather than an omission.
+Verdict vocabulary is the workstream's: **EMITTED** (production `parseFile` produced it
+on real corpus, with a count and the files), **RULED** (written reason AND a corpus
+measurement), **GAP** (the language has the construct — implemented this wave where real).
 
-### Per-type notes
+| type | verdict | edges | files | `metadata.relationshipType` |
+|---|---|---|---|---|
+| `calls` | **EMITTED** | 76,422 | 318 | `c_function_call` (76,416) · none (6) |
+| `uses` | **EMITTED** | 46,706 | 296 | `field_access` 36,578 · `identifier_usage` 10,128 |
+| `imports` | **EMITTED** | 1,459 | 332 | `include_dependency` |
+| `references` | **EMITTED** | 8,799 | 212 | `type_reference` 8,753 · `include_dependency` 46 |
+| `contains` | **EMITTED** | 6,147 | 227 | — (container → member) |
+| `exports` | **EMITTED** | 273 | 2 | `module_export` |
+| `overrides` | **EMITTED** | 102 | 33 | `c_redefinition` (`shape`: `conditional-redefinition` 50, `undef-redefine` 52) |
+| `instantiates` | **EMITTED** | 2 | 2 | `c_allocation` |
+| `extends` | **RULED** | 0 | 0 | — |
+| `implements` | **RULED** | 0 | 0 | — |
+
+**Arbiter:** `bun script/m14/ontology-coverage-gate.ts c --fresh` → **emitted 8/10,
+ruled-sound 2, FALSIFIED 0, ruled-without-justification 0, exit 0** over 4,421 admitted
+C/H files across the whole corpus. Its note reads *"c has no ruling TABLE; 2/10
+un-emitted types are ruled from its SPEC"*, and one caveat belongs beside that: with no
+table entry, the gate's own `basis` string defaults to *"the construct occurs 0x on the
+parse tree"* **whether or not a probe ran** (`treeHits` is empty for `c`). The RULED-SOUND
+verdict for `extends`/`implements` is therefore carried by this lane's own measurement
+below, not by the gate's reason text.
+
+### The two RULED types, with the measurement that rules them
+
+Instrument **A — grammar inventory** (`c-gap-probes.ts`, every node including anonymous
+tokens, `n.child(i)` exactly as the shared gate walks it, so the count is comparable with
+its bash 164 and json 26):
+
+    203 distinct node types over the 348 C-routed files
+    inheritance node types present: NONE of 15 probed
+      (base_clause, base_class, superclass, superclasses, class_heritage,
+       inheritance_specifier, extends_clause, implements_clause, interface_declaration,
+       interface_specifier, class_specifier, class_declaration, trait_declaration,
+       protocol_declaration, mixin_specifier)
+    object-creation node types present: NONE of 4 probed
+
+Instrument **B — parse-tree semantic counts**, for the constructs C *can* express:
+
+    extendsByValueMember                        788 in  95 files
+    extendsByValueAnonAggregate                  68 in  17 files
+    extendsPointerToLocalTag                     10 in  10 files
+    implementsObjectOfLocalFnPtrStruct            4 in   1 file
+    implementsObjectOfCrossFileFnPtrStruct      363 in 166 files
+    implementsFunctionAssignedIntoFnPtrMember     0 in   0 files
+
+**`extends` — RULED.** C has no supertype clause and cannot grow one. What it has is
+composition, and the language already represents composition as `contains`
+(container → member) — publishing it under a second label is the "two labels for one
+fact" the lane's own P1-one-truth-per-fact property exists to prevent. The third shape is
+refused for a **different** reason and the distinction is the substance: 10 members are
+POINTERS to a locally declared tag, and `struct A *` is a *reference*, not a subtype, so
+an `extends` edge there would assert `A is-a B` about source that says no such thing.
+
+**`implements` — RULED.** Same Instrument A result. C's nearest shape is a struct whose
+every member is a function pointer plus a brace-initialised object of it: 367 objects, of
+which **4** in 1 file have the type declared in the same file (`autosetup/jimsh0.c:8395,
+8420, 10859, 10906`, all of `Jim_HashTableType`) and **363** in 166 files are cross-file,
+which C-D2 forbids. The refusal is not the count — it is that the shape is a **convention
+and not a language interface**: nothing in C declares it, nothing checks it, and a struct
+with one non-function-pointer member would satisfy no interface at all. An `implements`
+edge over a duck-typed test asserts a relationship the language does not have.
+
+### `instantiates` is thin, and the thinness has a number
+
+2 edges in 2 files (`src/test_mutex.c`, `src/test_wsd.c`). `c-gap-probes.ts` finds **54**
+allocator calls whose value is cast to a type the file declares, so 52 rows are missing
+and the reason is one list: `MALLOC_FUNCTIONS` (`real-c-analyzer.ts:82`) is
+`["malloc","calloc","realloc","kmalloc","vmalloc"]` and 52 of the 54 are `sqlite3_malloc`
+(24) and `sqlite3_malloc64` (28) — sqlite's own wrappers. **RULED for widening**, and the
+number is recorded so the decision can be made on evidence: the M12 truth defines the C
+semantic as *"allocator calls, malloc/calloc/realloc family — C-specific allocation
+semantic"*, and widening the list to cover one codebase is precisely the defect #989
+removed from `exports` — a name list is right about the codebases it was written from and
+silent about the next.
+
+The wider readings are measured rather than asserted, because each is plausible enough
+that someone will propose it:
+
+| reading | count | verdict |
+|---|---|---|
+| any cast to a locally declared type, allocation or not | 610 in 84 files | **refused** — a cast is a conversion; `(char *)strdup(x)` produces no `char` object |
+| a local variable of a locally declared type with a brace initializer | 152 in 31 files | **refused** — construction by assignment, and each is already a `contains`/`references` fact |
+| a compound literal `(Type){…}` of a locally declared type | **0 in 0 files** | the construct C offers instead, and it does **not occur in this corpus** — so there is no compound-literal GAP to close here |
+| `sizeof(<locally declared type>)` anywhere | **0 in 0 files** | sizeof *names* a type without creating one; a rule counting it would be wrong in principle and is measured at zero besides |
+
+### `exports` is narrow on purpose, and the wide reading is measured
+
+273 edges in 2 files. The other obvious rule — a macro whose replacement list is **EMPTY**
+— is refused with the corpus as the reason: `c-gap-probes.ts` counts **57** declarations
+prefixed by such a marker and **52 of them are `CMPP_PRIVATE`, which expands to
+`static`** — the *opposite* marker. An empty macro contributes no tokens, so structure
+cannot distinguish an export marker from `ALIGN128` (an alignment attribute) or
+`SQLITE_WSD` (thread-local); only its NAME can, and the name is the fixed list this
+change removed.
+
+The widest reading — every file-scope symbol with external linkage, derivable from the
+language with no name list at all, which is exactly why it is tempting — is measured and
+refused **with its size**: **1,983** in 110 files (1,043 functions, 940 variables). It
+multiplies the type 7.3×, it would make `exports` indistinguishable from "is a function",
+and no oracle can check it because there is nothing to disagree with. A narrow graph that
+is true beats a wide graph that is not.
+
+### `overrides`: emitted, with both refused classes measured
+
+102 edges in 33 files. The rule is structural and needs no preprocessor evaluator (C-D2):
+C 6.9p5 makes an unconditional second definition of an external identifier a **constraint
+violation**, so a legal redefinition exists only across preprocessor arms — the two
+definitions must share an enclosing `#if`/`#ifdef` and sit in **different arms** of it.
+The second shape needs no arm test because C 6.10.3p2 makes an unconditional macro
+redefinition a constraint violation unless the replacement lists are identical, so
+`#undef X` then `#define X <other>` is the sanctioned form.
+
+    overridesMutuallyExclusiveArms      50 in  23 files   PUBLISHED
+    overridesUndefThenDefine            51 in  11 files   PUBLISHED
+    overridesRefusedNoSharedConditional 25 in   7 files   REFUSED
+    overridesUnconditionalRedefine     275 in  68 files   REFUSED (constraint violation)
+
+The 275 are the reason the `#undef` guard is load-bearing: they are config-header re-arms
+(`src/os_setup.h:45-87` alone carries several per macro) and nothing replaced anything —
+the preprocessor rejects the second definition. `c-lane/989-overrides-undef-guard` convicts
+any mutant that drops the guard. The 25 are parse damage (`src/printf.c:76-90` is a Tcl
+script inside `#if 0` that recovery reads as a function named `c`) or logically exclusive
+conditions under two SEPARATE conditionals, which needs a preprocessor evaluator.
+
+### The two DERIVATION findings, and what paid them
+
+`validation/m60/rel-type-coverage-baseline.json` carries two open findings for this lane:
+`contains` and `exports` are **emitted and compared against nothing**, and `overrides`
+became a third the moment #989 made it fire. The shared differential's own run says so
+in its output — `sqlite:c: COMPARED A LABEL WITH NO TRUTH: overrides (19 comparable,
+0 truth)` — and exits 6 for exactly that reason.
+
+- **`contains`** is covered by a better instrument than a second walker: `contains-vs-clang.ts`
+  judges it against **clang 14**, a different parser with a different recovery strategy,
+  so agreement is evidence rather than a tautology. Re-measured this wave:
+  **421/421 = 100.00%** members agreed over 33 records and 421 members
+  (was 414/421 = 98.34% before #990). 1 phantom remains —
+  `test_quota.c quota_FILE -> zMbcsName`, a member inside `#ifdef _WIN32` that a Linux
+  clang does not see; that is this lane's declared #957 superset, not a defect.
+- **`exports` and `overrides`** are now covered by a lane oracle,
+  `script/m14/tmp/c-audit/c-oracle.ts`, a second walker with pre-order traversal, its own
+  name read and its own node-type set. **Its limitation is stated in its own output: it is
+  a second walker over the SAME grammar, so it convicts a disagreement between two
+  implementations of a rule and cannot see a defect in the grammar.** Measured over the
+  348 C-routed files, both directions on (source, target, line):
+
+      exports    oracle 273  payload 273   MISSING 0   UNEXPLAINED 0
+      overrides  oracle  83  payload  83   MISSING 0   UNEXPLAINED 0
+
+  with a **reach caveat that is counted rather than absorbed**: 120 of 348 files have `#`
+  lines the walk cannot account for (1,591 lines in total, led by `src/main.c` 123 of
+  412), which is this lane's own recorded macro-inventory hole (gate property P13). Those
+  files are excluded from the `overrides` comparison on BOTH sides, with the excluded
+  payload rows counted (13 files, 19 edges). The honest scope of the `overrides` verdict
+  is therefore **83 of 83 edges on the 228 files the walk can fully account for**, plus 19
+  further edges in 13 files the oracle is blind to.
+
+### The six questions, answered per already-emitted type
+
+`ONTOLOGY-WORKSTREAM.md` Part 1 asks six questions of every type the analyzer already
+emits and says explicitly that **source derivation answers only the first**. All six are
+measured by `script/m14/tmp/c-audit/c-six-questions.ts` over the 348 C-routed files
+through `pool-worker.parseFile`, with the population printed by the instrument.
+
+| type | 1 exists | 2 fires | 3 correct | 4 labelled | 5 resolved | 6 confident |
+|---|---|---|---|---|---|---|
+| `calls` | 1 site | 76,422 / 318 files | 100.00% vs the parse (`call-edge-fidelity`), 0 unexplained on 2,600 files | clean: 0 untyped, 355 same-line same-callee repeats all C-D14-legal | **31.9% both ends** | 1.00 on 76,416 · absent on 6 |
+| `uses` | 2 sites | 46,706 / 296 | 0 over-emitted over 42,344 redis + 11,037 curl parse accesses | **16 pairs where `uses` AND `references` share one (source,target)** — the documented rule says never both | **61.7% both ends** | 1.00 value · 0.90 field |
+| `imports` | 1 site | 1,459 / 332 | 0 fabricated over 10,941 edges (`imports-audit`) | clean | **0% both ends** — by construction: the target is an include path and the source is `global`, neither is a symbol | 1.00 |
+| `references` | 1 site | 8,799 / 212 | audited by `deriveCCalls` | 46 rows carry `include_dependency` rather than `type_reference` | **89.3% both ends** | 1.00 · 0.80 type |
+| `contains` | 1 site | 6,147 / 227 | **100.00% vs clang 14** (421/421 members) | **2 self-edges and 160 placeholder-owner edges, all on C-routed files** — see below | **87.7% both ends** | 1.00 |
+| `exports` | 2 sites | 273 / 2 | **273/273**, 0 unexplained, `c-oracle.ts` | clean: 0 self-references | **93.4% both ends** (the 18 are declared names with no symbol of their own) | 1.00 |
+| `overrides` | 2 sites | 102 / 33 | **83/83**, 0 unexplained, `c-oracle.ts`, on the 228 files the oracle can see | clean by construction: both endpoints are the same name and `metadata.overridesLine` carries the earlier line | **100%** | 1.00 |
+| `instantiates` | 1 site | 2 / 2 | the one M12 truth row is `unmetUnder: C-D2` | clean | **100%** | 1.00 |
+
+Notes that belong beside the table rather than inside it:
+
+1. **Exists** is the *source-derivation* answer and is a lower bound by construction. The
+   `overrides` and `exports` rows say "2 sites" because #989 added two call sites each; a
+   branch reachable from a predicate that never matches is invisible to this count, which
+   is why questions 2–6 exist.
+2. **`imports` resolving at 0% is not a defect and must not be read as one.** An
+   `imports` target is a module path (`string.h`, `sqliteInt.h`) and its source is the
+   file-scope identity `global`; neither is a symbol, by construction of the type. The
+   same reasoning applies in part to `calls` (31.9%): the top unresolved targets are
+   `assert` 286, `sqlite3_free` 190, `memset` 65, `strlen` 62 — external symbols, which is
+   C-D2, not a resolution failure. What is worth watching is the *direction*: `calls`
+   resolves its SOURCE on every edge and fails only on cross-file targets, whereas
+   `uses` fails on **16,458** targets, led by `pMethods` 139, `pVtab` 120, `n` 63 — struct
+   members whose type lives in another file. That is #983's measured class, unchanged.
+3. **Labelled, the two open rows are real.** `contains` has **160** edges whose owner is a
+   placeholder: 4 of them are `Jim_Interp -> unknown`, which is a **true** member
+   (`Jim_Obj *unknown;`, `autosetup/jimsh0.c:663`) and therefore an R7 false positive on
+   this corpus; the other **156** are `anonymous_enum -> REG_*` in the same file, where
+   **four distinct anonymous enums** (jimsh0.c:1344, 13788, 14421, 15202) are all published
+   under the single name `anonymous_enum`. That is #987's ambiguous-owner class reached
+   through a file-scope anonymous enum, and it is left open with the count rather than
+   fixed — see *Open, with numbers*.
+4. **Confident: nothing is under 0.7**, so no C edge is a heuristic by the contract's
+   threshold. 45,380 edges carry a confidence below 1.0 (0.90 field access, 0.80 type
+   reference) and **none carries a key whose name contains a reason code**; what they do
+   carry is `metadata.relationshipType` (`field_access` / `identifier_usage`) and
+   `metadata.nodeType`, which are machine-readable and say *why*. Whether that satisfies
+   honesty-contract §4's "a machine-readable reason code (not just a number)" is the
+   owner's call; the measurement is that the keys are there under other names.
+5. **Two defects found by asking question 4** and fixed this wave — a macro published as a
+   member and a member published as a macro. Both are below under **#990** and **#991**.
+
+### Shared-harness defects found while measuring any of the above
+
+Named, not fixed, because `script/m14/**`, `src/ast/engine.ts` and
+`src/ast/language-detection.ts` belong to the master:
+
+| # | defect | measured |
+|---|---|---|
+| S1 | **`firing-check-v2.mjs:36` hard-codes `REPO = "$HOME/backbencher-brain"`**, so in a worktree it grades the MAIN checkout's analyzer | main `502a4cd4` vs this worktree `161d15f1`; the shared instrument reported C at 6/10 for a lane whose own worktree is 8/10 |
+| S2 | `engine.ts:1418-1434` blanks `__attribute__((…))`, `__declspec(…)` and seven MSVC tokens out of the CONTENT before `parser.parse()`, for c and cpp | `firing-check-v2`'s `getParser → parse → analyze` skips that step. Over the same 359 files the two entries disagree: `contains` 8,577 vs 7,501, `references` 8,845 vs 8,980, `overrides` 102 vs 111, `imports` 1,459 vs 1,505. The fired/silent SET agrees; the edge COUNTS are not production numbers |
+| S3 | **`language-detection.ts:210` matches `\b(?:virtual\|override\|constexpr\|explicit)\b` against comment TEXT** | 11 of sqlite's 42 headers routed to `RealCppAnalyzer`; 9 of the 11 flip to `c` when the literal `virtual ` is removed from the text |
+| S4 | **`ontology-coverage-gate.ts`'s resumable checkpoint makes a resumed walk report 0/10** | the tally lives in memory; the checkpoint records "already done", so a second run skips every file and reports `emitted 0/10 ruled-sound 4 … exit 1`. `--fresh` returns 8/10, exit 0. **A resumed run must not be quoted** |
+| S5 | `ontology-coverage-gate.ts` prints *"the construct occurs 0x on the parse tree"* as the basis for a type with no ruling-table entry **whether or not a probe ran** (`treeHits` is empty for `c`) | the verdict is right for C and the *reason text* is a template default, so the RULED-SOUND rows for `extends`/`implements` are carried by this lane's own Instrument A, not by the gate |
+| S6 | `run-fixtures.ts` and `audit-analyzer-grammar.ts` initialise web-tree-sitter from `node_modules/web-tree-sitter/tree-sitter.wasm`, a file absent from every checkout on this box | both abort with `ENOENT`. Worked around locally (`wasm/tree-sitter.wasm` copied into the shared `node_modules`, an environment fix and not a repository change) so the gates could run at all |
+
+### #990: a calling-convention MACRO was published as a struct member, and the real member beside it was MISSED
+
+`char *(SQLITE_CDECL*mprintf)(const char*,…)` — a function-pointer member whose calling
+convention is a macro — is not legal C without expansion, so tree-sitter recovers
+sqlite's `src/sqlite3ext.h:112` as
+
+    parenthesized_declarator
+      ERROR(field_identifier)                             <- SQLITE_CDECL, the MACRO
+      pointer_declarator declarator: (field_identifier)   <- mprintf,     the MEMBER
+
+`parenthesized_declarator` carries no `declarator` **field**, so both the struct and the
+union member-name walks fell to `namedChild(0)` — the ERROR — and returned the macro.
+
+Judged against clang 14 (`contains-vs-clang.ts --dir <sqlite>/src --max-files 120`):
+
+| | records | members | agreement | MISSED | PHANTOM |
+|---|---|---|---|---|---|
+| before | 33 | 421 | 414/421 = **98.34%** | 7 | 8 |
+| after | 33 | 421 | **421/421 = 100.00%** | **0** | 1 |
+
+**Both halves of the defect were in one struct**, which is why the phantom count alone
+would have understated it by half: 7 phantom members named `SQLITE_CDECL` and the 7 real
+members missing (`mprintf`, `xsnprintf`, `test_control`, `db_config`, `log`,
+`vtab_config`, `str_appendf`). The remaining 1 phantom is `test_quota.c quota_FILE ->
+zMbcsName`, a member inside `#ifdef _WIN32` that a Linux clang does not see — the
+declared #957 superset.
+
+`getIdentifierFromDeclarator` has guarded against exactly this since #916-C. **#990 is
+that guard in the two INLINE copies of the same walk**, extracted as
+`firstCleanNamedChild`. Nothing is recovered: the ERROR subtree is simply not a place a
+declared name can be read from.
+
+**The aggregate count did not move** — `contains` is 6,147 over the C-routed files before
+and after, because one phantom removed and one real member added cancel exactly. A
+count-based differential could not have found this class. That is the argument for keeping
+an independent-parser oracle.
+
+Pinned by `validation/m14/fixtures/c/macro-cdecl-member-990` (40th C fixture) with mutant
+`c-lane/990-member-name-skips-error`, which reverts **both** call sites at once and whose
+fact asserts the positive edges, the negative edges, **and the union edge** — so a
+half-revert fails. Proven failing end to end: with the fix reverted the fixture gate
+reports 39 pass / 1 FAIL with two expected symbols missing, three expected edges missing
+and two forbidden edges present.
+
+### #991: a macro symbol whose NAME is a name no `#define` declares — and it RESOLVED
+
+sqlite `ext/wasm/libcmpp.c:5520`
+
+    #define CmppLvl_empty_m {  .flags=0U, .lineNo=0U  }
+
+loses its macro name to the same brace-and-comment damage, and the `name:` field binds to
+`.flags`. The analyzer published a macro named `flags`, and **`flags` is a real struct
+member 900 lines earlier** (`cmpp_flag32_t flags;`, :448) — so a consumer resolving the
+macro table landed on a member. The lane gate's own `P7-no-macro-named-member` convicted
+it with 9 rows in that one file (`cmpp_ctor_opt.flags@L448 is named after an object-like
+macro, not a declarator`), and the analyzer was right about the member and wrong about the
+macro.
+
+Measured by `script/m14/tmp/c-audit/c-macro-name.ts` over 348 C-routed files and **4,472
+`#define` nodes**: the `name` field matches what the line actually spells in **4,466** and
+is fabricated in **6** — `flags` (:5520, the line spells `CmppLvl_empty_m`),
+`cmpp_size_t` (:5362), `cmpp__ListType_decl` (:5823), and `c` three times
+(`ext/rtree/rtree.c:1224, :1230, :1250`, the `#if 0` Tcl-script shape this lane has
+recorded before). **In all six an ERROR child of the same node sits BEFORE the name field**,
+so the structural test and the fabrication coincide exactly on this corpus, and the test
+needs no text.
+
+This is the fabrication class #963 removed from `exports` and #962 removed from
+`instantiates`: the published name has to be a name the source declares. The rule is a
+**refusal, not a rename** — the macro's name is in the source TEXT but not in the PARSE,
+and reading it back out of text is #934's line-anchored inventory and a different
+question. No symbol is minted, the read that needed it stays unresolved, and that is the
+direction this lane ranks acceptable over publishing a name that resolves to something
+else (#983).
+
+**The gate caught my own fixture and it was right.** The control "a member may share a
+macro's name" was first written with an OBJECT-like macro and `P7` flagged it on the
+fixture:
+
+    c991_member_named_after_macro.C991_flags_misnomer_m@L57 is named after an
+    object-like macro, not a declarator
+
+An object-like macro is replaced wherever its identifier appears, so `unsigned X;` after
+`#define X 0` expands to `unsigned 0;` and is not valid C. The control is now a
+FUNCTION-LIKE macro, which is replaced only where `(` follows the name and therefore
+survives a member declarator — which is exactly why #931's rule is restricted to
+object-like macros.
+
+Pinned by `validation/m14/fixtures/c/fabricated-macro-name-991` (41st) with mutant
+`c-lane/991-macro-name-not-after-an-error`. Effects on the corpus: **6 fabricated symbols
+removed**, 0 relationships changed, 0 crashes. The lane gate's `P7` violations on sqlite
+go from 9 to **0**; total property violations 15 → 6.
+
+### Open, with numbers — not re-baselined
+
+| # | what | measured | why not taken |
+|---|---|---|---|
+| O1 | **three `enum ops` in one file, one owner** | `ext/wasm/libcmpp.c` declares `enum ops { op_none, op_set, op_push, op_pop, op_heredoc }` at :13878, `enum ops { op_invalid, op_set, op_push, op_pop }` inside `cmpp_f_undef_policy` at :14127, and `enum ops { op_none, op_set, op_push, op_pop }` inside `cmpp_f_delimiter` at :14303. Three distinct enum types published under the one owner `ops`: `op_none` ×2, `op_set` ×3, `op_push` ×3, `op_pop` ×3 — 12 `contains` edges | This is #987's ambiguous-owner class reached through enum TAGS, and #961's answer — qualify a local type by its enclosing function, `lpRandomEntries.pick` — extends to TAGGED function-local types and would name these `cmpp_f_undef_policy.ops` and `cmpp_f_delimiter.ops`. It renames every local-type owner in the corpus and needs its own fixtures and mutants; that is a wave, not a patch at the end of a session. The lane gate reports it as 5 `P8` rows and they stay red |
+| O2 | **`#define` names the walk cannot account for** | 120 of 348 C-routed files have `#` lines with no `preproc_*` node; 1,591 lines in total, led by `src/main.c` 123 of 412, `src/os_win.c` 111 of 538, `src/vdbe.c` 88 of 313 | This is the recorded macro-inventory hole (gate property P13, #934). The payload covers those regions through its line-anchored inventory; an AST-only oracle does not, which is why `c-oracle.ts` excludes those 120 files from the `overrides` comparison and counts the exclusion (13 files, 19 edges) rather than absorbing it |
+| O3 | **16 `uses`/`references` pairs on the same (source,target)** | `ext/wasm/libcmpp.c`: `global -> cmpp_size_t` and five function sources to `cmpp_size_t`; `tool/lemon.c`: 13 sources to `rule`, 2 to `action` | The documented rule is "never both references and uses for the same pair", so 16 rows violate it. Not taken: the adjudicated direction (a type-position identifier is `references`, CGD12) and the payload's answer are individually pinned by fixtures, and re-deciding them is a wave. Measured, reported, red in the table above |
+| O4 | **`imports` emits BOTH a relationship row and an `imports[]` entry** | 1,459 in the relationship tally and 1,505 in the `ParseResult.imports` channel over the same files | `ParseResult.imports` (`src/ast/types.ts:206-216`) is the channel `parallel-indexer` writes to the `brain_import` TABLE. Whether a lane may emit both is a shared-layer decision, and `firing-check-v2` is built on the assumption that `imports` lives on one of them |
+
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
 | contains | ✅ | REAL container ownership only: struct→field, union→field, enum→member (post-loop over `ownerName`). Never `global contains X` — top-level symbols carry the synthetic `global` scope but emit no contains (dangling edge, Java-family ontology). **A container is never its own member**: `contains X -> X` is gate property P12, added this wave after a shadowed local made every enum member self-owning. **A macro in TYPE position names a type, not a member** (#985): `git_array_t(size_t) line_index;` publishes `line_index` alone; the macro's own name is a `macro_type_specifier`'s first identifier, not a declarator, and publishing it invented a member beside the real one. **An anonymous inline enum is owned by the MEMBER PATH** (#986), like an anonymous inline struct or union: `enum { A_ONE } first;` inside `U` gives `contains U.first -> A_ONE`, while the tagged spelling keeps its own tag. | 1.0 |
-| contains | ✅ | REAL container ownership only: struct→field, union→field, enum→member (post-loop over `ownerName`). Never `global contains X` — top-level symbols carry the synthetic `global` scope but emit no contains (dangling edge, Java-family ontology). **A container is never its own member**: `contains X -> X` is gate property P12, added this wave after a shadowed local made every enum member self-owning. | 1.0 |
 | references | ✅ | type usage — in-file declared type identifiers (`type_identifier`, `struct_specifier`/`union_specifier`/`enum_specifier` references, **including a function's return type, whether spelled with a tag or with a typedef name**). Never both references+uses for the same pair. | 0.8 |
 | uses | ✅ | field access (`a->x` → `uses x`, with `accessedFrom`); value identifier usage (global var, enum member, local function reference). **One name occurrence, one edge** — the field's own `field_identifier` leaf is the SAME AST node read twice by the walk and is not an independent observation (this wave: the two branches keyed the shared dedup set `::uses::` against `::use::`, so every field read published two edges with two different confidences; measured 2,369 provable occurrences over 80 redis files). | 0.9 (field access) · 1.0 (value) |
 | calls | ✅ | `call_expression` → callee name (incl. field-expression function pointers); source = enclosing function name via `getRelationshipSource()`. Per-SITE, not per-set: `f calls g` on three lines is three true edges. | 1.0 |
 | imports | ✅ | `#include <path>` / `#include "path"` → module name (pure-String `stripIncludeChars` unwrap of the `path` field / `string_literal` / `system_lib_string`). A macro-composed include argument is a `call_expression` and is refused — C-D2. | 1.0 |
 | exports | ✅ | a declaration introduced by an export marker. **Source = the declared NAME**; **target = the marker macro as written** (`EXPORT_SYMBOL`, `CURL_EXTERN`, `GIT_EXTERN`, `REDISMODULE_API`) — never the macro's argument, which in the prefixed forms is a return *type* (`GIT_EXTERN(int)`), and never the synthesised `KERNEL_EXPORT` the pre-#963 code emitted. All four surviving conventions: kernel call form, userspace prefix, paren form, and bare-token form. See #963 for the declared grammar limit (typedef return type). | 1.0 |
-| exports | ✅ | public (non-static) function/variable symbols; Linux `EXPORT_SYMBOL*` → `X exports KERNEL_EXPORT` | — |
 
 **Relationship source identity:** `getRelationshipSource()` returns the
 enclosing FUNCTION name — never the block scope (`core_init.block_211` would be a
@@ -131,6 +426,353 @@ dangling identity that never resolves to a symbol). File-scope relationships use
 at "0/422 relationships carry any line field" was true when written and is now
 false; the line work landed with the M59 rounds and this row is the current
 measurement.)
+
+---
+
+## Relationship ontology — VERIFY_C8 independent re-derivation, 2026-10-05
+
+> **This section is an INDEPENDENT verification pass, not a restatement of the section
+> above.** The handover for this lane was *"analyzer/C_FIX2 claims 8/10 on the
+> population the C analyzer actually owns — establish what that population is,
+> re-derive, and say whether the silent types are RULED with corpus proof."* Every
+> number below was produced by an instrument written for this pass
+> (`script/m14/tmp/c-audit/v8-*.ts`, none of which existed before it), and where this
+> section disagrees with the section above it says so.
+>
+> **One provenance finding first, because it bears on every table above.**
+> `docs/analyzers/real-c-analyzer.md:245` attributed the C six-questions table to
+> `script/m14/tmp/c-audit/c-six-questions.ts`. That path exists in **no branch of this
+> repository** — `git log --all --diff-filter=D` for it is empty and
+> `git ls-tree -r <branch> | grep six-questions` is 0 across 7,972 commits. The table
+> had no re-runnable instrument behind it. That is now
+> `script/m14/tmp/c-audit/v8-six-questions.ts`, written fresh rather than restored.
+
+### The population, re-derived
+
+**348 of sqlite's 359 derived `.c`/`.h` files**, 0 parse failures. Derived by `readdir`;
+filtered by **calling** `detectLanguageFromPath` with each file's own text rather than by
+reimplementing it, so the population cannot drift from what the router does.
+
+This number is the first thing that has to be right, because a verdict over the wrong
+population is a correct number about nothing: over all 359 files `contains` reads 8,577
+and over the 348 it reads 6,147, and the 2,430-edge difference is the **C++** analyzer's.
+
+### Verdict per type, on the 348, through `pool-worker.parseFile`
+
+| type | verdict | edges | files |
+|---|---|---|---|
+| `calls` | **EMITTED** | 76,422 | 318 |
+| `uses` | **EMITTED** | 46,706 | 296 |
+| `references` | **EMITTED** | 8,799 | 212 |
+| `contains` | **EMITTED** | 6,147 | 227 |
+| `imports` | **EMITTED** | 1,459 | 332 |
+| `exports` | **EMITTED** | 273 | 2 |
+| `overrides` | **EMITTED** | 102 | 33 |
+| `instantiates` | **EMITTED** | 2 | 2 |
+| `extends` | **RULED** | 0 | 0 |
+| `implements` | **RULED** | 0 | 0 |
+
+**8/10 on the relationship channel, and it is not a sample** — every derived file was
+analyzed, so no file-count knob can move it. `imports[]` reported separately: 1,459
+edges in 332 files on `ParseResult.imports`, which `parallel-indexer` writes to
+`brain_import` and never to `brain_relationship`.
+
+### The score DOES move with the file count, and here is the series
+
+| `--nfiles` | files | score |
+|---|---|---|
+| 25 | 25 | **5/10** |
+| 100 | 100 | **6/10** |
+| 200 | 200 | **6/10** |
+| 0 (full) | 359 | **8/10** |
+
+The walk is alphabetical, so at N ≤ 200 it never reaches `src/test_mutex.c` or
+`src/test_wsd.c`, which are 2 of the 2 files `instantiates` fires in. `exports` needs 2
+files of the whole corpus and `overrides` 33. **A 200-file sample of this corpus cannot
+see two of the four thin types and reports both as zero.** The 8/10 is a claim about
+348 files, not about a draw.
+
+### The shared instrument cannot measure a worktree, and this is re-measured
+
+`script/m14/firing-check-v2.mjs:36` pins `const REPO = "$HOME/backbencher-brain"`
+and imports the analyzer from there. Run from this worktree it graded **main** and
+reported:
+
+    C  6/10  200/200 parsed  imports[] 634  silent: extends implements exports overrides
+
+Two of those four "silent" types were firing the whole time on the branch being graded
+(`exports` 273, `overrides` 102). Same command, same corpus, same `NFILES`, and the two
+numbers disagree because the instrument names a path instead of deriving one. The number
+to quote for a worktree branch is the one from a ROOT-derived instrument
+(`c-firing.ts` / `v8-*.ts`), and the defect is reported for the master rather than
+patched here — `script/m14/**` is not this lane's file.
+
+### The two RULED types, with the measurement that rules them
+
+C's prose ruling was C-D1, "no class hierarchy", which is the same *shape* of claim that
+was wrong for bash's `overrides` for a whole wave. Re-derived with
+`v8-inheritance-probe.ts`, whose own first version was too loose twice and was corrected
+(a `*` matched anywhere below a declarator reported 547 "pointers to a local tag" where
+the strict class has 121; a duck-typed-implementation probe accepted `{ NULL }`, taking 46
+rows down to 24).
+
+**Instrument A — grammar inventory**, every node including anonymous tokens, `child(i)`
+exactly as the shared gate walks it so the figure is comparable with its bash 164:
+
+    203 distinct node types across the 348 files
+    inheritance node types present: NONE of 20 probed
+    object-creation node types present: NONE of 4 probed
+
+This is positive evidence of absence rather than a search that found nothing: the parse
+tree contains 203 node types and not one expresses a supertype clause. C cannot grow one,
+because the construct *is* the grammar.
+
+**Instrument B — the shapes C CAN express**, counted on the tree where a string literal
+cannot fake them:
+
+| shape | count | files |
+|---|---|---|
+| by-value member of a local TYPEDEF ALIAS | 388 | 57 |
+| by-value member of a local TAG | 18 | 11 |
+| inline anonymous aggregate member | 67 | 17 |
+| POINTER to a local TAG | 121 | 16 |
+| pointer to a local TYPEDEF ALIAS | 547 | 81 |
+| brace-initialised all-function-pointer object of a local struct | 24 | 4 |
+
+- **`extends` — RULED.** C has no supertype clause. What it has is composition, and the
+  language already represents composition as `contains`, so a second label for one fact is
+  what this lane's one-truth-per-fact property exists to prevent. The pointer shapes are
+  refused for a *different* reason and the distinction is the substance: 121 + 547 = 668
+  members are POINTERS to a local type, and `struct A *` is a *reference*, not a subtype.
+- **`implements` — RULED.** Same Instrument A result. C's nearest shape is a struct whose
+  every member is a function pointer plus a brace-initialised object of it: 24 objects in
+  4 files, all `Jim_HashTableType` / `JimAioFopsType` in `autosetup/jimsh0.c`. The
+  refusal is not the count. The shape is a **convention and not a language interface** —
+  nothing in C declares it, nothing checks it, and a struct with one non-function-pointer
+  member would satisfy no interface at all.
+
+**Falsifiable, as a ruling must be:** a non-zero count for any Instrument-B class, or any
+of the 20 inheritance node types appearing in the inventory, overturns it.
+
+### The six questions, answered per already-emitted type
+
+Source derivation answers **question 1 only**, and the `q1` column is the proof: `overrides`
+reads 2 construction sites on this branch and **0 on main**, because a generation landed.
+A construction site is not a firing branch.
+
+| type | 1 exists | 2 fires | 4 labelled | 5 both ends resolve | 6 conf < 0.7 |
+|---|---|---|---|---|---|
+| `calls` | 1 site | 76,422 / 318 files | 286 self-edges (`f calls f`, recursion) | **31.86%** | 0 |
+| `uses` | 2 sites | 46,706 / 296 | 4 self-edges | **61.73%** | 0 |
+| `imports` | 1 site | 1,459 / 332 | clean | **0.00%** — by construction, see below | 0 |
+| `references` | 1 site | 8,799 / 212 | clean | **89.68%** | 0 |
+| `contains` | 1 site | 6,147 / 227 | 0 self-edges | **100.00%** | 0 |
+| `exports` | 2 sites | 273 / 2 | 0 self-edges | **93.41%** (18 sources name no symbol) | 0 |
+| `overrides` | 2 sites | 102 / 33 | **102 of 102 are `X overrides X`** | **100.00%** | 0 |
+| `instantiates` | 1 site | 2 / 2 | clean | **100.00%** | 0 |
+
+- **Question 3 (correct), and its declared limit.** Every oracle reachable from inside
+  this repository is a **second walker over the same wasm grammar**, so it convicts a
+  disagreement between two implementations of a rule and is structurally blind to a
+  defect in the grammar. Only `contains` has a genuinely independent reference (clang 14);
+  that figure is quoted above, not reproduced here. `v8-edge-adjudication.ts` is no
+  exception and says so in its own output.
+- **`imports` resolving at 0.00% is not a defect.** The target is a module path and the
+  source is the file-scope identity `global`; neither is a symbol, by construction of the
+  type. Reporting it as a failure rate would be a false finding.
+- **Question 6: nothing is under 0.7**, so no C edge is a heuristic by the contract's
+  threshold. 0 edges are missing a `line_number` out of 141,455 measured.
+
+**`overrides` is 102 self-edges out of 102 edges — adjudicated, because it is the one
+number a reader should not take on trust.** The edge runs from the LATER definition to the
+EARLIER one and both endpoints are the same name, so every edge is `X overrides X`: a fact
+about one symbol rather than a relation between two. Whether that is the right *use* of
+`overrides` for a language with no superclass is a question of family policy, not a C
+defect, and it is stated here rather than left to be discovered by a consumer. What IS
+measurable is that each edge's own claim holds: see the adjudication below.
+
+### The two DERIVATION debts, and the label the shared differential fails on
+
+`validation/m60/rel-type-coverage-baseline.json` records two open DERIVATION findings for
+this lane — `contains` and `exports`, "emitted and compared against nothing".
+`overrides` is a **third in substance and not in the register's reckoning**, and the
+differential's own G20 check says so directly:
+
+    [label-dump] c: overrides  truth=0  comparable=11  <-- COMPARED WITH NO TRUTH
+    1 lane(s) COMPARED A LABEL WITH NO TRUTH ... exit 6
+
+so every `overrides` edge on the sampled corpus is counted `unexplained` and **the
+milestone's gate fails on the C lane**. That is the truth being blind, not the analyzer
+inventing edges — but "the oracle is blind" is not a coverage claim.
+
+`v8-edge-adjudication.ts` is the independent second opinion, and it adjudicates each
+edge's **own claim** against the parse **at the line the edge names** — which is
+narrower and, for these two labels, stronger than re-deriving the rule:
+
+| label | edges | confirmed | REFUTED | unadjudicable |
+|---|---|---|---|---|
+| `overrides` | 102 | **85** | **0** | 17 |
+| `exports` | 273 | **273** | **0** | 0 |
+
+Every one of the 273 `exports` targets resolves to a `#define` in the same file whose
+replacement list's first word is `extern` — 273 of 273. All 17 unadjudicable `overrides`
+edges are in `ext/wasm/libcmpp.c`, where the grammar produces **no `preproc_def` node**
+for those lines: this lane's recorded gate property **P13** macro-inventory hole.
+Reading the source settles them in the analyzer's favour — macro `E` is defined at 6141,
+`#undef`ed at 6143, redefined at 7027, `#undef`ed at 7032, redefined at 7436 — and an
+instrument that cannot see a region must not testify about it.
+
+**The probe was wrong six times before it was right, and every one of the six was a
+false refutation of correct analyzer behaviour.** `shares a conditional` compared a string
+that contained the arm; the arm was labelled by the conditional's first containing
+*direct* child, and in this grammar the `#else` body of an `#elif` chain is a
+`preproc_else` **nested inside** the `preproc_elif`; `preproc_elif` and `preproc_else`
+were not in the recognised node set; the `exports` source was required to be a
+`function_definition` when it is a `declaration` (a prototype, or a function-pointer
+**variable**) and the declarator walk then hit the `parenthesized_declarator`-has-no-
+`declarator`-**field** trap this lane already documented as #990; the `exports` name was
+keyed by the declaration's start row rather than the name's; and the `#undef` directive
+token reads `#  undef`, not `undef`. **An adjudication probe that refutes 100% of a class
+is telling you about itself**, and the only reason these were caught is that each was
+checked against the source text *before* being reported as an analyzer defect.
+
+### `exports`/`overrides`: a `line-audit` row that is not a defect
+
+`line-audit.ts` reports `exports 272/273 = 99.63%` with every other type at 100.00%
+whole-token. The single row is **not** an analyzer defect: line-audit asks whether the
+named line contains the edge's **target**, and an `exports` target is the **marker macro**,
+which in the multi-line prefix form sits on its own line above the declaration it prefixes:
+
+    764  CMPP_EXPORT
+    765  void cmpp_outputer_set(cmpp *pp, cmpp_outputer const *out, char const *zName);
+
+`line_number` 765 is the name-bearing node's row and is correct. **The test is
+mis-specified for this one label**, and it will report one false off-line row per
+multi-line prefix form forever. The other 272 pass because marker and declaration share a
+line there.
+
+### R7: 159 `contains` edges name a type that is written in no source file
+
+Question 6 asked for it and the answer is not zero. Measured on the 348 files, **uncapped**
+(my first version printed the 40-row SAMPLE cap as the count, which is the dart-census
+shape of defect):
+
+| placeholder literal | count | which end | which type |
+|---|---|---|---|
+| `anonymous_enum` | 90 | SOURCE | `contains` |
+| `anonymous_struct` | 67 | SOURCE | `contains` |
+| `unknown` | 4 | TARGET | 3 `uses` + 1 `contains` |
+| `anonymous_union` | 2 | SOURCE | `contains` |
+
+**The four `unknown` rows are TRUE and are R7 false positives on this corpus.**
+`autosetup/jimsh0.c:663` reads `Jim_Obj *unknown;` — jimsh names a member `unknown` — and
+the four edges are correct facts about it (`i->unknown = Jim_NewStringObj(...)`,
+`Jim_DecrRefCount(i, i->unknown)`, `Jim_GetCommand(interp, interp->unknown, ...)`).
+Recorded so the next sweep starts from 4 known-benign rows.
+
+**The 159 `contains` rows are real.** `anonymous_struct` / `anonymous_union` /
+`anonymous_enum` are the analyzer's own fallbacks from `specifierOwnName` and
+`extractEnum`, reached whenever an aggregate has no tag and no typedef alias — legal C,
+and the shape sqlite uses constantly:
+
+    src/date.c:676          static const struct { u8 nName; char zName[7];
+                               float rLimit; float rXform; } aXformType[] = {...};
+    src/util.c:1000         static const union { char a[201];
+                               short int forceAlignment; } sqlite3DigitPairs = {...};
+    autosetup/jimsh0.c:1344 enum { REG_NOERROR, REG_NOMATCH, ... };
+
+18 symbols carry those names. In `jimsh0.c` alone, **89 `contains` edges** name
+`anonymous_enum` as their source, where **four distinct anonymous enums** (:1344, :13788,
+:14421, :15202) are all published under the single string `anonymous_enum`. So one edge
+source denotes four different C types. `bb_graph` on `anonymous_enum` returns a type with
+89 members that belong to four types.
+
+**Two of this lane's own fixtures pin OPPOSITE contracts for this, and both pass today
+(41/41).** `c/layout-widths-from-ast-936` (a **file-scope** `enum { SLOTS = 4 };`)
+*expects* a symbol named `anonymous_enum` and calls it "the documented contract";
+`c/macro-wrapped-heading-917` (a **function-local** `enum { BufSize = ... };`) *forbids*
+the same name. So #961 removed the placeholder for a function-local anonymous enum and
+left it for a file-scope one, and 936 records the residue as intended behaviour. #961's own
+reasoning — a type definition emits no code; visibility is a separate fact — applies at
+file scope *a fortiori*.
+
+**Not fixed, and the reason is a decision rather than a patch.** Three rulings already
+close the alternatives: #952 refused to name a file-scope anonymous struct after its
+variable ("naming the type after the variable would publish a type that does not exist"),
+and #987 ruled option (d) — minting a qualifier such as `anonymous_enum.0` — out as "a
+name written in no source file, which is the fabrication class #962 removed from
+`instantiates` and #963 removed from `exports`". That leaves refusal, and its measured
+cost is **159 edges and 18 symbols across 12 files**. It also changes a behaviour a
+fixture calls "the documented contract", and it moves `contains-vs-clang`'s 421/421
+because `date.c` and `util.c` are inside that corpus's `src` slice. Both belong in one
+commit with the fixture change and the **re-measured** clang number, not folded into a
+measurement.
+
+### The lane's own gate, run on sqlite for the first time
+
+`verify-c-lane.ts` had never been pointed at `sqlite`, which is `LANG_REPOS.c`. Run
+there: **properties 6 VIOLATIONS**, mutants 48/48 caught, measured cost CAUGHT.
+**The lane gate FAILS** and is reported as it came out.
+
+| # | rows | adjudication |
+|---|---|---|
+| P6-named-symbol | 1 | **A PROPERTY FALSE POSITIVE, not an analyzer defect.** The member is `Jim_Obj *unknown;` at `jimsh0.c:663`. P6 tests a name against a list of placeholder literals and cannot tell an analyzer fallback from a name the SOURCE chose, so it will report this on every future run over jimsh. |
+| P8-conditional-member-redeclaration | 5 | **TWO REAL DEFECTS**, both #987's ambiguous-owner class through doors #961 and #958 did not close. P8's own wording is the argument: an UNCONDITIONAL repeated member name is not legal C, so a repeat means two different declarations collapsed onto one owner. |
+
+**P8 defect 1 — `ext/wasm/libcmpp.c`, 12 `contains` edges under one owner `ops`:**
+
+    13878  enum ops { op_none, op_set, op_push, op_pop, op_heredoc };
+    14127  enum ops { op_invalid, op_set, op_push, op_pop };
+    14303  enum ops { op_none, op_set, op_push, op_pop };
+
+Three **function-local** enums, three different C types, one published name; `op_set`,
+`op_push` and `op_pop` are emitted 3× each. #961 qualifies an *anonymous* local type by
+its enclosing function, but this enum carries a **tag**, so `enumName` is `ops` and the
+qualification never fires. The tag is the collision, and C keeps a block-scope tag
+invisible outside its block — which is why three functions may each write `enum ops` and
+all three be correct.
+
+**P8 defect 2 — `ext/rtree/geopoly.c:1803,1821`,** two `contains` edges under
+`sqlite3_geopoly_init.anonymous_struct -> zName`, from two DIFFERENT anonymous structs in
+one function. #958 fixed this for an aggregate that is a *member* of a named type; here
+the aggregate is the type of a function-local `static`, so the only handle is the
+variable name, and #952 already refused that. The path that results puts the
+**placeholder literal in the middle of it** — #958's defect verbatim and the same R7
+class measured above.
+
+**Not fixed.** Each needs its own fixture and its own decision, both of #987's shape, and
+option (d) is already ruled out. Left open with the count, which is more useful than a
+guess.
+
+### Gates re-run at this commit
+
+| gate | result |
+|---|---|
+| `run-fixtures.ts --lang c` | **41/41 pass, 0 fail** |
+| `verify-c-lane.ts --corpus sqlite` | **48/48 live mutants caught, 5 retired with stated reasons · 6 property violations · LANE GATE FAILS** |
+| `verify-c-lane.ts` measured cost | **CAUGHT — reverted/fixed 1.22× median-of-paired**, on `sqlite/src/btree.c` (407,753 B), metric CPU ms min-of-9 after a discarded warm-up, **load1 15.79 disclosed** (the box is shared; the wall figures carry that) |
+| `audit-analyzer-grammar.ts c` | **PASS — refs 68, unknown 0, unknownFields 0** |
+| `differential.ts --lang c --repo sqlite` | **`calls`/`uses`/`references`/`imports`/`instantiates` exactly agreed, MISSING 0; `overrides` COMPARED WITH NO TRUTH → exit 6** |
+| `rel-type-coverage-gate.ts --langs=c` | **2 findings, `contains` and `exports`**; reachability, agreement and enum checks clean |
+| P13 floor for the sqlite slice | **UNRECORDED — 119 `#define` directives carry no macro symbol; reported, not scored** |
+
+**The measured-cost check's default path is broken**: `verify-c-lane.ts:1527` defaults
+`C_LANE_PERF_FILE` to `$HOME/ishaq/fixtures/repositories/redis/src/server.c` —
+another user's home directory — so it **SKIPS and reports nothing** on this box. The row
+above was produced by pointing the env var at a real file this corpus owns.
+
+**Not measured, and not claimed:** the `bb_graph` payload budget (un-narrowed
+`relationshipTypes` at 2.5–4.8× a filtered answer) is not measurable from this lane. No
+edge was added this pass, so no payload regression is attributable to it — and saying
+"no regression" without measuring the payload would be the wrong kind of claim.
+
+### Outgoing only
+
+Analyzers emit edges **from the file being analyzed**. Resolving who points **at** a
+symbol is reverse-edge resolution, a subsystem that does not exist in this repository.
+Nothing in this section measures incoming edges, and the 31.86% `calls` and 61.73% `uses`
+resolution rates above are per-file by construction (C-D2), not a statement about the
+graph as a whole.
 
 ## Supported constructs
 
@@ -778,6 +1420,19 @@ its own evidence text:
 | --- | --- |
 | `references:global:Module.h` and 5 siblings | the edge is emitted under the first-class `imports` kind (M60/#910); the truth spells it `references` |
 | `instantiates:buffer_create:Buffer` | `Buffer` is declared in `Module.h`, so from `Module.c` it is cross-file, and the truth's own note reads `RE-TARGETED UNDER C-D2 … the row is therefore RETARGETED` |
+
+> **C_FIX2 addendum, 2026-10-05.** The rows above are the fixture-based M12 differential
+> and are unchanged. The **corpus** differential is a different measurement and it now
+> exits **6**: `BB_CORPUS_ROOT=… bun run script/m14/differential.ts --lang c --repo sqlite`
+> reports covered **8,283/8,284 (100%)**, **MISSING 1**, **21 unexplained (0.3%)**,
+> heuristic 0, `unexplained-by-label: overrides=19, uses=2`. The 19 `overrides` rows are
+> the DERIVATION finding — the shared oracle derives no `overrides` truth for C, so every
+> one of those edges lands in `unexplained`, which the harness says in its own output is
+> *"not coverage"*. They are audited by `c-audit/c-oracle.ts` instead (83/83, 0/0 on the
+> 228 files that oracle can see). The 2 `uses` rows and the 1 MISSING
+> (`uses (expr) -> cmpp_tt__last`, `ext/wasm/libcmpp.c:13778` — a read inside a `printf`
+> macro argument, which **#988 already ruled on**: measured, 83.7% of macro arguments name
+> nothing the file declares) are left as reported rows.
 
 The 17 false positives are the three classes this file already records: an `imports` edge
 the truth spells `references`, a `references` edge for a typedef declaration site the truth
@@ -2087,18 +2742,24 @@ The containment check exists because of that, not because of the two rows it fix
 
 ## Gate state (measured at this commit)
 
+Every row below was run at this commit on 2026-10-05 and the number is what it printed.
+Rows that fail are left failing and named; nothing here is re-baselined.
+
 | gate | result | how it was run |
 | --- | --- | --- |
-| M14.0.F3 fixtures | **32/32 pass** (18 pre-existing + 12 new) | `bun run script/m14/run-fixtures.ts --lang c` |
-| M14.0.F1 grammar conformance | **PASS**, 65 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
-| M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
-| C-lane gate (properties + mutants + cost) | **14 properties, 38/38 live mutants caught, 5 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
-| M14.0.F3 fixtures | **27/27 pass** (18 pre-existing + 9 new) | `bun run script/m14/run-fixtures.ts --lang c` |
-| M14.0.F1 grammar conformance | **PASS**, 61 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
-| M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
-| C-lane gate (properties + mutants + cost) | **14 properties, 34/34 live mutants caught, 3 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
-| grammar pin (`c` in `validation/m14/grammar-pins.json`) | **PASS** — source↔wasm zero both ways, 135 declared names, 128 wasm-named all declared; patch proven live | `bun run script/m14/verify-grammar-pins.ts` (whole-file run is red on the **cpp** lane's in-flight `PIN.md`, not on `c`) |
-| layout vs clang (independent reference) | **100.0% (39/39)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 89.8% / 58.0% overall; **no actionable misses on either corpus** | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` |
+| M14.0.F3 fixtures | **41/41 pass** (39 at handover + `c/macro-cdecl-member-990` + `c/fabricated-macro-name-991`) | `bun run script/m14/run-fixtures.ts --lang c` |
+| broken-version proof | **39 pass / 1 FAIL** with #990's two call sites reverted — 2 expected symbols missing, 3 expected edges missing, 2 forbidden edges present | reverts applied to the analyzer, fixture gate re-run, analyzer restored |
+| M14.0.F1 grammar conformance | **PASS**, 68 refs, unknown 0, unknownFields 0 (was 67 refs) | `bun run script/m14/audit-analyzer-grammar.ts c` |
+| M14.0.F1 as a whole | **RED on other lanes** — cpp 2 unknown, rust 2, sql 1; reported, not touched | same |
+| C-lane gate, fixtures only | **all properties hold · 48/48 live mutants caught · 5 retired with a stated reason** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts` |
+| C-lane gate + sqlite corpus | **RED: 6 property violations**, mutants 48/48 | `… --corpus $HOME/fixtures/repositories/sqlite --max-files 200`. At handover the same command reported **15**: #991 removed all 9 `P7` rows. The 6 remaining are `P6` 1 (a `property` literally named `unknown`, which is a REAL field — an R7 false positive) and `P8` 5 (three `enum ops` in `ext/wasm/libcmpp.c` under one owner — O1 above). Left red |
+| ontology coverage gate (the ARBITER) | **emitted 8/10 · ruled-sound 2 · FALSIFIED 0 · ruled-without-justification 0 · exit 0** over 4,421 admitted C/H files | `bun run script/m14/ontology-coverage-gate.ts c **--fresh**`. WITHOUT `--fresh` it reports **0/10, exit 1** — the resumable checkpoint makes the walk skip every file while the tallies live only in memory (defect S4) |
+| differential, C lane | **MISSING 1 / 8,304 analyzer edges, 21 unexplained (0.3%), heuristic 0, covered 8,283/8,284 (100%)** · **exit 6** | `BB_CORPUS_ROOT=… bun run script/m14/differential.ts --lang c --repo sqlite`. Exit 6 is the harness's own *"COMPARED A LABEL WITH NO TRUTH"* for `overrides` (19 comparable, 0 truth) — the DERIVATION finding, not a fabrication. The one MISSING is `uses (expr) -> cmpp_tt__last` (`ext/wasm/libcmpp.c:13778`), a read inside a `printf` macro argument, which **#988 already ruled on** (measured: 83.7% of macro arguments name nothing the file declares) and which the shared oracle does not carry. An unscoped run aborts on a corpus repo absent from this box (`grails-core`) |
+| `contains` vs clang 14 (independent parser) | **421/421 = 100.00%** members over 33 records; 0 missed, 1 phantom (the declared #957 `#ifdef _WIN32` superset) | `bun run script/m14/tmp/c-audit/contains-vs-clang.ts --dir <sqlite>/src --max-files 120` |
+| `exports` / `overrides` oracle | **273/273 and 83/83, MISSING 0, UNEXPLAINED 0**; `overrides` scope is the 228 of 348 files the walk can fully account for (13 files / 19 edges excluded and counted) | `bun run script/m14/tmp/c-audit/c-oracle.ts` |
+| payload + latency | **symbols −6, relationships 0, every per-type delta 0 · CPU −3.26% · 0 crashes in all three variants** | `bun run script/m14/tmp/c-audit/c-payload-cost.ts`. The first run of that instrument reported **+40.53%** — a fixed measurement order let host warm-up land on the first variant every round; the order now rotates and the per-round table is in the artifact |
+| grammar pin (`c` in `validation/m14/grammar-pins.json`) | **PASS** on the pin, but **which bytes are WIRED is now measured** and the doc's mechanism was wrong | `bun run script/m14/tmp/c-audit/c-grammar-source.ts`: `wasm/tree-sitter-c.wasm` 650,175 B `f9a2d771` **128 named types** (has `macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name`) vs the bun cache `tree-sitter-c@0.24.1` 625,918 B `c852c2a8` **125 named types** (missing all three). The LIVE parser produces `macro_prefixed_type_specifier` on `autosetup/jimsh0.c:727`, which only the 128-type build can, so the committed pin IS what the analyzer receives — but not through the path the log line names: `engine.ts:821` resolves a PATH, `hasWasmInRegistry()` then keys on the **basename** and returns `<repo>/wasm/<basename>`, so `language parser loaded { wasmPath: <bun cache> }` names a file that is never read |
+| layout vs clang (independent reference) | **100.0% (39/39)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 89.8% / 58.0% overall; **no actionable misses on either corpus** | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` — NOT re-run this wave (its corpora are not on this box); the row is the handover measurement and is labelled as such |
 | regex census | 2 entries removed; `ABSENT-IN-WORKTREE` for both | `bun run script/m12/verify-regex-census.ts` (the gate as a whole is red on other lanes' in-flight work — `sql`, `clojure`, `cpp`, `elixir`, `erlang`, `fsharp`, `go`, `zig`, and a pre-existing stale `makefile` row) |
 | typecheck | clean for the analyzer and every probe in this lane | `npx tsc --noEmit -p tsconfig.json` |
 
