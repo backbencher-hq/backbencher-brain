@@ -539,7 +539,8 @@ async function measureFile(file: string): Promise<FileTally> {
       const { getParser } = await import("../../src/ast/engine")
       const p = await getParser("python")
       const content = readFileSync(file, "utf8")
-      const pr = await p.parse(content, file)
+      const pr = await p.parse(content)
+      if (!pr) throw new Error("parser.parse returned no tree (null result)")
       let found = false
       const visit = (n: any): void => {
         if (!n || found) return

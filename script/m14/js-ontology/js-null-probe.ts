@@ -17,7 +17,8 @@ const cases: [string, string][] = [
   ["assign null to member", "function f(a) {\n  a.b = null;\n  return a.b;\n}\n"],
 ]
 for (const [label, src] of cases) {
-  const tree = await parser.parse(src, "probe.js")
+  const tree = await parser.parse(src)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const res: any = new RealJavaScriptAnalyzer().analyze(tree.rootNode, src, "probe.js")
   const rels = (res.relationships ?? []).filter((r: any) => r.type === "uses" || r.type === "calls")
   console.log(`${label}:`)

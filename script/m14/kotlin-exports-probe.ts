@@ -131,7 +131,7 @@ const stats = await resumableWalk(CHECKPOINT, all.length, {
     }
     let tree: any
     try {
-      tree = await parser.parse(readFileSync(abs, "utf8"), abs)
+      tree = await parser.parse(readFileSync(abs, "utf8"))
     } catch {
       filesFailed++
       return

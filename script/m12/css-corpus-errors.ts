@@ -38,6 +38,7 @@ async function main() {
     const src = readFileSync(f, "utf8")
     try {
       const tree = parser.parse(src)
+      if (!tree) throw new Error("parser.parse returned no tree (null result)")
       const root = tree.rootNode
       const errCount = countErrors(root)
       if (errCount > 0) {

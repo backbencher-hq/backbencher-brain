@@ -31,7 +31,10 @@ const NFILES = Number(process.env.NFILES || 100000)
 
 const { ASTEngine } = await import(`${REPO}/src/ast/engine.ts`)
 const { RelationshipType } = await import(`${REPO}/src/ast/types.ts`)
-const ALL = [...new Set(Object.values(RelationshipType))]
+// `Object.values<string>`: the enum arrives through a computed dynamic import, so
+// it is `any` and TS 5.9 types `Object.values(any)` as `unknown[]`; the four errors
+// sat on ALL's uses (byType.set(t, ...), t.padEnd), not here. Members are strings.
+const ALL = [...new Set(Object.values<string>(RelationshipType))]
 
 function findHtml(dir: string, out: string[]): void {
   let ents: any[]

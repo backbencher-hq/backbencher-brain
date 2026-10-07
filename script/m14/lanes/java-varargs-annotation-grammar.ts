@@ -129,6 +129,7 @@ async function main() {
   console.log(`population: ${CASES.length} hand-written minimal compilation units — every one is printed in full below\n`)
   for (const c of CASES) {
     const tree = parser.parse(c.src)
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     const errs = errorNodes(tree.rootNode)
     const ms = methodsWithPath(tree.rootNode)
     const insideClass = ms.filter(m => m.path.indexOf("class_body") !== -1).length
@@ -157,6 +158,7 @@ async function main() {
   const analyzer = new RealJavaAnalyzer()
   for (const c of CASES) {
     const tree = parser.parse(c.src)
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     const res: any = analyzer.analyze(tree.rootNode, c.src, "C.java", { filePath: "C.java" } as any)
     const errs = res.errors ?? []
     const TOP = new Set(["class_declaration", "interface_declaration", "enum_declaration", "record_declaration", "annotation_type_declaration"])

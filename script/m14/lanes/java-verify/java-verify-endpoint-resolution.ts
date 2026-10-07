@@ -122,7 +122,7 @@ for (const f of [...files, ...fixtures]) {
   let res: any
   try {
     const parser = await getParser("java")
-    const tree = parser.parse(content, f)
+    const tree = parser.parse(content)
     if (!tree) { failures++; continue }
     res = analyzer.analyze(tree.rootNode, content, f)
     tree.delete?.()

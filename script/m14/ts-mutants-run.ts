@@ -205,7 +205,8 @@ async function runResultMutant(m: TsMutant): Promise<{ caught: boolean; detail: 
     try { content = readFileSync(abs, "utf8") } catch { continue }
     let base: any
     try {
-      const tree = await parser.parse(content, abs)
+      const tree = await parser.parse(content)
+      if (!tree) throw new Error("parser.parse returned no tree (null result)")
       base = new Cls().analyze(tree.rootNode, content, abs)
     } catch { continue }
     const baseProblems = checkPins(base, f.exp)

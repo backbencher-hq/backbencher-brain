@@ -166,7 +166,8 @@ async function worker(): Promise<void> {
     let rootNode: any
     try {
       content = readFileSync(f, "utf8")
-      const pr = await parser.parse(content, f)
+      const pr = await parser.parse(content)
+      if (!pr) throw new Error("parser.parse returned no tree (null result)")
       rootNode = pr.rootNode
     } catch { parseFail++; continue }
 

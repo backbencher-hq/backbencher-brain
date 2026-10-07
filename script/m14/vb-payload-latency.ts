@@ -141,7 +141,8 @@ const { default: RealVbAnalyzer } = await import("../../src/ast/real-vb-analyzer
 for (const abs of files) {
   const content = readFileSync(abs, "utf8")
   const t0 = performance.now()
-  const tree = await parser.parse(content, abs)
+  const tree = await parser.parse(content)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const t1 = performance.now()
   const res: any = new RealVbAnalyzer().analyze(tree.rootNode, content, abs)
   const t2 = performance.now()

@@ -210,7 +210,11 @@ if (corpora.length === 0) {
 
 const { ASTEngine } = await import(`${REPO}/src/ast/engine.ts`)
 const { RelationshipType } = await import(`${REPO}/src/ast/types.ts`)
-const ALL = [...new Set(Object.values(RelationshipType))]
+// `Object.values<string>`: `RelationshipType` is re-exported through a computed
+// dynamic import, so it is `any` here and TS 5.9 types `Object.values(any)` as
+// `unknown[]`; the errors landed on ALL's uses (CHANNEL_NOTE[t], t.padEnd). Every
+// member of the enum is a string (src/ast/types.ts re-exports the engine enum).
+const ALL = [...new Set(Object.values<string>(RelationshipType))]
 const IMPORT_ENUM = RelationshipType.Imports
 
 // D3 guard: a census that cannot parse a grammar cannot rule anything.

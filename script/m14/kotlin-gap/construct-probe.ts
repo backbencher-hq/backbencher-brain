@@ -107,7 +107,7 @@ for (const rel of files) {
   let content: string
   try { content = readFileSync(p, "utf8") } catch { continue }
   let tree: any
-  try { tree = await parser.parse(content, p) } catch { continue }
+  try { tree = await parser.parse(content) } catch { continue }
   if (!tree) continue
   parsed++
 

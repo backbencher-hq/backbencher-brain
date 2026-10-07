@@ -115,7 +115,8 @@ async function worker() {
     try {
       const content = readFileSync(f.abs, "utf8")
       const parser = await getParser("typescript")
-      const tree = await parser.parse(content, f.abs)
+      const tree = await parser.parse(content)
+      if (!tree) throw new Error("parser.parse returned no tree (null result)")
       const leaf = path.basename(f.abs, path.extname(f.abs))
       truth = deriveImportsExportsTruth(tree.rootNode, leaf)
     } catch (e) { if (errors.length < 10) errors.push(`oracle ${label} ${String(e).slice(0, 90)}`); continue }

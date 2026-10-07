@@ -165,7 +165,7 @@ async function signatureOf(analyzer: any, over?: string[]): Promise<Sig> {
     let tree: any
     try {
       const parser = await getParser("java")
-      tree = parser.parse(content, abs)
+      tree = parser.parse(content)
       if (!tree) continue
     } catch { continue }
     let res: any

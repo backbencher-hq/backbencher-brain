@@ -27,6 +27,7 @@ async function main() {
   const src = readFileSync(FILE, "utf8")
   const parser = await getParser("java")
   const tree = parser.parse(src)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const root = tree.rootNode
   console.log(`FILE ${FILE}   lines ${src.split("\n").length}`)
   console.log(`root.hasError=${root.hasError}  root.text byte-length=${src.length}`)
