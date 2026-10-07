@@ -18,6 +18,8 @@
 // client start is awaited within the measured window.
 
 import { workspace, window, commands, ExtensionContext, StatusBarAlignment, StatusBarItem, ProgressLocation, MarkdownString, type WebviewPanel } from "vscode"
+import { accessSync, constants, statSync } from "node:fs"
+import path from "node:path"
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -101,10 +103,111 @@ function readLaunchConfig(): { mode: SourceMode; serverPath: string; minVersion:
   return { mode, serverPath, minVersion, budgetMs }
 }
 
-function buildServerOptions(launch: ServerLaunch): ServerOptions {
+/**
+ * The Node EXECUTABLE, not the string "node" — resolved, or reported missing.
+ *
+ * WHY THIS IS NOT A BARE NAME (measured 2026-10-07, VS Code 1.140.0, macOS).
+ * `launch.runtime` was the literal `"node"`, resolved against the PATH the
+ * editor inherited. On this machine node lives at `~/.local/node/bin/node` and
+ * is NOT on the default PATH, so VS Code started, the extension activated, and
+ * the server never launched. The user saw a status bar reading `bb: server
+ * down` and a notification saying "client: couldn't create connection to
+ * server" — naming neither node nor PATH, on a machine where node is installed
+ * and working. A GUI application does not inherit a shell's PATH, so "node" is
+ * on the developer's terminal PATH says nothing about whether the editor can
+ * find it.
+ *
+ * WHAT THIS MUST NOT BE. The obvious fallback — run the editor's own binary with
+ * `ELECTRON_RUN_AS_NODE=1` — was implemented, measured, and REMOVED. It starts
+ * and answers `initialize`, which is exactly why it is dangerous: the failure
+ * only appears on the first real request, as
+ *
+ *   The module '.../better-sqlite3/build/Release/better_sqlite3.node' was
+ *   compiled against a different Node.js version
+ *
+ * Electron's Node ABI is not Node's ABI, and this server loads a native module.
+ * A fallback that looks healthy and fails later, with an error about a build
+ * artifact, is worse than no fallback: it converts a clear "node is missing"
+ * into a puzzling "the module was compiled against a different version".
+ *
+ * So: a REAL node is looked for on PATH, then at the usual install prefixes,
+ * and if none is found the caller is told exactly that, with what was searched.
+ */
+export function resolveNodeExecutable(
+  env: Record<string, string | undefined> = process.env,
+  home: string = process.env.HOME ?? "",
+): { command: string; searched: string[] } | { error: string; searched: string[] } {
+  const searched: string[] = []
+
+  // 1. PATH, as the process actually received it.
+  for (const dir of (env.PATH ?? "").split(path.delimiter)) {
+    if (dir === "") continue
+    const candidate = path.join(dir, "node")
+    searched.push(candidate)
+    if (isExecutable(candidate)) return { command: candidate, searched }
+  }
+
+  // 2. The prefixes a node install actually lives under when it is not on PATH.
+  const prefixes = [
+    // `~/.local/node/bin` is where the node-install/node-build layout puts a
+    // non-system node on macOS, and it is the prefix this very machine uses —
+    // found by measurement, not by guessing at convention.
+    home === ""
+      ? []
+      : [
+          path.join(home, ".local", "node", "bin"),
+          path.join(home, ".local", "bin"),
+          path.join(home, ".nvm", "current", "bin"),
+          path.join(home, ".volta", "bin"),
+          path.join(home, ".bun", "bin"),
+        ],
+    "/usr/local/bin",
+    "/opt/homebrew/bin",
+    "/usr/bin",
+    "/snap/bin",
+  ]
+  for (const dir of prefixes.flat()) {
+    const candidate = path.join(dir, "node")
+    if (searched.includes(candidate)) continue
+    searched.push(candidate)
+    if (isExecutable(candidate)) return { command: candidate, searched }
+  }
+
   return {
-    run: { command: launch.runtime, args: [...launch.runtimeArgs, launch.entryPath, "--dir", workspaceRoot()] },
-    debug: { command: launch.runtime, args: [...launch.runtimeArgs, launch.entryPath, "--dir", workspaceRoot()] },
+    error:
+      "A real Node.js executable was not found, and the server cannot start without one: it loads better-sqlite3, a native module, so the editor's own bundled runtime cannot stand in (its ABI differs and every request would fail with \"compiled against a different Node.js version\").",
+    searched,
+  }
+}
+
+/** True when `p` is a file this process may execute. Fails closed. */
+function isExecutable(p: string): boolean {
+  try {
+    return statSync(p).isFile() && accessSync(p, constants.X_OK) === undefined
+  } catch {
+    return false
+  }
+}
+
+function buildServerOptions(launch: ServerLaunch): ServerOptions {
+  const args = [...launch.runtimeArgs, launch.entryPath, "--dir", workspaceRoot()]
+  if (launch.runtime !== "node") {
+    return { run: { command: launch.runtime, args }, debug: { command: launch.runtime, args } }
+  }
+  const resolved = resolveNodeExecutable()
+  if ("error" in resolved) {
+    // Loud and specific. The old behaviour spawned the bare name, the spawn
+    // failed, and the user was told only that a connection could not be made.
+    void window.showErrorMessage(
+      `Backbencher: ${resolved.error}\nSearched: ${resolved.searched.slice(0, 8).join(", ")}${resolved.searched.length > 8 ? ", …" : ""}\n` +
+        `Add Node to the PATH VS Code sees, or set bbLsp.serverPath.`,
+    )
+    throw new Error(resolved.error)
+  }
+  const options = { env: { ...process.env } }
+  return {
+    run: { command: resolved.command, args, options },
+    debug: { command: resolved.command, args, options },
   }
 }
 
