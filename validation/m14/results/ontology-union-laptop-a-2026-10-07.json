@@ -224,17 +224,17 @@
    8,
    9
   ],
-  "SVELTE": [
-   3,
-   3
+  "SCALA": [
+   8,
+   9
+  ],
+  "SWIFT": [
+   8,
+   9
   ],
   "OBJ_C": [
    6,
    7
-  ],
-  "SCALA": [
-   8,
-   9
   ],
   "CPP": [
    7,
@@ -247,6 +247,34 @@
   "VB": [
    7,
    9
+  ],
+  "SVELTE": [
+   3,
+   3
+  ],
+  "GO": [
+   10,
+   10
+  ],
+  "RUST": [
+   10,
+   10
+  ],
+  "TYPESCRIPT": [
+   8,
+   8
+  ],
+  "HTML": [
+   2,
+   2
+  ],
+  "VUE": [
+   1,
+   1
+  ],
+  "HASKELL": [
+   null,
+   10
   ]
  },
  "grammar": {
@@ -258,5 +286,7 @@
   "generated_results": "lane result JSONs stay on their branches (generated data rule)",
   "other_laptop_orchestration": "scripts/agent-orchestration/{launch-agent,status,watchdog}.sh from origin/supervisor/loop",
   "vb_branch_engine_and_package": "analyzer/GRAMMAR_FIX_VB carries an OLDER src/ast/engine.ts (-244 lines, re-adds @ts-nocheck) and package.json (drops prepack, docs/indexing/, verify:m27..m55) \u2014 not landed because it would revert Laptop B's fixes"
- }
+ },
+ "firing_note": "script/m14/firing-check-v2.mjs, NFILES=200, production path (getParser->parse->analyze). before = main's pre-integration revisions; after = origin/main 4cf800a17. HASKELL's before was not measured. KOTLIN was re-measured on both lane revisions DERIV_EXPORTS_KOT3 and DERIV_EXPORTS_KOT4 on their own trees and both report 9/10, so ONTOLOGY-PROGRESS.md's 10/10 for Kotlin is not reproducible at NFILES=200 and is sampling-sensitive until re-derived.",
+ "lane_claims_caveat": "ONTOLOGY-PROGRESS.md's per-lane 10/10 numbers hold on each lane's own branch and its own harness revision; main carries a mix (8 compiler-verified unions, 15 single coherent revisions), so main's own number is the one in firing_before_after, not the lane's claim."
 }
