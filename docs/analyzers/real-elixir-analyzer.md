@@ -46,7 +46,7 @@
 | calls | ✅ | `call` nodes in body position with function sources. Alias-resolved qualified module calls (`Repo.get` with `alias MyApp.Repo` → `MyApp.Repo.get`); same-module calls stay leaf (`add_bid`); pipelines (`|>`) call the piped target. Resolution rules: qualified calls emit when the receiver is capitalized (a module/alias) — lowercase receivers are dynamic dispatch (`module.manifests()`) and emit nothing; unqualified calls emit ONLY when the target is declared in the enclosing module/class (checked post-walk against the full declaration set, so forward references resolve) — Kernel builtins (`length`, `is_*`, `function_exported?`) and imported functions are not local symbols and produce no edge. Exclusions: special forms (case/cond/quote/unquote/...), def signature heads, an attribute's own NAME and the declaration attributes (EX-D25 — a code-valued attribute is NOT excluded), member access (`order.side`), quoted code. Self-recursion IS emitted (Rust `calls find -> find` analog) | 1.0 |
 | instantiates | ✅ | (a) `%Struct{...}` literals in body position (`instantiates new -> MyApp.User`) — never for `Map.put`-style module calls, never for pattern-position structs in a def head; plain `%{}` emits nothing. (b) `struct(User, attrs)` (ELXD19). (c) **`raise Mod` / `raise Mod, msg` / `reraise Mod, stack` (EX-D17)** — the same construction through `Kernel.raise`'s exception entry point, so it is an `instantiates` edge and never a call; 401 alias-named sites in 200 files of elixir@024beb1b carried no edge before the fix. A `__MODULE__` first argument resolves to the enclosing module; a bare `raise "msg"`, a bound exception, or a computed module name is **silent** (no static target to name). Self-construction (`raise __MODULE__` in the module's own body) is suppressed with the rest of the X class | 0.9 |
 | references | ✅ | module dependencies only: `use`/`import`/`alias`/`require` → `references module -> dep` (the FP-family module-dep contract, Clojure ns → required libs). A multi-alias expands one dependency per member (`alias Foo.{Bar, Baz}`, ELXD20) and **EX-D26 (2026-09-29)** widened the member filter to `identifier` nodes, so lowercase FUNCTION aliases (`alias Helper.{make, name}`) publish `references -> Helper.make` / `-> Helper.name` and register the local name; a bare call through such an alias then resolves (`make()` → `calls -> Helper.make`). Measured 0 sites in 938 files of the six corpora — a latent hole, fixed because it is one predicate wide. Body identifiers emit NOTHING (the old 47-edge references flood is removed) | 0.9 |
-| uses | ✅ | **ELIXIR_FIX2-U1 (2026-10-05)** a MEMBER FIELD READ: a `call` whose target is a `dot`, with **no** `arguments` child, whose receiver's first character is lowercase — `user.name`, `o.id`, `user.address.city` (2 edges: `address`, `city`, because the grammar nests `call(dot(call(dot(user,address)),city))`). Uppercase receiver = a module, so the same node shape is a remote reference and stays `calls` (Go's rule verbatim: "selectors that are the callee of a call_expression are skipped — the calls edge handles them"). Excluded with reasons: quoted block, def signature head, DECLARATION attribute value, `->` pattern position (ER-D7: a head pattern emits nothing). Measured 2,117 edges / 180 files from 2,244 construct sites (96.43% published; the 80 unpublished sites are each named in §4). `memberReadLeaf` sits next to `isMemberAccess` on purpose: if the two ever disagree a field read is either double-labelled or silently dropped | 0.7 |
+| uses | ✅ | **EX-EX3 × ELIXIR_FIX2-U1, reconciled (2026-10-07) — see §12** a MEMBER FIELD READ: a `call` whose target is a `dot`, with **no** `arguments` child, whose receiver is a lowercase variable or a `%`-literal (`%OntoUser{}.name`). Uppercase receiver = a module, so the same node shape is a remote reference and stays `calls` (Go's rule verbatim: "selectors that are the callee of a call_expression are skipped — the calls edge handles them"). Excluded with reasons: quoted block, def signature head, DECLARATION attribute value, `->` pattern position (ER-D7: a head pattern emits nothing). Two labels, deliberately countable apart: **`struct_field_read` at 0.9** when the file declares the field (gated on the declared-struct-field vocabulary, map-bound receivers dropped), **`usage_contextual` at 0.7** when the file declares no struct field at all, so there is nothing to verify against. The pre-reconciliation FIX2 measurement (2,117 edges / 180 files, 96.43% of 2,244 construct sites, all at 0.7) is kept in §4 as the record of what that rule published; §12 has the current numbers and the collision they answer | 0.9 / 0.7 |
 | exports | ✅ | **ELIXIR_FIX2-X2 (2026-10-05)** what the module PUBLISHES. Elixir has no `export` keyword — the language draws the surface with the DEFINITION FORM: `def`/`defmacro`/`defguard`/`defdelegate`/`@type`/`@opaque`/`@callback`/`defstruct`/a nested `defmodule` are reachable from outside the file; `defp`/`defmacrop`/`defguardp`/`@typep` are not. Measured 5,076 edges / 420 files (whole 601-file corpus, after ELIXIR_FIX2-P6 removed 6 edges that named an un-nameable module's members). The private half is the falsifier: 7,918 `defp`-family + 41 `@typep` corpus sites that an "is it a function" rule would publish. NOT published: a struct `Property` (membership rides `contains`, the exports-family ruling), an ownerless symbol (no owner to publish from), `owner === name` (the EX-L3 self-loop). `res.exports` (the ExportInfo LIST) is a different channel and is unchanged | 1.0 |
 | overrides | ⚠ GAP-in-the-language, DOES NOT FIRE on this corpus | **ELIXIR_FIX2-O1/O2 (2026-10-05)** Elixir HAS the construct: `defoverridable` (26 corpus sites / 14 files) and `super(...)` (17 / 4), and the analyzer read NEITHER before. It reads both now and publishes only the shape with two DISTINCT endpoints — a file that both DECLARES a provider N (with `defoverridable`) and `use`s N, which measures **0 sites in 601 files**. Not published, each with its measurement: `use N` in another file + any `def f` (a FABRICATION — most defs in a `use N` module are new, 510 `use` sites / 325 files); `defoverridable f: 1` + a later `def f` in the SAME module (17 sites / 3 files — a real override, but this lane merges a multi-clause head into ONE symbol so both endpoints are the same string: 17 self-loops carrying no graph information); a def name repeated across two modules in one file (21 / 9, and not an override at all). Fixture `use-defoverridable` is where the branch fires | 0.9 |
 
@@ -607,3 +607,90 @@ Two things the master should read here rather than the headline:
    harness's `{label, from, target}` shape and reconcile per §6, so this widens
    what is CHECKED without changing a verdict. Until it lands,
    `rel-type-coverage-gate` keeps reporting 3 un-audited labels for this lane.
+
+## 12. `uses` — a spec collision between two authors, reconciled (2026-10-07)
+
+Two pins constrain the SAME rule in opposite directions, and both landed on main in
+the corpus commit `1719ff6b3` (2026-10-07) as declared failures:
+
+| pin | authored | by | demands |
+| --- | --- | --- | --- |
+| `ontology-uses` (EX-EX3) | 37be14e7a, 2026-10-03 | the ontology wave | publish ONLY when the leaf names a struct field **this file** declares ("so a published target is always a real Property symbol"), at `struct_field_read`; and forbid the map key `m.domain`, the map-BOUND `m.id` (`%{} = m`), the chain's intermediate `u.profile`, and a `calls` edge to the literal receiver `%OntoUser{}.name` |
+| `member-read-uses` (ELIXIR_FIX2-U1) | 2a169c958, 2026-10-05 | the FIX2 wave | publish member reads in a file that declares **no struct at all** — `user.name`, `user.address.city` (both `address` and `city`), `o.id` — at 0.7 with `usage_contextual` |
+
+**This was not a defect in one of them — it is a collision, and it is measured as
+one.** 37 distinct revisions of `src/ast/real-elixir-analyzer.ts` exist in the object
+store: 32 reachable from a ref, plus **5 that no ref and no reflog points at**
+(the unreachable layer `script/m14/preservation-audit.py --dangling` walks). 15 of
+the 37 were run against the whole lane directly; of the other 22, every one carries
+NEITHER `struct_field_read` nor `usage_contextual` in its source, and both pins
+require at least one edge carrying one of those labels, so each fails a pin by
+construction. **No revision of this file passes both pins.** The two nearest misses
+are the lineage head (2,434 lines, 17 lane failures, `ontology-uses` red) and the
+wave's realization (`5d6dbd58`, 2,614 lines, 18 lane failures, `member-read-uses`
+red) — the wave replaced the unconditional rule with the declared-field gate, which
+is exactly what turned the FIX2 pin red. Its neighbours (`2381`, `2297`, `2326`,
+`2208`, `2226`, `2279`, `2384`, `2536`, and the 5 unreachable ones) each fail one or
+both; `2326` is the best of that family at 13 failures and fails both.
+
+### The reconciled rule
+
+The gate is applied exactly when the file has the vocabulary to apply it:
+
+| the file declares | `uses` publication | label | confidence |
+| --- | --- | --- | --- |
+| ≥1 struct field | only reads whose leaf is a declared field (`declaredStructFields`) | `struct_field_read` | 0.9 |
+| no struct field at all | every staged member read | `usage_contextual` | 0.7 |
+
+Two gates apply in BOTH branches, because neither depends on that vocabulary: a read
+through a receiver a `%{} = m` / `%{a: a} = m` match bound to a MAP is dropped (a
+map-key read is not a struct-field read, whatever the file declares — the corpus case
+is `defp from_map(%{} = datetime_map)` reading eleven keys at
+`calendar/datetime.ex:2063`), while `%Mod{} = u` binds a STRUCT and keeps publishing.
+A `%`-literal receiver is exempt from that gate (it is a value, not a binding) and
+**R7** keeps its spelling out of every `calls` target: a target carrying `%` or `{}`
+names no symbol, which is what the three pins' forbids say about `%OntoUser{}.name`,
+`%Helper{}.helper_fun` and `%URI{uri | path: "/bar"}.path`.
+
+Staging is post-walk (`ctx.usesCandidates`, resolved after the walk) and not
+emission-time, because a read can precede the `defstruct` that declares its field.
+`metadata` on the result carries the countable split: `usesCandidates`,
+`usesVerified`, `usesContextual`, `mapKeyReceiverDropped`.
+
+### Measurement — elixir corpus (568 files), before → after
+
+| | before | after |
+| --- | --- | --- |
+| `uses` edges | 2,108 | 1,630 |
+| — `struct_field_read` @0.9 | 0 | 168 |
+| — `usage_contextual` @0.7 | 2,108 | 1,462 |
+| `uses` files | 178 | 159 |
+| `uses` distinct sources / targets | 480 / 379 | 378 / 303 |
+| `uses` endpoints resolving file-local | 32.3% | **36.1%** |
+| `uses` endpoints resolving project-wide | 64.4% | **70.3%** |
+| `uses` edges resolving both ends | 1.4% | 1.7% |
+| `calls` edges / distinct targets | 48,791 / 6,857 | 48,786 / 6,855 |
+
+The other eight audited types are byte-identical in the same run — the change is
+confined to this rule. The portable part of the result is the resolution column: the
+1,630 surviving edges bind to symbols more often than the 2,108 did, which is what
+"the remainder stay silent rather than fabricated" has to mean in numbers.
+
+### What this rule gives up, stated
+
+* In a file that declares struct fields, a read of a field declared in ANOTHER file
+  is silent (the gate cannot verify it). That is the wave's measured trade and it is
+  the price of the 36.1/70.3 above; the fallback branch exists only for files with no
+  struct field vocabulary at all.
+* The fallback's labels are weaker on purpose: `usage_contextual` is an unverified
+  claim about the shape, not a statement that the field exists.
+* The map-binding detector is LEXICAL within one definition: a `%{} = x` binding
+  inside an anonymous `fn` is recorded against its enclosing definition, which can
+  only drop reads, never publish one.
+
+### Fixtures
+
+`ontology-uses` passes (its 9 findings close) and `member-read-uses` is unchanged at
+PASS — the first revision of this analyzer where both hold at once. Lane: 65 pass /
+17 fail → **66 / 16**; whole-corpus fixtures 136 → 135 declared failures, no lane
+regressed.
