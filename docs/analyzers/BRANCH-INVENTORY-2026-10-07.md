@@ -217,7 +217,41 @@ Two candidate classes were checked and rejected on the merits, not by the compil
 its pins for groovy and java fail against newer, better revisions; the `.wip(…)` and
 `.rescue(agents)` blobs score no better than the committed revisions on the same pins.
 
-## 7. Method notes that a later reader will want
+## 7. The verification battery at `a06b19701`, and what still fails outside it
+
+Run at the commit this note was pushed with:
+
+| check | command | result |
+|---|---|---|
+| types | `npx tsc --noEmit -p tsconfig.json` | exit 0 |
+| build | `npm run build` | exit 0 |
+| fixtures | `bun run script/m14/run-fixtures.ts` | exit 0, 1447 pins, 135 declared failing, `fixture baseline gate: no regressions` |
+| no regex in analyzers | `bash script/m14/no-regex-gate.sh` | exit 0 — 0 usages, 48 of 48 analyzers in scope, and the census agrees with HEAD (0 unclassified, 0 mislocated) |
+| main is forward-only | `bash .tools/main-forward-guard.sh` | `guard: OK — remote main is an ancestor of local main` |
+
+Two gates fail, and both were failing before this pass — every commit they name is an
+ancestor of the previous `origin/main` (`667efc518`), verified with
+`git merge-base --is-ancestor`:
+
+* `script/m49/verify-evidence-identity.ts` — 19/21: four artifacts no producer claims
+  (`M14.0.F10.powershell` from `0aad631e0`, `M14.0.JS-CENSUS` from `24c5f52a5`,
+  `M14.0.SVELTE-CENSUS` from `77c4b9f09`, `M14.6.perl` from `8f5e77904`) and one producer
+  whose artifact was never written (`M14.0.F5.fsharp`).
+* `script/m49/verify-evidence-lineage.ts` — 95 passed, 5 failed: the same three orphan
+  artifacts lack `regeneratedAt` and `regeneratedAtCommit`.
+
+Both are left as they are on purpose. The missing fields belong to the producer scripts
+that generate those artifacts, and adding them by hand would be exactly the hand-edited
+result the contract forbids; the four orphans are four producers nobody has written
+against a claim four lanes already publish.
+
+One gate moved in the right direction and is worth naming: the no-regex gate reported
+five in-scope usages before this pass (one real, four stale entries in a census last
+regenerated on 2026-10-05) and reports zero now, because the landed ruby revision had
+already replaced its `/\\/g` with a split/join and the last real one — kotlin's
+`/\.kts$/i` file-name test, older than the fold — is a suffix test in `6deea761c`.
+
+## 8. Method notes that a later reader will want
 
 * A source count is never evidence in this programme; the only valid instrument is
   `script/m14/firing-check-v2.mjs`, which runs the production path
