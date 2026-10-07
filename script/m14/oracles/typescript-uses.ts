@@ -90,6 +90,40 @@
 
 import { declaredNames, typePositionNodes, patternNames, paramNames, PRIMITIVES, type TruthEdge } from "./typescript-references"
 
+/**
+ * Is this string a bare JavaScript/TypeScript IDENTIFIER?
+ *
+ * Written as a character-class check by CODE rather than as a pattern. The
+ * pattern it replaces was `/^[A-Za-z_$][A-Za-z0-9_$]*$/`, which is correct, but
+ * the lane's rule is that nothing here is a regular expression: over source text
+ * a pattern matches comments and string literals, and the whole point of the
+ * no-regex rule is that this file should be reading a TREE, not matching strings.
+ * Here the input is a NAME the tree gave us — a single token — so a code scan is
+ * exact and costs nothing.
+ */
+function isIdentifierToken(s: string): boolean {
+  if (s.length === 0) return false
+  const first = s.charCodeAt(0)
+  const firstOk =
+    (first >= 65 && first <= 90) || // A-Z
+    (first >= 97 && first <= 122) || // a-z
+    first === 95 || // _
+    first === 36 // $
+  if (!firstOk) return false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    const ok =
+      (c >= 65 && c <= 90) ||
+      (c >= 97 && c <= 122) ||
+      (c >= 48 && c <= 57) || // 0-9
+      c === 95 ||
+      c === 36
+    if (!ok) return false
+  }
+  return true
+}
+
+
 const named = (n: any): any[] => (n?.namedChildren ?? [])
 const field = (n: any, f: string): string | null => n?.childForFieldName?.(f)?.text ?? null
 
@@ -233,7 +267,7 @@ export function deriveTypeScriptUsesTruth(root: any): TruthEdge[] {
     if (!n) return
     let name: string | null = null
     if (SOURCES.has(n.type)) name = field(n, "name")
-    if (name && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name)) {
+    if (name && isIdentifierToken(name)) {
       const bound = new Set<string>()
       const fp = n.childForFieldName?.("parameters")
       if (fp) for (const b of paramNames(fp)) bound.add(b)

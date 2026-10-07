@@ -93,7 +93,7 @@ const tsP = await load("tree-sitter-typescript.wasm")
 
 const unq = (s: string): string => (s.length >= 2 && (s[0] === '"' || s[0] === "'") && s[s.length - 1] === s[0] ? s.slice(1, -1) : s)
 const nodeTypes = new Map<string, number>()
-const bump = (k: string): void => nodeTypes.set(k, (nodeTypes.get(k) ?? 0) + 1)
+const bump = (k: string): void => { nodeTypes.set(k, (nodeTypes.get(k) ?? 0) + 1) }
 
 /**
  * A `<script>` block's `lang`, read the way `engine.ts:extractSfcScriptBlocks`
@@ -440,7 +440,9 @@ const realOverrides: Array<{ component: string; base: string; member: string; ki
       // this file actually imports.
       const dir = path.dirname(path.join(c.label.split("/")[0] === c.label ? "" : "", ""))
       void dir
-      const baseDir = path.dirname(c.label.replace(/^[^/]+\//, ""))
+      // `repo/rel` -> `rel`, by indexOf rather than a regex.
+      const slash = c.label.indexOf("/")
+      const baseDir = path.dirname(slash >= 0 ? c.label.slice(slash + 1) : c.label)
       void baseDir
       const repoDir = c.repoDir
       const candidates = ["", ".js", ".ts", ".mjs", ".cjs", "/index.js", "/index.ts", ".vue"]

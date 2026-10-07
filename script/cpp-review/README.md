@@ -25,6 +25,30 @@ All of them honour `BB_CORPUS_ROOT` (default `$HOME/ishaq/fixtures/repositories`
 | `d7-attribute-name.ts` | D7's measurement: specifiers whose `name` field is a `qualified_identifier`, and which arm each belongs to |
 | `dbg-parent.ts`, `enumnodes.ts` | two-line node probes used to pin a parent/field chain before a fix was written on it |
 | `perf-interleaved.ts` | the pre/post A/B, both arms in ONE process, order alternated per rep, parse excluded. |
+| `ontology-census.ts` | **the relationship-type census.** Per type: edge count, files, confidence, `evidenceClass`, endpoint resolution at two scopes, and the R7 endpoint adjudication. Plus a grammar inventory (182 node types) and parse-tree STRUCTURAL probes for every construct the language expresses by convention rather than by node — pure virtuals, the `override` keyword, virtual inheritance, the export attribute, includes. Instrument D counts what `src/ast/engine.ts` erases before the analyzer runs. |
+| `oracle-agreement.ts` | does the analyzer's own output match `script/m14/cpp-truth.ts`, per type, through the PRODUCTION entry. MISSING / unexplained / attributed, set-based. This is the check the three `DERIVATION` findings said did not exist. |
+| `mutants.ts` | **the lane's mutation harness.** 13 mutants, each reverting one decision from the 2026-10-04 ontology round. Rewrites the analyzer on disk and runs the SHARED fixture runner in a child process, so the expectations evaluated are the canonical ones and a mutant that crashes the run is CAUGHT rather than miscounted as a survivor. Four of the thirteen SURVIVED on their first run; what each one exposed is in the lane doc. |
+
+### Why these three are lane-owned and not in `script/m14/`
+
+`mutate-analyzer.ts` and `differential.ts` are MASTER-owned, and
+`ontology-coverage-gate.ts` has **no `CPP_RULED` table** — running it for cpp exits 2
+with "no RULING TABLE for cpp" rather than reporting. So this lane owns its
+instruments, in the same shape as the arbiter's (same corpus admission, same
+production entry, same three verdicts), so a number they produce can be pasted into
+the arbiter's table without re-deriving it. The needs are reported, not worked
+around by editing a shared file.
+
+### A fourth instrument, because `analyze()` and `parseFile` disagree
+
+`ontology-census.ts` has an instrument the other three do not need, added after
+`exports` came out **0** through the production entry while the analyzer emitted it
+from raw source. `src/ast/engine.ts` blanks `__attribute__((...))` and
+`__declspec(...)` out of C/C++ content before the parser runs, so 156 attribute
+sites in 24 corpus files are invisible to every c/cpp analyzer. An instrument that
+called `analyze()` would have reported 1 and been wrong about what the product
+delivers. This is the *known-zeros* failure mode the workstream doc names, and the
+census measures it rather than routing around it.
 
 ## Two disciplines these encode
 
