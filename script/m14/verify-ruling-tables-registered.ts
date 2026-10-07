@@ -137,7 +137,12 @@ if (unlisted.length) {
   console.error(`INCOMPLETE LIST: these lanes have no table and no spec ruling, but are not`)
   console.error(`listed as unadjudicated: ${unlisted.join(" ")}`)
   console.error(`Add them, or the gate reports a clean state while work is outstanding.`)
-  process.exit(1)
+  // NOT an exit. This used to `process.exit(1)` here, which meant the four checks BELOW
+  // never ran on any tree where the list was incomplete — so the gate reported only its
+  // first failure and stayed silent about unregistered tables, dangling registrations and
+  // forks. A gate that stops at the first finding is a gate whose other findings are
+  // unmeasured, and "unmeasured" reads as "absent". The failures are collected and every
+  // check still runs, so one run reports the whole state.
 }
 
 /**
@@ -166,7 +171,6 @@ if (phantom.length) {
   console.error(`${phantom.join(" ")}`)
   console.error(`Drop them from UNADJUDICATED. A lane that finished still counted as backlog`)
   console.error(`understates the backlog, and the understatement grows as lanes finish.`)
-  process.exit(1)
 }
 console.log(`unadjudicated lanes (neither table nor spec RULED) : ${UNADJUDICATED.length}  (${UNADJUDICATED.join(" ")})`)
 console.log(`cross-check: ${missing.length} lane(s) with no source, all listed — ${missing.join(" ") || "none"}`)
@@ -189,18 +193,81 @@ const dangling = [...registered].filter((l) => !onDisk.has(l)).sort()
 console.log(`ruling tables on disk : ${onDisk.size}  (${[...onDisk].sort().join(" ")})`)
 console.log(`registered in arbiter : ${registered.size}  (${[...registered].sort().join(" ")})`)
 
-if (unregistered.length === 0 && dangling.length === 0) {
-  console.log("PASS — every ruling table on disk is registered, and every registration resolves")
-  process.exit(0)
-}
 if (unregistered.length) {
   console.error(`\nUNREGISTERED (${unregistered.length}) — committed but invisible to the arbiter:`)
   for (const l of unregistered) console.error(`  script/m14/${l}-ruled.ts exists, RULED_BY_LANG.${l} does not`)
+  console.error("An unregistered ruling table does not fail loudly — it makes the lane read as")
+  console.error("unadjudicated. Register it, or delete it if the work was abandoned.")
 }
 if (dangling.length) {
   console.error(`\nDANGLING (${dangling.length}) — registered but no table on disk:`)
   for (const l of dangling) console.error(`  RULED_BY_LANG.${l} has no script/m14/${l}-ruled.ts`)
 }
-console.error("\nAn unregistered ruling table does not fail loudly — it makes the lane read as")
-console.error("unadjudicated. Register it, or delete it if the work was abandoned.")
+
+/**
+ * THE FORK CHECK — the last direction, and the one that was silently inverted.
+ *
+ * This gate derives `HERE`, `GATE` and `SPEC_DIR` from `import.meta.url`. That is the
+ * right idiom and it is also what makes a COPY of this file dangerous: a copy in any
+ * other directory reads that directory, finds no `*-ruled.ts` and no `spec/`, and
+ * reports every laptop-B lane as unregistered. Not a crash — a confident, wrong FAIL.
+ *
+ * That is not hypothetical. `scripts/agent-orchestration/verify-ruling-tables-registered.ts`
+ * arrived with the "checkpoint before integrating 207 lane commits" merge: an older copy
+ * of this file, with an older `UNADJUDICATED = ["clean","graphql","r"]` and without the
+ * phantom check. Run on `origin/main` it exits 1 with
+ *
+ *   INCOMPLETE LIST: ... not listed as unadjudicated: bash css dart fsharp ... zig
+ *
+ * i.e. all 20 ruled lanes, named as unregistered, on a tree where the canonical gate
+ * exits 0 and reports 20 tables / 20 registered / 0 unadjudicated. Nothing referenced
+ * the copy — `package.json`'s `audit:ruling-tables` points here — so it was pure downside:
+ * a reader who finds it first concludes the whole registry is broken.
+ *
+ * A duplicate that disagrees with its original cannot be caught by asking the original
+ * about its own behaviour, because the original is correct by construction. It has to be
+ * caught by LOOKING for the duplicate. So this check walks the tracked tree for any other
+ * file with this name and fails.
+ *
+ * The walk is deliberately narrow — `script/**` and `scripts/**`, skipping `node_modules`
+ * and the build dir — because the population that matters is "a second copy of this
+ * instrument inside the directories instruments live in".
+ */
+const REPO = join(HERE, "..", "..")
+function findForks(dir: string, acc: string[] = []): string[] {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (e.name === "node_modules" || e.name === "dist" || e.name.startsWith(".")) continue
+    const p = join(dir, e.name)
+    if (e.isDirectory()) findForks(p, acc)
+    else if (e.name === "verify-ruling-tables-registered.ts") acc.push(p)
+  }
+  return acc
+}
+let forks: string[] = []
+try {
+  for (const sub of ["script", "scripts"]) {
+    const d = join(REPO, sub)
+    if (existsSync(d)) forks = forks.concat(findForks(d))
+  }
+} catch {
+  console.error("could not walk script/ and scripts/ for forks — treating as unchecked, not as clean")
+  forks = ["<walk failed>"]
+}
+const SELF = join(HERE, "verify-ruling-tables-registered.ts")
+const foreign = forks.filter((p) => p !== SELF).sort()
+if (foreign.length) {
+  console.error(`\nFORK (${foreign.length}) — another copy of this gate, which reads ITS OWN directory:`)
+  for (const p of foreign) console.error(`  ${p.replace(`${REPO}/`, "")}`)
+  console.error("A copy resolves HERE/GATE/SPEC_DIR against the directory it sits in, so it finds")
+  console.error("no ruling tables and no spec/ and reports every lane unregistered. That failure")
+  console.error("is indistinguishable from a broken registry unless you know which file you ran.")
+  console.error("Delete the copy. Do not make it delegate — one gate, one directory.")
+}
+
+const failures = unlisted.length + phantom.length + unregistered.length + dangling.length + foreign.length
+if (failures === 0) {
+  console.log("PASS — every ruling table on disk is registered, and every registration resolves")
+  process.exit(0)
+}
+console.error(`\nFAIL — ${failures} finding(s) across 5 checks: unlisted ${unlisted.length}, phantom ${phantom.length}, unregistered ${unregistered.length}, dangling ${dangling.length}, forks ${foreign.length}`)
 process.exit(1)

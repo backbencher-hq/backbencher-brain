@@ -805,4 +805,56 @@ export const NIM_MUTANTS: NimMutant[] = [
       }),
     }),
   },
+  {
+    id: "nim/member-access-receiver-dropped",
+    language: "nim",
+    defectClass: "lost-metadata",
+    description:
+      "The member-access branch stops publishing the RECEIVER — `meta.fieldAccessExpression` " +
+      "goes from \"c.id\" to absent — while the edge itself still targets the bare `id`. " +
+      "Nothing else changes: same edge, same target, same confidence, one metadata key gone. " +
+      "Caught by nim/field-receiver's three expectRelationships rows, each of which pins " +
+      "`meta.fieldAccessExpression`. " +
+      "This mutant exists because of what it would cost SILENTLY. `field-type-ceiling.mts` " +
+      "derives its whole answer from that key — it is what makes `Character.id` derivable " +
+      "without an import graph — so if the key stopped being published the ceiling would " +
+      "read 0 and the documented decision not to build the rule would still be quoted as " +
+      "evidence. A null ceiling and a worthless ceiling are indistinguishable in the " +
+      "artifact, and only one of them is a statement about Nim. The fixture is what " +
+      "distinguishes them.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) => {
+        if (String(e?.type ?? "") !== "uses") return e
+        const m = e?.metadata
+        if (!m || m.fieldAccessExpression == null) return e
+        const { fieldAccessExpression: _dropped, ...rest } = m
+        return { ...e, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "nim/callable-parameter-type-dropped",
+    language: "nim",
+    defectClass: "lost-metadata",
+    description:
+      "`readParameters` keeps the parameter NAME and drops its declared TYPE, so `c` arrives " +
+      "as a parameter with no type where the source read `c: Character`. The member-access " +
+      "edge is untouched and still carries `fieldAccessExpression: \"c.id\"`. " +
+      "Caught by nim/field-receiver's expectParameters rows for charToResp and shipToResp, " +
+      "which pin both name and type. " +
+      "It is the second of the two premises the B1 ambiguity ceiling rests on, and the " +
+      "cheaper of the two to lose without noticing: without a parameter type there is no " +
+      "qualifier to apply, so `field-type-ceiling.mts` would fall from 42 file-unique " +
+      "candidates to 9 rejected at \"parameter has no declared type\" — and a ceiling that " +
+      "reads 0 looks exactly like a ceiling that measured 0.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const ps = s?.parameters
+        if (!Array.isArray(ps) || ps.length === 0) return s
+        return { ...s, parameters: ps.map((p: any) => ({ name: p?.name })) }
+      }),
+    }),
+  },
 ]
