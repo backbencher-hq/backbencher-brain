@@ -8,3 +8,20 @@ repository = "https://github.com/backbencher-hq/backbencher-brain"
 
 [language_servers.bb-lsp]
 languages = ["TypeScript", "JavaScript"]
+# WHY THIS BLOCK WAS INCOMPLETE (found 2026-10-07, when the owner's Zed leg was
+# finally attempted). This manifest declared which languages the server handles
+# and nothing else — there was NO `command`, so Zed had nothing to launch and the
+# integration could never have worked. It was never exercised, so nothing failed
+# loudly: a static manifest missing a required key reads exactly like a manifest
+# that is merely short. Nothing in the suite covers this file, which is why it
+# survived.
+#
+# The command is a wrapper script rather than a bare "node". Zed, like every GUI
+# application, does not inherit a shell's PATH, and on this machine node lives at
+# ~/.local/node/bin/node and is NOT on the default PATH — the same condition that
+# made the VS Code extension report "bb: server down" until it was fixed there.
+# The wrapper resolves a real node from PATH or from the usual install prefixes,
+# and deliberately does NOT fall back to Zed's own runtime: that fallback was
+# measured on the VS Code side and fails on better_sqlite3.node with "compiled
+# against a different Node.js version".
+command = "./bin/bb-lsp-server"
