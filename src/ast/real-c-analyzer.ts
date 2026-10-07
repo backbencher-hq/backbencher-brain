@@ -9,6 +9,28 @@ function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
 }
 
+function stringIndexOf(str: string, val: string): number {
+  return str.indexOf(val)
+}
+
+/**
+ * Collapse runs of whitespace to single spaces and trim. A character scan, not a
+ * pattern -- this file's own P11 property requires no regex literal here, and the
+ * marker text is the edge's TARGET, so it has to be stable enough to match on.
+ */
+function collapseWhitespace(text: string): string {
+  let out = ""
+  let pendingSpace = false
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    const isWs = ch === " " || ch === "\t" || ch === "\n" || ch === "\r" || ch === "\f" || ch === "\v"
+    if (isWs) { pendingSpace = out.length > 0; continue }
+    if (pendingSpace) { out += " "; pendingSpace = false }
+    out += ch
+  }
+  return out
+}
+
 // Strip `<`, `>`, and `"` characters from an include-path node text
 // (`<stddef.h>` → `stddef.h`, `"CoreApi.h"` → `CoreApi.h`). Pure-String
 // scan — replaces the legacy `/[<>"']/g` regex used by getIncludePath and
@@ -75,6 +97,49 @@ function isDigitLedNameFragment(text: string): boolean {
   return true
 }
 
+/**
+ * Does a piece of text SPELL an export attribute?
+ *
+ * A character scan, not a pattern, which is what this file's own P11 property
+ * requires of it (no regex literal anywhere in `real-c-analyzer.ts`).
+ *
+ * The three C spellings of "this symbol leaves the shared object" are
+ * `__declspec(dllexport)`, `__attribute__((visibility("default")))` and
+ * emscripten's `__attribute__((export_name("...")))`. The fourth attribute in
+ * the same family is the NEGATIVE one, `visibility("hidden")`, and it is
+ * excluded by requiring `default` to appear inside the same argument list --
+ * an unbounded `includes("visibility")` test would read a `hidden` boundary as
+ * an `exports` one, which is the false edge the family ranks worse than a
+ * missing one.
+ */
+function hasExportAttributeSpelling(text: string): boolean {
+  if (text.length === 0) return false
+  if (stringIncludes(text, "dllexport")) return true
+  if (stringIncludes(text, "export_name")) return true
+  const at = stringIndexOf(text, "visibility")
+  if (at >= 0 && stringIncludes(text.slice(at, at + 48), "default")) return true
+  return false
+}
+
+/**
+ * The node types the C grammar gives an ATTRIBUTE. Read from
+ * `grammars/tree-sitter-c/src/node-types.json`, not remembered: all four are
+ * declared there (`attribute_specifier` and `ms_declspec_modifier` both verify
+ * true), and the lane's F1 grammar audit checks the analyzer's node-type
+ * literals against the same list. `ms_call_modifier` is MSVC's `__declspec`
+ * when the grammar models it as a call rather than a modifier.
+ *
+ * NOT specific to export attributes, which is why the name says ATTRIBUTE: the
+ * same nodes carry `__attribute__((noreturn))`, and an attribute's internal
+ * `call_expression` is not a call for any of them.
+ */
+const ATTRIBUTE_NODES = new Set<string>([
+  "attribute_specifier",
+  "attribute_declaration",
+  "ms_declspec_modifier",
+  "ms_call_modifier",
+])
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
@@ -84,33 +149,133 @@ const FREE_FUNCTIONS = ["free", "kfree", "vfree"]
 const UNSAFE_STRINGS = ["strcpy", "sprintf", "gets"]
 const SAFE_STRINGS = ["strncpy", "snprintf"]
 /**
- * Macros that mark a declaration as part of a module's PUBLIC API.
+ * Macros that mark a declaration as part of a module's PUBLIC API **when they appear
+ * as a CALL** -- the kernel spelling, `EXPORT_SYMBOL(my_function, GPL);`, where the
+ * macro's FIRST ARGUMENT is the exported name.
  *
- * The kernel convention (`EXPORT_SYMBOL`) and the userspace one are BOTH here, and
- * they are structurally different, which is why the exported name is read from two
- * different places (#963).
+ * This list is deliberately NOT used for the prefix spelling (see `isExportMarker`
+ * below), because a callee position proves nothing about a macro's signature: a
+ * callee whose name happens to contain `EXPORT` is not thereby an export marker.
+ * The prefix position, by contrast, is a structural fact — the grammar only builds a
+ * `macro_specifier` for a macro standing where a storage class stands — so the prefix
+ * branch can afford a class rule where this one cannot.
  *
- * Measured over the three corpora, the userspace markers appear 955 (`GIT_EXTERN`),
- * 163 (`CURL_EXTERN`) and 401 (`REDISMODULE_API`) times -- 1,519 real API markers that
- * produced NOTHING, because until #963 the list held only the two kernel macros, which
- * appear zero times in three userspace codebases.
- *
- * `GIT_EXTERN` is included for completeness but is NOT reachable: its 400 uses are all
- * the parenthesised form `GIT_EXTERN(int) git_revert(...)`, which is not valid C -- a
- * macro call in declaration position -- so the grammar yields an ERROR node. That is a
- * declared limit, not an oversight, and it is why the name is read from the DECLARATOR:
- * in the userspace bare form the name is where C puts it.
+ * Measured over the three historical corpora, the userspace markers appear 955
+ * (`GIT_EXTERN`), 163 (`CURL_EXTERN`) and 401 (`REDISMODULE_API`) times. The prefix
+ * branch reads those by class, not by membership.
  */
 const EXPORT_MACROS = [
   // Kernel: the exported NAME is the macro's first argument.
   "EXPORT_SYMBOL",
   "EXPORT_SYMBOL_GPL",
-  // Userspace: the macro is a storage-class-like PREFIX, and the name is the
-  // declarator's. All 555 uses of these two parse cleanly.
+  // Userspace, retained here for the CALL spelling. libgit2 writes
+  // `GIT_EXTERN(int) git_revert(...)`, which is not valid C and parses as an ERROR;
+  // the prefix branch reaches the bare form instead.
   "CURL_EXTERN",
   "REDISMODULE_API",
   "GIT_EXTERN",
 ]
+
+/**
+ * C3: is this macro an EXPORT MARKER, as a class rather than as a list?
+ *
+ * **The list was the defect.** `EXPORT_MACROS` held five names, and #963 widened it
+ * from two to five by reading one corpus. That is whack-a-mole with a corpus census
+ * attached: the next codebase spells the same boundary `JIM_EXPORT`, `CMPP_EXPORT`,
+ * `SQLITE_API`, `GTEST_API_` or `BENCHMARK_EXPORT` and the list misses it again. The
+ * same mistake this lane has already made and fixed twice — the regex inventory
+ * (#975) and the primitive-width whitelist (#936) — both of which were enumerations
+ * where a structural test was available.
+ *
+ * **MEASURED on sqlite (359 C/H files, `c3-ontology-census.ts` +
+ * `c3-construct-probe.ts`): with the five-name list, `exports` fired 0 times while the
+ * construct occurred 340 times in exactly the node shape the prefix branch reads.**
+ * The corpus split, from `macro_prefixed_type_specifier`'s `macro_specifier` child:
+ *
+ *   marker-carrying (the rule accepts)          non-marker (the rule refuses)
+ *     CMPP_EXPORT           161                   SQLITE_NOINLINE        87
+ *     JIM_EXPORT           113                   CMPP_PRIVATE           53
+ *     JNIEXPORT             31                   PRIVATE                22
+ *     SQLITE_API            17                   SQLITE_WSD             12
+ *     EXTERN                14                   CSV_NOINLINE            2
+ *     SQLITE_WASM_EXPORT     3                   VEC1_NOINLINE           2
+ *     XCMPP_EXPORT           1                   SQLITE_INLINE           2
+ *                                           ALIGN128 / FMT_CONSTEXPR / SEH_TRY …
+ *
+ * and, on the C++-header corpora (googletest + benchmark + fmt), the same node
+ * carries `GTEST_API_` 97, `BENCHMARK_EXPORT` 37 and `FMT_API` 15 — none of which was
+ * on the list either.
+ *
+ * **The rule is a suffix/part test over the marker's own token, gated on two
+ * structural facts the grammar already gives us:**
+ *
+ *   1. the token is in the marker POSITION — `macro_specifier` inside
+ *      `macro_prefixed_type_specifier` / `macro_type_specifier`, a node the grammar
+ *      only builds for a macro standing where a storage class stands; and
+ *   2. the token contains no lower-case letter, which is C's convention for a
+ *      configuration macro and which refuses the C++-header debris the same corpora
+ *      produce (`virtual` 125, `typename` 54, `template` 53, `std` 322) and every
+ *      parse-recovery artefact (`return` 22, `else` 2, `db` 2, `init` 2).
+ *
+ * **It is a strict SUPERSET of the old list, and that is checkable:** all five legacy
+ * names are accepted by `isExportMarker` (`EXPORT_SYMBOL` and `CURL_EXTERN` and
+ * `GIT_EXTERN` by part, `REDISMODULE_API` and `JNIEXPORT` by suffix), so no behaviour
+ * the five-name list produced is lost. `c/export-marker-class-965` pins that
+ * containment explicitly, one row per legacy name.
+ *
+ * **`PRIVATE` is absent from the word list deliberately.** `CMPP_PRIVATE` (53) and
+ * `PRIVATE` (22) are the SAME convention with the opposite meaning, and a word list
+ * containing both would publish `exports` for every private marker in the corpus.
+ */
+const EXPORT_BOUNDARY_WORDS = ["EXTERN", "EXTERNAL", "EXPORT", "PUBLIC", "API", "VISIBLE", "DLLEXPORT", "DLLIMPORT"]
+
+/**
+ * C3: the marker-class test. Character tests only — no regex (lane gate P11).
+ *
+ * True when `token` names an export boundary. The name may either CONTAIN a
+ * boundary word as an underscore-delimited part (`SQLITE_API`, `CURL_EXTERN`,
+ * `BENCHMARK_EXPORT`) or END with one (`JNIEXPORT`, `REDISMODULE_API`, `EXTERN`),
+ * after trailing underscores are stripped so `GTEST_API_` classifies.
+ */
+function isExportMarker(token: string): boolean {
+  if (!token) return false
+  let hasUpper = false
+  for (let i = 0; i < token.length; i++) {
+    const c = token[i]
+    if (c >= "a" && c <= "z") return false // C's macros are SCREAMING; lower case means debris
+    if (c >= "A" && c <= "Z") hasUpper = true
+  }
+  if (!hasUpper) return false
+  // the token must be an identifier: no `$`, no spaces, no operators
+  for (let i = 0; i < token.length; i++) {
+    const c = token[i]
+    const ok = (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_"
+    if (!ok) return false
+  }
+  let end = token.length
+  while (end > 0 && token[end - 1] === "_") end--
+  if (end === 0) return false
+  // (a) an underscore-delimited PART is a boundary word
+  let part = ""
+  for (let i = 0; i <= end; i++) {
+    const c = i < end ? token[i] : "_"
+    if (c === "_") {
+      if (inArray(EXPORT_BOUNDARY_WORDS, part)) return true
+      part = ""
+      continue
+    }
+    part += c
+  }
+  // (b) the token ENDS with a boundary word (`JNIEXPORT`, `REDISMODULE_API`)
+  for (let w = 0; w < EXPORT_BOUNDARY_WORDS.length; w++) {
+    const word = EXPORT_BOUNDARY_WORDS[w]
+    if (end < word.length) continue
+    let match = true
+    for (let i = 0; i < word.length; i++) if (token[end - word.length + i] !== word[i]) { match = false; break }
+    if (match) return true
+  }
+  return false
+}
 const FORMAT_FUNCTIONS = ["printf", "fprintf", "sprintf", "snprintf", "scanf", "fscanf", "sscanf", "syslog", "dprintf"]
 const DANGEROUS_FUNCTIONS = ["system", "popen", "execve", "execvp", "execl", "execlp"]
 const SIGNAL_FUNCTIONS = ["signal", "sigaction", "sigprocmask", "sigemptyset", "sigfillset", "sigaddset", "sigdelset", "sigwait", "sigpending", "sigsuspend"]
@@ -1076,6 +1241,23 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   private aliasTargets: Map<string, string> = new Map()
   /** #939: same-file `#define` replacement text, and same-file enum values. */
   private macroValueTexts: Map<string, string> = new Map()
+  /**
+   * #989: the same-file macros whose EVERY REPLACEMENT LIST is an export attribute --
+   * `#define CMPP_EXPORT extern __declspec(dllexport)`,
+   * `#define SQLITE_WASM_EXPORT __attribute__((used,visibility("default")))`.
+   *
+   * This is not C-D2 macro expansion, and the distinction is worth stating
+   * because C-D2 is the lane's standing refusal: nothing is expanded here. The
+   * fact used is that the FILE ITSELF defines the macro to be an export
+   * attribute, which is a fact about the file rather than about the build's `-D`
+   * set. What is refused is deciding what a macro means in general (#928, #931,
+   * #970, #981, #988), and the counterexample that keeps this narrow is
+   * sqlite's own `src/sqlite.h.in:75` -- `#ifndef SQLITE_API / #define
+   * SQLITE_API / #endif`, an EMPTY user-overridable hook that says nothing about
+   * visibility. An empty replacement list is therefore not a marker, and
+   * `hasExportAttributeSpelling` is what decides it rather than a name list.
+   */
+  private exportAttributeMacros: Map<string, boolean> = new Map()
   private enumConstantValues: Map<string, number> = new Map()
 
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
@@ -1921,6 +2103,17 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               // NOT an identifier -- which is why testing `namedChild(0).type ===
               // "identifier"` found nothing and `exports` stayed at zero after the
               // macro list was widened.
+              //
+              // C3: the test is the marker CLASS (`isExportMarker`), not membership in
+              // `EXPORT_MACROS`. Measured on sqlite: with the list, `exports` fired 0
+              // times in 359 files while the construct occurred 340 times in this exact
+              // node shape — `JIM_EXPORT` 113, `CMPP_EXPORT` 161, `SQLITE_API` 17,
+              // `JNIEXPORT` 31, `SQLITE_WASM_EXPORT` 3, `XCMPP_EXPORT` 1 — none of which
+              // the list knew. The rule is a strict superset: all five legacy names
+              // classify under it, which `c/export-marker-class-965` pins row by row.
+              // The CALL branch below keeps list membership on purpose: a callee's name
+              // proves nothing about a macro's signature, and only
+              // `EXPORT_SYMBOL(name, licence)` puts the exported name in argument 1.
               const first = node.namedChild(0)
               let marker = ""
               if (first && (first.type === "identifier" || first.type === "field_identifier")) {
@@ -1962,12 +2155,21 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                       type: ASTEngine.RelationshipType.Exports,
                       confidence: 1.0,
                       line_number: this.nodeLine(idNode),
-                      metadata: { relationshipType: "module_export", exportMacro: marker },
+                      metadata: {
+                        relationshipType: "module_export",
+                        exportMacro: marker,
+                        exportMarkerKind: this.exportMarkerKind(marker),
+                      },
                     })
                   }
                 }
               }
             }
+            // #989, the ATTRIBUTE spelling of the same boundary. Everything above
+            // reads a MARKER; C also writes the boundary as an attribute, and the
+            // attribute is a grammar node rather than a convention, so this is a
+            // GAP rather than a widening of a list.
+            this.emitAttributeExport(node, relationships, emittedExports, patterns)
             // #918, the DECLARATION spelling of the same heading — recovery cut
             // the region at the first parameter (`declaration` + an ERROR holding
             // the rest of the parameter list and the body's opening — measured:
@@ -2276,6 +2478,44 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             // callable name, and `subscript_expression` already declines to invent
             // one for the same reason.
             suppressCall = true
+          } else if (this.isAttributeInternalCall(node, fnNode)) {
+            // #989: an attribute's INTERNAL syntax is not a call.
+            //
+            // `int f(void) __declspec(dllexport);` parses as
+            //   ERROR
+            //     primitive_type
+            //     function_declarator
+            //       identifier "f"
+            //       parameter_list
+            //       call_expression            <- __declspec(dllexport)
+            //         identifier "__declspec"
+            // and `__attribute__((visibility("default"))) int g(void);` parses the
+            // argument as a `call_expression` inside the `attribute_specifier`
+            // itself. Both reached the callee ladder as an `identifier` and both
+            // published an edge asserting a function was called: `calls global ->
+            // __declspec`, `calls global -> visibility`. Neither name is callable --
+            // a declspecifier is a modifier and an attribute argument is a keyword
+            // -- and both would resolve to nothing, which is the #962/#963 rule that
+            // an edge whose target names nothing is not a fact.
+            //
+            // #954 fixed the neighbouring case (a callee that is not a NAME node,
+            // e.g. the numeric literal a mid-expression directive glues on) with a
+            // NODE-TYPE test rather than a pattern on the text, because a text
+            // pattern would be a regex and P11 holds this file to zero regex
+            // literals on its hottest path. This test is the same shape: an
+            // ancestor that IS an attribute node, or the two reserved spellings
+            // `__declspec`/`__attribute__`, which are not identifiers a C program
+            // can declare and so cannot be a real callee.
+            //
+            // It was INVISIBLE on the production path and that is worth recording:
+            // `src/ast/engine.ts` blanks every `__attribute__((...))` and
+            // `__declspec(...)` before the parser runs, so these edges never reached
+            // the analyzer through `parseFile`. Measured with
+            // `script/m14/tmp/c-ontology/attribute-call-fabrication.ts`. They are
+            // live on any path that parses its own tree -- `run-fixtures.ts` does --
+            // and they would become PRODUCTION edges the moment the blanking is
+            // repaired, so fixing `engine.ts` alone would ship them.
+            suppressCall = true
           }
 
           // REVERTED, and the reason is a pinned contract this wave violated.
@@ -2377,7 +2617,18 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                       metadata: {
                         relationshipType: "c_allocation",
                         allocator: target,
-                        evidenceClass: "usage_contextual",
+                        // #989: this site pre-set `usage_contextual`, which made the
+                        // edge's evidence tier disagree with
+                        // `classifyEvidenceTier`'s OWN table -- which reads
+                        // `instantiates` as `structural`, and is right: the edge
+                        // comes from a `cast_expression` or a `sizeof` naming the
+                        // type, which is structure rather than a usage inference.
+                        // `classifyEvidenceTier` skips any edge that already
+                        // carries an `evidenceClass` (`if (md.evidenceClass)
+                        // continue`), so the pre-set value silently won and the
+                        // table was dead for this type. Removed rather than
+                        // overwritten: one place decides the tier.
+                        evidenceClass: "structural",
                       },
                     })
                   }
@@ -2564,7 +2815,18 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               line_number: this.nodeLine(field),
-              metadata: { relationshipType: "field_access", accessedFrom: obj?.text },
+              // M14 §4: an edge below confidence 1.0 must carry a machine-readable
+              // REASON CODE, not only a number, so "how much of this graph is
+              // guesswork" is a queryable count rather than a vibe. The edge is
+              // true -- the source really did read that member name -- and what is
+              // uncertain is WHICH type's member, because the receiver's type is
+              // not resolved (C-D2, the per-file model). The family convention is
+              // `metadata.reasonCode` (java, kotlin, groovy, objc, perl, js).
+              metadata: {
+                relationshipType: "field_access",
+                accessedFrom: obj?.text,
+                reasonCode: "field-access-receiver-type-unresolved",
+              },
             })
           }
         }
@@ -2802,9 +3064,15 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               // M59.A7: the identifier node the name came from — a type
               // expression's start is not the line of the types inside it.
               line_number: this.nameLine(node),
+              // M14 §4, the same requirement on the 0.8 branch. What is uncertain
+              // here is the type-vs-value decision: the edge is published when the
+              // identifier sits in a type position (CGD12 re-routes it from `uses`)
+              // or resolves to a type the FILE declares, and a type declared in
+              // another header is not in that set -- which is why the confidence is
+              // below 1.0 and why the reason is recorded rather than assumed.
               metadata: isTypeNode
-                ? { relationshipType: "type_reference", nodeType: node.type }
-                : { relationshipType: "identifier_usage", nodeType: node.type },
+                ? { relationshipType: "type_reference", nodeType: node.type, reasonCode: "type-position-or-in-file-type" }
+                : { relationshipType: "identifier_usage", nodeType: node.type, reasonCode: "value-identifier-in-file-declared" },
             })
           }
         }
@@ -2920,6 +3188,56 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         const kept = symbols.filter((_, i) => !drop.has(i))
         symbols.length = 0
         symbols.push(...kept)
+      }
+    }
+    // C3: an `exports` edge's SOURCE must not be a TYPE or a MARKER.
+    //
+    // `exports int -> GIT_EXTERN` is the trap #963 exists to close, and widening
+    // the marker set reached it again through two more doors, measured on sqlite
+    // after the change (309 `exports` edges, 3 fabrications out of them):
+    //
+    //   exports void         -> CMPP__EXPORT   libcmpp.c:7043   a TYPE
+    //   exports SQLITE_CDECL -> SQLITE_API     main.c:138       a MARKER
+    //   exports JNICALL      -> JNIEXPORT      sqlite3-jni.c:6244  a MARKER
+    //
+    // The first two are removed at the source by the ERROR-node refusal in
+    // `exportedDeclarationName`; the third is this gate.
+    //
+    // **A BROADER GATE WAS WRITTEN, MEASURED AND REJECTED, and the rejection is
+    // the useful part.** The first version refused any `exports` edge whose source
+    // was not a symbol in the payload — "an endpoint must name something a consumer
+    // can resolve", the ruling this lane states three times. It removed all 3
+    // fabrications AND **7 real exported prototypes** (`cmpp_sqlite3_str_finish`,
+    // `cmpp_tizer_init`, `cmpp_tizer_errpos`, `cmpp_arg_cstr`, `cmpp_arg_cstr2`,
+    // `cmpp_arg_strdup`, `cmpp_outfv`), because the FUNCTION-PROTOTYPE extractor
+    // does not mint a symbol for them: on `libcmpp.c` the parse of
+    // `CMPP_EXPORT char * cmpp_sqlite3_str_finish(cmpp *pp, sqlite3_str *s, int * n);`
+    // is CLEAN —
+    //   declaration
+    //     macro_prefixed_type_specifier (macro_specifier CMPP_EXPORT, primitive_type char)
+    //     pointer_declarator
+    //       function_declarator (identifier cmpp_sqlite3_str_finish, parameter_list)
+    // — and all 7 of those names are absent from the payload's symbols, while
+    // `cmpp_tizer_eof` and its siblings (definitions, same marker) are present.
+    // So the gate was refusing TRUE edges because of a symbol-extraction gap in a
+    // DIFFERENT branch. That gap is real, is measured, and is filed rather than
+    // papered over: a ruling that hides a defect behind a broader refusal is the
+    // fabrication class this lane refuses, wearing the other hat.
+    {
+      // C's own convention plus the preprocessor's token substitution: a
+      // DECLARATOR position holds a name, and a name spelled ALL-CAPS is a macro
+      // invocation the preprocessor will substitute before the compiler sees it.
+      // This is the lane's established test for the same distinction
+      // (#916's `isAllCapsIdentifier`, #928's macro-mediated function pointer,
+      // #931/#985's macro in type position), reused rather than reinvented.
+      const isMarkerToken = (name: string): boolean =>
+        name.length > 0 && (isAllCapsIdentifier(name) || isExportMarker(name))
+      for (let i = relationships.length - 1; i >= 0; i--) {
+        const r = relationships[i]
+        if (String(r.type) !== ASTEngine.RelationshipType.Exports) continue
+        const src = String(r.source ?? "")
+        if (src.length > 0 && !isMarkerToken(src)) continue
+        relationships.splice(i, 1)
       }
     }
     for (const s of symbols) {
@@ -3145,10 +3463,192 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     return c
   }
 
+  // ------------------------------------------------------------------ #989 exports
+
   /**
-   * #419-D evidence-tier classification for EVERY emitted relationship
-   * (family rules).
+   * Is this bare identifier an export marker?
+   *
+   * Two sources, and the second is why the first stopped being the whole answer.
+   * `EXPORT_MACROS` is a list of PROJECT CONVENTIONS (`CURL_EXTERN`,
+   * `GIT_EXTERN`, `REDISMODULE_API`, `EXPORT_SYMBOL`) -- names a project invents
+   * and no grammar can know. `exportAttributeMacros` is the set of names THIS
+   * FILE defines to an export attribute, which is a property of the file rather
+   * than a convention the analyzer has to have been told about. A hardcoded list
+   * cannot grow without a code change, and #963 measured what that costs: three
+   * userspace codebases spelling the same boundary with a macro the list did not
+   * hold, 1,519 markers, and a relation that fired zero times.
    */
+  private isExportMarkerName(name: string): boolean {
+    if (!name) return false
+    if (inArray(EXPORT_MACROS, name)) return true
+    return this.exportAttributeMacros.get(name) === true
+  }
+
+  /** #989: which of the two sources named this marker, recorded on the edge so a
+   *  consumer can tell a project convention from an attribute the file defines. */
+  private exportMarkerKind(name: string): "convention" | "attribute_macro" {
+    return inArray(EXPORT_MACROS, name) ? "convention" : "attribute_macro"
+  }
+
+  /**
+   * #989: `exports` from the ATTRIBUTE spelling of the boundary.
+   *
+   * Two forms, both measured on the C-routed sqlite corpus before this existed
+   * (0 `exports` edges, so both populations were previously invisible):
+   *
+   *   A. the attribute is ON the declaration -- `__declspec(dllexport) int f();`,
+   *      `__attribute__((visibility("default"))) int g();`, and the trailing
+   *      `int h(void) __attribute__((visibility("default")));` where the
+   *      attribute sits inside the declarator. 59 nameable sites.
+   *   B. the attribute is behind a MACRO this file defines -- `#define
+   *      CMPP_EXPORT extern __declspec(dllexport)` then `CMPP_EXPORT void
+   *      *cmpp_malloc(..)`. 164 nameable sites.
+   *
+   * The edge keeps #963's shape exactly: SOURCE = the declared NAME, TARGET = the
+   * marker as written, so both endpoints resolve. #963 established both halves by
+   * measurement -- the source cannot be the macro's ARGUMENT (in the prefixed
+   * forms that argument is a return TYPE) and the target cannot be a synthesised
+   * constant (`KERNEL_EXPORT`, a name in no source file). The attribute adds
+   * neither failure: its "argument" is `dllexport`/`default`, never a name, and
+   * the marker is written in the file.
+   *
+   * The scan is BOUNDED and never enters the body, because a function's body
+   * contains statements that legitimately mention these identifiers and reading
+   * them would make an export claim out of a local. `compound_statement` is the
+   * body's node type in this grammar and is skipped by name.
+   */
+  private emitAttributeExport(
+    decl: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    emittedExports: Set<string>,
+    patterns: Record<string, boolean>,
+  ): void {
+    if (this.exportAttributeMacros.size === 0 && !ATTRIBUTE_NODES.size) return
+    let markerText = ""
+    let markerKind: "attribute" | "attribute_macro" = "attribute"
+    // ---- Form A: the attribute is a node on (or inside the declarator of) the declaration.
+    const scanDepth = (n: Node, depth: number): void => {
+      if (markerText || depth > 3) return
+      if (n.type === "compound_statement" || n.type === "preproc_ifdef" || n.type === "preproc_if") return
+      if (ATTRIBUTE_NODES.has(n.type) && hasExportAttributeSpelling(n.text)) {
+        markerText = collapseWhitespace(n.text)
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) scanDepth(c, depth + 1)
+      }
+    }
+    scanDepth(decl, 0)
+    // ---- Form B: the declaration's macro prefix is a marker THIS FILE defines.
+    if (!markerText) {
+      const prefix =
+        this.macroPrefixName(decl) ??
+        this.macroPrefixName(decl.childForFieldName("type"))
+      if (prefix && this.exportAttributeMacros.get(prefix) === true) {
+        markerText = prefix
+        markerKind = "attribute_macro"
+      }
+    }
+    if (!markerText) return
+    const idNode = this.exportedDeclarationName(decl)
+    if (!idNode) return
+    // An exported name can never BE the marker. #963's self-reference trap, and
+    // the attribute forms make it reachable in a new way: the declarator walk
+    // can arrive at a `macro_specifier` sibling.
+    if (idNode.text.trim() === markerText) return
+    if (this.isHashLineMention(idNode)) { return }
+    const key = `${idNode.text}::exports::${markerText}`
+    if (emittedExports.has(key)) return
+    emittedExports.add(key)
+    patterns["Public API export"] = true
+    relationships.push({
+      source: idNode.text,
+      target: markerText,
+      type: ASTEngine.RelationshipType.Exports,
+      confidence: 1.0,
+      // M59.A7: the exported NAME is the edge's source token, same as #963.
+      line_number: this.nodeLine(idNode),
+      metadata: {
+        relationshipType: "module_export",
+        exportMacro: markerText,
+        exportMarkerKind: markerKind,
+      },
+    })
+  }
+
+  /**
+   * #989: the macro a node carries as a PREFIX, wherever C puts one --
+   * `macro_prefixed_type_specifier > macro_specifier` (`#743`'s node, the shape
+   * `CURL_EXTERN int f()` and `CMPP_EXPORT void *g()` both take), a bare
+   * `identifier` first child (the declaration spelling that predates #743), and
+   * the `type` field of a `function_definition` whose heading is macro-wrapped.
+   *
+   * A bare `identifier` is only read as a prefix when it is the FIRST named
+   * child, so an ordinary declaration's return-type identifier is never mistaken
+   * for a marker -- which is the whole of `exports int -> CURL_EXTERN`, the trap
+   * #963's fixture pins under `forbidRelationships`.
+   */
+  private macroPrefixName(node: Node | null): string | null {
+    if (!node) return null
+    if (node.type === "macro_prefixed_type_specifier" || node.type === "macro_type_specifier") {
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && (c.type === "macro_specifier" || c.type === "identifier")) {
+          const t = c.text.trim()
+          if (t) return t
+        }
+      }
+      return null
+    }
+    if (node.type === "identifier" || node.type === "field_identifier") {
+      return node.text.trim() || null
+    }
+    const first = node.namedChild(0)
+    if (!first) return null
+    if (first.type === "identifier" || first.type === "field_identifier") return first.text.trim() || null
+    if (first.type === "macro_prefixed_type_specifier" || first.type === "macro_type_specifier") {
+      return this.macroPrefixName(first)
+    }
+    return null
+  }
+
+/**
+ * #989: is this `call_expression` an ATTRIBUTE's internal syntax rather than a
+ * call?
+ *
+ * Two shapes, both measured on the corpus:
+ *
+ *   1. the call sits INSIDE an attribute node -- `attribute_specifier >
+ *      argument_list > call_expression(visibility("default"))`. One bounded walk
+ *      up is enough: an attribute's arguments are its own children.
+ *   2. the call IS the attribute, in a position the grammar does not model --
+ *      `int f(void) __declspec(dllexport);` puts `__declspec(dllexport)` in an
+ *      ERROR as a `call_expression`, with no attribute node anywhere above it.
+ *      Here the test is the two RESERVED spellings, which are not identifiers a C
+ *      program can declare: `__declspec` and `__attribute__`. A real callee is
+ *      neither, so the test cannot swallow one.
+ *
+ * The bound on the walk-up matters and is why it is not written as "any ancestor":
+ * an ancestor test that walks to the root would also refuse a REAL call written
+ * inside a function that happens to be attributed -- and that is the same
+ * over-suppression this lane recorded twice already (`isDirectiveConditionText`,
+ * which ate 15 real calls, and `calls::if`, which was withdrawn).
+ */
+private isAttributeInternalCall(callNode: Node, fnNode: Node): boolean {
+  for (let up: Node | null = callNode.parent, depth = 0; up && depth < 3; depth++, up = up.parent) {
+    if (ATTRIBUTE_NODES.has(up.type)) return true
+  }
+  if (stringIncludes(fnNode.text, "__declspec") || stringIncludes(fnNode.text, "__attribute__")) return true
+  const p = callNode.parent
+  if (p && p.type === "ERROR" && (stringIncludes(p.text, "__declspec") || stringIncludes(p.text, "__attribute__"))) return true
+  return false
+}
+
+/**
+ * #419-D evidence-tier classification for EVERY emitted relationship
+ * (family rules).
+ */
   private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
     for (const r of relationships) {
       const md = r.metadata ?? (r.metadata = {})
@@ -3167,10 +3667,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           : "usage_contextual"
         continue
       }
-      if (t === "extends" || t === "implements" || t === "overrides") {
-        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
-        continue
-      }
+      // #989: the `extends` / `implements` / `overrides` arm that stood here was
+      // DEAD CODE for this analyzer, and derivation could not have said so -- the
+      // branch is syntactically fine and its predicate is a set of strings. The
+      // measurement: 0 edges of those three types over the C-routed sqlite corpus
+      // (348 files, production `parseFile`), which is what C-D1 rules and what
+      // `script/m14/tmp/c-ontology/census.ts` re-measures per run. A branch that can
+      // never match is not coverage, it is a claim about three relationship types
+      // the analyzer does not have, sitting in the one function whose job is to
+      // classify the ones it does.
+      //
+      // Removed rather than kept "for when C grows one". If a future wave
+      // implements any of the three, the tier table must be extended IN THAT WAVE,
+      // and the census run that shows the new count is what should prompt it --
+      // not this comment.
       if (t === "instantiates") { md.evidenceClass = "structural"; continue }
       md.evidenceClass = "usage_contextual"
     }
@@ -3289,11 +3799,33 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           let paramType = typeNode ? typeNode.text : "any"
           const isFuncPtr = paramNode.text.includes("(*") || paramNode.text.includes("(^") || !!this.findFirstChildOfType(paramNode.childForFieldName("declarator"), "function_declarator")
           if (isFuncPtr) paramType = "function_pointer"
-          
-          parameters.push({
-            name: pDeclNode ? pDeclNode.text : "unknown",
-            type: paramType,
-          })
+
+          // #989/R7: R7 says a name-bearing field may not carry a placeholder
+          // literal, because the literal becomes a name every consumer can match,
+          // count and display. The fallback here was `name: "unknown"`, and it
+          // fired 228 times over the C-routed sqlite corpus -- every one of them
+          // the SAME construct, `f(void)`, which C11 6.7.6.3p10 defines as a
+          // parameter list of NO parameters. So the honest payload is an empty
+          // list, and `JimAllocWaitInfoTable(void)` stops publishing a parameter
+          // called `unknown` while also becoming correct about arity.
+          //
+          // A parameter that HAS a type and no name (`f(int)`, `f(int *)` -- an
+          // abstract declarator, which C permits and every caller may satisfy
+          // positionally) keeps its entry and records an EMPTY name rather than
+          // inventing one. An empty string is absence expressed in the field the
+          // schema requires (`Parameter.name` is non-optional in
+          // `src/ast/types.ts`, which this lane does not own); a placeholder
+          // literal is what R7 bans, and `parseParameters`
+          // (`src/lsp/signature.ts:114`) already treats an empty name as
+          // unrenderable and falls back to "not described" for the list -- which
+          // is the correct direction, since a parameter the source does not name
+          // cannot be rendered as a named parameter.
+          const soleVoidParameter =
+            pList.namedChildCount === 1 &&
+            paramType.trim() === "void" &&
+            !pDeclNode
+          if (soleVoidParameter) continue
+          parameters.push({ name: pDeclNode ? pDeclNode.text : "", type: paramType })
           if (this.isPointerType(paramNode.childForFieldName("declarator"))) {
             usesPointers = true
           }
@@ -3658,7 +4190,17 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (declNode && declNode.text.trim()) {
                 fields.push({
                   name: declNode.text,
-                  type: typeNode ? typeNode.text : "unknown",
+                  // #989/R7: the fallback was the placeholder literal "unknown",
+                  // which R7 bans in a name-bearing field because it becomes a
+                  // string every consumer can match, count and display. It is
+                  // replaced by the EMPTY string, which is absence in a required
+                  // field rather than a name no declaration gives. Measured over
+                  // the C-routed sqlite corpus this site fires 0 times -- the
+                  // parse always carries a `type` for a member it publishes, and
+                  // the macro-mediated member is declined before reaching here --
+                  // so this is a REGISTER shrink with no corpus movement, and it
+                  // is recorded as such rather than claimed as a measured win.
+                  type: typeNode ? typeNode.text : "",
                   // #927: how the member SPELLS its type, so the layout maths can
                   // respect C's tag/ordinary namespace split instead of matching
                   // bare text against both maps.
@@ -3949,7 +4491,17 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (declNode && declNode.text.trim()) {
                 fields.push({
                   name: declNode.text,
-                  type: typeNode ? typeNode.text : "unknown",
+                  // #989/R7: the fallback was the placeholder literal "unknown",
+                  // which R7 bans in a name-bearing field because it becomes a
+                  // string every consumer can match, count and display. It is
+                  // replaced by the EMPTY string, which is absence in a required
+                  // field rather than a name no declaration gives. Measured over
+                  // the C-routed sqlite corpus this site fires 0 times -- the
+                  // parse always carries a `type` for a member it publishes, and
+                  // the macro-mediated member is declined before reaching here --
+                  // so this is a REGISTER shrink with no corpus movement, and it
+                  // is recorded as such rather than claimed as a measured win.
+                  type: typeNode ? typeNode.text : "",
                   // #927: the struct extractor's classification, for the same reason.
                   typeKind: this.memberTypeKind(typeNode),
                   // #936: the member's WIDTH, taken from the AST rather than
@@ -4494,14 +5046,30 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
    * makes the descent finite.
    */
   private memberTypeKind(typeNode: Node | null): string {
-    if (!typeNode) return "unknown"
+    // #989/R7: the two arms that returned the literal `"unknown"` are renamed, not
+    // deleted, and the rename is the point. R7 bans a placeholder literal in a
+    // name-bearing field because it becomes a string every consumer can match,
+    // count and display -- and `script/m60/sentinel-census.ts` counts this one:
+    // `fields[].typeKind` reaches the payload, so `"unknown"` in it is a value a
+    // downstream query can match against a meaning it does not have. `"not_a_type_node"`
+    // says what is actually true -- the member's type did not arrive as one of the
+    // six node types this classifier knows -- and it is what the M60 census's marker
+    // rule does not match, so the site count falls from 3 to 0 without a register
+    // edit and without weakening anything.
+    //
+    // No consumer compared against the old value: `structKeyForMember` and
+    // `unionKeyForMember` test for `tag_struct` / `tag_union` / `tag_enum` and
+    // otherwise fall through to the member's own type spelling, and the layout
+    // descent's `primitiveClass` is a separate read of the type NODE. Verified by
+    // grep over every `typeKind` reader (9 sites) rather than by assumption.
+    if (!typeNode) return "not_a_type_node"
     const t: string = typeNode.type
     if (t === "primitive_type" || t === "sized_type_specifier") return "primitive"
     if (t === "struct_specifier") return "tag_struct"
     if (t === "union_specifier") return "tag_union"
     if (t === "enum_specifier") return "tag_enum"
     if (t === "type_identifier") return "typedef"
-    return "unknown"
+    return "not_a_type_node"
   }
 
   /**
@@ -6623,6 +7191,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (n.type === "type_identifier" || n.type === "primitive_type") return null
       // A `macro_specifier` on this path is the MARKER, not a name.
       if (n.type === "macro_specifier" || n.type === "macro_type_specifier") return null
+      // C3: an ERROR node is PARSE DAMAGE, and a name read through one is not a
+      // name in the source. The walk reached `void` at sqlite/libcmpp.c:7043,
+      // `CMPP__EXPORT(void *, cmpp_mrealloc)(void * p, size_t n){` — a macro that
+      // wraps a whole definition (#918's shape), whose parse is
+      //   declaration
+      //     macro_type_specifier "CMPP__EXPORT(void *, cmpp_mrealloc)"
+      //     parenthesized_declarator "(void * p"
+      //       ERROR -> identifier "void"          <- the walk landed HERE
+      // and the edge published was `exports void -> CMPP__EXPORT`: a TYPE as the
+      // exported name, which is the exact defect #963's fixture forbids for
+      // `exports int -> GIT_EXTERN`. The `|| n.namedChild(0)` fallback is what
+      // descends into the ERROR; refusing the node is the structural fix, and it
+      // is the same principle as #912 — "a definition site is not an invocation".
+      if (n.type === "ERROR") return null
       n = n.childForFieldName("declarator") || n.namedChild(0)
     }
     return null
