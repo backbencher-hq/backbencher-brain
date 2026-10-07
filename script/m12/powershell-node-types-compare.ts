@@ -36,6 +36,7 @@ const inputs = files.map((file) => readFileSync(`validation/m12/fixtures/powersh
 for (const file of corpusFiles.slice(0, 553)) inputs.push(execFileSync("git", ["-C", corpus, "show", `HEAD:${file}`], { encoding: "utf8" }))
 for (const input of inputs) {
   const tree = parser.parse(input)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const stack: any[] = [tree.rootNode]
   while (stack.length > 0) {
     const node = stack.pop()!

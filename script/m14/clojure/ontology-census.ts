@@ -136,8 +136,12 @@ async function main() {
   const mod: any = await import(path.join(ROOT, "src/ast/real-clojure-analyzer.ts"))
   const parser = await engine.ASTEngine.getParser("clojure")
   const analyzer = new mod.RealClojureAnalyzer()
-  const enumValues: string[] = [...new Set(Object.values(engine.ASTEngine.RelationshipType))].sort()
-  const declaredKinds = new Set<string>(Object.values(engine.ASTEngine.SymbolKind))
+  // `Object.values<string>`: `engine` is a computed dynamic import (`any`), so
+  // `Object.values(any)` is `unknown[]` in TS 5.9 — the annotation on the left could
+  // not reach through it. Both enums are string-initialised in src/ast/engine.ts
+  // (RelationshipType at :582, SymbolKind at :518).
+  const enumValues: string[] = [...new Set(Object.values<string>(engine.ASTEngine.RelationshipType))].sort()
+  const declaredKinds = new Set<string>(Object.values<string>(engine.ASTEngine.SymbolKind))
   const KIND_MODULE: string = engine.ASTEngine.SymbolKind.Module
   const KIND_PROPERTY: string = engine.ASTEngine.SymbolKind.Property
 

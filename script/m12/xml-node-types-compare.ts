@@ -128,6 +128,7 @@ for (const file of fixtureFiles) {
 // the defensive handlers are shape-verified here rather than claimed untested.
 for (const [label, probe] of Object.entries({ DTD_SHAPE_PROBE, PI_SHAPE_PROBE, CDATA_SHAPE_PROBE, RELAXNG_PROBE })) {
   const tree = parser.parse(probe)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   observe(tree.rootNode, `probe:${label}`)
   tree.delete()
 }
@@ -191,6 +192,7 @@ const coverage: { file: string; treeElements: number; symbolElements: number; tr
   const analyzer = new Analyzer()
   const audit = (label: string, src: string) => {
     const t = parser.parse(src)
+    if (!t) throw new Error("parser.parse returned no tree (null result)")
     let elements = 0
     let attributes = 0
     const st = [t.rootNode]

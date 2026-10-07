@@ -35,6 +35,7 @@ for (const file of [...corpusFiles.map((file) => `${corpus}/${file}`), ...fixtur
   const excluded = file.startsWith(`${corpus}/`) && unsupportedFiles.includes(file.slice(corpus.length + 1))
   const text = await Bun.file(file).text()
   const tree = parser.parse(text)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const stack: any[] = [tree.rootNode]
   while (stack.length) {
     const node = stack.pop()

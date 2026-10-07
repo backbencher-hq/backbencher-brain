@@ -114,7 +114,7 @@ for (const root of roots) {
     let text: string
     try { text = readFileSync(abs, "utf8") } catch { continue }
     let root_: Node | null = null
-    try { root_ = (await parser.parse(text, abs)).rootNode; filesParsed++ } catch { filesFailed++; continue }
+    try { root_ = (await parser.parse(text)).rootNode; filesParsed++ } catch { filesFailed++; continue }
     if (!root_) { filesFailed++; continue }
     n++
     if (root_.hasError) parseErrorFiles.push(abs)

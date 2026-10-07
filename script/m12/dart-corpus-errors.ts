@@ -24,6 +24,7 @@ async function main() {
     try {
       const parser = await ASTEngine.getParser("dart")
       const tree = parser.parse(src)
+      if (!tree) throw new Error("parser.parse returned no tree (null result)")
       if (Date.now() - started > 10000) { timeouts++; console.log("TIMEOUT:", rel); continue }
       let nodes = 0
       const stack = [tree.rootNode]

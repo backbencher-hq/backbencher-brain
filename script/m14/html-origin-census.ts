@@ -222,7 +222,11 @@ try { await ASTEngine.getParser("html") } catch (e) {
   console.log(`CENSUS REFUSED: getParser("html") failed — ${String(e).slice(0, 160)}`)
   process.exit(2)
 }
-const PRODUCTION_TYPES = [...new Set(Object.values(ENGINE_RT))]
+// `Object.values<string>`: ENGINE_RT comes from a computed dynamic import (`any`),
+// and TS 5.9 types `Object.values(any)` as `unknown[]`, so every later use of a
+// production type name (gFull.get(t), t.padEnd) was an error while this line was
+// not. The engine's RelationshipType members are all string-initialised.
+const PRODUCTION_TYPES = [...new Set(Object.values<string>(ENGINE_RT))]
 const { RealHtmlAnalyzer } = await import(`${REPO}/src/ast/real-html-analyzer.ts`)
 const { TypeInference } = await import(`${REPO}/src/ast/type-inference.ts`)
 const { FrameworkIntelligence } = await import(`${REPO}/src/ast/framework-intelligence.ts`)

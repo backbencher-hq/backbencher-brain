@@ -68,6 +68,7 @@ const inputs = files.map((file) => readFileSync(`validation/m12/fixtures/make/${
 for (const file of corpusFiles) inputs.push(readFileSync(file, "utf8"))
 for (const input of inputs) {
   const tree = parser.parse(input)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const stack: any[] = [tree.rootNode]
   while (stack.length > 0) {
     const node = stack.pop()!

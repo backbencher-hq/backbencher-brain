@@ -12,6 +12,7 @@ const errorFiles: string[] = []
 for (const file of files) {
   const source = await Bun.file(file).text()
   const tree = parser.parse(source)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   let errors = 0
   const walk = (node: any) => {
     if (node.type === "ERROR" || node.isMissing) errors++

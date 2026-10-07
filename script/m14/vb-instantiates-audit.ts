@@ -149,7 +149,8 @@ for (const abs of files) {
   let src = ""
   try { src = require("node:fs").readFileSync(abs, "utf8") } catch {}
   if (src === "") continue
-  const tree = parser.parse(src, abs)
+  const tree = parser.parse(src)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const walk = (n: any): void => {
     if (n.type === "object_creation_expression") objCreation++
     if (n.type === "array_creation_expression") arrayCreation++

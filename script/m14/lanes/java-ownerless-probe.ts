@@ -78,6 +78,7 @@ async function main() {
     const src = readFileSync(abs, "utf8")
     try {
       const tree = parser.parse(src)
+      if (!tree) throw new Error("parser.parse returned no tree (null result)")
       const res: any = analyzer.analyze(tree.rootNode, src, rel, { filePath: rel } as any)
       const syms: any[] = res.symbols ?? []
       const hits: Rec[] = []
@@ -110,6 +111,7 @@ async function main() {
     const abs = join(repoDir, f)
     const src = readFileSync(abs, "utf8")
     const tree = parser.parse(src)
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     const res: any = analyzer.analyze(tree.rootNode, src, f, { filePath: f } as any)
     const syms: any[] = res.symbols ?? []
     const types = syms.filter(isTopLevelTypeDecl)

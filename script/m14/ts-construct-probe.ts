@@ -246,7 +246,8 @@ async function selfTest(): Promise<void> {
   for (const c of CASES) {
     const tally = new Map<string, number>()
     const p = await getParser("typescript")
-    const tree = p.parse(c.src, c.label)
+    const tree = p.parse(c.src)
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     walkTypes(tree.rootNode, tally, (n: any) => {
       switch (n.type) {
         case "class_declaration":

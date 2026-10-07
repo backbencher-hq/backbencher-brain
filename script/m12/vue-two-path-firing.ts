@@ -175,7 +175,8 @@ for (const f of drawn) {
   // PATH A — the firing-check shape: parse the SFC, call analyze with no context.
   const aCount: Record<string, number> = {}
   try {
-    const pr = await parser.parse(content, f.abs)
+    const pr = await parser.parse(content)
+    if (!pr) throw new Error("parser.parse returned no tree (null result)")
     const res = new RealVueAnalyzer().analyze(pr.rootNode as any, content, f.abs)
     for (const r of (res.relationships ?? []) as Row[]) {
       const t = String(r.type ?? r.relationshipType ?? "").toLowerCase()

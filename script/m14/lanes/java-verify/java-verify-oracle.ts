@@ -698,7 +698,7 @@ for (const f of files) {
   let tree: any, res: any
   try {
     const parser = await getParser("java")
-    tree = parser.parse(content, f)
+    tree = parser.parse(content)
     if (!tree) { failures++; continue }
     res = analyzer.analyze(tree.rootNode as any, content, f) as any
   } catch { failures++; tree?.delete?.(); continue }

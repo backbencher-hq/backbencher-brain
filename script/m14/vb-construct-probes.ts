@@ -188,7 +188,7 @@ for (const abs of files) {
   let content: string
   try { content = readFileSync(abs, "utf8") } catch { continue }
   let tree: any
-  try { tree = await parser.parse(content, abs); parsed++ } catch { parseThrew++; continue }
+  try { tree = await parser.parse(content); parsed++ } catch { parseThrew++; continue }
   const root = tree.rootNode
   const declared = declaredMemberNames(root)
 

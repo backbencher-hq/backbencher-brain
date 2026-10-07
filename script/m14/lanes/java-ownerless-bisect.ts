@@ -121,6 +121,7 @@ async function main() {
   const parser = await getParser("java")
 
   const base = parser.parse(src)
+  if (!base) throw new Error("parser.parse returned no tree (null result)")
   let cls: any = null
   const s0 = [base.rootNode]
   while (s0.length) {

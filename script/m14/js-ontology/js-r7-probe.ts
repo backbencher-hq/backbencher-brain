@@ -17,7 +17,8 @@ const src = [
   "var o = { unknown: 1, 'na': 2 };",
   "g('unknown'); g(Na); g(null);",
 ].join("\n")
-const tree = await parser.parse(src, "probe.js")
+const tree = await parser.parse(src)
+if (!tree) throw new Error("parser.parse returned no tree (null result)")
 const stack: any[] = [tree.rootNode]
 const rows: string[] = []
 while (stack.length) {

@@ -9,7 +9,8 @@ import { getParser } from "../../../src/ast/engine"
 const file = "$HOME/fixtures/repositories/lodash/test/test.js"
 const parser = await getParser("javascript")
 const src = readFileSync(file, "utf8")
-const tree = await parser.parse(src, file)
+const tree = await parser.parse(src)
+if (!tree) throw new Error("parser.parse returned no tree (null result)")
 const stack: any[] = [tree.rootNode]
 let hits = 0
 while (stack.length) {

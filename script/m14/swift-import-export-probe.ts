@@ -254,7 +254,10 @@ console.log(`distinct module targets: ${out.distinctModuleTargets}`)
 console.log(`\npackage reduction (pinned grammar):`)
 for (const [k, v] of Object.entries(packageProbe)) console.log(`  ${(v as any).reduced ? "REDUCES  " : "ERROR    "} ${JSON.stringify(k)}`)
 console.log(`\nfile-scope declarations by access level (denominator ${allFileScope}):`)
-for (const [lvl, m] of Object.entries(fileScopeByLevel).sort((a, b) => Object.values(b[1] as any).reduce((x, y) => x + y, 0) - Object.values(a[1] as any).reduce((x, y) => x + y, 0))) {
-  console.log(`  ${lvl.padEnd(10)} ${String(Object.values(m as any).reduce((a: number, b: any) => a + b, 0)).padStart(7)}  ${JSON.stringify(m)}`)
+// `Object.values<number>`: the level maps hold COUNTS, but the `as any` left TS with
+// `unknown[]`, and `unknown` has no `+` — five errors in this one line (x, y, and
+// both reduce results). The element type is stated where the values are produced.
+for (const [lvl, m] of Object.entries(fileScopeByLevel).sort((a, b) => Object.values<number>(b[1] as any).reduce((x, y) => x + y, 0) - Object.values<number>(a[1] as any).reduce((x, y) => x + y, 0))) {
+  console.log(`  ${lvl.padEnd(10)} ${String(Object.values<number>(m as any).reduce((a, b) => a + b, 0)).padStart(7)}  ${JSON.stringify(m)}`)
 }
 console.log(`export-level (public|open|package) total ${exportTotal} = ${out.exportLevelShare}% of file-scope declarations; ${out.distinctExportCandidateNames} distinct names`)
