@@ -419,20 +419,37 @@ M41/M45 video hero still exists), not off content.
 
 ### 10.5 What is left, and it is two decisions for the owner
 
-1. **Deleting the 456 remote branches.** Every one of them is an ancestor of
-   `archive/all-lanes-2026-10-07` (§1), and every branch-side revision that is later than
-   main's has been compared by content: the 4 that strictly extend main were landed or
-   refused by the compiler, and the rest were measured and refused or identified as stale
-   snapshots (10.3). Deleting them leaves `origin` as `main` plus tags. Not done here: it
-   is destructive, external, and not a side effect a code pass should take. What the
-   deletion would have cost besides objects — the **names** — is now recorded:
-   `docs/analyzers/REMOTE-REFS-2026-10-07.tsv` lists all 460 non-HEAD refs with their
-   tip SHA, date, subject, and whether the tag covers the tip. The tag's message names no
-   branches, so before that file the mapping lived only in the remote's refs.
-2. **The 341.5 MB of generated java census JSON** (10.1). Pushing it would put generated
-   data in the remote object store, which the programme's rule forbids; not pushing it
-   means the local `refs/original/**` refs are the last place it lives. Either way it is
-   regenerable, and the decision is the owner's, not this pass's.
+1. **Deleting the 456 remote branches — DONE, 2026-10-07.** `origin` is now `main` plus
+   the four archive tags: 455 branches were deleted in five batches, all exit 0, no
+   deletion refused. Before it ran, four things were checked and written down here:
+
+   * every branch tip is an ancestor of `archive/all-lanes-2026-10-07` (§1);
+   * **object closure, as sets, not counts.** Objects reachable from the 461 pre-deletion
+     refs: 108,437. Objects reachable from what remains (`main` + 4 tags): 108,437.
+     Symmetric difference **0 in both directions** — no commit, tree, or blob became
+     unreachable;
+   * the **names** were recorded first, because the tag's message names no branches:
+     `docs/analyzers/REMOTE-REFS-2026-10-07.tsv` carries all 460 non-HEAD refs with tip
+     SHA, date, subject, and tag coverage. Any deleted branch is recreatable exactly:
+     `git push origin <sha>:refs/heads/<name>`;
+   * `gh pr list --state open` returned `[]`, so no open pull request lost its head.
+
+   Every branch-side revision that postdates main's was compared by content first: the 4
+   that strictly extend main were landed or refused by the compiler, and the rest were
+   measured and refused or identified as stale snapshots (10.3). This checkout still has
+   the 455 `refs/remotes/origin/*` mirrors and every object, so the deletion is reversible
+   locally as well as from the tag.
+2. **The 341.5 MB of generated java census JSON** (10.1) — **checked, not assumed, and
+   left local.** The 159.9 MB file self-describes: `{"tool":"script/m60/java-ontology-census.ts",
+   "corpus":{...},"totals":{"ontologyEdges":637870},"rows":[...],"edges":[...]}`. The
+   generators are on main — `script/m60/java-ontology-census.ts` for the merged census and
+   the thirteen shards (its output path is a CLI argument, so `-before` is a run target,
+   not a separate artifact), `script/m14/lanes/java-imports-exports-oracle.ts` for the
+   oracle — and the delta they exist to produce is consumed by
+   `script/m14/tmp/java/java-ontology-verdict.ts`, also on main. The lane's prose record
+   `docs/analyzers/java-ontology-census.md` is on main too. So these sixteen are raw
+   instrument output, regenerable, and their conclusions are on main: they stay in this
+   checkout and out of git, per the generated-data rule.
 3. **Not a decision, a count:** main still declares 136 failing fixtures across 23 lanes
    §4, and the elixir lane's 17 are the largest single group. That is the next fold.
 
