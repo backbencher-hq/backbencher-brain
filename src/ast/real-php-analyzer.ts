@@ -1118,9 +1118,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "function_call_expression") {
         this.processFunctionCall(node, relationships, owner, ns, inFunction, detectedFrameworks, patterns)
       } else if (type === "member_call_expression" || type === "nullsafe_member_call_expression") {
-        this.processMethodCall(node, relationships, inFunction)
+        this.processMethodCall(node, relationships, inFunction, owner)
       } else if (type === "scoped_call_expression") {
-        this.processScopedCall(node, relationships, inFunction)
+        this.processScopedCall(node, relationships, inFunction, owner)
       } else if (type === "object_creation_expression") {
         this.processObjectCreation(node, relationships, owner, inFunction)
       }
@@ -1420,9 +1420,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "function_call_expression") {
         this.processFunctionCall(n, relationships, owner, ns, inFunction, detectedFrameworks, patterns)
       } else if (type === "member_call_expression" || type === "nullsafe_member_call_expression") {
-        this.processMethodCall(n, relationships, inFunction)
+        this.processMethodCall(n, relationships, inFunction, owner)
       } else if (type === "scoped_call_expression") {
-        this.processScopedCall(n, relationships, inFunction)
+        this.processScopedCall(n, relationships, inFunction, owner)
       } else if (type === "object_creation_expression") {
         this.processObjectCreation(n, relationships, owner, inFunction)
       } else if (type === "require_once_expression" || type === "include_once_expression" ||
@@ -1483,7 +1483,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               line_number: this.nodeLine(member),
-              metadata: { phpSpecific: true, isMemberRead: true },
+              // M60: `$this->prop` names a member OF THE ENCLOSING CLASS, and that is
+              // published as (name, ownerName) on the symbol side. The receiver field here
+              // is `object`; `$obj->prop` and `$this->svc->inner` deliberately carry no
+              // owner — see `memberOwner` for why a guess is worse than nothing.
+              metadata: this.withMemberOwner(
+                { phpSpecific: true, isMemberRead: true },
+                this.memberOwner(n, owner, "object"),
+              ),
             })
           }
         }
@@ -1506,7 +1513,13 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               line_number: this.nodeLine(varNode),
-              metadata: { phpSpecific: true, isMemberRead: true, isStaticRead: true },
+              // M60: `self::$x` / `C::$x` / `static::$x` name a member of the scope's class.
+              // Receiver field is `scope`; `parent::$x` resolves through `baseByClass` and
+              // emits nothing when the class declares no base.
+              metadata: this.withMemberOwner(
+                { phpSpecific: true, isMemberRead: true, isStaticRead: true },
+                this.memberOwner(n, owner, "scope"),
+              ),
             })
           }
         }
@@ -1530,7 +1543,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             type: ASTEngine.RelationshipType.Uses,
             confidence: 0.9,
             line_number: this.nodeLine(memberNode),
-            metadata: { phpSpecific: true, isMemberRead: true, isConstFetch: true },
+            // M60: `C::K` names a constant of the scope's class. This node type has NO
+            // field names — children are positional [scope, name] — so `memberOwner` is
+            // called with `null` and reads namedChild(0). The `::class` guard above returns
+            // first, so the keyword never reaches an owner (fixture row forbids it).
+            metadata: this.withMemberOwner(
+              { phpSpecific: true, isMemberRead: true, isConstFetch: true },
+              this.memberOwner(n, owner, null),
+            ),
           })
         }
       } else if (type === "variable_name" && parent && parent.type === "subscript_expression") {
@@ -1714,14 +1734,103 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     return sawPlaceholder
   }
 
+  /**
+   * M60 — the OWNER a member-position edge carries, derived from the receiver node that the
+   * call/read rules were already holding.
+   *
+   * ## WHY
+   *
+   * A php member is PUBLISHED as `(bare name, ownerName)` — `ownerName` is set on every method
+   * and `pool-worker.ts:1007` carries it into the store — but the EDGE carried no owner, so
+   * `$this->render()`, `self::render()`, `parent::render()` and `Widget::render()` all
+   * published the same target string and were mutually indistinguishable. `render` is a method
+   * on many classes, so a reverse walk has to pick one declaration by a rule nobody chose.
+   * Unlike an owner published on the target name, this costs no extra parse: the receiver is
+   * on hand at all six emission sites and was discarded.
+   *
+   * ## WHAT IT DELIBERATELY DOES NOT DO
+   *
+   * It returns `undefined` in three shapes, and each is a case where a guess would be worse
+   * than nothing, because a WRONG owner points a reverse walk at a real method on the WRONG
+   * class — that is wrong refactoring advice, not a missing edge:
+   *
+   *   (a) a plain-variable receiver (`$obj->m()`) — the class is whatever was assigned; the
+   *       tree does not say. The tempting wrong answer is the enclosing class.
+   *   (b) a chained receiver (`$this->svc->m()`) — the object's type is the PROPERTY's
+   *       declared type. This analyzer does not infer property types, so there is nothing to
+   *       read.
+   *   (c) `parent::` in a class with NO declared base — `baseByClass` has no entry. This is
+   *       the position `processObjectCreation` already takes for `new parent()`.
+   *
+   * A base that IS declared but lives in another file is NOT one of these: the owner is that
+   * name, the edge is right, and it simply does not resolve in this file's symbol set. That
+   * asymmetry is why this returns the name and lets resolution fail downstream rather than
+   * dropping the edge here.
+   *
+   * ## HOW IT READS THE TREE
+   *
+   * Node types and FIELD names only, probed against the pinned grammar rather than assumed:
+   *
+   *   member_call_expression / nullsafe_member_call_expression   : fields object, name
+   *   member_access_expression / nullsafe_member_access_expression : fields object, name
+   *   scoped_call_expression                                    : fields scope, name
+   *   scoped_property_access_expression                         : fields scope, name
+   *   class_constant_access_expression                          : NO fields — children are
+   *       POSITIONAL [scope, name], so that caller passes `null` and this reads namedChild(0).
+   *
+   * `self`/`static` map to the enclosing class and `parent` to the declared base, which is the
+   * same reading `processObjectCreation` applies to `new self()`/`new static()`/`new parent()`
+   * (`static` is late static binding; the compile-time class is the best a static read can say).
+   */
+  private memberOwner(
+    node: Node,
+    owner: string | undefined,
+    receiverField: "object" | "scope" | null,
+  ): string | undefined {
+    const receiver = receiverField === null
+      ? (node.namedChildCount > 0 ? node.namedChild(0) : null)
+      : node.childForFieldName(receiverField)
+    if (!receiver) return undefined
+    if (receiver.type === "relative_scope") {
+      const text = receiver.text
+      if (text === "self" || text === "static") return owner
+      if (text === "parent") return owner ? this.baseByClass.get(owner) : undefined
+      return undefined
+    }
+    if (receiver.type === "name" || receiver.type === "qualified_name") {
+      return this.leafName(receiver.text)
+    }
+    if (receiver.type === "variable_name") {
+      // `$this` is the only receiver whose class the tree states outright.
+      return receiver.text === "$this" ? owner : undefined
+    }
+    return undefined
+  }
+
+  /**
+   * `metadata` for a member-position edge, carrying `owner` ONLY when one was derived.
+   *
+   * The key is OMITTED rather than set to `undefined`/`null`, so a consumer can test presence,
+   * and so `meta.owner: null` in a fixture ("this edge must NOT carry an owner") is a real
+   * assertion about the absent case rather than a vacuous one.
+   */
+  private withMemberOwner(
+    meta: Record<string, unknown>,
+    owner: string | undefined,
+  ): Record<string, unknown> {
+    return owner === undefined ? meta : { ...meta, owner }
+  }
+
   private processMethodCall(
     node: Node,
     relationships: ASTEngine.UniversalRelationship[],
     inFunction: string | undefined,
+    owner: string | undefined,
   ): void {
     const nameNode = node.childForFieldName("name")
     const methodName = nameNode?.text
     if (!methodName) return
+    const memberOwner = this.memberOwner(node, owner, "object")
     // PHP-E: `$this->handler(...)` is a tear-off reference, never a call.
     if (this.isFirstClassTearOff(node)) {
       relationships.push({
@@ -1730,7 +1839,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
         line_number: this.nodeLine(nameNode),
-        metadata: { phpSpecific: true, isTearOff: true },
+        metadata: this.withMemberOwner({ phpSpecific: true, isTearOff: true }, memberOwner),
       })
       return
     }
@@ -1740,7 +1849,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       type: ASTEngine.RelationshipType.Calls,
       confidence: 0.9,
       line_number: this.nodeLine(nameNode),
-      metadata: { phpSpecific: true },
+      metadata: this.withMemberOwner({ phpSpecific: true }, memberOwner),
     })
   }
 
@@ -1748,10 +1857,15 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     node: Node,
     relationships: ASTEngine.UniversalRelationship[],
     inFunction: string | undefined,
+    owner: string | undefined,
   ): void {
     const nameNode = node.childForFieldName("name")
     const methodName = nameNode?.text
     if (!methodName) return
+    // M60: the scope names the class outright (`Foo::m()`, `\A\B\Cls::m()`) or is a
+    // `relative_scope` (`self`/`static`/`parent`). The receiver field is `scope` here, not
+    // `object` — probed, not assumed; see `memberOwner`.
+    const memberOwner = this.memberOwner(node, owner, "scope")
     // PHP-E: `Widget::make(...)` is a tear-off reference, never a call.
     if (this.isFirstClassTearOff(node)) {
       relationships.push({
@@ -1760,7 +1874,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
         line_number: this.nodeLine(nameNode),
-        metadata: { phpSpecific: true, isTearOff: true },
+        metadata: this.withMemberOwner({ phpSpecific: true, isTearOff: true }, memberOwner),
       })
       return
     }
@@ -1770,7 +1884,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       type: ASTEngine.RelationshipType.Calls,
       confidence: 0.9,
       line_number: this.nodeLine(nameNode),
-      metadata: { phpSpecific: true },
+      metadata: this.withMemberOwner({ phpSpecific: true }, memberOwner),
     })
   }
 
