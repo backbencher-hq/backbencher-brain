@@ -1704,8 +1704,8 @@ Not a blank list, and not a list of adjectives. Each item is a fact a consumer c
    ANALYZER side while leaving on the truth side. With `references` and `imports` added:
    MISSING=0, covered 100%. `script/m14/differential.ts`, one line, and the comment beside
    it — which asserts "the lane emits no `references`" — is now false.
-5. **The arbiter dies on one corpus file.** §8, and the only remaining blocker on this
-   lane's gating. `src/ast/engine.ts:1411`'s `process.exit(1)` on a 120 s parse hang ends the
+5. **The arbiter dies on one corpus file.** **RESOLVED for this lane — see "The arbiter reaches
+   exit 0" above.** `src/ast/engine.ts:1411`'s `process.exit(1)` on a 120 s parse hang ends the
    whole gate run, so any lane whose corpus contains a file the parser cannot finish in
    120 s can never be gated, and the gate is the one instrument with no way to resume —
    `whole-corpus-census.ts` gets that property by sharding, because a census is not a gate.
@@ -1718,6 +1718,15 @@ Not a blank list, and not a list of adjectives. Each item is a fact a consumer c
    not reproducible while it exists. A minimal change that would fix it without touching
    parse semantics: retry the file on a FRESH `Parser` instance once, and only then take the
    process down — `getParser` already knows how to build one (`engine.ts:1034`).
+
+   What was added since: the walk's own `!<path>` marker is UNWRITABLE for this case, because
+   it is appended from a `catch` that `process.exit()` never reaches — so the defect above
+   cannot be fixed from inside the walk, only routed around. `run-arbiter-to-completion.sh`
+   routes around it and reaches `emitted 4/10  ruled-sound 6  FALSIFIED 0
+   ruled-without-justification 0`, exit 0. 19 distinct files were named across runs of one
+   unchanged corpus, which is the measurement that shows the hang is load-dependent rather
+   than a property of a file. Both the marker defect and the fresh-`Parser` fix remain
+   §8 items for the supervisor: `script/m14/resumable-walk.ts` and `src/ast/engine.ts`.
 6. **The canonical `M14.0.F5.json`** has no markdown row. markdown's F5 rows are
    measured and pinned in `differential-baseline.json`, but a scoped run is refused the
    right to write the milestone artifact — that belongs to the 43-language sweep.
@@ -1736,3 +1745,181 @@ Not a blank list, and not a list of adjectives. Each item is a fact a consumer c
 10. **Not markdown's, recorded because it is adjacent**: `F9-PROBE-CLEAN-HEAD-PATTERN`
    (`instantiates:wrap->Just`) fails on the clean lane, reproduced on a stashed
    tree. It is the clean lane's finding.
+
+---
+
+## M60 round: resolution causes A/B/C, the external marker, and the DERIVATION payoff
+
+Everything below is production `parseFile` over a named population, with the analyzer's
+sha256 recorded before and after each walk (`analyzerStableDuringRun: true` in every
+artifact). Instruments: `validation/m14/fixtures/markdown/ambiguity-split.ts`,
+`references-imports-derivation.ts`, `toc-truth-probe.mts`,
+`run-arbiter-to-completion.sh`.
+
+### Resolution, split three ways — 600 files, admitted population 17,456
+
+`abc-after-600.json`, same window as `abc-before-600.json` (`populationSha256`
+`1d079c4fff2092ce`, 600 files, 8,496 symbols, 12,067 edges, 0 degraded, 0 parse failures).
+
+| Cause | Question | Measured | Verdict |
+| --- | --- | --- | --- |
+| **B** format mismatch | does an edge target spell a symbol differently from the published name? | 4,951 unresolved targets, 4,672 dotted, **13** whose last dot-segment is a published name, and **0** of those 13 published in the edge's OWN file | **0 recoverable.** The 13 are coincidental collisions with a URL tail |
+| **A** name is not an identifier | does a published name collapse N declarations into one node? | 4,707 ambiguous targets; **4,705 closed** by `line_number`, 0 by `qualifiedName`, 0 by own-file; **2 still open** | closed by a field the analyzer already publishes (`real-markdown-analyzer.ts:150-157`, `:319/:384/:421/:474`) |
+| **C** external | are stdlib/BCL/remote targets counted as failures? | 4,107 external (`https` 3,996, `http` 110, `some` 1), 572 relative-path-in-repo, 272 bare token | now **marked**, not silently unresolved |
+
+The 2 rows A leaves open are both `uses` → `AGENTS.md` from `Deedle/CONTRIBUTING.md` and
+`FSharp.Data/CONTRIBUTING.md`: the target names a file that is outside the 600-file window,
+which is a statement about the sample rather than about the analyzer.
+
+C is now emitted as an explicit marker rather than inferred by the reader. The scheme rule is
+RFC 3986 `alpha *( ALPHA / DIGIT / '+' / '-' / '.' ) ':'`, scan terminated by `/`, `?` or `#`,
+**minimum two characters** so a Windows drive letter is not read as a scheme, applied after
+stripping one balanced `(...)` or `<...>` wrapper — 3 wrapped destinations in the window.
+Pinned by `markdown/link-target-external` and by four mutants
+(`external-marker-dropped`, `one-char-scheme-counts-external`,
+`destination-classified-from-label`, `angle-destination-delimiters-kept`).
+
+### MD-G4 — the `<...>` destination form emitted nothing at all
+
+`[text](<dest>)` is a legal CommonMark destination form. Before this round the analyzer
+emitted **0** edges for it: the angle delimiters were kept on the target, so no destination
+matched a published name and the edge was indistinguishable from an unresolved one. Now
+stripped, and pinned from both directions — `markdown/angle-destination-delimiters-kept`
+catches the regression, and `markdown/balanced-parens-stripped-too` guards the adjacent rule
+that one balanced `(...)` wrapper is removed and no more.
+
+### The DERIVATION payoff — `references` compared at last
+
+The DERIVATION section above establishes that `references` and `imports` are emitted and
+compared against nothing, because `differential.ts:23392` admits `["contains","uses"]`. That
+is shared machinery (§8), so instead of editing it this lane compared both sides itself, over
+the differential's OWN two corpora at their whole admitted population —
+**1,334 files, 1,334 parsed, 0 parse failures, 1 degraded** — production `parseFile` against
+`deriveMarkdownEdges`, strict equality on `(type, source, target)` with no normalisation.
+Artifact: `validation/m60/markdown/references-imports-derivation.json`.
+
+| type | analyzer keys | truth keys | matched | missing | unexplained | coverage of truth | precision | in allowlist |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `uses` | 41,890 | 33,588 | 33,506 | 82 | 8,384 | 0.9976 | 0.7999 | yes |
+| `contains` | 17,502 | 10,095 | 9,776 | 319 | 7,726 | 0.9684 | 0.5586 | yes |
+| `references` | 3,641 | 3,643 | 3,565 | 78 | 76 | **0.9786** | **0.9791** | **no** |
+| `imports` | 1 | 1 | 1 | 0 | 0 | **1.0000** | **1.0000** | **no** |
+
+Counts are over DISTINCT keys per file. `matched / analyzerEdges` is not a precision — the
+numerator is deduplicated and the denominator counts a triple once per occurrence — and
+quoting it would have read 0.3414 for `references` instead of 0.9791.
+
+So `references` agrees with an independently written walker on 97.86% of oracle truth, and
+nothing in the programme was measuring that.
+
+**The limitation, stated before the number.** `deriveMarkdownEdges` is a second walker over
+the same two grammars. It sub-parses each `inline` node itself rather than reading the
+engine's pre-parse (`differential.ts:22201-22204`), which removes collusion over the PARSE;
+it does not remove collusion over the GRAMMAR. A node type both walkers misread is invisible
+to this comparison. A high match rate is evidence the two walkers agree, not evidence the
+grammar is read correctly — instrument A in `markdown-ruled.ts` covers the grammar, by reading
+node types rather than edge agreement.
+
+### The 770 MISSING rows are the harness's one-sided filter, not an omission
+
+`differential.ts --lang markdown` prints, on kubernetes,
+`tree-truth=8499 covered=7729 (90.9%) MISSING=770`, every sample shaped
+`references document -> <heading text>`, all from files carrying a
+`<!-- BEGIN MUNGE: GENERATED_TOC -->` block. `8499 - 7729 = 770`.
+
+Those edges are not missing. `toc-truth-probe.mts` runs production `parseFile` on
+`kubernetes/CHANGELOG/CHANGELOG-1.11.md` — the file every sample names — and the analyzer
+emits, verbatim:
+
+```json
+{ "type": "references", "source": "document", "target": "v1.11.10",       "confidence": 1 }
+{ "type": "references", "source": "document", "target": "Client Binaries", "confidence": 1 }
+```
+
+182 `references` edges in that one file, 2,562 relationships in total. The oracle derives the
+same edges; the allowlist drops the analyzer's copy before the comparison, so each one reads
+as MISSING. `differential.ts:23408` documents exactly this, in its own words: "This harness
+filters the ANALYZER side by the allowlist and does NOT filter the truth side, so a label
+that truth derives and the allowlist omits is not merely unmeasured, it is measured as a
+DEFECT." Its own precedent for the repair is the csharp C923 asymmetry — exclude a label on
+BOTH sides.
+
+### A number that depends on the matching rule
+
+The same run prints `unexplained=0 (0%)` for both corpora. Under strict triple equality,
+`uses` precision is 0.7999 and `contains` precision is 0.5586. The gap is the harness's
+target normalisation, not an analyzer disagreement — `0%` is a property of the normaliser,
+and the unconditional rate is the table above. Both are reported rather than reconciled by
+assertion, because "unexplained = 0" and "56% of `contains` edges match exactly" are the same
+measurement under two rules and a reader cannot tell which one a gate used.
+
+### The arbiter reaches exit 0 — limitation 5 above, resolved
+
+Limitation 5 recorded that the gate "dies on one corpus file" and called it the only
+remaining blocker on this lane's gating. It is driven to a verdict now, by
+`run-arbiter-to-completion.sh`, which loops the gate and records each file it had to abandon:
+
+```
+walk: 17456/17456 files (100.0%)  newly walked 2650, resumed 14806  SKIPPED-BAD 2  PARTIAL
+emitted 4/10   ruled-sound 6   FALSIFIED 0   ruled-without-justification 0
+```
+
+Exit 0. Log: `validation/m60/markdown/arbiter-verdict.log`. The two zeros are the lane's
+verdict and they are unchanged.
+
+The walk could not do this by itself, and the reason is a defect in shared machinery (§8).
+`resumableWalk` writes `!<path>` from the `catch` around `opts.run(i)`, documented as the thing
+that stops "one poison file re-destroying every future run" — but a WASM trap inside
+`parser.parse()` is answered by `process.exit()`, which ends the process instead of rejecting
+the promise. The `catch` never runs, the marker is never written, and the file is offered
+again next run. Measured: `walk-markdown.txt` held **0** bad markers after repeated runs, and
+`duckdb/data/secrets/README.md` trapped at 14:33:06 with its own watchdog exiting the process
+at 14:35:09 — the same file, 123 s later.
+
+**19 distinct files** were named across this lane's runs of one unchanged corpus, and the two
+the final successful run named are not among the 17 earlier ones. The hang is load-dependent,
+not a property of any file, so marking one bad does not prevent another appearing and the
+driver loops rather than assuming one round suffices. Full record, including the fix that
+would remove the need (retry once on a fresh `Parser`; `getParser` already builds one at
+`engine.ts:1034`): `validation/m14/fixtures/markdown/arbiter-poison-files-markdown.json`.
+
+MD-ARB-1 above is re-measured here from two directions, which is what makes it a rate rather
+than an anecdote. Same gate, same 17,456-file population, banner `100.0%` both times:
+
+| run | newly walked | share of corpus | `uses` printed | `contains` printed | `imports` | `references` |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 972 | 5.6% | 16,938 | 9,651 | 12 | 138 |
+| 2 | 2,650 | 15.2% | 32,023 | 33,624 | 70 | 354 |
+
+The totals track the walk, not the corpus. Whole-population figures for the same types are in
+`validation/m60/markdown/whole-corpus-census.json`: `contains` 334,773, `uses` 270,779,
+`references` 16,857, `imports` 105, over all 17,456 admitted files.
+
+A single fresh walk in one process is not available as the alternative: the gate OOMs at this
+lane's measured heap cliff (~6,900 parses / 62.4 MB, commit `6af7361fe`), so the walk must
+resume — and a resumed walk is exactly where the banner and the tally diverge.
+
+### Mutant coverage is split across two files, and only one is wired
+
+`mutate-analyzer.ts` reaches markdown through `script/m60/markdown-mutants.ts` (line 31).
+That file holds **15** mutants and all 15 are caught:
+
+```
+BB_MUTANT_ONLY="markdown/" bun run script/m14/mutate-analyzer.ts
+→ all 15 mutants caught
+```
+
+`validation/m14/fixtures/markdown/markdown-mutants.ts` holds **16** more, including all four
+that cover the external marker and MD-G4, and **is imported by nothing**. Run directly, all 16
+are caught:
+
+```
+npx tsx validation/m14/fixtures/markdown/markdown-mutants.ts
+→ 16/16 lane mutants caught
+```
+
+So markdown has 31 mutants and 31 are caught, but a gate that runs only the shared registry
+sees 15 of them. The four that guard this round's new behaviour — `external-marker-dropped`,
+`one-char-scheme-counts-external`, `destination-classified-from-label`,
+`angle-destination-delimiters-kept` — are among the 16 that no shared gate runs. Wiring them
+means editing `script/m14/mutate-analyzer.ts` (§8).
