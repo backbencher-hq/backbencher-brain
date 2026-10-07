@@ -8,7 +8,7 @@
     },
     {
       "description": "clojure adversarial fixtures",
-      "detail": "71/71 fixtures pass",
+      "detail": "72/72 fixtures pass",
       "id": "fixtures-clojure",
       "status": "pass"
     },
@@ -290,8 +290,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "a5ec8bd0261c3efdd968062b6cc857e511878b33",
-  "committedAt": "2026-10-07T16:13:41-04:00",
+  "commit": "20bed43562dd6613a449b517c51f38e14701a9a9",
+  "committedAt": "2026-10-07T16:14:25-04:00",
   "data": {
     "details": [
       {
@@ -426,6 +426,11 @@
       },
       {
         "fixture": "clojure/dotdot",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/exports",
         "ok": true,
         "problems": []
       },
@@ -8382,7 +8387,7 @@
       },
       "clojure": {
         "fail": 0,
-        "pass": 71
+        "pass": 72
       },
       "cpp": {
         "fail": 6,
@@ -8575,8 +8580,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-07T20:14:05.357Z",
-  "regeneratedAtCommit": "a5ec8bd0261c3efdd968062b6cc857e511878b33",
+  "regeneratedAt": "2026-10-07T20:18:45.767Z",
+  "regeneratedAtCommit": "20bed43562dd6613a449b517c51f38e14701a9a9",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

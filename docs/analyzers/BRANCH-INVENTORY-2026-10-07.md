@@ -621,6 +621,28 @@ PRESERVATION_AUDIT_OUT=/tmp/preservation.json python3 script/m14/preservation-au
    `overrides` oracle.
 4. **The elixir lane's 17 declared failures** remain the largest single group (§10.5 item 3).
 
+### 11.7 The first fold of 11.4's pin list, measured: clojure
+
+The four clojure pins main never had were written into the tree from their own blobs
+(`git cat-file blob <blob> > <path>`, blobs from the instrument's JSON) and the lane run
+scoped. Nothing was landed on a guess:
+
+| pin | measured against main's analyzer |
+|---|---|
+| `clojure/exports` | **PASS** — landed. It is CLJ-D62's record: the `exports` edge shape, the trailing-`::`/private rules, and CLJ-D62b, the defect the fixture found rather than the census (the `exports[]` list carries 929 private rows over 130 files). Main already emits the edge, so the pin is permanent coverage, not a new claim |
+| `clojure/decl-name` | **FAIL** — 4 forbidden findings: main publishes `:-` and `"bad docstring"` as `function` symbols, and `contains` edges to both |
+| `clojure/override` | **FAIL** — 1 forbidden edge: `overrides[clj.fixture.override->same-line-same-kind]` |
+| `clojure/qualified-type` | **FAIL** — 7 expected symbols absent (`StampedNames`, `ErrorRecord`, `MyProtocolWithSchema`, `method1`, `method2`, `RecordSchema`) and the `implements`/`contains` edges that hang off them |
+
+The three refusals are refused by measurement, exactly as §10.3 refused six pins: landing
+one would turn clojure's `0` failing into a declared failure and trip the baseline gate.
+Each names a defect main has today — two are the kind this programme treats as worst
+(an edge to a keyword, an `overrides` edge to a name sharing a line with its own kind) and
+one is a gap — so they are the clojure wave's work list, and the pins land with the fixes.
+
+After landing `exports`: corpus 1448 pins, 136 declared failing, clojure 72 pass / 0 fail,
+`fixture baseline gate: no regressions`.
+
 Verification of this section's landed files is in §12.
 
 ## 12. Verification at the commit that lands §11
