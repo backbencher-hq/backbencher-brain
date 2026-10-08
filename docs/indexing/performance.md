@@ -51,7 +51,7 @@ wall times, one host:
 | cabal | Haskell | 2,140 | 19,137 | 141.0s | `validation/m11/fp-known-limitations.md:40` |
 | elixir | Elixir + Erlang | 616 | 11,189 | 192.4s | `validation/m11/fp-known-limitations.md:38` |
 | zig | Zig | 2,950 | 164,506 | 211s | `validation/m11/systems-known-limitations.md:33` |
-| julia | Julia | 941 | 27,560 | 168–208s | `docs/analyzers/julia.md:166` |
+| julia | Julia | 941 | 27,560 | 168–208s | `validation/m12/corpus-manifest.json` (the julia entry: 941 `*.jl` files, `corpusSymbols` 27,560) + `docs/analyzers/real-julia-analyzer.md:2147` (the timing) |
 | grails | Groovy | 7,114 | 64,719 | 494.6s | `reviews/groovy/master-review-2026-09-29.md:436-441` |
 
 Note the shape: `cabal` has more files than `elixir` but takes **less** time;
