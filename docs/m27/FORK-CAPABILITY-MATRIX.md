@@ -11,7 +11,7 @@ regeneration must be byte-identical.
 | Neovim | #617 | I3 (editor session machine-driven) | hover (tiered), definition, references, document/workspace symbols, call hierarchy, bb/staleness | graph webview: NOT in this editor (VS Code-only in v3, decision D-6) | [N1.json](../../validation/m27/results/N1.json) | verified (31/31) |
 | JetBrains (LSP4IJ) | #618 | I2 (config + wire capabilities verified; 1 blocked leg: runIde editor session) | hover (tiered), definition, references, document/workspace symbols, call hierarchy, bb/staleness | graph webview: NOT in this editor (VS Code-only in v3, decision D-6) | [J1.json](../../validation/m27/results/J1.json) | verified (22/22) |
 | Zed | #619 | I2 (config + wire capabilities verified; 1 blocked leg: in-editor Zed session) | hover (tiered), definition, references, document/workspace symbols, call hierarchy, bb/staleness | graph webview: NOT in this editor (VS Code-only in v3, decision D-6) | [Z1.json](../../validation/m27/results/Z1.json) | verified (36/36) |
-| Helix | #620 | unset (not verified) | hover (tiered), definition, references, document/workspace symbols, call hierarchy, bb/staleness | graph webview: NOT in this editor (VS Code-only in v3, decision D-6) | [H1.json](../../validation/m27/results/H1.json) | known-gap (21/21) |
+| Helix | #620 | I2 (config + wire capabilities verified; 1 blocked leg: driven hx session) | hover (tiered), definition, references, document/workspace symbols, call hierarchy, bb/staleness | graph webview: NOT in this editor (VS Code-only in v3, decision D-6) | [H1.json](../../validation/m27/results/H1.json) | verified (21/21) |
 
 Blocked legs are recorded inside each evidence file's `blockedLegs` —
 never silently dropped (D-7 boundary: portable nvim/zed toolchains only).
