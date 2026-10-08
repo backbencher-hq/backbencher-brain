@@ -1898,7 +1898,18 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // middle node as a receiver, not the leaf.
     const field = owner.childForFieldName("field") ?? owner.childForFieldName("method")
     if (!field || !this.isSameNode(field, nameNode)) return null
-    const receiver = owner.childForFieldName("table") ?? owner.childForFieldName("object")
+    // `object` is not a field of the pinned lua grammar — measured 2026-10-08
+    // against the shipped wasm: its 22 field names are alternative, arguments,
+    // attribute, body, clause, condition, consequence, content, end, field, left,
+    // local_declaration, method, name, operand, operator, parameters, right,
+    // start, step, table, value, and `object` is in none of them. A probe over
+    // `t.a`, `t["a"]`, `t.a.b` and `t:m()` shows `table` carried by
+    // dot_index_expression, bracket_index_expression and method_index_expression
+    // — every shape this method accepts. The `object` fallback was therefore a
+    // read that always returned null, the same shape as the sql `object` read
+    // removed on 2026-10-01, so it is deleted rather than left to look like a
+    // second chance at a receiver.
+    const receiver = owner.childForFieldName("table")
     if (!receiver || receiver.type !== "identifier") return null
     return receiver.text
   }

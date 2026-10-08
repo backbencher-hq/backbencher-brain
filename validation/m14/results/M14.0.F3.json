@@ -2,7 +2,7 @@
   "checks": [
     {
       "description": "vb adversarial fixtures",
-      "detail": "1/4 fixtures pass",
+      "detail": "2/5 fixtures pass",
       "id": "fixtures-vb",
       "status": "fail"
     },
@@ -290,8 +290,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "b4cdf43c6b67728aa5659bd959bc6b8394a42231",
-  "committedAt": "2026-10-08T10:24:43-04:00",
+  "commit": "9d476aa571d8bea0abe992e1eb03e892db18f507",
+  "committedAt": "2026-10-08T10:39:19-04:00",
   "data": {
     "details": [
       {
@@ -309,6 +309,11 @@
           "expected relationship not found: {\"comment\":\"FIX 3. A tuple type names SEVERAL types, so it emits one `references` edge per element rather than the single name `namingToken` could return.\",\"type\":\"references\",\"from\":\"Requirements\",\"target\":\"ValueRange\",\"meta.role\":\"returnType\"}; got: imports[root->System]@1; imports[root->Generic]@1; exports[root->Endpoints]@1; contains[Endpoints->Trace]@1; exports[Endpoints->Trace]@1; references[Trace->String]@0.6; uses[Trace->Name]@1; calls[Trace->StackFrame]@0.6; instantiates[Trace->StackFrame]@0.6; uses[Trace->Count]@1; uses[Trace->Empty]@1; uses[Trace->List]@0.7; uses[Trace->Text]@1; calls[Trace->System]@0.6; instantiates[Trace->System]@0.6; calls[Trace->ToString]@0.6; contains[Endpoints->GetEnumerator]@1; exports[Endpoints->GetEnumerator]@1; references[GetEnumerator->IEnumerator]@0.6; implements[GetEnumerator->IEnumerable.GetEnumerator]@0.7; calls[GetEnumerator->GetEnumerator]@1; calls[GetEnumerator->List]@0.6; instantiates[GetEnumerator->List]@0.6; contains[Endpoints->Requirements]@1; exports[Endpoints->Requirements]@1; contains[Endpoints->ThreeStrings]@1; exports[Endpoints->ThreeStrings]@1; references[ThreeStrings->String]@0.6; contains[Endpoints->Twice]@1; exports[Endpoints->Twice]@1",
           "expected relationship not found: {\"comment\":\"FIX 3, second element. Both are `role: returnType` because both element types are part of the declared return type.\",\"type\":\"references\",\"from\":\"Requirements\",\"target\":\"String\",\"meta.role\":\"returnType\"}; got: imports[root->System]@1; imports[root->Generic]@1; exports[root->Endpoints]@1; contains[Endpoints->Trace]@1; exports[Endpoints->Trace]@1; references[Trace->String]@0.6; uses[Trace->Name]@1; calls[Trace->StackFrame]@0.6; instantiates[Trace->StackFrame]@0.6; uses[Trace->Count]@1; uses[Trace->Empty]@1; uses[Trace->List]@0.7; uses[Trace->Text]@1; calls[Trace->System]@0.6; instantiates[Trace->System]@0.6; calls[Trace->ToString]@0.6; contains[Endpoints->GetEnumerator]@1; exports[Endpoints->GetEnumerator]@1; references[GetEnumerator->IEnumerator]@0.6; implements[GetEnumerator->IEnumerable.GetEnumerator]@0.7; calls[GetEnumerator->GetEnumerator]@1; calls[GetEnumerator->List]@0.6; instantiates[GetEnumerator->List]@0.6; contains[Endpoints->Requirements]@1; exports[Endpoints->Requirements]@1; contains[Endpoints->ThreeStrings]@1; exports[Endpoints->ThreeStrings]@1; references[ThreeStrings->String]@0.6; contains[Endpoints->Twice]@1; exports[Endpoints->Twice]@1"
         ]
+      },
+      {
+        "fixture": "vb/loop-and-using-bindings",
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "vb/member-read-and-construction",
@@ -8528,7 +8533,7 @@
       },
       "vb": {
         "fail": 3,
-        "pass": 1
+        "pass": 2
       },
       "vue": {
         "fail": 5,
@@ -8561,8 +8566,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-08T14:25:25.183Z",
-  "regeneratedAtCommit": "b4cdf43c6b67728aa5659bd959bc6b8394a42231",
+  "regeneratedAt": "2026-10-08T15:41:18.883Z",
+  "regeneratedAtCommit": "9d476aa571d8bea0abe992e1eb03e892db18f507",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

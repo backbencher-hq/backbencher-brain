@@ -2574,7 +2574,16 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (p && p.type === "parameter") {
       const params = p.parent
       const holder = params?.parent
-      if (params?.type === "parameters" && holder && (holder.type === "bare_function_type" || holder.type === "function_type" || holder.type === "parenthesized_type")) return
+      // `bare_function_type` and `parenthesized_type` are not node types of the
+      // pinned rust grammar — measured 2026-10-08 against the shipped wasm, whose
+      // function-ish types are function_type / function_item /
+      // function_signature_item / function_modifiers, and whose only
+      // parenthesised type is `tuple_type` (what `type P = (i32)` and
+      // `type U = (i32,)` actually build). Both spellings were dead disjuncts;
+      // `function_type` is live and is the shape this guard exists for, measured
+      // on `type F = extern "C" fn(x: i32)`: function_type -> parameters ->
+      // parameter(x) with no body to bind the name.
+      if (params?.type === "parameters" && holder && holder.type === "function_type") return
       // RUST-MR: a TRAIT method SIGNATURE's parameter declares too, and it is the
       // same absence of a body: `collectFunctionBindings` collects
       // `function_item` only, so a bodiless `function_signature_item` has NO

@@ -13,10 +13,10 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (39/45 languages pass)",
-      "detail": "unregistered vb field \"control\"; unregistered lua field \"object\"; unregistered powershell type \"command_expression\"; unregistered rust type \"bare_function_type\"; unregistered rust type \"parenthesized_type\"; unregistered sql type \"index\"; unregistered svelte type \"object_assignment_pattern_deprecated\"; regression vb 0->1; regression lua 0->1; regression powershell 0->1",
+      "description": "per-literal shrink-only register with reasons (45/45 languages pass)",
+      "detail": "45 language(s), every dead literal registered with a reason",
       "id": "dead-literal-gate",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "the gate is proven able to fail: 8 negatives incl. a NEW literal under an improved count, an unreasoned entry, and an unrecorded repayment",
@@ -25,97 +25,16 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "c53e702dcf2cdac512ee5faa6999ac2d9dde0592",
-  "committedAt": "2026-10-08T10:30:58-04:00",
+  "commit": "9d476aa571d8bea0abe992e1eb03e892db18f507",
+  "committedAt": "2026-10-08T10:39:19-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
-        "countRegressions": [
-          {
-            "from": 0,
-            "lang": "vb",
-            "to": 1
-          },
-          {
-            "from": 0,
-            "lang": "lua",
-            "to": 1
-          },
-          {
-            "from": 0,
-            "lang": "powershell",
-            "to": 1
-          },
-          {
-            "from": 0,
-            "lang": "rust",
-            "to": 2
-          },
-          {
-            "from": 0,
-            "lang": "sql",
-            "to": 1
-          },
-          {
-            "from": 0,
-            "lang": "svelte",
-            "to": 1
-          }
-        ],
-        "ok": false,
+        "countRegressions": [],
+        "ok": true,
         "recordIsV1": false,
         "shrunk": [],
-        "unregistered": [
-          {
-            "context": "real-vb-analyzer.ts:field-call:childForFieldName",
-            "kind": "field",
-            "lang": "vb",
-            "line": 1106,
-            "literal": "control"
-          },
-          {
-            "context": "real-lua-analyzer.ts:field-call:childForFieldName",
-            "kind": "field",
-            "lang": "lua",
-            "line": 1901,
-            "literal": "object"
-          },
-          {
-            "context": "real-powershell-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "powershell",
-            "line": 1172,
-            "literal": "command_expression"
-          },
-          {
-            "context": "real-rust-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "rust",
-            "line": 2577,
-            "literal": "bare_function_type"
-          },
-          {
-            "context": "real-rust-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "rust",
-            "line": 2577,
-            "literal": "parenthesized_type"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "sql",
-            "line": 922,
-            "literal": "index"
-          },
-          {
-            "context": "real-svelte-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "svelte",
-            "line": 1335,
-            "literal": "object_assignment_pattern_deprecated"
-          }
-        ]
+        "unregistered": []
       },
       "counts": {
         "bash": 0,
@@ -601,16 +520,10 @@
         "oracleFieldCount": 22,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 128,
-        "referencedFieldLiterals": 10,
+        "referencedFieldLiterals": 9,
         "referencedTypeLiterals": 25,
-        "status": "fail",
-        "unknownFields": [
-          {
-            "context": "real-lua-analyzer.ts:field-call:childForFieldName",
-            "line": 1901,
-            "literal": "object"
-          }
-        ],
+        "status": "pass",
+        "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -724,16 +637,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 423,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 39,
-        "status": "fail",
+        "referencedTypeLiterals": 38,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-powershell-analyzer.ts:comparison",
-            "line": 1172,
-            "literal": "command_expression"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-powershell.wasm"
@@ -825,21 +732,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
         "referencedFieldLiterals": 15,
-        "referencedTypeLiterals": 86,
-        "status": "fail",
+        "referencedTypeLiterals": 84,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-rust-analyzer.ts:comparison",
-            "line": 2577,
-            "literal": "bare_function_type"
-          },
-          {
-            "context": "real-rust-analyzer.ts:comparison",
-            "line": 2577,
-            "literal": "parenthesized_type"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-rust.wasm"
@@ -894,20 +790,19 @@
         "oracleNodeTypeCount": 823,
         "referencedFieldLiterals": 5,
         "referencedTypeLiterals": 48,
-        "status": "fail",
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 922,
-            "literal": "index"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [
           {
             "justification": "M14 grammar audit (real-sql-analyzer.ts:58, the SQL_KEYWORDS set): a SQL KEYWORD in a keyword table, not a parse-tree node reference. `table` is the reserved word the guard exists to recognise, and the audit's `X.type === \"lit\"` / set-literal heuristic reports set members the way it reports node types. Waived, not fixed — deleting the keyword would change behaviour, and the swift `String` entry is the same shape (a type-name table, waived with a justification).",
             "line": 724,
             "literal": "table"
+          },
+          {
+            "justification": "M14.0.F1 register repayment (2026-10-08, real-sql-analyzer.ts:922 adoptLateDeclaredIndexOwners): this is the symbol-metadata TAG THE ANALYZER ITSELF WRITES — `createSymbol(..., { type: \"index\", indexName, table, columns })` at real-sql-analyzer.ts:2380, read back as `symbol.metadata?.type !== \"index\"` — not a parse-tree node reference. The pinned sql grammar declares no node named `index` (its index productions are `create_index` / `alter_index` / `drop_index` / `index_fields` / `index_hint` / `keyword_index`), and no comparison in this analyzer ever tests a node against it. Waived, not fixed: deleting the comparison would drop the CREATE INDEX symbols' owner adoption, which is a behaviour change with no grammar conformance to buy. Same shape as the sql `table`/`grant_statement` and typescript `default_export_expression` entries above — an analyzer-owned payload compared against a literal, making no grammar claim. The site carries a comment saying so.",
+            "line": 932,
+            "literal": "index"
           }
         ],
         "wasm": [
@@ -924,16 +819,10 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 457,
         "referencedFieldLiterals": 6,
-        "referencedTypeLiterals": 35,
-        "status": "fail",
+        "referencedTypeLiterals": 34,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-svelte-analyzer.ts:comparison",
-            "line": 1335,
-            "literal": "object_assignment_pattern_deprecated"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-svelte.wasm",
@@ -1100,16 +989,10 @@
         "oracleFieldCount": 54,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 451,
-        "referencedFieldLiterals": 17,
+        "referencedFieldLiterals": 18,
         "referencedTypeLiterals": 47,
-        "status": "fail",
-        "unknownFields": [
-          {
-            "context": "real-vb-analyzer.ts:field-call:childForFieldName",
-            "line": 1106,
-            "literal": "control"
-          }
-        ],
+        "status": "pass",
+        "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -1201,10 +1084,10 @@
       }
     },
     "summary": {
-      "fail": 6,
+      "fail": 0,
       "languagesAudited": 45,
-      "pass": 39,
-      "totalUnknownReferences": 7
+      "pass": 45,
+      "totalUnknownReferences": 0
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1232,8 +1115,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-10-08T14:33:36.132Z",
-  "regeneratedAtCommit": "c53e702dcf2cdac512ee5faa6999ac2d9dde0592",
+  "regeneratedAt": "2026-10-08T15:40:49.043Z",
+  "regeneratedAtCommit": "9d476aa571d8bea0abe992e1eb03e892db18f507",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

@@ -1332,7 +1332,14 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         const left = n.childForFieldName?.("left") ?? n.childForFieldName?.("pattern") ?? n.namedChild(0)
         if (left) take(left)
       } else if (
-        n.type === "object_assignment_pattern_deprecated" ||
+        // `object_assignment_pattern_deprecated` was a dead disjunct: measured
+        // 2026-10-08, the pinned svelte grammar declares no assignment-pattern
+        // type at all, and the pinned typescript/javascript grammars declare
+        // `object_assignment_pattern` and `assignment_pattern` with no deprecated
+        // spelling. A real parse of `let { a = 1, ...rest } = obj` builds
+        // `object_pattern` -> `object_assignment_pattern`, which is the shape the
+        // arm ABOVE already handles; this container branch is for the patterns
+        // whose children are all bindings.
         n.type === "object_pattern" ||
         n.type === "array_pattern"
       ) {
