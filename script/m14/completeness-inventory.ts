@@ -51,10 +51,25 @@ const BASELINE = path.join(ROOT, "validation", "m14", "differential-baseline.jso
 interface LangConfig {
   id: string
   wasm: string
+  // A SECOND grammar the lane also loads (markdown: block + inline). Declared
+  // because the markdown entry carries it, and left OPTIONAL because most lanes
+  // have none. FINDING, recorded rather than papered over: nothing in this file
+  // reads this field, so section A classifies the named node types of `wasm`
+  // ALONE while the markdown entry's own comment says "section A's classification
+  // is the union of both". The union is not implemented; the field keeps the
+  // claim visible instead of deleting it to quiet the compiler.
+  companionWasm?: string[]
   classification: string
   fixturesDir: string
   docs: string[]
-  differentialCheck: string
+  // The name of the lane's differential check in M14.0.F5.json (section E reads
+  // `perfKey` against differential-baseline.json instead, and no code anywhere
+  // reads this field — measured repo-wide). OPTIONAL because the committed F5
+  // snapshot does not carry a check for every lane: it has `differential-toml`
+  // and no yaml id at all. A lane whose check is not in the snapshot leaves this
+  // undeclared; inventing a name to satisfy the type would be a claim nothing
+  // could check.
+  differentialCheck?: string
   perfKey: string
   // Optional documented differential floor (C-D4): a language whose honest
   // floor carries RULED residuals (macro-expansion boundary — C cannot
@@ -897,6 +912,10 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   classification: "toml-completeness.json",
   fixturesDir: "validation/m14/fixtures/toml",
   docs: ["docs/analyzers/real-toml-analyzer.md"],
+  // Measured in validation/m14/results/M14.0.F5.json: `differential-toml`
+  // (pass, 60 files, coverage 100%, unexplained 0%). The entry was missing the
+  // name it is gated by; the name is read off the artifact, not guessed.
+  differentialCheck: "differential-toml",
   perfKey: "cargo:toml",
   requiredKinds: ["contains"],
   payloads: {
@@ -910,6 +929,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   classification: "yaml-completeness.json",
   fixturesDir: "validation/m14/fixtures/yaml",
   docs: ["docs/analyzers/real-yaml-analyzer.md"],
+  // NO `differentialCheck`, and that absence is the measured state, not an
+  // omission: the committed M14.0.F5.json carries no `differential-yaml` row and
+  // no `differential-kubernetes:yaml` row either (its 61 differential ids were
+  // enumerated to check). What this lane DOES have is the F9 floor, pinned as
+  // `kubernetes:yaml` below and verified by section E against
+  // differential-baseline.json.
   perfKey: "kubernetes:yaml",
   requiredKinds: ["contains", "extends", "imports", "references"],
   payloads: {
@@ -956,8 +981,11 @@ async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
 
 function loadSpec(cfg: LangConfig) {
   const spec = JSON.parse(fs.readFileSync(path.join(ROOT, "script", "m14", "spec", cfg.classification), "utf8"))
-  const handled = new Set(spec.handled_verified?.types ?? [])
-  const silent = new Set(spec.internal_silent?.types ?? [])
+  // Typed as `Set<string>`, not left to inference off an `any` spec: without the
+  // declaration the elements read as `unknown` and the drift check that consumes
+  // them (`types.includes(t)`) became a call the compiler could not check.
+  const handled = new Set<string>(spec.handled_verified?.types ?? [])
+  const silent = new Set<string>(spec.internal_silent?.types ?? [])
   const gapTypes = new Set<string>()
   for (const g of spec.gap?.gaps ?? []) {
     // A spec is DATA. A record with no `node_type` classifies nothing — the same
@@ -1284,7 +1312,10 @@ async function main() {
   }
 
   let anyFailure = false
-  const results: any[] = []
+  // The declared shape is `runLang`'s own return type, so `r.checks` is
+  // `SectionCheck[]` at both places it is read below — it was `any[]`, which is
+  // why two callbacks had no element type and were flagged as implicit `any`.
+  const results: Array<{ checks: SectionCheck[]; summary: string; failures: number }> = []
   for (const cfg of cfgs) {
     const r = await runLang(cfg)
     anyFailure = anyFailure || r.failures > 0
