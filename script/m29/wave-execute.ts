@@ -23,6 +23,7 @@ import { WAVE_LANGUAGES, ROOT } from "./wave-protocol.ts"
 import { createStdioTransport, measureWarmP95, type FeatureMeasurement } from "../m25/feature-assertions.ts"
 import { writeSealed } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
+import { fileURLToPath } from "node:url"
 
 interface Expectations {
   language: string
@@ -283,6 +284,6 @@ async function main(): Promise<void> {
   process.exit(allOk ? 0 : 1)
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   void main()
 }

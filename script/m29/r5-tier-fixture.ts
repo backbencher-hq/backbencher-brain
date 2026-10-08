@@ -25,6 +25,7 @@ import os from "node:os"
 import path from "node:path"
 import { createHash } from "node:crypto"
 import { createRequire } from "node:module"
+import { fileURLToPath } from "node:url"
 
 const require = createRequire(import.meta.url)
 
@@ -125,7 +126,7 @@ export async function probeFixture(): Promise<{ tiers: string[]; ok: boolean; de
 }
 
 // CLI: npx tsx script/m29/r5-tier-fixture.ts  (prints RED/GREEN verdict)
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   void probeFixture().then((r) => {
     console.log(`R5 fixture probe: ${r.ok ? "GREEN" : "RED"} — ${r.detail}`)
     process.exit(r.ok ? 0 : 1)

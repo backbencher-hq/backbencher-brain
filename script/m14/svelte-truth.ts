@@ -32,8 +32,9 @@
 
 import * as fs from "node:fs"
 import * as path from "node:path"
+import { fileURLToPath } from "node:url"
 
-const ROOT = process.env.BB_REPO || path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..")
+const ROOT = process.env.BB_REPO || path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 
 /**
  * The labels this module can actually derive. The gate compares this list with

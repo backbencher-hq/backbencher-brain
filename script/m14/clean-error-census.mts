@@ -63,8 +63,9 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { execFileSync } from "node:child_process"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
+import { fileURLToPath } from "node:url"
 
-const ROOT = path.resolve(new URL(import.meta.url).pathname, "..", "..", "..")
+const ROOT = path.resolve(fileURLToPath(import.meta.url), "..", "..", "..")
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const WIDE = path.join(ROOT, "script", "m14", "clean-wide-manifest.txt")
 const argv = process.argv.slice(2)

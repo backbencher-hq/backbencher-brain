@@ -60,8 +60,9 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 import { emitEvidence, type Check } from "./evidence-harness"
+import { fileURLToPath } from "node:url"
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..")
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 // FULL CORPUS, with a cap that is above the largest corpus rather than a fraction
 // of it. The cap was 500, which covered 14.8% of the svelte corpus (500 of 3,382)
 // — and it was not buying anything: the whole census runs in 13.7s at 500, so

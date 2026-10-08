@@ -80,6 +80,7 @@ import * as path from "node:path"
 import { execFileSync } from "node:child_process"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
+import { fileURLToPath } from "node:url"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 
@@ -98,7 +99,7 @@ const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
  * no error anywhere. Resolved from the module's own URL, which is the only location
  * that cannot be changed by the caller.
  */
-const WIDE_MANIFEST = path.join(path.dirname(new URL(import.meta.url).pathname), "clean-wide-manifest.txt")
+const WIDE_MANIFEST = path.join(path.dirname(fileURLToPath(import.meta.url)), "clean-wide-manifest.txt")
 
 const argv = process.argv.slice(2)
 const arg = (k: string) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : "" }

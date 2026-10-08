@@ -43,10 +43,11 @@ import { execFile } from "node:child_process"
 import * as fs from "node:fs"
 import * as path from "node:path"
 import { promisify } from "node:util"
+import { fileURLToPath } from "node:url"
 
 const execFileP = promisify(execFile)
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..")
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const CHILD = path.join(ROOT, "validation", "m14", "fixtures", "clean", "error-invented-names.mts")
 const argv = process.argv.slice(2)
 const arg = (k: string) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : "" }

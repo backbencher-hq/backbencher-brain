@@ -32,8 +32,9 @@ import { spawnSync } from "node:child_process"
 import { readdirSync, readFileSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { TS_MUTANTS, type TsMutant } from "./ts-mutants"
+import { fileURLToPath } from "node:url"
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..")
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const FIXTURE_DIR = path.join(ROOT, "validation", "m14", "fixtures", "typescript")
 const onlyIdx = process.argv.indexOf("--only")
 const only = onlyIdx >= 0 ? process.argv[onlyIdx + 1] : null

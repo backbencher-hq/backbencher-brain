@@ -37,6 +37,7 @@ import { getParser } from "../../../src/ast/engine"
 import { ASTEngine } from "../../../src/ast/engine"
 import { RealJavaScriptAnalyzer } from "../../../src/ast/real-javascript-analyzer"
 import { isJsBuiltin, jsBuiltinHasMember } from "../../../src/ast/js-builtin-prototypes"
+import { fileURLToPath } from "node:url"
 
 const REPO = "$HOME/backbencher-brain"
 const DEFAULT_CORPUS = "$HOME/fixtures/repositories"
@@ -49,7 +50,7 @@ const JS_EXTS = [".js", ".mjs", ".cjs"]
 // ---------------------------------------------------------------------------
 const SLASH = String.fromCharCode(47)
 function assertNoRegexLiteral(): void {
-  const src = readFileSync(new URL(import.meta.url).pathname, "utf8")
+  const src = readFileSync(fileURLToPath(import.meta.url), "utf8")
   const NL = "\n"
   let i = 0
   let inStr: string | null = null

@@ -6,6 +6,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 
 type Issue = { code: string; title: string; evidenceFile: string | null; status: string; passed: number | null; failed: number | null; commit: string | null }
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -43,7 +44,7 @@ function closable(i: Issue): boolean {
 }
 check("no issue claims verified without a matching on-disk evidence file", issues.every(closable))
 
-const self = readFileSync(new URL(import.meta.url).pathname, "utf8")
+const self = readFileSync(fileURLToPath(import.meta.url), "utf8")
 check("M23 verifiers have no hardcoded true assertions", !/check\(\s*"[^"]*",\s*true\s*\)/.test(self))
 check("M23 no boolean-OR-constant tautologies", !/\|\|\s*true\b/.test(self))
 
