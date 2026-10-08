@@ -22,7 +22,6 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
 import { fingerprintFields } from "../m61/claim_fingerprints.ts"
-import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const LEDGER = path.join(ROOT, "validation/m28/results/manifest.json")

@@ -194,9 +194,32 @@ npx tsx script/m62/reseal-ledger.ts validation/m25/results/manifest.json --apply
 > `script/m14/verify-script-typecheck-baseline.ts` ratchets `script/m12` + `m14`
 > (716 errors worked down to 180). The rest — m11, m13, m15–m63, `lanes/`,
 > `incoming-*`, about 3,000 files — had no typecheck and no ratchet at all.
-> `npm run typecheck:scripts` now covers those, tracking **765 errors across 219
+> `npm run typecheck:scripts` now covers those, tracking **723 errors across 202
 > files** so the number can only shrink. A pass there means *no file got worse*,
 > not that the scripts typecheck, and it prints that in as many words.
+>
+> Every `TS2304` ("cannot find name") and `TS2300` ("duplicate identifier") is
+> now **zero** — those were 40 of the 765, and they were not noise. Each one is a
+> script that cannot work as written:
+>
+> - `script/m26/verify-polyglot-e2e.ts` set `BB_DATA_DIR` to an undeclared
+>   `mData`. Node coerces that to the *string* `"undefined"`, so the M1 mutant
+>   check indexed a directory named `undefined`, threw, and the catch treats "a
+>   mutant that cannot run" as caught. **The mutant check had been reporting PASS
+>   without ever comparing the mutant to an honest build.**
+> - `script/m48/l1-hub-smoke.ts` declared `client` inside the `try`, then built
+>   the `catch`'s error message from `client.stderr`. Any throw in that leg made
+>   the *catch* throw — so "no unexpected throw", the check whose entire job is
+>   reporting unexpected throws, never ran.
+> - `script/lanes/typescript/ts-census.ts` used `pr` 26 lines after the block that
+>   declared it had closed. The `ReferenceError` was swallowed by that walk's own
+>   `catch`, so the census reported parse quality from a tree it never touched.
+> - Three `script/m60/lua-*` gates imported the *named* `join` but used the
+>   *default* `path`, and never imported `fileURLToPath`. All three threw on line
+>   22 and had never run once.
+> - Six files carried a duplicate import of the same name; `graph-core.ts`
+>   declared `impact` twice in one interface, so it was `never` — a member that
+>   could never hold a value.
 >
 > The most alarming number in this document: **one unparseable file in the program
 > makes `tsc` report 0 semantic diagnostics instead of 521.** `tsc` emits syntactic

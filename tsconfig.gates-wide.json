@@ -10,7 +10,8 @@
   },
   "include": [
     "script/**/*.ts",
-    "script/**/*.mts"
+    "script/**/*.mts",
+    "src/ast/pool_worker_globals.d.ts"
   ],
   "exclude": [
     "node_modules",

@@ -9,7 +9,8 @@
 //
 // A name the ORACLE derives and the census does not names a file, and that
 // file's return is the one to read. That is the whole adjudication.
-import { join } from "node:path"
+import path, { join } from "node:path"
+import { fileURLToPath } from "node:url"
 import { readFileSync, readdirSync } from "node:fs"
 
 // Derived from this file's own location. Hardcoding the main checkout made this
