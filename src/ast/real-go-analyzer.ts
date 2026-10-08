@@ -1660,7 +1660,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * category test as "the uppercase version of the letter is different from
    * its lowercase version". Spot-checked against the categories that matter:
    * `A` upper, `a` not, `Ü` upper, `ü` not, `ß` not (Go: Ll, not Lu), CJK
-   * `中` not (Lo, not Lu), titlecase `ǅ` not (Lt, not Lu). The only residual is
+   * `U+4E2D` not (Lo, not Lu), titlecase `ǅ` not (Lt, not Lu). The only residual is
    * a code point the runtime's tables do not know, which is then not-upper —
    * the conservative direction (a symbol stays private rather than being
    * published as public API on a guess).

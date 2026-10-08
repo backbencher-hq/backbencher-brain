@@ -1869,7 +1869,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         //
         // Without this the pass is QUADRATIC in nesting depth. `block` is a trigger, so
         // n nested blocks each walk their own subtree; the block at depth d has O(n-d)
-        // nodes beneath it and Σ(n-d) = O(n²). Measured on a nested-if spine: `parent`
+        // nodes beneath it and sum(n-d) = O(n²). Measured on a nested-if spine: `parent`
         // and `type` crossings both scale as n^1.95–1.98, and 95% of them were eight
         // lines inside collectDartLocals' loop body (see
         // validation/m14/fixtures/dart/climb-attribution.ts). Production parseFile did

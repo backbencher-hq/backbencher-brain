@@ -264,7 +264,7 @@ function staticInteropClass(head: string): string | null {
 // scan now, and the conversion is PROVED, not asserted:
 // `script/m14/tmp/clj-regex-equiv.ts` runs both forms over every `sym_lit`
 // name in three corpora (633 files, 187,678 symbol nodes, 13,363 distinct
-// names) plus a 42-case adversarial battery (`%%`, `%&x`, `%0`, `%00`, `%١`,
+// names) plus a 42-case adversarial battery (`%%`, `%&x`, `%0`, `%00`, `%U+0661`,
 // `% 1`, `%1a`, a 20-digit `%…`, …) and reports **0 mismatches**.
 //
 // The walk is the regex's own grammar, step for step: one `%`, then either
@@ -278,7 +278,7 @@ export const isAnonArgShorthand = (s: string): boolean => {
   if (c1 < 48 || c1 > 57) return false              // then digits only
   for (let i = 2; i < s.length; i++) {
     const c = s.charCodeAt(i)
-    if (c < 48 || c > 57) return false              // ASCII digits ONLY (not ٣)
+    if (c < 48 || c > 57) return false              // ASCII digits ONLY (not U+0663)
   }
   return true
 }
