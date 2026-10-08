@@ -4555,9 +4555,24 @@ The battery states its own limit: it mutates the PAYLOAD, so it proves the rows 
 spelling, not that the analyzer computes it by the right route — the probe above is that half.
 
 **Verification.** Fixtures **24 pass / 0 fail**, `fixture baseline gate: no regressions`;
-`npx tsc --noEmit` clean. The whole-corpus arm for THIS change is the arm AFTER the current one; the
-number it has to beat is `contains 169,829 resolved / 530,368 ambiguous`, and the price says it should
-land near 656,000 resolved.
+`npx tsc --noEmit` clean. The number it had to beat was `contains 169,829 resolved / 530,368
+ambiguous`; the price said it should land near 656,000 resolved.
+
+**The arm is in, and the price was right** (`incoming-dart-contains-full.log`, whole corpus 33,738
+files, frozen at the revision that carries this change):
+
+```
+contains   700,432 edges    resolved 628,181   amb(decl) 72,183   unresolved 68
+           (before: 700,265    169,829            530,368              68)
+```
+
+**+458,352 resolved and -458,185 ambiguous, on the same 68 unresolved.** The price — measured on
+three pinned checkouts (3,977 files, 292,017 `contains` edges) — predicted 91.7 % of the ambiguous
+set moving to resolved with **0 regressions**, and the whole corpus moved 86 % of it while its own
+unresolved count did not move at all. The corpus arm cannot verify per-edge that nothing was
+disturbed (it measures a different revision's population), so the 0-regression claim is the price
+measurement's, on its own stated population. TOTAL: **1,679,235 resolved of 3,718,811** — before-arm
+988,684, qualifier arm 1,171,014, import arm 1,220,883.
 
 **Where the campaign stands — the qualifier/receiver arm, now COMPLETE**
 (`incoming-dart-index-after.log`, frozen at `1f3cc877a`, `--index`, per-project scope): TOTAL 3,718,646
@@ -4566,6 +4581,13 @@ edges / **1,171,014 resolved** (before-arm: 988,684) / 1,688,049 ambiguous / 859
 **231,752**, `uses` 194,072 -> **309,442**. Every other type is unmoved (`imports 0`, `exports 0`,
 `contains 169,829` — that arm predates this change). `overrides` held its 269,818 with 407
 owner-verified external claims and 15 REFUTED, and that is the number the next round has to move.
+
+**The import arm, COMPLETE** (`incoming-dart-imports-full.log`, frozen at `275ab8b58`): `imports`
+**0 -> 49,245 resolved** with 20,474 verified external claims (was 407 for the whole run) and 35,575
+unresolved; `exports` **0 -> 626 resolved**, 50 verified, 1,350 unresolved. TOTAL 1,220,883 resolved.
+The 35,575 unresolved imports were the number this round had to explain, and correcting the gate's
+key space (below) showed how much of it was the instrument rather than the code: on one whole project
+it was 46 % of them. The arm re-run at the fixed revision is `incoming-dart-arm5-fixed.log`.
 
 ## 2026-10-08 — a fixture that was green and asserted nothing
 
