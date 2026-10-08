@@ -953,7 +953,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     // has the vocabulary to apply it (it declares ≥1 struct field).
     //   - file declares struct fields  -> GATE. A read of a field this file does
     //     not declare is dropped rather than published as a name that resolves to
-    //     nothing (α's rule, and `ontology-uses` states it verbatim). Verified
+    //     nothing (`ontology-uses`' own rule, stated verbatim in the pin). Verified
     //     edges carry `struct_field_read` at 0.9.
     //   - file declares NO struct field -> PUBLISH. There is nothing to verify
     //     against; a field of a struct declared in another file is not a
