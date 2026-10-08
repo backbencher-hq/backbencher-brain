@@ -65,6 +65,7 @@ import { countUsageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
 import { classifyStoredRow, orderTiers, primaryTier, type EvidenceTier, type StoredTierRow } from "./evidence_tier"
 import { parseParameters, renderSignature, UNRESOLVED_TYPE } from "./signature"
 import { parseForSafety } from "../ast/safety-primitives"
+import { docCommentFor } from "./doc_comment"
 import { renderTypeLine, resolveTypeLine, type TypeLine } from "./type_inference_surface"
 import { actionsSection, connectedGroups, connectedSummarySection, containmentSection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
 
@@ -153,6 +154,8 @@ export interface SymbolHoverData {
    *  from a guess. `confidence` is non-null iff `inferred`; `unknown` is the
    *  declared marker, never a guess (§15.4). */
   typeLine: TypeLine
+  /** M24.L9: the declaration's own doc comment, or "" when none is adjacent. */
+  docComment: string
 }
 
 export interface HoverRequest {
@@ -339,7 +342,7 @@ export async function resolveOccurrenceSymbol(
   raw: CoreDatabase,
   filePath: string,
   position: LspPosition,
-): Promise<{ symbol: SymbolRow; file: FileRow; occurrence: { startLine: number; startColumn: number; endColumn: number }; mapper: PositionConverter } | null> {
+): Promise<{ symbol: SymbolRow; file: FileRow; occurrence: { startLine: number; startColumn: number; endColumn: number }; mapper: PositionConverter; docComment: string } | null> {
   let content: string
   try {
     content = readFileSync(filePath, "utf8")
@@ -387,6 +390,10 @@ export async function resolveOccurrenceSymbol(
     // second read. Two P1 mappers over the same bytes would be two answers to
     // the same question, which is the drift §5.1 exists to prevent.
     mapper,
+    // M24.L9: the declaration's own documentation, read from the comment sites
+    // this parse already produced. Attached to the DECLARATION, not to the
+    // cursor: a doc describes the symbol, and the cursor is often a use of it.
+    docComment: docCommentFor(safety.commentSites, row.line_start),
   }
 }
 
@@ -433,6 +440,20 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   // declares that the index records no origin, `unknown` is the declared
   // marker with the reason. §15.4 human text is human — this is a sentence, not
   // a serialization.
+  // M24.L9: the author's own words about the symbol, rendered directly UNDER the
+  // signature — the same position IntelliJ and rustdoc put it, so the prose and
+  // the declaration read as one fact about one thing rather than as two
+  // disconnected blocks.
+  //
+  // Rendered only when a comment is ADJACENT to the declaration (doc_comment.ts
+  // decides). An absent doc contributes NO line: no empty section, no
+  // placeholder. "This symbol has no documentation" is itself information, and a
+  // blank heading would render it as an omission to be filled in later rather
+  // than as the fact it is.
+  if (data.docComment.length > 0) {
+    lines.push(data.docComment)
+    lines.push("")
+  }
   lines.push(renderTypeLine(data.typeLine))
   // M55.T3: the count line declares what was counted, so a reader (and the
   // references surface, which legitimately answers a wider question when the
@@ -758,6 +779,7 @@ export async function hover(
     lineStart: symbol.line_start,
     lineEnd: symbol.line_end,
     typeLine,
+    docComment: occurrence?.docComment ?? "",
   }
 
   const elapsed = (deps.now ?? Date.now)() - startedAt
