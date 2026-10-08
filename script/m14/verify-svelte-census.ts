@@ -45,9 +45,9 @@
 // oracle as inputs, because this gate does not consult them: claiming them would
 // be a false lineage claim of exactly the kind this gate exists to prevent.
 
-import { execSync } from "node:child_process"
 import * as fs from "node:fs"
 import * as path from "node:path"
+import { emitEvidence, type Check } from "./evidence-harness"
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..")
 const CORPUS_ROOTS = [
@@ -595,21 +595,16 @@ console.log(
 
 // The evidence artifact the honesty gate reads. A gate whose artifact is never
 // read is a gate whose failure nobody is told about.
-let commit = "unknown"
-try {
-  commit = execSync("git rev-parse HEAD", { cwd: ROOT, stdio: ["ignore", "pipe", "ignore"] }).toString().trim()
-} catch {}
-const resultsDir = path.join(ROOT, "validation", "m14", "results")
-fs.mkdirSync(resultsDir, { recursive: true })
-const evidence = {
-  schemaVersion: 1,
-  issueId: "M14.0.SVELTE-CENSUS",
-  title: "svelte construct census — the check that consults neither the analyzer nor the oracle",
-  claimLevel: "measured",
-  commit,
-  regeneratedAt: new Date().toISOString(),
-  runtime: `bun ${process.versions.bun}`,
-  layers: ["ast_extraction", "relationships"],
+// The artifact is EMITTED THROUGH THE HARNESS (2026-10-08). This file used to build the
+// envelope by hand and write the file itself, which cost it two things the harness
+// provides. The lineage pair: it carried a timestamp and no commit, so M49's lineage
+// gate failed it ("M14.0.SVELTE-CENSUS.json carries regeneratedAtCommit — got: undefined").
+// And its claim in the producer register: M49 verify-evidence-identity discovers a
+// producer by the `emitEvidence(` anchor, so a hand-rolled writer left this artifact an
+// ORPHAN — an artifact in the results directory that no gate can be shown to produce,
+// which is exactly the state that gate exists to make impossible. The payload below is
+// unchanged; the envelope, the claim level and the writer move to the harness.
+const payload = {
   data: {
     corpusFiles: files.length,
     corpusRoots: CORPUS_ROOTS,
@@ -715,5 +710,16 @@ const evidence = {
     "This gate reads the corpus, not the analyzer's tables, so a rune the analyzer has never heard of and the corpus never uses is invisible to it. That is the $effect.untracked / $props.is_safe / $render case: 3 declared runes are corpus-absent and are carried on the spec surface, reported as such on every run.",
   ],
 }
-fs.writeFileSync(path.join(resultsDir, "M14.0.SVELTE-CENSUS.json"), JSON.stringify(evidence, null, 2) + "\n")
-console.log(`  wrote validation/m14/results/M14.0.SVELTE-CENSUS.json (${evidence.checks.length} checks)`)
+const file = emitEvidence({
+  issueId: "M14.0.SVELTE-CENSUS",
+  title: "svelte construct census — the check that consults neither the analyzer nor the oracle",
+  claimLevel: "L1",
+  layers: ["carrier-census"],
+  checks: payload.checks.map((c) => ({ id: c.id, description: c.description, status: c.status as Check["status"] })),
+  limitations: payload.limitations,
+  // The negative-control list and the "consults neither side" rationale are this gate's own
+  // governance prose; the harness envelope has no such key, so it travels inside `data`
+  // rather than being dropped.
+  data: { ...payload.data, governance: payload.governance },
+})
+console.log(`  wrote ${path.relative(ROOT, file)} (${payload.checks.length} checks)`)
