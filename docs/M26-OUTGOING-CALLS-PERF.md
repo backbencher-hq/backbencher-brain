@@ -23,63 +23,82 @@ the large per-language analyzers —
 `ast/real-java-analyzer.ts:148 analyze` (2 775 ms),
 `ast/real-graphql-analyzer.ts:358 analyze` (2 593 ms).
 
-## The cost is symbol-dependent, and only part of it is understood
+## The root cause (corrected - an earlier version of this doc had it wrong)
 
-This is the part most likely to be over-read, so it is stated first: **there is
-no single cause, and the dominant one changes with the symbol.** Two symbols that
-cost the same, by two completely different routes:
+**Every slow walk is one statement, at ~56 ms a call, ~100 % of the time.**
 
 ```
-intelligence/migration/migration-engine.ts:474  walk 2857ms   SQL   1ms   (5 statement texts)
-ast/real-graphql-analyzer.ts:358                walk 2996ms   SQL 2973ms  (73 executions)
+real-graphql-analyzer.ts:358   walk 2996ms   SQL 2973ms   41fbdf0f ran 52x @ 56ms
+migration-engine.ts:474        walk 2931ms   SQL 2856ms   41fbdf0f ran 51x @ 56ms
 ```
 
-For the `real-*-analyzer` symbols, one SQL statement is essentially the whole
-cost. For `migration-engine`, SQL is ~0 % and the 2.9 s is elsewhere in the walk
-and **has not been attributed yet**. Any claim of the form "the walk is slow
-because of query X" is therefore only true of a subset of symbols, and the
-table in §1 spans both populations.
+An earlier version of this document claimed the cost was symbol-dependent - that
+`migration-engine` spent 1 ms in SQL. **That was a bug in the measuring tool, not
+a fact about bb.** `STATEMENT_CACHE` (`graph-engine.ts:256`) holds the statement
+objects created by the *first* `db.prepare(sql)`; a `prepare` wrapper installed
+after that never sees their `.all()` calls. So the instrumentation reported ~0 ms
+SQL for a 2 857 ms walk. Instrumenting before the first walk - the fix is in
+`script/m26/profile-outgoing-calls.mts` - shows 100 %. A clean negative result
+that looks exactly like a finding is the failure mode this repository keeps
+meeting.
 
-### The SQL half: one statement, on the analyzer symbols
+### Why one call costs 56 ms for ~9 rows
 
-Wrapping `brain_database.prepare().all()` on the handle the walk actually uses
-(`BrainDatabase.getRawInstance`, `graph-engine.ts:440` — **not** the handle
-`expandCalls` is handed, which is why a first attempt at this measurement showed
-"3 ms of SQL" and was wrong):
+The statement is a `UNION ALL` of two branches. Split and timed on the
+migration-engine symbol (157 rows total):
 
 ```
-walk 2996 ms; the edge query ran 73 times, 2973 ms total
+LEFT  branch (source side)     0.7ms    62 rows
+RIGHT branch (EXTERNAL side)  65-74ms    95 rows
 ```
 
-One statement text (`sha1 41fbdf0f…`) runs 52× for 2 925 ms — **56 ms per
-execution** — and accounts for 99 % of that walk. The other edge query runs 21×
-for 17 ms total.
+The cost is entirely the **external** branch, whose predicate ends
+`AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL`.
 
-Reproduce with `script/m26/profile-outgoing-calls.mts` (leg 2). Note that the
-same script reports ~0 % SQL for `migration-engine`: that difference is the
-finding, not a measurement glitch.
+`target_symbol_id IS NULL` **cannot use an index seek** - an index seek on
+`target_symbol_id = ?` never matches NULL. So for each of the ten relationship
+types in the `IN` list, SQLite falls back to scanning that type's rows for the
+whole project and discarding the non-NULL ones. The index holds **17,193
+external rows out of 58,324**, and the walk re-scans that population once per
+visited node: 51 visits x 10 types.
 
-## What it is NOT (each ruled out by measurement)
+That is also why the cost tracks depth and not fan-out: depth is the number of
+nodes visited, and the external scan is paid per node.
 
-- **Not statement recompilation.** 0 `prepare()` calls during a measured warm
-  walk; the `STATEMENT_CACHE` in `graph-engine.ts:256` is working. (The cache
-  was itself a past fix: "84–132 compilations per call … the busiest text
-  compiled 52 times per call".)
-- **Not a Node/better-sqlite3 problem.** Python's SQLite 3.43.2 runs the *same
-  SQL with the same parameters* in 84 ms. A hand-built variant of the query runs
-  in 3 ms — but it is not the real query, which is how a wrong conclusion was
-  nearly drawn here.
-- **Not the cascade.** `cascadeBounds` gives 3 ids for the hot symbol
-  (`analyze` owns 2 members), and `brain_symbol_owner_idx` serves the range.
-- **Not the `ORDER BY` temp b-tree.** Stripping the sort takes 83.6 ms → 2.4 ms
-  *at LIMIT 201*, but the cliff below is present with the sort removed entirely,
-  so the sort is a symptom, not the cause.
-- **Not row marshalling or `metadata` volume.** Dropping `r.metadata` from the
-  projection changed nothing (83.7 ms).
-- **Not a `LIMIT` that is too small.** No edge is dropped: `LIMIT -1` returns
-  276 rows, the same set.
+### Fixes measured, and rejected
 
-## What it is: a post-join filter cliff
+| candidate | result |
+|---|---|
+| `INDEXED BY` both branches to their own index | **2.0x faster, identical rows, no schema change** (72.3 -> 35.6 ms) |
+| add `(project_id, source_symbol_id, relationship_type)` | **4.6x slower** (85 -> 393 ms) |
+| add `(project_id, target_external)`, pin the external branch | **4.2x slower** (65 -> 273 ms) |
+| add `(project_id, relationship_type, target_external)`, pin it | **3.5x slower** (65 -> 229 ms) |
+| `LIMIT` into each `UNION ALL` branch | not expressible: `LIMIT clause should come after UNION ALL not before` |
+
+The `INDEXED BY` result is real and needs no schema change, but it is only 2x,
+which takes a 2.9 s walk to roughly 1.5 s. Not enough - and it carries a hazard
+worth stating: `INDEXED BY` naming an index that does not exist is a
+*prepare-time* error, so a single older index file would take the whole surface
+down rather than degrade. It needs a gate over many symbols plus a presence
+check, not a patch.
+
+### The fix that should actually work
+
+Hoist the external fetch **out of the per-node query**. The external population
+depends on `project_id` and the relationship types, not on which node is being
+walked - only the `source_symbol_id IN cascade` filter is node-specific. Fetching
+it once per walk and filtering in JS turns 51 scans of the external population
+into 1, at the cost of a JS-side membership test against the cascade ids.
+
+This drops no edge: the same predicate, applied to the same rows, just once. It
+is a structural change to `graph-engine.ts` and therefore needs an equivalence
+gate over many roots - external edge sets identical before and after - before it
+can be considered. **It has not been written.**
+
+## Secondary effect: a LIMIT cliff on the same statement
+
+Still real, still worth knowing, but a *consequence* of the above rather than
+the main cause - and it is the shape that made the first diagnosis wrong.
 
 The query filters `relationship_type IN (10 kinds)` **after** joining
 `brain_symbol` and `brain_file`, while the index it seeks is
