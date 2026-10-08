@@ -263,14 +263,22 @@ type Row = {
 }
 
 /**
- * PRODUCTION PARITY: the project index.
+ * THE PROJECT INDEX, and what `--index` really is.
  *
  * This gate used to walk the corpus file by file with NO context — `parseFile(f, dirname(f))`
- * — while production (`pool-worker.ts` `parse_batch`) deserialises a `ProjectIndex` the parent
- * built and hands `{ projectIndex }` to every parse. Two dart passes read it: the override
- * pass resolves a base declared in ANOTHER file of the same repository, and the expression
- * pass gates which type mentions it emits at all. So a no-context walk is not a measurement
- * of the analyzer, it is a measurement of a degraded invocation of it.
+ * — while `pool-worker.ts` `parse_batch` CAN deserialise a `ProjectIndex` the parent built and
+ * hand `{ projectIndex }` to every parse. Two dart passes read it: the override pass resolves a
+ * base declared in ANOTHER file of the same repository, and the expression pass gates which type
+ * mentions it emits at all. So a no-context walk is not a measurement of the analyzer, it is a
+ * measurement of a DEGRADED INVOCATION of it.
+ *
+ * WHERE PRODUCTION ACTUALLY STANDS, measured rather than assumed: `parallel-indexer.ts:1443`
+ * sets `PROJECT_INDEX_EXTENSIONS = { ".sol": "solidity" }`, so a dart batch is parsed with NO
+ * index and production's dart numbers today are the `--index`-LESS arm of this gate. `--index`
+ * therefore measures an INDEX-ASSISTED population — the analyzer at full capability, resolved in
+ * production's per-project scope — and it is the arm to compare against a future production that
+ * builds the index, not against production as it runs now. The header of every report says which
+ * arm it is, because a number is only comparable to one measured the same way.
  *
  * Measured on one repository (`validation/m14/fixtures/dart/project-index-effect.ts`,
  * dart-http, 333 files, same files and order, one process):
@@ -642,9 +650,14 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
         `${rep.index.cached} from cache, ${rep.index.damaged} damaged) over ${rep.index.indexed} file(s) — ` +
         `the files THIS RUN sampled, so an index over a stride sample is not a project index ` +
         `(run with maxFiles 0 for the real one). Passed as ` +
-        `{ projectIndex } exactly as \`pool-worker.ts\` parse_batch does. This is the ` +
-        `production population: cross-file base resolution and the widened type-visibility ` +
-        `gate are IN these numbers, and its counts are not comparable to a --index-less run`,
+        `{ projectIndex } exactly as \`pool-worker.ts\` parse_batch does. ` +
+        `INDEX-ASSISTED POPULATION, and the distinction is not academic: with the index IN, ` +
+        `cross-file base resolution and the widened type-visibility gate are measured, and ` +
+        `real production PARSE does not hand dart an index at all — ` +
+        `\`parallel-indexer.ts\` PROJECT_INDEX_EXTENSIONS names only \`.sol\`, so a dart file ` +
+        `there is parsed with no context and behaves as this run's --index-less arm does. ` +
+        `The scope is production's (per project); THIS population is production's only once ` +
+        `\`.dart\` is added to that table. Its counts are not comparable to a --index-less run.`,
   )
   console.log(
     `excluded from that population: ${rep.excluded.absent} tracked-but-absent/unreadable + ` +

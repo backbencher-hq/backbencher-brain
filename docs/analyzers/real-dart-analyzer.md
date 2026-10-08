@@ -4365,3 +4365,107 @@ cannot both be read as they are labelled.** See the open inconsistency above. Ei
 0.8-confidence row is not counted as UNEXPLAINED, or the sample list names files outside
 the measured set. Whichever it is, a lane reading `unexplained = 0` off a default run
 is reading a number whose definition the run does not print.
+
+## 2026-10-08 — the import/export edges name FILES, because a Dart library is its URI
+
+**The class.** `processImportExport` wrote the SPECIFIER into every import/export/part target:
+`package:flutter/material.dart:*`, `../x.dart:*`, `order_domain.dart:*`. A specifier is a PATH and a
+resolver binds NAMES, so every one of these edges was unresolvable BY CONSTRUCTION — 105,311
+`imports` and 2,030 `exports` edges at whole-corpus scale, 0 resolved on both sides of the ledger,
+and no analyzer quality could have moved them.
+
+**The population, measured before any change** (`validation/m14/fixtures/dart/import-target-paths.ts`;
+comment/string-aware text scan of the same tracked population the gate admits — 33,738 files,
+110,957 directives):
+
+| | directives | share |
+|---|---|---|
+| name a file in the SAME checkout | 86,196 | 77.7% |
+| of those, target's bare file STEM is not unique in its checkout | 44,296 | 51.4% of the above |
+| name something no file in the checkout answers to | 24,761 | 22.3% |
+
+By scheme, in/out of the checkout (out = the checkout cannot name a file for it):
+`package:` 45,325 in / 18,501 out, and 18,234 of those name a package the checkout does not declare
+at all (a pub dependency; the other 267 declare the package and are missing the file — generated
+code and deleted files, which stay unresolved and visible); `dart:` 9,017 in / 4,257 out, and every
+in-repo one is in dart-sdk, whose `sdk/lib/<lib>/<lib>.dart` layout the checkout really has;
+relative+bare 31,854 in. The 44,296 stem collisions are why the fix is not "target the library
+name": a stem key would trade 105,311 unresolved edges for ~44k ambiguous ones and call it progress.
+
+**The rule.** A Dart library's identity IS its URI, and inside a checkout that URI is a path — so the
+analyzer publishes the library's project-relative path as `Module.qualifiedName` and writes the same
+string into the edge that names the file. Both sides read it from ONE function (`dartRepoRelPath`),
+the discipline this file already applies to `libraryName` (M60 D1). The precedent is the json lane's
+file-scoped `qualifiedName`, which is what the gate's own comment cites. Resolution is then strategy 1
+of the shared resolver — exact `qualified_name` match — so no production change is needed.
+`dartImportTargetPath` resolves four ways and REFUSES rather than guesses:
+
+1. a relative or bare specifier -> resolved against the importing file's own directory, refused if it
+   climbs above the checkout root;
+2. `package:<pkg>/<rest>` -> `<packageRoot>/lib/<rest>`, where the checkout's own `pubspec.yaml` files
+   say which package root that is (read once per project, cached; 23,375 of the in-repo `package:`
+   directives name a SIBLING package, so a walk up from the file is not enough — measured);
+3. `dart:<lib>` -> `sdk/lib/<lib>/<lib>.dart`, and only when that file is really in the checkout;
+4. anything else — a package this checkout does not declare, a `dart:` library it does not carry,
+   another scheme, a path above the root — keeps the specifier form, so the edge stays VISIBLY
+   unresolved instead of pointing at a wrong file or being quietly marked external.
+   The other half of an honest split (a genuinely-external dependency) is an EXTERNAL CLAIM, and that
+   is the gate's question, not something the analyzer may assume away: **not fixed, and named below.**
+
+The project root is derived, never assumed: the directory containing `.git`, found by walking up from
+the file, memoised. No caller hands `analyze()` a project root — fixtures, the gate and production all
+enter through the same call — and where there is no checkout above the file the analyzer keeps the old
+specifier targets rather than publishing a path whose origin no other file in the run shares.
+
+**Verification.**
+
+* Fixtures: **24 pass / 0 fail** (was 22), `fixture baseline gate: no regressions`. Two NEW fixtures
+  (`dart/import-resolution` + its real sibling target, which exists so both ends of the claim are in
+  one run, and whose pins forbid the specifier forms) and three CORRECTED pins, each carrying a
+  `correction_2026_10_08_targets` note: `part-of`, `payload-and-complexity`, and `callsite-lines-825`
+  — where the target moved on BOTH sides (expect and forbid), so the 28-vs-29 line contract that
+  fixture exists for keeps its teeth.
+* The pair check, on REAL paths, over whole checkouts (`dart-http`, `riverpod`, `proxicall`: 3,978
+  files, every admitted file of each, so each project's symbol table is complete):
+
+  ```
+  FILE-SHAPED: exactly 1 declaration, exactly one library identity   12,960
+  FILE-SHAPED: 0 declarations, NO library identity                      138
+  SPECIFIER (package:): kept as specifier                             6,168
+  SPECIFIER (dart:): kept as specifier                                  998
+  ```
+  **98.95% of the file-shaped edges (12,960 of 13,098) resolve to exactly one library identity**, and
+  the 138 misses have one named cause: the target file publishes no identity because it cannot be
+  analyzed (a degraded parse, or over the 1 MB analyzer cap — `native_cupertino_bindings.dart`,
+  `ok_http/.../jni/bindings.dart`).
+* The whole-corpus arm for THIS change is not in this section: the run in flight when it was written
+  is the qualifier/receiver arm (frozen at `1f3cc877a`), and this change is measured by the arm after
+  it. The before number it has to beat is `imports 105,311 / resolved 0` and `exports 2,030 / 0`.
+
+**What this round also corrected in the instruments.**
+
+* `incoming-gate.ts` called an `--index` run "the production population". It is not, and the
+  difference was measured: `parallel-indexer.ts:1443` sets
+  `PROJECT_INDEX_EXTENSIONS = { ".sol": "solidity" }`, so production's dart batch is parsed with NO
+  index and today equals the gate's `--index`-LESS arm. `--index` measures an INDEX-ASSISTED
+  population — the analyzer at full capability in production's per-project scope — and the report
+  now says so on every run.
+* `validation/m14/fixtures/dart/import-identity-pairing.ts` is the new pair check; it accepts
+  `--repo <names>` (whole checkouts, the number to quote) and `--corpus N` (a stride sample, which is
+  a FLOOR and says so: truncation can lose the file a target names, exactly the bias the gate
+  documents for its own stride runs).
+
+**Honest limits.**
+
+1. **The out-of-checkout half is untouched**: 24,761 directives (22.3%) name something no file in the
+   checkout answers to. They stay unresolved until an external claim can be VERIFIED against the file
+   population — the rule's `verifyExternalClaim` needs an identifier-shaped owner and a URI has none,
+   so this needs a path-claim verification mode in `incoming-rule.ts` (a third bucket, with a control
+   that proves it fires), not a marker the analyzer asserts about itself.
+2. **The fixture harness hands `analyze()` a synthetic path** (`fixtures/dart/<name>.dart`), so a
+   fixture pin's path prefix is that synthetic path resolved against the checkout, not the file's real
+   location. The corpus runs pass real paths and the RULE is the same; the pins say so in their notes.
+3. The 2 known dart-sdk deep-nesting files still degrade (analyzer budget), and a degraded file
+   publishes no identity, so a target naming one is reported with that reason rather than resolved.
+4. `overrides` (31,855 unresolved in the before-arm), `uses` and `calls` are NOT touched by this
+   round and remain the larger classes.

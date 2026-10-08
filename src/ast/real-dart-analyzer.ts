@@ -16,6 +16,7 @@
 
 import type { Node } from "web-tree-sitter"
 import * as path from "path"
+import { existsSync, readFileSync, readdirSync } from "fs"
 import { ASTEngine } from "./engine"
 
 // ============================================================================
@@ -292,6 +293,231 @@ function dartCompanionFor(projectIndex: any): Map<string, Set<string>> | undefin
   return out
 }
 
+// ============================================================================
+// LIBRARY IDENTITY — a Dart library IS its URI, so an import edge can name a FILE
+// ============================================================================
+/**
+ * `processImportExport` writes the SPECIFIER into every import/export target
+ * (`package:flutter/material.dart:*`, `../x.dart:*`, `order_domain.dart:*`). None of those is a
+ * symbol name, so no resolver can bind them — and that is not a defect of the resolver's rule:
+ * a specifier is a PATH, and the rule resolves NAMES. Measured on the admitted population
+ * (`validation/m14/fixtures/dart/import-target-paths.ts`: comment-aware text scan, 33,738
+ * files, 110,957 directives):
+ *
+ *   · 86,196 directives (77.7%) name a file IN THE SAME CHECKOUT — resolvable, and today none
+ *     are, because the edge names the specifier instead of the file the specifier names.
+ *   · 44,296 of those name a target whose bare file STEM is not unique in its checkout, so the
+ *     library NAME cannot address them. A project-relative PATH is unique by construction:
+ *     one file, one path.
+ *   · The other 24,761 name something no file in that checkout answers to — a dependency in the
+ *     pub cache, a `dart:` library outside the SDK checkout, a generated or deleted file. Those
+ *     are NOT resolved here and must not be: an unresolvable import may be a genuine external
+ *     dependency or a broken edge, and telling those apart is the gate's external-claim question.
+ *
+ * So what is published for a library is its PROJECT-RELATIVE PATH (posix separators) — which is
+ * what a Dart library really is: the language identifies a library by its URI, and inside a
+ * checkout that URI is its path. BOTH sides read that string from ONE function, so the published
+ * module and the edges that point at it cannot drift apart — the discipline this file already
+ * applies to `libraryName` (`M60 D1`).
+ *
+ * WHERE THE PROJECT STARTS is derived, not passed: the directory containing `.git`, found by
+ * walking UP from the file. No caller hands `analyze()` a project root — fixtures, the incoming
+ * gate and production all enter through the same call, and the file's own path is the only thing
+ * common to all three. Where there is no checkout above the file, the analyzer keeps the old
+ * specifier targets rather than publishing a path whose origin no other file in the run shares.
+ *
+ * `package:` resolution reads the checkout's own `pubspec.yaml` files — the project's statement
+ * of which packages it contains. It is cached per project root, and a package the checkout does
+ * not declare (a pub dependency) is refused: the half of the answer that only the project can give.
+ */
+type DartLibrarySite = {
+  /** the library's declared name (the file stem when it declares none) — the edge SOURCE */
+  moduleName: string
+  filePath: string
+  /** the checkout root above the file, or null when the file is not inside one */
+  projectRoot: string | null
+  /** the project-relative path that names this library, or null when there is no root */
+  moduleIdentity: string | null
+}
+
+type DartProjectFacts = {
+  /** package name -> project-relative directory holding its pubspec.yaml ("" = the root) */
+  packageRoots: Map<string, string>
+  /** does this checkout carry an SDK (`sdk/lib`)? */
+  sdkLib: boolean
+  /** memoised `dart:<lib>` probe -> the relative SDK file, or null when the checkout has none */
+  dartLibs: Map<string, string | null>
+}
+
+const DART_PROJECT_ROOT_CACHE = new Map<string, string | null>()
+const DART_PROJECT_FACTS_CACHE = new Map<string, DartProjectFacts>()
+/** Directory names a package/pubspec walk never enters. Not a guess: `.git` alone is the repo's
+ *  own object store, and the rest are build outputs that no project declares packages in. */
+const DART_WALK_SKIP = new Set([
+  ".git", ".hg", ".svn", "node_modules", ".dart_tool", ".symlinks", "build", "coverage", ".pub-cache", "out",
+])
+
+/** The checkout root above `filePath`, memoised per directory; null when there is no `.git`. */
+function dartProjectRootOf(filePath: string): string | null {
+  const start = path.dirname(path.resolve(filePath))
+  const seen: string[] = []
+  let dir = start
+  for (let i = 0; i < 64; i++) {
+    const cached = DART_PROJECT_ROOT_CACHE.get(dir)
+    if (cached !== undefined) {
+      for (const d of seen) DART_PROJECT_ROOT_CACHE.set(d, cached)
+      return cached
+    }
+    seen.push(dir)
+    if (existsSync(path.join(dir, ".git"))) {
+      if (DART_PROJECT_ROOT_CACHE.size > 20000) DART_PROJECT_ROOT_CACHE.clear()
+      for (const d of seen) DART_PROJECT_ROOT_CACHE.set(d, dir)
+      return dir
+    }
+    const parent = path.dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  if (DART_PROJECT_ROOT_CACHE.size > 20000) DART_PROJECT_ROOT_CACHE.clear()
+  for (const d of seen) DART_PROJECT_ROOT_CACHE.set(d, null)
+  return null
+}
+
+/** `[a-z][a-z0-9_]*` by char code — the pub and `dart:` library name shape. No regex: this
+ *  lane parses with char scans so a pattern cannot quietly disagree with the grammar. */
+function isDartLibraryName(text: string): boolean {
+  if (text.length === 0) return false
+  const first = text.charCodeAt(0)
+  if (first < 97 || first > 122) return false
+  for (let i = 1; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    const ok = (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+    if (!ok) return false
+  }
+  return true
+}
+
+/** The `name:` of a pubspec, read by scanning lines from column 0 (a dependency's name is
+ *  indented, so a top-level match is the package's own name and not a dependency's). */
+function dartPubspecName(file: string): string | null {
+  let text: string
+  try { text = readFileSync(file, "utf8") } catch { return null }
+  let lineStart = 0
+  for (let i = 0; i <= text.length; i++) {
+    if (i < text.length && text.charCodeAt(i) !== 10) continue
+    const line = text.slice(lineStart, i)
+    lineStart = i + 1
+    if (!line.startsWith("name:")) continue
+    let v = 5
+    while (v < line.length && (line.charCodeAt(v) === 32 || line.charCodeAt(v) === 9)) v++
+    let end = v
+    while (end < line.length) {
+      const c = line.charCodeAt(end)
+      if (c === 32 || c === 9 || c === 13 || c === 35) break
+      end++
+    }
+    const value = line.slice(v, end)
+    return isDartLibraryName(value) ? value : null
+  }
+  return null
+}
+
+/**
+ * The project's own package map and SDK presence, built once per project root.
+ *
+ * The WALK COST is paid once per process per project (a repo's directory tree), not per file:
+ * a `package:` specifier cannot be turned into a path without knowing which directory declares
+ * the package, and only a directory walk can answer that for a package that is not on the
+ * importing file's own ancestor path (measured: 23,375 of the in-repo `package:` directives
+ * name a SIBLING package, more than half). Secrets are not read: only files literally named
+ * `pubspec.yaml` are opened, and only their `name:` line is used.
+ */
+function dartProjectFacts(projectRoot: string): DartProjectFacts {
+  const hit = DART_PROJECT_FACTS_CACHE.get(projectRoot)
+  if (hit) return hit
+  const facts: DartProjectFacts = {
+    packageRoots: new Map(),
+    sdkLib: existsSync(path.join(projectRoot, "sdk", "lib")),
+    dartLibs: new Map(),
+  }
+  const stack: string[] = [projectRoot]
+  while (stack.length > 0) {
+    const dir = stack.pop()!
+    let entries: import("fs").Dirent[]
+    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { continue }
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        if (DART_WALK_SKIP.has(entry.name)) continue
+        stack.push(path.join(dir, entry.name))
+        continue
+      }
+      if (entry.name !== "pubspec.yaml" || !entry.isFile()) continue
+      const name = dartPubspecName(path.join(dir, entry.name))
+      if (name === null || facts.packageRoots.has(name)) continue
+      const rel = path.relative(projectRoot, dir)
+      facts.packageRoots.set(name, rel.split(path.sep).join("/"))
+    }
+  }
+  if (DART_PROJECT_FACTS_CACHE.size >= 64) DART_PROJECT_FACTS_CACHE.clear()
+  DART_PROJECT_FACTS_CACHE.set(projectRoot, facts)
+  return facts
+}
+
+/** `lib/src/x.dart` — the project-relative path of an absolute file, posix separators. */
+function dartRepoRelPath(projectRoot: string, absPath: string): string | null {
+  const rel = path.relative(projectRoot, path.resolve(absPath))
+  if (rel.length === 0 || path.isAbsolute(rel)) return null
+  if (rel === ".." || rel.startsWith(`..${path.sep}`)) return null
+  return rel.split(path.sep).join("/")
+}
+
+/** Join a project-relative base and a `lib/...` tail, refusing anything that climbs out. */
+function dartJoinInside(baseRel: string, tail: string): string | null {
+  const base = baseRel.length === 0 ? "" : `${baseRel}/`
+  const norm = path.posix.normalize(`${base}${tail}`)
+  if (norm.length === 0 || norm === "." || norm === ".." || norm.startsWith("../")) return null
+  return norm
+}
+
+/**
+ * The file a directive names, as a project-relative path, or null when this checkout cannot
+ * answer. Refusing is a first-class result: every branch below is a rule the corpus can audit.
+ */
+function dartImportTargetPath(projectRoot: string, filePath: string, uri: string): string | null {
+  if (uri.length === 0) return null
+  if (uri.startsWith("package:")) {
+    const rest = uri.slice(8)
+    const slash = rest.indexOf("/")
+    if (slash <= 0 || slash === rest.length - 1) return null
+    const pkg = rest.slice(0, slash)
+    const sub = rest.slice(slash + 1)
+    if (!isDartLibraryName(pkg)) return null
+    const packageRoot = dartProjectFacts(projectRoot).packageRoots.get(pkg)
+    // A package this checkout does not declare is a pub dependency: outside the population.
+    if (packageRoot === undefined) return null
+    return dartJoinInside(packageRoot, `lib/${sub}`)
+  }
+  if (uri.startsWith("dart:")) {
+    const lib = uri.slice(5)
+    if (!isDartLibraryName(lib)) return null
+    const facts = dartProjectFacts(projectRoot)
+    // Without an SDK in this checkout there is nothing to point at: a `dart:` library is part
+    // of the SDK, and the SDK is present exactly when `sdk/lib` is.
+    if (!facts.sdkLib) return null
+    const cached = facts.dartLibs.get(lib)
+    if (cached !== undefined) return cached
+    const rel = `sdk/lib/${lib}/${lib}.dart`
+    const found = existsSync(path.join(projectRoot, rel)) ? rel : null
+    facts.dartLibs.set(lib, found)
+    return found
+  }
+  // Another scheme (`http:`, `file:`, …) names something no path in this checkout is.
+  if (uri.indexOf(":") >= 0) return null
+  // A relative or bare specifier is resolved against the importing file's own directory.
+  const abs = path.resolve(path.dirname(path.resolve(filePath)), uri)
+  return dartRepoRelPath(projectRoot, abs)
+}
+
 export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -332,6 +558,15 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     //                              is correct — an annotation is not a library name.
     const library = this.libraryName(rootNode, filePath)
     const moduleName = library.name
+    // A library's own URI, read once and used by BOTH sides: the module node published below,
+    // and the import/export/part edges that name a file (see LIBRARY IDENTITY above).
+    const projectRoot = dartProjectRootOf(filePath)
+    const librarySite: DartLibrarySite = {
+      moduleName,
+      filePath,
+      projectRoot,
+      moduleIdentity: projectRoot === null ? null : dartRepoRelPath(projectRoot, filePath),
+    }
 
     // ...and the node. Published for EVERY file, not only for files that import
     // something: a Dart file IS a library whether or not it has directives, and a
@@ -357,6 +592,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols.push({
       name: moduleName,
       kind: ASTEngine.SymbolKind.Module,
+      // THE LIBRARY'S URI. Strategy 1 of the shared resolver matches `qualified_name` exactly,
+      // so publishing the path here is what lets an import edge name this file. Unset when the
+      // file is not inside a checkout: then the engine's own synthesis (`<scope>.<name>`) is
+      // what it always was, and the edges keep their specifier targets (see LIBRARY IDENTITY).
+      ...(librarySite.moduleIdentity === null ? {} : { qualifiedName: librarySite.moduleIdentity }),
       range: library.directive
         ? this.nodeToRange(library.directive)
         : { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1, startIndex: 0, endIndex: 0 },
@@ -759,7 +999,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "library_export":
         case "part_directive":
         case "part_of_directive": {
-          this.processImportExport(node, imports, exports, frameworks, relationships, moduleName)
+          this.processImportExport(node, imports, exports, frameworks, relationships, librarySite)
           break
         }
       }
@@ -1205,8 +1445,16 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     exports: ASTEngine.ExportInfo[],
     frameworks: Record<string, boolean>,
     relationships: ASTEngine.UniversalRelationship[],
-    moduleName: string,
+    site: DartLibrarySite,
   ): void {
+    // THE TARGET IS THE FILE THE SPECIFIER NAMES, when this checkout can say which file that
+    // is (`dartImportTargetPath`): that file's library node publishes the same project-relative
+    // path as its `qualifiedName`, so the edge resolves by exact match. The `:${"*"}` form is kept
+    // where the checkout cannot answer (a dependency, a `dart:` library this checkout does not
+    // carry, a path outside the root), because a specifier that names something the population
+    // does not contain must stay visibly unresolved rather than be pointed at a wrong file.
+    const targetOf = (uri: string): string | null =>
+      site.projectRoot === null ? null : dartImportTargetPath(site.projectRoot, site.filePath, uri)
     // `part 'x.dart'` (library lists a part) and `part of 'lib.dart'`
     // (part file names its library) are both library-coupling directives —
     // each produces an imports edge so the part graph is visible (ProxiCall
@@ -1217,8 +1465,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (uri) {
         imports.push({ module: uri, source: uri, imported: ["*"], isPart: true, range: this.nodeToRange(node) })
         relationships.push({
-          source: moduleName,
-          target: `${uri}:*`,
+          source: site.moduleName,
+          target: targetOf(uri) ?? `${uri}:*`,
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
           line_number: this.nodeLine(uriNode),
@@ -1245,8 +1493,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Exports relationship intact.
       // exports.push({ name: uri, isDefault: false, range: this.nodeToRange(node) })
       relationships.push({
-        source: moduleName,
-        target: uri,
+        source: site.moduleName,
+        target: targetOf(uri) ?? uri,
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
         line_number: this.nodeLine(uriNode),
@@ -1255,8 +1503,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     } else {
       imports.push({ module: uri, source: uri, imported: ["*"], isTypeOnly: false, range: this.nodeToRange(node) })
       relationships.push({
-        source: moduleName,
-        target: `${uri}:*`,
+        source: site.moduleName,
+        target: targetOf(uri) ?? `${uri}:*`,
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1.0,
         line_number: this.nodeLine(uriNode),
