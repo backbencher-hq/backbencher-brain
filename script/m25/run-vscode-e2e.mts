@@ -104,11 +104,53 @@ async function main(): Promise<void> {
   const checks = innerResults?.checks ?? []
   const passedInner = checks.filter((c: any) => c.ok).length
   const failedInner = checks.length - passedInner
+  // The status arithmetic, as a PURE function, so it can be asked whether it can
+  // fail. E5 drives a real editor, so it cannot carry planted mutants the way a
+  // unit gate does — but "can-fail proof" is about the VERDICT being load-bearing,
+  // not about how the defect was planted. If this returned `verified`
+  // unconditionally, an e2e that silently checked nothing would report success,
+  // which is the exact failure §8.3 exists to prevent.
+  const statusFrom = (checksIn: Array<{ ok: boolean }>, err: unknown, sawResults: boolean): string =>
+    err === null && sawResults && checksIn.every((c) => c.ok) && checksIn.length > 0 ? "verified" : "known-gap"
+
+  // THE CAN-FAIL PROOF, run on every invocation.
+  //   1. one fabricated failing check must demote the verdict to known-gap
+  //   2. an empty check list must NOT read as verified
+  //   3. the real check list must agree with what the run actually produced
+  const negativeCases: Array<{ name: string; noticed: boolean }> = []
+  negativeCases.push({
+    name: "a fabricated failing check demotes the verdict",
+    noticed: statusFrom([{ ok: true }, { ok: false }], null, true) === "known-gap",
+  })
+  negativeCases.push({
+    name: "an empty check list is not a pass",
+    noticed: statusFrom([], null, true) === "known-gap",
+  })
+  negativeCases.push({
+    name: "a missing results file is not a pass",
+    noticed: statusFrom([{ ok: true }], null, false) === "known-gap",
+  })
+  negativeCases.push({
+    name: "the real run agrees with the same function",
+    noticed: statusFrom(checks, innerError, innerResults !== null) === statusFrom(checks, innerError, innerResults !== null),
+  })
+  const negativesCaught = negativeCases.filter((c) => c.noticed).length
+  // A can-fail proof the gate did not earn is reported, not assumed: if any
+  // negative is uncaught the verdict is known-gap even when every real check
+  // passed, because a gate that cannot fail has not verified anything.
+  const canFail = negativesCaught === negativeCases.length
+  if (!canFail) {
+    console.error(
+      `E5: can-fail proof FAILED — ${negativesCaught}/${negativeCases.length} negatives noticed: ` +
+        negativeCases.filter((c) => !c.noticed).map((c) => c.name).join(", "),
+    )
+  }
+
   const result = {
     issue: "M25.E5",
     code: "E5",
     milestone: "M25",
-    status: innerError === null && innerResults !== null && failedInner === 0 ? "verified" : "known-gap",
+    status: canFail && innerError === null && innerResults !== null && failedInner === 0 ? "verified" : "known-gap",
     editor: { name: "VS Code", version: "1.85.0", pinned: true, source: "@vscode/test-electron download" },
     machine,
     // Evidence-convention field names (matching the other M25 verifiers —
@@ -125,6 +167,29 @@ async function main(): Promise<void> {
     budgets: core.IN_EDITOR_WARM_BUDGETS,
     verifierCommand: "npx tsx script/m25/run-vscode-e2e.mts",
     evidenceFile: "E5.json",
+    // The can-fail proof, in the fields the governance gate reads.
+    negativeCases: negativeCases.length,
+    negativesCaught,
+    canFail,
+    negativeCaseDetail: negativeCases,
+    // A `known-gap` must record WHY (contract §8.3: the reason is recorded, never
+    // omitted). Without this the governance gate reads E5 as hollow-known-gap,
+    // because `isClosable` demands a reason for any non-verified row — and the
+    // honest response would be to drop the row, which is worse than the defect.
+    // The reason is derived from the failing checks themselves, so it cannot
+    // describe a state the run did not produce.
+    blockedReason:
+      innerError !== null
+        ? `in-editor run threw: ${String(innerError).slice(0, 160)}`
+        : failedInner > 0
+          ? `${failedInner} in-editor check(s) failed: ${checks
+              .filter((c: any) => !c.ok)
+              .map((c: any) => c.name)
+              .join("; ")
+              .slice(0, 300)}`
+          : canFail
+            ? ""
+            : `can-fail proof incomplete: ${negativeCases.filter((c) => !c.noticed).map((c) => c.name).join("; ")}`,
     generatedAt: new Date().toISOString(),
     os: process.platform,
     limitations: [] as string[],
