@@ -60,6 +60,7 @@ import { spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, dirname, join, relative, resolve as resolvePath } from "node:path"
+import { fileURLToPath } from "node:url"
 
 // ---------------------------------------------------------------------------
 // ARIA role vocabulary — a specification constant, exactly like the analyzer's
@@ -87,7 +88,7 @@ const ARIA_ROLES: readonly string[] = [
 ]
 
 const WORKER = process.argv.includes("--worker")
-const SELF = new URL(import.meta.url).pathname
+const SELF = fileURLToPath(import.meta.url)
 const RAW_ARGS = process.argv.slice(2)
 const FIRST_FLAG = RAW_ARGS.findIndex((a) => a.startsWith("--"))
 const POSITIONAL = FIRST_FLAG === -1 ? RAW_ARGS : RAW_ARGS.slice(0, FIRST_FLAG)

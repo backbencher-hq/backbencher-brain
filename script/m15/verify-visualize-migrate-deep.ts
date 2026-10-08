@@ -14,6 +14,7 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { visualizeProject, formatVisualization } from "../../src/intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../../src/intelligence/migration/migration-engine"
+import { fileURLToPath } from "node:url"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
@@ -190,10 +191,10 @@ const FIXTURE: Record<string, string> = {
     } else {
       ck("V4: real repo present", false, "missing " + rake)
     }
-    const self = readFileSync(new URL(import.meta.url).pathname, "utf8").split("V4: evidence")[0].replace(/\/\/[^\n]*/g, "")
+    const self = readFileSync(fileURLToPath(import.meta.url), "utf8").split("V4: evidence")[0].replace(/\/\/[^\n]*/g, "")
     const autoPass = new RegExp("\\b(?:ck|nk)\\([^)]*,\\s*true\\s*[,)]")
     nk("V4: verifier has no auto-pass assertions", !autoPass.test(self), autoPass.test(self) ? "auto-pass found" : "clean")
-    nk("V4: cleanup refuses non-tmp roots", readFileSync(new URL(import.meta.url).pathname, "utf8").includes("root.startsWith(tmpdir())"), "structural guard in cleanup()")
+    nk("V4: cleanup refuses non-tmp roots", readFileSync(fileURLToPath(import.meta.url), "utf8").includes("root.startsWith(tmpdir())"), "structural guard in cleanup()")
   }
   await emit("V4", "M15.V4", "bb_visualize", "evidence + gate + real-repo e2e", "v4.json")
   await reset()
@@ -281,10 +282,10 @@ const FIXTURE: Record<string, string> = {
         ck("M4: " + f + " present", false, "missing or invalid")
       }
     }
-    const self = readFileSync(new URL(import.meta.url).pathname, "utf8").split("M4: evidence")[0].replace(/\/\/[^\n]*/g, "")
+    const self = readFileSync(fileURLToPath(import.meta.url), "utf8").split("M4: evidence")[0].replace(/\/\/[^\n]*/g, "")
     const autoPass = new RegExp("\\b(?:ck|nk)\\([^)]*,\\s*true\\s*[,)]")
     nk("M4: verifier has no auto-pass assertions", !autoPass.test(self), autoPass.test(self) ? "auto-pass found" : "clean")
-    nk("M4: cleanup refuses non-tmp roots", readFileSync(new URL(import.meta.url).pathname, "utf8").includes("root.startsWith(tmpdir())"), "structural guard in cleanup()")
+    nk("M4: cleanup refuses non-tmp roots", readFileSync(fileURLToPath(import.meta.url), "utf8").includes("root.startsWith(tmpdir())"), "structural guard in cleanup()")
   }
   await emit("M4", "M15.M4", "bb_migrate", "evidence + gate + closure", "m4.json")
 

@@ -27,6 +27,7 @@ import { createHash } from "node:crypto"
 import { computeCap, analyzerConformance, type SpecLedger, type Step } from "./wave-protocol.ts"
 import { writeSealed } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
+import { fileURLToPath } from "node:url"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT_JSON = path.join(ROOT, "validation/m29/results/PRECISION-LEDGER.json")
@@ -326,7 +327,7 @@ export function buildLedger(): { json: string; md: string; inputsHash: string } 
 }
 
 // CLI entry.
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   const { json, md, inputsHash } = buildLedger()
   if (process.argv.includes("--write")) {
     writeFileSync(OUT_JSON, json)

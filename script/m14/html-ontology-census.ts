@@ -71,6 +71,7 @@ import { mkdirSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "node:fs"
 import { join, relative, basename } from "node:path"
+import { fileURLToPath } from "node:url"
 /** Cheap recursive count of .html/.htm under a dir — used by the driver only to
  *  decide whether a corpus is worth a worker. */
 function countHtml(dir: string): number {
@@ -87,7 +88,7 @@ function countHtml(dir: string): number {
 }
 
 const WORKER = process.argv.includes("--worker")
-const SELF = new URL(import.meta.url).pathname
+const SELF = fileURLToPath(import.meta.url)
 // Positional args are corpus names, up to the first flag. A `--skip <path>` pair
 // contributes a path as a positional-looking argument, so the list must be cut at
 // the first flag or every skipped path would be read as a corpus name.

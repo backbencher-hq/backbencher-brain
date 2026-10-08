@@ -57,7 +57,7 @@ const REF = argOf("--ref") ?? "HEAD~4"
 // order.
 const REVERSE = argv.includes("--reverse")
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
-const REPO_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..")
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const ANALYZER_REL = "src/ast/real-typescript-analyzer.ts"
 
 // ----------------------------------------------------------------------------
@@ -65,6 +65,7 @@ const ANALYZER_REL = "src/ast/real-typescript-analyzer.ts"
 // even if the corpus moves underneath them.
 // ----------------------------------------------------------------------------
 import { createHash } from "node:crypto"
+import { fileURLToPath } from "node:url"
 const files: { abs: string; sha: string; bytes: number }[] = []
 {
   const dir = path.join(CR, REPO_FILTER)

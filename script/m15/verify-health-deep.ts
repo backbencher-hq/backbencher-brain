@@ -19,6 +19,7 @@ import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { getUnifiedHealth, formatUnifiedHealth } from "../../src/intelligence/health/health-provider"
+import { fileURLToPath } from "node:url"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
@@ -223,10 +224,10 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
         ck("H7: " + f + " present", false, "missing or invalid")
       }
     }
-    const self = readFileSync(new URL(import.meta.url).pathname, "utf8").split("H7: evidence")[0].replace(/\/\/[^\n]*/g, "")
+    const self = readFileSync(fileURLToPath(import.meta.url), "utf8").split("H7: evidence")[0].replace(/\/\/[^\n]*/g, "")
     const autoPass = new RegExp("\\b(?:ck|nk)\\([^)]*,\\s*true\\s*[,)]")
     nk("H7: verifier has no auto-pass assertions", !autoPass.test(self), autoPass.test(self) ? "auto-pass found" : "clean")
-    nk("H7: cleanup refuses non-tmp roots", readFileSync(new URL(import.meta.url).pathname, "utf8").includes("root.startsWith(tmpdir())"), "structural guard in cleanup()")
+    nk("H7: cleanup refuses non-tmp roots", readFileSync(fileURLToPath(import.meta.url), "utf8").includes("root.startsWith(tmpdir())"), "structural guard in cleanup()")
   }
   await emit("H7", "M15.H7", "bb_health", "evidence + gate + closure", "h7.json")
   await reset()

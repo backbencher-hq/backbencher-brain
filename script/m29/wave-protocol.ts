@@ -30,6 +30,7 @@ import { createHash } from "node:crypto"
 import { tmpdir } from "node:os"
 import { writeSealed } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
+import { fileURLToPath } from "node:url"
 
 export const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 export const SPEC_LEDGER = path.join(ROOT, "validation/m14/results/M14.0.SPEC.json")
@@ -327,6 +328,6 @@ function main(): void {
   })
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   main()
 }

@@ -19,6 +19,7 @@ import { analyzeComplexity } from "../../src/intelligence/analysis/complexity"
 import { analyzeImpact } from "../../src/intelligence/analysis/impact"
 import { testMapping, testGaps, testImpact } from "../../src/intelligence/testing/test-intel"
 import { testQuality } from "../../src/intelligence/testing/quality"
+import { fileURLToPath } from "node:url"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
@@ -234,10 +235,10 @@ async function makeFixture() {
         ck("N7: " + f + " present", false, "missing or invalid")
       }
     }
-    const self = readFileSync(new URL(import.meta.url).pathname, "utf8").split("N7: evidence")[0].replace(/\/\/[^\n]*/g, "")
+    const self = readFileSync(fileURLToPath(import.meta.url), "utf8").split("N7: evidence")[0].replace(/\/\/[^\n]*/g, "")
     const autoPass = new RegExp("\\b(?:ck|nk)\\([^)]*,\\s*true\\s*[,)]")
     nk("N7: verifier has no auto-pass assertions", !autoPass.test(self), autoPass.test(self) ? "auto-pass found" : "clean")
-    nk("N7: cleanup refuses non-tmp roots", readFileSync(new URL(import.meta.url).pathname, "utf8").includes("root.startsWith(tmpdir())"), "structural guard in cleanup()")
+    nk("N7: cleanup refuses non-tmp roots", readFileSync(fileURLToPath(import.meta.url), "utf8").includes("root.startsWith(tmpdir())"), "structural guard in cleanup()")
   }
   await emit("N7", "M15.N7", "bb_analyze", "evidence + gate + closure", "n7.json")
   await reset()

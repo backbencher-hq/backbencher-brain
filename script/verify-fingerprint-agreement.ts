@@ -31,8 +31,9 @@ import path from "node:path"
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { DatabaseSync } from "node:sqlite"
+import { fileURLToPath } from "node:url"
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..")
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
 let failures = 0
 function ok(name: string, cond: boolean, detail = "") {

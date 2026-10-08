@@ -43,6 +43,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 import { ASTEngine } from "../../src/ast/engine"
+import { fileURLToPath } from "node:url"
 
 // The enum the ANALYZERS construct from is the one re-exported by `engine.ts`
 // (`ASTEngine.RelationshipType`), where `Imports` is the string "imports".
@@ -53,7 +54,7 @@ import { ASTEngine } from "../../src/ast/engine"
 // shadcn-svelte color.svelte: the production path returns `imports` 6x.
 const RelationshipType = ASTEngine.RelationshipType
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..")
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 
 /** The ten distinct string values of the enum (aliases collapse). */
