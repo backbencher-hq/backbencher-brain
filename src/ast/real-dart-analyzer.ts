@@ -1565,9 +1565,34 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): void {
     for (const symbol of symbols) {
       if (symbol.ownerName) {
+        // THE TARGET IS THE MEMBER'S PUBLISHED SPELLING, not its bare name.
+        //
+        // This was the lane's LAST type emitting two bare names (`Owner -> member`), and it is
+        // its largest one: `contains 700,265 edges / 169,829 resolved / 530,368 ambiguous` in
+        // the whole-corpus gate run — 75.7% of the type unwalkable, and not because any member
+        // is wrong. A Dart project repeats member names constantly (`value`, `build`, `name`,
+        // `props`), and a bare name two classes declare is ambiguous BY CONSTRUCTION: the shared
+        // resolver (strategy 2) accepts a bare name only under `HAVING COUNT(*) = 1`.
+        //
+        // PRICED BEFORE BUILT, on whole checkouts so each project's key space is complete
+        // (`validation/m14/fixtures/dart/contains-target-price.ts`, dart-http + riverpod +
+        // proxicall, 292,017 contains edges):
+        //
+        //     ambiguous -> resolved   267,878   (91.7%)
+        //     ambiguous -> ambiguous   14,564   every one of them an OWNER-name collision
+        //     resolved  -> resolved     9,575
+        //     resolved  -> ambiguous        0   no edge moves backwards
+        //
+        // The spelling is `${scope}.${name}` because that is exactly what `pool-worker.ts`
+        // synthesises into the published `qualifiedName` for a symbol (`s.qualifiedName ||
+        // s.metadata?.fqn || (s.scope ? `${s.scope}.${s.name}` : s.name)`), so the edge and the
+        // node it names are one string from one rule — the discipline `libraryName` follows. A
+        // member with no scope keeps its bare name, which is today's behaviour rather than a
+        // guess at a spelling nothing publishes.
+        const qualified = symbol.scope ? `${symbol.scope}.${symbol.name}` : symbol.name
         relationships.push({
           source: symbol.ownerName,
-          target: symbol.name,
+          target: qualified,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           // The member's OWN NAME line — the name node when the producers could

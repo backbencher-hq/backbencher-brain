@@ -4417,6 +4417,37 @@ the file, memoised. No caller hands `analyze()` a project root — fixtures, the
 enter through the same call — and where there is no checkout above the file the analyzer keeps the old
 specifier targets rather than publishing a path whose origin no other file in the run shares.
 
+**The out-of-checkout half is a CLAIM, not a gap.** Resolving 77.7% and leaving 22.3% unresolved would
+have been a half-fix, because an unresolvable import may be a genuine dependency or a broken edge, and
+the programme's rule is that an unmarked external counts against a lane. So the refusal is split in
+two, at the only place that knows which is which:
+
+* **OUTSIDE** (marked `metadata.importOutsideProject`): a `package:` this checkout's pubspec files do
+  not declare, a `dart:` library in a checkout that carries no SDK, a scheme that is not a path.
+* **ABSENT** (NOT marked): the checkout declares it and the file is missing — generated/deleted files,
+  a `part` whose library is gone. A dangling INTERNAL reference, left unresolved and visible.
+
+The marker is verified by `incoming-rule.ts`'s `verifyImportClaim`, and the EVIDENCE IS THE ARBITER'S
+OWN: the gate's new `projectFactsForDart` reads the project's `pubspec.yaml` files and its ADMITTED
+file list (unsampled, so the claim is checked against the project rather than against the run's
+budget). A claim whose evidence came from its author would be a restatement. Outcomes: **VERIFIED**
+(not declared / no SDK file), **REFUTED** (the project HAS it, so the analyzer should have resolved it
+— counted against the lane), **UNVERIFIABLE** (no shape either side can turn into a path, counted and
+never merged). `externalClaimOf` decides which check a marker gets from the KEY that marked it rather
+than from the target's shape, and the report prints how many of the verified claims came from each
+mechanism — "verified" without saying by what is the number class this programme keeps retracting.
+
+The positive control grew five planted claims, including **a claim with no evidence supplied**, which
+must land in `unverifiable`: a check that cannot run must never read clean. It earned its keep
+immediately — it failed this change's own first cut on a stale assertion (`expected 1 REFUTED`, still
+asserting the pre-change count). Expected now: 3 refuted, 3 verified (1 owner + 2 project-facts), 2
+unverifiable.
+
+Measured: control PASS; on a 20-file sample the mechanism fires on real data — **157 claims verified
+by owner lookup and 16 against the projects' own pubspec files**. The fixture pins this distinction in
+BOTH directions (the resolved target and the dangling one carry `forbidRelationships` rows asserting
+the marker is NOT on them), so a mutation that marks everything external fails.
+
 **Verification.**
 
 * Fixtures: **24 pass / 0 fail** (was 22), `fixture baseline gate: no regressions`. Two NEW fixtures
@@ -4438,9 +4469,9 @@ specifier targets rather than publishing a path whose origin no other file in th
   the 138 misses have one named cause: the target file publishes no identity because it cannot be
   analyzed (a degraded parse, or over the 1 MB analyzer cap — `native_cupertino_bindings.dart`,
   `ok_http/.../jni/bindings.dart`).
-* The whole-corpus arm for THIS change is not in this section: the run in flight when it was written
-  is the qualifier/receiver arm (frozen at `1f3cc877a`), and this change is measured by the arm after
-  it. The before number it has to beat is `imports 105,311 / resolved 0` and `exports 2,030 / 0`.
+* The whole-corpus arm for THIS change was launched when this section was written (both halves in one
+  run: `incoming-dart-imports-full.log`). The before number it has to beat is `imports 105,311 /
+  resolved 0` and `exports 2,030 / 0`, with `extOK 407` from the owner mechanism alone.
 
 **What this round also corrected in the instruments.**
 
@@ -4457,11 +4488,11 @@ specifier targets rather than publishing a path whose origin no other file in th
 
 **Honest limits.**
 
-1. **The out-of-checkout half is untouched**: 24,761 directives (22.3%) name something no file in the
-   checkout answers to. They stay unresolved until an external claim can be VERIFIED against the file
-   population — the rule's `verifyExternalClaim` needs an identifier-shaped owner and a URI has none,
-   so this needs a path-claim verification mode in `incoming-rule.ts` (a third bucket, with a control
-   that proves it fires), not a marker the analyzer asserts about itself.
+1. **What remains of the out-of-checkout half**: the `package:` and `dart:` claims are verified, but a
+   directive with another scheme (`http:`, `file:` — 18 directives in the population) is genuinely
+   outside every file population and still lands in `unverifiable`, because no check in this rule can
+   reach it. A pattern-import (`import * as x`-style namespace target) is not dart's shape, and dart's
+   `show`/`hide` lists are not turned into edges at all, so no claim is made about them.
 2. **The fixture harness hands `analyze()` a synthetic path** (`fixtures/dart/<name>.dart`), so a
    fixture pin's path prefix is that synthetic path resolved against the checkout, not the file's real
    location. The corpus runs pass real paths and the RULE is the same; the pins say so in their notes.
@@ -4469,3 +4500,69 @@ specifier targets rather than publishing a path whose origin no other file in th
    publishes no identity, so a target naming one is reported with that reason rather than resolved.
 4. `overrides` (31,855 unresolved in the before-arm), `uses` and `calls` are NOT touched by this
    round and remain the larger classes.
+
+## 2026-10-08 — `contains` stops naming two bare names
+
+`addContainmentRelationships` was the last of the lane's ten types emitting two bare names
+(`Owner -> member`), and the largest. In the before-arm it was **700,265 edges, 169,829 resolved,
+530,368 ambiguous — 75.7% of the type unwalkable**, and not because any member was wrong. A Dart
+project repeats member names constantly (`value`, `build`, `props`, `constructor`), and a bare name
+that two declarations carry is ambiguous BY CONSTRUCTION: the shared resolver accepts a bare name
+only under `HAVING COUNT(*) = 1`.
+
+The member's `contains` target is now its PUBLISHED spelling — `scope` + `.` + `name` when the member
+has a scope, its bare name otherwise. That is the same string `pool-worker.ts` synthesises into the
+symbol's `qualifiedName` (`s.qualifiedName || s.metadata?.fqn || (s.scope ? ... : s.name)`), so the
+edge and the node it names are one string from one rule. A member with no scope keeps its bare name:
+that is today's behaviour, not a guess at a spelling nothing publishes.
+
+**Priced before it was built** (`validation/m14/fixtures/dart/contains-target-price.ts`, whole
+checkouts so each project's key space is complete — dart-http + riverpod + proxicall, 3,977 files,
+**292,017 contains edges**):
+
+    ambiguous -> resolved   267,878   (91.7%)
+    ambiguous -> ambiguous   14,564   every one of them an OWNER-name collision
+    resolved  -> resolved     9,575
+    resolved  -> ambiguous        0   no edge moves backwards
+
+The 14,564 that stay ambiguous are the honest remainder, and they are a DIFFERENT defect: two classes
+with the same NAME in one project. A member-target qualifier cannot separate those, and no fixture is
+asked to.
+
+**Probe (why the spelling is safe to publish).** For every member symbol in the fixture set,
+`scope === ownerName` and the published `qualifiedName === Owner.member` — the qualifier comes from the
+member's OWN fields, not from a second selection that could drift from the first. That is the
+discipline `libraryName` follows.
+
+**Fixture fallout, all of it `contains` targets.** Nine fixtures named a bare member: 16
+`expectRelationships` rows and 5 `forbidRelationships` rows moved. The two forbid rows that pinned a
+bare spelling were RETARGETED rather than left alone (`uses Wrapper -> Wrapper.shape$` at line 26,
+`contains Wrapped -> Wrapped.inner$` at line 44) — `forbidRelationships` matches by exact target
+equality, so a forbid left on the old spelling could no longer fire while still reading as coverage.
+The LINES they refuse are unchanged, so no position guard was weakened.
+
+**A battery, because a pin that cannot fail proves nothing**
+(`validation/m14/fixtures/dart/dedup-and-attribution-mutant.ts`, lane-owned and self-contained like
+`untyped-method-mutant.ts` — `mutate-analyzer.ts` is shared machinery and stays unedited). Three
+mutants, each applied to the real analyzer's output: M1 bare-target (the exact pre-fix emission), M2
+module-prefix (the plausible slip: reuse the file's library identity, which the analyzer already
+computes for `imports`), M3 double-qualify (re-deriving the spelling from an already-qualified value,
+the shape `pool-worker`'s own fallback chain invites). Measured: control passes, **all three
+constructed and all three caught**, and a collision census asserts the reason locally — 9 of the
+fixture's 20 `contains` edges name a member whose bare name is declared more than once in that one
+file (worst `constructor` x5), so a bare target is ambiguous by construction for nearly half of them.
+The battery states its own limit: it mutates the PAYLOAD, so it proves the rows discriminate the
+spelling, not that the analyzer computes it by the right route — the probe above is that half.
+
+**Verification.** Fixtures **24 pass / 0 fail**, `fixture baseline gate: no regressions`;
+`npx tsc --noEmit` clean. The whole-corpus arm for THIS change is the arm AFTER the current one; the
+number it has to beat is `contains 169,829 resolved / 530,368 ambiguous`, and the price says it should
+land near 656,000 resolved.
+
+**Where the campaign stands — the qualifier/receiver arm, now COMPLETE**
+(`incoming-dart-index-after.log`, frozen at `1f3cc877a`, `--index`, per-project scope): TOTAL 3,718,646
+edges / **1,171,014 resolved** (before-arm: 988,684) / 1,688,049 ambiguous / 859,140 unresolved /
+407 extOK / 15 extFAIL. The gain is concentrated exactly where the round aimed: `calls` 164,792 ->
+**231,752**, `uses` 194,072 -> **309,442**. Every other type is unmoved (`imports 0`, `exports 0`,
+`contains 169,829` — that arm predates this change). `overrides` held its 269,818 with 407
+owner-verified external claims and 15 REFUTED, and that is the number the next round has to move.
