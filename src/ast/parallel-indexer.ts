@@ -4629,23 +4629,67 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
     // BY, which does not resolve and threw SQLITE_ERROR inside a catch that hid it.
     // Both are why the location and the set-based shape are load-bearing.
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_src`)
-    rawDb.run(`DROP TABLE IF EXISTS temp._i13_rank`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_tier`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_file`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_lang`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_any`)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_pick`)
-    // ── THE RANKED INTERMEDIATE IS A TABLE, NOT A SUBQUERY ──
+    // ── THIS IS THE LINEAR PLAN: THREE PER-NAME AGGREGATES, THREE LOOKUPS ──
     //
-    // Same rows, same ranking, one difference: the R × C pairs are materialised so
-    // that the pass can COUNT them and report the count (see `ResolvePlanStats`
-    // above). The scaling gate's first check is "how many (relationship ×
-    // same-named-symbol) rows does the live plan consult", and the only honest
-    // source for that number is the table the plan itself built.
+    // Same ranking as the window function it replaces — definition ahead of
+    // declaration, then same-file, then same-language, then lowest id. What changed
+    // is how it is computed. The window function joined EVERY relationship to EVERY
+    // symbol sharing its target name, materialised all R × C pairs and sorted them to
+    // keep R of them, and C is not constant in project size: a popular name
+    // accumulates one candidate per file (`constructor`: 104 at 200 files, 329 at
+    // 800), so the pass was O(rels × N). Measured on nested pools of this
+    // repository's own files (script/perf/make-pools.sh), fresh index per tier:
     //
-    // This is the repair for a real failure, not a stylistic choice. The gate used
-    // to count candidates with its own hand-written replica of the join below — a
-    // replica that describes THIS plan. When the linear plan replaced it, the
-    // replica kept returning the old shape (2.87 pairs per relationship at 196
-    // files), so the gate stayed red on code that no longer performed the join and
-    // the discrepancy read as unexplained. A gate may not certify a plan that is
-    // not the one running; it now reads the plan's own count.
+    //   files  relationships  candidate pairs  pairs/rel   resolve ms
+    //      47          7,920           8,598         1.09           246
+    //     196         61,333         175,869         2.87         4,335
+    //     396         90,971         620,821         6.82        10,846
+    //     796        121,782       1,518,309        12.47        20,395
+    //
+    // pairs/relationship is the term that grows, and it is counted from the written
+    // index rather than timed, so it is a property of the DATA and not a load
+    // artifact. `script/perf/verify-scaling-linear.ts` bounds it, and its before-arm
+    // record (validation/m60/results/scaling-linear.before-linux.json) fails at
+    // 2.50× over a 4× tier increase.
+    //
+    // Three observations make the expensive part unnecessary — and they are CHECKED,
+    // not argued. script/perf/probe-i13-equivalence.mjs computes both plans on the
+    // same index and compares every `(rel_id → target_symbol_id)` assignment at all
+    // four tiers: 0 disagreements, same row count, plus a negative control (a plan
+    // that drops the tier term) that is CAUGHT rather than reported clean:
+    //
+    //   1. `COALESCE(s.is_declaration, 0) ASC` depends on the NAME, not on the
+    //      relationship: every candidate at a higher tier loses to every candidate at
+    //      the minimum tier, so one GROUP BY fixes the tier per name.
+    //   2. Within one file the language term is CONSTANT (`f.language` is a column of
+    //      brain_file, and brain_file.id is the primary key), so the third key cannot
+    //      reorder same-file candidates and the winner among them is the lowest id.
+    //   3. Therefore the winner is one of exactly three candidates, in order: lowest
+    //      id at the minimum tier in the relationship's own file; failing that, in
+    //      the relationship's own language; failing both, lowest id at the minimum
+    //      tier anywhere.
+    //
+    // Each of the three joins below is a lookup on a UNIQUE index, so the cost per
+    // relationship is O(log symbols) instead of O(candidates for its name), and the
+    // aggregates are O(symbols) to build. Ported from `rescue/perf-index-scaling`,
+    // which measured 8.6× at n800 (14,484 → 1,685 ms) with the equivalence digest
+    // unchanged.
+    //
+    // The gate that bounds this reads the number the plan reports about itself (see
+    // `ResolvePlanStats` above), cross-checked against the written index. That is a
+    // repair, not a preference: the gate used to count candidates with its own SQL —
+    // a copy of the window plan's join — which kept returning the window shape after
+    // the join was gone, and the mismatch was reported as unexplained.
+    //
+    // (History that still constrains the shape: a correlated subquery per row took
+    // 167 s, of which 164 s was the apply step alone; and an earlier attempt lived in
+    // `storeResults`, where it resolved against a partial table. Both are why nothing
+    // here is per-row correlated and why the UPDATE stays `FROM _i13_pick`.)
     //
     // The source file and language the ranking depends on, materialised once
     // because they cannot be correlated out of a subquery's ORDER BY here.
@@ -4657,34 +4701,115 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
       LEFT JOIN brain_file sf ON sf.id = src.file_id
       WHERE r.project_id = '${projectId}'
     `)
+    // ── THE JOIN KEY NEEDS AN INDEX, AND ITS ABSENCE COST 260× ──
+    //
+    // Without this, the pick's plan depends on whether `sqlite_stat1` exists, and
+    // on a FRESH index it does not: the pipeline runs ANALYZE at the END, after
+    // resolution. Measured on the n50 pool, no statistics, this exact query:
+    //
+    //   without this index   `SEARCH r USING INDEX brain_rel_project_idx` then
+    //                        `SCAN t` — one full scan of _i13_src per relationship
+    //                        row (7,968 × 7,968 here), 15.6 s
+    //   with it              `SEARCH t USING INDEX _src_rel (rel_id=?)`, 0.060 s
+    //
+    // The index is on the join key, so it makes EITHER order cheap rather than
+    // forcing one, and it does not depend on statistics that do not exist yet at
+    // this point in the pipeline. This is also the likely cause of the "resolve
+    // 889,631 ms at n200" that docs/UNMERGED-WORK.md recorded as unexplained while
+    // the same branch's own numbers said 712 ms: same SQL, planner chose per
+    // statistics that were not there.
+    rawDb.run(`CREATE UNIQUE INDEX temp._i13_src_rel ON _i13_src(rel_id)`)
+    // (1) The winning declaration tier per name. Observation 1.
     rawDb.run(`
-      CREATE TEMP TABLE _i13_rank AS
-      SELECT t.rel_id AS rel_id, s.id AS target_symbol_id,
-             ROW_NUMBER() OVER (PARTITION BY t.rel_id
-               ORDER BY COALESCE(s.is_declaration, 0) ASC,
-                        (s.file_id = t.src_file) DESC,
-                        (COALESCE(f.language, '') = t.src_lang) DESC,
-                        s.id ASC) AS rn
+      CREATE TEMP TABLE _i13_tier AS
+      SELECT name, MIN(COALESCE(is_declaration, 0)) AS tier
+      FROM brain_symbol WHERE project_id = '${projectId}'
+      GROUP BY name
+    `)
+    rawDb.run(`CREATE UNIQUE INDEX temp._i13_tier_name ON _i13_tier(name)`)
+    // (2a) Observation 2 + 3a: lowest id at the minimum tier, within one file. The
+    // join on `t.tier` is what restricts candidates to the tier that can win, so a
+    // higher-tier symbol cannot occupy a best_* row even when it is the lowest id in
+    // its file.
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_best_file AS
+      SELECT s.name AS name, s.file_id AS file_id, MIN(s.id) AS symbol_id
+      FROM brain_symbol s
+      JOIN _i13_tier t ON t.name = s.name AND t.tier = COALESCE(s.is_declaration, 0)
+      WHERE s.project_id = '${projectId}'
+      GROUP BY s.name, s.file_id
+    `)
+    rawDb.run(`CREATE UNIQUE INDEX temp._i13_best_file_key ON _i13_best_file(name, file_id)`)
+    // (2b) Observation 3b: lowest id at the minimum tier, within one language. The
+    // key is the COALESCEd language, so the '' bucket exists and '' matches '' — the
+    // same comparison the window key made.
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_best_lang AS
+      SELECT s.name AS name, COALESCE(f.language, '') AS lang, MIN(s.id) AS symbol_id
+      FROM brain_symbol s
+      JOIN _i13_tier t ON t.name = s.name AND t.tier = COALESCE(s.is_declaration, 0)
+      LEFT JOIN brain_file f ON f.id = s.file_id
+      WHERE s.project_id = '${projectId}'
+      GROUP BY s.name, COALESCE(f.language, '')
+    `)
+    rawDb.run(`CREATE UNIQUE INDEX temp._i13_best_lang_key ON _i13_best_lang(name, lang)`)
+    // (2c) Observation 3c: lowest id at the minimum tier, no further preference.
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_best_any AS
+      SELECT s.name AS name, MIN(s.id) AS symbol_id
+      FROM brain_symbol s
+      JOIN _i13_tier t ON t.name = s.name AND t.tier = COALESCE(s.is_declaration, 0)
+      WHERE s.project_id = '${projectId}'
+      GROUP BY s.name
+    `)
+    rawDb.run(`CREATE UNIQUE INDEX temp._i13_best_any_key ON _i13_best_any(name)`)
+    // The three LEFT JOINs are the plan, and the `IS NOT NULL` filter on the pick is
+    // load-bearing: the window plan emitted a row only when a candidate MATCHED, and
+    // the apply step is `UPDATE … FROM _i13_pick`, so a row carrying a NULL target
+    // would write NULL over a target strategies 1/2/4 had already resolved and
+    // un-bind a live edge. `_i13_best_any` is populated for every name that has at
+    // least one symbol, so the COALESCE is NULL exactly when no symbol carries the
+    // target name — which is precisely the no-candidate case.
+    //
+    // `bf.file_id = t.src_file` cannot match when `t.src_file IS NULL` (the source
+    // symbol is missing — 26,522 rows on the n800 index), and that is the right
+    // answer rather than an accident: the window key compared `s.file_id = NULL`,
+    // which is NULL, and SQLite sorts NULL last under DESC, so no candidate claimed
+    // the same-file tier there either.
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_pick AS
+      SELECT t.rel_id AS rel_id,
+             COALESCE(bf.symbol_id, bl.symbol_id, ba.symbol_id) AS target_symbol_id
       FROM _i13_src t
       JOIN brain_relationship r ON r.id = t.rel_id
-      JOIN brain_symbol s ON s.project_id = '${projectId}' AND s.name = r.target_external
-      LEFT JOIN brain_file f ON f.id = s.file_id
+      LEFT JOIN _i13_best_file bf ON bf.name = r.target_external AND bf.file_id = t.src_file
+      LEFT JOIN _i13_best_lang bl ON bl.name = r.target_external AND bl.lang = t.src_lang
+      LEFT JOIN _i13_best_any  ba ON ba.name = r.target_external
       WHERE r.project_id = '${projectId}'
         AND r.target_external IS NOT NULL
         AND r.relationship_type <> 'contains'
         AND instr(r.target_external, '.') = 0
         AND instr(r.target_external, ':') = 0
+        AND COALESCE(bf.symbol_id, bl.symbol_id, ba.symbol_id) IS NOT NULL
     `)
-    // The one number this plan reports. COUNT over the built table, not over an
-    // expression restated in a second query: a restatement is a copy that can drift
-    // from the plan it claims to describe.
-    const _i13RankRows = (rawDb.prepare(`SELECT COUNT(*) AS c FROM _i13_rank`).get() as any).c as number
-    stats = { plan: "window", largestIntermediate: _i13RankRows }
-    rawDb.run(`
-      CREATE TEMP TABLE _i13_pick AS
-      SELECT rel_id, target_symbol_id FROM _i13_rank WHERE rn = 1
-    `)
-    rawDb.run(`DROP TABLE IF EXISTS temp._i13_rank`)
+    // The number this plan reports: the largest intermediate it materialised, counted
+    // from the tables it built rather than from an expression restated in a second
+    // query — a restatement is a copy that can drift from the plan it describes.
+    // Bounded by the stored-relationship count, which is the linear claim itself.
+    const _i13Largest = (rawDb.prepare(`
+      SELECT MAX(c) AS m FROM (
+        SELECT COUNT(*) AS c FROM _i13_tier
+        UNION ALL SELECT COUNT(*) FROM _i13_best_file
+        UNION ALL SELECT COUNT(*) FROM _i13_best_lang
+        UNION ALL SELECT COUNT(*) FROM _i13_best_any
+        UNION ALL SELECT COUNT(*) FROM _i13_pick
+      )
+    `).get() as any).m as number
+    stats = { plan: "linear", largestIntermediate: _i13Largest }
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_tier`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_file`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_lang`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_any`)
     // Without this the apply step degrades to a scan per row — the 164 s above.
     rawDb.run(`CREATE UNIQUE INDEX temp._i13_pick_rel ON _i13_pick(rel_id)`)
     rawDb.run(`
