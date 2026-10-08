@@ -25,8 +25,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "fb1bea09260b57975b1ba7aa30789e4275e10a15",
-  "committedAt": "2026-10-08T12:27:44-04:00",
+  "commit": "d2bad8b7d3cadb6927319fa0b751de6c88b022e4",
+  "committedAt": "2026-10-08T17:09:01-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -1115,8 +1115,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-10-08T16:29:09.598Z",
-  "regeneratedAtCommit": "fb1bea09260b57975b1ba7aa30789e4275e10a15",
+  "regeneratedAt": "2026-10-08T21:13:31.562Z",
+  "regeneratedAtCommit": "d2bad8b7d3cadb6927319fa0b751de6c88b022e4",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
