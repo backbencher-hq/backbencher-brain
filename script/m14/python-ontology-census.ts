@@ -66,7 +66,7 @@
  *   bun run script/m14/python-ontology-census.ts --fresh          # re-walk
  */
 import { execFileSync } from "node:child_process"
-import { appendFileSync, readFileSync, readdirSync, statSync, unlinkSync } from "node:fs"
+import { appendFileSync, readFileSync, readdirSync, statSync, unlinkSync, type Dirent } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
@@ -172,7 +172,11 @@ interface Population {
 }
 
 function walkDisk(dir: string, out: string[]) {
-  let ents: ReturnType<typeof readdirSync>
+  // `ReturnType<typeof readdirSync>` resolves to the LAST overload, which is the
+  // `encoding: "buffer"` one — so every `Dirent` here carried a `NonSharedBuffer`
+  // name and `.endsWith(".py")` reported a comparison between a Buffer and a
+  // string. The call below is the default-encoding overload: names are strings.
+  let ents: Dirent[]
   try {
     ents = readdirSync(dir, { withFileTypes: true })
   } catch {

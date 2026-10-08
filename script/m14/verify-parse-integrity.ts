@@ -158,8 +158,10 @@ function parseDiagnosticsOf(sf: ts.SourceFile): readonly ts.Diagnostic[] {
  */
 function scriptKindOf(file: string): ts.ScriptKind {
   if (file.endsWith(".tsx")) return ts.ScriptKind.TSX
-  if (file.endsWith(".mts")) return ts.ScriptKind.MJS
-  if (file.endsWith(".cts")) return ts.ScriptKind.CJS
+  // `.mts`/`.cts` arms stood here returning `ts.ScriptKind.MJS`/`.CJS`, which the enum does
+  // not have: both returned `undefined`, and that made `createSourceFile` infer the kind
+  // from the FILENAME — which resolves `.mts`/`.cts` to `TS`, the same kind the default
+  // below returns. One statement of the kind, and it is the one that ran.
   return ts.ScriptKind.TS
 }
 

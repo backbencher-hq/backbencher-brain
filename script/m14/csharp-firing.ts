@@ -43,7 +43,7 @@
  * NO REGEXP anywhere (programme rule 1): string `includes`/`startsWith` only.
  */
 
-import { readdirSync, readFileSync, statSync } from "node:fs"
+import { readdirSync, readFileSync, statSync, type Dirent } from "node:fs"
 import { join, resolve as pathResolve } from "node:path"
 
 const HERE = import.meta.dir
@@ -79,13 +79,17 @@ type FileRow = { repo: string; rel: string; abs: string }
 
 function walkCs(dir: string, repo: string, out: FileRow[], depth: number): void {
   if (depth > 24) return
-  let ents: ReturnType<typeof readdirSync>
+  // `ReturnType<typeof readdirSync>` is the `encoding: "buffer"` overload — the
+  // last one — so the real call had to be cast to its own declared type (a cast TS
+  // now calls a mistake) and every `Dirent` below had its name re-declared by hand.
+  // The call is the default-encoding overload: names are strings.
+  let ents: Dirent[]
   try {
-    ents = readdirSync(dir, { withFileTypes: true }) as ReturnType<typeof readdirSync>
+    ents = readdirSync(dir, { withFileTypes: true })
   } catch {
     return
   }
-  for (const e of ents as unknown as Array<{ name: string; isDirectory(): boolean }>) {
+  for (const e of ents) {
     const p = join(dir, e.name)
     if (e.isDirectory()) {
       const n = e.name

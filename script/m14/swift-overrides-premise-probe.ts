@@ -43,6 +43,7 @@ import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
+import type { DeclarationKind, ProjectIndex } from "../../src/ast/project-index"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 // The SAME draw the lane's census and the uncovered-type oracle use, so the
@@ -108,7 +109,11 @@ const typesByFile = new Map<string, Set<string>>()
 /** every type name the corpus declares. */
 const declaredTypes = new Set<string>()
 /** declared type name -> its kind, so the project index can carry it. */
-const typeKinds = new Map<string, string>()
+const typeKinds = new Map<string, DeclarationKind>()
+/** Labels of the files whose parse tree carries ERROR/MISSING nodes. The project
+ *  index carries this so a caller can refuse to trust a declaration read under a
+ *  broken tree; the probe's own tier report states the count either way. */
+const damagedFiles = new Set<string>()
 let grammarErrorFiles = 0
 
 function firstChildOfType(n: any, type: string): any | null {
@@ -226,7 +231,7 @@ async function indexWorker(): Promise<void> {
       const tree = parser.parse(text)
       if (!tree) continue
       indexFile(tree.rootNode, `${f.repo}/${f.rel}`)
-      if (tree.rootNode.hasError) grammarErrorFiles++
+      if (tree.rootNode.hasError) { grammarErrorFiles++; damagedFiles.add(`${f.repo}/${f.rel}`) }
       tree.delete?.()
     } catch { /* unreadable is not a fact */ }
   }
@@ -255,20 +260,25 @@ function isSubclassOf(sub: string, sup: string, seen = new Set<string>()): boole
 // depend on a Swift entry existing in a shared spec registry it may not be
 // allowed to add. `parseFile` forwards the context to the engine, which hands it
 // to the analyzer — the production path, with the context the indexer would fill.
-const projectIndex = WITH_PROJECT_INDEX
+const declaredSymbolNames = (): Set<string> => {
+  const out = new Set<string>(declaredTypes)
+  for (const declared of members.values()) for (const m of declared) out.add(m)
+  return out
+}
+const projectIndex: ProjectIndex | undefined = WITH_PROJECT_INDEX
   ? {
       typeKinds,
       typeMembers: members,
       typeBases: new Map([...bases.entries()].map(([k, v]) => [k, [...v]])),
-      symbolNames: new Set<string>(),
-      damagedFiles: new Set<string>(),
+      symbolNames: declaredSymbolNames(),
+      damagedFiles,
       stats: { files: files.length, damaged: grammarErrorFiles },
     }
   : undefined
 if (WITH_PROJECT_INDEX) {
   console.log(`project index mode: typeKinds=${typeKinds.size} typeMembers=${members.size} typeBases=${bases.size} — handed to parseFile as AnalyzeContext.projectIndex`)
 }
-interface Edge { owner: string; method: string; parent: string; conf: number; reason: string; label: string; line?: number }
+interface Edge { owner: string; method: string; parent: string; pmethod: string; conf: number; reason: string; label: string; line?: number }
 const edges: Edge[] = []
 let idx2 = 0
 async function sweepWorker(): Promise<void> {

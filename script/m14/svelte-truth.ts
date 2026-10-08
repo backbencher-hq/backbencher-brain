@@ -226,7 +226,10 @@ export interface SvelteTruthResult {
   members: string[]
   /** template-local bindings, i.e. names a read must NOT publish */
   locals: string[]
-  blocks: number
+  /** The script-tree INDEXES this derivation read. Declared `number` while the value
+   *  returned is the `number[]` built by `blocks.push(bi)` below; nothing reads it, and
+   *  the declaration is what lagged the record. */
+  blocks: number[]
   componentName: string
 }
 
@@ -778,7 +781,10 @@ async function main(): Promise<void> {
     const component = truth.componentName
 
     for (const label of AUDITED) {
-      const tSet = new Set(
+      // `new Set(...)` over a chain read from an `any` receiver infers `Set<unknown>`, so the
+      // element type is stated at both sets below (`aSet.has(k)` and `tSet.has(k)` are how the
+      // two unknown-set inferences showed up).
+      const tSet = new Set<string>(
         truth.edges.filter((e) => e.label === label).map((e) => `${e.from}|${e.target}`),
       )
       // PROVENANCE, taken structurally rather than from analyzer metadata: an
@@ -791,7 +797,7 @@ async function main(): Promise<void> {
       const all = (res.relationships ?? []).filter(
         (r: any) => String(r.relationshipType ?? r.type) === label,
       )
-      const aSet = new Set(
+      const aSet = new Set<string>(
         all.filter((r: any) => r.source === component).map((r: any) => `${r.source}|${r.target}`),
       )
       delegated[label] += all.length - [...aSet].length

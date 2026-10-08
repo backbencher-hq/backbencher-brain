@@ -39,7 +39,14 @@ import { deriveErlangExportsTruth, ERLANG_ORACLE_LABELS } from "./oracles/erlang
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const argv = process.argv.slice(2)
-const argOf = (n: string, d?: string): string | undefined => (argv.includes(`--${n}`) ? argv[argv.indexOf(`--${n}`) + 1] : d)
+// Overloads: a flag read WITH a default always yields a string, and the single
+// `string | undefined` signature could not say so — `--repos` then had to be treated as
+// optional where this file's own default makes it required.
+function argOf(n: string): string | undefined
+function argOf(n: string, d: string): string
+function argOf(n: string, d?: string): string | undefined {
+  return argv.includes(`--${n}`) ? argv[argv.indexOf(`--${n}`) + 1] : d
+}
 const SAMPLE = Number(argOf("sample", "400"))
 const OUT = argOf("out")
 const REPOS = (argOf("repos", "otp,elixir")).split(",").map((s) => s.trim()).filter(Boolean)

@@ -125,7 +125,10 @@ export const CLEAN_MUTANTS: Mutant[] = [
         // publishes: for every class that a POLYMORPHIC instance targets, each of
         // that class's own methods becomes a self-edge. Both endpoints are one real
         // node, which is the point — every rate the store computes stays at 100%.
-        ...[...new Set(
+        // `new Set(...)` over a chain read from an `any` receiver infers `Set<unknown>`,
+        // which is why the `flatMap` callback's `cls` had to be annotated against a set
+        // of unknown values. The element type is stated instead.
+        ...[...new Set<string>(
           (r.relationships ?? [])
             .filter((x: any) => String(x.type).toLowerCase() === "implements" && (x.metadata as any)?.isPolymorphicInstance)
             .map((x: any) => String(x.target)),

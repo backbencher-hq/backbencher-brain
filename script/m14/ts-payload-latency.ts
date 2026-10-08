@@ -112,7 +112,28 @@ const VARIANT_ARG = argv.find((a) => a.startsWith("--variant="))?.slice("--varia
  * that differs. The child asserts which text it is running by hashing the analyzer
  * file it finds, and the parent asserts the hash matches the variant it asked for.
  */
-async function measureInChild(variant: Variant, repeats: number): Promise<any> {
+/**
+ * What the child prints between the `@@MEASURE@@` markers and the parent reads back.
+ *
+ * The declaration is not decoration: the parent's label arithmetic below needs the
+ * counts to BE numbers. `measureInChild` returned `any`, so `Object.entries`
+ * inferred `[string, unknown][]` from an `any` argument, `new Map` became
+ * `Map<string, unknown>`, and `(a - b)` stopped typechecking — the declared type had
+ * drifted from the record the child actually writes. `measureChild`, further down,
+ * builds this shape, so the two sides cannot drift apart again silently.
+ */
+interface ChildMeasurement {
+  analyzerHash: string
+  drawHash: string
+  files: number
+  runs: number
+  rels: number
+  bytes: number
+  byLabel: Record<string, number>
+  perFileSamples: number[][]
+}
+
+async function measureInChild(variant: Variant, repeats: number): Promise<ChildMeasurement> {
   const liveAbs = path.join(REPO_ROOT, ANALYZER_REL)
   const expectText = variant === "before"
     ? execFileSync("git", ["-C", REPO_ROOT, "show", `${REF}:${ANALYZER_REL}`], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
@@ -122,7 +143,7 @@ async function measureInChild(variant: Variant, repeats: number): Promise<any> {
   // Write the variant into place and LEAVE it there: the child reads it, and the
   // parent restores before doing anything else. `finally` covers a child that dies.
   writeFileSync(liveAbs, expectText)
-  let out: any
+  let out: ChildMeasurement
   try {
     const r = spawnSync(process.execPath, [
       import.meta.path,
@@ -239,8 +260,8 @@ const results = {
 
 const pad = (s: string, n: number) => (s + " ".repeat(n)).slice(0, n)
 const kb = (n: number) => `${(n / 1024).toFixed(1)} KiB`
-const tB = summarise(before.perFileSamples as number[][])
-const tA = summarise(after1.perFileSamples as number[][])
+const tB = summarise(before.perFileSamples)
+const tA = summarise(after1.perFileSamples)
 
 console.log(`\n${pad("metric", 34)}${pad("before", 16)}${pad("after", 16)}${pad("delta", 18)}`)
 console.log("-".repeat(84))

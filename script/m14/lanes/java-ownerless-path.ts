@@ -23,7 +23,10 @@ import { getParser } from "../../../src/ast/engine"
 const FILE = process.env.PROBE_FILE ??
   "$HOME/fixtures/repositories/java-lib/guava/src/com/google/common/base/Preconditions.java"
 
-function chain(node: any): string[] {
+// Returns the joined ancestor chain as ONE string (its one caller stores it as
+// `path`); the annotation said `string[]`, which is what the walk builds before it
+// is joined.
+function chain(node: any): string {
   const out: string[] = []
   let cur = node
   while (cur) {

@@ -19,7 +19,12 @@ import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "node:child_process"
 import { init, parser, analyzer, zigFiles, walk } from "../m14/tmp/zigw-harness"
-import { deriveZigReferenceEdges } from "../m14/differential"
+// The oracle lives in the lane's OWN truth module. It is not re-exported by
+// `../m14/differential` (that file imports it for its own sweep), so importing it
+// from there resolved to nothing and `truth` lost its type: the four call sites
+// below then read `Set<unknown>` and the `map` callback fell back to implicit
+// `any`.
+import { deriveZigReferenceEdges } from "../m14/zig-truth"
 
 const OUT = path.join(process.cwd(), "validation/m12/results/zig-deep-review.json")
 const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/ishaq/fixtures/repositories"

@@ -84,7 +84,9 @@ function countFile(rel: string): { hits: Hit[]; stringArgSplitCalls: number } {
 
   const lineOf = (n: ts.Node): number => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1
 
-  const isRegExpCtor = (e: ts.Expression): boolean =>
+  // Takes any Node, not an Expression: it is called with a statement position's child as
+  // well as with an argument, and every guard below (`isNewExpression`) accepts a Node.
+  const isRegExpCtor = (e: ts.Node): boolean =>
     ts.isNewExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === "RegExp"
 
   const isPatternArg = (a: ts.Expression | undefined): boolean => {

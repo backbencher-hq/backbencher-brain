@@ -70,7 +70,7 @@ import path from "node:path"
 import * as WTS from "web-tree-sitter"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { LANGS, LANG_REPOS, SECOND_CORPUS } from "./differential"
-import { emitEvidence } from "./evidence-harness"
+import { emitEvidence, type EvidenceInput } from "./evidence-harness"
 
 const ROOT = path.resolve(__dirname, "..", "..")
 const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
@@ -634,7 +634,10 @@ async function main() {
         `files=${r.files} ERROR=${r.errorFiles} MISSING=${r.missingFiles} either=${r.eitherFiles} ` +
         `damaged-lines median=${r.errorLinesMedian} max=${r.errorLinesMax} digest=${r.sampleDigest} verdict=${r.verdict}`,
     }))
-    const base = {
+    // Everything the harness needs EXCEPT the id: each emit branch below supplies one
+    // literal `issueId`. Un-annotated, `claimLevel: "L1"` widened to `string` and both
+    // emit calls were refused.
+    const base: Omit<EvidenceInput, "issueId"> = {
       title: SCOPED
         ? `corpus parse-success floor, LANE-SCOPED (${SCOPED_LANG ?? SCOPED_REPO}) — NOT the canonical whole-set claim`
         : "corpus parse-success floor — how much of each corpus the pinned grammar can parse",

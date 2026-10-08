@@ -123,13 +123,18 @@ const tsxP = new Parser(); tsxP.setLanguage(tsxLang)
  * heritage probe — it has to be counted. Shared with the negative control, so
  * the control measures THIS function rather than a copy of it.
  */
+// The callback's second parameter is the FILE LABEL, and it used to be dropped: this
+// function took `label`, never used it, and called `hit(k, ex)` — so the recorder at the
+// call site (`add`, which takes (k, label, ex)) received the EXAMPLE as its label and no
+// example at all. `hits` still counted, and every hit's file attribution was the example
+// string. Passing the label through is what makes the parameter mean anything.
 function measureScriptBlocks(
   blocks: Array<{ body: string; lang: string }>,
   label: string,
-  hit: (k: string, ex?: string) => void,
+  hit: (k: string, label: string, ex?: string) => void,
   langs?: { ts: any; tsx: any; js: any },
 ): void {
-  if (blocks.length > 1) hit("sfc:multi-script-block", `${blocks.length} blocks`)
+  if (blocks.length > 1) hit("sfc:multi-script-block", label, `${blocks.length} blocks`)
   const perBlock: Array<Set<string>> = []
   for (const b of blocks) {
     if (!b.body || !b.body.trim()) { perBlock.push(new Set()); continue }
@@ -158,7 +163,7 @@ function measureScriptBlocks(
   }
   for (let a = 0; a < perBlock.length; a++) {
     for (let bq = a + 1; bq < perBlock.length; bq++) {
-      for (const n of perBlock[a]) if (perBlock[bq].has(n)) hit("sfc:SCRIPT-BLOCK-collision", n)
+      for (const n of perBlock[a]) if (perBlock[bq].has(n)) hit("sfc:SCRIPT-BLOCK-collision", label, n)
     }
   }
 }

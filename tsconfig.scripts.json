@@ -7,7 +7,8 @@
   },
   "include": [
     "script/m14/**/*.ts",
-    "script/m12/**/*.ts"
+    "script/m12/**/*.ts",
+    "src/ast/pool_worker_globals.d.ts"
   ],
   "exclude": [
     "node_modules",

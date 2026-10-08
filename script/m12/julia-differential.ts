@@ -84,6 +84,25 @@ const CONSTRUCTS = arg("constructs")
 const JULIA = arg("julia", "/tmp/opencode/julia-1.11.3/bin/julia")!
 
 /**
+ * One compared file, as the artifact carries it.
+ *
+ * Written down because it was not: `row` was an inferred object literal and
+ * `treeSitterAlt` / `classification` were then assigned onto it, which is legal at
+ * runtime but invisible to the compiler — so the row shape the JSON actually has
+ * (an OPTIONAL `treeSitterAlt` present only under `--wasm=`, and a `classification`
+ * assigned on every row) existed nowhere but in the writer's head.
+ */
+interface Row {
+  repo: string
+  file: string
+  bytes: number
+  julia: { parses: boolean; toplevelExprs: any; error: any }
+  treeSitter: { errorNodes: number; firstErrorLine: number | null; firstErrorText: string | null }
+  treeSitterAlt?: { errorNodes: number }
+  classification?: string
+}
+
+/**
  * One Julia process for the whole corpus, not one per file.
  *
  * A Julia start-up is ~200ms, so a per-file oracle would spend most of the run on start-up and
@@ -195,7 +214,7 @@ async function main() {
   }
 
   // ---- the disagreement ----
-  const rows: any[] = []
+  const rows: Row[] = []
   let juliaOk = 0, juliaFail = 0, tsClean = 0, tsError = 0, missingVerdicts = 0
   const tsRejectsValidJulia: any[] = []   // the lane's real defects
   const juliaRejectsWhatTsAccepts: any[] = []
@@ -231,7 +250,7 @@ async function main() {
     if (jOk) juliaOk++; else juliaFail++
     if (errs > 0) tsError++; else tsClean++
 
-    const row = {
+    const row: Row = {
       repo: t.repo, file: t.rel, bytes: t.bytes,
       julia: { parses: jOk, toplevelExprs: v2.toplevelExprs ?? null, error: v2.error ?? null },
       treeSitter: { errorNodes: errs, firstErrorLine: firstErr.row >= 0 ? firstErr.row + 1 : null, firstErrorText: firstErr.row >= 0 ? (lines[firstErr.row] ?? "").trim().slice(0, 140) : null },
@@ -304,7 +323,10 @@ async function main() {
   for (const r of tsRejectsValidJulia.slice(0, 14))
     console.log(`    ${String(r.treeSitter.errorNodes).padStart(4)}E  ${r.file}:${r.treeSitter.firstErrorLine}  ${r.treeSitter.firstErrorText}`)
   if (tsRejectsValidJulia.length > 14) console.log(`    … and ${tsRejectsValidJulia.length - 14} more`)
-  if (payload.aB) { console.log(`\n  A/B vs ${WASM_ALT.split("/").pop()}: ${payload.aB.verdict}`); console.log(`     error files ${payload.aB.baselineErrorFiles} -> ${payload.aB.altErrorFiles}`) }
+  // `WASM_ALT` is optional and this statement is guarded by `payload.aB`, not by the
+  // variable — the payload's own record of the alternative wasm is the thing that is
+  // actually known to exist here.
+  if (payload.aB && WASM_ALT) { console.log(`\n  A/B vs ${WASM_ALT.split("/").pop()}: ${payload.aB.verdict}`); console.log(`     error files ${payload.aB.baselineErrorFiles} -> ${payload.aB.altErrorFiles}`) }
   console.log(`\nVERDICT: ${payload.verdict}`)
   console.log(`-> ${path.relative(ROOT, OUT)}`)
 }

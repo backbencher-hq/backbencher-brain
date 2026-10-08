@@ -85,7 +85,10 @@ function gitList(repo: string, exts: string[]): string[] {
     .sort()
 }
 
-async function audit(name: string): Promise<Record<string, any>> {
+// Returns NOTHING: the audit writes `validation/m12/results/<name>-corpus-errors.json` and
+// prints its summary. The declared `Promise<Record<string, any>>` was a type no path in
+// this function ever produced, and its one call site discards the result.
+async function audit(name: string): Promise<void> {
   const cfg = LANGS[name]
   const revision = execFileSync("git", ["-C", cfg.repo, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
   const trackedInCorpus = gitList(cfg.repo, cfg.ext)

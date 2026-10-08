@@ -83,7 +83,10 @@ for (const [key, value] of Object.entries(RelationshipType as unknown as Record<
 // different string, and that divergence is invisible unless it is named.
 const enumNameFor = new Map<string, string>(ALL_TYPES.map((t) => [t, enumValues.get(t) ?? `NO_ENUM_MEMBER(${t})`]))
 
-type Row = { type: string; source?: string; target?: string; confidence?: number; evidenceClass?: string; metadata?: Record<string, unknown> }
+// `type` and `relationshipType` are BOTH read below (`r.type ?? r.relationshipType`,
+// and the header above records why: the store's rows carry one or the other), so the
+// second spelling is part of the row — its declaration had only the first.
+type Row = { type: string; relationshipType?: string; source?: string; target?: string; confidence?: number; evidenceClass?: string; metadata?: Record<string, unknown> }
 
 function tally(rows: Row[] | undefined): Map<string, { n: number; files: Set<string>; conf: Map<string, number> }> {
   const out = new Map<string, { n: number; files: Set<string>; conf: Map<string, number> }>()

@@ -38,6 +38,12 @@
 // NO REGEX. Node types are compared with `===` and a Set; every name is a
 // node's `.text` or a `split(".")` slice.
 
+// The walk below reads `parent` and `startIndex`, so the cursor is a tree-sitter
+// Node and not the global (`DOM`) `Node` this file was silently getting: the two
+// type annotations named a class the module never imported, and TS resolved the
+// name to the only `Node` in scope. Type-only, so the emitted module is unchanged.
+import type { Node } from "web-tree-sitter"
+
 export interface TruthEdge {
   label: string
   from: string
