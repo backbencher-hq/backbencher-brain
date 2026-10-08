@@ -16,7 +16,20 @@ import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
-const here = path.dirname(new URL(import.meta.url).pathname)
+// fileURLToPath, NOT `new URL(import.meta.url).pathname`. The WHATWG URL
+// percent-encodes, so a repository path containing a space — and this one does
+// ("Default Project") — arrives here as `Default%20Project`, a directory that
+// does not exist. Every existsSync() below then answered about a path nobody can
+// cd into, and the gate reported:
+//
+//   VSIX not found at $HOME/Documents/Default%20Project/ishaq/...
+//
+// which reads like a missing build artifact rather than a missing decode. The
+// same defect is present in ~100 other scripts; script/m62/verify-path-encoding.ts
+// now counts them so the sweep is visible instead of silent.
+import { fileURLToPath } from "node:url"
+
+const here = path.dirname(fileURLToPath(import.meta.url))
 const resultsDir = path.join(here, "..", "..", "validation", "m25", "results")
 const vsix = path.join(here, "bb-lsp-vscode-0.1.0.vsix")
 
