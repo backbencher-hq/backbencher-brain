@@ -291,3 +291,22 @@ ide/zed/bb-lsp/target/
 # run-fixtures treats a subdirectory of fixtures/<lang>/ as a fixture group, so writing
 # them under fixtures/dart/generated/ turned 14 derived files into 14 phantom
 # "missing expectation file" failures.
+
+# fsharp lane: the walk's raw row dumps (~248 MB over 7 passes) stay OUT of git —
+# same programme rule 7 as the java-ontology-census note above. They are generated
+# measurement state, not source, and `git` stores a gzip blob as-is, so committing
+# them costs every clone forever.
+#
+# What IS committed instead: the probe scripts that produce and price them (the
+# method), the run logs, the small explain/idx artifacts, and
+# .tmp-probe/fs-verdict-state/MANIFEST.md — which carries every dump's byte count,
+# line count and sha256, plus the env vars that regenerate it.
+#
+# UNRESOLVED: three of the seven ARE cited by name from tracked source
+# (rows.ndjson and rows-pass4.ndjson by script/m14/fsharp-mutants.ts;
+# rows-pass5-meta.ndjson by script/m14/fsharp-mutants.ts and
+# src/ast/real-fsharp-analyzer.ts), so a number that shipped in a commit message
+# cannot be re-derived from a fresh clone. Gzipped they are 11.6 MB, not 141 MB.
+# Add with `git add -f` if the programme chooses to pin cited evidence; this rule
+# exists so that choice is deliberate rather than a `git add -A` accident.
+.tmp-probe/fs-verdict-state/*.ndjson
