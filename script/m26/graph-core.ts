@@ -994,7 +994,33 @@ export function renderHubList(grouped: GroupedHub, dom: GraphDom, group: "file" 
     if (!byKey.has(key)) byKey.set(key, [])
     byKey.get(key)!.push(item)
   }
-  const keys = [...byKey.keys()].sort()
+  // M26.H1: the external bucket is rendered LAST.
+  //
+  // "(external)" is a LABEL this renderer invents for an entry with no file,
+  // not a path — and the keys were sorted with a plain `.sort()`, which puts it
+  // FIRST because "(" precedes every letter. On the owner's real panel that
+  // meant `(EXTERNAL) · 39` of `Buffer`, `Number`, `Promise`, `parse`, `cwd`
+  // rendered above every symbol of their own code: the answer to "what does
+  // this call in MY code" sat below a screen of standard library.
+  //
+  // This is an ORDERING change and deliberately not a filter. Those external
+  // edges are real (`traverseGraph` genuinely calls `floor`, `max`, `min`,
+  // `join`) and they are not the store's "noise" — `isNoiseSymbolName` covers
+  // index artifacts (anonymous placeholders, keywords indexed as symbols,
+  // absolute paths used as names), none of which these are. A hop through
+  // `max` to reach an answer is real structure; deleting it would be a lie
+  // about the graph. So nothing is dropped, nothing is duplicated, and the gate
+  // proves the row set is byte-identical.
+  //
+  // Internal groups keep their alphabetical order among themselves; only the
+  // external bucket moves. A graph of nothing but externals still renders them.
+  const EXTERNAL_GROUP_KEY = "(external)"
+  const keys = [...byKey.keys()].sort((a, b) => {
+    const aExternal = a === EXTERNAL_GROUP_KEY
+    const bExternal = b === EXTERNAL_GROUP_KEY
+    if (aExternal !== bExternal) return aExternal ? 1 : -1
+    return a.localeCompare(b)
+  })
   for (const key of keys) {
     const g = dom.create("div")
     g.addClass("bb-hub-group")

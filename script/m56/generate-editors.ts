@@ -310,7 +310,13 @@ const integrations = [
     languages: zedLanguages,
     configFile: "ide/zed/bb-lsp/extension.toml",
     launch: numbered(read("ide/zed/bb-lsp/README.md"), "## Resolution order").join(" "),
-    install: "zed --install-extension <checkout>/ide/zed/bb-lsp",
+    // NOT a command. Zed's dev-extension install is a GUI flow (Extensions →
+    // Install Dev Extension → pick the folder) and automation cannot open that
+    // picker on this machine. Publishing `zed --install-extension …` sent readers
+    // after a command they cannot run; the owner's own attempt hit exactly that.
+    install:
+      "Extensions (bottom-left) → Install Dev Extension → <checkout>/ide/zed/bb-lsp" +
+      "  (a GUI flow; there is no CLI for this on this machine)",
   },
   {
     id: "helix",

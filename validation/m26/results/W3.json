@@ -8,7 +8,7 @@
   "failed": 1,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "currentCommit": "902d05720502f70a11044a6587d8fd9799009ad9",
   "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
   "sourceFingerprint": "9b0029694309a09c722d50fa1e14bd270888a6d32f7f6b233da5102a0799bf5d",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -19,7 +19,7 @@
   ],
   "evidenceFile": "W3.json",
   "pairsFile": "W3-pairs.json",
-  "generatedAt": "2026-10-05T22:31:35.134Z",
+  "generatedAt": "2026-10-08T11:14:17.260Z",
   "fixturePairs": [
     {
       "source": "kotlin",
@@ -39,7 +39,7 @@
   "machineReality": {
     "dir": "$HOME/.bb/projects",
     "present": true,
-    "scanned": 783,
+    "scanned": 835,
     "skipped": 0
   },
   "storedPairs": [
@@ -7095,7 +7095,7 @@
       "database": "d59fa944541934867b930f3e87bcf901035a25a7"
     }
   ],
-  "realDbsScanned": 783,
+  "realDbsScanned": 835,
   "limitations": [
     "Launch-language pairs with no stored rows are declared absent; per-machine reality is recorded here, not in the byte-gated doc.",
     "Coverage scan reads real project dbs read-only; unreadable/absent dbs are skipped and counted in machineReality.",
@@ -7103,7 +7103,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:31:35.135Z",
-    "contentSha256": "61d16bac018873bab2878e65f93f37f884410936bc6ecdfdd203ca4601d300bd"
+    "sealedAt": "2026-10-08T11:14:17.260Z",
+    "contentSha256": "86421efb9f53da816e2b237bacdf4a182a39ca31f85a146cd9df02bca87d7b64"
   }
 }
