@@ -1841,17 +1841,32 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       return null
     }
     /**
-     * The type a READ/CALL head names: `this` -> the enclosing type, `super` -> its base,
-     * a type name -> itself, a field -> the type the field is declared with. Anything else
-     * (a call result, an index expression, a prefix alias) has no owner this run can point
+     * A declared type name this pass can POINT AT, or undefined. `Widget?` is the same
+     * declaration as `Widget` (the operand of `?` is the type), and a generic or record
+     * type is NOT reduced here — `List<int>` names a declaration whose members this pass
+     * would then have to resolve through arguments it has not read, so it declines.
+     */
+    const plainTypeName = (text: string | undefined | null): string | undefined => {
+      const leaf = String(text ?? "").replace(/\?+$/, "")
+      return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(leaf) ? leaf : undefined
+    }
+
+    /**
+     * The type a READ/CALL head names, in the order Dart resolves an unqualified name:
+     * a LOCAL/PARAMETER binding shadows a field, which shadows nothing else this pass
+     * knows. `this` -> the enclosing type, `super` -> its base, a capitalized name -> the
+     * type it spells, a field -> the type the field is declared with. Anything else (a
+     * call result, an index expression, a prefix alias) has no owner this run can point
      * at, and returns null so the target stays the bare leaf the source wrote.
      */
-    const headOwner = (head: Node | null, enclosing: string | null): string | null => {
+    const headOwner = (head: Node | null, enclosing: string | null, localTypes: Map<string, string>): string | null => {
       const t = head?.type
       if (t === "this") return enclosing
       if (t === "super") return superByClass.get(enclosing ?? "") ?? null
       const text = this.headNameText(head)
       if (text === null) return null
+      const localType = localTypes.get(text)
+      if (localType) return localType
       const fieldType = fieldTypeByField.get(`${enclosing ?? ""}.${text}`)
       if (fieldType) return fieldType
       return text
@@ -1952,8 +1967,9 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       current: string | null,
       owner: string | null,
       locals: Set<string>,
+      localTypes: Map<string, string>,
       insideCollected: boolean,
-    ): [string | null, string | null, Set<string>, boolean] => {
+    ): [string | null, string | null, Set<string>, Map<string, string>, boolean] => {
       const prev = current
       const prevOwner = owner
       const t = n.type
@@ -1964,6 +1980,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // declarators plus the formal parameters of the preceding signature
       // sibling (Dart puts the body AFTER the signature in the container).
       let childLocals = locals
+      let childLocalTypes = localTypes
       // Whether a STRICT ancestor's whole subtree has already been collected into
       // `locals`. See the block below for why that makes a re-walk redundant.
       let childInsideCollected = insideCollected
@@ -1994,9 +2011,16 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         // COPY `locals` before merging. Writing into `locals` in place would leak this
         // scope's bindings back into its parent's set.
         let bound: Set<string> | null = null
+        // DECLARED TYPES for those bindings, collected in the same place and merged the
+        // same way. A receiver whose type is written in the signature or the declaration
+        // (`void run(OrderRepository r)`, `final Base b = Base();`) is what makes a call
+        // target determinate; the NAME set alone cannot tell `r` from a local.
+        let boundTypes: Map<string, string> | null = null
         if (!insideCollected) {
           const own = this.collectDartLocals(n)
           if (own.size > 0) bound = own
+          const ownTypes = this.collectDartLocalTypes(n)
+          if (ownTypes.size > 0) boundTypes = ownTypes
         }
         // A signature SIBLING is not a descendant, so its parameters are NOT implied by
         // the ancestor's collection. This walk stays unconditional — it is over a
@@ -2008,10 +2032,19 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!bound) bound = new Set<string>()
             for (const nm of sigNames) bound.add(nm)
           }
+          const sigTypes = this.collectDartParameterTypes(sig)
+          if (sigTypes.size > 0) {
+            if (!boundTypes) boundTypes = new Map<string, string>()
+            for (const [nm, ty] of sigTypes) boundTypes.set(nm, ty)
+          }
         }
         if (bound) {
           childLocals = new Set(locals)
           for (const nm of bound) childLocals.add(nm)
+        }
+        if (boundTypes) {
+          childLocalTypes = new Map(localTypes)
+          for (const [nm, ty] of boundTypes) childLocalTypes.set(nm, ty)
         }
         if (!insideCollected) childInsideCollected = true
       }
@@ -2169,7 +2202,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             // `super.go()` -> super); for a longer chain it is the link immediately before
             // the leaf, and a lowercase link (`a.b.c()`) does not name a type, so the
             // lookup refuses it and the target stays the bare leaf.
-            const ownerCand = links.length > 1 ? before : headOwner(head, owner)
+            const ownerCand = links.length > 1 ? before : headOwner(head, owner, localTypes)
             const qualified = qualifiedTarget(ownerCand, method)
             relationships.push({
               source: callSource,
@@ -2217,7 +2250,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             } else {
               // `Color.red`, `M.off`, `C.total`, `this.count`, `b.count` — the source
               // names the owner and the analyzer used to drop it (see `qualifiedTarget`).
-              const qualified = qualifiedTarget(headOwner(head, owner), member)
+              const qualified = qualifiedTarget(headOwner(head, owner, localTypes), member)
               relationships.push({
                 source: callSource,
                 target: qualified ?? member,
@@ -2573,7 +2606,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // What this node's children inherit. `current`/`owner` are this node's resolved
       // values and `childLocals`/`childInsideCollected` its merged sets — exactly the four
       // arguments the recursive form passed down.
-      return [current, owner, childLocals, childInsideCollected]
+      return [current, owner, childLocals, childLocalTypes, childInsideCollected]
     }
 
     /**
@@ -2590,14 +2623,15 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       current: string | null,
       owner: string | null,
       locals: Set<string>,
+      localTypes: Map<string, string>,
       insideCollected: boolean,
     ): void => {
-      const work: Array<[Node, string | null, string | null, Set<string>, boolean]> = [
-        [root, current, owner, locals, insideCollected],
+      const work: Array<[Node, string | null, string | null, Set<string>, Map<string, string>, boolean]> = [
+        [root, current, owner, locals, localTypes, insideCollected],
       ]
       while (work.length > 0) {
-        const [n2, cur, own, loc, inside] = work.pop()!
-        const [cur2, own2, loc2, inside2] = visitNode(n2, cur, own, loc, inside)
+        const [n2, cur, own, loc, types, inside] = work.pop()!
+        const [cur2, own2, loc2, types2, inside2] = visitNode(n2, cur, own, loc, types, inside)
         // MATERIALISE THE CHILD LIST ONCE, then iterate it. Indexing `n2.namedChild(i)` in
         // a loop is a trap rather than a style choice, and it is the reason this file cost
         // 7.6 minutes: `node --cpu-prof` on a 31,905-node slice put **92% of the run inside
@@ -2613,12 +2647,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         const kids: (Node | null)[] = n2.namedChildren ?? []
         for (let i = kids.length - 1; i >= 0; i--) {
           const child = kids[i]
-          if (child) work.push([child, cur2, own2, loc2, inside2])
+          if (child) work.push([child, cur2, own2, loc2, types2, inside2])
         }
       }
     }
 
-    processNode(node, null, null, new Set<string>(), false)
+    processNode(node, null, null, new Set<string>(), new Map<string, string>(), false)
   }
 
   // ============================================================================
@@ -3197,6 +3231,96 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
    * member read (CGD15 parity: a local is not a member, #299 — a false edge is
    * worse than a missing one). O(subtree), no regex.
    */
+  /**
+   * THE DECLARED TYPE OF EVERY LOCAL A SUBTREE BINDS (`collectDartLocals`' twin).
+   *
+   * The NAME set answers "is this a local", which is what suppresses a false member read.
+   * It cannot answer "what IS this local", which is what makes a call target determinate:
+   * `r.getOrders()` with `void run(OrderRepository r)` names `OrderRepository.getOrders`, and
+   * without the type the edge can only say `getOrders` — the bare-name population the
+   * incoming gate counts as ambiguous whenever any other declaration in the PROJECT shares
+   * the name.
+   *
+   * Two shapes, and both are read off the GRAMMAR rather than guessed from text:
+   *
+   *   local_variable_declaration   the declared type is a direct child (`extractFieldType`,
+   *                                the same reader fields use — `Baz y = Baz();`). It is
+   *                                `undefined` for `var x = Widget();`, so the fallback below
+   *                                is not a convenience: it is the only reading available.
+   *   initialized_variable_definition
+   *                                no declared type, so the INITIALIZER names it when it is a
+   *                                construction (`Widget()`), which is a fact about the source
+   *                                and not an inference about the program.
+   *
+   * `Widget? w` is deliberately NOT reduced (`extractFieldType` does not know the nullable
+   * wrapper) and a generic type is refused by `plainTypeName` — a receiver typed `List<int>`
+   * resolves through a type argument this pass has not read, and naming the wrong declaration
+   * is worse than naming none.
+   */
+  private collectDartLocalTypes(root: Node): Map<string, string> {
+    const out = new Map<string, string>()
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      const t = n.type
+      if (t === "local_variable_declaration" || t === "declaration" || t === "initialized_variable_definition") {
+        const name =
+          n.childForFieldName?.("name")?.text ??
+          this.findChildByType(n, "initialized_variable_definition")?.childForFieldName?.("name")?.text
+        if (name && !out.has(name)) {
+          const explicit = this.extractFieldType(n, n)
+          const typeName = explicit ? (String(explicit).replace(/\?+$/, "")) : this.constructedTypeName(n)
+          if (typeName && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(typeName)) out.set(name, typeName)
+        }
+      }
+      for (const c of n.namedChildren ?? []) if (c) stack.push(c)
+    }
+    return out
+  }
+
+  /** The type a variable's INITIALIZER constructs: `var x = Widget()` -> `Widget`.
+   *  `new`/`const` expressions and a bare capitalized callee are all constructions in
+   *  Dart, and a lowercase callee is a function call whose RESULT type this pass has not
+   *  read — so it returns undefined rather than the callee's name. */
+  private constructedTypeName(n: Node): string | undefined {
+    const value = n.childForFieldName?.("value")
+    if (!value) return undefined
+    const head =
+      value.type === "constructor_invocation" || value.type === "new_expression" ||
+      value.type === "const_object_expression"
+        ? this.findChildByType(value, "type_identifier")
+        : value.type === "identifier" || value.type === "type_identifier"
+          ? value
+          : null
+    const text = head?.text
+    if (!text || !/^[A-Z]/.test(text)) return undefined
+    return text
+  }
+
+  /**
+   * PARAMETER DECLARED TYPES, from the signature node the body follows.
+   *
+   * `extractParameters` is the reader the symbol payload already uses (and its fixture
+   * asserts), so a parameter is typed here exactly as it is typed on the symbol — one
+   * reader, two consumers. A parameter whose type is not a plain identifier contributes
+   * nothing, which is the conservative half of the rule.
+   */
+  private collectDartParameterTypes(sig: Node): Map<string, string> {
+    const out = new Map<string, string>()
+    let params: any[] = []
+    try {
+      params = (this.extractParameters(sig) as any[]) ?? []
+    } catch {
+      return out
+    }
+    for (const p of params) {
+      const name = String(p?.name ?? "")
+      const typeName = String(p?.type ?? "").replace(/\?+$/, "")
+      if (name && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(typeName)) out.set(name, typeName)
+    }
+    return out
+  }
+
   private collectDartLocals(root: Node): Set<string> {
     const out = new Set<string>()
     const stack: Node[] = [root]
