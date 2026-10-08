@@ -4602,8 +4602,84 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
     // an earlier SQL spelling correlated the UPDATE target from a subquery's ORDER
     // BY, which does not resolve and threw SQLITE_ERROR inside a catch that hid it.
     // Both are why the location and the set-based shape are load-bearing.
+    //
+    // ── WHY THIS IS NO LONGER A WINDOW FUNCTION ──
+    //
+    // The ranking key above is right and the choice of ranking is not in
+    // question. What changed is that the window function computes it the
+    // expensive way: it joins EVERY relationship to EVERY symbol sharing its
+    // target name, materialises all R × C pairs, and sorts them to keep R of them.
+    // C — the number of candidates for one name — is not constant in project
+    // size. Popular names accumulate one candidate per file (`constructor` has
+    // 104 at 200 files and 329 at 800 on the measured pools), so C grows with N
+    // and the pass becomes O(rels × N).
+    //
+    // MEASURED on nested pools of this repository's own source files, fresh
+    // index per tier (`script/perf/make-pools.sh`):
+    //
+    //   files  relationships  candidate pairs  pairs/rel   resolve ms
+    //      47          7,920           8,598         1.09           246
+    //     196         61,333         175,869         2.87         4,335
+    //     396         90,971         620,821         6.82        10,846
+    //     796        121,782       1,518,309        12.47        20,395
+    //
+    // The pairs/relationship column is the term that grows: 1.09 → 12.47 over a
+    // 17× increase in files. It is a property of the DATA, counted from the
+    // written index, so it is not a timing artefact — and it is the first check
+    // in script/perf/verify-scaling-linear.ts, whose before-arm record
+    // (validation/m60/results/scaling-linear.before.json) fails at 2.64× on a
+    // 4× tier increase.
+    //
+    // ── WHY THE LINEAR PLAN IS THE SAME ANSWER, NOT A DIFFERENT ONE ──
+    //
+    // Three observations about the key make the expensive part unnecessary:
+    //
+    //   1. `COALESCE(s.is_declaration, 0) ASC` depends on the NAME, not on the
+    //      relationship. Every candidate at a higher tier loses to every
+    //      candidate at the minimum tier, so only minimum-tier candidates can
+    //      win, and one GROUP BY fixes the tier per name.
+    //   2. Within one file the language term is CONSTANT: `f.language` is a
+    //      column of brain_file and brain_file.id is the primary key, so every
+    //      candidate in a file shares it. The third key cannot reorder
+    //      same-file candidates, so among them the winner is the lowest id.
+    //   3. Therefore the winner is one of exactly three candidates, in order:
+    //        (a) lowest id at minimum tier, in the relationship's own file;
+    //        (b) failing (a), lowest id at minimum tier, in the relationship's
+    //            own language;
+    //        (c) failing both, lowest id at minimum tier.
+    //      Three indexed lookups and a COALESCE return exactly that.
+    //
+    // PROVEN, not argued: script/perf/probe-i13-equivalence.mjs computes this
+    // plan and the window plan on the same index and compares every
+    // (rel_id → target_symbol_id) assignment. Measured at all four tiers, both
+    // as stored and with the declaration tier given real values: 0
+    // disagreements, and the same row COUNT (8,165 / 35,151 / 56,967 / 80,275) —
+    // the two plans cover the same population, which is what makes the
+    // element-wise comparison mean anything. On the as-stored corpus the
+    // declaration tier cannot discriminate (every symbol has is_declaration
+    // NULL: 27,121 of 27,121 at n800), so the probe also runs a NEGATIVE
+    // CONTROL — a plan that drops the tier term — and reports that the control is
+    // caught (13,609 disagreements at n800) rather than reporting a clean pass
+    // it could not earn.
+    //
+    // ── WHAT IS LOAD-BEARING IN THE SQL BELOW ──
+    //
+    // The `IS NOT NULL` filter on the pick. The window plan emits a row only when
+    // a candidate MATCHED, and the apply step is `UPDATE … FROM _i13_pick`, so a
+    // row carrying a NULL target would write NULL over a target strategies 1/2/4
+    // had already resolved and un-bind a live edge. `_i13_best_any` is populated
+    // for every name that has at least one symbol, so the COALESCE is NULL
+    // exactly when no symbol carries the target name — which is precisely the
+    // no-candidate case. Measured row counts confirm the two shapes agree: at
+    // n200 the pick is 35,151 rows against 50,649 in-scope relationships, and
+    // 35,151 is exactly the number of in-scope relationships that have a
+    // same-named symbol.
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_src`)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_pick`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_tier`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_file`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_lang`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_any`)
     // The source file and language the ranking depends on, materialised once
     // because they cannot be correlated out of a subquery's ORDER BY here.
     rawDb.run(`
@@ -4614,25 +4690,74 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
       LEFT JOIN brain_file sf ON sf.id = src.file_id
       WHERE r.project_id = '${projectId}'
     `)
+    // (1) The winning declaration tier per name. Observation 1 above.
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_tier AS
+      SELECT name, MIN(COALESCE(is_declaration, 0)) AS tier
+      FROM brain_symbol WHERE project_id = '${projectId}'
+      GROUP BY name
+    `)
+    rawDb.run(`CREATE UNIQUE INDEX temp._i13_tier_name ON _i13_tier(name)`)
+    // (2a) Observation 2 + 3a: lowest id at minimum tier, within one file. The
+    // join on `t.tier` is what restricts candidates to the tier that can win, so
+    // a higher-tier symbol cannot occupy a best_* row even when it is the lowest
+    // id in its file.
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_best_file AS
+      SELECT s.name AS name, s.file_id AS file_id, MIN(s.id) AS symbol_id
+      FROM brain_symbol s
+      JOIN _i13_tier t ON t.name = s.name AND t.tier = COALESCE(s.is_declaration, 0)
+      WHERE s.project_id = '${projectId}'
+      GROUP BY s.name, s.file_id
+    `)
+    rawDb.run(`CREATE UNIQUE INDEX temp._i13_best_file_key ON _i13_best_file(name, file_id)`)
+    // (2b) Observation 3b: lowest id at minimum tier, within one language. The
+    // key is the COALESCEd language, so the '' bucket exists and '' matches ''
+    // — the same comparison the window key made.
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_best_lang AS
+      SELECT s.name AS name, COALESCE(f.language, '') AS lang, MIN(s.id) AS symbol_id
+      FROM brain_symbol s
+      JOIN _i13_tier t ON t.name = s.name AND t.tier = COALESCE(s.is_declaration, 0)
+      LEFT JOIN brain_file f ON f.id = s.file_id
+      WHERE s.project_id = '${projectId}'
+      GROUP BY s.name, COALESCE(f.language, '')
+    `)
+    rawDb.run(`CREATE UNIQUE INDEX temp._i13_best_lang_key ON _i13_best_lang(name, lang)`)
+    // (2c) Observation 3c: lowest id at minimum tier, no further preference.
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_best_any AS
+      SELECT s.name AS name, MIN(s.id) AS symbol_id
+      FROM brain_symbol s
+      JOIN _i13_tier t ON t.name = s.name AND t.tier = COALESCE(s.is_declaration, 0)
+      WHERE s.project_id = '${projectId}'
+      GROUP BY s.name
+    `)
+    rawDb.run(`CREATE UNIQUE INDEX temp._i13_best_any_key ON _i13_best_any(name)`)
+    // The three LEFT JOINs are the plan. Each is an index lookup on a UNIQUE
+    // index, so the cost per relationship is O(log symbols) instead of
+    // O(candidates for this name), and the three tables are O(symbols) to build.
+    //
+    // `bf.file_id = t.src_file` cannot match when `t.src_file IS NULL` (the
+    // source symbol is missing — 26,522 rows on the n800 index), and that is the
+    // right answer rather than an accident: the window key compared
+    // `s.file_id = NULL`, which is NULL, and SQLite sorts NULL last under DESC,
+    // so no candidate claimed the same-file tier there either.
     rawDb.run(`
       CREATE TEMP TABLE _i13_pick AS
-      SELECT rel_id, target_symbol_id FROM (
-        SELECT t.rel_id AS rel_id, s.id AS target_symbol_id,
-               ROW_NUMBER() OVER (PARTITION BY t.rel_id
-                 ORDER BY COALESCE(s.is_declaration, 0) ASC,
-                          (s.file_id = t.src_file) DESC,
-                          (COALESCE(f.language, '') = t.src_lang) DESC,
-                          s.id ASC) AS rn
-        FROM _i13_src t
-        JOIN brain_relationship r ON r.id = t.rel_id
-        JOIN brain_symbol s ON s.project_id = '${projectId}' AND s.name = r.target_external
-        LEFT JOIN brain_file f ON f.id = s.file_id
-        WHERE r.project_id = '${projectId}'
-          AND r.target_external IS NOT NULL
-          AND r.relationship_type <> 'contains'
-          AND instr(r.target_external, '.') = 0
-          AND instr(r.target_external, ':') = 0
-      ) WHERE rn = 1
+      SELECT t.rel_id AS rel_id,
+             COALESCE(bf.symbol_id, bl.symbol_id, ba.symbol_id) AS target_symbol_id
+      FROM _i13_src t
+      JOIN brain_relationship r ON r.id = t.rel_id
+      LEFT JOIN _i13_best_file bf ON bf.name = r.target_external AND bf.file_id = t.src_file
+      LEFT JOIN _i13_best_lang bl ON bl.name = r.target_external AND bl.lang = t.src_lang
+      LEFT JOIN _i13_best_any  ba ON ba.name = r.target_external
+      WHERE r.project_id = '${projectId}'
+        AND r.target_external IS NOT NULL
+        AND r.relationship_type <> 'contains'
+        AND instr(r.target_external, '.') = 0
+        AND instr(r.target_external, ':') = 0
+        AND COALESCE(bf.symbol_id, bl.symbol_id, ba.symbol_id) IS NOT NULL
     `)
     // Without this the apply step degrades to a scan per row — the 164 s above.
     rawDb.run(`CREATE UNIQUE INDEX temp._i13_pick_rel ON _i13_pick(rel_id)`)
@@ -4659,6 +4784,10 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
     `)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_src`)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_pick`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_tier`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_file`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_lang`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_best_any`)
 
     // Cross-language normalization (polyglot fixture finding, M26 addendum):
     // this pass is the one that resolves forward references in the default
