@@ -15,6 +15,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
+import { claimFields, lintBanned } from "./evidence-harness"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const M14 = path.join(ROOT, "validation", "m14")
@@ -25,19 +26,38 @@ const REQUIRED_BASELINES = [
   "fixture-baseline.json",
   "differential-baseline.json",
 ]
-// Contract §1 terms — checked over artifact prose (not code identifiers).
-const BANNED = [
-  /\bperfect(ion)?\b/i, /\bcomplete[d]?\b/i, /\bproduction-ready\b/i,
-  /\bbulletproof\b/i, /\brock-solid\b/i, /\bbattle-tested\b/i,
-  /\bextensively tested\b/i, /\bthoroughly reviewed\b/i,
-  /\bshould work\b/i, /\bexpected to pass\b/i,
-]
 
 let failures = 0
 function fail(msg: string) { console.error(`HONESTY-GATE FAIL: ${msg}`); failures++ }
 function pass(msg: string) { console.log(`ok   ${msg}`) }
 
-// 1. banned vocabulary in M14 prose artifacts
+// 1. banned vocabulary (contract §1)
+//
+// The rule has two scopes because M14 keeps two kinds of file, and a lint that
+// cannot tell them apart fails on the evidence it exists to check:
+//
+//   - PROSE DOCUMENTS (.md): the whole file is an argument, so the whole file is
+//     linted. A verdict word in a plan, a review or a ledger is a claim.
+//   - EVIDENCE JSON: the agent-authored CLAIM fields only, through the same
+//     predicate the evidence harness enforces on every artifact it writes
+//     (`claimFields` + `lintBanned`, imported rather than re-spelled, so the two
+//     implementations cannot drift into two rules).
+//
+// Why JSON is not linted as raw text, measured at eb15aa887 over the 2,133 JSON
+// files under validation/m14: raw text reports 35 hits, and every one of them is
+// text the artifact is CHECKING rather than claiming — corpus identifiers
+// (`_comp_complete_longopt`, `AutoCompleteAtCursorImpl`, `IncompleteMatchInAsync01.fs`,
+// `ComputeIsComplete#`), a version string (`12.0.0-clean-ast-complete`), two
+// check IDS (`census-js-reserved-base-complete`), a quoted third party
+// (grammar-pins' `upstreamClaimVsMeasurement`: "Upstream's README says \"The
+// grammar should be complete\""), and prose explaining a DEFECT (html fixture:
+// "a page it cannot reason about at all scored PERFECT"). None is a verdict
+// about the work: each uses the word while naming what measured it. The harness
+// wrote that exclusion down when it first implemented §1 — "a corpus comment
+// saying 'complete the loop' must not fail the gate" — and it is the only
+// reading under which an artifact may quote the corpus it measures. The canaries
+// below prove the narrowed rule still fails on a claim and still passes a
+// payload that merely contains the vocabulary.
 function collectProse(dir: string, out: string[] = []) {
   if (!fs.existsSync(dir)) return out
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -47,19 +67,51 @@ function collectProse(dir: string, out: string[] = []) {
   }
   return out
 }
+function claimHits(a: unknown): string[] {
+  const hits = new Set<string>()
+  for (const s of claimFields(a)) for (const h of lintBanned(s)) hits.add(h)
+  return [...hits]
+}
 for (const file of collectProse(M14).concat(collectProse(path.join(ROOT, "docs")).filter(f => f.includes("M14")))) {
   // The contract itself quotes banned terms to define them, and the ledger
   // title ("Completeness Ledger") is a proper noun naming the specification,
   // not a verdict claim — both exempted by design.
   if (file.endsWith("M14-HONESTY-CONTRACT.md")) continue
   if (file.endsWith("M14-COMPLETENESS-LEDGER.md")) continue
-  const text = fs.readFileSync(file, "utf8")
-  for (const re of BANNED) {
-    const m = text.match(re)
-    if (m) fail(`banned term "${m[0]}" in ${path.relative(ROOT, file)}`)
+  const rel = path.relative(ROOT, file)
+  if (file.endsWith(".md")) {
+    for (const hit of lintBanned(fs.readFileSync(file, "utf8"))) fail(`banned term "${hit}" in ${rel}`)
+    continue
   }
+  // Fixture JSON is allowed to be invalid (validation/m14/fixtures/json carries
+  // two files whose whole purpose is a parse error) and a fixture is input, not
+  // a claim, so an unparseable file is skipped rather than failed.
+  let parsed: unknown
+  try { parsed = JSON.parse(fs.readFileSync(file, "utf8")) } catch { continue }
+  for (const hit of claimHits(parsed)) fail(`banned term "${hit}" in a claim field of ${rel}`)
 }
-pass("banned-vocabulary lint over validation/m14 + M14 docs")
+pass("banned-vocabulary lint over validation/m14 + M14 docs (prose whole, JSON claim fields)")
+
+// The rule has to fail on a claim, pass a payload, and fail on prose — proven
+// here rather than asserted, so a narrowing that went one step too far reports
+// itself as a blind gate instead of a green one.
+{
+  const claimCanary = {
+    title: "this artifact certifies the whole analyzer layer",
+    checks: [{ id: "c1", description: "coverage check", detail: "the analyzer is bulletproof and complete" }],
+    limitations: ["none, it is production-ready"],
+  }
+  if (claimHits(claimCanary).length === 0) fail("banned-vocabulary rule is blind: a banned term in a title/check detail/limitation was not reported")
+  const payloadCanary = {
+    title: "a title with no verdict in it",
+    checks: [{ id: "c1", description: "reviewed corpus sample", status: "pass" }],
+    data: { payload: { note: "the corpus comment says complete the loop", symbols: ["autoComplete", "IncompleteMatch"] } },
+  }
+  const leaked = claimHits(payloadCanary)
+  if (leaked.length) fail(`banned-vocabulary rule reads data payloads (${leaked.join(", ")}) — a corpus quote would become a gate failure`)
+  if (lintBanned("the milestone is complete").length === 0) fail("banned-vocabulary rule is blind on prose documents")
+}
+pass("banned-vocabulary rule discriminates (claim reported, corpus payload and quoted third party not)")
 
 // 2+3. evidence files valid and deep-checked
 for (const id of REQUIRED_EVIDENCE) {
