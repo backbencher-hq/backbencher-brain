@@ -712,7 +712,25 @@ async function main() {
     checks: [
       { id: "prove-java", description: "3 known Java dead branches detected", status: "pass", detail: "record_parameters, record_declaration_body, interface_type_list" },
       { id: "oracle-vs-reality", description: "oracle enumeration validated against a real runtime parse tree", status: "pass", detail: "dart probe: all parse-tree types present in oracle enum" },
-      { id: "dead-literal-gate", description: `per-literal shrink-only register with reasons (${passing}/${LANGUAGES.length} languages pass)`, status: "pass" },
+      // The status is the VERDICT's, not a literal `"pass"`. It was a literal until
+      // 2026-10-08, and the artifact therefore claimed this check passed while the
+      // very same run exited 3 — measured at b4cdf43c6: `status: "pass"` on
+      // disk beside "7 unregistered, 6 count regression(s)" in the log. A check
+      // whose text cannot disagree with the register it summarizes is the
+      // self-certification the honesty contract forbids, and it made the one line
+      // a reader looks at the one line that was always green.
+      {
+        id: "dead-literal-gate",
+        description: `per-literal shrink-only register with reasons (${passing}/${LANGUAGES.length} languages pass)`,
+        status: verdict.ok ? "pass" : "fail",
+        detail: verdict.ok
+          ? `${Object.keys(currentRun).length} language(s), every dead literal registered with a reason`
+          : [
+              ...verdict.unregistered.map((u) => `unregistered ${u.lang} ${u.kind} ${JSON.stringify(u.literal)}`),
+              ...verdict.countRegressions.map((r) => `regression ${r.lang} ${r.from}->${r.to}`),
+              ...verdict.shrunk.map((s) => `unrecorded repayment ${s.lang} ${JSON.stringify(s.literal)}`),
+            ].slice(0, 10).join("; "),
+      },
       { id: "gate-self-test", description: "the gate is proven able to fail: 8 negatives incl. a NEW literal under an improved count, an unreasoned entry, and an unrecorded repayment", status: "pass" },
     ],
     limitations: [
