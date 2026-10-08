@@ -72,6 +72,19 @@ const LEDGER = path.join(ROOT, "validation/m48/ledger.json")
 const ledger = JSON.parse(readFileSync(LEDGER, "utf8")) as { issues: Array<Record<string, any>> }
 
 const EXPECTED = ["G1", "P1", "P2", "P3", "P4", "C1", "C2", "D1", "W1", "H1", "L1"]
+/**
+ * One ledger row. `Issue` was referenced at the two sites below and declared
+ * nowhere in this file, and no typecheck covered `script/`, so nothing noticed.
+ * The shape is taken from what this file actually reads: the ledger is parsed as
+ * `Array<Record<string, any>>` on the line above, and only `code`, `status` and
+ * `evidence` are ever read off a row.
+ */
+interface Issue {
+  code: string
+  status: string
+  evidence?: Record<string, unknown>
+}
+
 const ledgerIssues: Issue[] = EXPECTED.map((code) => {
   const row = (ledger.issues ?? []).find((i) => i.code === code)
   return { code, status: row?.status ?? "unknown", evidence: row?.evidence }

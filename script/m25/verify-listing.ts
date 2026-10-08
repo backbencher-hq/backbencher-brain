@@ -26,7 +26,6 @@ import { tmpdir } from "node:os"
 import { createHash } from "node:crypto"
 import { join, resolve } from "node:path"
 import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
-import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const README_PATH = join(ROOT, "ide/vscode/README.md")

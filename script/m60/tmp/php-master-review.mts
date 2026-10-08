@@ -12,7 +12,7 @@
  *
  * Run: bun script/m60/tmp/php-master-review.mts [--full] [--json]
  */
-import { readFileSync } from "node:fs"
+import { readFileSync, readdirSync, statSync } from "node:fs"
 import { execSync } from "node:child_process"
 import path from "node:path"
 

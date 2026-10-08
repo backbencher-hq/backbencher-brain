@@ -165,5 +165,4 @@ writeFileSync(path.join(RESULTS, "P3-edge.json"), JSON.stringify(evidence, null,
 console.log(`\n${failed === 0 ? "VERIFIED" : "FAILED"}: ${passed}/${checks} checks, ${negatives.length} negatives`)
 process.exit(failed === 0 ? 0 : 1)
 
-import { writeFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"

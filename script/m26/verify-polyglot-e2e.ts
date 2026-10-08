@@ -191,14 +191,22 @@ async function main(): Promise<void> {
       const cli = await import(pathToFileURL(join(ROOT, "src/cli/index.ts")).href)
       const mProjectId = (cli.getProjectId as (p: string) => string)(p2Work)
       const prevData = process.env.BB_DATA_DIR
-      process.env.BB_DATA_DIR = mData
+      // Was `mData`, which is declared nowhere in this file. Node coerces
+      // `process.env.X = undefined` to the STRING "undefined", so this set the
+      // data dir to a directory named `undefined`, and line 201 then called
+      // `flaggedRows("undefined")`. That threw, the catch at the end of this block
+      // treats "a mutant that cannot even run" as caught, and so the M1 mutant
+      // check reported PASS without ever comparing the mutant against an honest
+      // build. The mutant indexes p2Work, so the directory belonging to it is
+      // p2Data — the same pairing used at line 141.
+      process.env.BB_DATA_DIR = p2Data
       try {
         await m.indexProjectParallel(mProjectId as never, p2Work, { skipPostProcessing: false })
       } finally {
         if (prevData === undefined) delete process.env.BB_DATA_DIR
         else process.env.BB_DATA_DIR = prevData
       }
-      const mutantRows = flaggedRows(mData).rows.length
+      const mutantRows = flaggedRows(p2Data).rows.length
       // Caught = the mutant LOSES the ts-js flags (0) that the honest build
       // produces (2) — i.e. the suite's P2 assertion would fail without the fix.
       check("M1: normalization mutant caught (ts-js flags drop to 0 without it)", mutantRows === 0, `mutant flagged=${mutantRows}`)

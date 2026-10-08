@@ -228,6 +228,16 @@ async function measurePopulation(
   resolveGraphRoot: (pid: string, name: string) => Promise<any>,
   traverseGraph: (pid: string, root: any, opts: any) => Promise<any>,
   projectId: string,
+  /**
+   * The caller's temp data directory, so this function can clean up after itself
+   * on its early-return path. It was not a parameter before: the one line that
+   * needed it referenced `dataDir`, which does not exist in this scope (it is a
+   * local of `main`, two hundred lines up). So on the `rows.length === 0` path
+   * the rmSync was unreachable behind a ReferenceError, thrown INSIDE the guard
+   * that exists precisely so the run bails out cleanly. The temp directory leaked
+   * every time, and the early return never actually returned.
+   */
+  dataDir: string,
 ): Promise<{ rows: any[]; measurements: RowMeasurement[]; roots: string[]; engineEdgeCache: Map<string, string[]> }> {
   const { deriveCallSiteAddress } = await import(pathToFileURL(path.join(ROOT, "src/intelligence/graph/line-address.ts")).href)
   const { addressLine0, isExactAddress } = await import(pathToFileURL(path.join(ROOT, "src/intelligence/graph/line-address.ts")).href)
@@ -416,7 +426,7 @@ async function main(): Promise<void> {
   check("every declared plant either landed or is reported as not-landed", plantedRows <= plants.length,
     `planted=${plantedRows} declared=${plants.length} classes=${[...new Set(plantedRowIds.values())].join(",")}`)
 
-  const { rows, measurements, roots, engineEdgeCache } = await measurePopulation(raw, plantedRowIds, resolveGraphRoot, traverseGraph, projectId)
+  const { rows, measurements, roots, engineEdgeCache } = await measurePopulation(raw, plantedRowIds, resolveGraphRoot, traverseGraph, projectId, dataDir)
 
   // --- REPORT -----------------------------------------------------------------
   const tally = (ms: RowMeasurement[]) => {
@@ -613,7 +623,7 @@ async function main(): Promise<void> {
   })
   const projectId2 = getProjectId(T2_ROOT)
   const raw2 = await BrainDatabase.getRawInstance(projectId2)
-  const pop2 = await measurePopulation(raw2, new Map(), resolveGraphRoot, traverseGraph, projectId2)
+  const pop2 = await measurePopulation(raw2, new Map(), resolveGraphRoot, traverseGraph, projectId2, dataDir)
   const tally2 = tally(pop2.measurements)
   const compared2 = pop2.measurements.filter((m) => !m.comparisonNotRun)
   console.log(`  ${pop2.measurements.length} stored calls rows, ${compared2.length} compared -> ${JSON.stringify(tally2)}`)
