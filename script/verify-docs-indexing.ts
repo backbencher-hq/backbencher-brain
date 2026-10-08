@@ -158,6 +158,7 @@ const docText = new Map<string, string>(DOC_FILES.map((f) => [f, read(f)]))
 const UNDOCUMENTED_ENV_ALLOWLIST: Record<string, string> = {
   BB_AUTO_REFRESH_MAX_FILES: "internal budget for the read-path auto-refresh; no user-facing effect and no CLI surface",
   BB_AUTO_REFRESH_MAX_BYTES: "internal budget for the read-path auto-refresh; no user-facing effect and no CLI surface",
+  BB_CLEAN_DIAG: "per-merge stderr trace inside the Clean analyzer (`real-clean-analyzer.ts` writes one `DIAG apply L…` line per symbol merge when set); a lane debug affordance with no indexing surface",
   BB_ENRICHMENT_MAX_ROWS: "internal cap on the enrichment phase; scaling guard, not a tuning knob",
   BB_FK_ENFORCE: "sqlite foreign_keys pragma toggle in src/storage/db.*.ts; a storage-layer integrity switch with no indexing surface",
   BB_INDEX_LOCK_CROSS_HOST_TTL_MS: "lock reclaim TTL across hosts; only meaningful in a multi-host setup with no user surface",
