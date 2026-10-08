@@ -4566,3 +4566,37 @@ edges / **1,171,014 resolved** (before-arm: 988,684) / 1,688,049 ambiguous / 859
 **231,752**, `uses` 194,072 -> **309,442**. Every other type is unmoved (`imports 0`, `exports 0`,
 `contains 169,829` — that arm predates this change). `overrides` held its 269,818 with 407
 owner-verified external claims and 15 REFUTED, and that is the number the next round has to move.
+
+## 2026-10-08 — a fixture that was green and asserted nothing
+
+`dart/nested-block-shadows-member` is named for one property: tell a NESTED local read from a
+MEMBER read. As committed (`02937fddc`) it did not contain a member read at all — its code began
+with `var value = 1;`, which in Dart shadows the field for the WHOLE body, so all three reads of
+`value` were local. Its two `forbidRelationships` rows named lines 20 and 22, which in that file
+are COMMENT lines, so they could not fire; and the surviving `expectRelationshipCount` of 1 was
+really pinning local-read DEDUP. The fixture was green the entire time, and its rationale —
+"two local reads and one member read … tell them apart" — was false about its own source.
+
+How it was found: pricing the `contains` round needed a dump of the fixture's real edges
+(`script/m14/tmp/dt-fixture-dump.ts`), and the dump showed one `uses run -> value` carrying
+`isLocalRead` and **no edge out of `run()` to `Box.value` at all**. A fixture cannot pass by
+testing a property its file cannot express, so the file could not be what the header described.
+
+**The repair is in the source AND the pins, not a patch on the pins.** `readsMember()` (line 56)
+makes the member read exist. `uses readsMember -> Box.value` pins it QUALIFIED, with the
+`qualifier` marker that produced the spelling. `forbidRelationships` then refuses the bare
+spelling for that read **and** any field edge out of `run()` — the row the pre-repair file could
+not state, and now the fixture's core assertion. The three local reads stay, because they ARE the
+dedup pin: 48, 51 and 53 collapse to one edge on 48, so 0, 1, 2 and 3 each mean something
+specific (0 = locals suppressed, >1 = dedup broken, a line that is not 48 = the wrong occurrence
+kept).
+
+A planted-shape battery (`nested-block-shadows-member-mutant.ts`) proves the new rows FIRE — the
+one thing a green fixture cannot say about itself. P1 plants the leaked field edge (caught by the
+forbid), P2 rewrites the member read to the bare spelling (caught in BOTH directions: the expect
+row goes missing AND the forbid fires), P3 removes the local read (the inverted-guard shape;
+caught by the expect row and the count), P4 re-adds the other two occurrences (caught by the count
+AND both per-line forbids). Measured: control passes, 4/4 constructed, 4/4 caught, fixtures still
+24/24. Three of the four are PLANTS rather than replays of a broken analyzer, and the battery file
+says so: the property under test is "this fixture REFUSES this edge", so handing it the edge is
+the honest proof — and the round that would produce each shape is named in its note.
