@@ -1,10 +1,12 @@
 // verify-mcp-e2e.ts — full end-to-end acceptance of the MCP surface.
 // Spawns the REAL compiled CLI (`bb mcp --dir …`), does the handshake, lists
-// tools, then calls ALL 15 tools and asserts each one responds.
+// tools, then calls EVERY CONTRACTED tool and asserts each one responds. The list
+// comes from docs/data/public-tools.json (16 today), never from a literal here:
+// this header said 15, the assertion below said 10, and the registry said 16.
 //   bun run script/verify-mcp-e2e.ts        (or: npx tsx script/verify-mcp-e2e.ts)
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "fs"
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "fs"
 import { tmpdir } from "os"
 import path from "path"
 import { execSync } from "child_process"
@@ -15,6 +17,20 @@ function check(label: string, cond: boolean, detail = "") {
   else {
     failures++
     console.log(`  FAIL: ${label} ${detail}`)
+  }
+}
+
+// The public surface is DEFINED by the contract, not by a number restated in a test.
+// docs/data/public-tools.json is generated from src/mcp/tool-registry.ts and enforced
+// by script/verify-public-surface.ts, so it is the one place this list can come from.
+const contract = JSON.parse(readFileSync(new URL("../docs/data/public-tools.json", import.meta.url), "utf8"))
+const CONTRACT_TOOLS: string[] = (contract.tools ?? []).map((t: any) => t.name)
+
+function parsePayload(text: string): any {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
   }
 }
 console.log(`runtime: ${process.version} (${typeof Bun !== "undefined" ? "bun" : "node"})`)
@@ -96,8 +112,11 @@ try {
 
   const tools = await client.listTools()
   const names = tools.tools.map((t: any) => t.name)
-  const EXPECTED = ["bb_search", "bb_ask", "bb_analyze", "bb_patterns", "bb_security", "bb_doc", "bb_visualize", "bb_migrate", "bb_edit", "bb_health"]
-  check("tools/list exposes exactly 10 public tools", names.length === 10 && EXPECTED.every((t) => names.includes(t)), `got ${names.length}: ${names.join(",")}`)
+  const missing = CONTRACT_TOOLS.filter((t) => !names.includes(t))
+  const undeclared = names.filter((t) => !CONTRACT_TOOLS.includes(t))
+  check(`tools/list exposes exactly the ${CONTRACT_TOOLS.length} contracted public tools`,
+    missing.length === 0 && undeclared.length === 0,
+    `missing: ${missing.join(",") || "none"}; served but not contracted: ${undeclared.join(",") || "none"}`)
 
   // ---- read-only tools ----
   let r = await call("bb_search", { query: "handleRequest", limit: 5 })
@@ -148,6 +167,51 @@ try {
   r = await call("bb_analyze", { mode: "test_quality" })
   check("bb_analyze test quality returns a report", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 140))
 
+  // ---- the five tools that had NO MCP coverage at all ----
+  // They were added after this harness was written and never called here, which is how the
+  // surface count drifted from ten to sixteen without a gate noticing.
+  r = await call("bb_graph", { symbol: "RequestHandler", direction: "both", maxDepth: 2 })
+  const graph = parsePayload(r.text)
+  check("bb_graph roots an exact symbol and tiers every edge",
+    !r.isError && graph?.root?.name === "RequestHandler" && graph?.root?.match === "exact" &&
+      Array.isArray(graph?.callers) && graph.callers.length > 0 &&
+      [...(graph.callers ?? []), ...(graph.callees ?? [])].every((e: any) => typeof e.tier === "string" && typeof e.relationshipType === "string"),
+    r.text.slice(0, 180))
+
+  r = await call("bb_impact", { symbol: "handleRequest" })
+  const impact = parsePayload(r.text)
+  check("bb_impact declares its rule and its root match",
+    !r.isError && impact?.rootMatch?.via === "exact" && Array.isArray(impact?.rule?.relationshipTypes) &&
+      impact.rule.relationshipTypes.includes("calls"),
+    r.text.slice(0, 180))
+
+  r = await call("bb_cross_language", { symbol: "helper" })
+  const xl = parsePayload(r.text)
+  check("bb_cross_language declares absence instead of inventing facts",
+    !r.isError && xl?.declaredAbsent === true && Array.isArray(xl?.facts) && xl.facts.length === 0 &&
+      xl?.ownFactCount === 0 && xl?.pairCount === 0,
+    r.text.slice(0, 180))
+
+  const noteBody = "e2e acceptance note: written, read back, and left as provenance for the annotate round-trip."
+  r = await call("bb_annotate", { symbol: "handleRequest", path: "src/app.ts", body: noteBody })
+  const wrote = parsePayload(r.text)
+  check("bb_annotate stores an agent-authored note with enforced provenance",
+    !r.isError && wrote?.stored === true && wrote?.annotation?.author_class === "agent" &&
+      wrote?.annotation?.body === noteBody && wrote?.annotation?.symbol_path === "src/app.ts",
+    r.text.slice(0, 180))
+
+  r = await call("bb_annotations", { symbol: "handleRequest" })
+  const readBack = parsePayload(r.text)
+  check("bb_annotations reads that note back",
+    !r.isError && readBack?.count === 1 && readBack?.declaredAbsent === false &&
+      readBack?.annotations?.[0]?.body === noteBody,
+    r.text.slice(0, 180))
+
+  // bb_index was only ever exercised through the CLI, never as the MCP tool.
+  r = await call("bb_index", { path: "src/app.ts", mode: "file" })
+  check("bb_index reindexes one file and reports an outcome",
+    !r.isError && /outcome/i.test(r.text), r.text.slice(0, 180))
+
   // ---- mutation tools (on the throwaway fixture) ----
   r = await call("bb_edit", { mode: "write", filePath: "src/edit-created.ts", content: "export const editCreated = true\n" })
   check("bb_edit write creates a file", r.text.includes('"reindexed": true') && r.text.includes('"validated": true'), r.text.slice(0, 160))
@@ -183,5 +247,5 @@ rmSync(root, { recursive: true, force: true })
 const { BrainDatabase } = await import("../src/brain/database")
 const { getProjectId } = await import("../src/cli/index")
 rmSync(path.dirname(BrainDatabase.getDbPath(getProjectId(root))), { recursive: true, force: true })
-console.log(failures === 0 ? "\nMCP E2E: 10 PUBLIC TOOLS PASS" : `\nMCP E2E: ${failures} FAILURES`)
+console.log(failures === 0 ? `\nMCP E2E: ${CONTRACT_TOOLS.length} CONTRACTED PUBLIC TOOLS PASS` : `\nMCP E2E: ${failures} FAILURES`)
 process.exit(failures > 0 ? 1 : 0)

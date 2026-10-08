@@ -3,7 +3,7 @@
 //   bun run script/verify-mcp.ts      (and npx tsx under Node)
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "fs"
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "fs"
 import { tmpdir } from "os"
 import path from "path"
 
@@ -64,7 +64,18 @@ try {
 
   const tools = await client.listTools()
   const names = tools.tools.map((t: any) => t.name)
-  check("tools/list exposes ten public tools", names.length === 10 && ["bb_search","bb_ask","bb_analyze","bb_patterns","bb_security","bb_doc","bb_visualize","bb_migrate","bb_edit","bb_health"].every((t) => names.includes(t)), `got ${names.join(",")}`)
+  // The expected surface is the CONTRACT, never a number restated here. This check said
+  // `names.length === 10` while the registry had grown to sixteen, so the gate failed at
+  // command 125 of 358 in `npm run verify` and the 233 commands after it never ran.
+  // docs/data/public-tools.json is generated from src/mcp/tool-registry.ts and enforced by
+  // script/verify-public-surface.ts, so it is the one place this list can come from.
+  const contract = JSON.parse(readFileSync(new URL("../docs/data/public-tools.json", import.meta.url), "utf8"))
+  const contracted: string[] = (contract.tools ?? []).map((t: any) => t.name)
+  const missing = contracted.filter((t) => !names.includes(t))
+  const undeclared = names.filter((t) => !contracted.includes(t))
+  check(`tools/list exposes exactly the ${contracted.length} contracted public tools`,
+    missing.length === 0 && undeclared.length === 0,
+    `missing: ${missing.join(",") || "none"}; served but not contracted: ${undeclared.join(",") || "none"}`)
 
   const searchRes: any = await client.callTool({ name: "bb_search", arguments: { query: "handleRequest", limit: 5 } })
   const searchText = (searchRes.content ?? []).map((c: any) => c.text ?? "").join("\n")

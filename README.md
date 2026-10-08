@@ -118,11 +118,15 @@ VS Code workspace MCP (`<project>/.vscode/mcp.json`):
 }
 ```
 
-The MCP server advertises exactly ten public tools: `bb_search`, `bb_ask`,
+The MCP server advertises exactly sixteen public tools: `bb_search`, `bb_ask`,
 `bb_analyze`, `bb_patterns`, `bb_security`, `bb_doc`, `bb_visualize`,
-`bb_migrate`, `bb_edit`, and `bb_health`. Removed pre-`0.3.0` aliases are documented
-in the migration guide and changelog. See the generated
-[canonical tool metadata](./docs/data/public-tools.json) and [tool references](./docs/tools/).
+`bb_migrate`, `bb_edit`, `bb_health`, `bb_index`, `bb_graph`, `bb_impact`,
+`bb_cross_language`, `bb_annotate`, and `bb_annotations`. The count is deliberately
+not restated anywhere it can drift: [canonical tool metadata](./docs/data/public-tools.json)
+is the contract authority, `script/verify-public-surface.ts` enforces it, and both MCP
+acceptance harnesses derive the expected surface from that file instead of listing names.
+Removed pre-`0.3.0` aliases are documented in the migration guide and changelog. See the
+generated [canonical tool metadata](./docs/data/public-tools.json) and [tool references](./docs/tools/).
 
 For the complete operational lifecycle, including CLI/MCP parity, project identity,
 database storage, indexing stages, host setup, every public tool, evidence semantics,
