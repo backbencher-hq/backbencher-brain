@@ -422,9 +422,16 @@ for (const f of admitted) {
   let content: string
   try { content = readFileSync(f.abs, "utf8") } catch { failed++; continue }
   let res: { symbols?: unknown[]; relationships?: Rel[] }
+  // The parse tree is kept for the parse-quality walk 26 lines below, which does
+  // `pr.rootNode.walk()`. `pr` used to be declared inside the try block above and
+  // went out of scope at its closing brace, so that walk referenced an undefined
+  // name — the ReferenceError was swallowed by its own `catch`, which is why this
+  // census reported parse quality from a tree it never touched. Declared out here
+  // so both the analyzer and the cursor walk see the same parse.
+  let pr: { rootNode: unknown } | null = null
   try {
     const parser = await getParser(LANG as never)
-    const pr = await parser.parse(content, f.abs)
+    pr = (await parser.parse(content, f.abs)) as unknown as { rootNode: unknown }
     res = new RealTypeScriptAnalyzer().analyze(pr.rootNode, content, f.abs) as never
   } catch (e) {
     failed++
@@ -452,7 +459,10 @@ for (const f of admitted) {
 
   // Parse-quality census, walked with the cursor API — no pattern matching.
   try {
-    const cursor = pr.rootNode.walk()
+    // Unreachable in practice — the parse loop `continue`s on failure — but this
+    // walk must not read through a null just because the type now admits one.
+    if (pr === null) throw new Error("no parse tree for " + label)
+    const cursor = (pr.rootNode as { walk(): any }).walk()
     let stack: boolean[] = []
     let bad = 0
     let go = true

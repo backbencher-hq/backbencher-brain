@@ -24,7 +24,6 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { writeSealed, parseSealedRecord, readEvidenceAllowingLegacy } from "../lib/evidence.ts"
-import { parseSealedRecord } from "../lib/evidence.ts"
 import { projectLaneLedger } from "../m61/ledger_gate_wiring.ts"
 import type { ProjectableLedger } from "../m61/ledger_projection.ts"
 

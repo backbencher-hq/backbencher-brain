@@ -14,7 +14,8 @@
 // Expected names come from the grammar walk above; observed names come from the
 // analyzer. Two independent derivations of the same question, which is the only
 // shape in which "recall 1.0" means anything.
-import { join } from "node:path"
+import path, { join } from "node:path"
+import { fileURLToPath } from "node:url"
 import { readFileSync } from "node:fs"
 
 // Derived from this file's own location. Hardcoding the main checkout made this

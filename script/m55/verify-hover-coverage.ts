@@ -81,7 +81,7 @@ import {
   FIXTURE_FILES, buildFixture, seed, know, rendered,
   BUSY_CALLER_FILES, BUSY_CALLER_BODY_LINES, BUSY_MANY_ROWS, BUSY_HOT_CALLS, BUSY_SYMBOL,
   HUB_DECL_LINES, APP_DECL_LINES,
-  type Fx, type KnownFacts, type RenderedFacts,
+  type Fx, type KnownFacts, type RenderedFacts, type RenderedSectionHeader,
 } from "./hover-coverage-fixture.ts"
 interface BudgetRow { p50: number; p95: number; p99: number; max: number; n: number; busyUsageLocations: number; distinctFiles: number; manyRowsShape: { p50: number; p95: number; storedRows: number; distinctFiles: number } | null
   hotCallerShape: { p50: number; p95: number; storedRows: number; distinctFiles: number } | null }

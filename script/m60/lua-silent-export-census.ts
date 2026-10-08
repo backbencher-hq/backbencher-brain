@@ -14,7 +14,8 @@
 // require("x")` names nothing — x is a module path, not a name this module
 // defines. Publishing an export called "x" would be inventing a name, which is the
 // fabrication this lane has refused in every other case.
-import { join } from "node:path"
+import path, { join } from "node:path"
+import { fileURLToPath } from "node:url"
 import { readFileSync, readdirSync } from "node:fs"
 
 // Derived from this file's own location. Hardcoding the main checkout made this

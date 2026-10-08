@@ -21,6 +21,15 @@ export const PINNED_VSCODE_VERSION = "1.85.0"
  * Bridge the extension's LanguageClient to the shared LspTransport. The
  * bridge is the ONLY editor-specific code in the whole assertion stack.
  */
+/**
+ * vscode-languageclient's own `Thenable<T>` — a promise-like that need not be a
+ * native Promise. It was referenced by name but declared nowhere in this
+ * repository, and because no typecheck covered `script/` nothing noticed. A
+ * `Thenable<T>` is only ever awaited here, so the structural form is exactly
+ * equivalent and needs no dependency on the VS Code types.
+ */
+type Thenable<T> = PromiseLike<T>
+
 export function languageClientTransport(client: {
   sendRequest(method: string, param: unknown): Promise<any>
   sendNotification(method: string, params?: unknown): Thenable<void>

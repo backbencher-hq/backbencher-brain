@@ -123,6 +123,15 @@ async function runGraphLeg(): Promise<any> {
   const dataDir = mkdtempSync(path.join(tmpdir(), "bblsp-graph-data-"))
   const commit = execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim()
 
+  // Declared here, above the try, because the catch below builds its failure
+  // detail from `client.stderr`. With `client` scoped to the try, a throw from
+  // anywhere in this leg made the CATCH itself throw ReferenceError while
+  // formatting the message: the original error was replaced by a confusing one,
+  // and the "no unexpected throw" check never ran at all. That is the one check
+  // in this leg whose whole job is to report unexpected throws, so it must not be
+  // the thing that breaks. Optional chaining, so it is safe before assignment.
+  let client: GraphClient | null = null
+
   try {
     // Seed the same fixture shape the M24 harness uses (real brain.db rows).
     const { createHash } = await import("node:crypto")
@@ -146,7 +155,7 @@ async function runGraphLeg(): Promise<any> {
     raw.prepare(`INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence) VALUES (?,?,?,?,?,?)`)
       .run("rel-1", projectId, "sym-main", "sym-greet", "calls", 1.0)
 
-    const client = new GraphClient(wsDir, dataDir)
+    client = new GraphClient(wsDir, dataDir)
     const init = await client.request("initialize", { capabilities: {} })
     check("bb/graph leg: initialize succeeds", !!init?.result?.capabilities)
     client.notify("initialized", {})
