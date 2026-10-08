@@ -39,12 +39,23 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "n
 import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import type { RegexUsage } from "./regex-census-core"
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 
 /** The M12 analyzer-file filter, kept byte-identical to regex-census-core.ts. */
 export const ANALYZER_FILE_RE = /^real-.+-analyzer\.ts$/
 
+// The READER's view of a scan row: the three fields every diffling needs
+// (file/line/source), plus the classifications as plain strings so a row read
+// back from JSON is the same type as a row just scanned. It used to carry a
+// `[key: string]: unknown` index signature, and that signature is what made the
+// scanner's real row — `RegexUsage`, whose classifications are UNIONS —
+// unassignable, forcing `as ScanEntry[]` casts in the two functions below. Those
+// casts were the only reason `scanHeadAnalyzers | scanAnalyzers` ever disagreed
+// about their row type, and the disagreement surfaced as a `RegexUsage | ScanEntry`
+// union in the census generator. A row's real type is `RegexUsage`; this is the
+// view a helper needs, and without the index signature the two line up.
 export interface ScanEntry {
   file: string
   line: number
@@ -53,7 +64,6 @@ export interface ScanEntry {
   classification?: string
   operation?: string
   receiverCategory?: string
-  [key: string]: unknown
 }
 
 export interface Drift {
@@ -169,7 +179,7 @@ export function workingAnalyzerFiles(dir = join(ROOT, "src/ast")): string[] {
 }
 
 /** Scan the analyzer blobs as committed — THE standard of truth. */
-export async function scanHeadAnalyzers(): Promise<ScanEntry[]> {
+export async function scanHeadAnalyzers(): Promise<RegexUsage[]> {
   const files = headAnalyzerFiles()
   const tmp = mkdtempSync(join(tmpdir(), "bb-census-head-"))
   try {
@@ -178,16 +188,20 @@ export async function scanHeadAnalyzers(): Promise<ScanEntry[]> {
       if (content !== null) writeFileSync(join(tmp, file), content)
     }
     const { scanAnalyzers } = await import("./regex-census-core")
-    return (await scanAnalyzers(tmp)) as ScanEntry[]
+    // NO CAST. This returned `as ScanEntry[]`, a claim the compiler could not
+    // check — the exact shape regex-census.ts warns about where the missing
+    // `await` was hidden by a type assertion. The scanner's row type is the
+    // honest return type, and it is assignable to `ScanEntry` at every call site.
+    return await scanAnalyzers(tmp)
   } finally {
     rmSync(tmp, { recursive: true, force: true })
   }
 }
 
 /** Scan the working tree — a PREVIEW, never the standard. */
-export async function scanWorkingAnalyzers(): Promise<ScanEntry[]> {
+export async function scanWorkingAnalyzers(): Promise<RegexUsage[]> {
   const { scanAnalyzers } = await import("./regex-census-core")
-  return (await scanAnalyzers()) as ScanEntry[]
+  return await scanAnalyzers()
 }
 
 /**
