@@ -4440,7 +4440,29 @@ export async function storeResults(
 // RELATIONSHIP RESOLUTION (run once at the end of indexing)
 // ============================================================================
 
-async function resolveRelationships(projectId: ProjectID): Promise<void> {
+/**
+ * What the name-resolution pass DID, in the terms the scaling gate measures.
+ *
+ * Reported from inside the pass on purpose. `script/perf/verify-scaling-linear.ts`
+ * used to count candidates with its own SQL — a replica of the window plan's join —
+ * so when the plan changed the gate kept measuring the old shape and the mismatch
+ * read as an unexplained red. A gate may not certify a plan that is not the one
+ * running; the number now comes from the table the live plan materialised.
+ */
+export interface ResolvePlanStats {
+  /** Which plan the pass executed. */
+  plan: "window" | "linear"
+  /**
+   * Rows in the largest intermediate the plan materialised. For the window plan
+   * that is the ranked (relationship × same-named-symbol) relation — the `R × C`
+   * fan-out; for the linear plan it is a per-name aggregate, bounded by the symbol
+   * table. Comparable across plans by construction, which is what lets one check
+   * bound both.
+   */
+  largestIntermediate: number
+}
+
+async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanStats | null> {
   const { BrainDatabase } = await import("../brain/database")
   const rawDb = await BrainDatabase.getRawInstance(projectId)
 
@@ -4451,9 +4473,13 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
   ).get(projectId) as any)?.c || 0
 
   if (unresolved === 0) {
+    // `null`, not a zero: a pass that did not run must not report the best
+    // possible measurement, and the gate throws on an absent one.
     log.debug("no unresolved relationships to resolve")
-    return
+    return null
   }
+
+  let stats: ResolvePlanStats | null = null
 
   try {
     // Build temp lookup tables once — avoids O(n*m) correlated subqueries
@@ -4603,7 +4629,24 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
     // BY, which does not resolve and threw SQLITE_ERROR inside a catch that hid it.
     // Both are why the location and the set-based shape are load-bearing.
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_src`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_rank`)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_pick`)
+    // ── THE RANKED INTERMEDIATE IS A TABLE, NOT A SUBQUERY ──
+    //
+    // Same rows, same ranking, one difference: the R × C pairs are materialised so
+    // that the pass can COUNT them and report the count (see `ResolvePlanStats`
+    // above). The scaling gate's first check is "how many (relationship ×
+    // same-named-symbol) rows does the live plan consult", and the only honest
+    // source for that number is the table the plan itself built.
+    //
+    // This is the repair for a real failure, not a stylistic choice. The gate used
+    // to count candidates with its own hand-written replica of the join below — a
+    // replica that describes THIS plan. When the linear plan replaced it, the
+    // replica kept returning the old shape (2.87 pairs per relationship at 196
+    // files), so the gate stayed red on code that no longer performed the join and
+    // the discrepancy read as unexplained. A gate may not certify a plan that is
+    // not the one running; it now reads the plan's own count.
+    //
     // The source file and language the ranking depends on, materialised once
     // because they cannot be correlated out of a subquery's ORDER BY here.
     rawDb.run(`
@@ -4615,25 +4658,33 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
       WHERE r.project_id = '${projectId}'
     `)
     rawDb.run(`
-      CREATE TEMP TABLE _i13_pick AS
-      SELECT rel_id, target_symbol_id FROM (
-        SELECT t.rel_id AS rel_id, s.id AS target_symbol_id,
-               ROW_NUMBER() OVER (PARTITION BY t.rel_id
-                 ORDER BY COALESCE(s.is_declaration, 0) ASC,
-                          (s.file_id = t.src_file) DESC,
-                          (COALESCE(f.language, '') = t.src_lang) DESC,
-                          s.id ASC) AS rn
-        FROM _i13_src t
-        JOIN brain_relationship r ON r.id = t.rel_id
-        JOIN brain_symbol s ON s.project_id = '${projectId}' AND s.name = r.target_external
-        LEFT JOIN brain_file f ON f.id = s.file_id
-        WHERE r.project_id = '${projectId}'
-          AND r.target_external IS NOT NULL
-          AND r.relationship_type <> 'contains'
-          AND instr(r.target_external, '.') = 0
-          AND instr(r.target_external, ':') = 0
-      ) WHERE rn = 1
+      CREATE TEMP TABLE _i13_rank AS
+      SELECT t.rel_id AS rel_id, s.id AS target_symbol_id,
+             ROW_NUMBER() OVER (PARTITION BY t.rel_id
+               ORDER BY COALESCE(s.is_declaration, 0) ASC,
+                        (s.file_id = t.src_file) DESC,
+                        (COALESCE(f.language, '') = t.src_lang) DESC,
+                        s.id ASC) AS rn
+      FROM _i13_src t
+      JOIN brain_relationship r ON r.id = t.rel_id
+      JOIN brain_symbol s ON s.project_id = '${projectId}' AND s.name = r.target_external
+      LEFT JOIN brain_file f ON f.id = s.file_id
+      WHERE r.project_id = '${projectId}'
+        AND r.target_external IS NOT NULL
+        AND r.relationship_type <> 'contains'
+        AND instr(r.target_external, '.') = 0
+        AND instr(r.target_external, ':') = 0
     `)
+    // The one number this plan reports. COUNT over the built table, not over an
+    // expression restated in a second query: a restatement is a copy that can drift
+    // from the plan it claims to describe.
+    const _i13RankRows = (rawDb.prepare(`SELECT COUNT(*) AS c FROM _i13_rank`).get() as any).c as number
+    stats = { plan: "window", largestIntermediate: _i13RankRows }
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_pick AS
+      SELECT rel_id, target_symbol_id FROM _i13_rank WHERE rn = 1
+    `)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_rank`)
     // Without this the apply step degrades to a scan per row — the 164 s above.
     rawDb.run(`CREATE UNIQUE INDEX temp._i13_pick_rel ON _i13_pick(rel_id)`)
     rawDb.run(`
@@ -4708,6 +4759,8 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
     log.warn("relationship resolution failed", { error: err })
     throw err
   }
+
+  return stats
 }
 
 // ============================================================================
@@ -5977,9 +6030,15 @@ export async function runPostProcessing(
     _log.log("  Resolving cross-file relationships...")
     let _t = Date.now()
     try {
-      await resolveRelationships(projectId)
+      const relStats = await resolveRelationships(projectId)
       recordPhase("relationships", Date.now() - _t, "ok")
-      _log.log(`  ✓ resolved in ${Date.now()-_t}ms`)
+      // The plan's own numbers ride the phase line because the scaling gate
+      // (`script/perf/verify-scaling-linear.ts`) parses THIS line: it has to read
+      // what the pass did, not a replica of what some plan was expected to do.
+      // `plan=none` and `largest-intermediate=-1` report the pass not running —
+      // absent evidence, which the gate rejects, never a zero that reads as a
+      // perfect score.
+      _log.log(`  ✓ resolved in ${Date.now()-_t}ms [plan=${relStats?.plan ?? "none"} largest-intermediate=${relStats ? relStats.largestIntermediate : -1}]`)
     } catch (relErr: any) {
       recordPhase("relationships", Date.now() - _t, "failed")
       log.warn("relationship resolution failed", { error: relErr?.message })
