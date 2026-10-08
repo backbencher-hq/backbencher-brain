@@ -71,7 +71,8 @@ prose ruling (`dart hcl make markdown powershell yaml`), and **4 are unadjudicat
 `clean`, `graphql`, `r`, `scss`** — no table and no spec ruling.
 
 **Types that fire but are compared against nothing** (emitted ∩ never-audited, from the
-coverage gate). 83 type-instances fleet-wide:
+coverage gate). 81 type-instances fleet-wide (was 83 before php's `contains`/`imports` oracles
+landed on 2026-10-08):
 
 | lane | count | types |
 |---|---|---|
@@ -79,7 +80,7 @@ coverage gate). 83 type-instances fleet-wide:
 | hcl, json, lua, make, nim, r, yaml | 6 each | calls, contains, exports, imports, references, uses |
 | graphql | 5 | contains, exports, imports, references, uses |
 | clean, protobuf, xml | 4 each | contains, exports, imports, uses (+ extends, overrides for xml) |
-| php | 3 | contains, exports, imports |
+| php | 1 | exports |
 | dart, fsharp, julia, markdown, scss | 2 each | dart: overrides, references · f#: imports, uses · julia: exports, imports · markdown: imports, references · scss: calls, exports |
 | powershell | 1 | imports |
 | bash, css, toml, zig | — | clean on this axis |
@@ -521,8 +522,13 @@ PHPD36 (new) records the recovery-escape decision. The gate's FULL corpus run is
 
 ### What is NOT done in php
 
-Ambiguity is untouched (155,752 edges, 44.5%), the three missing oracles (`contains`/`imports`/
-`exports` = 63,774 edges, 18.2%), external naming, the four structural-limit labels, the runnable
+Ambiguity is untouched (155,752 edges, 44.5%) — that is the whole of what is left on the OUTGOING
+axis, since the oracle side is finished: `contains`, `imports`, `exports` and `overrides` all joined
+the compared set on 2026-10-08, the last of them through `script/m14/oracles/php-overrides.ts`, and
+the spec's `declared_no_truth` list is now **empty** (the overrides declaration was withdrawn, not
+kept as a stale suppression). The one bound that remains is a SUBSET rather than a label: overrides
+speaks only where the base class is declared in the same file. Then: external naming, the four
+structural-limit labels, the runnable
 gates (24 scripts still hardcode a `ROOT` that does not exist on this checkout), the 5 remaining
 `verify-analyzer` false positives (now recorded as a stale GROUND TRUTH — it has zero `contains`
 rows — rather than as analyzer false positives; PHPD33 and PHPD36 the only completeness rows
@@ -807,6 +813,12 @@ the genuine external boundary. Trait use is deliberately out of the map, which m
 bound. The same-file (20,368) and namespace (10,188) preferences are smaller AND riskier, because
 each REPLACES a resolution instead of narrowing one.
 
+> **Update (PHP round 5, below):** this lever could not be implemented, and the reason was not the
+> analyzer — the store column an ancestor walk has to read (`brain_symbol.super_types`) was NULL on
+> every php row, so `override-retarget.ts` returned before its first query. The payload is now
+> published and the column is populated; the 24,223 is unchanged and the walk is now possible where
+> before it was not. Read round 5 before pricing any implementation of the stages below.
+
 
 **A type-inference wall, now a number**: the survivors are `uses` 48,839, `calls` 21,052,
 `imports` 4,509, `contains` 2,783, and their top names are `metadata` (6,477), `value`, `result`,
@@ -856,6 +868,307 @@ with 5 FPs, all of them that gap); the lane's gates still carry the hardcoded `R
 external block is still a boundary of the POPULATION (this corpus has no WordPress, no Symfony, no
 Laravel).
 
+## PHP round 3 (2026-10-08) — the harness had lost php's independent truth, and nothing could say so
+
+**Found by running two gates that had never run.** `script/m60/php-oracle-independence.ts` and
+`script/m60/php-line-contract.ts` both pinned `ROOT = "$HOME/backbencher-brain"` — a
+checkout this lane does not have (`…/mcp/backbencher-brain`) — so both died on their FIRST import,
+and a gate that cannot start reports nothing, which reads exactly like a gate that passes. ROOT is
+now derived from `import.meta.url` in both (`ruled-gate.ts` derives it the same way for the same
+reason).
+
+**The independence gate's first real verdict was FAIL — six violations, all true.** The merge
+`dc7b8b494` ("607 remote commits united with 502 local") spliced `script/m14/differential.ts` and
+dropped php's independent truth: `phpIndependentStaticIncludePath` (governs `imports`),
+`phpIndependentCallableName` (governs `calls`), `derivePhpDeclaredTypeEdgesIndependent` (the whole
+declared-type graph behind `references`) **and** `derivePhpContainsEdges` (governs `contains`).
+The splice was repaired later for SYNTAX only (`d4c4bba34`: "a duplicated '}' after the zig truth
+block closed the per-file lane loop early") and the lost CONTENT was never restored — while
+`reviews/php/master-review.md` went on claiming "0 shared rules … measured at 0 disagreements …
+proven to fail". Every one of those names is present at `93d5b5e65` (2026-09-30, an ancestor of
+HEAD) and absent at HEAD.
+
+**Restored, and held to provenance rather than paraphrased.** The three derivations are back in
+`differential.ts` verbatim — `diff` against `git show 93d5b5e65:script/m14/differential.ts` is
+**EMPTY** (350 lines) — and the truth loop, the include-path call site and the callee call site all
+point at the independent versions; the import drops the two shared rules and keeps only the
+deliberately exempted superseded comparison. The `contains` oracle is back in a LANE-OWNED module
+`script/m14/oracles/php-contains.ts` (also byte-exact; the `dart-contains.ts` precedent — a shared
+file is a file that conflicts) and it is REGISTERED, which took three edits, not one: the import,
+the truth loop, and php's entry in the compared-labels list. An oracle that is defined but not
+registered compares nothing, which is exactly how the label went unaudited.
+
+| | before | after |
+|---|---|---|
+| `php-oracle-independence` | CRASHED (hardcoded ROOT) | **PASS** — 3/3 defined=1 refs=2, truth loop off the shared rule |
+| php truth rows, phpunit draw | 1,229 | **1,795** |
+| php truth rows, phpmyadmin draw | 1,674 | **3,122** |
+| php differential, phpunit | 99.8% · MISSING=2 · unexplained=0 | 99.8% · MISSING=3 · **unexplained=55, all `contains`** |
+| php differential, phpmyadmin | 100% · MISSING=0 · unexplained=0 | 100% · MISSING=0 · **unexplained=56, all `contains`** |
+
+The three restored rules reproduce the shared ones EXACTLY on that draw — phpunit's 1,229 truth
+rows and its two `references` MISSING rows are unchanged, phpmyadmin still 100% — which re-confirms
+the authoring measurement a week later. `tsc --noEmit` clean; all 27 php fixtures pass.
+
+**The 111 unexplained `contains` edges are ONE shape, and it is the oracle's gap, not the
+analyzer's.** All 80 sampled are a NAMESPACE containing a type — `contains PHPUnit\TextUI ->
+TestRunner`, `contains PhpMyAdmin\Controllers\Export -> …` — with 80 of 80 sources namespaced and
+0 class-form. The oracle's shape map listed only the four NAMED-TYPE bodies as containers and was
+written before M60's namespace containment landed — so the analyzer was not wrong and the ORACLE was
+incomplete.
+
+**The gap is closed the same day, and closed in both directions.** The oracle gained one marked
+section (`M60 NAMESPACE CONTAINMENT`), re-derived from the tree: a namespace owns the declarations at
+FILE SCOPE under it (a top-level `if` is not a scope, which is why phpunit's 251
+`if (!function_exists(…))` helpers are contained by their namespace), while a member stays its
+class's and a declaration inside a CALLABLE is the one shape it declares it does not model.
+
+| draw | phpunit truth / MISSING / unexplained | phpmyadmin truth / MISSING / unexplained |
+|---|---|---|
+| `rot 4` | 1,003 / 1 / **0** | 2,542 / 1 / **0** |
+| `rot 5` | 1,094 / 1 / **0** | 2,419 / 2 / **0** |
+
+Two draws because the 60-file draw ROTATES — totals are not comparable across runs. `unexplained = 0`
+is the 111 closed; it would also read 0 if the oracle had grown into the analyzer's own output, so the
+column that proves the most is `MISSING`, which stayed at the PRE-EXISTING include-path rows and
+never `contains`. No mutant pins this section and none can: the registry transforms the analyzer's
+result, not a truth derivation — the pin is the reading, and the revert is deleting the marked
+section (`unexplained = 111` comes back). Declared residual, counted rather than implied absent: a
+named function inside a CALLABLE (PHPD37, 3 declarations, Slim) and recovery-escaped members
+(PHPD36, 22, `markdown.php`) are analyzer `contains` edges in files OUTSIDE the two pinned corpora,
+so this differential cannot see them.
+
+**Still lost, same merge, NOT restored: `buildPhpOverrideCompanionWithVisibility`.** It existed in
+`differential.ts` at `abae80c43` (2026-09-30 21:58, an ancestor of HEAD: definition + two call
+sites) and is absent at HEAD. `php-line-contract.ts` imports it, so that gate now gets PAST its ROOT
+fix and fails at the import — which is why php still has no committed line-contract artifact. It is
+the last known casualty of `dc7b8b494` on php's path, and it is recorded rather than guessed at:
+restoring it means reading its two call sites against today's file, not just its body.
+
+**The last MISSING rows are gone too, and the fix was TWO edits rather than the one the ledger named.**
+The truth's include leg pushed `references` where the analyzer has published `imports` since the
+M12.PHP-IMPORTS round (adjudicated here already — "a stale oracle label, not a missing edge").
+Relabelling alone fixes nothing: php's compared-labels entry had no `imports`, so the analyzer's
+include edges were dropped from the comparison — and the label had NO truth derivation at all, which
+is why `rel-type-coverage-gate` counted it as DERIVATION. So the `use`-clause half was written from
+the tree (plain and grouped forms, FQN as written, prefix-joined, alias not part of the target), the
+include half was relabelled, and `imports` was registered.
+
+| draw | lane | truth | covered | MISSING | analyzer edges | unexplained |
+|---|---|---|---|---|---|
+| rot 6 | phpunit | 1,046 | 1,046 (100%) | **0** | 1,030 | **0** |
+| rot 6 | phpmyadmin | 3,204 | 3,204 (100%) | **0** | 3,161 | **0** |
+| rot 7 | phpunit | 1,326 | 1,326 (100%) | **0** | 1,285 | **0** |
+| rot 7 | phpmyadmin | 2,898 | 2,898 (100%) | **0** | 2,885 | **0** |
+
+`BB_LABEL_DUMP=php` is the evidence that this is not vacuous: `imports` reads **truth=280 /
+comparable=280** on the phpunit draw and **596 / 596** on phpmyadmin — equal on both sides, for a
+label that had zero truth the day before. And the gate that counted the gap now reads
+`php 1 un-audited: ["exports"]` — and as of PHP round 4 that is **`php` in NO un-audited row at all**:
+`emitted` and `audited` are the same ten labels, and php's DERIVATION list is empty (was
+`["contains","imports","exports"]` two days ago). The gate still exits 1 on `79 NEW` rows — all of
+them OTHER lanes, a shared debt baseline that predates this session's merges — reported, not
+touched. And php is in NO regression
+row; the gate's exit 1 comes from `80 NEW` rows belonging to OTHER lanes, a shared debt baseline that
+predates this session's merges — reported, not touched.
+
+## PHP round 4 (2026-10-08) — a real publication the graph did not carry, found by building the denominator `exports` never had
+
+Round 3 left `exports` as php's last un-audited label. The obvious next move was to write its
+truth oracle; the right one was first to ask whether the 57 edges it emitted were the RIGHT 57,
+because **a count with no denominator cannot be wrong in a way anyone can see.** So the probe
+grew one: every `define`-family call in the admitted population, split by callee RESOLUTION |
+scope | name-literalness, with every shape key **pre-seeded at 0** — a key that appears only
+once it fires cannot be told apart from a classifier that can never produce it.
+
+**It read 58 implied publications against 57 emitted edges.** The missing one is phpunit's
+`tests/end-to-end/generic/_files/auto_prepend_file.php`: one file-scope
+`\define('AUTO_PREPEND_FILE_LOADED', true);`, in a file whose entire purpose is that PHP's
+`auto_prepend_file` publishes a constant every later script can read — refused for its SPELLING
+alone, because rule 1 tested the callee's literal text (`=== "define"`) rather than what it
+resolves to. PHP's own rules settle it: *"Fully qualified names always resolve to the name
+without leading namespace separator"*, while the fallback to the global function is stated for
+**unqualified** names — so `\define` is the global function unconditionally, `namespace\define`
+is a strict current-namespace lookup that does not fall back, and `Other\define` is a userland
+function. (The manual pages are quoted in the code comment; this was resolved by reading the
+resolution rules, not by trying spellings.)
+
+**The fix is one condition** plus `metadata.calleeShape` recording which spelling was accepted.
+Everything around it is evidence, in the order it was produced:
+
+- the fixture and its expectation were extended **first** — four new negative shapes
+  (`Other\define`, `namespace\define`, a nested `\define`, the aliased
+  `use function define as pub`) — and the suite read `FAIL php/define-exports`;
+- the fix made it **27/27 pass**;
+- the revert mutant `php/drop-absolute-fq-define-publication` filters `exports` edges by
+  `metadata.calleeShape` (GENERICALLY — no hardcoded target, so it cannot silently stop
+  matching) and is **caught**; `mutant-check.mts` reads **16 caught / 0 survived / clean
+  baseline**, and the php slice of the shared registry reads **68 caught / 0 survived**
+  (1867 → 68 by filter);
+- the whole population, before/after, same instrument: **10 content fields changed, every one
+  of them following from that single edge** — `edgesSeen` 350,367 → 350,368, `symbolsPublished`
+  40,266 → 40,267, `exports` 57 → 58 (`resolved:unique` 43 → 44),
+  `targetClasses/resolved:unique` 115,660 → 115,661, `sourceClasses/source:global` 29,891 →
+  29,892, `incoming/declarations` 40,266 → 40,267, `reachedByAtLeastOneResolvingEdge`
+  21,144 → 21,145, `reachedAndNamedByNothing` 17,350 → 17,351 — with
+  `namedButReachedByNone` UNMOVED (14,371) and `defectRows` / `unexplainedTotal` still **0**.
+
+The shapes the rule still refuses are **priced, not assumed**: qualified `Other\define` 0
+occurrences, relative `namespace\define` 0, the aliased form 0 (it *does* publish — unqualified
+names go through the function import table — so it is recorded as a boundary rather than
+half-implementing an import table for one callee), `class_alias`/`function_alias` 0, and **no
+file in the population declares its own `define`**, which is the only way the bare-name test
+could have been unsound. Two instrument corrections belong to the finding: the audit's own
+classifier had to be made **reachable** before it could report a zero (`member_call_expression`
+leaves the `function` field NULL, so a test on the callee field's type can never see
+`$o->define()`), and the doc's old claim of "second implementation agreeing 57/57" was about a
+copy that had already been withdrawn — the surviving instrument **disagreed**, which is how the
+missing edge was found. Two instruments came out of this and are committed rather than left in a
+scratch file: `exports-probe-controls.mts` gained a **(D) define-AUDIT control block** — the audit
+that found the edge gets its own positive controls, or an audit that could only read zero would
+have "confirmed" 57 forever — and `callee-shapes.mts` now PINS the grammar fact the audit's
+classifier depends on (a member call leaves the `function` field NULL, so a member call named
+`define` can never be classified by the callee field's type), so a grammar change fails loudly
+instead of silently reclassifying calls. `exports-probe.json` is regenerated (5,094/5,094
+cross-check, 0 failures); PHPD38 records the decision.
+
+**And then the label was closed, not just measured.** The oracle
+`script/m14/oracles/php-exports.ts` was written from PHP's resolution rules (no shared code with
+the analyzer, which is what `php-oracle-independence` checks for the lane's other derivations),
+imported and registered in the differential, and `exports` was added to php's compared-label set —
+`rel-type-coverage-gate` now reads `php` in NO un-audited row, with `emitted` and `audited` both the
+same ten labels and php's DERIVATION list **empty** (from three labels on 10-07, to one at the start
+of this round, to none).
+
+**A wave proves nothing here, which is why the proof is a cross-check.** `exports` is 58 edges over
+18 files in 5,094, so a 60-file wave (and the two php waves both read it) can contain **zero rows**
+of it: a label admitted with 0 truth and 0 comparable prints nothing and passes — the vacuous-zero
+shape again. So `validation/m14/fixtures/php/exports-truth-crosscheck.mts` compares the oracle
+against the ANALYZER (via `parseFile`, so a projection-layer loss would show) on **every file the
+audit says carries the label**, with the harness's own `normTarget` imported rather than
+re-implemented:
+
+```
+  files compared        18   (the audit's publication set, not a draw)
+  truth edges           58
+  analyzer edges        58
+  MISSING (truth-only)  0
+  unexplained (an-only) 0
+  ok  the fully qualified `\define` file is on BOTH sides
+  ok  control: a truth-only edge IS reported as MISSING
+  ok  control: an analyzer-only edge IS reported as unexplained
+```
+
+That is the label verified in BOTH directions — with the comparator run on pairs one edge apart as
+positive controls, because a comparator that cannot fail makes every 0/0 it prints worthless.
+
+**The other half of the same day: `overrides`, which failed in the OPPOSITE direction.** It was
+already COMPARED (php sits in the base overrides disjunct) while no php oracle derived it, so every
+analyzer row met no truth and was counted as an unexplained **fabrication** — a worse reading than
+"nobody wrote down what it should have produced", and a state the spec had DECLARED with a
+`closes_when` rather than discovered late. `script/m14/oracles/php-overrides.ts` now derives it: a
+method that re-declares a name its base class declares overrides it, unless the base's declaration
+is `private` (PHP: a private member is not inherited, so the same name is a DIFFERENT method — the
+fixture that found the analyzer's missing filter declares one on both sides on purpose, and the
+corpus never exercised it). Bounded ON PURPOSE to a base **in the same file**, because php keys
+every edge on the LEAF name and one repo holds three `TestSuite` classes and two `Assert` classes
+(one vendored): a cross-file lookup is a guess, and the analyzer's own history records that guess
+getting it wrong in BOTH directions. So the label is complete over its SUBSET, not over PHP — and
+`overrides-truth-crosscheck.mts` builds its denominator from the TREE rather than from the analyzer
+(a denominator taken from the analyzer would be blind to the very miss it exists to catch): 5,094
+files swept with the local parser, 3,100 candidate files, then `parseFile` row by row against the
+oracle — **2 truth edges, 2 analyzer edges, 0 MISSING, 0 unexplained**, with the analyzer's total
+asserted equal to `perType.overrides.edges` in the census and the comparator run on pairs one edge
+apart. The `declared_no_truth` entry is **withdrawn** (closure recorded at `label_coverage._closed`,
+PHPD39 records the decision), because a declaration that outlives its defect hides the next one.
+
+Both php waves were then re-run with the oracle registered: `covered 100% MISSING=0 |
+unexplained=0 heuristic=0` on each, with no `COMPARED WITH NO TRUTH` line.
+
+Two shared gates agree from outside this lane, and both are worth reading as they now stand:
+`verify-label-coverage.ts` reads **`| php | phpunit | 25 | 217 | 217 | — | — |`** — every truth
+edge compared, no undeclared gap for php (the gate's exit 1 is `35 undeclared gap(s) across 20
+lane(s)`, all other lanes) — and the differential's own `COMPARED WITH NO TRUTH` guard, which fires
+when a label has analyzer rows and no truth at all, does not print for php on either wave. **Both
+items this paragraph used to leave open are closed, and the sentence is corrected rather than left
+standing:** `exports` was admitted when `script/m14/oracles/php-exports.ts` was imported, registered
+and added to php's compared-label set, and `overrides` got its own truth oracle
+(`script/m14/oracles/php-overrides.ts`). `rel-type-coverage-gate` therefore lists php in **no
+un-audited row at all** — `emitted` and `audited` are the same ten labels, DERIVATION empty — and
+the spec's `declared_no_truth` list is empty. What remains is not a missing comparison but a
+BOUND: `overrides` speaks only where the base is in the same file, which the oracle's header and
+PHPD39 state.
+
+## PHP round 5 (2026-10-08) — the ambiguity lever's precondition was FALSE, and it was a column
+
+Round 2 priced php's one **sound** lever at **24,223 endpoints** (`owner+inherited`, section 3:
+`$this->persist()` in a subclass whose parent declares `persist`). This round set out to implement it
+and found it could not have been: the column an ancestor walk has to read was empty for php, not
+thin.
+
+### 1. The seam, and the empty column
+
+The only thing that puts a project-wide hierarchy in the store is
+`src/ast/parallel-indexer.ts:3590`, which binds `symbol.metadata.superTypes` into
+`brain_symbol.super_types`. `src/ast/override-retarget.ts` reads it and opens with
+`if (supertypes.size === 0) return out`. php published heritage as EDGES only — the class metadata
+carried `baseClass`, `interfaces`, `extendedInterfaces`, `implementedInterfaces`, and never
+`superTypes` — so the column was NULL on every php row and the pass returned before its first
+query. php's inheritance was, to a consumer holding the store, **absent rather than thin**; same
+defect class as the rest of this lane (a fact published and then dropped), except here there was no
+fact to drop.
+
+### 2. The payload, held to a MIRROR of the edges
+
+`metadata.superTypes` is now published on class, interface and enum declarations, and it carries
+**the same spellings and the same omissions as the heritage edges the same declaration emits**: the
+base a PHPD10 `heritageTarget` could not separate from the class's own name is absent for the same
+reason it emits no `extends` edge (no self-loop in the column that exists to be WALKED), a
+same-leaf QUALIFIED base keeps its qualification, the enum branch's duplicated `heritageTarget`
+derivation is now one list feeding both edges and payload, and the key is OMITTED rather than `[]`
+when empty because the store's own test is `Array.isArray(...) && length > 0`. Traits are excluded
+deliberately: this column is walked as a nearest-declaring-ANCESTOR chain and a trait is a flattened
+mixin, not an ancestor.
+
+### 3. Evidence, in the order that makes it evidence
+
+Fixture authored first and read **FAIL** on six payload rows; `28/28` php fixtures after. Three new
+mutants — payload dropped, base-only, and names-itself — all caught by that one fixture; lane
+`mutant-check` **19 caught / 0 survived / clean baseline** (was 16) and the shared registry **71**
+(was 68). A new store gate (`validation/m14/fixtures/php/store-heritage-roundtrip.mts`) stores four
+committed fixtures through the real `storeResults` and reads the database back: the column is
+non-NULL, the values are exact on every pinned shape, the stored hierarchy EQUALS the stored
+`extends`+`implements` targets for every symbol (9 symbols / 12 edge rows), and the cross-file case
+holds (`SubContract -> ["BaseContract"]`). Two negative controls plus the control that makes the
+rest mean something: the same files with `metadata.superTypes` stripped store **NULL on every
+symbol (0/58)**, which reproduces the pre-change state from the analyzer's own result.
+
+### 4. What that gate found on its way in — reported, not edited
+
+Re-storing the same project loses a row: **70 -> 69 relationships, the lost one being `extends
+SubContract -> BaseContract`**, and it does not come back (a third store stays at 69). Cause is
+`parallel-indexer.ts:2928-2929`, which before every file's inserts deletes every relationship from
+ANY file whose `target_symbol_id` lives in the file being stored — on a cold store those cross-file
+rows have a NULL target, so nothing matches; on the second store the previous run's resolution has
+filled it, and the target file's turn deletes the inbound edge that the earlier-stored source file
+is never asked to re-emit. **Order experiment, run not argued:** with the defining file stored LAST
+the count goes 12 -> 11 -> 11; with the defining file stored FIRST it stays 12 -> 12 -> 12. Nothing
+is lost when the target is stored before the source, which is why it has gone unnoticed; it bites
+permanently in the direction the file walk orders late. `parallel-indexer.ts` is shared machinery
+(§8) and is **not edited**; the gate prints the row and keeps the probe's own operation asserted so
+it cannot report "no loss" from an empty read.
+
+### 5. What this round does NOT claim
+
+Not that the walk is sound — the existing consumer keys its map on the bare `name` and this lane's
+own fixture set declares `FeaturesForm` in two files, which a name-keyed consumer merges. Not that
+the lever moved: zero edges and zero symbols changed, the census still reads `owner+inherited`
+24,223, and the census's ancestor map is built from EDGES, which were already there. What changed
+is that the column is no longer empty, so the walk is possible at all. One asymmetry is recorded and
+not fixed: the class and interface branches skip an unresolvable same-leaf parent and the ENUM
+branch never had that guard, so `enum Foo implements \Foo` would emit a self-implements edge —
+removing an edge is differential-visible and needs its own before/after.
+
 ## Totals today
 
 - Outgoing at `10/10 applicable`: **3 of 23** (`dart`, `fsharp`, `php`).
@@ -864,26 +1177,27 @@ Laravel).
   (`hcl make yaml`)**, from `script/m14/verify-ruling-tables-registered.ts`'s own two lists.
   Unadjudicated: **0** (was reported as 4; refuted above with the command that says zero).
 - **php's outgoing is `unexplained = 0` as a RE-RUNNABLE ARTIFACT, not a session result**: of
-  350,367 endpoints, 115,660 resolve uniquely, 169,156 are ambiguous (the cause-A axis, untouched),
+  350,368 endpoints, 115,661 resolve uniquely, 169,156 are ambiguous (the cause-A axis, untouched),
   44,641 are variables in their own file, 10,644 name a bare name no admitted file declares, 8,457
   name php internals, 1,536 a namespace outside the population, 204 a path, 19 a dynamic callee, 45
   a language keyword, 13 a construct, **5 an M37.13 anonymous-class member**, and **0** are in a
   class the census cannot name — target defect 0, source defect 0, source unexplained 0. Round 1's
   two fixes moved 1 orphan `contains` endpoint to 0 and 19 declared-but-unpublished `calls` edges
   to 0; round 2's nested-function fix moved 3 declarations into the store (+3 symbols, +3
-  `contains`, +3 resolved) and emptied the last defect class. **No bucket was ever moved by
-  inventing an edge**: `calls` 103,190 and `uses` 155,016 are unchanged across both rounds, to the
-  digit. Caveat that cost a re-run: the first version of this table was measured SINGLE-PASS, i.e.
+  `contains`, +3 resolved) and emptied the last defect class; round 4's `exports` fix moved +1
+  symbol and +1 `exports` edge and **exactly the fields that follow from it** (PHP round 4). **No
+  bucket was ever moved by inventing an edge**: `calls` 103,190 and `uses` 155,016 are unchanged
+  across all three rounds, to the digit. Caveat that cost a re-run: the first version of this table was measured SINGLE-PASS, i.e.
   each file classified against the store as it stood when reached, and it read 29,181 more
   bare-name and 5,142 more namespace-outside endpoints than the two-pass run does; the corrected
   numbers are the ones that agree with the lane's independent audit to the digit.
-- **php's INCOMING is measured for the first time over the whole population**: of 40,266
-  declarations, 21,144 are reached by a resolving edge and **14,371 are named by edges that never
+- **php's INCOMING is measured over the whole population**: of 40,267
+  declarations, 21,145 are reached by a resolving edge and **14,371 are named by edges that never
   arrive**, and every one of those 14,371 is named by `ambiguous:multiple-declarations` and nothing
   else. The incoming hole is the outgoing ambiguity seen from the declarations, not a second
-  defect and not a missing reverse walk.
+  defect and not a missing reverse walk — and round 4's added edge did NOT grow it.
   `bun validation/m14/fixtures/php/reason-census.mts` · artifact
-  `validation/m60/php/reason-census.json` · 27 fixtures pass / 0 fail · 67 mutants caught / 0
-  survived · precision 1.000 over a truth file that now covers all ten types · PHPD36 + PHPD37
-  record the two rounds' decisions.
+  `validation/m60/php/reason-census.json` · 27 fixtures pass / 0 fail · 68 mutants caught / 0
+  survived · precision 1.000 over a truth file that now covers all ten types · PHPD36, PHPD37 and
+  PHPD38 record the three rounds' decisions.
 - Zero regexes: **yes** (18 → 0; laptop A's handoff records they have not matched this).

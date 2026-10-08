@@ -671,6 +671,41 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
 
         const modifiers = this.extractModifiers(node)
+        // M60 php round — THE PROJECT-WIDE HIERARCHY, PUBLISHED ON THE SYMBOL.
+        //
+        // php published heritage as EDGES and never on the symbol, and the store seam that
+        // persists a hierarchy reads `metadata.superTypes` (parallel-indexer.ts:3590 ->
+        // `brain_symbol.super_types`). So that column was NULL on every php row and
+        // `retargetCrossFileOverrides` — which opens `if (supertypes.size === 0) return out` —
+        // had nothing to walk: php's inheritance was, to a store consumer, ABSENT rather than
+        // thin. That is the blocker behind the ambiguity census's one SOUND lever
+        // (`owner+inherited`, 24,223 endpoints): no implementation of it can resolve a member
+        // through a class's ancestors while the store cannot say what those ancestors ARE.
+        //
+        // The list MIRRORS the heritage edges this declaration emits — same spellings, same
+        // omissions — so it is assembled from `baseUnresolvable`/`baseName`/`interfaces` rather
+        // than re-read from the node. Both halves matter and both are already decided above:
+        //   * a base `heritageTarget` could not separate from the class's own name emits NO
+        //     extends edge, so it must not appear here either — a self-loop is always fabrication,
+        //     and writing one into the column that exists to be WALKED is worse than omitting it;
+        //   * a same-leaf QUALIFIED base keeps its qualification on the edge, so the payload
+        //     carries the same string: a consumer holding this column cannot re-leaf it.
+        //
+        // OMITTED when the list is empty rather than published as `[]`. The store's own test is
+        // `Array.isArray(...) && length > 0`, so the two are one fact downstream; omitting it is
+        // therefore a spelling choice, and the fixture pins it so the spelling cannot drift
+        // without a decision.
+        //
+        // What this unblocks is the WALK, not its soundness: the existing consumer keys its map
+        // on the symbol's bare `name`, so two classes called `Child` in different namespaces still
+        // merge their parents — the leaf collision the `overrides` oracle bounded itself around.
+        // Fixing THAT is a consumer decision and is not claimed here.
+        //
+        // TRAITS ARE ABSENT, deliberately. `use SomeTrait` is not a heritage clause: this column
+        // is walked as a nearest-declaring-ANCESTOR chain, and a trait is a flattened mixin rather
+        // than an ancestor, so admitting it would change what "nearest" means for every class that
+        // mixes one in. A declared boundary, not an oversight.
+        const superTypes = [...(baseUnresolvable || !baseName ? [] : [baseName]), ...interfaces]
         symbols.push({
           name: className,
           kind: ASTEngine.SymbolKind.Class,
@@ -707,6 +742,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             namespace: ns,
             baseClass: baseUnresolvable ? undefined : baseName,
             interfaces,
+            // The hierarchy the store persists — see `superTypes` above for the mirror rule, the
+            // self-loop omission and the trait boundary.
+            ...(superTypes.length ? { superTypes } : {}),
             isFinal: modifiers.includes("final"),
             isAnonymous: false,
           },
@@ -799,7 +837,17 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // the derivation and the csharp/typescript precedent.
           ownerName: owner ?? ns,
           ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
-          metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${ifaceName}` : ifaceName, namespace: ns, extendedInterfaces: extended },
+          // An interface's parents are `extends` edges, so they are its heritage too — same
+          // mirror rule as the class branch (see `superTypes` there): the list is the one the
+          // edges above were emitted from, unresolvable same-leaf parents already skipped, and
+          // the key is omitted rather than published empty so the store sees "no supertypes".
+          metadata: {
+            phpSpecific: true,
+            fqn: ns ? `${ns}\\${ifaceName}` : ifaceName,
+            namespace: ns,
+            extendedInterfaces: extended,
+            ...(extended.length ? { superTypes: extended } : {}),
+          },
         })
         const body = this.findChildByType(node, "declaration_list")
         if (body) this.pushMembers(body, stack, ifaceName, ASTEngine.SymbolKind.Interface, ns, scope)
@@ -836,13 +884,19 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Labeled`). Probe-verified: enum_declaration carries the clause; the
         // pre-M37.13 code never read it, silently dropping enum implements.
         const ifaceClause = this.findChildByType(node, "class_interface_clause")
+        // One derivation, two consumers: the implements EDGES below and the heritage payload on
+        // the symbol. The metadata used to recompute `heritageTarget` for every child a second
+        // time, which is exactly how a payload and its edges drift apart.
+        const implementedInterfaces: string[] = []
         if (ifaceClause) {
           for (let i = 0; i < ifaceClause.namedChildCount; i++) {
             const iface = ifaceClause.namedChild(i)
             if (!iface) continue
+            const ifaceName = this.heritageTarget(iface.text, enumName)
+            implementedInterfaces.push(ifaceName)
             relationships.push({
               source: enumName,
-              target: this.heritageTarget(iface.text, enumName),
+              target: ifaceName,
               type: ASTEngine.RelationshipType.Implements,
               confidence: 1.0,
               line_number: this.nodeLine(iface),
@@ -858,7 +912,22 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // M60 NAMESPACE CONTAINMENT — see the class_declaration branch.
           ownerName: owner ?? ns,
           ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
-          metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${enumName}` : enumName, namespace: ns, implementedInterfaces: ifaceClause ? Array.from({ length: ifaceClause.namedChildCount }, (_, i) => this.heritageTarget(ifaceClause.namedChild(i)?.text ?? "", enumName)).filter(Boolean) : [] },
+          // Same mirror rule as the class and interface branches — the enum's implements edges are
+          // its heritage. NOTE the asymmetry this makes visible rather than creates: the class and
+          // interface branches SKIP a same-leaf parent that qualification cannot separate from the
+          // declaration's own name, and this branch has never had that guard, so an
+          // `enum Foo implements \Foo` would emit a self-implements edge and the payload mirrors
+          // it. NOT fixed here, and the reason is scope rather than doubt: removing an edge is a
+          // differential-visible change (the oracle's side would have to move with it) and needs
+          // its own before/after count over the population, so it is recorded in the lane docs as
+          // an open, unpriced shape instead of being folded into an additive payload change.
+          metadata: {
+            phpSpecific: true,
+            fqn: ns ? `${ns}\\${enumName}` : enumName,
+            namespace: ns,
+            implementedInterfaces,
+            ...(implementedInterfaces.length ? { superTypes: implementedInterfaces } : {}),
+          },
         })
         const list = this.findChildByType(node, "enum_declaration_list")
         if (list) {
@@ -1423,8 +1492,25 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    *
    * ## What counts, and the three tests that decide it
    *
-   *   1. the callee is EXACTLY the bare name `define` — a `Foo\define` or a variable
-   *      callee is a different function and is not a publication;
+   *   1. the callee RESOLVES TO THE GLOBAL `define`. Two spellings do, and only two:
+   *      the bare name `define` (which reaches the global function through PHP's
+   *      unqualified-name fallback) and the FULLY QUALIFIED `\define` (which reaches it
+   *      unconditionally — "Fully qualified names always resolve to the name without
+   *      leading namespace separator"). A QUALIFIED `Foo\define` resolves against the
+   *      current namespace, a RELATIVE `namespace\define` resolves to the current
+   *      namespace and does NOT fall back (the fallback is a rule for unqualified names),
+   *      and a variable callee resolves to nothing: none of the three is a publication.
+   *      The `\define` shape is not a hypothesis — a whole-population define-audit
+   *      (`validation/m14/fixtures/php/exports-probe.mts`) found 58 tree-implied
+   *      file-scope publications against 57 emitted edges, and the missing one was
+   *      phpunit's `tests/end-to-end/generic/_files/auto_prepend_file.php`, a file whose
+   *      entire purpose is publishing a constant that later scripts read (PHP's
+   *      `auto_prepend_file`), refused for its SPELLING alone. The two refused
+   *      define-family shapes are priced there as well: `namespace\define` at 0
+   *      occurrences, and the aliased `use function define as pub` — which does publish —
+   *      at 0 occurrences over 5,094 admitted files, so it is recorded and not
+   *      half-implemented. The audit also measured 0 files that declare their OWN
+   *      `define`, which is the only way the bare-name test could have been unsound;
    *   2. the first argument's VALUE node is a `string` / `encapsed_string`, read
    *      THROUGH the `argument` wrapper. `define($n, …)` publishes a name nobody can
    *      write down, so there is nothing for an edge to point at (measured: 1 in the
@@ -1494,7 +1580,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const n = stack.pop()!
       if (n.type === "function_call_expression") {
         const fn = n.childForFieldName("function")
-        if (fn && fn.text === "define" && isFileLevel(n)) {
+        // Rule 1 as a RESOLUTION test, not a spelling test. See the header: `\define` is
+        // a fully qualified name and therefore the global function in every program,
+        // while `Foo\define` / `namespace\define` are a different function or nothing at
+        // all. `calleeShape` is recorded because the two accepted spellings are not
+        // interchangeable to a consumer that has to explain the edge, and because it is
+        // the field a revert mutant filters on (script/m14/php-mutants.ts).
+        const calleeShape = fn?.text === "define" ? "bare" : fn?.text === "\\define" ? "absolute-fq" : null
+        if (fn && calleeShape && isFileLevel(n)) {
           const args = this.findChildByType(n, "arguments")
           const wrapper = args?.namedChild(0)
           // THROUGH the `argument` wrapper — see the header: testing the wrapper's own
@@ -1532,6 +1625,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
                   fileLevel: true,
                   relationshipType: "define_call",
                   file: filePath,
+                  calleeShape,
                   // The name is GLOBAL even inside a namespace, which is why the symbol
                   // carries no ownerName. Recorded so a consumer does not re-derive it
                   // from the file's namespace and get it wrong.

@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-10-03T23:44:27.946Z",
+  "generatedAt": "2026-10-08T13:26:46.830Z",
   "corpusRoot": "$HOME/fixtures/repositories",
-  "filesScanned": 4642,
-  "pipelineCrossCheckFiles": 4642,
-  "pipelineCrossCheckCompleted": 4642,
+  "filesScanned": 5094,
+  "pipelineCrossCheckFiles": 5094,
+  "pipelineCrossCheckCompleted": 5094,
   "pipelineCrossCheckFailed": 0,
   "pipelineCrossCheckFailures": [],
-  "pipelineCrossCheckUniverse": 4642,
+  "pipelineCrossCheckUniverse": 5094,
   "envSkippedForParseBomb": [],
   "distinctNodeTypes": 277,
   "probes": {
@@ -15,16 +15,16 @@
       "files": 1506
     },
     "P1b-qualified-reexport": {
-      "occurrences": 12,
-      "files": 8
+      "occurrences": 37,
+      "files": 29
     },
     "P2a-file-level-return-no-named-value": {
       "occurrences": 2,
       "files": 2
     },
     "P2b-file-level-return-named-value": {
-      "occurrences": 28,
-      "files": 20
+      "occurrences": 33,
+      "files": 25
     },
     "P3-alias-call": {
       "occurrences": 0,
@@ -40,20 +40,435 @@
     }
   },
   "p1Targets": {
-    "distinct": 4,
-    "alreadyPublishedAsImports": 4,
+    "distinct": 13,
+    "alreadyPublishedAsImports": 13,
     "notPublishedAsImports": 0,
     "notPublishedSample": [],
     "list": [
+      "Amp\\ByteStream\\buffer",
+      "Amp\\Promise\\all",
+      "Amp\\async",
+      "Amp\\call",
       "FastRoute\\simpleDispatcher",
       "Foo\\FOO",
       "Foo\\foo",
-      "PHPUnit\\TestFixture\\Generator\\f"
+      "PHPUnit\\TestFixture\\Generator\\f",
+      "React\\Promise\\all",
+      "React\\Promise\\reject",
+      "React\\Promise\\resolve",
+      "Safe\\file_get_contents",
+      "Safe\\json_encode"
     ]
   },
+  "defineAudit": {
+    "byShapeScopeName": {
+      "absolute-fq|file-level|literal": 1,
+      "absolute-fq|file-level|non-literal": 0,
+      "absolute-fq|nested|literal": 0,
+      "absolute-fq|nested|non-literal": 0,
+      "alias-call|file-level|literal": 0,
+      "alias-call|file-level|non-literal": 0,
+      "alias-call|nested|literal": 0,
+      "alias-call|nested|non-literal": 0,
+      "aliased-use-function|file-level|literal": 0,
+      "aliased-use-function|file-level|non-literal": 0,
+      "aliased-use-function|nested|literal": 0,
+      "aliased-use-function|nested|non-literal": 0,
+      "bare-shadowed-by-declared-define|file-level|literal": 0,
+      "bare-shadowed-by-declared-define|file-level|non-literal": 0,
+      "bare-shadowed-by-declared-define|nested|literal": 0,
+      "bare-shadowed-by-declared-define|nested|non-literal": 0,
+      "bare|file-level|literal": 57,
+      "bare|file-level|non-literal": 0,
+      "bare|nested|literal": 3,
+      "bare|nested|non-literal": 1,
+      "dynamic-callee|file-level|literal": 0,
+      "dynamic-callee|file-level|non-literal": 1,
+      "dynamic-callee|nested|literal": 8,
+      "dynamic-callee|nested|non-literal": 527,
+      "method-named-define|file-level|literal": 0,
+      "method-named-define|file-level|non-literal": 0,
+      "method-named-define|nested|literal": 0,
+      "method-named-define|nested|non-literal": 0,
+      "namespace-relative|file-level|literal": 0,
+      "namespace-relative|file-level|non-literal": 0,
+      "namespace-relative|nested|literal": 0,
+      "namespace-relative|nested|non-literal": 0,
+      "namespaced-other|file-level|literal": 0,
+      "namespaced-other|file-level|non-literal": 0,
+      "namespaced-other|nested|literal": 0,
+      "namespaced-other|nested|non-literal": 0
+    },
+    "publicationsExpected": 58,
+    "publications": [
+      {
+        "file": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "MARKDOWN_VERSION"
+      },
+      {
+        "file": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "MARKDOWN_EMPTY_ELEMENT_SUFFIX"
+      },
+      {
+        "file": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "MARKDOWN_TAB_WIDTH"
+      },
+      {
+        "file": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "MARKDOWN_WP_POSTS"
+      },
+      {
+        "file": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "MARKDOWN_WP_COMMENTS"
+      },
+      {
+        "file": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "MARKDOWN_PARSER_CLASS"
+      },
+      {
+        "file": "cloogle.org/frontend/api.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "SERVER_HOSTNAME"
+      },
+      {
+        "file": "cloogle.org/frontend/api.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "SERVER_PORT"
+      },
+      {
+        "file": "cloogle.org/frontend/api.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "SERVER_TIMEOUT"
+      },
+      {
+        "file": "cloogle.org/frontend/api.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "DOS_INITIAL_BLOCK"
+      },
+      {
+        "file": "cloogle.org/frontend/api.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "DOS_BLOCK_MULTIPLY"
+      },
+      {
+        "file": "cloogle.org/frontend/api.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "DOS_MAX_BLOCK"
+      },
+      {
+        "file": "cloogle.org/frontend/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CLOOGLE_DB_HOST"
+      },
+      {
+        "file": "cloogle.org/frontend/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CLOOGLE_DB_USER"
+      },
+      {
+        "file": "cloogle.org/frontend/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CLOOGLE_DB_NAME"
+      },
+      {
+        "file": "cloogle.org/frontend/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CLOOGLE_DB_PASS"
+      },
+      {
+        "file": "cloogle.org/frontend/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CLOOGLE_KEEP_STATISTICS"
+      },
+      {
+        "file": "cloogle.org/frontend/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "E_CLOOGLEDOWN"
+      },
+      {
+        "file": "cloogle.org/frontend/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "E_ILLEGALMETHOD"
+      },
+      {
+        "file": "cloogle.org/frontend/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "E_ILLEGALREQUEST"
+      },
+      {
+        "file": "cloogle.org/frontend/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "E_TIMEOUT"
+      },
+      {
+        "file": "cloogle.org/frontend/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "E_DOSPROTECT"
+      },
+      {
+        "file": "cloogle.org/frontend/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "E_QUERYTOOLONG"
+      },
+      {
+        "file": "cloogle.org/frontend/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "DOS_MAX_REQUESTS_PER_SECOND"
+      },
+      {
+        "file": "cloogle.org/frontend/doc/contents.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CLEANHOME"
+      },
+      {
+        "file": "cloogle.org/frontend/doc/src.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CLEANHOME"
+      },
+      {
+        "file": "cloogle.org/frontend/src/lib.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CLEANHOME"
+      },
+      {
+        "file": "cloogle.org/frontend/src/lib.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CLEANLIB"
+      },
+      {
+        "file": "cloogle.org/frontend/src/src.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CLEAN_HOME"
+      },
+      {
+        "file": "cloogle.org/frontend/stats/ajax/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "SQL_NOT_SILLYUSER"
+      },
+      {
+        "file": "cloogle.org/frontend/stats/ajax/conf.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "SQL_SERVER_ERROR"
+      },
+      {
+        "file": "pb-grpc/examples/php/route_guide/route_guide_client.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "COORD_FACTOR"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "AUTOLOAD_FILE"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "TEMP_DIR"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CHANGELOG_FILE"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "LICENSE_FILE"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "SQL_DIR"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CONFIG_FILE"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CUSTOM_HEADER_FILE"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CUSTOM_FOOTER_FILE"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "VERSION_CHECK_DEFAULT"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "LOCALE_PATH"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CACHE_DIR"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "VERSION_SUFFIX"
+      },
+      {
+        "file": "phpmyadmin/app/constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "K_PATH_IMAGES"
+      },
+      {
+        "file": "phpmyadmin/public/index.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "ROOT_PATH"
+      },
+      {
+        "file": "phpmyadmin/public/setup/index.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "ROOT_PATH"
+      },
+      {
+        "file": "phpmyadmin/src/FieldMetadata.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "MYSQLI_TYPE_JSON"
+      },
+      {
+        "file": "phpmyadmin/tests/bootstrap-static.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "ROOT_PATH"
+      },
+      {
+        "file": "phpmyadmin/tests/bootstrap-static.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "TESTSUITE"
+      },
+      {
+        "file": "phpmyadmin/tests/bootstrap.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "TESTSUITE"
+      },
+      {
+        "file": "phpmyadmin/tests/bootstrap.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "ROOT_PATH"
+      },
+      {
+        "file": "phpmyadmin/tests/phpstan-constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "ROOT_PATH"
+      },
+      {
+        "file": "phpmyadmin/tests/phpstan-constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "CACHE_DIR"
+      },
+      {
+        "file": "phpmyadmin/tests/phpstan-constants.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "VERSION_SUFFIX"
+      },
+      {
+        "file": "phpunit/tests/bootstrap.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "TEST_FILES_PATH"
+      },
+      {
+        "file": "phpunit/tests/bootstrap.php",
+        "callee": "define",
+        "calleeNodeType": "name",
+        "name": "PHPUNIT_COMPOSER_INSTALL"
+      },
+      {
+        "file": "phpunit/tests/end-to-end/generic/_files/auto_prepend_file.php",
+        "callee": "\\define",
+        "calleeNodeType": "qualified_name",
+        "name": "AUTO_PREPEND_FILE_LOADED"
+      }
+    ],
+    "filesDeclaringTheirOwnDefine": [],
+    "aliasCalls": {
+      "fileLevelLiteral": 0,
+      "rows": []
+    }
+  },
   "p1bRedeclaredByFile": {
-    "count": 3,
+    "count": 5,
     "occurrences": [
+      {
+        "file": "gql-graphql-php/src/Executor/Promise/Adapter/AmpPromiseAdapter.php",
+        "target": "Amp\\Promise\\all",
+        "leaf": "all"
+      },
+      {
+        "file": "gql-graphql-php/src/Executor/Promise/Adapter/ReactPromiseAdapter.php",
+        "target": "React\\Promise\\all",
+        "leaf": "all"
+      },
       {
         "file": "nvim-treesitter/tests/query/highlights/php/keywords.php",
         "target": "Foo\\foo",
@@ -71,7 +486,7 @@
       }
     ]
   },
-  "importTargetsDistinct": 2935,
+  "importTargetsDistinct": 3249,
   "examples": [
     {
       "probe": "P4-define-literal",
@@ -235,43 +650,43 @@
     },
     {
       "probe": "P2b-file-level-return-named-value",
-      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
-      "detail": "return ( );  [parenthesized_expression]"
+      "file": "gql-graphql-php/.php-cs-fixer.php",
+      "detail": "return MLL\\PhpCsFixerConfig\\risky($finder, [ 'no_superfluous_phpdoc_tags' => [ '  [member_call_expression]"
     },
     {
-      "probe": "P2a-file-level-return-no-named-value",
-      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
-      "detail": "return true ;  [boolean]"
+      "probe": "P1b-qualified-reexport",
+      "file": "gql-graphql-php/examples/04-async-php/amphp-v3/http-server/graphql.php",
+      "detail": "function Amp\\ByteStream\\buffer"
     },
     {
-      "probe": "P2b-file-level-return-named-value",
-      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
-      "detail": "return fn () => ( );  [arrow_function]"
-    },
-    {
-      "probe": "P2b-file-level-return-named-value",
-      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
-      "detail": "return fn ( ) => ( );  [arrow_function]"
+      "probe": "P1b-qualified-reexport",
+      "file": "gql-graphql-php/examples/04-async-php/amphp-v3/schema.php",
+      "detail": "function Amp\\async"
     },
     {
       "probe": "P2b-file-level-return-named-value",
-      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
-      "detail": "return function ( ) { };  [anonymous_function]"
+      "file": "gql-graphql-php/examples/04-async-php/amphp-v3/schema.php",
+      "detail": "return new Schema([ 'query' => new ObjectType([ 'name' => 'Query', 'fields' => [  [object_creation_expression]"
+    },
+    {
+      "probe": "P1b-qualified-reexport",
+      "file": "gql-graphql-php/examples/04-async-php/amphp/schema.php",
+      "detail": "function Amp\\call"
     },
     {
       "probe": "P2b-file-level-return-named-value",
-      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
-      "detail": "return function () { };  [anonymous_function]"
+      "file": "gql-graphql-php/examples/04-async-php/amphp/schema.php",
+      "detail": "return new Schema([ 'query' => new ObjectType([ 'name' => 'Query', 'fields' => [  [object_creation_expression]"
     },
     {
       "probe": "P2b-file-level-return-named-value",
-      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
-      "detail": "return match ( ) { };  [match_expression]"
+      "file": "gql-graphql-php/phpstan/include-by-php-version.php",
+      "detail": "return $config;  [variable_name]"
     },
     {
       "probe": "P2b-file-level-return-named-value",
-      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
-      "detail": "return match () { };  [match_expression]"
+      "file": "gql-graphql-php/rector.php",
+      "detail": "return static function (Rector\\Config\\RectorConfig $rectorConfig): void { $recto  [anonymous_function]"
     }
   ]
 }

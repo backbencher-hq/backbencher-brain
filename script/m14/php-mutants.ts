@@ -98,6 +98,19 @@ export const PHP_MUTANTS: Mutant[] = [
       ],
     }),
   },
+  {
+    id: "php/drop-absolute-fq-define-publication",
+    language: "php",
+    defectClass: "relationship-loss",
+    description:
+      "reverts the callee-resolution fix: drops every `exports` edge whose callee was the FULLY QUALIFIED `\\define`, which is exactly what the bare-name-only rule did before 2026-10-08. Written GENERICALLY off the edge's own `metadata.calleeShape` rather than a hardcoded target name, for the reason recorded above the owner mutants — a name-hardcoded filter silently stops matching and then reports a survive as a pass. Caught by php/define-exports' `expectRelationships` on `AUTO_PREPEND_STYLE`; the population it costs is 1 edge, and it is a publication PHP guarantees unconditionally (`\\define` is fully qualified, so there is no namespace lookup and no fallback for the rule to be wrong about), in phpunit's `tests/end-to-end/generic/_files/auto_prepend_file.php` — a file whose whole purpose is that the constant is globally visible.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "exports" && x.metadata?.calleeShape === "absolute-fq"),
+      ),
+    }),
+  },
 ]
 
 /**
@@ -494,7 +507,102 @@ const PHP_NESTED_FUNCTION_MUTANTS: Mutant[] = [
   },
 ]
 
+/**
+ * The heritage payload (`metadata.superTypes`), and the THREE ways it fails.
+ *
+ * The payload exists because the store seam that persists a project-wide hierarchy reads
+ * `symbol.metadata.superTypes` (`src/ast/parallel-indexer.ts:3590` -> `brain_symbol.super_types`) and
+ * php never published it: the column was NULL on every row, so `retargetCrossFileOverrides`
+ * returned before its first query and php's inheritance was, to a store consumer, ABSENT rather
+ * than thin. Each mutant below is one direction of that failure, and the directions are not
+ * interchangeable — which is why there are three rather than one:
+ *
+ *   1. the payload VANISHES. Every other label in the graph is untouched, so nothing else notices;
+ *   2. the payload keeps the BASE and drops the INTERFACES. This is the one that arrives by
+ *      accident, because `metadata.baseClass` already existed and mirroring it costs nothing — the
+ *      result is a column that looks populated and is half the hierarchy, which is worse than NULL
+ *      for a consumer that trusts it (a member reached through an interface is not inherited from
+ *      the base). Reverted by reading the result's OWN `extends` edges, so it cannot go vacuous if
+ *      the rule or a fixture is renamed;
+ *   3. the payload names a heritage the declaration does NOT have — the naive re-derivation from
+ *      the node text. It is the direction that fabricates rather than loses: the PHPD10 shape
+ *      `class InvalidArgumentException extends \InvalidArgumentException` resolves to the class's
+ *      OWN name, and a payload that re-read the node would write a SELF-LOOP into the column that
+ *      exists to be walked.
+ */
+/** The kinds the heritage payload can appear on — the four declaration shapes php publishes a
+ *  heritage for. `trait` is in the set because the analyzer's own `isClassLikeOwnerKind` treats it
+ *  as one; it carries no heritage in PHP, so including it only means mutant 3 has a shape it can
+ *  name itself on, which is the direction it exists to reproduce. */
+const CLASS_LIKE_KINDS = new Set(["class", "interface", "trait", "enum"])
+
+const PHP_HERITAGE_MUTANTS: Mutant[] = [
+  {
+    id: "php/heritage-payload-dropped",
+    language: "php",
+    defectClass: "lost-metadata",
+    description:
+      "strips `metadata.superTypes` from every symbol — the state of this lane before the change, reproduced faithfully rather than described. Same symbols, same names, same kinds, same heritage EDGES; one metadata key gone. Nothing else in the ontology moves, so the graph looks exactly as healthy as it did: this is precisely why the column stayed NULL for php without any gate going red, and why the defect needed a fixture of its own. Caught by php/heritage-published's six `meta.superTypes` rows.",
+    transform: r => ({
+      ...r,
+      symbols: (r?.symbols ?? []).map((s: any) => {
+        if (!s?.metadata || typeof s.metadata !== "object") return s
+        if (!("superTypes" in s.metadata)) return s
+        const { superTypes: _dropped, ...rest } = s.metadata
+        return { ...s, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "php/heritage-payload-base-only",
+    language: "php",
+    defectClass: "lost-metadata",
+    description:
+      "keeps the base and drops the interfaces — the accidental half-payload, and the reason the fixture asserts the set on a class that has BOTH rather than a class per shape. Reverted by reading the result's OWN `extends` edges, never a name list: an entry survives only if this declaration emits an `extends` edge to it, which is exactly the base-only rule (an interface's parents ARE extends edges, so an interface keeps its list and the discrimination stays honest). Caught by php/heritage-published — `WithBaseAndInterfaces` loses `Second` and `Labeled`, `WithInterfaceOnly` and `Suit` lose everything and go back to absent.",
+    transform: r => {
+      const extendsTargets = new Map<string, Set<string>>()
+      for (const x of (r?.relationships ?? []) as any[]) {
+        if (String(x?.type) !== "extends") continue
+        const src = String(x?.source ?? "")
+        let set = extendsTargets.get(src)
+        if (!set) { set = new Set(); extendsTargets.set(src, set) }
+        set.add(String(x?.target ?? ""))
+      }
+      return {
+        ...r,
+        symbols: (r?.symbols ?? []).map((s: any) => {
+          const list = s?.metadata?.superTypes
+          if (!Array.isArray(list) || list.length === 0) return s
+          const keep = list.filter((n: any) => extendsTargets.get(String(s.name))?.has(String(n)))
+          const { superTypes: _dropped, ...rest } = s.metadata
+          return { ...s, metadata: keep.length ? { ...rest, superTypes: keep } : rest }
+        }),
+      }
+    },
+  },
+  {
+    id: "php/heritage-payload-names-itself",
+    language: "php",
+    defectClass: "fabricated-relationship",
+    description:
+      "adds each class-like declaration's OWN name to its heritage — what a payload re-derived from the node text produces, and the one direction here that FABRICATES instead of losing. Every declaration with no heritage gains one that points at itself, so the store column reads populated for exactly the shapes the analyzer declined to publish. It is not hypothetical: the PHPD10 gate exists because `class InvalidArgumentException extends \\InvalidArgumentException` resolves to the class's own name, and the class branch emits no edge for it — a payload that re-read the raw base text would put that self-loop in the column a consumer walks. Caught by php/heritage-published's three `meta.superTypes: null` rows (`NoHeritage`, `PlainIface`, `InvalidArgumentException`), which is what those rows are FOR: without them the omission side of the rule would be unfalsifiable.",
+    transform: r => ({
+      ...r,
+      symbols: (r?.symbols ?? []).map((s: any) => {
+        if (!s || typeof s.name !== "string" || !s.name) return s
+        if (!CLASS_LIKE_KINDS.has(String(s.kind))) return s
+        const md = { ...(s.metadata ?? {}) }
+        const list = Array.isArray(md.superTypes) ? md.superTypes : []
+        if (list.includes(s.name)) return s
+        md.superTypes = [...list, s.name]
+        return { ...s, metadata: md }
+      }),
+    }),
+  },
+]
+
 PHP_MUTANTS.push(...PHP_RECEIVER_OWNER_MUTANTS)
 PHP_MUTANTS.push(...PHP_PROJECTION_MUTANTS)
 PHP_MUTANTS.push(...PHP_RECOVERY_MUTANTS)
 PHP_MUTANTS.push(...PHP_NESTED_FUNCTION_MUTANTS)
+PHP_MUTANTS.push(...PHP_HERITAGE_MUTANTS)

@@ -1,11 +1,11 @@
 {
   "instrument": "validation/m14/fixtures/php/reason-census.mts",
   "incoming": {
-    "declarations": 40266,
+    "declarations": 40267,
     "namedByAtLeastOneUnresolvedEdge": 18165,
-    "reachedByAtLeastOneResolvingEdge": 21144,
+    "reachedByAtLeastOneResolvingEdge": 21145,
     "reachedAndNamed": 3794,
-    "reachedAndNamedByNothing": 17350,
+    "reachedAndNamedByNothing": 17351,
     "namedButReachedByNone": 14371,
     "neitherNamedNorReached": 4751,
     "resolvedEdgesWithoutASingleIdentity": 542,
@@ -135,12 +135,12 @@
   "filesAnalyzed": 5094,
   "parseFailures": 0,
   "parserErrorFiles": 12,
-  "symbolsPublished": 40266,
-  "edgesSeen": 350367,
+  "symbolsPublished": 40267,
+  "edgesSeen": 350368,
   "typesSeen": 10,
   "targetClasses": {
     "ambiguous:multiple-declarations": 169156,
-    "resolved:unique": 115660,
+    "resolved:unique": 115661,
     "variable-in-this-file": 44641,
     "external:bare-name-outside-population": 10644,
     "external:php-internal-function": 4498,
@@ -156,7 +156,7 @@
   "sourceClasses": {
     "source:published:unique": 200350,
     "source:published:ambiguous": 120123,
-    "source:global": 29891,
+    "source:global": 29892,
     "source:declared-on-anonymous-class": 3
   },
   "perType": {
@@ -280,13 +280,13 @@
       }
     },
     "exports": {
-      "edges": 57,
+      "edges": 58,
       "target": {
-        "resolved:unique": 43,
+        "resolved:unique": 44,
         "ambiguous:multiple-declarations": 14
       },
       "source": {
-        "source:global": 57
+        "source:global": 58
       }
     },
     "overrides": {
@@ -601,5 +601,5 @@
   "defectRows": [],
   "unexplainedRows": [],
   "unexplainedTotal": 0,
-  "elapsedSec": 155.411
+  "elapsedSec": 179.943
 }

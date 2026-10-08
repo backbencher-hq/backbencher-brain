@@ -25,9 +25,17 @@
  */
 import { readFileSync, writeFileSync, existsSync } from "node:fs"
 import { execSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
 import * as path from "node:path"
 
-const ROOT = "$HOME/backbencher-brain"
+// ROOT is the CHECKOUT this script ships in, derived from the script's own location rather
+// than written down. It used to be the literal `$HOME/backbencher-brain`, which is a
+// path a lane worktree does not have — so on `…/mcp/backbencher-brain` this gate died on its
+// FIRST import (`Cannot find module $HOME/backbencher-brain/src/ast/engine.ts`) and
+// the lane had no line-contract reading at all while reading as "never run". An instrument is
+// only re-runnable where the checkout actually is; `validation/m14/fixtures/php/ruled-gate.ts`
+// derives its ROOT the same way for the same reason.
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const CORPORA = ["phpunit", "phpmyadmin"]
 const FULL = process.argv.includes("--full")
 const AS_JSON = process.argv.includes("--json")
