@@ -696,6 +696,17 @@ async function main() {
     // rather than written as an orphan.
     if (!SCOPED) emitEvidence({ ...base, issueId: "M14.0.F10" })
     else if (SCOPED_LANG === "clean") emitEvidence({ ...base, issueId: "M14.0.F10.clean" })
+    // M49 (2026-10-08): powershell. The artifact at this id was written by an EARLIER
+    // version of this gate — back when the scoped path computed `M14.0.F10.<lane>` — so
+    // when the rule above was introduced (one LITERAL branch per declared lane) the
+    // artifact on disk became an ORPHAN: a file in the results directory that no producer
+    // claims, which is precisely what M49 verify-evidence-identity exists to make
+    // impossible. Measured before this branch was added: `verify-evidence-identity`
+    // reported `M14.0.F10.powershell` among four orphans, and its committed copy carries
+    // the pre-harness envelope (15 keys, no `checks`, no `limitations`). The branch is the
+    // fix, and the re-run below is what makes the artifact the gate's own output again
+    // instead of a stale file nothing can regenerate.
+    else if (SCOPED_LANG === "powershell") emitEvidence({ ...base, issueId: "M14.0.F10.powershell" })
     else throw new Error(
       `verify-parse-success: --emit has no declared artifact id for scope "${SCOPED_LANG ?? SCOPED_REPO}" — add one literal emit call `
       + '(`{ ...base, issueId: "M14.0.F10.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '
