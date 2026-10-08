@@ -32,6 +32,11 @@ tool-mode-corpus.json.fresh
 # @vscode/test-electron download cache (R3/M25 e2e artifacts)
 .vscode-test/
 
+# script/perf/make-pools.sh writes nested copies of this repo's own source here
+# (n10 … n800 plus the 4,799-file pool). They are copies, not content, and a
+# second tree of this size does not belong in git; the gate reads them from disk.
+.perf-fixtures/
+
 # client-tooling client runtime dir
 .client-tooling/
 
