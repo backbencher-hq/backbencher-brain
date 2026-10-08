@@ -4,8 +4,8 @@
   "milestone": "M27",
   "status": "known-gap",
   "checks": 14,
-  "passed": 12,
-  "failed": 2,
+  "passed": 13,
+  "failed": 1,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "mutantRecords": [
@@ -30,8 +30,8 @@
       "caught": true
     }
   ],
-  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
-  "sourceFingerprint": "aff3a75ff787ebe1862b270855b6e9b64cc6b69e27101b3c1c444a23b2060ecb",
+  "currentCommit": "a055bd56a6811c4edfe2def46071cdbe9cf048cb",
+  "sourceFingerprint": "c2095aaf617d110b2258ae6d64ca023454eb13a51d1d5303e7540fe5e09638cc",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m27/verify-matrix.ts",
@@ -40,7 +40,7 @@
   ],
   "verifierCommand": "npx tsx script/m27/verify-matrix.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-10-05T22:33:28.541Z",
+  "generatedAt": "2026-10-08T01:40:51.724Z",
   "claimLevel": "n/a — this issue produces a truth table, not a claim",
   "limitations": [
     "The matrix's editor/column shape is declared (4 adapters + the VS Code baseline); every VALUE is generated from the ledger and evidence files.",
@@ -48,7 +48,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:33:28.543Z",
-    "contentSha256": "72e361a29b569d5d32d4495f04d14b7f95e6151dbce80103b1785252e297bbe0"
+    "sealedAt": "2026-10-08T01:40:51.726Z",
+    "contentSha256": "a0715b114ea30a9aa5f13bb96ef9b09b194545218a6a613556243bf03dceca52"
   }
 }

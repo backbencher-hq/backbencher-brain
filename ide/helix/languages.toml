@@ -1,5 +1,16 @@
 # bb_lsp — Backbencher Brain language server (M27.H1)
-# Edit BB_ROOT to your backbencher-brain checkout (compiled dist required).
+# bb_lsp — Backbencher Brain language server (M27.H1)
+#
+# THE PATH BELOW IS A PLACEHOLDER AND MUST BE EDITED. It used to read
+# `/opt/backbencher-brain/dist/lsp/server.js`, and script/m56/generate-editors.ts
+# publishes this file's command verbatim to the website as Helix's `launch`
+# instructions — so readers were shown a Linux path as though it were the way to
+# run the server. On any other machine, including the owner's Mac, that path does
+# not exist. Nothing failed loudly: a config file full of a plausible absolute
+# path reads exactly like a config file that is merely specific.
+#
+# A gate (script/m56/verify-published-paths.ts) now fails if any published editor
+# config carries a machine-specific absolute path.
 
 [[language]]
 name = "typescript"
@@ -19,4 +30,4 @@ language-servers = [ { name = "bb-lsp" } ]
 
 [language-server.bb-lsp]
 command = "node"
-args = [ "/opt/backbencher-brain/dist/lsp/server.js" ]
+args = [ "/ABSOLUTE/PATH/TO/backbencher-brain/dist/lsp/server.js" ]  # EDIT ME
