@@ -2,16 +2,23 @@
   "issue": "M29.R1",
   "code": "R1",
   "milestone": "M29",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 36,
-  "passed": 36,
-  "failed": 0,
+  "passed": 33,
+  "failed": 3,
   "mutantsCaught": 7,
   "mutantsTotal": 7,
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "d684cf37d71e7cc2c33e866258386f8c77ad2b3d",
   "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
+  "sourceFingerprint": "5de646714c10006336a5506c85c09a75e9a770161ef7fa7cbdfe305e30689239",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m29/verify-wave-protocol.ts",
+    "script/m29/generate-wave-doc.ts",
+    "script/m29/wave-protocol.ts"
+  ],
   "evidenceFile": "R1.json",
-  "generatedAt": "2026-09-20T02:47:11.627Z",
+  "generatedAt": "2026-10-08T01:37:33.481Z",
   "limitations": [
     "S5 (per-language server leg) and S6 (in-editor leg) are R2 execution work; in the dry-run they are declared blockers that cap at I1.",
     "The SPEC conformance read is machine-read from the committed ledger; re-running the SPEC itself is M14's wave machinery, not R1's.",
@@ -19,7 +26,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:47:11.628Z",
-    "contentSha256": "566b377c23107ee51a0f5d78067b107b3127dab1847a0fda8465c3b5558b933e"
+    "sealedAt": "2026-10-08T01:37:33.482Z",
+    "contentSha256": "f3007be14acbe9c5fdd0f13cae8b791a012a0d4b75f56e6b46e0eb31604daa14"
   }
 }
