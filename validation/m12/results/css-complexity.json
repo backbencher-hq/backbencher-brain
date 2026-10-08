@@ -77,7 +77,7 @@
   "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.852Z",
-    "contentSha256": "e540c4023ddda45b59951f858623a119dd99bf4df49942143234274485f15e1d"
+    "sealedAt": "2026-10-08T00:38:12.187Z",
+    "contentSha256": "38a6aa02389b549f44869ea1a4d00a47be854a76105b141c82c5fe5903392479"
   }
 }
