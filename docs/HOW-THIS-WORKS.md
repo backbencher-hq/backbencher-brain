@@ -176,11 +176,33 @@ never pass.
 ```bash
 export PATH="$HOME/.local/node/bin:$PATH"   # node is not on the default PATH
 
-npm run typecheck                             # tsc --noEmit
+npm run typecheck                             # tsc --noEmit — src/ ONLY, see below
+npm run typecheck:scripts                     # the gate suite's typecheck ratchet
 npx tsx script/m25/verify-governance.ts       # a milestone governance gate
 npx tsx script/m62/verify-path-encoding.ts    # a focused gate
 npx tsx script/m62/reseal-ledger.ts validation/m25/results/manifest.json --apply
 ```
+
+> **`npm run typecheck` does not check the gates.** `tsconfig.json` includes
+> `src/**/*.ts` and nothing else, so `tsc` never loads a file under `script/`.
+> Proven on 2026-10-08: a gate file containing
+> `const n: number = "not a number"` and a call to a function that does not exist
+> left `npm run typecheck` reporting **0 errors**. Every "tsc clean" ever said
+> about a gate was vacuous.
+>
+> `script/m60/verify-script-surface.ts` found this on 2026-09-25, and
+> `script/m14/verify-script-typecheck-baseline.ts` ratchets `script/m12` + `m14`
+> (716 errors worked down to 180). The rest — m11, m13, m15–m63, `lanes/`,
+> `incoming-*`, about 3,000 files — had no typecheck and no ratchet at all.
+> `npm run typecheck:scripts` now covers those, tracking **765 errors across 219
+> files** so the number can only shrink. A pass there means *no file got worse*,
+> not that the scripts typecheck, and it prints that in as many words.
+>
+> The most alarming number in this document: **one unparseable file in the program
+> makes `tsc` report 0 semantic diagnostics instead of 521.** `tsc` emits syntactic
+> errors and then drops semantic checking for the entire program. Every ratchet
+> would pass. Both gates that count type errors therefore plant a canary and
+> refuse to publish a verdict if it does not come back.
 
 A gate that cannot fail is worse than no gate, because it is believed. Every
 gate written in this regime carries at least one negative: a leg that plants a
