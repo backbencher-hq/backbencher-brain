@@ -1763,6 +1763,100 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
     }
+    // ── THE SOURCE'S OWN QUALIFIER, KEPT INSTEAD OF DROPPED ──────────────
+    //
+    // Measured 2026-10-08 on a 6-line probe file (`script/m14/tmp/dt-selector-shape.ts`
+    // prints the node shapes; the symbol table below is `pool-worker.parseFile`'s):
+    //
+    //   source            edge the analyzer emitted      symbol the file PUBLISHES
+    //   Color.red         uses  -> red                   enum_member  q=Color.red
+    //   C.create()        calls -> create                method       q=C.create
+    //   super.go()        calls -> go                    method       q=Base.go
+    //   this.count        uses  -> count                 property     q=Base.count
+    //   b.count           uses  -> count                 property     q=Base.count
+    //
+    // Every one of those targets is a bare member name, and the qualifier that would make it
+    // determinate is written in the SOURCE. `Color.red` in a project with four `red`s is an
+    // ambiguous edge; `Color.red` is exactly one declaration, because the member symbol's
+    // `ownerName` is what `pool-worker` turns into its `qualifiedName`. This is the same
+    // defect the fsharp lane measured and fixed (calls target-determinacy 19.1% -> 29.1%).
+    //
+    // VERIFY-THEN-WRITE, because qualification can also make an edge WORSE: a bare `count`
+    // that is unique in the project resolves, while `C.count` for a member C inherits names
+    // a declaration C does not have. So the target is written ONLY when the analyzer can
+    // point at the declaration it names — in this file's own symbol table, or in the project
+    // index's member table. Nothing here guesses an owner from a capital letter alone.
+    const fileQualified = new Set<string>()
+    for (const s of symbols) {
+      if (s.ownerName) fileQualified.add(`${s.ownerName}.${s.name}`)
+    }
+    /** type -> member, transitively closed, from the index — the same read the override pass
+     *  makes (`buildResolutionTables`' `typeMembers`), and absent for a per-file run. */
+    const indexDeclares = (typeName: string, member: string): boolean => {
+      const set = projectIndex?.typeMembers?.get?.(typeName)
+      if (set instanceof Set) return set.has(member)
+      if (Array.isArray(set)) return set.includes(member)
+      return false
+    }
+    /**
+     * The type that DECLARES `member`, starting at `from` and walking this file's superclass
+     * chain. Dart's own rule: a member is addressable through the type that inherits it, but
+     * the DECLARATION is what a qualified name names — `this.count` inside C is `Base.count`
+     * when C extends Base, and writing `C.count` there would name a symbol that does not
+     * exist (and, being a lookup miss, would be counted as a broken edge).
+     */
+    const declaringOwner = (member: string, from: string | null, memberNodesByOwner: Map<string, Set<string>>): string | null => {
+      const seen = new Set<string>()
+      let cur = from
+      while (cur && !seen.has(cur)) {
+        seen.add(cur)
+        if (memberNodesByOwner.get(cur)?.has(member)) return cur
+        cur = superByClass.get(cur) ?? null
+      }
+      return null
+    }
+    /** owner text -> the fields/locals it declares -> their DECLARED type, when that type is
+     *  a plain identifier. `final Base b;` makes `b.count` addressable as `Base.count`. */
+    const fieldTypeByField = new Map<string, string>()
+    for (const s of symbols) {
+      if (!s.ownerName) continue
+      const dt = String((s.metadata as any)?.dataType ?? "")
+      if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(dt)) fieldTypeByField.set(`${s.ownerName}.${s.name}`, dt)
+    }
+    /**
+     * A QUALIFIED TARGET, or null. The owner must be a type this run can SEE, and the
+     * qualified name it produces must be a declaration that exists — this file's symbol
+     * table, or the project index's member table.
+     */
+    const qualifiedTarget = (ownerText: string | null, member: string): string | null => {
+      if (!ownerText || !member || !visibleTypes.has(ownerText)) return null
+      const declared = declaringOwner(member, ownerText, membersByOwner)
+      if (declared) {
+        // the in-file spelling is verified against what the file PUBLISHES, not rebound
+        const spelling = `${declared}.${member}`
+        if (fileQualified.has(spelling)) return spelling
+        return null
+      }
+      if (indexDeclares(ownerText, member)) return `${ownerText}.${member}`
+      return null
+    }
+    /**
+     * The type a READ/CALL head names: `this` -> the enclosing type, `super` -> its base,
+     * a type name -> itself, a field -> the type the field is declared with. Anything else
+     * (a call result, an index expression, a prefix alias) has no owner this run can point
+     * at, and returns null so the target stays the bare leaf the source wrote.
+     */
+    const headOwner = (head: Node | null, enclosing: string | null): string | null => {
+      const t = head?.type
+      if (t === "this") return enclosing
+      if (t === "super") return superByClass.get(enclosing ?? "") ?? null
+      const text = this.headNameText(head)
+      if (text === null) return null
+      const fieldType = fieldTypeByField.get(`${enclosing ?? ""}.${text}`)
+      if (fieldType) return fieldType
+      return text
+    }
+
     // Current call source = enclosing function/method/constructor leaf name.
     const resolveCurrent = (n: Node, current: string | null): string | null => {
       // Local functions are NOT call contexts (family contract: locals fold
@@ -2002,9 +2096,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: {},
               })
             } else {
+              // A bare callee inside a type body resolves to THAT type's member before it
+              // resolves to a file-scope function of the same name (Dart's member scope
+              // shadows the library scope), so the enclosing type is the owner — and it is
+              // only written when the declaration is verifiable.
+              const qualified = locals.has(leaf) ? null : qualifiedTarget(owner, leaf)
               relationships.push({
                 source: callSource,
-                target: leaf,
+                target: qualified ?? leaf,
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 line_number: this.nodeLine(leafNode),
@@ -2022,7 +2121,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // Metadata only. No row is added or removed and no confidence moves,
                 // so this cannot change a payload; it makes an existing population
                 // queryable, which is what M14 §4 asks of a heuristic edge.
-                metadata: locals.has(leaf) ? { isLocalRead: true } : {},
+                metadata: {
+                  ...(locals.has(leaf) ? { isLocalRead: true } : {}),
+                  ...(qualified ? { qualifier: "enclosing" } : {}),
+                },
               })
             }
           }
@@ -2062,16 +2164,26 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { isNamedConstructor: true },
             })
           } else {
+            // KEEP THE QUALIFIER THE SOURCE WROTE (see `qualifiedTarget`). For a one-link
+            // chain the owner is the head (`C.create()` -> C, `this.build()` -> this,
+            // `super.go()` -> super); for a longer chain it is the link immediately before
+            // the leaf, and a lowercase link (`a.b.c()`) does not name a type, so the
+            // lookup refuses it and the target stays the bare leaf.
+            const ownerCand = links.length > 1 ? before : headOwner(head, owner)
+            const qualified = qualifiedTarget(ownerCand, method)
             relationships.push({
               source: callSource,
-              target: method,
+              target: qualified ?? method,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               line_number: this.nodeLine(calleeNode),
               // Same reason as the bare-call arm above: a leaf that the enclosing
               // function binds is a binding, and the row is labelled so a consumer
               // can tell it from a call to a declared member.
-              metadata: locals.has(method) ? { isLocalRead: true } : {},
+              metadata: {
+                ...(locals.has(method) ? { isLocalRead: true } : {}),
+                ...(qualified ? { qualifier: "chain" } : {}),
+              },
             })
           }
         }
@@ -2103,13 +2215,18 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: { isNamedConstructor: true, isTearOff: true },
               })
             } else {
+              // `Color.red`, `M.off`, `C.total`, `this.count`, `b.count` — the source
+              // names the owner and the analyzer used to drop it (see `qualifiedTarget`).
+              const qualified = qualifiedTarget(headOwner(head, owner), member)
               relationships.push({
                 source: callSource,
-                target: member,
+                target: qualified ?? member,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.9,
                 line_number: this.nodeLine(memberNode),
-                metadata: { isMemberRead: true },
+                metadata: qualified
+                  ? { isMemberRead: true, qualifier: "head" }
+                  : { isMemberRead: true },
               })
             }
           }
@@ -2156,13 +2273,16 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { isNamedConstructor: true, isConstantPattern: true },
             })
           } else {
+            const qualified = qualifiedTarget(head, member)
             relationships.push({
               source: callSource,
-              target: member,
+              target: qualified ?? member,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               line_number: this.nodeLine(n),
-              metadata: { isMemberRead: true, isConstantPattern: true },
+              metadata: qualified
+                ? { isMemberRead: true, isConstantPattern: true, qualifier: "pattern" }
+                : { isMemberRead: true, isConstantPattern: true },
             })
           }
         }
@@ -2213,13 +2333,20 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         ) {
           const isDeclaredMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
           if (!locals.has(txt) && isDeclaredMember) {
+            // The enclosing type DECLARES this member (that gate is unchanged — an
+            // inherited bare read still emits no edge, which is a separate question from
+            // what the edge is CALLED), so the owner is known and the qualified name is
+            // checkable against what this file publishes.
+            const qualified = qualifiedTarget(owner, txt)
             relationships.push({
               source: callSource,
-              target: txt,
+              target: qualified ?? txt,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.6,
               line_number: this.nodeLine(n),
-              metadata: { isBareRead: true },
+              metadata: qualified
+                ? { isBareRead: true, qualifier: "enclosing" }
+                : { isBareRead: true },
             })
           } else if (locals.has(txt)) {
             // DT2: bound locals/params read as values (OC-E parity).
