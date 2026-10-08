@@ -29,7 +29,7 @@
   "corpusPolicy": "tracked .md files from clean scala3@18df09c (the scala3 language repo, already pinned for the scala analyzer); four named grammar-level limitations (|| in table cell, indented <details> in numbered lists, EOF heading without newline) are excluded and measured separately by markdown-corpus-errors.ts",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.932Z",
-    "contentSha256": "d30a5eac4018ae7fef5383b8caffc94136497f700295f94d8f1400f414b66608"
+    "sealedAt": "2026-10-08T00:38:12.192Z",
+    "contentSha256": "36eded9aed87116f02fa9c31594d617ba067bd024921f02ff0c96d6ea781cc69"
   }
 }

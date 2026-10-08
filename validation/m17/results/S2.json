@@ -27,7 +27,7 @@
   "negativeLine": "Proves persistence/history equivalence only, not taint-detection accuracy (phantom sinks are an analyzer-domain gap).",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.355Z",
-    "contentSha256": "b0497225169f7734936e2763957ca22131905a2249cf38b57ccbbac066a3fbff"
+    "sealedAt": "2026-10-08T00:38:12.237Z",
+    "contentSha256": "b30de31543fad33a269e9454e7ebe6b49339f63b6af51adde1a347245254c985"
   }
 }

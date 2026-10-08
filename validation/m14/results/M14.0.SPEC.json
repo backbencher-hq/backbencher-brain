@@ -2972,7 +2972,7 @@
   "title": "Completeness spec (#419) — A–H sections per language",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.322Z",
-    "contentSha256": "137eef24d488cf5d4f05256fbc93f8f5cf2dbefb64a3beb98aa0a4e09f7e57ee"
+    "sealedAt": "2026-10-08T00:38:12.219Z",
+    "contentSha256": "19b0e841bb9d0ca6be0fc783852819d76e5f01aeda0964a611e2df81d479ba87"
   }
 }
