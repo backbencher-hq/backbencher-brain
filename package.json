@@ -86,6 +86,7 @@
     "audit:toml-census": "bun run script/m14/verify-toml-census.ts",
     "audit:svelte-census": "bun run script/m14/verify-svelte-census.ts",
     "audit:js-census": "bun run script/m14/verify-js-census.ts",
+    "audit:perl-wave": "bun run script/m14/verify-perl-wave.ts",
     "audit:carrier-census": "bun run script/m14/verify-carrier-census.ts",
     "audit:census": "bun run script/m14/verify-corpus-census.ts",
     "audit:probes": "bun run script/m14/verify-probe-battery.ts",
