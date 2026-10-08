@@ -4600,3 +4600,165 @@ AND both per-line forbids). Measured: control passes, 4/4 constructed, 4/4 caugh
 24/24. Three of the four are PLANTS rather than replays of a broken analyzer, and the battery file
 says so: the property under test is "this fixture REFUSES this edge", so handing it the edge is
 the honest proof — and the round that would produce each shape is named in its note.
+
+## 2026-10-08 — a binding is SPELLED, not named · and the gate's key space is complete before any
+edge is classified
+
+Two defects this round, and they are two answers to one question: **is the number we print about
+the code, or about the instrument?**
+
+### 1. The phantom link: a local read that became a dependency on someone else's field
+
+`uses` for a read of a bound local published the **bare name** as its target
+(`uses run -> counter`) with `metadata.isLocalRead` — correct metadata, wrong string. The store
+does not read metadata: `parallel-indexer.resolveRelationships` matches a target by NAME
+(Strategy 1 exact `qualified_name`; Strategy 2 bare `name` admitted while
+`_res_name.cnt = 1` for that project), so a function's own `counter` was stored as depending on
+an unrelated class's `counter` in a file it never imported.
+
+Measured before the fix, with the arbiter's own rule and the gate's own key-space construction
+(`validation/m14/fixtures/dart/local-read-phantom.ts`, first written RED):
+
+```
+local-read/reads.dart    void run() { var counter = 0; ... counter ... }   imports nothing
+local-read/declares.dart class Telemetry { int counter = 0; }
+uses run -> counter      classifyEdge: `resolved` (decls=1, kinds=property)
+                         the declaration it binds lives in local-read/declares.dart
+```
+
+That file now guards the fix — 6 checks, exit 0 when the false link is unreachable — and keeps the
+counterfactual, because that is what makes the fix load-bearing rather than cosmetic:
+
+```
+ok  the local read is emitted and carries the binding claim
+ok  the target is SPELLED as a binding — "run#counter" = `run` + `#` + `counter`
+ok  the LOCAL is not a published symbol, but its callable is
+ok  THE CLAIM HOLDS: the arbiter verifies the binding by its spelling
+ok  COUNTERFACTUAL: the bare name would be bound to the OTHER file — with no claim,
+      classifyEdge on `counter` says `resolved` (decls=1, kinds=property) … Telemetry.counter
+ok  AND the claim alone catches a lost spelling — the bare `counter` WITH the claim is
+      `bindingRefuted`
+```
+
+The fix is a **spelling**, not a marker, because the marker is precisely what the store ignores: a
+binding target is now `<callable>#<binding>` (`BINDING_SEP`, `src/ast/types.ts`) and the edge
+carries `metadata.localBinding`. `#` cannot appear in an identifier in any language of this family,
+so the string can never name a declaration — Strategy 1 and Strategy 2 both miss it and the store
+leaves the edge alone. Precedent for the separator inside the family: the js lane already dedups
+bare reads on `source.#name`; that key is internal to its `seen` set, and the published spelling
+here has no dot on purpose — a dotted target would be textually indistinguishable from a member
+path, which is the one thing a binding target must not look like.
+
+**Three sites, two changed, one deliberately not.** `uses` for a bound local and `calls` for a bound
+callee both resolve the name against the scope inventory (`locals.has(...)`) before emitting, so the
+analyzer KNOWS the string is a binding and now says so. The third — the invocation-chain leaf — was
+left alone and the comment there says why: that path does not resolve the leaf, so spelling it as a
+binding would be asserting something the analyzer did not establish.
+
+**The arbiter half (`incoming-rule.ts`).** `localBinding` is a third claim kind, because it is
+verified by nothing the other two use: `owner` and `projectFacts` ask the project about the thing the
+target depends on, while a binding claim says there is no dependency to find and the only checkable
+fact is the spelling (`verifyBindingClaim`). The routing is by KEY (`externalClaimOf`), never by the
+shape of the target. Outcomes are their own three columns — `bindingVerified` is not a resolution
+(there is nothing to resolve to) and not a gap (nothing is missing) — and `bindingRefuted` counts as
+bad in the verdict, exactly as `externalRefuted` does. One more guard, because a spelling is
+evidence only while it is unspeakable: the **separator tripwire** counts published keys containing
+`#` over the finished key spaces and refuses a PASS if any exists.
+
+The gate's control plants all of it (2 spelled-verified, 1 refuted — the phantom shape itself, 1
+trailing-separator unverifiable) plus the routing and `verifyBindingClaim` asserts, so a future edit
+that consults the count before the claim fails in the control rather than in a clean-looking table.
+
+### 2. The gate classified edges against a half-built key space
+
+While pricing the round, a whole-project run of `dart-http` (333 files) showed `imports` still had
+247 unresolved targets — and the printed worklist named files that plainly exist, e.g.
+`pkgs/http/lib/http.dart`. They do exist, and they publish exactly that `qualifiedName`.
+
+`measure` built the key space and classified each edge **in the same streaming pass**, so an edge was
+judged against only the files read before it. Replicated independently, for the same population and
+the same edges (`imports` + `exports`, 1406 edges):
+
+```
+two independent passes over the finished key space  → 713 of 1406 in the key space
+the one-pass gate as it ran                         → 384 of the same 1406
+```
+
+329 edges — 46 % of the resolvable ones — read as unresolved because their target file sorted after
+the file that imports it. Production cannot have that property: `resolveRelationships` runs as a
+pass over the finished project's symbol table (`WHERE s.project_id = ?`). The direction mattered: the
+gate printed a **worse** number than the truth, so a lane would chase gaps that do not exist.
+
+Fix: keep the streaming parse (a second pass over 33,738 files would double a 70-minute run) and
+defer only the classification. Each edge is reduced to the fields the decision needs — target,
+claim, marker signature, project — and classified after the walk, against both key spaces complete.
+The separator tripwire already worked this way for the same reason; it was the TABLE that had not
+been brought in line with it.
+
+Same project, same revision, before → after the fix:
+
+```
+type           edges  resolved before→after   amb(decl) b→a    unres b→a     extOK b→a    extFAIL b→a
+calls           4709    1277 → 1341            637 → 1055     2730 → 2248      0 → 0        0 → 0
+uses            8228    1885 → 1733           1045 → 1571     1784 → 1410      0 → 0        0 → 0
+contains        2595    2442 → 2408            153 →  187        0 → 0        0 → 0        0 → 0
+imports         1303     369 →  612              0 →  0       247 → 4       687 → 687     0 → 0
+references       476     452 →  442             24 →   34        0 → 0        0 → 0        0 → 0
+exports          103      15 →  101              0 →  0        88 → 2        0 → 0        0 → 0
+extends          212      77 →   85              0 →   4       135 → 123      0 → 0        0 → 0
+implements       126      42 →   59              3 →   3        81 → 64       0 → 0        0 → 0
+overrides        326      77 →  122              6 →   6         0 → 0      235 → 187     8 → 11
+instantiates    1019     367 →  519             12 →  24       640 → 476      0 → 0        0 → 0
+TOTAL          19097    7003 → 7422           1880 → 2884     5705 → 4327   922 → 874     8 → 11
+```
+
+Both directions are the fix: more edges RESOLVE (their key existed, later in the walk) and more
+edges read AMBIGUOUS (a colliding declaration in a file the streaming space had not reached yet).
+The 4 remaining unresolved imports are exactly the two files over the 1 MB cap
+(`native_cupertino_bindings.dart`, `ok_http/lib/src/jni/bindings.dart`) — the same cause the earlier
+pairing check named, now the whole of the residual. The 11 refuted `overrides` claims
+(`ClientException.address`, `TransportStream.peerPushes`, …) are printed by name in the report.
+
+**Every whole-corpus dart number measured before this commit is order-dependent and understated.**
+The arms in this document's history (`incoming-dart-index-full.log`, `…-after.log`,
+`…-imports-full.log`, `…-contains-full.log`) all ran the one-pass gate; the arm re-run at this
+revision (`incoming-dart-arm5-fixed.log`) is the first whose resolved/unresolved columns are about
+the code rather than about the walk.
+
+### Three smaller instrument corrections, same round
+
+- `amb(kind)` is a SUBSET of `amb(decl)` and the legend now says so, because the columns must sum to
+the edge count exactly and a reader was left to re-derive that (verified: `uses` 4620 + 1102 + 3900
++ 6444 = 16066 in a 400-file sample).
+- The marker diagnostic buckets bindings in their own column (folding a verified binding into
+`unres` made the diagnostic disagree with the table it exists to explain) and prints any
+binding-bearing marker set even when it ranks below the top 5 by remaining work.
+- The worklist prints PER TYPE. A flat 20-line slice of the pooled name list printed twenty `calls`
+names and no `imports` name at all — the one list that round needed, while the count (35,575) sat
+right there in the table.
+- `--repo=a,b` measures whole named projects. A stride sample cannot measure a file-scoped target: an
+import resolves only if the target file is in the same key space, so a sampled run understates
+import resolution by construction (measured 0.4 % sampled vs 46.8 % whole corpus on one revision).
+
+### What the claim does NOT prove, stated plainly
+
+The gate verifies the SPELLING of a binding target. It does not prove the edge it marks was a read of
+a binding — an analyzer that marked a real member read and spelled it `f#x` would read as
+`bindingVerified`. The gate's control catches the crude form (a marked target that a declaration
+answers is refuted, and that case is planted), and the second instrument narrows the rest:
+`validation/m14/fixtures/dart/binding-census.ts` measures the marked SET — 402 sampled files, 6,522
+marked edges, 6,234 distinct spellings, and the four shape counters that a wrongly-marked set would
+move: tail starts uppercase 9 (all verified by hand as PARAMETERS: `_check(TypeImpl T, TypeImpl S,
+…)` in dart-sdk's own suite), prefix contains a dot 0, prefix === tail 0, tail contains a dot 0.
+A long tail of spellings used once, and no member-shaped ones, is what a scope-resolved set looks
+like. Run it before and after an edit to an analyzer, and a marker that starts firing for member
+reads shows up as a slope instead of as a silent column.
+
+### Cross-lane, not fixed here
+
+The same shape exists in other lanes of the family, under the same store rule, because they publish
+a local read as a bare name too: `real-javascript-analyzer.ts` (bare-read path, `target: txt` with
+`metadata: { isFieldAccess: true, bareRead: true }`, separator only in its internal dedup key) and
+`real-php-analyzer.ts` (`metadata.isLocalRead`, bare target). Their populations are not this lane's,
+so nothing was changed there — but the phantom link is not a dart-specific defect, and the fix's
+mechanism (an unspeakable separator plus a claim the arbiter can check) is portable as-is.
