@@ -2,18 +2,15 @@
   "issue": "622",
   "code": "X1",
   "milestone": "M27",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 34,
-  "passed": 32,
-  "failed": 2,
-  "failures": 2,
+  "passed": 34,
+  "failed": 0,
+  "failures": 0,
   "negativeCases": 6,
-  "currentCommit": "69bb9592a8b534f82ff03c6a32d445b59717a2c9",
+  "currentCommit": "82392bdca4d8bcea2d48ca16c5b1654093d81ce4",
   "verifierCommand": "npx tsx script/m27/verify-closure.ts",
-  "barViolations": [
-    "bar1: an adapter leg is neither verified nor blocked-with-reason (H1=known-gap)",
-    "bar3: capability matrix not verified"
-  ],
+  "barViolations": [],
   "perMutantRecords": {
     "N1": [],
     "J1": [],
@@ -21,10 +18,10 @@
     "H1": [],
     "V1": []
   },
-  "generatedAt": "2026-10-08T17:41:58.105Z",
+  "generatedAt": "2026-10-08T17:55:36.492Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T17:41:58.107Z",
-    "contentSha256": "26a0920aa6eb92019e78c1683e7f59c7695164e892b3595033397ad026460926"
+    "sealedAt": "2026-10-08T17:55:36.494Z",
+    "contentSha256": "79e26ba7505c8c718438db345e4f9c877511274baa56ac6d756b2f920582b0e5"
   }
 }

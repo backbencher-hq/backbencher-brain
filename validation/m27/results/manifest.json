@@ -137,7 +137,7 @@
         "Evidence persisted at validation/m27/results/H1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "currentCommit": "a055bd56a6811c4edfe2def46071cdbe9cf048cb",
         "verifierCommand": "npx tsx script/m27/verify-helix.ts",
         "evidenceFile": "H1.json",
@@ -164,7 +164,7 @@
         "Evidence persisted at validation/m27/results/V1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "currentCommit": "a055bd56a6811c4edfe2def46071cdbe9cf048cb",
         "verifierCommand": "npx tsx script/m27/verify-matrix.ts",
         "evidenceFile": "V1.json",
@@ -191,7 +191,7 @@
         "Evidence persisted at validation/m27/results/X1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "currentCommit": "a055bd56a6811c4edfe2def46071cdbe9cf048cb",
         "verifierCommand": "npx tsx script/m27/verify-closure.ts",
         "evidenceFile": "X1.json",
@@ -204,8 +204,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T17:32:07.494Z",
-    "contentSha256": "451ec7feea76b44722e02f5abf01a5b1111e5031ac65e9944320128a664b5fb8"
+    "sealedAt": "2026-10-08T17:54:12.832Z",
+    "contentSha256": "f4e16466b959a5e0aae4254a94f4e8ade04600302e039d33ba83dad3579a800c"
   },
   "updatedAt": "2026-10-08T17:32:07.494Z"
 }
