@@ -116,6 +116,32 @@ export function lintBanned(text: string): string[] {
   }
   return hits
 }
+
+/**
+ * The strings contract §1 lints, for one parsed artifact: the agent-authored
+ * CLAIM fields, and nothing else. Exported because a second gate
+ * (`script/m14/verify-honesty.ts`) has to enforce the same rule over the same
+ * files, and a rule spelled twice is a rule that can drift into two rules.
+ *
+ * The exclusion of everything else is the point, not an oversight: an artifact's
+ * data payload quotes the corpus it measured ("_comp_complete_longopt",
+ * "AutoCompleteAtCursorImpl"), and a gate that reads those as verdicts cannot be
+ * satisfied by honest work at all.
+ */
+export function claimFields(a: any): string[] {
+  return [
+    a?.title ?? "",
+    ...(a?.checks ?? []).map((c: any) => `${c?.description ?? ""} ${c?.detail ?? ""}`),
+    // A string limitation is prose and therefore a claim: lint it as itself, not
+    // as an object with no fields (which read as the empty string and was
+    // invisible to the lint). Measured before this change: 0 of the 69 harness
+    // artifacts that carry string limitations trip a banned term, so tightening
+    // the lint here changes no existing verdict.
+    ...(a?.limitations ?? []).flatMap((l: any) =>
+      typeof l === "string" ? [l] : [l?.description ?? "", l?.justification ?? ""]),
+    ...(a?.mutationLog ?? []).map((m: any) => `${m?.description ?? ""} ${m?.detail ?? ""}`),
+  ]
+}
 function collectStrings(v: unknown, out: string[] = []): string[] {
   if (typeof v === "string") out.push(v)
   else if (Array.isArray(v)) v.forEach(x => collectStrings(x, out))
@@ -205,21 +231,10 @@ export function validateArtifact(a: any): Validation {
   // data payloads (corpus source lines, quoted file content, targets) are
   // EVIDENCE, not claims - a corpus comment saying 'complete the loop' must
   // not fail the gate. Claim fields are exactly where an agent could inject
-  // a verdict.
-  const claimFields = [
-    a?.title ?? "",
-    ...(a?.checks ?? []).map((c: any) => `${c?.description ?? ""} ${c?.detail ?? ""}`),
-    // A string limitation is prose and therefore a claim: lint it as itself, not
-    // as an object with no fields (which read as the empty string and was
-    // invisible to the lint). Measured before this change: 0 of the 69 harness
-    // artifacts that carry string limitations trip a banned term, so tightening
-    // the lint here changes no existing verdict.
-    ...(a?.limitations ?? []).flatMap((l: any) =>
-      typeof l === "string" ? [l] : [l?.description ?? "", l?.justification ?? ""]),
-    ...(a?.mutationLog ?? []).map((m: any) => `${m?.description ?? ""} ${m?.detail ?? ""}`),
-  ]
+  // a verdict. The set itself lives in `claimFields` so the honesty gate can
+  // enforce the same rule without spelling it a second time.
   const banned = new Set<string>()
-  for (const s of claimFields) for (const hit of lintBanned(s)) banned.add(hit)
+  for (const s of claimFields(a)) for (const hit of lintBanned(s)) banned.add(hit)
   if (banned.size) errors.push(`banned vocabulary present (contract §1): ${[...banned].join(", ")}`)
 
   return { ok: errors.length === 0, errors, warnings }
