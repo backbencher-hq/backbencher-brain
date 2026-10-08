@@ -3,15 +3,19 @@
   "code": "G1",
   "milestone": "M25",
   "status": "known-gap",
-  "checks": 78,
-  "passed": 69,
-  "failed": 9,
-  "negativeCases": 11,
-  "currentCommit": "69bb9592a8b534f82ff03c6a32d445b59717a2c9",
-  "workingTreeRelevantChanges": [],
+  "checks": 91,
+  "passed": 88,
+  "failed": 3,
+  "negativeCases": 21,
+  "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
+  "workingTreeRelevantChanges": [
+    "ide/vscode/publish-openvsx.mjs",
+    "script/m25/run-vscode-e2e.mts",
+    "script/m25/verify-governance.ts"
+  ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-08T17:37:01.442Z",
+  "generatedAt": "2026-10-08T19:48:03.024Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "open",
@@ -21,10 +25,10 @@
     "This gate validates governance metadata, mutation response, and the M24 bar; it does not verify extension features.",
     "A run with relevant uncommitted M25 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "9 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) ... - the relevant tree was clean at measure time - 1 ledger-projection finding(s)",
+  "blockedReason": "3 check(s) failed: G1: M24 bar — ledger closed with all 11 issues verified (mechanical); G1: M24 bar — M24 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit - relevant uncommitted files at measure time: ide/vscode/publish-openvsx.mjs, script/m25/run-vscode-e2e.mts, script/m25/verify-governance.ts",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T17:37:01.464Z",
-    "contentSha256": "999f2182034c3181bdfee3edb41999b6bcb2adbe591e87b88f6d0ec4f36cd806"
+    "sealedAt": "2026-10-08T19:48:03.036Z",
+    "contentSha256": "0280714e0ef57f771fad83fd4bf4546a3b3bebe34f1799db531ad9041c182c0f"
   }
 }
