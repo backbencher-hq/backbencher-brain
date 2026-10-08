@@ -56,9 +56,9 @@
     },
     {
       "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 1,
+      "findings": 0,
       "id": "analyzer-hygiene-cpp",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
@@ -140,9 +140,9 @@
     },
     {
       "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 1,
+      "findings": 0,
       "id": "analyzer-hygiene-elixir",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
@@ -152,8 +152,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "66b9327df03097d8751798523b29b23013a327a9",
-  "committedAt": "2026-10-02T03:44:19+02:00",
+  "commit": "b4cdf43c6b67728aa5659bd959bc6b8394a42231",
+  "committedAt": "2026-10-08T10:24:43-04:00",
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.F7",
   "layers": [
@@ -164,8 +164,8 @@
       "description": "Regex-based detection over TypeScript source: multi-line identical-branch ternaries, alias-heavy this-patterns, cross-method write-only object props, and variable-to-variable node comparisons (dataflow needed — the TSD2 `nameField === n` shape) are out of scope (covered by review + F9 probes instead)"
     }
   ],
-  "regeneratedAt": "2026-10-02T02:02:39.174Z",
-  "regeneratedAtCommit": "66b9327df03097d8751798523b29b23013a327a9",
+  "regeneratedAt": "2026-10-08T14:25:08.286Z",
+  "regeneratedAtCommit": "b4cdf43c6b67728aa5659bd959bc6b8394a42231",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Analyzer-hygiene gate: dead code classes mechanically detected (no-op ternaries, duplicate branches, write-only flags)"
