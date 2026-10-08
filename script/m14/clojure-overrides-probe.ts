@@ -202,7 +202,10 @@ for (const dirName of DIRS) {
   if (!ok) { console.error(`PROBE: ${corpusDir} absent — a missing corpus is a SKIP, never a pass.`); continue }
   const discovered = deriveFiles(corpusDir)
   const files = LIMIT > 0 ? discovered.slice(0, LIMIT) : discovered
-  const row = { dir: dirName, files: files.length, parsed: 0, c: {}, ex: {} }
+  // Annotated with the row type the counter helpers below write THROUGH: `c: {}` and
+  // `ex: {}` infer as the empty type on their own, so `row.c[k]` was indexing `{}` —
+  // the counters the probe records were typed as impossible-to-write.
+  const row: (typeof rows)[number] = { dir: dirName, files: files.length, parsed: 0, c: {}, ex: {} }
   const bump = (k: string, where: string) => {
     row.c[k] = (row.c[k] || 0) + 1
     const arr = row.ex[k] || (row.ex[k] = [])
