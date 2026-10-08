@@ -23,10 +23,10 @@
   "machineReality": {
     "dir": "$HOME/.bb/projects",
     "present": true,
-    "scanned": 783,
+    "scanned": 835,
     "skipped": 0
   },
-  "realDbsScanned": 783,
+  "realDbsScanned": 835,
   "realDbsSkipped": 0,
   "realCrossLanguagePairs": 469,
   "realPairRows": [
@@ -3315,9 +3315,9 @@
     }
   ],
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "currentCommit": "902d05720502f70a11044a6587d8fd9799009ad9",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
-  "sourceFingerprint": "0397a00860189992ade30415932378a9e8010e9f48991060771f86b754fe955f",
+  "sourceFingerprint": "8bf7814b52cfe7eef4fa3d4b5c7804e3d42fd6bd65edb9fbeb5f7bff57826749",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m26/verify-graph-docs.ts",
@@ -3327,14 +3327,14 @@
     "script/m26/ambient-reality.ts",
     "script/m26/graph-core.ts"
   ],
-  "generatedAt": "2026-10-05T22:31:44.143Z",
+  "generatedAt": "2026-10-08T11:14:34.786Z",
   "limitations": [
     "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate.",
     "The drift gate compares the bytes on disk BEFORE writing, so the first run after a content change fails and regenerates; the run after that is the proof."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:31:44.145Z",
-    "contentSha256": "fded85885ce7973a1d2d5fe1d96bc427ff8790436993eaa13b4ef551c750802d"
+    "sealedAt": "2026-10-08T11:14:34.787Z",
+    "contentSha256": "c120f9a95491c3a0afd730c321f7d5fcb39da0e1637c1594f3d946ceea74db86"
   }
 }
