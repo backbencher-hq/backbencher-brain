@@ -35,9 +35,17 @@ import { spawnSync } from "node:child_process"
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
 const TSCONFIG = "tsconfig.scripts.json"
 const BASELINE_REL = "validation/m60/script-surface-baseline.json"
-/** A canary must be a name the config's script glob actually matches: a leading-dot file is NOT
- *  matched by that glob (measured 2026-09-25), and a file the program never reads proves nothing. */
-const CANARY_REL = "script/m60/__script-surface-canary.ts"
+/** A canary must be a file the compiled program CONTAINS: a leading-dot name is NOT matched by a
+ *  `.ts` glob (measured 2026-09-25), and a file the program never reads proves nothing.
+ *
+ *  The second half of that rule is why this canary is not beside this gate. `tsconfig.scripts.json`
+ *  included every `script` TypeScript file when the canary was written; a merge on 2026-10-04
+ *  (151c0a0b5) narrowed the include to the `script/m14` tree, the `script/m12` tree and one
+ *  declaration file, and the canary at `script/m60/...` silently fell outside the program — every
+ *  run then came back blind and blamed a parse error that was not there. The canary therefore lives
+ *  inside the M14 tree this config compiles, and main() refuses before compiling if its directory
+ *  is not in the config's include. */
+const CANARY_REL = "script/m14/__script-surface-canary.ts"
 
 const CANARY_SOURCE = [
   "// Written for the duration of one typecheck by script/m60/verify-script-surface.ts, then deleted.",
@@ -128,26 +136,75 @@ function runTsc(root: string, configRel: string): { out: string; status: number 
   return { out, status: proc.status, error: proc.error ? String(proc.error.message) : null }
 }
 
+/** The config's include items, or null when the config cannot be read as JSON. */
+function includeItems(root: string): string[] | null {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(root, TSCONFIG), "utf8")) as { include?: unknown }
+    if (Array.isArray(cfg.include)) return cfg.include.map(String)
+    return cfg.include === undefined ? [] : [String(cfg.include)]
+  } catch { return null }
+}
+
+/** One include item as a matcher: `**` crosses directories (`**\/` matching zero or more of them),
+ *  `*` stays inside one path segment. The two rules this config's items use; nothing else is
+ *  interpreted, and `?`/`[...]` are not glob here. */
+export function globToRegExp(glob: string): RegExp {
+  let out = ""
+  for (let i = 0; i < glob.length; i++) {
+    const c = glob[i]
+    if (c === "*") {
+      if (glob[i + 1] === "*") {
+        i++
+        if (glob[i + 1] === "/") { i++; out += "(?:[^/]+/)*" } else out += ".*"
+      } else out += "[^/]*"
+    } else if (".+^${}()|[]\\".includes(c)) out += `\\${c}`
+    else out += c
+  }
+  return new RegExp(`^${out}$`)
+}
+
 /** The walk that counts what the config compiles, so the register can say how big the surface is
  *  without a second compiler run. Its exclusions are duplicated from the config on purpose and the
  *  two are compared at run time: a scope that drifts from the config would silently change what
- *  "the surface" means. */
+ *  "the surface" means.
+ *
+ *  It walks the config's own INCLUDE ROOTS, not `script/`. Until 2026-10-08 it walked `script/`,
+ *  which was right when the config included every script file and wrong the moment that changed:
+ *  the 2026-10-04 narrowing (151c0a0b5) left this walk reporting 792 files for a program of ~340,
+ *  and `--write-baseline` would have written that number into the register as its scope. A register
+ *  that overstates what was compiled is a wrong record even when every error in it is real.
+ *
+ *  The walk is checkable against the compiler, not trusted: `--files` prints its list, and on
+ *  2026-10-08 it was diffed against `tsc -p tsconfig.scripts.json --noEmit --listFiles` — 490 files,
+ *  the same 490, no entry on either side alone. */
 const EXCLUDE_DIRS = ["node_modules", "dist", "tests", "script/m14/tmp"] as const
-function surfaceFiles(root: string, skip: string): number {
-  let n = 0
-  const walk = (dir: string) => {
+export function surfaceFiles(root: string, skip: string): { files: number; from: "config" | "script-walk"; list: string[] } {
+  const seen = new Set<string>()
+  const walk = (dir: string, match: (rel: string) => boolean) => {
     let entries: fs.Dirent[]
     try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch { return }
     for (const e of entries) {
       const p = path.join(dir, e.name)
       const relp = path.relative(root, p).split(path.sep).join("/")
       if (EXCLUDE_DIRS.some((x) => relp === x || relp.startsWith(x + "/"))) continue
-      if (e.isDirectory()) walk(p)
-      else if (e.name.endsWith(".ts") && e.name !== skip) n++
+      if (e.isDirectory()) { walk(p, match); continue }
+      if (!e.name.endsWith(".ts") || e.name === skip) continue
+      if (match(relp)) seen.add(relp)
     }
   }
-  walk(path.join(root, "script"))
-  return n
+  const items = includeItems(root)
+  if (items && items.length > 0) {
+    const matchers = items.map(globToRegExp)
+    const match = (rel: string) => matchers.some((m) => m.test(rel))
+    for (const item of items) {
+      const star = item.indexOf("*")
+      const start = star >= 0 ? item.slice(0, star).replace(/\/[^/]*$/, "") || "." : path.dirname(item)
+      walk(path.join(root, start), match)
+    }
+    return { files: seen.size, from: "config", list: [...seen].sort() }
+  }
+  walk(path.join(root, "script"), () => true)
+  return { files: seen.size, from: "script-walk", list: [...seen].sort() }
 }
 
 /** Which in-scope inputs are dirty in the working tree. A register is a measurement of a TREE, not
@@ -231,6 +288,14 @@ function selftest(): number {
   const p3 = parseDiagnostics("script/a.ts(9,1): error TS2345: Argument of type '{ x: string; }' is not assignable.\n  Types of property 'x' are incompatible.\n")
   check("parser: a continuation line is not mistaken for a second diagnostic", p3.diagnostics.length === 1)
 
+  // --- the scope walk's globs ------------------------------------------------------------------
+  check("glob: `**/*.ts` matches a nested file and a direct one, and not another extension",
+    globToRegExp("script/m14/**/*.ts").test("script/m14/a/b.ts") && globToRegExp("script/m14/**/*.ts").test("script/m14/x.ts") && !globToRegExp("script/m14/**/*.ts").test("script/m14/x.js"))
+  check("glob: a single `*` does not cross a directory",
+    !globToRegExp("script/*/*.ts").test("script/m14/a/b.ts") && globToRegExp("script/*/*.ts").test("script/m14/a.ts"))
+  check("glob: a literal item matches itself and nothing else",
+    globToRegExp("src/ast/pool_worker_globals.d.ts").test("src/ast/pool_worker_globals.d.ts") && !globToRegExp("src/ast/pool_worker_globals.d.ts").test("src/ast/engine.ts"))
+
   // --- the census ------------------------------------------------------------------------------
   const c = census([{ file: "script/a.ts", line: 1, col: 1, code: "TS2322", text: "" },
                     { file: "script/a.ts", line: 4, col: 1, code: "TS2322", text: "" },
@@ -299,7 +364,20 @@ function selftest(): number {
 function scopeLines(root: string): string {
   try {
     const text = fs.readFileSync(path.join(root, TSCONFIG), "utf8")
-    return text.split("\n").filter((l) => /"(include|exclude)"/.test(l)).map((l) => l.trim()).join(" ")
+    // The ITEMS, not the key lines. The first version kept only the lines that spell
+    // `"include"`/`"exclude"`, which on this repo's layout (keys and items on separate
+    // lines) yielded the two keys and none of the directories — so the drift check below
+    // reported all four EXCLUDE_DIRS as missing and REFUSED on an unmodified config. That
+    // is the one thing a refusal must not do: fire on a correct file, because then the
+    // gate's own verdict carries no information. JSON first, since tsconfig is JSON here;
+    // the old line filter remains for a config this parse cannot read (JSONC comments).
+    try {
+      const cfg = JSON.parse(text) as { include?: unknown; exclude?: unknown }
+      const flatten = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : v === undefined ? [] : [String(v)])
+      return [...flatten(cfg.include), ...flatten(cfg.exclude)].join(" ")
+    } catch {
+      return text.split("\n").filter((l) => /"(include|exclude)"/.test(l)).map((l) => l.trim()).join(" ")
+    }
   } catch { return "(config unreadable)" }
 }
 
@@ -312,6 +390,20 @@ function main(): number {
   if (drift.length > 0) {
     console.error(`REFUSED: ${TSCONFIG}'s scope and this gate's walk disagree about ${drift.join(", ")} — fix one, not neither.`)
     return 1
+  }
+  // The canary must be readable by the program about to be compiled; otherwise the run refuses as
+  // blind and its diagnosis blames a parse error for a scope defect. Checked before spending the
+  // compilation, and phrased so the fix is obvious.
+  if (!cfgText.includes(path.dirname(CANARY_REL))) {
+    console.error(`REFUSED: the canary ${CANARY_REL} is not inside any directory ${TSCONFIG} includes (scope: ${cfgText}) — the instrument would report on a program that never contained it.`)
+    return 1
+  }
+
+  if (args.includes("--files")) {
+    const scope = surfaceFiles(ROOT, path.basename(CANARY_REL))
+    console.log(`# ${scope.files} file(s) in the configured program (scope from: ${scope.from}); diff against:\n#   node node_modules/typescript/bin/tsc -p ${TSCONFIG} --noEmit --listFiles`)
+    for (const f of scope.list) console.log(f)
+    return 0
   }
 
   if (args.includes("--report")) {
@@ -348,6 +440,10 @@ function main(): number {
       return 1
     case "blind":
       console.error(`\nREFUSED (blind): the canary's deliberate error did not come back, so this compilation proved nothing about the surface's semantics.`)
+      if (!ev.diagnostics.some((d) => /^TS1\d{3}$/.test(d.code))) {
+        console.error(`${CANARY_REL} is not in the program the config compiled — that directory is outside ${TSCONFIG}'s include (scope: ${cfgText}) — and no TS1xxx parse error was reported, so a parse refusal is not the cause. Fix the canary's path, not the surface.`)
+        return 1
+      }
       console.error(`Cause, measured 2026-09-25: one file that fails to PARSE silences every semantic diagnostic in the program. The parse errors below are the whole diagnosis — fix the file that carries them, then run again.`)
       for (const d of ev.diagnostics.slice(0, 20)) console.error(`  ${d.file}(${d.line},${d.col}): ${d.code} ${d.text}`)
       if (ev.diagnostics.length > 20) console.error(`  … ${ev.diagnostics.length - 20} more`)
@@ -378,8 +474,11 @@ function main(): number {
 }
 
 /** `--write-baseline` is a separate, explicit act: it measures and records. Kept out of main()'s
- *  switch so that the measurement cannot be written by a run that was refused for blindness. */
-function writeBaseline(): number {
+ *  switch so that the measurement cannot be written by a run that was refused for blindness.
+ *  `--note` is why the register is what it is — an empty register measures nothing unless it also
+ *  says which program it was measured over, and the next reader should not have to infer that from
+ *  a commit message they may never see. */
+function writeBaseline(note?: string): number {
   const ev = evaluate(ROOT, TSCONFIG, CANARY_REL, path.join(ROOT, "__no-such-baseline.json"))
   if (ev.verdict === "blind" || ev.verdict === "stale-canary" || ev.verdict === "non-positional") {
     console.error(`REFUSED: ${ev.verdict} — a register may not be frozen from a run that proved nothing.`)
@@ -396,18 +495,25 @@ function writeBaseline(): number {
     const p = spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" })
     return { head: (p.stdout ?? "").trim(), headShort: (p.stdout ?? "").trim().slice(0, 8) }
   })()
+  const scope = surfaceFiles(ROOT, path.basename(CANARY_REL))
   const record = {
     schemaVersion: 1,
     milestone: "M60",
     gate: "script-surface typecheck",
     contract: "SHRINK-ONLY. Every error in this register is real, measured debt of the untyped layer (see reviews/m60-script-surface-typecheck.md); the gate fails on any new file or any (file, code) whose count grows. A shrink is printed and only re-frozen by hand with --write-baseline, from a run whose canary came back.",
-    measuredAt: { date: new Date().toISOString(), ...head, tsVersion, tsconfig: TSCONFIG, canaryVisible: ev.canaryVisible, filesInScope: surfaceFiles(ROOT, path.basename(CANARY_REL)), dirtyInScope: dirtyInScope(ROOT) },
+    ...(note ? { freezeNote: note } : {}),
+    measuredAt: {
+      date: new Date().toISOString(), ...head, tsVersion, tsconfig: TSCONFIG, canaryVisible: ev.canaryVisible,
+      filesInScope: scope.files, scopeFrom: scope.from, include: includeItems(ROOT) ?? [],
+      dirtyInScope: dirtyInScope(ROOT),
+    },
     totals: { errors: errors.reduce((a, e) => a + e.total, 0), filesWithErrors: errors.length },
     errors,
   }
   fs.mkdirSync(path.dirname(path.join(ROOT, BASELINE_REL)), { recursive: true })
   fs.writeFileSync(path.join(ROOT, BASELINE_REL), JSON.stringify(record, null, 2) + "\n")
-  console.log(`wrote ${BASELINE_REL}: ${record.totals.errors} error(s) in ${record.totals.filesWithErrors} file(s), canary visible=${ev.canaryVisible}, ${record.measuredAt.dirtyInScope.length} dirty in scope`)
+  console.log(`wrote ${BASELINE_REL}: ${record.totals.errors} error(s) in ${record.totals.filesWithErrors} file(s) of the ${scope.files}-file program, canary visible=${ev.canaryVisible}, ${record.measuredAt.dirtyInScope.length} dirty in scope`)
+  if (record.totals.errors === 0) console.log(`  an empty register is the strongest reading this gate has: any new diagnostic is a new file and fails as growth. Its scope is the config's include (${scope.from}), not the hand walk.`)
   if (record.measuredAt.dirtyInScope.length) {
     console.log(`  the register measures a working tree: re-freeze once ${record.measuredAt.dirtyInScope.length === 1 ? "that file" : "those files"} land(s) if the commit is what the record should describe`)
     for (const f of record.measuredAt.dirtyInScope.slice(0, 10)) console.log(`    dirty  ${f}`)
@@ -416,4 +522,6 @@ function writeBaseline(): number {
 }
 
 const isMain = process.argv[1]?.endsWith("verify-script-surface.ts")
-if (isMain) process.exitCode = process.argv.includes("--write-baseline") ? writeBaseline() : main()
+const noteAt = process.argv.indexOf("--note")
+const NOTE = noteAt >= 0 ? process.argv[noteAt + 1] : undefined
+if (isMain) process.exitCode = process.argv.includes("--write-baseline") ? writeBaseline(NOTE) : main()
