@@ -65,6 +65,7 @@ import { countUsageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
 import { classifyStoredRow, orderTiers, primaryTier, type EvidenceTier, type StoredTierRow } from "./evidence_tier"
 import { parseParameters, renderSignature, UNRESOLVED_TYPE } from "./signature"
 import { parseForSafety } from "../ast/safety-primitives"
+import { docCommentFor } from "./doc_comment"
 import { renderTypeLine, resolveTypeLine, type TypeLine } from "./type_inference_surface"
 import { actionsSection, connectedGroups, connectedSummarySection, containmentSection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
 
@@ -103,6 +104,12 @@ export interface SymbolHoverData {
    *  absence); an empty array is a callable with zero parameters. */
   parameters: Array<{ name: string; type: string | null; isOptional: boolean; defaultValue: string | null; isRest: boolean }> | null
   usageCount: number
+  /**
+   * How many files this project's index covers — the denominator for
+   * `usageCount`. Null when it could not be measured; the renderer then says the
+   * scope is unknown rather than implying one it does not know.
+   */
+  indexedFileCount: number | null
   evidenceTiers: EvidenceTier[]
   /** M26.W3: pre-rendered cross-language section — empty string when the
    *  index stores no cross-language rows for this symbol (the hover then
@@ -147,6 +154,8 @@ export interface SymbolHoverData {
    *  from a guess. `confidence` is non-null iff `inferred`; `unknown` is the
    *  declared marker, never a guess (§15.4). */
   typeLine: TypeLine
+  /** M24.L9: the declaration's own doc comment, or "" when none is adjacent. */
+  docComment: string
 }
 
 export interface HoverRequest {
@@ -301,11 +310,39 @@ export function findSymbolAtPosition(
  *  else unique workspace declaration, else null (declared ambiguity — the
  *  caller then falls back to the enclosing symbol). Parses only the file at
  *  the cursor via the shared safety machinery; comments/strings excluded. */
+/**
+ * How many files this project's index covers, or null when it could not be
+ * measured.
+ *
+ * Null is NOT rendered as 0. A project whose file count cannot be read is not a
+ * project with no files; "in 0 indexed files" would be a second invented zero on
+ * the very line that exists to stop invented zeros.
+ */
+function indexedFileCountFor(raw: any, fileId: string | null | undefined): number | null {
+  if (fileId === null || fileId === undefined || fileId === "") return null
+  try {
+    // The SAME project-from-file derivation the annotation query above uses
+    // (`project_id = (SELECT project_id FROM brain_file WHERE id = ?)`), so the
+    // scope is measured over exactly the project this symbol belongs to and the
+    // two cannot drift. An earlier revision read `file.project_id`, which the
+    // local FileRow does not carry — so it silently measured nothing and the
+    // hover rendered "indexed scope unknown" on every symbol, which is honest and
+    // useless.
+    const row = raw
+      .prepare("SELECT count(*) AS c FROM brain_file WHERE project_id = (SELECT project_id FROM brain_file WHERE id = ?)")
+      .get(fileId) as { c?: number } | undefined
+    const n = Number(row?.c)
+    return Number.isFinite(n) ? n : null
+  } catch {
+    return null
+  }
+}
+
 export async function resolveOccurrenceSymbol(
   raw: CoreDatabase,
   filePath: string,
   position: LspPosition,
-): Promise<{ symbol: SymbolRow; file: FileRow; occurrence: { startLine: number; startColumn: number; endColumn: number }; mapper: PositionConverter } | null> {
+): Promise<{ symbol: SymbolRow; file: FileRow; occurrence: { startLine: number; startColumn: number; endColumn: number }; mapper: PositionConverter; docComment: string } | null> {
   let content: string
   try {
     content = readFileSync(filePath, "utf8")
@@ -353,6 +390,10 @@ export async function resolveOccurrenceSymbol(
     // second read. Two P1 mappers over the same bytes would be two answers to
     // the same question, which is the drift §5.1 exists to prevent.
     mapper,
+    // M24.L9: the declaration's own documentation, read from the comment sites
+    // this parse already produced. Attached to the DECLARATION, not to the
+    // cursor: a doc describes the symbol, and the cursor is often a use of it.
+    docComment: docCommentFor(safety.commentSites, row.line_start),
   }
 }
 
@@ -399,6 +440,20 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   // declares that the index records no origin, `unknown` is the declared
   // marker with the reason. §15.4 human text is human — this is a sentence, not
   // a serialization.
+  // M24.L9: the author's own words about the symbol, rendered directly UNDER the
+  // signature — the same position IntelliJ and rustdoc put it, so the prose and
+  // the declaration read as one fact about one thing rather than as two
+  // disconnected blocks.
+  //
+  // Rendered only when a comment is ADJACENT to the declaration (doc_comment.ts
+  // decides). An absent doc contributes NO line: no empty section, no
+  // placeholder. "This symbol has no documentation" is itself information, and a
+  // blank heading would render it as an omission to be filled in later rather
+  // than as the fact it is.
+  if (data.docComment.length > 0) {
+    lines.push(data.docComment)
+    lines.push("")
+  }
   lines.push(renderTypeLine(data.typeLine))
   // M55.T3: the count line declares what was counted, so a reader (and the
   // references surface, which legitimately answers a wider question when the
@@ -406,7 +461,11 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   // disagreement. Zero is stated, never omitted: a symbol with no stored
   // references reads "0 usages", not silence (§14 Truth Rule 1).
   lines.push(
-    `**${data.name}** — ${data.symbolType}, ${data.usageCount} usage${data.usageCount === 1 ? "" : "s"} _(${USAGE_SITE_FILTER_LABEL})_`,
+    `**${data.name}** — ${data.symbolType}, ${data.usageCount} usage${data.usageCount === 1 ? "" : "s"}${
+      data.indexedFileCount === null
+        ? " (indexed scope unknown — this count is bounded by something not measured)"
+        : ` in ${data.indexedFileCount} indexed file${data.indexedFileCount === 1 ? "" : "s"}`
+    } _(${USAGE_SITE_FILTER_LABEL})_`,
   )
   if (data.evidenceTiers.length > 0) {
     lines.push(`evidence: ${data.evidenceTiers.join(", ")}`)
@@ -541,6 +600,19 @@ export async function hover(
   // it is applied once here, and the section renders the same filtered array.
   const usageSiteRows = usageSitesOf(sites)
   const usageCount = usageSiteRows.length
+  // M24.L8: THE SCOPE THE COUNT WAS MEASURED OVER. A usage count is only
+  // meaningful beside what was searched, and a zero is the case that misleads:
+  // the owner hovered `formatAddress` and read "0 usages", which is TRUE of the
+  // index (201 files, all of `src/`) and FALSE of the repository, where the
+  // function is called 5 times in `script/`. Nothing was wrong with the number;
+  // the sentence made a local measurement read as a global claim.
+  //
+  // The count stays — §14 Truth Rule 1 requires the zero to be stated rather
+  // than omitted, and that is right. What was missing is the bound. The
+  // qualifier is shown for EVERY count, not only for zero: a qualifier that
+  // appeared only on the zero would imply the non-zero counts were global, which
+  // is the same mistake in the other direction.
+  const indexedFileCount = indexedFileCountFor(raw, file.id)
   // M26.W3: per-pair cross-language facts from stored rows only.
   const crossSection = crossLanguageSection(factsFromRows(storedCrossLanguageRows(raw, symbol.id), file.language))
   // M28.A2: annotation rows for this symbol, rendered by the single owner.
@@ -682,6 +754,7 @@ export async function hover(
       }))
     })(),
     usageCount,
+    indexedFileCount,
     evidenceTiers: tiers,
     // M42.H2: rich sections composed from stored relationship rows.
     connectedSection: connectedSummarySection(connectedGroups(sites)),
@@ -706,6 +779,7 @@ export async function hover(
     lineStart: symbol.line_start,
     lineEnd: symbol.line_end,
     typeLine,
+    docComment: occurrence?.docComment ?? "",
   }
 
   const elapsed = (deps.now ?? Date.now)() - startedAt

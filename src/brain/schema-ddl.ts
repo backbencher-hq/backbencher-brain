@@ -485,6 +485,55 @@ export function ensureAnnotationTable(raw: any): void {
   // on retry, and swallowing it manufactures a green result over a broken
   // artifact. So the failure is re-checked by parsing the schema back, and
   // re-thrown when the database cannot be read.
+  //
+  // REPAIR, NOT SKIP (measured 2026-10-07). The statement above is
+  // `CREATE TRIGGER IF NOT EXISTS`, and IF NOT EXISTS cannot replace a trigger
+  // that ALREADY EXISTS — so every database written by a pre-fix build kept its
+  // malformed trigger FOREVER. Proven on a real index (project 064be526, schema
+  // applied 2026-09-30):
+  //
+  //     before: MALFORMED (|| present)
+  //     bb index src -> "indexed 201 files"
+  //     after:  STILL MALFORMED — re-indexing did NOT repair it
+  //     independent SQLite 3.43.2: NO — malformed database schema ... near "||"
+  //
+  // Re-indexing is what the previous commit told the owner to do, and it does not
+  // work. 762 local indexes were in that state and nothing could fix them.
+  //
+  // So the guard is compared against what is INSTALLED and replaced when they
+  // differ. Replacing unconditionally would be simpler, but it would drop and
+  // recreate the trigger on every open, leaving a window in which a write can
+  // land with no guard at all — trading a permanent corruption for a transient
+  // hole in the very check that exists to refuse unauthorised provenance.
+  // Comparing first means an up-to-date database is not touched.
+  //
+  // The comparison is on the NORMALISED text: SQLite stores the statement as
+  // written, so whitespace and the `IF NOT EXISTS` clause differ between the
+  // stored form and the constant. What matters is the body, so that is what is
+  // compared.
+  const wantsGuard = ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL
+  const guardBody = wantsGuard.slice(wantsGuard.indexOf("BEFORE")).replace(/\s+/g, " ").trim()
+  let installedGuard = ""
+  try {
+    const row = raw.prepare("SELECT sql FROM sqlite_master WHERE type='trigger' AND name='brain_annotation_author_class_guard'").get() as { sql?: string } | undefined
+    installedGuard = String(row?.sql ?? "")
+  } catch {
+    installedGuard = "" // unreadable: fall through and let the exec decide
+  }
+  const installedBody = installedGuard.slice(installedGuard.indexOf("BEFORE")).replace(/\s+/g, " ").trim()
+  const guardIsStale = installedBody !== guardBody
+
+  if (guardIsStale && installedGuard !== "") {
+    // A pre-fix trigger is present. Drop it BEFORE creating the current one, or
+    // IF NOT EXISTS would leave the old body in place — which is the whole defect.
+    try {
+      raw.exec("DROP TRIGGER IF EXISTS brain_annotation_author_class_guard_update; DROP TRIGGER IF EXISTS brain_annotation_author_class_guard;")
+    } catch {
+      // A read-only or busy handle cannot drop. The exec below will then throw,
+      // and the catch below decides whether that is transient or fatal.
+    }
+  }
+
   try {
     raw.exec(ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL)
   } catch (error) {

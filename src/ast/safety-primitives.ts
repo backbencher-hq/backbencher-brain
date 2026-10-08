@@ -70,6 +70,9 @@ export interface BodyRange {
 }
 
 export interface SafetyParse {
+  /** M24.L9: comment sites read from the tree before it is released. */
+  commentSites: CommentSite[]
+
   language: string
   content: string
   /** Byte mask: 1 = live code, 0 = comment/string-literal byte. */
@@ -393,6 +396,45 @@ export function occurrencesMatching(
  * syntax mask and identifier occurrences, then delete the tree. The tree is
  * never exposed to the caller, so callers cannot leak WASM memory.
  */
+/** One comment node, located by the line it ENDS on (1-based). */
+export interface CommentSite {
+  endLine: number
+  text: string
+}
+
+/**
+ * Every comment node in a tree, with the line each one ends on.
+ *
+ * `isCommentNodeType` is the file's OWN predicate (declared above) and is CALLED
+ * here rather than re-spelled. A first version of this added a second,
+ * near-identical predicate — which is exactly the duplicated-vocabulary drift
+ * this repository keeps having to undo, and tsc caught the merged declaration.
+ *
+ * The line matters more than the text: a documentation comment belongs to a
+ * declaration only when it is ADJACENT to it, and "ends on the line immediately
+ * above" is the check that makes that decidable.
+ */
+export function extractCommentSites(tree: any): CommentSite[] {
+  const out: CommentSite[] = []
+  const stack: any[] = tree?.rootNode ? [tree.rootNode] : []
+  while (stack.length > 0) {
+    const node = stack.pop()
+    if (node === null || node === undefined) continue
+    if (isCommentNodeType(String(node.type))) {
+      out.push({ endLine: Number(node?.endPosition?.row ?? 0) + 1, text: String(node?.text ?? "") })
+    }
+    // `children` is an ARRAY. The first version wrote `children - 1` as if it
+    // were a length, so the index was NaN, the loop never ran, and the function
+    // returned [] for every file — which looks exactly like "this grammar emits no
+    // comments". It is the kind of bug that produces a confident empty answer.
+    const children = node?.children ?? []
+    for (let i = children.length - 1; i >= 0; i--) {
+      if (children[i] !== null && children[i] !== undefined) stack.push(children[i])
+    }
+  }
+  return out
+}
+
 export async function parseForSafety(filePath: string, content: string): Promise<SafetyParse> {
   const { language, tree, parser, transientLuaGrammar } = await ASTEngine.parseTree(filePath, content)
   try {
@@ -405,6 +447,7 @@ export async function parseForSafety(filePath: string, content: string): Promise
       maskedRanges: masked,
       codeRanges: code,
       bodyRanges: collectBodyRanges(tree),
+        commentSites: extractCommentSites(tree),
     }
   } finally {
     try {

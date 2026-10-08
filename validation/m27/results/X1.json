@@ -3,29 +3,34 @@
   "code": "X1",
   "milestone": "M27",
   "status": "known-gap",
-  "checks": 34,
-  "passed": 30,
-  "failed": 4,
-  "failures": 4,
+  "checks": 35,
+  "passed": 27,
+  "failed": 8,
+  "failures": 8,
   "negativeCases": 6,
-  "currentCommit": "f70ec0734fbae53b25994d7395bb108fd1999343",
+  "currentCommit": "a055bd56a6811c4edfe2def46071cdbe9cf048cb",
   "verifierCommand": "npx tsx script/m27/verify-closure.ts",
   "barViolations": [
-    "bar1-declared-absence: N1 is blocked with a reason — nvim not provisioned in .tools/ (D-7 portable layout)",
+    "bar1: an adapter leg is neither verified nor blocked-with-reason (J1=known-gap, H1=known-gap)",
     "bar1: capability subset proofs not all present",
-    "bar2: no I3 leg (N1 is the declared slot)"
+    "bar3: capability matrix not verified"
   ],
   "perMutantRecords": {
     "N1": [],
     "J1": [],
     "Z1": [],
-    "H1": [],
+    "H1": [
+      {
+        "name": "H1 mutant: invented flag breaks the dist-form match",
+        "caught": false
+      }
+    ],
     "V1": []
   },
-  "generatedAt": "2026-10-05T14:22:21.032Z",
+  "generatedAt": "2026-10-08T01:40:51.779Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:22:21.033Z",
-    "contentSha256": "5d63854d9136010b266ec9144f090e62d3cc16b7b638ee1c70ea208f270c99eb"
+    "sealedAt": "2026-10-08T01:40:51.781Z",
+    "contentSha256": "7b76ed4389cdd58497e2cde6097cc7b1fb301afd59567f5b4060944cf12ddb8e"
   }
 }
