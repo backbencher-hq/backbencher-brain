@@ -644,4 +644,222 @@ export const FSHARP_MUTANTS: Mutant[] = [
       }
     },
   },
+  {
+    id: "fsharp/in-file-type-spelled-as-its-leaf",
+    language: "fsharp",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "M60 ontology lane pass 7, FS-P7-2 — the declared-type arm published the bare LEAF (`Dep`) even when the file was the one that declared `Dep`, while `calls`, `instantiates` and `uses` have spelled a name this file published as its identity since FS-P5: the same file, two rules for one question. The leaf is not wrong so much as ambiguous — the store resolves it through strategy 2 only while the NAME is unique in the corpus — and the identity is exact. Measured on the population that runs it (rows-pass10-meta.ndjson, keyed on the arm's own `relationshipType`): of `references`' 35,102 `declared_type` rows, 7,076 are `in-file-declaration`, 6,907 of those are respelled to the identity, and the class moves from 2,613 determinate to 4,865 — **+2,252, zero the other way**, `references` target-determinacy 25.8% -> 30.3%. The first price read +4,205/-110 on 9,555 rows and was wrong twice, both recorded in the analyzer's own comment: it pooled `open` rows the rule never touches, and it took the identity of whatever symbol the file published first under that name — ANY KIND. The unfiltered draft reached 35.3% of the draw against this rule's 34.8%, and the 1,536 determinate edges that difference is made of were attached to 2,467 identities held by a module, a member (`FieldParserInfo.Type`, `ParquetColumnKind.DateTimeOffset`) or a namespace — determinate edges naming a declaration that is NOT the type the source wrote. On the shipped arm, 6,907 of 6,907 dotted declared-type targets are held by a type-kind symbol. Reverted by cutting every `references` edge the analyzer itself marked `declared_type` + `in-file-declaration` back to its last segment, read off the result's own metadata so the revert cannot go vacuous. Caught by fsharp/declared-type-graph, whose rows name the identity (`Fixture.Types.Dep`, `Fixture.Types.Other`) while the two GROUP rows in the same file keep the leaf because those types are declared elsewhere — one file, both halves of the rule.",
+    transform: (r: any) => {
+      const hit = (r.relationships ?? []).filter(
+        (x: any) =>
+          String(x.type) === "references" &&
+          String(x.metadata?.relationshipType) === "declared_type" &&
+          String(x.metadata?.targetResolution) === "in-file-declaration",
+      )
+      if (hit.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) =>
+          String(x.type) === "references" &&
+          String(x.metadata?.relationshipType) === "declared_type" &&
+          String(x.metadata?.targetResolution) === "in-file-declaration"
+            ? { ...x, target: String(x.target).split(".").pop() }
+            : x,
+        ),
+      }
+    },
+  },
+  {
+    id: "fsharp/unresolved-marker-shipped",
+    language: "fsharp",
+    defectClass: "wrong-payload",
+    description:
+      "M60 ontology lane pass 7, FS-P7-1's decision half. The reason a target carries is decided AFTER the walk, from the COMPLETE published set, because the two halves of the question are answered at different times: the KIND of name is known when the edge is emitted, whether THIS FILE declares it is not — a type declared further down the file is still this file's declaration, and a mid-walk membership test would call it external. So the walk records a MARKER (`unresolved-type-name`, `unresolved-namespace`, `unresolved-base-name`, `unresolved-interface-name`) and a final pass rewrites it into the class (`in-file-declaration` / `external-type` / `external-namespace` / `base-member(-external)` / `interface-member(-external)`). The mutant reverts the final pass: every class the finalizer can produce goes back to its marker, per label, exactly as the shipped code would have emitted it if the loop were deleted. A marker reaching the result is a defect by definition — the file says so — and six labels' worth of reason rows go red at once. Caught by fsharp/declared-type-graph (extends/references), fsharp/import-and-use (imports/references), fsharp/override-target (extends/implements/overrides) and fsharp/type-extension-and-containment (contains, through the source reason).",
+    transform: (r: any) => {
+      const TYPE_LABELS = new Set(["extends", "implements"])
+      const marker = (x: any): string | null => {
+        const t = String(x.type)
+        const md = x.metadata ?? {}
+        const res = String(md.targetResolution ?? "")
+        if (res === "external-type") return "unresolved-type-name"
+        if (res === "external-namespace") return "unresolved-namespace"
+        if (res === "base-member" || res === "base-member-external") return "unresolved-base-name"
+        if (res === "interface-member" || res === "interface-member-external") return "unresolved-interface-name"
+        if (res !== "in-file-declaration") return null
+        // `in-file-declaration` is produced by the finalizer AND by `calls`/`uses`/`instantiates`
+        // (FS-P5), so only the labels the finalizer owns are reverted — otherwise the mutant
+        // would re-break a rule this pass did not touch and could be caught by the wrong fixture.
+        if (TYPE_LABELS.has(t)) return "unresolved-type-name"
+        if (String(md.relationshipType) === "declared_type") return "unresolved-type-name"
+        if (String(md.relationshipType) === "open_directive" || md.isImport === true) return "unresolved-namespace"
+        return null
+      }
+      const hit = (r.relationships ?? []).filter((x: any) => marker(x) !== null)
+      if (hit.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const m = marker(x)
+          return m ? { ...x, metadata: { ...(x.metadata ?? {}), targetResolution: m } } : x
+        }),
+      }
+    },
+  },
+  {
+    id: "fsharp/external-claim-dropped",
+    language: "fsharp",
+    defectClass: "wrong-payload",
+    description:
+      "M60 ontology lane pass 8, FS-P8. `incoming-gate.ts fsharp fs` asked this lane's incoming question for the first time and the answer was 42,116 edges, 12,208 resolving to exactly one declaration in the file's own PROJECT, 28,862 unresolved and **zero external claims** — so a genuinely-external target and a broken edge were indistinguishable, which is the one thing the workstream's standard forbids. The marker is `metadata.isExternalTarget`, a key the gate already recognises, and the gate verifies it: the target's OWNER (everything before the last dot) must be absent from the project, or the claim is REFUTED and counted against the lane. On a 400-file draw the marker converts 705 unresolved edges to verified claims and is refuted 6 times. The mutant deletes the key from every relationship — same edges, same endpoints, one payload field gone — which is the only way a deleted claim can be caught, since the unmarked edge is exactly what the lane shipped for its whole life.",
+    transform: (r: any) => {
+      const hit = (r.relationships ?? []).filter((x: any) => x.metadata?.isExternalTarget !== undefined)
+      if (hit.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          if (x.metadata?.isExternalTarget === undefined) return x
+          const metadata = { ...x.metadata }
+          delete metadata.isExternalTarget
+          return { ...x, metadata }
+        }),
+      }
+    },
+  },
+  {
+    id: "fsharp/external-claim-blanket",
+    language: "fsharp",
+    defectClass: "wrong-payload",
+    description:
+      "M60 ontology lane pass 8, the OTHER half of FS-P8 — a claim that is present and WRONG, which no dropped-claim mutant can reach. The marker's value is exactly the lookup that follows it, and the price table is what decided the shipped rule: a marker on ANY dotted target converts 26,795 verified against 35,839 REFUTED (42.8%), because a one-segment owner is a module NAME a project very often declares itself (`Seq` 4,447, `List` 4,035, `Expect` 2,540, `System` 2,118, `Array` 1,943, `String` 1,604 refutations). Restricting to owners of two or more segments whose ROOT this file does not declare moves the same population to 6,893 edges at 93.0% verified — the residue being the cross-file case the analyzer cannot see. The mutant is the deleted restriction: it marks every relationship with a dotted target, so `open System` and the `Seq.map`/`Array.fold`/`FSharpPlus.map` shapes are all claimed. Caught by the three forbid rows in fsharp/import-and-use and fsharp/call-target-spelling that assert the one-segment shapes are NOT claimed.",
+    transform: (r: any) => {
+      const hit = (r.relationships ?? []).filter(
+        (x: any) => String(x.target ?? "").includes(".") && x.metadata?.targetResolution !== undefined,
+      )
+      if (hit.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) =>
+          String(x.target ?? "").includes(".") && x.metadata?.targetResolution !== undefined
+            ? { ...x, metadata: { ...x.metadata, isExternalTarget: true } }
+            : x,
+        ),
+      }
+    },
+  },
+  {
+    id: "fsharp/override-reason-ignores-whether-the-base-is-local",
+    language: "fsharp",
+    defectClass: "wrong-payload",
+    description:
+      "M60 ontology lane pass 7, the half of FS-P7-1 that a DROPPED reason cannot catch. `unresolved-marker-shipped` and `containment-source-reason-dropped` both revert a payload to nothing, so both are blind to a class that is present and WRONG — and the override classes are exactly where a present-and-wrong value is cheapest to write: the finalizer asks ONE question (`publishedTypeNames.has(writtenBase)`) and answers with two pairs of class names, so deleting the question and keeping the `-external` arm of each pair is a one-line edit that renames nothing, drops nothing, and turns every `overrides` row into a claim about a declaration the file does not contain. On the shipped draw (rows-pass10-meta.ndjson) that is 188 rows: 114 `overrides` `base-member`, 72 `overrides` `interface-member` and 2 `calls` `base-member` (the `base.M` call arm shares the `base-member` class with the declaration arm). Caught by fsharp/override-target, which pins BOTH halves of the split one field apart — `Dog.Speak -> Animal.Speak` is `base-member` because `Animal` is this file's type while `Buffer.Flush -> System.IO.MemoryStream.Flush` is `base-member-external`, and `Tagged.Tag -> ITagged.Tag` is `interface-member` while `Resource.Dispose -> IDisposable.Dispose` is `interface-member-external` — rows added in the same pass for this exactly: before them, swapping the two class names passed all 12 fixtures. Caught on the call side by fsharp/call-target-spelling's `Base.Speak`.",
+    transform: (r: any) => {
+      const LOCAL = new Set(["base-member", "interface-member"])
+      const hit = (r.relationships ?? []).filter((x: any) => LOCAL.has(String(x.metadata?.targetResolution)))
+      if (hit.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) =>
+          LOCAL.has(String(x.metadata?.targetResolution))
+            ? { ...x, metadata: { ...(x.metadata ?? {}), targetResolution: `${String(x.metadata.targetResolution)}-external` } }
+            : x,
+        ),
+      }
+    },
+  },
+  {
+    id: "fsharp/containment-source-reason-dropped",
+    language: "fsharp",
+    defectClass: "wrong-payload",
+    description:
+      "M60 ontology lane pass 7, FS-P7-1's SOURCE half. A `contains` edge names its parent by IDENTITY when the file has exactly one symbol of that name, by its own name when the parent is a top-level unit (which IS its own name), and by the bare name when two declarations share it with different identities — the last case is 30.4% of the draw's 58,298 `contains` edges, and the first draft of the classification called EVERY module-scoped edge `ambiguous-owner-name` because `publish` mints no fqn for an unowned symbol, which is a claim about the corpus that is false. Two facts were therefore added to every containment edge: `targetResolution` (`published-identity`, because the child IS a symbol this file minted) and `sourceResolution` (`in-file-declaration` / `ownerless-unit` / `ambiguous-owner-name`). The mutant deletes `sourceResolution` — same edges, same endpoints, one payload field gone — which is the only way a deleted reason can be caught. Caught by fsharp/override-target (`ownerless-unit` and `in-file-declaration`) and fsharp/type-extension-and-containment (`ambiguous-owner-name`, on `First.Same`/`Second.Same`).",
+    transform: (r: any) => {
+      const hit = (r.relationships ?? []).filter(
+        (x: any) => String(x.type) === "contains" && x.metadata?.sourceResolution !== undefined,
+      )
+      if (hit.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          if (String(x.type) !== "contains" || x.metadata?.sourceResolution === undefined) return x
+          const metadata = { ...x.metadata }
+          delete metadata.sourceResolution
+          return { ...x, metadata }
+        }),
+      }
+    },
+  },
+  {
+    id: "fsharp/mutual-type-group-read-as-one-type",
+    language: "fsharp",
+    defectClass: "wrong-owner",
+    description:
+      "PRE-FIX (FS-P9): `type A = … and B = …` is ONE `type_definition` node holding a clause body per type, and the analyzer read the declaration from the NODE — so the group was named after its FIRST clause, every later clause was published nowhere, and every later clause's members were published under the first name. Measured on the 3,000-file draw (.tmp-probe/fs-p10-groups.mts, arm rows-pass13-meta.ndjson): 79 groups in 67 files, 182 clauses after a first, 161 of those names published nowhere — while the members were not missing at all but ATTACHED WRONGLY, which is the half a missing-name count cannot see: `ConcatBuilder.GroupOwn` is a published symbol, so a containment edge or a call landing on it RESOLVED and nothing downstream could tell it named the wrong type. The fix re-dispatches each clause through the same type branch as a marked walk frame (`asTypeUnit`), so the kind classifier, record fields, DU/enum cases, interface implementations, `extends` edges, member scoping and containment composition are one implementation for both shapes. Reverted here by collapsing each mutual group to its first clause: the later clause's symbol is DROPPED, its members keep their spans but take the first clause's owner and fqn, and every edge endpoint that named the group's later clause is rewritten to the first — which is exactly the pre-fix shape (a resolved edge naming a declaration the source did not mean). The group is identified in the OUTPUT by the only signal the output has: two type-kind symbols with the SAME owner whose declaration lines are adjacent, which is what an `and` clause is once the `and` token is gone. Caught by fsharp/mutual-type-group, whose four shapes pin an OWNER each and whose two `expectRelationshipCount` rows pin the totals a per-row expect cannot state.",
+    transform: (r: any) => {
+      const TYPE_KINDS = new Set(["class", "interface", "enum", "type", "struct", "delegate"])
+      const syms = (r.symbols ?? []) as any[]
+      const isType = (s: any) => !!s?.range && !!s?.name && TYPE_KINDS.has(String(s.kind))
+      const byOwner = new Map<string, any[]>()
+      for (const s of syms) {
+        if (!isType(s)) continue
+        const key = String(s.ownerName ?? "")
+        const list = byOwner.get(key) ?? []
+        list.push(s)
+        byOwner.set(key, list)
+      }
+      const merges: [any, any][] = []
+      for (const list of byOwner.values()) {
+        list.sort((a: any, b: any) => a.range.startLine - b.range.startLine)
+        for (let i = 1; i < list.length; i++) {
+          const prev = list[i - 1]!
+          const cur = list[i]!
+          if (cur.range.startLine - prev.range.startLine <= 4) merges.push([prev, cur])
+        }
+      }
+      if (merges.length === 0) return r
+      const dropped = new Set(merges.map((m) => m[1]))
+      const fqnOf = (s: any) => String(s?.metadata?.fqn ?? s?.name ?? "")
+      const rename = new Map<string, string>()
+      for (const [a, b] of merges) {
+        rename.set(fqnOf(b), fqnOf(a))
+        rename.set(String(b.name), fqnOf(a))
+      }
+      const respell = (endpoint: string): string => {
+        if (rename.has(endpoint)) return rename.get(endpoint)!
+        for (const [from, to] of rename) {
+          if (from && endpoint.startsWith(from + ".")) return to + endpoint.slice(from.length)
+        }
+        return endpoint
+      }
+      return {
+        ...r,
+        symbols: syms
+          .filter((s) => !dropped.has(s))
+          .map((s) => {
+            let out = s
+            for (const [a, b] of merges) {
+              const owner = String(out.ownerName ?? "")
+              const fqn = String(out.metadata?.fqn ?? "")
+              const ownerHit = owner === String(b.name)
+              const fqnHit = fqn.startsWith(fqnOf(b) + ".")
+              if (!ownerHit && !fqnHit) continue
+              out = {
+                ...out,
+                ownerName: ownerHit ? String(a.name) : out.ownerName,
+                metadata: {
+                  ...(out.metadata ?? {}),
+                  fqn: fqnHit ? fqnOf(a) + fqn.slice(fqnOf(b).length) : out.metadata?.fqn,
+                },
+              }
+            }
+            return out
+          }),
+        relationships: (r.relationships ?? []).map((x: any) => ({
+          ...x,
+          source: respell(String(x.source)),
+          target: respell(String(x.target)),
+        })),
+      }
+    },
+  },
 ]

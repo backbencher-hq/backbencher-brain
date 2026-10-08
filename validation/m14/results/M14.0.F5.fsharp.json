@@ -1,0 +1,851 @@
+{
+  "checks": [
+    {
+      "description": "THIS lane's own analyzer and spec are this commit's",
+      "detail": "1 of this lane's own input(s) differ from head 1f3cc877a6: src/ast/real-fsharp-analyzer.ts",
+      "id": "differential-lane-code-inputs",
+      "status": "fail"
+    },
+    {
+      "description": "the SHARED oracle/harness that produced these rows is this commit's",
+      "detail": "1 shared harness file(s) differ from head 1f3cc877a6: script/m14/differential.ts — the harness is shared by every lane, so this can be another lane's uncommitted work and is NOT evidence about this lane's rows",
+      "id": "differential-harness-code-inputs",
+      "status": "fail"
+    },
+    {
+      "description": "fsharp: analyzer vs oracle agreement on the drawn file set",
+      "detail": "files=60 tree-truth=4984 covered=4974 (99.8%) MISSING=10 | analyzer-edges=2913 unexplained=69 (2.4%) heuristic=0 hash=2143f8bdc90fe3f1",
+      "id": "differential-fsharp",
+      "status": "fail"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "1f3cc877a6e4b6101374803d1eeac8902ff85113",
+  "committedAt": "2026-10-08T07:51:55-04:00",
+  "corpusPins": {
+    "fsharp": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d"
+  },
+  "data": {
+    "codeInputs": {
+      "clean": false,
+      "dirty": [
+        "script/m14/differential.ts",
+        "src/ast/real-fsharp-analyzer.ts"
+      ],
+      "head": "1f3cc877a6e4b6101374803d1eeac8902ff85113",
+      "laneDirt": [
+        "src/ast/real-fsharp-analyzer.ts"
+      ],
+      "otherDirt": [],
+      "ownInputs": [
+        "src/ast/real-fsharp-analyzer.ts",
+        "script/m14/spec/fsharp-completeness.json"
+      ],
+      "sharedDirt": [
+        "script/m14/differential.ts"
+      ],
+      "sharedInputs": [
+        "script/m14/differential.ts",
+        "script/m14/evidence-harness.ts"
+      ]
+    },
+    "report": {
+      "fsharp": {
+        "analyzerEdges": 2913,
+        "coveragePct": 99.8,
+        "coveredByAnalyzer": 4974,
+        "explainableByTree": 2844,
+        "fabricationPct": 2.4,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 10,
+        "perf": {
+          "avgMsPerFile": 35.1,
+          "loadAvg1": 3.71,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 628.7,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "2143f8bdc90fe3f1",
+        "samples": [
+          {
+            "dir": "MISSING",
+            "file": "src/Compiler/Utilities/TypeHashing.fs",
+            "from": "TypeStructure.GetHashCode",
+            "label": "overrides",
+            "line": 436,
+            "target": "GetHashCode",
+            "to": "GetHashCode"
+          },
+          {
+            "dir": "MISSING",
+            "file": "src/Compiler/Utilities/TypeHashing.fs",
+            "from": "TypeStructure.Equals",
+            "label": "overrides",
+            "line": 442,
+            "target": "Equals",
+            "to": "Equals"
+          },
+          {
+            "dir": "MISSING",
+            "file": "src/Compiler/Utilities/TypeHashing.fs",
+            "from": "context",
+            "label": "instantiates",
+            "line": 465,
+            "target": "ThreadLocal<GenerationContext>",
+            "to": "ThreadLocal<GenerationContext>"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Utilities/TypeHashing.fs",
+            "from": "StructuralUtilities.context",
+            "label": "instantiates",
+            "line": 465,
+            "target": "Threading"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/tests/Salsa/VsMocks.fs",
+            "from": "VsFileChangeEx.SomehowModifiedFile",
+            "label": "calls",
+            "line": 81,
+            "target": "ignore"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/tests/Salsa/VsMocks.fs",
+            "from": "new IVsSolutionBuildManager.FindActiveProjectCfgName",
+            "label": "calls",
+            "line": 1528,
+            "target": "Seq.tryHead"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "docs/release-notes/FSharp.Compiler.Service.fsx",
+            "from": "content",
+            "label": "calls",
+            "line": 44,
+            "target": "Markdown.ToHtml"
+          },
+          {
+            "dir": "MISSING",
+            "file": "src/Compiler/Service/ServiceAssemblyContent.fs",
+            "from": "AssemblySymbol.ToString",
+            "label": "overrides",
+            "line": 49,
+            "target": "ToString",
+            "to": "ToString"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Service/ServiceAssemblyContent.fs",
+            "from": "Parent.FormatEntityFullName",
+            "label": "calls",
+            "line": 109,
+            "target": "removeModuleSuffix"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Service/ServiceAssemblyContent.fs",
+            "from": "Parent.FormatEntityFullName",
+            "label": "calls",
+            "line": 108,
+            "target": "removeGenericParamsCount"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Service/ServiceAssemblyContent.fs",
+            "from": "AssemblyContent.traverseMemberFunctionAndValues",
+            "label": "calls",
+            "line": 199,
+            "target": "Option.toList"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Service/ServiceAssemblyContent.fs",
+            "from": "AssemblyContent.GetAssemblySignatureContent",
+            "label": "calls",
+            "line": 279,
+            "target": "Seq.toList"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Service/ServiceAssemblyContent.fs",
+            "from": "AssemblyContent.GetAssemblyContent",
+            "label": "calls",
+            "line": 302,
+            "target": "withCache"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/ComputedCollections/ComputedCollections.fs",
+            "from": "ComputedCollections.verifyCompilation",
+            "label": "calls",
+            "line": 15,
+            "target": "verifyILBaseline"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/ComputedCollections/ComputedCollections.fs",
+            "from": "ComputedCollections.verifyCompilation",
+            "label": "calls",
+            "line": 14,
+            "target": "compile"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/ComputedCollections/ComputedCollections.fs",
+            "from": "ComputedCollections.verifyCompilation",
+            "label": "calls",
+            "line": 13,
+            "target": "ignoreWarnings"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/ComputedCollections/ComputedCollections.fs",
+            "from": "ComputedCollections.verifyCompilation",
+            "label": "calls",
+            "line": 12,
+            "target": "withEmbedAllSource"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/ComputedCollections/ComputedCollections.fs",
+            "from": "ComputedCollections.verifyCompilation",
+            "label": "calls",
+            "line": 11,
+            "target": "withEmbeddedPdb"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/ComputedCollections/ComputedCollections.fs",
+            "from": "ComputedCollections.verifyCompilation",
+            "label": "calls",
+            "line": 10,
+            "target": "asExe"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/ComputedCollections/ComputedCollections.fs",
+            "from": "ComputedCollections.Int32RangeArrays_fs",
+            "label": "calls",
+            "line": 21,
+            "target": "ComputedCollections.verifyCompilation"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/ComputedCollections/ComputedCollections.fs",
+            "from": "ComputedCollections.Int32RangeArrays_fs",
+            "label": "calls",
+            "line": 20,
+            "target": "getCompilation"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/CodeGenRegressions/CodeGenRegressions_Exceptions.fs",
+            "from": "CodeGenRegressions_Exceptions.``Issue_878_ExceptionSerialization``",
+            "label": "calls",
+            "line": 24,
+            "target": "shouldSucceed"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/CodeGenRegressions/CodeGenRegressions_Exceptions.fs",
+            "from": "CodeGenRegressions_Exceptions.``Issue_878_ExceptionSerialization``",
+            "label": "calls",
+            "line": 23,
+            "target": "compile"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/CodeGenRegressions/CodeGenRegressions_Exceptions.fs",
+            "from": "CodeGenRegressions_Exceptions.``Issue_878_ExceptionSerialization``",
+            "label": "calls",
+            "line": 21,
+            "target": "asLibrary"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/CodeGenRegressions/CodeGenRegressions_Exceptions.fs",
+            "from": "CodeGenRegressions_Exceptions.``Issue_878_ExceptionSerialization``",
+            "label": "calls",
+            "line": 37,
+            "target": "ignore"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/CodeGenRegressions/CodeGenRegressions_Exceptions.fs",
+            "from": "CodeGenRegressions_Exceptions.``Issue_878_ExceptionSerialization_Roundtrip``",
+            "label": "calls",
+            "line": 98,
+            "target": "run"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/CodeGenRegressions/CodeGenRegressions_Exceptions.fs",
+            "from": "CodeGenRegressions_Exceptions.``Issue_878_ExceptionSerialization_Roundtrip``",
+            "label": "calls",
+            "line": 95,
+            "target": "ignoreWarnings"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/CodeGenRegressions/CodeGenRegressions_Exceptions.fs",
+            "from": "CodeGenRegressions_Exceptions.``Issue_878_ExceptionSerialization_Roundtrip``",
+            "label": "calls",
+            "line": 93,
+            "target": "asExe"
+          },
+          {
+            "dir": "MISSING",
+            "file": "src/Compiler/Service/SynExpr.fs",
+            "from": "MulDivMod.Equals",
+            "label": "overrides",
+            "line": 29,
+            "target": "Equals",
+            "to": "Equals"
+          },
+          {
+            "dir": "MISSING",
+            "file": "src/Compiler/Service/SynExpr.fs",
+            "from": "MulDivMod.GetHashCode",
+            "label": "overrides",
+            "line": 30,
+            "target": "GetHashCode",
+            "to": "GetHashCode"
+          },
+          {
+            "dir": "MISSING",
+            "file": "src/Compiler/Service/SynExpr.fs",
+            "from": "AddSub.Equals",
+            "label": "overrides",
+            "line": 43,
+            "target": "Equals",
+            "to": "Equals"
+          },
+          {
+            "dir": "MISSING",
+            "file": "src/Compiler/Service/SynExpr.fs",
+            "from": "AddSub.GetHashCode",
+            "label": "overrides",
+            "line": 44,
+            "target": "GetHashCode",
+            "to": "GetHashCode"
+          },
+          {
+            "dir": "MISSING",
+            "file": "src/Compiler/Service/SynExpr.fs",
+            "from": "OriginalNotation.Equals",
+            "label": "overrides",
+            "line": 58,
+            "target": "Equals",
+            "to": "Equals"
+          },
+          {
+            "dir": "MISSING",
+            "file": "src/Compiler/Service/SynExpr.fs",
+            "from": "OriginalNotation.GetHashCode",
+            "label": "overrides",
+            "line": 63,
+            "target": "GetHashCode",
+            "to": "GetHashCode"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/FieldMembers/FieldMembers.fs",
+            "from": "FieldMembers.verifyCompile",
+            "label": "calls",
+            "line": 15,
+            "target": "compile"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/FieldMembers/FieldMembers.fs",
+            "from": "FieldMembers.verifyCompile",
+            "label": "calls",
+            "line": 13,
+            "target": "asExe"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/FieldMembers/FieldMembers.fs",
+            "from": "FieldMembers.verifyCompileAndRun",
+            "label": "calls",
+            "line": 21,
+            "target": "compileAndRun"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/FieldMembers/FieldMembers.fs",
+            "from": "FieldMembers.``DefaultValue01_fs``",
+            "label": "calls",
+            "line": 28,
+            "target": "shouldSucceed"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/FieldMembers/FieldMembers.fs",
+            "from": "FieldMembers.``DefaultValue01_fs``",
+            "label": "calls",
+            "line": 27,
+            "target": "FieldMembers.verifyCompileAndRun"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/FieldMembers/FieldMembers.fs",
+            "from": "FieldMembers.``E_StaticField01_fs``",
+            "label": "calls",
+            "line": 35,
+            "target": "shouldFail"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/FieldMembers/FieldMembers.fs",
+            "from": "FieldMembers.``E_StaticField01_fs``",
+            "label": "calls",
+            "line": 34,
+            "target": "FieldMembers.verifyCompile"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/tests/Salsa/SalsaUtils.fs",
+            "from": "VsOpsUtils.AssertCompListContains",
+            "label": "calls",
+            "line": 215,
+            "target": "Array.length"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/tests/Salsa/SalsaUtils.fs",
+            "from": "VsOpsUtils.AssertCompListContains",
+            "label": "calls",
+            "line": 215,
+            "target": "completions"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/tests/Salsa/SalsaUtils.fs",
+            "from": "VsOpsUtils.AssertCompListContainsExactly",
+            "label": "calls",
+            "line": 242,
+            "target": "List.length"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/tests/Salsa/SalsaUtils.fs",
+            "from": "VsOpsUtils.DotCompletionAtMarker",
+            "label": "calls",
+            "line": 264,
+            "target": "Seq.length"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.Editor/LanguageService/SymbolHelpers.fs",
+            "from": "SymbolHelpers.getSymbolUsesOfSymbolAtLocationInDocument",
+            "label": "calls",
+            "line": 27,
+            "target": "liftAsync"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.Editor/LanguageService/SymbolHelpers.fs",
+            "from": "SymbolHelpers.getSymbolUsesOfSymbolAtLocationInDocument",
+            "label": "calls",
+            "line": 32,
+            "target": "Async.AwaitTask"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.Editor/LanguageService/SymbolHelpers.fs",
+            "from": "SymbolHelpers.getSymbolUsesInProjects",
+            "label": "calls",
+            "line": 94,
+            "target": "CancellableTask.sequential"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.Editor/LanguageService/SymbolHelpers.fs",
+            "from": "SymbolHelpers.getSymbolUsesInProjects",
+            "label": "calls",
+            "line": 100,
+            "target": "CancellableTask.whenAll"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.Editor/LanguageService/SymbolHelpers.fs",
+            "from": "SymbolHelpers.findSymbolUses",
+            "label": "calls",
+            "line": 156,
+            "target": "List.distinct"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.Editor/LanguageService/SymbolHelpers.fs",
+            "from": "SymbolHelpers.getSymbolUses",
+            "label": "calls",
+            "line": 184,
+            "target": "seq"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Debugger/PortablePdbs.fs",
+            "from": "PortablePdbs.``Valid Portable PDBs are produced by compiler``",
+            "label": "calls",
+            "line": 42,
+            "target": "shouldSucceed"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Debugger/PortablePdbs.fs",
+            "from": "PortablePdbs.``Valid Portable PDBs are produced by compiler``",
+            "label": "calls",
+            "line": 41,
+            "target": "compile"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Debugger/PortablePdbs.fs",
+            "from": "PortablePdbs.``Valid Portable PDBs are produced by compiler``",
+            "label": "calls",
+            "line": 40,
+            "target": "withPortablePdb"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Debugger/PortablePdbs.fs",
+            "from": "PortablePdbs.``Valid Portable PDBs are produced by compiler``",
+            "label": "calls",
+            "line": 39,
+            "target": "asLibrary"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/TypeTestsInPatternMatching.fs",
+            "from": "TypeTestsInPatternMatching.``Test codegen for one column of sealed types``",
+            "label": "calls",
+            "line": 24,
+            "target": "shouldSucceed"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/TypeTestsInPatternMatching.fs",
+            "from": "TypeTestsInPatternMatching.``Test codegen for one column of sealed types``",
+            "label": "calls",
+            "line": 23,
+            "target": "compile"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/TypeTestsInPatternMatching.fs",
+            "from": "TypeTestsInPatternMatching.``Test codegen for empty string pattern under --optimize-``",
+            "label": "calls",
+            "line": 397,
+            "target": "withNoOptimize"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/tests/UnitTests/LegacyLanguageService/Tests.LanguageService.Completion.fs",
+            "from": "UsingMSBuild.AssertCtrlSpaceCompletionContains",
+            "label": "calls",
+            "line": 215,
+            "target": "completions"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/tests/UnitTests/LegacyLanguageService/Tests.LanguageService.Completion.fs",
+            "from": "UsingMSBuild.WordByWordSystematicTestWithSpecificExpectations",
+            "label": "calls",
+            "line": 448,
+            "target": "raise"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.LanguageService/Intellisense.fs",
+            "from": "TaggedText.appendTo",
+            "label": "calls",
+            "line": 26,
+            "target": "ignore"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.LanguageService/Intellisense.fs",
+            "from": "FSharpMethodListForAMethodTip_DEPRECATED.parameterRanges",
+            "label": "calls",
+            "line": 57,
+            "target": "Seq.pairwise"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.LanguageService/Intellisense.fs",
+            "from": "FSharpDeclarations_DEPRECATED.GetGlyph",
+            "label": "calls",
+            "line": 225,
+            "target": "int"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.LanguageService/Intellisense.fs",
+            "from": "FSharpIntellisenseInfo_DEPRECATED.GetDataTipText",
+            "label": "calls",
+            "line": 438,
+            "target": "List.head"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.LanguageService/Intellisense.fs",
+            "from": "FSharpIntellisenseInfo_DEPRECATED.GetDataTipText",
+            "label": "calls",
+            "line": 438,
+            "target": "List.rev"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/LexicalAnalysis/SymbolicOperators.fs",
+            "from": "SymbolicOperators.``SymbolicOperators - GreaterThanDotParen01_fs - ``",
+            "label": "calls",
+            "line": 18,
+            "target": "ignore"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/LexicalAnalysis/SymbolicOperators.fs",
+            "from": "SymbolicOperators.``SymbolicOperators - GreaterThanDotParen01_fs - ``",
+            "label": "calls",
+            "line": 17,
+            "target": "shouldSucceed"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/LexicalAnalysis/SymbolicOperators.fs",
+            "from": "SymbolicOperators.``SymbolicOperators - GreaterThanDotParen01_fs - ``",
+            "label": "calls",
+            "line": 16,
+            "target": "typecheck"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/LexicalAnalysis/SymbolicOperators.fs",
+            "from": "SymbolicOperators.``SymbolicOperators - GreaterThanDotParen01_fs - ``",
+            "label": "calls",
+            "line": 15,
+            "target": "asFsx"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/LexicalAnalysis/SymbolicOperators.fs",
+            "from": "SymbolicOperators.``SymbolicOperators - E_GreaterThanDotParen01_fs - ``",
+            "label": "calls",
+            "line": 27,
+            "target": "shouldFail"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/LexicalAnalysis/SymbolicOperators.fs",
+            "from": "SymbolicOperators.``SymbolicOperators - E_GreaterThanDotParen01_fs - ``",
+            "label": "calls",
+            "line": 26,
+            "target": "compile"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Stress/StressTests.fs",
+            "from": "StressTests.generateDeeplyNestedParens",
+            "label": "calls",
+            "line": 26,
+            "target": "ignore"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Stress/StressTests.fs",
+            "from": "StressTests.``Stress - CodeGeneratorFor2766 - deeply nested unbalanced parens``",
+            "label": "calls",
+            "line": 46,
+            "target": "shouldFail"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Stress/StressTests.fs",
+            "from": "StressTests.``Stress - CodeGeneratorFor2766 - deeply nested unbalanced parens``",
+            "label": "calls",
+            "line": 44,
+            "target": "compile"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Stress/StressTests.fs",
+            "from": "StressTests.``Stress - CodeGeneratorFor2766 - deeply nested unbalanced parens``",
+            "label": "calls",
+            "line": 43,
+            "target": "asExe"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Stress/StressTests.fs",
+            "from": "StressTests.``Stress - SeqExprCapacity - 500 sequential expressions``",
+            "label": "calls",
+            "line": 95,
+            "target": "shouldSucceed"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Stress/StressTests.fs",
+            "from": "StressTests.``Stress - SeqExprCapacity - run 200 sequential expressions``",
+            "label": "calls",
+            "line": 114,
+            "target": "compileAndRun"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/MemberDefinitions/MethodsAndProperties/staticMembers-DU.fs",
+            "from": "VanillaDU.GetValue",
+            "label": "calls",
+            "line": 12,
+            "target": "ignore"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/MemberDefinitions/MethodsAndProperties/staticMembers-DU.fs",
+            "from": "VanillaDU.GetValue",
+            "label": "calls",
+            "line": 12,
+            "target": "float"
+          }
+        ],
+        "treeTruthEdges": 4984,
+        "unexplainedInAnalyzer": 69
+      }
+    },
+    "samplingRule": "seeded 60 files/language, scoped to fsharp",
+    "scope": "fsharp",
+    "scoped": true,
+    "secondCorpus": {
+      "mapping": {
+        "c": "jq",
+        "clean": "clean-stdlib",
+        "clojure": "clj-kondo",
+        "cpp": "nlohmann-json",
+        "csharp": "fsharp",
+        "css": "grails-core",
+        "dart": "dart-http",
+        "elixir": "phoenix",
+        "erlang": "otp",
+        "go": "terraform",
+        "groovy": "geb",
+        "haskell": "hledger",
+        "html": "sqlite",
+        "java": "clojure",
+        "javascript": "lodash",
+        "kotlin": "kotlinx-coroutines",
+        "markdown": "kubernetes",
+        "objc": "afnetworking",
+        "php": "phpmyadmin",
+        "powershell": "ansible",
+        "python": "requests",
+        "ruby": "rack",
+        "rust": "cargo",
+        "scala": "cats-effect",
+        "svelte": "shadcn-svelte",
+        "swift": "alamofire",
+        "toml": "ripgrep",
+        "typescript": "element-plus",
+        "vue": "vue-element-admin",
+        "yaml": "ansible",
+        "zig": "zls"
+      },
+      "report": {}
+    }
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F5.fsharp",
+  "layers": [
+    "differential"
+  ],
+  "limitations": [
+    {
+      "description": "LANE-SCOPED artifact: this run measured 1 lane(s) (fsharp), not the canonical two-corpus sweep. Its rows are not the M14.0.F5 claim, which carries every gated lane."
+    },
+    {
+      "description": "second opinion is a clause-structure re-derivation from the same wasm grammars; a grammar bug shared by both paths would be invisible to this harness"
+    },
+    {
+      "description": "seeded sample of files per language, deterministic; not exhaustive over the corpus"
+    },
+    {
+      "description": "the code-input check is scoped to this lane's producers (src/ast/real-fsharp-analyzer.ts, script/m14/spec/fsharp-completeness.json, script/m14/differential.ts, script/m14/evidence-harness.ts); 0 OTHER measured input(s) are dirty in this checkout from other lanes () and are recorded in data.codeInputs.otherDirt — they did not produce these rows, and their dirt belongs to their lanes' own artifacts"
+    }
+  ],
+  "regeneratedAt": "2026-10-08T12:07:10.526Z",
+  "regeneratedAtCommit": "1f3cc877a6e4b6101374803d1eeac8902ff85113",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Differential corpus harness, LANE-SCOPED (fsharp: fsharp) — NOT the canonical 43-language claim"
+}

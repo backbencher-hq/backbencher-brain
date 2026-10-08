@@ -58,7 +58,7 @@ over upstream tree-sitter-fsharp:
 | instantiates | ✅ | constructor chaining `new() = Point(0, 0)` → `Point` (enclosing constructor body); source = `constructor` | 0.95 |
 | overrides | ✅ | `override` keyword token (first child of `member_defn`), and **FS-A2 (M60 pass 2) the target is resolved from the INTERFACE the member implements when there is one**, because `override` is not a statement about a base class: F# has no separate keyword for an interface member, so `interface I with override this.M() = …` implements `I.M`. Base-class form: `inherit Animal()` → `Dog.Speak -> Animal.Speak`. Interface form: `interface System.IDisposable with` → `Resource.Dispose -> IDisposable.Dispose`, carrying `metadata.relationshipType = "interface_member_implementation"` (the csharp lane's C923 shape, measured the same in java, kotlin, typescript, dart and python). The interface wins over the base list, and an OBJECT EXPRESSION is the same rule through a different node — `{ new IFoo with override x.M() }` has no `interface_implementation` node at all, the interface sits directly on the `object_expression`. **With neither an interface nor a base there is NO target and NOTHING is emitted**: pre-fix that case published `overrides Owner.M -> M`, a member overriding itself. Measured: 126 interface-implementation `override` members in 37 corpus files, 700 `override` members in types with no base at all across 179 files | 1.0 |
 | uses | ✅ (**M60, 2026-10-02** — was ❌) | **An attribute application**: `[<Struct>]`, `[<Obsolete("gone")]`, `[<assembly: TypeProviderAssembly(…)>]`. This is the only F# construct a `uses` edge is FOR: it names a type, applies it as a marker, and never invokes it — so it is not a `calls` (no application), not an `implements` (no interface declaration), not an `extends` (no base), not an `instantiates` (no construction), and not a `references` (nothing here is a signature; the declared-type pass reads type WRITERS and an attribute's type is the type of an object construction). Source = the decorated declaration, read from the scope stack the walk already maintains. Measured: **1,666 edges in 157 of a 400-file corpus draw, all at confidence 1.0, all `metadata.relationshipType = "attribute_application"`**; 29,441 `attribute` nodes in 2,492 corpus files. Pinned by `validation/m14/fixtures/fsharp/import-and-use.fs`. **The old ❌ is not still true** — its stated reason (C#-family parity; member *reads* are covered at call level) never addressed attributes, which are not member reads. What is still not emitted: `base.X` member access, measured at **0 occurrences across all 6,619 corpus files** (see §M60 below) | 1.0 |
-| references | ✅ | Two classes. (a) `open_statement`/`open_decl` → full module path; source = enclosing namespace/module; a module path is legitimately dotted and is **not** subject to the R10 leaf rule. (b) **R9 `declared_type`** — every type WRITTEN in a declaration: `class_field`, `parameter`, `return_type`, `record_field`, `union_case_payload`, `type_abbreviation`, `local_annotation`. Absent from this lane until FS-D4 (the m60 census measured `absent` with the control present). Two positions are **refused**: a type *parameter* and a *predefined* type (`int`, `string`) name no declaration, and a **type query** (`typeof<T>`, `unbox<T>`) is an expression carrying a type argument rather than a written type — `typeof<Foo>.Assembly.Location` depends on a runtime value. The grammar spells a query as a `typed_expression` whose `long_identifier_or_op` child reads `typeof` — a **sibling** of the type, not its parent, which cost two attempts at the discriminator that each measured nothing (FS-D11). A local's written type belongs to the enclosing **callable**, not to the class. | 0.9 (opens) / 1.0 (declared_type) |
+| references | ✅ | Two classes. (a) `open_statement`/`open_decl` → full module path; source = enclosing namespace/module; a module path is legitimately dotted and is **not** subject to the R10 leaf rule. (b) **R9 `declared_type`** — every type WRITTEN in a declaration: `class_field`, `parameter`, `return_type`, `record_field`, `union_case_payload`, `type_abbreviation`, `local_annotation`. Absent from this lane until FS-D4 (the m60 census measured `absent` with the control present). Two positions are **refused**: a type *parameter* and a *predefined* type (`int`, `string`) name no declaration, and a **type query** (`typeof<T>`, `unbox<T>`) is an expression carrying a type argument rather than a written type — `typeof<Foo>.Assembly.Location` depends on a runtime value. The grammar spells a query as a `typed_expression` whose `long_identifier_or_op` child reads `typeof` — a **sibling** of the type, not its parent, which cost two attempts at the discriminator that each measured nothing (FS-D11). A local's written type belongs to the enclosing **callable**, not to the class. **FS-P7-2: the target of a `declared_type` row is the IDENTITY this file published when the file declared the type (`Fixture.Types.Dep`), and the LEAF otherwise (`Stream` for a written `System.IO.Stream`)** — priced at +2,252 determinate edges against zero, and the identity is only ever taken from a symbol whose kind a written type can name, because the unfiltered draft built 2,467 determinate edges onto a module's, a member's or a namespace's identity (see PASS 7). Every row carries `metadata.targetResolution` (`in-file-declaration` / `external-type`) and `metadata.targetWritten` when a path was reduced. | 0.9 (opens) / 1.0 (declared_type) |
 | contains | ✅ | owner → owned members via `ownerName` (namespace → module/type, module → type/function, type → member). **`contains X -> X` is refused at composition**, not by suppressing the label: a DU case named after its own type really is contained by its union (`type P = P of string`), so suppressing the label would lose a real fact — 368 such self-edges per 400 corpus files (FS-D3). A `type X with` extension publishes no symbol at all (FS-D2), and a forward declaration in a signature file merges with its definition rather than shadowing it (FS-D2 regression guard). | 1.0 |
 | depends | ✅ | imports → References | 0.9 |
 | imports | ✅ (**M60, 2026-10-02** — was ❌) | F#'s THREE import forms, all measured on the wired grammar over the whole corpus: (a) `import_decl` — `open X` and `open type X` are the SAME node (`seq("open", optional("type"), $.long_identifier)`), distinguished by the token and recorded as `metadata.opensTypes`; (b) `module_abbrev` — `module IO = System.IO`, F#'s only alias whose target lies outside the compilation, read as the direct `identifier` (the alias) plus the direct `long_identifier` (the path), so the edge names `System.IO` and not the file's own alias; (c) `fsi_directive_decl` for `#r` / `#load` / `#I` only — the node covers six keywords and `#time` / `#help` / `#quit` import NOTHING, so the keyword is read off the tree and the other three are refused. **BOTH labels stay on an `open`**: `imports` is the dependency `src/intelligence/analysis/dependencies.ts` reads (19 analyzers emit it; ER-D41 is this lane's exact shape), `references` is the mention — the confidences are asymmetric because the derivations are: 1.0 on `imports` because the directive NAMES the path, 0.9 on `references` because that is what it was already measured at. Measured: **705 edges in 158 of a 400-file draw — 689 `open_directive` + 16 `resource_directive`**; whole corpus 11,371 `import_decl` nodes in 2,540 files, 193 `fsi_directive_decl` in 135, 5 `module_abbrev` in 5 | 1.0 |
@@ -2035,6 +2035,470 @@ pass emits — the entire justification for "determinate or explained" — could
 one-line edit with the whole suite staying green. That is the gap `fsharp/call-target-spelling`
 closes, and the four new mutants are each read off the result's own metadata so they cannot go
 vacuous when a fixture is renamed.
+
+## M60 ONTOLOGY LANE, PASS 7 — every label's residual has a name, and a written type is spelled as an identity (2026-10-08)
+
+### FS-P7-1 — the six labels whose residual had no reason at all
+
+Pass 6 gave `calls`, `uses` and `instantiates` a `targetResolution` class and the class census
+turned 234,998 loose target edges into a table. The other six labels kept theirs unexplained, and
+that is the one thing this lane's standard forbids — not a smaller number, but a number with no
+reason recorded next to it:
+
+| label | loose targets, pass 6 | classes, pass 6 |
+|---|---:|---|
+| `contains` | 17,297 | none |
+| `references` | 37,064 | none |
+| `imports` | 12,730 | none |
+| `extends` | 722 | none |
+| `implements` | 446 | none |
+| `overrides` | 666 | none |
+
+Every one of those six now carries a class, decided from the analyzer's own result:
+
+| label | reason class | edges | determinate | what the class is |
+|---|---|---:|---:|---|
+| `contains` | `published-identity` | 58,298 | 41,001 (70.3%) | the child IS a symbol this file minted |
+| `contains` (source) | `in-file-declaration` | 40,632 | 31,306 (77.0%) | the parent's identity is known |
+| `contains` (source) | `ownerless-unit` | 12,526 | 5,954 (47.5%) | the parent is a top-level unit, so its name IS its identity |
+| `contains` (source) | `ambiguous-owner-name` | 5,140 | 511 (9.9%) | two parents, one name, two identities |
+| `references` | `external-type` | 28,026 | 7,637 (27.2%) | a type name declared nowhere in this file |
+| `references` | `external-namespace` | 14,537 | 2,582 (17.8%) | an `open` of a path this file does not declare |
+| `references` | `in-file-declaration` | 7,356 | 4,888 (66.4%) | a type this file declared, spelled as its identity |
+| `imports` | `external-namespace` | 14,537 | 2,582 (17.8%) | the same `open`, under the label the dependency pass reads |
+| `imports` | `resource-path` | 521 | 4 (0.8%) | a `#r`/`#load`/`#I` literal |
+| `imports` | `in-file-declaration` | 280 | 23 (8.2%) | an `open` of a path this file published |
+| `imports` | `module-alias-path` | 1 | 0 | `module IO = System.IO` |
+| `extends` | `external-type` | 1,051 | 385 (36.6%) | the base is not declared here |
+| `extends` | `in-file-declaration` | 136 | 80 (58.8%) | the base IS a type this file declared |
+| `implements` | `external-type` | 672 | 298 (44.3%) | |
+| `implements` | `in-file-declaration` | 219 | 147 (67.1%) | |
+| `overrides` | `base-member-external` | 542 | 41 (7.6%) | an inherited member of a base declared elsewhere |
+| `overrides` | `interface-member-external` | 224 | 158 (70.5%) | an interface member, interface not declared here |
+| `overrides` | `base-member` | 114 | 22 (19.3%) | the base IS this file's |
+| `overrides` | `interface-member` | 72 | 65 (90.3%) | the interface IS this file's |
+
+**`contains`'s residual is a CORPUS fact and it is now PROVED, not described.** 58,298 targets,
+41,001 with exactly one holder in the pool, **17,297 with two or more, and 0 absent from it** —
+so every loose containment target is an identity the corpus itself declares more than once.
+Nothing about the spelling can move those, and no other class exists.
+
+**The CAUSE of that collision was asserted in this paragraph's first draft, and the assertion was
+WRONG.** It read "which is what a `.fs`/`.fsi` pair IS" — a plausible sentence with nothing behind
+it. Pass 8 measured it (`.tmp-probe/logs/fs-p8-contains.txt`, arm `rows-pass12-meta.ndjson`, the
+`.fs`-only key space so a signature file cannot be the explanation): of the 11,739 ambiguous
+containment edges, **7,456 are two or more `.fs` files of one checkout declaring the same
+qualified name** (Fabulous' samples alone declare `Program.main` in 92 separate files, and
+`App.view`, `Msg.Increment`, `Model.Count`, `AppDelegate.CreateMauiApp` recur the same way);
+**3,798 are ONE file declaring the name more than once** — F# member OVERLOADING, verified on the
+largest witness with a line-numbered dump (`Bolero/src/Bolero.Html/Builders.fs`: 63 `Yield`
+overloads of `ConcatBuilder`, each at a distinct line, **0** symbols sharing a line — so it is the
+language, not duplicate publishing); and only **485 are a `.fs`/`.fsi` pair**. The number that
+mattered (17,297 with two or more holders) was right and the sentence explaining it was 4% right,
+which is exactly the failure mode this record exists to catch.
+
+### The marker design, and the two bugs it caught in itself
+
+The two halves of the reason question are answered at DIFFERENT TIMES: the KIND of name is known
+when the edge is emitted, whether THIS FILE declares it is not — a type declared further down the
+file is still this file's declaration, and a mid-walk membership test would call it external. So
+the walk records a marker (`unresolved-type-name`, `unresolved-namespace`, `unresolved-base-name`,
+`unresolved-interface-name`) and one final pass rewrites it from the COMPLETE published set. A
+marker surviving to a consumer would be a defect by definition, and one of this pass's mutants
+ships exactly that.
+
+Two defects were found by probing rather than by any gate, and both are recorded because neither
+would have failed anything:
+
+1. **The finalizer's guard listed two markers of four.** The other two fell through it and the
+   fixture probe printed `res=unresolved-base-name` on every `overrides` row in `override-target`
+   within a minute of the code existing. A gate could not have caught it: nothing pinned these
+   classes yet.
+2. **The source class was a LIE THAT LOOKED LIKE ONE.** `publish` mints `metadata.fqn` only for an
+   OWNED symbol, so a top-level module has no fqn, `fqnByName` held null for it, and
+   `sourceResolution` was `ambiguous-owner-name` on every module-scoped containment edge — a claim
+   that two declarations share the name, which is false. On the draw that class would have
+   swallowed the 30% of `contains` that is ordinary module scoping. It is three classes now:
+   `in-file-declaration`, `ownerless-unit` (a unit with no owner IS its own name), and
+   `ambiguous-owner-name` for the real case, pinned by `First.Same`/`Second.Same`.
+
+### A grammar observation, found by appending a line
+
+The `declared-type-graph` fixture pinned `groupFirst`/`groupSecond` as `kind: variable` and passed
+that way for the lane's entire life. Appending a `type` declaration after the mutual group flipped
+them to `function` — and by this lane's own rule (`let rec f (a) = …` has an argument list, so it
+is a Function) the second answer is the correct one. Both parses report **0 errors**; the EOF form
+has 25 symbols, the form with a declaration after it 28, and the first clause's
+`function_declaration_left` exists only in the second. The row is re-pinned to `function` with the
+finding written into it, because an editor who deletes the appended block sees it flip back.
+
+### FS-P7-2 — a type THIS FILE declares is spelled as its identity, not as its leaf
+
+The declared-type arm published the bare leaf (`Dep`) even when the file was the one that declared
+`Dep`, while `calls`, `instantiates` and `uses` have spelled a name this file published as its
+identity since FS-P5 — the same file, two rules for one question. The leaf is not wrong so much as
+ambiguous: the store resolves it through strategy 2 only while the NAME is unique in the corpus.
+
+**The first price was wrong in two ways, and both were defects of the instrument.** It read
++4,205 / −110 on 9,555 rows (`.tmp-probe/fs-p7-fqn.py`, rows-pass7-meta.ndjson). The population
+POOLED the `open` rows, which this rule never touches — a `references` row is an `open`, an
+`open type` or a written type, and only the third is a declared type — and the candidate used the
+identity of whatever symbol the file published FIRST under that name, ANY KIND.
+
+That second defect was not academic. The unfiltered draft shipped to a 3,000-file arm measured
+35.3% and built these edges on real code:
+
+```
+references  VirtualParquetSource.createFrame     -> ParquetColumnKind.DateTimeOffset   (the union's CASE,
+references  ParquetColumnSource.createDateTime   -> ParquetColumnKind.DateTime           for a written TYPE)
+references  Argu.UnionCaseArgInfo.UnionCaseArgInfo -> FieldParserInfo.Type
+```
+
+A DETERMINATE edge naming a declaration that is definitively NOT the type the source wrote is
+worse than the ambiguous leaf it replaced, because the wrongness is asserted rather than left
+type-hanging. The fix is a second map filled in the same funnel as `fqnOfName` (so the two cannot
+drift) that only a `class`/`interface`/`enum`/`type`/`struct`/`delegate` may fill, and a matching
+question on the reason side (`publishedTypeNames`, so "this name is mine" no longer answers yes for
+a DU case).
+
+**The shipped rule, on the population that runs it** (`.tmp-probe/fs-p7-price.py` keyed on the
+arm's own `relationshipType`, rows-pass10-meta.ndjson):
+
+| | rows | determinate |
+|---|---:|---:|
+| `references` / `declared_type` | 35,102 | 12,502 (35.6%) |
+| of those, `in-file-declaration` | 7,076 | 4,865 (68.7%) |
+| ... of those, respelled to the identity | 6,907 | 4,865 |
+| of those, `external-type` (untouched) | 28,026 | 7,637 (27.2%) |
+
+**+2,252 determinate edges and ZERO the other way**, `references` target-determinacy 25.8% → 30.3%,
+and the whole draw 34.2% → 34.8%. The 7,076 − 6,907 = 169 rows that stay leaves are rows whose
+name no TYPE-kind symbol carries.
+
+**What the kind gate cost, counted against the unfiltered draft it replaced:** 1,536 determinate
+edges (whole-draw target determinacy 35.3% → 34.8%). **What it bought**
+(`.tmp-probe/fs-p7-pop.py <shipped arm> <pre-change arm>`, whose output is kept as
+`logs/fs-p7-pop.txt`): of the 9,403 dotted in-file rows the unfiltered draft produced, 1,430 named
+an identity held only by a MODULE, 816 only by a MEMBER (`FieldParserInfo.Type`,
+`Existential.Type`, `ParquetColumnKind.DateTimeOffset`), 221 only by a NAMESPACE and 106 named an
+identity present nowhere in the file at all. The audit that found them is also the acceptance test,
+and it runs on the shipped arm: **6,907 of 6,907** dotted declared-type targets are held by a
+type-kind symbol.
+
+The dotted written path itself was priced and DECLINED: of the 1,155 `references` rows that carry
+one, respelling to the path as written moves **+85 and −158** — a dotted target that misses
+strategy 1 falls to strategy 3, whose tail is everything after the FIRST dot (`IO.Stream`, a name
+no symbol has), while the leaf's own name is still reachable through strategy 2. The leaf stands
+for the external half, and the row that pins that (`Dotted -> Stream`) sits one field away from
+the row that pins the identity (`Dotted -> Fixture.Types.Dep`) in the same file.
+
+### The A/B at pass 7 — the canonical table, 3,000 files, both arms on the store's own model
+
+| label | edges A → B | source determinate | target determinate |
+|---|---|---|---|
+| `calls` | 210,532 → 210,972 | 60.2% → **86.0%** | 19.1% → **29.1%** |
+| `contains` | 58,298 → 58,298 | 42.4% → **64.8%** | 34.2% → **70.3%** |
+| `references` | 49,919 → 49,919 | 35.8% → **63.5%** | 25.8% → **30.3%** (+4.5p) |
+| `imports` | 15,339 → 15,339 | 26.3% → **30.4%** | 17.0% → 17.0% |
+| `uses` | 18,157 → 18,157 | 64.5% → **85.0%** | 14.0% → **14.7%** |
+| `instantiates` | 1,508 → 1,527 | 49.0% → **87.1%** | 37.3% → **40.5%** |
+| `extends` | 1,187 → 1,187 | 49.7% → **78.3%** | 39.2% → 39.2% |
+| `implements` | 891 → 891 | 51.2% → **72.7%** | 49.9% → 49.9% |
+| `overrides` | 952 → 952 | 56.9% → 56.9% | 30.0% → 30.0% |
+| **TOTAL** | 356,783 → **357,242** | **52.5% → 76.8%** | **22.4% → 34.8%** (+12.5p) |
+
++87,042 source-determinate edges, +44,585 target-determinate, arbitrary attachments
+243,870 → **196,513**, unattached 33,002 → 36,233. The 1,536-edge cost of the kind gate is inside
+those totals: the unfiltered draft read 35.3%.
+
+### Gates at this pass's HEAD
+
+| gate | result |
+|---|---|
+| `run-fixtures.ts --lang fsharp` | **12 / 12 PASS** — 64 rows now pin a reason class (`meta.targetResolution` / `meta.sourceResolution` / `meta.targetWritten`) across SEVEN of the twelve fixtures: `override-target` 18, `call-target-spelling` 12, `declared-type-graph` 12, `import-and-use` 12, `call-ownership` 4, `type-extension-and-containment` 4, `name-surface` 2. Every class this pass introduced now has at least one row that fails if the class is renamed, dropped or INVERTED |
+| `mutate-analyzer.ts` (`BB_MUTANT_ONLY="fsharp/"`) | **32 / 32 CAUGHT**, 0 survived — four new: `in-file-type-spelled-as-its-leaf`, `unresolved-marker-shipped`, `containment-source-reason-dropped`, `override-reason-ignores-whether-the-base-is-local` |
+| `tsc --noEmit` | clean |
+| corpus A/B | the canonical table above — re-walked AFTER the last source edit (`.tmp-probe/fs-verdict-state/rows-pass11-meta.ndjson`, `BB_META_OUT=… npx tsx .tmp-probe/fs-ab-meta.mts walk --cap 3000`) and **byte-identical** (`cmp`) to the arm the table was computed from (`rows-pass10-meta.ndjson`). The table therefore belongs to the code on disk, not to an earlier draft of it — which is the failure mode this lane has been bitten by |
+| F5, lane-scoped (`bun script/m14/differential.ts --lang fsharp --emit`) | 60 files, truth 4,984, covered 4,974 (99.8%), analyzer edges 2,913, residual **79 rows, enumerated rather than totalled**: 69 unexplained = `calls` 68 (the oracle does not derive the pipeline arm and the one-character arm) + `instantiates` 1; 10 MISSING = `overrides` 9 (the oracle still derives the pre-fix self-target spelling) + the same `instantiates` row. **Not one of the 69 sits on a label this pass respelled** — that is what leaf-normalized matching means, and here it is checked rather than assumed. The single `instantiates` row (`StructuralUtilities.context -> Threading`, `src/Compiler/Utilities/TypeHashing.fs`) is new to this lane's record and is stated rather than buried: a target read as a type where the oracle reads a namespace — FS-P6-4's position rule, not this pass's. The run wrote `validation/m14/results/M14.0.F5.fsharp.json`, which records its OWN dirt (`laneDirt: src/ast/real-fsharp-analyzer.ts`, `sharedDirt: script/m14/differential.ts`) instead of stamping a clean commit over uncommitted code. |
+
+### What this pass did NOT do, and the price of each
+
+* **`references` opens (14,817 rows, 17.6%) and `imports` (14,817 external-namespace) did not
+  move.** Their mass is BCL and framework namespaces the draw does not declare (`System`,
+  `System.IO`, `Microsoft.FSharp.Core`). Respelling those is the cross-file join, not a spelling
+  rule; the analyzer cannot see another file's declarations.
+* **The same in-file identity lever on `extends`/`implements` was measured and DECLINED**: +59
+  determinate edges (extends +29/−0, implements +30/−0) against diverging from R10, the family
+  rule applied to ten lanes that publishes a qualified type USE under the leaf. The number is here
+  so a later pass can take it with its eyes open.
+* **`overrides` did not move** (30.0% before and after). The remaining non-determinacy is the base
+  or interface being external — a fact about the corpus, and all 952 edges now carry which one.
+
+  The one spelling inside those edges that was still flagged as unwritten-down is now written down.
+  The declaration form stores its base AS WRITTEN (`inherit System.IO.MemoryStream()` →
+  `Buffer.Flush -> System.IO.MemoryStream.Flush`, three segments, strategy 3's tail
+  `IO.MemoryStream.Flush`, unattached), and the tempting fix is the leaf the `base.` CALL arm uses.
+  Priced on the shipped arm (`.tmp-probe/fs-p7-base.py`): 542 `base-member-external` rows, and
+  **only 6 of them carry a dotted base** — `inherit Base()` with a bare name already spells the
+  leaf — so respelling buys **+3 determinate / −0** while turning 3 unattached edges into ARBITRARY
+  attachments (`none -> ambiguous`: the store picks MIN(id) among several symbols named `Invoke`).
+  An arbitrary attachment is not a gain under this lane's accounting, so the as-written base stands,
+  the number is in the source at the emission site, and no TODO was left behind.
+
+  Two of the four `overrides` classes were the other half of that flag: `base-member-external` and
+  `interface-member` had no fixture row at all, so the pair of questions the finalizer asks
+  (`publishedTypeNames.has(base)`) could have been deleted — keeping the `-external` arm of each
+  pair — and all 12 fixtures would still have passed. `override-target` now writes each pair one
+  field apart (`Dog.Speak -> Animal.Speak` is `base-member`, `Buffer.Flush ->
+  System.IO.MemoryStream.Flush` is `base-member-external`; `Tagged.Tag -> ITagged.Tag` is
+  `interface-member`, `Resource.Dispose -> IDisposable.Dispose` is `interface-member-external`),
+  and the mutant `override-reason-ignores-whether-the-base-is-local` is that deletion — 188 rows on
+  the draw, caught by exactly the two fixtures that should catch it.
+* **`exports` remains RULED** (pass 1), unchanged.
+* **The `new IFoo` object-expression symbols are left alone on purpose**, as recorded in pass 6.
+
+## M60 ONTOLOGY LANE, PASS 8 — the incoming side, asked for the first time (2026-10-08)
+
+Every pass before this one asked how the analyzer SPELLS an endpoint. `incoming-gate.ts` asks a
+different question — does every edge resolve to exactly ONE declaration in the file's own PROJECT,
+with the exceptions that are legitimate and DECLARED as such — and the lane had never been put
+to it:
+
+```
+npx tsx script/m14/incoming-gate.ts fsharp fs 400      # exit 1
+```
+
+| | edges | resolved | amb(decl) | unresolved | extOK | ext? | extFAIL |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `calls` | 26,485 | 5,277 | 346 | 20,862 | 0 | 0 | 0 |
+| `uses` | 2,677 | 18 | 125 | 2,534 | 0 | 0 | 0 |
+| `contains` | 6,249 | 5,885 | 363 | **1** | 0 | 0 | 0 |
+| `imports` | 1,382 | 75 | 48 | 1,259 | 0 | 0 | 0 |
+| `references` | 4,853 | 863 | 153 | 3,837 | 0 | 0 | 0 |
+| `extends` / `implements` / `overrides` / `instantiates` | 470 | 90 | 11 | 369 | 0 | 0 | 0 |
+| **TOTAL** | **42,116** | **12,208** | **1,046** | **28,862** | **0** | **0** | **0** |
+
+**The finding is the three zeros on the right.** 28,862 edges name nothing the project publishes
+and NOT ONE carries a declared external marker, so on this lane a genuinely-external target and a
+broken edge are indistinguishable — which is the one thing this workstream's standard forbids. The
+gate's own worklist says it in one line: *"A lane that marks nothing and reports a large unresolved
+should ask whether those targets are external before it asks why they do not resolve."*
+
+### The classes, in production's own scope
+
+The gate prints a worklist of target STRINGS. A worklist is not an explanation, so the same
+population was re-counted per reason class, with the key space built from the FULL corpus (11,799
+files — no sample bias) and the scope set to the file's project, which is production's
+(`.tmp-probe/fs-incoming.py`, arm `rows-pass12-meta.ndjson`):
+
+| label | reason | edges | resolved | amb | unres | res% |
+|---|---|---:|---:|---:|---:|---:|
+| `calls` | `bare-external` | 65,299 | 11,851 | 16,370 | 37,078 | 18.1% |
+| `calls` | `external-type-or-module` | 65,152 | 19,703 | 6,424 | 39,025 | 30.2% |
+| `contains` | `published-identity` | 58,298 | 42,657 | 15,641 | **0** | 73.2% |
+| `references` | `external-type` | 28,026 | 6,787 | 8,302 | 12,937 | 24.2% |
+| `calls` | `in-file-declaration` | 21,461 | 19,394 | 2,067 | **0** | 90.4% |
+| `calls` | `receiver-value` | 18,035 | 3,340 | 7,352 | 7,343 | 18.5% |
+| `uses` | `bare-external` | 17,912 | 1,571 | 1,567 | 14,774 | 8.8% |
+| `calls` | `local-binding` | 17,761 | 4,036 | 5,456 | 8,269 | 22.7% |
+| `references` / `imports` | `external-namespace` | 14,537 each | 2,397 | 4,091 | 8,049 | 16.5% |
+| `calls` | `module-member` | 8,662 | 1,898 | 189 | 6,575 | 21.9% |
+| `calls` | `call-chain-receiver` | 8,357 | 1,202 | 4,231 | 2,924 | 14.4% |
+| `references` | `in-file-declaration` | 7,356 | 4,937 | 2,419 | **0** | 67.1% |
+| `calls` | `in-file-qualified` | 3,269 | 2,454 | 815 | **0** | 75.1% |
+| **TOTAL** | | **357,242** | **126,812 (35.5%)** | 80,316 | 150,114 | |
+
+The project scope resolves MORE than the pooled one (35.5% against 31.0%) and is the one
+production uses. Two rows are already closed in the sense this record cares about: every class
+whose target is an identity THIS FILE minted (`in-file-declaration`, `in-file-qualified`,
+`published-identity`) has **zero** unresolved edges, and `contains` has zero as well — a
+containment target that the file published is either unique in its project or collides with a
+sibling declaration, and the collision is now a named corpus fact (see the pass-7 correction
+above: 7,456 sibling-file collisions, 3,798 overloads, 485 signature pairs).
+
+### Why each unresolved target is unresolved
+
+`.tmp-probe/fs-p8-why.py` splits the non-resolving population by WHERE the name lives, which is
+the difference between four different pieces of work:
+
+220,255 edges on the draw do not resolve under production's scope, and every one of them now
+carries a cause:
+
+| | edges | what it is |
+|---|---:|---|
+| `OTHER` | **93,204** | declared in ANOTHER project of the corpus — production's scope is the project, so no spelling and no analyzer change can reach it |
+| `AMBIG-in-.fs` | **65,215** | more than one declaration shares the name in this project's `.fs` files: 7,456-weights of sibling-project collisions (`Program.main` × 92) and 3,798 of F# overloading |
+| `NOWHERE` | **56,910** | nothing in the 11,799-file corpus declares it: FSharp.Core, the BCL, a framework, or a typo |
+| `SIG` | **3,689** | declared in this project's `.fsi`/`.fsx`, which the gate's `.fs` population cannot see (this is the only cause that is a fact about the INSTRUMENT's population rather than about the code) |
+| `AMBIG-in-this-project (sig files)` | 1,237 | the same collision through the signature files |
+
+and the `NOWHERE` mass splits into the two shapes that decide whether a claim can be VERIFIED at
+all: **38,882 DOTTED** (an owner the gate can look up) and **18,028 BARE** (no owner —
+`incoming-rule.ts`'s `targetOwner` returns null, so a claim on one reads `externalUnverified` and
+buys an explanation while still blocking a pass).
+
+### The external claim, priced three ways before a line of it was written
+
+The marker is `metadata.isExternalTarget`, a key the gate already recognises, and its value is
+exactly the lookup that follows it (owner = everything before the last dot; an owner holding `:`,
+`/` or whitespace is unverifiable; an owner the PROJECT publishes REFUTES the claim and counts
+against the lane). So it was priced as a rule, not as an intention
+(`.tmp-probe/fs-p8-mark.py`, `fs-p8-rule.py`, `fs-p8-rule2.py`):
+
+| rule | population | verified | REFUTED | verify-rate |
+|---|---:|---:|---:|---:|
+| any dotted target | 62,634 | 26,795 | 35,839 | 42.8% |
+| owner with ≥2 segments | 7,140 | 6,318 | 822 | 88.5% |
+| ... and a root this FILE does not declare | **6,893** | **6,409** | **484** | **93.0%** |
+
+The first row is why a blanket marker is not shipped: `List.map`, `Seq.map`, `Array.map` are
+two-segment targets and a project very often declares a `List` of its own — the top refuting owners
+are `Seq(4,447)`, `List(4,035)`, `Expect(2,540)`, `System(2,118)`, `Array(1,943)`, `String(1,604)`,
+which is to say FSharp.Core-shaped names a project redeclares. The third row is the shipped rule,
+and the root test is the one thing the analyzer can check that the gate cannot: whether the path's
+ROOT is a segment THIS FILE already declares — that is what separates `System.Runtime.InteropServices`
+from `FSharp.Compiler.Syntax`, `Grace.CLI.Common` and `Fake.Core`, three of the file's OWN project's
+namespaces (338 of the 822 refutations, 41%, removed for 170 verified edges). The 484 refuted claims
+that remain are the cross-file case by construction: the declaration IS in the project and the
+analyzer cannot see another file. They are not hidden — the gate's `extFAIL` column counts them.
+
+The root test is checked on a file that writes both shapes, because a rule whose only witness is the
+good case is the failure this record keeps repeating — `.tmp-probe/p8-roots.fs`:
+
+```fsharp
+namespace Acme.App.Core
+open Acme.Shared.Validation      // owner `Acme.Shared`, root `Acme` IS this file's  -> NOT claimed
+open System.Collections.Generic  // owner `System.Collections`, root `System` is not -> claimed
+```
+
+and the dump agrees row for row (`imports -> Acme.Shared.Validation` carries no claim,
+`imports -> System.Collections.Generic` carries `isExternalTarget: true`).
+
+The override classes carry the claim on a different rule because their class already asserts it:
+`base-member-external` / `interface-member-external` mean the base is not a type this file declares,
+and their owner is a base type's leaf (`Exception.ToString`, `MemoryStream.Flush`) — measured 454
+verified against 60 refuted, so they are claimed on the class rather than on the segment count.
+NOT claimed, deliberately: `bare-external`, `local-binding`, `receiver-value`, `call-chain-receiver`
+and `self-member` (they name a VALUE or this file's own member, so "external" would be false), and
+`resource-path` (`#r`/`#load`/`#I` literals — a path or a URI, whose owners carry `:` or `/`).
+
+### What the claim did
+
+| reading | edges | resolved | amb | unresolved | extOK | extFAIL |
+|---|---:|---:|---:|---:|---:|---:|
+| before (400-file stride) | 42,116 | 12,208 | 1,046 | 28,862 | 0 | 0 |
+| after (same 400 files) | 42,116 | 12,208 | 1,046 | **28,151** | **705** | **6** |
+
+711 edges moved out of `unresolved`: 705 into claims the project CONFIRMS and 6 into claims it
+refutes (0.84%). The gate's own accounting prints the split — *"of those 705 verified: 705 by owner
+lookup in the key space"* — and the 6 refutations are the cross-file shape above, visible in the
+`extFAIL` column rather than buried.
+
+### 604 files publish NOTHING, and the ruling behind it is right
+
+Measured over the whole admitted corpus: **604 of 11,799 files (5.1%) yield zero symbols** — 402
+`.fs`, 200 `.fsx`, 2 `.fsi`. They are the files whose ENTIRE tree is one parse-recovery region, which
+is a deliberate behaviour (FS-D15/DS-D16: a recovery region is DISCLOSED and not MINED, because
+mining it published `calls … -> abstract`, `-> member` and `-> Sealed` — language keywords called by
+a real symbol). The paragraph that records the ruling quotes a probe-sized rate of 6/400 files
+(1.5%); the corpus rate is 5.1%, and the difference is the number anyone deciding whether to fix the
+grammar gaps needs. Mainstream sources are in the list — `fsharp/src/FSharp.Core/seqcore.fs`,
+`FSharp.Data/src/FSharp.Data.Html.Core/HtmlNode.fs`,
+`FSharp.Formatting/src/FSharp.Formatting.Markdown/MarkdownParser.fs` — every one of them reporting a
+`parse recovery region` warning on its own root, so the fact is disclosed on the result, not hidden.
+**What it costs the incoming side is measured and small: 123 of 150,114 unresolved edges (0.1%)**
+(`.tmp-probe/logs/fs-p8-zerosymbol.txt` — the top-level declarations those files carry, matched
+against the unresolved targets of the same project). It is a COVERAGE gap (their declarations are
+absent from the graph) and not a cause of the residual, and those are different findings that a
+count of "0 symbols" cannot tell apart.
+
+### What this pass did NOT do, and the price of each
+
+* **The 18,028 BARE unresolved targets stay unclaimed and cannot be claimed.** A bare name has no
+owner, so the gate's lookup cannot confirm or deny it; marking one reads `externalUnverified`, which
+blocks a pass anyway. `printfn`, `sprintf`, `unbox` and the rest of FSharp.Core are in this set.
+* **The `OTHER` mass (declared in another project) is not an analyzer defect and not fixable by
+  spelling**: production resolves within the project, the corpus has the declaration in a different
+  checkout, and no spelling changes what the store can see.
+* **F# has no project-index spec, so the gate cannot run `--index` for this lane** —
+  `src/ast/project-index.ts` defines specs for solidity, python and dart, and the gate says in its own
+  header that an `--index`-less run is NOT the population production parses. **That milestone was
+  priced before it was built, and the price is negative** (`.tmp-probe/fs-p9-project.py`,
+  `fs-p9-collapse.py`, `logs/fs-p9-project.txt`, `logs/fs-p9-collapse.txt`):
+
+  * The first cut asked the obvious question — how many edges name a declaration the project has in
+    ANOTHER file — and read **146,822 of 357,242 (41.1%)**. That number is NOT headroom, and saying so
+    is the point of the second cut: most of those edges already RESOLVE (the store's per-project name
+    lookup finds them) or are ambiguous for a reason an index cannot touch. Worked example, checked
+    against the classes: `references`/`external-type`'s 28,026 edges are 15,089 whose target IS a
+    project key (6,787 resolving + 8,302 ambiguous) and 12,937 whose target is declared in no file of
+    the project at all — zero of the latter are reachable by any index.
+  * The second cut asked the narrower question that decides it: of the unresolved targets whose LEAF
+    is shared by 2+ project declarations, how many does F#'s own resolution order (`open A` makes
+    `A.Foo` the meaning of a written `Foo`) reduce to EXACTLY ONE candidate? Across all classes:
+    **1,298 edges**, out of 16,074 candidates-examined. And the witness for that collapse is a
+    MIS-JOIN — `Seq.map` in `Deedle/src/Deedle.ExcelWriter/ExcelWriter.fs`, 7 declarations sharing
+    the leaf, "survivor" `Frame.map` — because a rule that matches the file's own root segment
+    against a candidate path cannot tell `Seq` (FSharp.Core) from a project module. Shipping that
+    mechanism would have converted an honest unresolved edge into a determinate edge naming the wrong
+    declaration, which this record calls worse than the ambiguity it replaced.
+  * What the spec WOULD buy is real but small: the ~1,068 refuted claims become honest non-claims, and
+    `extends`/`implements`/`overrides` get a `project-declaration` class instead of `external-type`
+    (2,928 unresolved edges corpus-wide), plus the methodological point that the gate would finally
+    measure production's population. It is a methodology win, not a numbers win — and the analyzer's
+    member targets would still be owner-only, because `publish` mints `${ownerName}.${name}` and no
+    spelling can distinguish two types that share an owner name.
+  * **DECLINED for now, with the number recorded**: 1,298 candidate edges at a rule whose own best
+    witness is wrong is not a milestone, it is a way to move determinacy upward and truthfulness
+    downward at the same time.
+* **`resource-path` (`#r`/`#load`/`#I`) cannot be verified by this rule** — its owners carry `:` or
+  `/`, which `verifyExternalClaim` refuses for a reason that has nothing to do with the claim.
+
+### Gates at this pass's HEAD
+
+| gate | result |
+|---|---|
+| `run-fixtures.ts --lang fsharp` | **12 / 12 PASS** — 8 new rows in two fixtures: the claim on BOTH labels of one `open` (`import-and-use`'s `System.Collections.Generic`, 2 expects) and six forbids — the one-segment opens (`System`, `System.Math`) and the four shapes a blanket marker would grab (`Array.fold`, `Seq.map`, `FSharpPlus.map`, `StringBuilder`) |
+| `mutate-analyzer.ts` (`BB_MUTANT_ONLY="fsharp/"`) | **34 / 34 CAUGHT**, 0 survived — two new: `external-claim-dropped` (the claim deleted) and `external-claim-blanket` (the claim applied to every dotted target, i.e. the ±42.8% rule), the second caught by TWO fixtures |
+| `tsc --noEmit` | clean |
+| `incoming-gate.ts fsharp fs 400` | before 0 claims / 28,862 unresolved → after 705 verified / 6 refuted / 28,151 unresolved |
+| `incoming-gate.ts fsharp fs 0` | **the whole population: 10,138 of 10,138 `.fs` files, 26 repos, 0 parse failures, 0 degraded, 1,121,081 edges — 393,397 resolved (35.1%), 161,959 ambiguous, 548,600 unresolved, 16,057 claims VERIFIED and 1,068 REFUTED** (`logs/inc-fs-full-after.txt`) |
+
+### The same rule at corpus scale
+
+| label | edges | resolved | amb(decl) | unresolved | extOK | extFAIL |
+|---|---:|---:|---:|---:|---:|---:|
+| `calls` | 707,590 | 204,144 | 91,117 | 412,329 | 0 | 0 |
+| `contains` | 173,560 | 145,756 | 27,795 | **9** | 0 | 0 |
+| `references` | 130,228 | 31,593 | 25,695 | 65,408 | 7,251 | 281 |
+| `uses` | 61,077 | 4,102 | 10,353 | 46,622 | 0 | 0 |
+| `imports` | 35,356 | 4,412 | 5,191 | 18,221 | 7,251 | 281 |
+| `instantiates` | 4,793 | 1,220 | 490 | 3,083 | 0 | 0 |
+| `overrides` | 3,018 | 552 | 99 | 306 | 1,555 | 506 |
+| `extends` | 2,883 | 798 | 814 | 1,271 | 0 | 0 |
+| `implements` | 2,576 | 820 | 405 | 1,351 | 0 | 0 |
+| **TOTAL** | **1,121,081** | **393,397 (35.1%)** | 161,959 | 548,600 | **16,057** | **1,068 (6.2%)** |
+
+Two numbers here are worth more than the verdict, which is still FAIL and will stay FAIL while
+FSharp.Core names are written bare:
+
+* **`contains` has NINE unresolved edges in the whole corpus**, out of 173,560. Every containment
+target the file minted is an identity production can find, and the 27,795 ambiguous ones are the
+sibling-file and overload collisions whose CAUSE pass 8 measured (7,456 sibling-file, 3,798
+overload, 485 signature pair — the pass-7 sentence that attributed them all to a `.fs`/`.fsi` pair
+was 4% right and is corrected above). The FS-P7-1 reason work
+is what made that visible — before it, this label carried 17,297 "loose" targets with no reason.
+* **The claim's refutation rate is NOT uniform, and the difference is the finding.** The opens
+  (one `open` emits a `references` row and an `imports` row, so each column's 7,251 claims cover the
+  same population) refute 281 of 7,251 (3.7%); the override classes refute **506 of 2,061
+  (24.5%)** against 1,555 verified. Both are the same shape — the declaration lives in ANOTHER file
+  of the same project — but a base type is far more likely than a framework namespace to be declared
+  beside the file that inherits it (`Animal`, `Component`, `Base` are common; `System.Runtime.InteropServices`
+  is not). Keeping the branch is still right by the gate's own arithmetic: dropping it removes 506
+  refutations and 1,555 verifications, i.e. it makes `bad` worse by 1,049. It is reported rather than
+  tuned away, and it is the second measurement in this pass that points at the same next step —
+  F# has no `project-index` spec, so the cross-file population cannot be resolved and can only be
+  claimed or left unexplained.
 
 ## Issue
 
