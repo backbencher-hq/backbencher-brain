@@ -859,7 +859,10 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
     return false
   }
   const currentFn = (): string => {
-    for (let i = scopes.length - 1; i >= 0; i--) if (scopes[i].fn) return scopes[i].fn
+    // The element is read ONCE: a truthiness test on `scopes[i].fn` does not narrow the
+    // later `scopes[i].fn` (an element access through a loop variable), so the return was
+    // typed `string | null` against a `string`.
+    for (let i = scopes.length - 1; i >= 0; i--) { const fn = scopes[i].fn; if (fn) return fn }
     return "(global)"
   }
   const isDeclName = (n: any): boolean => {

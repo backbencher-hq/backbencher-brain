@@ -54,13 +54,23 @@ let checked = 0
 for (const file of files) {
   const text = fs.readFileSync(file, "utf8")
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.ES2022, true)
-  const diags = sf.parseDiagnostics ?? []
+  // `parseDiagnostics` is TypeScript's OWN internal field: present on the object at
+  // runtime, absent from the public type. Named here rather than invented.
+  const diags = (sf as unknown as { parseDiagnostics?: ts.Diagnostic[] }).parseDiagnostics ?? []
   checked++
   if (diags.length === 0) continue
   broken++
   for (const d of diags.slice(0, 3)) {
-    const { line, character } = sf.getLineAndCharacterOfPosition(d.start)
     const msg = ts.flattenDiagnosticMessageText(d.messageText, " ")
+    // `Diagnostic.start` is optional in TypeScript's own type. A diagnostic with no start
+    // has no position to report, so it is printed without one rather than at a position
+    // this file would have invented.
+    const start = d.start
+    if (start === undefined) {
+      console.error(`  ${file}:  ${msg}`)
+      continue
+    }
+    const { line, character } = sf.getLineAndCharacterOfPosition(start)
     console.error(`  ${file}:${line + 1}:${character + 1}  ${msg}`)
     const src = (text.split("\n")[line] ?? "").trim()
     if (src) console.error(`      | ${src.slice(0, 120)}`)

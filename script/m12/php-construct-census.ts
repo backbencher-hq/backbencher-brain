@@ -83,8 +83,13 @@ for (const [t, bucket] of classified) {
   const n = counts.get(t) ?? 0
   if (n === 0) {
     neverSeen.push(t)
-    if (bucket === "handled_verified" && !adjudicated.has(t)) claimedButUntested.push(t)
-    else if (bucket === "handled_verified" && adjudicated.has(t)) probedButUntested.push({ type: t, decision: adjudicated.get(t) })
+    // One `has` + one `get` said the same thing twice, and the `get` could still read as
+    // absent. One lookup states the decision once.
+    if (bucket === "handled_verified") {
+      const decision = adjudicated.get(t)
+      if (decision === undefined) claimedButUntested.push(t)
+      else probedButUntested.push({ type: t, decision })
+    }
   }
   else if (n <= 2) thin.push({ type: t, count: n })
 }

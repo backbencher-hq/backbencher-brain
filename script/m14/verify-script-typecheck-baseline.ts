@@ -39,11 +39,35 @@
 //   bun run script/m14/verify-script-typecheck-baseline.ts --update-baseline [--note "..."]
 //   bun run script/m14/verify-script-typecheck-baseline.ts --update-baseline --allow-increase "why"
 import { execFileSync } from "node:child_process"
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? path.dirname(process.argv[1] ?? "."), "..", "..")
 const BASELINE_PATH = path.join(ROOT, "validation", "m14", "script-typecheck-baseline.json")
+
+/** A canary carrying ONE deliberate semantic error, written for the duration of the
+ *  compile and deleted in a `finally`.
+ *
+ *  WHY IT IS NEEDED. This gate's whole subject is a COUNT, and a program with no
+ *  diagnostics and a compiler that never launched produce identical output — nothing.
+ *  The gate already refused an empty run for that reason, and the refusal made the one
+ *  reading it cannot verify (zero) unreportable: a sweep that fixed the last error could
+ *  not lock the gain in. The canary resolves it the way `script/m60/verify-script-surface.ts`
+ *  resolves it for the same reason — its own TS2322 has to come back, which proves
+ *  DIAGNOSTICS are being reported, and then it is subtracted before anything is compared.
+ *
+ *  It lives DIRECTLY under `script/m14/` because the program's include glob matches every
+ *  TypeScript file below that directory and `script/m14/tmp` is EXCLUDED: a canary under
+ *  `tmp/` would be in no program and would prove nothing (m60's gate records the same
+ *  measurement). */
+const CANARY_REL = "script/m14/__typecheck-ratchet-canary.ts"
+const CANARY_SOURCE = [
+  "// Written for the duration of one typecheck by script/m14/verify-script-typecheck-baseline.ts,",
+  "// then deleted. Its single deliberate TS2322 is this gate's proof that SEMANTIC diagnostics",
+  "// came back at all — without it a clean run and a compiler that never started look the same.",
+  'export const __typecheckRatchetCanary: number = "deliberate type error"',
+  "",
+].join("\n")
 // NO evidence artifact is written into validation/m14/results/ by this gate, on purpose.
 // That directory is the M14 evidence battery, and script/m49/verify-evidence-identity.ts
 // maps every artifact in it to a producer; a new artifact emitted here would appear to
@@ -104,11 +128,17 @@ interface Counts {
 
 function measure(): Counts {
   const argv = scriptTypecheckArgv()
+  const canaryPath = path.join(ROOT, CANARY_REL)
   let text = ""
+  writeFileSync(canaryPath, CANARY_SOURCE)
   try {
-    text = execFileSync(process.execPath, [compiler(), ...argv], { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, timeout: 900_000, stdio: ["ignore", "pipe", "pipe"] })
-  } catch (e: any) {
-    text = String(e?.stdout ?? "") + String(e?.stderr ?? "")
+    try {
+      text = execFileSync(process.execPath, [compiler(), ...argv], { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, timeout: 900_000, stdio: ["ignore", "pipe", "pipe"] })
+    } catch (e: any) {
+      text = String(e?.stdout ?? "") + String(e?.stderr ?? "")
+    }
+  } finally {
+    rmSync(canaryPath, { force: true })
   }
   const byFile = new Map<string, number>()
   const messages = new Map<string, string[]>()
@@ -121,11 +151,15 @@ function measure(): Counts {
     if (list.length < 8) list.push(`${m[4]}:${m[2]} ${m[5]}`)
     messages.set(file, list)
   }
-  if (byFile.size === 0 && !/error TS/.test(text) && text.trim() === "") {
+  const canaryErrors = byFile.get(CANARY_REL) ?? 0
+  byFile.delete(CANARY_REL)
+  messages.delete(CANARY_REL)
+  if (canaryErrors === 0) {
     fail([
-      "script typecheck ratchet: REFUSING to report a clean run — the compiler produced no output at all.",
+      "script typecheck ratchet: REFUSING to report — the canary's own error did not come back.",
       `  ran: ${process.execPath} ${compiler()} ${argv.join(" ")}`,
-      "  (no output is how a compiler that never launched reads; errors and a silent success both print something)",
+      `  ${CANARY_REL} carries one deliberate TS2322 and the run reported ${canaryErrors} of it`,
+      "  (a run that cannot report the canary cannot report a ZERO either: zero errors is the one reading this gate must never invent)",
     ])
   }
   return { total: [...byFile.values()].reduce((a, b) => a + b, 0), byFile, messages }
@@ -233,7 +267,13 @@ function main(): void {
     process.exit(2)
   }
 
-  console.log(`PASS — no file's error count rose. This is NOT a claim that the scripts typecheck: ${current.total} error(s) are DECLARED in the baseline and still there.`)
+  console.log(
+    current.total === 0
+      // The message has to change with the reading, or the gate would go on disclaiming a
+      // claim it is no longer making: with the canary in place a zero is a MEASUREMENT.
+      ? "PASS — no file's error count rose, and the surface is at ZERO errors: the canary proved diagnostics were reported, so the zero is a reading and not an absence of output."
+      : `PASS — no file's error count rose. This is NOT a claim that the scripts typecheck: ${current.total} error(s) are DECLARED in the baseline and still there.`,
+  )
   if (r.totalDelta < 0) console.log(`  ${-r.totalDelta} error(s) fewer than declared — lock the gain in with --update-baseline`)
   if (r.resolved.length) console.log(`  resolved/gone: ${r.resolved.map((x) => `${x.file} ${x.from}->${x.to}`).join(", ")}`)
   process.exit(0)

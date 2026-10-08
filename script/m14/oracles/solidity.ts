@@ -465,7 +465,9 @@ export function deriveSolidityEdges(root: any, moduleName: string): { label: str
       // property in a SEPARATE member_expression wrapping the meta_type_expression.
       const objInner = obj && obj.type === "expression" ? namedChildren(obj)[0] : obj
       if (objInner && objInner.type === "meta_type_expression") continue
-      push("uses", scopeOf(d), name, true)
+      // `push` takes (label, from, target). A fourth argument stood here and had no
+      // parameter to land in — reading an `uses` edge as external was never recorded.
+      push("uses", scopeOf(d), name)
       continue
     }
     if (name === "abi") continue

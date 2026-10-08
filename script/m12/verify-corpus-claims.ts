@@ -297,7 +297,7 @@ for (const a of manifest.analyzers) {
     const pin =
       (a.candidates ?? [])
         .map(String)
-        .find((c) => {
+        .find((c: string) => {
           const sha = shaOf(c)
           if (!sha) return false
           const shaMatch = rev.startsWith(sha) || sha.startsWith(rev.slice(0, sha.length))

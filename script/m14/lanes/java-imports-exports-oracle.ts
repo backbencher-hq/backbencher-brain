@@ -279,9 +279,13 @@ const ms = Date.now() - t0
 
 // ------------------------------------------------------------------ adjudicate
 function adjudicate(type: "imports" | "exports") {
-  const truth = new Map<Row, Row>()
+  // Keyed by `file|key`, not by the row: the row is the VALUE. The declaration
+  // said `Map<Row, Row>` while every `set` call passed a string, so the five reads
+  // below (`.replace` on the key, `get`/`has` with a string) described a map this
+  // code never built.
+  const truth = new Map<string, Row>()
   for (const r of oracle) if (r.type === type) truth.set(`${r.file}|${r.key}`, r)
-  const obs = new Map<Row, Row>()
+  const obs = new Map<string, Row>()
   for (const r of observed) if (r.type === type) obs.set(`${r.file}|${r.key}`, r)
   let tp = 0, fp = 0, fn = 0, lineAgree = 0, confAgree = 0
   const fpEx: string[] = [], fnEx: string[] = []

@@ -82,6 +82,10 @@ export const HASKELL_TRUTH_LABELS: ReadonlyArray<HaskellTruthLabel> = [
   "overrides",
 ]
 
+/** Labels for which from === target is a fact about the language rather than an
+ *  artefact of the derivation. Empty of effect today (see `push`), stated on purpose. */
+const SELF_TARGET_LABELS: ReadonlySet<string> = new Set(["calls"])
+
 export interface HaskellTruthEdge {
   label: HaskellTruthLabel
   from: string
@@ -124,7 +128,9 @@ function walk(root: Node, visit: (n: Node) => boolean | void): void {
   while (stack.length) {
     const n = stack.pop()!
     if (visit(n) === false) continue
-    for (let i = 0; i < n.childCount; i++) stack.push(n.child(i))
+    // `Node.child(i)` is `Node | null` in the binding, and pushing a null only moved
+    // the failure to the next `visit`. A null child is skipped, which is the same walk.
+    for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) stack.push(c) }
   }
 }
 
@@ -260,7 +266,12 @@ export function deriveHaskellSurfaceEdges(root: Node, symbols: Array<{ name?: st
   const seen = new Set<string>()
   const push = (label: HaskellTruthLabel, from: string, target: string) => {
     if (!from || !target) return
-    if (label !== "calls" && from === target) return
+    // `label !== "calls"` stood here. `HaskellTruthLabel` has no `calls` member, so the
+    // comparison had no overlap (TS2367) and was true for every label that can reach it
+    // — the current rule is "no self-edge, for any label". The exemption is written as a
+    // LOOKUP instead of a comparison so it stays visible, and so a future `calls` member
+    // inherits it instead of silently changing this rule.
+    if (!SELF_TARGET_LABELS.has(label) && from === target) return
     const k = `${label}|${from}|${target}`
     if (seen.has(k)) return
     seen.add(k)

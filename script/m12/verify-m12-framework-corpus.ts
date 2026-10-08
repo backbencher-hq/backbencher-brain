@@ -19,7 +19,7 @@ const OUT_FILE = join(process.cwd(), "validation/m12/results/framework-corpus.js
 
 // repo -> { expected: string[] (any match passes), globHint: (path) => boolean }
 // The expected framework is hand-audited from each repo's dominant stack.
-const REPO_EXPECTATIONS: Record<string, { dir: string; expected: string[]; pick: (p: string) => boolean }> = {
+const REPO_EXPECTATIONS: Record<string, { dir: string; expected: string[]; pick: (p: string) => boolean; /** A probe that checks ONLY its own pick matches, and never pulls unrelated files. */ fallbackOnly?: boolean }> = {
   vue_core: { dir: "vue-core", expected: ["vue"], pick: (p) => /\.ts$/.test(p) && /packages\/[^/]+\/src/.test(p) && /(defineComponent|createApp|ref\(|computed\()/.test(readFileSync(join(REPO_ROOT, "vue-core", p), "utf8")) },
   svelte: { dir: "svelte", expected: ["svelte"], pick: (p) => /\.(svelte|ts)$/.test(p) && /packages\/svelte\/src/.test(p) && /(onMount|createEventDispatcher|export let)/.test(readFileSync(join(REPO_ROOT, "svelte", p), "utf8")) },
   grails_core: { dir: "grails-core", expected: ["grails"], pick: (p) => /\.groovy$/.test(p) && /(grails\.|@Controller|@Service|@Transactional)/.test(readFileSync(join(REPO_ROOT, "grails-core", p), "utf8")) },
@@ -84,7 +84,7 @@ for (const [repo, spec] of Object.entries(REPO_EXPECTATIONS)) {
   const toCheck = [...candidates, ...fallback]
   // An explicit fallbackOnly probe (e.g. the YAML workflow probe) checks only
   // its own pick matches and never pulls unrelated files.
-  if ((spec as any).fallbackOnly && candidates.length === 0) continue
+  if (spec.fallbackOnly && candidates.length === 0) continue
 
   for (const file of toCheck) {
     const full = join(dir, file)

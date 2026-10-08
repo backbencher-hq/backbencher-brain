@@ -567,7 +567,11 @@ export function oracleAnalyze(root: any, _filePath: string): OracleFile {
           const nameNode = childByType(c, "atom")
           const macro = childByType(c, "macro_call_expr")
           const macroVar = macro ? childByType(macro, "var") || childByType(macro, "atom") : undefined
-          let name: string | undefined
+          // The name and its line are set by the SAME branch, so the third arm continues:
+          // that is what made `line` definitely assigned (the `if (!name) continue` that
+          // stood here was unreachable — both surviving branches set a non-empty name) and
+          // it is the only form in which TS can see the two assignments are correlated.
+          let name: string
           let line: number
           if (nameNode?.text) {
             name = nameNode.text
@@ -575,8 +579,7 @@ export function oracleAnalyze(root: any, _filePath: string): OracleFile {
           } else if (macroVar?.text === "MODULE" && moduleName) {
             name = moduleName
             line = line1(macroVar ?? macro)
-          }
-          if (!name) continue
+          } else continue
           const arityNode = childByType(c, "arity")
           const arity = arityNode ? digits(childByType(arityNode, "integer")?.text) : 0
           push("exports", moduleName, name, line, isType ? "export_type" : "export")

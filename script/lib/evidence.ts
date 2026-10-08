@@ -202,9 +202,21 @@ export function readEvidence<T = Record<string, unknown>>(filePath: string): Evi
  *  qualifies as legacy — unparseable/tampered/missing stay hard refusals.
  *  Gates using this during the window must WARN on legacy records and hard-
  *  FAIL on unsealed records written after the window opened. */
+/** A pre-M61 record: correct JSON with no seal to verify. It is its OWN arm rather than a
+ *  variation on the ok arm, because that arm requires a `seal` and this one has none — a
+ *  legacy acceptance that claimed a seal would be exactly the lie the seal machinery
+ *  exists to prevent. The `legacy?: boolean` on the read type is what callers check. */
+export interface LegacyEvidenceRecord<T> {
+  ok: true
+  record: T
+  legacy: true
+  reason: string
+}
+export type EvidenceReadOrLegacy<T> = (EvidenceRead<T> | LegacyEvidenceRecord<T>) & { legacy?: boolean }
+
 export function readEvidenceAllowingLegacy<T = Record<string, unknown>>(
   filePath: string,
-): EvidenceRead<T> & { legacy?: boolean } {
+): EvidenceReadOrLegacy<T> {
   const result = readEvidence<T>(filePath)
   if (result.ok) return result
   if (result.kind === "unsealed") {
@@ -216,7 +228,7 @@ export function readEvidenceAllowingLegacy<T = Record<string, unknown>>(
           record: parsed as T,
           legacy: true,
           reason: "legacy (pre-M61) record accepted in the transition window",
-        } as EvidenceRead<T> & { legacy?: boolean }
+        }
       }
     } catch {
       // fall through to the hard refusal below

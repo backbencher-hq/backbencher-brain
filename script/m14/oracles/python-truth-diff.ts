@@ -111,7 +111,9 @@ const agreed = new Map<string, number>()
 const missing = new Map<string, string[]>()
 const unexplained = new Map<string, string[]>()
 const guessBadEx = new Map<string, string[]>()
-const count = (m: Map<string, number>, t: string, d: number): void => m.set(t, (m.get(t) ?? 0) + d)
+// Block bodies, not concise ones: `: void => m.set(...)` returns the Map and TS refuses
+// to read that expression as the declared `void`. The call is what runs either way.
+const count = (m: Map<string, number>, t: string, d: number): void => { m.set(t, (m.get(t) ?? 0) + d) }
 
 /**
  * COUNT AND SAMPLE ARE SEPARATE, and conflating them is how this harness first
@@ -131,7 +133,7 @@ const count = (m: Map<string, number>, t: string, d: number): void => m.set(t, (
 const missingN = new Map<string, number>()
 const truthCount = new Map<string, number>()
 const analyzerCount = new Map<string, number>()
-const bump = (m: Map<string, number>, k: string): void => m.set(k, (m.get(k) ?? 0) + 1)
+const bump = (m: Map<string, number>, k: string): void => { m.set(k, (m.get(k) ?? 0) + 1) }
 const multiN = new Map<string, number>()
 const multiEx = new Map<string, string[]>()
 let currentFile = "?"

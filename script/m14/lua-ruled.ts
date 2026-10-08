@@ -205,7 +205,14 @@ export const REJECTED_IMPLEMENTS_TREE_PROBE = (root: any, fileLabel: string, hit
   const stringValue = (n: any): string | undefined => {
     if (!n || n.type !== "string") return undefined
     const t = String(n.text ?? "")
-    const m = /^(?:\[\[|=|')([\s\S]*?)(?:\]\]|=|\2)$/.exec(t)
+    // The closing group's third alternative was `\2`, a backreference to a group that
+    // does not exist in this expression (there is one capturing group). A backreference
+    // with no target group is a legacy octal escape, so it matched the control
+    // character U+0002 and could never close a string here — TS reports it as TS1533.
+    // Reading it as `'` instead would newly match `'x'`, which changes what this probe
+    // derives, so the dead alternative is dropped and the quoting path below keeps doing
+    // that work: this is the behaviour that ran, written down.
+    const m = /^(?:\[\[|=|')([\s\S]*?)(?:\]\]|=)$/.exec(t)
     return (m ? m[1] : t).replace(/^["']|["']$/g, "")
   }
   const lineOf = (n: any): number => (n?.startPosition?.row ?? 0) + 1

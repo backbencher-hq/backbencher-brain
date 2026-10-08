@@ -119,7 +119,9 @@ async function main() {
         const n = stack.pop()
         if (!n) continue
         if (n.type === "ERROR" || n.isMissing) parseErrNodes.set(n.type, (parseErrNodes.get(n.type) ?? 0) + 1)
-        for (let i = 0; i < n.childCount; i++) stack.push(n.child(i))
+        // `Node.child(i)` is `Node | null` in the binding: pushing a null only moves the
+        // failure to the next pop, so a null child is skipped.
+        for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) stack.push(c) }
       }
       for (const r of res.relationships ?? []) {
         const t = String((r as any).relationshipType ?? (r as any).type)

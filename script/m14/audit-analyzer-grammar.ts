@@ -197,6 +197,10 @@ interface Finding { literal: string; line: number; context: string }
  */
 export interface DeadLiteralRecord {
   schemaVersion?: number
+  /** The register's own rule, written into the file every time the record is rewritten
+   *  (`--update-baseline`) so the file carries the standard it has to meet. Declared here
+   *  because that writer passed it and no reader could name it. */
+  rule?: string
   counts?: Record<string, number>
   literals?: Record<string, Array<{ literal: string; owner?: string; reason?: string; kind?: string }>>
 }

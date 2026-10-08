@@ -75,7 +75,10 @@ if (process.argv.includes("--merge-only")) {
     mergedFrom: parts,
     shardCount: shards.length,
     corpusAdmitted: shards[0]?.corpusAdmitted,
-    drawn: shards.reduce((a: number, s: number) => a + (s?.drawn ?? 0), 0),
+    // `shards` are PARSED shard artifacts (`JSON.parse` each), so the accumulator's
+    // partner is an object with a `drawn` count — it was annotated `number`, which is
+    // what the accumulator is and not what the shard is.
+    drawn: shards.reduce((a: number, s: any) => a + (s?.drawn ?? 0), 0),
     edges,
     byKind,
     unresolvableTotal: Object.values(unresolvableByType).reduce((a, b) => a + b, 0),

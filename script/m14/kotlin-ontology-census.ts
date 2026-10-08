@@ -87,6 +87,10 @@ function pickFiles(dir: string, want: number): string[] {
       const p = join(d, name)
       let dirent
       try { dirent = readdirSync(d, { withFileTypes: true }).find((e) => e.name === name) } catch { continue }
+      // The lookup is a SECOND read of the same directory, so an entry that vanished
+      // between the two (or a name the second read no longer lists) is absent here.
+      // Skipping it is the conservative direction; the dereference used to throw.
+      if (!dirent) continue
       if (dirent.isDirectory()) {
         if (name === "node_modules" || name === ".git" || name === "build") continue
         walk(p, depth + 1)

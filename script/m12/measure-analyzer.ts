@@ -190,7 +190,9 @@ async function main() {
 
   runs.push(await runSet("fixtures", fixtureFiles))
 
-  let corpusStats: { files: number; symbols: number; relationships: number; measurement: any } | null = null
+  // `runSet`'s own return shape, not a hand-written guess at it: the declaration here
+  // named a `files` the function never returns and omitted the `name` it does.
+  let corpusStats: Awaited<ReturnType<typeof runSet>> | null = null
   let corpusFiles: string[] = []
   if (corpusDir) {
     corpusFiles = listFiles(corpusDir, true)

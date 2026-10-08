@@ -51,6 +51,11 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 
+// Overloads, because the return depends on whether a default was given: a flag read
+// WITH a default always yields a string, and the single `string | undefined` signature
+// could not say so — `--file`'s value then had to be treated as optional where it is not.
+function argOf(flag: string): string | undefined
+function argOf(flag: string, dflt: string): string
 function argOf(flag: string, dflt?: string): string | undefined {
   const i = process.argv.indexOf(flag)
   return i !== -1 && i + 1 < process.argv.length ? process.argv[i + 1] : dflt

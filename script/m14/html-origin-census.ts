@@ -340,6 +340,10 @@ interface Row {
   confOwn: Map<string, number>; confDelta: Map<string, number>; confNoFieldOwn: Map<string, number>
   evClassOwn: Map<string, number>; evClassDelta: Map<string, number>
   noLineOwn: number; badLineOwn: number; noLineDelta: number; badLineDelta: number
+  /** The own-pass count of rows the analyzer tagged `metadata.htmlEmbedded`. It was
+   *  written and never declared, so it landed as `undefined++` (NaN) on the row
+   *  record and only the DELTA pair was ever read by the report. */
+  htmlEmbeddedTagged: number
   htmlEmbeddedTaggedDelta: number; htmlEmbeddedUntaggedDelta: number
   emptyName: number; whitespaceName: number; unknownKind: number
   placeholderEndpoint: number
@@ -360,7 +364,7 @@ function blankRow(corpus: string): Row {
     confOwn: new Map(), confDelta: new Map(), confNoFieldOwn: new Map(),
     evClassOwn: new Map(), evClassDelta: new Map(),
     noLineOwn: 0, badLineOwn: 0, noLineDelta: 0, badLineDelta: 0,
-    htmlEmbeddedTaggedDelta: 0, htmlEmbeddedUntaggedDelta: 0,
+    htmlEmbeddedTagged: 0, htmlEmbeddedTaggedDelta: 0, htmlEmbeddedUntaggedDelta: 0,
     emptyName: 0, whitespaceName: 0, unknownKind: 0, placeholderEndpoint: 0,
     hits: new Map(), nodeTypes: {}, customTags: new Map(), customTagFiles: new Set(), customTagSamples: [], roleValues: new Map(),
   }

@@ -76,7 +76,9 @@ async function main() {
     } catch {
       continue
     }
-    const got = (res.relationships ?? [])
+    // `res` is read from a computed analyzer and declared `any`, so the chain below is
+    // `any` and `new Set(...)` over it infers `Set<unknown>` — the element type is stated.
+    const got: string[] = (res.relationships ?? [])
       .filter((r: any) => r.type === "contains")
       .map((r: any) => `${r.source}|${r.target}`)
     const gotSet = new Set(got)

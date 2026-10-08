@@ -71,7 +71,12 @@ export interface EvidenceInput {
   checks: Check[]
   limitations: LimitationInput[]
   reviewers?: string[]
-  corpusPins?: Record<string, string> // repo -> commit SHA
+  /** repo -> commit SHA, OR the wider per-lane pin ROW shape. Two committed artifacts in
+   *  `validation/m14/results` carry rows (`M14.0.F14.json` = {repo, lang, files, draw};
+   *  `yaml-f5-differential.json` = {corpus, pin, available, drawn, stride}) and the
+   *  harness has always spread whatever it is given into the artifact unchanged — the
+   *  declaration named only the object form, so those two producers had to be wrong. */
+  corpusPins?: Record<string, string> | Array<Record<string, string | number>>
   mutationLog?: { mutant: string; injectedAt: string; caughtBy: string }[]
   data?: Record<string, unknown> // tool-specific payload (sorted deterministically)
 }
