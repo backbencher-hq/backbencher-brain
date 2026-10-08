@@ -170,8 +170,10 @@ async function main() {
       if (!(rng.startLine >= 1)) failures.push(`${lang}/${s.name}: startLine not 1-based`)
     }
 
-    // kind consistency across languages (string-insensitive)
-    const kindNorm = (k: string) => String(k).toLowerCase()
+    // kind consistency across languages (string-insensitive). `kind` is optional on
+    // a symbol row, so the helper takes what the call sites actually pass; `String`
+    // already accepted it at runtime.
+    const kindNorm = (k: string | undefined) => String(k).toLowerCase()
     if (cls && !/class/.test(kindNorm(cls.kind))) failures.push(`${lang}: Widget kind ${cls.kind} is not class-like`)
     if (method && !/method|function/.test(kindNorm(method.kind))) failures.push(`${lang}: render kind ${method.kind} unexpected`)
 
@@ -379,9 +381,13 @@ async function main() {
     // 5. The scheme contract, cross-checked against the SOURCE: a hyperlink is
     //    not a code dependency. These two are the only non-fragment hrefs in the
     //    fixture, and neither may become an edge.
+    // The `text !== label` clause that stood here first was already always true: the
+    // two members of every pair are different string literals, so the check that ran
+    // was exactly `!source.includes(text) && !source.includes(label)` — the fixture
+    // must mention the href in ONE of its two spellings. Stated as what runs.
     for (const [label, text] of [["LINKEXT", "https://example.com/x"], ["MAILTO", "mailto:a@b.c"]] as const) {
       if (rels.some((x: any) => String(x.target) === text)) htmlFailures.push(`html: ${text} became a graph edge — a hyperlink is not a code dependency`)
-      if (text !== label && !HTML_SOURCE.includes(text) && !HTML_SOURCE.includes(label)) htmlFailures.push(`html: cc1 placeholder ${label} was not substituted`)
+      if (!HTML_SOURCE.includes(text) && !HTML_SOURCE.includes(label)) htmlFailures.push(`html: cc1 placeholder ${label} was not substituted`)
     }
     if (rels.some((x: any) => x.type === "calls")) htmlFailures.push("html: a `calls` edge exists — a URL is not a callee, and the pre-fix lane's whole call graph was URLs")
 

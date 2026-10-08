@@ -180,7 +180,14 @@ function fileScopeName(root: any): string | null {
   const cands = [
     ...descendantsOfType(root, "module_defn", 3),
     ...descendantsOfType(root, "named_module", 3),
-    ...descendantsOfType(root, 3),
+    // A third collection stood here, and it is recorded as a FINDING rather than a
+    // deletion: `descendantsOfType(root, 3)` put the maxDepth argument in the `type`
+    // position, so the filter compared a node's `type` (a string) against the number 3 and
+    // the collection was ALWAYS empty. It is deleted because deleting it is what the file has been doing;
+    // the type it was probably meant to name is `namespace`, which the analyzer's own
+    // `collectFileScope` accepts beside `module_defn`/`named_module` (real-fsharp-analyzer
+    // :2061). Adding that here would newly resolve file scopes in namespaced files, which
+    // is a change to what this oracle DERIVES, so it is recorded rather than made.
   ]
   // ONE top-level declaration, or none. Two corpus files have the same shape — an `open`
   // above the `module` keyword — and they need opposite answers: in a single-module file
@@ -718,7 +725,11 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
           // the arguments still produce calls, so they are walked and NOT the operand
           for (let i = operand.namedChildCount - 1; i >= 0; i--) {
             const c = operand.namedChild(i)
-            if (c) stack.push({ node: c, scope: cur, callOwner: owner, inBody: body })
+            // The frame shape gained `suppressCalls` (the property-getter contract, which
+            // travels to EVERY depth — see the Frame comment) and this push, the sibling of
+            // the general child push below, was left without it. It carries the same value
+            // the general push gives the operand's own frame.
+            if (c) stack.push({ node: c, scope: cur, callOwner: owner, inBody: body, suppressCalls: suppressCalls || isExpressionProperty })
           }
           continue
         }

@@ -97,9 +97,13 @@ const metrics = {
   falsePositiveRate: +(totalObserved === 0 ? 0 : (symFp + relFp + impFp) / totalObserved).toFixed(6),
   falseNegativeRate: +(totalExpected === 0 ? 0 : (symFn + relFn + impFn) / totalExpected).toFixed(6),
   unknownRate: 0,
+  // The failure layer is a FIELD of `metrics`, last so the artifact's key order is what
+  // it has always been. It used to be assigned onto `metrics` from outside the literal,
+  // which is legal at runtime and invisible to the compiler — so the type of `metrics`
+  // did not carry it and both reads below (`passed`, and the report) were errors.
+  earliestFailingLayer: falseNegativeIds.length || falsePositiveIds.length || violations.length || rangeFailures.length
+    ? "ast_extraction" : null,
 }
-metrics.earliestFailingLayer = falseNegativeIds.length || falsePositiveIds.length || violations.length || rangeFailures.length
-  ? "ast_extraction" : null
 
 writeSealed(path.join(OUT, "r-differential.json"), {
   schemaVersion: 1,

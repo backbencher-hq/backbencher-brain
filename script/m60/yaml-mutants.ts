@@ -342,7 +342,10 @@ const volumeSourceScannedAsNames = (r: any) => {
       invented.push({
         type: "references",
         source: owner,
-        target: child,
+        // `target: child` (the full path) stood here first and was SHADOWED by the line
+        // below it: a duplicate key in one object literal, whose later member wins. The
+        // leaf spelling is the one that has run, so it is the one that stays; TS1117
+        // was the only thing reporting that the first line had no effect.
         target: child.slice(child.lastIndexOf(".") + 1),
         confidence: 0.8,
         line_number: 0,

@@ -271,7 +271,12 @@ const t0 = Date.now()
 await Promise.all(Array.from({ length: workerCount }, () => worker()))
 const wall = Date.now() - t0
 
-const out = ALL_TYPES.map((t) => {
+/** One summary entry per ALL_TYPES, INCLUDING a type the draw never fired: that
+ *  entry carries zeros and none of the row's own counters, so the print loop below
+ *  reads the counters as OPTIONAL. The array was left inferred as that union and
+ *  the loop read four fields off the arm that does not declare them. */
+type SummaryRow = { type: Type; count: number; files: number } & Partial<Row>
+const out: SummaryRow[] = ALL_TYPES.map((t) => {
   const r = rows.get(t)
   if (!r) return { type: t, count: 0, files: 0 }
   const any = r as any

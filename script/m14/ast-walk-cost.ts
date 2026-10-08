@@ -65,7 +65,17 @@ const DEFAULT_THRESHOLD = 40
 
 type Counters = { type: number; parent: number; childForFieldName: number; namedChild: number }
 
-function instrument(): { counters: Counters; installed: boolean } {
+// The handle carries `install`, which is called AFTER the tree is parsed because the
+// prototype being measured is not known before then. The return type named only
+// `counters` and `installed`, so the spread below was standing in for the method it
+// could not declare.
+interface WalkInstrument {
+  counters: Counters
+  readonly installed: boolean
+  install(proto: any): void
+}
+
+function instrument(): WalkInstrument {
   const counters: Counters = { type: 0, parent: 0, childForFieldName: 0, namedChild: 0 }
   let installed = false
   return {

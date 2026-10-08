@@ -12,7 +12,9 @@
  * Every mutant below is a REVERT of a behaviour this wave added or a defect it
  * fixed. A surviving one means the pin does not bite.
  */
-import type { Mutant } from "../../mutate-analyzer"
+// `../../mutate-analyzer` resolves to the REPO ROOT's parent — the registry is this
+// file's own directory (the header above names it: `script/m14/mutate-analyzer.ts`).
+import type { Mutant } from "./mutate-analyzer"
 
 /**
  * Revive the `contains -> Unknown` edge the analyzer used to publish for every

@@ -257,7 +257,10 @@ async function main() {
     console.log(`\nSCOPED run (${langArg ?? `${CENSUS_FILES}-file sample`}) — results printed above, NO evidence written; run without --lang/--files to emit the canonical M14.0.F8.json`)
   } else {
   const { emitEvidence } = await import("./evidence-harness")
-  const checks = results.map((r) => ({
+  // Two fields beyond the harness's `Check` ride on each row, and the committed artifact
+  // records both per language (24 of each in M14.0.F8.json) — so they are declared here
+  // rather than dropped by typing the array as `Check[]`.
+  const checks: Array<{ id: string; description: string; status: "pass" | "fail"; filesScanned: number; blindSpots: number }> = results.map((r) => ({
     id: `corpus-census-${r.language}`,
     description: `every parse-tree node type occurring in ${r.filesScanned} real corpus files is classified in the spec (blind spots: ${r.blindSpots.length})`,
     status: r.pass ? "pass" : "fail",

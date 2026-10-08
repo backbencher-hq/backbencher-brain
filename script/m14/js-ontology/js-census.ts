@@ -31,7 +31,7 @@
 //   bun run script/m14/js-ontology/js-census.ts --corpus lodash --limit 200
 //   bun run script/m14/js-ontology/js-census.ts --json out.json
 
-import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { readFileSync, readdirSync, statSync, writeFileSync, type Dirent } from "node:fs"
 import { join } from "node:path"
 import { getParser } from "../../../src/ast/engine"
 import { ASTEngine } from "../../../src/ast/engine"
@@ -98,9 +98,12 @@ function isSkippedDir(name: string): boolean {
   return name === "node_modules" || name === ".git" || name === "dist-test" || name === "coverage"
 }
 function walkFiles(dir: string, exts: string[], out: string[] = []): string[] {
-  let ents: ReturnType<typeof readdirSync>
+  // Default-encoding overload: `ReturnType<typeof readdirSync>` is the `buffer` one,
+  // so the names here are strings and the `as any[]` that papered over the mismatch
+  // is gone.
+  let ents: Dirent[]
   try { ents = readdirSync(dir, { withFileTypes: true }) } catch { return out }
-  for (const e of ents as any[]) {
+  for (const e of ents) {
     const p = join(dir, e.name)
     if (e.isDirectory()) { if (!isSkippedDir(e.name)) walkFiles(p, exts, out) }
     else if (hasExt(e.name, exts)) out.push(p)

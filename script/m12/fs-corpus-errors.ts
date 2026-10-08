@@ -5,7 +5,9 @@
 //   chunkFile:  one relative path per line (git-tracked F# file)
 //   resultsFile: append a single summary line (default /tmp/fs-full-errors-results.txt)
 import { readFileSync, appendFileSync } from "fs"
-import { ASTEngine } from "../src/ast/engine"
+// `../src/...` pointed at `script/src/`, which does not exist: this file lives one
+// directory deeper than the `script/*.ts` scratch scripts it was copied from.
+import { ASTEngine } from "../../src/ast/engine"
 
 async function main() {
   const repo = "$HOME/fixtures/repositories/fsharp"
@@ -22,6 +24,10 @@ async function main() {
       // Fresh parser per file — mirrors the production pipeline.
       const parser = await ASTEngine.getParser("fsharp")
       const tree = parser.parse(src)
+      // A null tree is an anomaly this instrument RECORDS rather than dereferences: the
+      // throw lands in the caller's crash counter, which is what a null tree meant here
+      // before this file's import was repaired and the type became visible.
+      if (!tree) throw new Error("parser returned no tree")
       let nodes = 0
       const stack = [tree.rootNode]
       while (stack.length) {

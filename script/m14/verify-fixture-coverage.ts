@@ -587,7 +587,10 @@ async function main() {
     console.log(`\nSCOPED run (${langs.length} of ${Object.keys(GATED_LANGS).length} lanes): results printed above, NO evidence written — run without --lang for the canonical artifact`)
   } else {
     const { emitEvidence } = await import("./evidence-harness")
-    const checks = results.map((r) => ({
+    // Two fields beyond the harness's `Check` ride on each row, and the committed
+    // artifact records both per language (27 of each in M14.0.F6.json) — so they are
+    // declared here rather than dropped by typing the array as `Check[]`.
+    const checks: Array<{ id: string; description: string; status: "pass" | "fail"; uncovered: string[]; deadLiterals: string[] }> = results.map((r) => ({
       id: `fixture-coverage-${r.language}`,
       description: `every handled_verified type exercised by a fixture; no dead analyzer literals (${r.specHandled} spec types, ${r.fixtureTypes} fixture types)`,
       status: r.pass ? "pass" : "fail",

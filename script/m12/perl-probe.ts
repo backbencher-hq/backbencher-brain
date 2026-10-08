@@ -15,6 +15,9 @@ for (const r of result.relationships ?? []) {
 }
 console.log("=== IMPORTS ===")
 for (const i of result.imports ?? []) console.log(`${i.module} [${(i.items ?? []).join(",")}]`)
+// `parseFile`'s over-5MB skip branch returns no `exports` key, so the probe says it is
+// reading one channel of a union rather than assuming the field is there.
+const exportsOf = (x: typeof result): any[] => ("exports" in x ? (x.exports ?? []) : [])
 console.log("=== EXPORTS ===")
-for (const e of result.exports ?? []) console.log(`${e.name} [${e.kind || e.type || ""}]`)
+for (const e of exportsOf(result)) console.log(`${e.name} [${e.kind || e.type || ""}]`)
 console.log(`=== ERRORS ===\ncount: ${(result.errors ?? []).length}`)

@@ -105,8 +105,12 @@ type Edge = {
   evidenceClass: string | undefined; metadataKeys: string; line: number | undefined
   repo: string; rel: string; fileSyms: Set<string>; crateSyms: Set<string>; bytes: number
 }
-const perType = new Map<Type, { n: number; files: Set<string>; conf: Map<string, number>; ev: Map<string, number>; md: Map<string, number> }>()
-for (const t of ALL_TYPES) perType.set(t, { n: 0, files: new Set(), conf: new Map(), ev: new Map(), md: new Map() })
+// `files` is a COUNT on this row (the distinct-file SET is `typeFiles`, one map over):
+// the row's own field is assigned `typeFiles.get(t)!.size` below and read into the
+// artifact as the column's number. It was declared `Set<string>` and initialised with
+// one, so the write below was the only thing that knew the field is a count.
+const perType = new Map<Type, { n: number; files: number; conf: Map<string, number>; ev: Map<string, number>; md: Map<string, number> }>()
+for (const t of ALL_TYPES) perType.set(t, { n: 0, files: 0, conf: new Map(), ev: new Map(), md: new Map() })
 const resolution = new Map<Type, { fileBoth: number; fileSrcOnly: number; fileTgtOnly: number; fileNeither: number; leafBoth: number; crateBoth: number; crateNeither: number }>()
 for (const t of ALL_TYPES) resolution.set(t, { fileBoth: 0, fileSrcOnly: 0, fileTgtOnly: 0, fileNeither: 0, leafBoth: 0, crateBoth: 0, crateNeither: 0 })
 /** The store resolves a QUALIFIED endpoint by its leaf — `parallel-indexer.ts`

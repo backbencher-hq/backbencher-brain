@@ -142,7 +142,10 @@ export const GO_MUTANTS: GoMutant[] = [
     transform: (r: any) => {
       const mod = (r?.symbols ?? []).find((s: any) => String(s.kind).toLowerCase() === "module")
       if (!mod) return r
-      const present = new Set((r?.symbols ?? []).map((s: any) => String(s.name)))
+      // `new Set(...)` over an expression read from an `any` receiver infers `Set<unknown>`
+      // (the same inference that turns `new Map(Object.entries(any))` into a map of
+      // `unknown`), so the element type is stated rather than inferred from nothing.
+      const present = new Set<string>((r?.symbols ?? []).map((s: any) => String(s.name)))
       const added = [...present]
         .filter((n) => /^[A-Z]/.test(n) && !(r?.relationships ?? []).some((x: any) => normType(x) === "exports" && String(x.target) === n))
         .slice(0, 4)
@@ -166,7 +169,7 @@ export const GO_MUTANTS: GoMutant[] = [
     transform: (r: any) => {
       const mod = (r?.symbols ?? []).find((s: any) => String(s.kind).toLowerCase() === "module")
       if (!mod) return r
-      const present = new Set((r?.symbols ?? []).map((s: any) => String(s.name)))
+      const present = new Set<string>((r?.symbols ?? []).map((s: any) => String(s.name)))
       const added = [...present]
         .filter((n) => /^[a-z_]/.test(n))
         .slice(0, 4)

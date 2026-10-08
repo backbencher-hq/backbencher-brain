@@ -52,7 +52,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import * as WTS from "web-tree-sitter"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
-import { emitEvidence } from "./evidence-harness"
+import { emitEvidence, type EvidenceInput } from "./evidence-harness"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const argv = process.argv.slice(2)
@@ -522,7 +522,11 @@ try {
 } catch { /* no prior artifact: the canonical name is free */ }
 
 if (hasArg("--emit")) {
-  const base = {
+  // Everything the evidence harness needs EXCEPT the id: each emit branch below
+  // supplies one literal `issueId`. Un-annotated, `claimLevel: "L3"` and the
+  // `status: … ? "fail" : "pass"` ternary widened to `string` and the harness
+  // refused all five calls; the annotation is what makes the five checks real.
+  const base: Omit<EvidenceInput, "issueId"> = {
     title: `Grammar-leaf admissibility gate — ${LANG} candidate ${path.basename(CANDIDATE)}`,
     claimLevel: "L3",
     layers: ["grammar", "analyzer", "corpus"],
