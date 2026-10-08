@@ -258,13 +258,50 @@ check(
 // --- against the GOLDEN oracle ------------------------------------------------
 {
   const goldenPath = path.join(ROOT, "validation", "m26", "results", "external-arm-baseline.json")
-  let golden: { entries: Array<{ root: string; callees: string[]; callers: string[] }> }
+  let golden: {
+    indexFingerprint?: Record<string, number>
+    entries: Array<{ root: string; callees: string[]; callers: string[] }>
+  }
   try {
     golden = JSON.parse(readFileSync(goldenPath, "utf8"))
   } catch (e) {
     check("the golden baseline is readable", false, `${goldenPath}: ${String((e as Error).message).slice(0, 70)}`)
     golden = { entries: [] }
   }
+  // If the index moved, the golden describes a database that no longer exists and
+  // every comparison below is against a fiction. Say that FIRST and on its own,
+  // because "the index changed" and "the code changed behaviour" call for opposite
+  // responses and a reader must not have to infer which one happened.
+  if (golden.indexFingerprint !== undefined) {
+    const now = (() => {
+      const one = (sql: string): number =>
+        Number(
+          (pinned as unknown as { prepare: (s: string) => { get: () => { n: number } } }).prepare(sql).get().n,
+        )
+      return {
+        symbols: one("SELECT COUNT(*) AS n FROM brain_symbol"),
+        files: one("SELECT COUNT(*) AS n FROM brain_file"),
+        relationships: one("SELECT COUNT(*) AS n FROM brain_relationship"),
+        externalRelationships: one(
+          "SELECT COUNT(*) AS n FROM brain_relationship WHERE target_symbol_id IS NULL AND target_external IS NOT NULL",
+        ),
+      }
+    })()
+    const moved = Object.keys(golden.indexFingerprint).filter(
+      (k) => golden.indexFingerprint![k] !== (now as Record<string, number>)[k],
+    )
+    check(
+      "the index the golden was captured against is STILL the index under test",
+      moved.length === 0,
+      moved.length === 0
+        ? `fingerprints agree (${now.relationships} relationships)`
+        : `*** THE INDEX CHANGED: ${moved.map((k) => `${k} ${golden.indexFingerprint![k]} -> ${(now as Record<string, number>)[k]}`).join(", ")} *** ` +
+          `re-capture with: npx tsx script/m26/capture-external-arm-baseline.mts — the per-root diffs below are against a database that no longer exists`,
+    )
+  } else {
+    check("the golden records which index it came from", false, "*** no indexFingerprint in the golden — it cannot distinguish a code change from a re-index ***")
+  }
+
   const walkCache = new Map<string, Walk>()
   currentConnection = pinned
   for (const [i, entry] of golden.entries.entries()) {
