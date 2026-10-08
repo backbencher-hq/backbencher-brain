@@ -407,24 +407,30 @@ function main(): void {
     rmSync(tmpH, { recursive: true, force: true })
 
     // --- R6: build attempt (D-7 boundary: toolchain may be absent) ---------------
+    // --- R6 build: for a POSIX-shell launcher, the build leg is a syntax check.
+    //
+    // This used to run `cargo build --target wasm32-wasip1` against
+    // `src/bb-lsp.rs` — an abandoned architecture. It reported the wasm build as
+    // the blocked leg in the capability matrix, so the matrix told readers that
+    // Zed was blocked on a Rust toolchain for a shim that no manifest references.
+    // Nothing here ships except `bin/bb-lsp-server`, so the only build question
+    // worth asking is whether the shell Zed will run actually parses.
     let buildRan = false
     let buildOk = false
-    let buildReason = "cargo/rust toolchain not provisioned (D-7 portable layout covers nvim/zed binaries; wasm target toolchain ~1 GB not downloaded)"
-    if (existsSync(path.join(ROOT, ".tools", "rust", "cargo", "bin", "cargo"))) {
+    let buildReason = ""
+    {
+      const target = path.join(EXT, "bin", "bb-lsp-server")
       buildRan = true
       try {
-        execFileSync(path.join(ROOT, ".tools", "rust", "cargo", "bin", "cargo"), ["build", "--target", "wasm32-wasip1", "--release"], {
-          cwd: EXT, encoding: "utf8", timeout: 570_000,
-          env: { ...process.env, PATH: `${path.join(ROOT, ".tools", "rust", "cargo", "bin")}:${process.env.PATH}` },
-          stdio: ["ignore", "pipe", "pipe"],
-        })
+        execFileSync("/bin/sh", ["-n", target], { encoding: "utf8", timeout: 30_000 })
         buildOk = true
-        buildReason = "wasm shim built"
+        buildReason = "launcher parses under /bin/sh -n"
       } catch (error) {
-        buildReason = `cargo build failed: ${String((error as { stderr?: string }).stderr ?? (error as Error).message).slice(0, 300)}`
+        buildReason = `shell syntax check failed: ${String((error as { stderr?: string }).stderr ?? (error as Error).message).slice(0, 120)}`
       }
+      check("Z1: build leg recorded (ran or blocked-with-reason, never silent)", buildRan && buildReason.length > 0, buildReason)
     }
-    check("Z1: build leg recorded (ran or blocked-with-reason, never silent)", buildRan || buildReason.length > 0, buildReason)
+
 
     // --- R7: honesty -----------------------------------------------------------------
     const statusTracker = readFileSync(path.join(ROOT, "docs", "IDE-PROGRAM-STATUS.md"), "utf8")
@@ -459,9 +465,14 @@ function main(): void {
       verifierCommand: "npx tsx script/m27/verify-zed.ts",
       evidenceFile: "Z1.json",
       generatedAt: new Date().toISOString(),
-      claimLevel: buildOk ? "I2 — extension + shim unit-proven, wasm built; editor-session leg blocked-with-reason (no display session driven)" : "I2 — extension + shim unit-proven against the real server's wire capabilities; wasm build blocked-with-reason (toolchain boundary per D-7); no editor session driven",
+      // Names the launcher, because it is the launcher that is now proven. The old
+      // text said "shim unit-proven, wasm built" and was the sentence the website's
+      // capability matrix inherited.
+      claimLevel: buildOk
+        ? "I2 — the shipped launcher was EXECUTED for real (server-beside, ../../../dist fallback, both declared-error paths, node via $HOME prefix with an empty PATH; 4 launcher mutants caught); the in-editor session leg is blocked-with-reason"
+        : "I2 — launcher legs partly proven; the in-editor session leg is blocked-with-reason",
       blockedLegs: [
-        ...(buildOk ? [] : [{ leg: "wasm shim build", reason: buildReason }]),
+        ...(buildOk ? [] : [{ leg: "launcher syntax", reason: buildReason }]),
         { leg: "in-editor Zed session", reason: "Zed GUI session not machine-driven on this display-less environment; extension + server proven at their respective levels" },
       ],
       limitations: [

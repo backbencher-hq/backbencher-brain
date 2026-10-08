@@ -186,3 +186,28 @@ the script's comments because each produced a confident wrong number rather than
 an error: instrumenting the handle you were handed instead of the one the walk
 opens; patching `getRawInstance` when `traverseGraph` only reaches it on a cache
 miss; and `mkdirSync`'s return value.
+## Also found while clearing the editor/docs leg (2026-10-08)
+
+A sealed ledger with no sanctioned way to re-seal. `validation/m27/results/manifest.json`
+carries a `bbSeal` envelope (`alg`, `sealedAt`, `contentSha256`), and
+`script/lib/evidence.ts` refuses the read on mismatch — which it did, correctly,
+when the Zed scope text was corrected:
+
+```
+M61 trusted read refused manifest.json: seal mismatch: content sha256 795d26a2…
+```
+
+The text was stale: it still described the Zed extension as "extension.toml +
+thin wasm shim owning binary resolution only" with acceptance criteria
+"extension.toml + shim build clean via zed extension CLI". None of that ships —
+the manifest launches `./bin/bb-lsp-server`, and there is no Zed CLI here.
+
+The edit was reverted rather than forced. `evidence.ts` exports `sealFor()`, but
+**nothing in the repository calls it**: there is no re-seal command, so a stale
+sealed ledger can be *detected* and not *corrected* through the sanctioned path.
+Forcing the seal by recomputing the hash in place would defeat the property the
+seal exists for, and a hand-edited sealed file is exactly the thing a future
+reader cannot trust.
+
+Left as a known gap with this note. It needs either a re-seal subcommand or a
+generator that owns the scope text — a decision, not a patch.

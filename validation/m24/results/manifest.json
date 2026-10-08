@@ -40,13 +40,13 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+        "currentCommit": "a055bd56a6811c4edfe2def46071cdbe9cf048cb",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 23,
         "failed": 1,
         "negativeCases": 11,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: script/m24/verify-call-hierarchy.ts, script/m24/verify-callsite-agreement.ts, script/m24/verify-closure.ts, script/m24/verify-docs.ts, script/m24/verify-freshness.ts, script/m24/verify-harness.ts"
+        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
     },
     {
@@ -154,7 +154,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+        "currentCommit": "82a15fbb653c327b5607430aa8b984b394238c8a",
         "verifierCommand": "npx tsx script/m24/verify-hover.ts",
         "evidenceFile": "L2.json",
         "passed": 58,
@@ -302,7 +302,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+        "currentCommit": "88e2d9f4494c0c3738e5f262807a3ff7dc87f03d",
         "verifierCommand": "npx tsx script/m24/verify-docs.ts",
         "evidenceFile": "D1.json",
         "passed": 47,
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:34:55.198Z",
-    "contentSha256": "99ee6ff94aa9f8d1db0a52a95219170d2d8316cee8c8b668b654e1e3bc7f4352"
+    "sealedAt": "2026-10-08T01:45:55.624Z",
+    "contentSha256": "b63e7ea345a65e0da54751f568cbfa8baae56edfc1cc8f517a5a27881628741c"
   }
 }
