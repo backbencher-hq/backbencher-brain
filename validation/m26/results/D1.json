@@ -23,10 +23,10 @@
   "machineReality": {
     "dir": "$HOME/.bb/projects",
     "present": true,
-    "scanned": 835,
+    "scanned": 837,
     "skipped": 0
   },
-  "realDbsScanned": 835,
+  "realDbsScanned": 837,
   "realDbsSkipped": 0,
   "realCrossLanguagePairs": 469,
   "realPairRows": [
@@ -3315,7 +3315,7 @@
     }
   ],
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "902d05720502f70a11044a6587d8fd9799009ad9",
+  "currentCommit": "69bb9592a8b534f82ff03c6a32d445b59717a2c9",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
   "sourceFingerprint": "8bf7814b52cfe7eef4fa3d4b5c7804e3d42fd6bd65edb9fbeb5f7bff57826749",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -3327,14 +3327,14 @@
     "script/m26/ambient-reality.ts",
     "script/m26/graph-core.ts"
   ],
-  "generatedAt": "2026-10-08T11:14:34.786Z",
+  "generatedAt": "2026-10-08T17:31:50.170Z",
   "limitations": [
     "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate.",
     "The drift gate compares the bytes on disk BEFORE writing, so the first run after a content change fails and regenerates; the run after that is the proof."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T11:14:34.787Z",
-    "contentSha256": "c120f9a95491c3a0afd730c321f7d5fcb39da0e1637c1594f3d946ceea74db86"
+    "sealedAt": "2026-10-08T17:31:50.172Z",
+    "contentSha256": "38f5e872f569cd793623dd473262fca6070416c67eaec25974de6aaeed674be3"
   }
 }

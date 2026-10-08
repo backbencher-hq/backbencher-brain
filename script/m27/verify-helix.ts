@@ -172,7 +172,32 @@ async function main(): Promise<void> {
   const droppedLanguage = fragText.replace('name = "scala"\nlanguage-servers = [ { name = "bb-lsp" } ]\n\n', "")
   negative("H1 mutant: dropped language is rejected", validateFragment(droppedLanguage).errors.some((e) => e === "language-not-wired:scala"))
 
-  const invented = fragText.replace('args = [ "/opt/backbencher-brain/dist/lsp/server.js" ]', 'args = [ "/opt/backbencher-brain/dist/lsp/server.js", "--graph-ui" ]')
+  // ANCHORED ON THE LINE, NOT ON A PATH (fixed 2026-10-08).
+  //
+  // This replaced the literal 'args = [ "/opt/backbencher-brain/dist/lsp/server.js" ]'.
+  // That path was then replaced with an explicit `/ABSOLUTE/PATH/TO/...  # EDIT ME`
+  // placeholder, because script/m56/generate-editors.ts publishes this file's
+  // command to the website and a Linux path was being shown to readers as the way
+  // to run the server. String.replace does NOT throw when its needle is absent — it
+  // returns the haystack unchanged. So the mutant planted NOTHING, the validator saw
+  // a clean fragment, and the mutant SURVIVED; the gate reported that, which is the
+  // gate working. §8.3: a mutant that cannot fire is not a pass, and a skip is not a
+  // pass either.
+  //
+  // Anchoring on the shape of the line rather than its contents keeps the mutant
+  // alive across any future change to WHICH path is documented.
+  const invented = fragText.replace(
+    // `[^\]]*\]` and NOT `.*\]$`: the line ends with `# EDIT ME`, so an
+  // end-anchored pattern misses it — which is what the first attempt did, and
+  // the no-op guard below caught it.
+  /^args = \[[^\]]*\]/m,
+    'args = [ "/ABSOLUTE/PATH/TO/backbencher-brain/dist/lsp/server.js", "--graph-ui" ]',
+  )
+  if (invented === fragText) {
+    // A no-op mutant that then reported success would be the exact defect this gate
+    // exists to catch, so it is stated rather than passed over.
+    negative("H1 mutant: the invented-flag mutant actually PLANTED something", false, "the args line was not found — the mutant is a no-op and cannot be caught")
+  }
   const inventedParsed = validateFragment(invented)
   negative("H1 mutant: invented flag breaks the dist-form match", !inventedParsed.ok || inventedParsed.errors.length > 0 || !inventedParsed.parsed?.["language-server"]?.["bb-lsp"]?.args?.every?.((a: string) => a.endsWith(".js")))
 

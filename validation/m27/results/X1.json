@@ -3,34 +3,28 @@
   "code": "X1",
   "milestone": "M27",
   "status": "known-gap",
-  "checks": 35,
-  "passed": 27,
-  "failed": 8,
-  "failures": 8,
+  "checks": 34,
+  "passed": 32,
+  "failed": 2,
+  "failures": 2,
   "negativeCases": 6,
-  "currentCommit": "a055bd56a6811c4edfe2def46071cdbe9cf048cb",
+  "currentCommit": "69bb9592a8b534f82ff03c6a32d445b59717a2c9",
   "verifierCommand": "npx tsx script/m27/verify-closure.ts",
   "barViolations": [
-    "bar1: an adapter leg is neither verified nor blocked-with-reason (J1=known-gap, H1=known-gap)",
-    "bar1: capability subset proofs not all present",
+    "bar1: an adapter leg is neither verified nor blocked-with-reason (H1=known-gap)",
     "bar3: capability matrix not verified"
   ],
   "perMutantRecords": {
     "N1": [],
     "J1": [],
     "Z1": [],
-    "H1": [
-      {
-        "name": "H1 mutant: invented flag breaks the dist-form match",
-        "caught": false
-      }
-    ],
+    "H1": [],
     "V1": []
   },
-  "generatedAt": "2026-10-08T01:40:51.779Z",
+  "generatedAt": "2026-10-08T17:41:58.105Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T01:40:51.781Z",
-    "contentSha256": "7b76ed4389cdd58497e2cde6097cc7b1fb301afd59567f5b4060944cf12ddb8e"
+    "sealedAt": "2026-10-08T17:41:58.107Z",
+    "contentSha256": "26a0920aa6eb92019e78c1683e7f59c7695164e892b3595033397ad026460926"
   }
 }
