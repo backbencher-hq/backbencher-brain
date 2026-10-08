@@ -15,6 +15,7 @@ import { BrainDatabase } from "../../src/brain/database"
 import { detectOrphans } from "../../src/intelligence/patterns/orphans"
 import { detectIndexRules } from "../../src/intelligence/patterns/rules"
 import { PatternBrainTools } from "../../src/ast/tools"
+import { fileURLToPath } from "node:url"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
@@ -237,10 +238,10 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
         ck("P7: " + f + " present", false, "missing or invalid")
       }
     }
-    const self = readFileSync(new URL(import.meta.url).pathname, "utf8").split("P7: evidence")[0].replace(/\/\/[^\n]*/g, "")
+    const self = readFileSync(fileURLToPath(import.meta.url), "utf8").split("P7: evidence")[0].replace(/\/\/[^\n]*/g, "")
     const autoPass = new RegExp("\\b(?:ck|nk)\\([^)]*,\\s*true\\s*[,)]")
     nk("P7: verifier has no auto-pass assertions", !autoPass.test(self), autoPass.test(self) ? "auto-pass found" : "clean")
-    nk("P7: cleanup refuses non-tmp roots", readFileSync(new URL(import.meta.url).pathname, "utf8").includes("root.startsWith(tmpdir())"), "structural guard in cleanup()")
+    nk("P7: cleanup refuses non-tmp roots", readFileSync(fileURLToPath(import.meta.url), "utf8").includes("root.startsWith(tmpdir())"), "structural guard in cleanup()")
   }
   await emit("P7", "M15.P7", "bb_patterns", "evidence + gate + closure", "p7.json")
   await reset()

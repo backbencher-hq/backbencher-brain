@@ -32,8 +32,9 @@
  */
 import * as fs from "fs"
 import * as path from "path"
+import { fileURLToPath } from "node:url"
 
-const ROOT = path.resolve(import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname), "..", "..")
+const ROOT = path.resolve(import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const FIXTURE_DIR = path.join(ROOT, "validation/m12/fixtures/graphql")
 const TRUTH = path.join(ROOT, "validation/m12/ground-truth/graphql.json")
 const OUT = path.join(ROOT, "validation/m12/results/graphql-differential.json")

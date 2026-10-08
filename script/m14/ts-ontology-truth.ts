@@ -37,6 +37,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 import { getParser } from "../../src/ast/engine"
+import { fileURLToPath } from "node:url"
 
 // ----------------------------------------------------------------------------
 // The ontology's ten types, in the spelling an ANALYZER emits on the wire.
@@ -54,7 +55,7 @@ import { getParser } from "../../src/ast/engine"
  *  never has to appear in this source file. */
 const SEP = String.fromCharCode(31)
 
-const REPO_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..")
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 
 /** Values of one `export enum RelationshipType` block, in declaration order. */
 function readEnumValues(file: string): Map<string, string> {

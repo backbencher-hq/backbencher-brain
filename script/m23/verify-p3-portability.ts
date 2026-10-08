@@ -17,6 +17,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readdirSync,
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation", "m23", "results")
@@ -162,7 +163,7 @@ try {
 }
 
 // Self-audit: no auto-pass in this file
-const self = readFileSync(new URL(import.meta.url).pathname, "utf8")
+const self = readFileSync(fileURLToPath(import.meta.url), "utf8")
 ck("no auto-pass assertions in verifier", !/ck\([^)]*,\s*true\s*\)/.test(self), "self-audit")
 
 const { execFileSync: efs } = await import("node:child_process")

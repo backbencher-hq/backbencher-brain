@@ -84,6 +84,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 import { execSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
 const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
@@ -293,7 +294,7 @@ if (has("--selftest")) selftest()
  */
 const IS_MAIN = (() => {
   const entry = process.argv[1] ? path.resolve(process.argv[1]) : ""
-  return entry === path.resolve(new URL(import.meta.url).pathname)
+  return entry === path.resolve(fileURLToPath(import.meta.url))
 })()
 if (IS_MAIN) {
 

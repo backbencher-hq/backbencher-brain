@@ -13,6 +13,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 
 type Issue = {
   code: string
@@ -68,7 +69,7 @@ function closable(i: CompatibleIssue): boolean {
 check("no issue claims verified without a matching on-disk evidence file", issues.every(closable))
 
 // Self-audit for auto-pass / tautology patterns in the verifier itself.
-const self = readFileSync(new URL(import.meta.url).pathname, "utf8")
+const self = readFileSync(fileURLToPath(import.meta.url), "utf8")
 const hardTrue = /check\(\s*"[^"]*",\s*true\s*\)/.test(self)
 const orTrue = /\|\|\s*true\b/.test(self)
 check("M22 verifiers have no hardcoded true assertions", !hardTrue)

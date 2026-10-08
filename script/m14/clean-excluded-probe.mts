@@ -32,10 +32,11 @@ import { execFile } from "node:child_process"
 import * as fs from "node:fs"
 import * as path from "node:path"
 import { promisify } from "node:util"
+import { fileURLToPath } from "node:url"
 
 const execFileP = promisify(execFile)
 
-const HERE = path.dirname(new URL(import.meta.url).pathname)
+const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, "..", "..")
 const SINGLE = path.join(ROOT, "validation", "m14", "fixtures", "clean", "single-file-walk.mts")
 
