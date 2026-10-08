@@ -48,6 +48,26 @@ const sig = (rows: Array<Record<string, any>>): string =>
     .sort()
     .join("\n")
 
+// THE INDEX'S IDENTITY, recorded with the golden.
+//
+// The golden's first purpose was to catch a behaviour change. Its second, and the
+// one it was silently failing, is distinguishing "the code changed" from "the
+// world changed": the owner's 201-file index was re-indexed by something outside
+// this session (relationships 58,324 -> 62,043), and the golden then reported 8
+// roots of behavioural difference that were really one index rebuild. A golden
+// that cannot say which index it came from cannot tell those apart, and the
+// honest response to an unexplained failure is to distrust the instrument.
+const fingerprint = (): Record<string, number> => {
+  const one = (sql: string): number => Number((raw as unknown as { prepare: (s: string) => { get: (q?: unknown[]) => { n: number } } }).prepare(sql).get().n)
+  return {
+    symbols: one("SELECT COUNT(*) AS n FROM brain_symbol"),
+    files: one("SELECT COUNT(*) AS n FROM brain_file"),
+    relationships: one("SELECT COUNT(*) AS n FROM brain_relationship"),
+    externalRelationships: one("SELECT COUNT(*) AS n FROM brain_relationship WHERE target_symbol_id IS NULL AND target_external IS NOT NULL"),
+  }
+}
+const indexFingerprint = fingerprint()
+
 const baseline: Array<{ root: string; callees: string[]; callers: string[]; nodes: number }> = []
 let externalEdges = 0
 for (const root of roots) {
@@ -86,6 +106,7 @@ writeFileSync(
     {
       note: "Edge rowIds per root, captured from the walk BEFORE the UNRESOLVED arm's index pin. The oracle for verify-external-arm-plan.ts: comparing two arms of the same code proves self-consistency, not correctness.",
       projectId: PROJECT_ID,
+      indexFingerprint,
       roots: baseline.length,
       externalCalleeEdges: externalEdges,
       entries: baseline,
