@@ -87,6 +87,40 @@ if (projects.length === 0) {
 // ---------------------------------------------------------------------------
 // 1. depth vs latency
 // ---------------------------------------------------------------------------
+// Instrumentation MUST be installed before the first walk. STATEMENT_CACHE holds
+// the statement objects produced by the first db.prepare(sql); a wrapper installed
+// later never sees those .all() calls. Doing this after leg 1 reported "SQL total
+// 1ms" for a 2857ms walk and concluded the cost was not in SQL — which was wrong,
+// and wrong in the direction that looks like a clean negative result.
+const byTextEarly = new Map<string, { n: number; ms: number; rows: number; example: string }>()
+const getRawEarly = BrainDatabase.getRawInstance.bind(BrainDatabase) as any
+function instrument(db: unknown): unknown {
+  const d = db as any
+  if (d.__profiled) return d
+  d.__profiled = true
+  const prepare = d.prepare.bind(d)
+  d.prepare = (sql: string) => {
+    const stmt = prepare(sql)
+    const all = stmt.all.bind(stmt)
+    stmt.all = (...a: unknown[]) => {
+      const t0 = performance.now()
+      const out = all(...a)
+      const h = createHash("sha1").update(sql).digest("hex").slice(0, 8)
+      const e = byTextEarly.get(h) ?? { n: 0, ms: 0, rows: 0, example: sql }
+      e.n += 1
+      e.rows += out.length
+      e.ms += performance.now() - t0
+      byTextEarly.set(h, e)
+      return out
+    }
+    return stmt
+  }
+  return d
+}
+;(BrainDatabase as any).getRawInstance = async (pid: unknown) => instrument(await getRawEarly(pid))
+instrument(await getRawEarly(PID))
+instrument(raw)
+
 console.log("\n1. LATENCY BY TRAVERSAL DEPTH (each measured warm)\n")
 interface Row {
   label: string
@@ -122,36 +156,7 @@ if (depths.size < 2) {
 // 2. per-SQL-text attribution, on the handle the WALK uses
 // ---------------------------------------------------------------------------
 console.log("\n2. WHERE THE WALK TIME GOES (on BrainDatabase.getRawInstance, not the passed handle)\n")
-const byText = new Map<string, { n: number; ms: number; example: string }>()
-const getRaw = BrainDatabase.getRawInstance.bind(BrainDatabase) as any
-// `traverseGraph` only reaches getRawInstance on a cache MISS — on a warm handle
-// it returns early. So patching getRawInstance alone captures nothing on a second
-// walk, which is exactly what the first run of this script reported: "SQL total
-// 0ms across 0 distinct statement texts" for a 2-second walk. The handle that the
-// walk will reuse is fetched HERE and patched directly.
-function instrument(db: unknown): unknown {
-  if ((db as any).__profiled) return db
-  ;(db as any).__profiled = true
-  const prepare = (db as any).prepare.bind(db)
-  ;(db as any).prepare = (sql: string) => {
-    const stmt = prepare(sql)
-    const all = stmt.all.bind(stmt)
-    ;(stmt as any).all = (...a: unknown[]) => {
-      const t0 = performance.now()
-      const out = all(...a)
-      const h = createHash("sha1").update(sql).digest("hex").slice(0, 8)
-      const e = byText.get(h) ?? { n: 0, ms: 0, example: sql }
-      e.n += 1
-      e.ms += performance.now() - t0
-      byText.set(h, e)
-      return out
-    }
-    return stmt
-  }
-  return db
-}
-;(BrainDatabase as any).getRawInstance = async (pid: unknown) => instrument(await getRaw(pid))
-await instrument(await getRaw(PID))
+const byText = byTextEarly
 const worst = rows.reduce((a, b) => (b.ms > a.ms ? b : a))
 const worstProject = projects.find((p) => p.label === worst.label) ?? projects[0]!
 byText.clear()
@@ -162,7 +167,7 @@ const totalSql = [...byText.values()].reduce((a, e) => a + e.ms, 0)
 console.log(`   walk ${walkMs.toFixed(0)}ms for ${worstProject.label} (depth ${walkResult.maxDepthReached}, ${walkResult.callees.length} callees / ${walkResult.callers.length} callers)`)
 console.log(`   SQL total ${totalSql.toFixed(0)}ms across ${byText.size} distinct statement texts\n`)
 for (const [h, e] of [...byText].sort((a, b) => b[1].ms - a[1].ms).slice(0, 5)) {
-  console.log(`     ${h}  ran ${String(e.n).padStart(3)}x  ${e.ms.toFixed(0).padStart(6)}ms  (${((100 * e.ms) / walkMs).toFixed(0)}% of the walk)`)
+  console.log(`     ${h}  ran ${String(e.n).padStart(4)}x  ${e.ms.toFixed(0).padStart(6)}ms  (${e.ms > 0 ? Math.round(e.ms / Math.max(e.n, 1)) : 0}ms each, ${((100 * e.ms) / walkMs).toFixed(0)}% of the walk)  ${e.rows} rows`)
 }
 const top = [...byText].sort((a, b) => b[1].ms - a[1].ms)[0]
 if (top && top[1].ms > walkMs * 0.5) {
