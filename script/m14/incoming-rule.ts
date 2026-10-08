@@ -43,7 +43,45 @@ export const EXTERNAL_KEYS = [
   // the generic spellings because it marks a BASE, not a target: the marked row still
   // names a member, and that member is still required to exist (see the Object retarget).
   "isExternalBase",
+  // dart: `importOutsideProject`, the IMPORT/EXPORT claim — different in kind from every key
+  // above, and handled by its own verification below. The others claim "the declaration this
+  // target names is not in the population", which the key space itself can check (look the
+  // owner up). This one claims "the FILE this specifier names is not in this project", which
+  // no symbol lookup can check: a specifier is a path, so it is verified against the
+  // project's own pubspec files and its admitted file list. Same rule, different evidence.
+  "importOutsideProject",
 ]
+
+/**
+ * WHAT A MARKER CLAIMS — because "external" is not one claim, and one check cannot verify two.
+ *
+ *   owner        the target names a declaration whose OWNER the project does not publish.
+ *                Verified by looking the owner up in the name table (`verifyExternalClaim`).
+ *   projectFacts the target names a FILE the project does not contain (a package its
+ *                pubspec files do not declare, an SDK library it does not carry, a scheme
+ *                that is not a path at all). Verified against the project's own facts.
+ *
+ * The kind is decided by WHICH KEY marked the edge, not by the shape of the target: a
+ * `package:` target could in principle carry either claim, and choosing the check by shape
+ * would be guessing at what the analyzer meant.
+ */
+export type ExternalClaim = { kind: "owner" | "projectFacts" }
+
+/** The marker key that means "the FILE is outside this project". Checked first: it is the
+ *  more specific claim, and an edge carrying both must be verified on the stronger evidence. */
+export const IMPORT_CLAIM_KEY = "importOutsideProject"
+
+export function externalClaimOf(rel: any): ExternalClaim | null {
+  const md = rel?.metadata
+  if (!md || typeof md !== "object") return null
+  if (md[IMPORT_CLAIM_KEY] === true) return { kind: "projectFacts" }
+  for (const k of EXTERNAL_KEYS) {
+    if (k === IMPORT_CLAIM_KEY) continue
+    if (md[k] === true) return { kind: "owner" }
+    if (Array.isArray(md[k]) && md[k].length > 0) return { kind: "owner" }
+  }
+  return null
+}
 
 /** Is this edge declared as naming something outside the corpus? */
 export function isMarkedExternal(rel: any): boolean {
@@ -60,6 +98,62 @@ export function isMarkedExternal(rel: any): boolean {
 export type Outcome =
   | "resolved" | "ambBoth" | "ambDeclOnly" | "unresolved"
   | "externalVerified" | "externalRefuted" | "externalUnverified"
+
+/**
+ * WHAT THE PROJECT ITSELF SAYS, for verifying an IMPORT claim.
+ *
+ * Built by the caller from the project's own files (never from the analyzer's opinion of
+ * them), because a claim verified by its author is not verified:
+ *   packages  every package name the project's `pubspec.yaml` files declare;
+ *   files     every project-relative path the project ADMITS (tracked, present, under the
+ *             analyzer's size cap) — the population, not the filesystem;
+ *   sdkLib    whether the project carries an SDK at all (`sdk/lib`).
+ */
+export type ProjectFacts = {
+  packages: Set<string>
+  files: Set<string>
+  sdkLib: boolean
+}
+
+/**
+ * CAN THE PROJECT REFUTE AN IMPORT CLAIM?
+ *
+ * The analyzer refuses to turn a specifier into a path for two different reasons, and only
+ * one of them is a claim: a package the checkout does not declare is OUTSIDE it, while a
+ * declared package whose file is missing is a DANGLING INTERNAL reference — the analyzer
+ * marks the first and not the second, and this function would refute the second if a lane
+ * ever marked it, which is the point.
+ *
+ *   VERIFIED      the package is not declared here / the SDK file is not here. The project
+ *                 has looked for what this import depends on and does not have it.
+ *   REFUTED       the project DOES contain it, so "outside this project" is false and the
+ *                 edge is reported as the defect it is (this is the check that catches an
+ *                 analyzer resolving a path key it should have resolved already).
+ *   UNVERIFIABLE  the target is not a `package:`/`dart:` specifier at all (another scheme,
+ *                 or a shape neither side can turn into a path). Counted, never merged.
+ */
+export function verifyImportClaim(
+  facts: ProjectFacts,
+  tgt: string,
+): "externalVerified" | "externalRefuted" | "externalUnverified" {
+  const raw = tgt.endsWith(":*") ? tgt.slice(0, -2) : tgt
+  if (raw.startsWith("package:")) {
+    const rest = raw.slice("package:".length)
+    const slash = rest.indexOf("/")
+    if (slash <= 0) return "externalUnverified"
+    const pkg = rest.slice(0, slash)
+    if (pkg.length === 0) return "externalUnverified"
+    return facts.packages.has(pkg) ? "externalRefuted" : "externalVerified"
+  }
+  if (raw.startsWith("dart:")) {
+    const lib = raw.slice("dart:".length)
+    if (lib.length === 0) return "externalUnverified"
+    // The SDK's layout, exactly as the analyzer resolves it. A project WITH the file is
+    // refuted even if the analyzer's own `sdkLib` probe missed it — the file is the evidence.
+    return facts.files.has(`sdk/lib/${lib}/${lib}.dart`) ? "externalRefuted" : "externalVerified"
+  }
+  return "externalUnverified"
+}
 
 /**
  * The owner segment of a qualified target: everything before the FINAL dot.
@@ -113,6 +207,9 @@ export type Classified = {
   decls: number
   /** the distinct kinds among them, `|`-joined — empty when there are none */
   kinds: string
+  /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
+   *  mechanism that produced the number, not only the number. */
+  verifiedBy?: "owner" | "projectFacts"
 }
 
 /**
@@ -123,14 +220,23 @@ export function classifyEdge(
   declCount: Map<string, number>,
   kinds: Map<string, Set<string>>,
   tgt: string,
-  markedExternal: boolean,
+  claim: ExternalClaim | null,
+  /** the project's own facts, for a `projectFacts` claim. Absent means the check could not
+   *  be run at all, and the claim is then UNVERIFIABLE — never quietly accepted. */
+  facts?: ProjectFacts,
 ): Classified {
   const decls = declCount.get(tgt) ?? 0
   const kindSet = kinds.get(tgt)
   const kindText = [...(kindSet ?? [])].sort().join("|")
   if (decls === 0) {
-    const outcome = markedExternal ? verifyExternalClaim(declCount, tgt) : "unresolved"
-    return { outcome, decls, kinds: kindText }
+    if (claim === null) return { outcome: "unresolved", decls, kinds: kindText }
+    if (claim.kind === "projectFacts") {
+      if (!facts) return { outcome: "externalUnverified", decls, kinds: kindText }
+      const outcome = verifyImportClaim(facts, tgt)
+      return { outcome, decls, kinds: kindText, verifiedBy: outcome === "externalVerified" ? "projectFacts" : undefined }
+    }
+    const outcome = verifyExternalClaim(declCount, tgt)
+    return { outcome, decls, kinds: kindText, verifiedBy: outcome === "externalVerified" ? "owner" : undefined }
   }
   if (decls > 1) {
     return { outcome: (kindSet?.size ?? 0) > 1 ? "ambBoth" : "ambDeclOnly", decls, kinds: kindText }
@@ -156,6 +262,10 @@ export type Outcomes = {
   markedExternal: number
   /** of those: the owner is absent, so the claim survives */
   externalVerified: number
+  /** of `externalVerified`: confirmed by the owner lookup */
+  externalVerifiedByOwner: number
+  /** of `externalVerified`: confirmed by the project's own pubspec files and file list */
+  externalVerifiedByProjectFacts: number
   /** of those: the target has no identifier-shaped owner to check */
   externalUnverified: number
   /** of those: the key space publishes the owner, so the claim is FALSE and the edge is not clean */
@@ -167,7 +277,8 @@ export type Outcomes = {
 
 export const emptyOutcomes = (): Outcomes => ({
   resolved: 0, ambiguousByDecl: 0, ambiguousByKind: 0, unresolved: 0,
-  markedExternal: 0, externalVerified: 0, externalUnverified: 0, externalRefuted: 0,
+  markedExternal: 0, externalVerified: 0, externalVerifiedByOwner: 0, externalVerifiedByProjectFacts: 0,
+  externalUnverified: 0, externalRefuted: 0,
   ambiguousNames: [], unresolvedNames: [],
 })
 
@@ -191,6 +302,8 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
     case "externalVerified":
       out.markedExternal++
       out.externalVerified++
+      if (c.verifiedBy === "projectFacts") out.externalVerifiedByProjectFacts++
+      else out.externalVerifiedByOwner++
       break
     case "externalUnverified":
       out.markedExternal++

@@ -1455,6 +1455,40 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // does not contain must stay visibly unresolved rather than be pointed at a wrong file.
     const targetOf = (uri: string): string | null =>
       site.projectRoot === null ? null : dartImportTargetPath(site.projectRoot, site.filePath, uri)
+    // OUTSIDE THE PROJECT vs ABSENT FROM IT — two different facts, and only one is a CLAIM.
+    //
+    //   OUTSIDE (marked `importOutsideProject`): the checkout cannot contain the target at all
+    //     — a package its own pubspec files do not declare, a `dart:` library in a checkout
+    //     that carries no SDK, a scheme (`http:`, `file:`) that is not a path in any project.
+    //     The marker asserts "this is not in this project", and the incoming gate verifies
+    //     that assertion against the project's own pubspec files and admitted file list —
+    //     never against this analyzer's opinion, or the claim would be its own evidence.
+    //
+    //   ABSENT (unmarked): the checkout DOES declare it and the file is not there — generated
+    //     and deleted files, a `part` whose library is gone. That is a DANGLING INTERNAL
+    //     reference: it stays unresolved and visible. Marking it external would launder a
+    //     real defect into a clean row, which is the one thing a marker must never do.
+    const outsideProject = (uri: string): boolean => {
+      if (site.projectRoot === null) return false
+      if (uri.startsWith("package:")) {
+        const rest = uri.slice(8)
+        const slash = rest.indexOf("/")
+        if (slash <= 0) return false
+        const pkg = rest.slice(0, slash)
+        if (!isDartLibraryName(pkg)) return false
+        return dartProjectFacts(site.projectRoot).packageRoots.get(pkg) === undefined
+      }
+      if (uri.startsWith("dart:")) {
+        const lib = uri.slice(5)
+        if (!isDartLibraryName(lib)) return false
+        // No SDK in this checkout means no `dart:` library is in it. When the SDK IS here the
+        // question is per-library, and a missing one is ABSENT rather than outside.
+        return !dartProjectFacts(site.projectRoot).sdkLib
+      }
+      return uri.indexOf(":") >= 0
+    }
+    const claimMeta = (uri: string, resolved: string | null): Record<string, boolean> =>
+      resolved === null && outsideProject(uri) ? { importOutsideProject: true } : {}
     // `part 'x.dart'` (library lists a part) and `part of 'lib.dart'`
     // (part file names its library) are both library-coupling directives —
     // each produces an imports edge so the part graph is visible (ProxiCall
@@ -1463,14 +1497,19 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       const uriNode = this.findDescendantByType(node, "string_literal") || this.findDescendantByType(node, "uri")
       const uri = uriNode ? unquote(uriNode.text) : ""
       if (uri) {
+        const resolved = targetOf(uri)
         imports.push({ module: uri, source: uri, imported: ["*"], isPart: true, range: this.nodeToRange(node) })
         relationships.push({
           source: site.moduleName,
-          target: targetOf(uri) ?? `${uri}:*`,
+          target: resolved ?? `${uri}:*`,
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
           line_number: this.nodeLine(uriNode),
-          metadata: { isPart: true, isPartOf: node.type === "part_of_directive" },
+          metadata: {
+            isPart: true,
+            isPartOf: node.type === "part_of_directive",
+            ...claimMeta(uri, resolved),
+          },
         })
       }
       return
@@ -1492,23 +1531,25 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // export list; the bare uri does not. Dropping the uri push leaves the
       // Exports relationship intact.
       // exports.push({ name: uri, isDefault: false, range: this.nodeToRange(node) })
+      const resolved = targetOf(uri)
       relationships.push({
         source: site.moduleName,
-        target: targetOf(uri) ?? uri,
+        target: resolved ?? uri,
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
         line_number: this.nodeLine(uriNode),
-        metadata: {},
+        metadata: { ...claimMeta(uri, resolved) },
       })
     } else {
+      const resolved = targetOf(uri)
       imports.push({ module: uri, source: uri, imported: ["*"], isTypeOnly: false, range: this.nodeToRange(node) })
       relationships.push({
         source: site.moduleName,
-        target: targetOf(uri) ?? `${uri}:*`,
+        target: resolved ?? `${uri}:*`,
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1.0,
         line_number: this.nodeLine(uriNode),
-        metadata: {},
+        metadata: { ...claimMeta(uri, resolved) },
       })
     }
   }

@@ -104,18 +104,23 @@
  *       3 THE INSTRUMENT'S OWN CONTROL DID NOT FIRE.
  */
 import { execFileSync } from "node:child_process"
-import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 // THE RULE IS IMPORTED, NOT COPIED. A census that counts WHY about the same edges must
 // count them the same way, so the classification lives in incoming-rule.ts and this file
 // consumes it. Re-exported below so a caller of this module keeps working unchanged.
 import {
-  EXTERNAL_KEYS, isMarkedExternal, targetOwner, verifyExternalClaim, classifyEdge, tally, emptyOutcomes,
+  EXTERNAL_KEYS, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
+  emptyOutcomes, verifyImportClaim,
+  type ExternalClaim, type ProjectFacts,
   type Outcome, type Classified, type Outcomes,
 } from "./incoming-rule"
-export { EXTERNAL_KEYS, isMarkedExternal, targetOwner, verifyExternalClaim, classifyEdge, tally, emptyOutcomes }
-export type { Outcome, Classified, Outcomes }
+export {
+  EXTERNAL_KEYS, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
+  emptyOutcomes, verifyImportClaim,
+}
+export type { ExternalClaim, ProjectFacts, Outcome, Classified, Outcomes }
 
 /** Laptop B's 23 lanes, from docs/analyzers/PROMPT-LAPTOP-B.md:15 — asserted, not inferred. */
 export const LANES_B: Record<string, string> = {
@@ -168,6 +173,10 @@ const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
  */
 function discoverFiles(lang: string, ext: string, maxFiles: number): {
   files: string[]; total: number; repos: number
+  /** THE UNSAMPLED ADMITTED POPULATION — `files` before the stride. A project fact (is this
+   *  path in the population at all?) must be answered from THIS, not from the sample, or a
+   *  claim would be verified against the run's budget instead of against the project. */
+  admitted: string[]
   /** tracked paths of THIS lane that could not be read at all (absent from the working tree) */
   absent: number
   /** tracked paths of this lane over SIZE_CAP — never parsed, so never measured */
@@ -181,7 +190,7 @@ function discoverFiles(lang: string, ext: string, maxFiles: number): {
   try {
     entries = readdirSync(CR)
   } catch {
-    return { files: [], total: 0, repos: 0, absent: 0, overCap: 0, overCapLargest: 0 }
+    return { files: [], admitted: [], total: 0, repos: 0, absent: 0, overCap: 0, overCapLargest: 0 }
   }
   for (const name of entries.sort()) {
     const dir = path.join(CR, name)
@@ -247,7 +256,62 @@ function discoverFiles(lang: string, ext: string, maxFiles: number): {
     files = picked
   }
   void lang
-  return { files, total, repos: repos.size, ...excluded }
+  return { files, admitted: found, total, repos: repos.size, ...excluded }
+}
+
+/**
+ * THE PROJECT'S OWN FACTS, for verifying an import claim — built by THIS file, from the
+ * filesystem, and never handed to the analyzer.
+ *
+ * That separation is the whole point: the analyzer asserts "this specifier names a file that
+ * is not in this project", and a claim whose evidence came from its author would be a
+ * restatement. So the arbiter looks for itself: the project's `pubspec.yaml` files say
+ * which packages it declares, and the ADMITTED population says which paths exist in it.
+ * The package reader is deliberately the same rule the analyzer applies (`name:` at column
+ * 0, value up to whitespace or `#`) so the two sides cannot read one pubspec differently.
+ */
+const DART_FACT_WALK_SKIP = new Set([
+  ".git", ".hg", ".svn", "node_modules", ".dart_tool", ".symlinks", "build", "coverage", ".pub-cache", "out",
+])
+
+function projectFactsForDart(repoRoot: string, admitted: string[]): ProjectFacts {
+  const files = new Set<string>()
+  for (const abs of admitted) {
+    const rel = path.relative(repoRoot, abs)
+    if (rel.length > 0) files.add(rel.split(path.sep).join("/"))
+  }
+  const packages = new Set<string>()
+  const stack: string[] = [repoRoot]
+  while (stack.length > 0) {
+    const dir = stack.pop()!
+    let entries: import("node:fs").Dirent[]
+    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { continue }
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        if (!DART_FACT_WALK_SKIP.has(entry.name)) stack.push(path.join(dir, entry.name))
+        continue
+      }
+      if (entry.name !== "pubspec.yaml") continue
+      let text: string
+      try { text = readFileSync(path.join(dir, entry.name), "utf8") } catch { continue }
+      for (const line of text.split("\n")) {
+        if (!line.startsWith("name:")) continue
+        const raw = line.slice(5)
+        let v = 0
+        while (v < raw.length && (raw[v] === " " || raw[v] === "\t")) v++
+        let end = v
+        while (end < raw.length) {
+          const c = raw[end]
+          if (c === " " || c === "\t" || c === "\r" || c === "#") break
+          end++
+        }
+        const value = raw.slice(v, end)
+        if (value.length > 0) packages.add(value)
+        break
+      }
+    }
+  }
+  return { packages, files, sdkLib: existsSync(path.join(repoRoot, "sdk", "lib")) }
 }
 
 
@@ -351,7 +415,7 @@ async function projectIndexesFor(
 }
 
 async function measure(lang: string, ext: string, maxFiles: number, useIndex: boolean) {
-  const { files, total, repos, absent, overCap, overCapLargest } = discoverFiles(lang, ext, maxFiles)
+  const { files, admitted, total, repos, absent, overCap, overCapLargest } = discoverFiles(lang, ext, maxFiles)
 
   // name -> how many DECLARATIONS publish it, and the distinct kinds among them.
   // Both, because the whole point of this gate is that the kind-count is not the
@@ -383,6 +447,26 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     const rel = f.startsWith(CR) ? f.slice(CR.length + 1) : f
     return path.join(CR, rel.split(path.sep)[0])
   }
+
+  // THE EVIDENCE FOR AN IMPORT CLAIM, built once per repository and ONLY for a lane whose
+  // analyzer makes that claim (`importOutsideProject`). Built from the UNSAMPLED admitted
+  // list, because "is this path in the project?" is a fact about the project, not about
+  // how many files this run had budget for.
+  const projectFacts: Map<string, ProjectFacts> | null = (() => {
+    const admittedByRepo = new Map<string, string[]>()
+    for (const f of admitted) {
+      const repo = repoOf(f)
+      const list = admittedByRepo.get(repo)
+      if (list) list.push(f)
+      else admittedByRepo.set(repo, [f])
+    }
+    // Only dart's analyzer makes this claim today. A lane that adds one opts in here, and a
+    // lane that does not pays nothing: no walk, no map, and no claim can arise for it.
+    if (ext.toLowerCase() !== "dart") return null
+    const out = new Map<string, ProjectFacts>()
+    for (const [repo, list] of admittedByRepo) out.set(repo, projectFactsForDart(repo, list))
+    return out
+  })()
 
   // PROGRESS ON STDERR, because a whole-corpus run is hours and a run whose only output is
   // its last line cannot be told apart from a wedged one. stdout stays exactly the report:
@@ -480,13 +564,17 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       row.edges++
       const tgt = String(rel?.target ?? rel?.to ?? rel?.toSymbol ?? "")
       if (tgt.length === 0) continue
-      const marked = isMarkedExternal(rel)
+      const claim = externalClaimOf(rel)
+      // A `projectFacts` claim is verified against the PROJECT'S OWN files, which this file
+      // builds and the analyzer never sees — the claim and its evidence must not come from
+      // the same author, or "verified" would mean "the analyzer said so twice".
+      const facts = claim?.kind === "projectFacts" ? projectFacts!.get(repoOf(f)) : undefined
       // THE SAME EDGE, BOTH QUESTIONS. Project scope first because that is the one the
       // verdict reads; pooled beside it because it is the one every earlier dart number in
       // this programme was measured with, and dropping it silently would make this run
       // incomparable to its own history.
-      tally(row.project, classifyEdge(pDecl!, pKinds!, tgt, marked), tgt, label)
-      tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, tgt, marked), tgt, label)
+      tally(row.project, classifyEdge(pDecl!, pKinds!, tgt, claim, facts), tgt, label)
+      tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, tgt, claim, facts), tgt, label)
     }
   }
 
@@ -532,23 +620,49 @@ function selfTest(): { ok: boolean; failures: string[] } {
     // 2 declarations, TWO kinds — must count under BOTH metrics.
     ["gamma", new Set(["function", "module"])],
   ])
-  // ONE OF EACH OUTCOME, including the two the old control could not reach: an external
+  // ONE OF EACH OUTCOME, including the two the original control could not reach: an external
   // claim that survives a lookup and one that does not. A control that cannot plant a
   // refuted claim cannot detect the laundering it exists to prevent.
-  const marked = new Set([
+  //
+  // AND ONE OF EACH CLAIM KIND, because `verifyExternalClaim` and `verifyImportClaim` are two
+  // checks and a control that exercises only the first would let the second accept anything.
+  const ownerClaims = new Set([
     "AbsentThing.build",              // owner not published -> verified
     "Object.hashCode",                // owner published     -> REFUTED
     "package:flutter/material.dart:*", // no identifier owner -> unverified
+  ])
+  // The project's own facts, planted here exactly as `projectFactsForDart` builds them from a
+  // real checkout: one package it declares, one SDK library it carries, one path it admits.
+  const facts: ProjectFacts = {
+    packages: new Set(["declared_pkg"]),
+    files: new Set(["sdk/lib/async/async.dart"]),
+    sdkLib: true,
+  }
+  const factClaims = new Map<string, boolean>([
+    ["package:declared_pkg/x.dart:*", true],   // package IS declared -> REFUTED
+    ["package:absent_pkg/x.dart:*", true],     // not declared         -> verified
+    ["dart:async:*", true],                    // SDK file IS here     -> REFUTED
+    ["dart:missinglib:*", true],               // SDK file is not here -> verified
+    ["package:nofacts_pkg/x.dart:*", false],   // A CLAIM WITH NO EVIDENCE, checked below
   ])
   const got: Record<Outcome, number> = {
     resolved: 0, ambBoth: 0, ambDeclOnly: 0, unresolved: 0,
     externalVerified: 0, externalRefuted: 0, externalUnverified: 0,
   }
+  let verifiedByOwner = 0
+  let verifiedByFacts = 0
   for (const t of [
     "alpha", "beta", "gamma", "delta",
     "AbsentThing.build", "Object.hashCode", "package:flutter/material.dart:*",
   ]) {
-    got[classifyEdge(declCount, kinds, t, marked.has(t)).outcome]++
+    const c = classifyEdge(declCount, kinds, t, ownerClaims.has(t) ? { kind: "owner" } : null)
+    got[c.outcome]++
+    if (c.verifiedBy === "owner") verifiedByOwner++
+  }
+  for (const [t, withFacts] of factClaims) {
+    const c = classifyEdge(declCount, kinds, t, { kind: "projectFacts" }, withFacts ? facts : undefined)
+    got[c.outcome]++
+    if (c.verifiedBy === "projectFacts") verifiedByFacts++
   }
 
   // THE SCOPE IS APPLIED, and this asserts it rather than trusting the caller. `gamma` is
@@ -557,8 +671,8 @@ function selfTest(): { ok: boolean; failures: string[] } {
   // If a future edit collapses the scopes back into one, this fails and the control exits 3.
   const oneProject = new Map<string, number>([["gamma", 1]])
   const oneProjectKinds = new Map<string, Set<string>>([["gamma", new Set(["function"])]])
-  const scoped = classifyEdge(oneProject, oneProjectKinds, "gamma", false).outcome
-  const pooled = classifyEdge(declCount, kinds, "gamma", false).outcome
+  const scoped = classifyEdge(oneProject, oneProjectKinds, "gamma", null).outcome
+  const pooled = classifyEdge(declCount, kinds, "gamma", null).outcome
   if (scoped !== "resolved" || pooled !== "ambBoth") {
     failures.push(
       `control: the same target classified ${scoped} in project scope and ${pooled} pooled; ` +
@@ -570,17 +684,27 @@ function selfTest(): { ok: boolean; failures: string[] } {
   if (got.ambDeclOnly !== 1) failures.push(`control: expected 1 ambiguous-by-declaration-only, got ${got.ambDeclOnly}`)
   if (got.ambBoth !== 1) failures.push(`control: expected 1 ambiguous-by-both, got ${got.ambBoth}`)
   if (got.unresolved !== 1) failures.push(`control: expected 1 unresolved, got ${got.unresolved}`)
-  // THE LAUNDERING MUTANT. Delete the verification (return an external outcome for every
-  // marked edge) and this asserts 0 and fails the control — which is the only reason the
-  // number it prints can be believed.
-  if (got.externalRefuted !== 1) {
+  // THE LAUNDERING MUTANT. Delete either verification (return an external outcome for every
+  // marked edge) and the refuted count drops to 0 and fails the control — which is the only
+  // reason the number it prints can be believed.
+  // 3 verified: the absent owner, and the two project-facts claims the project does not contain.
+  if (got.externalVerified !== 3) failures.push(`control: expected 3 verified external claims, got ${got.externalVerified}`)
+  // 3 refuted: a published owner, a declared package, an SDK library the project carries.
+  if (got.externalRefuted !== 3) {
     failures.push(
-      `control: expected 1 REFUTED external claim (owner published), got ${got.externalRefuted} ` +
-      `— an external marker is being accepted without a lookup`,
+      `control: expected 3 REFUTED external claims (owner published, package declared, SDK file ` +
+      `present), got ${got.externalRefuted} — a claim is being accepted without evidence`,
     )
   }
-  if (got.externalVerified !== 1) failures.push(`control: expected 1 verified external claim, got ${got.externalVerified}`)
-  if (got.externalUnverified !== 1) failures.push(`control: expected 1 unverifiable external claim, got ${got.externalUnverified}`)
+  // 2 unverifiable: a URI with no identifier owner, and a project-facts claim with NO facts
+  // supplied. The second is the one that matters: an unchecked claim must never read clean.
+  if (got.externalUnverified !== 2) failures.push(`control: expected 2 unverifiable external claims, got ${got.externalUnverified}`)
+  if (verifiedByOwner !== 1 || verifiedByFacts !== 2) {
+    failures.push(
+      `control: expected the 3 verified claims to split 1 owner / 2 project-facts, got ` +
+      `${verifiedByOwner} / ${verifiedByFacts}`,
+    )
+  }
   return { ok: failures.length === 0, failures }
 }
 
@@ -595,6 +719,8 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
     into.unresolved += r.unresolved
     into.markedExternal += r.markedExternal
     into.externalVerified += r.externalVerified
+    into.externalVerifiedByOwner += r.externalVerifiedByOwner
+    into.externalVerifiedByProjectFacts += r.externalVerifiedByProjectFacts
     into.externalUnverified += r.externalUnverified
     into.externalRefuted += r.externalRefuted
   }
@@ -710,10 +836,22 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   console.log("-".repeat(93))
   console.log(line("TOTAL", v.totals, v.edges))
   console.log(
-    "extOK = external claim the PROJECT CONFIRMS (owner absent from it) · " +
-    "ext? = claim no lookup can check (no identifier owner) · " +
+    "extOK = external claim the PROJECT CONFIRMS · " +
+    "ext? = claim no check can reach (no identifier owner, and no project fact for it) · " +
     "extFAIL = claim the project REFUTES, counted against the lane",
   )
+  // WHICH EVIDENCE CONFIRMED THEM. Two mechanisms can produce `extOK`, and a lane must be
+  // able to audit the one that did: a claim about a DECLARATION is checked by looking its
+  // owner up in the key space, a claim about a FILE is checked against the project's own
+  // pubspec files and admitted file list. Printed separately because "verified" without
+  // saying by what is the shape of number this programme keeps having to retract.
+  if (v.totals.externalVerified > 0) {
+    console.log(
+      `    of those ${v.totals.externalVerified} verified: ` +
+      `${v.totals.externalVerifiedByOwner} by owner lookup in the key space, ` +
+      `${v.totals.externalVerifiedByProjectFacts} against the project's own pubspec files + file list`,
+    )
+  }
   console.log()
   // THE OTHER QUESTION, kept because every dart number in this programme before today was
   // measured this way and a table that silently changed its unit is worse than one that
