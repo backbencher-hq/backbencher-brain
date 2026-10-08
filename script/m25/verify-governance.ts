@@ -114,7 +114,31 @@ function isClosable(issue: Issue): boolean {
   // projection made the honest states visible and this rule could not record them.
   if (issue.status !== "verified") {
     const reason = typeof e.blockedReason === "string" ? e.blockedReason.trim() : ""
-    return Boolean(e.status === issue.status && e.verifierCommand && e.evidenceFile && e.passed > 0 && reason.length > 0)
+    const base = Boolean(e.status === issue.status && e.verifierCommand && e.evidenceFile && reason.length > 0)
+    // `blocked` AND `known-gap` ARE NOT THE SAME STATE, and this rule conflated them.
+    //
+    //   known-gap  the verifier RAN and something failed. It therefore has checks,
+    //              and demanding `passed > 0` is right: a known-gap that ran
+    //              nothing is a blocked leg wearing the wrong name.
+    //   blocked    the verifier COULD NOT RUN — the editor is not installed, the
+    //              OS is not present. It has, by definition, ZERO passes. Requiring
+    //              `passed > 0` here made an honest blocked leg structurally
+    //              UNRECORDABLE, which is precisely the failure the comment above
+    //              this branch describes for another status, reintroduced one
+    //              branch down. Contract §8.3 requires a missing editor to be
+    //              recordable as `blocked` WITH its reason; under the old rule the
+    //              only ways to satisfy it were to fake a pass or drop the reason.
+    //
+    //              E6 and E7 are exactly this case: E6 "cursor CLI not found on
+    //              PATH", E7 "No Linux hardware or runner on this machine". Both
+    //              record 0 passes because both genuinely ran nothing.
+    //
+    // WHAT THIS DOES NOT ALLOW: a `blocked` row still needs its reason, its
+    // verifier command and its evidence file, and the row's own status must match
+    // the evidence's. Only the pass-count requirement is dropped, and only for
+    // `blocked`. The negative below proves `known-gap` still demands passes.
+    if (issue.status === "blocked") return base
+    return Boolean(base && e.passed > 0)
   }
   return Boolean(
     e.status === issue.status &&
@@ -181,6 +205,47 @@ const SHARED_RELEVANT_FILES = [
 ]
 
 /** Contract §1 banned vocabulary, enforced over M25 artifacts. */
+/**
+ * The ledger text the vocabulary lint actually reads.
+ *
+ * Contract §1 bans words like "production-ready" and "battle-tested" because a
+ * ledger that CLAIMS those is lying about what was checked. This function strips
+ * `blockedReason` first, and the reason is specific rather than convenient:
+ *
+ *   blockedReason is MACHINE-DERIVED. It is written by copying a gate's own
+ *   failure message, and those messages quote the failing check's NAME — which for
+ *   this very lint is the banned pattern's own source text, e.g.
+ *   "no banned vocabulary in manifest.json (perfect(ion)?\b)". So the lint found
+ *   its own regex, quoted inside the diagnostic it had produced, stored in the
+ *   ledger, and reported the ledger for it. Measured: both occurrences in
+ *   manifest.json were in `.issues[].evidence.blockedReason`, and zero were in any
+ *   prose field.
+ *
+ * That is a self-reference, not a claim, and a lint that flags its own pattern is a
+ * lint that cannot be satisfied.
+ *
+ * WHAT THIS MUST NOT BECOME. `blockedReason` is excluded from the VOCABULARY lint
+ * only. It is still a sealed field, still read by the closure bars, and the two
+ * negative legs below prove the exclusion is narrow: a banned word planted in a
+ * PROSE field must still be caught, and only a banned word that exists SOLELY in
+ * a blockedReason may pass.
+ */
+function lintableLedgerText(ledger: unknown): string {
+  const strip = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(strip)
+    if (node !== null && typeof node === "object") {
+      const out: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+        if (k === "blockedReason") continue
+        out[k] = strip(v)
+      }
+      return out
+    }
+    return node
+  }
+  return JSON.stringify(strip(ledger))
+}
+
 const BANNED_PATTERNS: RegExp[] = [
   /perfect(ion)?\b/i,
   /\bcomplete(ly|d|ness)?\b/i,
@@ -358,13 +423,36 @@ function main(): void {
   const vocabTargets: Array<[string, string]> = [
     ["M25-MASTER-PLAN.md", plan],
     ["IDE-PROGRAM-STATUS.md", statusTracker],
-    ["manifest.json", JSON.stringify(ledger)],
+    ["manifest.json", lintableLedgerText(ledger)],
   ]
   for (const [name, text] of vocabTargets) {
     for (const pattern of BANNED_PATTERNS) {
       const m = text.match(pattern)
       check(`G1: no banned vocabulary in ${name} (${pattern.source})`, m === null, m?.[0] ?? "")
     }
+
+    // The blockedReason exclusion must stay narrow, or it is a hole rather than a fix.
+    {
+      const withProse = { issues: [{ code: "Z9", scope: "this lane is battle-tested", evidence: { blockedReason: "none" } }] }
+      const proseHit = BANNED_PATTERNS.some((p) => lintableLedgerText(withProse).match(p))
+      negative("G1: a banned word in a PROSE field is still caught", proseHit, "lintableLedgerText kept the prose")
+      const onlyInReason = { issues: [{ code: "Z9", scope: "ordinary prose", evidence: { blockedReason: "failed: no banned vocabulary (perfect(ion)?)" } }] }
+      const reasonOnly = BANNED_PATTERNS.some((p) => lintableLedgerText(onlyInReason).match(p))
+      negative("G1: a banned word existing ONLY in a blockedReason is NOT flagged (the documented exclusion)", !reasonOnly, "the exclusion is in force")
+      const rawStillSeesIt = BANNED_PATTERNS.some((p) => JSON.stringify(onlyInReason).match(p))
+      check("G1: the raw ledger text DOES still contain the word — the exclusion is scoped, not a deletion", rawStillSeesIt, "sanity: nothing was removed from the ledger itself")
+    }
+  }
+  // The blockedReason exclusion must stay narrow, or it is a hole rather than a fix.
+  {
+    const withProse = { issues: [{ code: "Z9", scope: "this lane is battle-tested", evidence: { blockedReason: "none" } }] }
+    const proseHit = BANNED_PATTERNS.some((p) => lintableLedgerText(withProse).match(p))
+    negative("G1: a banned word in a PROSE field is still caught", proseHit, "lintableLedgerText kept the prose")
+    const onlyInReason = { issues: [{ code: "Z9", scope: "ordinary prose", evidence: { blockedReason: "failed: no banned vocabulary (perfect(ion)?\\b)" } }] }
+    const reasonOnly = BANNED_PATTERNS.some((p) => lintableLedgerText(onlyInReason).match(p))
+    negative("G1: a banned word existing ONLY in a blockedReason is NOT flagged (the documented exclusion)", !reasonOnly, "the exclusion is in force")
+    const rawStillSeesIt = BANNED_PATTERNS.some((p) => JSON.stringify(onlyInReason).match(p))
+    check("G1: the raw ledger text DOES still contain the word — the exclusion is scoped, not a deletion", rawStillSeesIt, "sanity: nothing was removed from the ledger itself")
   }
   // The program tracker must state the honest v1 state: not started or in
   // progress, never a shipped claim while the ledger has planned issues.
@@ -421,6 +509,32 @@ function main(): void {
     "G1: verified without evidence is rejected",
     validateLedger(hollow, plan, contract).some((error) => error === "hollow-verified:G1"),
   )
+
+  // The `blocked` relaxation must not become a hole: `known-gap` MEANS the
+  // verifier ran and failed, so it must still be able to show passes. A known-gap
+  // with zero passes is a blocked leg wearing the wrong name.
+  {
+    const gapNoPasses = structuredClone(ledger)
+    const g = gapNoPasses.issues.find((i: Issue) => i.status === "blocked") ?? gapNoPasses.issues[0]!
+    g.status = "known-gap"
+    g.evidence!.status = "known-gap"
+    g.evidence!.passed = 0
+    g.evidence!.blockedReason = "ran and failed"
+    const errs = validateLedger(gapNoPasses, plan, contract)
+    negative(
+      "G1: a known-gap with ZERO passes is still hollow (only `blocked` may run nothing)",
+      errs.some((e) => e === `hollow-known-gap:${g.code}`),
+      `errors: ${errs.filter((e) => e.startsWith("hollow-")).join(",") || "none"}`,
+    )
+    const blockedNoReason = structuredClone(ledger)
+    const b = blockedNoReason.issues.find((i: Issue) => i.status === "blocked") ?? blockedNoReason.issues[0]!
+    b.evidence!.blockedReason = "   "
+    negative(
+      "G1: a `blocked` row with a BLANK reason is still hollow",
+      validateLedger(blockedNoReason, plan, contract).some((e) => e === `hollow-blocked:${b.code}`),
+      "the reason is still required",
+    )
+  }
 
   // Removing one issue must be rejected.
   const missing = structuredClone(ledger)
