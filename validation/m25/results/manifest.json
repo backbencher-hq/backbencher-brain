@@ -40,14 +40,14 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+        "currentCommit": "a2a5c8d7904aefa2243bfdebba4a9f843ee93667",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 66,
-        "failed": 6,
+        "passed": 83,
+        "failed": 3,
         "realFailed": 0,
-        "negativeCases": 11,
-        "blockedReason": "6 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) … — the relevant tree was clean at measure time"
+        "negativeCases": 21,
+        "blockedReason": "3 check(s) failed: G1: M24 bar — ledger closed with all 11 issues verified (mechanical); G1: M24 bar — M24 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
     },
     {
@@ -68,7 +68,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+        "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
         "verifierCommand": "npx tsx script/m25/verify-extension-skeleton.ts",
         "evidenceFile": "E1.json",
         "passed": 44,
@@ -98,7 +98,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+        "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
         "verifierCommand": "npx tsx script/m25/verify-auto-index.ts",
         "evidenceFile": "E2.json",
         "passed": 43,
@@ -128,7 +128,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+        "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
         "verifierCommand": "npx tsx script/m25/verify-status-surface.ts",
         "evidenceFile": "E3.json",
         "passed": 32,
@@ -158,7 +158,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+        "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
         "verifierCommand": "npx tsx script/m25/verify-packaging.ts",
         "evidenceFile": "E4.json",
         "passed": 56,
@@ -174,7 +174,7 @@
       "code": "V1",
       "githubIssue": 505,
       "tool": "extension-harness",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "extension host test harness (vscode-test) + fork runner; shared feature-assertion core reused across VS Code and forks; latency budgets re-measured in-editor (full extension stack, not just the server)",
       "acceptanceCriteria": [
         "shared assertion core: one library, per-editor runners adapt transport only (M27 will reuse)",
@@ -187,24 +187,24 @@
         "limitations declared"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+        "status": "known-gap",
+        "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
         "verifierCommand": "npx tsx script/m25/verify-harness-core.ts",
         "evidenceFile": "V1.json",
-        "passed": 27,
-        "failed": 0,
+        "passed": 21,
+        "failed": 4,
         "negativeCases": 3,
         "mutantsCaught": 6,
         "mutantsTotal": 6,
         "blockedReason": "The stdio leg measures the server + core stack; the fully in-editor numbers (extension host included) are E5's vscode-test run at a pinned editor version — same core, same gate, transport swapped.",
-        "realFailed": 0
+        "realFailed": 4
       }
     },
     {
       "code": "E5",
       "githubIssue": 503,
       "tool": "vscode-e2e",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "scripted verification inside VS Code at a pinned version: per-feature assertions (hover content, definition jump, references, symbols, call hierarchy) on a fixture workspace, using the extension as a user would",
       "acceptanceCriteria": [
         "vscode-test (or equivalent) harness runs all features with assertions from the shared assertion core (V1)",
@@ -217,23 +217,25 @@
         "mutation: any assertion weakened -> gate fails"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "status": "known-gap",
+        "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
         "verifierCommand": "npx tsx script/m25/run-vscode-e2e.mts",
         "evidenceFile": "E5.json",
-        "passed": 88,
+        "passed": 86,
         "total": 26,
         "inEditor": true,
         "pinnedEditor": "vscode-1.85.0",
         "activationMs": 52,
         "declaredBudgetMs": 150,
         "liveStalenessLoop": true,
-        "failed": 0,
+        "failed": 2,
         "negativeCaseNames": [
           "L2: hover outside index is declared absent",
           "L3: definition outside index is honest empty",
           "E5: fresh marker clears the badge"
-        ]
+        ],
+        "negativeCases": 4,
+        "blockedReason": "2 in-editor check(s) failed: H2: usage link is clickable with an index-backed file:line target; E5 live: debounced reindex lands and marker returns fresh"
       }
     },
     {
@@ -254,7 +256,7 @@
       ],
       "evidence": {
         "status": "blocked",
-        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+        "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
         "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
         "evidenceFile": "F-CURSOR.json",
         "forks": {
@@ -308,7 +310,7 @@
       ],
       "evidence": {
         "status": "blocked",
-        "currentCommit": "726fd632ff2fedf92d7d3d60a31b214a0cd4055b",
+        "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
         "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
         "evidenceFile": "E7-linux.json",
         "os": "linux",
@@ -324,7 +326,7 @@
       "code": "D1",
       "githubIssue": 506,
       "tool": "marketplace-docs",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "OpenVSX/VS Code marketplace listing text as a governed artifact: features, claim levels, limitations, complement stance; install/verification docs per editor",
       "acceptanceCriteria": [
         "listing linted with contract vocabulary (D1 verifier reads the listing source)",
@@ -337,12 +339,12 @@
         "limitations non-empty or justified"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+        "status": "known-gap",
+        "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
         "verifierCommand": "npx tsx script/m25/verify-listing.ts",
         "evidenceFile": "D1.json",
-        "passed": 21,
-        "failed": 0,
+        "passed": 20,
+        "failed": 1,
         "negativeCases": 4,
         "installFollowAlong": {
           "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
@@ -356,7 +358,7 @@
       "code": "X1",
       "githubIssue": 507,
       "tool": "closure-gate",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "full contract §6 mutant set over the extension surface (staleness suppression, wrong evidence level rendered, budget hidden, fork claim without run) + v1 completion-bar audit at current HEAD",
       "acceptanceCriteria": [
         "per-mutant records",
@@ -369,12 +371,12 @@
         "ledger clean"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+        "status": "known-gap",
+        "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
         "verifierCommand": "npx tsx script/m25/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 37,
-        "failed": 0,
+        "passed": 28,
+        "failed": 9,
         "negativeCases": 3,
         "blockedReason": "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract."
       }
@@ -382,7 +384,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:34:58.908Z",
-    "contentSha256": "564dde88535d63ce707327f7cae8c1721e63fbd9ee458c1e6d6740bc5ee088d7"
+    "sealedAt": "2026-10-08T20:02:04.077Z",
+    "contentSha256": "44a5c2348f6ca279b3aa69db8a68485cb0bc1239b1be4978abfeb96da993da6d"
   }
 }

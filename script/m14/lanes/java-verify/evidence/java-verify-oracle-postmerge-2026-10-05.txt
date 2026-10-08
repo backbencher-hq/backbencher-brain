@@ -1,0 +1,224 @@
+JAVA ORACLE (VERIFY_JAVA9) — independent walker, SAME grammar as the analyzer
+corpus repo: java-lib
+population: 3275 .java files on disk · MEASURED 3275 · sampling: ALL (lexicographic)
+audited types: calls extends implements instantiates references contains uses overrides
+
+[INFO] [12:36:42] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [12:36:42] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:37:11] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:37:55] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:38:27] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:38:48] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:39:22] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:39:53] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+MEASURED 3275/3275 files · 0 failures · 200924 ms
+
+| type | analyzer edges | analyzer distinct | oracle edges | oracle distinct | TP | FP (files) | FN (files) | precision | recall |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| calls | 262870 | 66005 | 261845 | 65632 | 159908 | 1115 (468 files) | 207 (140 files) | 99.31% | 99.87% |
+| extends | 4248 | 2076 | 4248 | 2065 | 4066 | 158 (112 files) | 0 (0 files) | 96.26% | 100.00% |
+| implements | 1940 | 890 | 1940 | 890 | 1895 | 20 (14 files) | 0 (0 files) | 98.96% | 100.00% |
+| instantiates | 21327 | 7185 | 21327 | 7161 | 16151 | 402 (222 files) | 22 (14 files) | 97.57% | 99.86% |
+| references | 38959 | 19421 | 38923 | 19385 | 38923 | 36 (3 files) | 0 (0 files) | 99.91% | 100.00% |
+| contains | 83761 | 37153 | 79846 | 36190 | 70210 | 5711 (698 files) | 51 (34 files) | 92.48% | 99.93% |
+| uses | 19691 | 8394 | 44164 | 8419 | 19213 | 464 (237 files) | 89 (48 files) | 97.64% | 99.54% |
+| overrides | 2244 | 989 | 2178 | 947 | 1481 | 461 (103 files) | 463 (88 files) | 76.26% | 76.18% |
+
+=== DISAGREEMENT CAUSES (every FP and FN classified; UNATTRIBUTED is a finding) ===
+calls:
+    UNATTRIBUTED                           709
+    KEYWORD_ENDPOINT                       281
+    SOURCE_ATTRIBUTION_DIFFERS             228
+    ORACLE_ATTRIBUTES_TO_OUTER_TYPE        80
+    SYNTHESIZED_ANONYMOUS_TYPE             22
+    QUALIFIED_TARGET_LEAF                  2
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/SpliteratorTester.java: ofInt -> accept
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/SpliteratorTester.java: ofLong -> accept
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/SpliteratorTester.java: ofDouble -> accept
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/google/AbstractMultisetSetCountTester.java: testSetCountZeroToOneConcurrentWithIteration -> next
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/google/AbstractMultisetSetCountTester.java: testSetCountZeroToOneConcurrentWithEntrySetIteration -> next
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/google/AbstractMultisetSetCountTester.java: testSetCountOneToZeroConcurrentWithIteration -> next
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/google/AbstractMultisetSetCountTester.java: testSetCountOneToZeroConcurrentWithEntrySetIteration -> next
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/google/MultimapPutIterableTester.java: testPutAllNonEmptyIterableOnPresentKey -> iterator
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/google/MultimapPutIterableTester.java: testPutAllNonEmptyIterableOnAbsentKey -> iterator
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/google/MultimapPutIterableTester.java: testPutAllEmptyIterableOnAbsentKey -> emptyIterator
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/testers/CollectionAddAllTester.java: testAddAllConcurrentWithIteration -> next
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/testers/CollectionAddTester.java: testAddConcurrentWithIteration -> next
+extends:
+    QUALIFIED_TARGET_LEAF                  158
+implements:
+    QUALIFIED_TARGET_LEAF                  20
+instantiates:
+    QUALIFIED_TARGET_LEAF                  320
+    SOURCE_ATTRIBUTION_DIFFERS             75
+    ORACLE_ATTRIBUTES_TO_OUTER_TYPE        22
+    SYNTHESIZED_ANONYMOUS_TYPE             4
+    UNATTRIBUTED                           3
+      UNATTRIBUTED ANALYZER-ONLY android/guava/src/com/google/common/collect/ImmutableSetMultimap.java: valuesBuilder -> ImmutableSortedSet.Builder
+      UNATTRIBUTED ANALYZER-ONLY android/guava/src/com/google/common/collect/ImmutableSortedMultiset.java: copyOf -> ImmutableSortedMultiset.Builder
+      UNATTRIBUTED ANALYZER-ONLY guava/src/com/google/common/collect/ImmutableSetMultimap.java: valuesBuilder -> ImmutableSortedSet.Builder
+references:
+    UNATTRIBUTED                           36
+      UNATTRIBUTED ANALYZER-ONLY futures/failureaccess/src/module-info.java: com.google.common.util.concurrent.internal -> com.google.common.util.concurrent.internal
+      UNATTRIBUTED ANALYZER-ONLY guava-testlib/src/module-info.java: com.google.common.testlib -> java.logging
+      UNATTRIBUTED ANALYZER-ONLY guava-testlib/src/module-info.java: com.google.common.testlib -> com.google.common
+      UNATTRIBUTED ANALYZER-ONLY guava-testlib/src/module-info.java: com.google.common.testlib -> junit
+      UNATTRIBUTED ANALYZER-ONLY guava-testlib/src/module-info.java: com.google.common.testlib -> com.google.errorprone.annotations
+      UNATTRIBUTED ANALYZER-ONLY guava-testlib/src/module-info.java: com.google.common.testlib -> com.google.j2objc.annotations
+      UNATTRIBUTED ANALYZER-ONLY guava-testlib/src/module-info.java: com.google.common.testlib -> org.jspecify
+      UNATTRIBUTED ANALYZER-ONLY guava-testlib/src/module-info.java: com.google.common.testlib -> com.google.common.collect.testing
+      UNATTRIBUTED ANALYZER-ONLY guava-testlib/src/module-info.java: com.google.common.testlib -> com.google.common.collect.testing.features
+      UNATTRIBUTED ANALYZER-ONLY guava-testlib/src/module-info.java: com.google.common.testlib -> com.google.common.collect.testing.google
+      UNATTRIBUTED ANALYZER-ONLY guava-testlib/src/module-info.java: com.google.common.testlib -> com.google.common.collect.testing.testers
+      UNATTRIBUTED ANALYZER-ONLY guava-testlib/src/module-info.java: com.google.common.testlib -> com.google.common.escape.testing
+contains:
+    SYNTHESIZED_ANONYMOUS_TYPE             3317
+    SOURCE_ATTRIBUTION_DIFFERS             2310
+    UNATTRIBUTED                           84
+    ORACLE_ATTRIBUTES_TO_OUTER_TYPE        51
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/collect/testing/features/FeatureUtilTest.java: testBuildTesterRequirements_class_empty -> Tester
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/collect/testing/features/FeatureUtilTest.java: testBuildTesterRequirements_class_present -> Tester
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/collect/testing/features/FeatureUtilTest.java: testBuildTesterRequirements_class_absent -> Tester
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/collect/testing/features/FeatureUtilTest.java: testBuildTesterRequirements_class_present_and_absent -> Tester
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/collect/testing/features/FeatureUtilTest.java: testBuildTesterRequirements_class_present_method_present -> Tester
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/collect/testing/features/FeatureUtilTest.java: testBuildTesterRequirements_class_absent_method_absent -> Tester
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/collect/testing/features/FeatureUtilTest.java: testBuildTesterRequirements_class_present_method_absent -> Tester
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/collect/testing/features/FeatureUtilTest.java: testBuildTesterRequirements_class_absent_method_present -> Tester
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/collect/testing/features/FeatureUtilTest.java: testBuildTesterRequirements_classClassConflict -> Tester
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/collect/testing/features/FeatureUtilTest.java: testBuildTesterRequirements_classClassConflict_inherited -> Tester
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/collect/testing/features/FeatureUtilTest.java: testBuildTesterRequirements_classClassConflict_implied -> Tester
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/collect/testing/features/FeatureUtilTest.java: testBuildTesterRequirements_methodClassConflict -> Tester
+uses:
+    SOURCE_ATTRIBUTION_DIFFERS             275
+    UNATTRIBUTED                           101
+    CONSTRUCTOR_SPELLING_SOURCE            88
+    ORACLE_ATTRIBUTES_TO_OUTER_TYPE        65
+    KEYWORD_ENDPOINT                       24
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/features/CollectionFeature.java: CollectionFeature -> implied
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/features/CollectionSize.java: CollectionSize -> implied
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/features/CollectionSize.java: CollectionSize -> numElements
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/features/ListFeature.java: ListFeature -> implied
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/features/MapFeature.java: MapFeature -> implied
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/features/SetFeature.java: SetFeature -> implied
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/src/com/google/common/collect/testing/google/MultimapFeature.java: MultimapFeature -> implied
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/testing/anotherpackage/ForwardingWrapperTesterTest.java: ForwardingWrapperTesterTest -> ForwardingArithmetic
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/testing/anotherpackage/ForwardingWrapperTesterTest.java: ForwardingWrapperTesterTest -> ParameterTypesDifferentForwarder
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/testing/anotherpackage/ForwardingWrapperTesterTest.java: ForwardingWrapperTesterTest -> ForwardingRunnable
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/testing/anotherpackage/ForwardingWrapperTesterTest.java: ForwardingWrapperTesterTest -> FailsToForwardParameters
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/testing/anotherpackage/ForwardingWrapperTesterTest.java: ForwardingWrapperTesterTest -> ForwardsToTheWrongMethod
+overrides:
+    ORACLE_ATTRIBUTES_TO_OUTER_TYPE        463
+    UNATTRIBUTED                           237
+    SYNTHESIZED_ANONYMOUS_TYPE             220
+    SOURCE_ATTRIBUTION_DIFFERS             4
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/testing/anotherpackage/ForwardingWrapperTesterTest.java: ForwardingArithmetic.add -> Adder.add
+      UNATTRIBUTED ANALYZER-ONLY android/guava-testlib/test/com/google/common/testing/anotherpackage/ForwardingWrapperTesterTest.java: ForwardsToTheWrongMethod.add -> Adder.add
+      UNATTRIBUTED ANALYZER-ONLY android/guava-tests/test/com/google/common/eventbus/outside/DeepInterfaceTest.java: SubscriberClass.annotatedIn1 -> Interface1.annotatedIn1
+      UNATTRIBUTED ANALYZER-ONLY android/guava-tests/test/com/google/common/eventbus/outside/DeepInterfaceTest.java: SubscriberClass.declaredIn1AnnotatedInClass -> Interface1.declaredIn1AnnotatedInClass
+      UNATTRIBUTED ANALYZER-ONLY android/guava-tests/test/com/google/common/eventbus/outside/DeepInterfaceTest.java: SubscriberClass.nowhereAnnotated -> Interface1.nowhereAnnotated
+      UNATTRIBUTED ANALYZER-ONLY android/guava/src/com/google/common/base/CharMatcher.java: NamedFastMatcher.toString -> CharMatcher.toString
+      UNATTRIBUTED ANALYZER-ONLY android/guava/src/com/google/common/base/CharMatcher.java: NegatedFastMatcher.precomputed -> CharMatcher.precomputed
+      UNATTRIBUTED ANALYZER-ONLY android/guava/src/com/google/common/base/CharMatcher.java: BitSetMatcher.matches -> CharMatcher.matches
+      UNATTRIBUTED ANALYZER-ONLY android/guava/src/com/google/common/base/CharMatcher.java: BitSetMatcher.setBits -> CharMatcher.setBits
+      UNATTRIBUTED ANALYZER-ONLY android/guava/src/com/google/common/base/CharMatcher.java: Any.matches -> CharMatcher.matches
+      UNATTRIBUTED ANALYZER-ONLY android/guava/src/com/google/common/base/CharMatcher.java: Any.indexIn -> CharMatcher.indexIn
+      UNATTRIBUTED ANALYZER-ONLY android/guava/src/com/google/common/base/CharMatcher.java: Any.lastIndexIn -> CharMatcher.lastIndexIn
+
+=== POPULATIONS THIS ORACLE DOES NOT ADJUDICATE (counted, not scored) ===
+calls removed by the mirrored stdlib filter: 5738
+overrides by resolver tier:
+    first-parent-guess     17452
+    generic-substitution   213
+references of evidenceClass reference_qualified (type mentions): 182507
+    android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java: AbstractCollectionTestSuiteBuilder -> List
+    android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java: AbstractCollectionTestSuiteBuilder -> Class
+    android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java: AbstractCollectionTestSuiteBuilder -> AbstractTester
+    android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java: getTesters -> CollectionAddAllTester
+
+=== DISAGREEMENT DETAIL (whole corpus, first 4 per type per side) ===
+calls: 1115 analyzer-only, 207 oracle-only
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/Helpers.java: anonymous_Iterator -> listIterator   [SOURCE_ATTRIBUTION_DIFFERS]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/Helpers.java: anonymous_Iterator -> size   [SOURCE_ATTRIBUTION_DIFFERS]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/MapInterfaceTest.java: MapInterfaceTest -> this   [KEYWORD_ENDPOINT]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/SafeTreeMap.java: SafeTreeMap -> this   [KEYWORD_ENDPOINT]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/SafeTreeSet.java: SafeTreeSet -> this   [KEYWORD_ENDPOINT]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/SpliteratorTester.java: ofInt -> accept   [UNATTRIBUTED]
+    oracle-only    android/guava-testlib/src/com/google/common/collect/testing/MapInterfaceTest.java: MapInterfaceTest -> super   [KEYWORD_ENDPOINT]
+    oracle-only    android/guava-testlib/src/com/google/common/collect/testing/SafeTreeMap.java: SafeTreeMap -> super   [KEYWORD_ENDPOINT]
+    oracle-only    android/guava-testlib/src/com/google/common/collect/testing/SafeTreeSet.java: SafeTreeSet -> super   [KEYWORD_ENDPOINT]
+    oracle-only    android/guava-testlib/src/com/google/common/collect/testing/features/TesterRequirements.java: TesterRequirements -> super   [KEYWORD_ENDPOINT]
+    oracle-only    android/guava-testlib/src/com/google/common/collect/testing/google/MultisetIteratorTester.java: testRemovingIteratorUnknownOrder -> asList   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-testlib/src/com/google/common/collect/testing/google/MultisetIteratorTester.java: testRemovingIteratorUnknownOrder -> e0   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+extends: 158 analyzer-only, 0 oracle-only
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/google/ListMultimapTestSuiteBuilder.java: MultimapGetGenerator -> MultimapTestSuiteBuilder.MultimapGetGenerator   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/google/ListMultimapTestSuiteBuilder.java: MultimapAsMapGetGenerator -> MultimapTestSuiteBuilder.MultimapAsMapGetGenerator   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/google/SetMultimapTestSuiteBuilder.java: EntriesGenerator -> MultimapTestSuiteBuilder.EntriesGenerator   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/google/SetMultimapTestSuiteBuilder.java: MultimapGetGenerator -> MultimapTestSuiteBuilder.MultimapGetGenerator   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/google/SetMultimapTestSuiteBuilder.java: MultimapAsMapGetGenerator -> MultimapTestSuiteBuilder.MultimapAsMapGetGenerator   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava-tests/benchmark/com/google/common/collect/ConcurrentHashMultisetBenchmark.java: EntrySet -> AbstractMultiset.EntrySet   [QUALIFIED_TARGET_LEAF]
+implements: 20 analyzer-only, 0 oracle-only
+    analyzer-only  android/guava-tests/test/com/google/common/io/CloserTest.java: TestSuppressor -> Closer.Suppressor   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava-tests/test/com/google/common/reflect/TypeTokenTest.java: SingleGenericExtendsBase -> GenericClass.Base   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava/src/com/google/common/collect/CollectSpliterators.java: FlatMapSpliteratorOfPrimitive -> Spliterator.OfPrimitive   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava/src/com/google/common/collect/CollectSpliterators.java: FlatMapSpliteratorOfInt -> Spliterator.OfInt   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava/src/com/google/common/collect/CollectSpliterators.java: FlatMapSpliteratorOfLong -> Spliterator.OfLong   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava/src/com/google/common/collect/CollectSpliterators.java: FlatMapSpliteratorOfDouble -> Spliterator.OfDouble   [QUALIFIED_TARGET_LEAF]
+instantiates: 402 analyzer-only, 22 oracle-only
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/Helpers.java: anonymous_AbstractList -> ArrayList   [SOURCE_ATTRIBUTION_DIFFERS]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/google/SetGenerators.java: create -> ImmutableSortedSet.Builder   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/google/SortedSetMultimapTestSuiteBuilder.java: computeMultimapGetTestSuite -> SetMultimapTestSuiteBuilder.MultimapGetGenerator   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/google/SortedSetMultimapTestSuiteBuilder.java: computeMultimapAsMapGetTestSuite -> SetMultimapTestSuiteBuilder.MultimapAsMapGetGenerator   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/google/UnmodifiableCollectionTests.java: assertMultisetIsUnmodifiable -> Multiset.Entry   [QUALIFIED_TARGET_LEAF]
+    analyzer-only  android/guava-tests/benchmark/com/google/common/collect/ImmutableListCreationBenchmark.java: preSizedBuilderAdd -> ImmutableList.Builder   [QUALIFIED_TARGET_LEAF]
+    oracle-only    android/guava-tests/test/com/google/common/collect/AbstractBiMapTest.java: testEntryNotAccessedAfterEntrySetIteratorRemove -> InvalidatingEntryMap   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/collect/LinkedHashMultimapTest.java: testKeySetIteration -> LinkedHashSet   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/io/CharSourceTest.java: testReadLines_withProcessor_stopsOnFalse -> ArrayList   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/io/CharSourceTester.java: testReadLines_withProcessor_stopsOnFalse -> ArrayList   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/io/FilesTest.java: testReadBytes_returnFalse -> ByteArrayOutputStream   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/reflect/TypeTokenResolutionTest.java: testResolveOwnerClass -> Owner   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+references: 36 analyzer-only, 0 oracle-only
+    analyzer-only  futures/failureaccess/src/module-info.java: com.google.common.util.concurrent.internal -> com.google.common.util.concurrent.internal   [UNATTRIBUTED]
+    analyzer-only  guava-testlib/src/module-info.java: com.google.common.testlib -> java.logging   [UNATTRIBUTED]
+    analyzer-only  guava-testlib/src/module-info.java: com.google.common.testlib -> com.google.common   [UNATTRIBUTED]
+    analyzer-only  guava-testlib/src/module-info.java: com.google.common.testlib -> junit   [UNATTRIBUTED]
+    analyzer-only  guava-testlib/src/module-info.java: com.google.common.testlib -> com.google.errorprone.annotations   [UNATTRIBUTED]
+    analyzer-only  guava-testlib/src/module-info.java: com.google.common.testlib -> com.google.j2objc.annotations   [UNATTRIBUTED]
+contains: 5711 analyzer-only, 51 oracle-only
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java: PermittedMetaException -> anonymous_PermittedMetaException   [SYNTHESIZED_ANONYMOUS_TYPE]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java: anonymous_PermittedMetaException -> isPermitted   [SYNTHESIZED_ANONYMOUS_TYPE]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java: AbstractIteratorTester -> anonymous_IteratorOperation   [SYNTHESIZED_ANONYMOUS_TYPE]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java: anonymous_IteratorOperation -> execute   [SOURCE_ATTRIBUTION_DIFFERS]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java: newAddMethod -> anonymous_IteratorOperation   [SYNTHESIZED_ANONYMOUS_TYPE]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java: newSetMethod -> anonymous_IteratorOperation   [SYNTHESIZED_ANONYMOUS_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/collect/FauxveridesTest.java: FauxveridesTest -> apply   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/collect/ForwardingMapTest.java: ForwardingMapTest -> iterator   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/collect/OrderingTest.java: Composite -> apply   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/reflect/InvokableTest.java: AnonymousClassInConstructor -> run   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/util/concurrent/AbstractExecutionThreadServiceTest.java: TimeoutOnStartUp -> execute   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/util/concurrent/AbstractScheduledServiceTest.java: TestAbstractScheduledCustomService -> getNextSchedule   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+uses: 464 analyzer-only, 89 oracle-only
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java: constructor -> mapGenerator   [CONSTRUCTOR_SPELLING_SOURCE]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/ListIteratorTester.java: constructor -> KNOWN_ORDER   [SOURCE_ATTRIBUTION_DIFFERS]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/SampleElements.java: constructor -> B   [SOURCE_ATTRIBUTION_DIFFERS]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/SampleElements.java: constructor -> A   [SOURCE_ATTRIBUTION_DIFFERS]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/SampleElements.java: constructor -> C   [SOURCE_ATTRIBUTION_DIFFERS]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/SampleElements.java: constructor -> D   [SOURCE_ATTRIBUTION_DIFFERS]
+    oracle-only    android/guava-tests/test/com/google/common/collect/IteratorsTest.java: SingletonIteratorTester -> KNOWN_ORDER   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/collect/IteratorsTest.java: DoubletonIteratorTester -> KNOWN_ORDER   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/test/com/google/common/collect/ListsImplTest.java: LinkedListExample -> ALL   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava/src/com/google/common/cache/LocalCache.java: HashIterator -> length   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava/src/com/google/common/collect/CollectSpliterators.java: FlatMapSpliteratorOfObject -> FlatMapSpliteratorOfObject   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava/src/com/google/common/collect/CollectSpliterators.java: FlatMapSpliteratorOfInt -> FlatMapSpliteratorOfInt   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+overrides: 461 analyzer-only, 463 oracle-only
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java: anonymous_PermittedMetaException.isPermitted -> PermittedMetaException.isPermitted   [SYNTHESIZED_ANONYMOUS_TYPE]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java: anonymous_IteratorOperation.execute -> IteratorOperation.execute   [SYNTHESIZED_ANONYMOUS_TYPE]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/SpliteratorTester.java: anonymous_Ordered.inOrder -> Ordered.inOrder   [SYNTHESIZED_ANONYMOUS_TYPE]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/google/SortedMultisetTestSuiteBuilder.java: anonymous_ForwardingTestMultisetGenerator.create -> ForwardingTestMultisetGenerator.create   [SYNTHESIZED_ANONYMOUS_TYPE]
+    analyzer-only  android/guava-testlib/src/com/google/common/collect/testing/google/SortedMultisetTestSuiteBuilder.java: anonymous_ForwardingTestMultisetGenerator.order -> ForwardingTestMultisetGenerator.order   [SYNTHESIZED_ANONYMOUS_TYPE]
+    analyzer-only  android/guava-testlib/src/com/google/common/testing/AbstractPackageSanityTests.java: anonymous_Chopper.chop -> Chopper.chop   [SYNTHESIZED_ANONYMOUS_TYPE]
+    oracle-only    android/guava-testlib/src/com/google/common/collect/testing/google/ListMultimapTestSuiteBuilder.java: MultimapGetGenerator.create -> MultimapGetGenerator.create   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-testlib/src/com/google/common/collect/testing/google/ListMultimapTestSuiteBuilder.java: MultimapAsMapGetGenerator.create -> MultimapAsMapGetGenerator.create   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-testlib/src/com/google/common/collect/testing/google/SetMultimapTestSuiteBuilder.java: EntriesGenerator.create -> EntriesGenerator.create   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-testlib/src/com/google/common/collect/testing/google/SetMultimapTestSuiteBuilder.java: MultimapGetGenerator.create -> MultimapGetGenerator.create   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-testlib/src/com/google/common/collect/testing/google/SetMultimapTestSuiteBuilder.java: MultimapAsMapGetGenerator.create -> MultimapAsMapGetGenerator.create   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]
+    oracle-only    android/guava-tests/benchmark/com/google/common/collect/ConcurrentHashMultisetBenchmark.java: EntrySet.multiset -> EntrySet.multiset   [ORACLE_ATTRIBUTES_TO_OUTER_TYPE]

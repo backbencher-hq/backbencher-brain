@@ -269,6 +269,58 @@ function prepared(db: unknown, sql: string): { all: (...params: unknown[]) => un
   return statement as { all: (...params: unknown[]) => unknown[] }
 }
 
+
+/**
+ * Whether the connection's schema carries the index the UNRESOLVED arm is pinned
+ * to, and the clause to use.
+ *
+ * WHY THE PIN EXISTS (measured 2026-10-08, owner's real 201-file index).
+ * The callee query is a UNION ALL of a resolved arm and an UNRESOLVED/external
+ * arm. The external arm's predicate ends `AND r.target_symbol_id IS NULL AND
+ * r.target_external IS NOT NULL`, and `target_symbol_id IS NULL` CANNOT use an
+ * index seek — a seek on `target_symbol_id = ?` never matches NULL. So SQLite
+ * fell back to using `brain_rel_proj_type_target_idx` on its
+ * (project_id, relationship_type) prefix and RANGE-SCANNING `target_symbol_id`
+ * once per relationship type. Measured on one visited symbol: 17,193 external
+ * rows out of 58,324, and 10 types, re-scanned for every node the walk visits.
+ *
+ * The arm joins the cascade on `casc.id = r.source_symbol_id`, so it wants a
+ * SOURCE-side seek. Given one, it runs in 2.5 ms instead of 197 ms (79.7x), and
+ * the full two-arm statement in 5.2 ms instead of 161 ms (30.7x) — with a
+ * byte-identical row set. Pinned, the plan is
+ * `SCAN casc` then `SEARCH r USING brain_rel_proj_source_idx
+ * (project_id=? AND source_symbol_id=?)`.
+ *
+ * WHY IT IS GUARDED. `INDEXED BY` naming an index that does not exist is a
+ * PREPARE-TIME error, not a slow query: one older index file, or a connection to
+ * a database mid-migration, would take the whole call-hierarchy and graph surface
+ * down instead of degrading. So the hint is applied only when the index is
+ * actually present on this connection, and the query is unchanged when it is not.
+ * The absence is measured once per connection, not per query.
+ */
+const EXTERNAL_ARM_SOURCE_INDEX = "brain_rel_proj_source_idx"
+const indexPresence = new WeakMap<object, boolean>()
+
+function externalArmIndexClause(raw: unknown): string {
+  if (raw === null || typeof raw !== "object") return ""
+  const db = raw as { prepare?: (s: string) => { all: (...a: unknown[]) => unknown[] } }
+  if (typeof db.prepare !== "function") return ""
+  let present = indexPresence.get(db as object)
+  if (present === undefined) {
+    present = false
+    try {
+      const rows = db
+        .prepare("SELECT 1 AS present FROM sqlite_master WHERE type = 'index' AND name = ?")
+        .all(EXTERNAL_ARM_SOURCE_INDEX)
+      present = rows.length > 0
+    } catch {
+      present = false // a schema we cannot interrogate gets the unhinted query
+    }
+    indexPresence.set(db as object, present)
+  }
+  return present ? ` INDEXED BY ${EXTERNAL_ARM_SOURCE_INDEX}` : ""
+}
+
 function cascadeBounds(symbolId: string): { prefix: string; upper: string } {
   const prefix = symbolId.includes(":") ? symbolId.slice(0, symbolId.lastIndexOf(":") + 1) : ""
   return { prefix, upper: prefix + ";" }
@@ -910,7 +962,7 @@ export async function traverseGraph(
           // the node's name — so nothing is lost; it is simply labelled for
           // what it is.
           selectColsUnresolved +
-          "FROM brain_relationship r " +
+          "FROM brain_relationship r" + externalArmIndexClause(raw) + " " +
           // No target-symbol join at all: there is no target symbol, so the
           // target columns come from `selectColsUnresolved` as literal NULLs.
           // They used to be `LEFT JOIN … ON 0` against the resolved select

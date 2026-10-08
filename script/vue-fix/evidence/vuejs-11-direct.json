@@ -1,0 +1,340 @@
+{
+  "lane": "VUE_FIX",
+  "mode": "direct",
+  "corpus": {
+    "root": "$HOME/fixtures/repositories",
+    "repo": "vuejs",
+    "tracked": 11,
+    "admitted": 11,
+    "limit": 0
+  },
+  "files": {
+    "parsed": 11,
+    "failed": 0,
+    "emptySymbols": 0,
+    "totalSymbols": 11,
+    "totalRelationships": 10,
+    "filesWithDelegatedRows": 0
+  },
+  "channels": {
+    "imports": {
+      "count": 0,
+      "kinds": {},
+      "examples": []
+    },
+    "exports": {
+      "count": 0
+    }
+  },
+  "types": {
+    "calls": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "extends": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "implements": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "uses": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "brain_import": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "exports": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "contains": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "references": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "overrides": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "instantiates": {
+      "verdict": "EMITTED",
+      "count": 10,
+      "files": 3,
+      "fileExamples": [
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/App.vue",
+        "packages-private/sfc-playground/src/Header.vue",
+        "packages-private/sfc-playground/src/Header.vue"
+      ],
+      "examples": [
+        "App -[instantiates]-> Header",
+        "App -[instantiates]-> Repl",
+        "Header -[instantiates]-> VersionSelect",
+        "Header -[instantiates]-> Sun",
+        "Header -[instantiates]-> Moon",
+        "Header -[instantiates]-> Share"
+      ],
+      "resolved": {
+        "both": 0,
+        "src": 10,
+        "tgt": 0,
+        "pctBoth": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 10
+      },
+      "sourceKind": {
+        "vue-own": 10
+      },
+      "confidence": {
+        "0.95": 10
+      },
+      "evidenceClass": {
+        "usage_contextual": 10
+      },
+      "line": {
+        "withLine": 10,
+        "withoutLine": 0
+      }
+    }
+  },
+  "parseFailures": []
+}

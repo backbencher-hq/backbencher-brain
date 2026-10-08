@@ -1165,11 +1165,15 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       const work: Node[] = [node]
       while (work.length > 0) {
         const n = work.pop()!
-        // `command`, not `command_expression`: the node this pinned grammar builds for
-          // an invocation is `command`, and `command_expression` appears NOWHERE in it.
-          // Written as the wrong name the guard never fired, which is how the
-          // `new-object-variable-psb14` rows were still being pre-empted.
-          if (n.type === "command" || n.type === "command_expression") continue
+        // `command`, not `command_expression`: the node this pinned grammar builds
+        // for an invocation is `command`, and `command_expression` appears NOWHERE
+        // in it. Written as the wrong name the guard never fired, which is how the
+        // `new-object-variable-psb14` rows were still being pre-empted; the correct
+        // name fixed that, and the wrong one stayed behind as a disjunct that could
+        // never be true. Confirmed 2026-10-08 against the shipped wasm (no such node
+        // type) and by a real parse of `Get-Thing -Name x`, whose invocation shape
+        // is `pipeline_chain -> command`. Removed so the guard reads as what it is.
+        if (n.type === "command") continue
         if (n.type === "variable" || n.type === "braced_variable" || n.type === "member_access") {
           emitVariableReads(n, true, "isAssignmentRead")
           continue

@@ -59,8 +59,10 @@
 
 import * as fs from "node:fs"
 import * as path from "node:path"
+import { emitEvidence, type Check } from "./evidence-harness"
+import { fileURLToPath } from "node:url"
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..")
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 // FULL CORPUS, with a cap that is above the largest corpus rather than a fraction
 // of it. The cap was 500, which covered 14.8% of the svelte corpus (500 of 3,382)
 // — and it was not buying anything: the whole census runs in 13.7s at 500, so
@@ -254,6 +256,22 @@ const DECLARED_SUPPRESSED = new Map<string, string[]>([
 // listed. A completeness table that is complete only where nobody looked is the
 // most dangerous shape a gate can have: it reports the coverage of the sample and
 // is graded as the coverage of the lane.
+// REGENERATED 2026-10-08 against a ROTATED CORPUS. The svelte checkout left the
+// sample at 3,369 .js files and came back with 3,433 (64 files, 1,516 member bases),
+// and gate 4 fired naming exactly nine leaves it had never seen: process.exitCode,
+// process.SVELTE_CPU_PROF_INTERVAL, process.SVELTE_PROFILE_NAME,
+// process.GITHUB_ACTIONS, Promise.allSettled, globalThis.MutationObserver,
+// document.execCommand, window.length, window.childNodes. That is the teeth working —
+// a completeness table that is complete only where nobody looked is the most dangerous
+// shape a gate can have — and the disposition is NAMED for the same measured reason as
+// every other leaf in these five bases: `console` is the ONE base whose leaves the
+// analyzer suppresses (DECLARED_SUPPRESSED above, and gate 9 probes a leaf of every
+// non-console reserved base to confirm the NAMED row it sits in). Each of the nine is
+// an ordinary member of a reserved global — Node's environment/profiling variables, a
+// Promise combinator, a DOM constructor, a deprecated (but corpus-present) DOM command,
+// and two Window properties — so each joins its base's list rather than opening a new
+// disposition. A leaf whose disposition is NOT that should be probed and moved, not
+// appended here.
 const DECLARED_NAMED_BASES = new Map<string, string[]>([
   ["Array", ["__svelte_cleanup", "call", "from", "includes", "indexOf", "isArray", "prototype", "push", "slice", "sort"]],
   ["Boolean", ["prototype", "toJSON"]],
@@ -264,16 +282,16 @@ const DECLARED_NAMED_BASES = new Map<string, string[]>([
   ["Math", ["E", "LN10", "LN2", "LOG10E", "LOG2E", "PI", "SQRT1_2", "SQRT2", "abs", "acos", "acosh", "asin", "asinh", "atan", "atan2", "atanh", "cbrt", "ceil", "clz32", "cos", "cosh", "exp", "expm1", "f16round", "floor", "fround", "imul", "log", "log10", "log1p", "log2", "max", "min", "pow", "random", "round", "sign", "sin", "sinh", "sqrt", "tan", "tanh", "trunc"]],
   ["Number", ["MAX_VALUE", "isFinite", "isInteger", "isNaN", "isSafeInteger", "parseFloat", "parseInt", "prototype", "toJSON", "toString"]],
   ["Object", ["apply", "assign", "call", "create", "defineProperties", "defineProperty", "entries", "fromEntries", "getOwnPropertyDescriptor", "getOwnPropertyDescriptors", "getOwnPropertyNames", "getOwnPropertySymbols", "getPrototypeOf", "hasOwn", "hasOwnProperty", "is", "isExtensible", "keys", "propertyIsEnumerable", "prototype", "toString", "values"]],
-  ["Promise", ["all", "reject", "resolve", "withResolvers"]],
+  ["Promise", ["all", "allSettled", "reject", "resolve", "withResolvers"]],
   ["Reflect", ["get", "getOwnPropertyDescriptor", "has", "ownKeys", "set"]],
   ["Set", ["prototype"]],
   ["String", ["call", "fromCharCode", "fromCodePoint", "prototype", "toJSON"]],
   ["Symbol", ["asyncIterator", "iterator", "prototype"]],
   ["WeakMap", ["name"]],
-  ["document", ["activeElement", "addEventListener", "appendChild", "baseURI", "body", "childNodes", "createComment", "createDocumentFragment", "createElement", "createElementNS", "createTextNode", "dispatchEvent", "documentMode", "getElementById", "head", "importNode", "querySelector", "querySelectorAll", "removeChild", "title"]],
-  ["globalThis", ["Buffer", "Date", "Map", "Set", "URL", "URLSearchParams", "contentType", "createPolicy", "crypto", "delayed", "digest", "document", "frag", "from", "includes", "process", "subtle", "trustedTypes", "versions", "webcontainer", "window"]],
-  ["process", ["BENCH_PROFILE_DIR", "BENCH_SINGLE", "CI", "FRAGMENTS", "NODE_ENV", "PORT", "SHOULD_UPDATE_EXPECTED", "SVELTE_NO_ASYNC", "TMP_VAR", "argv", "cwd", "env", "execPath", "exit", "includes", "isTTY", "on", "platform", "slice", "stderr", "stdin", "stdout", "version", "write"]],
-  ["window", ["Backbone", "Event", "HTMLDivElement", "HTMLParagraphElement", "HTMLSpanElement", "InputEvent", "KeyboardEvent", "MouseEvent", "_", "__svelte", "activeElement", "addEventListener", "body", "createElement", "createTextNode", "devicePixelRatio", "dispatchEvent", "document", "getBoundingClientRect", "getComputedStyle", "getElementById", "h", "head", "history", "includes", "innerHTML", "innerHeight", "innerWidth", "location", "matchMedia", "name", "outerHeight", "outerWidth", "pageYOffset", "prototype", "querySelector", "querySelectorAll", "removeEventListener", "screenLeft", "screenTop", "scrollTo", "scrollX", "scrollY", "setTimeout", "title", "ui", "uid"]],
+  ["document", ["activeElement", "addEventListener", "appendChild", "baseURI", "body", "childNodes", "createComment", "createDocumentFragment", "createElement", "createElementNS", "createTextNode", "dispatchEvent", "documentMode", "execCommand", "getElementById", "head", "importNode", "querySelector", "querySelectorAll", "removeChild", "title"]],
+  ["globalThis", ["Buffer", "Date", "Map", "MutationObserver", "Set", "URL", "URLSearchParams", "contentType", "createPolicy", "crypto", "delayed", "digest", "document", "frag", "from", "includes", "process", "subtle", "trustedTypes", "versions", "webcontainer", "window"]],
+  ["process", ["BENCH_PROFILE_DIR", "BENCH_SINGLE", "CI", "FRAGMENTS", "GITHUB_ACTIONS", "NODE_ENV", "PORT", "SHOULD_UPDATE_EXPECTED", "SVELTE_CPU_PROF_INTERVAL", "SVELTE_NO_ASYNC", "SVELTE_PROFILE_NAME", "TMP_VAR", "argv", "cwd", "env", "execPath", "exit", "exitCode", "includes", "isTTY", "on", "platform", "slice", "stderr", "stdin", "stdout", "version", "write"]],
+  ["window", ["Backbone", "Event", "HTMLDivElement", "HTMLParagraphElement", "HTMLSpanElement", "InputEvent", "KeyboardEvent", "MouseEvent", "_", "__svelte", "activeElement", "addEventListener", "body", "childNodes", "createElement", "createTextNode", "devicePixelRatio", "dispatchEvent", "document", "getBoundingClientRect", "getComputedStyle", "getElementById", "h", "head", "history", "includes", "innerHTML", "innerHeight", "innerWidth", "length", "location", "matchMedia", "name", "outerHeight", "outerWidth", "pageYOffset", "prototype", "querySelector", "querySelectorAll", "removeEventListener", "screenLeft", "screenTop", "scrollTo", "scrollX", "scrollY", "setTimeout", "title", "ui", "uid"]],
 ])
 
 // --- helpers ---------------------------------------------------------------
@@ -1265,7 +1283,16 @@ gates.push({
 
 // --- ARTIFACT --------------------------------------------------------------
 
-const artifact = {
+// The artifact is EMITTED THROUGH THE HARNESS (2026-10-08). This file used to build its
+// own envelope and write the file itself, which cost it two things the harness provides.
+// The lineage pair — it carried a timestamp and a commit-less envelope, so M49's lineage
+// gate failed it on both fields ("carries regeneratedAtCommit — got: undefined"). And its
+// claim in the producer register: M49 verify-evidence-identity discovers a producer by the
+// `emitEvidence(` anchor, so a hand-rolled writer left this artifact an ORPHAN — an
+// artifact in the results directory that no gate can be shown to produce. The payload
+// below is unchanged (it travels whole, inside `data`); the envelope, the claim level and
+// the writer move to the harness.
+const payload = {
   census: "M14.0.JS-CENSUS",
   lane: "javascript",
   generatedAt: new Date().toISOString(),
@@ -1350,12 +1377,21 @@ const artifact = {
   status: failures.length === 0 ? "PASS" : "FAIL",
 }
 
-const outDir = path.join(ROOT, "validation/m14/results")
-fs.mkdirSync(outDir, { recursive: true })
-const outFile = path.join(outDir, "M14.0.JS-CENSUS.json")
-fs.writeFileSync(outFile, JSON.stringify(artifact, null, 2) + "\n")
+const outFile = emitEvidence({
+  issueId: "M14.0.JS-CENSUS",
+  title: "javascript construct census — the check that consults neither the analyzer nor the oracle",
+  claimLevel: "L1",
+  layers: ["carrier-census"],
+  checks: gates.map((g) => ({ id: g.id, description: g.detail, status: (g.pass ? "pass" : "fail") as Check["status"] })),
+  limitations: [
+    "Discovery is a CORPUS SCAN with a deterministic cap, not a proof about the language: a construct no corpus file spells is invisible to this gate and is reported as not seen rather than accounted for. The cap is published in `data.sample` (files per corpus, bytes per file) so what was read is auditable, and the selection is sorted-then-strided rather than random, so a rerun over the same corpora reads the same files.",
+    "This gate consults NEITHER the analyzer's tables NOR the oracle for discovery — that is the only reason it exists, since the differential compares two readings of the specification by one author and cannot see a construct both forgot (it reported coverage while the receiver of a member call was named by nothing). It answers 'does anybody account for this construct', not 'is this construct handled correctly'; the differential and the hand-audited corpus truth answer the second question.",
+    "The declared member-base table behind the reserved-base check is derived from the sample this artifact publishes rather than curated by hand, and gate `census-js-named-bases-verified` probes a leaf of every non-console base, so the table cannot rot into asserting suppression that no longer happens. A base absent from the sample is not asserted about at all.",
+  ],
+  data: { ...payload },
+})
 
-console.log(`\nM14.0.JS-CENSUS — ${artifact.status}`)
+console.log(`\nM14.0.JS-CENSUS — ${payload.status}`)
 console.log(`  sample: ${JSON.stringify(filesWalked)} (cap ${SAMPLE_PER_CORPUS}/corpus, deterministic stride)`)
 for (const g of gates) console.log(`  ${g.pass ? "PASS" : "FAIL"}  ${g.id}\n          ${g.detail}`)
 if (failures.length > 0) {

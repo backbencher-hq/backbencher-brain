@@ -202,9 +202,21 @@ export function readEvidence<T = Record<string, unknown>>(filePath: string): Evi
  *  qualifies as legacy — unparseable/tampered/missing stay hard refusals.
  *  Gates using this during the window must WARN on legacy records and hard-
  *  FAIL on unsealed records written after the window opened. */
+/** A pre-M61 record: correct JSON with no seal to verify. It is its OWN arm rather than a
+ *  variation on the ok arm, because that arm requires a `seal` and this one has none — a
+ *  legacy acceptance that claimed a seal would be exactly the lie the seal machinery
+ *  exists to prevent. The `legacy?: boolean` on the read type is what callers check. */
+export interface LegacyEvidenceRecord<T> {
+  ok: true
+  record: T
+  legacy: true
+  reason: string
+}
+export type EvidenceReadOrLegacy<T> = (EvidenceRead<T> | LegacyEvidenceRecord<T>) & { legacy?: boolean }
+
 export function readEvidenceAllowingLegacy<T = Record<string, unknown>>(
   filePath: string,
-): EvidenceRead<T> & { legacy?: boolean } {
+): EvidenceReadOrLegacy<T> {
   const result = readEvidence<T>(filePath)
   if (result.ok) return result
   if (result.kind === "unsealed") {
@@ -216,7 +228,7 @@ export function readEvidenceAllowingLegacy<T = Record<string, unknown>>(
           record: parsed as T,
           legacy: true,
           reason: "legacy (pre-M61) record accepted in the transition window",
-        } as EvidenceRead<T> & { legacy?: boolean }
+        }
       }
     } catch {
       // fall through to the hard refusal below
@@ -239,6 +251,69 @@ export function sealLegacyFile(filePath: string, now = new Date()): EvidenceSeal
     writeFileSync(filePath, `${JSON.stringify(sealed, null, 2)}\n`)
   })
   return seal
+}
+
+/** The result of a stale-seal refresh — never throws for expected states, so
+ *  the caller reports the refusal instead of dying on it. */
+export type RefreshResult =
+  | { ok: true; oldDigest: string; newDigest: string; seal: EvidenceSeal }
+  | { ok: false; reason: string; kind: "missing" | "unparseable" | "not-object" | "unsealed" | "bad-seal" | "valid" | "no-reason" }
+
+/**
+ * Repair a STALE seal: a record whose bbSeal envelope no longer matches its own
+ * bytes because a producer rewrote the content after sealing (the merge/restore
+ * hazard — a `git checkout` of sealed bytes from an older tree grafts a seal over
+ * the newer content, and every pre-M61 raw write path re-stamps content while
+ * carrying the old envelope forward).
+ *
+ * The bound (why this cannot launder a record):
+ *   - only a record that ALREADY carries a well-formed seal is touched, and only
+ *     when that seal is PROVABLY stale (digest mismatch). A valid seal is refused
+ *     (`kind: "valid"`, nothing written) and an unsealed record is refused
+ *     (`kind: "unsealed"` — that is sealLegacyFile's job, not this one's).
+ *   - `why` must be a non-empty reason; the caller records it (the repo's tool
+ *     writes validation/m61/seal-refresh-register.json) so a refresh is a written,
+ *     reviewable act rather than a silent one.
+ *   - every content field is preserved, at VALUE level, and the caller proves it
+ *     with the trusted read (parse → strip the envelope → compare with the record
+ *     it read). The write itself re-serializes the record the way every other
+ *     evidence write in this repo does (`JSON.stringify(record, null, 2)` + "\n"),
+ *     so a record that was not in that canonical form — a number written as
+ *     `494600.0`, a missing final newline — is canonicalized, and the new seal
+ *     covers the CANONICAL bytes. That normalization is `sealLegacyFile`'s own
+ *     behavior (the migration has always done it); what is new here is that the
+ *     caller can MEASURE it: script/m61/refresh-stale-seals.ts compares the file
+ *     before and after with the envelope's lines removed and reports every record
+ *     whose bytes moved beyond the envelope (`envelopeOnly: false`).
+ *   - the write takes the same M61.V2 directory lock as every other evidence write.
+ *
+ * A stale seal is NOT proof of tampering on its own (this repo has 24 of them from
+ * re-stamping producers, each of which is a content change the owning lane made on
+ * purpose) — but it IS the shape tampering takes, so the repo's answer is to refuse
+ * it loudly (verifySeal) and to repair it only with a stated reason.
+ */
+export function refreshStaleSeal(filePath: string, why: string, now = new Date()): RefreshResult {
+  if (!why || !why.trim()) return { ok: false, reason: "a stale-seal refresh requires a non-empty reason", kind: "no-reason" }
+  if (!existsSync(filePath)) return { ok: false, reason: `no such evidence file: ${filePath}`, kind: "missing" }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(readFileSync(filePath, "utf8"))
+  } catch (e) {
+    return { ok: false, reason: `evidence file is not valid JSON: ${filePath} (${(e as Error).message})`, kind: "unparseable" }
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return { ok: false, reason: `evidence file is not a JSON object: ${filePath}`, kind: "not-object" }
+  }
+  const record = parsed as Record<string, unknown>
+  const verdict = verifySeal(record)
+  if (verdict.ok) return { ok: false, reason: `the seal already verifies — nothing to refresh`, kind: "valid" }
+  if (verdict.kind !== "tampered") return { ok: false, reason: verdict.reason, kind: verdict.kind === "unsealed" ? "unsealed" : "bad-seal" }
+  const oldDigest = String((record[SEAL_KEY] as Partial<EvidenceSeal>).contentSha256)
+  const seal = sealFor(record, now)
+  withLock(path.dirname(filePath), () => {
+    writeFileSync(filePath, `${JSON.stringify({ ...record, [SEAL_KEY]: seal }, null, 2)}\n`)
+  })
+  return { ok: true, oldDigest, newDigest: seal.contentSha256, seal }
 }
 
 /** Drop-in adoption helper for gates that already do

@@ -54,12 +54,15 @@ function checkIdentity(result: ReturnType<RealErlangAnalyzer["analyze"]>) {
     { name: "shape", owner: "arity_identity", arity: 3, clauses: 1, start: 6, end: 6 },
     { name: "commented", owner: "arity_identity", arity: 2, clauses: 1, start: 7, end: 9 },
   ])
-  assert.deepEqual(result.exports.map(e => ({ name: e.name, arity: e.arity })), [{ name: "pick", arity: 0 }, { name: "pick", arity: 1 }])
+  assert.deepEqual((result.exports ?? []).map(e => ({ name: e.name, arity: e.arity })), [{ name: "pick", arity: 0 }, { name: "pick", arity: 1 }])
   assert.equal(source.slice(functions[1].range.startIndex, functions[1].range.endIndex), "pick(0) -> zero;\npick(X) -> X.")
 }
 
 function checkCallIdentity(result: ReturnType<RealErlangAnalyzer["analyze"]>) {
-  const byTargetArity = (a: { target: string; arity: number }, b: { target: string; arity: number }) =>
+  // The comparator reads the analyzer's own rows, where `target` is optional (`source` and
+  // `target` are `string | undefined` on a relationship) — the shape it declared required
+  // both, so it could not be handed the array it sorts.
+  const byTargetArity = (a: { target?: string; arity?: unknown }, b: { target?: string; arity?: unknown }) =>
     `${a.target}/${a.arity}`.localeCompare(`${b.target}/${b.arity}`)
   // M59 (#825): every call edge carries the NAME-BEARING node's line — the
   // callee atom (local) or the function atom (remote, the chain's leaf) —

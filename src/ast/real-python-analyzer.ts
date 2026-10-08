@@ -27,10 +27,77 @@ function stripLeadingAt(text: string): string {
   return text.startsWith("@") ? text.slice(1) : text
 }
 
+/**
+ * Names the STORE has reserved, so a bare endpoint equal to one is indistinguishable from a
+ * synthetic scope. Derived from the indexer's own list rather than restated, because a
+ * second hand-maintained copy is exactly what standing rule R7 was written about: a copied
+ * list is correct on the day it is written and silently wrong the day the indexer grows.
+ *
+ * The list cannot be imported — `parallel-indexer.ts` is a downstream consumer, not a
+ * dependency of an analyzer, and importing it would invert the layering. So the names are
+ * declared here as the documented contract and `RESERVED_ENDPOINT_NAMES` is the single
+ * place to extend, with the source line named beside it. If the indexer's set grows, this
+ * one must grow with it; that is a stated obligation, not an accident.
+ *
+ * Measured over the whole derived population (5,984 python files, production parseFile):
+ * 7 emitted edges had a reserved endpoint, all from `SafeUUID.unknown`.
+ * @see src/ast/parallel-indexer.ts:3519 — `GENERIC_SOURCE_NAMES`
+ * @see validation/m60/ledger.json — rule R7
+ */
+const RESERVED_ENDPOINT_NAMES: ReadonlySet<string> = new Set([
+  "unknown",
+  "SCSS_FILE_SCOPE",
+  "window",
+  "exports",
+  "default",
+  "GlobalScope",
+])
+
+/**
+ * Publish a member name so it can never BE a reserved bare word.
+ *
+ * `exports` is the sharpest of the six after `unknown`: an `__all__` entry legitimately
+ * named `exports` is a real export, and an unqualified `exports` target is what the store
+ * treats as a synthetic scope. `default` is the same shape (`from mod import default` is
+ * legal Python).
+ *
+ * A name that is not reserved is returned UNCHANGED — this is not a blanket qualifier. The
+ * 88,535 `contains` edges this analyzer emits are published as bare members and resolve at
+ * 100.0%; qualifying all of them would have changed every one of them for no reason and
+ * broken the resolution the store already does by leaf name.
+ */
+function qualifyReservedEndpoint(name: string, owner: string): string {
+  return RESERVED_ENDPOINT_NAMES.has(name) ? `${owner}.${name}` : name
+}
+
 interface PythonScope {
   node: Node
   name: string
   kind: ASTEngine.SymbolKind
+}
+
+/**
+ * What this file PROVES about the names it uses, gathered before the walk so that a class
+ * declared ABOVE the import which proves its base still resolves. See
+ * `collectInterfaceBindings` for why the proof is the import and not the spelling.
+ */
+interface InterfaceBindings {
+  /** `from abc import ABC` / `ABCMeta` — an abstract base class declaration. */
+  abcNames: Set<string>
+  /** `from typing`/`typing_extensions import Protocol` — a structural interface. */
+  protocolNames: Set<string>
+  /** `from collections.abc import X` — the stdlib interface catalogue; all 25 exported
+   *  names are ABCs (measured against CPython's own `_collections_abc.py`: 7 declare
+   *  `metaclass=ABCMeta`, 18 inherit it from a base that does, and the one non-ABC class in
+   *  that module, `_CallableGenericAlias`, is not exported). */
+  collectionsAbcNames: Set<string>
+  /** `from abc import abstractmethod` and its three relatives. */
+  abstractDecoratorNames: Set<string>
+  /** dotted roots this file imports, so `abc.ABC` is self-proving once `abc` is bound. */
+  importRoots: Set<string>
+  /** classes THIS file declares abstract — `X.register(Y)` on one of them is a
+   *  conformance declaration with no inheritance behind it. */
+  localAbstractClasses: Set<string>
 }
 
 interface PythonContext {
@@ -47,9 +114,25 @@ interface PythonContext {
   functionSymbolIndex: Record<string, number>
   // O(1) instantiates check: names of in-file declared classes/enums
   declaredTypes: Set<string>
+  /**
+   * INCOMING_PY: the ROOT module of every import this file declares.
+   *
+   * Seeded by the SAME pre-pass that seeds `declaredTypes`, so it costs no additional
+   * walk — `preScan` already visits every node in the file and this is one `split` per
+   * import statement. It exists so `calls` can tell an EXTERNAL member apart from a
+   * dispatch through a receiver it cannot follow: `os.path.join` names `os.path`, a
+   * module attribute chain this file imported, and a consumer holding the imports can
+   * reach `join` through it; `recv.join` names a local whose type is written down
+   * nowhere. Both publish a leaf named `join`, and without this set the reason code
+   * cannot tell them apart — which would make the code assert "no static target" about
+   * the one shape that HAS one.
+   */
+  importRoots: Set<string>
   seenRels: Set<string>
   // (class\u001fattr) — one Property per instance attribute per class (PYD1)
   instanceAttrs: Set<string>
+  /** Set before the main walk; read by `extractClass` to decide implements-vs-extends. */
+  interfaceBindings?: InterfaceBindings
   currentModule: string | undefined
   currentClass: string | undefined
   /** PERL-MR15: the cross-file companion. Read from `AnalyzeContext.overrideCompanion`,
@@ -104,9 +187,62 @@ export const PYTHON_BUILTINS = new Set([
   "type", "vars", "zip", "__import__",
 ])
 
-const DENYLISTED_SYMBOL_NAMES = new Set([
-  "self", "cls", "this", "super", "None", "True", "False",
-])
+/**
+ * VERIFY_PY10 — REMOVED, with the measurement that removed it.
+ *
+ * This set gated the name on a `class_definition` and a `function_definition`, which is
+ * the one place it could not do any good: if the grammar produced a `def X` or a
+ * `class X` node, then `X` IS a declaration. The list reads as if it were written to keep
+ * synthetic scope names out of the symbol table, and it does that job elsewhere — but
+ * here it was filtering DECLARATIONS by name, and one of its four entries is a legal
+ * method name that a real framework ships.
+ *
+ *     django/template/loader_tags.py:71     def super(self):
+ *
+ * `super` is a builtin FUNCTION, so the gate skipped the whole `function_definition`
+ * branch — not just the symbol, but `ctx.currentFunction = "super"` and the exit frame
+ * that restores it. The walk then descended into that method's body with
+ * `currentFunction === undefined` and `currentClass === "BlockNode"`, which is the shape
+ * of a class body. Measured consequences, all in that one file, all from this one line:
+ *
+ *   LOSS        1 symbol (`BlockNode.super`) and its `contains` edge. `super` is not a
+ *               scratch name in django — `{{ block.super }}` is the documented template
+ *               API for it.
+ *   FABRICATION 1 symbol (`BlockNode.render_context`, a method LOCAL at L77) published as
+ *               a class member, because a local assignment inside a mis-scoped method
+ *               reaches the class-body Property branch.
+ *   DANGLING    7 `uses` edges with source `super` — `extractMemberUses` is a SECOND
+ *               walk with no denylist, so it bound the owner the main walk refused to
+ *               bind. The graph therefore carried edges naming a symbol that did not
+ *               exist, which is the "stored and compared against nothing" shape.
+ *   MISATTRIB   4 `calls` edges sourced to the CLASS instead of the method.
+ *
+ * The independent oracle found this as 4 `missing calls` + 5 `unexplained calls` + 1
+ * `missing contains` + 1 `unexplained contains` on django — 11 rows, 10 of them this one
+ * gate.
+ *
+ * BLAST RADIUS, measured before removing anything: every `def`/`class` declaration in all
+ * 5,364 code-bearing corpus files whose name is in this set. Exactly ONE — the `super`
+ * above. Zero named `self`, `cls`, `this`, `None`, `True` or `False`. (`None`, `True` and
+ * `False` are keywords, so they can never be a declaration name at all; `self`, `cls` and
+ * `this` are ordinary identifiers and simply do not occur in this corpus.) So the change
+ * is zero-delta on 5,363 of 5,364 files and fixes the 5,364th.
+ */
+
+/**
+ * INCOMING_PY / M14 §4 — the reason a `references` edge is at 0.95 rather than 1.0,
+ * keyed by the annotation POSITION the name was written in.
+ *
+ * Declared as a table rather than inlined at the push site because the position is
+ * already an input to that call and a table is the only spelling that cannot drift
+ * from the field it mirrors: `metadata.relationshipType` and `metadata.reasonCode`
+ * are both derived from `relType`, one lookup apart.
+ */
+const PY_REFERENCE_REASON: Record<string, string> = {
+  declared_type: "annotation-type",
+  return_type: "return-annotation",
+  instanceof_check: "instanceof-check",
+}
 
 /**
  * The python framework trigger surface (#747).
@@ -246,6 +382,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       patterns: {},
       functionSymbolIndex: {},
       declaredTypes: new Set(),
+      importRoots: new Set(),
       seenRels: new Set(),
       instanceAttrs: new Set(),
       currentModule: moduleName,
@@ -275,12 +412,33 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChildByType(n, "identifier")
         if (nameNode?.text) ctx.declaredTypes.add(nameNode.text)
       }
+      // INCOMING_PY — the import vocabulary, gathered in the walk that was already
+      // happening. `import a.b as c` roots at `a`; `from .m import x` names no package
+      // (a leading dot is not a root) and contributes nothing, exactly as
+      // `noteFramework` already rules.
+      if (n.type === "import_statement" || n.type === "import_from_statement") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "import" || c.text === "import") continue
+          if (c.type !== "dotted_name" && c.type !== "relative_import" && c.type !== "aliased_import") continue
+          if (c.text.startsWith(".")) continue
+          const first = c.type === "aliased_import" ? (c.childForFieldName("name") ?? c.namedChild(0)) : c
+          const root = first?.text.split(".")[0]
+          if (root) ctx.importRoots.add(root)
+        }
+      }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
         if (c) preScan(c)
       }
     }
     preScan(rootNode)
+
+    // Interface bindings, same argument as `preScan` above and for the same reason:
+    // `class C(ABC)` can sit ABOVE the `from abc import ABC` that proves the base is not a
+    // user class named ABC, and python resolves names at runtime rather than positionally.
+    ctx.interfaceBindings = this.collectInterfaceBindings(rootNode)
 
     // #748 (M49 dup-key family ruling, Option A — the same rule js/ts/vue
     // pinned): python binds the LAST definition of a name in one container
@@ -366,7 +524,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       switch (node.type) {
         case "class_definition": {
           const nameNode = this.findChildByType(node, "identifier")
-          if (nameNode && nameNode.text && !DENYLISTED_SYMBOL_NAMES.has(nameNode.text)) {
+          if (nameNode && nameNode.text) {
             this.extractClass(node, ctx)
             const prevClass = ctx.currentClass
             const prevFunc = ctx.currentFunction
@@ -389,7 +547,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // (an anonymous `async` token is child 0) — `async_function_definition`
           // never appears. Async-ness is detected via the token scan below.
           const nameNode = this.findChildByType(node, "identifier")
-          if (nameNode && nameNode.text && !DENYLISTED_SYMBOL_NAMES.has(nameNode.text)) {
+          if (nameNode && nameNode.text) {
             // Nested function inside another function body: scoped noise —
             // NOT a symbol, and its body's calls attribute to the enclosing
             // function (JS-family contract: locals/params/lambda-params are
@@ -471,7 +629,33 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of ctx.symbols) {
       const owner = s.ownerName
       if (owner && owner !== s.name) {
-        this.pushRel(ctx, owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range?.startLine)
+        // PY-23 (R7). The endpoint of this edge is a bare leaf, and a bare leaf can be a
+        // name the STORE has already reserved. `SafeUUID` in CPython's `uuid.py` is an Enum
+        // with a member literally named `unknown`:
+        //
+        //     class SafeUUID(Enum):
+        //         safe = 0
+        //         unsafe = -1
+        //         unknown = None
+        //
+        // which published `contains SafeUUID -> unknown`. `unknown` is the placeholder
+        // literal standing rule R7 forbids as an endpoint AND a member of the indexer's
+        // own `GENERIC_SOURCE_NAMES` (`src/ast/parallel-indexer.ts:3519`), so a real
+        // symbol and a synthetic scope became the same string, and nothing downstream can
+        // tell them apart.
+        //
+        // Measured over the whole derived population (5,984 files) this was 7 edges, all
+        // from this one construct: 1 `contains` and 6 `uses`, 4 of them in `uuid.py`
+        // itself. Found by the RESOLVED question of the six-questions instrument and by
+        // nothing else — no fixture, no mutant, no completeness gate, because the edge is
+        // structurally perfect and its endpoint is a real member of a real class.
+        //
+        // The fix is not to drop the edge: the containment is true and `SafeUUID.unknown`
+        // is navigable in Python. The fix is to publish the name the way every other
+        // member edge in this analyzer already does — qualified by its owner — so the
+        // endpoint is a real symbol path rather than a reserved bare word. Resolution then
+        // finds the member instead of the indexer's synthetic-scope list matching first.
+        this.pushRel(ctx, owner, qualifyReservedEndpoint(s.name, owner), ASTEngine.RelationshipType.Contains, 1.0, {}, s.range?.startLine)
       }
     }
 
@@ -485,6 +669,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // refs and member uses created above — leaves with an evidenceClass.
     this.extractDeclaredTypeRefs(rootNode, ctx.relationships, phantomDefs, ctx.moduleName)
     this.extractMemberUses(rootNode, ctx, phantomDefs)
+    this.extractVirtualRegistrations(rootNode, ctx)
     this.classifyEvidenceTier(ctx.relationships)
 
     const detectedFrameworks: string[] = PY_FRAMEWORK_ORDER.filter((f) => ctx.frameworks[f])
@@ -526,6 +711,366 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   // EXTRACTION METHODS
   // ========================================================================
 
+  /**
+   * What this FILE proves about the names it uses — the evidence an `implements` edge
+   * needs, gathered before the main walk because a class can precede the import that
+   * proves its base (python resolves names at runtime, not positionally; the same reason
+   * `preScan` exists above for forward references).
+   *
+   * WHY AN EDGE IS NEEDED AT ALL. Python has no `interface` keyword and no `implements`
+   * clause. Measured over the whole derived corpus (5,984 python files through production
+   * `parseFile`), the grammar produces 117 node types and NONE of
+   * `interface_declaration` / `protocol_declaration` / `abstract_class_declaration` /
+   * `implements_clause` / `trait_declaration`, against 21,008 `class_definition` nodes.
+   * So the construct cannot arrive as its own grammar node — it arrives as something INSIDE
+   * the base list, which is exactly where every other OO language puts `extends`.
+   *
+   * The base list therefore carries TWO distinct facts and the analyzer was publishing only
+   * one of them as `extends`:
+   *
+   *   class C(Base)       Base is a class.            -> extends
+   *   class C(Mapping)    Mapping is an INTERFACE.    -> implements
+   *
+   * The second line is not a python quirk. `collections.abc` is the standard library's
+   * interface catalogue and `typing.Protocol` is its structural-interface primitive; measured
+   * over the corpus, 100 class bases are proven to be one of these, 85 classes declare one
+   * with `metaclass=ABCMeta`, and 113 classes declare one by carrying `@abstractmethod`
+   * methods. `sqlite3/dbapi2.py:54` goes further and states conformance with NO inheritance
+   * at all — `collections.abc.Sequence.register(Row)`.
+   *
+   * WHY THIS IS A PRE-PASS AND NOT A NAME LOOKUP. The proof is the FILE'S OWN IMPORT, not a
+   * name's spelling. `ABC` is a legal class name a user can define, and 27 base occurrences
+   * of `Protocol` in this corpus are exactly that (24 of them inside CPython's own
+   * `typing.py`, which DEFINES the class it then names, plus asyncio's local `protocols`
+   * module). Accepting the spelling would have relabelled 27 `extends` edges that are
+   * correct. Every proof below is therefore either an import in this file, a dotted spelling
+   * whose root this file imported, or a class this file itself declared abstract.
+   */
+  private collectInterfaceBindings(rootNode: Node): InterfaceBindings {
+    const out: InterfaceBindings = {
+      abcNames: new Set(),
+      protocolNames: new Set(),
+      collectionsAbcNames: new Set(),
+      abstractDecoratorNames: new Set(),
+      importRoots: new Set(),
+      localAbstractClasses: new Set(),
+    }
+    // ONE ITERATIVE WALK, not two recursive ones.
+    //
+    // MEASURED, and this is the reason the shape is what it is. The first version did a
+    // recursive import scan and then a recursive abstract-class scan, both over the whole
+    // tree and both before the main walk. On a derived 400-file sample through the
+    // production path that cost +32.04% wall clock (36,426 ms -> 48,096 ms) against the
+    // e73c3e58e baseline, for 30 additional edges — +0.00% relationship payload. A 32%
+    // latency charge for 30 edges is a bad trade at any volume, and the brief is explicit
+    // that an addition regressing a budget is to be reported rather than absorbed.
+    //
+    // Two things make it cheap now. The walks are MERGED: the abstract-class question needs
+    // the import bindings, so a second pass existed only to sequence them, and the
+    // dependency is resolved per class AFTER the walk instead — each class records the raw
+    // evidence (does it name ABCMeta, which abstract-decorator leaves does its body use) and
+    // the verdict is computed once the file's bindings are known. And the traversal is
+    // ITERATIVE, matching this file's own stated contract ("Iterative stack traversal (no
+    // recursion, no call-stack explosions)") — the recursive version was a latent stack
+    // overflow on a deeply nested file, which is a correctness risk a timing number does not
+    // show.
+    const pendingClasses: { name: string; namesAbcMeta: boolean; decoLeaves: Set<string>; decoDotted: Set<string> }[] = []
+    // class name -> its recorded raw evidence. A name-keyed map, which is what lets the
+    // decorator branch below attach to the class it is lexically inside without an exit frame.
+    const pendingByName = new Map<string, { name: string; namesAbcMeta: boolean; decoLeaves: Set<string>; decoDotted: Set<string> }>()
+    const stack: Node[] = [rootNode]
+    while (stack.length) {
+      const n = stack.pop()!
+      if (n.type === "import_statement") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c?.type === "dotted_name") out.importRoots.add(c.text.split(".")[0])
+        }
+      } else if (n.type === "import_from_statement") {
+        const modNode = n.childForFieldName("module_name")
+        const mod = modNode?.text ?? ""
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          // `.id`, not object identity: web-tree-sitter hands back a FRESH wrapper
+          // on every access, so `c === modNode` was never true and the module name
+          // of `from X import a` was read as a bound name — the guard this comment
+          // describes had been a no-op since the day it was written (hygiene class
+          // KAD2/TSD2, caught by script/m14/verify-analyzer-hygiene.ts).
+          if (!c || c.id === modNode?.id) continue
+          // `from X import a, b` — each named child after the module is a bound name.
+          // An aliased import makes TWO names matter and conflating them is a real bug this
+          // fixture caught: `from abc import ABC as BaseABC` PROVES the import name `ABC`
+          // and BINDS the alias `BaseABC`. Testing the bound name against the literal
+          // "ABC" silently failed to prove it, so `class C(BaseABC)` stayed `extends` — the
+          // one shape that is unambiguously an abstract base class, mislabelled by an
+          // alias.
+          let imported: string | undefined
+          let bound: string | undefined
+          if (c.type === "identifier") { imported = c.text; bound = c.text }
+          else if (c.type === "dotted_name") { imported = c.text; bound = c.text.slice(c.text.lastIndexOf(".") + 1) }
+          else if (c.type === "aliased_import") {
+            const alias = c.childForFieldName("alias")
+            const nm = c.childForFieldName("name")
+            imported = nm?.text
+            bound = alias?.text ?? (imported ? imported.slice(imported.lastIndexOf(".") + 1) : undefined)
+          }
+          if (!imported || !bound) continue
+          const importedLeaf = imported.slice(imported.lastIndexOf(".") + 1)
+          if (mod === "abc") {
+            if (importedLeaf === "ABC" || importedLeaf === "ABCMeta") out.abcNames.add(bound)
+            if (importedLeaf === "abstractmethod" || importedLeaf === "abstractproperty" ||
+                importedLeaf === "abstractclassmethod" || importedLeaf === "abstractstaticmethod") {
+              out.abstractDecoratorNames.add(bound)
+            }
+          } else if (mod === "typing" || mod === "typing_extensions") {
+            // typing_extensions is the backport and is what a library still supporting 3.7
+            // imports; measured on this corpus, pydantic writes
+            // `from typing_extensions import Protocol` in 21 of its base lists. Accepting
+            // only `typing` would have left the corpus's largest source of Protocol
+            // declarations relabelled as `extends`.
+            if (importedLeaf === "Protocol") out.protocolNames.add(bound)
+          } else if (mod === "collections.abc") {
+            out.collectionsAbcNames.add(bound)
+          }
+        }
+      } else if (n.type === "class_definition") {
+        // Record the class's RAW abstractness evidence; the verdict waits for the file's
+        // bindings, which is the only ordering the single walk has to respect.
+        const nameNode = this.findChildByType(n, "identifier")
+        let namesAbcMeta = false
+        const args = this.findChildByType(n, "argument_list")
+        if (args) {
+          for (let i = 0; i < args.namedChildCount; i++) {
+            const a = args.namedChild(i)
+            if (!a) continue
+            if (a.type === "keyword_argument") {
+              const kn = a.childForFieldName("name")?.text
+              const kv = a.childForFieldName("value")
+              if (kn === "metaclass") {
+                if (this.baseClassLeaf(kv) === "ABCMeta" || this.dottedTail(kv) === "abc.ABCMeta") namesAbcMeta = true
+              }
+              continue
+            }
+            if (this.baseClassLeaf(a) === "ABCMeta") namesAbcMeta = true
+          }
+        }
+        if (nameNode?.text) {
+          const entry = { name: nameNode.text, namesAbcMeta, decoLeaves: new Set<string>(), decoDotted: new Set<string>() }
+          pendingByName.set(entry.name, entry)
+          pendingClasses.push(entry)
+        }
+      } else if (n.type === "decorator") {
+        // Attribute the decorator to the ENCLOSING CLASS by walking up the parent chain and
+        // stopping at the first `function_definition`.
+        //
+        // A method's `@abstractmethod` declares the METHOD abstract, not the class, so
+        // crediting it to the class would make every class containing one abstract method an
+        // interface - which is a different claim and a much larger one. The stop-at-function
+        // rule is also what keeps this correct inside an ITERATIVE walk: an explicit node
+        // stack has no exit frame to pop a scope from, and the first version used one,
+        // which silently credited every method decorator in a class to the class.
+        //
+        // `decorator.parent` is the `decorated_definition`, whose `definition` field names
+        // what is actually decorated; it must be a `function_definition` for this decorator
+        // to say anything about a class's abstractness at all.
+        const owner = n.parent
+        if (!owner || owner.type !== "decorated_definition") continue
+        if (owner.childForFieldName("definition")?.type !== "function_definition") continue
+        const classNode = owner.parent
+        if (!classNode || classNode.type !== "class_definition") continue
+        const className = this.findChildByType(classNode, "identifier")?.text
+        if (!className) continue
+        let entry = pendingByName.get(className)
+        if (!entry) {
+          entry = { name: className, namesAbcMeta: false, decoLeaves: new Set(), decoDotted: new Set() }
+          pendingByName.set(className, entry)
+          pendingClasses.push(entry)
+        }
+        const first = n.namedChild(0)
+        if (first?.type === "identifier") entry.decoLeaves.add(first.text)
+        else {
+          const dotted = this.dottedTail(n)
+          if (dotted) entry.decoDotted.add(dotted)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+
+    // Now that the file's bindings are known, settle each class. O(number of classes), not
+    // O(tree).
+    for (const c of pendingClasses) {
+      if (!c.name) continue
+      if (c.namesAbcMeta) { out.localAbstractClasses.add(c.name); continue }
+      for (const leaf of c.decoLeaves) {
+        if (out.abstractDecoratorNames.has(leaf)) { out.localAbstractClasses.add(c.name); break }
+      }
+      if (out.localAbstractClasses.has(c.name)) continue
+      for (const d of c.decoDotted) {
+        if (out.importRoots.has("abc") && d.startsWith("abc.")) { out.localAbstractClasses.add(c.name); break }
+      }
+    }
+    return out
+  }
+
+/**
+   * Is this class base an INTERFACE rather than a class?
+   *
+   * Returns the proving module when it is, and null when it is not — the caller then emits
+   * `extends`. One base, one edge, and the label is the most specific true label: this is
+   * the same decision the C# lane made on the same construct
+   * (`src/ast/real-csharp-analyzer.ts:1371-1380`, `isImplements ? Implements : Extends`),
+   * and it is why publishing BOTH labels is not done here either — two edges for one
+   * syntactic fact double the graph without adding information, which is the argument this
+   * lane already used to rule `references` out.
+   *
+   * `typing.Generic` is measured and EXCLUDED: 291 base occurrences in this corpus, more
+   * than `ABC` and `Protocol` combined, and it is a type-parameter marker, not an
+   * interface. Accepting it would have made `implements` the largest type in the analyzer
+   * and been wrong about every one of those edges.
+   *
+   * PY-25 — THAT EXCLUSION WAS DEAD CODE, and mutation is what found it. This method
+   * originally carried an explicit `leaf === "Generic"` refusal. Mutant M5b deleted the
+   * clause outright and **every one of the 21 python fixtures still passed**, because
+   * `Generic` is never in `abcNames`, `protocolNames` or `collectionsAbcNames` — only
+   * `Protocol` is carried from `typing` — so the clause could never have fired. A dead
+   * branch is exactly what the workstream says source derivation cannot see ("a branch that
+   * never matches is dead code and derivation cannot see it"), and this is that case found
+   * by deliberately breaking the code rather than by reading it.
+   *
+   * So the clause is deleted, because leaving a guard that guards nothing is worse than
+   * not having it: it advertises a protection that a future edit can remove without any
+   * test noticing. The real mechanism is one line above in `collectInterfaceBindings` —
+   * only `Protocol` is carried out of `typing` — and the measurement that keeps it that
+   * way is in the fixture, as a forbid row on `GenericOnly -> Generic` which fails the
+   * moment anyone adds `Generic` to the typing set.
+   */
+  private interfaceBaseKind(base: Node, ib: InterfaceBindings): string | null {
+    const leaf = this.baseClassLeaf(base)
+    if (!leaf) return null
+    // A DOTTED base is a DIFFERENT BINDING from the bare name, and the bare-name proofs
+    // must not be consulted for it.
+    //
+    // PY-26, found by the fixture row written to kill a different mutant. Given
+    //
+    //     from typing import Protocol
+    //     class Unbound(vendor_base.Protocol): ...
+    //
+    // the bare route fired first — `Protocol` IS a proven name in this file — and relabelled
+    // `vendor_base.Protocol`, which is some third-party module's own class called Protocol,
+    // that this analyzer has never read. `typing.Protocol` and `vendor_base.Protocol` share
+    // a leaf and nothing else. Every routing decision here has to be made on the SHAPE of
+    // the base, and the shape is the whole question: `Protocol` proves `Protocol`,
+    // `abc.ABC` proves itself once `abc` is bound, and `vendor_base.Protocol` proves
+    // nothing until this file has bound `vendor_base`.
+    const isDotted = base.type === "attribute"
+    if (!isDotted) {
+      if (ib.abcNames.has(leaf)) return "abc"
+      if (ib.protocolNames.has(leaf)) return "typing"
+      if (ib.collectionsAbcNames.has(leaf)) return "collections.abc"
+    }
+    // The dotted spellings are self-proving once the ROOT is importable in this file:
+    // `abc.ABC` cannot be a user class when the file has `import abc` in it.
+    const dotted = this.dottedTail(base)
+    if (dotted) {
+      const root = dotted.split(".")[0]
+      if (ib.importRoots.has(root)) {
+        if (dotted === "abc.ABC" || dotted === "abc.ABCMeta") return "abc"
+        if (dotted === "typing.Protocol") return "typing"
+        if (root === "collections" && dotted.startsWith("collections.abc.")) return "collections.abc"
+      }
+    }
+    return null
+  }
+
+  /** The dotted text of a name expression: `abc.ABC` -> "abc.ABC", `X` -> null. */
+  private dottedTail(n: Node | null | undefined): string | null {
+    if (!n) return null
+    if (n.type === "identifier") return null
+    if (n.type === "attribute") {
+      const obj = n.childForFieldName("object")
+      const attr = n.childForFieldName("attribute")
+      if (!obj || !attr) return null
+      const head = obj.type === "identifier" ? obj.text : this.dottedTail(obj)
+      return head ? `${head}.${attr.text}` : attr.text
+    }
+    if (n.type === "decorator") {
+      const first = n.namedChild(0)
+      return first ? this.dottedTail(first) : null
+    }
+    return null
+  }
+
+  /**
+   * `SomeABC.register(SomeClass)` — Python's conformance declaration with NO inheritance.
+   *
+   * This is the one form where the language states conformance outright, and it is why the
+   * `implements` verdict is GAP rather than RULED. But the SPELLING `.register(` is a
+   * homonym: measured over 5,984 corpus files there are 493 `X.register(Y)` calls and only
+   * ONE whose receiver is provably an abstract base class. The rest are `site.register` (241),
+   * `selector.register` (21), `SyncManager.register` (17), `self.register` (17) and Flask's
+   * `blueprint.register` — emitting from the bare spelling would have fabricated ~492 wrong
+   * edges and poisoned bb_graph on any project that uses a plugin registry. So the receiver
+   * must be proven, and the surviving site is real:
+   *
+   *     cpython-stdlib/sqlite3/dbapi2.py:54   collections.abc.Sequence.register(Row)
+   *
+   * Confidence is 0.9, not 1.0: the receiver is proven but the ARGUMENT is read as a leaf
+   * name, and `Row` is a class this analyzer may not have read the declaration of.
+   */
+  private extractVirtualRegistrations(rootNode: Node, ctx: PythonContext): void {
+    const ib = ctx.interfaceBindings
+    if (!ib) return
+    const walk = (n: Node): void => {
+      if (n.type === "call") {
+        const fn = n.childForFieldName("function")
+        if (fn?.type === "attribute") {
+          const attr = fn.childForFieldName("attribute")
+          if (attr?.text === "register") {
+            const recv = fn.childForFieldName("object")
+            let kind: string | null = null
+            const recvDotted = this.dottedTail(recv)
+            const recvLeaf = this.baseClassLeaf(recv)
+            if (recvDotted && ib.importRoots.has(recvDotted.split(".")[0])) {
+              if (recvDotted === "abc.Sequence" || recvDotted === "abc.Iterable" ||
+                  recvDotted === "abc.Container" || recvDotted === "abc.Hashable" ||
+                  recvDotted === "abc.Sized" || recvDotted === "abc.Mapping" ||
+                  recvDotted === "abc.Set") kind = "abc"
+              else if (recvDotted === "collections.abc.Sequence" || recvDotted === "collections.abc.Iterable" ||
+                       recvDotted === "collections.abc.Mapping" || recvDotted === "collections.abc.Set" ||
+                       recvDotted === "collections.abc.Hashable") kind = "collections.abc"
+            } else if (recvLeaf) {
+              if (ib.collectionsAbcNames.has(recvLeaf)) kind = "collections.abc"
+              else if (ib.localAbstractClasses.has(recvLeaf)) kind = "declared-abstract-class"
+            }
+            if (kind) {
+              const args = n.childForFieldName("arguments")
+              const first = args?.namedChild(0)
+              const target = first ? this.baseClassLeaf(first) : null
+              if (target && target !== "unknown") {
+                const owner = ctx.currentClass ?? ctx.moduleName
+                this.pushRel(ctx, target, recvLeaf ?? recvDotted ?? "", ASTEngine.RelationshipType.Implements, 0.9, {
+                  pythonSpecific: true,
+                  interfaceKind: kind,
+                  reasonCode: "virtual-registration",
+                  note: "declared conformance via ABC.register, with no inheritance in the base list",
+                }, this.nodeLine(n))
+                void owner
+              }
+            }
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(rootNode)
+  }
+
   private extractClass(node: Node, ctx: PythonContext) {
     const nameNode = this.findChildByType(node, "identifier")
     if (!nameNode?.text) return
@@ -559,8 +1104,24 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // fabricated self-loop. Skip it (the leaf text is still recorded in
         // baseClasses metadata for payload honesty).
         if (baseLeaf !== className) {
-          this.pushRel(ctx, className, baseLeaf, ASTEngine.RelationshipType.Extends, 1.0, {
+          // `implements`, not `extends`, when this file proves the base is an interface.
+          // RELABEL, not addition: one base, one edge, most specific true label. Publishing
+          // both would put two rows for one syntactic fact into `brain_relationship` for
+          // every one of these, and the six-questions instrument's pairwise co-occurrence
+          // measure would immediately report an `extends|implements` cell that means
+          // "this analyzer has not decided". The C# lane made the same call on the same
+          // construct (real-csharp-analyzer.ts:1371-1380).
+          //
+          // Confidence is 1.0 and not a heuristic, and the reason is a measurement rather
+          // than a convention: the proof is an IMPORT IN THIS FILE, so the source itself
+          // asserts both that the name is the stdlib's and that the class conforms to it.
+          // There is no case where the import exists and the claim is false.
+          const ifaceKind = ctx.interfaceBindings ? this.interfaceBaseKind(arg, ctx.interfaceBindings) : null
+          this.pushRel(ctx, className, baseLeaf, ifaceKind
+            ? ASTEngine.RelationshipType.Implements
+            : ASTEngine.RelationshipType.Extends, 1.0, {
             pythonSpecific: true,
+            ...(ifaceKind ? { interfaceKind: ifaceKind, reasonCode: "interface-base-proven" } : {}),
           }, this.nodeLine(arg))
         }
       }
@@ -659,7 +1220,37 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // when the VALUE is a runtime call. Function-valued (`f = some_fn`)
           // is already covered by `identifier`; excluded remain only the
           // multi-target tuple forms.
-          if (right && (right.type === "string" || right.type === "integer" ||
+          //
+          // PY-27, found by the independent differential rather than by a gate: `-1`
+          // parses as a `unary_operator` wrapping an `integer`, not as an `integer`,
+          // so `unsafe = -1` failed the constant test and CPython's own
+          // `class SafeUUID(Enum)` published no member for it. Measured over the whole
+          // derived population: 1 site in 253 enum members (132 enum classes, 5,984
+          // files) — small, and a real member missing from the graph in the standard
+          // library, which is worse than the count suggests.
+          //
+          // Only a SIGNED NUMERIC literal qualifies. `~x` and `not x` are also
+          // `unary_operator` nodes and neither is constant, so the operand is what
+          // decides and the operator is checked rather than assumed.
+          //
+          // The operator token is an ANONYMOUS child: `unary_operator` over `-1` has
+          // `child(0) = "-"` with `isNamed === false` and `namedChild(0) = "1"`. A scan
+          // over named children therefore finds no operator and every signed numeric
+          // stayed excluded - which is the same off-by-a-child mistake the census made
+          // twice in this session (see script/m14/python-construct-census.mts). Reading
+          // the grammar's own child list, named and anonymous, is what fixes it.
+          const signedNumeric = ((): boolean => {
+            if (!right || right.type !== "unary_operator") return false
+            let sign = false
+            for (let k = 0; k < right.childCount; k++) {
+              const c = right.child(k)
+              if (c?.type === "-" || c?.type === "+") sign = true
+            }
+            if (!sign) return false
+            const operand = right.namedChild(right.namedChildCount - 1)
+            return !!operand && (operand.type === "integer" || operand.type === "float")
+          })()
+          if (right && (signedNumeric || right.type === "string" || right.type === "integer" ||
               right.type === "float" || right.type === "true" || right.type === "false" ||
               right.type === "none" || right.type === "identifier" || right.type === "call")) {
             ctx.symbols.push({
@@ -1094,6 +1685,27 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const left = node.namedChild(0)
     if (!left) return
 
+    // INCOMING_PY: A TARGET WITH NO NAME IS NOT A SYMBOL.
+    //
+    // tree-sitter is error-tolerant and hands an `assignment` a named child even when
+    // the text before `=` is not an identifier at all. `Int DEFINITIONS ::= BEGIN` —
+    // ASN.1 notation, which the `otp` corpus carries under a `.py` extension in 29
+    // files — parses as an assignment whose LHS is a zero-width, EMPTY identifier, and
+    // both the module-Variable path and the class-Property path published it:
+    //
+    //     { name: "", kind: "variable", startLine: 27, startIndex: 731, endIndex: 731 }
+    //
+    // A symbol whose name is the empty string is not a weak symbol, it is a node that
+    // joins to nothing and can be counted, displayed and matched by every consumer
+    // downstream — and the workstream's completion condition names empty names as a
+    // failure alongside unknown symbols. Measured over the 679-file INCOMING_PY
+    // corpus, `extractAssignment` published 2 of them, both in
+    // `otp/lib/asn1/examples/Int.py`; a guard on the name removes exactly those two
+    // and changes nothing else, because the tree carries no other name for them.
+    //
+    // The honest state is ABSENCE (R7's rule), not `""`.
+    if (left.text.length === 0) return
+
     // Instance attribute write: `self.host = ...` inside a method. The LHS is
     // an `attribute` node (object + attr), NOT an identifier — the pre-M14
     // code required `left.type === "identifier"` and therefore never reached
@@ -1151,26 +1763,50 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // that has nothing to do with the author. A list and a tuple are the same
       // declaration to every tool that reads `__all__`, including `from mod import *`.
       const right = node.childForFieldName("right") ?? node.namedChild(node.namedChildCount - 1)
-      if (right && (right.type === "list" || right.type === "tuple")) {
-        for (let i = 0; i < right.namedChildCount; i++) {
-          const child = right.namedChild(i)
+      // INCOMING_PY: `expression_list` is the THIRD spelling, and it was the one still
+      // missing. PY-14 added `tuple`; the grammar has a separate node for a bare
+      // comma-separated RHS with no brackets at all:
+      //
+      //     __all__ = "a", "b"          -> (expression_list (string) (string))
+      //
+      // which is a legal module-level export declaration — `from mod import *` honours
+      // it identically to the bracketed spellings — and published NOTHING, because the
+      // allowlist read `list` or `tuple` and `expression_list` is neither. Measured on
+      // CPython 3.10's own stdlib: `__all__` is assigned in 238 files and **9 of them
+      // use this spelling** (`asyncio/coroutines.py` line 1 is
+      // `__all__ = 'coroutine', 'iscoroutinefunction', 'iscoroutine'`), so 3.8% of the
+      // standard library's declared public surfaces were invisible for a reason that
+      // has nothing to do with the author. On the pinned fixtures corpus the count is
+      // **0** — no `__all__` there uses this shape — and that is reported as 0 rather
+      // than folded into the stdlib number, because a measurement from outside the
+      // pinned corpus is a different measurement.
+      //
+      // `__all__ = (a + b + [...])` — a concatenation — stays a declared boundary, as
+      // does a comprehension: neither has a statically knowable member list.
+      const dunderAllContainer = right
+        ? (right.type === "list" || right.type === "tuple" || right.type === "expression_list") ? right : undefined
+        : undefined
+      if (dunderAllContainer) {
+        const form = dunderAllContainer.type
+        for (let i = 0; i < dunderAllContainer.namedChildCount; i++) {
+          const child = dunderAllContainer.namedChild(i)
           if (child && child.type === "string") {
             const exportName = this.unquote(child)
             if (exportName) {
               // `form` records WHICH `__all__` spelling declared this name, alongside the
-              // same fact on the relationship edge. `list` and `tuple` are one declaration
-              // to `from mod import *`, so this is provenance rather than meaning — and it
-              // is what lets PY-14's revert be expressed as a shape instead of as a list
-              // of fixture strings.
-              ctx.exports.push({ name: exportName, type: "list_item", form: right.type })
+              // same fact on the relationship edge. `list`, `tuple` and a bare
+              // `expression_list` are one declaration to `from mod import *`, so this is
+              // provenance rather than meaning — and it is what lets PY-14's revert be
+              // expressed as a shape instead of as a list of fixture strings.
+              ctx.exports.push({ name: exportName, type: "list_item", form })
               this.pushRel(ctx, ctx.moduleName, exportName, ASTEngine.RelationshipType.Exports, 1.0, {
                 pythonSpecific: true,
-                // WHICH SPELLING declared the export. `list` and `tuple` are the same
-                // declaration to `from mod import *`, so the edge is the same either way —
-                // but a reader triaging a surface wants to know that a module declares it
+                // WHICH SPELLING declared the export. All three are the same declaration
+                // to `from mod import *`, so the edge is the same either way — but a
+                // reader triaging a surface wants to know that a module declares it
                 // twice in two forms, and it gives the mutant harness a way to express
                 // PY-14's revert generically instead of by naming fixture strings.
-                dunderAllForm: right.type,
+                dunderAllForm: form,
               }, this.nodeLine(child))
             }
           }
@@ -1346,13 +1982,58 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Instantiates, 0.9, {
         pythonSpecific: true,
         qualified: fullCallee,
+        // M14 §4: a sub-1.0 confidence must carry a machine-readable reason code, and
+        // for python the reason is worth naming because it is the whole narrowing —
+        // the class is one THIS parse declared, so the callee is its constructor and not
+        // merely something that happens to be spelled with a capital.
+        reasonCode: "in-file-class-constructor",
       }, this.nodeLine(calleeLeaf))
       return
     }
 
+    // INCOMING_PY — WHY THE TARGET IS NOT DISPATCHABLE, in machine-readable form.
+    //
+    // This is the lane's whole subject. Python resolves a callee at RUNTIME through the
+    // receiver's type and the MRO, so `self.m()` names a method whose defining class is
+    // a fact about the caller of `m`, not about this file. The lane was already emitting
+    // the honest NAME (PY-11: dropping it loses the fact), but it emitted the name with
+    // nothing saying WHICH of the three situations produced it, and a consumer reading
+    // `calls f -> g` cannot tell a call it can trust from a call it cannot.
+    //
+    // M14 §4 is the contract that says so: any relationship at confidence < 1.0 must
+    // carry a reason code, not just a number. Measured before this line over the
+    // 679-file INCOMING_PY corpus: 29,877 `calls` edges at 0.9, **0 of them carrying a
+    // reason code**. The partition those codes express, measured on the same corpus:
+    //
+    //   in-file-callee        the leaf names a symbol this parse declared
+    //   dispatch-on-parameter `self.m()` / `cls.m()` — the receiver is the implicit
+    //                        first parameter, so the target class is decided by
+    //                        whoever constructed the instance. NO static target.
+    //   dispatch-on-receiver  `recv.m()` where recv is a local or a parameter — the
+    //                        receiver's type is not written down. NO static target.
+    //   external-member-call  `os.path.m()` — the receiver is rooted at a module THIS
+    //                        file imported, so the member is reachable through the
+    //                        import edge even though its definition is not in view.
+    //   bare-name-callee      `f(...)` — the name is a value, and may equally be a
+    //                        module global, an injected dependency, or `from x import *`.
+    //
+    // `external-member-call` is separated from `dispatch-on-receiver` because they are
+    // opposite facts and merging them makes the code lie in one direction: `os.path.join`
+    // HAS a reachable target (the import says so) and calling it unrecoverable would
+    // teach a consumer to discard the edges it should follow.
+    //
+    // The edge is still emitted in every case, because the name IS what the source
+    // wrote; what changes is that the uncertainty is now a field rather than an
+    // absence, and `bb_graph` can decline to walk an edge it cannot justify.
+    const dispatchClass = fullCallee.includes(".")
+      ? (fullCallee.startsWith("self.") || fullCallee.startsWith("cls.")
+          ? "dispatch-on-parameter"
+          : ctx.importRoots.has(fullCallee.split(".")[0]!) ? "external-member-call" : "dispatch-on-receiver")
+      : "bare-name-callee"
     this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Calls, 0.9, {
       pythonSpecific: true,
       qualified: fullCallee,
+      reasonCode: dispatchClass,
     }, this.nodeLine(calleeLeaf))
   }
 
@@ -1422,8 +2103,26 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           const gpFn = gpIsCall ? gp!.namedChild(0) : undefined
           const isReceiverOfCall = gpIsCall && !!gpFn && gpFn.type === "attribute" && gpFn.startIndex === n.startIndex && gpFn.endIndex === n.endIndex
           if (!isAssignLhs && !isGpAssignLhs && !isAugLhs && !isCallFn && !isReceiverOfCall) {
-            this.pushRel(ctx, inFn, leaf.text, ASTEngine.RelationshipType.Uses, 0.9, {
+            // PY-23 (R7), the same defect as the `contains` fix above and the same
+            // construct: `SafeUUID.unknown` in CPython's `uuid.py` is a member read whose
+            // LEAF is `unknown`, publishing `uses __init__ -> unknown`. Six such edges
+            // across 5,984 corpus files, four of them in `uuid.py`.
+            //
+            // The qualifier is the receiver when the receiver is a type this file DECLARES,
+            // and only then. `SafeUUID.unknown` names a member of a class the analyzer has
+            // read, so `SafeUUID.unknown` is the navigable name. `self.unknown` is
+            // instance state the analyzer has not seen declared anywhere, and inventing an
+            // owner for it would be the fabrication R7 exists to stop — so a reserved leaf
+            // under a receiver the analyzer cannot vouch for keeps its bare spelling and is
+            // counted by the six-questions instrument instead of being quietly qualified.
+            const recv = n.namedChild(0)
+            const recvName = recv && recv.type === "identifier" ? recv.text : undefined
+            const qualified = recvName && ctx.declaredTypes.has(recvName)
+              ? qualifyReservedEndpoint(leaf.text, recvName)
+              : leaf.text
+            this.pushRel(ctx, inFn, qualified, ASTEngine.RelationshipType.Uses, 0.9, {
               pythonSpecific: true, isMemberRead: true,
+              ...(qualified !== leaf.text ? { qualifiedTarget: true, receiver: recvName } : {}),
             }, this.nodeLine(leaf))
           }
         }
@@ -1452,6 +2151,22 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // survive the collection.
     const collectTypeNodes = (n: Node, out: Node[]): void => {
       if (n.type === "identifier") {
+        // INCOMING_PY: an identifier with NO TEXT names nothing, and an edge endpoint
+        // that names nothing is worse than a weak one — it is a row every consumer can
+        // count, join and display while pointing at no node. tree-sitter recovers a
+        // zero-width identifier wherever the grammar is damaged, and an error-tolerant
+        // parse of non-python under a `.py` extension produces those by the hundred:
+        // `small SmallInt ::= 17` (ASN.1, `otp/lib/asn1/examples/Int.py`) parses as an
+        // assignment AND as a `type` clause holding an empty identifier, which
+        // published `references asn2 -> ` — a real relationship row with an empty
+        // target. `pushRel`'s `if (!source || !target) return` guard cannot catch it,
+        // because this walk builds its rows directly and never goes through it.
+        //
+        // The honest state is ABSENCE: there is no type name in the source, so there is
+        // no reference to publish. Measured over the 679-file INCOMING_PY corpus with
+        // the R7 half of `script/m60/python-resolution-census.ts` widened to convict an
+        // EMPTY value as well as a placeholder literal.
+        if (n.text.length === 0) return
         if (!PRIMITIVES.has(n.text) && !out.some((x) => x.text === n.text)) out.push(n)
         return
       }
@@ -1460,6 +2175,36 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         const c = n.namedChild(i)
         if (c) collectTypeNodes(c, out)
       }
+    }
+
+    /**
+     * INCOMING_PY — the QUALIFIER an annotated type was written with, or nothing.
+     *
+     * `def f(t: pa.Table)` names the type `Table` and writes the qualifier `pa`. The
+     * leaf is the target, which is right; the qualifier is what makes it findable, and
+     * it was discarded exactly as `unittest.TestCase` was on `extends` and `pa.Table`
+     * was on `uses`. Measured over the 679-file INCOMING_PY corpus before this line,
+     * **1,498 `references` edges, 331 (22.1%) resolved in-file, 553 (36.9%) through an
+     * import, and 614 (41.0%) to nothing** — the worst in-file ratio of any type the
+     * lane emits, and the annotation case is where it is cheapest to fix because the
+     * qualifier is a PARENT of the identifier, not a sibling of it.
+     *
+     * `dotted_name` and `attribute` are the two nodes a qualified type annotation
+     * parses as (a parameter annotation gives `attribute`, a `dotted_name` where the
+     * grammar emits one), and in both the identifier this collector reaches is the
+     * LAST named child — the same leaf convention `callLeafName` and `baseClassLeaf`
+     * already use, and for the same reason: `pa.Table` names `Table`. Returns undefined
+     * for a bare identifier, which is most annotations and gains nothing by being
+     * spelled, and for the RECEIVER identifier of the chain, which is a module alias
+     * rather than the type being named.
+     */
+    const typeQualifier = (n: Node): string | undefined => {
+      const p = n.parent
+      if (!p || (p.type !== "dotted_name" && p.type !== "attribute")) return undefined
+      if (p.namedChildCount === 0) return undefined
+      const leaf = p.namedChild(p.namedChildCount - 1)
+      if (!leaf || leaf.startIndex !== n.startIndex || leaf.endIndex !== n.endIndex) return undefined
+      return p.text
     }
 
     const resolveSource = (start: Node): string => {
@@ -1512,13 +2257,32 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           const key = `${source}|${t}|${relType}`
           if (emitted.has(key)) continue
           emitted.add(key)
+          const qualifier = typeQualifier(tn)
           relationships.push({
             source,
             target: t,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.95,
             ...(this.nodeLine(tn) ? { line_number: this.nodeLine(tn)! } : {}),
-            metadata: { relationshipType: relType },
+            // INCOMING_PY / M14 §4: `relationshipType` already said WHICH annotation
+            // position the name was written in, and it is exactly the reason the edge is
+            // at 0.95 rather than 1.0 — an annotation is a claim by the author about a
+            // type, and a claim is not a declaration. Measured over the 679-file corpus
+            // before this line: 1,498 `references` edges at 0.95, 0 with a reason code.
+            // `reasonCode` mirrors the position so the code is queryable on its own,
+            // and the two can never drift because they are set from one variable.
+            //
+            // `qualified` is the qualifier the annotation was written with (`pa.Table`),
+            // when it had one — same field, same meaning and same reason as `extends`'
+            // and `uses`'. It goes INSIDE metadata, which is where the other three put
+            // it: `calls` has carried `metadata.qualified` since PY-11, and a field
+            // that lives at the top level on one type and in metadata on another is two
+            // fields with one name, which is a consumer bug waiting to happen.
+            metadata: {
+              relationshipType: relType,
+              reasonCode: PY_REFERENCE_REASON[relType] ?? "declared-type",
+              ...(qualifier ? { qualified: qualifier } : {}),
+            },
           })
         }
       }
@@ -1707,7 +2471,15 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           return inFile || !!overrideCompanion?.get(b)?.has(s.name)
         })
         if (declaring) {
-          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${declaring}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, {}, s.range?.startLine)
+          // INCOMING_PY / M14 §4: 0.95 is below 1.0, so this edge owes a reason code
+          // like every other one, and the reason it carries is the strongest claim the
+          // lane makes: the target is not a guess about a module it has not read, it is
+          // the first base in MRO order that DECLARES this method — a fact about code
+          // in front of it. Measured over the 679-file INCOMING_PY corpus before this
+          // line: 670 `overrides` edges below 1.0 and 81 of them (the verified tier)
+          // carried no reason code, so a consumer could not tell a verified MRO edge
+          // from the `first-parent-guess` tier except by reading the confidence.
+          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${declaring}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, { reasonCode: "mro-base-declares-method" }, s.range?.startLine)
           continue
         }
         // `object.__init__` is the one external override that is a FACT and not a
@@ -1792,65 +2564,18 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (firstUnread !== undefined && !overrideCompanion?.has(firstUnread)) {
           this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${firstUnread}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.5, { reasonCode: "first-parent-guess" }, s.range?.startLine)
         }
-        // No base declares it, so this is a guess. Guess the best candidate — and the
-        // best candidate is NOT always the leftmost.
-        //
-        // A base that is declared in THIS file and lacks the name is evidence of
-        // absence: we have read it. A base that is external is merely unknown. Guessing
-        // a base we have just ruled out names the one class we KNOW does not have the
-        // method, which is the worst possible guess — and it is what the leftmost rule
-        // did for `class Requirement(_ComputedReqKindsMixin, RequirementNamedTuple)`,
-        // where the mixin was read and found to have `__init__` but no `__new__`, and
-        // the NamedTuple that necessarily has `__new__` was never named.
-        //
-        // This is the change that matters most in this method, and the measurement that
-        // forced it: the guess was 98% WRONG. Over 400 corpus files the unconditional
-        // version emitted 1,313 override edges the tree contradicts against 27 it
-        // confirms — and those 1,313 were overwhelmingly bases this analyzer had
-        // ALREADY READ and found lacking.
-        //
-        // A base declared IN THIS FILE that lacks the name is not a candidate at all: we
-        // read its body, it does not define the method, so the subclass is not
-        // overriding anything. An edge emitted anyway is not honest suspicion — it is a
-        // false statement carrying a confidence label, and at 1,313 rows it is 1.3% of
-        // this lane's relationships.
-        //
-        // The rule is therefore: a verified edge to the first base that DECLARES the
-        // name; a 0.5 guess ONLY to a base this file never read, where the question is
-        // genuinely open; and NO edge when every base is in-file and none declares the
-        // name. That last case is not a gap — the tree says the method is new rather
-        // than overriding, and emitting nothing is what the tree says.
-        //
-        // The 0.5 and the reasonCode stay, because where a guess is still permitted it
-        // should still be answerable. Making it answerable is not the same as making it
-        // right, and this measurement is the difference.
-        // PY-7, resolved by measurement. The first-parent guess is GONE, and the number
-        // that removed it is the whole argument:
-        //
-        //   over 400 pinned corpus files, the guess emitted 1,163 override edges the
-        //   block grammar CONTRADICTS, against 27 it confirms. 98% wrong.
-        //
-        // The analyzer's own comment already said why it was firing at all: the
-        // companion index that could have verified these "is never populated in
-        // production". So the branch was not a measured fallback, it was an
-        // unconditional emission for every method of every class with an external base,
-        // carrying a confidence label that made 1,163 false rows look like suspicions.
-        // A confidence value is a claim about how sure the analyzer is; at 2% precision
-        // the honest value is "I have no information", and the honest edge count is
-        // zero.
-        //
-        // Two candidate smarter rules were measured and both failed:
-        //   - only guess a base the file never READ (removes 150 of 1,313; the rest name
-        //     an external base, which is exactly where no local signal exists);
-        //   - only guess a base the file IMPORTS, as corroboration (154 of 428 refuted
-        //     guesses name an imported base, so it removes 64% and leaves the rest).
-        //
-        // So there is no rule that makes this honest, and keeping a 2%-precision
-        // mechanism at 1.3% of the lane's relationships is not a trade — it is noise
-        // with a confidence score. What remains is the part that is a FACT about
-        // Python rather than a guess about another module: `object.__init__` is
-        // universal, so a class that defines `__init__` overrides it, and that is
-        // emitted as verified below.
+        // (The duplicate 60-line rationale that used to follow here, and the
+        //  "PY-7, resolved by measurement. The first-parent guess is GONE" block
+        //  that contradicted it, were removed 2026-10-05. Two comments in one
+        //  method disagreed with each other AND with the three lines of live code
+        //  above: one said the guess was restored and narrowed to the first
+        //  unreadable base, the other said it was gone and that emitting nothing was
+        //  the honest count. The code above is the first-parent guess, still emitted
+        //  at 0.5 with reasonCode "first-parent-guess", because it is a CROSS-LANE
+        //  family contract (M37.10, pinned for php/ruby/python/js/perl/java/swift)
+        //  and python does not remove one lane's copy of it unilaterally. The
+        //  reasoning that still holds is kept immediately above; what was removed is
+        //  the copy that said the opposite, and a copy of that copy.)
         continue
       }
     }
@@ -1966,7 +2691,8 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * which is how the call case silently named its callee; the fallback was the
    * defect, exactly as it was in callLeafName.
    */
-  private baseClassLeaf(node: Node): string | undefined {
+  private baseClassLeaf(node: Node | null | undefined): string | undefined {
+    if (!node) return undefined
     if (node.type === "identifier") return node.text
     if (node.type === "subscript") {
       const first = node.namedChild(0)

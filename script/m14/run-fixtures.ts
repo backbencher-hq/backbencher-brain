@@ -58,8 +58,14 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
   svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
-    typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
-    java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
+  // These two are registered HERE, and the position is load-bearing: key order IS the
+  // lane order (`Object.keys(LANGS)` drives the run and the rows the canonical
+  // artifact carries), and `validation/m14/fixture-baseline.json` records it with
+  // typescript and java directly after svelte. A second, identical pair lower down
+  // (after `nim`) was the duplicate the compiler flagged — same wasm, same analyzer,
+  // same class, same `ext` — and it is the one removed, so the object is unchanged.
+  typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
+  java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
   groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy" },
   kotlin: { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: "kt" },
   scala: { wasm: "tree-sitter-scala.wasm", analyzerFile: "real-scala-analyzer", className: "RealScalaAnalyzer", ext: "scala" },
@@ -73,6 +79,13 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   dart: { wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart" },
   swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
   objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
+  // Laptop B's lanes. Both were already routed by language-detection.ts (`r: "r"`,
+  // `lua: "lua"`) and their analyzers and wasm exist in the tree, but the fixture
+  // runner had no lane for them — so validation/m14/fixtures/{r,lua} held 35
+  // expectation files that NOTHING executed. The gate that caught it (fixture-lane
+  // gate) is the one added for exactly this defect class; this is the fix it asked for.
+  r: { wasm: "tree-sitter-r.wasm", analyzerFile: "real-r-analyzer", className: "RealRAnalyzer", ext: "r" },
+  lua: { wasm: "tree-sitter-lua.wasm", analyzerFile: "real-lua-analyzer", className: "RealLuaAnalyzer", ext: "lua" },
   // M60 julia wave. A lane that cannot fail is decoration: the language was named in
   // language-detection.ts and dispatched in engine.ts — so the website advertised it —
   // while being absent from this map, which is the gate that would have caught the four
@@ -163,8 +176,6 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // indexer would never route is the inert-pin class — it would report coverage
   // the production path does not have.
   nim: { wasm: "tree-sitter-nim.wasm", analyzerFile: "real-nim-analyzer", className: "RealNimAnalyzer", ext: "nim,nims,nimble" },
-  java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
-  typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
   // GraphQL joined 2026-09-27 with the M12.38/#177 wave. The lane did not exist,
   // which is why 31 measured defects survived in an analyzer whose only pinned
   // surface was 97 hand-audited facts over three m12 fixtures — including 3,131
@@ -901,7 +912,10 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       }
     }
     for (const want of exp.expectTypeParameters ?? []) {      const sym = symbols.find((s: any) => s.name === want.symbol)
-      const tps = (sym?.genericParameters ?? sym?.metadata?.typeParameters ?? [])
+      // `string[]` is the analyzer's own declaration for this field
+      // (src/ast/engine.ts: `genericParameters?: string[]`), and without it the array
+      // arrived as `any` and the `some` callback below had no parameter type at all.
+      const tps: string[] = (sym?.genericParameters ?? sym?.metadata?.typeParameters ?? [])
       for (const inc of (want.includes ?? [])) {
         if (!tps.some((t) => t === inc || t.includes(inc))) {
           problems.push('expected ' + want.symbol + ' typeParameters to include "' + inc + '"; got: ' + JSON.stringify(tps))
@@ -1427,7 +1441,10 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     //      member names are not importable; membership rides Contains.
     // This kills the exports fork (and its next occurrence) at gate time
     // instead of audit time.
-    const exportNames = (result.exports ?? []).map((e: any) => e.name)
+    // Declared `string[]`: the export rows carry the published name, and leaving this
+    // to inference off the dynamic engine result produced `Set<unknown>` downstream,
+    // where the resolver's own `(n: string)` callback could no longer be passed.
+    const exportNames: string[] = (result.exports ?? []).map((e: any) => e.name)
     // Erlang #880: arity is function identity — `-export([pick/0, pick/1]).`
     // is a legal export list. Dedup by name+arity where the export carries an
     // arity, by bare name otherwise (all other languages).

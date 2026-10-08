@@ -125,6 +125,7 @@ const observed = new Set<string>()
 const observedAnon = new Set<string>()
 for (const input of inputs) {
   const tree = parser.parse(input.source)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const stack: any[] = [tree.rootNode]
   while (stack.length > 0) {
     const node = stack.pop()!

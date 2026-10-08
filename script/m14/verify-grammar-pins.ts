@@ -79,20 +79,87 @@ const BUILTIN_WASM_SYMBOLS = new Set(["error_sentinel"])
 // either corroborated by a measured field in the emitted record or carries the
 // artifact that shows it; the sweep's §7c table is the reader-facing summary.
 // ---------------------------------------------------------------------------
+/**
+ * Provenance: the authored half of a lane's decision. Its kinds are the CLOSED set
+ * MEASURED over the emitted registry (validation/m14/grammar-pins.json — 27
+ * decisions on 2026-10-07): 9 vendored rebuilds, 5 npm-tarball copies, 4
+ * unnamed-sha builds, 3 patched-vendored rebuilds, 2 third-party copies, 2
+ * patched-upstream rebuilds, 1 npm-dependency rebuild, 1 upstream rebuild. Three of
+ * those kinds, and every field in LaneProvenanceExtras, were used by this file's own
+ * data while this declaration did not name them: the record was the truth and the
+ * type lagged it. Each field below was READ BACK OUT of the emitted records before
+ * it was declared, so this widening describes the data instead of blessing a guess.
+ */
+/** The source a rebuild was built from. Which of repo/package/rev a lane could NAME
+ *  is per-lane (a lane whose revision could not be recovered says so in prose rather
+ *  than inventing one); `pinnedExactly`/`depOf` are the npm-dependency pair: the
+ *  version resolved exactly rather than as the range the package declares, and which
+ *  package declared it (measured on the scss and sql decisions). */
+export interface LaneProvenanceBase {
+  repo?: string
+  package?: string
+  version: string
+  rev?: string
+  pinnedExactly?: boolean
+  depOf?: { package: string; version: string }
+}
+
+export type LaneProvenance = (
+  | { kind: "byte-identical-to-npm-tarball"; package: string; version: string }
+  | { kind: "byte-identical-to-third-party-package"; package: string; version: string; upstream: { repo: string; version: string; rev: string; builtWith?: string } }
+  | { kind: "local-rebuild-from-vendored-source"; base: LaneProvenanceBase; patches: string[]; patchEvidence: string }
+  | { kind: "local-rebuild-from-upstream-source"; base: LaneProvenanceBase; patches: string[]; patchEvidence: string; chain: string }
+  | { kind: "local-rebuild-from-patched-upstream-source"; base?: LaneProvenanceBase; upstream?: { repo?: string; version?: string; rev?: string; builtWith?: string } }
+  | { kind: "local-rebuild-from-patched-vendored-source"; base: LaneProvenanceBase; acquisition?: string }
+  | { kind: "local-rebuild-from-npm-dependency"; base: LaneProvenanceBase }
+  | { kind: "unnamed-build-sha-only"; chain: string }
+) &
+  LaneProvenanceExtras
+
+/** Provenance fields the authored records carry across kinds (same measurement).
+ *  Optional because each kind uses the ones that apply to it: a `chain` on a
+ *  byte-identical copy names the commit that swapped it in; `retained`/`ruled`
+ *  record an alternative kept or rejected; `acquisition`/`buildRequires` record how
+ *  the bytes were obtained; `localCheckout`/`upstreamClaimVsMeasurement` pin where a
+ *  claim was checked. */
+export interface LaneProvenanceExtras {
+  chain?: string
+  package?: string
+  version?: string
+  upstream?: { repo?: string; version?: string; rev?: string; builtWith?: string }
+  patches?: string[]
+  patchEvidence?: string
+  acquisition?: string
+  retained?: string
+  /** An ARRAY: each ruling is a paragraph, and a lane can carry several (protobuf's
+   *  provenance rules `any { … }` and the two ABI notes as three entries). */
+  ruled?: string[]
+  upstreamClaimVsMeasurement?: string
+  localCheckout?: string
+  /** An ARRAY: the steps a rebuild requires, one per element (scss: the
+   *  `npm install --no-save tree-sitter-css@0.20.0` step and the ABI-15 tree-sitter.json
+   *  note). */
+  buildRequires?: string[]
+}
+
 export interface LaneDecision {
   wired: string
-  provenance:
-    | { kind: "byte-identical-to-npm-tarball"; package: string; version: string }
-    | { kind: "byte-identical-to-third-party-package"; package: string; version: string; upstream: { repo: string; version: string; rev: string; builtWith?: string } }
-    | { kind: "local-rebuild-from-vendored-source"; base: { repo: string; version: string }; patches: string[]; patchEvidence: string }
-    | { kind: "local-rebuild-from-upstream-source"; base: { repo: string; version: string }; patches: string[]; patchEvidence: string; chain: string }
-    | { kind: "unnamed-build-sha-only"; chain: string }
+  provenance: LaneProvenance
   source:
     | { state: "vendored"; dir: string; note: string; srcSubdir?: string }
     | { state: "not-obtainable-offline"; note: string }
   decision: string
-  alternatives: Array<{ option: string; measured: string; artifact: string }>
+  /** `rejected` and `why` are measured on the emitted decisions: an alternative is
+   *  either kept, or rejected (`rejected: true` — a BOOLEAN, read back out of the
+   *  records) with its reason stated in `why`. */
+  alternatives: Array<{ option: string; measured: string; artifact: string; rejected?: boolean; why?: string }>
   evidence: string[]
+  /** The companion grammar bytes a lane's wired grammar depends on (markdown's
+   *  block/inline pair). Authored here; the emitted registry does not carry it yet
+   *  (recorded as a finding rather than silently declared-and-dropped). */
+  companionWasm?: string[]
+  /** The authored EXPECTATION list: measureCopies() resolves each path to its
+   *  sha256/byteIdentical/absent against the wired bytes. */
   copies: Array<{ label: string; path: string }>
   notVendored?: Array<{ path: string; why: string }>
 }
@@ -1423,7 +1490,7 @@ export const LANES: Record<string, LaneDecision> = {
     ],
     copies: [
       { label: "wasm registry copy of the block grammar", path: path.join(HOME, ".bb/wasm/tree-sitter-markdown.wasm") },
-      { label: "wasm registry copy of the INLINE companion grammar", path: path.join(HOME, ".bb/wasm/tree-sitter-markdown_inline.wasm"), of: "wasm/tree-sitter-markdown_inline.wasm" },
+      { label: "wasm registry copy of the INLINE companion grammar", path: path.join(HOME, ".bb/wasm/tree-sitter-markdown_inline.wasm") },
     ],
     notVendored: [
       { path: "grammar.js / src/grammar.json / src/node-types.json", why: "not vendored; the package publishes a prebuilt per-release wasm, so there is no tarball source tree to copy byte-for-byte" },
@@ -2055,14 +2122,22 @@ export function selfTestGate(): { passed: number; failures: string[] } {
     check("surface id-order drift fails", verifyPins(record, actual).some((x) => /idOrderDigest drifted/.test(x.check)))
   }
   // 4. a vendored source edit fails; a new vendored file fails even with the others intact.
+  // The measured union has a `not-obtainable-offline` member; the mutation is only
+  // meaningful on the vendored member, so it NARROWS to it and refuses loudly
+  // otherwise (a mutation that silently did nothing would "pass" while testing
+  // nothing — the same class the mutants above are meant to catch).
   {
     const { record, actual } = base()
-    actual.x.vendored.files["grammar.js"].sha256 = "cafe"
+    const v = actual.x.vendored
+    if (v.state !== "vendored") throw new Error("fixture: x.vendored must be the vendored member for this mutation")
+    v.files["grammar.js"].sha256 = "cafe"
     check("vendored file drift fails", verifyPins(record, actual).some((x) => /vendored file drifted/.test(x.check)))
   }
   {
     const { record, actual } = base()
-    actual.x.vendored.files["src/scanner.c"] = { sha256: "n3w", bytes: 5 }
+    const v = actual.x.vendored
+    if (v.state !== "vendored") throw new Error("fixture: x.vendored must be the vendored member for this mutation")
+    v.files["src/scanner.c"] = { sha256: "n3w", bytes: 5 }
     check("vendored file added fails", verifyPins(record, actual).some((x) => /added without a record/.test(x.check)))
   }
   // 5. a vanished local copy fails (the provenance chain moved).
@@ -2170,7 +2245,13 @@ async function main() {
       record.generatedAt = new Date().toISOString()
       record.commit = execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim()
       if (typeof record.scope === "string") {
-        record.scope = record.scope.replace(/^the six functional-family lanes \([^)]*\)/, (m0) => m0)
+        // This used to be a NO-OP — `.replace(/…/, (m0) => m0)` — so the stale count
+        // shipped in every single-lane write, and tsc read the callback's parameter as
+        // implicit any (TS7006 on this line). The count is stale by measurement: 27
+        // decisions are registered here, not six. The family set is named without a
+        // number so it cannot go stale again, and the prose that follows already says
+        // every registered lane is covered.
+        record.scope = record.scope.replace(/^the six functional-family lanes \(([^)]*)\)/, (_match: string, families: string) => `the functional-family lanes (${families})`)
       }
       fs.mkdirSync(path.dirname(REGISTRY), { recursive: true })
       fs.writeFileSync(REGISTRY, JSON.stringify(record, null, 2) + "\n")

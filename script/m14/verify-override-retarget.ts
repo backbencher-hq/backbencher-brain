@@ -60,7 +60,10 @@ type Row = { id: string; src: string; tgt: string; conf: number; type?: string }
  * `run`. That is the exact shape of the measured defect, and it is why a name-based
  * resolver gets it wrong.
  */
-function buildProject(): { db: Database; rows: Row[] } {
+// `Database` is better-sqlite3's exported NAMESPACE (the d.ts is `export = Database`), and
+// the instance type is its `Database` member — used bare it reads as a value and TS refuses
+// it in a type position.
+function buildProject(): { db: Database.Database; rows: Row[] } {
   const db = new Database(":memory:")
   db.exec(`
     CREATE TABLE brain_symbol (
@@ -107,7 +110,7 @@ function buildProject(): { db: Database; rows: Row[] } {
   return { db, rows: [] }
 }
 
-const targets = (db: Database): Map<string, string> => {
+const targets = (db: Database.Database): Map<string, string> => {
   const m = new Map<string, string>()
   for (const r of db.prepare(`SELECT id, target_external FROM brain_relationship`).all() as any[]) {
     m.set(String(r.id), String(r.target_external))

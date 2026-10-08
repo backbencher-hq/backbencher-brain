@@ -1,0 +1,41 @@
+#!/bin/sh
+# Launch bb_lsp for Zed.
+#
+# WHY A WRAPPER INSTEAD OF A BARE COMMAND. Zed (like every other GUI app) does not
+# inherit a shell's PATH, so `command = "node"` fails on any machine where node is
+# not on the default PATH — which is true of this one (node lives at
+# ~/.local/node/bin/node). The same defect was found and fixed on the VS Code
+# side; this is the same fix in the shape Zed needs. An Electron-as-Node
+# substitute is NOT used here: that approach was measured on the VS Code side and
+# fails on better_sqlite3.node with "compiled against a different Node.js version".
+#
+# Resolution order: PATH, then the prefixes a real node install lives under.
+set -e
+# NO EXTERNAL BINARIES. `dirname` is not a shell builtin in ANY shell, so calling
+# it here meant this launcher broke on a PATH that lacks coreutils — before it
+# reached the node resolution it exists to perform. That is precisely Zed's
+# situation: the reason this script exists at all is that Zed does not hand a
+# shell a usable PATH. Found by running the shipped script against a minimal PATH,
+# where it reported `dirname: command not found` and then
+# `server not found next to the extension (//../../../dist/lsp/server.js)` — an
+# error about a path built from an empty $DIR, which reads like a missing file
+# rather than a missing dependency.
+#
+# `cd` and `pwd` ARE builtins (dash, bash, zsh, busybox), so they stay.
+self_dir=${0%/*}
+[ "$self_dir" = "$0" ] && self_dir=.
+DIR=$(CDPATH= cd -- "$self_dir/.." && pwd)
+SERVER="$DIR/dist/lsp/server.js"
+[ -f "$SERVER" ] || SERVER="$DIR/../../../dist/lsp/server.js"
+[ -f "$SERVER" ] || { echo "bb_lsp: server not found next to the extension ($SERVER)" >&2; exit 1; }
+
+find_node() {
+  if command -v node >/dev/null 2>&1; then command -v node; return 0; fi
+  for c in "$HOME/.local/node/bin/node" "$HOME/.nvm/current/bin/node" "$HOME/.volta/bin/node" \
+           "$HOME/.bun/bin/node" /usr/local/bin/node /opt/homebrew/bin/node /usr/bin/node; do
+    [ -x "$c" ] && { echo "$c"; return 0; }
+  done
+  return 1
+}
+NODE=$(find_node) || { echo "bb_lsp: no node executable found; add node to the PATH Zed sees" >&2; exit 1; }
+exec "$NODE" "$SERVER" "$@"

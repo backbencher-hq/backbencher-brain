@@ -1,0 +1,12 @@
+JAVA IMPORT-FLAG EQUIVALENCE (EXPORTS_JAVA2)
+corpus java-lib: 3275 .java files on disk (derived by readdir), measuring 3275
+question: does reading isStatic/isWildcard from node TYPES differ, on any declaration, from searching the declaration's TEXT?
+
+import declarations walked: 38923   files that failed to parse: 0
+shapes seen (node-type read):
+  static=false wildcard=false    27951
+  static=true wildcard=false     10972
+
+DISAGREEMENTS between the node-type read and the text search: 0
+
+VERDICT: EQUIVALENT on every declaration in this corpus. A fixture cannot kill mutants I3/I8, and claiming one did would be false.

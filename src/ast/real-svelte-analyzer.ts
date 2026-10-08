@@ -47,7 +47,7 @@ import { RealTypeScriptAnalyzer } from "./real-typescript-analyzer"
 function shiftMetadataLineMirrors(md: Record<string, unknown> | undefined, lineOffset: number): void {
   if (!md || lineOffset === 0) return
   for (const [k, v] of Object.entries(md)) {
-    if (!/line/i.test(k)) continue
+    if (!keyCarriesALine(k)) continue
     if (typeof v === "number") md[k] = v + lineOffset
     else if (Array.isArray(v) && v.some((x) => typeof x === "number")) {
       md[k] = v.map((x) => (typeof x === "number" ? x + lineOffset : x))
@@ -120,6 +120,45 @@ const SVELTE_RUNES = new Set([
 // PURE-STRING HELPERS (regex-free)
 // ============================================================================
 
+/**
+ * Values that are SPELLED like identifiers and are accepted by `isIdentifier`, but are
+ * not names anything can be called ON.
+ *
+ * R7, standing rule, measured. `isIdentifier` tests the first character against
+ * `[A-Za-z_$]`, so `null`, `undefined`, `true`, `false`, `NaN`, `Infinity` and `this` all
+ * pass it. Two real corpus files hand the analyzer exactly that:
+ *
+ *   svelte/packages/svelte/tests/runtime-legacy/samples/component-events-nullish/main.svelte
+ *       <Widget on:click={null} {logs} />
+ *   svelte/packages/svelte/tests/runtime-runes/samples/undefined-event-handler/main.svelte
+ *       <button onmouseenter={undefined}></button>
+ *
+ * Both produced a `calls` edge whose TARGET was the literal — `calls
+ * component-events-nullish -> null` and `calls undefined-event-handler -> undefined`. That
+ * is the fabrication class the workstream calls the most expensive mistake available: an
+ * edge naming a value where the ontology means a callable, so `bb_impact` would report
+ * that editing a symbol named `null` breaks a component. It is also the standing rule's
+ * own shape — a placeholder-literal edge endpoint — and it survived a differential because
+ * the oracle's mirrored handler rule has the same acceptance set: both sides emitted the
+ * same wrong edge, so they agreed.
+ *
+ * SCOPE, stated rather than implied: this filters the HANDLER and INVOKED-CARRIER
+ * extraction only. A member genuinely named `unknown` still emits, and two corpus files
+ * declare one: `css/samples/omit-scoping-attribute-class-dynamic/input.svelte` has
+ * `export let unknown = 'whatever'` and
+ * `runtime-runes/samples/proxy-coercive-assignment-warning/main.svelte` has
+ * `const unknown = (node) => …`. Those are the user's own bindings, an edge to them is
+ * faithful, and R7 is about ANALYZER-SUPPLIED placeholders rather than about a source
+ * identifier that happens to collide with one. Measured over the whole 6,439-file corpus
+ * by `script/m14/svelte-r7-probe.mts`: 12 placeholder-literal sites, of which 10 are
+ * those two files' faithful `unknown` bindings and 2 were these handler literals.
+ *
+ * The first two entries are JavaScript keywords and can never be a binding at all; the
+ * rest are globals a name could shadow, and a handler named after one is a call to nothing
+ * this file declares, which is the same fabrication by another route.
+ */
+const NON_CALLABLE_LITERALS = new Set(["null", "undefined", "true", "false", "NaN", "Infinity", "this"])
+
 function isIdentifier(text: string): boolean {
   if (text.length === 0) return false
   const first = text[0]
@@ -129,6 +168,53 @@ function isIdentifier(text: string): boolean {
     if (!((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_" || c === "$")) return false
   }
   return true
+}
+
+/**
+ * `{#await promise then value}` / `{#await promise as value}` — split the head
+ * fragment into the PROMISE expression and everything after the `then`/`as`
+ * keyword. Returns undefined when the fragment carries no such keyword, which
+ * is the `{:then}`/block form.
+ *
+ * A char walk, and deliberately the same accept set as the pattern it replaces:
+ * the keyword must be preceded by a whitespace run and followed by a whitespace
+ * run, so `sometimes` (`then` with no leading space) and `has` (`as` not at a
+ * word start) do NOT match — `has` in particular, because a promise named `as`
+ * is the only thing that would be lost and Svelte has no such binding.
+ * `head` is everything before the keyword's whitespace run; `matchLength` is
+ * the length of the whole match, so `text.slice(matchLength)` is the remainder.
+ */
+export function splitAwaitHead(text: string): { head: string; matchLength: number } | undefined {
+  const isSpace = (c: string): boolean => c === " " || c === "\t" || c === "\n" || c === "\r"
+  let i = 0
+  while (i < text.length) {
+    if (!isSpace(text[i])) {
+      i++
+      continue
+    }
+    const wsStart = i
+    while (i < text.length && isSpace(text[i])) i++
+    const kwStart = i
+    let kwLen = 0
+    if (text.startsWith("then", i)) kwLen = 4
+    else if (text.startsWith("as", i)) kwLen = 2
+    if (kwLen > 0 && i + kwLen < text.length && isSpace(text[i + kwLen])) {
+      let after = i + kwLen
+      while (after < text.length && isSpace(text[after])) after++
+      return { head: text.slice(0, wsStart), matchLength: after }
+    }
+    i = kwStart + 1
+  }
+  return undefined
+}
+
+/**
+ * `key` names a LINE (`decoratorLine`, `line`, `decoratorLines`) as a
+ * case-insensitive substring test, with no pattern literal. Only the KEY NAME
+ * is examined; the value's type is decided by the caller.
+ */
+function keyCarriesALine(key: string): boolean {
+  return key.toLowerCase().indexOf("line") >= 0
 }
 
 /**
@@ -289,6 +375,29 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // value} binds value; {:catch err} binds err; {#snippet row(label)}
     // binds label+count. A shadowed name must NOT emit a use.
     const templateExprNames = new Map<string, number>()
+    // ONTOLOGY-WORKSTREAM SVELTE3 — the collapse, DECLARED rather than hidden.
+    //
+    // `templateExprNames` is a `Map<name, line>`, so a second read of one member
+    // OVERWRITES the first, and the `seenUses` dedupe then publishes exactly ONE
+    // `uses` edge whose `line_number` is the LAST site. Every earlier site is
+    // unrecoverable from the edge. Reproduced on a fixture with four reads of
+    // `count` (lines 6, 8, 9, 10): one edge, line 10, lines 6/8/9 gone.
+    //
+    // Measured over shadcn-svelte's 1,878 files: 2,953 template-sourced `uses`
+    // edges, of which 979 (33.2%) name a member the template writes on MORE THAN
+    // ONE line, standing in for 2,106 template read sites that reach no edge at
+    // all. The edge is therefore not wrong — "this template reads this member" is
+    // true — but a consumer asking WHERE reads one line and gets the last of
+    // several, which is a false answer presented as a fact.
+    //
+    // The fix records EVERY site rather than emitting one edge per site. One edge
+    // per read would add 2,106 edges (+7.6% of the svelte payload) to express N
+    // copies of the SAME set-membership fact, and would make a consumer count reads
+    // by counting edges — which is what made this projection lossy in the first
+    // place. The edge count is unchanged and `line_number` keeps its existing
+    // meaning (the last site, unchanged for every existing fixture); what changes is
+    // that the full set is now machine-readable on the edge.
+    const templateReadSites = new Map<string, number[]>()
     // D12: framework-invoked carriers (`use:`, `transition:`, `in:`, `out:`,
     // `animate:`) are CALL SITES. Accumulated here and emitted after the walk, so
     // the edges pass through the same DEDUPE and the same central `classifyEvidenceTier`
@@ -302,6 +411,38 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // with a bare-identifier value are DYNAMIC component references,
     // resolved post-merge (imports are unknown until the script pass).
     const thisTargets = new Map<string, number>()
+    // ONTOLOGY-WORKSTREAM SVELTE3: a DOTTED component tag — `<Card.Root/>` — is
+    // Svelte's namespaced-component syntax, resolved by reading the NAMESPACE OBJECT
+    // bound to `Card`. Three measured facts make the old shape wrong:
+    //
+    //   1. The target string `Card.Root` is not a symbol. Measured over 1,878
+    //      shadcn-svelte files: 7,845 of 11,706 `instantiates` edges (67.0%) carry a
+    //      dotted target, and 0 of those 7,845 name a symbol the file publishes or
+    //      the corpus holds. Every one of them is an edge `bb_graph` cannot follow.
+    //   2. The tag's FIRST segment is checkable. `Card` is an import binding in
+    //      99.3% of those edges (7,791 of 7,845), so the edge can name the MODULE
+    //      the component comes from — the strongest fact this analyzer can prove,
+    //      since the module itself lives outside the corpus.
+    //   3. A dotted tag whose segment 0 is NOT imported names nothing Svelte can
+    //      resolve: the compiler rejects the file. 54 edges in the corpus are in
+    //      that state, and they are dropped for exactly the reason the reserved
+    //      `svelte:` namespace is dropped above (D9/D11, gap X4) — an undeclared
+    //      name in a reserved position is a compile error, not a component.
+    //
+    // WHY THE TARGET STAYS AS WRITTEN. Naming the member leaf instead (`Root`) is
+    // what this analyzer's OWN `calls` and `{@render}` rules do for a dotted
+    // expression (`on:click={box.open}` -> `open`, `{@render ns.row(it)}` -> `row`),
+    // and it was tempting on symmetry grounds alone. It is refused because `Root` is
+    // a global name the analyzer has NOT seen: the module is outside the corpus, so
+    // asserting that it exports `Root` is a fabrication, which the workstream counts
+    // against the lane and which poisons bb_graph / bb_impact / bb_migrate. The tag as
+    // written is a FACT; the module behind it is now recorded; the member inside it is
+    // declared unverified in `resolution`. The D4 asymmetry (first segment here, last
+    // segment there) is deliberate and is the cost of not inventing a symbol.
+    //
+    // Resolved POST-MERGE for the same reason as `thisTargets` above: the import
+    // records do not exist until the script pass has run.
+    const dottedTags = new Map<string, { line: number; templateLocal: boolean }>()
     const templateStack: Array<{ node: Node; scope: { shadowed: Set<string> } }> = [
       { node: rootNode, scope: { shadowed: new Set() } },
     ]
@@ -381,12 +522,12 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       // S1: {#each items as item, i} — the collection is a member use, but
       // the loop vars (item, i) are template-LOCAL.
       if (t === "each_statement") {
-        this.collectEachExpression(n, templateExprNames, childShadowed)
+        this.collectEachExpression(n, templateExprNames, childShadowed, templateReadSites)
       }
       // S1: {#await promise then value} {:catch err} — the promise is a member
       // use; then/catch vars are template-LOCAL.
       if (t === "await_statement") {
-        this.collectAwaitExpression(n, templateExprNames, childShadowed)
+        this.collectAwaitExpression(n, templateExprNames, childShadowed, templateReadSites)
       }
       // D5 (second review): {#if cond}, {:else if cond} and {#key exp}
       // conditions are opaque svelte_raw_text under if_start/else_if_start/
@@ -394,17 +535,17 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       // referencing ONLY the condition (masked in every fixture by duplicate
       // reads elsewhere) emitted nothing. Pure reads, no bindings.
       if (t === "if_statement" || t === "else_if_block" || t === "key_statement") {
-        this.collectConditionExpression(n, templateExprNames, childShadowed)
+        this.collectConditionExpression(n, templateExprNames, childShadowed, templateReadSites)
       }
       if (t === "expression") {
         // {count}, label={label}, this={Comp}, {@const total}, {@debug x},
         // {@html raw} — every expression body is a member read.
-        this.collectExpressionIdentifiers(n, templateExprNames, childShadowed)
+        this.collectExpressionIdentifiers(n, templateExprNames, childShadowed, templateReadSites)
       }
       // {@html raw} / {@const total = expr} / {@debug expr} carry the body
       // directly as svelte_raw_text (no `expression` wrapper node).
       if (t === "html_tag" || t === "const_tag" || t === "debug_tag") {
-        this.collectTagExpressionIdentifiers(n, templateExprNames, childShadowed)
+        this.collectTagExpressionIdentifiers(n, templateExprNames, childShadowed, templateReadSites)
         // {@const total = expr} BINDS `total` as a template-LOCAL that
         // shadows any same-named member within this subtree — register the
         // binding name into childShadowed so later {total} reads don't emit a
@@ -435,6 +576,33 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         // X4, owner the oracle; the analyzer is the side that can be fixed here.
         if (tag && tag.startsWith("svelte:") && !SVELTE_BUILTIN_TAGS.has(tag)) {
           // reserved namespace, undeclared member — deliberately not a component
+        } else if (tag && tag.includes(".") && !seenUsages.has(tag)) {
+          // A NAMESPACE-qualified tag (`<Card.Root/>`). Deferred to the post-merge
+          // pass below, which is the first point where the file's import bindings
+          // exist. See the `dottedTags` declaration for why the target is not
+          // rewritten to its member leaf.
+          seenUsages.add(tag)
+          const tagNode = this.elementTagNameNode(n)
+          const nsSegment = tag.slice(0, tag.indexOf("."))
+          // THE TEMPLATE-LOCAL CASE, and it is not a corner. `{#each items as item}`
+          // followed by `<item.icon/>` is a legal Svelte DYNAMIC component: `item` is
+          // a block-local the loop declares, not an import. Measured on
+          // shadcn-svelte's own blocks: `nav-secondary.svelte:22` (`<item.icon/>`
+          // under `{#each items as item}`), `demo-sidebar-menu.svelte`
+          // (`<project.icon/>`), `demo-sidebar-icon.svelte` (`<team.logo/>`,
+          // `<activeTeam.logo/>`), `+page.svelte` (`<data.component/>`).
+          //
+          // The FIRST version of this rule tested the import bindings alone and so
+          // DROPPED all of them — and the 400-file differential reported exactly
+          // that, 12 MISSING in its sample, every one a loop-variable component. A
+          // rule that removed 12 real edges to fix 54 unbindable ones was the wrong
+          // trade, and the gate that found it is the one whose job is comparing the
+          // two sides. The shadow set is the analyzer's own record of the bindings
+          // this template declares, so the check is structural, not a name guess.
+          dottedTags.set(tag, {
+            line: tagNode ? tagNode.startPosition.row + 1 : 0,
+            templateLocal: shadowed.has(nsSegment),
+          })
         } else if (tag && !HTML_BUILTIN_TAGS.has(tag) && !SVELTE_BUILTIN_TAGS.has(tag) && !seenUsages.has(tag)) {
           seenUsages.add(tag)
           const tagNode = this.elementTagNameNode(n)
@@ -484,7 +652,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
               const expr = inner.startsWith("...") ? inner.slice(3) : inner
               // The shorthand lives in the attribute NAME, so the line is the
               // attribute's (the name is written on the tag it belongs to).
-              this.collectIdentifiersFromText(expr, templateExprNames, childShadowed, attr.startPosition.row + 1)
+              this.collectIdentifiersFromText(expr, templateExprNames, childShadowed, attr.startPosition.row + 1, templateReadSites)
             }
           }
         }
@@ -522,7 +690,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!text) continue
             const base = exprNode ? exprNode.startPosition.row + 1 : attr.startPosition.row + 1
             const before = new Set(templateExprNames.keys())
-            this.collectIdentifiersFromText(text, templateExprNames, childShadowed, base)
+            this.collectIdentifiersFromText(text, templateExprNames, childShadowed, base, templateReadSites)
             // D12 provenance. The read joins the SAME `templateExprNames` the block
             // constructs use, which is deliberate — a `bind:value={m}` read and a
             // `{m}` read are the same fact — but it means the collection site is
@@ -542,6 +710,12 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             // and the callable leaf is what a `calls` edge can name.
             const leaf = rest.includes(".") ? rest.slice(rest.lastIndexOf(".") + 1) : rest
             if (!leaf) continue
+            // Same rule as the handler extraction, for the same reason: `use:null` names a
+            // value, and a `calls` edge naming a value is the fabrication class. Note this
+            // filters the DIRECTIVE'S OWN NAME, not its argument — `use:action={null}`
+            // still emits `calls -> action`, because the framework invokes the name written
+            // in the attribute and the argument's value does not change what is invoked.
+            if (NON_CALLABLE_LITERALS.has(leaf)) continue
             seenDirectiveCalls.add(`${leaf}@${attr.startPosition.row + 1}`)
             directiveCalls.push({
               leaf,
@@ -619,7 +793,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             const attachIdx = kids.findIndex((k) => k.type === "ERROR" && k.text === "attach")
             if (attachIdx < 0) continue
             const nameTok = kids[attachIdx + 1]
- if (!nameTok || !/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(nameTok.text)) continue
+            if (!nameTok || !isIdentifier(nameTok.text)) continue
             const afterText = (kids[attachIdx + 2]?.text ?? "}").trim()
             if (afterText !== "}" && afterText !== "(") continue
             const attachHandler = nameTok.text
@@ -865,6 +1039,10 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         const key = `${moduleName}:${resolved}`
         if (seenUses.has(key)) continue
         seenUses.add(key)
+        // ONTOLOGY-WORKSTREAM SVELTE3: the sites this member is read on, in
+        // document order and de-duplicated. One edge, the complete set — see the
+        // `templateReadSites` declaration for why this is not one edge per read.
+        const sites = templateReadSites.get(name) ?? (resolved === name ? undefined : templateReadSites.get(resolved))
         relationships.push({
           source: moduleName,
           target: resolved,
@@ -873,7 +1051,8 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           // M59 (#825): the line the identifier is WRITTEN on, recorded where
           // the text was scanned. `0` can only appear if a caller passed no
           // base line for a fragment it could not locate — the oracle counts
-          // that as a wrong line rather than a silent pass.
+          // that as a wrong line rather than a silent pass. This is the LAST site;
+          // the whole set is in `templateReadSites` below.
           ...(line > 0 ? { line_number: line } : {}),
           metadata: {
             isTemplateExpression: true,
@@ -881,6 +1060,80 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             // from a block construct, a store subscription or a tag expression, so a
             // consumer can tell a two-way binding from an ordinary template read.
             ...(carrierReadKeys.has(`${resolved}@${line}`) ? { carrierDirective: true } : {}),
+            // Present only when the member is read on MORE THAN ONE site, so a
+            // single-read edge carries no extra key. `templateReadSitesCollapsed`
+            // is the machine-readable statement that `line_number` above is one
+            // of several and not the only place to look.
+            ...(sites && sites.length > 1
+              ? { templateReadSites: [...sites], templateReadSitesCollapsed: sites.length }
+              : {}),
+          },
+        })
+      }
+    }
+
+    // ONTOLOGY-WORKSTREAM SVELTE3: resolve the NAMESPACE-qualified tags collected
+    // above. Post-merge because the import records do not exist before it.
+    //
+    // And a DEFECT FIXED ON THE WAY, which was making this rule's sibling dead:
+    // `thisTargets` below built its binding set from `imp.items` VERBATIM, and the
+    // JS analyzer does not write bare binding names there. Measured on the real
+    // analyzer-local import records:
+    //     import * as Card from "./card"     -> items: ["* as Card"],  alias: "Card"
+    //     import { alpha as beta } from "./b" -> items: ["alpha as beta"], alias: undefined
+    // So the set received the literal strings `"* as Card"` and `"alpha as beta"`,
+    // never `Card` or `beta`, and `<svelte:component this={Card}/>` published
+    // NOTHING. Both spellings are the corpus's own idiom — 1,052 of shadcn-svelte's
+    // 1,878 files contain a namespace import — so the rule was silent on exactly
+    // the dynamic-component form it was written for. `importLocalBindings` is the
+    // one derivation both rules now use, so the two cannot drift again.
+    if (dottedTags.size > 0) {
+      const nsBindings = new Map<string, string>()
+      for (const imp of imports) {
+        for (const b of this.importLocalBindings(imp)) nsBindings.set(b.name, b.module)
+      }
+      const declaredNames = new Set(symbols.map((s) => s.name))
+      for (const [tag, site] of dottedTags) {
+        const dot = tag.indexOf(".")
+        const ns = tag.slice(0, dot)
+        const module = nsBindings.get(ns)
+        // Svelte resolves `<Ns.M>` by reading the object bound to `Ns`, and there
+        // are THREE places `Ns` can be bound — all structural, all provable here:
+        //
+        //   1 an IMPORT        `import * as Card` — a static namespaced component.
+        //   2 a TEMPLATE-LOCAL the walk recorded — `{#each items as item}` then
+        //     `<item.icon/>`, which is what the FIRST version of this rule dropped
+        //     and what the 400-file differential reported as 12 MISSING.
+        //   3 a SCRIPT SYMBOL  `const status = $derived(statuses.find(...))` then
+        //     `{#if status}<status.icon/>` — a component held in state. The
+        //     differential found this one too, on
+        //     `docs/src/routes/(app)/(layout)/examples/tasks/components/
+        //     data-table-status-cell.svelte:11`.
+        //
+        // If none of the three binds it, the compiler rejects the file and the tag
+        // names nothing: the same reasoning D9/D11 already applies to the reserved
+        // `svelte:` prefix. Note case 3 is a RUNTIME namespace — whether `Ns.M` is
+        // a component is not knowable here, which is why every dotted edge sits at
+        // 0.9 with a reason code rather than at the plain-tag 0.95.
+        if (module === undefined && !site.templateLocal && !declaredNames.has(ns)) continue
+        relationships.push({
+          source: moduleName,
+          target: tag,
+          type: ASTEngine.RelationshipType.Instantiates,
+          confidence: 0.9,
+          ...(site.line > 0 ? { line_number: site.line } : {}),
+          metadata: {
+            isComponentUsage: true,
+            resolution: "namespace-member",
+            // The MODULE is deliberately NOT copied onto the edge. It is already in
+            // this same result's `imports` records, keyed by `namespaceBinding`, and
+            // repeating a module specifier on every edge cost 45 bytes × 7,802 corpus
+            // edges: measured +903 KiB (+16.6%) on shadcn-svelte's serialized
+            // relationship payload before this was removed, for information the
+            // consumer already had. `namespaceBinding` is the key into it.
+            ...(module !== undefined ? { namespaceBinding: ns } : {}),
+            ...(module === undefined && site.templateLocal ? { namespaceLocal: true } : {}),
+            ...(module === undefined && !site.templateLocal ? { namespaceSymbol: true } : {}),
           },
         })
       }
@@ -893,11 +1146,14 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // already carry a Uses edge above and are skipped (no double emission).
     if (thisTargets.size > 0) {
       const memberNames = new Set(symbols.map((s) => s.name))
+      // ONTOLOGY-WORKSTREAM SVELTE3: was `imp.items` verbatim, which held
+      // `"* as Card"` for `import * as Card` and `"alpha as beta"` for
+      // `import { alpha as beta }` — so neither `Card` nor `beta` was ever in the
+      // set and this branch published nothing for either. See the `dottedTags`
+      // block above; `importLocalBindings` is the shared derivation.
       const importBindings = new Set<string>()
       for (const imp of imports) {
-        for (const item of imp.items ?? []) {
-          if (item && item !== "*") importBindings.add(item)
-        }
+        for (const b of this.importLocalBindings(imp)) importBindings.add(b.name)
       }
       for (const [name, line] of thisTargets) {
         if (memberNames.has(name) || !importBindings.has(name)) continue
@@ -1058,8 +1314,32 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (n.type === "assignment_pattern") {
         const left = n.childForFieldName?.("left") ?? n.namedChild(0)
         if (left) take(left)
+      } else if (n.type === "object_assignment_pattern") {
+        // `{ a = default }` binds `a`; `default` is a VALUE, not a binding.
+        //
+        // This node used to be grouped with the container patterns below, which
+        // published BOTH children — so a default that names another binding made
+        // that binding a prop. Measured on
+        // `shadcn-svelte/docs/src/lib/registry/ui/chart/chart-container.svelte`,
+        // whose `let { id = uid, … } = $props()` published the module-level
+        // `const uid = $props.id()` as a component Property
+        // (`isSvelteProp: true`, `contains chart-container -> uid`), and because
+        // the same name list drives the merge dedupe, the delegate's correct
+        // `uid` Constant was DROPPED — one binding, two false facts and the true
+        // declaration lost. Found by the lane's own truth
+        // (script/m14/svelte-truth.ts), which derives ownership from the
+        // grammar and disagreed on exactly these edges.
+        const left = n.childForFieldName?.("left") ?? n.childForFieldName?.("pattern") ?? n.namedChild(0)
+        if (left) take(left)
       } else if (
-        n.type === "object_assignment_pattern" ||
+        // `object_assignment_pattern_deprecated` was a dead disjunct: measured
+        // 2026-10-08, the pinned svelte grammar declares no assignment-pattern
+        // type at all, and the pinned typescript/javascript grammars declare
+        // `object_assignment_pattern` and `assignment_pattern` with no deprecated
+        // spelling. A real parse of `let { a = 1, ...rest } = obj` builds
+        // `object_pattern` -> `object_assignment_pattern`, which is the shape the
+        // arm ABOVE already handles; this container branch is for the patterns
+        // whose children are all bindings.
         n.type === "object_pattern" ||
         n.type === "array_pattern"
       ) {
@@ -1235,8 +1515,25 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * Is the bi-th <script> block marked context="module"? Module-block
-   * exports are module-level API - they must NOT become component props.
+   * Is the bi-th <script> block a MODULE block? Module-block exports are
+   * module-level API - they must NOT become component props.
+   *
+   * Svelte spells this two ways and BOTH are real: `context="module"` and the
+   * bare `module` attribute (the Svelte 3/4 shorthand, still what the corpus
+   * writes - `sv-addons/registry/template/src/lib/registry/ui/button/button.svelte`
+   * opens `<script lang="ts" module>`). The old predicate compared the whole
+   * start-tag TEXT for the literal `context="module"`, so every bare-`module`
+   * block was read as an INSTANCE block: its exports became component props
+   * (ownerName = the component, plus a `contains` edge) and the `exports[]`
+   * channel stayed empty. Measured on the 200-file sample: exports[] 0 rows,
+   * and the 22 `exports` edges all arrived from the JS delegate's own
+   * `export const` handling rather than from the module API they are.
+   *
+   * Both spellings are now read STRUCTURALLY, off the attribute nodes: an
+   * `attribute` whose `attribute_name` is `context` with value `module`, or one
+   * whose `attribute_name` is `module` with no value. No pattern literal, and a
+   * single-quoted `context='module'` is now found for the same reason the
+   * double-quoted one always was: by construction, not by spelling.
    */
   private isModuleContextBlock(rootNode: Node, index: number): boolean {
     // Document-order scan - a LIFO stack walk visits later siblings first,
@@ -1256,7 +1553,25 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     const block = blocks[index]
     if (!block) return false
     const startTag = this.findChildByType(block, "start_tag")
-    return !!startTag && /context=["']module["']/.test(startTag.text)
+    if (!startTag) return false
+    for (let i = 0; i < startTag.namedChildCount; i++) {
+      const attr = startTag.namedChild(i)
+      if (!attr || attr.type !== "attribute") continue
+      const name = this.attributeName(attr)
+      if (name === "module") return true
+      if (name === "context" && this.attributeValue(attr) === "module") return true
+    }
+    return false
+  }
+
+  /** The `attribute_value` text of an attribute, however it is quoted. */
+  private attributeValue(attr: Node): string {
+    const value = this.findChildByType(attr, "attribute_value")
+    if (value) return value.text
+    const quoted = this.findChildByType(attr, "quoted_attribute_value")
+    if (!quoted) return ""
+    const inner = this.findChildByType(quoted, "attribute_value")
+    return inner ? inner.text : ""
   }
 
   private isExported(exportInfos: ASTEngine.ExportInfo[], name: string): boolean {
@@ -1264,6 +1579,57 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (e.name === name && !e.isDefault) return true
     }
     return false
+  }
+
+  /**
+   * ONTOLOGY-WORKSTREAM SVELTE3 — the LOCAL BINDING an `import` introduces, which
+   * is the only name Svelte's template can legitimately write.
+   *
+   * The JS/TS sub-analyzer does not write bare binding names in `items`; it writes
+   * the item AS SPELLED. Measured on real analyzer-local records:
+   *
+   *   import * as Card from "./card"      -> items ["* as Card"],  alias "Card"
+   *   import { alpha as beta } from "./b" -> items ["alpha as beta"], alias undefined
+   *   import Foo from "./foo"             -> items ["Foo"], alias undefined
+   *   import { qux } from "./qux"         -> items ["qux"], alias undefined
+   *
+   * So a consumer that adds `items` to a set of binding names holds `"* as Card"`
+   * and `"alpha as beta"` and never `Card` or `beta`. Two rules were reading that
+   * set and both were silent on the forms above; this is the one derivation they
+   * share now.
+   *
+   * Pure String operations — the `as` split is `indexOf`/`slice`, never a regex
+   * (the lane is regex-free by contract).
+   */
+  private importLocalBindings(imp: ASTEngine.ImportInfo): Array<{ name: string; isNamespace: boolean; module: string }> {
+    const module = String(imp?.module ?? "")
+    const out: Array<{ name: string; isNamespace: boolean; module: string }> = []
+    // A bare side-effect import binds nothing.
+    if (imp?.isSideEffectImport === true) return out
+    const items = Array.isArray(imp?.items) ? imp.items : []
+    // `alias` is set for the namespace form and is the namespace's local name, so it
+    // wins over the `* as X` spelling in `items`.
+    const alias = typeof (imp as any)?.alias === "string" ? String((imp as any).alias).trim() : ""
+    if (alias) {
+      out.push({ name: alias, isNamespace: items.some((i) => String(i).trim().startsWith("*")), module })
+      return out
+    }
+    for (const raw of items) {
+      let item = String(raw).trim()
+      if (!item) continue
+      const isNamespace = item.startsWith("*")
+      if (isNamespace) {
+        // `* as X` is covered by the alias branch above; a bare `*` has no local name.
+        item = item.startsWith("* as ") ? item.slice(4).trim() : ""
+        if (!item) continue
+      }
+      // `X as Y` binds Y, never X.
+      const asIdx = item.indexOf(" as ")
+      if (asIdx >= 0) item = item.slice(asIdx + 4).trim()
+      if (!item) continue
+      out.push({ name: item, isNamespace, module })
+    }
+    return out
   }
 
   // ============================================================================
@@ -1336,7 +1702,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const n of names.keys()) shadowed.add(n)
   }
 
-  private collectIdentifiersFromText(text: string, out: Map<string, number>, shadowed: Set<string>, baseLine = 0): void {
+  private collectIdentifiersFromText(text: string, out: Map<string, number>, shadowed: Set<string>, baseLine = 0, sites?: Map<string, number[]>): void {
     // M2+M3 (review wave): the flat identifier regex read string contents
     // (`f("a=b")` -> Uses(a), Uses(b)) and chain leaves (`item.id` -> member
     // `id`) as member reads. Character walk with quote states (backslash
@@ -1361,7 +1727,13 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       const prev2 = k - 1 >= 0 ? text[k - 1] : ""
       if (prev === "." || (prev2 === "?" && prev === ".") || prev === "#") return
       if (shadowed.has(word)) return
-      out.set(word, baseLine + RealSvelteAnalyzer.linesBefore(text, start))
+      const site = baseLine + RealSvelteAnalyzer.linesBefore(text, start)
+      out.set(word, site)
+      if (sites) {
+        const arr = sites.get(word)
+        if (arr) { if (arr[arr.length - 1] !== site) arr.push(site) }
+        else sites.set(word, [site])
+      }
     }
     let i = 0
     while (i < text.length) {
@@ -1408,13 +1780,13 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** {#each items as item, i} — collection is a use; loop vars shadow. */
-  private collectEachExpression(node: Node, out: Map<string, number>, shadowed: Set<string>): void {
+  private collectEachExpression(node: Node, out: Map<string, number>, shadowed: Set<string>, sites?: Map<string, number[]>): void {
     const start = this.findDescendant(node, (c) => c.type === "each_start")
     if (!start) return
     const rawTexts = this.rawTextNodes(start)
     // each_start has two raw_text children: [collection, vars]
     const collection = rawTexts[0]
-    if (collection) this.collectIdentifiersFromText(collection.text, out, shadowed, collection.startPosition.row + 1)
+    if (collection) this.collectIdentifiersFromText(collection.text, out, shadowed, collection.startPosition.row + 1, sites)
     // S5 (#419): the loop-var list (rawTexts[1], e.g. `row, i` / `[a, b]` /
     // `{ id }`) binds template-LOCAL names that SHADOW same-named members. They
     // must be registered into `shadowed` (the set the children inherit) so a
@@ -1427,7 +1799,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** {#await promise then value} {:catch err} — promise is a use; vars shadow. */
-  private collectAwaitExpression(node: Node, out: Map<string, number>, shadowed: Set<string>): void {
+  private collectAwaitExpression(node: Node, out: Map<string, number>, shadowed: Set<string>, sites?: Map<string, number[]>): void {
     const start = this.findDescendant(node, (c) => c.type === "await_start")
     const thenBlk = this.findDescendant(node, (c) => c.type === "then_start")
     const catchBlk = this.findDescendant(node, (c) => c.type === "catch_start")
@@ -1442,14 +1814,14 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       // the promise expression is everything up to then/as; then/catch vars
       // shadow. Simpler: collect all identifiers but drop the then/catch vars
       // (already added to childShadowed), and only the promise survives.
-      const m = /^(.*?)\s+(?:then|as)\s+/.exec(text)
-      const promiseExpr = m ? m[1] : text
+      const m = splitAwaitHead(text)
+      const promiseExpr = m ? m.head : text
       this.collectIdentifiersFromText(promiseExpr, out, shadowed, firstLine)
       // M4 (review wave): the INLINE then/as vars (`then value` with no
       // then_block node) were never registered — {value} later leaked as a
       // member use. Register the remainder as template-local bindings.
       if (m) {
-        const rest = text.slice(m[0].length)
+        const rest = text.slice(m.matchLength)
         this.collectShadowNames(rest, shadowed)
       }
     }
@@ -1470,7 +1842,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
    *  svelte_raw_text child of if_start/else_if_start/key_start (no
    *  `expression` wrapper, unlike mustache bodies). Every identifier is a
    *  member read; these heads bind nothing, so no shadow registration. */
-  private collectConditionExpression(node: Node, out: Map<string, number>, shadowed: Set<string>): void {
+  private collectConditionExpression(node: Node, out: Map<string, number>, shadowed: Set<string>, sites?: Map<string, number[]>): void {
     const start = this.findDescendant(node, (c) =>
       c.type === "if_start" || c.type === "else_if_start" || c.type === "key_start")
     if (!start) return
@@ -1483,7 +1855,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // head (`{#key a}` + separate text) then offsets from the first fragment, so
     // the claimed line is still a line the name is written on.
     const baseLine = rawNodes[0] ? rawNodes[0].startPosition.row + 1 : 0
-    this.collectIdentifiersFromText(rawNodes.map((r) => r.text).join(" "), out, shadowed, baseLine)
+    this.collectIdentifiersFromText(rawNodes.map((r) => r.text).join(" "), out, shadowed, baseLine, sites)
   }
 
   /** {#snippet row(label, count)} heads — params are template-local. */
@@ -1496,9 +1868,9 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** A template expression body ({count}, label={label}, {@html raw}). */
-  private collectExpressionIdentifiers(node: Node, out: Map<string, number>, shadowed: Set<string>): void {
+  private collectExpressionIdentifiers(node: Node, out: Map<string, number>, shadowed: Set<string>, sites?: Map<string, number[]>): void {
     const textNode = this.expressionTextNode(node)
-    this.collectIdentifiersFromText(textNode?.text ?? "", out, shadowed, textNode ? textNode.startPosition.row + 1 : 0)
+    this.collectIdentifiersFromText(textNode?.text ?? "", out, shadowed, textNode ? textNode.startPosition.row + 1 : 0, sites)
   }
 
   /** D4: last all-identifier segment of a dotted render target
@@ -1523,7 +1895,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** {@html raw} / {@const total = expr} / {@debug expr} — body is a direct
    *  svelte_raw_text child of the tag (no `expression` wrapper). */
-  private collectTagExpressionIdentifiers(node: Node, out: Map<string, number>, shadowed: Set<string>): void {
+  private collectTagExpressionIdentifiers(node: Node, out: Map<string, number>, shadowed: Set<string>, sites?: Map<string, number[]>): void {
     const textNode = this.expressionTextNode(node)
     const baseLine = textNode ? textNode.startPosition.row + 1 : 0
     let text = textNode?.text ?? ""
@@ -1541,7 +1913,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         text = text.slice(eq + 1)
       }
     }
-    this.collectIdentifiersFromText(text, out, shadowed, base)
+    this.collectIdentifiersFromText(text, out, shadowed, base, sites)
   }
 
   /** Index of the first top-level `=` (not inside () / [] / {}) in `text`.*/
@@ -1622,20 +1994,19 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         i = end
       }
     }
-    // Bare-identifier check
-    if (isIdentifier(text)) return { name: text, line: at(0) }
+    // Bare-identifier check. A literal that merely LOOKS like an identifier is not a
+    // handler name — see NON_CALLABLE_LITERALS, and the two corpus files that produced
+    // `calls -> null` and `calls -> undefined` before this test existed.
+    if (isIdentifier(text) && !NON_CALLABLE_LITERALS.has(text)) return { name: text, line: at(0) }
     // Dotted member leaf: `on:click={box.open}` binds the method reference -
     // the CALLABLE LEAF is the last segment. (Previously emitted nothing.)
     const parts = text.split(".")
     if (parts.length > 1 && parts.every((p) => isIdentifier(p))) {
       const leaf = parts[parts.length - 1]
+      if (NON_CALLABLE_LITERALS.has(leaf)) return undefined
       return { name: leaf, line: at(text.lastIndexOf(leaf)) }
     }
     return undefined
-  }
-
-  private onHandlerLeaf(attr: Node): string | undefined {
-    return this.onHandlerCall(attr)?.name
   }
 
   /**
@@ -1713,16 +2084,6 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   private attributeName(attr: Node): string {
     const name = this.findChildByType(attr, "attribute_name")
     return name ? name.text : ""
-  }
-
-  /**
-   * M59 (#825): the `line_number` for a relationship, from the node that SPELLS
-   * the name the edge is about. Same contract as the java/TS/JS analyzers: the
-   * line belongs to the name, and a construct with no name-bearing node gets
-   * NOTHING rather than `0` (unknown must be absent, never a number).
-   */
-  private lineField(nameNode: Node | null | undefined): { line_number?: number } {
-    return nameNode ? { line_number: nameNode.startPosition.row + 1 } : {}
   }
 
   private offsetRange(

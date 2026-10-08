@@ -15,6 +15,7 @@ import { BrainDatabase } from "../../src/brain/database"
 import { searchSymbols } from "../../src/intelligence/search/symbol-search"
 import { searchContent } from "../../src/intelligence/search/content-search"
 import { searchRegex } from "../../src/intelligence/search/regex-search"
+import { fileURLToPath } from "node:url"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(l: string, c: boolean, d?: string) { checks++; if (c) passed++; else { failed++; console.log("  FAIL: " + l + (d ? " — " + d : "")) } }
@@ -231,7 +232,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   }
   // Self-audit: no auto-pass assertions remain in this verifier (it must not
   // verify itself tautologically).
-  const self = readFileSync(new URL(import.meta.url).pathname, "utf8").split("S7: evidence")[0].replace(/\/\/[^\n]*/g, "")
+  const self = readFileSync(fileURLToPath(import.meta.url), "utf8").split("S7: evidence")[0].replace(/\/\/[^\n]*/g, "")
   const autoPass = new RegExp("\\b(?:ck|nk)\\([^)]*,\\s*true\\s*[,)]")
   nk("S7: verifier has no auto-pass assertions", !autoPass.test(self), autoPass.test(self) ? "auto-pass found" : "clean")
   nk("S7: no '>= 0' tautologies in this verifier", !/>= 0/.test(self), "found '>= 0'")

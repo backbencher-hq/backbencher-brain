@@ -46,7 +46,7 @@
 | overrides | ✅ | resolved against the class's **DECLARATION** (`name@startLine`), never its name — two `class C` declarations in one file are unrelated, and a name-keyed lookup gave a base-less class its namesake's bases. A base spelling the class's own name is excluded from both this derivation and `extends` (#299), so a rebind class overrides nothing and never overrides itself; method whose name is found walking the **real MRO**, not the leftmost base — **PY-8**: `Requirement.__new__` pointed at a mixin that does not define `__new__`. `object.__init__` is a verified universal fact (0.95). The **first-parent guess is 0.5**, not 0.95: it is a cross-lane family contract (php/ruby/python/js/perl/java/swift) pinned by `python/external-override`, and python does not remove it unilaterally. Measured over 400 corpus files it fired 1,163 times and was confirmed **0** times — the companion-index tier above it is never populated (**PY-7**) | 0.95 verified / 0.5 guessed |
 | contains | ✅ | computed from `ownerName` on symbols (single pass) — class members, enum members, record fields. Three boundaries, one rule read three ways, all confirmed against CPython's `vars()`: a class in a **class body** gets `ownerName` and IS a member (`Outer.Inner` resolves); a class in a **method or function body** does not (`Outer.Local` does not resolve); and a name bound inside a **lambda or comprehension** is that function's local, never a member | 1.0 |
 | uses | ✅ | member **read** `self.x` → leaf, marked `isMemberRead`; assignment targets, call callees (`self.ping()` — the attribute IS the call) and call receivers (`self.svc.ping()` — `self.svc` is traversal) are excluded, so a read is only ever a read | 0.9 |
-| references | — | not emitted; name identity is carried by imports/exports/calls, and a second edge for the same fact doubles the graph without adding information | — |
+| references | ✅ | `references` is sourced to whoever WROTE the annotation, not to whoever is mentioned — python keeps type information in annotations, so `x: T` inside a function belongs to that function. `assignment` / `typed_parameter` / `typed_default_parameter` → `declared_type`; `function_definition` → `return_type`; `isinstance(x, T)` / `issubclass(a, B)` → `instanceof_check`. Dedupes per `(source, target, kind)`. Builtin scalars (`str int float complex bool bytes object None Any self cls`) excluded. Measured 21,028 edges over 5,365 corpus files. **This row previously read "— not emitted"; that was wrong and is corrected here** — the code emits it at `extractDeclaredTypeRefs`, the differential has audited it since it was written, and the same file's differential table below already credited 12,280 agreed edges to it | 0.95 |
 | depends | — | not emitted (covered by imports) | — |
 
 ## Supported constructs
@@ -173,7 +173,7 @@ lives).
 | `exports` | 93 | **0** | **0** |
 
 **161,094 edges agreed by two derivations that share no helper; 1 disagreement, 99.9994%.**
-The four types added last (`uses`, `references`, `imports`, `exports`) came back perfect on their
+The four types added last (`uses`, `references`, `imports`, `exports`) agreed with the oracle on their
 first full run — 66,621 edges that had been verified by nothing until then.
 
 The run started at 90 disagreements and ended at 1. Nine were real analyzer defects and are
@@ -242,9 +242,173 @@ comparison can see. That is the whole argument for having built the instrument: 
 | the measurements and the defects | `reviews/python/master-review.md` |
 | lane contract | `docs/analyzers/python.md` |
 
+## Relationship ontology — verdicts with numbers (branch `analyzer/PY_INSTRUMENTS`, 2026-10-05)
+
+Every one of the ten types carries a measured verdict. The instrument is
+`script/m14/python-ontology-census.ts`, which runs the analyzer through the PRODUCTION
+entry (`parseFile` from `src/ast/pool-worker.ts`) over the **whole** pinned population:
+**5,365 tracked `.py`/`.pyi` in 5 git checkouts under `fixtures/repositories/python-corpus/`**
+(ansible 1,857 · django 2,933 · flask 83 · pydantic 455 · requests 37), plus the
+**unpinned `python-corpus/cpython-stdlib`** (621 files) measured on separate counters and
+never merged. 5,365/5,365 parsed, 0 parse failures, 0 degraded, 108,689 symbols,
+566,728 relationships, 3 error nodes in 2 files.
+
+`imports[]` is reported on its own channel throughout: `ParseResult` carries it separately
+and `parallel-indexer` writes it to the `brain_import` **table**, never to
+`brain_relationship` rows.
+
+| type | verdict | edges | files | resolving (declared / imported / neither) |
+| --- | --- | --- | --- | --- |
+| calls | EMITTED | 243,619 | 3,992 | 11.2% / see below / 88.8% |
+| uses | EMITTED | 140,435 | 2,909 | 32.9% / see below / 67.1% |
+| contains | EMITTED | 72,371 | 3,030 | **100%** / — / 0% |
+| imports | EMITTED (relationship channel) | 37,832 | 4,212 | 0% / — / 100% by design |
+| references | EMITTED | 21,028 | 1,285 | 16.9% / see below / 83.1% |
+| exports | EMITTED | 1,564 | 143 | 51.7% / — / 48.3% |
+| extends | EMITTED | 15,887 | 2,654 | 23.3% / — / 76.7% |
+| overrides | EMITTED | 26,397 | 1,986 | 5.6% / — / 94.4% |
+| instantiates | EMITTED | 7,595 | 909 | 89.9% |
+| **implements** | **RULED** | 0 | 0 | — see below |
+
+### `implements` — RULED, with the falsification written out
+
+The one type this analyzer does not emit. Ruled on **instrument A** (grammar inventory)
+with **instrument B** published alongside, so the choice is the supervisor's:
+
+- **A.** The pinned grammar produces **196 distinct node types** over the pinned
+  population (198 across both) and **0 of 17** node-type names that would express a
+  conformance clause is among them.
+- **B.** Python's interface system is real and the corpus uses it: **14 ABC bases and 57
+  Protocol bases over 16,377 base-list entries (0.43%)**, plus 134 `@abstractmethod`
+  methods. All 71 base entries are already published as `extends`, because
+  `class C(X)` means the same thing whatever X is — `issubclass(C, X)` is True for a
+  concrete base, an `abc.ABC` and a `typing.Protocol` alike, and X is in `C.__mro__` in
+  all three.
+- **The deciding count.** Python *does* have conformance without inheritance:
+  `SomeABC.register(SomeConcrete)`, true for `issubclass` with no base-list entry.
+  Measured tight it reads **0 occurrences in 0 files over 5,986 files**, against 365
+  loose `.register(` calls in 75 files that are object and plugin registration.
+
+`PYTHON_RULED_INSTRUMENT_B` is exported from `script/m14/python-ruled.ts`; registering it
+makes the gate report FALSIFIED with **71 occurrences across 33 files**, and those figures
+are re-verified by `validation/m14/fixtures/python/ruled-probe-check.ts` on every run.
+Probe: `validation/m14/fixtures/python/implements-probe.ts` (calibrated; `--self-test`
+asserts exact counts and a corpus run exits non-zero if calibration fails).
+
+## The six questions, per emitted type
+
+Source derivation answers only question 1. Each of the others has a measurement.
+
+| type | 1 exists | 2 fires | 3 oracle agrees (django, 2,933 files) | 4 labelled | 5 resolved | 6 confident |
+| --- | --- | --- | --- | --- | --- | --- |
+| calls | ✅ | 243,619 | 102,940 agreed · **4 missing · 5 unexplained** | ✅ | 11.2% in-file | 0.9, no reason code |
+| uses | ✅ | 140,435 | 54,259 agreed · 0 · 0 | ✅ | 32.9% in-file | 0.9, no reason code |
+| contains | ✅ | 72,371 | 47,995 agreed · **1 missing · 1 unexplained** | ✅ | **100%** | 1.0 structural |
+| imports | ✅ | 37,832 | 19,200 agreed · 0 · 0 | ✅ | n/a by design | 1.0 import_based |
+| references | ✅ | 21,028 | 1,582 agreed · 0 · 0 | ✅ | 16.9% in-file | 0.95 |
+| exports | ✅ | 1,564 | 823 agreed · 0 · 0 | ✅ | 51.7% in-file | 1.0 structural |
+| extends | ✅ | 15,887 | 8,395 agreed · 0 · 0 | ✅ | 23.3% in-file | 1.0 structural |
+| overrides | ✅ | 26,397 | 943 agreed · 0 · 0 · **21,024 guesses REFUTED, 0 confirmed** | ✅ | 5.6% in-file | **94.3% below 0.7** |
+| instantiates | ✅ | 7,595 | 2,077 agreed · 0 · 0 | ✅ | 89.9% in-file | 0.9 |
+
+**238,214 edges agreed over 2,933 files; 5 missing, 6 unexplained.** All eleven
+disagreements are in two files and one shape: `django/template/loader_tags.py` is a
+module that mixes several classes and the two derivations disagree about which method
+owns a call, and `test_forms.py`'s `DateTimeForm -> datetime` is a class whose name is
+bound twice. Neither is a count artefact, and both are reported rather than closed
+because the ownership question is the same undetermined one the doc records for
+`contains MethodRedef -> a` under Known gaps.
+
+1. **Exists** — `ASTEngine.RelationshipType.<X>` appears in the source (derivation only).
+2. **Fires** — the census counts above, from `parseFile` on 5,365 real files. No type is
+   reachable only from a branch that never matches.
+3. **Oracle agrees** — `script/m14/oracles/python-truth.ts` + `python-truth-diff.ts`,
+   a separate walker sharing no helper with the analyzer, over django's 2,933 files and
+   requests+flask's 120: 238,214 + 10,911 edges agreed, 5 missing, 6 unexplained, 61
+   multiplicity disagreements, and — the number that matters — **21,024
+   `first-parent-guess` overrides refuted by the tree and 0 confirmed** on django, 204
+   refuted and 0 confirmed on requests+flask.
+   **Stated limitation, per the workstream: both walk the SAME grammar, so a grammar bug
+   shared by the analyzer and the oracle is invisible to this check.** The check bounds
+   disagreement between two derivations, not correctness of the grammar both read.
+4. **Labelled** — no cross-type mislabelling found. `references` was re-checked because
+   this file's own table previously claimed it was not emitted at all.
+5. **Resolved** — the three-way split. A target counts as *imported* only if this file's
+   own `imports[]` names it, which is what separates ordinary cross-file traffic from a
+   name nothing here accounts for. `imports` is 0% by design: its target is
+   `module:item`, a foreign-key-shaped name, not a symbol in this file.
+6. **Confident** — `evidenceClass` is present on **100%** of edges for every type.
+   `overrides` is the outlier and is honestly labelled: **24,879 of 26,397 edges (94.3%)
+   sit below the 0.7 threshold** at 0.5 with `reasonCode: first-parent-guess`, plus 35
+   `object-init-universal` at 0.95 and 1,483 at 0.95 verified. Mean confidence 0.526.
+
+### Rule R7 and the standing rules
+
+`emptySymbolNames 0` · `emptyOrUnknownKind 0` · **placeholder endpoints 0** · empty
+endpoints 0. Two `uses` edges have a target whose VALUE is the literal `unknown`, and both
+are real reads — `return obj.unknown` (django) and `SafeUUID.unknown` (pydantic) — so the
+census asks the tree before convicting them. A bare value test would have reported a
+fabricated defect.
+
+## DERIVATION findings — this lane has three
+
+The gate that reports these is `script/m14/verify-label-coverage.ts`, and it **cannot
+measure this lane**: `LANG_REPOS.python = "cython"` (`differential.ts:455`) and
+`LANG_REPOS_SECOND.python = "requests"` (`:613`), and neither is a top-level directory
+any more — both now live inside `python-corpus/`. Measured 2026-10-05 it prints
+`skipped (not a pass): python (no files under cython)`.
+
+`validation/m14/fixtures/python/derivation-audit.ts` stands in for it, EXTRACTING the
+compared-label allowlist out of `differential.ts` and evaluating it for `lang="python"`
+rather than copying it:
+
+| | edges (400 of 5,365) | files | verdict |
+| --- | --- | --- | --- |
+| `contains` | 5,054 | 238 | **DERIVATION — compared by nothing** |
+| `imports` | 2,855 | 324 | **DERIVATION — compared by nothing** |
+| `exports` | 118 | 9 | **DERIVATION — compared by nothing** |
+
+**8,027 of 40,785 emitted edges (19.7%) are audited by nothing.** `imports` is the sharpest:
+the analyzer emits 37,832 `imports` *relationship* edges at 1.0 across the full corpus AND
+fills `imports[]` with 37,905 rows, and the differential compares neither for python.
+Also measured: `implements` is IN the compared-label list while this lane emits zero of it,
+because that harness entry is unconditional — python's instance of the `brain_import`
+denominator question raised in `REVIEW-2026-10-04` §1.
+
+## Payload
+
+`validation/m14/fixtures/python/payload-measure.ts`, production `parseFile`, 400 of 5,365
+files: 40,769 relationships, **10.9 MiB un-narrowed**, of which `calls` 43.9% and `uses`
+27.0% of bytes. Narrowing to `calls` alone is 2.3×; to `exports` alone, 379×. python's
+un-narrowed payload is dominated by two labels, so a caller narrowing to the kinds it asked
+about saves proportionally less than the 2.5–4.8× band the workstream records for lodash and
+ripgrep — those graphs were not 71% calls+uses. **No edges were added on this branch**
+(`implements` is RULED and the analyzer's only change is a comment), so these are standing
+figures, not a before/after pair.
+
+## Which fleet instruments can measure this lane (measured 2026-10-05)
+
+Four of them cannot, and they share ONE root cause: the corpus was reorganised into
+`python-corpus/` (an aggregate of five git checkouts plus one unpinned directory) and the
+shared pins still point at the old layout.
+
+| instrument | what it does | measured result |
+| --- | --- | --- |
+| `script/m14/firing-check.mjs` | run the analyzer through production, tally types | `LANES.PYTHON` points at `python-codesql`, absent. Prints `PYTHON 0 types fired / NO CORPUS under python-codesql` and a SILENT list of all ten, **exit 0** |
+| `script/m14/firing-check-v2.mjs` | the corrected version | no `PYTHON` entry in `LANES` at all; `PY_INSTRUMENTS` → exit 2, "no lane matches" |
+| `script/m14/ontology-coverage-gate.ts` | the ARBITER | admits corpus only from a git-tracked **top-level** dir; prints `corpus: 424 admitted files` and then exits 2, "no RULING SOURCE for python". The 424 are stray `.py` inside other languages' repos (swift-corpus 286, haskell 41, otp 32, ruby 20) — 5,982 vs 424 is a 14× wrong population |
+| `script/m14/verify-label-coverage.ts` | the DERIVATION gate | `LANG_REPOS.python = "cython"` (`differential.ts:455`), `LANG_REPOS_SECOND.python = "requests"` (`:613`); neither is top-level any more. Prints `skipped (not a pass): python (no files under cython)` |
+
+An earlier note in this lane's history recorded `firing-check.mjs` as throwing a
+TypeError. It does not: it prints a **complete, confident, wrong** report and exits 0.
+
+All four are supervisor-owned. The one-line fixes are in `script/m14/python-ruled.ts`
+(the arbiter's import) and are named in this report; none was made here.
+
 ## Census
 
-- Baseline (M12 issue #166): 5 census regex entries in `real-python-analyzer.ts`
-  (decorator `@` strip, quote strips, module-name extension strip).
-- After M12.27: **0** (all replaced with pure char scans / AST token reads).
-  Project census: 69 → 64.
+- Baseline (M12 issue #166): 5 census regex entries in `real-python-analyzer.ts`.
+- After M12.27: **0**. Project census: 69 → 64. Re-measured 2026-10-05: `real-python-analyzer.ts`
+  contributes **0 regex literals**, and the whole-tree census reports 4, all in
+  `real-svelte-analyzer.ts`. The analyzer and all five lane instruments on this branch were
+  re-checked through the TypeScript AST: **0 regex constructs across 6 files**.

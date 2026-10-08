@@ -122,6 +122,15 @@ const OO_EQUIVALENTS: Record<string, { wasm: string; analyzerFile: string; class
   },
 }
 
+// One symbol row as the analyzers under test return it. The gate reaches each
+// analyzer through a computed dynamic import (`await import(`../../src/ast/${...}`)`),
+// which TypeScript cannot resolve, so `r` is `any` and `r.symbols ?? []` is `any` too
+// — and a callback passed to `.find`/`.filter` on an `any` has NO contextual type, so
+// 20 callback parameters in this file were implicit `any` (TS7006). Naming the row
+// shape here restores inference for all of them; `range` stays loose because the two
+// uses below read different sub-fields of it, which is what the row carries.
+type SymbolRow = { name?: string; kind?: string; range?: any; [key: string]: any }
+
 async function main() {
   const wts: any = await import("web-tree-sitter")
   const ParserClass = wts.Parser ?? wts.default ?? wts
@@ -139,7 +148,7 @@ async function main() {
     const analyzer = new mod[cfg.className]()
     const r = await analyzer.analyze(parser.parse(cfg.source).rootNode, cfg.source, `Widget.${cfg.ext}`)
 
-    const symbols = r.symbols ?? []
+    const symbols: SymbolRow[] = r.symbols ?? []
     const cls = symbols.find(s => s.name === "Widget" && /class/i.test(String(s.kind)))
     const method = symbols.find(s => s.name === "render")
 
@@ -161,8 +170,10 @@ async function main() {
       if (!(rng.startLine >= 1)) failures.push(`${lang}/${s.name}: startLine not 1-based`)
     }
 
-    // kind consistency across languages (string-insensitive)
-    const kindNorm = (k: string) => String(k).toLowerCase()
+    // kind consistency across languages (string-insensitive). `kind` is optional on
+    // a symbol row, so the helper takes what the call sites actually pass; `String`
+    // already accepted it at runtime.
+    const kindNorm = (k: string | undefined) => String(k).toLowerCase()
     if (cls && !/class/.test(kindNorm(cls.kind))) failures.push(`${lang}: Widget kind ${cls.kind} is not class-like`)
     if (method && !/method|function/.test(kindNorm(method.kind))) failures.push(`${lang}: render kind ${method.kind} unexpected`)
 
@@ -192,7 +203,7 @@ async function main() {
     const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
     const analyzer = new mod[cfg.className]()
     const r = await analyzer.analyze(parser.parse(cfg.source).rootNode, cfg.source, `Widget.${cfg.ext}`)
-    const symbols = r.symbols ?? []
+    const symbols: SymbolRow[] = r.symbols ?? []
     const st = symbols.find(s => s.name === "Widget")
     const method = symbols.find(s => s.name === cfg.methodName)
     if (!st) sysFailures.push(`${lang}: Widget struct not extracted`)
@@ -222,7 +233,7 @@ async function main() {
     const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
     const analyzer = new mod[cfg.className]()
     const r = await analyzer.analyze(parser.parse(cfg.source).rootNode, cfg.source, `Widget.${cfg.ext}`)
-    const symbols = r.symbols ?? []
+    const symbols: SymbolRow[] = r.symbols ?? []
     const cls = symbols.find(s => s.name === cfg.classNameLiteral && /class|interface/.test(String(s.kind).toLowerCase()))
     const method = symbols.find(s => s.name === cfg.methodName)
     if (!cls) ooFailures.push(`${lang}: class ${cfg.classNameLiteral} not extracted as class-kind symbol`)
@@ -264,7 +275,7 @@ async function main() {
     const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
     const analyzer = new mod[cfg.className]()
     const r = await analyzer.analyze(parser.parse(cfg.source).rootNode, cfg.source, `Widget.${cfg.ext}`)
-    const symbols = r.symbols ?? []
+    const symbols: SymbolRow[] = r.symbols ?? []
     const cls = symbols.find(s => s.name === "Widget" && /class/i.test(String(s.kind)))
     const method = symbols.find(s => s.name === "render")
     if (!cls) webFailures.push(`${lang}: class Widget not extracted as class-kind symbol`)
@@ -315,7 +326,7 @@ async function main() {
     const mod: any = await import("../../src/ast/real-html-analyzer")
     const analyzer = new mod.RealHtmlAnalyzer()
     const r = await analyzer.analyze(parser.parse(HTML_SOURCE).rootNode, HTML_SOURCE, "cc1.html")
-    const symbols = r.symbols ?? []
+    const symbols: SymbolRow[] = r.symbols ?? []
     const rels = r.relationships ?? []
     const byName = new Map<string, any>(symbols.map((s: any) => [String(s.name), s]))
 
@@ -370,9 +381,13 @@ async function main() {
     // 5. The scheme contract, cross-checked against the SOURCE: a hyperlink is
     //    not a code dependency. These two are the only non-fragment hrefs in the
     //    fixture, and neither may become an edge.
+    // The `text !== label` clause that stood here first was already always true: the
+    // two members of every pair are different string literals, so the check that ran
+    // was exactly `!source.includes(text) && !source.includes(label)` — the fixture
+    // must mention the href in ONE of its two spellings. Stated as what runs.
     for (const [label, text] of [["LINKEXT", "https://example.com/x"], ["MAILTO", "mailto:a@b.c"]] as const) {
       if (rels.some((x: any) => String(x.target) === text)) htmlFailures.push(`html: ${text} became a graph edge — a hyperlink is not a code dependency`)
-      if (text !== label && !HTML_SOURCE.includes(text) && !HTML_SOURCE.includes(label)) htmlFailures.push(`html: cc1 placeholder ${label} was not substituted`)
+      if (!HTML_SOURCE.includes(text) && !HTML_SOURCE.includes(label)) htmlFailures.push(`html: cc1 placeholder ${label} was not substituted`)
     }
     if (rels.some((x: any) => x.type === "calls")) htmlFailures.push("html: a `calls` edge exists — a URL is not a callee, and the pre-fix lane's whole call graph was URLs")
 

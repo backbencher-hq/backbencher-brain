@@ -2,19 +2,15 @@
   "issue": "622",
   "code": "X1",
   "milestone": "M27",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 34,
-  "passed": 30,
-  "failed": 4,
-  "failures": 4,
+  "passed": 34,
+  "failed": 0,
+  "failures": 0,
   "negativeCases": 6,
-  "currentCommit": "f70ec0734fbae53b25994d7395bb108fd1999343",
+  "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
   "verifierCommand": "npx tsx script/m27/verify-closure.ts",
-  "barViolations": [
-    "bar1-declared-absence: N1 is blocked with a reason — nvim not provisioned in .tools/ (D-7 portable layout)",
-    "bar1: capability subset proofs not all present",
-    "bar2: no I3 leg (N1 is the declared slot)"
-  ],
+  "barViolations": [],
   "perMutantRecords": {
     "N1": [],
     "J1": [],
@@ -22,10 +18,10 @@
     "H1": [],
     "V1": []
   },
-  "generatedAt": "2026-10-05T14:22:21.032Z",
+  "generatedAt": "2026-10-08T18:13:27.456Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:22:21.033Z",
-    "contentSha256": "5d63854d9136010b266ec9144f090e62d3cc16b7b638ee1c70ea208f270c99eb"
+    "sealedAt": "2026-10-08T18:13:27.458Z",
+    "contentSha256": "a3e8229fbf563b4efc345e2e541db13c67ae124cec48d4394fa8118c1918c406"
   }
 }

@@ -23,13 +23,14 @@
 // Exit 0 = every non-blocked step passed; exit 1 = any real failure.
 
 import { existsSync, readFileSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
-import { execFileSync } from "node:child_process"
+import { execFileSync, spawn } from "node:child_process"
 import path from "node:path"
 import { realpathSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { tmpdir } from "node:os"
 import { writeSealed } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
+import { fileURLToPath } from "node:url"
 
 export const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 export const SPEC_LEDGER = path.join(ROOT, "validation/m14/results/M14.0.SPEC.json")
@@ -110,14 +111,61 @@ function gitCommit(): string {
   }
 }
 
-function runGate(step: string, script: string): Step {
-  try {
-    execFileSync("npx", ["tsx", script], { cwd: ROOT, stdio: "ignore", timeout: 240_000 })
-    return { step, status: "pass", detail: `${script} exit 0` }
-  } catch (error) {
-    const status = (error as { status?: number }).status
-    return { step, status: "fail", detail: `${script} exit ${String(status ?? "error")}` }
-  }
+/** The bound on a spawned component gate. ONE value, shared by this protocol and
+ *  its own wiring harness (script/m29/verify-wave-harness.ts uses the same 420 s for
+ *  the same two verifiers) — two different bounds for one verifier made the protocol
+ *  report a timeout where its harness reported a verdict. */
+export const GATE_BOUND_MS = 420_000
+
+/**
+ * Spawn a component gate (S2/S3) and classify its outcome HONESTLY.
+ *
+ * Three outcomes, three statuses, and the difference is the whole point:
+ *   exit 0            -> `pass`
+ *   exit != 0         -> `fail`   (the gate reached a verdict and the verdict is red)
+ *   killed / timeout  -> `blocked` (the gate never reached a verdict)
+ *
+ * The third case used to be reported as `fail` with the detail "exit error", which
+ * asserts something the run did not measure: the gate did not fail, it did not
+ * finish. Measured on this machine 2026-10-07: script/m24/verify-positions.ts ran
+ * 740 s without a verdict after the protocol's 240 s spawn bound killed its parent,
+ * so the leg printed "exit error" — a red gate whose stated cause was false. The
+ * protocol's own rule is the fix ("a step that did not run is `blocked` with a
+ * machine-readable reason, never `pass`, never omitted"): a step that did not REACH
+ * a verdict is `blocked` too, and the cap is unaffected (a blocked tier-1 step caps
+ * at I0 exactly like a failed one — computeCap is unchanged).
+ *
+ * The second defect this closes is the orphan. `execFileSync(..., { timeout })`
+ * signals only the direct child (`npx`), so `tsx` and the verifier kept running and
+ * kept WRITING after the protocol had already read their status — the m24 records
+ * this protocol's S2/S3 steps are about. The child is now a process-group leader
+ * and the bound kills the GROUP, so a timed-out step leaves nothing behind.
+ */
+function runGate(step: string, script: string): Promise<Step> {
+  return new Promise<Step>((resolve) => {
+    const child = spawn("npx", ["tsx", script], { cwd: ROOT, stdio: "ignore", detached: true })
+    let settled = false
+    const finish = (s: Step): void => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(s)
+    }
+    const timer = setTimeout(() => {
+      try {
+        if (child.pid) process.kill(-child.pid, "SIGKILL")
+      } catch {
+        // already gone — the close handler will have settled this
+      }
+      finish({ step, status: "blocked", detail: `${script} did not reach a verdict within ${GATE_BOUND_MS / 1000}s — killed at the bound (a timeout is not a gate failure)` })
+    }, GATE_BOUND_MS)
+    child.on("error", (error) => finish({ step, status: "blocked", detail: `${script} could not be spawned: ${error.message}` }))
+    child.on("close", (code, signal) => {
+      if (code === 0) finish({ step, status: "pass", detail: `${script} exit 0` })
+      else if (signal) finish({ step, status: "blocked", detail: `${script} was killed by ${signal} before reaching a verdict` })
+      else finish({ step, status: "fail", detail: `${script} exit ${String(code)}` })
+    })
+  })
 }
 
 export interface S4Result {
@@ -196,8 +244,18 @@ export async function evaluateLanguage(language: string): Promise<WaveVerdict> {
   }
 
   // S2/S3: component gates (positions, freshness) — real verifiers, spawned.
-  steps.push(runGate("S2-position-gate", "script/m24/verify-positions.ts"))
-  steps.push(runGate("S3-freshness-gate", "script/m24/verify-freshness.ts"))
+  // A gate that never reached a verdict is `blocked`, and a blocked step is a
+  // declared blocker like every other one: the cap is unreachable this run and the
+  // reason is machine-readable. `blockers` is what a reader is owed; `fail` is a
+  // verdict the run does not have.
+  for (const [name, script] of [
+    ["S2-position-gate", "script/m24/verify-positions.ts"],
+    ["S3-freshness-gate", "script/m24/verify-freshness.ts"],
+  ] as const) {
+    const s = await runGate(name, script)
+    steps.push(s)
+    if (s.status === "blocked") blockers.push(`${name}: ${s.detail}`)
+  }
 
   // S4: real per-language fixture + real indexing.
   const s4 = await realIndexStep(language)
@@ -270,6 +328,6 @@ function main(): void {
   })
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   main()
 }

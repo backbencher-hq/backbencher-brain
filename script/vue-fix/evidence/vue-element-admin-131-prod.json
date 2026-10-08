@@ -1,0 +1,524 @@
+{
+  "lane": "VUE_FIX",
+  "mode": "prod",
+  "corpus": {
+    "root": "$HOME/fixtures/repositories",
+    "repo": "vue-element-admin",
+    "tracked": 131,
+    "admitted": 131,
+    "limit": 0
+  },
+  "files": {
+    "parsed": 131,
+    "failed": 0,
+    "emptySymbols": 0,
+    "totalSymbols": 996,
+    "totalRelationships": 4356,
+    "filesWithDelegatedRows": 121,
+    "corpusSymbolNames": 599
+  },
+  "channels": {
+    "imports": {
+      "count": 209,
+      "kinds": {
+        "default": 139,
+        "named": 70
+      },
+      "examples": [
+        "src/components/Charts/MixChart.vue: ?:echarts, ?:resize",
+        "src/components/Breadcrumb/index.vue: ?:pathToRegexp",
+        "src/components/Charts/Keyboard.vue: ?:echarts, ?:resize",
+        "src/components/Charts/LineMarker.vue: ?:echarts, ?:resize",
+        "src/components/DndList/index.vue: ?:draggable",
+        "src/components/DragSelect/index.vue: ?:Sortable",
+        "src/components/Dropzone/index.vue: ?:Dropzone, ?:dropzone/dist/dropzone.css",
+        "src/components/HeaderSearch/index.vue: ?:Fuse, ?:path"
+      ]
+    },
+    "exports": {
+      "count": 121
+    }
+  },
+  "rawLabels": [
+    {
+      "label": "uses",
+      "count": 2080,
+      "files": 4,
+      "example": "MixChart -[uses]-> resize"
+    },
+    {
+      "label": "contains",
+      "count": 826,
+      "files": 4,
+      "example": "MixChart -[contains]-> className"
+    },
+    {
+      "label": "calls",
+      "count": 781,
+      "files": 4,
+      "example": "mounted -[calls]-> initChart"
+    },
+    {
+      "label": "instantiates",
+      "count": 342,
+      "files": 4,
+      "example": "index -[instantiates]-> el-breadcrumb"
+    },
+    {
+      "label": "imports",
+      "count": 197,
+      "files": 4,
+      "example": "MixChart -[imports]-> echarts:echarts"
+    },
+    {
+      "label": "exports",
+      "count": 121,
+      "files": 4,
+      "example": "MixChart -[exports]-> default"
+    },
+    {
+      "label": "extends",
+      "count": 9,
+      "files": 4,
+      "example": "MixChart -[extends]-> resize"
+    }
+  ],
+  "types": {
+    "calls": {
+      "verdict": "EMITTED",
+      "count": 781,
+      "files": 92,
+      "fileExamples": [
+        "src/components/Charts/MixChart.vue",
+        "src/components/Charts/MixChart.vue",
+        "src/components/Charts/MixChart.vue",
+        "src/components/Charts/MixChart.vue"
+      ],
+      "examples": [
+        "mounted -[calls]-> initChart",
+        "beforeDestroy -[calls]-> dispose",
+        "initChart -[calls]-> init",
+        "initChart -[calls]-> getElementById",
+        "initChart -[calls]-> push",
+        "initChart -[calls]-> setOption"
+      ],
+      "resolved": {
+        "both": 166,
+        "src": 690,
+        "tgt": 173,
+        "pctBoth": 21.3,
+        "corpusTgt": 204,
+        "pctCorpusTgt": 26.1
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 17,
+        "selfLoop": 30
+      },
+      "seam": {
+        "delegated": 781,
+        "vueOwn": 0
+      },
+      "sourceKind": {
+        "delegated:component": 690,
+        "delegated:other": 91
+      },
+      "confidence": {
+        "0.9": 781
+      },
+      "evidenceClass": {
+        "usage_contextual": 781
+      },
+      "line": {
+        "withLine": 781,
+        "withoutLine": 0
+      }
+    },
+    "extends": {
+      "verdict": "EMITTED",
+      "count": 9,
+      "files": 9,
+      "fileExamples": [
+        "src/components/Charts/MixChart.vue",
+        "src/components/Charts/Keyboard.vue",
+        "src/components/Charts/LineMarker.vue",
+        "src/layout/components/Sidebar/SidebarItem.vue"
+      ],
+      "examples": [
+        "MixChart -[extends]-> resize",
+        "Keyboard -[extends]-> resize",
+        "LineMarker -[extends]-> resize",
+        "SidebarItem -[extends]-> FixiOSBug",
+        "Layout -[extends]-> ResizeMixin",
+        "BarChart -[extends]-> resize"
+      ],
+      "resolved": {
+        "both": 0,
+        "src": 9,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 7,
+        "pctCorpusTgt": 77.8
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 9
+      },
+      "sourceKind": {
+        "vue-own": 9
+      },
+      "confidence": {
+        "0.9": 9
+      },
+      "evidenceClass": {
+        "usage_contextual": 9
+      },
+      "line": {
+        "withLine": 9,
+        "withoutLine": 0
+      }
+    },
+    "implements": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "uses": {
+      "verdict": "EMITTED",
+      "count": 2080,
+      "files": 112,
+      "fileExamples": [
+        "src/components/Charts/MixChart.vue",
+        "src/components/Charts/MixChart.vue",
+        "src/components/Charts/MixChart.vue",
+        "src/components/Charts/MixChart.vue"
+      ],
+      "examples": [
+        "MixChart -[uses]-> resize",
+        "MixChart -[uses]-> String",
+        "beforeDestroy -[uses]-> chart",
+        "initChart -[uses]-> echarts",
+        "initChart -[uses]-> document",
+        "initChart -[uses]-> id"
+      ],
+      "resolved": {
+        "both": 866,
+        "src": 1945,
+        "tgt": 889,
+        "pctBoth": 41.6,
+        "corpusTgt": 1049,
+        "pctCorpusTgt": 50.4
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 18,
+        "genericEndpoint": 243,
+        "selfLoop": 16
+      },
+      "seam": {
+        "delegated": 1631,
+        "vueOwn": 449
+      },
+      "sourceKind": {
+        "delegated:component": 1496,
+        "delegated:other": 135,
+        "vue-own": 449
+      },
+      "confidence": {
+        "0.6": 1616,
+        "0.95": 449,
+        "0.85": 15
+      },
+      "evidenceClass": {
+        "usage_contextual": 2080
+      },
+      "line": {
+        "withLine": 2080,
+        "withoutLine": 0
+      }
+    },
+    "brain_import": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "exports": {
+      "verdict": "EMITTED",
+      "count": 121,
+      "files": 121,
+      "fileExamples": [
+        "src/components/Charts/MixChart.vue",
+        "src/components/Breadcrumb/index.vue",
+        "src/components/Charts/Keyboard.vue",
+        "src/App.vue"
+      ],
+      "examples": [
+        "MixChart -[exports]-> default",
+        "index -[exports]-> default",
+        "Keyboard -[exports]-> default",
+        "App -[exports]-> default",
+        "BackToTop -[exports]-> default",
+        "LineMarker -[exports]-> default"
+      ],
+      "resolved": {
+        "both": 0,
+        "src": 121,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 1,
+        "genericEndpoint": 121,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 121,
+        "vueOwn": 0
+      },
+      "sourceKind": {
+        "delegated:component": 121
+      },
+      "confidence": {
+        "1": 121
+      },
+      "evidenceClass": {
+        "structural": 121
+      },
+      "line": {
+        "withLine": 121,
+        "withoutLine": 0
+      }
+    },
+    "contains": {
+      "verdict": "EMITTED",
+      "count": 826,
+      "files": 112,
+      "fileExamples": [
+        "src/components/Charts/MixChart.vue",
+        "src/components/Charts/MixChart.vue",
+        "src/components/Charts/MixChart.vue",
+        "src/components/Charts/MixChart.vue"
+      ],
+      "examples": [
+        "MixChart -[contains]-> className",
+        "MixChart -[contains]-> id",
+        "MixChart -[contains]-> width",
+        "MixChart -[contains]-> height",
+        "MixChart -[contains]-> data",
+        "MixChart -[contains]-> chart"
+      ],
+      "resolved": {
+        "both": 826,
+        "src": 826,
+        "tgt": 826,
+        "pctBoth": 100,
+        "corpusTgt": 826,
+        "pctCorpusTgt": 100
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 9,
+        "genericEndpoint": 108,
+        "selfLoop": 1
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 826
+      },
+      "sourceKind": {
+        "vue-own": 826
+      },
+      "confidence": {
+        "1": 826
+      },
+      "evidenceClass": {
+        "structural": 826
+      },
+      "line": {
+        "withLine": 826,
+        "withoutLine": 0
+      }
+    },
+    "references": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "overrides": {
+      "verdict": "ABSENT",
+      "count": 0,
+      "files": 0,
+      "fileExamples": [],
+      "examples": [],
+      "resolved": {
+        "both": 0,
+        "src": 0,
+        "tgt": 0,
+        "pctBoth": 0,
+        "corpusTgt": 0,
+        "pctCorpusTgt": 0
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 0,
+        "genericEndpoint": 0,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 0,
+        "vueOwn": 0
+      },
+      "sourceKind": {},
+      "confidence": {},
+      "evidenceClass": {},
+      "line": {
+        "withLine": 0,
+        "withoutLine": 0
+      }
+    },
+    "instantiates": {
+      "verdict": "EMITTED",
+      "count": 342,
+      "files": 102,
+      "fileExamples": [
+        "src/components/Breadcrumb/index.vue",
+        "src/components/Breadcrumb/index.vue",
+        "src/App.vue",
+        "src/components/Charts/LineMarker.vue"
+      ],
+      "examples": [
+        "index -[instantiates]-> el-breadcrumb",
+        "index -[instantiates]-> el-breadcrumb-item",
+        "App -[instantiates]-> router-view",
+        "initChart -[instantiates]-> LinearGradient",
+        "initChart -[instantiates]-> LinearGradient",
+        "initChart -[instantiates]-> LinearGradient"
+      ],
+      "resolved": {
+        "both": 1,
+        "src": 342,
+        "tgt": 1,
+        "pctBoth": 0.3,
+        "corpusTgt": 15,
+        "pctCorpusTgt": 4.4
+      },
+      "r7": {
+        "emptyEndpoint": 0,
+        "placeholderEndpoint": 1,
+        "genericEndpoint": 1,
+        "selfLoop": 0
+      },
+      "seam": {
+        "delegated": 7,
+        "vueOwn": 335
+      },
+      "sourceKind": {
+        "vue-own": 335,
+        "delegated:component": 7
+      },
+      "confidence": {
+        "0.95": 342
+      },
+      "evidenceClass": {
+        "usage_contextual": 335,
+        "structural": 7
+      },
+      "line": {
+        "withLine": 342,
+        "withoutLine": 0
+      }
+    }
+  },
+  "parseFailures": []
+}

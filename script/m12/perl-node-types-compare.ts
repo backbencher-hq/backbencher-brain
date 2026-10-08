@@ -21,6 +21,7 @@ let parseErrors = 0
 for (const file of [...corpusFiles, ...fixtures]) {
   const source = await Bun.file(file).text()
   const tree = parser.parse(source)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   const stack: any[] = [tree.rootNode]
   while (stack.length > 0) {
     const node = stack.pop()

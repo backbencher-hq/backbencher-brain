@@ -115,6 +115,7 @@ const fixtureFiles = readdirSync(FIXTURE_DIR).filter((f) => /\.(xml|xsd)$/i.test
 const fixtureErrors: { file: string; errorNodes: number }[] = []
 for (const file of fixtureFiles) {
   const tree = parser.parse(readFileSync(join(FIXTURE_DIR, file), "utf8"))
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   if (tree.rootNode.hasError) {
     let e = 0
     const walk = (n: any) => { if (n.isError) e++; for (let i = 0; i < n.childCount; i++) walk(n.child(i)) }
@@ -128,6 +129,7 @@ for (const file of fixtureFiles) {
 // the defensive handlers are shape-verified here rather than claimed untested.
 for (const [label, probe] of Object.entries({ DTD_SHAPE_PROBE, PI_SHAPE_PROBE, CDATA_SHAPE_PROBE, RELAXNG_PROBE })) {
   const tree = parser.parse(probe)
+  if (!tree) throw new Error("parser.parse returned no tree (null result)")
   observe(tree.rootNode, `probe:${label}`)
   tree.delete()
 }
@@ -152,6 +154,7 @@ try {
       let src: string
       try { src = readFileSync(abs, "utf8") } catch { continue }
       const tree = parser.parse(src)
+      if (!tree) throw new Error("parser.parse returned no tree (null result)")
       if (tree.rootNode.hasError) corpusErrorFiles++
       const walk = (n: any) => { if (n.isMissing) corpusMissingNodes++; for (let i = 0; i < n.childCount; i++) walk(n.child(i)) }
       walk(tree.rootNode)
@@ -191,6 +194,7 @@ const coverage: { file: string; treeElements: number; symbolElements: number; tr
   const analyzer = new Analyzer()
   const audit = (label: string, src: string) => {
     const t = parser.parse(src)
+    if (!t) throw new Error("parser.parse returned no tree (null result)")
     let elements = 0
     let attributes = 0
     const st = [t.rootNode]
@@ -201,7 +205,7 @@ const coverage: { file: string; treeElements: number; symbolElements: number; tr
         const tag = n.children.find((c: any) => c.type === "STag" || c.type === "EmptyElemTag")
         if (tag) for (let i = 0; i < tag.namedChildCount; i++) if (tag.namedChild(i)?.type === "Attribute") attributes++
       }
-      for (let i = 0; i < n.childCount; i++) st.push(n.child(i))
+      for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) st.push(c) }
     }
     t.delete()
     const result: any = analyzer.analyze(treeOf(src).rootNode, src, label) as any

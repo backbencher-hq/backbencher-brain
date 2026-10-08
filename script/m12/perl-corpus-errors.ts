@@ -14,6 +14,7 @@ for (const file of files) {
   const source = await Bun.file(file).text()
   try {
     const tree = parser.parse(source)
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     let errors = 0
     const stack: any[] = [tree.rootNode]
     while (stack.length > 0) {

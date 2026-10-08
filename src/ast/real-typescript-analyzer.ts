@@ -993,8 +993,20 @@ function extractImportClause(importNode: Node): ImportClauseInfo {
  * `extractImportItems` so the two cannot drift (one is that walk's names, the
  * other its names plus their nodes).
  */
-function extractImportItemsWithNodes(importNode: Node): Array<{ item: string; node: Node }> {
-  const out: Array<{ item: string; node: Node }> = []
+/**
+ * The names an `import_statement` binds, each with the node that names it AND
+ * whether that SPECIFIER carried TypeScript's inline `type` modifier
+ * (`import { type A, B } from "m"`, TS 4.5+).
+ *
+ * The per-item flag is threaded through rather than recomputed by the caller
+ * because this function returns the specifier's `name` FIELD, not the
+ * `import_specifier` that owns the modifier — the caller holding `name` cannot
+ * see a `type` sibling of it. Returning the specifier instead would change what
+ * the `lineField` below stamps, since M59 (#825) pins the imported NAME's own
+ * line, so the flag travels beside the node rather than replacing it.
+ */
+function extractImportItemsWithNodes(importNode: Node): Array<{ item: string; node: Node; typeOnly: boolean }> {
+  const out: Array<{ item: string; node: Node; typeOnly: boolean }> = []
   for (let i = 0; i < importNode.namedChildCount; i++) {
     const child = importNode.namedChild(i)
     if (!child) continue
@@ -1003,32 +1015,32 @@ function extractImportItemsWithNodes(importNode: Node): Array<{ item: string; no
         const c = child.namedChild(j)
         if (!c) continue
         if (c.type === "identifier") {
-          out.push({ item: c.text, node: c })
+          out.push({ item: c.text, node: c, typeOnly: false })
         } else if (c.type === "namespace_import") {
           const asName = c.childForFieldName("name") ?? c.namedChild(0)
-          if (asName) out.push({ item: `* as ${asName.text}`, node: asName })
+          if (asName) out.push({ item: `* as ${asName.text}`, node: asName, typeOnly: false })
         } else if (c.type === "named_imports") {
           for (let k = 0; k < c.namedChildCount; k++) {
             const spec = c.namedChild(k)
             if (!spec || spec.type !== "import_specifier") continue
             const name = spec.childForFieldName("name")
             const alias = spec.childForFieldName("alias")
-            if (name) out.push({ item: alias ? `${name.text} as ${alias.text}` : name.text, node: name })
+            if (name) out.push({ item: alias ? `${name.text} as ${alias.text}` : name.text, node: name, typeOnly: isTypeOnlySpecifier(spec) })
           }
         }
       }
     } else if (child.type === "identifier") {
-      out.push({ item: child.text, node: child })
+      out.push({ item: child.text, node: child, typeOnly: false })
     } else if (child.type === "namespace_import") {
       const asName = child.childForFieldName("name") ?? child.namedChild(0)
-      if (asName) out.push({ item: `* as ${asName.text}`, node: asName })
+      if (asName) out.push({ item: `* as ${asName.text}`, node: asName, typeOnly: false })
     } else if (child.type === "named_imports") {
       for (let k = 0; k < child.namedChildCount; k++) {
         const spec = child.namedChild(k)
         if (!spec || spec.type !== "import_specifier") continue
         const name = spec.childForFieldName("name")
         const alias = spec.childForFieldName("alias")
-        if (name) out.push({ item: alias ? `${name.text} as ${alias.text}` : name.text, node: name })
+        if (name) out.push({ item: alias ? `${name.text} as ${alias.text}` : name.text, node: name, typeOnly: isTypeOnlySpecifier(spec) })
       }
     }
   }
@@ -1087,6 +1099,52 @@ function isImportRequireClause(importNode: Node): boolean {
   for (let i = 0; i < (importNode.namedChildCount ?? 0); i++) {
     const c = importNode.namedChild(i)
     if (c && c.type === "import_require_clause") return true
+  }
+  return false
+}
+
+/**
+ * True when this `import_statement` carries TypeScript's `type` modifier —
+ * `import type { T } from "m"`, erased at compile time and unusable as a value.
+ *
+ * The modifier is an ANONYMOUS `type` child of the statement itself, a sibling
+ * of `import_clause`, so a named-child walk cannot see it. Measured: 655
+ * type-only `import_statement` nodes across 279 of 400 admitted element-plus
+ * files, 982 type-only specifiers against 2,058 value specifiers — 32% of the
+ * import surface on that corpus. The specifiers were already emitted as
+ * `imports` edges (271 of 271 files with a type-only import produce one), so
+ * this is not a missing edge: it is an edge that cannot say what it is. The
+ * graph asserted a runtime dependency where the compiler asserts none, and a
+ * consumer could not tell the two apart from the edge alone.
+ *
+ * `childCount`/`child(i)` rather than `namedChildCount`/`namedChild(i)` is the
+ * whole point; `isImportRequireClause` above uses the named walk because
+ * `import_require_clause` IS a named node.
+ */
+function isTypeOnlyImport(importNode: Node): boolean {
+  for (let i = 0; i < (importNode.childCount ?? 0); i++) {
+    const c = importNode.child(i)
+    if (c && c.type === "type") return true
+  }
+  return false
+}
+
+/**
+ * The INLINE type modifier of TypeScript 4.5+ — `import { type A, B } from "m"`,
+ * where one specifier is erased and another is not, in a single statement.
+ *
+ * Same grammar fact as `isTypeOnlyImport` at a smaller radius: an anonymous
+ * `type` child, this time of the `import_specifier` rather than of the
+ * statement. `import def, { type Only, value } from "./mixed"` is a real and
+ * common shape, and a statement-level flag alone gets it wrong in the
+ * expensive direction — it would report `Only` as a runtime dependency the
+ * compiler has already deleted. Statement-level `import type {...}` erases the
+ * WHOLE statement, so it takes precedence when both could apply.
+ */
+function isTypeOnlySpecifier(specifierNode: Node): boolean {
+  for (let i = 0; i < (specifierNode.childCount ?? 0); i++) {
+    const c = specifierNode.child(i)
+    if (c && c.type === "type") return true
   }
   return false
 }
@@ -1998,8 +2056,24 @@ class TypeScriptAnalysisRunner {
       errors.push(...this.detectReactHookAntiPatterns(rootNode))
     }
 
-    const mod = path.basename(filePath, path.extname(filePath))
-    this.scopeManager.pushScope(ScopeKind.Module, mod, rootNode)
+    // ONE module name, computed once, by the one function that owns the rule.
+    //
+    // This line used to be a second, independent `path.basename(filePath,
+    // path.extname(filePath))`, which made the module name an answer with two
+    // derivations that agreed on every ordinary file and disagreed on a
+    // declaration file: `moduleLeafName()` (fixed 2026-10-05, VERIFY_TS10) said
+    // `env`, this one still said `env.d`. The mutation run caught it — an
+    // over-stripping mutant of `moduleLeafName()` passed the control fixture
+    // precisely because this site was still answering correctly, which is the
+    // shape a duplicated rule takes: one lane's fix, half applied, and a green
+    // suite over the half that was not the one the edges come from.
+    //
+    // It matters beyond tidiness: this name is the MODULE SCOPE, so it is the
+    // prefix of every `qualifiedName` in the file and the `scope` a symbol
+    // carries. Two spellings of one module means a declaration file's symbols
+    // were scoped `env.d.*` while its import and export edges were sourced from
+    // `env`, and nothing joins those.
+    this.scopeManager.pushScope(ScopeKind.Module, this.moduleLeafName(), rootNode)
 
     // PHASE 1: Inject phantom symbols for better resolution
     // PHANTOM INJECTION REMOVED (Phase 3): fake this/constructor/globals polluted indexes.
@@ -5618,6 +5692,14 @@ class TypeScriptAnalysisRunner {
       if (!sourceNode) return
 
       const modulePath = stringContent(sourceNode)
+      // `import type { T } from "m"` names a dependency the COMPILER erases.
+      // The edge was already emitted (the specifiers are read either way), so
+      // this adds no edge and removes none; it records which of the two kinds
+      // this is, so a consumer reading the graph can tell a type dependency from
+      // a runtime one instead of inferring it. Measured before the change: 271
+      // of 271 element-plus files with a type-only import emitted an edge and 0
+      // of those edges carried any type-only marker.
+      const typeOnly = isTypeOnlyImport(node)
       if (isImportRequireClause(node)) {
         const clauseNode = node.namedChildren.find((c: any) => c && c.type === "import_require_clause")
         const bindNode = clauseNode?.namedChildren?.find((c: any) => c && c.type === "identifier")
@@ -5627,7 +5709,7 @@ class TypeScriptAnalysisRunner {
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
           ...this.lineField(bindNode ?? sourceNode),
-          metadata: { module: modulePath, isRequire: true, isDefault: !!bindNode },
+          metadata: { module: modulePath, isRequire: true, isDefault: !!bindNode, isTypeOnly: typeOnly },
         })
         return
       }
@@ -5656,14 +5738,18 @@ class TypeScriptAnalysisRunner {
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
           ...this.lineField(sourceNode),
-          metadata: { module: modulePath, isSideEffectImport: true },
+          metadata: { module: modulePath, isSideEffectImport: true, isTypeOnly: typeOnly },
         })
         return
       }
 
       // Create import relationships (leaf identity: source is the module leaf)
-      for (const { item, node: itemNode } of items) {
+      for (const { item, node: itemNode, typeOnly: itemTypeOnlyFlag } of items) {
         const itemName = item.split(" as ")[0].replace("* as ", "")
+        // Statement-level `import type` erases everything it names, so it wins;
+        // otherwise the INLINE `type` modifier on this specifier decides, and a
+        // specifier with neither is a runtime dependency.
+        const itemTypeOnly = typeOnly || itemTypeOnlyFlag
 
         relationships.push({
           source: this.moduleLeafName(),
@@ -5675,6 +5761,7 @@ class TypeScriptAnalysisRunner {
           metadata: {
             module: modulePath,
             alias: item.indexOf(" as ") !== -1 ? item.split(" as ")[1] : undefined,
+            isTypeOnly: itemTypeOnly,
           },
         })
       }
@@ -5761,8 +5848,40 @@ class TypeScriptAnalysisRunner {
     }
   }
 
+  /**
+   * The MODULE an `imports` / `exports` edge is sourced from.
+   *
+   * Leaf identity is the family contract (see the comment block above
+   * `hasToken`): sources and targets are leaf names, never file-qualified ids.
+   * The leaf is the basename minus its last extension.
+   *
+   * A DECLARATION file is the one place where that rule names a module nobody
+   * else spells. `path.extname("env.d.ts")` is `.ts`, so the leaf came out
+   * `env.d` — while TypeScript, and every consumer that joins these edges, calls
+   * that module `env`. Measured by script/m14/ts-production-drop.mjs on
+   * element-plus: 368 `imports` + `exports` edges across 3 `.d.ts` files were
+   * sourced from `env.d` / `components.d` / `index.d`, and a lane oracle run
+   * against the same corpus disagreed with the analyzer on 365 of them for that
+   * reason alone before the comparison was moved onto the target half.
+   *
+   * So the `.d` goes too. It is a spelling fix, not a new rule: the module of
+   * `foo.d.ts` is `foo`, exactly as the module of `foo.ts` is `foo`.
+   *
+   * Deliberately NOT fixed here, because it is a family convention rather than a
+   * bug and changing it would be a cross-lane decision: leaf identity is
+   * ambiguous by construction. Measured on the same run, 10 module leaves are
+   * shared by more than one file — `index` by 43 files, `css` by 21, `instance`
+   * by 9, `types` by 3, `constants` by 5. Reported, not changed.
+   */
   private moduleLeafName(): string {
-    return path.basename(this.currentFile, path.extname(this.currentFile))
+    const base = path.basename(this.currentFile)
+    const ext = path.extname(base)
+    let leaf = ext.length > 0 ? base.slice(0, base.length - ext.length) : base
+    // `env.d.ts`, `env.d.mts`, `env.d.cts` all declare module `env`. A file
+    // literally named `.d.ts` keeps its name: the guard is on the stem being
+    // longer than the suffix, not on the pattern.
+    if (leaf.length > 2 && leaf.endsWith(".d")) leaf = leaf.slice(0, leaf.length - 2)
+    return leaf
   }
 
   // ========================================================================
@@ -6022,6 +6141,62 @@ class TypeScriptAnalysisRunner {
     return this.typeInference.inferFunctionReturnType(node)
   }
 
+/**
+   * The heritage base NAME for one clause child, with type arguments removed.
+   *
+   * Applied to CLASS `implements` only, and only after measuring which clause
+   * shapes tree-sitter-typescript 0.23.2 actually produces. It produces THREE:
+   *
+   *   class `extends GenBase<string>`   -> [type_identifier, type_arguments]
+   *   class `extends ns.QBase<string>`  -> [member_expression, type_arguments]
+   *   class `implements Gen<string>`    -> [generic_type]            <-- ONE node
+   *   interface `extends A<string>`     -> [generic_type]            <-- ONE node
+   *
+   * So a generic heritage entry arrives EITHER as a sibling `type_arguments`
+   * node (both class-extends shapes, handled by the existing sibling skip) OR as
+   * a single `generic_type` child whose `.text` still carries the arguments
+   * (class-implements, and interface-extends, which is why
+   * `extractInterfaceExtends` has stripped since M49 #759). The
+   * `type_arguments` skip cannot see the second kind, and that is the whole bug.
+   *
+   * Measured costs when class `implements` kept its arguments:
+   *
+   *  1. PRODUCTION DELETED THE EDGE. `filterNoiseRelationships`
+   *     (src/ast/pool-worker.ts:654) drops any target whose leaf contains `<`
+   *     or `>`, so `implements Observer<T>` never reached the index. Measured by
+   *     running the analyzer and `parseFile` on the same file and diffing:
+   *       rxjs    implements  51 raw ->  43 production,  8 lost (15.69%), 6 files
+   *       nest    implements 252 raw -> 213 production, 39 lost (15.48%), 39 files
+   *       typeorm implements 158 raw -> 127 production, 31 lost (19.62%), 30 files
+   *     78 losses over three corpora, every one of them this shape and nothing
+   *     else. After the fix all three read 0 lost.
+   *  2. THE ENDPOINT COULD NOT BIND. `Observer<T>` is not a declared name.
+   *  3. THE STRUCTURAL OVERRIDE ARM COULD NOT PAIR, because it resolves the base
+   *     by name: `ifaceByName.get("Subscribable<T>")` never matches the declared
+   *     `Subscribable`, so `ObservableImpl.subscribe -> Subscribable.subscribe`
+   *     was missing while both members were in the same file. That one file went
+   *     from 1 `overrides` edge to 7.
+   *
+   * The oracle already does this and has for a long time — differential.ts's
+   * heritage `collect` strips at the first `<` for every TYPE node, citing the
+   * identical groovy `Cache<T>` case. So this brings the analyzer into lockstep
+   * instead of inventing a third spelling.
+   *
+   * The dotted path is deliberately KEPT (`ns.Base` stays `ns.Base`), which is
+   * what the oracle's TYPE branch does and what the override arms' comments
+   * already rely on ("the base name is used VERBATIM ... a qualified or generic
+   * target is therefore unresolved on both sides, which is what lockstep
+   * means"). Taking the leaf here would move qualified heritage on one side
+   * only. `extractInterfaceExtends` below does go on to take the leaf; that
+   * asymmetry predates this fix and is left alone rather than changed silently.
+   *
+   * No regular expression: `indexOf` + `slice`.
+   */
+  private static heritageBaseName(text: string): string {
+    const lt = text.indexOf("<")
+    return lt === -1 ? text : text.slice(0, lt).trim()
+  }
+
   private extractClassHeritage(node: Node): { extends?: string[]; implements?: string[]; extendsLines?: number[]; implementsLines?: number[] } {
     const result: { extends?: string[]; implements?: string[]; extendsLines?: number[]; implementsLines?: number[] } = {}
 
@@ -6045,6 +6220,20 @@ class TypeScriptAnalysisRunner {
               // wholesale fabricated an Extends edge to "<string>". Skip
               // argument nodes; take the base type text only.
               if (type.type === "type_arguments") continue
+              // MEASURED, and the reason this call site is NOT stripped even
+              // though the implements one below is: every class-extends shape
+              // tree-sitter-typescript 0.23.2 produces carries its arguments as a
+              // SIBLING `type_arguments` node, so the skip above already removed
+              // them. Probed all three shapes:
+              //   extends GenBase<string>    -> [type_identifier, type_arguments]
+              //   extends ns.QBase<string>   -> [member_expression, type_arguments]
+              //   extends ns2.Plain          -> [member_expression]
+              // A strip added here was mutant-tested and SURVIVED — no fixture can
+              // kill it, because no shape reaches it with arguments still attached.
+              // Shipping it would be untestable defensive code, so it is not here.
+              // (INTERFACE heritage is the opposite case and does need the strip:
+              // `extends A<string>` is a single `generic_type` child, which is why
+              // extractInterfaceExtends has carried one since M49 #759.)
               result.extends.push(type.text)
               // M59 (#825): the base TYPE NAME's line, kept parallel to the
               // name list. The subclass's own declaration line is NOT it —
@@ -6057,7 +6246,10 @@ class TypeScriptAnalysisRunner {
             for (let k = 0; k < heritageClause.namedChildCount; k++) {
               const type = heritageClause.namedChild(k)
               if (!type || type.type === "type_arguments") continue
-              result.implements.push(type.text)
+              // See heritageBaseName: an implements entry written with type
+              // arguments arrives as ONE `generic_type` child, so the
+              // `type_arguments` skip above cannot see the arguments.
+              result.implements.push(TypeScriptAnalysisRunner.heritageBaseName(type.text))
               // M59.A7 (corpus sweep after the M49 W22 fix): the M59 round gave
               // `extends` its base-name line but left `implements` unstamped, so
               // every `implements` edge was the ONE relationship kind the web

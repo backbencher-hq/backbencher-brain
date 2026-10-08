@@ -66,6 +66,7 @@ async function extractEmittedTypes(): Promise<{ named: Set<string>; anon: Set<st
     try {
       if (statSync(join(REPO, f)).size < 1024) continue
       const tree = parser.parse(readFileSync(join(REPO, f), "utf8"))
+      if (!tree) throw new Error("parser.parse returned no tree (null result)")
       const stack: any[] = [tree.rootNode]
       while (stack.length) {
         const n = stack.pop()!

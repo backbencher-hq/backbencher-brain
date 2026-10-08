@@ -175,6 +175,7 @@ try {
     corpusFiles++
     corpusBytes += text.length
     const tree = parser.parse(text)
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     absorb(tree, `corpus:${rel}`)
     tree.delete?.()
   }
@@ -183,6 +184,7 @@ try {
   for (const f of readdirSync("validation/m12/fixtures/sql").filter((x) => x.endsWith(".sql"))) {
     corpusFiles++
     const tree = parser.parse(readFileSync(join("validation/m12/fixtures/sql", f), "utf8"))
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     absorb(tree, `m12-fixture:${f}`)
     tree.delete?.()
   }
@@ -191,6 +193,7 @@ if (existsSync(PROBE_DIR)) {
   for (const f of readdirSync(PROBE_DIR).filter((x) => x.endsWith(".sql")).sort()) {
     probeFiles++
     const tree = parser.parse(readFileSync(join(PROBE_DIR, f), "utf8"))
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
     absorb(tree, `probe:${f}`)
     tree.delete?.()
   }

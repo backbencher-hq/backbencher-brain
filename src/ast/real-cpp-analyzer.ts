@@ -150,7 +150,7 @@ function macroDecoratedClassDecl(spec: Node): { name: string; nameNode: Node; bo
   // (a) a real specifier carries its own body and needs none of this
   for (let i = 0; i < spec.namedChildCount; i++) {
     const c = spec.namedChild(i)
-    if (c && (c.type === "class_body" || c.type === "field_declaration_list")) return null
+    if (c && c.type === "field_declaration_list") return null
   }
   // (1) the name field must read as a MACRO, not as the class's own name
   const nameField = spec.childForFieldName?.("name")?.text?.trim()
@@ -165,9 +165,23 @@ function macroDecoratedClassDecl(spec: Node): { name: string; nameNode: Node; bo
   }
   if (!body) return null
   // (2) the real name is a bare identifier SIBLING of the specifier, outside the body
+  //
+  // D29 — the `c === spec || c === body` guard this loop used to carry was DEAD, and
+  // the shared hygiene gate named it (`bare-node-identity-comparison`, KAD2/TSD2).
+  // Measured on the wired web-tree-sitter: two wrappers for the same underlying node
+  // compare FALSE by identity and TRUE by `.id` —
+  //
+  //     namedChild(0) === namedChild(0)   ->  false
+  //     namedChild(0).id === ...id        ->  true
+  //
+  // so the comparison never skipped anything. It was also REDUNDANT: `spec` is a
+  // class/struct/union specifier and `body` is a `compound_statement`, and the very
+  // next line already refuses every node whose type is not `identifier`. Removed
+  // rather than repaired to `.id`, because a guard that cannot fire is not a guard,
+  // and `.id` would be a second answer to a question the type check already answers.
   for (let i = 0; i < parent.namedChildCount; i++) {
     const c = parent.namedChild(i)
-    if (!c || c === spec || c === body) continue
+    if (!c) continue
     if (c.type !== "identifier") continue
     if (c.endIndex <= body.startIndex) {
       return { name: c.text.trim(), nameNode: c, body, owner: parent }
@@ -881,6 +895,30 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     content: string,
     filePath: string,
+    /**
+     * M14 ONTOLOGY (this round). The engine's FOURTH argument, which this
+     * analyzer did not declare — so `AnalyzeContext.overrideCompanion` had never
+     * reached it, and the cross-file half of `overrides` had no channel to
+     * arrive on. That is the PERL-MR14→MR15 defect verbatim, and
+     * `override-context.ts` names it: "Python's `analyze()` had stopped at three
+     * parameters, so the engine's fourth never reached it, and the resolver read
+     * `(ctx as any)._overrideCompanion` — an underscore-prefixed key that nothing
+     * populates. The rule was written, wired to a channel, shipped, and had never
+     * run."
+     *
+     * The cpp case was one step quieter, because no rule was written yet: the
+     * override resolver resolved bases from `classBases`, a per-file map, and
+     * nothing consulted a project-level one. Measured cost of the per-file-only
+     * answer: 185 `overrides` edges against 735 `override`-keyword sites in the
+     * corpus — the keyword is the author's own assertion, and it was read for
+     * `decorators` only.
+     *
+     * Declaring the parameter is the whole fix on this side. Populating it in
+     * production is a one-word change to `parallel-indexer.ts` (its companion
+     * pass currently runs for `["perl", "python"]`); that file is not this lane's
+     * to edit, and the need is reported instead.
+     */
+    context?: ASTEngine.AnalyzeContext,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
@@ -909,8 +947,22 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     const referencesSeen = new Set<string>()
     let fileDecisions = 0
     const classVirtuals = new Map<string, Map<string, string[]>>()
-    const pendingOverrides: Array<{ cls: string; method: string; params: string; line?: number }> = []
+    const pendingOverrides: Array<{ cls: string; method: string; params: string; line?: number; keyword?: "override" | "final" }> = []
     const classBases = new Map<string, string[]>()
+    // M14 ONTOLOGY (this round): the `implements` registries. Function-scope, not
+    // branch-scope, because both are FILLED and READ at different times — a
+    // derived class may precede its contract base in the file, so the answer is
+    // only available after the walk. Declaring them inside the class branch (as
+    // the first cut of this did) resets them on every class and makes the edge
+    // fire for whichever class happened to be walked last.
+    const classPureVirtuals = new Map<string, Set<string>>()
+    const pendingImplements: Array<{ derived: string; base: string; line: number }> = []
+    // The `exports` sites: a declaration carrying an export attribute, recorded at
+    // its own node and emitted after the walk so one edge per exported NAME holds
+    // however many times it is declared (an in-class declaration and an out-of-line
+    // definition are two nodes stating one export).
+    const pendingExports: Array<{ name: string; owner: string | null; line: number; spelling: string }> = []
+    const exportsSeen = new Set<string>()
 
     // CP1 (cpp review) bare-read resolution sets. C++ has no runtime —
     // every bare `identifier` that names a file-visible VALUE is a Uses
@@ -1002,7 +1054,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               const lt = tt.text.indexOf("<")
               return lt > 0 ? tt.text.slice(0, lt).trim() : null
             })()
-          const body = this.findChild(n, "class_body") || this.findChild(n, "field_declaration_list")
+          const body = this.findChild(n, "field_declaration_list")
           if (nm && body) {
             for (let i = n.namedChildCount - 1; i >= 0; i--) {
               const c = n.namedChild(i)
@@ -1284,7 +1336,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (t.includes("statement") || t.includes("declaration") || t.includes("declarator") ||
             t.includes("specifier") || t.includes("enumerator") || t.includes("compound") ||
             t.includes("argument_list") || t.includes("init") || t.includes("expression") ||
-            t.includes("function_definition") || t.includes("class_body") || t.includes("field_declaration_list")) return false
+            t.includes("function_definition") || t.includes("field_declaration_list")) return false
         if (t.startsWith("preproc_")) return true
         cur = cur.parent
       }
@@ -1307,7 +1359,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (t === "qualified_identifier") return true
         if (t.includes("statement") || t.includes("declaration") || t.includes("declarator") ||
             t.includes("expression") || t.includes("function_definition") || t.includes("field_declaration_list") ||
-            t.includes("class_body") || t.includes("argument_list")) return false
+            t.includes("argument_list")) return false
         cur = cur.parent
       }
       return false
@@ -1319,7 +1371,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         const t: string = cur.type
         if (t === "attribute" || t === "attribute_declaration" || t === "attribute_specifier") return true
         if (t.includes("statement") || t.includes("declaration") || t.includes("function_definition") ||
-            t.includes("expression") || t.includes("class_body")) return false
+            t.includes("expression")) return false
         cur = cur.parent
       }
       return false
@@ -1778,7 +1830,24 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // keyword — `using namespace\n  std;` would otherwise name the line
                 // above the module.
                 line_number: this.nodeLine(targetNode ?? node),
-                metadata: { isUsingDeclaration: true, isImport: true, relationshipType: "using_dependency" },
+                // M14-HONESTY-CONTRACT §4: an edge below 1.0 carries a
+                // machine-readable reason code, and `classifyEvidenceTier` defaults
+                // a MISSING confidence to 1 — so a 0.9 with no code is a number a
+                // consumer can bucket but not explain. Measured over 929 corpus
+                // files before this field existed: 625 `references` rows at 0.9 and
+                // 0 of them with a code.
+                //
+                // What the 0.9 means here, stated so it is checkable: the edge
+                // binds the NAME the source spells, and nothing inside the named
+                // module. `using std::vector;` proves a dependency on `std`; it
+                // does not prove which declaration of `vector` is meant, and this
+                // analyzer does no header-level resolution to find out.
+                metadata: {
+                  isUsingDeclaration: true,
+                  isImport: true,
+                  relationshipType: "using_dependency",
+                  reasonCode: "using-dependency-name-only",
+                },
               })
             }
           }
@@ -1986,6 +2055,29 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // isIncludeDependency, so the completeness gate's Section B saw no
           // pin for the include dependency kind.
           //
+          // M60/#910, the ONTOLOGY correction (this round, measured): the KIND
+          // was wrong, not the metadata. A `#include` is C++'s file inclusion —
+          // the same construct the C lane emits as a FIRST-CLASS `imports`
+          // edge, and the one every `imports`-bearing language (ts/js/python/
+          // dart/bash/lua/makefile/php/rust) already emits as its own kind. C++
+          // was emitting `references` + `metadata.isImport`, and the cost of
+          // that is measured, not argued: the one reader that answers "what
+          // does this module depend on" — the LSP usages file-level section,
+          // `relationship_type IN ('imports','exports')` (`graph_request.ts`,
+          // `graph_usages.ts`) — could not see a SINGLE C++ include, ever.
+          // The metadata markers stay (they are the evidence: the written path,
+          // system-vs-quoted); the relationship KIND now says what it is.
+          // `module` and `fileLevel` let the store name the importing file on a
+          // row whose source is file-scope — the same two fields the C lane
+          // sets, read by `parallel-indexer`'s `importerExternal`.
+          //
+          // This is a LABEL move, not an edge move: measured 5,404 `#include`
+          // sites in 905 corpus files, of which 5,118 were distinct module
+          // names (the remainder are repeats D3 already collapses). No edge is
+          // gained or lost; the count of include-dependency rows is identical
+          // before and after, and `cpp/include-kind-imports` pins BOTH the new
+          // kind and the absence of the old one.
+          //
           // D3: one edge per dependency. `referencesSeen` is keyed on the
           // module name alone, so the EDGE is the dependency; the `imports`
           // entry above was still pushed for every directive, which is the
@@ -1996,14 +2088,22 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             relationships.push({
               source: "global",
               target: includePath,
-              type: ASTEngine.RelationshipType.References,
+              type: ASTEngine.RelationshipType.Imports,
               confidence: 1.0,
               // M59.A7 (#825), the C lane's rule: the include directive is the
               // source construct and its WRITTEN NAME is the path token — take
               // that node's line, not the directive's (a multi-line include puts
               // the path last).
               line_number: this.nodeLine(pathNode ?? node),
-              metadata: { relationshipType: "include_dependency", isSystem, isImport: true, isIncludeDependency: true },
+              metadata: {
+                relationshipType: "include_dependency",
+                isSystem,
+                isSystemInclude: isSystem,
+                isImport: true,
+                isIncludeDependency: true,
+                module: includePath,
+                fileLevel: true,
+              },
             })
           }
         }
@@ -2076,7 +2176,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // push (matches the C negative contract: forward decls produce no
         // symbol). Only the type identifier lives inside, so walk children
         // (harmless) and continue.
-        let bodyNode = this.findChild(node, "class_body") || this.findChild(node, "field_declaration_list")
+        let bodyNode = this.findChild(node, "field_declaration_list")
         if (!bodyNode) {
           // D15: this specifier has no body, but it may still BE a class whose head
           // carries a macro — `class GTEST_API_ Widget { … };`, which the grammar
@@ -2183,6 +2283,41 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         pushedScope = true
 
         const baseClasses: string[] = []
+        /**
+         * M14 ONTOLOGY (this round): `implements`.
+         *
+         * The previous ruling — "C++ has no separate interface construct:
+         * interface satisfaction IS inheritance, and inheritance is emitted as
+         * `extends`" — was PROSE, and the ontology gate exists because prose
+         * lost this argument once already. It is also wrong about the language,
+         * and the corpus says so with a number: the construct IS spelled, in the
+         * base clause itself, by `virtual void f() = 0;`. A base with at least
+         * one pure virtual member IS C++'s interface (C.120, "prefer using
+         * abstract interfaces as NVI"), and `struct Derived : public IFace` is
+         * the one spelling that says "implements this contract".
+         *
+         * What makes it derivable rather than invented is that `implements` adds
+         * information `extends` does not: WHICH base is a contract and which
+         * carries state. Both edges are emitted for such a base, deliberately,
+         * because they are two facts — the family contract that forbids a
+         * duplicate row is about one fact stated twice (containment, an include
+         * dependency), not about one pair carrying two labels.
+         *
+         * The rule is applied at EMISSION time, not at read time, for a reason
+         * that is a correctness requirement rather than a style choice: whether a
+         * base is a contract depends on whether a pure virtual is declared in its
+         * BODY, which for a base declared LATER in the file, or in another file,
+         * is not known when the derived class is walked. So the registry is
+         * filled first (every class-scope `= 0` member, at its own node) and the
+         * `implements` edges are emitted after the walk, from the same
+         * `classBases` registry `overrides` uses. A base the analyzer never saw
+         * declared simply produces no `implements` edge, which is the honest
+         * per-file answer rather than a guess.
+         *
+         * Measured population over the corpus: 127 pure-virtual members in 26
+         * files, 28 classes that declare at least one, 171 (derived → contract)
+         * pairs.
+         */
         const baseClause = this.findChild(node, "base_class_clause")
         if (baseClause) {
           // Pinned-wasm shape: base_class_clause children are FLAT
@@ -2226,6 +2361,12 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                 line_number: this.nameLine(typeNode),
                 metadata: { nodeType: typeNode.type },
               })
+              // The `implements` candidate is recorded HERE, with the line the
+              // base name is written on, and adjudicated after the walk once
+              // the pure-virtual registry is complete. Recording it here rather
+              // than emitting it here is the whole of the rule's correctness:
+              // see the registry's own comment.
+              pendingImplements.push({ derived: name, base: target, line: this.nameLine(typeNode) ?? 1 })
             }
           }
           // Registry key = the SAME leaf the edge names (template args stripped,
@@ -2253,6 +2394,21 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         symbols.push(sym)
         newContext.symbolRef = sym
+        // `exports`: `class __declspec(dllexport) Foo { … };` and
+        // `struct __attribute__((visibility("default"))) Bar { … };` export the
+        // class name itself. Recorded on the same list as functions so the post-
+        // loop dedupes across both declaration forms.
+        {
+          const spelling = this.exportAttributeSpelling(node)
+          if (spelling) {
+            pendingExports.push({
+              name,
+              owner: parentContext?.name ?? null,
+              line: this.nameLine(node) ?? 1,
+              spelling,
+            })
+          }
+        }
       } else if (
         type === "compound_statement" && enclosingFunctionScope() === null &&
         macroDeclaredBody(node) &&
@@ -2831,8 +2987,57 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!prev.includes(normParams)) sigs.set(funcName, [...prev, normParams])
             else sigs.set(funcName, prev)
             classVirtuals.set(parentContext.name, sigs)
+            // M14 ONTOLOGY (this round): a PURE VIRTUAL — `virtual void f() = 0;`
+            // — is what makes a class an interface, so it is recorded on the
+            // declaring class for `implements`. There is NO `pure_specifier` node
+            // on the pinned grammar (measured: `grammar.js` defines no such rule
+            // and the wasm produces none across 182 node types), so the marker is
+            // structural — an unnamed `=` child of the declaration whose next
+            // sibling is a `number_literal` reading `0`. That is the only shape
+            // tree-sitter-cpp gives a pure-specifier, and reading it as "the
+            // declarator chain plus a zero initializer" would be a fabrication:
+            // `void f() = 0` is not a default argument, and a member initializer
+            // list `= { 0 }` is a different node entirely.
+            if (this.isPureVirtualDeclaration(node)) {
+              const pure = classPureVirtuals.get(parentContext.name) ?? new Set<string>()
+              pure.add(funcName)
+              classPureVirtuals.set(parentContext.name, pure)
+            }
+            // M14 ONTOLOGY (this round): the `override`/`final` keyword is the
+            // AUTHOR'S ASSERTION that this method overrides a base virtual — the
+            // strongest evidence C++ offers, and it was being read for `decorators`
+            // only. Carried into the record so the resolver can (a) promote a
+            // signature match from a 0.9 guess to a 1.0 fact and (b) accept a
+            // cross-file base from `AnalyzeContext.overrideCompanion`, which a
+            // signature cannot be checked against (the companion carries NAMES).
+            const overrideKeyword = this.functionOverrideSpecifier(node)
             if ((classBases.get(parentContext.name)?.length ?? 0) > 0) {
-              pendingOverrides.push({ cls: parentContext.name, method: funcName, params: normParams, line: this.nodeLine(node) })
+              pendingOverrides.push({
+                cls: parentContext.name,
+                method: funcName,
+                params: normParams,
+                line: this.nodeLine(node),
+                ...(overrideKeyword ? { keyword: overrideKeyword } : {}),
+              })
+            }
+          }
+
+          // `exports`: a declaration carrying `__declspec(dllexport)` or
+          // `__attribute__((visibility("default")))` exports its name from this
+          // translation unit. Recorded here, emitted after the walk, one edge per
+          // name. The owner is included in the TARGET so an exported member is not
+          // confused with a same-named file-scope entity — the same
+          // `Owner.member` endpoint convention `overrides` already uses.
+          {
+            const spelling = this.exportAttributeSpelling(node)
+            if (spelling) {
+              const owner = parentContext && parentContext.kind !== ASTEngine.SymbolKind.Function ? parentContext.name : null
+              pendingExports.push({
+                name: funcName,
+                owner,
+                line: this.nodeLine(funcNameNode ?? node) ?? 1,
+                spelling,
+              })
             }
           }
 
@@ -3056,7 +3261,18 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               // carried no line at all, which is the #870 measurement (a member
               // read reported at line 0 in the fmt lane).
               line_number: this.nodeLine(field),
-              metadata: { relationshipType: "field_access", accessedFrom: obj?.text },
+              // M14-HONESTY-CONTRACT §4, and the code says what the 0.9 means:
+              // the edge states that THIS SCOPE READS a member with this name, and
+              // the RECEIVER'S TYPE is not resolved — nothing here carries C++ type
+              // inference, so which class declares the member is unknown and a
+              // same-named member on an unrelated class is indistinguishable from
+              // the intended one. Measured before this field existed: 3,012 `uses`
+              // rows at 0.9, none carrying a code.
+              metadata: {
+                relationshipType: "field_access",
+                accessedFrom: obj?.text,
+                reasonCode: "member-read-receiver-type-unresolved",
+              },
             })
           }
         }
@@ -3193,13 +3409,66 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // ERROR-recovers the shape (fn.hasError). A mangled callee has no
           // trustworthy leaf — emit nothing.
           const calleeIsError = !!funcNode.hasError
-          if (!targetName.startsWith("operator") && !calleeIsTempCall && !calleeIsUnnamed && !calleeIsError) {
+          /**
+           * D25 — A CLASS CALLING ITSELF. Two rules of the language, and the edge
+           * violates both at once:
+           *
+           *   [class.mem]  a class body DECLARES; it does not execute. A
+           *                `call_expression` at class scope is not a call at all.
+           *   [class.ctor] no member of a class may have the class's own name —
+           *                the only such member is the constructor, which is not
+           *                callable and has no body to call from.
+           *
+           * So `calls C -> C` sourced at a class is a fabrication. The shape
+           * arrives through the D15/D8 recovery — a macro-decorated head
+           * (`class BENCHMARK_EXPORT CPUInfo { … }`) hands its body over as an
+           * ERROR'd `compound_statement` and the constructor declaration inside it
+           * is recovered as an expression statement.
+           *
+           * Measured over 912 cpp corpus files: 1,455 `calls` rows with
+           * `source === target`, of which 923 are sourced at a METHOD and 450 at a
+           * FUNCTION — all of them real recursion, and every one of them survives
+           * this rule because a method or function body is the position where a
+           * self-call is legal. 80 are sourced at a CLASS and 2 at a VARIABLE
+           * (`BenchmarkReporter`, reporter.h:131 — a macro-decorated head published
+           * as a variable, the same recovery).
+           *
+           * The control that makes the rule mean something: `C()` inside a member
+           * function body IS a legal default-construction of a temporary, and it is
+           * not refused, because the enclosing scope there is the METHOD `f`, not
+           * the class `C`. The discriminator is the enclosing scope's kind, not the
+           * text.
+           */
+          const ownerIsTypeScope =
+            parentContext?.kind === ASTEngine.SymbolKind.Class ||
+            parentContext?.kind === ASTEngine.SymbolKind.Struct
+          const classCallingItself = ownerIsTypeScope && parentContext?.name === targetName
+          if (!targetName.startsWith("operator") && !calleeIsTempCall && !calleeIsUnnamed && !calleeIsError && !classCallingItself) {
             relationships.push({
               source,
               target: targetName,
               fromSymbol: source,
               toSymbol: qualifiedName,
               type: ASTEngine.RelationshipType.Calls,
+              // M14 ONTOLOGY (this round), question 6 ("is `confidence` right?").
+              // This row carried NO `confidence` at all, and it is the largest edge
+              // family in the lane: measured 101,340 `calls` rows over 929 corpus
+              // files, every one of them `undefined`, against a documentation
+              // table that claimed 1.0. A consumer reading `rel.confidence` got
+              // `undefined` on three quarters of the lane's output, and
+              // `classifyEvidenceTier` papered over it by defaulting a missing
+              // value to 1 — so the missing field was invisible from inside the
+              // analyzer and from the evidence tier at the same time.
+              //
+              // 1.0 is the honest value, and it is not a claim that the CALLEE is
+              // the function the author meant: it is a claim about what the edge
+              // IS. A `call_expression` whose callee leaf is a name is a
+              // deterministic AST fact, which is why `uses`/`extends`/
+              // `instantiates`/`references` all publish a number for the same kind
+              // of edge. Which overload a bare name selects is recorded separately
+              // and honestly, in `metadata.qualified` (the full callee path) — it
+              // is not a confidence question.
+              confidence: 1.0,
               // M59.A7 (#825) / M60.P1 (#873): ONE line, ONE base, ONE node. The
               // row's `line_number` is the callee leaf's line (the node that
               // names the edge) and the metadata mirror repeats THAT value
@@ -3406,9 +3675,40 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // POST-LOOP override resolution: every class and virtual is known now.
     // Resolves transitively (A->B->C) with a depth cap.
+    //
+    // M14 ONTOLOGY (this round) — the `override`/`final` keyword, and the
+    // cross-file companion. Two additions, both measured, and the numbers say the
+    // previous form was reading only a quarter of what the language spells out:
+    // 735 `override`-keyword sites in the corpus, 185 `overrides` edges emitted.
+    //
+    // What the keyword buys, precisely:
+    //
+    //   - CONFIDENCE. `void D::m(int) override` is not a shape to be matched; it
+    //     is the author asserting that `m` overrides a base virtual. Once a base
+    //     with a matching signature is found, the edge is a FACT (1.0), not a
+    //     0.9 signature-match inference. Without the keyword the same edge stays
+    //     0.9, because without it a same-name/same-parameter coincidence is
+    //     indistinguishable from an override on this evidence alone.
+    //   - CROSS-FILE BASES. `AnalyzeContext.overrideCompanion` (the channel
+    //     `types.ts` documents and eighteen sibling lanes already read) carries
+    //     `owner → declared method NAMES` from previously parsed files. It has
+    //     no signatures, so on its own it cannot tell an override from
+    //     name-hiding — which is exactly why PERL-MR15 measured 75.6% of its
+    //     companion-based edges to be FALSE and withdrew them. Here the keyword
+    //     supplies what the companion lacks, and the combination is sound: the
+    //     companion proves the base DECLARES the method, the keyword proves the
+    //     method OVERRIDES one. 0.95, not 1.0, because "the first ancestor in
+    //     declaration order that declares the method" is still a choice.
+    //
+    // Without a keyword and without an in-file signature match, nothing is
+    // emitted — including for a companion-declared base. That is the perl-MR15
+    // ruling applied rather than re-derived.
+    const companion: Map<string, Set<string>> | undefined =
+      context?.overrideCompanion instanceof Map ? context.overrideCompanion : undefined
     {
-      const resolves = (startCls: string, method: string, params: string): string[] => {
-        const found: string[] = []
+      type Resolved = { base: string; confidence: number; reasonCode: string }
+      const resolves = (startCls: string, method: string, params: string, keyword: boolean): Resolved[] => {
+        const found: Resolved[] = []
         const seen = new Set<string>()
         const queue = [startCls]
         let depth = 0
@@ -3432,7 +3732,23 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             // C++ name-hiding, not virtual dispatch. CPPD11: the registry is
             // now a per-name LIST of signatures — any matching signature is a
             // real virtual override.
-            if (baseSigs && (baseSigs.get(method) ?? []).includes(params)) found.push(base)
+            const sigMatch = !!baseSigs && (baseSigs.get(method) ?? []).includes(params)
+            if (sigMatch) {
+              found.push({
+                base,
+                confidence: keyword ? 1.0 : 0.9,
+                reasonCode: keyword ? "override-keyword+signature-match" : "signature-match",
+              })
+            } else if (keyword && companion) {
+              // A base declared in ANOTHER file has no in-file registry entry, so
+              // the signature arm is silent for it. The companion supplies the
+              // declaration; the keyword supplies the intent. No keyword means no
+              // edge here — see the block comment above.
+              const declared = companion.get(base)
+              if (declared && declared.has(method)) {
+                found.push({ base, confidence: 0.95, reasonCode: "override-keyword+companion-declares-method" })
+              }
+            }
             queue.push(base)
           }
         }
@@ -3443,22 +3759,103 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       // — emit each pair once.
       const seenOv = new Set<string>()
       for (const pend of pendingOverrides) {
-        for (const base of resolves(pend.cls, pend.method, pend.params)) {
-          const k = `${pend.cls}.${pend.method}|${base}.${pend.method}`
+        for (const hit of resolves(pend.cls, pend.method, pend.params, !!pend.keyword)) {
+          const k = `${pend.cls}.${pend.method}|${hit.base}.${pend.method}`
           if (seenOv.has(k)) continue
           seenOv.add(k)
           relationships.push({
             source: `${pend.cls}.${pend.method}`,
-            target: `${base}.${pend.method}`,
+            target: `${hit.base}.${pend.method}`,
             type: ASTEngine.RelationshipType.Overrides,
-            confidence: 0.9,
+            confidence: hit.confidence,
             // M59.A7 (#825): the overriding method's own declaration site (the
             // pending record carries the line captured where the method was
             // walked — a post-loop resolution has no node to ask).
             line_number: pend.line,
-            metadata: { isVirtualOverride: true, reasonCode: "signature-match" },
+            metadata: {
+              isVirtualOverride: true,
+              reasonCode: hit.reasonCode,
+              // M14-HONESTY-CONTRACT §4: any edge under 1.0 carries a
+              // machine-readable reason code, and `override`/`final` is
+              // recorded so a reader can tell an asserted override from an
+              // inferred one without re-parsing the source.
+              ...(pend.keyword ? { overrideSpecifier: pend.keyword } : {}),
+            },
           })
         }
+      }
+    }
+
+    // M14 ONTOLOGY (this round): `implements`, emitted post-walk for the reason
+    // the registry comment gives — whether a base is a CONTRACT is a fact about
+    // the base's body, which is not known when the derived class is walked.
+    //
+    // One edge per (derived, base) pair. The `extends` edge for the same pair is
+    // NOT a duplicate of this one: containment is one fact stated once, whereas
+    // "inherits from" and "implements this contract" are two different readings
+    // of the same base clause, and only this one tells a consumer which bases
+    // carry no state. The population is measured, not estimated: 171
+    // (derived → contract) pairs over the corpus, and 12 of them inside
+    // `cpp-example` alone — so a ruling that `implements` does not apply to C++
+    // is falsified by the corpus, which is precisely the gate's own lesson about
+    // `overrides` having been ruled on prose for a whole wave.
+    {
+      const seenImpl = new Set<string>()
+      for (const pend of pendingImplements) {
+        const k = `${pend.derived} ${pend.base}`
+        if (seenImpl.has(k)) continue
+        const pure = classPureVirtuals.get(pend.base)
+        // No in-file declaration of the base, or a base with no pure virtual:
+        // either way there is no contract to implement, and a guess here is the
+        // fabrication this workstream exists to prevent.
+        if (!pure || pure.size === 0) continue
+        seenImpl.add(k)
+        relationships.push({
+          source: pend.derived,
+          target: pend.base,
+          type: ASTEngine.RelationshipType.Implements,
+          confidence: 1.0,
+          line_number: pend.line,
+          metadata: {
+            // WHY this base is a contract, stated in machine-readable form so a
+            // consumer can re-derive it: the pure virtual members it declares.
+            reasonCode: "pure-virtual-base",
+            pureVirtuals: [...pure],
+            pureVirtualCount: pure.size,
+          },
+        })
+      }
+    }
+
+    // M14 ONTOLOGY (this round): `exports` relationships. The
+    // `ExportInfo[]` payload above is a FILE-SCOPE surface list ("everything
+    // public at the top level"), which is a different question from "the author
+    // marked this symbol as exported from this shared library". The graph edge
+    // carries the answer to the second question, and it is the only place it
+    // exists: a consumer asking "what does this library export" gets
+    // dllexport/visibility-default names, not every public top-level symbol.
+    {
+      for (const pend of pendingExports) {
+        const target = pend.owner ? `${pend.owner}.${pend.name}` : pend.name
+        if (exportsSeen.has(target)) continue
+        exportsSeen.add(target)
+        relationships.push({
+          source: "global",
+          target,
+          type: ASTEngine.RelationshipType.Exports,
+          confidence: 1.0,
+          // M59.A7 (#825): the exported NAME's line, which is the declaration's
+          // `nameLine`, not the attribute's — `__declspec` precedes the type.
+          line_number: pend.line,
+          metadata: {
+            // WHICH spelling declared the export. Recorded because the two
+            // mechanisms have different reach — `dllexport` is MSVC and
+            // `visibility("default")` is GCC/Clang ELF — and a reader triaging
+            // a symbol's visibility needs to know which one the author used.
+            exportSpelling: pend.spelling,
+            relationshipType: "export_attribute",
+          },
+        })
       }
     }
 
@@ -3491,7 +3888,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope
       if (!_owner) continue
-      const relKey = `${_owner} ${s.name}`
+      const relKey = `${_owner}\u0000${s.name}`
       if (containsSeen.has(relKey)) continue
       containsSeen.add(relKey)
       relationships.push({
@@ -3756,7 +4153,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       return false
     }
     return (spec.namedChildren ?? []).some(
-      (c: any) => c.type === "class_body" || c.type === "field_declaration_list",
+      (c: any) => c.type === "field_declaration_list",
     )
   }
 
@@ -4138,6 +4535,13 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       const t = String(r.type ?? "")
       const conf = typeof r.confidence === "number" ? r.confidence : 1
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      // M60/#910 (this round, cpp row): `#include` is now a first-class
+      // `imports` edge rather than `references` + metadata.isImport, and the
+      // tier follows the kind — the same rule the C lane states for the same
+      // construct. Without this arm the new kind fell through to the
+      // `usage_contextual` fallback below, which is the tier for a contextual
+      // usage and says nothing about a module dependency.
+      if (t === "imports") { md.evidenceClass = "import_based"; continue }
       if (t === "references") { md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"; continue }
       if (t === "extends" || t === "implements" || t === "overrides") {
         md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
@@ -4210,6 +4614,191 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
   private childText(node: Node, type: string): string | null {
     const child = this.findChild(node, type)
     return child ? child.text : null
+  }
+
+  /**
+   * The `override` / `final` `virtual_specifier` on a function declaration, or
+   * null. Read from the DECLARATOR, because that is where the pinned grammar puts
+   * it: measured on the fork,
+   *
+   *   field_declaration[declarator="go() override"]
+   *     primitive_type
+   *     function_declarator[declarator="go"]
+   *       field_identifier
+   *       parameter_list
+   *       virtual_specifier "override"        <- a CHILD of the declarator
+   *
+   * so a declaration-level scan never fires — which is why the `decorators`
+   * payload needed its own second lookup, and why override RESOLUTION ignored the
+   * strongest evidence C++ offers until this round.
+   */
+  private functionOverrideSpecifier(declaration: Node | null): "override" | "final" | null {
+    if (!declaration) return null
+    const fd = declaration.type === "function_declarator" ? declaration : this.findChild(declaration, "function_declarator")
+    if (!fd) return null
+    for (let i = 0; i < fd.childCount; i++) {
+      const c = fd.child(i)
+      if (c?.type !== "virtual_specifier") continue
+      const txt = String(c.text ?? "").trim()
+      if (txt === "override" || txt === "final") return txt
+    }
+    return null
+  }
+
+  /**
+   * The EXPORT attribute a declaration carries, or null. Which spelling exists is
+   * a measurement, not a preference — see `docs/analyzers/real-cpp-analyzer.md`
+   * "the exports construct, measured three ways".
+   *
+   * Two are readable on the pinned grammar and one of them is not:
+   *
+   *   1. `__declspec(dllexport)` — MSVC. The grammar keeps the paren group as a
+   *      `ms_declspec_modifier` node whose named children are the attribute names
+   *      (`ms_declspec_modifier [__declspec ( identifier)]`), so the spelling is a
+   *      node, not text.
+   *   2. `__attribute__((visibility("default")))` — GCC/Clang ELF. An
+   *      `attribute_specifier` holding an `argument_list` whose
+   *      `call_expression` names `visibility` with a `"default"` string argument.
+   *   3. `#define FOO __declspec(dllexport)` + `FOO void f();` — how both of the
+   *      above are ACTUALLY used. Measured over the corpus: 11 macro definitions
+   *      name `dllexport` and 0 declarations spell it inline except through one.
+   *      Reading that needs macro expansion, which is a DECLARED limitation of
+   *      this lane (M14-HONESTY-CONTRACT §3, "macro/template expansion
+   *      boundaries (c, cpp, rust, hcl)"), so the macro-mediated population is
+   *      reported with its count rather than resolved.
+   *
+   * `dllimport` is the opposite direction (this translation unit imports the
+   * symbol from another module) and `visibility("hidden")` is the opposite of
+   * default visibility, so neither is an export and neither is emitted.
+   */
+  private exportAttributeSpelling(node: Node): "declspec-dllexport" | "attribute-visibility-default" | "attribute-dllexport" | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "ms_declspec_modifier") {
+        for (let j = 0; j < c.namedChildCount; j++) {
+          const a = c.namedChild(j)
+          if (a?.type === "identifier" && a.text === "dllexport") return "declspec-dllexport"
+        }
+        continue
+      }
+      if (c.type === "attribute_specifier") {
+        // A role walk, not a text scan: find a `visibility` CALLED with `"default"`.
+        let hit = false
+        const visit = (n: Node): void => {
+          if (hit) return
+          if (n.type === "call_expression") {
+            const fn = n.childForFieldName?.("function")
+            if (fn && String(fn.text ?? "").trim() === "visibility") {
+              const args = n.childForFieldName?.("arguments")
+              if (args) {
+                for (let k = 0; k < args.namedChildCount; k++) {
+                  const arg = args.namedChild(k)
+                  const lit = arg?.type === "string_literal" ? arg : arg ? this.findChild(arg, "string_literal") : null
+                  if (lit && stripIncludeChars(String(lit.text ?? "")).trim() === "default") { hit = true; return }
+                }
+              }
+            }
+          }
+          for (let k = 0; k < n.namedChildCount; k++) { const g = n.namedChild(k); if (g) visit(g) }
+        }
+        visit(c)
+        if (hit) return "attribute-visibility-default"
+      }
+      if (c.type === "attribute_declaration") {
+        // The C++11 `[[...]]` SPELLING of the same two attributes, and the one the
+        // STANDARD defines: `[[gnu::visibility("default")]]` and
+        // `[[msvc::dllexport]]` are what a C++11-and-later author writes instead
+        // of the vendor keyword forms, and GCC, Clang and MSVC all accept them.
+        //
+        // It is measured, not assumed. On the pinned fork:
+        //
+        //   attribute_declaration "[[gnu::visibility(\"default\")]]"
+        //     (anon) [[            attribute_declaration
+        //     attribute "gnu::visibility(\"default\")"
+        //       identifier "gnu"      <- the VENDOR
+        //       (anon) ::
+        //       identifier "visibility" <- the ATTRIBUTE NAME (the last identifier)
+        //       argument_list "(\"default\")" > string_content "default"
+        //     (anon) ]]
+        //
+        // so the name to read is the LAST `identifier` of the `attribute` — the
+        // vendor prefix is not part of it — and the argument is a `string_literal`
+        // inside the `attribute`'s own `argument_list`. `[[nodiscard]]`,
+        // `[[maybe_unused]]`, `[[noreturn]]` and `[[deprecated]]` are the corpus's
+        // real population (285 / 9 / 8 / 6 of 308 `attribute_declaration` nodes over
+        // 912 cpp files) and none of them names an export, which is why the test is
+        // the attribute's NAME and not "this declaration carries an attribute".
+        const hit = this.attributeRoleExport(c)
+        if (hit) return hit
+      }
+    }
+    return null
+  }
+
+  /**
+   * Does an `attribute_declaration` (`[[...]]`) export its declaration?
+   *
+   * Returns the spelling, or null. Node walk only: the attribute's last
+   * `identifier` is its name, and the argument is read from the `argument_list`
+   * child rather than sliced out of the attribute's text — so a COMMENT naming
+   * `visibility` and a `visibility` inside a string literal cannot produce an
+   * edge, which is the whole reason this lane holds no regexes.
+   */
+  private attributeRoleExport(attrDecl: Node): "attribute-dllexport" | "attribute-visibility-default" | null {
+    for (let i = 0; i < attrDecl.namedChildCount; i++) {
+      const attr = attrDecl.namedChild(i)
+      if (attr?.type !== "attribute") continue
+      // the last identifier in the chain is the attribute NAME (`gnu::visibility`
+      // -> `visibility`); a bare `[[nodiscard]]` is one identifier.
+      let name: string | null = null
+      for (let j = 0; j < attr.namedChildCount; j++) {
+        const c = attr.namedChild(j)
+        if (c?.type === "identifier") name = String(c.text ?? "")
+      }
+      if (name === "dllexport") return "attribute-dllexport"
+      if (name !== "visibility") continue
+      const args = this.findChild(attr, "argument_list")
+      if (!args) continue
+      for (let k = 0; k < args.namedChildCount; k++) {
+        const arg = args.namedChild(k)
+        const lit = arg?.type === "string_literal" ? arg : arg ? this.findChild(arg, "string_literal") : null
+        if (lit && stripIncludeChars(String(lit.text ?? "")).trim() === "default") return "attribute-visibility-default"
+      }
+    }
+    return null
+  }
+
+  /**
+   * Is this class-scope function declaration PURE VIRTUAL — `virtual void f() = 0;`?
+   *
+   * Structural, because the pinned grammar has no node for it: measured on the
+   * fork,
+   *
+   *   field_declaration[declarator="go()"]
+   *     virtual  primitive_type
+   *     function_declarator[declarator="go"] field_identifier parameter_list
+   *     "="                                  <- UNNAMED token
+   *     number_literal "0"                   <- the pure-specifier
+   *
+   * so the signature is "a declaration with a function declarator, an unnamed `=`
+   * child, and a `0` right after it". Reading it any looser would sweep in a
+   * member initializer (`int x = 0;` is a `field_declaration` with an
+   * `init_declarator`, and it has no function declarator at all) or a defaulted
+   * argument (`void f(int x = 0)` puts the `=` inside the `parameter_list`, not on
+   * the declaration) — both measured shapes, both excluded by the two conditions.
+   */
+  private isPureVirtualDeclaration(declaration: Node): boolean {
+    if (declaration.type !== "field_declaration" && declaration.type !== "declaration") return false
+    const decl = this.findChild(declaration, "function_declarator")
+    if (!decl) return false
+    for (let i = 0; i < declaration.childCount; i++) {
+      const c = declaration.child(i)
+      if (!c || c.isNamed || c.type !== "=") continue
+      const nxt = declaration.child(i + 1)
+      if (nxt && nxt.type === "number_literal" && String(nxt.text ?? "").trim() === "0") return true
+    }
+    return false
   }
 
   private hasDirectModifier(node: Node, modifier: string): boolean {

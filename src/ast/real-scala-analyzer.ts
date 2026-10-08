@@ -131,6 +131,80 @@ function isSelfOverride(declaring: string | undefined | null, ownerName: string 
   return !!declaring && !!ownerName && declaring === ownerName
 }
 
+/**
+ * SCALA RESERVED WORDS — the words a declaration may NOT be named (SLS 1.1,
+ * plus the Scala 3 additions), each measured to produce an ERROR node in every
+ * identifier position by the pinned grammar
+ * (script/m14/tmp/scala-probe-keyword.ts).
+ *
+ * The Scala 3 SOFT keywords are deliberately ABSENT. `end`, `using`, `inline`,
+ * `opaque`, `transparent`, `extension`, `derives`, `then`, `open` and `infix`
+ * all parse cleanly as ordinary identifiers — the corpus relies on it
+ * (`Reporting.scala:909` declares `case class Suppression(..., start: Int,
+ * end: Int, ...)` and `DocComments.scala:417` declares `val end = ...`) — so
+ * treating them as reserved would reject 265 legal published names.
+ *
+ * ESCAPED IDENTIFIERS ARE NOT IN SET. `` def `return`: Int `` declares a member
+ * whose name IS `return`, and the source spells it that way; M60 #924 decided
+ * the PUBLISHED name drops the backticks (quoting is syntax, not name), which
+ * makes a published `return` that a reference can spell. Rejecting it here
+ * would break real declarations. The census that forced this distinction is
+ * script/m14/tmp/scala-keyword-name-census.ts (class A: escaped-identifier,
+ * 80 endpoints on the full corpus — all correct).
+ */
+const SCALA_RESERVED = new Set([
+  "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false",
+  "final", "finally", "for", "if", "implicit", "import", "lazy", "macro",
+  "match", "new", "null", "object", "override", "package", "private", "protected",
+  "return", "sealed", "super", "this", "throw", "trait", "true", "try",
+  "type", "val", "var", "while", "with", "yield",
+  // Scala 3 reserved additions
+  "given", "enum", "export",
+])
+
+/**
+ * Is this parsed name a Scala KEYWORD used where a NAME belongs?
+ *
+ * `def this(...)` is an auxiliary CONSTRUCTOR: `this` is the keyword that
+ * introduces it and no file declares a member called `this`. The analyzer reads
+ * the node's `name:` field — which the grammar fills with the keyword — and
+ * publishes a method symbol for it, so every relationship sourced at that
+ * invented symbol and every `contains` edge naming it points at a member that
+ * does not exist. That is rule R7's exact shape ("a literal in a name-bearing
+ * field becomes a symbol, or an edge endpoint, that does not exist in the
+ * source") reached through the PARSER rather than through a typed fallback,
+ * which is why script/m60/sentinel-census.ts cannot see it: there is no string
+ * literal in this file to register.
+ *
+ * Measured on the full 9,353-file corpus (scala-keyword-name-census.ts):
+ * 209 files, 1,336 published endpoints. CompilerCommand.scala:17-18 alone:
+ *
+ *     contains    CompilerCommand -> this
+ *     calls       this -> this
+ *     instantiates this -> Settings
+ *     references  this -> List / String / Unit / Settings
+ *
+ * The fix is NOT to rename the symbol. An auxiliary constructor has no name,
+ * and a name is what every published surface needs. It is to publish the
+ * auxiliary constructor the way the language models it — as a CONSTRUCTOR of
+ * the class, which already has a symbol — and attribute its body to the owner,
+ * so `this(arguments, new Settings(error))` is an `instantiates Settings` on
+ * `CompilerCommand` and a `calls this` is not published at all (`this(...)` in
+ * an auxiliary constructor is constructor DELEGATION, not a call to a member
+ * named `this`; the primary constructor already carries the `instantiates`).
+ *
+ * A keyword interpolated as a LITERAL is the same defect from the other side:
+ * `s"$null"` interpolates the constant `null`, which no declaration names, and
+ * `collectExpressionUses` reads the interpolation's identifier without asking
+ * whether it is a reference. Measured: 7 endpoints, all in test/files/neg/
+ * t5856.scala. `null`/`true`/`false` are excluded from the edge; the other
+ * reserved words cannot appear in an expression at all, so the guard is stated
+ * over the whole set and costs nothing.
+ */
+function isKeywordUsedAsName(name: string): boolean {
+  return SCALA_RESERVED.has(name)
+}
+
 export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
   // S1.21: stable per-file counter for anonymous given names (see handleGiven).
   // Reset at the top of every analyze() so each file counts from 1.
@@ -376,7 +450,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (node.type === "val_definition" || node.type === "var_definition" || node.type === "val_declaration" || node.type === "var_declaration") {
         this.handleVariable(node, symbols, exports, parent)
       } else if (node.type === "type_definition") {
-        this.handleTypeAlias(node, symbols, parent)
+        this.handleTypeAlias(node, symbols, parent, exports)
       } else if (node.type === "import_declaration") {
         this.handleImport(node, imports)
       } else if (node.type === "enum_definition") {
@@ -394,6 +468,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         patternsObj["Extension Methods (Scala 3)"] = true
       } else if (node.type === "export_declaration") {
         patternsObj["Exports (Scala 3)"] = true
+        this.handleExportClause(node, relationships, currentParent)
       } else if (node.type === "match_expression") {
         patternsObj["Case Classes & Pattern Matching"] = true
       } else if (node.type === "for_expression") {
@@ -975,6 +1050,179 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
+    // M60 ontology `imports` (this lane's GAP, closed here).
+    //
+    // WHY A SECOND EDGE AND NOT A RELABEL. An import names a MODULE, and the
+    // go lane measured what happens when that fact is published under
+    // `references` (#910, real-go-analyzer.ts:337-352): every import path lands
+    // in the lane's `references` TARGET SURFACE, and an import path is a dotted
+    // string (`scala.collection.mutable`, `cats.effect.kernel`) whose separators
+    // — `.`, `:` — no Scala declaration may contain. A Scala identifier is
+    // `[A-Za-z_$][A-Za-z0-9_$]*` or an operator built from the operator character
+    // set; it NEVER contains a dot, because a dot is the SELECTOR between two
+    // names. So every one of the 13,352 `import_based` references edges on the
+    // full corpus carries a target no declaration can spell, and they are
+    // indistinguishable, in that surface, from a genuine qualified type
+    // reference.
+    //
+    // The family precedent for the fix is a relabel (go publishes `imports` and
+    // NOT a `references` edge for the same import). That is NOT available here,
+    // and the reason is pinned evidence rather than preference: the hand-audited
+    // truth at validation/m12/ground-truth/scala.json records all six of its
+    // `references` rows sourced at "root" citing an import, and
+    // deriveScalaReferencesTruth (differential.ts:4103, :4261) derives the import
+    // path as a `references` row. Relabelling would turn 6 hand-audited facts
+    // into MISSING and every derived import row with them. The pinned ground
+    // truth and the oracle are MASTER-owned; a lane cannot move them.
+    //
+    // So `imports` is ADDED as its own label and `references` is left exactly
+    // where the evidence puts it. Both are true of the same source line — one
+    // says "this file depends on that module" (a dependency, the family's
+    // `imports`), the other says "that module path is referenced from the file
+    // root" (the audited fact). The two are not duplicates in the graph's terms:
+    // `imports` is reachable by bb_graph's traversal default and answers a
+    // dependency question, `references` joins the module path to the audited
+    // symbol surface.
+    //
+    // This is a payload cost and it is stated rather than hidden: +1 edge per
+    // import. Measured on the full corpus, 13,353 import_declaration nodes, so
+    // +13,353 edges on 526,371 — 2.5%. The lane's payload/latency check is
+    // re-run and its result reported.
+    //
+    // Source is "(file)" — the family sentinel for "this FILE, as a unit". It is
+    // not "root", which is the scala import-`references` label and a different
+    // node; and it is not a package name, because Scala's `package a.b { ... }`
+    // is a namespace marker with no symbol (the walk deliberately publishes no
+    // package symbol, matching the java/kotlin contract), so a package-named
+    // source would name something the graph does not have.
+    for (const imp of imports) {
+      if (!imp.module || imp.module.length === 0) continue
+      // A SELECTOR clause (`import scala.util.{Try, Success}`) names TWO
+      // dependencies, and `imp.module` is the PACKAGE they live in, not either
+      // of them. handleImport's `pathStr` stops at the package because a plain
+      // selector is not part of the dotted path — correct for `imp.module`, whose
+      // job is the prefix, and wrong for a dependency edge, whose target is the
+      // thing depended on. So the selector names are appended here, where the
+      // edge is built, and only for the clause forms that carry them.
+      //
+      // The three forms that must NOT be expanded, and why, all measured by
+      // script/m14/tmp/scala-import-shape-probe.ts over the language's eight
+      // import spellings:
+      //   import scala.collection.mutable            items ["mutable"], module
+      //     already ends in it -> the package IS the dependency, one edge.
+      //   import scala.collection.{immutable => im}   handleImport DOES push the
+      //     renamed segment into `parts` (differential's importPathOf does the
+      //     same), so the module already reads scala.collection.immutable and
+      //     ends in it -> one edge, already correct.
+      //   import scala.util._                         items ["*"] -> the whole
+      //     package is depended on; there is no name to append.
+      // An EXCLUDED selector (`X => _`) is not a dependency, so it does not
+      // become an edge target either. `alreadyFull` then collapses to the module
+      // path, which is the right answer for a clause that only excludes:
+      // `import treeBuilder.{global => _, unit => _}` depends on `treeBuilder`.
+      const excluded = new Set<string>()
+      for (const sp of (imp.specifiers ?? []) as any[]) if (sp?.excluded && typeof sp.imported === "string") excluded.add(sp.imported)
+      // The base for a DEPENDENCY is the module path as it stood BEFORE the
+      // selector clause, with the clause's own names appended to it. Falling back
+      // to `imp.module` covers an import with no clause (`import a.b.C`).
+      const impMeta = (imp.metadata ?? {}) as any
+      const groupList: Array<{ prefix: string; names: string[] }> = Array.isArray(impMeta.importGroups) && impMeta.importGroups.length > 0
+        ? impMeta.importGroups
+        : [{ prefix: imp.module!, names: (imp.items ?? []).filter((s: any) => typeof s === "string" && s.length > 0) }]
+      // One dependency per GROUP, one per imported name inside a group. A group
+      // with no imported names is a package (`import a.b._`, `import a.b.C`, or a
+      // clause of exclusions) and is depended on as itself.
+      const targets: string[] = []
+      for (const g of groupList) {
+        const base = typeof g?.prefix === "string" ? g.prefix : ""
+        if (base.length === 0) continue
+        const names = (Array.isArray(g?.names) ? g.names : []).filter((n: any) => typeof n === "string" && n.length > 0 && n !== "*" && !excluded.has(n))
+        if (names.length === 0) {
+          targets.push(base)
+          continue
+        }
+        const alreadyFull = names.every((n: string) => base.endsWith(`.${n}`) || base === n)
+        if (alreadyFull) targets.push(base)
+        else for (const n of names) targets.push(`${base}.${n}`)
+      }
+      // The target is the depended-on NAME'S MODULE PATH, so the selector is
+      // joined onto the path unconditionally. The first cut joined only when the
+      // path was already dotted, which made the shape of the IMPORT decide the
+      // precision of the edge: `import scala.collection.{Try}` published
+      // `scala.collection.Try` and `import mutable.{Buffer}` published bare
+      // `Buffer`, for a `mutable` that is this file's own alias for
+      // `scala.collection.mutable` (src/compiler/scala/tools/nsc/ast/parser/
+      // MarkupParsers.scala:19,53). One invariant, both spellings.
+      // One edge per DISTINCT target: a clause may name the same selector twice
+      // (`import a.{b, b}`) and a duplicated edge is not a second dependency.
+      const emittedHere = new Set<string>()
+      for (const t of targets) {
+        if (t.length === 0 || emittedHere.has(t)) continue
+        emittedHere.add(t)
+        relationships.push({
+          source: "(file)",
+          target: t,
+          type: ASTEngine.RelationshipType.Imports,
+          confidence: 1.0,
+          ...(imp.range?.startLine ? { line_number: imp.range.startLine } : {}),
+          // `isImport` is what script/m14/completeness-inventory.ts section B reads
+          // to pin the kind, so the label is claimed twice over — by the enum and
+          // by the marker — exactly as the go lane's edge does.
+          metadata: { isImport: true, isScalaImport: true, packageName: t },
+        })
+      }
+    }
+
+    // M60 ontology `exports` (this lane's GAP, closed here).
+    //
+    // The construct EXISTS and it is large. Measured on the full corpus
+    // (script/m14/tmp/scala-ontology-census.ts, instrument B on the parse tree):
+    // 19,826 top-level declarations that are neither private nor protected,
+    // across 9,315 of 9,353 files — Scala's export surface is a CONVENTION (the
+    // ABSENCE of `private`), which is precisely why a grammar inventory cannot
+    // rule it: the ontology gate's own json `exports` note records that ruling
+    // being wrong for exactly this reason.
+    //
+    // `exports: ExportInfo[]` was ALREADY being filled (handleClass/Object/
+    // Trait/Enum/Given/Function/Variable, 18,586 entries on the full corpus) but
+    // nothing published a RELATIONSHIP, so bb_graph's traversal default could
+    // never return an export: the type was in the enum, in the traversal default
+    // and in no analyzer's output. That is the "a value can be neither used nor
+    // accounted for" shape the rel-type-coverage gate's CHECK 4 names, and it is
+    // why `exports` showed as 0 edges with 18,586 export records sitting beside
+    // it.
+    //
+    // Source "(file)" for the convention half, matching the `imports` edge above
+    // and the family convention (zig's `(file)`, dart's module name). Scala's
+    // package is a namespace with no symbol, so the FILE is the unit an importer
+    // binds against — and it is a sentinel the graph already uses, not a name
+    // that would have to resolve.
+    //
+    // The Scala 3 RE-EXPORT clause (`export a.b.{x, y}`, `export a.b.*`) is a
+    // DIFFERENT relationship and is emitted separately below: it says this file
+    // re-exports a name it does not own, which is not what "public declaration"
+    // means. Measured on the full corpus it occurs 0 times — the pinned
+    // v0.26.2 grammar parses only the standalone clause form, not `export class`
+    // (script/m14/tmp/scala-probe-export.ts measured `export class Alpha` as an
+    // ERROR node) — and scala3's own source uses none. It is emitted anyway
+    // because the corpus is one repository and the construct is real: a ruling
+    // measured on a corpus that happens not to use a construct is not a ruling
+    // that the language lacks it.
+    const publishedExports = new Set<string>()
+    for (const e of exports) {
+      if (!e.name || publishedExports.has(e.name)) continue
+      publishedExports.add(e.name)
+      relationships.push({
+        source: "(file)",
+        target: e.name,
+        type: ASTEngine.RelationshipType.Exports,
+        confidence: 1.0,
+        ...(e.range?.startLine ? { line_number: e.range.startLine } : {}),
+        metadata: { isScalaExport: true, exportKind: String(e.kind ?? "") },
+      })
+    }
+    this.collectScalaReExports(rootNode, relationships)
+
     // M14 #419 G1: rewrite import-reference sources from the placeholder
     // "root" to the file's primary top-level type so references carry a
     // symbol identity (imports precede declarations in source order) —
@@ -988,11 +1236,63 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the import emit above. `root` is what the hand audit records for every import row.
     void 0
 
+    // ─────────────────────────────────────────────────────────────────────
+    // `exports` — the PUBLIC SURFACE OF THIS MODULE.
+    //
+    // The lane filled `ParseResult.exports` (an ExportInfo[] on the side) and
+    // published NO relationship of this label, so the one label that states
+    // "this module offers this name" was stored and compared against nothing:
+    // 12 lanes fleet-wide shared the shape, and scala was one of them.
+    //
+    // Scala states its export surface two ways, and both are read here:
+    //
+    //   A. IMPLICIT — every public TOP-LEVEL declaration is exported from its
+    //      package. There is no keyword for this: it is visibility plus
+    //      placement. It is the whole surface of a Scala 2 corpus and the same
+    //      shape go (`package -> name`), zig (`(file) -> name`) and
+    //      typescript (`module -> name`) already emit.
+    //
+    //   B. EXPLICIT — the Scala 3 `export` clause (`export a.b.c`,
+    //      `export a.b.{c, d}`, `export a.b.{c => d}`, `export a.b.{given C}`,
+    //      `export a.b.*`, `export a.b.given`), a re-export statement. The walk
+    //      read it only to set a pattern flag. All six forms parse under the
+    //      wired wasm with zero ERROR nodes (probe:
+    //      script/m14/tmp/scala-scala3-export-clause.mts).
+    //
+    // The SOURCE is the module: the file's full package path, or the
+    // FILE_MODULE sentinel when the file declares no package. It is NOT
+    // `metadata.packageName`, and the reason is measured rather than stylistic:
+    // that field is assigned by every `package_clause` the walk meets, so on the
+    // CHAINED form this corpus writes —
+    //
+    //     package scala.tools.nsc
+    //     package typechecker
+    //
+    // — it holds `typechecker`, and on Global.scala's three-clause header it
+    // holds `nsc` (probe: script/m14/tmp/scala-package-identity.mts, 600 files,
+    // 308 of them multi-clause). A fragment is not a module name; it is neither
+    // resolvable nor equal to the package the name is actually visible in, and an
+    // `exports` edge built on it would be confidently wrong. The full path is
+    // computed from the clauses themselves instead (join the top-level clause
+    // paths with "."), which is the identity a reference site spells:
+    // `import scala.tools.nsc.typechecker.Contexts`.
+    //
+    // Deduplicated on (module, name): a companion pair publishes the class and
+    // the object under ONE name, and the ExportInfo array's own
+    // object-suppression is order-dependent — measured 42 repeated names in 883
+    // entries across 600 files, every one an `object Foo` declared BEFORE
+    // `class Foo` (Contexts.scala:2003 object, :2109 class), so the object is
+    // pushed first and the class pushes a second entry for a name already
+    // present. Two edges would say the module exports `ContextMode` twice.
+    // Nothing is lost: the two entries are the same fact, and `contains` still
+    // carries both members.
+    this.emitExportSurface(rootNode, exports, relationships)
+
     // Declared-type reference graph (M14): constructor params, val/var type
     // clauses, function params, return types, @throws annotations,
     // asInstanceOf/isInstanceOf targets. Absent until M14 — the corpus
     // oracle never checked it.
-    this.collectDeclaredTypeRefs(rootNode, relationships)
+    this.collectDeclaredTypeRefs(rootNode, relationships, symbols)
     this.collectExpressionUses(rootNode, relationships)
 
     this.classifyEvidenceTier(relationships)
@@ -1005,6 +1305,295 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata,
       errors: metadata.errors || [],
     }
+  }
+
+  /**
+   * The MODULE a Scala file belongs to: its full package path.
+   *
+   * Read from the `package_clause` nodes themselves rather than from
+   * `metadata.packageName`, which the walk overwrites per clause. Scala writes a
+   * package header two ways and this corpus uses the chained one exclusively:
+   *
+   *     package scala.tools.nsc        <- one dotted clause
+   *     package typechecker             <- a second clause CHAINED onto it
+   *
+   * The full path is the two joined with "."; a single braced clause
+   * (`package a.b { … }`) needs no join. Measured on 600 corpus files
+   * (script/m14/tmp/scala-package-identity.mts): 599 files chained-only, 1
+   * mixed, 0 braced-only, and `metadata.packageName` equals the FULL path in
+   * only the 292 single-clause files — on the other 308 it holds the last
+   * fragment (`typechecker`, `nsc`), which is not a package any reference site
+   * spells.
+   *
+   * Only TOP-LEVEL clauses are joined. A clause nested in a braced block is
+   * already written as its full path (`package reflect { … }` inside
+   * `package scala { … }` still spells `scala.reflect`), and joining it again
+   * would double the prefix.
+   *
+   * FILE_MODULE is the fallback for a file with no package clause at all — the
+   * default package, where the compilation unit IS the module. It is a sentinel
+   * and not a symbol, declared as such: zig's `(file)` and this lane's own
+   * `(script)`/`root` sentinels are the same kind of thing, and the alternative
+   * — publishing an empty source — is the defect the M60/SDJ-11 work removed.
+   */
+  static readonly FILE_MODULE = "(file)"
+
+  private scalaModuleName(rootNode: Node): string {
+    const parts: string[] = []
+    for (let i = 0; i < rootNode.namedChildCount; i++) {
+      const c = rootNode.namedChild(i)
+      if (!c || c.type !== "package_clause") continue
+      let id: Node | null = null
+      for (let j = 0; j < c.namedChildCount; j++) {
+        const x = c.namedChild(j)
+        if (x && x.type === "package_identifier") { id = x; break }
+      }
+      if (!id) continue
+      const segs: string[] = []
+      const collect = (n: Node): void => {
+        if (n.type === "identifier") segs.push(n.text)
+        for (let k = 0; k < n.namedChildCount; k++) {
+          const y = n.namedChild(k)
+          if (y) collect(y)
+        }
+      }
+      collect(id)
+      const seg = segs.join(".")
+      if (seg.length > 0) parts.push(stripScalaQuoting(seg))
+    }
+    if (parts.length === 0) return RealScalaAnalyzer.FILE_MODULE
+    return parts.join(".")
+  }
+
+  /**
+   * `exports` — this module's public surface, as relationships.
+   *
+   * Two producers, one dedupe (see the call site for the measurement behind
+   * both):
+   *
+   *   A. IMPLICIT, from the `ExportInfo[]` the walk already builds: every public
+   *      TOP-LEVEL class/trait/object/enum/function/val/var/named-given. The
+   *      array is the lane's existing definition of the surface — it is what the
+   *      fixture gate's F3 export-uniqueness check reads — so the edges are
+   *      derived from it rather than from a second, divergent rule that could
+   *      drift from it.
+   *
+   *   B. EXPLICIT, from Scala 3 `export_declaration`. The exported NAME is the
+   *      leaf that is actually introduced here: a selector, or the final segment
+   *      of a plain path. Two forms publish NO edge and the reason is the
+   *      language's, not caution:
+   *
+   *        `export a.b.*`      re-exports an unknown set of names — the clause
+   *                           names a set, not a name, so an edge per member
+   *                           would mean inventing members this file never
+   *                           writes.
+   *        `export a.b.given`  re-exports the GIVEN INSTANCES resolved for
+   *                           `a.b`'s type — a set defined by implicit
+   *                           resolution in another compilation unit.
+   *
+   *      Both are recorded in the edge metadata (`exportForm`) rather than
+   *      dropped, so a reader can see that the file re-exports a wildcard and
+   *      that the analyzer declines to enumerate it.
+   *
+   * `confidence: 1.0` and `evidenceClass: structural` (the tier classifier
+   * already routes `exports` there): the edge is read off a declaration, and
+   * nothing about it is inferred.
+   */
+  private emitExportSurface(
+    rootNode: Node,
+    exports: ASTEngine.ExportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const moduleName = this.scalaModuleName(rootNode)
+    // A declaration is on the module's surface when it is STRUCTURALLY top level:
+    // reachable from the compilation unit through package blocks and package
+    // objects, and through nothing else. The `!parent` guard every handler uses
+    // cannot decide this on a file the grammar damaged, because tree-sitter's
+    // recovery re-parents the contents of a broken construct to the ERROR node —
+    // the walk then never saw the enclosing type, the symbol has no owner, and
+    // the members read as module-level declarations.
+    //
+    // Measured on scala/scala, both directions:
+    //
+    //   FALSE EDGES without this rule: CommentFactoryBase.scala, whose `trait
+    //   CommentFactoryBase { this: MemberLookupBase => …` fails to parse and puts
+    //   18 of the trait's members on the module's surface
+    //   (`scala.tools.nsc.doc.base -> global`, `-> createComment`,
+    //   `-> checkList`, …), plus Checks_0.scala:8 (`check` out of `class Checks`)
+    //   and 4 members of a type in the negative test t5702. Those are `contains`
+    //   relationships, not exports.
+    //
+    //   FALSE EDGES with the first attempt at this rule, which excluded any
+    //   declaration whose start index fell inside an ERROR span: an unclosed
+    //   construct makes the ERROR span run to end-of-file, so 6 genuinely
+    //   top-level declarations in damaged files were dropped with it
+    //   (`case object Const` in t2968.scala, `var Const` beside it, and the four
+    //   `val fnMinusPlus…` of variant-placeholders-future.scala). Reachability
+    //   through the package structure distinguishes the two cases where an index
+    //   test cannot: a swallowed member is reachable only through the ERROR, and
+    //   a top-level declaration after a broken one still is.
+    //
+    // The array stays the source of NAMES and KINDS — this only decides which of
+    // its entries are on the surface, so the visibility rule is not restated here.
+    const surfaceIndexes = new Set<number>()
+    const SURFACE_DECLS = new Set([
+      "class_definition", "trait_definition", "object_definition", "enum_definition",
+      "val_definition", "var_definition", "val_declaration", "var_declaration",
+      "function_definition", "given_definition",
+    ])
+    const collectSurface = (scope: Node): void => {
+      for (let i = 0; i < scope.namedChildCount; i++) {
+        const c = scope.namedChild(i)
+        if (!c) continue
+        if (SURFACE_DECLS.has(c.type)) {
+          surfaceIndexes.add(this.declarationLineNode(c).startIndex)
+          continue
+        }
+        // `package a.b { … }` and `package object a { … }`: their bodies are
+        // module scope. The body of a braced package is a `block`, not a
+        // `template_body` (measured), and both spellings are accepted.
+        if (c.type === "package_clause" || c.type === "package_object") {
+          for (let j = 0; j < c.namedChildCount; j++) {
+            const b = c.namedChild(j)
+            if (b && (b.type === "block" || b.type === "template_body")) collectSurface(b)
+          }
+        }
+      }
+    }
+    collectSurface(rootNode)
+
+    const seen = new Set<string>()
+    const key = (name: string): string => `${moduleName} ${name}`
+    for (const e of exports) {
+      const name = stripScalaQuoting(String(e.name ?? ""))
+      if (name.length === 0) continue
+      // The array's own start index is `declarationLineNode`'s (M59/#825), which
+      // is what collectSurface records, so the two address the same span.
+      if (e.range?.startIndex !== undefined && !surfaceIndexes.has(e.range.startIndex)) continue
+      if (seen.has(key(name))) continue
+      seen.add(key(name))
+      relationships.push({
+        source: moduleName,
+        target: name,
+        type: ASTEngine.RelationshipType.Exports,
+        confidence: 1.0,
+        // M59 (#825): the surface is declared where the name is declared.
+        ...(e.range?.startLine ? { line_number: e.range.startLine } : {}),
+        metadata: {
+          exportForm: "public-top-level-declaration",
+          symbolKind: String(e.kind ?? ""),
+        },
+      })
+    }
+
+    const visit = (n: Node): void => {
+      if (n.type === "export_declaration") {
+        for (const t of this.scalaExportClauseTargets(n)) {
+          const k = key(t.name)
+          if (seen.has(k)) continue
+          seen.add(k)
+          relationships.push({
+            source: moduleName,
+            target: t.name,
+            type: ASTEngine.RelationshipType.Exports,
+            confidence: 1.0,
+            line_number: n.startPosition.row + 1,
+            metadata: { exportForm: t.form },
+          })
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) visit(c)
+      }
+    }
+    visit(rootNode)
+  }
+
+  /**
+   * The names one Scala 3 `export` clause introduces into this file, read from
+   * the grammar's own node types (probe:
+   * script/m14/tmp/scala-scala3-export-clause.mts dumps all six forms):
+   *
+   *   export a.b.c              -> export_declaration > identifier "." identifier
+   *                                  "." identifier            => leaf `c`
+   *   export a.b.{c, d}         -> namespace_selectors > identifier   => `c`, `d`
+   *   export a.b.{c => d, e}    -> namespace_selectors > arrow_renamed_identifier
+   *                                  > identifier "=>" identifier      => `d`
+   *                                  (the name INTRODUCED here is `d`; `c` is
+   *                                  only reachable under it)
+   *   export a.b.{given C}      -> namespace_selectors > given type_identifier
+   *                                  => `C`
+   *   export a.b.*              -> namespace_wildcard           => no name to publish
+   *   export a.b.given          -> namespace_wildcard `given`   => no name to publish
+   *
+   * Each entry carries the FORM it came from, so the edge metadata says which
+   * spelling produced the name.
+   */
+  private scalaExportClauseTargets(node: Node): { name: string; form: string }[] {
+    const out: { name: string; form: string }[] = []
+    // The path segments before any selector/wildcard child, in source order.
+    const path: string[] = []
+    // `*` and `given` re-export a SET. The first version of this reader fell
+    // through to the path fallback below and published the clause's LAST PATH
+    // SEGMENT (`export other.module.*` -> an export of `module`), which names
+    // something this file neither declares nor re-exports: an intermediate
+    // package, not a member. The fixture's forbid entry caught it
+    // (scala/exports-surface, `forbid target: module`), and the flag below is
+    // that finding made structural — a wildcard suppresses the fallback.
+    let wildcard = false
+    let sawSelectors = false
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "identifier") { path.push(c.text); continue }
+      if (c.type === "namespace_selectors") {
+        sawSelectors = true
+        for (let j = 0; j < c.namedChildCount; j++) {
+          const s = c.namedChild(j)
+          if (!s) continue
+          if (s.type === "identifier") {
+            out.push({ name: stripScalaQuoting(s.text), form: "scala3-export-selector" })
+          } else if (s.type === "arrow_renamed_identifier") {
+            // `c => d` introduces `d`; take its LAST identifier, which is the
+            // name bound in this file.
+            let last: string | null = null
+            for (let k = 0; k < s.namedChildCount; k++) {
+              const id = s.namedChild(k)
+              if (id && id.type === "identifier") last = id.text
+            }
+            if (last) out.push({ name: stripScalaQuoting(last), form: "scala3-export-renamed-selector" })
+          } else if (s.type === "type_identifier") {
+            out.push({ name: stripScalaQuoting(s.text), form: "scala3-export-given-selector" })
+          } else if (s.type === "generic_type") {
+            // `export m.{given Ordering[Int]}` — an APPLIED type, so the
+            // selector's child is `generic_type`, not `type_identifier`, and
+            // reading only the bare form silently yielded nothing (measured:
+            // the fixture's `given Ordering[Int]` clause published the path
+            // leaf `module` instead of `Ordering` before this case existed).
+            // scalaTypeHeadName descends the head position and returns the
+            // base name, so `Ordering[Int]` -> `Ordering` and
+            // `scala.math.Ordering[Int]` -> `scala.math.Ordering`.
+            out.push({ name: this.scalaTypeHeadName(s), form: "scala3-export-given-selector" })
+          }
+        }
+        continue
+      }
+      if (c.type === "namespace_wildcard") {
+        // `*` and `given` re-export a SET the clause does not name. There is no
+        // name to publish, and inventing one would be a fabricated endpoint.
+        wildcard = true
+      }
+    }
+    // The path fallback names the LAST SEGMENT, and it is only honest when the
+    // clause named nothing else: with a wildcard there is no name at all, and
+    // with selectors there IS one — it is simply a shape this reader does not
+    // recognise, and answering with `module` instead would name an intermediate
+    // package as an export.
+    if (out.length === 0 && !wildcard && !sawSelectors && path.length > 0) {
+      out.push({ name: stripScalaQuoting(path[path.length - 1]), form: "scala3-export-clause" })
+    }
+    return out.filter((t) => t.name.length > 0)
   }
 
   private detectFrameworks(imports: ASTEngine.ImportInfo[], frameworksObj: Record<string, boolean>) {
@@ -1359,8 +1948,21 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * @throws[IO] annotation parses as generic_type("throws", [IO]) — the
    * "throws" name is skipped, its arguments become throws_type edges.
    */
-  private collectDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+  private collectDeclaredTypeRefs(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    declaredSymbols: ASTEngine.UniversalSymbol[] = [],
+  ): void {
     const emitted = new Set<string>()
+    // R7: the names THIS FILE declares. Used only to decide the wildcard type
+    // names below, and the rule is deliberately narrow — see the guard in
+    // collectTypeNames. Measured: 49 `references X -> ?` endpoints on the
+    // 9,353-file corpus whose emitting file declares no `?`
+    // (script/m14/tmp/scala-ontology-census.ts, R7 undeclared column), against
+    // 16 that DO declare one (`type ?[A]`, test/files/neg/qmark-deprecated.scala,
+    // where `?` is a real class symbol and its references are correct).
+    const declaredNames = new Set<string>()
+    for (const s of declaredSymbols) if (s?.name) declaredNames.add(stripScalaQuoting(String(s.name)))
 
     // M59 (#825, second half): a type name is stamped with the line of the
     // NODE THAT CARRIES THE NAME, not with the line its enclosing type
@@ -1383,10 +1985,87 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // text. Measured 2 rows on a 2000-file scala3 draw.
         const name = stripScalaQuoting(name0)
         if (!name || name === "throws") return
+        // SCALA4 (R7): a WILDCARD is not a type name. `Class[?]` and `Class[_]` parse
+        // as generic_type > type_arguments > type_identifier("?" / "_"), so the walk
+        // below reached the wildcard and published it as a referenced TYPE. Measured
+        // over the whole corpus through production parseFile (18,965 files):
+        //
+        //   compiler/src/dotty/tools/dotc/config/Properties.scala:24
+        //       protected def pickJarBasedOn: Class[?]     -> references `?`
+        //   library/src/scala/collection/ArrayOps.scala:1037, 1236
+        //   compiler/src/dotty/tools/backend/sjs/JSCodeGen.scala:1239, 1457
+        //
+        // 878 `references` endpoints were a placeholder literal resolving to NO symbol
+        // this run published — 874 spelled `?`, and every one of them named nothing.
+        // An endpoint that names nothing cannot be resolved, hovered or followed, so
+        // the edge is the same class rule R7 bans, reached by a route nobody had walked:
+        // not by inventing a name but by MISTAKING the wildcard for one. SCALA3 closed
+        // the same class for `exports` (`export p.{x => _, _}` publishing `*`).
+        //
+        // THE FIX IS POSITIONAL, and the corpus says why. 17 other `?` targets DO
+        // resolve, because `def ?` is a legal Scala predicate — and they arrive through
+        // `method_value` (a capitalized receiver, a field_expression), NOT through a
+        // type position. 193 `*` targets also resolve: `def *(x: Byte): Int` is
+        // declared six times over in library/src/scala/Char.scala. A literal ban here
+        // would delete 210 real edges; refusing the wildcard only where it IS a
+        // wildcard cannot. Enumerated, not pattern-matched, because each spelling was
+        // checked against what the grammar can put in a type position.
+        if (name === "?" || name === "_") return
         if (out.some((x) => x.name === name)) return
         out.push({ name, line: n.startPosition.row + 1 })
       }
       if (n.type === "type_identifier") {
+        // R7 (measured: 6 endpoints over the whole 9,353-file corpus —
+        // script/m14/tmp/scala-placeholder-fragment-probe.ts). A Scala 3
+        // PLACEHOLDER type is not a name: `val fnMinusPlus1: -_ => +_` means
+        // `Function1[-_, +_]`, and the pinned grammar splits each half into the
+        // operator character plus a wildcard:
+        //
+        //   infix_type "-_ => +_"
+        //     infix_type "-_ =>"
+        //       type_identifier "-"        <- read as a TYPE NAME
+        //       identifier "_"
+        //       type_identifier "=>"
+        //     operator_identifier "+"
+        //     wildcard "_"
+        //
+        // so reading every `type_identifier` published `references Test -> -`,
+        // a type no file declares (the file declares `-_`, at line 4, in
+        // ESCAPED form). Three sites on the corpus, in
+        // test/files/pos/variant-placeholders-future.scala and its neg twin,
+        // for `-`, `+` and the `*` of `-_*`.
+        //
+        // It is a FRAGMENT, not a name: the published endpoint is a substring of
+        // what the source spells. A corpus-wide name lookup cannot see this —
+        // `-` and `+` ARE declared elsewhere in the corpus as operator methods
+        // (`def -(x: Byte): Double`, src/library/scala/Double.scala:149) — so
+        // the instrument that finds it asks whether the endpoint is a whole token
+        // at the line the edge points at.
+        //
+        // R7's rule is the honest state: ABSENCE, not a string. Note what is
+        // NOT touched: the ESCAPED `-_` is a real type alias, parses as ONE
+        // backticked identifier with no wildcard sibling, and keeps its edge.
+        if (this.isScalaPlaceholderFragment(n)) return
+        // R7, third measurement (49 endpoints over the corpus; the census's R7
+        // undeclared column, every one of them `?`). `Map[? <: AnyRef, ? >: Null]`
+        // (test/files/neg/wildcards-future.scala:6) is Scala 3's WILDCARD
+        // VARIABLE syntax: `?` alone means an inferred type and `? >: Null` a
+        // bound on one. The grammar spells both as a bare `type_identifier "?"`,
+        // which is indistinguishable from the legal Scala 3 type name `?` —
+        // `class ?`, `type ?[A]` — so no amount of reading the NODE settles it.
+        //
+        // What settles it is the FILE: a name is a name here if this file
+        // declares it. So the guard is stated over the two characters that are
+        // wildcards in some position and a declared type name in another, and
+        // only when this file declares neither. `=:=` and `<:<` are NOT in the
+        // set: they are real external types (src/library/scala/typeConstraints.scala:205
+        // declares `sealed abstract class =:=[From, To]`), and a rule broad
+        // enough to suppress them would trade 49 fabrications for a larger loss
+        // of true edges — measured: 26 `references -> =:=` sites in
+        // src/library/scala/jdk/FunctionExtensions.scala that resolve to a type
+        // this repository declares elsewhere.
+        const bare = stripScalaQuoting(n.text)
+        if ((bare === "?" || bare === "_") && !declaredNames.has(bare)) return
         push(n.text)
         return
       }
@@ -1700,6 +2379,31 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const emitUse = (n: Node, target: string, nameNode?: Node): void => {
       if (!target) return
+      // SCALA4 (R7): `_` is not a legal Scala identifier — it is the wildcard and the
+      // placeholder, never a declaration — so an edge naming it names nothing. The
+      // grammar nevertheless emits it as an `identifier`, in exactly the shapes this
+      // walk reads:
+      //
+      //   repl/src/dotty/tools/repl/AbstractFileClassLoader.scala:86-92
+      //       case s"java.$_" => super.loadClass(name)        (7 of the 8)
+      //   tests/pending/run/t7715.scala:21
+      //       case rx"${_} by ${I(b)}" => b
+      //   project/scripts/bisect.scala:261
+      //       case s"$major.$minor.$patch-$_" => …
+      //
+      // `interpolation` with an `identifier` child is exactly the `$name` form, and `_`
+      // parses the same way as any other identifier, so the first version of this walk
+      // published `uses loadClass -> _`. Measured over the whole corpus through
+      // production parseFile: 8 such edges, all of them in files with ZERO parse
+      // diagnostics — this is not the fuzz corpus, these are ordinary repl and build
+      // scripts.
+      //
+      // Only `_` is refused. `*` and `?` are legal Scala method names (`def *`,
+      // `def ?`) and this walk legitimately targets them; `unknown` is a legal `val`
+      // name (library/test/scala/collection/IterableTest.scala:89 declares one) and
+      // banning it here would delete a real edge. The literal set is enumerated
+      // because each one was checked against what the language can declare.
+      if (target === "_") return
       // SCD1 (JAD1/KAD1 family contract): assignment LHS is a WRITE, not a
       // read. `h.value = 5` previously emitted uses h. Both write shapes are
       // gated (probe-verified): `=` parses as assignment_expression (LHS =
@@ -1734,7 +2438,35 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const walk = (n: Node): void => {
       if (n.type === "interpolation") {
         const id = n.namedChild(0)
-        if (id && id.type === "identifier") emitUse(n, id.text, id)
+        // R7 (measured: 7 endpoints, all in test/files/neg/t5856.scala). The
+        // `$name` form interpolates an IDENTIFIER, but the grammar gives the
+        // same shape for a KEYWORD literal: `s"$null"`, `s"$false"`, `s"$true"`
+        // all parse as interpolation > identifier, and `null`/`true`/`false` are
+        // constants no declaration names. So the edge would claim
+        // `Test uses null` — a symbol the file does not declare.
+        //
+        // It is the same rule the auxiliary-constructor fix states (a keyword
+        // used where a NAME belongs is not a name), applied to the read path.
+        // Measured source, scala3 test/files/neg/t5856.scala:1-10, is a
+        // deliberate negative test of exactly this: `val s1 = s"$null"` through
+        // `val s9 = s"$"`.
+        //
+        // R7, second measurement (9 endpoints over the whole corpus —
+        // script/m14/tmp/scala-placeholder-fragment-probe.ts): `$_` and `${_}`
+        // interpolate the WILDCARD, and `_` is never a name in any Scala
+        // position. `s"\\*{$_}"` (test/files/neg/t7715.scala:10) published
+        // `uses Test -> _`; `val q"type $_ = $res"`
+        // (test/scalacheck/.../QuasiquoteProperties.scala:94) published
+        // `uses typecheckTyp -> _`. The wildcard is spelled `_` INSIDE a longer
+        // token, which is why a corpus-wide name lookup calls it legal — some
+        // other file writes `val _ = readNameRef()` (AttributeUnpickler.scala:36),
+        // a DISCARDING val that names nothing at all.
+        //
+        // `_` alone is the whole guard: it is the only wildcard that reaches this
+        // path (the `?` wildcard arrives as a bare `type_identifier` in a TYPE
+        // position and is handled, or not, by isScalaPlaceholderFragment), and a
+        // bare `_` can never be a member name.
+        if (id && id.type === "identifier" && !isKeywordUsedAsName(id.text) && id.text !== "_") emitUse(n, id.text, id)
       } else if (n.type === "field_expression") {
         const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function")?.id === n.id
         if (!isCallFn) {
@@ -1776,6 +2508,86 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     walk(rootNode)
   }
 
+  /**
+   * SCALA 3 RE-EXPORT CLAUSES — `export a.b.{x, y}`, `export a.b.*`,
+   * `export a.b.{x => y}`.
+   *
+   * This is NOT the export convention. A public top-level declaration is this
+   * file's OWN API; a re-export clause names something the file does not define
+   * and makes it reachable under this package — a different fact, and the only
+   * one of the two that is a DEPENDENCY in the graph's sense (it points at
+   * another compilation unit's name).
+   *
+   * Node shape, measured (script/m14/tmp/scala-probe-export.ts):
+   *   export a.b.{x, y}   -> (export_declaration path: (identifier) path: (identifier)
+   *                                     (namespace_selectors (identifier) (identifier)))
+   *   export a.b.*        -> (export_declaration path: … path: … (namespace_wildcard))
+   *   export a.b.{x => y} -> (export_declaration … (namespace_selectors (arrow_renamed_identifier
+   *                                                             name: (identifier) alias: (identifier))))
+   *
+   * The pinned grammar parses ONLY this standalone form. `export class Alpha`,
+   * `export object Beta`, `export type Foo = Int` and `export def f(..)` all
+   * produce an ERROR node, so the export MODIFIER spelling of the language does
+   * not reach this analyzer at all — a separate limitation, recorded in the lane
+   * doc, because a construct the grammar drops cannot be read by any walker over
+   * it. (dotty's own sources use no re-export clause: 0 occurrences over 9,353
+   * files. The emission is here because the CORPUS is one repository and the
+   * construct is real — "the corpus does not use it" is not "the language cannot
+   * express it", which is the distinction the ontology gate's json `exports`
+   * note exists to enforce.)
+   *
+   * The target is the FULL re-exported path (`a.b.x`), not the bare selector,
+   * because the clause's meaning is "this package now offers the name a.b.x";
+   * publishing `x` alone would name a symbol the file neither declares nor
+   * imports. That is the same `lastSegment` exception the derives-clause already
+   * makes (emit()'s `leafOnly`, G6), stated for the same reason: a re-export is
+   * written as a path.
+   */
+  private collectScalaReExports(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "export_declaration") {
+        const parts: string[] = []
+        let wildcard = false
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (!c) continue
+          if (c.type === "identifier") parts.push(stripScalaQuoting(c.text))
+          else if (c.type === "namespace_wildcard") wildcard = true
+          else if (c.type === "namespace_selectors") {
+            for (let j = 0; j < c.childCount; j++) {
+              const sel = c.child(j)
+              if (!sel) continue
+              if (sel.type === "identifier") parts.push(stripScalaQuoting(sel.text))
+              else if (sel.type === "arrow_renamed_identifier") {
+                // `x => y` re-exports x under the name y; the re-exported PATH
+                // ends at x (what is actually offered), which is the `name:`
+                // field. The ALIAS is the local binding and is not part of it.
+                const nm = sel.childForFieldName?.("name") ?? sel.namedChild(0)
+                if (nm) parts.push(stripScalaQuoting(nm.text))
+              }
+            }
+          }
+        }
+        if (parts.length === 0) continue
+        const target = parts.join(".")
+        relationships.push({
+          source: "(file)",
+          target,
+          type: ASTEngine.RelationshipType.Exports,
+          confidence: 1.0,
+          line_number: n.startPosition.row + 1,
+          metadata: { isScalaExport: true, isScalaReExport: true, wildcard },
+        })
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
   private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
     for (const r of relationships) {
       const md = r.metadata ?? (r.metadata = {})
@@ -1783,6 +2595,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const t = String(r.type ?? r.relationshipType ?? "")
       const conf = typeof r.confidence === "number" ? r.confidence : 1
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      // M60 ontology: `imports` is import_based for the same reason `references`
+      // with isImportDep is — the edge exists because of an `import` statement,
+      // not because of any type position. Stated here rather than inherited so a
+      // future `imports` edge from another site is re-classified on its own
+      // merits instead of defaulting to usage_contextual.
+      if (t === "imports") { md.evidenceClass = "import_based"; continue }
       if (t === "references") {
         // M14 #419 G1: isImportDep — the JVM-family tier bug (the classifier
         // ignored the flag, so every scala import edge was mislabeled
@@ -2108,6 +2926,80 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return t.endsWith("type") || t === "type_identifier" || t === "stable_type_identifier"
   }
 
+  /**
+   * Is this `type_identifier` part of a Scala 3 PLACEHOLDER rather than a type
+   * name?
+   *
+   * The grammar splits `-_` / `+_` / `-_*` into the operator character as a
+   * `type_identifier` and the wildcard as a NEIGHBOUR TOKEN — but not always as
+   * a sibling, which is why a first version of this guard (next SIBLING only)
+   * suppressed 2 of the 6 corpus sites and left 4 published. Both shapes are
+   * measured, on `scala/wildcard-is-not-a-name` line 12 and on the two corpus
+   * files:
+   *
+   *   vararg: -_*        infix_type          -> type_identifier "-" + identifier "_" + type_identifier "*"
+   *   byname: => -_      lazy_parameter_type -> type_identifier "-", and the `_`
+   *                      lands as an ERROR SIBLING OF THE PARAMETER, one level up
+   *
+   * So the test is on the ADJACENT TOKEN in source order, found by walking to
+   * the parent for as long as the node is the last child. A placeholder's
+   * `_` is what follows the operator and what precedes the `*`, so the test is
+   * "the next token is a wildcard, or the previous token is `_`".
+   *
+   * What this deliberately does NOT decide: a `?` wildcard (`def f(x: List[?])`)
+   * parses as a BARE `type_identifier "?"` with no wildcard neighbour, so it is
+   * indistinguishable here from the legal Scala 3 type name `?` (`type ?[A]`,
+   * test/files/neg/qmark-deprecated.scala). Deciding it needs the file's
+   * declared-type table, which this collector does not hold; it is recorded as
+   * an open item in the lane doc rather than guessed at.
+   */
+  private isScalaPlaceholderFragment(n: Node): boolean {
+    if (n.type !== "type_identifier") return false
+    // forward
+    let cur: Node | null = n
+    while (cur) {
+      const p: Node | null = cur.parent
+      if (!p) break
+      let sawNext = false
+      for (let i = 0; i < p.childCount; i++) {
+        const c = p.child(i)
+        if (!c) continue
+        if (c.id === cur.id) {
+          const next = p.child(i + 1)
+          if (next) {
+            sawNext = true
+            if (next.text === "_" || next.text === "?") return true
+          }
+          break
+        }
+      }
+      if (sawNext) break
+      cur = p
+    }
+    // backward
+    cur = n
+    while (cur) {
+      const p: Node | null = cur.parent
+      if (!p) break
+      let sawPrev = false
+      for (let i = p.childCount - 1; i >= 0; i--) {
+        const c = p.child(i)
+        if (!c) continue
+        if (c.id === cur.id) {
+          const prev = p.child(i - 1)
+          if (prev) {
+            sawPrev = true
+            if (prev.text === "_") return true
+          }
+          break
+        }
+      }
+      if (sawPrev) break
+      cur = p
+    }
+    return false
+  }
+
   /** Extract supertypes from an extends_clause (direct type children in v0.26.2). */
   /**
    * M59 (#825): each supertype name is paired with the LINE IT IS WRITTEN ON.
@@ -2211,15 +3103,25 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // id "x" (probe: two classes → ["constructor","constructor"],["x","x"]).
       // A stub parent (id = class name, never pushed to symbols) qualifies
       // the ids: A.constructor / A.x. Same fix in handleEnum.
-      const idStub = { id: name, name } as unknown as ASTEngine.UniversalSymbol
+      // M60 (#924, scala E) follow-through: `ownerName` is the SOURCE of every
+      // `contains` edge these members publish, and it was the RAW identifier
+      // text — so a class declared as ``implicit class `not in Ordered` `` gave
+      // its constructor and its `v` property the owner "`not in Ordered`" WITH
+      // the backticks, while the class symbol itself was "not in Ordered"
+      // (createSymbol strips quoting). Two spellings of one owner, so those
+      // two `contains` edges pointed at a node that does not exist and the same
+      // class's other members pointed at one that does. Measured on scala/scala
+      // ScalaVersion.scala:124 (script/m14/tmp/scala-endpoint-defects.mts).
+      const ownerName = stripScalaQuoting(name)
+      const idStub = { id: ownerName, name: ownerName } as unknown as ASTEngine.UniversalSymbol
       const ctor = this.createSymbol("constructor", ASTEngine.SymbolKind.Constructor, classParamsNode, idStub, {
         type: "constructor",
-        ownerName: name,
+        ownerName,
         ownerKind: ASTEngine.SymbolKind.Class,
         scalaSpecific: true,
       })
       // ownerName must point at the class so contains resolves
-      ctor.ownerName = name
+      ctor.ownerName = ownerName
       // S1.15: the ctor carries its parameter payload (names + types),
       // mirroring the java convention of copying components into the ctor.
       const ctorParams: ASTEngine.Parameter[] = []
@@ -2241,11 +3143,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const prop = this.createSymbol(pName, ASTEngine.SymbolKind.Property, cp, idStub, {
             type: isVar ? "var" : "val",
             isConstructorProperty: true,
-            ownerName: name,
+            ownerName,
             ownerKind: ASTEngine.SymbolKind.Class,
             isCaseClassParam: isCase,
           })
-          prop.ownerName = name
+          prop.ownerName = ownerName
           symbols.push(prop)
         }
       }
@@ -2273,7 +3175,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `class Outer { class Inner }` exported Inner as a top-level API name.
     if (this.isPublic(node) && !parent) {
       exports.push({
-        name,
+        // `symbol.name`, not the raw `name`: createSymbol strips quoting syntax,
+        // so the array used to publish `` `strip margin` `` where the symbol was
+        // `strip margin` — one public surface with two spellings of every
+        // backticked name in it. Measured on scala/scala (package.scala:40,
+        // `implicit val `strip margin``), and the `exports` RELATIONSHIP derives
+        // from this array, so the two spellings would have met in the graph.
+        name: symbol.name,
         kind: ASTEngine.SymbolKind.Class,
         range: symbol.range,
       })
@@ -2346,9 +3254,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // run-fixtures.ts) rejects duplicate export names. The class is the
     // importable unit; the companion resolves through it. Suppressed only
     // when a same-name type export already exists in THIS file.
-    if (this.isPublic(node) && !parent && !exports.some((e) => e.name === name)) {
+    if (this.isPublic(node) && !parent && !exports.some((e) => e.name === symbol.name)) {
       exports.push({
-        name,
+        name: symbol.name,
         kind: ASTEngine.SymbolKind.Module,
         range: symbol.range,
       })
@@ -2408,7 +3316,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // S1.5: nested traits must not export (top-level guard, same as class).
     if (this.isPublic(node) && !parent) {
       exports.push({
-        name,
+        name: symbol.name,
         kind: ASTEngine.SymbolKind.Interface,
         range: symbol.range,
       })
@@ -2462,7 +3370,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // blind spot the differential could never catch; probe s1-probe3). The
     // extractor + walk mirror handleTrait (all supertypes are extends).
     if (this.isPublic(node) && !parent) {
-      exports.push({ name, kind: ASTEngine.SymbolKind.Enum, range: symbol.range })
+      exports.push({ name: symbol.name, kind: ASTEngine.SymbolKind.Enum, range: symbol.range })
     }
 
     const enumExtends = this.findChild(node, "extends_clause")
@@ -2490,14 +3398,18 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const enumParamsNode = this.findChild(node, "class_parameters")
     if (enumParamsNode) {
       // S1.1: stub-parent id qualification (see handleClass).
-      const idStub = { id: name, name } as unknown as ASTEngine.UniversalSymbol
+      // Same rule as handleClass: the stub parent and the ownerName overrides
+      // carry the STRIPPED name, or an enum declared ``enum `odd name` `` would
+      // publish `contains` edges from a spelling no symbol has.
+      const ownerName = stripScalaQuoting(name)
+      const idStub = { id: ownerName, name: ownerName } as unknown as ASTEngine.UniversalSymbol
       const ctor = this.createSymbol("constructor", ASTEngine.SymbolKind.Constructor, enumParamsNode, idStub, {
         type: "constructor",
-        ownerName: name,
+        ownerName,
         ownerKind: ASTEngine.SymbolKind.Enum,
         scalaSpecific: true,
       })
-      ctor.ownerName = name
+      ctor.ownerName = ownerName
       // S1.15: ctor parameter payload (enum parity with handleClass).
       const ctorParams: ASTEngine.Parameter[] = []
       symbols.push(ctor)
@@ -2516,10 +3428,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const prop = this.createSymbol(pName, ASTEngine.SymbolKind.Property, cp, idStub, {
             type: isVar ? "var" : "val",
             isConstructorProperty: true,
-            ownerName: name,
+            ownerName,
             ownerKind: ASTEngine.SymbolKind.Enum,
           })
-          prop.ownerName = name
+          prop.ownerName = ownerName
           symbols.push(prop)
         }
       }
@@ -2537,11 +3449,14 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (caseName) {
             const member = this.createSymbol(caseName, ASTEngine.SymbolKind.EnumMember, c, symbol, {
               type: "enum_case",
-              ownerName: name,
+              // stripped, like every other ownerName (see handleClass): a case
+              // declared ``case `type` `` must not source its `contains` edge
+              // from a spelling the symbol index does not hold.
+              ownerName: stripScalaQuoting(name),
               ownerKind: ASTEngine.SymbolKind.Enum,
               scala3: true,
             })
-            member.ownerName = name
+            member.ownerName = stripScalaQuoting(name)
             symbols.push(member)
           }
         } else {
@@ -2555,12 +3470,294 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return symbol
   }
 
-  private handleTypeAlias(node: Node, symbols: ASTEngine.UniversalSymbol[], parent: ASTEngine.UniversalSymbol | null) {
+  private handleTypeAlias(node: Node, symbols: ASTEngine.UniversalSymbol[], parent: ASTEngine.UniversalSymbol | null, exports: ASTEngine.ExportInfo[]) {
     const name = this.extractIdentifier(node, "name")
     if (!name) return
 
     const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Type, node, parent, { isTypeAlias: true })
     symbols.push(symbol)
+
+    // M60 ontology: a type alias is part of the export surface exactly when the
+    // val/def next to it is. `package object io { type PlainFile = … }`
+    // (src/compiler/scala/tools/nsc/io/package.scala:27) is reachable as
+    // `io.PlainFile` — `import io._` brings it in — while the `val File` two
+    // lines up WAS exported, because handleVariable has an export path and this
+    // handler had none. Found by the lane's adjudicator as ANALYZER-ONLY/ORACLE-
+    // ONLY pairs on that file; the asymmetry is the finding, not the magnitude.
+    //
+    // `parent` is null inside a `package object` as well as at the file's top
+    // level, and both are package-level surfaces in Scala, which is why the
+    // guard is the same one every other declaration uses rather than a new one.
+    if (this.isPublic(node) && !parent) exports.push({ name, kind: ASTEngine.SymbolKind.Type, range: symbol.range })
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Scala 3 EXPORT CLAUSE -> `exports` relationships.
+  //
+  // The lane handover recorded `exports` as silent and the census measured the
+  // construct present: `export_declaration` — 277 nodes in 158 files of the
+  // 18,965-file population (script/m14/tmp/scala3-ontology-census.ts), e.g.
+  // compiler/src/dotty/tools/dotc/core/Flags.scala, library/src/scala/
+  // NamedTuple.scala. So this is a GAP, not an absence, and a prose ruling
+  // ("Scala has no export construct") would have been wrong on 277 measured
+  // nodes — the ontology gate's founding premise.
+  //
+  // THE RECONSTRUCTION, and why child position cannot do it. The natural first
+  // rule — "everything before the last named child is the qualifier, the last
+  // named child is the selection" — is wrong on real corpus shapes, measured in
+  // script/m14/tmp/scala3-export-reconstruct-census.mts:
+  //
+  //   * `export toppingPrice.apply, crustPrice.apply, crustPrice.unlift`
+  //     (tests/neg/i20511-1.scala) parses with SIX `field: path` children and
+  //     NO selection node at all. The positional rule reads the qualifier as
+  //     "toppingPrice.apply.crustPrice.apply.crustPrice" — three unrelated
+  //     exportees fused into one nonsense path. The FIELD is what separates
+  //     them: a `,` terminates the exportee and the path children after it
+  //     begin the next one.
+  //   * the anonymous `.` between path segments does NOT consistently carry
+  //     `field: path` (it does between two path segments, it does NOT before a
+  //     selection node), so it has to be skipped by node type, not by field.
+  //
+  // With that, the rule reconstructs 277 of 277 declarations and produces 280
+  // exportees. The first version of the rule reconstructed 90 of 277; the
+  // 187 it missed were all wildcards and selector lists, which is why the
+  // coverage number is printed rather than asserted.
+  //
+  // WHAT AN EDGE IS. A Scala 3 export clause re-publishes members of another
+  // object under the enclosing declaration's own name. So the edge reads
+  //     <enclosing declaration>  exports  <exported name>
+  // which is the same shape makefile/python/zig emit (module -> name) and the
+  // shape parallel-indexer's file-level `exports` section expects. The
+  // QUALIFIER is carried in metadata rather than glued into the target: it is
+  // the SOURCE path of the member, not part of the name the export publishes,
+  // and gluing it would produce targets no symbol in the graph is named by.
+  //
+  // CONFIDENCE. 1.0 on a NAMED exportee: the name is written in the clause, so
+  // there is nothing inferred. A wildcard exportee (`export X._`, 133 of the
+  // 277 declarations) names no member, so an edge naming one would be
+  // fabricated; it is published at 0.7 with `reasonCode: "export-wildcard"` and
+  // an `isWildcard` flag, which makes it countable as a heuristic per
+  // M14-HONESTY-CONTRACT §4 rather than silently indistinguishable from the
+  // named ones.
+  //
+  // ENDPOINT RESOLUTION. The source is the enclosing declaration's name, which
+  // is a symbol the same walk publishes, so it resolves. The target is a member
+  // name that is usually NOT a symbol in this file (it lives on the qualifier's
+  // object), so it resolves externally or not at all — which is the same
+  // position every `references` import edge is already in, and is why the
+  // qualifier goes in metadata where a consumer can still find it.
+  private handleExportClause(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
+  ): void {
+    interface Exportee { prefix: string[]; selKind: string; src: Node; names: string[]; exportedAs?: string }
+
+    const SELECTION_TYPES = new Set(["namespace_selectors", "namespace_wildcard", "as_renamed_identifier"])
+    const exportees: Exportee[] = []
+    let pathParts: string[] = []
+    // The NODE each path segment came from. Without it the line of a plain
+    // `export a.b` edge would be the declaration's first line rather than the
+    // line `b` is written on, which is the class #825 closed everywhere else in
+    // this file.
+    let pathNodes: Node[] = []
+
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c) return // an unreadable child: publish nothing rather than guess
+      const t = c.type
+      const field = node.fieldNameForChild(i) ?? ""
+
+      if (t === "export") continue
+      if (t === ",") {
+        // A comma ends the exportee. `export a.b, c.d` is two exportees, and the
+        // path children after the comma start the next one.
+        if (pathParts.length === 0) continue
+        const leaf = pathParts.pop()!
+        const leafNode = pathNodes.pop() ?? c
+        exportees.push({ prefix: pathParts, selKind: "identifier", src: leafNode, names: [leaf] })
+        pathParts = []
+        pathNodes = []
+        continue
+      }
+      // The separator between path segments is never a name, and it does not
+      // consistently carry `field: path` (it does between two path segments,
+      // it does not before a selection node), so it is skipped by node type.
+      if (t === ".") continue
+      // scala3's semanticdb `.expect.scala` format parks an ASSERTION comment
+      // in the qualifier (`export decode/*->...Codec#decode.*/._`) and in the
+      // selector list. A comment names nothing; treating it as a segment would
+      // publish the comment text as a path.
+      if (c.isNamed && t === "block_comment") continue
+
+      if (c.isNamed && SELECTION_TYPES.has(t)) {
+        if (field !== "") continue // a selection is never a path segment
+        if (t === "namespace_wildcard") {
+          // `export X._` / `export X.*` — no member is named.
+          exportees.push({ prefix: pathParts.slice(), selKind: t, src: c, names: [] })
+        } else if (t === "namespace_selectors") {
+          // One edge PER SELECTOR, each on the line that selector is written
+          // on. A single shared `src` would put every name of a multi-line
+          // `export Target.{ alpha,\n beta,\n gamma }` on the `export`
+          // line, which is the class #825 closed everywhere else in this file:
+          // `alpha` is written on line 3, not line 2.
+          const picked: Array<{ name: string; node: Node; exportedAs?: string }> = []
+          // A `_` / `*` selector INSIDE a selector list means "the rest of this
+          // object's members" — `export printUnit.{status => _, _}`
+          // (tests/pos/reference/exports.scala:21) exports `status` and then
+          // everything else on printUnit. It names no member, so it must not
+          // become a target: the first version published `Copier exports *` at
+          // confidence 1.0, and `*` is not a legal Scala identifier, so that
+          // edge had an endpoint nothing could ever resolve. The same class as
+          // the `unknown` placeholder banned by rule R7
+          // (validation/m60/ledger.json), reached by a different route.
+          // It becomes a wildcard exportee on the QUALIFIER instead, which is
+          // the scope the clause really does re-publish.
+          let innerWildcard = false
+          for (let j = 0; j < c.namedChildCount; j++) {
+            const s = c.namedChild(j)
+            if (!s || (s.isNamed && s.type === "block_comment")) continue
+            if (s.type === "namespace_wildcard") { innerWildcard = true; continue }
+            const nm = this.exportSelectorName(s)
+            if (nm === null) continue
+            // A selector can rename too: `export p.{ epsilon as eps }`.
+            const alias = this.exportSelectorAlias(s)
+            picked.push({ name: nm, node: s, ...(alias && alias !== "*" ? { exportedAs: alias } : {}) })
+          }
+          for (const pk of picked) {
+            exportees.push({ prefix: pathParts.slice(), selKind: t, src: pk.node, names: [pk.name], ...(pk.exportedAs ? { exportedAs: pk.exportedAs } : {}) })
+          }
+          if (innerWildcard && pathParts.length > 0) {
+            exportees.push({ prefix: pathParts.slice(), selKind: "namespace_wildcard", src: c, names: [] })
+          }
+        } else {
+          // `x as y` — the SOURCE member is the first identifier; `as _` means
+          // "no rename", so the published name stays the source name.
+          const srcNode = c.namedChild(0)
+          const srcName = srcNode ? this.exportSelectorName(srcNode) : null
+          if (srcName !== null) {
+            const alias = this.exportSelectorAlias(c)
+            exportees.push({ prefix: pathParts.slice(), selKind: t, src: srcNode ?? c, names: [srcName], ...(alias && alias !== "*" ? { exportedAs: alias } : {}) })
+          }
+        }
+        pathParts = []
+        pathNodes = []
+        continue
+      }
+
+      if (field === "path") {
+        if (c.isNamed) { pathParts.push(c.text); pathNodes.push(c) }
+        continue
+      }
+      return // an unrecognised child: publish nothing rather than a guess
+    }
+    if (pathParts.length > 0) {
+      const leaf = pathParts.pop()!
+      const leafNode = pathNodes.pop() ?? node
+      exportees.push({ prefix: pathParts, selKind: "identifier", src: leafNode, names: [leaf] })
+    }
+    if (exportees.length === 0) return
+
+    // The SOURCE endpoint. An export clause with no enclosing declaration is a
+    // TOP-LEVEL export — legal Scala 3, and 39 of the 277 measured declarations
+    // are one (tests/pos/i11141.scala, tests/pos/i13476.scala and the
+    // package-level exports in tests/neg/package-export/package.scala). Those
+    // publish no owner symbol to point at, so they are sourced at the same
+    // file-scope sentinel the rest of this analyzer uses, "(script)" — never at
+    // a fabricated type name.
+    const source = parent?.name ?? "(script)"
+    const seen = new Set<string>()
+
+    for (const e of exportees) {
+      const qualifier = e.prefix.join(".")
+      if (e.names.length === 0) {
+        // A wildcard exportee: the clause re-publishes EVERY member of the
+        // qualifier, and no member is written. The edge is real (this
+        // declaration does export that object's surface) but it names a scope,
+        // not a symbol, so it is a heuristic edge and says so.
+        if (qualifier.length === 0) continue
+        const key = `${source}|${qualifier}|*`
+        if (seen.has(key)) continue
+        seen.add(key)
+        relationships.push({
+          source,
+          target: qualifier,
+          type: ASTEngine.RelationshipType.Exports,
+          confidence: 0.7,
+          line_number: e.src.startPosition.row + 1,
+          metadata: { isExportClause: true, isWildcard: true, reasonCode: "export-wildcard", exportKind: "all_members", evidenceClass: "structural" },
+        })
+        continue
+      }
+      for (const nm of e.names) {
+        // `as y` renames on export: the PUBLISHED name is the alias.
+        const published = e.exportedAs ?? nm
+        const target = stripScalaQuoting(published)
+        if (target.length === 0 || target === "throws") continue
+        // Rule R7 in its general form (validation/m60/ledger.json): no edge
+        // endpoint may be a placeholder literal. `_` and `*` are the spellings
+        // Scala uses for "no name here", and `unknown` is this repository's
+        // banned placeholder; a target equal to any of them names nothing.
+        // Enumerated, not pattern-matched, because each one was checked against
+        // what the grammar can declare.
+        if (target === "_" || target === "*" || target === "unknown" || target === "?") continue
+        const key = `${source}|${target}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        relationships.push({
+          source,
+          target,
+          type: ASTEngine.RelationshipType.Exports,
+          confidence: 1.0,
+          // M59 (#825): the exported name is written in the clause, so the line
+          // is where that NAME is written — the selector's own line inside a
+          // selector list, the leaf segment's own line for `export a.b`, and
+          // never the declaration's first line.
+          line_number: e.src.startPosition.row + 1,
+          metadata: {
+            isExportClause: true,
+            exportKind: e.exportedAs ? "renamed" : "named",
+            ...(qualifier.length > 0 ? { exportFrom: qualifier } : {}),
+            ...(e.exportedAs ? { exportedAs: stripScalaQuoting(e.exportedAs) } : {}),
+            evidenceClass: "structural",
+          },
+        })
+      }
+    }
+  }
+
+  /** The RENAMING alias one selector publishes, or null when it does not
+   *  rename. `x as y` / `x => y` publish `y`; `x as _` / `x => _` publish `x`,
+   *  which is why `_` and `*` are never returned as an alias. */
+  private exportSelectorAlias(sel: Node): string | null {
+    const t = sel.type
+    if (t !== "as_renamed_identifier" && t !== "arrow_renamed_identifier") return null
+    if (sel.namedChildCount < 2) return null
+    const last = sel.namedChild(sel.namedChildCount - 1)
+    if (!last) return null
+    const txt = last.text
+    // `_` is the "no rename" spelling, not a name anybody can spell.
+    if (txt === "_" || txt === "*") return null
+    return this.exportSelectorName(last)
+  }
+
+  /** The member name ONE selector contributes, or null when it contributes
+   *  none. `as`/`=>` forms contribute their SOURCE name; the alias is read
+   *  separately so the caller can record the rename. */
+  private exportSelectorName(sel: Node): string | null {
+    const t = sel.type
+    if (t === "identifier" || t === "operator_identifier" || t === "type_identifier") return sel.text
+    if (t === "generic_type") {
+      // `export defaults.{given Ring[Int]}` — the exported TYPE is its head.
+      const head = sel.namedChild(0)
+      return head ? this.exportSelectorName(head) : null
+    }
+    if (t === "as_renamed_identifier" || t === "arrow_renamed_identifier") {
+      const src = sel.namedChild(0)
+      return src ? this.exportSelectorName(src) : null
+    }
+    if (t === "namespace_wildcard") return "*"
+    return null
   }
 
   private handleGiven(
@@ -2622,7 +3819,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The old handler had no export path at all, so `given myOrd: Ordering[Int]`
     // vanished from the public API surface.
     if (explicitName && this.isPublic(node) && !parent) {
-      exports.push({ name, kind: ASTEngine.SymbolKind.Constant, range: symbol.range })
+      exports.push({ name: symbol.name, kind: ASTEngine.SymbolKind.Constant, range: symbol.range })
     }
     return symbol
   }
@@ -2676,6 +3873,58 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     if (!name) return null
+
+    // R7 (measured: 1,336 endpoints over 209 files on the 9,353-file corpus —
+    // see isKeywordUsedAsName). `def this(...)` is an AUXILIARY CONSTRUCTOR,
+    // not a method named `this`. The grammar fills the node's `name:` field with
+    // the keyword, so the generic handler below would publish a method symbol
+    // named `this` and every edge sourced at it would name a member no file
+    // declares.
+    //
+    // It is handled as what it IS — a constructor of the enclosing class. The
+    // class already owns a `constructor` symbol carrying the PRIMARY
+    // constructor's parameters, and an auxiliary constructor is not reachable
+    // by name in Scala either (`new C(a, b)` binds the class, never the
+    // auxiliary). So the honest publication is: no new symbol, the parameters
+    // folded into the owner's constructor payload, and the body's relationships
+    // attributed to the OWNER. `return parent` makes the walk push the owner as
+    // the parent for the auxiliary's body, which is what the rest of this
+    // function does with `parent` — the auxiliary's `new Settings(error)` then
+    // sources from `CompilerCommand`, which is a real symbol.
+    //
+    // Returning `parent` rather than a new symbol is also what keeps `contains`
+    // honest: before, the class carried a member named `this` that no
+    // declaration in the file spells.
+    if (name === "this" && parent && (parent.kind === ASTEngine.SymbolKind.Class || parent.kind === ASTEngine.SymbolKind.Module)) {
+      // Fold the auxiliary's parameter list into the constructor symbol the
+      // class published, so the payload is not lost. Additive and deduped by
+      // (name, type): a file may declare several auxiliary constructors that
+      // differ only in arity, and each is a distinct signature.
+      let ctor: ASTEngine.UniversalSymbol | undefined
+      for (const s of symbols) {
+        if (s.ownerName === parent.name && s.kind === ASTEngine.SymbolKind.Constructor && s.name === "constructor") { ctor = s; break }
+      }
+      if (ctor) {
+        const existing = new Set((ctor.parameters ?? []).map((p) => `${p.name}:${p.type}`))
+        const ps = ctor.parameters ?? (ctor.parameters = [])
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const pn = node.namedChild(i)
+          if (!pn || pn.type !== "parameters") continue
+          for (let j = 0; j < pn.namedChildCount; j++) {
+            const p = pn.namedChild(j)
+            if (!p || p.type !== "parameter") continue
+            const pname = p.childForFieldName("name")?.text || ""
+            const ptype = p.childForFieldName("type")?.text || ""
+            const key = `${pname}:${ptype}`
+            if (existing.has(key)) continue
+            existing.add(key)
+            ps.push({ name: pname, type: ptype, isImplicit: false })
+          }
+        }
+      }
+      patternsObj["Auxiliary Constructors"] = true
+      return parent
+    }
 
     const isMethod =
       parent &&
@@ -2855,7 +4104,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `def outer` escaped as a top-level export) nor enum methods (5b above).
     if (this.isPublic(node) && methodKind === ASTEngine.SymbolKind.Function && !parent) {
       exports.push({
-        name,
+        name: symbol.name,
         kind: ASTEngine.SymbolKind.Function,
         range: symbol.range,
       })
@@ -2936,6 +4185,19 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // expression collectors (the identifiers are ordinary reads).
     if (patternNode.type === "tuple_pattern") return
 
+    // R7: a `val`/`var` whose PATTERN is the keyword `this`. The pinned grammar
+    // accepts `val this = this` (scala3 test/files/pos/t8365.scala:7 — measured,
+    // node shape `val_definition pattern: (identifier "this")`) even though the
+    // language rejects the bare spelling, so the pattern node arrives carrying
+    // the keyword and the generic path below published a property named `this`
+    // plus `contains A -> this`.
+    //
+    // The guard is on the RAW pattern text, not the reserved set: an ESCAPED
+    // `` val `this` = ... `` is a legal declaration whose published name drops
+    // the backticks (M60 #924), and refusing it would drop a real member. The
+    // auxiliary-constructor handler in handleFunction states the same rule.
+    if (patternNode.text === "this") return
+
     // M60/S12: that refusal was for ONE of five pattern shapes, and the other
     // four published the PATTERN'S SOURCE TEXT as the symbol name. A `val`'s
     // pattern is a NAME only when it is a name; every other pattern is a
@@ -2997,7 +4259,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (this.isPublic(node) && !parent) {
         exports.push({
-          name,
+          name: symbol.name,
           kind: kind,
           range: symbol.range,
         })
@@ -3153,10 +4415,22 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           isQualified = fnNode.type === "field_expression"
           if (isQualified) {
             // obj.method — the leaf identifier is the method name
+            //
+            // The leaf set is `identifier` OR `operator_identifier`, and the
+            // second disjunct is not decoration: `super.==(new AnyRef)` parses
+            // as field_expression > value:(identifier "super")
+            // field:(operator_identifier "=="), so collecting only `identifier`
+            // found no leaf past the receiver and the edge published
+            // `calls f4 -> super` — the RECEIVER as the callee, which names a
+            // keyword no file declares (R7) and loses the method entirely.
+            // Measured 13 endpoints over the corpus (t3736.scala:6-7,19-21,
+            // t5063.scala:2), every one of them an operator-named member reached
+            // through `super`. `super.toString` was already right because its
+            // leaf is a plain identifier.
             const leaves: Node[] = []
             for (let i = 0; i < fnNode.namedChildCount; i++) {
               const c = fnNode.namedChild(i)
-              if (c && c.type === "identifier") leaves.push(c)
+              if (c && (c.type === "identifier" || c.type === "operator_identifier")) leaves.push(c)
             }
             if (leaves.length > 0) {
               calleeNode = leaves[leaves.length - 1]
@@ -3174,6 +4448,15 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // was three disconnected graph nodes (cross-language oddity; kotlin/java
       // each use one). Everything unparented now sources to "(script)".
       const sourceName = parent?.name ?? "(script)"
+      // R7: `this(...)` is CONSTRUCTOR DELEGATION, never a call to a member
+      // named `this`. An auxiliary constructor's body opens with it —
+      // `def this(arguments: List[String], error: String => Unit) = this(arguments,
+      // new Settings(error))` — and publishing `calls CompilerCommand -> this`
+      // names a member no file declares. The class's own `constructor` symbol
+      // and the `instantiates` edge for the delegated construction carry the
+      // fact, so nothing is lost. Measured: 88 targets at 400-file depth, all of
+      // them this one form.
+      if (calledName === "this") return
       if (calledName) {
         // Companion-apply construction idiom (Type(...)): in Scala, PascalCase
         // receiver-less calls ARE constructions (case-class/class companion
@@ -3229,7 +4512,23 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (node.type !== "import_declaration") return
 
     const parts: string[] = []
-    const selectors: { local: string; imported: string }[] = []
+    // `excluded` marks the Scala 3 EXCLUSION selector (`X => _`), which is a
+    // name the import WITHHOLDS. The type is declared here rather than in
+    // src/ast/types.ts (master-owned) because `ImportInfo` carries an index
+    // signature, so the extra key travels without a change to the contract.
+    const selectors: { local: string; imported: string; excluded?: boolean }[] = []
+    /** The facts a SELECTOR clause carries for the dependency edges: the module
+     *  path as it stood before the clause, and the names the clause imports.
+     *  Set only when the import HAS a `{...}` clause. */
+    // The DEPENDENCY facts, one entry per GROUP of a Scala 3 multi-clause
+    // import (`import sbt._, Keys._` is TWO dependencies; `parts` concatenates
+    // them into `sbt.Keys`, which is neither). Measured on the corpus: 149
+    // multi-clause import declarations, the commonest shape being two wildcard
+    // clauses. `groupParts` resets at each `,`, so a group's prefix is the path
+    // as WRITTEN in that group — which is what `parts` cannot express once two
+    // groups have contributed to it.
+    const groups: { prefix: string; names: string[] }[] = []
+    let groupParts: string[] = []
     // M59 (#825): the line the TARGET of the import edge is written on. The
     // target is the dotted module, and its LAST segment is the name the edge
     // names — which is not always on the statement's first line. Measured on
@@ -3263,14 +4562,77 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!child) continue
 
       if (child.type === "identifier" || child.type === ".") {
-        if (child.type === "identifier") { parts.push(part(child.text)); moduleLine = child.startPosition.row + 1 }
+        if (child.type === "identifier") {
+          parts.push(part(child.text))
+          groupParts.push(part(child.text))
+          moduleLine = child.startPosition.row + 1
+        }
+      } else if (child.type === ",") {
+        // A `,` between groups: the path accumulated so far is a COMPLETE group
+        // and must be published as one, then the next path starts fresh. The
+        // first cut only reset `groupParts` here, which DROPPED the first group
+        // of `import scala.collection.mutable, mutable.ArrayDeque`
+        // (src/compiler/scala/tools/nsc/CompilationUnits.scala:17) — the
+        // adjudicator derived both dependencies and the analyzer published one.
+        // `parts` deliberately keeps accumulating: it is the audited module path.
+        const completed = groupParts.join(".")
+        if (completed.length > 0) groups.push({ prefix: completed, names: [] })
+        groupParts = []
       } else if (child.type === "namespace_wildcard") {
         selectors.push({ local: "*", imported: "*" })
+        const gprefix = groupParts.join(".")
+        if (gprefix.length > 0) groups.push({ prefix: gprefix, names: [] })
+        groupParts = []
       } else if (child.type === "namespace_selectors") {
+        // A clause with TWO OR MORE renames cannot be expressed by ONE module
+        // path. `import scala.collection.mutable.{Field => JField, Method =>
+        // JMethod}` (src/library/scala/Enumeration.scala:16) depends on
+        // `...mutable.Field` AND `...mutable.Method`, and pushing each renamed
+        // segment into `parts` CONCATENATES them: the path came out as
+        // `scala.collection.mutable.Field.Method`, which then reached three
+        // surfaces at once — the `references` target, `ImportInfo.path`, and
+        // the `imports` edges, where each selector is appended AGAIN:
+        //
+        //   imports (file) -> treeBuilder.global.unit.global
+        //   imports (file) -> treeBuilder.global.unit.unit
+        //
+        // for `import treeBuilder.{global => _, unit => _}`
+        // (src/compiler/scala/reflect/quasiquotes/Parsers.scala:107). Measured on
+        // the corpus: 63 clauses carry two or more renames, against 682 with
+        // exactly one.
+        //
+        // So with 2+ renames the module path stays the PACKAGE PREFIX and every
+        // renamed name rides in `selectors`, which is what a plain selector list
+        // (`import scala.util.{Try, Success}`) already does. With 0 or 1 rename
+        // nothing changes here, and that restraint is load-bearing: the
+        // single-rename form is pinned by evidence a lane does not own —
+        // validation/m12/ground-truth/scala.json records
+        // `import scala.collection.{immutable => im}` as the module
+        // `scala.collection.immutable`, and differential.ts's
+        // deriveScalaReferencesTruth derives the same path.
+        // The MODULE PATH keeps the audited convention — a renamed segment joins
+        // it — because that path is what the `references` edge publishes and two
+        // master-owned artifacts pin it: validation/m12/ground-truth/scala.json
+        // and differential.ts's importPathOf (differential.ts:4054, which appends
+        // every arrow-renamed name and ignores plain selectors). Changing it here
+        // to "prefix only" would turn every such clause into a MISSING row in a
+        // harness this lane does not own, which is a report, not a fix.
+        //
+        // The DEPENDENCY edges cannot use that path, so the clause's own facts
+        // are recorded beside it: the path as it stood BEFORE the clause, and
+        // the names the clause imports. `import parser.{symbXMLBuilder => handle,
+        // o2p, r2p}` (src/compiler/scala/tools/nsc/ast/parser/MarkupParsers.scala:76)
+        // depends on three members of `parser`; folding one renamed name into the
+        // path and appending the rest produced `parser.symbXMLBuilder.o2p`, which
+        // is a package that does not exist. Both edges are right only if they are
+        // computed from different bases, so they are.
+        const groupPrefix = groupParts.join(".")
+        const groupNames: string[] = []
         for (let j = 0; j < child.childCount; j++) {
           const sel = child.child(j)
           if (!sel) continue
           if (sel.type === "identifier") {
+            groupNames.push(part(sel.text))
             selectors.push({ local: sel.text, imported: sel.text })
           } else if (sel.type === "arrow_renamed_identifier") {
             // `D => Renamed` — local alias is the RHS, imported name is the
@@ -3282,12 +4644,26 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             const imported = sel.namedChild(0)
             const local = sel.namedChild(1)
             if (imported && local) {
+              // `X => _` is an EXCLUSION, not an inclusion: Scala 3 spells
+              // "import everything from this package EXCEPT X" as
+              // `import a.{X => _, *}`. The dependency is therefore the PACKAGE,
+              // and naming `X` as a dependency would assert the opposite of what
+              // the statement says — that this file needs `a.X`. The grammar
+              // spells the alias as a `wildcard` node, which is how the two forms
+              // are told apart (`Field => JField` has an identifier there).
+              // Measured on the corpus: 103 rename-to-wildcard selectors, e.g.
+              // `import treeBuilder.{global => _, unit => _}`
+              // (src/compiler/scala/reflect/quasiquotes/Parsers.scala:107).
+              const isExclusion = local.type === "wildcard" || local.text === "_"
               parts.push(part(imported.text))
               moduleLine = imported.startPosition.row + 1
-              selectors.push({ local: local.text, imported: imported.text })
+              if (!isExclusion) groupNames.push(part(imported.text))
+              selectors.push({ local: isExclusion ? "_" : local.text, imported: imported.text, excluded: isExclusion })
             }
           }
         }
+        if (groupPrefix.length > 0) groups.push({ prefix: groupPrefix, names: groupNames })
+        groupParts = []
       } else if (child.type === "as_renamed_identifier") {
         // `Z as W` — the module path keeps the ORIGINAL segment (`x.y.Z`),
         // the alias is the local name. Losing `Z` truncated the module path
@@ -3296,11 +4672,20 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const alias = child.namedChild(1)
         if (original && original.type === "identifier") {
           parts.push(part(original.text))
+          groupParts.push(part(original.text))
           moduleLine = original.startPosition.row + 1
           selectors.push({ local: alias && alias.type === "identifier" ? alias.text : original.text, imported: original.text })
+          const gprefix = groupParts.join(".")
+          if (gprefix.length > 0) groups.push({ prefix: gprefix, names: [] })
+          groupParts = []
         }
       }
     }
+
+    // A group still open at the end of the statement is a bare path:
+    // `import java.nio.charset.{...}, StandardCharsets.UTF_8`.
+    const tailPrefix = groupParts.join(".")
+    if (tailPrefix.length > 0) groups.push({ prefix: tailPrefix, names: [] })
 
     const pathStr = parts.join(".")
 
@@ -3331,6 +4716,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // items = imported names, specifiers kept for any legacy reader.
       items: selectors.map((s) => s.imported),
       specifiers: selectors,
+      // Read by the `imports` edge builder; see handleImport's comment on why the
+      // dependency edges and the module path are computed from different bases.
+      ...(groups.length > 0 ? { metadata: { importGroups: groups } } : {}),
       range: {
         startLine: node.startPosition.row + 1,
         startColumn: node.startPosition.column + 1,
@@ -3387,9 +4775,25 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (compiler/test/dotty/tools/dotc/SettingsTests.scala), all of them
     // mis-attributed for that reason.
     const f = node.childForFieldName?.("name")
-    if (f) return stripScalaQuoting(f.text)
+    // R7: an AUXILIARY CONSTRUCTOR's `name:` field holds the keyword `this`.
+    // This string becomes an edge SOURCE, so returning it publishes
+    // `references this -> List` — a symbol no file declares. Returning null
+    // makes the caller's walk CONTINUE to the enclosing class, which is the
+    // right answer: `def this(arguments: List[String], settings: Settings)` is
+    // a constructor of CompilerCommand, so the `List` it names is referenced by
+    // CompilerCommand. Measured: 143 endpoints over 31 files at 400-file depth,
+    // all downstream of this one read.
+    //
+    // The guard is `=== "this"` and not the RESERVED set on purpose. An ESCAPED
+    // identifier (`` def `return` ``) also lands here with a reserved word, and
+    // that IS a legal declared name the source spells — M60 #924's quoting rule
+    // makes the published `return` referenceable, so refusing it would drop real
+    // declarations. Only `this` is a keyword where a NAME cannot be written at
+    // all. See isKeywordUsedAsName.
+    if (f) return f.text === "this" ? null : stripScalaQuoting(f.text)
     const i = this.findChild(node, "identifier")?.text
-    return i === undefined ? null : stripScalaQuoting(i)
+    if (i === undefined) return null
+    return i === "this" ? null : stripScalaQuoting(i)
   }
 
   private findChild(node: Node, type: string): Node | null {

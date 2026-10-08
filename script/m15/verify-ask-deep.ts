@@ -22,6 +22,7 @@ import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { quickAnswer } from "../../src/intelligence/search/quick-answer"
+import { fileURLToPath } from "node:url"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
@@ -367,7 +368,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   {
     // Regression: cleanup must never delete a non-tmp root (the A6 bug that
     // deleted |rake/lib| during development was caused by rmSync on the root).
-    const cleanupSrc = readFileSync(new URL(import.meta.url).pathname, "utf8")
+    const cleanupSrc = readFileSync(fileURLToPath(import.meta.url), "utf8")
       .split("A8: evidence")[0]
     nk("A8: cleanup refuses to rmSync non-tmp roots", cleanupSrc.includes("root.startsWith(tmpdir())"), "structural guard in cleanup()")
 
@@ -385,7 +386,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
     // self-audit: verifier must be auto-pass-free. Strip comments (so
     // documentation text like `ck(..., true)` in a comment is not a match),
     // then scan only the code section before this A8 block.
-    const self = readFileSync(new URL(import.meta.url).pathname, "utf8")
+    const self = readFileSync(fileURLToPath(import.meta.url), "utf8")
       .split("A8: evidence")[0]
       .replace(/\/\/[^\n]*/g, "")
     const autoPass = new RegExp("\\b(?:ck|nk)\\([^)]*,\\s*true\\s*[,)]")

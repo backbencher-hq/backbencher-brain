@@ -2149,6 +2149,125 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // M60 CS3 — `exports`, the one relationship type this lane was silent on that
+    // the LANGUAGE HAS a construct for.
+    //
+    // ## The construct, measured before this method existed
+    //
+    // C# has no `export` keyword. Its export surface is the `public` accessibility
+    // modifier on a top-level type: `public class Foo` in `namespace N` is
+    // reachable from another assembly as `N.Foo`, and `internal`/`private`/`file`
+    // is not. Instrument A over 300 roslyn files found 282 distinct node types and
+    // NONE of the eight export-declaration node types a module language would have
+    // — so the grammar route is closed. Instrument B (a tree walk, where a string
+    // literal cannot fake a modifier) over three corpora:
+    //
+    //   corpus          files   type decls   TOP-LEVEL public types   public members
+    //   roslyn           300       333                     0                582
+    //   aspnetcore       400       520                   275              1,962
+    //   vbnet-samples    400       461                   340                913
+    //
+    // **The roslyn row is the reason this cannot be ruled, and the reason a
+    // single-corpus reading would have been wrong.** dotnet/roslyn is a compiler:
+    // its implementation assemblies declare 303 of 333 top-level types `internal`
+    // and ZERO `public`. A rule keyed on `public` measures 0 there and would read
+    // as RULED, which is the corpus-starvation shape FIRING-CHECK.md records for
+    // Ruby at NFILES=25 (1/10 → 8/10 at 200). Two other families were needed
+    // before the number meant anything.
+    //
+    // ## Why top-level public TYPES and not the wider populations
+    //
+    // Three wider rules were counted on the same draw, not chosen by taste
+    // (aspnetcore column): every public type including nested = 299; every public
+    // type AND every public member = 1,986. Rejected for stated reasons:
+    //
+    //   - nested public types are reached through their outer type, which
+    //     `contains` already carries, and their export PATH (`Outer.Nested`) is
+    //     not expressible as a target without inventing a qualified name;
+    //   - public MEMBERS are `contains` again with a modifier attached — 7.2x the
+    //     edges for no new graph question, and member visibility already rides
+    //     `brain_symbol.visibility` (schema-ddl.ts:66).
+    //
+    // So the edge is exactly the C# answer to "what does this assembly publish":
+    // the set of top-level `public` types, which is what a `using` in another
+    // assembly can bind.
+    //
+    // ## Why the source is the OWNER the symbol table already computed
+    //
+    // `source` is `ownerName` — the namespace symbol for a namespaced type — and
+    // it is the SAME string `contains` derives from one loop away, so both
+    // endpoints resolve at exactly the rate `contains` does rather than at a new
+    // rate that would need its own measurement. A top-level type with no
+    // namespace has no owner and takes the lane's existing file-scope spelling,
+    // `"global"` (the same source CS-B1 uses for a top-level `calls` edge); that
+    // source does not resolve to a symbol, and neither does any other file-scope
+    // edge in this lane, so it is the file and not a placeholder (rule R7 bans the
+    // literal `unknown`, which appears nowhere here).
+    //
+    // ## Confidence and evidence class
+    //
+    // 1.0 / `structural`, like lua's module-surface export edge (LUA-42) and like
+    // `contains`: both halves of the claim are written in the file — the `public`
+    // keyword and the type's name. Nothing is inferred about the binding.
+    //
+    // ## What this does NOT change
+    //
+    // `res.exports[]` (lines 1452 and 1494) is untouched. That channel answers a
+    // different question — the RESOLVABLE-NAME set, namespace-free top-level
+    // declarations, gated by F3 on name resolution (CS-B4 / M49) — and it is
+    // recorded here because the two are easy to confuse: on roslyn the channel
+    // carries 302 rows and this emits 0, because roslyn's 302 are `internal`.
+    for (const s of symbols) {
+      // `public` and only `public`. `extractVisibility` already normalises the
+      // two C# modifiers that must never reach an export surface: `file` maps to
+      // `private` (CS-B4), and a top-level type with NO modifier leaves
+      // `visibility` undefined — which is correct, because C#'s default
+      // accessibility for a top-level type declaration is `internal`, not
+      // `public`. So an unannotated type is correctly excluded by requiring the
+      // literal value rather than by a default.
+      if (s.visibility !== "public") continue
+      // A namespace symbol carries `visibility: "public"` by construction
+      // (namespace_declaration / file_scoped_namespace_declaration branches above),
+      // and a namespace exports nothing, so kind is filtered explicitly.
+      const k = s.kind as ASTEngine.SymbolKind
+      if (
+        k !== ASTEngine.SymbolKind.Class &&
+        k !== ASTEngine.SymbolKind.Struct &&
+        k !== ASTEngine.SymbolKind.Interface &&
+        k !== ASTEngine.SymbolKind.Enum &&
+        k !== ASTEngine.SymbolKind.Delegate
+      ) continue
+      // TOP-LEVEL is a grammar fact, not a heuristic: the analyzer gives a nested
+      // type its OUTER TYPE as owner, so `ownerKind === Namespace` selects
+      // namespaced top-level types and "no owner at all" selects the global scope.
+      //
+      // The first version of this predicate was `ownerKind === Namespace ? ownerName
+      // : "global"`, which is WRONG and was caught by measurement rather than by
+      // reading: it accepted every nested public type and gave it the file-scope
+      // source, i.e. it claimed `Outer.Nested` was a global-scope export. On
+      // aspnetcore that was 299 emitted against 275 real top-level public types —
+      // 24 fabricated rows, exactly the R2-vs-R1 gap the construct census counted
+      // (299 = R2 "every public type including nested", 275 = R1). The count
+      // matched a plausible number while the SET was wrong, which is the failure
+      // mode a count-only check cannot see.
+      const isNamespacedTopLevel = s.ownerKind === ASTEngine.SymbolKind.Namespace && !!s.ownerName
+      const isGlobalTopLevel = !s.ownerKind && !s.ownerName && !s.scope
+      if (!isNamespacedTopLevel && !isGlobalTopLevel) continue
+      const source = isNamespacedTopLevel ? (s.ownerName as string) : "global"
+      relationships.push({
+        source,
+        target: s.name,
+        type: ASTEngine.RelationshipType.Exports,
+        confidence: 1.0,
+        line_number: this.containmentLine(s, containmentSites),
+        metadata: {
+          relationshipType: "csharp_public_type_export",
+          exportForm: isNamespacedTopLevel ? "public_top_level_type" : "public_global_scope_type",
+          visibility: "public",
+        },
+      })
+    }
+
     // Field-access Uses pass (csharp #264 wave). The M12 contract declares
     // `uses (field access)` but it was never emitted — a genuine Station-3
     // gap. Mirrors the go/rust family: member_access_expression on a field
@@ -2248,6 +2367,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      // M60 CS3: `exports` is written in the file — a `public` keyword on a
+      // top-level type declaration — so it is a structural fact and not a guess.
+      // Without this line it fell through to the default `usage_contextual`,
+      // which is the class `calls`/`uses` carry because the BINDING they denote
+      // is not written; that is not true here, and the tier is the field a
+      // consumer reads to decide whether to trust the edge.
+      if (type === "exports") { md.evidenceClass = "structural"; continue }
       md.evidenceClass = "usage_contextual"
     }
   }

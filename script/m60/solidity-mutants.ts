@@ -649,7 +649,15 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
         return x
       }),
     }),
-    caughtBy: "solidity/crossfile-sol21",
+    // The harness reports the catching fixture as a PROJECT-QUALIFIED path
+    // (`solidity/sol21/sol21-derived`, project `sol21`), not as the lane label
+    // "crossfile-sol21" — a name that exists in the muster prose and in the
+    // fixture runner's project directory, but not as any file under
+    // validation/m14/fixtures/solidity/. Measured by running every mutant that
+    // declares `caughtBy` (BB_MUTANT_ONLY="solidity/", 49 mutants): 23 of 25
+    // declarations matched the fixture the run names as their new failure, and
+    // this pair did not. Corrected to the name the run actually prints.
+    caughtBy: "solidity/sol21/sol21-derived",
   },
   {
     id: "solidity/project-index-candidate-as-resolution",
@@ -664,7 +672,9 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
         return { ...x, metadata: { ...(x.metadata ?? {}), calleeKind: "crossFileInheritedMember" } }
       }),
     }),
-    caughtBy: "solidity/crossfile-sol21",
+    // Same correction as `solidity/project-index-ignored`: the run names the
+    // catching fixture `solidity/sol21/sol21-derived`, not "crossfile-sol21".
+    caughtBy: "solidity/sol21/sol21-derived",
   },
   {
     id: "solidity/qualified-calls-dropped",

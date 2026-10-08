@@ -1,0 +1,75 @@
+R7 origin — 110 files in [ripgrep]
+  edges 29660 · with a placeholder endpoint 1462 in 101 files · parse failures 0
+  placeholder edges carrying no line_number: 0
+
+type            edges  (edges having >=1 placeholder endpoint)
+------------------------------------------------------------
+imports           572
+calls             497
+uses              202
+exports           140
+contains           44
+references         33
+instantiates       18
+implements          2
+
+enclosing declaration at the edge's own line     edges
+------------------------------------------------------------
+source_file                                        882
+function_item                                      358
+const_item                                         122
+struct_item                                         76
+mod_item                                            44
+enum_item                                           17
+trait_item                                           6
+impl_item                                            3
+
+type         side name           owner                  edges  files
+----------------------------------------------------------------------------
+imports      src  global         source_file              443     93
+calls        src  global         source_file              359     15
+uses         src  global         const_item               108      1
+exports      src  global         struct_item               71     29
+imports      src  global         function_item             60     28
+calls        tgt  default        function_item             58     23
+calls        src  default        function_item             47     16
+uses         tgt  None           function_item             37      4
+uses         src  global         source_file               36      9
+imports      tgt  super          mod_item                  35     35
+exports      src  global         function_item             30     14
+imports      tgt  crate          source_file               28     28
+contains     tgt  default        function_item             26     17
+references   src  default        function_item             26     17
+instantiates src  default        function_item             15     12
+exports      src  global         source_file               15      9
+calls        src  global         const_item                12      2
+exports      src  global         enum_item                 12     11
+calls        tgt  none           function_item             11      5
+uses         src  default        function_item              9      5
+uses         tgt  root           function_item              9      3
+calls        src  global         function_item              6      1
+exports      src  global         trait_item                 6      3
+imports      tgt  crate          mod_item                   5      5
+contains     tgt  None           enum_item                  5      4
+contains     tgt  root           struct_item                4      3
+exports      src  global         mod_item                   4      2
+references   src  global         function_item              3      1
+contains     tgt  none           function_item              3      3
+references   src  none           function_item              3      3
+instantiates src  none           function_item              2      2
+implements   src  anonymous_impl impl_item                  2      1
+contains     src  anonymous_impl function_item              2      1
+calls        src  none           function_item              2      2
+exports      src  global         const_item                 2      1
+imports      tgt  super          source_file                1      1
+uses         tgt  null           function_item              1      1
+calls        tgt  null           function_item              1      1
+contains     tgt  null           struct_item                1      1
+contains     tgt  global         function_item              1      1
+instantiates src  global         function_item              1      1
+uses         src  root           function_item              1      1
+calls        tgt  root           function_item              1      1
+contains     tgt  root           function_item              1      1
+references   src  root           function_item              1      1
+contains     src  anonymous_impl impl_item                  1      1
+uses         src  none           function_item              1      1

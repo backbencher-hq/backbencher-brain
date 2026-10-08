@@ -26,6 +26,18 @@ interface LocalScopes {
   frameLocals: Map<number, Map<string, string>>
 }
 
+/**
+ * Keywords that may stand ALONE as an `export` node's only named child when the
+ * grammar mis-parses `data D` / `class C a` in an export list (the name lands in
+ * a sibling `ERROR`). `readExportName` must not publish one of these as a name.
+ *
+ * Declared at module scope, not rebuilt per call: it is read once per `export`
+ * node and the export list is the hottest loop in `processModule`.
+ */
+const HASKELL_DECLARATION_KEYWORDS: ReadonlySet<string> = new Set([
+  "type", "data", "newtype", "class", "instance", "family", "pattern", "proc", "default", "module",
+])
+
 interface HaskellContext {
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
@@ -54,6 +66,21 @@ interface HaskellContext {
   currentFunction: string | undefined
   seenRels: Set<string>
 }
+
+// The grammar's type-bearing node vocabulary (VERIFY_HS9). Used ONLY by
+// isTypePosition, to tell a TYPE-level operator from an expression-level one —
+// `infix` is aliased from _exp_infix, _pat_infix and _type_infix alike, so the
+// operator child cannot make that distinction. Names taken from the pinned
+// grammar's own rules (grammar/type.js, grammar/data.js, grammar/decl.js,
+// grammar/context.js); nothing here is a guess about a node type that the
+// grammar does not define.
+const HASKELL_TYPE_BEARING_NODES = new Set([
+  "type", "signature", "type_synomym", "type_synonym", "data_type", "newtype",
+  "type_patterns", "type_family", "type_instance", "deriving", "deriving_instance",
+  "class", "instance", "strict_field", "field_pattern", "forall",
+  "quantified_variables", "promoted", "type_params", "constraint", "context",
+  "deriving_strategy", "via", "kind_signature", "arity", "kind", "children",
+])
 
 export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
@@ -256,13 +283,15 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         pushedScope = this.processClass(node, ctx, scopeStack)
       } else if (node.type === "instance") {
         pushedScope = this.processInstance(node, ctx, scopeStack)
-    } else if (node.type === "data_type" || node.type === "newtype") {
-      pushedScope = this.processData(node, ctx, scopeStack)
-    } else if (node.type === "type_synomym") {
-      pushedScope = this.processTypeSynonym(node, ctx, scopeStack)
-    } else if (node.type === "foreign_import") {
-      pushedScope = this.processForeignImport(node, ctx, scopeStack)
-    } else if (node.type === "deriving_instance") {
+      } else if (node.type === "data_type" || node.type === "newtype") {
+        pushedScope = this.processData(node, ctx, scopeStack)
+      } else if (node.type === "type_synomym") {
+        pushedScope = this.processTypeSynonym(node, ctx, scopeStack)
+      } else if (node.type === "pattern_synonym") {
+        pushedScope = this.processPatternSynonym(node, ctx)
+      } else if (node.type === "foreign_import") {
+        pushedScope = this.processForeignImport(node, ctx, scopeStack)
+      } else if (node.type === "deriving_instance") {
 
         // HSD12 (probe 2026-09-03, postgrest Routine.hs:65): standalone
         // `deriving instance Show Foo` parses as deriving_instance → name
@@ -342,6 +371,16 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.extractApplyCall(node, ctx, scopeStack)
       } else if (node.type === "infix") {
         this.processInfix(node, ctx, scopeStack)
+      } else if (node.type === "prefix_id") {
+        // VERIFY_HS9 G1/G2: a PREFIX operator application — `(<+>) a b` or
+        // `(:+:) a b`. The grammar gives this its own node type (grammar/
+        // operator.js `_pvarsym`/`_pconsym` aliased to prefix_id), it was
+        // reached by the walk and nothing read it, so a locally defined
+        // operator had no callers and an infix constructor had no constructions.
+        // Measured 22 operator + 3 constructor sites on a 60-file draw.
+        // A `prefix_id` can also occur in pattern position (`(<+>) p`), and the
+        // shared helper gates on that and on type position.
+        this.emitOperatorApplication(node, ctx, scopeStack)
       }
 
       if (pushedScope) stack.push({ node, isExit: true })
@@ -777,46 +816,61 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (exportsList) {
       for (let i = 0; i < exportsList.namedChildCount; i++) {
         const expNode = exportsList.namedChild(i)
-        if (expNode) {
-          // The export list INTERLEAVES Haddock comments with exports:
-          //   exports -> comment "-- * Result", export "Result",
-          //            comment "-- ** Specialized multi-row results", export "rowMaybe"
-          // Iterating every named child published the comments as exported
-          // names -- measured 39 `exports` edges across the corpus whose target
-          // was a `--` comment, e.g. `exports Hasql.Decoders -> "-- * Result"`.
-          // A comment is not a name, and no consumer can resolve it. Only an
-          // `export` node is an export; `haddock` and `comment` are not.
-          if (expNode.type !== "export") continue
-          let exportName = expNode.text.trim()
-          if (this.startsWithWord(exportName, "module ")) {
-            exportName = exportName.slice("module ".length).trim()
-          } else {
-            const paren = exportName.indexOf("(")
-            if (paren >= 0) exportName = exportName.slice(0, paren).trim()
-          }
-          if (exportName && exportName !== ",") {
-            ctx.exports.push({ name: exportName, isDefault: false, range: this.nodeToRange(expNode) })
-            // `exports` is a product relationship type and the export LIST was
-            // already being read and stored in ctx.exports — but only as a flat
-            // array of names, so the graph never learned what a module makes
-            // public. In Haskell that list is the module's entire API surface,
-            // and it is the one place a re-export (`module M`) or a narrowed
-            // export (`module M (foo)`) is stated at all, so an omission here
-            // loses information no other node carries.
-            //
-            // `T(A, B)` is normalised to `T` above, which is the type the module
-            // exports; the constructor list is a visibility detail of T, not a
-            // second exported name.
-            this.pushRel(
-              ctx,
-              moduleName,
-              exportName,
-              ASTEngine.RelationshipType.Exports,
-              1.0,
-              { evidenceClass: "structural" },
-              this.lineOf(expNode),
-            )
-          }
+        if (!expNode) continue
+        // The export list carries THREE node types and two of them were dropped
+        // or mangled:
+        //
+        //   export         a name, in one of four shapes (see readExportName)
+        //   module_export  `module M` — a RE-EXPORT
+        //   comment/haddock documentation, which is not a name
+        //
+        // The comment half was already handled: iterating every named child
+        // published the comments as exported names — measured 39 `exports` edges
+        // across the corpus whose target was a `--` comment, e.g.
+        // `exports Hasql.Decoders -> "-- * Result"`.
+        //
+        // M60-HK2 (tree census 2026-10-03, `script/m14/tmp/hs-export-ffi-probe.ts`
+        // over all 14,066 admitted files, `validation/m14/results/` sibling
+        // hs-export-ffi.json): `module_export` occurs 409 times and every one was
+        // dropped, because the guard was `if (expNode.type !== "export") continue`.
+        // The analyzer's own comment above used to justify reading the list as
+        // the one place a re-export is stated at all — and it was skipping them.
+        let exportName: string | undefined
+        let isReExport = false
+        let anchor: Node = expNode
+        if (expNode.type === "export") {
+          const read = this.readExportName(expNode, exportsList, i)
+          exportName = read.name
+          if (read.anchor) anchor = read.anchor
+        } else if (expNode.type === "module_export") {
+          const mod = this.findNamedChildByType(expNode, ["module", "module_id"])
+          exportName = mod ? this.assembleModuleId(mod) : undefined
+          isReExport = exportName !== undefined
+        } else {
+          continue
+        }
+        if (exportName && exportName !== ",") {
+          ctx.exports.push({ name: exportName, isDefault: false, range: this.nodeToRange(expNode) })
+          // `exports` is a product relationship type and the export LIST was
+          // already being read and stored in ctx.exports — but only as a flat
+          // array of names, so the graph never learned what a module makes
+          // public. In Haskell that list is the module's entire API surface,
+          // and it is the one place a re-export (`module M`) or a narrowed
+          // export (`module M (foo)`) is stated at all, so an omission here
+          // loses information no other node carries.
+          //
+          // `T(A, B)` is normalised to `T` by readExportName, which is the type
+          // the module exports; the constructor list is a visibility detail of T,
+          // not a second exported name.
+          this.pushRel(
+            ctx,
+            moduleName,
+            exportName,
+            ASTEngine.RelationshipType.Exports,
+            1.0,
+            { evidenceClass: "structural", ...(isReExport ? { isReExport: true } : {}) },
+            this.lineOf(anchor),
+          )
         }
       }
     }
@@ -831,6 +885,92 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
     scopeStack.push({ node, name: moduleName, kind: ASTEngine.SymbolKind.Module })
     return true
+  }
+
+  /**
+   * THE NAME an `export` node exports, or undefined when it exports none.
+   *
+   * WHY THIS IS NOT `expNode.text`. The export list states a name with a
+   * DECLARATION KEYWORD in front of it whenever the entry narrows what is
+   * exported, and the raw text is the whole phrase:
+   *
+   *     export -> namespace("type") + name("T")        text "type T"
+   *     export -> namespace("pattern") + name("P")     text "pattern P"
+   *     export -> name("U") + children("(..)")         text "U(..)"
+   *     export -> variable("data")   + ERROR("D")      text "data"   (a mis-parse)
+   *
+   * Measured over the whole corpus before this method existed (analyzer pass,
+   * `script/m14/tmp/hs-ontology-analyse.ts`): 392 of 54,830 `exports` edges
+   * carried a target that was a keyword or a keyword phrase — 100 `type`,
+   * 32 `data`, 8 `pattern`, and the rest `pattern <Ctor>` / `type <Ty>`.
+   * `exports Data.Type.Bool -> type` names the Haskell keyword: it resolves to
+   * nothing, and `T(A, B)`-style narrowing means the thing the module actually
+   * exports is `T`, not `T(A, B)`.
+   *
+   * Tree shapes, counted on the pinned grammar over all 14,066 admitted files
+   * (`script/m14/tmp/hs-export-ffi-probe.ts`): 31,892 `export` nodes —
+   * 6,697 with a `name`/`constructor` child, 24,515 a bare `variable`, 43 a bare
+   * declaration keyword whose real name the grammar pushed into a SIBLING `ERROR`
+   * (37 of the 43 recoverable that way), and 0 unclassified.
+   *
+   * The 6 unrecoverable ones emit NOTHING. Under standing rule R7 the honest
+   * state for "I cannot read this name" is absence, not a keyword standing in for
+   * a name — a literal in a name-bearing field becomes an edge endpoint that does
+   * not exist in the source, and `bb_graph` will happily count and display it.
+   */
+  private readExportName(expNode: Node, exportsList: Node, index: number): { name: string | undefined; anchor?: Node } {
+    // 1. `type T` / `pattern P` / `T(A, B)` / `T(..)` — the grammar already knows
+    //    the name and the qualifier separately.
+    const named = this.findNamedChildByType(expNode, ["name", "constructor"])
+    if (named?.text) return { name: named.text, anchor: named }
+    // 2. A STANDALONE namespace export of an operator: `type (&&)`, `type (||)`,
+    //    `pattern (:|)`. Pinned grammar:
+    //      export -> namespace("type") + prefix_id("(&&)") -> operator("&&")
+    //    The name is the OPERATOR, read from its own node, exactly as
+    //    `processFunction` names an operator definition (`a +.+ b` declares
+    //    `+.+`). Without this case the fall-through below cut the text at the
+    //    first `(` and published the KEYWORD — measured, on the two `type (&&)` /
+    //    `type (||)` entries of `libraries/base/src/Data/Type/Bool.hs:20-21` and
+    //    the three `pattern …` entries of
+    //    `testsuite/tests/parser/should_compile/T25900.hs:4-6`.
+    const opId = this.findNamedChildByType(expNode, ["prefix_id", "infix_id"])
+    if (opId) {
+      // `constructor_operator` is the PATTERN-SYNONYM form: `pattern (:|)` puts
+      // its name in that node, not in `operator` (measured on
+      // testsuite/tests/parser/should_compile/T25900.hs:6).
+      const op = this.findNamedChildByType(opId, ["operator", "constructor_operator"])
+      if (op?.text) return { name: op.text, anchor: op }
+      const innerVar = this.findNamedChildByType(opId, ["variable"])
+      if (innerVar?.text) return { name: innerVar.text, anchor: innerVar }
+    }
+    // 2. A bare `variable` that is NOT a declaration keyword: `f`, `x`, `>>=`.
+    const variable = this.findNamedChildByType(expNode, ["variable"])
+    if (variable?.text) {
+      if (!HASKELL_DECLARATION_KEYWORDS.has(variable.text)) return { name: variable.text, anchor: variable }
+      // 3. `data`/`class` mis-parsed on its own, with the real name in the next
+      //    `ERROR` sibling of the same comma-separated `exports` list.
+      for (let j = index + 1; j < exportsList.namedChildCount; j++) {
+        const nx = exportsList.namedChild(j)
+        if (!nx) continue
+        if (nx.type === "export" || nx.type === "module_export") break
+        if (nx.type === "ERROR") {
+          const rec = this.findNamedChildByType(nx, ["name", "constructor"])
+          if (rec?.text) return { name: rec.text, anchor: rec }
+        }
+      }
+      return { name: undefined }
+    }
+    // 4. Anything else: an operator entry (`(>>=)`) keeps its own text, which is
+    //    the name. A qualified re-export inside a narrowed list keeps its dotted
+    //    form. Anything with an interior `(` that we have not already handled is
+    //    not reduced further — the earlier `indexOf("(")` cut turned
+    //    `History(historyBreakpointId, …)` into `History`, which is right, but it
+    //    also could not tell a narrowed export from a qualified one, and the
+    //    `name` child above now can.
+    const text = expNode.text.trim()
+    if (!text) return { name: undefined }
+    const paren = text.indexOf("(")
+    return { name: paren >= 0 ? text.slice(0, paren).trim() : text, anchor: expNode }
   }
 
   // module_id children compose dotted names: Data → List → "Data.List"
@@ -1154,7 +1294,11 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   private collectTypeNameLeafNodes(node: Node, skip: Node | null, out: Node[] = []): Node[] {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
-      if (!c || c === skip) continue
+      // `.id`, not object identity: web-tree-sitter returns a FRESH wrapper on every
+      // access, so `c === skip` never matched and the subtree the caller asked to
+      // prune was walked anyway — the skipped names could be republished as uses
+      // (hygiene class KAD2/TSD2, caught by script/m14/verify-analyzer-hygiene.ts).
+      if (!c || (skip !== null && c.id === skip.id)) continue
       if (c.type === "name" || c.type === "constructor") {
         if (c.text.trim() && !out.some((o) => o.text === c.text)) out.push(c)
         continue
@@ -1162,6 +1306,127 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.collectTypeNameLeafNodes(c, null, out)
     }
     return out
+  }
+
+  // A pattern synonym is a first-class top-level DECLARATION — `pattern Head a b =
+// expr` names a constructor-shaped value the module defines, so omitting it left
+// every use of the name with nothing to resolve to, exactly as omitting a type
+// synonym did. It is not exotic: GHC's own sources carry 1,094 of them across
+// 261 files (`script/m14/tmp/hs-pattern-synonyms.ts`, all 14,038 admitted files),
+// and 94 export entries name one, so those `exports` edges had a target nothing
+// declared. Found by the `haskell/exports-and-ffi` fixture, which the M14 runner
+// refused with `export(s) [":|"] do not resolve to a top-level symbol`.
+//
+// MEASURED shape distribution over those 1,094 nodes: 449 carry a readable name
+// (421 a `signature` child, 28 a bare `equation`), and 645 are VIEW PATTERNS
+// (`pattern P x <- Q x where P x = Q x`) whose name the previous reader could not
+// reach at all. The name is ALWAYS the head of the equation's left-hand side, so
+// one rule covers every shape:
+//
+//   pattern_synonym -> pattern + signature -> prefix_id -> constructor_operator   (`:|`)
+//   pattern_synonym -> pattern + signature -> constructor                       (`Zero`)
+//   pattern_synonym -> pattern + equation  -> apply(apply(constructor, x), y)    (`OptMResult`)
+//   pattern_synonym -> pattern + equation  -> apply -> constructor              (a view pattern)
+//   pattern_synonym -> pattern + equation  -> infix -> constructor_operator      (`:|`)
+//
+// The symbol kind is `constructor`, not `function`: a pattern synonym is built
+// and matched like a data constructor (`instantiates` already targets it through
+// the `apply`-head rule), and calling it a function would put a name the module
+// never defines into the FP-family `calls` set.
+private processPatternSynonym(node: Node, ctx: HaskellContext): boolean {
+    ctx.patterns["Pattern Synonyms"] = true
+    const sig = this.findNamedChildByType(node, ["signature"])
+    const eq = this.findNamedChildByType(node, ["equation"])
+    // A pattern synonym is normally declared TWICE — a signature and an equation
+    // (`pattern (:|) :: …` then `pattern xs :| ys = …`) — and both halves name the
+    // same value. Publishing one symbol per half would double the symbol and, worse,
+    // double the `contains` edge at two different site lines for a single
+    // declaration. So the name is resolved once and `publishPatternSynonym`
+    // collapses the halves through the O(1) index, extending the range — the same
+    // treatment a multi-clause function gets in `processFunction`.
+    let name: string | undefined
+    let anchor: Node | undefined
+    if (sig) {
+      // `pattern (:|) :: …` — the name is the head of the signature, not child 0
+      // verbatim: `signature` here is `prefix_id + :: + function`.
+      const head = this.findNamedChildByType(sig, ["prefix_id", "infix_id", "constructor", "constructor_operator", "variable"])
+      if (head) {
+        name =
+          head.type === "prefix_id" || head.type === "infix_id"
+            ? this.findNamedChildByType(head, ["constructor_operator", "operator", "constructor", "variable"])?.text
+            : head.text
+        anchor = head
+      }
+    }
+    if (!name && eq) {
+      // The LEFT-HAND SIDE only. `equation` children are the LHS, the `<-`/`=`
+      // token, and the RHS; taking the first `apply`/`infix`/`constructor` child
+      // is the LHS by construction, and the LHS head is the name.
+      for (let i = 0; i < eq.namedChildCount; i++) {
+        const c = eq.namedChild(i)
+        if (!c) continue
+        if (c.type === "constructor" && c.text) { name = c.text; anchor = c; break }
+        if (c.type === "infix") {
+          const op = this.findNamedChildByType(c, ["constructor_operator", "operator"])
+          if (op?.text) { name = op.text; anchor = op; break }
+          continue
+        }
+        if (c.type === "apply") {
+          const head = this.haskellAppliedHeadName(c)
+          if (head) { name = head; anchor = this.findAppliedHeadNode(c) ?? c; break }
+        }
+      }
+    }
+    // A shape this reader cannot name: ABSENCE, not a placeholder. Under rule R7
+    // a literal in a name-bearing field becomes a symbol no file contains.
+    if (!name || !anchor) return false
+    return this.publishPatternSynonym(name, node, anchor, ctx)
+  }
+
+  private publishPatternSynonym(name: string, declNode: Node, anchor: Node, ctx: HaskellContext): boolean {
+    if (!name || name === " ") return false
+    const key = `${ctx.currentModule ?? ""}::${name}`
+    const existingIdx = ctx.functionSymbolIndex[key]
+    if (existingIdx !== undefined) {
+      const existing = ctx.symbols[existingIdx]
+      if (existing) {
+        const declRange = this.nodeToRange(declNode)
+        existing.range.endLine = Math.max(existing.range.endLine, declRange.endLine)
+        if (existing.range.endIndex !== undefined && declRange.endIndex !== undefined) {
+          existing.range.endIndex = Math.max(existing.range.endIndex, declRange.endIndex)
+        }
+      }
+      return true
+    }
+    const range = this.nodeToRange(declNode)
+    range.startLine = anchor.startPosition.row + 1
+    range.startColumn = anchor.startPosition.column + 1
+    ctx.symbols.push({
+      name,
+      kind: ASTEngine.SymbolKind.Constructor,
+      range,
+      scope: ctx.currentModule ?? "",
+      ownerName: ctx.currentModule,
+      ownerKind: ASTEngine.SymbolKind.Type,
+      visibility: "public",
+      metadata: { haskellSpecific: true, isPatternSynonym: true },
+    })
+    ctx.functionSymbolIndex[key] = ctx.symbols.length - 1
+    return true
+  }
+
+  /** The node carrying the head name of an applied type/expression spine. */
+  private findAppliedHeadNode(node: Node): Node | null {
+    let cur: Node | null = node
+    let guard = 0
+    while (cur && guard++ < 64) {
+      if (cur.type === "apply" || cur.type === "parens" || cur.type === "strict") {
+        cur = cur.namedChildCount > 0 ? cur.namedChild(0) : null
+        continue
+      }
+      break
+    }
+    return cur
   }
 
   // FFI declarations. `foreign import capi "libpq-fe.h PQresultStatus"`
@@ -1179,8 +1444,27 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     const varNode = sig ? this.findNamedChildByType(sig, ["variable"]) : null
     const name = varNode?.text ?? ""
     if (!name) return false
-    const entity = this.findNamedChildByType(node, ["entity"])?.text ?? ""
+    // The C entity is a string LITERAL in the Haskell source:
+    //   foreign import ccall unsafe "RTSkeepAlive" c_keepCAFsForGHCi :: () -> IO ()
+    // and the grammar's `entity` node text is the literal WITH its quotes. The
+    // analyzer published it verbatim, so the `references` endpoint carried
+    // `"RTSkeepAlive"` — quotes included.
+    //
+    // MEASURED, both directions. Over all 14,066 admitted files the tree carries
+    // 1,153 `foreign_import` nodes and 1,040 of their `entity` texts are quoted
+    // literals (90.2%). On the analyzer's own corpus pass, 935 `references` edges
+    // were emitted and 1,866 of the corpus's FFI endpoint occurrences resolved to
+    // no published symbol — the samples are unambiguous:
+    //   references c_keepCAFsForGHCi -> "keepCAFsForGHCi"
+    //   references getOrSetLibHSghcFastStringTable -> "getOrSetLibHSghcFastStringTable"
+    //   references setHeapSize -> "setHeapSize"
+    // The spelling a reader needs in order to find the symbol in the C header is
+    // `RTSkeepAlive`, and the doc comment on this very method said so — the string
+    // "is kept as metadata and as a `references` edge, because that string is how a
+    // reader finds the symbol in the C headers". With the quotes it is not that
+    // string. A pure char scan, like every other string operation in this lane.
     const convention = this.findNamedChildByType(node, ["calling_convention"])?.text ?? ""
+    const entity = this.foreignEntityName(this.readForeignEntity(node) ?? "", convention)
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
     ctx.symbols.push({
       name,
@@ -1455,6 +1739,20 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (const c of x.namedChildren) if (c) stack.push(c)
       }
       for (const sn of superNames) {
+        // A class that lists ITSELF as a superclass is legal Haskell under
+        // `UndecidableSuperClasses`, and GHC's own testsuite does it:
+        //   class (Frac (Frac a) ~ Frac a, Fractional (Frac a), ID (Frac a)) => ID a
+        // (testsuite/tests/typecheck/should_compile/T11254.hs:12). So this is a
+        // true statement about the source — and it is still not published, for
+        // the reason the `contains` post-loop already gives 30 lines below: a
+        // self-named edge collapses into a SELF-LOOP in symbol-ID space, where it
+        // can be neither traversed nor distinguished from the declaration itself.
+        //
+        // MEASURED: this was the ONLY `extends` row the differential disagreed on
+        // (1 UNEXPLAINED of 98 over a 1,200-file stride draw,
+        // `script/m14/tmp/hs-oracle-agreement.ts`), because the F5 oracle drops
+        // structural self-edges outright. Two independent readings, one rule.
+        if (sn === name) continue
         this.pushRel(
           ctx,
           name,
@@ -1545,6 +1843,26 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // type_patterns → list → variable (`instance Sized [a]`) | bare
       // name/constructor (`instance Sized Foo`) | parens → apply first child
       // (`instance Functor (Stream f)`). Probe 2026-09-03.
+      //
+      // `qualified` is the fourth shape and it was MISSING, which is a GAP and not
+      // a nicety: `instance TrieMap IntMap.IntMap` is
+      // `type_patterns -> qualified("IntMap.IntMap")`, so no branch matched,
+      // `targetType` stayed empty, and the instance SYMBOL was published under
+      // the CLASS's own name — `instance TrieMap IntMap.IntMap` produced a symbol
+      // named `TrieMap` beside the file's `class TrieMap`, i.e. two symbols with
+      // one name and different kinds — while the edge the language plainly
+      // expresses, `implements IntMap.IntMap -> TrieMap`, was never emitted.
+      // MEASURED (stride-40 draw, 351 files, 282 `instance` nodes,
+      // `script/m14/tmp/hs-verify-ffi-instance.ts`): `instance TrieMap
+      // IntMap.IntMap` at compiler/GHC/Data/TrieMap.hs:139 and `instance
+      // MonadGetUnique USM.UniqSM` at compiler/GHC/Types/Unique/DSM.hs:158.
+      //
+      // The text is taken VERBATIM, which is this lane's standing convention for a
+      // qualified head: qualified CALLS publish the full `M.lookup` (the Erlang
+      // `gen_server:cast` precedent) and a qualified SUPERCLASS keeps its dots,
+      // because taking the leaf would only trade a MISSING edge for a
+      // differently-spelled one. `IntMap.IntMap` is also how the source writes
+      // it, so the edge target is greppable back to the declaration.
       const direct = this.findNamedChildByType(tpNode, ["name", "constructor"])
       if (direct?.text) {
         targetType = direct.text
@@ -1568,6 +1886,36 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
               // child, not at the enclosing `instance` keyword's line
               const head = first.namedChildren.find((c: any) => c.type === "name" || c.type === "constructor")
               targetNode = head ?? first
+            }
+          } else {
+            // A QUALIFIED target, and ONLY when it is the FIRST type pattern.
+            // `instance TrieMap IntMap.IntMap` is `type_patterns ->
+            // qualified("IntMap.IntMap")` and no other branch above can name it.
+            //
+            // "ONLY when it is the first" is load-bearing, and the first version of
+            // this fix got it wrong. `findNamedChildByType` scans for the first child
+            // of a recognised TYPE, so adding "qualified" to that list let a LATER
+            // pattern hijack the target of a multi-parameter instance whose first
+            // pattern was parenthesised — measured over the corpus, that silently
+            // moved 2 `implements` and 5 `overrides` edges onto the wrong type:
+            //
+            //   compiler/GHC/HsToCore/Quote.hs:1239
+            //     instance RepTV (HsBndrVis GhcRn) TH.BndrVis
+            //     type_patterns children, document order: [0] parens  [1] qualified
+            //   compiler/GHC/ThToHs.hs:1600
+            //     instance CvtFlag TH.BndrVis (HsBndrVis GhcPs)
+            //     type_patterns children, document order: [0] qualified  [1] parens
+            //
+            // Gating on position rather than on type makes the change strictly
+            // ADDITIVE: every shape the pre-existing branches already read is still
+            // read by them, and the only new case is a first pattern nothing else
+            // could name. That is checked by the same-ruler census (FIX 2 net +120
+            // `implements` with 0 rows moved off a previously-correct target) and by
+            // the `instance-target-no-qualified` mutant.
+            const firstPattern = tpNode.namedChildCount > 0 ? tpNode.namedChild(0) : null
+            if (firstPattern?.type === "qualified" && firstPattern.text) {
+              targetType = firstPattern.text
+              targetNode = firstPattern
             }
           }
         }
@@ -1829,6 +2177,31 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     const infixId = this.findNamedChildByType(node, ["infix_id"])
 
     if (infixId) {
+      // VERIFY_HS9: a TICKED CONSTRUCTOR in body position (`x `Cons` y`) is a
+      // construction, not a call — the ticked name is a `constructor` child, so
+      // the variable lookup below finds nothing and the site was dropped whole.
+      // Measured 9 such sites on a 60-file draw (script/m14/tmp/hs9-opshape-
+      // probe.ts, EXP/infix_id:constructor). Pattern-ticked constructors are
+      // gated below exactly like every other pattern site.
+      const tickedCtor = this.findNamedChildByType(infixId, ["constructor"])
+      if (tickedCtor?.text) {
+        const fnC = ctx.currentFunction
+        if (fnC && !this.isPatternPosition(node) && !this.isTypePosition(node)) {
+          this.pushRel(
+            ctx,
+            fnC,
+            tickedCtor.text,
+            ASTEngine.RelationshipType.Instantiates,
+            0.9,
+            {
+              haskellSpecific: true,
+              isTickedConstructorApplication: true,
+            },
+            this.lineOf(tickedCtor),
+          )
+        }
+        return
+      }
       // Backtick call: the infix_id wraps the called function (variable).
       // HSD19 companion: an infix DEFINITION head (`(a,b) `gives` r = ...`)
       // is pattern territory (head slot) — its own infix_id is the name being
@@ -1897,6 +2270,15 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
       }
+    } else {
+      // VERIFY_HS9 G1/G2 — every OTHER infix shape is an operator or a
+      // constructor application, and the file that DEFINES an operator as a
+      // callable published it with no callers at all (see the doc's
+      // "VERIFY_HS9 measurement log"). Two sub-shapes, one walk:
+      //   `constructor_operator` head  -> instantiates (it CONSTRUCTS)
+      //   plain `operator` head        -> calls, but only when this file
+      //                                   declares that operator as a callable
+      this.emitOperatorApplication(node, ctx, scopeStack)
     }
 
     // Pattern marking (unchanged contract).
@@ -1904,6 +2286,123 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (op === ">>=" || op === ">>" || op === "<-") ctx.patterns["Monads"] = true
     if (op === "<$>" || op === "<*>") ctx.patterns["Functors and Applicatives"] = true
     if (op === "|>") ctx.patterns["Pipe Operator"] = true
+  }
+
+  // ==========================================================================
+  // VERIFY_HS9 — operator and infix-constructor APPLICATION (G1 + G2).
+  //
+  // What was missing, measured (script/m14/tmp/hs9-opshape-probe.ts, 60-file
+  // GHC draw, all counts AST-side):
+  //
+  //   EXP/infix:operator            3,140   of which 86 name an operator THIS
+  //                                         file declares as a callable
+  //   EXP/infix:constructor_operator   111   an infix DATA-CONSTRUCTOR
+  //                                         application (`a :+: b`) — a
+  //                                         construction, emitted as nothing
+  //   EXP/infix_id:constructor          9   a ticked constructor (`x `Cons` y`)
+  //   EXP/prefix_id:operator           22   `(<+>) a b`, a prefix application
+  //   EXP/prefix_id:constructor_operator 3   `(:+:) a b`
+  //   TYP/infix:operator               29   TYPE-level operator — must emit
+  //                                         nothing, and the node type alone
+  //                                         cannot tell it from an expression
+  //   PAT/infix:constructor_operator   98   pattern — must emit nothing
+  //
+  // WHY THE POSITION TEST IS NOT OPTIONAL: `infix` is ONE node type for THREE
+  // syntactic positions in the pinned grammar. _exp_infix (grammar/exp.js:353),
+  // _pat_infix (grammar/pat.js:99) and _type_infix (grammar/type.js:116) are all
+  // aliased to `infix`, and all three use the field names left_operand /
+  // operator / right_operand. A type-level operator is a bare `operator` node,
+  // exactly like an expression's — the 29 TYP rows above are sites that an
+  // operator-only test would have turned into 29 fabricated calls.
+  //
+  // WHY NAME RESOLUTION IS RIGHT AND NOT A GUESS: Haskell resolves an
+  // unqualified name lexically, and a module's own top-level declaration — or
+  // class method — SHADOWS the implicit Prelude import. So in a module that
+  // declares `==`, `x == y` IS that module's `==`; the alternative would be an
+  // ambiguous-occurrence error. This is the same rule resolveCallableTarget
+  // already applies to plain variables, extended to operators.
+  //
+  // WHY SECTIONS ARE NOT EMITTED: `(x +)` is a PARTIAL application — it builds
+  // a function value, it performs no call. `(<+>) a b` is a full application
+  // and is emitted. The line is full-application vs partial, and it is stated
+  // here rather than left to a reader of the code.
+  // ==========================================================================
+  private emitOperatorApplication(node: Node, ctx: HaskellContext, scopeStack: Scope[]): void {
+    const fn = ctx.currentFunction
+    if (!fn) return
+    // Pattern territory and type territory are both non-expression: a matched
+    // `a :+: b` constructs nothing, and a type-level operator is not a call.
+    if (this.isPatternPosition(node) || this.isTypePosition(node)) return
+
+    // `infix` names its operator with a FIELD (grammar/exp.js:353,
+    // `field('operator', ...)`); `prefix_id` wraps the symbol directly
+    // (grammar/operator.js `_pvarsym`/`_pconsym`). Read the field first and
+    // fall back to the first named child, so the same helper serves both.
+    const opField = node.childForFieldName("operator")
+    const head: Node | null = opField ?? (node.namedChildCount > 0 ? node.namedChild(0) : null)
+    if (!head) return
+
+    if (head.type === "constructor_operator") {
+      this.pushRel(
+        ctx,
+        fn,
+        head.text,
+        ASTEngine.RelationshipType.Instantiates,
+        0.9,
+        {
+          haskellSpecific: true,
+          isInfixConstructorApplication: true,
+        },
+        this.lineOf(head),
+      )
+      return
+    }
+    if (head.type !== "operator") return
+    // `$` is handled by its own branch above: it applies the LEFT operand, not
+    // itself, so resolving `$` as a declared callable would be a different
+    // (and wrong) edge.
+    if (head.text === "$") return
+    const resolved = this.resolveCallableTarget(head.text, scopeStack, ctx)
+    if (resolved === undefined) return
+    this.pushRel(
+      ctx,
+      fn,
+      resolved,
+      ASTEngine.RelationshipType.Calls,
+      0.9,
+      {
+        haskellSpecific: true,
+        context: "operator application",
+      },
+      this.lineOf(head),
+    )
+  }
+
+  /**
+   * VERIFY_HS9: is this node part of a TYPE rather than an expression?
+   *
+   * Needed because `infix` covers expression, pattern AND type position in the
+   * pinned grammar (see emitOperatorApplication). The list is the grammar's own
+   * type-bearing vocabulary; the loop stops at an expression-bearing node so a
+   * `type` buried inside a body does not capture expression operators above it.
+   * Measured 29 type-level `infix:operator` sites on a 60-file draw, so this
+   * test is load-bearing rather than defensive.
+   */
+  private isTypePosition(node: Node): boolean {
+    let cur: Node | null = node.parent
+    let guard = 0
+    while (cur && guard++ < 256) {
+      if (HASKELL_TYPE_BEARING_NODES.has(cur.type)) return true
+      if (
+        cur.type === "match" || cur.type === "do" || cur.type === "bind" ||
+        cur.type === "let_in" || cur.type === "lambda" || cur.type === "record" ||
+        cur.type === "guard"
+      ) {
+        return false
+      }
+      cur = cur.parent
+    }
+    return false
   }
 
   /**
@@ -1942,7 +2441,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "references") { md.evidenceClass = md.isHaskellImport ? "import_based" : "reference_qualified"; continue }
       if (t === "extends" || t === "implements") { md.evidenceClass = "structural"; continue }
       if (t === "overrides") { md.evidenceClass = md.isInstanceMethod ? "structural" : md.evidenceClass ?? "structural"; continue }
-      if (t === "instantiates") { md.evidenceClass = md.isRecordConstruction || md.isConstructorApplication || md.isQualifiedConstructorApplication ? "usage_contextual" : "structural"; continue }
+      if (t === "instantiates") { md.evidenceClass = md.isRecordConstruction || md.isConstructorApplication || md.isQualifiedConstructorApplication || md.isInfixConstructorApplication || md.isTickedConstructorApplication ? "usage_contextual" : "structural"; continue }
       md.evidenceClass = conf >= 0.85 ? "usage_contextual" : "inferred"
     }
   }
@@ -1963,10 +2462,6 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ==========================================================================
   // Pure-string helpers (no regex).
   // ==========================================================================
-  private startsWithWord(text: string, word: string): boolean {
-    return text.length >= word.length && text.slice(0, word.length) === word
-  }
-
   private stripOuterParens(text: string): string {
     let start = 0
     let end = text.length
@@ -1977,6 +2472,153 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private stripTrailingDot(text: string): string {
     return text.length > 0 && text[text.length - 1] === "." ? text.slice(0, -1) : text
+  }
+
+  /**
+   * The C entity a `foreign_import` binds, or undefined when the declaration
+   * names none.
+   *
+   * The Haskell 2010 FFI grammar is `foreign import [cc] [safety] import
+   * [stringliteral] (entity | variadic)`: the string literal is the OPTIONAL
+   * HEADER and the entity is the name that follows it. The pinned grammar models
+   * both as `entity` children, so `foreign import capi "libwidget.h"
+   * "widget_alloc" c_widgetAlloc` carries TWO of them — the header first — and
+   * taking the FIRST match publishes the header as the symbol:
+   * `references c_widgetAlloc -> "libwidget.h"`, a file name where a function
+   * name belongs.
+   *
+   * MEASURED, and it corrected the hypothesis: over all 14,038 admitted `.hs`
+   * files there are 1,153 `foreign_import` nodes and the shape distribution is
+   * 1,040 with ONE quoted `entity` (which IS the entity — GHC writes
+   * `foreign import ccall unsafe "rts_isDebugged" c_rtsIsDebugged`), 113 with NO
+   * `entity` node at all, exactly 1 whose entity sits inside a sibling `ERROR`,
+   * and ZERO with two `entity` children
+   * (`script/m14/tmp/hs-ffi-shapes.ts`). So on THIS corpus the header case never
+   * fires and the only live FFI defect was the quotes. The LAST-entity rule is
+   * kept because it is strictly more correct on a shape the grammar does produce
+   * elsewhere, and the count above is what says its reach here is 0 — a fix whose
+   * corpus measurement is 0 is still worth having, and its 0 is recorded rather
+   * than implied.
+   */
+  private readForeignEntity(node: Node): string | undefined {
+    let found: Node | null = null
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c?.type === "entity") found = c
+    }
+    return found?.text
+  }
+
+  /**
+   * Drop ONE surrounding pair of double quotes.
+   *
+   * The FFI `entity` is a Haskell string literal, so the grammar's node text is
+   * `"name"` and the quotes are part of the node's text rather than of the name.
+   * Only the exact pair is removed, and only when both ends have one: a C
+   * identifier cannot contain `"`, and a bare word that happens to be an entity
+   * (the `foreign export`/`foreign import` variants whose entity is not a literal)
+   * is left exactly as it was. No regex — the lane's string contract is char
+   * scans over values already extracted from AST nodes.
+   */
+  private stripQuotes(text: string): string {
+    if (text.length >= 2 && text[0] === '"' && text[text.length - 1] === '"') return text.slice(1, -1)
+    return text
+  }
+
+  /**
+   * THE C SYMBOL an FFI `entity` literal binds, not the whole literal.
+   *
+   * MEASURED DEFECT (2026-10-03, `script/m14/tmp/hs-verify-ffi-instance.ts`, tree
+   * pass over a stride-40 draw of the GHC corpus — 351 files, 23 `foreign_import`
+   * nodes): 7 of those 23 entity literals (30.4 %) carry a HEADER AND THE C NAME
+   * IN ONE STRING, separated by a space, and the analyzer published the header as
+   * the symbol:
+   *
+   *   references log1pDoubleOld -> "math.h log1p"      <- a FILE NAME
+   *   references functionInC    -> "T15933.h function_in_c"
+   *
+   * This is the Haskell 2010 Report's own grammar, F.3.2.1:
+   *
+   *     impent  →  'static' [chname] [&] [cid]  |  string
+   *
+   * and for the string form the header and the entity share one literal, so
+   * `foreign import ccall "T15933.h function_in_c"` binds the C symbol
+   * `function_in_c`. GHC writes both shapes in this very corpus:
+   * `foreign import ccall unsafe "RTSkeepAlive" c_keepCAFsForGHCi` (name only)
+   * and the two above (header + name). The name-only shape is unaffected, which
+   * is why the defect sat unread: every spot check drew the common form.
+   *
+   * WHY THE PRIOR MEASUREMENT MISSED IT. `readForeignEntity`'s own comment
+   * records a tree census of 1,153 `foreign_import` nodes with "ZERO with two
+   * `entity` children", and concluded the header case never fires. That count is
+   * of NODES, and it is correct — this grammar really does model the header and
+   * the entity as ONE `entity` node whose text is the whole literal. The header
+   * is inside the string, not beside it, so no node census can see it; only the
+   * literal's CONTENT distinguishes the two shapes. A fix whose measured reach
+   * was recorded as 0 was recorded from the wrong quantity.
+   *
+   * RULE, IN TWO PARTS, BOTH CONDITIONED ON THE CALLING CONVENTION.
+   *
+   * (a) `javascript` NAMES NO ENTITY, so it yields "". `foreign import
+   *     javascript "(($1, $2) => { return $1($2); })"` binds a JAVASCRIPT BODY.
+   *     Measured over a stride-12 draw (1,170 files, 62 `foreign_import` nodes,
+   *     `script/m14/tmp/hs-verify-ffi-conv.ts`): 13 of 13 `javascript` nodes name
+   *     JS code and not one names an entity. Before this branch the analyzer
+   *     published those bodies verbatim, and 8 of them SHIPPED — they contain
+   *     none of the characters `pool-worker.filterNoiseRelationships` bans, so
+   *     the filter did not catch them:
+   *
+   *       references js_print         -> "console.log($1)"
+   *       references js_req_to_str   -> "$1.text($2)"
+   *       references js_server_create -> "$1.createServer($2)"
+   *       references js_fetch_post    -> "r.text();"
+   *
+   *     That is the R7 payload-as-name shape: a code fragment standing where a
+   *     symbol belongs, counted by bb_graph and displayed by bb_impact. Under R7
+   *     the honest state for "no entity is named here" is ABSENCE. The declaration
+   *     still publishes its Haskell symbol and its `contains` edge; only the
+   *     `references` edge — which asserts an external symbol exists — is withheld.
+   *
+   * (b) For every C convention (`ccall`, `capi`, `stdcall`, `prim`, …) the C
+   *     entity is the LAST whitespace-separated token of the unquoted literal,
+   *     less a leading `&`. A C identifier contains neither a space nor a `&`
+   *     sigil, and the Report puts the header and the `static` keyword before the
+   *     entity, separated by a space. Measured in the same draw, the C
+   *     conventions are where the header and the `&` actually live:
+   *
+   *       capi   HEADER_PLUS_NAME  x6   "math.h log1p"
+   *       ccall  HEADER_PLUS_NAME  x2   "test_error_throwing.h equivalent_to_id"
+   *       ccall  AMPERSAND         x1   "stdio.h &putchar"
+   *
+   *     against 37 name-only C nodes and 13 javascript ones. The `&` is Report
+   *     F.3.2.1's `impent → 'static' [chname] [&] [cid]`: it means "pass the
+   *     address of this entity" and is not part of the entity's spelling, so
+   *     `foreign import ccall unsafe "&ghc_unique_counter64" ghc_unique_counter64`
+   *     (compiler/GHC/Types/Unique/Supply.hs:280) names the C symbol
+   *     `ghc_unique_counter64`.
+   *
+   * A corpus-wide count of the two prefix defects together, over the 1,356 quoted
+   * FFI literals GHC writes: **391 header+name and 42 `&`-prefixed = 433 of
+   * 1,356 (31.9 %)**, with 923 clean. That count is taken over the literals; the
+   * convention split is taken over the tree, because only the tree knows which
+   * convention a literal belongs to and the two must not be conflated — 10 of the
+   * 391 text-level "header" hits are JavaScript bodies, not headers.
+   */
+  private foreignEntityName(literal: string, convention: string): string {
+    // (a) No entity is named by a javascript FFI declaration.
+    if (convention === "javascript") return ""
+    // (b) The C entity is the last space-separated token, less a leading `&`.
+    const unquoted = this.stripQuotes(literal).trim()
+    if (!unquoted) return ""
+    let start = 0
+    for (let i = 0; i < unquoted.length; i++) {
+      if (unquoted[i] === " " || unquoted[i] === "\t" || unquoted[i] === "\n" || unquoted[i] === "\r") {
+        start = i + 1
+      }
+    }
+    let name = unquoted.slice(start)
+    if (name[0] === "&") name = name.slice(1)
+    return name
   }
 
   private hasArrowInParens(text: string): boolean {

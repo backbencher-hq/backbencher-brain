@@ -58,7 +58,10 @@ check("builtin echo not called", !hasRel(common, "calls", "Common.sh", "echo") &
 // sudo was never called. Re-anchored to the module it failed immediately, which is
 // how the vacuous pass was found. `Deploy.sh:16` really is `sudo systemctl
 // restart app`, so the correct contract is that sudo IS a call and IS flagged.
-check("sudo is a call, and is flagged", hasRel(deploy, "calls", "Deploy.sh", "sudo") && ((deploy.metadata?.patterns ?? []) as string[]).includes("Privilege Escalation"), "a privilege-escalating external command is a real call site and says so")
+// `metadata` is on the success shape only; the over-5MB skip shape has no such key, and
+// `?.` already read an absent one as empty. Stated once, beside the other accessors.
+const metaOf = (p: any): { patterns?: string[] } => p.metadata ?? {}
+check("sudo is a call, and is flagged", hasRel(deploy, "calls", "Deploy.sh", "sudo") && ((metaOf(deploy).patterns ?? []) as string[]).includes("Privilege Escalation"), "a privilege-escalating external command is a real call site and says so")
 check("uses var expansion", hasRel(common, "uses", "check_all", "name"))
 check("uses array expansion", hasRel(common, "uses", "check_all", "names"))
 check("uses subscript base", hasRel(common, "uses", "check_all", "names"), "${names[@]}")

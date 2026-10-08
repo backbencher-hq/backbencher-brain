@@ -550,6 +550,34 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const r of sub.relationships ?? []) {
         const tgt = (r.target ?? "") as string
         if (VUE_COMPILER_MACROS.has(tgt)) continue
+        // F19 (2026-10-04, VUE_FIX): an `exports` row whose target is the
+        // KEYWORD `default` names a symbol that exists in no file, ever, so the
+        // seam does not publish it. The TypeScript delegate already refuses to
+        // build this row (real-typescript-analyzer.ts:5744, M4: "`module ->
+        // default` names no symbol in this or any other file"); the JavaScript
+        // delegate has no such rule, and the Options-API object form
+        // `export default { … }` — Vue's own component declaration, the form
+        // every Options-API SFC uses — is exactly the shape that lands there.
+        //
+        // MEASURED (production `parseFile`, vue-element-admin, 131 .vue files):
+        // 121 `exports` rows, every one of them `Component -> default`, and the
+        // target resolves at 0 of 121 against the symbols of its own file AND at
+        // 0 of 121 against all 599 distinct symbol names the draw publishes. The
+        // construct is not rare: the same draw has 144 `export default`
+        // statements (script/vue-fix/vue-construct-probe.ts), so this is the
+        // ordinary Options-API component and the rows are the lane's whole
+        // `exports` population.
+        //
+        // What is NOT lost: the component itself is the default export, and it is
+        // published as the SFC's own Class symbol (the file stem, or the `name:`
+        // option after the F8 rename), which every consumer already reaches. What
+        // is lost is a row whose only content was the word `default` — a keyword
+        // the store already distrusts as an endpoint name
+        // (parallel-indexer.ts:3519 GENERIC_SOURCE_NAMES lists it).
+        //
+        // A NAMED default export is unaffected: `export default class Widget`
+        // yields the target `Widget`, which is a real symbol, and it still ships.
+        if (String(r.type ?? r.relationshipType) === ASTEngine.RelationshipType.Exports && tgt === "default") continue
         // M59 (#825): the delegate's lines are SCRIPT-RELATIVE, and this loop is
         // the seam where they become FILE lines — every other script artifact
         // (symbols, imports, exports, errors) is shifted right below/above, and
@@ -1560,11 +1588,27 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // ONTOLOGY (2026-10-03) — `overrides`, the Options-API merge.
     //
-    // WHAT THIS IS. Vue's own merge rule is that a component's own value for an
-    // option WINS over the base's, so a member declared here that the base also
-    // declares is an override of that member. That is the only sense the language
-    // has one, and it is the reason the label belongs to Vue at all: there is no
-    // keyword for it.
+    // WHAT THIS IS. For the options whose merge STRATEGY REPLACES a same-named
+    // key — `methods`, `computed`, `props`, `emits`, `inject`, and the colliding
+    // keys two `data` factories both return — the component's value wins over the
+    // base's, so a member declared here that the base also declares is an
+    // override of that member. That is the only sense the language has one, and
+    // it is the reason the label belongs to Vue at all: there is no keyword for
+    // it.
+    //
+    // WHAT IT IS NOT, and this used to be wrong. The first version of this
+    // comment said the rule held for "a member declared here that the base also
+    // declares", without qualification, and the first version of
+    // `optionsMemberNames` read accordingly — every option kind plus every
+    // lifecycle shorthand method. Vue's own merge table
+    // (vuejs@4ab865a `internalOptionMergeStrats`,
+    // packages/runtime-core/src/componentOptions.ts:1005-1035) says otherwise for
+    // four classes: lifecycle hooks `mergeAsArray` and BOTH RUN, `watch`
+    // `mergeWatchOptions` and both run, `data` `mergeDataFn` and both factories
+    // run, `provide` `mergeDataFn`. Measured cost of the unqualified rule: 21
+    // name collisions on the corpus, 0 of them in the replacement half, so a
+    // cross-file resolution built on it would have emitted 21 fabricated rows and
+    // not one true one. The full table is on `optionsMemberNames`.
     //
     // WHY IT WAS ABSENT, MEASURED. Two separate facts, and conflating them is how
     // this type went missing for a whole wave elsewhere:
@@ -1615,9 +1659,16 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       // computed, data keys, methods, watchers, lifecycle hooks, `setup`), because
       // the delegated script symbols inside the default-export object were filtered
       // out in step 3b and `provide` ownership is applied later.
+      // `Event` is here for `emits`, which `optionsMemberNames` reads: Vue's
+      // `mergeEmitsOrPropsOptions` extends the base's map with the child's, so a
+      // same-named event the component declares DOES replace the base's handler.
+      // Without the kind, that collision was unreachable — a base's `emits` key
+      // could be read but never matched, because the component's own event symbol
+      // is an `Event` and nothing else in this set admits one.
       const MEMBER_KINDS = new Set<ASTEngine.SymbolKind>([
         ASTEngine.SymbolKind.Method,
         ASTEngine.SymbolKind.Property,
+        ASTEngine.SymbolKind.Event,
       ])
       const own = new Map<string, ASTEngine.UniversalSymbol>()
       for (const s of symbols) {
@@ -1704,27 +1755,78 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * ONTOLOGY (2026-10-03): every member name an options object declares, across
-   * the member-bearing options plus the lifecycle shorthand methods.
+   * ONTOLOGY (2026-10-03, CORRECTED 2026-10-05): the member names an options
+   * object declares — restricted to the options Vue's OWN MERGE TABLE REPLACES,
+   * and to nothing else.
    *
-   * The shorthand methods are the majority of a real merge's collisions and were
-   * the first version's blind spot: `mounted()` and `beforeDestroy()` are written
-   * as `method_definition` children of the options object, not as `pair` keys, so
-   * reading only `pair` children misses every lifecycle override. Measured on the
-   * corpus: `./mixins/resize.js` declares `mounted` and `beforeDestroy`, and all 14
-   * override rows the corpus supports are lifecycle hooks.
+   * WHY THE RESTRICTION IS THE WHOLE FIX. The first version of this read every
+   * `pair` child of `MEMBER_OPTIONS` plus every `method_definition` child, on
+   * the stated premise that "Vue's own merge rule is that a component's own
+   * value for an option WINS over the base's, so a member declared here that the
+   * base also declares is an override of that member". That premise is FALSE, and
+   * Vue's own source says so in one table.
+   *
+   * vuejs@4ab865a, packages/runtime-core/src/componentOptions.ts:1005-1035,
+   * `internalOptionMergeStrats`:
+   *
+   *   methods, computed, components, directives -> mergeObjectOptions
+   *        `extend(Object.create(null), to, from)` — the CHILD'S value for a
+   *        same-named key wins outright.                                  OVERRIDE
+   *   props, emits -> mergeEmitsOrPropsOptions
+   *        `extend({}, normalize(to), normalize(from ?? {}))` — same.    OVERRIDE
+   *   inject -> mergeInject -> mergeObjectOptions                       OVERRIDE
+   *   data -> mergeDataFn
+   *        BOTH factories run and the results are `extend`ed, so the child's
+   *        wins PER RETURNED KEY while the `data` option itself survives as
+   *        two. Not a member override — but the colliding DATA KEYS are real.
+   *   beforeCreate … serverPrefetch (14 hooks) -> mergeAsArray
+   *        `[...new Set([].concat(to, from))]` — BOTH HOOKS RUN.      NOT one.
+   *        Confirmed independently at apiLifecycle.ts:26-27:
+   *        `const hooks = target[type] || (target[type] = []); hooks.push(...)`.
+   *   watch -> mergeWatchOptions
+   *        per key the two are CONCATENATED into an array — both run.    NOT one.
+   *   provide -> mergeDataFn, same as data.                            NOT one.
+   *
+   * So of the option kinds a real merge can collide on, four classes are a
+   * replacement and four are a merge. The first version could not tell them
+   * apart, and it emitted a row for all of them.
+   *
+   * WHAT THAT COST, MEASURED. Over the 1,151 admitted `.vue` files of
+   * element-plus + vue-element-admin + vuejs there are 9 `extends`/`mixins`
+   * heritage edges and 21 name collisions across them — and every one of the 21
+   * is in the merge half: `mounted`, `beforeDestroy`, `activated`, `deactivated`
+   * and the `data` factory. A cross-file resolution built on the old rule would
+   * have emitted 21 fabricated `overrides` rows and 0 true ones
+   * (`script/m14/vue-overrides-crossfile-probe.mts`; evidence in
+   * `validation/m14/results/vue-verify8-overrides-crossfile.json`). Under this
+   * rule the same corpus supports 0, which is the correct answer and not a gap.
+   *
+   * A fabricated edge is the most expensive mistake available in this programme
+   * (ONTOLOGY-WORKSTREAM, "The fabrication rule"): it counts as `unexplained`
+   * and it poisons bb_graph, bb_impact and bb_migrate. Removing 21 false rows is
+   * worth more than adding them.
+   *
+   * WHAT IS DELIBERATELY NOT IN THE SET, each exclusion a decision:
+   *   - lifecycle hooks, `data`, `setup`, `watch`: merged, per the table above.
+   *   - `components` / `directives`: merged per key like `methods`, so they COULD
+   *     collide — but this analyzer publishes no symbol for an asset
+   *     registration, so a collision could never be joined to an own member and
+   *     the rule could never fire. Adding it would be a branch that cannot fire,
+   *     which is the dead-code class this workstream exists to remove.
    */
   private optionsMemberNames(optionsObject: Node): Set<string> {
     const out = new Set<string>()
-    const MEMBER_OPTIONS = new Set(["methods", "computed", "props", "emits", "watch", "inject"])
+    // Per-key REPLACEMENT options only. `watch` sits in the merge half, and
+    // `data`/`setup` are not options at all in this sense — `data`'s colliding
+    // RETURNED keys are handled by `optionsDataKeys` below.
+    const MEMBER_OPTIONS = new Set(["methods", "computed", "props", "emits", "inject"])
     for (let i = 0; i < optionsObject.namedChildCount; i++) {
       const child = optionsObject.namedChild(i)
       if (!child) continue
-      if (child.type === "method_definition") {
-        const name = child.childForFieldName("name")?.text
-        if (name && !name.startsWith("[")) out.add(unquote(name))
-        continue
-      }
+      // A `method_definition` child of the options object is a lifecycle hook (or
+      // `data`/`setup`), never a member — see the merge table above for why each
+      // one is a merge and not a replacement.
+      if (child.type === "method_definition") continue
       if (child.type !== "pair") continue
       const key = child.childForFieldName("key")?.text
       if (!key || key.startsWith("[")) continue
@@ -1746,6 +1848,49 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else {
         out.add(k)
+      }
+    }
+    for (const dk of this.optionsDataKeys(optionsObject)) out.add(dk)
+    return out
+  }
+
+  /**
+   * The keys a `data` option RETURNS — the one collision class `data` really does
+   * replace, because `mergeDataFn` runs both factories and `extend`s the two
+   * results with the child's last.
+   *
+   * Two shapes, both read off the options object and neither leaving the tree:
+   * the object form (`data: { n: 0 }`) and the factory form
+   * (`data() { return { n: 0 } }`), which is `findReturnedObject`'s job. An arrow
+   * factory written as a `pair` value (`data: () => ({ … })`) goes through the
+   * same call, because `findReturnedObject` handles an expression body.
+   */
+  private optionsDataKeys(optionsObject: Node): Set<string> {
+    const out = new Set<string>()
+    const addFrom = (o: Node | undefined): void => {
+      if (!o || o.type !== "object") return
+      for (let i = 0; i < o.namedChildCount; i++) {
+        const p = o.namedChild(i)
+        if (p?.type !== "pair") continue
+        const raw = p.childForFieldName("key")?.text
+        if (!raw || raw.startsWith("[")) continue
+        out.add(unquote(raw))
+      }
+    }
+    for (let i = 0; i < optionsObject.namedChildCount; i++) {
+      const child = optionsObject.namedChild(i)
+      if (!child) continue
+      if (child.type === "method_definition") {
+        if (child.childForFieldName("name")?.text !== "data") continue
+        addFrom(this.findReturnedObject(child))
+        continue
+      }
+      if (child.type !== "pair" || child.childForFieldName("key")?.text !== "data") continue
+      const v = child.childForFieldName("value")
+      if (!v) continue
+      if (v.type === "object") { addFrom(v); continue }
+      if (v.type === "arrow_function" || v.type === "function_expression" || v.type === "function") {
+        addFrom(this.findReturnedObject(v))
       }
     }
     return out
@@ -3047,4 +3192,3 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 }
-

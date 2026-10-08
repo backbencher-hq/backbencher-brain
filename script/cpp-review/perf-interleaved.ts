@@ -26,7 +26,11 @@ import path from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 import { RealCppAnalyzer as Post } from "../../src/ast/real-cpp-analyzer"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/ishaq/fixtures/repositories"
+// Same stale default as `defect-register.ts` had: the OTHER laptop's corpus path,
+// which does not exist here, so the probe walked 0 files and reported a ratio of
+// nothing. `BB_CORPUS_ROOT` still wins. The zero-admission case is reported rather
+// than averaged — a ratio over an empty corpus is not a slow ratio, it is no ratio.
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const REPOS = (process.env.CPP_REPOS ?? "fmt,nlohmann-json,catch2").split(",").filter(Boolean)
 const EXTS = [".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hxx", ".hh", ".h++"]
 const SKIP = new Set([".git", "build", "node_modules", ".github"])
@@ -108,6 +112,15 @@ for (let r = 0; r < REPS; r++) {
 }
 const med = (a: number[]) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)] }
 const best = (a: number[]) => Math.min(...a)
+
+// A ratio over an empty corpus is not a slow ratio, it is no ratio: `best([])` is
+// Infinity and `Infinity/Infinity` is NaN, which JSON serialises as null and a
+// reader skips. The zero case is refused instead.
+if (samples.length === 0) {
+  console.error(`perf-interleaved: 0 files admitted from ${JSON.stringify(REPOS)} under ${CORPUS}. Nothing was measured.`)
+  try { rmSync(PREFIX_MODULE) } catch { /* best effort */ }
+  process.exit(1)
+}
 
 const out = {
   generatedAt: new Date().toISOString(), files: samples.length, reps: REPS, base,

@@ -3,31 +3,35 @@
   "code": "Z1",
   "milestone": "M27",
   "status": "verified",
-  "checks": 29,
-  "passed": 29,
+  "checks": 36,
+  "passed": 36,
   "failed": 0,
-  "mutantsCaught": 4,
-  "mutantsTotal": 4,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
   "mutantRecords": [
     {
-      "name": "Z1 mutant: shim dist-path drift is rejected",
+      "name": "Z1 mutant: M1: the ../../../dist fallback removed is caught",
+      "caught": true
+    },
+    {
+      "name": "Z1 mutant: M2: the loud server error replaced by a silent exit 0 is caught",
+      "caught": true
+    },
+    {
+      "name": "Z1 mutant: M3: the $HOME prefix list dropped (PATH-only node search) is caught",
+      "caught": true
+    },
+    {
+      "name": "Z1 mutant: M4: the loud node error replaced by a silent exit 0 is caught",
       "caught": true
     },
     {
       "name": "Z1 mutant: dropped/renamed language is rejected",
       "caught": true
-    },
-    {
-      "name": "Z1 mutant: shim order drift vs oracle is rejected (code, not comment)",
-      "caught": true
-    },
-    {
-      "name": "Z1: a comment renumbering a step is not code drift",
-      "caught": true
     }
   ],
-  "currentCommit": "b52c2bc7ad5caade0356f5228c84dc77afd32293",
-  "sourceFingerprint": "3d86246aa2b7b0a4300753a43b1f87931ef8a41a86ae9d97337639ae0b05c27a",
+  "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
+  "sourceFingerprint": "ced3b72e75e4ee7f619cf7a2442658076408ac84077fb656a7effe78ca759599",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m27/verify-zed.ts",
@@ -37,18 +41,14 @@
   ],
   "build": {
     "ran": true,
-    "ok": false,
-    "reason": "cargo build failed: error: rustup could not choose a version of cargo to run, because one wasn't specified explicitly, and no default is configured.\nhelp: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.\n"
+    "ok": true,
+    "reason": "launcher parses under /bin/sh -n"
   },
   "verifierCommand": "npx tsx script/m27/verify-zed.ts",
   "evidenceFile": "Z1.json",
-  "generatedAt": "2026-10-05T22:41:54.956Z",
-  "claimLevel": "I2 — extension + shim unit-proven against the real server's wire capabilities; wasm build blocked-with-reason (toolchain boundary per D-7); no editor session driven",
+  "generatedAt": "2026-10-08T18:13:56.010Z",
+  "claimLevel": "I2 — the shipped launcher was EXECUTED for real (server-beside, ../../../dist fallback, both declared-error paths, node via $HOME prefix with an empty PATH; 4 launcher mutants caught); the in-editor session leg is blocked-with-reason",
   "blockedLegs": [
-    {
-      "leg": "wasm shim build",
-      "reason": "cargo build failed: error: rustup could not choose a version of cargo to run, because one wasn't specified explicitly, and no default is configured.\nhelp: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.\n"
-    },
     {
       "leg": "in-editor Zed session",
       "reason": "Zed GUI session not machine-driven on this display-less environment; extension + server proven at their respective levels"
@@ -60,7 +60,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:41:54.958Z",
-    "contentSha256": "4122baf8772bfe8537be2d60ef7a56a8bc43024815075b0cb529118ee90d1046"
+    "sealedAt": "2026-10-08T18:13:56.012Z",
+    "contentSha256": "dfa845dc0dc21f90e60f83c592db52c9318bdb61adc92e978bb3fc91e51c4166"
   }
 }

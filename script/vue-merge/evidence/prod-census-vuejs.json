@@ -1,0 +1,934 @@
+{
+ "instrument": "script/vue-merge/vue-ontology-census-prod.ts",
+ "entry": "ASTEngine.parseFile (the call pool-worker.ts:833 makes)",
+ "at": "2026-10-05T04:12:16.897Z",
+ "corpus": "vuejs",
+ "population": {
+  "filesFound": 11,
+  "filesParsed": 11,
+  "filesFailed": 0,
+  "definition": "every .vue under $HOME/fixtures/repositories/vuejs, readdir walk, node_modules/.git excluded, sorted"
+ },
+ "types": [
+  "calls",
+  "contains",
+  "exports",
+  "extends",
+  "implements",
+  "imports",
+  "instantiates",
+  "overrides",
+  "references",
+  "uses"
+ ],
+ "counts": {
+  "calls": 69,
+  "contains": 12,
+  "exports": 0,
+  "extends": 0,
+  "implements": 0,
+  "imports": 25,
+  "instantiates": 10,
+  "overrides": 0,
+  "references": 21,
+  "uses": 32
+ },
+ "filesPerType": {
+  "calls": 4,
+  "contains": 2,
+  "exports": 0,
+  "extends": 0,
+  "implements": 0,
+  "imports": 4,
+  "instantiates": 3,
+  "overrides": 0,
+  "references": 3,
+  "uses": 4
+ },
+ "importsChannel": {
+  "rows": 17,
+  "files": 4
+ },
+ "exportsChannel": {
+  "rows": 0,
+  "files": 0
+ },
+ "symbols": {
+  "total": 66,
+  "unknownKind": 0,
+  "emptyName": 0,
+  "placeholder": 0
+ },
+ "parseErrors": 0,
+ "hasErrorFiles": 0,
+ "failures": [],
+ "wallMs": 1136,
+ "table": [
+  {
+   "type": "calls",
+   "count": 69,
+   "files": 4,
+   "fileList": [
+    "packages-private/sfc-playground/src/App.vue (39)",
+    "packages-private/sfc-playground/src/VersionSelect.vue (19)",
+    "packages-private/sfc-playground/src/Header.vue (10)",
+    "packages-private/vite-debug/App.vue (1)"
+   ],
+   "distinctPairs": 48,
+   "bothEndpointsResolve": 6,
+   "sourceOnly": 63,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 8.7,
+   "confidences": {
+    "0.9": 69
+   },
+   "evidenceClasses": {
+    "usage_contextual": 69
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "delegated-js-ts": 69
+   },
+   "examples": [
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "ref",
+     "line": 7,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "calleeExpression": "ref",
+      "line": 7,
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "setVH",
+     "target": "setProperty",
+     "line": 10,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "calleeExpression": "document.documentElement.style.setProperty",
+      "line": 10,
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "addEventListener",
+     "line": 12,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "calleeExpression": "window.addEventListener",
+      "line": 12,
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "setVH",
+     "line": 13,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "calleeExpression": "setVH",
+      "line": 13,
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "ref",
+     "line": 15,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "calleeExpression": "ref",
+      "line": 15,
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "parse",
+     "line": 20,
+     "confidence": 0.9,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "calleeExpression": "JSON.parse",
+      "line": 20,
+      "evidenceClass": "usage_contextual",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    }
+   ]
+  },
+  {
+   "type": "contains",
+   "count": 12,
+   "files": 2,
+   "fileList": [
+    "packages-private/sfc-playground/src/Header.vue (10)",
+    "packages-private/sfc-playground/src/VersionSelect.vue (2)"
+   ],
+   "distinctPairs": 12,
+   "bothEndpointsResolve": 12,
+   "sourceOnly": 0,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 100,
+   "confidences": {
+    "1": 12
+   },
+   "evidenceClasses": {
+    "structural": 12
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "contains-pass": 12
+   },
+   "examples": [
+    {
+     "file": "packages-private/sfc-playground/src/Header.vue",
+     "source": "Header",
+     "target": "toggle-theme",
+     "line": 21,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/Header.vue",
+     "source": "Header",
+     "target": "toggle-ssr",
+     "line": 22,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/Header.vue",
+     "source": "Header",
+     "target": "toggle-prod",
+     "line": 23,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/Header.vue",
+     "source": "Header",
+     "target": "toggle-autosave",
+     "line": 24,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/Header.vue",
+     "source": "Header",
+     "target": "reload-page",
+     "line": 25,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/Header.vue",
+     "source": "Header",
+     "target": "store",
+     "line": 14,
+     "confidence": 1,
+     "evidenceClass": "structural",
+     "meta": {
+      "evidenceClass": "structural"
+     }
+    }
+   ]
+  },
+  {
+   "type": "exports",
+   "count": 0,
+   "files": 0,
+   "fileList": [],
+   "distinctPairs": 0,
+   "bothEndpointsResolve": 0,
+   "sourceOnly": 0,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0,
+   "confidences": {},
+   "evidenceClasses": {},
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {},
+   "examples": []
+  },
+  {
+   "type": "extends",
+   "count": 0,
+   "files": 0,
+   "fileList": [],
+   "distinctPairs": 0,
+   "bothEndpointsResolve": 0,
+   "sourceOnly": 0,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0,
+   "confidences": {},
+   "evidenceClasses": {},
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {},
+   "examples": []
+  },
+  {
+   "type": "implements",
+   "count": 0,
+   "files": 0,
+   "fileList": [],
+   "distinctPairs": 0,
+   "bothEndpointsResolve": 0,
+   "sourceOnly": 0,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0,
+   "confidences": {},
+   "evidenceClasses": {},
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {},
+   "examples": []
+  },
+  {
+   "type": "imports",
+   "count": 25,
+   "files": 4,
+   "fileList": [
+    "packages-private/sfc-playground/src/App.vue (11)",
+    "packages-private/sfc-playground/src/Header.vue (10)",
+    "packages-private/sfc-playground/src/VersionSelect.vue (3)",
+    "packages-private/vite-debug/App.vue (1)"
+   ],
+   "distinctPairs": 24,
+   "bothEndpointsResolve": 0,
+   "sourceOnly": 25,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0,
+   "confidences": {
+    "1": 25
+   },
+   "evidenceClasses": {
+    "import_based": 25
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "delegated-js-ts": 25
+   },
+   "examples": [
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "./Header.vue:Header",
+     "line": 2,
+     "confidence": 1,
+     "evidenceClass": "import_based",
+     "meta": {
+      "module": "./Header.vue",
+      "evidenceClass": "import_based",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "@vue/repl:Repl",
+     "line": 3,
+     "confidence": 1,
+     "evidenceClass": "import_based",
+     "meta": {
+      "module": "@vue/repl",
+      "evidenceClass": "import_based",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "@vue/repl:useStore",
+     "line": 3,
+     "confidence": 1,
+     "evidenceClass": "import_based",
+     "meta": {
+      "module": "@vue/repl",
+      "evidenceClass": "import_based",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "@vue/repl:SFCOptions",
+     "line": 3,
+     "confidence": 1,
+     "evidenceClass": "import_based",
+     "meta": {
+      "module": "@vue/repl",
+      "evidenceClass": "import_based",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "@vue/repl:useVueImportMap",
+     "line": 3,
+     "confidence": 1,
+     "evidenceClass": "import_based",
+     "meta": {
+      "module": "@vue/repl",
+      "evidenceClass": "import_based",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "@vue/repl/monaco-editor:Monaco",
+     "line": 4,
+     "confidence": 1,
+     "evidenceClass": "import_based",
+     "meta": {
+      "module": "@vue/repl/monaco-editor",
+      "evidenceClass": "import_based",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    }
+   ]
+  },
+  {
+   "type": "instantiates",
+   "count": 10,
+   "files": 3,
+   "fileList": [
+    "packages-private/sfc-playground/src/Header.vue (7)",
+    "packages-private/sfc-playground/src/App.vue (2)",
+    "packages-private/sfc-playground/src/VersionSelect.vue (1)"
+   ],
+   "distinctPairs": 10,
+   "bothEndpointsResolve": 0,
+   "sourceOnly": 10,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0,
+   "confidences": {
+    "0.95": 10
+   },
+   "evidenceClasses": {
+    "usage_contextual": 10
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "template-usage": 10
+   },
+   "examples": [
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "Header",
+     "line": 150,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isComponentUsage": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "Repl",
+     "line": 162,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isComponentUsage": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/Header.vue",
+     "source": "Header",
+     "target": "VersionSelect",
+     "line": 76,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isComponentUsage": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/Header.vue",
+     "source": "Header",
+     "target": "Sun",
+     "line": 127,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isComponentUsage": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/Header.vue",
+     "source": "Header",
+     "target": "Moon",
+     "line": 128,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isComponentUsage": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/Header.vue",
+     "source": "Header",
+     "target": "Share",
+     "line": 131,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isComponentUsage": true,
+      "evidenceClass": "usage_contextual"
+     }
+    }
+   ]
+  },
+  {
+   "type": "overrides",
+   "count": 0,
+   "files": 0,
+   "fileList": [],
+   "distinctPairs": 0,
+   "bothEndpointsResolve": 0,
+   "sourceOnly": 0,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 0,
+   "confidences": {},
+   "evidenceClasses": {},
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {},
+   "examples": []
+  },
+  {
+   "type": "references",
+   "count": 21,
+   "files": 3,
+   "fileList": [
+    "packages-private/sfc-playground/src/App.vue (8)",
+    "packages-private/sfc-playground/src/VersionSelect.vue (7)",
+    "packages-private/sfc-playground/src/Header.vue (6)"
+   ],
+   "distinctPairs": 21,
+   "bothEndpointsResolve": 16,
+   "sourceOnly": 5,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 76.2,
+   "confidences": {
+    "0.8": 16,
+    "0.95": 5
+   },
+   "evidenceClasses": {
+    "reference_qualified": 21
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "delegated-js-ts": 21
+   },
+   "examples": [
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "toggleProdMode",
+     "target": "productionMode",
+     "line": 92,
+     "confidence": 0.8,
+     "evidenceClass": "reference_qualified",
+     "meta": {
+      "line": 92,
+      "evidenceClass": "reference_qualified",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "toggleSSR",
+     "target": "useSSRMode",
+     "line": 96,
+     "confidence": 0.8,
+     "evidenceClass": "reference_qualified",
+     "meta": {
+      "line": 96,
+      "evidenceClass": "reference_qualified",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "toggleAutoSave",
+     "target": "autoSave",
+     "line": 100,
+     "confidence": 0.8,
+     "evidenceClass": "reference_qualified",
+     "meta": {
+      "line": 100,
+      "evidenceClass": "reference_qualified",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "toggleAutoSave",
+     "target": "AUTO_SAVE_STORAGE_KEY",
+     "line": 101,
+     "confidence": 0.8,
+     "evidenceClass": "reference_qualified",
+     "meta": {
+      "line": 101,
+      "evidenceClass": "reference_qualified",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "reloadPage",
+     "target": "replRef",
+     "line": 105,
+     "confidence": 0.8,
+     "evidenceClass": "reference_qualified",
+     "meta": {
+      "line": 105,
+      "evidenceClass": "reference_qualified",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "toggleTheme",
+     "target": "theme",
+     "line": 110,
+     "confidence": 0.8,
+     "evidenceClass": "reference_qualified",
+     "meta": {
+      "line": 110,
+      "evidenceClass": "reference_qualified",
+      "sfcDelegated": true,
+      "sfcLineOffset": 0
+     }
+    }
+   ]
+  },
+  {
+   "type": "uses",
+   "count": 32,
+   "files": 4,
+   "fileList": [
+    "packages-private/sfc-playground/src/App.vue (11)",
+    "packages-private/sfc-playground/src/Header.vue (11)",
+    "packages-private/sfc-playground/src/VersionSelect.vue (9)",
+    "packages-private/vite-debug/App.vue (1)"
+   ],
+   "distinctPairs": 32,
+   "bothEndpointsResolve": 32,
+   "sourceOnly": 0,
+   "targetOnly": 0,
+   "neitherResolves": 0,
+   "resolvePct": 100,
+   "confidences": {
+    "0.95": 31,
+    "0.85": 1
+   },
+   "evidenceClasses": {
+    "usage_contextual": 32
+   },
+   "placeholderEndpoints": 0,
+   "emptyEndpoints": 0,
+   "byProducer": {
+    "template-expression": 31,
+    "delegated-js-ts": 1
+   },
+   "examples": [
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "store",
+     "line": 171,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isTemplateExpression": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "productionMode",
+     "line": 152,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isTemplateExpression": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "useSSRMode",
+     "line": 173,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isTemplateExpression": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "autoSave",
+     "line": 169,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isTemplateExpression": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "theme",
+     "line": 164,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isTemplateExpression": true,
+      "evidenceClass": "usage_contextual"
+     }
+    },
+    {
+     "file": "packages-private/sfc-playground/src/App.vue",
+     "source": "App",
+     "target": "toggleTheme",
+     "line": 156,
+     "confidence": 0.95,
+     "evidenceClass": "usage_contextual",
+     "meta": {
+      "isTemplateExpression": true,
+      "evidenceClass": "usage_contextual"
+     }
+    }
+   ]
+  }
+ ],
+ "perFile": [
+  {
+   "file": "packages-private/sfc-playground/src/App.vue",
+   "symbols": 26,
+   "relationships": 71,
+   "imports": 4,
+   "exports": 0,
+   "errors": 0,
+   "byType": {
+    "instantiates": 2,
+    "calls": 39,
+    "references": 8,
+    "imports": 11,
+    "uses": 11
+   },
+   "componentClass": "App",
+   "kinds": "class,constant,function,variable"
+  },
+  {
+   "file": "packages-private/sfc-playground/src/Header.vue",
+   "symbols": 20,
+   "relationships": 54,
+   "imports": 10,
+   "exports": 0,
+   "errors": 0,
+   "byType": {
+    "instantiates": 7,
+    "calls": 10,
+    "references": 6,
+    "imports": 10,
+    "uses": 11,
+    "contains": 10
+   },
+   "componentClass": "Header",
+   "kinds": "class,constant,event,function,property"
+  },
+  {
+   "file": "packages-private/sfc-playground/src/VersionSelect.vue",
+   "symbols": 11,
+   "relationships": 41,
+   "imports": 2,
+   "exports": 0,
+   "errors": 0,
+   "byType": {
+    "instantiates": 1,
+    "calls": 19,
+    "references": 7,
+    "uses": 9,
+    "imports": 3,
+    "contains": 2
+   },
+   "componentClass": "VersionSelect",
+   "kinds": "class,constant,function,property"
+  },
+  {
+   "file": "packages-private/sfc-playground/src/icons/Copy.vue",
+   "symbols": 1,
+   "relationships": 0,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {},
+   "componentClass": "Copy",
+   "kinds": "class"
+  },
+  {
+   "file": "packages-private/sfc-playground/src/icons/Download.vue",
+   "symbols": 1,
+   "relationships": 0,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {},
+   "componentClass": "Download",
+   "kinds": "class"
+  },
+  {
+   "file": "packages-private/sfc-playground/src/icons/GitHub.vue",
+   "symbols": 1,
+   "relationships": 0,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {},
+   "componentClass": "GitHub",
+   "kinds": "class"
+  },
+  {
+   "file": "packages-private/sfc-playground/src/icons/Moon.vue",
+   "symbols": 1,
+   "relationships": 0,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {},
+   "componentClass": "Moon",
+   "kinds": "class"
+  },
+  {
+   "file": "packages-private/sfc-playground/src/icons/Reload.vue",
+   "symbols": 1,
+   "relationships": 0,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {},
+   "componentClass": "Reload",
+   "kinds": "class"
+  },
+  {
+   "file": "packages-private/sfc-playground/src/icons/Share.vue",
+   "symbols": 1,
+   "relationships": 0,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {},
+   "componentClass": "Share",
+   "kinds": "class"
+  },
+  {
+   "file": "packages-private/sfc-playground/src/icons/Sun.vue",
+   "symbols": 1,
+   "relationships": 0,
+   "imports": 0,
+   "exports": 0,
+   "errors": 0,
+   "byType": {},
+   "componentClass": "Sun",
+   "kinds": "class"
+  },
+  {
+   "file": "packages-private/vite-debug/App.vue",
+   "symbols": 2,
+   "relationships": 3,
+   "imports": 1,
+   "exports": 0,
+   "errors": 0,
+   "byType": {
+    "imports": 1,
+    "calls": 1,
+    "uses": 1
+   },
+   "componentClass": "App",
+   "kinds": "class,constant"
+  }
+ ]
+}

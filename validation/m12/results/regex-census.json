@@ -2,87 +2,13 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-05T20:09:34.650Z",
+  "generatedAt": "2026-10-07T08:14:41.673Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 5,
+  "totalRegexUsages": 0,
   "analyzersScanned": 48,
-  "byClassification": {
-    "needs_review": 3,
-    "normalization": 2
-  },
-  "byReceiverCategory": {
-    "identifier": 3,
-    "node_text": 2
-  },
-  "perFile": [
-    {
-      "file": "real-svelte-analyzer.ts",
-      "count": 4,
-      "usages": [
-        {
-          "file": "real-svelte-analyzer.ts",
-          "line": 50,
-          "column": 10,
-          "source": "/line/i",
-          "operation": "test",
-          "receiver": "k",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-svelte-analyzer.ts",
-          "line": 622,
-          "column": 19,
-          "source": "/^[A-Za-z_$][A-Za-z0-9_$]*$/",
-          "operation": "test",
-          "receiver": "nameTok.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-svelte-analyzer.ts",
-          "line": 1259,
-          "column": 26,
-          "source": "/context=[\"']module[\"']/",
-          "operation": "test",
-          "receiver": "startTag.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-svelte-analyzer.ts",
-          "line": 1445,
-          "column": 17,
-          "source": "/^(.*?)\\s+(?:then|as)\\s+/",
-          "operation": "test",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-ruby-analyzer.ts",
-      "count": 1,
-      "usages": [
-        {
-          "file": "real-ruby-analyzer.ts",
-          "line": 317,
-          "column": 65,
-          "source": "/\\\\/g",
-          "operation": "replace",
-          "receiver": "filePath",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    }
-  ]
+  "byClassification": {},
+  "byReceiverCategory": {},
+  "perFile": []
 }

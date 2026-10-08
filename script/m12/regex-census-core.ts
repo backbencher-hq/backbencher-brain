@@ -58,6 +58,7 @@ export async function scanAnalyzers(dir = "src/ast"): Promise<RegexUsage[]> {
     const full = join(dir, file)
     const content = readFileSync(full, "utf8")
     const tree = parser.parse(content)
+    if (!tree) throw new Error("parser.parse returned no tree (null result)")
 
     const visit = (node: any, depth: number) => {
       if (depth > 60) return

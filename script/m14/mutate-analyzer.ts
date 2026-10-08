@@ -780,6 +780,13 @@ export interface Mutant {
   language: string
   defectClass: string
   description: string
+  /** The fixture that catches this mutant (the lane row that fails when the
+   *  mutant is applied). Optional and additive: mutants whose catch is described
+   *  in prose inside `description` leave it out. It is a field rather than prose
+   *  so a reader can answer "what fails if this defect returns?" without parsing
+   *  English, and so a fixture can be deleted without the mutant's catch silently
+   *  becoming "nothing". */
+  caughtBy?: string
   // `source` is the analyzed file's text (the analyzer's own result carries no
   // rawContent — only the engine's parseFile adds it). A defect class whose
   // pre-fix output was derived from the SOURCE TEXT in a way the post-fix
@@ -788,7 +795,32 @@ export interface Mutant {
   // string that would silently stop matching (the failure mode that left
   // swift/drop-container-subscript-uses surviving). Optional: every existing
   // mutant is unaffected.
-  transform: (result: any, source?: string) => any
+  transform: (result: MutantPayload, source?: string) => any
+}
+
+/**
+ * The payload a mutant's `transform` receives.
+ *
+ * Deliberately LOOSE, and not for convenience: a mutant's whole job is to
+ * fabricate a BAD payload — a missing key, a wrong value, a line that is off by
+ * one — so a precise result type here would forbid the very defect the mutant
+ * exists to inject, and every `payload-corruption` mutant would need a cast.
+ *
+ * It is not `any` for one measured reason. With `any`, the collection walks in
+ * the transforms (`(r.relationships ?? []).filter(x => ...)`, ~230 sites in this
+ * file) have no contextual type, so the callback parameter is an implicit `any`
+ * — 226 of the 716 `typecheck:scripts` errors at the 2026-10-07 sweep were this
+ * one shape, and the sites that do not error are the ones an author happened to
+ * annotate by hand. Naming the two collections the transforms walk restores
+ * inference at every call site without constraining what a mutant writes back:
+ * the index signature still admits any other key, and the return type is still
+ * `any`, so a transform may return whatever shape it likes.
+ */
+export interface MutantPayload {
+  relationships?: any[]
+  symbols?: any[]
+  errors?: any[]
+  [key: string]: any
 }
 
 function normRel(r: any) { return { ...r, type: r.type ?? r.relationshipType } }
@@ -2305,7 +2337,7 @@ function tomlNameLosesItsPath() {
 }
 
 function tomlOwnerLookupUsesRawSegments() {
-  return (r: any) => {
+  return (r: MutantPayload) => {
     const syms = r.symbols ?? []
     const mod = syms.find((s: any) => s?.kind === "module")
     if (!mod) return r
@@ -16723,7 +16755,7 @@ export const MUTANTS: Mutant[] = [
       relationships: (r.relationships ?? []).map((e: any) =>
         e.type === "calls" && e.target === "level" ? { ...e, target: "app.log" } : e,
       ),
-      symbols: (r.symbols ?? []).concat(r.symbols.filter((s: any) => s.name === "RQ").map((s: any) => ({ ...s, name: "app", kind: "class" }))),
+      symbols: (r.symbols ?? []).concat((r.symbols ?? []).filter((s: any) => s.name === "RQ").map((s: any) => ({ ...s, name: "app", kind: "class" }))),
     }),
   },
   {

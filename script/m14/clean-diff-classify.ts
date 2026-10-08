@@ -339,7 +339,11 @@ for (const f of files) {
       else { put("F-unattributed", "unexplained", m, rel); if (unexpMiss.length < 25) unexpMiss.push(`UNEXPL(${m.label} ${m.from} -> ${m.target})  ${rel}`) }
     } else if (m.label === "instantiates") {
       put("A-declined-instantiation", "unexplained", m, rel)
-    } else if (m.label === "implements" && !bareCtorHeads.has(`${m.target}::${m.source}`)) {
+      // `m.source` stood here, and a `Triple` has no `source` (its fields are label/from/
+      // target): the key was `<head>::undefined`, which no `${cls}::${head}` entry can be,
+      // so the test was always true and cause K was never separated from the fallthrough.
+      // The pair is (class, head), which is (from, target) on this row.
+    } else if (m.label === "implements" && !bareCtorHeads.has(`${m.target}::${m.from}`)) {
       put("K-oracle-implements-head", "unexplained", m, rel)
     } else {
       put("F-unattributed", "unexplained", m, rel)

@@ -70,7 +70,7 @@ import path from "node:path"
 import * as WTS from "web-tree-sitter"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { LANGS, LANG_REPOS, SECOND_CORPUS } from "./differential"
-import { emitEvidence } from "./evidence-harness"
+import { emitEvidence, type EvidenceInput } from "./evidence-harness"
 
 const ROOT = path.resolve(__dirname, "..", "..")
 const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
@@ -634,7 +634,10 @@ async function main() {
         `files=${r.files} ERROR=${r.errorFiles} MISSING=${r.missingFiles} either=${r.eitherFiles} ` +
         `damaged-lines median=${r.errorLinesMedian} max=${r.errorLinesMax} digest=${r.sampleDigest} verdict=${r.verdict}`,
     }))
-    const base = {
+    // Everything the harness needs EXCEPT the id: each emit branch below supplies one
+    // literal `issueId`. Un-annotated, `claimLevel: "L1"` widened to `string` and both
+    // emit calls were refused.
+    const base: Omit<EvidenceInput, "issueId"> = {
       title: SCOPED
         ? `corpus parse-success floor, LANE-SCOPED (${SCOPED_LANG ?? SCOPED_REPO}) — NOT the canonical whole-set claim`
         : "corpus parse-success floor — how much of each corpus the pinned grammar can parse",
@@ -693,6 +696,17 @@ async function main() {
     // rather than written as an orphan.
     if (!SCOPED) emitEvidence({ ...base, issueId: "M14.0.F10" })
     else if (SCOPED_LANG === "clean") emitEvidence({ ...base, issueId: "M14.0.F10.clean" })
+    // M49 (2026-10-08): powershell. The artifact at this id was written by an EARLIER
+    // version of this gate — back when the scoped path computed `M14.0.F10.<lane>` — so
+    // when the rule above was introduced (one LITERAL branch per declared lane) the
+    // artifact on disk became an ORPHAN: a file in the results directory that no producer
+    // claims, which is precisely what M49 verify-evidence-identity exists to make
+    // impossible. Measured before this branch was added: `verify-evidence-identity`
+    // reported `M14.0.F10.powershell` among four orphans, and its committed copy carries
+    // the pre-harness envelope (15 keys, no `checks`, no `limitations`). The branch is the
+    // fix, and the re-run below is what makes the artifact the gate's own output again
+    // instead of a stale file nothing can regenerate.
+    else if (SCOPED_LANG === "powershell") emitEvidence({ ...base, issueId: "M14.0.F10.powershell" })
     else throw new Error(
       `verify-parse-success: --emit has no declared artifact id for scope "${SCOPED_LANG ?? SCOPED_REPO}" — add one literal emit call `
       + '(`{ ...base, issueId: "M14.0.F10.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '

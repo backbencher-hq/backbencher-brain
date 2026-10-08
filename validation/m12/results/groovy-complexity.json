@@ -27,7 +27,7 @@
     {
       "name": "corpus_full:groovy",
       "measurement": {
-        "wallTimeMs": 494600.0,
+        "wallTimeMs": 494600,
         "peakRssBytes": 424673280,
         "files": 7114,
         "symbols": 64719,
@@ -42,7 +42,7 @@
   "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/. 'corpus_subset' was a 400-file sample and has been replaced by a full-corpus run; see runs[].note for why the two disagree.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.876Z",
-    "contentSha256": "152f7df640db29172c019ffceaa0f3b108f6925d2c5bfb07db41a1f4041c9c5b"
+    "sealedAt": "2026-10-08T00:38:12.189Z",
+    "contentSha256": "ca725c8714af046ae4491359df5f14acb550a3987a3c6e579941cec0f5c1c147"
   }
 }

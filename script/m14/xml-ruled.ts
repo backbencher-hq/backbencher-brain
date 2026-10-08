@@ -233,7 +233,10 @@ const forEachElement = (root: any, visit: (f: NonNullable<ReturnType<typeof elem
         else if (an?.startsWith("xmlns:")) inner.set(an.slice(6), av)
       }
     }
-    visit({ local: facts.local, attrs: facts.attrs, ns: inner.get(facts.prefix ?? "") })
+    // `prefix` is part of what the visitor is handed (the type is `elementFacts`'s own
+    // return shape): no visitor reads it today, and the call was the one place it was
+    // dropped.
+    visit({ local: facts.local, prefix: facts.prefix, attrs: facts.attrs, ns: inner.get(facts.prefix ?? "") })
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
       if (c) recurse(c, inner)

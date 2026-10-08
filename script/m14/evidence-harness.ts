@@ -52,15 +52,31 @@ export interface Limitation {
   description: string
   justification?: string // required if this evidence claims L4+ with no other limitations? always recommended
 }
+/** A limitation as an emitter may write it: the object form above, or plain
+ *  prose. Both shapes are already on disk — measured over the 335 JSONs in
+ *  `validation/**` that carry a `limitations` array, 304 contain at least one
+ *  STRING entry (826 string entries against 84 object entries), and 4 of this
+ *  harness's own 69 schemaVersion-2 artifacts carry strings. The harness has
+ *  always TOLERATED both at runtime (`l?.description ?? ""` reads an absent
+ *  description as empty); rejecting the prose shape at the type level only
+ *  pushed authors into `as any`. The array is now typed as what the callers
+ *  actually pass, and the banned-vocabulary lint below reads BOTH shapes so a
+ *  string limitation is a claim in exactly the same sense an object one is. */
+export type LimitationInput = string | Limitation
 export interface EvidenceInput {
   issueId: string
   title: string
   claimLevel: ClaimLevel
   layers: string[]
   checks: Check[]
-  limitations: Limitation[]
+  limitations: LimitationInput[]
   reviewers?: string[]
-  corpusPins?: Record<string, string> // repo -> commit SHA
+  /** repo -> commit SHA, OR the wider per-lane pin ROW shape. Two committed artifacts in
+   *  `validation/m14/results` carry rows (`M14.0.F14.json` = {repo, lang, files, draw};
+   *  `yaml-f5-differential.json` = {corpus, pin, available, drawn, stride}) and the
+   *  harness has always spread whatever it is given into the artifact unchanged — the
+   *  declaration named only the object form, so those two producers had to be wrong. */
+  corpusPins?: Record<string, string> | Array<Record<string, string | number>>
   mutationLog?: { mutant: string; injectedAt: string; caughtBy: string }[]
   data?: Record<string, unknown> // tool-specific payload (sorted deterministically)
 }
@@ -99,6 +115,32 @@ export function lintBanned(text: string): string[] {
     if (re.test(text)) hits.push(term)
   }
   return hits
+}
+
+/**
+ * The strings contract §1 lints, for one parsed artifact: the agent-authored
+ * CLAIM fields, and nothing else. Exported because a second gate
+ * (`script/m14/verify-honesty.ts`) has to enforce the same rule over the same
+ * files, and a rule spelled twice is a rule that can drift into two rules.
+ *
+ * The exclusion of everything else is the point, not an oversight: an artifact's
+ * data payload quotes the corpus it measured ("_comp_complete_longopt",
+ * "AutoCompleteAtCursorImpl"), and a gate that reads those as verdicts cannot be
+ * satisfied by honest work at all.
+ */
+export function claimFields(a: any): string[] {
+  return [
+    a?.title ?? "",
+    ...(a?.checks ?? []).map((c: any) => `${c?.description ?? ""} ${c?.detail ?? ""}`),
+    // A string limitation is prose and therefore a claim: lint it as itself, not
+    // as an object with no fields (which read as the empty string and was
+    // invisible to the lint). Measured before this change: 0 of the 69 harness
+    // artifacts that carry string limitations trip a banned term, so tightening
+    // the lint here changes no existing verdict.
+    ...(a?.limitations ?? []).flatMap((l: any) =>
+      typeof l === "string" ? [l] : [l?.description ?? "", l?.justification ?? ""]),
+    ...(a?.mutationLog ?? []).map((m: any) => `${m?.description ?? ""} ${m?.detail ?? ""}`),
+  ]
 }
 function collectStrings(v: unknown, out: string[] = []): string[] {
   if (typeof v === "string") out.push(v)
@@ -189,15 +231,10 @@ export function validateArtifact(a: any): Validation {
   // data payloads (corpus source lines, quoted file content, targets) are
   // EVIDENCE, not claims - a corpus comment saying 'complete the loop' must
   // not fail the gate. Claim fields are exactly where an agent could inject
-  // a verdict.
-  const claimFields = [
-    a?.title ?? "",
-    ...(a?.checks ?? []).map((c: any) => `${c?.description ?? ""} ${c?.detail ?? ""}`),
-    ...(a?.limitations ?? []).flatMap((l: any) => [l?.description ?? "", l?.justification ?? ""]),
-    ...(a?.mutationLog ?? []).map((m: any) => `${m?.description ?? ""} ${m?.detail ?? ""}`),
-  ]
+  // a verdict. The set itself lives in `claimFields` so the honesty gate can
+  // enforce the same rule without spelling it a second time.
   const banned = new Set<string>()
-  for (const s of claimFields) for (const hit of lintBanned(s)) banned.add(hit)
+  for (const s of claimFields(a)) for (const hit of lintBanned(s)) banned.add(hit)
   if (banned.size) errors.push(`banned vocabulary present (contract §1): ${[...banned].join(", ")}`)
 
   return { ok: errors.length === 0, errors, warnings }

@@ -157,6 +157,27 @@ export interface OperationMeasurement {
   declaredNegativeControls?: { file: string; errors: number; verdict: string }[]
   corpusPolicy?: string
   complexityPolicy?: string
+  // What was measured, not just how much of it. `measureOperation`'s counts
+  // parameter has always accepted these keys and silently DROPPED them: the
+  // parameter was typed `{files?, symbols?, relationships?, databasePath?}` and
+  // only those four were read, so the eleven m12 instruments that pass
+  // `{files, corpus, revision}` were handing over the one fact an evidence
+  // artifact cannot be re-derived without and watching it vanish. Measured over
+  // the 11 tracked `*-corpus-complexity.json` artifacts at the 2026-10-07 sweep:
+  // zero carry `corpus` or `revision` — the loss was total. The keys are copied
+  // through now (see `OperationCounts`), which is what the callers already
+  // believed was happening.
+  corpus?: string
+  revision?: string
+  /** One revision per repository, keyed by repository name — typed against the one
+   *  site that assigns it (`script/m12/make-corpus-measure.ts:14-19`, a
+   *  `Record<string, string>`), not against the plural-as-array shape the name
+   *  suggests. Declaring `string[]` here was a guess that would have traded the 11
+   *  fixed errors for 1 new one. */
+  revisions?: Record<string, string>
+  corpusRepositories?: string[]
+  corpusRepositoriesAbsent?: string[]
+  corpusFileCap?: number
   performanceTruth?: string
   manifest?: unknown
   manifestPresent?: boolean
@@ -276,11 +297,49 @@ function throughput(count: number | null | undefined, wallTimeMs: number): numbe
   return count / (wallTimeMs / 1000)
 }
 
+/**
+ * What the caller knows about the work being measured.
+ *
+ * The first four keys are counted INTO the measurement (rates are derived from
+ * them). Everything else is corpus provenance — which repository, which revision
+ * of it, how many repositories were unioned — and is copied into the measurement
+ * verbatim. Declaring only the four counted keys made the provenance keys a type
+ * error at 11 call sites even though the runtime accepted them and the authors
+ * plainly intended them to be recorded; a key that is accepted and discarded is
+ * worse than one that is rejected, because the artifact then reads as though
+ * nobody had described the corpus.
+ */
+export interface OperationCounts {
+  files?: number
+  symbols?: number
+  relationships?: number
+  databasePath?: string
+  corpus?: string
+  revision?: string
+  /** Keyed by repository name: see the note on the same field in
+   *  `OperationMeasurement`. */
+  revisions?: Record<string, string>
+  corpusRepositories?: string[]
+  corpusRepositoriesAbsent?: string[]
+  corpusFileCap?: number
+}
+
 export async function measureOperation<T>(
   name: string,
   operation: () => Promise<T> | T,
-  counts: { files?: number; symbols?: number; relationships?: number; databasePath?: string } = {},
+  counts: OperationCounts = {},
 ): Promise<{ value: T; measurement: OperationMeasurement }> {
+  // Split the counted fields from the provenance fields: only the former feed the
+  // rates below, and the latter are spread into the measurement so the artifact
+  // says WHAT it measured. Destructuring rather than an allow-list means a future
+  // provenance key needs no change here.
+  const {
+    files: countedFiles,
+    symbols: countedSymbols,
+    relationships: countedRelationships,
+    databasePath: countedDatabasePath,
+    ...provenance
+  } = counts
   const memoryBefore = process.memoryUsage().rss
   const usageBefore = process.resourceUsage()
   const started = process.hrtime.bigint()
@@ -288,16 +347,17 @@ export async function measureOperation<T>(
   const wallTimeMs = Number(process.hrtime.bigint() - started) / 1e6
   const usageAfter = process.resourceUsage()
   const memoryAfter = process.memoryUsage().rss
-  const databaseBytes = counts.databasePath
-    ? statSync(counts.databasePath, { throwIfNoEntry: false })?.size ?? null
+  const databaseBytes = countedDatabasePath
+    ? statSync(countedDatabasePath, { throwIfNoEntry: false })?.size ?? null
     : null
-  const files = counts.files ?? null
-  const symbols = counts.symbols ?? null
-  const relationships = counts.relationships ?? null
+  const files = countedFiles ?? null
+  const symbols = countedSymbols ?? null
+  const relationships = countedRelationships ?? null
 
   return {
     value,
     measurement: {
+      ...provenance,
       name,
       wallTimeMs,
       userCpuMs: (usageAfter.userCPUTime - usageBefore.userCPUTime) / 1000,

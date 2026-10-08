@@ -28,6 +28,7 @@ import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
 import { createStdioTransport, measureWarmP95, type FeatureMeasurement } from "../m25/feature-assertions.ts"
 import { writeSealed } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
+import { fileURLToPath } from "node:url"
 
 const CORPUS = path.join(ROOT, ".tools", "m29-giant-corpus")
 const MANIFEST = path.join(CORPUS, "..", "m29-giant-corpus-manifest.json")
@@ -589,7 +590,7 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
 }
 
 // CLI entry.
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   void runGiantBudget().then((result) => {
     // Audit 2026-09-18: an `--index-only` run is a CACHE BUILD, not a budget
     // measurement, but it used to write its `{status:"indexed"}` result over

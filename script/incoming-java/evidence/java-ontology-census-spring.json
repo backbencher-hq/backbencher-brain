@@ -1,0 +1,329 @@
+{
+  "instrument": "script/incoming-java/census.ts",
+  "lane": "INCOMING_JAVA",
+  "repoHead": "27ff8449e63625cde22b7f02695f3b7b88376541",
+  "corpus": {
+    "dir": "$HOME/fixtures/repositories/java-sample",
+    "rev": "500158f732419217507c7656904b8e6aa1bcc0d6",
+    "filesEnumerated": 50,
+    "analyzed": 50,
+    "failed": 0
+  },
+  "enumLabels": [
+    "calls",
+    "extends",
+    "implements",
+    "uses",
+    "brain_import",
+    "exports",
+    "contains",
+    "references",
+    "overrides",
+    "instantiates"
+  ],
+  "labelsOutsideEnum": {},
+  "perType": {
+    "calls": {
+      "n": 1571,
+      "verdict": "EMITTED",
+      "files": [
+        "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+        "src/main/java/org/springframework/samples/petclinic/PetClinicRuntimeHints.java",
+        "src/main/java/org/springframework/samples/petclinic/model/NamedEntity.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/Owner.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/Pet.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetController.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetTypeFormatter.java"
+      ],
+      "resolution": {
+        "resolved": 52,
+        "srcAmb": 0,
+        "tgtAmb": 1519,
+        "neither": 0
+      },
+      "confidence": {
+        "0.7": 1569,
+        "0.8": 2
+      },
+      "evidenceClass": {
+        "usage_contextual": 1571
+      },
+      "relationshipType": {
+        "absent": 1571
+      },
+      "missingLine": 0
+    },
+    "uses": {
+      "n": 132,
+      "verdict": "EMITTED",
+      "files": [
+        "src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java",
+        "src/main/java/org/springframework/samples/petclinic/model/NamedEntity.java",
+        "src/main/java/org/springframework/samples/petclinic/model/Person.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/Owner.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/Pet.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetController.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetType.java"
+      ],
+      "resolution": {
+        "resolved": 95,
+        "srcAmb": 0,
+        "tgtAmb": 37,
+        "neither": 0
+      },
+      "confidence": {
+        "1": 36,
+        "0.6": 96
+      },
+      "evidenceClass": {
+        "usage_contextual": 132
+      },
+      "relationshipType": {
+        "absent": 113,
+        "mapped_column": 12,
+        "mapped_table": 6,
+        "config_property": 1
+      },
+      "missingLine": 0
+    },
+    "contains": {
+      "n": 293,
+      "verdict": "EMITTED",
+      "files": [
+        "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+        "src/main/java/org/springframework/samples/petclinic/PetClinicRuntimeHints.java",
+        "src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java",
+        "src/main/java/org/springframework/samples/petclinic/model/NamedEntity.java",
+        "src/main/java/org/springframework/samples/petclinic/model/Person.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/Owner.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/OwnerRepository.java"
+      ],
+      "resolution": {
+        "resolved": 293,
+        "srcAmb": 0,
+        "tgtAmb": 0,
+        "neither": 0
+      },
+      "confidence": {
+        "1": 281,
+        "0.6": 12
+      },
+      "evidenceClass": {
+        "structural": 293
+      },
+      "relationshipType": {
+        "absent": 293
+      },
+      "missingLine": 12
+    },
+    "imports": {
+      "n": 0,
+      "verdict": "SILENT",
+      "files": [],
+      "resolution": null,
+      "confidence": {},
+      "evidenceClass": {},
+      "relationshipType": {},
+      "missingLine": 0
+    },
+    "references": {
+      "n": 1082,
+      "verdict": "EMITTED",
+      "files": [
+        "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java",
+        "src/main/java/org/springframework/samples/petclinic/PetClinicRuntimeHints.java",
+        "src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java",
+        "src/main/java/org/springframework/samples/petclinic/model/NamedEntity.java",
+        "src/main/java/org/springframework/samples/petclinic/model/Person.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/Owner.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/OwnerRepository.java"
+      ],
+      "resolution": {
+        "resolved": 477,
+        "srcAmb": 0,
+        "tgtAmb": 605,
+        "neither": 0
+      },
+      "confidence": {
+        "0.9": 477,
+        "0.95": 605
+      },
+      "evidenceClass": {
+        "import_based": 475,
+        "reference_qualified": 607
+      },
+      "relationshipType": {
+        "absent": 475,
+        "class_literal": 50,
+        "declared_type": 501,
+        "throws_type": 50,
+        "cast_target": 3,
+        "method_reference_receiver": 2,
+        "instanceof_check": 1
+      },
+      "missingLine": 0
+    },
+    "exports": {
+      "n": 17,
+      "verdict": "EMITTED",
+      "files": [
+        "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetController.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/VisitController.java",
+        "src/main/java/org/springframework/samples/petclinic/system/CrashController.java",
+        "src/main/java/org/springframework/samples/petclinic/system/WelcomeController.java",
+        "src/main/java/org/springframework/samples/petclinic/vet/VetController.java"
+      ],
+      "resolution": {
+        "resolved": 0,
+        "srcAmb": 0,
+        "tgtAmb": 0,
+        "neither": 17
+      },
+      "confidence": {
+        "1": 17
+      },
+      "evidenceClass": {
+        "structural": 17
+      },
+      "relationshipType": {
+        "absent": 17
+      },
+      "missingLine": 0
+    },
+    "extends": {
+      "n": 11,
+      "verdict": "EMITTED",
+      "files": [
+        "src/main/java/org/springframework/samples/petclinic/model/NamedEntity.java",
+        "src/main/java/org/springframework/samples/petclinic/model/Person.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/Owner.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/OwnerRepository.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/Pet.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetType.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetTypeRepository.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/Visit.java"
+      ],
+      "resolution": {
+        "resolved": 0,
+        "srcAmb": 0,
+        "tgtAmb": 11,
+        "neither": 0
+      },
+      "confidence": {
+        "1": 11
+      },
+      "evidenceClass": {
+        "structural": 11
+      },
+      "relationshipType": {
+        "extends": 8,
+        "extends_interface": 3
+      },
+      "missingLine": 0
+    },
+    "implements": {
+      "n": 6,
+      "verdict": "EMITTED",
+      "files": [
+        "src/main/java/org/springframework/samples/petclinic/PetClinicRuntimeHints.java",
+        "src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetTypeFormatter.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetValidator.java",
+        "src/main/java/org/springframework/samples/petclinic/system/WebConfiguration.java",
+        "src/test/java/org/springframework/samples/petclinic/PostgresIntegrationTests.java"
+      ],
+      "resolution": {
+        "resolved": 0,
+        "srcAmb": 0,
+        "tgtAmb": 6,
+        "neither": 0
+      },
+      "confidence": {
+        "1": 6
+      },
+      "evidenceClass": {
+        "structural": 6
+      },
+      "relationshipType": {
+        "implements": 6
+      },
+      "missingLine": 0
+    },
+    "overrides": {
+      "n": 9,
+      "verdict": "EMITTED",
+      "files": [
+        "src/main/java/org/springframework/samples/petclinic/PetClinicRuntimeHints.java",
+        "src/main/java/org/springframework/samples/petclinic/model/NamedEntity.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/Owner.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetTypeFormatter.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetValidator.java",
+        "src/main/java/org/springframework/samples/petclinic/system/WebConfiguration.java",
+        "src/test/java/org/springframework/samples/petclinic/PostgresIntegrationTests.java"
+      ],
+      "resolution": {
+        "resolved": 9,
+        "srcAmb": 0,
+        "tgtAmb": 0,
+        "neither": 0
+      },
+      "confidence": {
+        "0.5": 9
+      },
+      "evidenceClass": {
+        "inferred": 9
+      },
+      "relationshipType": {
+        "method_override": 9
+      },
+      "missingLine": 0
+    },
+    "instantiates": {
+      "n": 96,
+      "verdict": "EMITTED",
+      "files": [
+        "src/main/java/org/springframework/samples/petclinic/owner/Owner.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/Pet.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetController.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/PetTypeFormatter.java",
+        "src/main/java/org/springframework/samples/petclinic/owner/VisitController.java",
+        "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java",
+        "src/main/java/org/springframework/samples/petclinic/system/CrashController.java"
+      ],
+      "resolution": {
+        "resolved": 1,
+        "srcAmb": 0,
+        "tgtAmb": 95,
+        "neither": 0
+      },
+      "confidence": {
+        "0.95": 96
+      },
+      "evidenceClass": {
+        "structural": 96
+      },
+      "relationshipType": {
+        "instantiates": 96
+      },
+      "missingLine": 0
+    }
+  },
+  "r7": {
+    "unknownSource": 0,
+    "unknownTarget": 0,
+    "emptySource": 0,
+    "emptyTarget": 0,
+    "placeholderEndpoint": 0,
+    "placeholderBackedByDeclaration": 0,
+    "reasonCodes": {
+      "overrides/first-parent-guess": 9
+    },
+    "examples": []
+  }
+}

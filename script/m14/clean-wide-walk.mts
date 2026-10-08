@@ -57,10 +57,11 @@ import { createHash } from "node:crypto"
 import * as fs from "node:fs"
 import * as path from "node:path"
 import { promisify } from "node:util"
+import { fileURLToPath } from "node:url"
 
 const execFileP = promisify(execFile)
 
-const HERE = path.dirname(new URL(import.meta.url).pathname)
+const HERE = path.dirname(fileURLToPath(import.meta.url))
 const CENSUS = path.join(HERE, "clean-ontology-census.ts")
 
 const argv = process.argv.slice(2)

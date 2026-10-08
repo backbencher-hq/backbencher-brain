@@ -607,6 +607,54 @@
         "resolution": "A single missing closing brace. `anonScalaDecl` guards its `decls` bookkeeping with `if (!decls[anonName])`, and the per-occurrence registration that follows sat INSIDE that guard, so exactly one anonymous body per supertype name was ever registered — the first. Everything downstream then behaved correctly on incomplete input: the occurrences that did exist had right keys, the BFS had right sigs (SDJ-23), and the published names were right, so each layer looked healthy while the population was truncated at one. The 4,008-file result: MISSING 0, unexplained 0, truth 331,656 (up from 331,420 — the 236 genuinely-missing anonymous override rows the truncation had been hiding), covered 100%, fixtures 63/63, and cats-effect 0/0 across its whole corpus. THE PROCESS POINT, which is why this took four attempts. I \"fixed\" the brace placement earlier and verified it by GREPPING THE INDENTATION, which cannot distinguish a comment at 8 spaces from one at 4. The edit had in fact been lost in a revert, I saw the indentation I expected, and I recorded the fix as shipped. Reading the braces with line numbers would have shown it in one step. Three earlier hypotheses were wrong for the same reason: each was checked against a signal that could not have detected the failure (a count that matched, a name that matched, a signature that matched) rather than against the thing that was actually broken. SDJ-16, SDJ-19 and SDJ-22 all carry the corrected causes.",
         "measured_by": "differential --lang scala --sample 4008 --force-fresh; script/m14/tmp/scala-ovr-2side.ts (self-validating, with the BFS instrumented)",
         "fix_shape": "shipped — one closing brace."
+      },
+      {
+        "id": "SCL-ONT-1",
+        "node_type": "import_declaration",
+        "status": "CLOSED",
+        "question": "`imports` was in no measured verdict. The relationship ontology this gate reads is the EDGE set, and the analyzer constructed no `RelationshipType.Imports` at all — the construct landed in `imports: ImportInfo[]` plus a `references` edge carrying `metadata.isImportDep`. Is the construct expressible in Scala?",
+        "resolution": "YES, and it is a GAP, not a ruling. Implemented: one `imports` edge per `import_declaration`, source `root`, target the DEPENDENCY PATH, `metadata` carrying isImport / fileLevel / importedNames / wildcard / selectorGroup, `evidenceClass: import_based`. The dependency path is kept in a NEW accumulator rather than reusing `ImportInfo.module`, because `module` appends a selector's imported name: it publishes `a.b.D` for `import a.b.{C, D => Renamed}` where the Scala Language Spec ch.9 says the clause binds names FROM the package `a.b`. The `references` twin is built from `module`, is an AUDITED label, and is deliberately NOT retargeted here.",
+        "measured_by": "script/m14/tmp/scala-grammar-inventory.ts — `import_declaration` present, 2,358 nodes across 429 of 600 files, 0 `export_declaration`. script/m60/scala-imports-exports-oracle.ts — 1,687 distinct (file,type,target) keys over 300 files, oracle recall 100.00%, observed precision 100.00%, MISSING 0, UNEXPLAINED 0. Before the change the same oracle derived 2,208 rows against 0 observed (MISSING 2,095). script/m14/tmp/scala-ontology-census.ts — 2,079 edges over 354 files delivered by the production path."
+      },
+      {
+        "id": "SCL-ONT-2",
+        "node_type": "exports: public top-level declarations; export_declaration",
+        "status": "CLOSED",
+        "question": "`exports` emitted nothing while `exports: ExportInfo[]` was being filled on every file, and spec decision D2 had ruled the label out on a family-convention argument. Does the language express it?",
+        "resolution": "YES, two ways, and D2 is SUPERSEDED. (a) Scala has no `export` keyword in Scala 2, so its export surface is a VISIBILITY rule — a top-level declaration is part of the unit's API unless it carries private/protected — which is the rule the Java oracle derives from JLS 7.6, for the same reason: a JVM-family language with no module manifest says it with access modifiers. (b) Scala 3 `export a.b.C` re-exports a name INTO the unit, and the node is in the grammar the analyzer already switched on. D2's reasoning — 'consistent with kotlin S5 / groovy S3' — is a family convention, and the ontology workstream's premise is that a family convention is not a measurement. Two gaps closed while building the oracle: public top-level TYPE ALIASES were absent from the surface (`handleTypeAlias` had no export path), and seven export pushes kept a backticked name's quoting, so `implicit val \\`strip margin\\`` published a name no reference can spell.",
+        "measured_by": "script/m60/scala-imports-exports-oracle.ts — 443 distinct exports keys over 300 files, recall 100.00%, precision 100.00%, MISSING 0, UNEXPLAINED 0; and it was RED before the change (MISSING 408 of 456). `export_declaration` count on this corpus: 0 (Scala 2.13) — the rule is proven by fixture `scala/incoming-scala-export-surface`, whose three clause forms were probed against the pinned grammar at 0 ERROR nodes, and the corpus count is reported as 0 rather than as coverage. Production-path census: 641 edges over 385 files."
+      },
+      {
+        "id": "SCL-ONT-3",
+        "node_type": "class_parameter, parameter, val_definition, var_definition, function_definition, field_expression",
+        "status": "EMITTED",
+        "question": "Do the eight types the lane emitted before this wave actually FIRE? Source derivation only answers CONSTRUCTIBILITY.",
+        "resolution": "Eight of ten fired on the production path over 400 corpus files, with counts and files: calls 30,375/346 files; references 29,439/389; contains 17,714/384; uses 13,186/346; instantiates 7,141/321; overrides 1,395/186; extends 1,219/272; implements 205/64. The two that did not fire were `imports` and `exports`, and both were gaps (SCL-ONT-1, SCL-ONT-2) rather than absences of a construct. After the change: 10 of 10 fire.",
+        "measured_by": "script/m14/tmp/scala-ontology-census.ts (production path, 400 files, 18,511 symbols, 100,674 rows before / 103,394 after, 0 files failed, 0 parse diagnostics). The shared `script/m14/firing-check.mjs` cannot measure this lane on this machine: it hardcodes REPO = $HOME/backbencher-brain, so it reads the main checkout rather than a lane worktree."
+      },
+      {
+        "id": "SCL-ONT-4",
+        "node_type": "confidence and evidenceClass, per relationship",
+        "status": "RECORDED",
+        "question": "Is the confidence / evidenceClass model right per type, given the honesty contract's 0.7 line between a heuristic and a fact?",
+        "resolution": "The doc claimed overrides carry 0.9. Measured: 1.00 on 678 and 0.50 on 717 (51.4%), the `first-supertype-guess` tier, which `classifyEvidenceTier` already labels `inferred`. So the majority of overrides and 74% of instantiates (0.70 companion-apply) are heuristics by the contract's own definition. One gap: `calls` is 100% sub-1.0 (0.90) with `metadata: {}` on all 30,375 rows, and §4 requires a machine-readable reason code on every edge below 1.0. Recorded as owed rather than fixed — the fix moves a label the shared differential adjudicates and that differential cannot run on this machine (SCL-ONT-5).",
+        "measured_by": "script/m14/tmp/scala-ontology-census.ts confidence and evidenceClass histograms, 400 files."
+      },
+      {
+        "id": "SCL-ONT-5",
+        "node_type": "environment: the shared differential and its corpora",
+        "status": "BLOCKED — environment, not lane",
+        "question": "Can this lane re-run its differential and mutation gates on this machine?",
+        "resolution": "No. `script/m14/differential.ts` enumerates every active corpus repo before it honours `--lang`, and 40 of the 56 repos it names are absent from $HOME/fixtures/repositories — including `scala3` and `cats-effect`, the two corpora every number in this lane's doc was originally measured on. It fails on the first missing repo, `grails-core`, which is not a scala input. The last recorded differential evidence for this lane (validation/m14/results/M14.0.F5.scala.json, commit 51a8afc8, an ancestor of the lane HEAD) records scala3@18df09c0 4,008 files: tree-truth 331,656, covered 331,656 (100%), MISSING 0, analyzer-edges 197,804, unexplained 0, heuristic 4,652 (2.35%); cats-effect 457 files: truth 35,930, covered 100%, MISSING 0, unexplained 0. That is the oracle-agreement figure for the eight pre-existing types, and it is NOT re-runnable here. Because `imports` and `exports` are not in the lane's audited-label set, `script/m60/rel-type-coverage-gate.ts` CHECK 1 now reports 2 DERIVATION findings for scala until master adds both labels to the shared allowlist and points them at script/m60/scala-imports-exports-oracle.ts. Nine mutant-registry entries in script/m14/mutate-analyzer.ts are owed on the same grounds; the evidence that they die is script/m14/tmp/incoming-scala-mutants.ts (9 of 9 caught, 2 controls PASS, analyzer restored byte-identical).",
+        "measured_by": "the differential's own error at script/m14/differential.ts:21421; the corpus-presence enumeration over its LANG_REPOS / SECOND_CORPUS tables; validation/m14/results/M14.0.F5.scala.json."
+      },
+      {
+        "id": "SCL-DETECT-1",
+        "node_type": "language-detection: EXT_LANGUAGE",
+        "status": "OPEN — not this lane's file",
+        "question": "Is `.sbt` routed to the scala analyzer, as this lane's doc claimed?",
+        "resolution": "NO, and the file that decides it is not this lane's. `EXT_LANGUAGE` in src/ast/language-detection.ts carries `scala:` and `sc:` and NO `sbt:` entry, so `detectLanguageFromPath('build.sbt')` returns null, `parseFile` labels the file `unknown`, and the production path returns 0 symbols and 0 relationships for it. Measured on this lane's corpus: 33 tracked `.sbt` files, 0 detected, production totals 0 symbols / 0 relationships against 195 symbols / 996 relationships / 13 imports from `RealScalaAnalyzer.analyze` on the same trees (`build.sbt` alone: 163 / 912 / 13). Every one of the 1,048 'lost' rows in the analyzer-emission-vs-delivered comparison is a `.sbt` file, so that figure is this defect and not a noise-filter decision. The fix is one line in language-detection.ts, which this lane does not own; reported, not made.",
+        "measured_by": "script/m14/tmp/scala-ontology-census.ts raw-vs-delivered multiset comparison, and a direct detectLanguageFromPath + parseFile probe over all 33 tracked `.sbt` files."
       }
     ]
   },
@@ -616,9 +664,21 @@
     "declared_no_truth": [
       {
         "label": "overrides",
-        "reason": "`overrides` sits in the differential allowlist DEFAULT admitted prefix for every language except csharp/dart/swift/cpp, so it is compared for this lane — but this lane has no overrides oracle, so every analyzer overrides row enters the comparison with no truth to meet and is counted as an unexplained FABRICATION. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced. Dropping the label instead would hide the analyzer's output, which is the other half of the same silence. Closes when an overrides oracle exists for this language (scala's own cross-file work is recorded as SDJ-8); until then the state is DECLARED rather than counted as a verdict.",
-        "closes_when": "an overrides oracle exists for this language; then admit it and reconcile"
+        "reason": "STALE as written and corrected by SCL-ONT-5. The text says 'this lane has no overrides oracle' — the shared differential DOES derive overrides for scala (it is in the shared admitted prefix for every language except csharp/dart/swift/cpp/go, and differential.ts carries the scala keywordless-implementation rules). What is true is that the oracle cannot be re-run on this machine, because 40 of its 56 corpus repos are absent. The entry is left in place with that correction rather than deleted, because the state it describes — an overrides edge whose oracle cannot be executed — is still the state.",
+        "closes_when": "the corpus is restored on the machine that runs the differential, and the differential is re-run at the lane HEAD"
+      },
+      {
+        "label": "imports",
+        "reason": "NEW at SCL-ONT-1. The lane emits the label and has its own oracle (script/m60/scala-imports-exports-oracle.ts: 1,687 distinct keys, recall 100.00%, precision 100.00% over 300 corpus files), but the label is NOT in the shared differential's audited set for scala, so the shared harness drops the analyzer's rows before comparing them. An edge that only this lane's own oracle sees is verified and unaudited at the same time; that is the DERIVATION finding CHECK 1 exists to report, and master owns the allowlist.",
+        "closes_when": "master adds `imports` to scala's audited-label set in script/m14/differential.ts and the label is admitted to the F5 comparison"
+      },
+      {
+        "label": "exports",
+        "reason": "NEW at SCL-ONT-2, identical in shape to `imports`: emitted by the lane, derived by script/m60/scala-imports-exports-oracle.ts (443 distinct keys, recall 100.00%, precision 100.00% over 300 corpus files), and not in the shared audited set. The Scala 3 `export_declaration` half is additionally unexercised by the corpus — 0 clauses in Scala 2.13 — and is proven by fixture instead.",
+        "closes_when": "master adds `exports` to scala's audited-label set and admits the clause rule to the F5 comparison"
       }
-    ]
-  }
+    ],
+    "_incoming_scala_note": "SCL-ONT-1..5 and SCL-DETECT-1 were added by the INCOMING_SCALA lane; `imports` and `exports` entries describe edges the lane emits and its own oracle derives while the shared allowlist does not yet audit them."
+  },
+  "_incoming_scala_note": "Decisions SCL-ONT-1 .. SCL-ONT-6 were added by the INCOMING_SCALA lane (branch analyzer/INCOMING_SCALA). Each carries the corpus measurement that supports it, because the ontology workstream's rule is that a ruling with prose and no measurement is a defect: `overrides` had a prose justification for a whole wave and it was wrong. Every count below is from $HOME/fixtures/repositories/scala through the production entry (`parseFile`), never through `analyze()` alone."
 }

@@ -204,3 +204,205 @@ committed `M14.0.F5` artifact — the canonical artifact belongs to the full
 60-file, 30-language sweep, and a scoped `--lang vb` run refuses to write it
 rather than replace a bigger claim with a smaller one. See `docs/vb.md` and
 `reviews/vb/master-review.md`.
+
+---
+
+# Ontology pass `analyzer/VERIFY_VB10` — every verdict carries a number
+
+The handover claim for this lane was "**10/10 labels, 0 unexplained endpoints**".
+Measured through the production path (`getParser` → `parse` → `analyze`) on
+`fixtures/repositories/roslyn-vb`, it is **7/10**, and it is 7/10 at every file
+count tried. The three silent types are real absences, not sampling artefacts.
+
+## The baseline, and why 10/10 was wrong
+
+`script/m14/firing-check-v2.mjs VB`, code-bearing sampling, `roslyn-vb`
+(3,751 `.vb` files on disk):
+
+| NFILES | fired | silent | `imports[]` |
+|---:|---:|---|---:|
+| 50 | 7/10 | `uses` `exports` `instantiates` | 216 in 46 files |
+| 200 | 7/10 | `uses` `exports` `instantiates` | 1,060 in 192 files |
+| 400 | 7/10 | `uses` `exports` `instantiates` | 2,039 in 365 files |
+| 1000 | 7/10 | `uses` `exports` `instantiates` | 4,645 in 920 files |
+
+Edge counts at NFILES=200: `references` 3241, `contains` 2119, `calls` 1895,
+`imports` 1060, `overrides` 595, `implements` 206, `extends` 113.
+
+Three separate things were conflated in the handover claim, and each is worth
+naming because each is a different error:
+
+1. **A source scan counted `RelationshipType` symbols in the file.** That
+   answers `constructible`, not `fires`. The seven types above are the ones the
+   seven `relationships.push` sites can build; the three silent ones are the
+   ones with no push site at all. Derivation saw the enum, not the corpus.
+2. **`instantiates` and `uses` and `exports` were counted as covered** somewhere
+   between the analyzer and the table. There is no `push` site for any of the
+   three anywhere in this file — a grep for the enum members finds the *import*
+   sites and no others.
+3. **`imports` is a special case worth stating precisely.** This analyzer emits
+   `imports` on BOTH channels: an `ImportInfo` per name on `ParseResult.imports`
+   (what `parallel-indexer` writes to the `brain_import` TABLE) *and* an
+   `imports` relationship row (`RelationshipType.Imports` from `engine.ts`,
+   whose value is the string `"imports"`). `types.ts` spells the same member
+   `"brain_import"`, which no emitter produces. So `imports` fires here and the
+   1,060 in the `imports[]` column are a *second*, parallel set — they are not
+   double-counted in the 1,060 `imports:` relationship rows, they are the same
+   1,060 facts published twice by design.
+
+## Two defects found outside this lane, named not fixed
+
+- **`firing-check-v2.mjs` cannot resolve this lane's own name.** The documented
+  command is `NFILES=200 bun script/m14/firing-check-v2.mjs VERIFY_VB10` and it
+  exits 2 with "no lane matches". `resolveLane` splits the lane name into
+  tokens and matches a token against a key as a *prefix*
+  (`norm(k).startsWith(t)`, line 195) or the whole name against a key as a
+  *prefix* (line 202) — and the programme's own lane naming
+  (`VERIFY_<LANG><N>`, `BASH`, `JAVA`) fits neither: the language token carries
+  its digit (`VB10`, not `VB`) and the `VERIFY` prefix is a prefix of the name,
+  not of a key. Every lane launched with its own branch name hits this. Workable
+  around by passing the bare key (`VB`); the fix is a token that *contains* the
+  key, and it belongs to the master.
+- **The instrument's lane key is `VB`, not `VISUAL_BASIC`.** `REVIEW-2026-10-04`
+  §2 table row 4 lists `VISUAL_BASIC | csharp-sample | absent`; `LANES.VB` was
+  repointed to `roslyn-vb` and the row was never updated, so the review's claim
+  that VB had never been measured reads as still true while the table above
+  contradicts it.
+
+## The three silent types, each with the instrument its question needs
+
+`script/m14/vb-construct-probes.ts`. Silence in `firing-check-v2` says the
+analyzer has no construction site; it says nothing about the LANGUAGE. So each
+silent type gets the instrument the question needs — a grammar inventory where a
+node type would express the construct, and a parse-tree semantic count where it
+would not.
+
+Whole corpus, population derived: **3,751 `.vb` files, 3,751 parsed, 0 throws.**
+The grammar produced **208 distinct named node types and 43 distinct anonymous
+tokens**.
+
+### `instantiates` — **GAP**, and a large one
+
+| construct | count | files |
+|---|---:|---:|
+| `object_creation_expression` (plus the `New` inside an `invocation_expression`) | 16,871 | 1,266 |
+| `array_creation_expression` (`New T(args)` with arguments) | 18,636 | 1,457 |
+
+**35,507 construction sites.** VB.NET has the construct in bulk and the analyzer
+publishes a `calls` edge for every one of them — carrying
+`metadata.constructed: true` — but no `instantiates` edge exists anywhere in the
+file. The family contract for `instantiates` is csharp's
+`object_creation_expression` → `{source: enclosing, target: constructed type,
+confidence: 0.95, metadata: {isNew: true}}`, and the shape transfers to VB
+unchanged because the construct is the same construct.
+
+### `uses` — **GAP**
+
+| construct | count | files |
+|---|---:|---:|
+| `member_access_expression` / `with_member_access_expression` that is a READ | **536,141** | 3,555 |
+| bare `identifier` that names a member THIS FILE declares | 415,065 | 2,939 |
+
+A member read is the family's `uses`: go's GO1, csharp's CS-D4 and CS-R1 all
+define it as a value read that is neither a call nor a write. One GRAMMAR FACT had
+to be measured first, because getting it wrong makes the construct look absent:
+**in this grammar `member_access_expression` has no `name` field and no
+`expression` field.** Its children are positional — `identifier`, the anonymous
+`.`, `identifier`. A probe written against the C# shape reads
+`childForFieldName("name") === undefined` on every one of them and reports **0
+member reads**, which is indistinguishable from "VB cannot read a member". The
+first version of this probe made exactly that error and returned 0. The accessed
+member is the **last `identifier` leaf**, which is the same `calleeLeaf` rule the
+analyzer's own call path already uses.
+
+A second measured fact shapes the callee test: `obj.M().N()` puts the
+`member_access_expression` under an `array_access_expression`, not directly under
+the `invocation_expression`, so the climb has to pass through it or every chained
+call's leading segment reads as a use.
+
+### `exports` — **RULED**, with the measurement that rules it
+
+Two measurements, because a grammar cannot see a CONVENTION and the json lane's
+own table records that a grammar-inventory-only ruling on `exports` was unsound:
+
+1. **Instrument A — grammar inventory.** Across 3,751 files the grammar produced
+   **208 named node types and 43 anonymous tokens. Zero of either contains
+   "export" as a word**, named or anonymous. `module_declaration` — the nearest VB
+   shape to a unit of publication — does not appear in the corpus at all. VB.NET
+   has no `Export` keyword, no export statement and no export list.
+2. **Instrument B — what is left.** **48,976 `Public` modifiers** across 3,217
+   files are the only thing in this corpus that even resembles "published". A
+   `Public` member modifier is a *modality*, it is already published on the symbol
+   as `visibility`, and turning it into 48,976 edges would be manufacturing an
+   edge the language does not have — the exact failure the workstream names when
+   it says "a TOML value is a string in a format that defines no include, import
+   or reference … inventing one would be worse than a thin graph".
+
+The ruling is falsifiable, which is what makes it a ruling: a probe finding a
+non-zero count of an export-bearing node type overturns it, and this probe is
+committed so that it can be re-run.
+
+### The grammar defect the tuple-return finding exposes
+
+The same probe also counts `return_statement` nodes whose expression is a
+parenthesised comma list. Over a 400-file draw: **2,016 `return_statement` nodes,
+4 of them with a parenthesised expression, and 0 of those 4 containing a comma.**
+The grammar cannot *represent* a tuple return at all, which is why the count is
+zero rather than large. See the `Return (A, B)` repro above.
+
+## Payload / latency AFTER the two added edge types — a REGRESSION, reported not re-baselined
+
+`script/m14/vb-payload-latency.ts`, `VB_LABEL=AFTER-verify_vb10`, roslyn-vb,
+**sample MEASURED 300 files of 3,751 DERIVED on disk** (sorted directory walk,
+`VB_NFILES=300` — the identical sample the BEFORE row in commit `435b74053`
+measured, so the two are comparable):
+
+| | BEFORE `435b74053` | AFTER this branch | ratio |
+|---|---:|---:|---:|
+| relationships | 14,255 | 22,945 | **1.61×** |
+| relationships / file | 47.5 | 76.5 | 1.61× |
+| payload, total | 2417.6 KiB | 4600.4 KiB | **1.90×** |
+| payload / file | 8.06 KiB | 15.33 KiB | 1.90× |
+| parse latency | 2.99 s (10.0 ms/file) | 3.71 s (12.4 ms/file) | 1.24× |
+| analyze latency | 5.46 s (18.2 ms/file) | 10.67 s (35.6 ms/file) | **1.95×** |
+| analyze per edge | — | 464.98 µs | — |
+| symbols | 5,795 | 5,795 | 1.00× |
+| imports[] | 1,213 | 1,213 | 1.00× |
+
+Payload bytes per type, AFTER, so the growth is attributable to a type a consumer
+can actually filter on:
+
+| type | edges | % of edges | payload | % of bytes |
+|---|---:|---:|---:|---:|
+| references | 5,782 | 25.20 | 898.0 KiB | 19.52 |
+| calls | 4,837 | 21.08 | 1184.3 KiB | 25.74 |
+| contains | 4,655 | 20.29 | 652.1 KiB | 14.17 |
+| **uses** | 4,519 | 19.69 | **1073.8 KiB** | 23.34 |
+| imports | 1,213 | 5.29 | 209.0 KiB | 4.54 |
+| overrides | 889 | 3.87 | 299.3 KiB | 6.51 |
+| **instantiates** | 677 | 2.95 | **180.2 KiB** | 3.92 |
+| extends | 272 | 1.19 | 62.8 KiB | 1.37 |
+| implements | 101 | 0.44 | 18.1 KiB | 0.39 |
+
+**This is a regression against a green budget and it is reported as one.** The
+workstream's rule is "report it — do not quietly re-baseline"; nothing here changed
+a baseline. Two honest qualifications, both measured rather than asserted:
+
+1. **`calls` is the larger half of the growth, and `calls` is not one of the two
+   types added.** 1,303 → 4,837 edges, +3,534. That is the lane's own oracle's
+   defect 1 and the `Sub New*`/argument-bearing-construction repairs landing in the
+   same branch: a construction with arguments (`New Box(1, 2)`) was an
+   `array_creation_expression` with no `function` field, so reading the callee from
+   `function` dropped them. `uses` (4,519 edges, 1073.8 KiB) and `instantiates`
+   (677 edges, 180.2 KiB) — the two types this ontology pass added — account for
+   1,253.8 KiB of the 2,182.8 KiB growth, and `calls` for more than the rest.
+2. **The workstream's own comparison is against `bb_graph`'s un-narrowed default,
+   which is a per-QUESTION payload, not a per-corpus one.** 4600.4 KiB over 300
+   files is 15.33 KiB/file; the 795 KiB (ripgrep) figure is a whole-repo graph
+   answer. The lane cannot claim a ratio against it and does not: what it claims is
+   the 1.90× growth of the relationship channel on an unchanged sample, which is
+   the measurement a lane can make and a reader can re-run.
+
+`ast-walk-cost.ts`, the shared instrument that would put this next to the other
+lanes, has a hardcoded `$HOME/ishaq/fixtures/repositories` corpus that does not
+exist on this machine and carries no vb sample. Reported to master; not edited.

@@ -146,7 +146,7 @@ try {
 
 // Self-audit: no auto-pass in this file
 const { readFileSync } = await import("node:fs")
-const self = readFileSync(new URL(import.meta.url).pathname, "utf8")
+const self = readFileSync(fileURLToPath(import.meta.url), "utf8")
 ck("no auto-pass assertions in verifier", !/ck\([^)]*,\s*true\s*\)/.test(self), "self-audit")
 
 const { execFileSync } = await import("node:child_process")
@@ -166,3 +166,4 @@ console.log(`\n${failed === 0 ? "VERIFIED" : "FAILED"}: ${passed}/${checks} chec
 process.exit(failed === 0 ? 0 : 1)
 
 import { writeFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"

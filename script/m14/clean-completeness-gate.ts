@@ -32,6 +32,11 @@ const WASM = "wasm/tree-sitter-clean.wasm"
 
 interface Spec {
   grammar: string
+  /** OPTIONAL self-check a spec MAY carry: the population it was written against, so
+   *  a spec that drifts from the pinned grammar is caught instead of silently
+   *  re-based. No committed spec carries it today, and the read below tolerates
+   *  that, which is why the field is optional rather than required. */
+  _population_check?: { declared_named_types?: number }
   handled_verified: { types: string[] }
   internal_silent: { types: string[] }
   gap: { gaps: Array<{ id: string; node_type: string }> }

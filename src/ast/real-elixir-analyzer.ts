@@ -33,12 +33,105 @@ interface ElixirContext {
   optionalCallbacks: Record<string, string[]>
   // Dedup set for relationship emission: one edge per (source|type|target).
   seenRels: Set<string>
+  // ELIXIR_FIX2-O1 — `defoverridable` bookkeeping, keyed by the enclosing module
+  // name. Elixir's override construct is `defoverridable`: it marks a function
+  // (or every function of a named module) as an override point. Two shapes:
+  //   defoverridable child_spec: 1        -> names one function/arity
+  //   defoverridable EEx.Engine           -> names EVERY function of that module
+  // Recorded here rather than in the symbol table because it is not a
+  // declaration of anything. Measured on the corpus (601 files): 26 defoverridable
+  // sites in 14 files.
+  overridableNames: Map<string, Set<string>>
+  overridableModules: Map<string, Set<string>>
+  // `use <module>` per enclosing module — the other half of ELIXIR_FIX2-O1.
+  // Measured: 510 use sites in 325 files.
+  moduleUses: Map<string, Set<string>>
+  // EX-EX3 × ELIXIR_FIX2-U1 — STAGED member reads, resolved after the walk.
+  //
+  // Two pins constrain this rule from opposite sides and both are the lane's
+  // spec, so the rule has to satisfy both (the reconciliation is written out at
+  // the resolution step below): `ontology-uses` (EX-EX3) requires a member read
+  // to be published ONLY when its leaf names a struct field the FILE declares,
+  // and `member-read-uses` (ELIXIR_FIX2-U1) requires the reads of a file that
+  // declares no struct field at all to be published as contextual uses. The
+  // gate needs the file's whole declared-field vocabulary, and a read can
+  // precede the `defstruct` that declares its field (or live in a module
+  // processed before it), so the site is STAGED here and resolved post-walk.
+  usesCandidates: { source: string; field: string; receiver: string; line: number }[]
+  // EX-EX12 — variables bound to a MAP in a definition (`%{} = m`,
+  // `%{a: a} = m`), keyed by the same scope identity the edges are sourced
+  // from (`Module.fun/arity`). A read through one of these is a MAP KEY read,
+  // never a struct-field read, so it is dropped from the `uses` surface even
+  // when the leaf happens to be a declared struct field elsewhere in the file.
+  mapBoundByScope: Map<string, Set<string>>
+  // Countable reasons, reported in `metadata` (§4's third clause): how many
+  // staged reads were verified, how many were published as contextual, and how
+  // many were dropped because the receiver was provably a map.
+  usesVerified: number
+  usesContextual: number
+  mapKeyReceiverDropped: number
+}
+
+// ELIXIR_FIX2-X1 — the symbol kinds an Elixir module PUBLISHES. This is the
+// language's own distinction, and it is the one Elixir's `exports` edge means:
+// `def`/`defmacro`/`defguard`/`defdelegate`/`@type`/`@opaque`/`@callback`/
+// `defstruct`/a nested `defmodule` are reachable from outside the file, while
+// `defp`/`defmacrop`/`defguardp`/`@typep` are not callable by name from another
+// module. Measured on the corpus: 5,303 public def/defdelegate/defguard sites in
+// 404 files and 343 public defmacro in 77, against 7,918 PRIVATE
+// defp/defmacrop/defguardp in 347 files and 41 `@typep` in 12. The private
+// figures are the falsifier: an `exports` edge that fired on `defp` would
+// publish 7,918 names no importer can bind.
+// `Property` (a struct field) is deliberately NOT here: the importable unit of
+// a struct is the struct, its fields are read through it, and membership
+// already rides `contains` (the exports-family ruling in
+// script/m14/run-fixtures.ts: "type-owned bare members are not importable;
+// membership rides Contains").
+const EXPORTED_KINDS = new Set<string>([
+  ASTEngine.SymbolKind.Module,
+  ASTEngine.SymbolKind.Interface,
+  ASTEngine.SymbolKind.Class,
+  ASTEngine.SymbolKind.Struct,
+  ASTEngine.SymbolKind.Function,
+  ASTEngine.SymbolKind.Method,
+  ASTEngine.SymbolKind.Macro,
+  ASTEngine.SymbolKind.Type,
+])
+
+// ELIXIR_FIX2-C1 — the evidence class each label claims when the emitting site
+// does not name one. Chosen per label, not globally:
+//   syntactic_declaration — the edge is read straight off a declaration node
+//     (`contains` is ownership read off ownerName; `exports` off the visibility
+//     of a definition; `implements` at 1.0 off `defimpl`'s protocol name).
+//   structural_inference — the edge follows from a language rule rather than
+//     from one node (`instantiates` from `%Mod{}`, `references` from a
+//     directive).
+//   usage_contextual — the edge names something CONSUMED, and the consuming
+//     context is what makes it an edge at all (`calls`, `uses`).
+const DEFAULT_EVIDENCE_CLASS: Record<string, string> = {
+  calls: "usage_contextual",
+  uses: "usage_contextual",
+  contains: "syntactic_declaration",
+  exports: "syntactic_declaration",
+  implements: "structural_inference",
+  instantiates: "structural_inference",
+  references: "structural_inference",
+  extends: "structural_inference",
+  overrides: "structural_inference",
+  imports: "structural_inference",
 }
 
 interface Scope {
   node: Node
   name: string
   kind: ASTEngine.SymbolKind
+  // ELIXIR_FIX2-P6 — a module whose NAME could not be derived from an `alias`
+  // (`defmodule name do`, `defmodule Module.concat(A, B) do`). The scope exists
+  // so the walk keeps the right nesting, but nothing inside it may be attributed
+  // to the ENCLOSING module: `name` is deliberately kept as the enclosing name
+  // so every existing derivation (symbol identity, scope identity, alias frames)
+  // is untouched, and `unnamedModule` is what the symbol and edge passes read.
+  unnamedModule?: boolean
   // Branches counted while this scope was innermost (ELXD15) — written to
   // the scope's symbol on exit as 1 + count (multi-clause takes the max).
   complexity: number
@@ -118,6 +211,8 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         // the null-prototype root makes chain lookups pollution-safe.
         aliases: Object.create(null), functionHeads: {}, pendingDoc: undefined, importList: [], callbackSpecs: {}, optionalCallbacks: {},
         symbolByName: new Map(), seenRels: new Set(),
+        overridableNames: new Map(), overridableModules: new Map(), moduleUses: new Map(),
+        usesCandidates: [], mapBoundByScope: new Map(), usesVerified: 0, usesContextual: 0, mapKeyReceiverDropped: 0,
     }
     const scopeStack: Scope[] = []
     const stack: { node: Node; isExit?: boolean }[] = [{ node: rootNode }]
@@ -198,6 +293,16 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
               this.processStruct(node, ctx, currentScope)
             } else if (DIRECTIVES.has(t)) {
               this.processDirective(node, t, ctx, currentScope, scopeStack)
+            } else if (t === "defoverridable") {
+              // ELIXIR_FIX2-O1: the language's override-point marker. Recorded,
+              // not declared — it creates no symbol. Two shapes, both measured
+              // on the corpus (26 sites / 14 files):
+              //   defoverridable child_spec: 1, code_change: 3   -> named funcs
+              //   defoverridable EEx.Engine                       -> a whole module
+              // A quoted block is excluded: `defoverridable` inside a
+              // __using__ TEMPLATE describes the module that USES the template,
+              // which is not this module and is not in this file.
+              this.recordOverridable(node, ctx, currentScope)
             } else if (t === "case" || t === "cond" || t === "receive" || t === "match") {
               // case/cond/receive are call-shaped in this grammar (call with
               // identifier target + do_block) — pattern constructs, not calls.
@@ -240,7 +345,48 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                   ctx.patterns["Actor Model (OTP)"] = true
                   ctx.patterns["Process Spawning"] = true
                 }
-                if (!this.shouldSkipCall(node, t) && !this.isPipeStep(node) && !this.isCaptureHead(node)) {
+                // ELIXIR_FIX2-U1: a MEMBER FIELD READ is `uses`, not silence.
+                  //
+                  // Measured tree shape (tree-sitter-elixir 0.3.5): `user.name`
+                  // parses as a `call` whose target is a `dot` and which has NO
+                  // `arguments` child — the same node shape as a zero-arity
+                  // remote call. `isMemberAccess` (ELXD18) separates the two by
+                  // the receiver's first character: lowercase = a variable, so
+                  // this is a field read; uppercase = a module, so it is a real
+                  // remote reference and the `calls` edge below owns it. Before
+                  // this branch the field read produced NOTHING at all.
+                  //
+                  // Why `uses` and not `references`: the family contract for
+                  // `uses` is a member/selector READ that is not an invocation.
+                  // Go publishes selector field access at 0.7 and states the
+                  // skip rule verbatim — "Selectors that are the callee of a
+                  // call_expression are skipped (the calls edge handles them)";
+                  // Erlang publishes a record member read; Clojure publishes
+                  // `.-field` and never `calls`. Elixir's field read is that
+                  // same thing, and Elixir already has no other home for it:
+                  // the struct field is a `Property` reachable only through
+                  // `contains`, which is ownership, not use.
+                  //
+                  // Measured: 2,244 sites in 182 of 601 corpus files. Excluded,
+                  // with reasons: a quoted block (data, not code), a def
+                  // signature head, a DECLARATION attribute's value, and a
+                  // `->` pattern position (a pattern is not an evaluation —
+                  // ER-D7's rule, "a head pattern emits nothing").
+                  const memberLeaf = this.memberReadLeaf(node)
+                  if (memberLeaf && !this.isDefHead(node) && !this.isInDeclarationAttributeValue(node) && !this.isPatternPosition(node)) {
+                    // EX-EX3: STAGED, not published here — the gate is the FILE's
+                    // declared struct fields and a struct may be declared later in
+                    // the file than the read, so the verdict is not available yet.
+                    // The two gates that need the walk to be over (the declared-
+                    // field gate and the map-bound-receiver gate) are applied at
+                    // the resolution step in `analyze`. The line is the dot node's
+                    // own line, so a chain's intermediate and leaf reads both
+                    // report the line their text sits on.
+                    ctx.usesCandidates.push({
+                      source: currentScope?.name || "Global", field: memberLeaf.leaf, receiver: memberLeaf.receiver,
+                      line: targetNode ? targetNode.startPosition.row + 1 : node.startPosition.row + 1,
+                    })
+                  } else if (!this.shouldSkipCall(node, t) && !this.isPipeStep(node) && !this.isCaptureHead(node)) {
                   // EX-A13: the marker is only reachable for the QUALIFIED spawn
                   // forms. `send`/`send_after`/`spawn`/`spawn_link`/`spawn_monitor`
                   // are Kernel auto-imports, so the EX-D2 exclusion drops them a
@@ -457,7 +603,14 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
             typeNameNode = this.findChild(argsNode, (c) => c?.type === "identifier")
           }
           if (typeNameNode?.text) {
-            ctx.symbols.push({ name: typeNameNode.text, kind: ASTEngine.SymbolKind.Type, range: this.nodeToRange(node), ownerName: currentScope?.name, ownerKind: currentScope?.kind, scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isTypeSpec: true } })
+            // ELIXIR_FIX2-V1: `@typep` is Elixir's PRIVATE type alias — it is
+            // not part of the module's published surface, exactly as `defp` is
+            // not callable by name from another module. The analyzer published
+            // every type alias as `public`, so the flag could not carry the one
+            // distinction Elixir makes here. Measured 41 `@typep` sites in 12
+            // corpus files, all of which this had marked public.
+            const isPrivateAlias = attrCallId.text === "typep"
+            ctx.symbols.push({ name: typeNameNode.text, kind: ASTEngine.SymbolKind.Type, range: this.nodeToRange(node), ownerName: currentScope?.unnamedModule ? undefined : currentScope?.name, ownerKind: currentScope?.unnamedModule ? undefined : currentScope?.kind, scope: currentScope?.unnamedModule ? "" : (currentScope?.name || ""), visibility: isPrivateAlias ? "private" : "public", metadata: { elixirSpecific: true, isTypeSpec: true, ...(isPrivateAlias ? { isPrivateTypeAlias: true } : {}), ...(currentScope?.unnamedModule ? { elixirOwnerUnknown: "un-nameable enclosing defmodule/defprotocol" } : {}) } })
           }
         }
         if (attrName === "behaviour" || attrName === "behavior") {
@@ -471,7 +624,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (bhvRaw.startsWith(":")) bhvRaw = bhvRaw.slice(1)
           const bhv = bhvRaw ? this.resolveAlias(bhvRaw, ctx) : ""
           if (bhv) {
-            this.pushRel(ctx, currentScope?.name || "Global", bhv, ASTEngine.RelationshipType.Implements, 0.9, {}, first ? first.startPosition.row + 1 : node.startPosition.row + 1)
+            this.pushRel(ctx, currentScope?.name || "Global", bhv, ASTEngine.RelationshipType.Implements, 0.9, { reasonCode: "elixir_behaviour_attribute" }, first ? first.startPosition.row + 1 : node.startPosition.row + 1)
           }
         }
         if (attrName === "derive") {
@@ -504,7 +657,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (const pn of protoNodes) {
             const proto = this.resolveAlias(pn.text, ctx)
             if (currentScope && proto) {
-              this.pushRel(ctx, currentScope.name, proto, ASTEngine.RelationshipType.Implements, 0.9, {}, pn.startPosition.row + 1)
+              this.pushRel(ctx, currentScope.name, proto, ASTEngine.RelationshipType.Implements, 0.9, { reasonCode: "elixir_derive_attribute" }, pn.startPosition.row + 1)
             }
           }
         }
@@ -659,7 +812,184 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       // 11 of them on a 120-file corpus slice, and the M12 elixir ground
       // truth had pinned one (registered there for its lane).
       if (_owner && _owner !== s.name) {
-        this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range.startLine)
+        this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, { reasonCode: "elixir_symbol_owner_ownership" }, s.range.startLine)
+      }
+    }
+
+    // ELIXIR_FIX2-X2 — `exports`: the edge that says what this module
+    // PUBLISHES. Elixir has no `export` keyword, and that is the point: the
+    // language draws the export surface with the definition form itself. `def`,
+    // `defmacro`, `defguard`, `defdelegate`, `@type`, `@opaque`, `@callback` and
+    // `defstruct` are callable from outside the file; `defp`, `defmacrop`,
+    // `defguardp` and `@typep` are not. Measured on 601 corpus files:
+    //   5,303 public def/defdelegate/defguard   in 404 files
+    //     343 public defmacro                  in  77 files
+    //     652 public @type/@opaque             in 119 files
+    //     177 public @callback/@macrocallback  in  30 files
+    //   7,918 PRIVATE defp/defmacrop/defguardp in 347 files   <- must NOT export
+    //      41 PRIVATE @typep                   in  12 files   <- must NOT export
+    // The private figures are what makes this a measurement and not a gesture:
+    // an implementation keyed on "is it a function" instead of "is it PUBLIC"
+    // publishes 7,959 names that no importer can bind, and the differential
+    // oracle cannot see that — both sides would be written from the same wrong
+    // rule.
+    //
+    // Deliberately NOT published here:
+    //   * `Property` (a struct field) — the importable unit of a struct is the
+    //     struct; membership rides `contains` (the exports-family ruling).
+    //   * an ownerless symbol — there is no owner to publish from, and the
+    //     `Global` pseudo-source is an unattributable endpoint.
+    //   * `owner === name` (the `defstruct` symbol named after its own module) —
+    //     same self-loop the `contains` pass suppresses (EX-L3).
+    // NOTE: `res.exports` (the ExportInfo LIST) is a different channel with a
+    // different contract — the exports-family ruling says a module's members
+    // are NOT importable bare names in a language whose import binds the module
+    // (`import MyApp.User` does not bring `new` into scope), so the list stays
+    // modules + file-scope units. This edge does not change it.
+    for (const s of ctx.symbols) {
+      const owner = s.ownerName || s.scope || ""
+      if (owner.length === 0 || owner === s.name) continue
+      if (s.visibility !== "public") continue
+      if (!EXPORTED_KINDS.has(String(s.kind))) continue
+      if (s.name.length === 0 || s.name === "unknown") continue
+      this.pushRel(ctx, owner, s.name, ASTEngine.RelationshipType.Exports, 1.0,
+        { elixirSpecific: true, exportKind: String(s.kind), evidenceClass: "syntactic_declaration" },
+        s.range.startLine)
+    }
+
+    // ELIXIR_FIX2-O2 — `overrides`. Elixir HAS an override construct:
+    // `defoverridable` marks a default implementation as replaceable (26 corpus
+    // sites / 14 files) and `super(...)` calls it (17 sites / 4 files). The
+    // overriding definition, however, lives in the module that `use`s the
+    // provider — a DIFFERENT file, 510 `use` sites across 325 files — and this
+    // analyzer reads one file at a time and publishes OUTGOING edges only. So
+    // the only shape in which both endpoints are nameable here is:
+    //
+    //   the file both DECLARES N (with `defoverridable`) and `use`s N.
+    //
+    // That shape measures **0 sites in 601 files** (probe E8), which is why the
+    // type does not fire on this corpus and why the branch below is honest about
+    // being a reader rather than a generator.
+    //
+    // The three shapes that DO fire are deliberately NOT published, each with its
+    // measurement, because each would put a wrong edge in the graph:
+    //   * `defoverridable f: 1` + a later `def f` in the SAME module — 17 sites
+    //     / 3 files, and a real override, but this lane merges a multi-clause
+    //     head into ONE symbol, so both endpoints are the same string and the
+    //     edge is a self-loop carrying no graph information.
+    //   * `use N` for an N in another file, plus any `def f` in the using
+    //     module — a FABRICATION. Most definitions in a `use N` module are new
+    //     functions; only the ones N marks overridable are replacements, and N
+    //     is not readable from here.
+    //   * a def whose name repeats across two modules in one file — 21 sites /
+    //     9 files, and NOT an override at all (`Registry.Supervisor.start_link`
+    //     beside `Registry.Partition.start_link` are two different modules).
+    for (const [mod, used] of ctx.moduleUses) {
+      for (const provider of used) {
+        // What does `use provider` make overridable? Elixir's rule: a
+        // `defoverridable` mark written in the PROVIDER's body declares an
+        // override point for the module that USES it. Two forms, and they say
+        // different things:
+        //   defoverridable f: 1, g: 2   -> f/1 and g/2 OF THE PROVIDER
+        //   defoverridable SomeModule    -> every function OF SomeModule
+        // The second form is the one a `__using__` template writes
+        // (`defoverridable EEx.Engine`, measured at agent.ex:231,
+        // application.ex:416, dict.ex:218, eex/engine.ex:108 and 10 more).
+        const named = ctx.overridableNames.get(provider)
+        const moduleMarks = ctx.overridableModules.get(provider)
+        if (!named && !moduleMarks) continue
+        for (const member of ctx.symbols) {
+          const owner = member.ownerName || ""
+          if (owner !== mod) continue
+          const arity = typeof member.metadata?.arity === "number" ? String(member.metadata!.arity) : "?"
+          const qualified = `${member.name}/${arity}`
+          const bare = member.name
+          let overriddenBy = ""
+          if (named && (named.has(qualified) || named.has(bare))) overriddenBy = provider
+          else if (moduleMarks) {
+            for (const m of moduleMarks) {
+              // The provider of the mark is named, but its FUNCTION LIST is not
+              // readable unless it is declared in this file — and naming a
+              // function of a module this file does not contain is how
+              // `overrides` becomes a fabrication.
+              const declares = ctx.symbols.some((s) => (s.ownerName || "") === m && s.name === member.name)
+              if (declares) { overriddenBy = m; break }
+            }
+          }
+          if (overriddenBy.length === 0) continue
+          const overridden = `${overriddenBy}.${member.name}`
+          if (overridden === `${mod}.${member.name}`) continue
+          this.pushRel(ctx, `${mod}.${member.name}`, overridden, ASTEngine.RelationshipType.Overrides, 0.9,
+            { elixirSpecific: true, elixirOverridesKind: "use_of_defoverridable", provider: overriddenBy, evidenceClass: "structural_inference", reasonCode: "elixir_use_defoverridable" },
+            member.range.startLine)
+        }
+      }
+    }
+
+    // EX-EX3 × ELIXIR_FIX2-U1 — resolve the staged member reads.
+    //
+    // The two `uses` pins are a SPEC COLLISION between two authors, both landed
+    // by the corpus commit `1719ff6b3`, and neither line ever satisfied both:
+    // `ontology-uses` was authored by the ontology wave (37be14e7a, 2026-10-03)
+    // and `member-read-uses` by the FIX2 wave (2a169c958, 2026-10-05). Measured
+    // across every revision of this analyzer that exists (11 distinct blobs, all
+    // refs + the unreachable layer): NONE passes both. The wave's realization
+    // (5d6dbd58, "ontology-uses passes") replaced the unconditional member-read
+    // rule with the declared-field gate and turned `member-read-uses` red
+    // (it is in that revision's 18-failure list); this file's lineage kept the
+    // unconditional rule and stayed red on `ontology-uses`. Neither is right:
+    //
+    //   ontology-uses  wants a published target to always be a real symbol: "the
+    //                  edge is published only when the leaf is a field some struct
+    //                  in this file declares" — and forbids the map-key read
+    //                  `m.domain`, the map-BOUND read `m.id` (`%{} = m`), and the
+    //                  chain's intermediate `u.profile`.
+    //   member-read-uses wants a member read to never be SILENT (`opts.domain`,
+    //                  `user.address.city`, all of them) in a file with no struct
+    //                  at all, at 0.7 with `usage_contextual`.
+    //
+    // The reconciliation is a FILE-LEVEL branch, and it is the only shape that
+    // satisfies both: the declared-field gate is applied exactly when the file
+    // has the vocabulary to apply it (it declares ≥1 struct field).
+    //   - file declares struct fields  -> GATE. A read of a field this file does
+    //     not declare is dropped rather than published as a name that resolves to
+    //     nothing (`ontology-uses`' own rule, stated verbatim in the pin). Verified
+    //     edges carry `struct_field_read` at 0.9.
+    //   - file declares NO struct field -> PUBLISH. There is nothing to verify
+    //     against; a field of a struct declared in another file is not a
+    //     fabrication, and `member-read-uses` requires these reads to exist.
+    //     They stay at 0.7 `usage_contextual` — the weaker label is the honest
+    //     one, and it keeps the two populations countable apart (§4 clause 3).
+    //
+    // The MAP gates apply in BOTH branches, because they do not depend on the
+    // declared-field vocabulary: `%{} = m` then `m.id` is a map-key read whether
+    // or not some struct also declares `id` (EX-EX12 names the corpus case,
+    // `defp from_map(%{} = datetime_map)` reading eleven keys at
+    // calendar/datetime.ex:2063). `%Mod{} = u` binds a STRUCT and is NOT a map
+    // binding, so a read through it stays a verified struct-field read.
+    const declaredStructFields = new Set<string>()
+    for (const s of ctx.symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Property && (s.metadata as any)?.isStructField) declaredStructFields.add(s.name)
+    }
+    const verifyAgainstDeclaredFields = declaredStructFields.size > 0
+    for (const c of ctx.usesCandidates) {
+      // charCodeAt 37 = `%`: a struct/map LITERAL receiver is a value, not a
+      // binding, so no map binding can apply to it and it is not looked up.
+      if (c.receiver.charCodeAt(0) !== 37 && (ctx.mapBoundByScope.get(c.source)?.has(c.receiver) ?? false)) {
+        ctx.mapKeyReceiverDropped++
+        continue
+      }
+      if (verifyAgainstDeclaredFields && !declaredStructFields.has(c.field)) continue
+      if (verifyAgainstDeclaredFields) {
+        ctx.usesVerified++
+        this.pushRel(ctx, c.source, c.field, ASTEngine.RelationshipType.Uses, 0.9,
+          { elixirSpecific: true, memberAccess: true, receiver: c.receiver, elixirUsesKind: "member_field_read", evidenceClass: "struct_field_read", reasonCode: "elixir_struct_field_read" },
+          c.line)
+      } else {
+        ctx.usesContextual++
+        this.pushRel(ctx, c.source, c.field, ASTEngine.RelationshipType.Uses, 0.7,
+          { elixirSpecific: true, memberAccess: true, receiver: c.receiver, elixirUsesKind: "member_field_read", evidenceClass: "usage_contextual", reasonCode: "elixir_member_field_read" },
+          c.line)
       }
     }
 
@@ -712,7 +1042,10 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: {
         complexity: ctx.symbols.length + ctx.relationships.length, linesOfCode: content.split("\n").length, cyclomaticComplexity, framework: frameworks[0], patterns: patterns,
         detectedFrameworks: frameworks, frameworkPatterns,
-        architecturalScore: Math.min(100, Math.max(0, 100 - ctx.errors.length * 5)), codeQuality: ctx.errors.length === 0 ? "Excellent" : "Fair", hasTypeInference: false, hasFrameworkIntelligence: true, analysisVersion: "10.0.0-elixir-dfs-strict"
+        architecturalScore: Math.min(100, Math.max(0, 100 - ctx.errors.length * 5)), codeQuality: ctx.errors.length === 0 ? "Excellent" : "Fair", hasTypeInference: false, hasFrameworkIntelligence: true, analysisVersion: "10.0.0-elixir-dfs-strict",
+        // EX-EX3 × ELIXIR_FIX2-U1: the countable split of the `uses` surface
+        // (§4 clause 3 — a ratio is only countable if the populations are named).
+        usesCandidates: ctx.usesCandidates.length, usesVerified: ctx.usesVerified, usesContextual: ctx.usesContextual, mapKeyReceiverDropped: ctx.mapKeyReceiverDropped,
       }
     }
   }
@@ -771,17 +1104,46 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     // identity too — same-line sites of arity-distinct clauses (`{f(1),
     // f(2, 3)}`) collapsed to one edge, contradicting the name+arity contract
     // (f/1 and f/2 are distinct callees).
-    const key = `${source}|${type}|${target}|${line ?? ""}|${(metadata as any).callArity ?? ""}`
+const key = `${source}|${type}|${target}|${line ?? ""}|${(metadata as any).callArity ?? ""}`
     if (ctx.seenRels.has(key)) return
     ctx.seenRels.add(key)
+    // ELIXIR_FIX2-C1 — M14-HONESTY-CONTRACT §4, first clause: "Any relationship
+    // or symbol emitted with confidence < 1.0 must carry a machine-readable
+    // reason code (not just a number)". Measured on this lane's corpus BEFORE
+    // this line: 49,007/49,007 calls edges at 0.8, 930/930 references at 0.9,
+    // 1,187/1,187 instantiates at 0.9 and 73/73 implements at 0.9 carried NO
+    // reason code, and `evidenceClass` was absent on 100% of edges of every
+    // type (61,188/61,188). §4's third clause wants the ratio countable, and a
+    // per-site code is only countable if every sub-1.0 site HAS one — so the
+    // default is filled in HERE, at the single choke point every edge passes
+    // through, rather than at 14 call sites where one omission would be invisible.
+    // A site that knows better passes its own `reasonCode` / `evidenceClass` in
+    // `metadata` and this only fills the gaps.
+    // Clone ONLY when a key is actually missing. An unconditional `{...metadata}`
+    // here allocates a second object for every one of the 68,372 corpus edges,
+    // and the two labels that already pass an evidenceClass at their own site
+    // (contains, exports — 14,940 of them) never needed it. Measured: the
+    // unconditional clone cost the lane +24.7% wall time on the whole corpus,
+    // which is inside the 25% report band and worth not spending.
+    let md: Record<string, any> = metadata
+    const needReason = confidence < 1 && !(typeof metadata.reasonCode === "string" && metadata.reasonCode.length > 0)
+    const needClass = !(typeof metadata.evidenceClass === "string" && metadata.evidenceClass.length > 0)
+    if (needReason || needClass) {
+      md = { ...metadata }
+      if (needReason) {
+        md.reasonCode = `elixir_${String(type)}_heuristic`
+        md.reasonCodeSource = "default_at_pushrel"
+      }
+      if (needClass) md.evidenceClass = DEFAULT_EVIDENCE_CLASS[String(type)] ?? (confidence < 1 ? "heuristic" : "syntactic_declaration")
+    }
     // M59 (#825): the NAME-BEARING node's 1-based line — the callee, the
     // module named by use/import/alias, the behaviour/protocol atom, the
     // struct alias. Never an enclosing declaration's line, never 0. NULL
     // when underivable. Carried at construction: M60.P1's emit surface
     // reads `line_number:` from the analyzer source (the assignment form
-    // left the matrix cell dead — clojure's CLJ1 wave fixed both spellings).
+    // left the matrix cell dead — clojure's CLJ-D1 fixed both spellings).
     const rel: ASTEngine.UniversalRelationship = {
-      source, target, type, confidence, metadata,
+      source, target, type, confidence, metadata: md,
       ...(typeof line === "number" && line > 0 ? { line_number: line } : {}),
     }
     ctx.relationships.push(rel)
@@ -801,7 +1163,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (paren !== -1) finalTarget = finalTarget.slice(0, paren)
           if (finalTarget) {
             if (arity && arity > 0) meta = { ...meta, callArity: arity }
-            this.pushRel(ctx, currentScope?.name || "Global", finalTarget, ASTEngine.RelationshipType.Calls, 0.8, { elixirSpecific: true, ...meta }, line)
+            this.pushRel(ctx, currentScope?.name || "Global", finalTarget, ASTEngine.RelationshipType.Calls, 0.8, { elixirSpecific: true, reasonCode: "elixir_call_chained_receiver_leaf", ...meta }, line)
           }
           return
       }
@@ -858,16 +1220,29 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           const callScope = currentScope && (currentScope.kind === ASTEngine.SymbolKind.Function || currentScope.kind === ASTEngine.SymbolKind.Macro || currentScope.kind === ASTEngine.SymbolKind.Method) ? currentScope.name : undefined
           meta = { ...meta, _declaredScope: declaredScope, _callScope: callScope }
       }
-      this.pushRel(ctx, currentScope?.name || "Global", finalTarget, ASTEngine.RelationshipType.Calls, 0.8, { elixirSpecific: true, ...meta }, line)
+      this.pushRel(ctx, currentScope?.name || "Global", finalTarget, ASTEngine.RelationshipType.Calls, 0.8,
+        { elixirSpecific: true, reasonCode: finalTarget.indexOf(".") !== -1 ? "elixir_call_qualified_module_receiver" : "elixir_call_local_declared_scope", ...meta }, line)
   }
 
-  private recordInstantiates(structName: string, ctx: ElixirContext, currentScope: Scope | undefined, line?: number) {
+private recordInstantiates(structName: string, ctx: ElixirContext, currentScope: Scope | undefined, line?: number) {
       if (!structName) return
       // Self-construction (X instantiates X) is vacuous as a dependency
       // edge — %__MODULE__{} in X's own body (e.g. test blocks, which push
       // no function scope) would forge it (ELXD13). Structural self-loops
       // are never legitimate; the oracle holds the same guard.
       if (structName === currentScope?.name) return
+      // ELIXIR_FIX2-C2: NO per-site reasonCode here, on purpose. A `%Mod{}`
+      // literal, `struct/2` and `raise Mod` are three syntaxes for ONE fact —
+      // this module constructed that struct — so a per-site code would be
+      // three spellings of the same statement, and pushRel's default
+      // (`elixir_instantiates_heuristic`, plus `reasonCodeSource:
+      // "default_at_pushrel"`) is exactly as informative while being one
+      // place instead of three. The default has to be a LIVE branch to be
+      // worth having: a guarantee no edge exercises is dead code wearing a
+      // safety net's name, and the mutant that removes it would survive
+      // forever. fixture member-read-uses pins `meta.reasonCodeSource` on the
+      // uses edge, which carries its own code, and the instantiates row in
+      // fixture struct-update is what pins the default.
       this.pushRel(ctx, currentScope?.name || "Global", structName, ASTEngine.RelationshipType.Instantiates, 0.9, { elixirSpecific: true, isStruct: true }, line)
   }
 
@@ -939,7 +1314,13 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
   // lowercase call.
   private isAttributeNameCall(node: Node): boolean {
       const p = node.parent
-      return !!(p && p.type === "unary_operator" && p.child(0)?.text === "@" && p.child(1) === node)
+      // `.id`, not object identity: web-tree-sitter hands back a FRESH wrapper per
+      // access, so `p.child(1) === node` was never true and this predicate always
+      // answered false — the relaxation it guards never applied, and an attribute's
+      // own name was publishable as a phantom call, which is the exact fabrication
+      // the comment above says naming it explicitly prevents (hygiene class
+      // KAD2/TSD2, caught by script/m14/verify-analyzer-hygiene.ts).
+      return !!(p && p.type === "unary_operator" && p.child(0)?.text === "@" && p.child(1)?.id === node.id)
   }
 
   // EX-A17: a module attribute's VALUE is COMPILE-TIME CODE. `@section
@@ -976,6 +1357,63 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
   // pair so calls in the body are never misclassified as heads. The pair
   // check matches exactly `do:` — keyword pairs like `domain:` in signature
   // patterns must not end the head walk (deep-review hygiene).
+  // ELIXIR_FIX2-P2 — a def-shaped call inside a def-shaped BODY is a CALL.
+  //
+  // Elixir requires `def`/`defp`/`defmacro`/… to sit at module level; a
+  // definition inside a definition body is a macro invocation of the same name
+  // (the one legal way to generate definitions — inside a `quote` — is already
+  // excluded by isInQuotedCode). Found by the contains oracle, not by reading:
+  //
+  //   lib/elixir/lib/kernel/utils.ex:317-319
+  //     defmacro defguard(args, expr) do
+  //       defguard(args, expr, __CALLER__)
+  //     end
+  //
+  // published a MACRO symbol named `args`, owned by `Kernel.Utils.defguard/2`.
+  // The shape is `call > identifier(defguard) + arguments(identifier,
+  // identifier, identifier)` — with bare arguments there is NO nested `call`
+  // node, so the existing signature read takes `arguments`' first named child
+  // and the argument becomes the name. `isDefHead` cannot see it: it returns
+  // false on the enclosing `do_block` before it ever reaches the outer call,
+  // which is the correct answer to "is this a signature head" and the wrong
+  // question to ask here.
+  private isInsideDefBody(node: Node): boolean {
+    let cur: Node | null = node.parent
+    while (cur) {
+      if (cur.type === "do_block") {
+        const owner = cur.parent
+        if (owner && owner.type === "call") {
+          const id = this.findChild(owner, (c) => c?.type === "identifier")
+          if (id && DEF_CONSTRUCTS.has(id.text)) return true
+        }
+        // A do_block under anything else (defmodule, defprotocol, defimpl,
+        // try, fn, case) is not a definition body.
+      }
+      // The SINGLE-LINE body form: `defmodule X, do: defguard(...)`. The `do:`
+      // pair is a body when its owner is a DEF-shaped call and a module body when
+      // its owner is a MODULE-shaped one, so the two are separated here rather
+      // than by whether a do_block exists. Found by the contains oracle:
+      // kernel/guard_test.exs:196-200 publishes
+      //   defmodule(LiteralUsage, do: defguard("literal is bad"))
+      //   defmodule(RemoteUsage,   do: defguard(Remote.call(is_bad)))
+      // inside `assert_raise ArgumentError` blocks — Elixir treats both
+      // `defguard` calls as definitions at module level (which is why the test
+      // asserts they are invalid), and the analyzer was dropping the second one's
+      // containment.
+      if (cur.type === "pair") {
+        const kw = this.findChild(cur, (c) => c?.type === "keyword")
+        const kwt = kw?.text ?? ""
+        const owner = cur.parent
+        if ((kwt === "do" || kwt.startsWith("do:")) && owner && owner.type === "call") {
+          const id = this.findChild(owner, (c) => c?.type === "identifier")
+          if (id && DEF_CONSTRUCTS.has(id.text)) return true
+        }
+      }
+      cur = cur.parent
+    }
+    return false
+  }
+
   private isDefHead(node: Node): boolean {
       const startIndex = node.startIndex
       let cur = node.parent
@@ -1046,6 +1484,176 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       return root.length > 0 && root[0] >= "a" && root[0] <= "z"
   }
 
+  // ELIXIR_FIX2-O1 — record `defoverridable`. Two shapes, both on the corpus:
+  //
+  //   defoverridable child_spec: 1, code_change: 3     named function/arity
+  //   defoverridable EEx.Engine                         a whole module
+  //
+  // The name/arity list arrives as `keywords` or as a `list` of `pair`s /
+  // bare `keyword`s, and the arity is irrelevant to the edge — the edge names
+  // the FUNCTION, and Elixir's own `Module.overridable?/2` keys on name+arity,
+  // so the arity is carried in the recorded string for readability only. No
+  // pattern: a colon is found with indexOf and the head is a slice.
+  private recordOverridable(node: Node, ctx: ElixirContext, currentScope: Scope | undefined): void {
+    const owner = currentScope?.name || ""
+    if (owner.length === 0) return
+    // No quote guard HERE, and that is deliberate: the WALK already routes every
+    // quoted `call` away from the whole branch chain (`if (isInQuotedCode(node))
+    // { /* data */ } else if (t === …)`), so a `defoverridable` inside a
+    // `__using__` template never arrives here. An earlier version carried a
+    // second, redundant guard inside this method — and it was DEAD CODE: the
+    // mutant that removed it produced byte-identical output on the corpus and
+    // on the fixtures, which is the workstream's own test for "this branch can
+    // never match". Measured on the corpus, 14 of the 26 `defoverridable` sites
+    // ARE that shape (agent.ex:231, dict.ex:218, eex/engine.ex:108,
+    // application.ex:416, gen_server.ex:920), so the behaviour is worth the
+    // coverage — fixture Cc1.WithTemplate/template_only pins it — and the dead
+    // guard is not. Mutant elixir/overrides-quoted-leak attacks the LIVE gate.
+    const argsNode = this.findChild(node, (c) => c?.type === "arguments")
+    if (!argsNode) return
+    const addName = (name: string): void => {
+      if (name.length === 0) return
+      let set = ctx.overridableNames.get(owner)
+      if (!set) { set = new Set(); ctx.overridableNames.set(owner, set) }
+      set.add(name)
+    }
+    const namedKids = (n: Node): Node[] => {
+      const res: Node[] = []
+      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) res.push(c) }
+      return res
+    }
+    const addModule = (m: string): void => {
+      if (m.length === 0) return
+      let set = ctx.overridableModules.get(owner)
+      if (!set) { set = new Set(); ctx.overridableModules.set(owner, set) }
+      set.add(this.resolveAlias(m, ctx))
+    }
+    const takePair = (pair: Node): void => {
+      const kw = this.findChild(pair, (c) => c?.type === "keyword")
+      if (!kw) return
+      const colon = kw.text.indexOf(":")
+      if (colon <= 0) return
+      // Elixir's own `Module.overridable?/2` keys on name AND arity, so the
+      // recorded identity carries it: `base_fun/1` matches a `def base_fun(a)`.
+      // A mark written without an arity is stored bare and matches any arity.
+      const name = kw.text.slice(0, colon)
+      const rest = kw.text.slice(colon + 1)
+      let digits = ""
+      for (let i = 0; i < rest.length; i++) { const c = rest.charCodeAt(i); if (c >= 48 && c <= 57) digits += rest[i] }
+      addName(digits.length > 0 ? `${name}/${digits}` : name)
+    }
+    // One dispatcher over the arguments subtree, keyed on the node type read
+    // through `String(...)`. Written this way because TypeScript's control-flow
+    // analysis narrows a `child.type` comparison chain against the discriminant
+    // it just matched, and a five-armed if/else over the same field is exactly
+    // the shape it refuses — which is a type error about the CODE, not about the
+    // trees. The recursion covers the two shapes the corpus uses
+    // (`defoverridable f: 1, g: 2` and `defoverridable [f: 1, g: 2]`).
+    const visit = (n: Node, depth: number): void => {
+      if (depth > 4) return
+      const t: string = String(n.type)
+      if (t === "pair") { takePair(n); return }
+      if (t === "keyword") { const colon = n.text.indexOf(":"); if (colon > 0) addName(n.text.slice(0, colon)); return }
+      if (t === "alias") { addModule(n.text); return }
+      if (t === "identifier") { addName(n.text); return }
+      for (const c of namedKids(n)) visit(c, depth + 1)
+    }
+    visit(argsNode, 0)
+  }
+
+  // ELIXIR_FIX2-U1 — the SAME predicate isMemberAccess uses, returning the two Kept next to it on purpose: if the two ever
+  // disagree, a field read is either double-labelled (edge here AND a call) or
+  // silently dropped (neither), and the only way to notice is the two sitting in
+  // one file. Pure char scan — `charCodeAt` against a-z — not a pattern.
+  private memberReadLeaf(node: Node): { leaf: string; receiver: string } | undefined {
+      const target = this.findChild(node, (c) => c?.type === "identifier" || c?.type === "dot")
+      if (target?.type !== "dot") return undefined
+      if (this.findChild(node, (c) => c?.type === "arguments")) return undefined
+      const parts = target.text.split(".")
+      if (parts.length < 2) return undefined
+      const root = parts[0] ?? ""
+      if (root.length === 0) return undefined
+      const c0 = root.charCodeAt(0)
+      // 37 = `%`. A struct/map LITERAL receiver (`%OntoUser{}.name`, the
+      // `%URI{uri | path: "/bar"}.path` R7 endpoint) is a VALUE, and the read
+      // through it is still a read of the named field, so it is staged here.
+      // It can never be a variable, so it is exempt from the map-binding gate
+      // and it is exempt from naming a CALLABLE name — see `shouldSkipCall`,
+      // where the same `%` keeps the literal text out of a `calls` target (R7).
+      if (!((c0 >= 97 && c0 <= 122) || c0 === 37)) return undefined
+      const leaf = parts[parts.length - 1] ?? ""
+      // R7: no empty names, and never the placeholder literal.
+      if (leaf.length === 0 || leaf === "unknown") return undefined
+      return { leaf, receiver: root }
+  }
+
+  // EX-EX12 — the variables this DEFINITION binds to a MAP, by shape (no
+  // patterns, no regexes):
+  //   `%{} = m`         a match whose map side is a bare map  -> m
+  //   `%{a: a} = m`     a destructuring match                 -> m and a
+  //   `m = %{a: a}`     the same match written the other way   -> m and a
+  //   `%Mod{} = u`      NOT a map (the map side carries a `struct` child) -> none
+  // A NESTED definition owns its own bindings, so its subtree is not scanned
+  // here — its own `processFunction` call records them under its own scope.
+  private mapBoundVariables(within: Node): string[] {
+    const out: string[] = []
+    const seen = new Set<string>()
+    const add = (name: string): void => {
+      if (name.length === 0 || seen.has(name)) return
+      seen.add(name)
+      out.push(name)
+    }
+    const scan = (n: Node): void => {
+      if (n !== within && n.type === "call") {
+        const kwt = this.findChild(n, (c) => c?.type === "identifier")?.text ?? ""
+        if (DEF_CONSTRUCTS.has(kwt) && !this.isDefHead(n)) return
+      }
+      if (n.type === "binary_operator" && this.binaryPart(n, "operator")?.text === "=") {
+        const left = this.binaryPart(n, "left")
+        const right = this.binaryPart(n, "right")
+        const leftIsMap = left?.type === "map" && this.findChild(left, (c) => c?.type === "struct") === null
+        const rightIsMap = right?.type === "map" && this.findChild(right, (c) => c?.type === "struct") === null
+        if (leftIsMap || rightIsMap) {
+          const pattern = (leftIsMap ? left : right)!
+          const bound = leftIsMap ? right : left
+          for (const name of this.identifiersIn(pattern)) add(name)
+          if (bound?.type === "identifier") add(bound.text)
+          else if (bound) for (const name of this.identifiersIn(bound)) add(name)
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) scan(c)
+      }
+    }
+    scan(within)
+    return out
+  }
+
+  /** The identifiers a subtree names — the keys of `%{a: a, b: b}` bind `a`/`b`.
+   *  A `pair`'s key (`:day` in `%{day: day}`) is a NAME, not a binding, so the
+   *  key child is skipped and only the value side is walked. */
+  private identifiersIn(n: Node): string[] {
+    const out: string[] = []
+    const stack: Node[] = [n]
+    while (stack.length > 0) {
+      const cur = stack.pop()!
+      if (cur.type === "identifier" && cur.text) out.push(cur.text)
+      if (cur.type === "pair") {
+        const key = this.findChild(cur, (c) => c?.type === "keyword")
+        if (key) {
+          for (let i = 0; i < cur.namedChildCount; i++) { const c = cur.namedChild(i); if (c && c !== key) stack.push(c) }
+          continue
+        }
+      }
+      for (let i = 0; i < cur.namedChildCount; i++) {
+        const c = cur.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
+  }
+
   // X6 companion: the right-hand side of `|>` is consumed by the pipe
   // branch (thread-adjusted arity) — its own walk must not re-emit the
   // written arity as a second edge once arity joins the dedupe key.
@@ -1074,6 +1682,13 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (this.isInDeclarationAttributeValue(node)) return true
       if (this.isDefHead(node)) return true
       if (this.isMemberAccess(node)) return true
+      // R7 (EX-EX3, R7EndpointNames, ELX4.R7Host): a target carrying `%` or `{}`
+      // names no symbol. A struct-literal or map-literal receiver is a VALUE, so
+      // `%OntoUser{}.name`, `%Helper{}.helper_fun` and `%URI{uri | path: "/bar"}.path`
+      // are not callable names and must not be published as `calls` targets. The
+      // test cannot hit a real name: `%` at position 0 is the struct/map operator
+      // (a callable name never starts with it) and `{` cannot appear in a name.
+      if (t.length > 0 && (t.charCodeAt(0) === 37 || t.indexOf("{") !== -1)) return true
       return false
   }
 
@@ -1143,6 +1758,44 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       return res;
     }
 
+  // ELIXIR_FIX2-P3 — a `defmodule`/`defprotocol`/`defimpl` name must come from
+  // an `alias` / `dot` / `identifier` node. `extractName` FALLS BACK to the
+  // node's raw text, which is right for a directive argument (`import Foo` is
+  // an alias, but `alias Foo.{Bar, Baz}` is a dot) and wrong for a module
+  // declaration: found by the contains oracle at
+  //   lib/elixir/test/elixir/kernel_test.exs:906  `defmodule 1 + 2, do: :ok`
+  //   lib/elixir/test/elixir/kernel_test.exs:924  `defmodule :"foo/bar", do: :ok`
+  //   lib/elixir/test/elixir/kernel_test.exs:928  `defmodule :"foo\bar", do: :ok`
+  // which published module symbols named `KernelTest.1 + 2, do: :ok`,
+  // `KernelTest.:"foo/bar", do: :ok` and `KernelTest.:"foo\bar", do: :ok`. All
+  // three are Elixir code that RAISES (the surrounding test is an
+  // `assert_raise ArgumentError`), so the construct is a computed module name,
+  // not a declaration, and the honest reading is silence. A name this reader
+  // cannot produce is a name the analyzer must not invent.
+  private declarationName(argsNode: Node): string {
+    // `alias` / `dot` ONLY. A bare `identifier` is a VARIABLE, and Elixir's
+    // `defmodule name do … end` accepts an expression — so `name = :dynamic;
+    // defmodule name` creates a module called `LoggerTest.dynamic`, while
+    // reading the identifier publishes `LoggerTest.name`. Measured by the
+    // contains oracle on the corpus: logger_test.exs (`LoggerTest.name` plus its
+    // two members `debug`/`error`), exception_test.exs
+    // (`ExceptionTest.module` plus `foo`), module_test.exs
+    // (`ModuleTest.__MODULE__.NonAtomAlias` plus `hello`). A module name is a
+    // namespace, and a variable's spelling is not one.
+    const aliasNode = this.findChild(argsNode, (c) => c?.type === "alias" || c?.type === "dot")
+    if (!aliasNode) return ""
+    const txt = aliasNode.text
+    if (txt.length === 0) return ""
+    // A name that still carries Elixir source punctuation is a fallback that
+    // leaked, not a module name: reject rather than publish it.
+    for (let i = 0; i < txt.length; i++) {
+      const c = txt.charCodeAt(i)
+      const ok = (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95 || c === 46 || c === 33
+      if (!ok) return ""
+    }
+    return txt
+  }
+
   private extractName(node: Node): string {
       let aliasNode = this.findChild(node, (c) => c?.type === "alias")
       if (aliasNode) return aliasNode.text
@@ -1164,7 +1817,24 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (this.isDefHead(node) || this.isInAttribute(node) || this.isInQuotedCode(node)) return false
     const argsNode = this.findChild(node, (c) => c?.type !== "identifier" && c?.type !== "do_block")
     if (!argsNode) return false
-    const name = this.extractName(argsNode)
+    if (this.isInsideDefBody(node)) return false
+    const name = this.declarationName(argsNode)
+    // ELIXIR_FIX2-P6. Reaching here with no name means the construct IS a module
+    // declaration whose name is a computed expression or a variable, so there is
+    // no module to own what follows. The first version returned false and left
+    // the ENCLOSING module in scope, so `def foo` inside
+    // `for module <- modules do write_beam(defmodule module do def foo, do: :bar
+    // end end) end` published `contains ExceptionTest -> foo` and
+    // `exports ExceptionTest -> foo` for a function that belongs to a module the
+    // corpus never names. Measured: 10 declarations in 5 files (exception_test,
+    // map_test, module_test, logger_test, compile.erlang_test). Publishing a
+    // wrong edge is the expensive mistake, so the scope is pushed UNNAMED and the
+    // members carry no owner.
+    if (name.length === 0) {
+      scopeStack.push({ node, name: currentScope?.name ?? "", kind: ASTEngine.SymbolKind.Module, complexity: 0, unnamedModule: true, savedAliases: ctx.aliases })
+      ctx.aliases = Object.create(ctx.aliases)
+      return true
+    }
     const fullName = currentScope ? `${currentScope.name}.${name}` : name
     // EX-A10: a NESTED defmodule is owned by its enclosing declaration — the
     // same field its own functions/struct/fields already carry, the lane's own
@@ -1199,9 +1869,29 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private processProtocol(node: Node, ctx: ElixirContext, currentScope: Scope | undefined, scopeStack: Scope[]): boolean {
     if (this.isDefHead(node) || this.isInAttribute(node) || this.isInQuotedCode(node)) return false
+    // ELIXIR_FIX2-P6, same rule as processModule: an un-nameable protocol owns
+    // nothing, and its callbacks must not be published as the enclosing
+    // module's exports.
     const argsNode = this.findChild(node, (c) => c?.type !== "identifier" && c?.type !== "do_block")
     if (!argsNode) return false
-    const name = this.extractName(argsNode)
+    if (this.isInsideDefBody(node)) return false
+    const name = this.declarationName(argsNode)
+    // ELIXIR_FIX2-P6. Reaching here with no name means the construct IS a module
+    // declaration whose name is a computed expression or a variable, so there is
+    // no module to own what follows. The first version returned false and left
+    // the ENCLOSING module in scope, so `def foo` inside
+    // `for module <- modules do write_beam(defmodule module do def foo, do: :bar
+    // end end) end` published `contains ExceptionTest -> foo` and
+    // `exports ExceptionTest -> foo` for a function that belongs to a module the
+    // corpus never names. Measured: 10 declarations in 5 files (exception_test,
+    // map_test, module_test, logger_test, compile.erlang_test). Publishing a
+    // wrong edge is the expensive mistake, so the scope is pushed UNNAMED and the
+    // members carry no owner.
+    if (name.length === 0) {
+      scopeStack.push({ node, name: currentScope?.name ?? "", kind: ASTEngine.SymbolKind.Module, complexity: 0, unnamedModule: true, savedAliases: ctx.aliases })
+      ctx.aliases = Object.create(ctx.aliases)
+      return true
+    }
     const fullName = currentScope ? `${currentScope.name}.${name}` : name
     // EX-A10 (same ruling, protocol half): a protocol declared inside a module
     // is owned by it, like every other nested declaration in this file.
@@ -1304,10 +1994,10 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         const el = forTypeListNode.namedChild(k)
         if (!el || el.type !== "alias") continue
         const t = this.resolveAlias(el.text, ctx)
-        if (t && t !== "Unknown" && t !== protocol) this.pushRel(ctx, t, protocol, ASTEngine.RelationshipType.Implements, 1.0, {}, el.startPosition.row + 1)
+        if (t && t !== "Unknown" && t !== protocol) this.pushRel(ctx, t, protocol, ASTEngine.RelationshipType.Implements, 1.0, { reasonCode: "elixir_defimpl_for_type" }, el.startPosition.row + 1)
       }
     } else if (fullName !== protocol) {
-      this.pushRel(ctx, fullName, protocol, ASTEngine.RelationshipType.Implements, 1.0, {}, implLineNode ? implLineNode.startPosition.row + 1 : node.startPosition.row + 1)
+      this.pushRel(ctx, fullName, protocol, ASTEngine.RelationshipType.Implements, 1.0, { reasonCode: "elixir_defimpl_protocol" }, implLineNode ? implLineNode.startPosition.row + 1 : node.startPosition.row + 1)
     }
     ctx.pendingDoc = undefined
     // W23-E1: same lexical alias swap as modules (defimpl bodies are scopes).
@@ -1323,6 +2013,11 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     // itself fabricates struct:defstruct (ELXD4, kernel.ex:5624).
     if (this.isDefHead(node) || this.isInAttribute(node) || this.isInQuotedCode(node)) return
     if (!currentScope) return
+    // ELIXIR_FIX2-P6: a struct's name IS its module's name. With no module name
+    // there is no struct name, so neither the struct nor its fields are
+    // published — naming the struct after the ENCLOSING module would forge a
+    // struct that module does not define.
+    if (currentScope.unnamedModule) return
     const structName = currentScope.name
     const structSym: ASTEngine.UniversalSymbol = { name: structName, kind: ASTEngine.SymbolKind.Struct, range: this.nodeToRange(node), scope: currentScope.name, ownerName: currentScope.name, ownerKind: currentScope.kind, visibility: "public", metadata: { elixirSpecific: true, isStruct: true } }
     ctx.symbols.push(structSym)
@@ -1411,6 +2106,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     // definition (ELXD23). Without this the inner head fabricates phantoms
     // (macro "args", function "Unknown"/"sig").
     if (this.isDefHead(node) || this.isInAttribute(node) || this.isInQuotedCode(node)) return false
+    if (this.isInsideDefBody(node)) return false
     const sigNodes = this.filterChildren(node, (c) => c?.type !== "identifier" && c?.type !== "do_block")
     if (sigNodes.length === 0) return false
 
@@ -1498,10 +2194,28 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
               } else {
                   parameters.push({ name: "operand", type: "dynamic" })
               }
-          }
+          } else {
+            // ELIXIR_FIX2-P1. These three lines read the OPERATOR shape out of a
+            // binary_operator node. They were left UNCONDITIONAL inside this
+            // branch, so on every `defmacro (..)` they ran AFTER the operator
+            // name had been taken correctly and overwrote it: binaryPart on a
+            // `block` returns its first ANONYMOUS child, which is the `(` token,
+            // so `defmacro (..)` published a macro named "(" with arity 3 (the
+            // one operand plus two fabricated ones) and `defmacro (---)`
+            // published arity 4. Measured on this lane's own fixture
+            // paren-operator-forms, which has been FAILING on the inherited
+            // baseline (validation/m14/fixture-baseline.json says elixir: 0
+            // failures) rather than passing:
+            //   53b5ec1ac (EX-A15 lands)  macro ..  arity 1   macro --- arity 2
+            //   a7368a806 (#924 E half)   macro Unknown arity 0, heads 3
+            //   1ce88e403 (merge m48)     macro (   arity 3   macro (   arity 4
+            // The binary_operator arm above already reads the same three fields
+            // on the node type that HAS them, so this else keeps the old
+            // behaviour for a node that matched the `||` without being a block.
             name = this.binaryPart(actualCall, "operator")?.text || "Unknown"
             parameters.push({ name: this.binaryPart(actualCall, "left")?.text || "left", type: "dynamic" })
             parameters.push({ name: this.binaryPart(actualCall, "right")?.text || "right", type: "dynamic" })
+          }
         } else if (actualCall.type === "unary_operator") {
             // Unary operator definition (`def +value`) — the name is the
             // operator token, the operand the single parameter (ELXD24).
@@ -1614,10 +2328,15 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
     } else {
         const symbol: ASTEngine.UniversalSymbol = {
-            name, kind: symbolKind, range: this.nodeToRange(node), scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind, visibility, parameters,
+            name, kind: symbolKind, range: this.nodeToRange(node), scope: currentScope?.unnamedModule ? "" : (currentScope?.name || ""), ownerName: currentScope?.unnamedModule ? undefined : currentScope?.name, ownerKind: currentScope?.unnamedModule ? undefined : currentScope?.kind, visibility, parameters,
             ...(isDeclaration ? { isDeclaration: true } : {}),
             metadata: {
                 elixirSpecific: true, isMacro: defType.indexOf("macro") !== -1, arity, heads: 1, clauseRanges: [this.nodeToRange(node)],
+                // ELIXIR_FIX2-P6: the declaration is real, its OWNER is not
+                // knowable (the enclosing defmodule's name is a variable or a
+                // computed expression). Recorded so a consumer can see WHY the
+                // symbol has no owner, instead of inferring a bug.
+                ...(currentScope?.unnamedModule ? { elixirOwnerUnknown: "un-nameable enclosing defmodule/defprotocol" } : {}),
                 hasPatternMatching: hasPattern, guards: guardList, isGenServerCallback: isGenCallback, isSupervisorCallback: isSupCallback,
                 ...(isDeclaration ? { isBodylessDeclaration: true, isDeclaration: true } : {}),
                 ...(parkedSpec ? { callbackSpec: parkedSpec, isCallbackDeclaration: true } : {}),
@@ -1669,7 +2388,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         // W24 #17: the delegate edge's source follows the scope-arity rule —
         // the declared function's identity is name+arity (see scopeName).
         const delScope = currentScope ? `${currentScope.name}.${name}/${arity}` : `${name}/${arity}`
-        this.pushRel(ctx, delScope, `${resolved}.${asName || name}`, ASTEngine.RelationshipType.Calls, 0.9, { elixirSpecific: true, isDelegate: true }, toLine)
+        this.pushRel(ctx, delScope, `${resolved}.${asName || name}`, ASTEngine.RelationshipType.Calls, 0.9, { elixirSpecific: true, isDelegate: true, reasonCode: "elixir_defdelegate_remote_target" }, toLine)
       }
     }
 
@@ -1689,6 +2408,20 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     // W23-E1: function bodies are lexical too — an `alias` inside a def
     // scopes to that def, never to the whole module.
     scopeStack.push({ node, name: scopeName, kind: symbolKind, complexity: 0, symbol: fnSym, savedAliases: ctx.aliases })
+    // EX-EX12 — this definition's MAP bindings, recorded under the scope identity
+    // the member reads are sourced from. Cheap pre-test first: a definition whose
+    // text carries no `%{` cannot contain a bare map literal (`%Mod{` does not
+    // match, because the character after `%` is the alias's first letter), so the
+    // scan is skipped for the majority of definitions — measured on the corpus,
+    // 1,344 of 9,492 definitions carry one.
+    if (ctx.content.includes("%{")) {
+      const bound = this.mapBoundVariables(node)
+      if (bound.length > 0) {
+        let set = ctx.mapBoundByScope.get(scopeName)
+        if (!set) { set = new Set(); ctx.mapBoundByScope.set(scopeName, set) }
+        for (const b of bound) set.add(b)
+      }
+    }
     ctx.aliases = Object.create(ctx.aliases)
     return true
   }
@@ -1713,6 +2446,14 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
        return modScope + name.slice("__MODULE__".length)
      }
      const moduleName = this.resolveAlias(resolveSelf(rawModuleName), ctx)
+     // ELIXIR_FIX2-O1: `use N` is the other half of the override rule — N is
+     // what the using module can override. Recorded per enclosing module so the
+     // post-walk pass can ask "does this file both use N and declare N?".
+     if (target === "use" && modScope && moduleName.length > 0) {
+       let set = ctx.moduleUses.get(modScope)
+       if (!set) { set = new Set(); ctx.moduleUses.set(modScope, set) }
+       set.add(moduleName)
+     }
 
       // Dependency targets: exactly one module, except multi-alias
       // (`alias Foo.{Bar, Baz}`) which expands to one dependency per member
@@ -1872,7 +2613,27 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (const dep of deps) {
             if (!dep.name) continue
             ctx.imports.push({ module: dep.name, source: dep.name, imported: ["*"], isTypeOnly: false, range: this.nodeToRange(node) })
-            if (dep.name !== currentScope?.name) this.pushRel(ctx, currentScope?.name || "Global", dep.name, ASTEngine.RelationshipType.References, 0.9, {}, dep.line)
+            if (dep.name !== currentScope?.name) this.pushRel(ctx, currentScope?.name || "Global", dep.name, ASTEngine.RelationshipType.References, 0.9,
+              { reasonCode: `elixir_directive_${target}`, directive: target }, dep.line)
+            // ELX-EXPORTS `uses`: `use Mod` is Elixir's MIXIN APPLICATION —
+            // `Mod.__using__(opts)` runs inside the using module and injects code
+            // into it, which is the claim the family records as `uses` (dart's
+            // `class A extends B with M1` at real-dart-analyzer.ts, css's
+            // `@include` of a `@mixin`). It is NOT a relabelling of the
+            // dependency: `references` is a separate true statement that the
+            // module view reads, so BOTH edges come from the same directive, and
+            // a self-directive publishes neither (ELXD8, the guard above).
+            //
+            // `structural` and not a usage class: the directive's text NAMES the
+            // module, so the evidence is syntax, not context. The sibling pin
+            // `elx4-uses-mixin` records the pushRel DEFAULT (`usage_contextual`)
+            // for the same construct, so the two pins disagree about this one
+            // field and the disagreement is recorded rather than smoothed over —
+            // see §13 of docs/analyzers/real-elixir-analyzer.md.
+            if (target === "use" && dep.name !== currentScope?.name) {
+              this.pushRel(ctx, currentScope?.name || "Global", dep.name, ASTEngine.RelationshipType.Uses, 0.9,
+                { elixirSpecific: true, isMixin: true, via: "use", evidenceClass: "structural", reasonCode: "elixir_use_mixin_application" }, dep.line)
+            }
           }
       }
   }

@@ -1,0 +1,116 @@
+JAVA STORE ROUND-TRIP (EXPORTS_JAVA2)
+corpus java-lib: 3275 .java files on disk (derived by readdir)
+population measured: 40 — the first 40 in lexicographic order that CARRY an import_declaration node
+  (a file with no import cannot answer "what does this file import"; asking one to is how an instrument reports a number about the wrong population)
+
+[INFO] [09:07:25] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [09:07:25] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+analyzer output, before storage:
+  imports[]  (the brain_import TABLE's channel) : 451
+  relationships typed "imports" (this probe's subject) : 451
+
+[STORE] AbstractCollectionTestSuiteBuilder.java: 2s 64r
+[STORE] AbstractContainerTester.java: 33s 177r
+[STORE] AbstractIteratorTester.java: 108s 526r
+[STORE] AbstractMapTester.java: 36s 268r
+[STORE] AbstractTester.java: 13s 56r
+[STORE] CollectionTestSuiteBuilder.java: 11s 104r
+[STORE] ConcurrentMapTestSuiteBuilder.java: 4s 51r
+[STORE] DerivedCollectionGenerators.java: 89s 710r
+[STORE] FeatureSpecificTestSuiteBuilder.java: 32s 275r
+[STORE] Helpers.java: 71s 466r
+[STORE] ListTestSuiteBuilder.java: 13s 202r
+[STORE] MapInterfaceTest.java: 76s 1467r
+[STORE] MapTestSuiteBuilder.java: 21s 344r
+[STORE] MinimalCollection.java: 17s 101r
+[STORE] MinimalSet.java: 7s 73r
+[STORE] NavigableMapTestSuiteBuilder.java: 20s 249r
+[STORE] NavigableSetTestSuiteBuilder.java: 14s 182r
+[STORE] OneSizeGenerator.java: 12s 87r
+[STORE] PerCollectionSizeTestSuiteBuilder.java: 8s 123r
+[STORE] QueueTestSuiteBuilder.java: 5s 53r
+[STORE] ReserializingTestCollectionGenerator.java: 9s 70r
+[STORE] SafeTreeMap.java: 56s 353r
+[STORE] SafeTreeSet.java: 43s 234r
+[STORE] SampleElements.java: 37s 147r
+[STORE] SetTestSuiteBuilder.java: 12s 145r
+[INFO] [09:07:29] [parallel-indexer] resolving external symbol references {"symbolCount":792}
+stored brain_relationship rows by type:
+  references        2701
+  calls             1951
+  contains           830
+  imports            354
+  overrides          263
+  instantiates       166
+  uses               153
+  exports             40
+  extends             40
+  implements          33
+
+  brain_import TABLE rows: 451
+
+  sample of the stored imports rows (354 total):
+    src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  tgt=java.util.Arrays.asList  sid=null  tid=null  ln=19
+    src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  tgt=com.google.common.annotations.GwtIncompatible  sid=null  tid=null  ln=21
+    src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  tgt=com.google.common.collect.testing.testers.CollectionAddAllTester  sid=null  tid=null  ln=22
+    src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  tgt=com.google.common.collect.testing.testers.CollectionAddTester  sid=null  tid=null  ln=23
+    src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  tgt=com.google.common.collect.testing.testers.CollectionClearTester  sid=null  tid=null  ln=24
+    src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  tgt=com.google.common.collect.testing.testers.CollectionContainsAllTester  sid=null  tid=null  ln=25
+  source_symbol_id IS NULL: 354   BOTH NULL: 341   total: 354
+  emitted 451 -> stored 354. The delta is measured, not assumed; see the COLLAPSE check below.
+  emitted imports rows: 451
+  collide WITHIN one file (same source,target,line): 0
+  collide ACROSS files under the store's id (no file component): 97 across 60 id groups
+  => 354 rows expected stored, 354 observed
+  emitted imports rows with NO line_number: 0
+      rows anywhere in the db with that target: 8
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:19 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java ln=19 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:24 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java ln=24 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:28 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java ln=28 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:22 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java ln=22 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:26 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java ln=26 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:23 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/IteratorFeature.java ln=23 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:21 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/IteratorTester.java ln=21 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:27 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/MapInterfaceTest.java ln=27 sid=null
+      symbols stored for this file: 7  AnEnum:enum, A:enum_member, B:enum_member, C:enum_member, D:enum_member, E:enum_member, F:enum_member
+    SILENT android/guava-testlib/src/com/google/common/collect/testing/AnEnum.java  emitted 1 imports rows, stored under that source_external 0  e.g. com.google.common.collect.testing->com.google.common.annotations.GwtCompatible
+      rows anywhere in the db with that target: 8
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:19 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java ln=19 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:24 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java ln=24 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:28 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java ln=28 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:22 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java ln=22 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:26 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java ln=26 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:23 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/IteratorFeature.java ln=23 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:21 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/IteratorTester.java ln=21 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:27 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/MapInterfaceTest.java ln=27 sid=null
+      symbols stored for this file: 3  DerivedComparable:class, constructor:constructor, serialVersionUID:constant
+    SILENT android/guava-testlib/src/com/google/common/collect/testing/DerivedComparable.java  emitted 3 imports rows, stored under that source_external 0  e.g. com.google.common.collect.testing->com.google.common.annotations.GwtCompatible | com.google.common.collect.testing->com.google.common.annotations.GwtIncompatible
+      rows anywhere in the db with that target: 8
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:19 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java ln=19 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:24 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java ln=24 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:28 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java ln=28 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:22 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java ln=22 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:26 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/DerivedCollectionGenerators.java ln=26 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:23 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/IteratorFeature.java ln=23 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:21 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/IteratorTester.java ln=21 sid=null
+        id=java-lane-store-roundtrip-2033804-1791205644390:rel:null:com.google.common.annotations.GwtCompatible:imports:27 src=../..$HOME/fixtures/repositories/java-lib/android/guava-testlib/src/com/google/common/collect/testing/MapInterfaceTest.java ln=27 sid=null
+      symbols stored for this file: 2  DerivedGenerator:interface, getInnerGenerator:method
+    SILENT android/guava-testlib/src/com/google/common/collect/testing/DerivedGenerator.java  emitted 1 imports rows, stored under that source_external 0  e.g. com.google.common.collect.testing->com.google.common.annotations.GwtCompatible
+
+bb_graph "dependencies" section — graph_request.ts:291-297 SQL, run per file:
+  files measured            : 40
+  files answering with rows : 37
+  rows returned in total    : 341
+    android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTestSuiteBuilder.java  20
+    android/guava-testlib/src/com/google/common/collect/testing/AbstractCollectionTester.java  5
+    android/guava-testlib/src/com/google/common/collect/testing/AbstractContainerTester.java  12
+    android/guava-testlib/src/com/google/common/collect/testing/AbstractIteratorTester.java  21
+    android/guava-testlib/src/com/google/common/collect/testing/AbstractMapTester.java  10
+
+PASS  a java file with imports answers bb_graph's dependencies query  — 37/40 files, 341 rows
+PASS  java import edges reach bb_graph's dependencies section  — 341 rows over 37/40 files; the silent files are cross-file id collisions in the store, counted above
+PASS  brain_import (the separate channel) is non-empty and reported SEPARATELY  — 451 rows — this is the table, not the relationship channel
+PASS  no `imports` relationship row exists that no query can reach  — 354 stored import rows, 341 reachable
+PASS  no empty / placeholder / non-path endpoint on an imports row
+
+RESULT: 0 failures

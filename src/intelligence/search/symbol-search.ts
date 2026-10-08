@@ -61,7 +61,8 @@ const LIKE_ESCAPE_CLAUSE = ` ESCAPE '${LIKE_ESCAPE_CHAR}'`
 // SQLite's NOCASE collation and its LOWER() fold ASCII A–Z only. The ranking
 // below folds with String.toLowerCase(), which folds every Unicode case pair.
 // Fetching on one rule and ranking on another means a case-insensitive search
-// silently loses e.g. ΣΊΣΥΦΟΣ / σίσυφος — in a product whose premise is 40+
+// silently loses e.g. the Greek spelling of Sisyphus in all caps against its
+// lowercase form — in a product whose premise is 40+
 // languages. So a query that contains any non-ASCII character takes a JS-side
 // fold, and the SQL narrows the candidate set with the query's ASCII prefix
 // (still index-backed) before that fold runs.

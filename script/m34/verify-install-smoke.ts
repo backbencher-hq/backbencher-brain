@@ -159,7 +159,25 @@ type Mutant = { name: string; probe: () => boolean | Promise<boolean> }
 
 // Package-level mutant helper: stage a minimal copy of the repo surface,
 // apply a mutation, pack a REAL tarball from it. Mutant installs use
-// --ignore-scripts (no native builds needed to evaluate the planted defect).
+// --ignore-scripts (no native builds needed to evaluate the planted defect), and
+// so does the PACK, for the same reason.
+//
+// `npm pack` runs the staged package's `prepack`, and this repo's prepack is
+// `npm run typecheck && npm run build`. The stage holds package.json, bin, dist,
+// wasm, docs and the READMEs — no node_modules, no tsconfig, no src — so prepack
+// dies there, `npm pack` aborts, `packMutantTarball` throws, the two probes that
+// need a tarball are scored "survived" (the catch below), and S1 reports
+// "every planted defect was caught: FAIL" while nothing was wrong with what the
+// mutants plant. Reproduced outside the gate on 2026-10-07:
+//
+//   $ npm pack --pack-destination ../dest-repro     # in a stage built the same way
+//   > npm run typecheck 1>&2 && npm run build 1>&2
+//   sh: 1: tsc: not found
+//   npm error code 127 ... npm error command failed
+//
+// The defect under test is the leak scan and the installed-binary smoke, not a
+// build step that cannot run in a partial copy of the repo; `--ignore-scripts`
+// isolates the mutants from it, exactly as the install leg already does.
 function packMutantTarball(mutate: (stage: string) => void, tag: string): string {
   const stage = path.join(tmp, `stage-${tag}`)
   mkdirSync(stage, { recursive: true })
@@ -171,7 +189,7 @@ function packMutantTarball(mutate: (stage: string) => void, tag: string): string
   mutate(stage)
   const dest = path.join(tmp, `pack-${tag}`)
   mkdirSync(dest, { recursive: true })
-  execFileSync("npm", ["pack", "--pack-destination", dest], { cwd: stage, encoding: "utf8", timeout: 120000, stdio: ["ignore", "pipe", "pipe"] })
+  execFileSync("npm", ["pack", "--ignore-scripts", "--pack-destination", dest], { cwd: stage, encoding: "utf8", timeout: 120000, stdio: ["ignore", "pipe", "pipe"] })
   const produced = execFileSync("sh", ["-c", `ls ${dest}/*.tgz`], { encoding: "utf8" }).trim()
   if (!produced) throw new Error("mutant pack produced nothing")
   return produced.trim().split("\n")[0]

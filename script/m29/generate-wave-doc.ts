@@ -6,6 +6,7 @@
 import { writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { ROOT, WAVE_LANGUAGES, computeCap, type Step } from "./wave-protocol.ts"
+import { fileURLToPath } from "node:url"
 
 const OUT = path.join(ROOT, "docs", "m29", "WAVE-PROTOCOL.md")
 
@@ -140,6 +141,6 @@ function main(): void {
   console.log(`wrote ${path.relative(ROOT, OUT)}`)
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   main()
 }

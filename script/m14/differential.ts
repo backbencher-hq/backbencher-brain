@@ -8024,27 +8024,6 @@ export function deriveCSharpContains(root: any): { label: string; from: string; 
     }
     const field = n.childForFieldName?.("name")
     if (field && typeof field.text === "string") return field.text
-    if (n.type === "field_declaration" || n.type === "event_field_declaration") {
-      // A FIELD's name lives on the DECLARATOR, and one field_declaration can declare several
-      // (`int a, b;`) — each declarator is its own symbol, so each is its own containment edge.
-      // An EVENT FIELD is the same shape (`public event EventDele01 OnEvent01;` writes its name
-      // on the declarator too), and the first version of this truth read only the field form, so
-      // three `contains` rows in a roslyn metadata-interop fixture came out ANALYZER-only. The
-      // gate caught it as 3 UNEXPLAINED on a 28,727-row draw — which is the class working.
-      const vd = (n.namedChildren ?? []).find((c: any) => c.type === "variable_declaration")
-      const names: string[] = []
-      for (const d of vd?.namedChildren ?? []) {
-        if (d?.type !== "variable_declarator") continue
-        const id = (d.namedChildren ?? []).find((c: any) => c.type === "identifier")
-        if (id && typeof id.text === "string" && id.text) names.push(id.text)
-      }
-      // EVERY declarator is its own symbol and its own containment edge. Returning a name only
-      // when there is exactly one dropped the multi-declarator form wholesale: 14 UNEXPLAINED
-      // `contains` rows in a roslyn symbol test (`private NamedTypeSymbol _a, _b, _c;` is one
-      // field_declaration and three symbols), which is the same shape the analyzer's own
-      // field_declaration branch already loops over.
-      return names
-    }
     return null
   }
 
@@ -8065,6 +8044,25 @@ export function deriveCSharpContains(root: any): { label: string; from: string; 
       return out
     }
     if (t === "field_declaration" || t === "event_field_declaration") {
+      // A FIELD's name lives on the DECLARATOR, and one field_declaration can declare several
+      // (`int a, b;`) — each declarator is its own symbol, so each is its own containment edge.
+      // An EVENT FIELD is the same shape (`public event EventDele01 OnEvent01;` writes its name
+      // on the declarator too), and the first version of this truth read only the field form, so
+      // three `contains` rows in a roslyn metadata-interop fixture came out ANALYZER-only. The
+      // gate caught it as 3 UNEXPLAINED on a 28,727-row draw — which is the class working.
+      //
+      // EVERY declarator is its own symbol and its own containment edge. Returning a name only
+      // when there is exactly one dropped the multi-declarator form wholesale: 14 UNEXPLAINED
+      // `contains` rows in a roslyn symbol test (`private NamedTypeSymbol _a, _b, _c;` is one
+      // field_declaration and three symbols), which is the same shape the analyzer's own
+      // field_declaration branch already loops over.
+      //
+      // That ruling used to be written in TWO places: here, and inside `nameOf` — whose field
+      // arm this branch intercepts before `nameOf` is ever consulted, because these two types
+      // never reach it. So the copy in `nameOf` was unreachable, and it returned an ARRAY from
+      // a `string | null` function: every edge built from a field name would have carried a
+      // type the record never has. The declaration and the data said different things, and the
+      // typecheck was reading the declaration.
       const vd = (n.namedChildren ?? []).find((c: any) => c.type === "variable_declaration")
       const out: string[] = []
       for (const d of vd?.namedChildren ?? []) {
@@ -18976,13 +18974,19 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       // would let a displaced name win over the recovery. Scoped to cpp, since
       // these are cpp rules and this branch is shared by every language that
       // spells a class.
-      let clsName: string | null = null
+      let declaredName: string | null = null
       if (lang === "cpp") {
-        if (n.hasError) clsName = recoveredDeclaredName(n)?.text ?? null
-        if (clsName === null && t === "enum_specifier") clsName = attributeDisplacedEnumName(n)
-        if (clsName === null) clsName = specifierDeclaredName(n)
+        if (n.hasError) declaredName = recoveredDeclaredName(n)?.text ?? null
+        if (declaredName === null && t === "enum_specifier") declaredName = attributeDisplacedEnumName(n)
+        if (declaredName === null) declaredName = specifierDeclaredName(n)
       }
-      if (clsName === null) clsName = nameNode?.text ?? "?"
+      // `clsName` is a STRING, and the two bindings are not a style choice: `nameNode?.text`
+      // is `any` (these tree nodes are), and assigning an `any` to a `string | null` leaves
+      // the variable at the DECLARED type — measured, not assumed — so the old one-liner left
+      // `clsName` possibly-null for the rest of this walk and every `extends` edge whose
+      // source is the class's own name carried a null the record never contains. The nullable
+      // step is the RESOLUTION above; the name is that, else the node's text, else "?".
+      const clsName: string = declaredName ?? nameNode?.text ?? "?"
       // extends side: superclass (classes), extends_interfaces+type_list
       // (java-style interfaces), extends_type_clause (typescript interfaces),
       // base_class_clause (cpp - flat children, access specifiers skipped)
@@ -21406,8 +21410,17 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
         // a MIXED group keeps only its real members, which is the D8 split
         if (real.length !== members.length) {
           const rejoined = real.join(", ")
-          childParent = enclosingSelector ? nestedResolved(rejoined, enclosingSelector) : rejoined
-          if (enclosingSelector && !childParent.includes("&")) push("contains", enclosingSelector, childParent)
+          // `resolveNestedSelector` can REFUSE — it returns null for an empty parent, and this
+          // branch used the result as a string and called `.includes` on it. The honest reading
+          // is the one the sibling branch below already states for the same refusal: a parent
+          // that cannot be resolved is treated as ABSENT, so the rule keeps the parent it
+          // inherited and no `contains` edge is pushed for it. The `&` test is unchanged, so
+          // every resolution that has a name behaves exactly as before.
+          const resolved = enclosingSelector ? nestedResolved(rejoined, enclosingSelector) : rejoined
+          if (resolved) {
+            childParent = resolved
+            if (enclosingSelector && !resolved.includes("&")) push("contains", enclosingSelector, resolved)
+          }
           for (const c of children(n)) walk(c, ctx, childParent)
           return
         }
@@ -21849,7 +21862,26 @@ async function main() {
   const runLoadAvgStart = loadAvg1()
 
   // Two-corpus gate: active repos = primary set ∪ second-corpus set.
-  const activeRepos = REPO ? [REPO] : [...new Set([...Object.values(LANG_REPOS), ...Object.values(SECOND_CORPUS)])]
+  //
+  // A SCOPED RUN REQUIRES ONLY ITS OWN LANES' CHECKOUTS (2026-10-08). This list used
+  // to be every lane's repo even for `--lang <one>`, so a scoped run on a box missing
+  // any UNRELATED lane's checkout died before its first measurement — measured while
+  // re-measuring perl's lane-scoped evidence: `--lang perl` threw
+  // `corpus repo missing: /home/.../repositories/grails-core` and wrote nothing, which
+  // makes every lane-scoped artifact (`M14.0.F5.<lane>`, `M14.6.perl`, the powershell
+  // floor) unreproducible on any box that does not hold all 48 corpora. The missing-repo
+  // throw itself stays: for a SWEEP a missing checkout silently shrinks the claim, and
+  // that is worth refusing. A scoped run's claim is about the scoped lanes only, so the
+  // requirement is scoped with it — and if a scoped lane's OWN repo is missing, the
+  // loop below still throws, naming a checkout that matters.
+  const scopedLangs = ONLY_LANGS
+  const activeRepos = REPO
+    ? [REPO]
+    : [...new Set(
+        scopedLangs
+          ? scopedLangs.flatMap((l) => [LANG_REPOS[l], SECOND_CORPUS[l]]).filter((r): r is string => Boolean(r))
+          : [...Object.values(LANG_REPOS), ...Object.values(SECOND_CORPUS)],
+      )]
   for (const rp of activeRepos) {
     const rd = path.join(CORPUS_ROOT, rp)
     if (!fs.existsSync(rd)) throw new Error(`corpus repo missing: ${rd}`)
@@ -22296,10 +22328,14 @@ async function main() {
         // imposed on a shared harness, and project-index.ts's own header says
         // decisions at the dispatch path are not one lane's to make unilaterally. It
         // is a flag with a measured number, not a default nobody asked for.
-        const depsMode = (() => {
+        // The flag is narrowed to its three spellings AT THE POINT IT IS READ, not merely
+        // validated: the value is handed to `dartDependencyRoots`, whose mode is
+        // `"direct" | "all"`, and a `string` that happened to hold one of them was a claim the
+        // declaration could not check. Same three spellings, same fallback to `none`.
+        const depsMode = ((): "none" | "direct" | "all" => {
           const a = process.argv.find((x) => x.startsWith("--dart-deps="))
           const v = a ? a.slice("--dart-deps=".length) : "none"
-          return (["none", "direct", "all"] as const).includes(v as any) ? v : "none"
+          return v === "direct" || v === "all" ? v : "none"
         })()
         const indexFiles = [...files]
         let depFiles = 0

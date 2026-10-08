@@ -24,6 +24,7 @@ async function main() {
     try {
       const parser = await ASTEngine.getParser("typescript")
       const tree = parser.parse(src)
+      if (!tree) throw new Error("parser.parse returned no tree (null result)")
       let nodes = 0
       const stack = [tree.rootNode]
       while (stack.length) {
