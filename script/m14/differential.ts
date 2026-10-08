@@ -21428,7 +21428,26 @@ async function main() {
   const runLoadAvgStart = loadAvg1()
 
   // Two-corpus gate: active repos = primary set ∪ second-corpus set.
-  const activeRepos = REPO ? [REPO] : [...new Set([...Object.values(LANG_REPOS), ...Object.values(SECOND_CORPUS)])]
+  //
+  // A SCOPED RUN REQUIRES ONLY ITS OWN LANES' CHECKOUTS (2026-10-08). This list used
+  // to be every lane's repo even for `--lang <one>`, so a scoped run on a box missing
+  // any UNRELATED lane's checkout died before its first measurement — measured while
+  // re-measuring perl's lane-scoped evidence: `--lang perl` threw
+  // `corpus repo missing: /home/.../repositories/grails-core` and wrote nothing, which
+  // makes every lane-scoped artifact (`M14.0.F5.<lane>`, `M14.6.perl`, the powershell
+  // floor) unreproducible on any box that does not hold all 48 corpora. The missing-repo
+  // throw itself stays: for a SWEEP a missing checkout silently shrinks the claim, and
+  // that is worth refusing. A scoped run's claim is about the scoped lanes only, so the
+  // requirement is scoped with it — and if a scoped lane's OWN repo is missing, the
+  // loop below still throws, naming a checkout that matters.
+  const scopedLangs = ONLY_LANGS
+  const activeRepos = REPO
+    ? [REPO]
+    : [...new Set(
+        scopedLangs
+          ? scopedLangs.flatMap((l) => [LANG_REPOS[l], SECOND_CORPUS[l]]).filter((r): r is string => Boolean(r))
+          : [...Object.values(LANG_REPOS), ...Object.values(SECOND_CORPUS)],
+      )]
   for (const rp of activeRepos) {
     const rd = path.join(CORPUS_ROOT, rp)
     if (!fs.existsSync(rd)) throw new Error(`corpus repo missing: ${rd}`)
