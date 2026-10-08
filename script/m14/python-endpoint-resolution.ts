@@ -390,7 +390,12 @@ const rows = new Map<Type, Stat>()
 for (const t of ALL_TYPES) rows.set(t, mkStat())
 const untyped = mkStat()
 
-const bump = (m: Map<string, number>, k: string) => m.set(k, (m.get(k) ?? 0) + 1)
+/** Generic in the key: the tables below are keyed on strings AND on numbers
+ *  (`ambN` is multiplicity -> count), and the old `Map<string, number>` signature
+ *  made the numeric one unreachable — it was "fixed" with a cast that did not
+ *  check anything (`as Map<number, number>` onto a parameter typed
+ *  `Map<string, number>`). The body is identical for both. */
+const bump = <K>(m: Map<K, number>, k: K) => m.set(k, (m.get(k) ?? 0) + 1)
 const bumpBin = (m: Map<Bin, number>, k: Bin) => m.set(k, (m.get(k) ?? 0) + 1)
 
 const leafOf = (name: string): string => {
@@ -473,6 +478,17 @@ const classify = (
 }
 
 // ---------------------------------------------------------------- tally
+// Declared BEFORE the tally reads it. It sat after this loop, and the loop is
+// top-level: the `placeholderInSource` note called it from inside the loop, so the
+// one run that had a placeholder-shaped name present in real source raised
+// "Cannot access 'fileTextHas' before initialization" instead of reporting — an
+// instrument that dies exactly on the case it exists to describe. Only the ORDER
+// changes; the predicate body is the same.
+const fileTextHas = (f: FileRecord, name: string): boolean => {
+  if (name === "") return false
+  return f.text.includes(name)
+}
+
 for (const f of files) {
   for (const rel of f.rels) {
     const t = typeOf(rel) as Type
@@ -488,7 +504,7 @@ for (const f of files) {
     bumpBin(s.fileTgt, ft.bin)
     bumpBin(s.projSrc, ps.bin)
     bumpBin(s.projTgt, pt.bin)
-    if (pt.bin === "AMBIGUOUS") bump(s.ambN as Map<number, number>, pt.n)
+    if (pt.bin === "AMBIGUOUS") bump(s.ambN, pt.n)
     if (src === "" || tgt === "") s.emptyEndpoints++
     if (src === tgt && src !== "") s.selfLoop++
     bump(s.conf, String(rel.confidence ?? "absent"))
@@ -529,11 +545,6 @@ for (const f of files) {
       }
     }
   }
-}
-
-const fileTextHas = (f: FileRecord, name: string): boolean => {
-  if (name === "") return false
-  return f.text.includes(name)
 }
 
 // ---------------------------------------------------------------- report
