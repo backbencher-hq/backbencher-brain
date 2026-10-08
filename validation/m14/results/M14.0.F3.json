@@ -164,7 +164,7 @@
     },
     {
       "description": "haskell adversarial fixtures",
-      "detail": "4/4 fixtures pass",
+      "detail": "5/5 fixtures pass",
       "id": "fixtures-haskell",
       "status": "pass"
     },
@@ -188,7 +188,7 @@
     },
     {
       "description": "erlang adversarial fixtures",
-      "detail": "28/28 fixtures pass",
+      "detail": "29/29 fixtures pass",
       "id": "fixtures-erlang",
       "status": "pass"
     },
@@ -290,8 +290,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "b0eace73d791282defd9770b90c8f592e0efa1e8",
-  "committedAt": "2026-10-08T11:44:59-04:00",
+  "commit": "354e7cc439dee190767467cda1a0d29f4750a58e",
+  "committedAt": "2026-10-08T11:54:06-04:00",
   "data": {
     "details": [
       {
@@ -6116,6 +6116,11 @@
         "problems": []
       },
       {
+        "fixture": "haskell/gadt-constructors",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "haskell/operator-application",
         "ok": true,
         "problems": []
@@ -6992,6 +6997,11 @@
       },
       {
         "fixture": "erlang/clause-merge-range",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "erlang/construct-coverage",
         "ok": true,
         "problems": []
       },
@@ -8397,7 +8407,7 @@
       },
       "erlang": {
         "fail": 0,
-        "pass": 28
+        "pass": 29
       },
       "fsharp": {
         "fail": 0,
@@ -8417,7 +8427,7 @@
       },
       "haskell": {
         "fail": 0,
-        "pass": 4
+        "pass": 5
       },
       "hcl": {
         "fail": 0,
@@ -8566,8 +8576,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-08T15:53:41.428Z",
-  "regeneratedAtCommit": "b0eace73d791282defd9770b90c8f592e0efa1e8",
+  "regeneratedAt": "2026-10-08T16:08:40.959Z",
+  "regeneratedAtCommit": "354e7cc439dee190767467cda1a0d29f4750a58e",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
