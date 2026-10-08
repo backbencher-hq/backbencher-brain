@@ -605,4 +605,60 @@ PHP_MUTANTS.push(...PHP_RECEIVER_OWNER_MUTANTS)
 PHP_MUTANTS.push(...PHP_PROJECTION_MUTANTS)
 PHP_MUTANTS.push(...PHP_RECOVERY_MUTANTS)
 PHP_MUTANTS.push(...PHP_NESTED_FUNCTION_MUTANTS)
+/**
+ * MEMBER IDENTITY (`Owner.member` on every class-like member), and the two directions it fails.
+ *
+ * The property is not cosmetic: the store's FIRST target-resolution strategy is an EXACT
+ * `qualified_name` match, and its index takes `MIN(id)` per qualified name — the right rule when a
+ * qualified name identifies one thing, and a NAME index when it does not. While php published no
+ * qualified name for a member, a bare member target was attached to the alphabetically first
+ * declaration of that name ANYWHERE in the project, silently, and the lane's ambiguity census could
+ * not see it (the census measures the analyzer's endpoints against the analyzer's symbols and never
+ * asks what the store then bound the row to). Both mutants below reproduce a state this code was
+ * actually in, or one keystroke away from:
+ *
+ *   1. the field is ABSENT for every member — the pre-fix state exactly. The store's index is a name
+ *      index again, so member targets are resolved by `MIN(id)`;
+ *   2. the field is set where it must NOT be: a NAMESPACE-owned declaration. Its identity is already
+ *      php's own `Namespace\name` in `metadata.fqn`, and minting a second, dotted spelling for the
+ *      same declaration is the aliasing this rule exists to remove — the store would then have two
+ *      qualified names for one symbol, and a target spelled the other way matches NEITHER.
+ *
+ * They are separate because a reverting diff (the first) and an over-reaching rule (the second) look
+ * nothing alike in review, and only one of them was ever the code.
+ */
+const PHP_MEMBER_IDENTITY_MUTANTS: Mutant[] = [
+  {
+    id: "php/member-identity-dropped",
+    language: "php",
+    defectClass: "lost-identity",
+    description:
+      "drops `qualifiedName` from every member whose owner is class-like — the exact pre-fix state. Caught by php/member-identity's `expectSymbols` rows (four `persist` declarations under four owners plus a constant, a property and an enum member) AND by its `forbidSymbols` rows, which state the absence directly: the mutant deletes the field rather than corrupting it, so an assertion phrased only as `qualifiedName: 'AlphaStore.persist'` would pass on a symbol that has no field at all only by failing — the absence rows are what make the intent explicit. NOT caught by any store gate: those read the store's own behaviour, and the store merely gets worse.",
+    transform: r => ({
+      ...r,
+      symbols: (r?.symbols ?? []).map((s: any) => {
+        if (!s || !s.ownerName || !CLASS_LIKE_KINDS.has(String(s.ownerKind))) return s
+        const { qualifiedName: _dropped, ...rest } = s
+        return rest
+      }),
+    }),
+  },
+  {
+    id: "php/member-identity-on-namespace-scope",
+    language: "php",
+    defectClass: "fabricated-identity",
+    description:
+      "extends the rule one level too far: a declaration whose owner is a NAMESPACE also gets `Namespace.name`, so one declaration carries two qualified spellings. This is the direction that arrives by simplifying the guard (`if (!s.ownerName) continue`), and it is worse than the drop in one respect — a target spelled the OTHER way matches neither form, so the symbol becomes reachable by no name at all. Caught by php/member-identity's `forbidSymbols` row `{name: 'helperFn', qualifiedNameEndsWith: 'helperFn'}`, which is written as a suffix because the fabricated spelling is the thing being forbidden, and by that fixture's `qualifiedName: null` pin on the same function.",
+    transform: r => ({
+      ...r,
+      symbols: (r?.symbols ?? []).map((s: any) => {
+        if (!s || s.qualifiedName || !s.ownerName) return s
+        if (CLASS_LIKE_KINDS.has(String(s.ownerKind))) return s
+        return { ...s, qualifiedName: `${s.ownerName}.${s.name}` }
+      }),
+    }),
+  },
+]
+
 PHP_MUTANTS.push(...PHP_HERITAGE_MUTANTS)
+PHP_MUTANTS.push(...PHP_MEMBER_IDENTITY_MUTANTS)

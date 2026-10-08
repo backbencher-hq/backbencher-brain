@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-07T01:58:44.679Z",
+  "at": "2026-10-08T16:03:16.999Z",
   "enumValues": [
     "calls",
     "contains",
@@ -619,8 +619,11 @@
       ],
       "audited": [
         "calls",
+        "contains",
+        "exports",
         "extends",
         "implements",
+        "imports",
         "instantiates",
         "overrides",
         "references",
@@ -1386,21 +1389,6 @@
     },
     {
       "check": "DERIVATION",
-      "lang": "php",
-      "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "php",
-      "detail": "emits `exports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "php",
-      "detail": "emits `imports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
       "lang": "powershell",
       "detail": "emits `imports` but the differential audits [\"calls\",\"contains\",\"exports\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
     },
@@ -1664,8 +1652,8 @@
   "inputErrorLanes": [],
   "baseline": {
     "recorded": 104,
-    "regressions": 81,
-    "repaid": 60,
+    "regressions": 79,
+    "repaid": 61,
     "regressionsDetail": [
       "DERIVATION|clean|emits `exports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\"] — the type is stored and compared against nothing",
       "DERIVATION|clean|emits `imports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\"] — the type is stored and compared against nothing",
@@ -1711,8 +1699,6 @@
       "DERIVATION|nim|emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
       "DERIVATION|perl|emits `calls` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
       "DERIVATION|perl|emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
-      "DERIVATION|php|emits `exports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing",
-      "DERIVATION|php|emits `imports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing",
       "DERIVATION|powershell|emits `imports` but the differential audits [\"calls\",\"contains\",\"exports\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing",
       "DERIVATION|protobuf|emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
       "DERIVATION|protobuf|emits `exports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",

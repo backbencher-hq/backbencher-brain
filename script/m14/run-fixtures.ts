@@ -256,6 +256,13 @@ const CONSTRAINT_KEY_ALLOWLIST = new Set([
   "name", "kind", "ownerName", "scope", "owner", "ownerKind", "range", "startLine", "endLine",
   "startColumn", "endColumn", "genericParameters", "parameters", "returnType", "type",
   "visibility", "isAsync", "isAbstract", "isExported", "isDeclaration", "isRecordField",
+  // php member IDENTITY (M60 php wave, 2026-10-08). A real top-level field on `UniversalSymbol`
+  // (`ASTEngine` declares the index signature; php's `publishMemberIdentity` sets it), and the row
+  // is live rather than inert: `matchConstraints` reaches the generic `actual[k] !== v` branch, so
+  // `qualifiedName: null` states the ABSENT form too. It is allowlisted because the check it feeds
+  // exists to catch keys that can never match, and this one can — leaving it off the list reported
+  // a working row as an inert assertion.
+  "qualifiedName",
   "docstring", "decorators", "complexity", "linesOfCode", "id", "line",
   // SOL-16: NatSpec payload. `comments` is the per-comment array the TypeScript lane
   // populates for the same job, so the key is allowlisted for cross-lane parity

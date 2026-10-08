@@ -31,6 +31,7 @@ import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
 import { resolveImportTargets } from "./import-resolution"
 import { retargetCrossFileOverrides } from "./override-retarget"
+import { resolveMemberTargetsByOwner } from "./member-owner-resolution"
 import { ASTEngine } from "./engine"
 
 const log = Log.create({ service: "parallel-indexer" })
@@ -4395,6 +4396,36 @@ export async function storeResults(
          // declares is left exactly as it was, which keeps it visible as declared
          // low-confidence suspicion rather than silently deleting a real override.
          retargetCrossFileOverrides(rawDb as any, projectId)
+
+         // M60 php round: MEMBER RESOLUTION THROUGH THE RECEIVER'S OWNER (and its ancestors).
+         //
+         // The strategies above resolve a target BY NAME, which is simply unavailable for a member:
+         // `render` is a method on many classes, so `_res_name_unique` declines every one of them.
+         // Measured over php's whole population (350,368 edges): 169,156 endpoints (48.3%) resolve
+         // to more than one declaration, of which the census priced 24,223 as closable by walking
+         // the enclosing class's ANCESTORS and 2,756 by the owner channel alone — the two stages it
+         // calls SOUND, as against the same-file and namespace PREFERENCES it refuses to price
+         // because each REPLACES a resolution instead of narrowing one. See
+         // src/ast/member-owner-resolution.ts for the rule and every shape it refuses.
+         //
+         // It runs HERE, after the override retarget and after every symbol is stored, because that
+         // is the first point at which both halves of its input exist: `metadata.owner` on the rows
+         // and `brain_symbol.super_types` on the classes. It only ever fills a NULL
+         // `target_symbol_id` and never re-points a resolved row, so it cannot invent an edge.
+         {
+           const owned = resolveMemberTargetsByOwner(rawDb as any, projectId)
+           if (owned.resolved > 0 || owned.scanned > 0) {
+             log.debug("member resolution via receiver owner", {
+               scanned: owned.scanned,
+               ownerResolved: owned.ownerResolved,
+               inheritedResolved: owned.inheritedResolved,
+               ownerNotInPopulation: owned.ownerNotInPopulation,
+               ownerAmbiguous: owned.ownerAmbiguous,
+               notDeclared: owned.notDeclared,
+               ambiguousInChain: owned.ambiguousInChain,
+             })
+           }
+         }
 
          // Cleanup temp tables
          rawDb.run(`DROP TABLE IF EXISTS _res_qname`)

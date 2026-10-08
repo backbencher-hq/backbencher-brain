@@ -2452,3 +2452,182 @@ HEAD, and restoring it still requires reading its two call sites against today's
       phpunit     files=60 tree-truth=1065 covered=1065 (100%) MISSING=0 | analyzer-edges=1045 unexplained=0
       phpmyadmin  files=60 tree-truth=2682 covered=2682 (100%) MISSING=0 | analyzer-edges=2646 unexplained=0
 ```
+
+## Round: the member channel — the store was answering member reads with the alphabetically first declaration (2026-10-08)
+
+Round 5 ended with the ambiguity census's one **sound** lever priced at **24,223 endpoints**
+(`owner+inherited`) and named as the next piece of work. This round went to implement it and found
+the thing standing in front of it, which is worse than the ambiguity the census measures: **for a
+member read, the store was not leaving the row ambiguous. It was resolving it, confidently, to the
+alphabetically first declaration of that name in the project.**
+
+### 1. Two halves of one defect, and neither is visible from the analyzer
+
+**(a) php published no qualified name for a member, so the store's FIRST strategy was a name
+strategy.** `src/ast/parallel-indexer.ts` resolves a relationship target by EXACT `qualified_name`
+match before any post-index pass runs, through an index built
+`SELECT qualified_name, MIN(id) ... GROUP BY qualified_name` — a deterministic winner per qualified
+name, which is the RIGHT rule when a qualified name identifies one thing. php set neither
+`qualifiedName` nor `metadata.fqn` on a member, so `qualified_name` was the BARE member name and the
+tie-break `MIN(id)` was doing the identifying. `render`, `persist`, `handle` are method names on
+hundreds of classes.
+
+**(b) The insert-time resolver answers member targets before any of those passes run.**
+`resolveTargetStmt` (`src/ast/parallel-indexer.ts:2726`) resolves a target by bare name at insert
+time:
+
+```sql
+WHERE s.project_id = ? AND s.name = ?
+ORDER BY COALESCE(s.is_declaration, 0) ASC, (s.file_id = ?) DESC, (f.language = ?) DESC, s.id
+LIMIT 1
+```
+
+— same file first, then lexicographic `s.id`, which is `${fileId}:${name}:${line}` compared as TEXT.
+So within a file that declares several members of one name, the winner is the alphabetically first
+line, and the row is stored RESOLVED.
+
+Both halves produce the same outcome: **a wrong answer in the expensive direction.** A reverse walk
+from `AlphaStore::persist` reports callers in files that never mentioned it. And the lane's own
+census could not see it, by construction: the census measures the ANALYZER's endpoint resolvability
+against the analyzer's own symbol set — 169,156 endpoints read "ambiguous, 48.3%" — and never asks
+what the store then BOUND the row to. An instrument cannot find a defect in a layer it does not read.
+
+### 2. What was changed, and the two stages it implements
+
+**Member identity.** `publishMemberIdentity` (`real-php-analyzer.ts`) sets `qualifiedName` to
+`Owner.member` on every symbol whose owner is class-like — class, interface, trait, enum — which
+covers methods, properties, class constants and enum cases. This restores the index's contract:
+a BARE member target no longer matches a member's qualified name, so an unprovable member read is
+left UNRESOLVED (NULL, the honest state) instead of being attached to whichever declaration sorts
+first, and a target that IS spelled `Owner.member` — which is how `overrides` has always spelled its
+targets — now matches exactly (which is also the first time `retargetCrossFileOverrides`'s
+`methodsByOwner` index, keyed on `qualified_name` ending in `.${name}`, has found anything for php,
+however populated `super_types` was).
+
+*Deliberately not set when the owner is a NAMESPACE*: a namespaced function's `metadata.fqn` is
+already php's own `Fixture\MemberId\helperFn`, and minting a dotted second spelling for the same
+declaration would create a symbol two of whose names match nothing — the aliasing this rule exists to
+remove. The fixture pins both halves, including the absence.
+
+**The owner channel** — `src/ast/member-owner-resolution.ts`, wired into `storeResults` after the
+override retarget. It implements exactly the two stages the census calls SOUND, and refuses the rest:
+
+```
+  stage 1  ownerResolved      the receiver's OWN class declares the member        (census: 2,756)
+  stage 2  inheritedResolved  no ancestor… one ancestor's chain declares it       (census: 24,223)
+```
+
+The receiver's class is read from `metadata.owner` — the analyzer's own signal, published for
+`$this->`, `self::`, `static::` and `parent::` receivers, and NEVER for a read off a local variable,
+because that receiver's type is not knowable from one file. The walk reads
+`brain_symbol.super_types`, the column round 5 filled for php. It **only ever fills a NULL
+`target_symbol_id`** and never re-points a resolved row, so it cannot invent an edge; when the
+receiver's name is carried by two declarations it resolves by IDENTITY (the enclosing declaration's
+own store id) rather than by name; and it declines — leaving the row NULL with a counted reason — on
+`ambiguousOwner`, `notDeclared`, `ambiguousInChain`, `ownerNotInPopulation`.
+
+**NOT implemented, and this is a decision rather than an omission:** the census's preference stages —
+`same-file` (20,368), `namespace` (10,188), `emptied-by-kind` (3,129), `filters` (2,756),
+`emptied-by-owner` (1,179). Each REPLACES a resolution rather than narrowing one, so each would move
+the number without a rule that says the replacement is right; the census records them as priced but
+not sound, and no part of this round adopts one.
+
+### 3. Evidence, and the order it came in
+
+**The gate** — `validation/m14/fixtures/php/owner-resolution-gate.mts` — indexes four committed
+files built so that EVERY name-keyed strategy must decline: the member names collide project-wide
+(`persist` ×3, `solo` ×2, `dup` ×2), so `_res_name_unique` (`HAVING COUNT(*)=1`) cannot fire and the
+dotted fallback has no dot to split. It keeps the pass's claim and the store defect apart, and the
+defect half is PINNED BY NAME, because the day the store stops mislanding those rows this gate must
+go red and the change must be acknowledged rather than absorbed:
+
+```
+  PINNED  $this->persist() written in GammaStore is stored RESOLVED against AlphaStore::persist
+  PINNED  goPlain -> persist (a LOCAL VARIABLE: the type is unknowable) is stored RESOLVED against AlphaStore
+  PINNED  goTwoAncestors -> dup (two ancestors declare it) is stored RESOLVED against DupIface
+  PINNED  goAmbiguousParent/Ancestor -> solo is stored RESOLVED against one of the two Twins
+  PASS    goExternalBase -> getMessage: the one row the store gets right, by finding nothing
+```
+
+The claim half runs the pass against the input it DECLARES (rows with NULL targets, which it clears
+in the store first, because a resolver whose caller gets there first has no other way to be
+measured):
+
+```
+  DIRECT      $this->persist() -> the class that DECLARES it            GammaStore
+  INHERITED   written where nothing declares it -> ONE ancestor         BetaStore
+  COLLIDING   $this->solo() in one of two `Twin` classes -> by IDENTITY Twin@gamma.php
+  NEGATIVE ×5 goPlain, goTwoAncestors, goExternalBase, goAmbiguousParent, goAmbiguousAncestor
+              all stay NULL, each with the rule that declined it named in the fixture source
+  counters    ownerResolved=2 inheritedResolved=1 ambiguousOwner=1 notDeclared=2 — read back off
+              the rows, so the pass's own counters are checked against the database
+```
+
+**Three stores, because one cannot separate the two signals.** The same four files are stored three
+times, one signal removed from the analyzer's OWN result each time, and the same rows cleared and
+re-resolved in each:
+
+```
+  B  `metadata.owner` stripped        NOTHING resolves (0) — the resolutions above are CAUSED by it
+  C  `super_types` stripped           the DIRECT row still resolves, the INHERITED one does not:
+                                      the ancestor walk is load-bearing, not a second reading of the owner
+```
+
+Without B, a pass that resolved everything by name would light up the direct row and be wrong about
+the inherited one; without C, a pass that resolved by owner alone and never walked would do the
+reverse. Plus `IDEMPOTENT` (re-running resolves nothing more) and `dangling=0` (no resolved member
+row names an owner that does not exist).
+
+**The pin at the analyzer layer**, since the gate cannot reach a projection or a mutant:
+`validation/m14/fixtures/php/member-identity.php` + expectation pin the qualified spelling across all
+four class-like owner kinds, the same member name under four owners as FOUR declarations
+(`expectSymbolCount`), and — the half that makes the rule falsifiable — the ABSENCES:
+`forbidSymbols` rows stating that `AlphaStore.persist` with no qualified name must not exist, and
+that a namespace-owned declaration must not acquire one. Two mutants revert it in the two directions
+it can fail (`php/member-identity-dropped`: the field absent for every member — the exact pre-fix
+state; `php/member-identity-on-namespace-scope`: the rule extended one level too far, one declaration
+with two qualified spellings). Both are caught by that fixture alone.
+
+```
+  php fixtures                29/29 PASS   (was 28)
+  php mutant-check            21 caught / 0 survived / clean baseline   (was 19)
+  shared registry (php/)      73 caught   (was 71) · verify-orphaned-mutants: PHP_MUTANTS 21 WIRED
+  npx tsc --noEmit            clean
+  differential --lang php     phpunit    covered 100% MISSING=0 | unexplained=0
+                              phpmyadmin covered 100% MISSING=0 | unexplained=0
+  php-oracle-independence     PASS
+  rel-type-coverage-gate      php appears in NO row — emitted == audited == the same ten labels
+```
+
+One shared-harness line was needed for the fixture and is additive: `qualifiedName` is added to
+`CONSTRAINT_KEY_ALLOWLIST` in `run-fixtures.ts`. That list exists to catch constraint keys which can
+NEVER match (a row that reads as coverage and asserts nothing); `qualifiedName` is a real field on
+`UniversalSymbol` and reaches the generic `actual[k] !== v` branch, so leaving it off reported a
+working row as inert. No lane used the key before, and the check is a report rather than an
+exception, so no other lane's verdict moves.
+
+### 4. What this round does NOT claim
+
+- **NOT that the lever moved.** The census's 24,223 counts ANALYZER endpoints — a property of the
+  analyzer's output and its symbol set — and this round changed no edge the analyzer emits. What it
+  changed is the STORE's behaviour, and how many stored rows move is **not measured here**: the gate
+  is four files, and the population effect needs a full-project store comparison this round did not
+  run. The honest statement of the pass's reach TODAY is that the insert-time resolver in §1(b)
+  claims those rows first, so the pass sees only the rows it left NULL — the fix that would give the
+  pass its real population is a change to that shared ranking, not to this pass.
+- **NOT that everything landable now lands.** The pass reads `metadata.owner`, so its reach is
+  exactly the receivers php can name (`$this->`, `self::`, `static::`, `parent::`). A member read off
+  a local variable, a parameter, a return value or a property is outside it by construction — that is
+  the type-inference wall the census calls still-ambiguous, and it is 107,313 endpoints.
+- **NOT that php's hierarchy is safe to walk by name.** The existing consumer keys its `supertypes`
+  map on the symbol's bare `name` (round 5, §5), which is why the identity work in §2 is a
+  precondition for the walk rather than an adjacent nicety.
+
+### 5. One defect reported, not edited
+
+The insert-time ranking in §1(b) is shared store machinery (workstream §8) and is unchanged here: it
+still resolves those rows before the pass can, which is why the gate PINS its landing spots instead of
+asserting they are absent. The round-5 finding stands beside it — re-storing the same project loses a
+cross-file relationship row permanently (`parallel-indexer.ts:2928-2929`). Both are reported with the
+exact rows and the experiments that reproduce them; neither is edited here, and the pass added in this
+round is written so that fixing either one needs no change to it: it fills NULL and nothing else.

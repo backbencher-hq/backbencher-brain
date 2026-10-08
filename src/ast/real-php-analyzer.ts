@@ -1299,6 +1299,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // --- Nested named functions: the declarations the symbol walk cannot reach ---
     this.publishNestedNamedFunctions(rootNode, symbols)
 
+    // --- Member IDENTITY: `Owner.member` on every class-like member ---
+    this.publishMemberIdentity(symbols)
+
     // --- Override relationships (implicit PHP overrides) ---
     this.resolveOverrides(symbols, relationships, context)
 
@@ -2270,6 +2273,60 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * attribute arguments genuinely read (consts/globals via file frame).
    */
   /** Class-like owners: a recovered declaration under one of these publishes as a MEMBER. */
+  /**
+   * M60 php round — MEMBER IDENTITY: a class-like member's `qualifiedName` is `Owner.member`.
+   *
+   * ## Why this is not cosmetic
+   *
+   * The store resolves a relationship target by `qualified_name` EXACT match before anything else
+   * (`src/ast/parallel-indexer.ts` strategy 1: `WHERE target_external = _res_qname.qualified_name`),
+   * and that index is built `SELECT qualified_name, MIN(id) ... GROUP BY qualified_name` — a
+   * deterministic winner for a DUPLICATE qualified name, which is the right rule when a qualified
+   * name really identifies one thing. php published NEITHER `qualifiedName` nor `metadata.fqn` for a
+   * member, so the store's `qualified_name` was the BARE member name and that index degenerated into
+   * a name index whose tie-break is `MIN(id)` — the alphabetically first file. MEASURED on four
+   * fixture files, before this change:
+   *
+   * ```
+   *   goDirect          -> persist   landed on AlphaStore::persist    (written in GammaStore)
+   *   goInherited       -> persist   landed on AlphaStore::persist    (written in a BetaStore subclass)
+   *   goPlain           -> persist   landed on AlphaStore::persist    (a LOCAL VARIABLE's class — unknowable)
+   *   goTwoAncestors    -> dup       landed on DupIface::dup          (two ancestors declare it)
+   * ```
+   *
+   * Every one of those is a WRONG answer published as a resolved edge, and the failure is silent in
+   * the expensive direction: a reverse walk from `AlphaStore::persist` reports callers in files that
+   * never mentioned it. The lane's ambiguity census could not see it either, because the census
+   * measures the ANALYZER's endpoint resolvability against the analyzer's own symbol set and never
+   * asks what the store then bound it to — 48.3% of endpoints are "ambiguous" there while the store
+   * was quietly resolving a large share of them to an arbitrary declaration.
+   *
+   * Publishing the owner-qualified spelling restores the index's contract. Three consequences, all
+   * of them wanted:
+   *
+   *   1. a BARE member target no longer matches a member's qualified name, so an ambiguous member
+   *      read is left UNRESOLVED (NULL, the honest state) instead of being attached to whichever
+   *      declaration sorts first;
+   *   2. the member reads the analyzer CAN prove — the ones carrying `metadata.owner` — are resolved
+   *      by owner and ancestor walk (`src/ast/member-owner-resolution.ts`), which is a rule rather
+   *      than a tie-break;
+   *   3. `overrides` targets are ALREADY spelled `Owner.member`, so they now match this index
+   *      exactly, and `retargetCrossFileOverrides` — whose `methodsByOwner` is built from
+   *      `qualified_name` ending in `.${name}` and therefore found NOTHING for php, however
+   *      populated `super_types` was — becomes able to do its job for this language at all.
+   *
+   * Deliberately NOT set on symbols whose owner is a NAMESPACE: a top-level function's `fqn` is
+   * already `${ns}\\${name}` (PHP's own spelling, backslash-qualified), and a dotted alias would be a
+   * second identity for one declaration. `metadata.fqn` is left alone for the same reason — this
+   * publishes the one field the store's resolver reads.
+   */
+  private publishMemberIdentity(symbols: ASTEngine.UniversalSymbol[]): void {
+    for (const s of symbols) {
+      if (!s.ownerName || !this.isClassLikeOwnerKind(s.ownerKind)) continue
+      s.qualifiedName = `${s.ownerName}.${s.name}`
+    }
+  }
+
   private isClassLikeOwnerKind(kind: ASTEngine.SymbolKind | undefined): boolean {
     return kind === ASTEngine.SymbolKind.Class || kind === ASTEngine.SymbolKind.Interface ||
       kind === ASTEngine.SymbolKind.Trait || kind === ASTEngine.SymbolKind.Enum
