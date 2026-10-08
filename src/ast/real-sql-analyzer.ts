@@ -919,6 +919,16 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private adoptLateDeclaredIndexOwners(state: ParseState): void {
     for (const symbol of state.symbols) {
+      // `index` is a TAG THIS ANALYZER WRITES (the CREATE INDEX arm above sets
+      // `metadata.type: "index"` on the symbol it creates) and reads back here —
+      // NOT a parse-tree node type. The pinned sql grammar declares no node by
+      // that name: its index productions are create_index, alter_index,
+      // drop_index, index_fields, index_hint and keyword_index. The grammar
+      // audit's `X.type === "lit"` heuristic reads any `.type`-named binding
+      // compared against a literal as a node-type reference, so this one is
+      // WAIVED in validation/m14/grammar-audit-allowlist.json with the same
+      // reason. Deleting the comparison is not the fix: it is what selects the
+      // symbols whose owner is a table declared later in the file.
       if (symbol.metadata?.type !== "index") continue
       if (symbol.ownerName) continue
       const table = symbol.metadata.table

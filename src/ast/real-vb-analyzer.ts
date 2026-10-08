@@ -1102,10 +1102,36 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (text.length > 0) this.localsInFile.add(text)
         }
       }
-      if (n.type === "for_each_statement" || n.type === "using_statement") {
-        const ctrl = n.childForFieldName("control")
-        if (ctrl) {
-          const { text } = this.declaredName(ctrl)
+      // `control` is NOT a field of the pinned vbnet grammar, and this guard was
+      // therefore dead: measured 2026-10-08 against the shipped wasm, the
+      // grammar's 54 field names contain no `control`, so the read returned null
+      // on every node and neither a `For Each` variable nor a `Using` target was
+      // ever recorded as a local — which left both exposed to the statement-level
+      // call signal this set exists to suppress.
+      //
+      // Measured shapes from a real parse (`For Each item In list … Next`,
+      // `Using g As New G() … End Using`): `for_each_statement` carries the loop
+      // variable in its `variable` field (identifier `item`) and the sequence in
+      // `collection`; `using_statement` carries the declaration in its `resource`
+      // field as a `variable_declarator` whose own `name` field holds `g` — the
+      // same node the `Dim`/`Const` branch above reads through `declaredName`.
+      if (n.type === "for_each_statement") {
+        const v = n.childForFieldName("variable")
+        if (v) {
+          const { text } = this.declaredName(v)
+          // The field holds a bare identifier, which `declaredName` reports as ""
+          // because it looks for a `name` field or a named child; the leaf itself
+          // is the name, so fall back to its own text rather than losing the
+          // binding. A typed variable (`For Each kv As KeyValuePair(Of K, V)`) is
+          // measured to be an identifier too, so this is the whole shape.
+          const name = text.length > 0 ? text : this.nameText(v)
+          if (name.length > 0) this.localsInFile.add(name)
+        }
+      }
+      if (n.type === "using_statement") {
+        const resource = n.childForFieldName("resource")
+        if (resource) {
+          const { text } = this.declaredName(resource)
           if (text.length > 0) this.localsInFile.add(text)
         }
       }
