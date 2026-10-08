@@ -1294,7 +1294,11 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   private collectTypeNameLeafNodes(node: Node, skip: Node | null, out: Node[] = []): Node[] {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
-      if (!c || c === skip) continue
+      // `.id`, not object identity: web-tree-sitter returns a FRESH wrapper on every
+      // access, so `c === skip` never matched and the subtree the caller asked to
+      // prune was walked anyway — the skipped names could be republished as uses
+      // (hygiene class KAD2/TSD2, caught by script/m14/verify-analyzer-hygiene.ts).
+      if (!c || (skip !== null && c.id === skip.id)) continue
       if (c.type === "name" || c.type === "constructor") {
         if (c.text.trim() && !out.some((o) => o.text === c.text)) out.push(c)
         continue

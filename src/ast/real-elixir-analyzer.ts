@@ -1314,7 +1314,13 @@ private recordInstantiates(structName: string, ctx: ElixirContext, currentScope:
   // lowercase call.
   private isAttributeNameCall(node: Node): boolean {
       const p = node.parent
-      return !!(p && p.type === "unary_operator" && p.child(0)?.text === "@" && p.child(1) === node)
+      // `.id`, not object identity: web-tree-sitter hands back a FRESH wrapper per
+      // access, so `p.child(1) === node` was never true and this predicate always
+      // answered false — the relaxation it guards never applied, and an attribute's
+      // own name was publishable as a phantom call, which is the exact fabrication
+      // the comment above says naming it explicitly prevents (hygiene class
+      // KAD2/TSD2, caught by script/m14/verify-analyzer-hygiene.ts).
+      return !!(p && p.type === "unary_operator" && p.child(0)?.text === "@" && p.child(1)?.id === node.id)
   }
 
   // EX-A17: a module attribute's VALUE is COMPILE-TIME CODE. `@section
