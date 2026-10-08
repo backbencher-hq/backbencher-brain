@@ -791,7 +791,12 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         const mod = modNode?.text ?? ""
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
-          if (!c || c === modNode) continue
+          // `.id`, not object identity: web-tree-sitter hands back a FRESH wrapper
+          // on every access, so `c === modNode` was never true and the module name
+          // of `from X import a` was read as a bound name — the guard this comment
+          // describes had been a no-op since the day it was written (hygiene class
+          // KAD2/TSD2, caught by script/m14/verify-analyzer-hygiene.ts).
+          if (!c || c.id === modNode?.id) continue
           // `from X import a, b` — each named child after the module is a bound name.
           // An aliased import makes TWO names matter and conflating them is a real bug this
           // fixture caught: `from abc import ABC as BaseABC` PROVES the import name `ABC`
