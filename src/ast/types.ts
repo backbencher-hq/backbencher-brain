@@ -145,6 +145,42 @@ export interface UniversalSymbol {
   [key: string]: any
 }
 
+/**
+ * THE BINDING SEPARATOR — the character a relationship target carries when it names a
+ * BINDING rather than a declaration.
+ *
+ * The family contract publishes no locals, parameters or lambda parameters as symbols (the
+ * csharp/python/go parity ruling, recorded for dart as DARTD8), so an edge that reads a local
+ * has no declaration to point at — but it still has to say WHICH binding it read, and the
+ * string it writes is what the store resolves. `parallel-indexer.ts:resolveRelationships`
+ * matches that string against `qualified_name` (Strategy 1) and then against a bare `name`
+ * admitted only while the name is declared exactly once in the project (Strategy 2), and it
+ * does not read the edge's metadata while doing it.
+ *
+ * A bare local name is therefore indistinguishable from a declaration's name, and wherever the
+ * local's name collides with a UNIQUE declaration the read is bound to that declaration. This
+ * is not a hypothesis: `validation/m14/fixtures/dart/local-read-phantom.ts` reproduces it
+ * in-repo — a function's own `counter` binds to an unrelated class's field of the same name,
+ * with `metadata.isLocalRead` set and the store's own rule (`classifyEdge`) reporting
+ * `resolved`. The analyzer's comment at the call site used to claim the opposite ("the family
+ * contract publishes no locals, so the target binds to nothing a consumer holds"); the claim
+ * was about the FAMILY's contract, and the defect is that the SPELLING did not carry it.
+ *
+ * `#` cannot appear in an identifier in any language of this family (`[A-Za-z_$]` and the
+ * alphanumerics that follow it, in every spelling), so a target containing it cannot be a
+ * declaration's name once the spelling carries it — which is what makes the claim checkable by
+ * the ARBITER rather than by the analyzer that wrote it: `verifyBindingClaim`
+ * (script/m14/incoming-rule.ts) requires the separator's presence AND that no published key in
+ * the project contains it.
+ *
+ * Deliberately NOT `.` and NOT `:`. Consumers take the LEAF of an unresolved target as "the
+ * name this edge is about" (`src/intelligence/patterns/orphans.ts`: after the last colon, then
+ * after the last dot), which would reduce a dotted or colon-joined spelling straight back to
+ * the bare local name and reopen the false name match this constant exists to close. `#` is
+ * unchanged by that rule, and it is the notation the family already reads as "member of".
+ */
+export const BINDING_SEP = "#"
+
 export interface UniversalRelationship {
   source?: string
   target?: string

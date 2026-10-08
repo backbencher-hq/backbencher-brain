@@ -18,6 +18,7 @@ import type { Node } from "web-tree-sitter"
 import * as path from "path"
 import { existsSync, readFileSync, readdirSync } from "fs"
 import { ASTEngine } from "./engine"
+import { BINDING_SEP } from "./types"
 
 // ============================================================================
 // PURE-STRING HELPERS (regex-free normalization)
@@ -2447,29 +2448,38 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               // resolves to a file-scope function of the same name (Dart's member scope
               // shadows the library scope), so the enclosing type is the owner — and it is
               // only written when the declaration is verifiable.
-              const qualified = locals.has(leaf) ? null : qualifiedTarget(owner, leaf)
+              //
+              // A CALLEE can be a BINDING, not a declaration. `$default(_that)` is a real
+              // invocation — freezed's generated `map`/`maybeMap` takes the mapping function
+              // as a formal parameter named `$default` and calls it — and the family contract
+              // publishes no locals. The label `isLocalRead` was added for exactly this and
+              // the `calls` branch consulted `locals` for nothing, so the class was present
+              // but UNCOUNTABLE: 138 `calls -> $default` rows and 50 `calls -> orElse` rows
+              // over 4,788 corpus files, indistinguishable in any report from a call to a
+              // method nobody declared.
+              //
+              // 2026-10-08 — the label was NOT enough, and the comment that used to sit here
+              // ("the target binds to nothing a consumer holds") was FALSE about the string it
+              // published. The store resolves a target by NAME and never reads the metadata:
+              // `resolveRelationships` Strategy 2 admits a bare name declared exactly once in
+              // the project, so `calls -> $default` binds to any single declaration of that
+              // name, in any file. The target now carries `BINDING_SEP` and the `localBinding`
+              // claim, so the spelling itself says "a binding" and cannot be a declaration's
+              // name (see `src/ast/types.ts` and `local-read-phantom.ts`).
+              const isBinding = locals.has(leaf)
+              const qualified = isBinding ? null : qualifiedTarget(owner, leaf)
               relationships.push({
                 source: callSource,
-                target: qualified ?? leaf,
+                target: qualified ?? (isBinding ? `${callSource}${BINDING_SEP}${leaf}` : leaf),
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 line_number: this.nodeLine(leafNode),
-                // A CALLEE can be a binding, not a declaration, and the label has
-                // to say so. `$default(_that)` is a real invocation — freezed's
-                // generated `map`/`maybeMap` takes the mapping function as a formal
-                // parameter named `$default` and calls it — and the family contract
-                // publishes no locals, so the target binds to nothing a consumer
-                // holds. `uses` already carries `isLocalRead` for exactly this and
-                // the `calls` branch consulted `locals` for nothing, so the class was
-                // present but UNCOUNTABLE: 138 `calls -> $default` rows and 50
-                // `calls -> orElse` rows over 4,788 corpus files, indistinguishable
-                // in any report from a call to a method nobody declared.
-                //
-                // Metadata only. No row is added or removed and no confidence moves,
-                // so this cannot change a payload; it makes an existing population
-                // queryable, which is what M14 §4 asks of a heuristic edge.
+                // Metadata only, for the marker half. No row is added or removed and no
+                // confidence moves, so this cannot change WHICH edges exist; it makes an
+                // existing population queryable, which is what M14 §4 asks of a heuristic
+                // edge.
                 metadata: {
-                  ...(locals.has(leaf) ? { isLocalRead: true } : {}),
+                  ...(isBinding ? { isLocalRead: true, localBinding: true } : {}),
                   ...(qualified ? { qualifier: "enclosing" } : {}),
                 },
               })
@@ -2527,6 +2537,18 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               // Same reason as the bare-call arm above: a leaf that the enclosing
               // function binds is a binding, and the row is labelled so a consumer
               // can tell it from a call to a declared member.
+              //
+              // 2026-10-08 — DELIBERATELY NOT re-spelled as a binding, and the reason is a
+              // finding rather than an omission. This arm runs for a chain of TWO or more
+              // links (`a.b.c()`), where the leaf is resolved against the RECEIVER, not
+              // against the enclosing function: the `locals` set consulted here is the
+              // enclosing function's, so `isLocalRead` on this arm answers a question about
+              // the WRONG SCOPE whenever `links.length > 1`. The target cannot be re-spelled
+              // to `#` for the same reason — for a chain the leaf may genuinely name a
+              // declaration reachable through the receiver, and `qualifiedTarget` is the rule
+              // that decides it. Named, not fixed: a one-link chain reaches the bare-call arm
+              // above and IS re-spelled; the multi-link case needs its own measurement of how
+              // often `locals.has(method)` is true where no receiver member exists.
               metadata: {
                 ...(locals.has(method) ? { isLocalRead: true } : {}),
                 ...(qualified ? { qualifier: "chain" } : {}),
@@ -2698,13 +2720,25 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           } else if (locals.has(txt)) {
             // DT2: bound locals/params read as values (OC-E parity).
             // Exact scope resolution — confidence 0.9, lane-compared.
+            //
+            // 2026-10-08 — the target is the BINDING's spelling, not the bare name. The
+            // analyzer has positively resolved `txt` to a binding here, and a binding is not a
+            // declaration: no symbol exists for it (DARTD8), so no lookup can ever be right,
+            // while the store's bare-name rule (Strategy 2, `cnt = 1`, metadata unread) binds
+            // the bare name to whatever single declaration happens to carry it. Measured: a
+            // function's own `counter` bound to an unrelated class's field named `counter`, in
+            // another file (validation/m14/fixtures/dart/local-read-phantom.ts). The
+            // separator makes the target unspeakable as a declaration, and the `localBinding`
+            // claim is what the arbiter checks (`verifyBindingClaim`).
             relationships.push({
               source: callSource,
-              target: txt,
+              target: `${callSource}${BINDING_SEP}${txt}`,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               line_number: this.nodeLine(n),
-              metadata: { isLocalRead: true },
+              // A read of a PARAMETER is a binding too: `locals` holds the function's bound
+              // names (parameters and `var`s alike), which is why both land here.
+              metadata: { isLocalRead: true, localBinding: true },
             })
           } else if (!isDeclaredMember && topLevelValues.has(txt)) {
             // DT2: file-scope values read as values. Members shadow

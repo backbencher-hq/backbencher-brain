@@ -26,6 +26,11 @@
  *   real-nim-analyzer.ts  meta.nimStdlibModule, measured marking 66 of 485 unbindable
  *     (docs/analyzers/real-nim-analyzer.md:435-449)
  */
+// The binding separator is a FAMILY constant (src/ast/types.ts) rather than a local copy: the
+// analyzer spells a binding with it and this rule checks that spelling, so two definitions
+// would be two rules and the arbiter's copy would be the one that mattered.
+import { BINDING_SEP } from "../../src/ast/types"
+
 export const EXTERNAL_KEYS = [
   "zigExternalRef",
   "nimStdlibModule",
@@ -61,19 +66,50 @@ export const EXTERNAL_KEYS = [
  *                pubspec files do not declare, an SDK library it does not carry, a scheme
  *                that is not a path at all). Verified against the project's own facts.
  *
+ *   binding      the target names a BINDING — a local, parameter or lambda parameter — which
+ *                the family contract publishes no symbol for (DARTD8). There is nothing to
+ *                look up and nothing to find: verified against the TARGET'S OWN SPELLING
+ *                (`BINDING_SEP` present, and the part after it non-empty), and refuted the
+ *                moment the target names a declaration, because that is exactly the state the
+ *                spelling exists to make impossible.
+ *
  * The kind is decided by WHICH KEY marked the edge, not by the shape of the target: a
  * `package:` target could in principle carry either claim, and choosing the check by shape
  * would be guessing at what the analyzer meant.
  */
-export type ExternalClaim = { kind: "owner" | "projectFacts" }
+export type ExternalClaim = { kind: "owner" | "projectFacts" | "binding" }
 
-/** The marker key that means "the FILE is outside this project". Checked first: it is the
- *  more specific claim, and an edge carrying both must be verified on the stronger evidence. */
+/**
+ * The marker key that means "the target names a BINDING, not a declaration".
+ *
+ * A third claim kind, because it is verifiable by NOTHING the other two use. `owner` and
+ * `projectFacts` both ask the project about the thing the target DEPENDS ON; a binding claim
+ * says the target has no dependency to find — the family contract publishes no locals,
+ * parameters or lambda parameters as symbols (DARTD8), so the string can never name a
+ * declaration, and the only thing to check is whether the SPELLING says so.
+ *
+ * The spelling is `<callable>#<binding>` (`BINDING_SEP`, src/ast/types.ts). `#` cannot appear
+ * in an identifier in any language of this family, which is what makes this claim checkable
+ * by the ARBITER rather than by the analyzer that wrote it: presence of the separator is a
+ * fact about the string, and "no published key contains the separator" is a fact about the
+ * key space, asserted once per run (see `separatorFreeKeys` — a population tripwire, not a
+ * per-edge lookup, because the key space is still being built while the walk classifies).
+ */
+export const BINDING_CLAIM_KEY = "localBinding"
+
+/** The marker key that means "the FILE is outside this project". Checked after the binding
+ *  claim: both are specific, and an edge carrying both is verified on the binding spelling
+ *  first because that one is a statement about the target itself. */
 export const IMPORT_CLAIM_KEY = "importOutsideProject"
 
 export function externalClaimOf(rel: any): ExternalClaim | null {
   const md = rel?.metadata
   if (!md || typeof md !== "object") return null
+  // Checked FIRST, and it is the one claim whose evidence is the target's own spelling rather
+  // than a lookup: an edge carrying it says "do not look this up, it is a binding". A lane
+  // cannot launder a gap with it — the claim is refuted outright when the target names a
+  // declaration (see `classifyEdge`).
+  if (md[BINDING_CLAIM_KEY] === true) return { kind: "binding" }
   if (md[IMPORT_CLAIM_KEY] === true) return { kind: "projectFacts" }
   for (const k of EXTERNAL_KEYS) {
     if (k === IMPORT_CLAIM_KEY) continue
@@ -98,6 +134,35 @@ export function isMarkedExternal(rel: any): boolean {
 export type Outcome =
   | "resolved" | "ambBoth" | "ambDeclOnly" | "unresolved"
   | "externalVerified" | "externalRefuted" | "externalUnverified"
+  // A BINDING's outcomes are their own, and are NOT the external ones. A verified binding is
+  // not a resolution (nothing was resolved — there is nothing to resolve to) and not a gap
+  // either (nothing is missing), so folding it into either column would misstate one of two
+  // different things. The lane reports it in its own column, and `bindingRefuted` counts
+  // against the lane exactly as `externalRefuted` does.
+  | "bindingVerified" | "bindingRefuted" | "bindingUnverified"
+
+/**
+ * IS THE TARGET SPELLED AS A BINDING? The one check whose evidence is the target itself.
+ *
+ * Measured before it was built (`validation/m14/fixtures/dart/local-read-phantom.ts`): a
+ * function's own `counter`, published as the bare name, was bound by the store's own rule to
+ * an unrelated class's field in another file, because `resolveRelationships` matches a target
+ * by NAME and never reads this metadata. The separator is the fix's whole mechanism, so this
+ * function's job is to make a spelling that lost it impossible to pass quietly:
+ *
+ *   bindingVerified    the target carries `BINDING_SEP` and names something after it.
+ *   bindingRefuted     the target carries NO separator. A marked edge whose target could be a
+ *                      declaration's name is the defect this round exists to remove, and
+ *                      "refuted" is the outcome that counts against the lane.
+ *   bindingUnverified  a separator with nothing after it (`run#`) — a spelling no producer in
+ *                      this family writes, and one no binding can be read out of. Counted,
+ *                      never merged into either of the other two.
+ */
+export function verifyBindingClaim(tgt: string): Outcome {
+  const at = tgt.lastIndexOf(BINDING_SEP)
+  if (at < 0) return "bindingRefuted"
+  return at === tgt.length - 1 ? "bindingUnverified" : "bindingVerified"
+}
 
 /**
  * WHAT THE PROJECT ITSELF SAYS, for verifying an IMPORT claim.
@@ -209,7 +274,7 @@ export type Classified = {
   kinds: string
   /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
    *  mechanism that produced the number, not only the number. */
-  verifiedBy?: "owner" | "projectFacts"
+  verifiedBy?: "owner" | "projectFacts" | "binding"
 }
 
 /**
@@ -228,6 +293,17 @@ export function classifyEdge(
   const decls = declCount.get(tgt) ?? 0
   const kindSet = kinds.get(tgt)
   const kindText = [...(kindSet ?? [])].sort().join("|")
+  // A BINDING CLAIM IS CHECKED BEFORE THE COUNT, and that ordering is the whole point: the
+  // claim says "this target names a binding, not a declaration", so the moment the key space
+  // answers the target with a declaration the claim is FALSE — even though the edge would
+  // otherwise read as a happy `resolved`. That is the defect measured in
+  // `local-read-phantom.ts`: a bare local name, of which the project declares exactly one,
+  // counted as resolved while naming a field of an unrelated class.
+  if (claim !== null && claim.kind === "binding") {
+    if (decls > 0) return { outcome: "bindingRefuted", decls, kinds: kindText }
+    const outcome = verifyBindingClaim(tgt)
+    return { outcome, decls, kinds: kindText, verifiedBy: outcome === "bindingVerified" ? "binding" : undefined }
+  }
   if (decls === 0) {
     if (claim === null) return { outcome: "unresolved", decls, kinds: kindText }
     if (claim.kind === "projectFacts") {
@@ -266,6 +342,12 @@ export type Outcomes = {
   externalVerifiedByOwner: number
   /** of `externalVerified`: confirmed by the project's own pubspec files and file list */
   externalVerifiedByProjectFacts: number
+  /** targets spelled as a BINDING (`<callable>#<binding>`) and not naming a declaration */
+  bindingVerified: number
+  /** marked as a binding but spelled so it CAN name a declaration — counted against the lane */
+  bindingRefuted: number
+  /** a separator with nothing after it: countable, but no binding can be read out of it */
+  bindingUnverified: number
   /** of those: the target has no identifier-shaped owner to check */
   externalUnverified: number
   /** of those: the key space publishes the owner, so the claim is FALSE and the edge is not clean */
@@ -279,6 +361,7 @@ export const emptyOutcomes = (): Outcomes => ({
   resolved: 0, ambiguousByDecl: 0, ambiguousByKind: 0, unresolved: 0,
   markedExternal: 0, externalVerified: 0, externalVerifiedByOwner: 0, externalVerifiedByProjectFacts: 0,
   externalUnverified: 0, externalRefuted: 0,
+  bindingVerified: 0, bindingRefuted: 0, bindingUnverified: 0,
   ambiguousNames: [], unresolvedNames: [],
 })
 
@@ -308,6 +391,23 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
     case "externalUnverified":
       out.markedExternal++
       out.externalUnverified++
+      break
+    case "bindingVerified":
+      out.bindingVerified++
+      break
+    case "bindingUnverified":
+      out.bindingUnverified++
+      break
+    case "bindingRefuted":
+      // NOT `unresolved` (that column means "carries no claim at all") and NOT clean. It is
+      // the one outcome that says the SPELLING is wrong, and the verdict counts it as bad.
+      out.bindingRefuted++
+      if (out.unresolvedNames.length < 25) {
+        out.unresolvedNames.push({
+          name: `${tgt}   [binding claim REFUTED — the target can name a declaration]`,
+          type: label,
+        })
+      }
       break
     case "externalRefuted":
       // NOT `unresolved` (that column means "carries no external claim") and NOT clean

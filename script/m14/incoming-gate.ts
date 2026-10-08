@@ -107,18 +107,22 @@ import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
+// The separator a binding's target carries. Imported from the FAMILY constant rather than
+// re-spelled here: the analyzer writes it (src/ast/types.ts) and this gate checks it, and two
+// copies of a spelling would be two rules.
+import { BINDING_SEP } from "../../src/ast/types"
 // THE RULE IS IMPORTED, NOT COPIED. A census that counts WHY about the same edges must
 // count them the same way, so the classification lives in incoming-rule.ts and this file
 // consumes it. Re-exported below so a caller of this module keeps working unchanged.
 import {
   EXTERNAL_KEYS, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
-  emptyOutcomes, verifyImportClaim,
+  emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY,
   type ExternalClaim, type ProjectFacts,
   type Outcome, type Classified, type Outcomes,
 } from "./incoming-rule"
 export {
   EXTERNAL_KEYS, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
-  emptyOutcomes, verifyImportClaim,
+  emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY,
 }
 export type { ExternalClaim, ProjectFacts, Outcome, Classified, Outcomes }
 
@@ -171,7 +175,7 @@ const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
  * sampled 1,250, so the number and the command that produced it disagreed by half with
  * nothing in the output saying so.
  */
-function discoverFiles(lang: string, ext: string, maxFiles: number): {
+function discoverFiles(lang: string, ext: string, maxFiles: number, onlyRepos?: Set<string>): {
   files: string[]; total: number; repos: number
   /** THE UNSAMPLED ADMITTED POPULATION — `files` before the stride. A project fact (is this
    *  path in the population at all?) must be answered from THIS, not from the sample, or a
@@ -193,6 +197,13 @@ function discoverFiles(lang: string, ext: string, maxFiles: number): {
     return { files: [], admitted: [], total: 0, repos: 0, absent: 0, overCap: 0, overCapLargest: 0 }
   }
   for (const name of entries.sort()) {
+    // A REPO FILTER is a SUBSET of the corpus, and the header says so. It exists because a
+    // stride sample cannot measure a FILE-SCOPED target: an import that names a path in the
+    // same project resolves only if that project's other files are in the key space, so a
+    // sampled run understates import resolution by construction (measured: 0.4 % sampled vs
+    // 46.8 % whole-corpus on the same revision). A whole single project is the honest unit for
+    // any question about file-scoped targets.
+    if (onlyRepos && !onlyRepos.has(name)) continue
     const dir = path.join(CR, name)
     try {
       if (!statSync(dir).isDirectory()) continue
@@ -317,6 +328,9 @@ function projectFactsForDart(repoRoot: string, admitted: string[]): ProjectFacts
 
 /** A type's edge count plus its two scopes. `Outcomes` itself lives in `incoming-rule.ts`,
  *  because a census has to count with the same tally this verdict does. */
+/** One marker set's PROJECT-scope outcomes — see `Row.marks`. */
+type MarkBucket = { resolved: number; amb: number; unres: number; ext: number; bind: number }
+
 type Row = {
   type: Type
   edges: number
@@ -324,6 +338,12 @@ type Row = {
   project: Outcomes
   /** resolution against every file in this run pooled into one key space — the old number */
   pooled: Outcomes
+  /** the PROJECT-scope outcome of every edge this type emitted, grouped by the sorted set of
+   *  metadata KEYS it carries. KEYS ONLY, never values: the claim mechanism itself reads the
+   *  KEY that marked an edge (`externalClaimOf`), and a value would shatter one marker into a
+   *  signature per symbol it names (`firstHeritageParent=StatelessWidget` for one line).
+   *  Printed as a worklist — WHICH markers the unwalkable edges carry, not merely how many. */
+  marks: Map<string, MarkBucket>
 }
 
 /**
@@ -414,8 +434,8 @@ async function projectIndexesFor(
   return { byRepo, built, cached, damaged, indexed }
 }
 
-async function measure(lang: string, ext: string, maxFiles: number, useIndex: boolean) {
-  const { files, admitted, total, repos, absent, overCap, overCapLargest } = discoverFiles(lang, ext, maxFiles)
+async function measure(lang: string, ext: string, maxFiles: number, useIndex: boolean, onlyRepos?: Set<string>) {
+  const { files, admitted, total, repos, absent, overCap, overCapLargest } = discoverFiles(lang, ext, maxFiles, onlyRepos)
 
   // name -> how many DECLARATIONS publish it, and the distinct kinds among them.
   // Both, because the whole point of this gate is that the kind-count is not the
@@ -430,7 +450,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   const projectKinds = new Map<string, Map<string, Set<string>>>()
   const rows = new Map<Type, Row>()
   for (const t of ALL_TYPES) {
-    rows.set(t, { type: t, edges: 0, project: emptyOutcomes(), pooled: emptyOutcomes() })
+    rows.set(t, { type: t, edges: 0, project: emptyOutcomes(), pooled: emptyOutcomes(), marks: new Map() })
   }
 
   let parsed = 0
@@ -467,6 +487,43 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     for (const [repo, list] of admittedByRepo) out.set(repo, projectFactsForDart(repo, list))
     return out
   })()
+
+  // ==========================================================================================
+  // THE KEY SPACE MUST BE COMPLETE BEFORE ANY EDGE IS CLASSIFIED.
+  //
+  // This loop used to classify each edge AS IT STREAMED, against whatever part of the key
+  // space had been parsed so far. Measured on `dart-http` (one whole project, 333 files, both
+  // revisions, same edges, same key space, two-pass probe vs this gate):
+  //
+  //     imports+exports edges in the key space : 713 of 1406   (two passes, complete space)
+  //     the same edges as this gate counted   : 384 of 1406   (one pass, streaming space)
+  //
+  // 329 edges — 46 % of the resolvable ones — read as unresolved because their target file
+  // happened to sort AFTER the file that imports it. That is not a property of the code being
+  // measured; it is a property of this file's loop order. Production cannot have it:
+  // `parallel-indexer.resolveRelationships` runs as a pass over the finished `symbols` table
+  // (`WHERE s.project_id = ?`), so every key of the project is in scope for every edge of it.
+  //
+  // The direction of the error is what makes it worth this much comment: the gate under-
+  // reported resolution — it printed a WORSE number than the truth — so a lane reading the
+  // table would chase gaps that do not exist, and a whole-corpus arm would publish them.
+  //
+  // The fix keeps the streaming parse (re-parsing to get two passes measured at 2× a 70-minute
+  // run) and defers only the CLASSIFICATION: each edge is reduced here to the fields the
+  // decision needs — target, claim, marker signature, project — and classified after the walk,
+  // against both key spaces complete. The separator tripwire below already worked this way for
+  // the same reason; it was the table that had not been brought in line with it.
+  type PendingEdge = {
+    label: Type
+    tgt: string
+    claim: ExternalClaim | null
+    /** the marker-set signature, interned in `row.marks` at push time so the diagnostic and
+     *  the classification cannot disagree about which marker set an edge belongs to */
+    sig: string
+    /** the PROJECT the edge was emitted in — the key space that decides its outcome */
+    repo: string
+  }
+  const pending: PendingEdge[] = []
 
   // PROGRESS ON STDERR, because a whole-corpus run is hours and a run whose only output is
   // its last line cannot be told apart from a wedged one. stdout stays exactly the report:
@@ -568,18 +625,78 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // A `projectFacts` claim is verified against the PROJECT'S OWN files, which this file
       // builds and the analyzer never sees — the claim and its evidence must not come from
       // the same author, or "verified" would mean "the analyzer said so twice".
-      const facts = claim?.kind === "projectFacts" ? projectFacts!.get(repoOf(f)) : undefined
-      // THE SAME EDGE, BOTH QUESTIONS. Project scope first because that is the one the
-      // verdict reads; pooled beside it because it is the one every earlier dart number in
-      // this programme was measured with, and dropping it silently would make this run
-      // incomparable to its own history.
-      tally(row.project, classifyEdge(pDecl!, pKinds!, tgt, claim, facts), tgt, label)
-      tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, tgt, claim, facts), tgt, label)
+      // WHICH MARKERS AN EDGE CARRIES, counted by KEY. This is the same unit the claim
+      // mechanism reads — `externalClaimOf` decides from the KEY that marked an edge, not from
+      // the shape of its target — so the table it feeds is a worklist of markers a rule could
+      // act on, not a second opinion about the counts above.
+      const md = (rel as any)?.metadata ?? {}
+      const markKeys = Object.keys(md).filter(
+        (k) => k !== "evidenceClass" && k !== "analysisVersion" && md[k] !== false && md[k] != null,
+      )
+      markKeys.sort()
+      const sig = markKeys.length ? markKeys.join("+") : "(no marker)"
+      if (!row.marks.has(sig)) row.marks.set(sig, { resolved: 0, amb: 0, unres: 0, ext: 0, bind: 0 })
+      // DEFERRED, not classified here — see `PendingEdge`. The three fields that decide the
+      // outcome travel with the edge; everything else (the counts, the marks, the name lists)
+      // is written in the classification pass below, so no column can be filled from a
+      // half-built key space even by accident.
+      pending.push({ label, tgt, claim, sig, repo: repoOf(f) })
+      continue
     }
   }
 
+  // ------------------------------------------------------------------------------------------
+  // CLASSIFICATION, over the finished key spaces. Project scope first because that is the one
+  // the verdict reads; pooled beside it because that is the one every earlier dart number in
+  // this programme was measured with, and dropping it silently would make this run
+  // incomparable to its own history — and BOTH are complete here, which is the point.
+  for (const e of pending) {
+    const row = rows.get(e.label)!
+    const marks = row.marks.get(e.sig)!
+    // The evidence for a `projectFacts` claim is the project's own files, and it is looked up
+    // HERE, from the same map phase 1 built from the admitted list — never from the analyzer.
+    const facts = e.claim?.kind === "projectFacts" ? projectFacts?.get(e.repo) : undefined
+    const pc = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts)
+    tally(row.project, pc, e.tgt, e.label)
+    tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts), e.tgt, e.label)
+    switch (pc.outcome) {
+      case "resolved": marks.resolved++; break
+      case "ambDeclOnly": case "ambBoth": marks.amb++; break
+      case "externalVerified": case "externalUnverified": marks.ext++; break
+      // A binding is its own bucket HERE TOO, for the same reason it has its own column in
+      // TABLE 1: it is neither a resolution (there is nothing to resolve to) nor a gap
+      // (nothing is missing). Folding it into `unres` would make the diagnostic disagree
+      // with the table it exists to explain.
+      case "bindingVerified": case "bindingRefuted": case "bindingUnverified": marks.bind++; break
+      // `unresolved` AND `externalRefuted`: a refuted claim is not clean, and folding it in
+      // with the verified ones would hide the one outcome that is a lane's own defect.
+      default: marks.unres++
+    }
+  }
+
+  // THE SEPARATOR TRIPWIRE. Every binding claim is verified by the TARGET'S SPELLING
+  // (`verifyBindingClaim`), and that verification is worth something only while no published
+  // declaration name contains the separator — if one did, a target carrying it could name a
+  // declaration and the claim would still read clean. Asserted ONCE over the FINISHED key
+  // space rather than per edge, because the walk classifies edges while the key space is still
+  // being built. Counted over the pooled space and over each project's own space, so a name
+  // counts once per space it appears in; the number is a tripwire, and `> 0` is its whole
+  // message.
+  let separatorKeys = 0
+  const separatorExamples: string[] = []
+  const scanSeparator = (keys: Iterable<string>) => {
+    for (const k of keys) {
+      if (!k.includes(BINDING_SEP)) continue
+      separatorKeys++
+      if (separatorExamples.length < 5) separatorExamples.push(k)
+    }
+  }
+  scanSeparator(pooledDecl.keys())
+  for (const m of projectDecl.values()) scanSeparator(m.keys())
+
   return {
     lang, ext, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, rows,
+    bindingSpelling: { separator: BINDING_SEP, keys: separatorKeys, examples: separatorExamples },
     // THE EXCLUSIONS TRAVEL WITH THE POPULATION. A reader comparing two runs has to be able
     // to see whether the population moved under them, and a lane returning to a number it
     // recognizes should not have to wonder which cap produced it.
@@ -648,9 +765,11 @@ function selfTest(): { ok: boolean; failures: string[] } {
   const got: Record<Outcome, number> = {
     resolved: 0, ambBoth: 0, ambDeclOnly: 0, unresolved: 0,
     externalVerified: 0, externalRefuted: 0, externalUnverified: 0,
+    bindingVerified: 0, bindingRefuted: 0, bindingUnverified: 0,
   }
   let verifiedByOwner = 0
   let verifiedByFacts = 0
+  let verifiedBySpelling = 0
   for (const t of [
     "alpha", "beta", "gamma", "delta",
     "AbsentThing.build", "Object.hashCode", "package:flutter/material.dart:*",
@@ -663,6 +782,41 @@ function selfTest(): { ok: boolean; failures: string[] } {
     const c = classifyEdge(declCount, kinds, t, { kind: "projectFacts" }, withFacts ? facts : undefined)
     got[c.outcome]++
     if (c.verifiedBy === "projectFacts") verifiedByFacts++
+  }
+
+  // THE BINDING CLAIM, and the one case that must be caught is the one this round was built
+  // on: a target MARKED as a binding whose spelling a declaration answers. `counter` is
+  // planted in `declCount` for it — that is the whole defect, reproduced in the control as
+  // well as in `local-read-phantom.ts`, so a future edit that consults the count before the
+  // claim fails HERE instead of silently reading `resolved`.
+  const bindingPlants = new Map<string, boolean>([
+    ["run#counter", true],   // spelled as a binding, nothing answers it -> VERIFIED
+    ["lonely#x", true],      // same, second site                          -> VERIFIED
+    ["counter", true],       // marked, but a declaration answers it       -> REFUTED
+    ["binder#", true],       // separator with nothing after it            -> UNVERIFIED
+  ])
+  declCount.set("counter", 1)
+  for (const [t] of bindingPlants) {
+    const c = classifyEdge(declCount, kinds, t, { kind: "binding" })
+    got[c.outcome]++
+    if (c.verifiedBy === "binding") verifiedBySpelling++
+  }
+  // THE MARKER -> KIND ROUTING. `externalClaimOf` decides the check from the KEY, and a
+  // mutation that let a binding marker fall through to the owner check would verify every
+  // binding by looking up `run#counter` as an owner (which also reads `verified`, for the
+  // wrong reason). Asserted on the routing function itself because that is where the choice
+  // is made.
+  if (externalClaimOf({ metadata: { [BINDING_CLAIM_KEY]: true } })?.kind !== "binding") {
+    failures.push("control: `localBinding` did not route to the binding claim")
+  }
+  if (externalClaimOf({ metadata: { isExternalBase: true } })?.kind !== "owner") {
+    failures.push("control: `isExternalBase` no longer routes to the owner claim")
+  }
+  if (verifyBindingClaim("run#counter") !== "bindingVerified") {
+    failures.push("control: a correctly spelled binding target did not verify")
+  }
+  if (verifyBindingClaim("run.counter") !== "bindingRefuted") {
+    failures.push("control: a DOTTED target verified as a binding — the check is not testing the separator")
   }
 
   // THE SCOPE IS APPLIED, and this asserts it rather than trusting the caller. `gamma` is
@@ -705,6 +859,23 @@ function selfTest(): { ok: boolean; failures: string[] } {
       `${verifiedByOwner} / ${verifiedByFacts}`,
     )
   }
+  // THE BINDING COUNTS. 2 verified from 2 spelled plants, 1 refuted (the plant whose spelling a
+  // declaration answers — the phantom shape), 1 unverifiable (the trailing separator).
+  if (got.bindingVerified !== 2) {
+    failures.push(`control: expected 2 verified binding claims, got ${got.bindingVerified}`)
+  }
+  if (got.bindingRefuted !== 1) {
+    failures.push(
+      `control: expected 1 REFUTED binding claim (a marked target whose spelling a declaration ` +
+      `answers), got ${got.bindingRefuted} — the claim is being accepted without the spelling check`,
+    )
+  }
+  if (got.bindingUnverified !== 1) {
+    failures.push(`control: expected 1 unverifiable binding claim, got ${got.bindingUnverified}`)
+  }
+  if (verifiedBySpelling !== 2) {
+    failures.push(`control: expected 2 binding claims verified BY THE SPELLING, got ${verifiedBySpelling}`)
+  }
   return { ok: failures.length === 0, failures }
 }
 
@@ -723,6 +894,9 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
     into.externalVerifiedByProjectFacts += r.externalVerifiedByProjectFacts
     into.externalUnverified += r.externalUnverified
     into.externalRefuted += r.externalRefuted
+    into.bindingVerified += r.bindingVerified
+    into.bindingRefuted += r.bindingRefuted
+    into.bindingUnverified += r.bindingUnverified
   }
   for (const r of rep.rows.values()) {
     edges += r.edges
@@ -732,16 +906,33 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
   // A lane with no corpus is UNMEASURED, which is not the same as passing and must not
   // render as one. Exits 2.
   if (rep.parsed === 0) return { pass: false, edges, totals: t, pooled, reason: "no corpus admitted — UNMEASURED, not a pass" }
+  // THE BINDING CLAIM'S EVIDENCE IS THE SPELLING, and the spelling is evidence only while no
+  // published declaration name carries the separator: a target containing it could then name a
+  // declaration, and every binding claim in the run would be checking nothing. That is a
+  // fact about the population, so it is asserted over the population and named in the verdict
+  // rather than left to the per-edge check to notice.
+  if (rep.bindingSpelling.keys > 0) {
+    return {
+      pass: false, edges, totals: t, pooled,
+      reason:
+        `${rep.bindingSpelling.keys} published key(s) contain the binding separator ` +
+        `\`${rep.bindingSpelling.separator}\` ${JSON.stringify(rep.bindingSpelling.examples)}, so a target ` +
+        `carrying it can name a declaration — every binding claim in this run is unverifiable`,
+    }
+  }
   // A REFUTED external claim is a bad edge. It is not in `unresolved` (that column is
   // "carries no external claim") and must not be, but it is counted here so that a lane
   // whose large population is external-LOOKING cannot buy a PASS with a marker.
-  const bad = t.ambiguousByDecl + t.unresolved + t.externalRefuted
+  const bad = t.ambiguousByDecl + t.unresolved + t.externalRefuted + t.bindingRefuted
   const ext = `${t.externalVerified} verified + ${t.externalUnverified} unverifiable external`
+  const bind =
+    `${t.bindingVerified} binding(s) spelled as a binding` +
+    (t.bindingUnverified > 0 ? ` + ${t.bindingUnverified} unverifiable` : "")
   const scope = `of ${edges} edges, resolved against the file's OWN PROJECT (production's scope)`
-  if (bad === 0 && t.externalUnverified === 0) {
+  if (bad === 0 && t.externalUnverified === 0 && t.bindingUnverified === 0) {
     return {
       pass: true, edges, totals: t, pooled,
-      reason: `every one ${scope} resolves to exactly one declaration, or carries an external claim the project confirms (${ext})`,
+      reason: `every one ${scope} resolves to exactly one declaration, or carries a claim the project confirms (${ext}; ${bind})`,
     }
   }
   if (bad === 0) {
@@ -755,6 +946,7 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
     reason:
       `${t.ambiguousByDecl} ambiguous + ${t.unresolved} unresolved ${scope}` +
       (t.externalRefuted > 0 ? `, and ${t.externalRefuted} external claim(s) REFUTED by the project` : "") +
+      (t.bindingRefuted > 0 ? `, and ${t.bindingRefuted} binding claim(s) REFUTED — a target marked as a binding whose spelling can name a declaration` : "") +
       (t.externalUnverified > 0 ? `; ${t.externalUnverified} external claim(s) unverifiable (${ext})` : ""),
   }
 }
@@ -822,13 +1014,15 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   console.log(`TABLE 1 — PER PROJECT, the scope production resolves in (this is the verdict's):`)
   const header =
     w("type", 14) + w("edges", 9) + w("resolved", 10) + w("amb(decl)", 11) +
-    w("amb(kind)", 11) + w("unresolved", 12) + w("extOK", 8) + w("ext?", 8) + "extFAIL"
+    w("amb(kind)", 11) + w("unresolved", 12) + w("extOK", 8) + w("ext?", 8) +
+    w("extFAIL", 9) + w("bindOK", 9) + w("bind?", 8) + "bindFAIL"
   console.log(header)
-  console.log("-".repeat(93))
+  console.log("-".repeat(117))
   const line = (label: string, r: Outcomes, edges: string | number) =>
     w(label, 14) + w(edges, 9) + w(r.resolved, 10) + w(r.ambiguousByDecl, 11) +
     w(r.ambiguousByKind, 11) + w(r.unresolved, 12) +
-    w(r.externalVerified, 8) + w(r.externalUnverified, 8) + String(r.externalRefuted)
+    w(r.externalVerified, 8) + w(r.externalUnverified, 8) + w(r.externalRefuted, 9) +
+    w(r.bindingVerified, 9) + w(r.bindingUnverified, 8) + String(r.bindingRefuted)
   for (const type of ALL_TYPES) {
     const r = rep.rows.get(type)!
     console.log(line(type, r.project, r.edges))
@@ -840,6 +1034,29 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     "ext? = claim no check can reach (no identifier owner, and no project fact for it) · " +
     "extFAIL = claim the project REFUTES, counted against the lane",
   )
+  console.log(
+    `bindOK = a target SPELLED as a binding (\`<callable>${rep.bindingSpelling.separator}<binding>\`), which no ` +
+    `declaration can answer · bind? = a separator with nothing after it · ` +
+    `bindFAIL = marked as a binding but spelled so it CAN name a declaration, counted against the lane`,
+  )
+  // The columns are NOT disjoint groups of equal standing: `amb(kind)` is a SUBSET of
+  // `amb(decl)` (both are printed because a lane reads them for different reasons), and saying
+  // so here is cheaper than the reader re-deriving it — the sum is the check.
+  console.log(
+    `amb(kind) is a SUBSET of amb(decl), printed beside it for comparison: ` +
+    `resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL = the edge count, exactly.`,
+  )
+  // THE POPULATION HALF OF THE BINDING CLAIM. A per-edge verification of the spelling is
+  // only honest while the separator really is unspeakable as a name here, and that is a fact
+  // about the key space — asserted once, over the finished space, because the walk classifies
+  // edges while the space is still being built.
+  console.log(
+    `separator tripwire: ${rep.bindingSpelling.keys} published key(s) contain ` +
+    `\`${rep.bindingSpelling.separator}\` of ${v.edges} edges measured` +
+    (rep.bindingSpelling.keys > 0
+      ? ` — ${JSON.stringify(rep.bindingSpelling.examples)} — THE CLAIM'S EVIDENCE IS VOID IN THIS POPULATION`
+      : ` (0 required: a declaration name carrying it would make a binding claim unfalsifiable)`),
+  )
   // WHICH EVIDENCE CONFIRMED THEM. Two mechanisms can produce `extOK`, and a lane must be
   // able to audit the one that did: a claim about a DECLARATION is checked by looking its
   // owner up in the key space, a claim about a FILE is checked against the project's own
@@ -850,6 +1067,53 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
       `    of those ${v.totals.externalVerified} verified: ` +
       `${v.totals.externalVerifiedByOwner} by owner lookup in the key space, ` +
       `${v.totals.externalVerifiedByProjectFacts} against the project's own pubspec files + file list`,
+    )
+  }
+  // WHICH MARKERS THE UNWALKABLE EDGES CARRY. A count says how much is unresolved; it does not
+  // say WHAT the unresolved edges are, and a round chosen from a count alone is a guess. Each
+  // line is a marker a rule could act on, with the RESOLVED share printed beside it so a marker
+  // that is already handled reads as handled rather than as remaining work.
+  const markRows: { type: Type; sig: string; b: MarkBucket }[] = []
+  for (const type of ALL_TYPES) {
+    for (const [sig, b] of rep.rows.get(type)!.marks) {
+      if (b.amb + b.unres + b.bind > 0) markRows.push({ type, sig, b })
+    }
+  }
+  if (markRows.length) {
+    console.log(
+      `EDGES A MARKER SET EXPLAINS — NOT-RESOLVED, PLUS BINDINGS (diagnostic, PER PROJECT scope, ` +
+      `up to 5 marker sets per type ordered by amb+unresolved, then any binding-bearing set):`,
+    )
+    console.log(
+      w("type", 14) + w("metadata KEYS on the edge", 52) + w("resolved", 10) + w("amb", 9) +
+      w("unres", 9) + w("extClaim", 10) + "binding",
+    )
+    console.log("-".repeat(113))
+    for (const type of ALL_TYPES) {
+      const mine = markRows
+        .filter((m) => m.type === type)
+        // THE WORK, ranked by what is LEFT — because that is what the top of this table is for.
+        // A binding does NOT belong in this ranking: `bindOK` is a verified outcome, and ranking
+        // it with the gaps would put a class with nothing left to do at the top of a list of
+        // remaining work. They are printed below instead, so neither is hidden.
+        .sort((x, y) => y.b.amb + y.b.unres - (x.b.amb + x.b.unres))
+        .slice(0, 5)
+      const bindOnly = markRows
+        .filter((m) => m.type === type && m.b.bind > 0 && !mine.includes(m))
+        .sort((x, y) => y.b.bind - x.b.bind)
+      const show = (m: { type: Type; sig: string; b: MarkBucket }) =>
+        console.log(
+          w(m.type, 14) + w(m.sig.length > 50 ? `${m.sig.slice(0, 47)}...` : m.sig, 52) +
+          w(m.b.resolved, 10) + w(m.b.amb, 9) + w(m.b.unres, 9) + w(m.b.ext, 10) + String(m.b.bind),
+        )
+      for (const m of mine) show(m)
+      for (const m of bindOnly) show(m)
+    }
+    console.log("-".repeat(113))
+    console.log(
+      `extClaim = a claim on this marker set the project VERIFIED or that no check can reach · ` +
+      `binding = edges on this marker set SPELLED as a binding. Grouped by KEY only: a value would ` +
+      `split one marker into a signature per symbol it names.`,
     )
   }
   console.log()
@@ -893,18 +1157,45 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   const unresList = [...rep.rows.values()].flatMap((r) =>
     r.project.unresolvedNames.map((u) => ({ ...u })),
   )
-  if (ambList.length) {
-    const shown = ambList.slice(0, 20)
-    console.log(`AMBIGUOUS TARGETS (${ambList.length} sampled, up to 20 shown) — the worklist:`)
-    for (const a of shown) {
-      console.log(`  ${w(a.type, 13)} ${w(a.name, 42)} ${a.declarations} declarations  [${a.kinds}]`)
+  // BOTH LISTS, together: a run can have unresolved names and no ambiguous ones (a lane whose
+  // targets name nothing at all), and gating the print on the ambiguous list alone would hide
+  // exactly that case's worklist.
+  if (ambList.length || unresList.length) {
+    // PER TYPE, not the first 20 names. The lists are filled per type (up to 25 each), and a
+    // flat slice of the pooled list prints whatever type happens to come first — measured
+    // 2026-10-08: a whole-corpus dart run printed 20 `calls` names and no `imports` name at
+    // all, so the one worklist that round needed was invisible while the count (35,575) was
+    // right there in TABLE 1. A worklist that names the wrong type is a number with a list
+    // attached, which is what this section exists not to be.
+    console.log(
+      `AMBIGUOUS / UNRESOLVED TARGETS (worklist; counts sampled per type — ` +
+      `don't read a type's absence here as a zero, read TABLE 1):`,
+    )
+    // Keyed by STRING, not `Type`: `unresolvedNames` entries already carry the type as their
+    // `label` string (written by `tally` for the report), and the two lists must group by the
+    // same key or one of them would print under the wrong heading.
+    const ambByType = new Map<string, typeof ambList>()
+    for (const a of ambList) {
+      const list = ambByType.get(a.type) ?? []
+      list.push(a)
+      ambByType.set(a.type, list)
     }
-    console.log()
-  }
-  if (unresList.length) {
-    const shown = unresList.slice(0, 20)
-    console.log(`UNRESOLVED TARGETS (${unresList.length} sampled, up to 20 shown) — the worklist:`)
-    for (const u of shown) console.log(`  ${w(u.type, 13)} ${u.name}`)
+    const unresByType = new Map<string, typeof unresList>()
+    for (const u of unresList) {
+      const list = unresByType.get(u.type) ?? []
+      list.push(u)
+      unresByType.set(u.type, list)
+    }
+    for (const type of ALL_TYPES) {
+      const as = ambByType.get(type) ?? []
+      const us = unresByType.get(type) ?? []
+      if (!as.length && !us.length) continue
+      console.log(`  ${type}`)
+      for (const a of as.slice(0, 4)) {
+        console.log(`    amb  ${w(a.name, 42)} ${a.declarations} declarations  [${a.kinds}]`)
+      }
+      for (const u of us.slice(0, 4)) console.log(`    unres  ${u.name}`)
+    }
     console.log()
   }
   console.log(`VERDICT: ${v.pass ? "PASS" : "FAIL"} — ${v.reason}`)
@@ -926,6 +1217,12 @@ const argv = process.argv.slice(2)
 const JSON_OUT = argv.includes("--json")
 const ALL = argv.includes("--all")
 const USE_INDEX = argv.includes("--index")
+// `--repo=a,b` measures whole named repositories instead of a stride over the corpus. See
+// `discoverFiles` for why a sampled run cannot answer a question about file-scoped targets.
+const REPO_ARG = argv.find((a) => a.startsWith("--repo="))
+const ONLY_REPOS = REPO_ARG
+  ? new Set(REPO_ARG.slice("--repo=".length).split(",").map((s) => s.trim()).filter(Boolean))
+  : undefined
 const rest = argv.filter((a) => !a.startsWith("--"))
 
 // THE CONTROL RUNS FIRST, ALWAYS. Before any lane, before any corpus. An instrument that
@@ -945,7 +1242,7 @@ if (ALL) {
   const summary: string[] = []
   for (const [lang, ext] of Object.entries(LANES_B)) {
     const max = Number(rest[0] ?? 120)
-    const rep = await measure(lang, ext, max, USE_INDEX)
+    const rep = await measure(lang, ext, max, USE_INDEX, ONLY_REPOS)
     const v = verdict(rep)
     if (rep.parsed === 0) {
       unmeasured++
@@ -990,7 +1287,7 @@ if (rest.length < 2) {
 const lang = rest[0]
 const ext = rest[1]
 const maxFiles = Number(rest[2] ?? 120)
-const rep = await measure(lang, ext, maxFiles, USE_INDEX)
+const rep = await measure(lang, ext, maxFiles, USE_INDEX, ONLY_REPOS)
 const v = verdict(rep)
 
 if (JSON_OUT) {
