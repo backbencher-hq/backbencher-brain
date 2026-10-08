@@ -186,28 +186,32 @@ the script's comments because each produced a confident wrong number rather than
 an error: instrumenting the handle you were handed instead of the one the walk
 opens; patching `getRawInstance` when `traverseGraph` only reaches it on a cache
 miss; and `mkdirSync`'s return value.
-## Also found while clearing the editor/docs leg (2026-10-08)
+## CORRECTION (2026-10-08): a sealed ledger DOES have a sanctioned repair
 
-A sealed ledger with no sanctioned way to re-seal. `validation/m27/results/manifest.json`
-carries a `bbSeal` envelope (`alg`, `sealedAt`, `contentSha256`), and
-`script/lib/evidence.ts` refuses the read on mismatch — which it did, correctly,
-when the Zed scope text was corrected:
+I wrote here that the repo had "no sanctioned way to re-seal" a stale sealed
+ledger, and recommended building one. **That was wrong.** `script/lib/evidence.ts`
+already ships it: `refreshStaleSeal(filePath, why)`, which refuses when the seal
+already verifies, refuses an empty reason, and writes under the directory lock.
+`writeSealed` is there too.
 
-```
-M61 trusted read refused manifest.json: seal mismatch: content sha256 795d26a2…
-```
+The error was a grep for `sealFor` that missed `refreshStaleSeal` and
+`writeSealed`, followed by a conclusion drawn from the absence of the one name I
+had searched for. That is the same shape as every other near-miss in this log: a
+clean negative produced by a tool that had not been asked the right question.
 
-The text was stale: it still described the Zed extension as "extension.toml +
-thin wasm shim owning binary resolution only" with acceptance criteria
-"extension.toml + shim build clean via zed extension CLI". None of that ships —
-the manifest launches `./bin/bb-lsp-server`, and there is no Zed CLI here.
+WHAT IT COST, MEASURED. `validation/m27/results/manifest.json` records `H1` and
+`V1` as `known-gap` while their evidence files said `verified`, because gates
+re-run and rewrite evidence and the ledger is a separate committed artefact nobody
+re-derives. `script/m27/verify-closure.ts`'s completion bar reads the LEDGER, so
+it reported two proven legs as unproven and X1 sat at 27/35 KNOWN-GAP.
 
-The edit was reverted rather than forced. `evidence.ts` exports `sealFor()`, but
-**nothing in the repository calls it**: there is no re-seal command, so a stale
-sealed ledger can be *detected* and not *corrected* through the sanctioned path.
-Forcing the seal by recomputing the hash in place would defeat the property the
-seal exists for, and a hand-edited sealed file is exactly the thing a future
-reader cannot trust.
+THE FIX. `script/m62/reseal-ledger.ts` re-derives each row's status from its
+evidence file and only when that file's OWN seal verifies — so a hand-edited
+evidence file cannot promote anything, because a tampered file is not read. The
+refusal lives in `applyRefresh`, not in the CLI: a safety property that lives in
+the caller is not a property of the code. Gated by
+`script/m62/verify-ledger-reseal.ts`, 13 legs, whose important one is M1 — a
+tampered evidence file must not promote a row, and must block the write.
 
-Left as a known gap with this note. It needs either a re-seal subcommand or a
-generator that owns the scope text — a decision, not a patch.
+RESULT: H1 VERIFIED (21/21, 4/4 mutants), V1 VERIFIED (14/14, 5/5), X1 VERIFIED
+(34/34, 6 negative). X1 had been KNOWN-GAP at 27/35.
