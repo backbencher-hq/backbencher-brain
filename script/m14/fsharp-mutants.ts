@@ -28,6 +28,36 @@
  */
 import type { Mutant } from "./mutate-analyzer"
 
+/**
+ * ENDPOINT MATCHING IN THE FIXED SPELLING — FS-P4-1/FS-P4-2.
+ *
+ * Four of the mutants below identify the edges they re-break by the SPELLING of an
+ * endpoint: `source === target` (the blanket self-edge refusal), `source === Probe`
+ * (the setter's parameter), `source === Describe` (the `default` implementation), and
+ * `anon.has(source)` (an object expression's members). Every one of those spellings was
+ * a BARE name, and pass 4 made every edge endpoint that names a symbol this file
+ * publishes carry that symbol's published identity instead (`Owner.member`). The
+ * mutants kept compiling, kept running, and silently matched NOTHING — four greens that
+ * meant nothing, which is the failure mode this file's own header calls out.
+ *
+ * The fix is not to re-spell the four literals: it is to match the endpoint in a way
+ * that does not depend on the spelling at all, because the DEFECT these mutants revert
+ * is about identity, not about text. An endpoint matches a name when it IS that name or
+ * when it ENDS with `.` + that name — which is exactly the relation the pre-fix spelling
+ * expressed, and which stays true under any future re-spelling.
+ */
+const matchesEndpoint = (names: Set<string>, value: unknown): boolean => {
+  const v = String(value ?? "")
+  if (names.has(v)) return true
+  for (const n of names) if (n && v.endsWith(`.${n}`)) return true
+  return false
+}
+
+/** Does this `calls` edge name the same declaration on both ends? */
+const isSelfCallEdge = (x: any): boolean =>
+  String(x?.type) === "calls" &&
+  (String(x.source) === String(x.target) || String(x.source).endsWith(`.${String(x.target)}`))
+
 export const FSHARP_MUTANTS: Mutant[] = [
   {
     id: "fsharp/type-extension-redeclares-the-type",
@@ -131,10 +161,10 @@ export const FSHARP_MUTANTS: Mutant[] = [
       return {
         ...r,
         symbols: (r.symbols ?? []).map((s: any) =>
-          s.ownerName && anon.has(String(s.ownerName)) ? { ...s, ownerName: undefined } : s,
+          s.ownerName && matchesEndpoint(anon, s.ownerName) ? { ...s, ownerName: undefined } : s,
         ),
         relationships: (r.relationships ?? []).filter(
-          (x: any) => !(String(x.type) === "contains" && anon.has(String(x.source))),
+          (x: any) => !(String(x.type) === "contains" && matchesEndpoint(anon, x.source)),
         ),
       }
     },
@@ -189,7 +219,7 @@ export const FSHARP_MUTANTS: Mutant[] = [
       return {
         ...r,
         relationships: (r.relationships ?? []).filter(
-          (x: any) => !(String(x.type) === "calls" && setters.has(String(x.source))),
+          (x: any) => !(String(x.type) === "calls" && matchesEndpoint(setters, x.source)),
         ),
       }
     },
@@ -208,7 +238,7 @@ export const FSHARP_MUTANTS: Mutant[] = [
       return {
         ...r,
         relationships: (r.relationships ?? []).filter(
-          (x: any) => !(String(x.type) === "calls" && sigNames.has(String(x.source))),
+          (x: any) => !(String(x.type) === "calls" && matchesEndpoint(sigNames, x.source)),
         ),
       }
     },
@@ -356,11 +386,9 @@ export const FSHARP_MUTANTS: Mutant[] = [
     description:
       "A defect in the lane's own TRUTH ORACLE, reverted here because a differential finds bugs on both sides and a mutant is the only way a truth-side bug stays fixed. The oracle refused EVERY label's self-edge, on the reasoning that a self-edge is a statement about the graph rather than the code. That is true for `contains` and FALSE for `calls`: `let rec f x = … f (x-1) …` really does call itself, and refusing the edge deletes a true fact about the program. Measured: 668 UNEXPLAINED rows per 200 real files, every one of them a recursive call the analyzer was RIGHT to emit. The analyzer's own refusal is already per-label (see the composition site); this mutant restores the blanket version on the ANALYZER's output so the fixture that pins `calls loop -> loop` — a true recursive call that must survive — goes red. Caught by fsharp/call-ownership, whose last forbid row states the two rules are per-label on purpose.",
     transform: (r: any) => {
-      const recursive = (r.relationships ?? []).filter(
-        (x: any) => String(x.type) === "calls" && String(x.source) === String(x.target),
-      )
+      const recursive = (r.relationships ?? []).filter(isSelfCallEdge)
       if (recursive.length === 0) return r
-      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "calls" && String(x.source) === String(x.target))) }
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !isSelfCallEdge(x)) }
     },
   },
   {
@@ -483,6 +511,136 @@ export const FSHARP_MUTANTS: Mutant[] = [
           delete metadata.fqn
           return { ...s, metadata }
         }),
+      }
+    },
+  },
+  {
+    id: "fsharp/edge-source-spelled-bare",
+    language: "fsharp",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "M60 ontology lane pass 4, FS-P4-1. FS-P3-1 above fixed the `overrides` SOURCE and left every other label bare, so `calls`/`instantiates` sources were the member's own name while the store registers each symbol under `${scope}.${name}` (parallel-indexer.ts:3247) — an exact map hit for the qualified spelling and a first-wins pick among same-named symbols for the bare one. Measured on a 3,000-file draw of the 11,809-file population, scored against the full-corpus pool with the store's own strategy 1/2/3 model (.tmp-probe/fs-verdict-state/rows-pass4.ndjson vs rows.ndjson): source-determinate edges 187,370 (52.5%) -> 255,415 (71.6%), +68,045, and it is strictly additive because when the qualified spelling is absent the store's leaf fallback returns exactly what the bare spelling gave. Reverted by dropping every `calls`/`instantiates` source to its last segment, which is the pre-fix spelling and nothing else. Caught by fsharp/call-ownership (7 rows), fsharp/one-char-calls (7) and fsharp/declared-type-graph, whose expect rows now carry the published spelling.",
+    transform: (r: any) => {
+      const QUALIFIED = new Set(["calls", "instantiates"])
+      const hit = (r.relationships ?? []).filter(
+        (x: any) => QUALIFIED.has(String(x.type)) && String(x.source).includes("."),
+      )
+      if (hit.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) =>
+          QUALIFIED.has(String(x.type))
+            ? { ...x, source: String(x.source).split(".").pop() }
+            : x,
+        ),
+      }
+    },
+  },
+  {
+    id: "fsharp/containment-endpoints-spelled-bare",
+    language: "fsharp",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "M60 ontology lane pass 4, FS-P4-2. A `contains` edge names two symbols the file PUBLISHED, and it named both of them as bare strings: the parent by `ownerName` and the child by `name`, while `publish` had already minted `${ownerName}.${name}` into `metadata.fqn` and the store already derives `qualified_name` from that field. So a containment edge was determinate only while exactly one symbol in the project carried the child's name. Measured on the same 3,000-file draw: `contains` target-determinate 34.2% -> 70.3% (+36.2 points) and source-determinate 42.4% -> 64.8%, with the edge COUNT unchanged at 58,298. Reverted by dropping both endpoints to their last segment. Caught by fsharp/name-surface (16 rows), fsharp/type-extension-and-containment (18), fsharp/override-target, fsharp/open-scope and fsharp/declared-type-graph. NOTE the parent half is deliberately NOT symmetrical with the child half in one case: where the parent's name is ambiguous within the file the composition keeps the PARENT bare, and that is the state this revert produces, so the fixture rows that pin a bare parent (`Setup`, `Integration.Probe`, `Fixture.OneCharCalls.Counter.Types`) keep passing under it — which is why they are written bare and must stay that way.",
+    transform: (r: any) => {
+      const hit = (r.relationships ?? []).filter((x: any) => String(x.type) === "contains")
+      if (hit.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) =>
+          String(x.type) === "contains"
+            ? {
+                ...x,
+                source: String(x.source).split(".").pop(),
+                target: String(x.target).split(".").pop(),
+              }
+            : x,
+        ),
+      }
+    },
+  },
+  {
+    id: "fsharp/qualified-callee-reduced-to-leaf",
+    language: "fsharp",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "M60 ontology lane pass 6, FS-P6-3, and the largest single target-side defect this lane has shipped. The analyzer READ the qualifier the source wrote and threw it away: `Array.fold` was emitted as `fold`, `Microsoft.FSharp.Collections.Seq.map` as `map`, `DotNet.exec` as `exec`. Measured on a 3,000-file draw of the 11,809-file corpus scored against the full-corpus pool with the store's own S1/S2/S3 (.tmp-probe/fs-p6-price.py, rows-pass5-meta.ndjson): of the 68,453 `calls` edges in the `external-type-or-module` class, respelling the discarded qualifier into `${qualifierLeaf}.${leaf}` moves 11,709 targets to DETERMINATE and 1,821 the other way, and every one of the 11,709 is a `q_cnt == 1` identity — an identity exactly one symbol in the corpus holds. Whole-draw: `calls` target-determinacy 19.1% -> 29.1%, all labels 22.4% -> 34.2%. The revert is read off the RESULT's own `metadata.targetResolution`, not off a name list, so it cannot silently stop matching when the rule or a fixture is renamed: a `calls` edge the analyzer itself marked `module-member`, `external-type-or-module` or `opened-module` gets its target cut to the last segment, which is exactly the pre-fix spelling. Caught by fsharp/call-target-spelling, whose three expect rows pin `Array.fold`, `FSharpPlus.map` and `Seq.map` and whose forbid row pins the leaf `fold`. NOTE the class it must NOT touch: `receiver-value` (a lowercase qualifier, i.e. a value's member) is a leaf on purpose, because no symbol is ever stored as `value.member` — measured, respelling that class loses 510 edges against the 109 it gains.",
+    transform: (r: any) => {
+      const QUALIFIED_RES = new Set(["module-member", "external-type-or-module", "opened-module"])
+      const hit = (r.relationships ?? []).filter(
+        (x: any) => String(x.type) === "calls" && QUALIFIED_RES.has(String(x.metadata?.targetResolution)),
+      )
+      if (hit.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) =>
+          String(x.type) === "calls" && QUALIFIED_RES.has(String(x.metadata?.targetResolution))
+            ? { ...x, target: String(x.target).split(".").pop() }
+            : x,
+        ),
+      }
+    },
+  },
+  {
+    id: "fsharp/call-chain-spelled-as-a-path",
+    language: "fsharp",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "M60 ontology lane pass 6, FS-P6-1. F# writes a fluent call as one `dot_get` node whose TEXT is the whole chain, and the walk read that text as a callee PATH: because the chain's first segment happened to be a name the file published, the identity branch returned the entire chain as the edge target. Measured on the 3,000-file draw: 514 `calls` targets are not names at all — `ArgumentParser.Create<'Template'>().ToParseResults`, `parser.PrintUsage().Contains`, `router.GetRoute(model).TrimStart`, `Existential.FromType(t).Accept` — and a target carrying a parameter list can never be a store identity, so every one of those edges was unresolvable by construction while looking like a resolved name in the graph. The member actually called is the LAST name in the chain, on a receiver whose type the file cannot know. The revert rebuilds the pre-fix string from the edge's own `targetQualifier` plus its target, so it is faithful by construction and self-checking: the qualifier is the chain text the analyzer itself preserved. Caught by fsharp/call-target-spelling, whose forbid row names the chain, and whose expect row pins the same edge with its `call-chain-receiver` reason.",
+    transform: (r: any) => {
+      const chains = (r.relationships ?? []).filter(
+        (x: any) => String(x.type) === "calls" && x.metadata?.targetResolution === "call-chain-receiver",
+      )
+      if (chains.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          if (String(x.type) !== "calls" || x.metadata?.targetResolution !== "call-chain-receiver") return x
+          const qual = String(x.metadata?.targetQualifier ?? "")
+          if (!qual) return x
+          return { ...x, target: `${qual}.${String(x.target)}`, metadata: { ...x.metadata, targetResolution: "in-file-qualified" } }
+        }),
+      }
+    },
+  },
+  {
+    id: "fsharp/target-resolution-reason-dropped",
+    language: "fsharp",
+    defectClass: "wrong-payload",
+    description:
+      "M60 ontology lane pass 6, FS-P5-2's contract half. The spelling rule's whole justification is that a target the analyzer CANNOT prove carries the reason it cannot: `local-binding`, `bare-external`, `receiver-value`, `call-chain-receiver`, `base-member-external`, each with the discarded qualifier beside it. That is what makes the residual auditable instead of unexplained, and until this round NOTHING PINNED IT — the audit that found this (.tmp-probe/fs-target-audit.py, which keys on the same strings) grepped the 11 expectation files for `targetResolution` and matched zero, so every reason could have been deleted in a one-line edit and the whole suite would have stayed green. The mutant deletes both keys from every relationship: same edges, same endpoints, same confidences, one payload field gone. Caught by fsharp/call-target-spelling, whose eleven expect rows each pin `meta.targetResolution` (and four pin `meta.targetQualifier`), which is why that fixture exists as a target-side fixture rather than as more rows in a call-ownership one.",
+    transform: (r: any) => {
+      const hit = (r.relationships ?? []).filter((x: any) => x.metadata?.targetResolution !== undefined)
+      if (hit.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          if (!x.metadata || x.metadata.targetResolution === undefined) return x
+          const metadata = { ...x.metadata }
+          delete metadata.targetResolution
+          delete metadata.targetQualifier
+          return { ...x, metadata }
+        }),
+      }
+    },
+  },
+  {
+    id: "fsharp/derived-endpoint-spelled-bare",
+    language: "fsharp",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "M60 ontology lane pass 5/6, the DERIVED half of the spelling rule — the two spellings the analyzer COMPUTES rather than reads. `this.M` is spelled `${enclosingType}.${M}` and `base.M` is spelled `${baseLeaf}.${M}` when the base is a type this file declared, because both are identities the file published (`publish` mints `${ownerName}.${name}`, and the enclosing type IS the ownerName of the member being called). The pre-fix answer was the bare leaf, which the store resolves by name uniqueness if it is lucky and by nothing at all if it is not — the same defect FS-P3-1 fixed on the `overrides` label one pass earlier. Reverted by cutting every edge the analyzer itself marked `self-member` or `base-member` back to its last segment, read off the result's own metadata so the revert cannot go vacuous. Caught by fsharp/call-target-spelling, which pins `Widget.RenderTo` and `Base.Speak` with those two reasons, and by fsharp/override-target on the `overrides` side of the same rule.",
+    transform: (r: any) => {
+      const DERIVED = new Set(["self-member", "base-member"])
+      const hit = (r.relationships ?? []).filter((x: any) => DERIVED.has(String(x.metadata?.targetResolution)))
+      if (hit.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) =>
+          DERIVED.has(String(x.metadata?.targetResolution))
+            ? { ...x, target: String(x.target).split(".").pop() }
+            : x,
+        ),
       }
     },
   },

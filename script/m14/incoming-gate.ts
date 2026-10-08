@@ -77,7 +77,7 @@
  *       3 THE INSTRUMENT'S OWN CONTROL DID NOT FIRE.
  */
 import { execFileSync } from "node:child_process"
-import { readFileSync, readdirSync, statSync } from "node:fs"
+import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
@@ -114,6 +114,12 @@ const EXTERNAL_KEYS = [
   "stdlibModule",
   "moduleNamingEdges",
   "markAsExternal",
+  // dart: the first-heritage fallback in `real-dart-analyzer.ts`, which fires only where
+  // NO evidence refutes the base (the base is a name this run cannot see) and only for a
+  // member carrying the `@override` annotation. Named `isExternalBase` rather than one of
+  // the generic spellings because it marks a BASE, not a target: the marked row still
+  // names a member, and that member is still required to exist (see the Object retarget).
+  "isExternalBase",
 ]
 
 const ALL_TYPES = [
@@ -140,6 +146,11 @@ const LABEL_ALIASES: Record<string, string> = {
 }
 const ontologyName = (raw: string): Type | null => (LABEL_ALIASES[raw] as Type) ?? null
 
+/** The engine's own full-AST bound (`pool-worker.ts` FULL_AST_LIMIT). Above it the analyzer
+ *  extracts structurally; above 5 MB `parseFile` returns an empty fallback with zero symbols.
+ *  A gate that admits files the analyzer will not measure is measuring its own patience. */
+const SIZE_CAP = 1024 * 1024
+
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 
 /**
@@ -152,14 +163,22 @@ const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
  * sampled 1,250, so the number and the command that produced it disagreed by half with
  * nothing in the output saying so.
  */
-function discoverFiles(lang: string, ext: string, maxFiles: number): { files: string[]; total: number; repos: number } {
+function discoverFiles(lang: string, ext: string, maxFiles: number): {
+  files: string[]; total: number; repos: number
+  /** tracked paths of THIS lane that could not be read at all (absent from the working tree) */
+  absent: number
+  /** tracked paths of this lane over SIZE_CAP — never parsed, so never measured */
+  overCap: number
+  overCapLargest: number
+} {
   const found: string[] = []
   const repos = new Set<string>()
+  const excluded = { absent: 0, overCap: 0, overCapLargest: 0 }
   let entries: string[]
   try {
     entries = readdirSync(CR)
   } catch {
-    return { files: [], total: 0, repos: 0 }
+    return { files: [], total: 0, repos: 0, absent: 0, overCap: 0, overCapLargest: 0 }
   }
   for (const name of entries.sort()) {
     const dir = path.join(CR, name)
@@ -186,10 +205,22 @@ function discoverFiles(lang: string, ext: string, maxFiles: number): { files: st
       if (!rel.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) continue
       const abs = path.join(dir, rel)
       try {
-        // Same size bound as the coverage gate: a >512 KB file is not a language sample,
-        // it is a bundle, and tree-sitter on it is a hang risk rather than a measurement.
-        if (statSync(abs).size > 512 * 1024) continue
+        // THE SIZE CAP IS PART OF THE POPULATION CLAIM, so it is counted and printed.
+        //
+        // It was 512 KB, which admitted 33,692 of this lane's 33,755 tracked .dart files
+        // and said nothing about the 63 left out. 46 of those sat between 512 KB and
+        // 1 MB — inside the range where `pool-worker.ts` still builds a FULL AST
+        // (FULL_AST_LIMIT = 1 MB) — so the gate was not measuring files the analyzer could
+        // measure. The cap is now that engine limit, because that is the line the analyzer
+        // itself draws: above 1 MB it extracts structurally, above 5 MB it returns an empty
+        // fallback with zero symbols. What remains excluded is reported in the header.
+        const size = statSync(abs).size
+        if (size > SIZE_CAP) { excluded.overCap++; excluded.overCapLargest = Math.max(excluded.overCapLargest, size); continue }
       } catch {
+        // A path `git ls-files` lists and the working tree does not have. Two such .dart
+        // files exist in this corpus (`pb-reference/examples/{add,list}_people.dart`), and
+        // a population that counts them is claiming files it cannot open.
+        excluded.absent++
         continue
       }
       found.push(abs)
@@ -200,14 +231,20 @@ function discoverFiles(lang: string, ext: string, maxFiles: number): { files: st
   const total = found.length
   // STRIDE, not head: a head-N walk measures one repository and calls it a language.
   // Deterministic either way, so a re-run with the same N reproduces the same set.
+  //
+  // `maxFiles <= 0` means NO CAP. It exists because the previous call form passed the
+  // corpus size measured under the OLD cap, and a stride computed against a grown corpus
+  // silently truncates it back — the population number would look unchanged while 46 real
+  // files went unmeasured, which is the defect this file keeps having to fix.
   let files = found
-  if (total > maxFiles) {
+  if (maxFiles > 0 && total > maxFiles) {
     const stride = Math.max(1, Math.floor(total / maxFiles))
     const picked: string[] = []
     for (let i = 0; i < found.length && picked.length < maxFiles; i += stride) picked.push(found[i])
     files = picked
   }
-  return { files, total, repos: repos.size }
+  void lang
+  return { files, total, repos: repos.size, ...excluded }
 }
 
 /** Is this edge declared as naming something outside the corpus? */
@@ -222,6 +259,75 @@ function isMarkedExternal(rel: any): boolean {
   return false
 }
 
+type Outcome =
+  | "resolved" | "ambBoth" | "ambDeclOnly" | "unresolved"
+  | "externalVerified" | "externalRefuted" | "externalUnverified"
+
+/**
+ * The owner segment of a qualified target: everything before the FINAL dot.
+ *
+ * `Object.hashCode` -> `Object`; `package:flutter/material.dart:*` -> a non-identifier,
+ * which is the point of returning it rather than a cleaned-up guess.
+ */
+function targetOwner(tgt: string): string | null {
+  const dot = tgt.lastIndexOf(".")
+  if (dot <= 0) return null
+  return tgt.slice(0, dot)
+}
+
+/**
+ * CAN THE POPULATION REFUTE THE CLAIM? An external marker is a claim the corpus can check,
+ * and a gate that accepts it unverified is a gate that can be laundered: mark every
+ * unresolved edge external and `unresolved` reads 0. So the claim is verified here.
+ *
+ *   VERIFIED   the target's OWNER is not published anywhere in the population. The corpus
+ *              has looked for the declaration this edge depends on and does not have it —
+ *              that is what "outside the declared population" means, measured.
+ *   REFUTED    the corpus DOES publish the owner. The claim "this names something outside
+ *              the corpus" is then false about the owner, and the edge is reported as what
+ *              it is: unresolved. It is never counted clean.
+ *   UNVERIFIABLE  the target has no identifier-shaped owner to look up (a module URI such
+ *              as `package:flutter/material.dart:*`, or a bare unqualified name). The index
+ *              cannot confirm or deny, so this is a THIRD bucket — visible, counted, and
+ *              deliberately not merged into either of the other two.
+ *
+ * Calibrated on this programme's own record: `docs/analyzers/INCOMING-WORKLIST.md` says an
+ * unmarked external "counts against a lane, because a genuinely-external target and a
+ * broken edge are otherwise indistinguishable". This keeps that standard and adds the
+ * missing half — a marked one must still survive a lookup.
+ */
+function verifyExternalClaim(
+  declCount: Map<string, number>,
+  tgt: string,
+): "externalVerified" | "externalRefuted" | "externalUnverified" {
+  const owner = targetOwner(tgt)
+  if (owner === null) return "externalUnverified"
+  // `:`, `/` or whitespace means the owner is not an identifier — a URI scheme, a path, or
+  // a member spelling like `operator ==`. No published symbol can be keyed by it, so a
+  // lookup would return 0 for a reason that has nothing to do with the claim.
+  if (/[:/\s]/.test(owner)) return "externalUnverified"
+  return (declCount.get(owner) ?? 0) > 0 ? "externalRefuted" : "externalVerified"
+}
+
+/**
+ * THE ONE RULE. Measurement and control both call this, because two copies of a counting
+ * rule are two rules, and the copy the control runs is the one that stays correct.
+ */
+function classifyEdge(
+  declCount: Map<string, number>,
+  kinds: Map<string, Set<string>>,
+  tgt: string,
+  markedExternal: boolean,
+): Outcome {
+  const decls = declCount.get(tgt) ?? 0
+  if (decls === 0) {
+    if (!markedExternal) return "unresolved"
+    return verifyExternalClaim(declCount, tgt)
+  }
+  if (decls > 1) return (kinds.get(tgt)?.size ?? 0) > 1 ? "ambBoth" : "ambDeclOnly"
+  return "resolved"
+}
+
 type Row = {
   type: Type
   edges: number
@@ -233,15 +339,101 @@ type Row = {
   ambiguousByKind: number
   /** targets naming nothing published and NOT declared external */
   unresolved: number
-  /** targets naming nothing published but carrying an external marker */
+  /** targets naming nothing published but carrying an external marker — the claim, total */
   markedExternal: number
+  /** of those: the owner is absent from the whole population, so the claim survives */
+  externalVerified: number
+  /** of those: the target has no identifier-shaped owner to check */
+  externalUnverified: number
+  /** of those: the corpus publishes the owner, so the claim is FALSE and the edge is not clean */
+  externalRefuted: number
   /** the colliding TARGET STRINGS, so the gap is a list a lane can act on */
   ambiguousNames: { name: string; declarations: number; kinds: string }[]
   unresolvedNames: { name: string; type: string }[]
 }
 
-async function measure(lang: string, ext: string, maxFiles: number) {
-  const { files, total, repos } = discoverFiles(lang, ext, maxFiles)
+/**
+ * PRODUCTION PARITY: the project index.
+ *
+ * This gate used to walk the corpus file by file with NO context — `parseFile(f, dirname(f))`
+ * — while production (`pool-worker.ts` `parse_batch`) deserialises a `ProjectIndex` the parent
+ * built and hands `{ projectIndex }` to every parse. Two dart passes read it: the override
+ * pass resolves a base declared in ANOTHER file of the same repository, and the expression
+ * pass gates which type mentions it emits at all. So a no-context walk is not a measurement
+ * of the analyzer, it is a measurement of a degraded invocation of it.
+ *
+ * Measured on one repository (`validation/m14/fixtures/dart/project-index-effect.ts`,
+ * dart-http, 333 files, same files and order, one process):
+ *
+ *     overrides   326 edges / 198 unresolved  ->  198 edges / 13 unresolved
+ *     references  476 edges /   0 unresolved  -> 1227 edges /  0 unresolved
+ *     TOTAL      18,598 edges / 7,914 unresolved -> 19,221 / 7,729
+ *
+ * The override edge COUNT falls because the cross-file index refutes fallbacks the per-file
+ * walk had to guess at — fewer edges, and the ones that remain are the true externals. The
+ * reference count RISES because the analyzer can see the types it is mentioning. Both
+ * directions are the analyzer working as designed, which is why the index is opt-in here
+ * rather than assumed: the two populations are different, and a number is only comparable
+ * to another number measured the same way. The header says which one it is.
+ */
+const INDEX_SPECS: Record<string, { spec: any; wasm: string }> = {
+  dart: { spec: null, wasm: "tree-sitter-dart/tree-sitter-dart.wasm" },
+}
+const INDEX_CACHE = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
+
+/** Build (or reuse) one index per repository, the unit production builds for. */
+async function projectIndexesFor(
+  lang: string, files: string[],
+): Promise<{ byRepo: Map<string, any>; built: number; cached: number; damaged: number; indexed: number }> {
+  const byRepo = new Map<string, any>()
+  const entry = INDEX_SPECS[lang]
+  if (!entry) return { byRepo, built: 0, cached: 0, damaged: 0, indexed: 0 }
+  const mod: any = await import("../../src/ast/project-index")
+  const spec = lang === "dart" ? mod.DART_DECLARATION_SPEC : mod.SOLIDITY_DECLARATION_SPEC
+  const { resolveWasmAsset } = await import("../../src/util/wasm")
+  const wasm = resolveWasmAsset(entry.wasm)
+  const perRepo = new Map<string, string[]>()
+  for (const f of files) {
+    const rel = f.startsWith(CR) ? f.slice(CR.length + 1) : f
+    const repo = path.join(CR, rel.split(path.sep)[0])
+    if (!perRepo.has(repo)) perRepo.set(repo, [])
+    perRepo.get(repo)!.push(f)
+  }
+  let built = 0
+  let cached = 0
+  let damaged = 0
+  let indexed = 0
+  mkdirSync(INDEX_CACHE, { recursive: true })
+  for (const [repo, repoFiles] of perRepo) {
+    const cachePath = path.join(INDEX_CACHE, `${lang}-${path.basename(repo)}.json`)
+    // A cache is keyed on the file set AND the newest mtime in it. A count alone would
+    // return yesterday's index for a repository that edited a file in place, which is the
+    // one case where a stale index silently changes an answer instead of failing.
+    let newest = 0
+    for (const f of repoFiles) { try { newest = Math.max(newest, statSync(f).mtimeMs) } catch { /* counted by the gate */ } }
+    try {
+      const raw = JSON.parse(readFileSync(cachePath, "utf8"))
+      if (raw?.files === repoFiles.length && raw?.newest === newest) {
+        const back = mod.deserializeProjectIndex(raw.index)
+        if (back !== null) { byRepo.set(repo, back); cached++; indexed += raw.files; continue }
+      }
+    } catch { /* no usable cache: build below */ }
+    const index = await mod.buildProjectIndexStreaming(wasm, repoFiles, spec)
+    damaged += index.stats.damaged
+    indexed += index.stats.files
+    byRepo.set(repo, index)
+    built++
+    try {
+      writeFileSync(cachePath, JSON.stringify({
+        files: repoFiles.length, newest, index: mod.serializeProjectIndex(index),
+      }))
+    } catch { /* a cache that cannot be written is not a failed measurement */ }
+  }
+  return { byRepo, built, cached, damaged, indexed }
+}
+
+async function measure(lang: string, ext: string, maxFiles: number, useIndex: boolean) {
+  const { files, total, repos, absent, overCap, overCapLargest } = discoverFiles(lang, ext, maxFiles)
 
   // name -> how many DECLARATIONS publish it, and the distinct kinds among them.
   // Both, because the whole point of this gate is that the kind-count is not the
@@ -253,6 +445,7 @@ async function measure(lang: string, ext: string, maxFiles: number) {
     rows.set(t, {
       type: t, edges: 0, resolved: 0, ambiguousByDecl: 0,
       ambiguousByKind: 0, unresolved: 0, markedExternal: 0,
+      externalVerified: 0, externalUnverified: 0, externalRefuted: 0,
       ambiguousNames: [], unresolvedNames: [],
     })
   }
@@ -265,10 +458,20 @@ async function measure(lang: string, ext: string, maxFiles: number) {
    *  endpoint population is name + qualifiedName and not name alone. */
   let aliasedKeys = 0
 
+  // Built BEFORE the walk, because production's index is built before its batch runs too.
+  const indexInfo = useIndex ? await projectIndexesFor(lang, files) : null
+  const repoOf = (f: string): string => {
+    const rel = f.startsWith(CR) ? f.slice(CR.length + 1) : f
+    return path.join(CR, rel.split(path.sep)[0])
+  }
+
   for (const f of files) {
     let r: any
     try {
-      r = await parseFile(f, path.dirname(f))
+      const idx = indexInfo?.byRepo.get(repoOf(f))
+      r = idx === undefined
+        ? await parseFile(f, path.dirname(f))
+        : await parseFile(f, path.dirname(f), { projectIndex: idx } as any)
     } catch {
       failed++
       continue
@@ -335,10 +538,43 @@ async function measure(lang: string, ext: string, maxFiles: number) {
       const tgt = String(rel?.target ?? rel?.to ?? rel?.toSymbol ?? "")
       if (tgt.length === 0) continue
 
-      const decls = declCount.get(tgt) ?? 0
-      if (decls === 0) {
-        if (isMarkedExternal(rel)) row.markedExternal++
-        else {
+      switch (classifyEdge(declCount, kindsByName, tgt, isMarkedExternal(rel))) {
+        case "resolved":
+          row.resolved++
+          break
+        case "ambDeclOnly":
+        case "ambBoth":
+          row.ambiguousByDecl++
+          if ((kindsByName.get(tgt)?.size ?? 0) > 1) row.ambiguousByKind++
+          if (row.ambiguousNames.length < 25) {
+            row.ambiguousNames.push({
+              name: tgt, declarations: declCount.get(tgt) ?? 0,
+              kinds: [...(kindsByName.get(tgt) ?? [])].sort().join("|"),
+            })
+          }
+          break
+        case "externalVerified":
+          row.markedExternal++
+          row.externalVerified++
+          break
+        case "externalUnverified":
+          row.markedExternal++
+          row.externalUnverified++
+          break
+        case "externalRefuted":
+          // NOT `unresolved` (that column means "carries no external claim") and NOT clean
+          // (that column means "names exactly one declaration"). It is its own thing, and
+          // the verdict counts it as bad, so a lane cannot mark its way to a PASS.
+          row.markedExternal++
+          row.externalRefuted++
+          if (row.unresolvedNames.length < 25) {
+            row.unresolvedNames.push({
+              name: `${tgt}   [external claim REFUTED — the corpus publishes ${targetOwner(tgt)}]`,
+              type: label,
+            })
+          }
+          break
+        case "unresolved":
           row.unresolved++
           // NAME IT. A count a lane cannot resolve back to the things it counted leaves
           // the only response as re-running the whole lane hoping to see it again — and
@@ -346,25 +582,24 @@ async function measure(lang: string, ext: string, maxFiles: number) {
           // verdict itself, and it is capped per type so one pathological name (a
           // stdlib function used 40,000 times) cannot produce a 40,000-line report.
           if (row.unresolvedNames.length < 25) row.unresolvedNames.push({ name: tgt, type: label })
-        }
-        continue
+          break
       }
-      if (decls > 1) {
-        row.ambiguousByDecl++
-        if ((kindsByName.get(tgt)?.size ?? 0) > 1) row.ambiguousByKind++
-        if (row.ambiguousNames.length < 25) {
-          row.ambiguousNames.push({
-            name: tgt, declarations: decls,
-            kinds: [...(kindsByName.get(tgt) ?? [])].sort().join("|"),
-          })
-        }
-        continue
-      }
-      row.resolved++
     }
   }
 
-  return { lang, ext, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, rows }
+  return {
+    lang, ext, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, rows,
+    // THE EXCLUSIONS TRAVEL WITH THE POPULATION. A reader comparing two runs has to be able
+    // to see whether the population moved under them, and a lane returning to a number it
+    // recognizes should not have to wonder which cap produced it.
+    excluded: { absent, overCap, overCapLargest, sizeCapBytes: SIZE_CAP },
+    index: indexInfo === null
+      ? null
+      : {
+        repos: indexInfo.byRepo.size, built: indexInfo.built,
+        cached: indexInfo.cached, damaged: indexInfo.damaged, indexed: indexInfo.indexed,
+      },
+  }
 }
 
 type Report = Awaited<ReturnType<typeof measure>>
@@ -379,7 +614,14 @@ type Report = Awaited<ReturnType<typeof measure>>
 function selfTest(): { ok: boolean; failures: string[] } {
   const failures: string[] = []
   // name -> declarations, kinds
-  const declCount = new Map<string, number>([["alpha", 1], ["beta", 3], ["gamma", 2]])
+  const declCount = new Map<string, number>([
+    ["alpha", 1], ["beta", 3], ["gamma", 2],
+    // `Object` IS published — dart-sdk `sdk/lib/core/object.dart` publishes `Object.hashCode`
+    // among its 12 symbols, measured with `pool-worker.parseFile` — so an external claim
+    // about anything owned by `Object` is REFUTABLE and must be refuted, while an owner the
+    // corpus does not have survives. The two cases differ only by this entry.
+    ["Object", 1],
+  ])
   const kinds = new Map<string, Set<string>>([
     ["alpha", new Set(["function"])],
     // 3 declarations, ONE kind — the make/scss shape that reads 0 ambiguous by kind.
@@ -387,19 +629,40 @@ function selfTest(): { ok: boolean; failures: string[] } {
     // 2 declarations, TWO kinds — must count under BOTH metrics.
     ["gamma", new Set(["function", "module"])],
   ])
-  const classify = (t: string) => {
-    const d = declCount.get(t) ?? 0
-    if (d === 0) return "unresolved"
-    if (d > 1) return (kinds.get(t)?.size ?? 0) > 1 ? "ambBoth" : "ambDeclOnly"
-    return "resolved"
+  // ONE OF EACH OUTCOME, including the two the old control could not reach: an external
+  // claim that survives a lookup and one that does not. A control that cannot plant a
+  // refuted claim cannot detect the laundering it exists to prevent.
+  const marked = new Set([
+    "AbsentThing.build",              // owner not published -> verified
+    "Object.hashCode",                // owner published     -> REFUTED
+    "package:flutter/material.dart:*", // no identifier owner -> unverified
+  ])
+  const got: Record<Outcome, number> = {
+    resolved: 0, ambBoth: 0, ambDeclOnly: 0, unresolved: 0,
+    externalVerified: 0, externalRefuted: 0, externalUnverified: 0,
   }
-  const got = { resolved: 0, ambBoth: 0, ambDeclOnly: 0, unresolved: 0 }
-  for (const t of ["alpha", "beta", "gamma", "delta"]) got[classify(t) as keyof typeof got]++
+  for (const t of [
+    "alpha", "beta", "gamma", "delta",
+    "AbsentThing.build", "Object.hashCode", "package:flutter/material.dart:*",
+  ]) {
+    got[classifyEdge(declCount, kinds, t, marked.has(t))]++
+  }
 
   if (got.resolved !== 1) failures.push(`control: expected 1 resolved, got ${got.resolved}`)
   if (got.ambDeclOnly !== 1) failures.push(`control: expected 1 ambiguous-by-declaration-only, got ${got.ambDeclOnly}`)
   if (got.ambBoth !== 1) failures.push(`control: expected 1 ambiguous-by-both, got ${got.ambBoth}`)
   if (got.unresolved !== 1) failures.push(`control: expected 1 unresolved, got ${got.unresolved}`)
+  // THE LAUNDERING MUTANT. Delete the verification (return an external outcome for every
+  // marked edge) and this asserts 0 and fails the control — which is the only reason the
+  // number it prints can be believed.
+  if (got.externalRefuted !== 1) {
+    failures.push(
+      `control: expected 1 REFUTED external claim (owner published), got ${got.externalRefuted} ` +
+      `— an external marker is being accepted without a lookup`,
+    )
+  }
+  if (got.externalVerified !== 1) failures.push(`control: expected 1 verified external claim, got ${got.externalVerified}`)
+  if (got.externalUnverified !== 1) failures.push(`control: expected 1 unverifiable external claim, got ${got.externalUnverified}`)
   return { ok: failures.length === 0, failures }
 }
 
@@ -407,6 +670,7 @@ function verdict(rep: Report): { pass: boolean; totals: Row; reason: string } {
   const t: Row = {
     type: "calls", edges: 0, resolved: 0, ambiguousByDecl: 0,
     ambiguousByKind: 0, unresolved: 0, markedExternal: 0,
+    externalVerified: 0, externalUnverified: 0, externalRefuted: 0,
     ambiguousNames: [], unresolvedNames: [],
   }
   for (const r of rep.rows.values()) {
@@ -416,20 +680,36 @@ function verdict(rep: Report): { pass: boolean; totals: Row; reason: string } {
     t.ambiguousByKind += r.ambiguousByKind
     t.unresolved += r.unresolved
     t.markedExternal += r.markedExternal
+    t.externalVerified += r.externalVerified
+    t.externalUnverified += r.externalUnverified
+    t.externalRefuted += r.externalRefuted
   }
   // A lane with no corpus is UNMEASURED, which is not the same as passing and must not
   // render as one. Exits 2.
   if (rep.parsed === 0) return { pass: false, totals: t, reason: "no corpus admitted — UNMEASURED, not a pass" }
-  const bad = t.ambiguousByDecl + t.unresolved
-  if (bad === 0) {
+  // A REFUTED external claim is a bad edge. It is not in `unresolved` (that column is
+  // "carries no external claim") and must not be, but it is counted here so that a lane
+  // whose large population is external-LOOKING cannot buy a PASS with a marker.
+  const bad = t.ambiguousByDecl + t.unresolved + t.externalRefuted
+  const ext = `${t.externalVerified} verified + ${t.externalUnverified} unverifiable external`
+  if (bad === 0 && t.externalUnverified === 0) {
     return {
       pass: true, totals: t,
-      reason: `every one of ${t.edges} edges resolves to exactly one declaration, or carries a declared external marker (${t.markedExternal})`,
+      reason: `every one of ${t.edges} edges resolves to exactly one declaration, or carries an external claim the corpus confirms (${ext})`,
+    }
+  }
+  if (bad === 0) {
+    return {
+      pass: false, totals: t,
+      reason: `${t.externalUnverified} external claim(s) name no identifier-shaped owner, so the corpus can neither confirm nor deny them (${ext})`,
     }
   }
   return {
     pass: false, totals: t,
-    reason: `${t.ambiguousByDecl} ambiguous + ${t.unresolved} unresolved of ${t.edges} edges`,
+    reason:
+      `${t.ambiguousByDecl} ambiguous + ${t.unresolved} unresolved of ${t.edges} edges` +
+      (t.externalRefuted > 0 ? `, and ${t.externalRefuted} external claim(s) REFUTED by the population` : "") +
+      (t.externalUnverified > 0 ? `; ${t.externalUnverified} external claim(s) unverifiable (${ext})` : ""),
   }
 }
 
@@ -441,6 +721,24 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   console.log(
     `population: ${rep.parsed} parsed of ${rep.files.length} sampled ` +
     `(corpus has ${rep.total} .${rep.ext} files across ${rep.repos} repos; stride sample)`,
+  )
+  console.log(
+    rep.index === null
+      ? `project index: NOT USED — this is the per-file population, which is NOT the one ` +
+        `production parses (re-run with --index to measure that one)`
+      : `project index: USED — ${rep.index.repos} repo index(es) (${rep.index.built} built, ` +
+        `${rep.index.cached} from cache, ${rep.index.damaged} damaged) over ${rep.index.indexed} file(s) — ` +
+        `the files THIS RUN sampled, so an index over a stride sample is not a project index ` +
+        `(run with maxFiles 0 for the real one). Passed as ` +
+        `{ projectIndex } exactly as \`pool-worker.ts\` parse_batch does. This is the ` +
+        `production population: cross-file base resolution and the widened type-visibility ` +
+        `gate are IN these numbers, and its counts are not comparable to a --index-less run`,
+  )
+  console.log(
+    `excluded from that population: ${rep.excluded.absent} tracked-but-absent/unreadable + ` +
+    `${rep.excluded.overCap} over the ${(rep.excluded.sizeCapBytes / 1024 / 1024).toFixed(0)} MB cap ` +
+    (rep.excluded.overCap > 0 ? `(largest ${(rep.excluded.overCapLargest / 1024 / 1024).toFixed(1)} MB)` : "") +
+    ` — above the cap the engine extracts structurally, not as an analyzer`,
   )
   console.log(`parse failures: ${rep.failed}   degraded (regex fallback): ${rep.degraded}`)
   console.log(
@@ -455,21 +753,29 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   console.log()
   console.log(
     w("type", 14) + w("edges", 9) + w("resolved", 10) + w("amb(decl)", 11) +
-    w("amb(kind)", 11) + w("unresolved", 12) + "external",
+    w("amb(kind)", 11) + w("unresolved", 12) +
+    w("extOK", 8) + w("ext?", 8) + "extFAIL",
   )
-  console.log("-".repeat(88))
+  console.log("-".repeat(93))
   for (const t of ALL_TYPES) {
     const r = rep.rows.get(t)!
     console.log(
       w(t, 14) + w(r.edges, 9) + w(r.resolved, 10) + w(r.ambiguousByDecl, 11) +
-      w(r.ambiguousByKind, 11) + w(r.unresolved, 12) + String(r.markedExternal),
+      w(r.ambiguousByKind, 11) + w(r.unresolved, 12) +
+      w(r.externalVerified, 8) + w(r.externalUnverified, 8) + String(r.externalRefuted),
     )
   }
-  console.log("-".repeat(88))
+  console.log("-".repeat(93))
   const t = v.totals
   console.log(
     w("TOTAL", 14) + w(t.edges, 9) + w(t.resolved, 10) + w(t.ambiguousByDecl, 11) +
-    w(t.ambiguousByKind, 11) + w(t.unresolved, 12) + String(t.markedExternal),
+    w(t.ambiguousByKind, 11) + w(t.unresolved, 12) +
+    w(t.externalVerified, 8) + w(t.externalUnverified, 8) + String(t.externalRefuted),
+  )
+  console.log(
+    "extOK = external claim the corpus CONFIRMS (owner absent from the population) · " +
+    "ext? = claim the index cannot check (no identifier owner) · " +
+    "extFAIL = claim the corpus REFUTES, counted against the lane",
   )
   console.log()
   // THE WORKLIST. A count a lane cannot resolve back to the things it counted leaves the
@@ -507,6 +813,7 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
 const argv = process.argv.slice(2)
 const JSON_OUT = argv.includes("--json")
 const ALL = argv.includes("--all")
+const USE_INDEX = argv.includes("--index")
 const rest = argv.filter((a) => !a.startsWith("--"))
 
 // THE CONTROL RUNS FIRST, ALWAYS. Before any lane, before any corpus. An instrument that
@@ -526,7 +833,7 @@ if (ALL) {
   const summary: string[] = []
   for (const [lang, ext] of Object.entries(LANES_B)) {
     const max = Number(rest[0] ?? 120)
-    const rep = await measure(lang, ext, max)
+    const rep = await measure(lang, ext, max, USE_INDEX)
     const v = verdict(rep)
     if (rep.parsed === 0) {
       unmeasured++
@@ -537,7 +844,8 @@ if (ALL) {
     summary.push(
       `${w(lang, 12)} ${v.pass ? "PASS" : "FAIL"}  ` +
       `edges ${w(String(t0(rep)), 8)} amb(decl) ${w(String(v.totals.ambiguousByDecl), 7)} ` +
-      `unres ${w(String(v.totals.unresolved), 7)} ext ${v.totals.markedExternal}  ` +
+      `unres ${w(String(v.totals.unresolved), 7)} extOK ${w(String(v.totals.externalVerified), 7)} ` +
+      `extFAIL ${v.totals.externalRefuted}  ` +
       `[${rep.parsed} files]`,
     )
   }
@@ -558,12 +866,15 @@ function t0(rep: Report): number {
 if (rest.length < 2) {
   console.error("usage: npx tsx script/m14/incoming-gate.ts <lang> <extension> [maxFiles]")
   console.error("       npx tsx script/m14/incoming-gate.ts --all [maxFiles]")
+  console.error("       maxFiles 0 = the WHOLE admitted corpus. A positive value stride-samples it,")
+  console.error("       and stride against a corpus that has grown since the number was chosen")
+  console.error("       silently truncates the population back to the old size.")
   process.exit(2)
 }
 const lang = rest[0]
 const ext = rest[1]
 const maxFiles = Number(rest[2] ?? 120)
-const rep = await measure(lang, ext, maxFiles)
+const rep = await measure(lang, ext, maxFiles, USE_INDEX)
 const v = verdict(rep)
 
 if (JSON_OUT) {
@@ -573,6 +884,7 @@ if (JSON_OUT) {
       sampled: rep.files.length, parsed: rep.parsed, failed: rep.failed,
       corpusTotal: rep.total, repos: rep.repos, degraded: rep.degraded,
       degradedFiles: rep.degradedFiles, qualifiedNameAliases: rep.aliasedKeys,
+      excluded: rep.excluded,
     },
     verdict: v.pass ? "PASS" : "FAIL",
     reason: v.reason,

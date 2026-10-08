@@ -52,7 +52,7 @@ over upstream tree-sitter-fsharp:
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ | `app_expression`/`application_expression` → leaf callee name (`Map.tryFind` → `tryFind`, `store.Add` → `Add`, `first.Log` → `Log`), **plus a BARE pipeline** (`infix_expression` whose `infix_op` token is a pipe) since FS-A6 (M60 pass 2) — single pass, deduped by identity in the harness. **FS-A6, and the doc's own pipe claim was half true until it was measured:** the pipe `a \|> List.map` → `map` was read only when the pipeline sat in CALLEE position (`f (x \|> g)`), because only the `application_expression` branch had an `infix_expression` arm. The shape F# is actually written in — a `let` whose BODY is the pipeline — produced nothing: **1,043 bare `\|>` nodes with a NAME on the right, against 580 read in callee position, on a 300-file corpus draw**, i.e. ~11% of the corpus's calls were absent from the label. The operator's TOKEN decides which side carries the callee (`\|>` `\|>>` `>>=` apply the right operand, `<\|` `<<` the left) and `>>` `>>>` `>=>` `<<<` are deliberately absent because they COMPOSE two functions and call neither. **FS-A4, in the same round:** the label was also gated on `fnName.length > 1`, which no property of the program justifies and which dropped every call to a one-letter function — **5,313 occurrences over 6,619 files in 735 files** (2.2% of the label's 246,327 full-extent edges), and the dropped population resolves BETTER than the emitted one (32.4% in-file on a 120-file draw against 22.2%). **Source (owner) is the enclosing callable**, and which callables count is the substance of FS-D10/D12/D13: a top-level `let` owns its initialiser's calls *whatever its kind* (a `let` with no arguments is a Variable, and a script top level has no enclosing callable, so keying on kind dropped 2,520 rows per 200 files); a `default` implementation owns its body's calls (it publishes no symbol — the abstract signature is canonical — but the body belongs to it); an explicit `with get, set` property owns its **setter**'s calls. A recursive `calls f -> f` is emitted: a self-CALL is a fact about the program, while a self-`contains` is not, and the refusal is per-label. | 0.8 |
+| calls | ✅ | `app_expression`/`application_expression` → the callee name, **plus a BARE pipeline** (`infix_expression` whose `infix_op` token is a pipe) since FS-A6 (M60 pass 2) — single pass, deduped by identity in the harness. **FS-A6, and the doc's own pipe claim was half true until it was measured:** the pipe `a \|> List.map` → `map` was read only when the pipeline sat in CALLEE position (`f (x \|> g)`), because only the `application_expression` branch had an `infix_expression` arm. The shape F# is actually written in — a `let` whose BODY is the pipeline — produced nothing: **1,043 bare `\|>` nodes with a NAME on the right, against 580 read in callee position, on a 300-file corpus draw**, i.e. ~11% of the corpus's calls were absent from the label. The operator's TOKEN decides which side carries the callee (`\|>` `\|>>` `>>=` apply the right operand, `<\|` `<<` the left) and `>>` `>>>` `>=>` `<<<` are deliberately absent because they COMPOSE two functions and call neither. **FS-A4, in the same round:** the label was also gated on `fnName.length > 1`, which no property of the program justifies and which dropped every call to a one-letter function — **5,313 occurrences over 6,619 files in 735 files** (2.2% of the label's 246,327 full-extent edges), and the dropped population resolves BETTER than the emitted one (32.4% in-file on a 120-file draw against 22.2%). **Source (owner) is the enclosing callable**, and which callables count is the substance of FS-D10/D12/D13: a top-level `let` owns its initialiser's calls *whatever its kind* (a `let` with no arguments is a Variable, and a script top level has no enclosing callable, so keying on kind dropped 2,520 rows per 200 files); a `default` implementation owns its body's calls (it publishes no symbol — the abstract signature is canonical — but the body belongs to it); an explicit `with get, set` property owns its **setter**'s calls. A recursive `calls f -> f` is emitted: a self-CALL is a fact about the program, while a self-`contains` is not, and the refusal is per-label. **THE TARGET IS NOT ALWAYS THE LEAF, and the pass-4 sentence that said it was is superseded by passes 5 and 6 below.** A `calls` target is spelled by one rule with three outcomes: the identity this file PUBLISHED when the written path (or, for a 3+-segment path, its last two segments) is one of them (`Message.SetInput`, `Seq.map`, `Widget.RenderTo`); `${qualifierLeaf}.${leaf}` when the qualifier the source wrote is module-LIKE and the identity is not provable in-file (`Microsoft.FSharp.Collections.Seq.map` → `Seq.map`, `Array.fold` → `Array.fold` — provably never worse than the leaf, because strategy 3's tail of a two-segment string IS the leaf); and the LEAF otherwise, always with `metadata.targetResolution` naming the class (`local-binding`, `bare-external`, `receiver-value`, `call-chain-receiver`, `base-member-external`, `in-file-declaration`, `in-file-qualified`, `self-member`, `module-member`, `opened-module`, `external-type-or-module`) and `metadata.targetQualifier` carrying the discarded qualifier. Measured: `calls` target-determinacy 19.1% → 29.1%, all labels 22.4% → 34.2% on the 3,000-file draw. Pinned by `fsharp/call-target-spelling` (11 classes, 4 forbids). | 0.8 |
 | extends | ✅ | `class_inherits_decl` (`inherit Animal()`) → `Animal`; source = the type. **R10 spelling:** a qualified target is published under the LEAF, with the qualified form kept in `metadata.qualifiedType` — the name this lane would publish for that type as a symbol, which is what a consumer joins on (FS-D9; 13 dotted `implements` + 3 dotted `extends` per 400 files) | 1.0 |
 | implements | ✅ | `interface_implementation` (`interface ILogger with`) → `ILogger`; source = the type. R10 leaf spelling as for `extends`. | 1.0 |
 | instantiates | ✅ | constructor chaining `new() = Point(0, 0)` → `Point` (enclosing constructor body); source = `constructor` | 0.95 |
@@ -1582,6 +1582,459 @@ touched.
    union could not move, so the probe would have shown no change at all for the defect it was
    written to detect. The `src%STORE` and `dotSrcStore` columns exist because of that, and the
    before/after table above is measured on both sides rather than inferred from one.
+
+## M60 ONTOLOGY LANE, PASS 4 — the endpoint spelling, and the production filter that was eating the result (2026-10-07)
+
+### The defect pass 3 left standing
+
+FS-P3-1 (above) qualified the `overrides` SOURCE to `Owner.member` and measured 0.0% → 100.0%
+binding at the store seam. Every OTHER label kept spelling its endpoints as BARE names, and
+the store's own code says why that is not a cosmetic difference:
+
+* `parallel-indexer.ts:3236-3250` registers each symbol in `nameToSymbol` under **both** its
+  `name` and `${scope}.${name}`;
+* an edge source is resolved with `nameToSymbol.get(sourceName)` — the exact-spelling map —
+  **before** any of the leaf/`endsWith` fallbacks run (line 3920);
+* the map is built first-wins (`if (!nameToSymbol.has(nm))`), so a bare owner name resolves to
+  whichever same-named declaration the walk happened to emit first, while a qualified one is a
+  direct hit.
+
+So the lane was handing the store a spelling that cannot be determinate whenever two
+declarations in the project share a leaf. This pass moves that spelling for the two labels
+whose endpoints are the file's OWN symbols, and fixes one production filter that was deleting
+the result.
+
+### FS-P4-1 — `calls` / `instantiates` sources carry the published fqn
+
+The walk now carries `callOwnerQualified` beside `callOwner` (the fqn `publish` already mints
+into `metadata.fqn`, which `pool-worker.ts:1026` already turns into `qualified_name`) and the
+four source sites use it. `callOwner` itself is untouched, because it is ALSO the semantic key
+for constructor chaining and for `baseTypes`; only the edge's spelling moves.
+
+**Strictly additive**, and that is a property of the store rather than a hope: when the
+qualified spelling is absent, the leaf fallback returns exactly what the bare spelling gives
+today (strategy 3's `SUBSTR(…, INSTR(…, '.') + 1)`). So the change can only move an edge from
+arbitrary-attachment to determinate resolution.
+
+### FS-P4-2 — `contains` names both endpoints by the identity it published
+
+A containment edge names two symbols the file published — the parent by `ownerName`, the child
+by `name` — and both were written bare while `publish` had already minted their fqns. The
+composition now reads the parent back out of the symbol set (`fqnByName`) and writes both
+endpoints as published identities. Where the parent's name is **ambiguous within the file** the
+map holds `null` and the bare spelling is kept, because a wrong qualified spelling is worse than
+an ambiguous bare one — the same discipline the store's line-based enclosure lookup applies.
+
+### FS-P4-3 — the production noise filter was eating the edges it exists to protect (cross-lane)
+
+`filterNoiseRelationships` (`pool-worker.ts`) tests the noise list on the target's **LEAF** and
+tested the declaration exemption on the target **AS WRITTEN**. For a bare endpoint those are the
+same string; for a qualified one they are not, so the exemption silently stopped applying.
+
+Measured on one file, both paths, same revision — `FsCheck/src/FsCheck/StateMachine.fs`:
+
+```
+engine path    115 contains
+production     114 contains      the missing one is
+                                contains FsCheck.Experimental.StateMachine -> StateMachine.tearDown@209
+```
+
+the only difference between the two paths on that file. Scoped over the 3,000-file A/B draw:
+edges whose target leaf is in `NOISE_TARGETS` and whose name the file DECLARES — **12 of 12
+exempted before, 0 of 11 after**. `setUp`/`tearDown`/`beforeEach`/`afterEach` are in that list
+universally, so every `contains` into a test-lifecycle member was being deleted as framework
+noise. The fix tests both spellings (`declaredNames.has(target) || declaredNames.has(leaf)`),
+which keeps the block's power — a name the file does not declare is still dropped — and restores
+the exemption for **every lane that spells an endpoint qualified**, not just this one.
+
+### The A/B — 3,000 files, identical draw, both arms scored against the full-corpus pool
+
+The draw is the first 3,000 files of the deterministic corpus walk; both arms went through the
+production `parseFile`, and both were scored with the store's own strategy 1/2/3 model.
+
+| label | edges A→B | source determinate | target determinate |
+|---|---|---|---|
+| `calls` | 210,532 → 210,532 | 60.2% → **86.0%** (+25.9p) | 19.1% → 19.1% |
+| `contains` | 58,298 → 58,298 | 42.4% → **64.8%** (+22.4p) | 34.2% → **70.3%** (+36.2p) |
+| `instantiates` | 1,508 → 1,508 | 49.0% → **87.0%** (+38.0p) | 37.3% → 37.3% |
+| `references` / `imports` / `uses` / `extends` / `implements` / `overrides` | unchanged | unchanged | unchanged |
+| **TOTAL** | 356,783 → 356,783 | **52.5% → 71.6%** (+19.1p) | **22.4% → 28.3%** (+5.9p) |
+
+**+68,045 source-determinate edges and +21,090 target-determinate**, on this draw. The
+full-population static model (`.tmp-probe/fs-spelling-effect.py`, which reads the store's SQL
+off the 11,799-file row set) predicts +214,367 source-determinate edges
+(612,083 → 826,450, 52.7% → 71.1%) — the same effect at corpus scale, and the two agree.
+
+### Neutrality, proved rather than asserted
+
+The A/B also settles what the change cannot do. Leaf-normalized edge multisets
+(`type`, `sourceLeaf`, `targetLeaf`) over the same 3,000 files:
+
+```
+arm A 356,783   arm B 356,783   keys only in A: 0   keys only in B: 0
+```
+
+No leaf anywhere moved. That is the rigorous version of "this is a spelling change": the F5
+differential's whole match is `label + normTarget(target)` with `normTarget` = the LAST segment
+(`differential.ts:1019-1043`) and it never compares sources, so no leaf-based matcher in the
+product — differential included — can see a different graph.
+
+### What this pass did NOT do, and the reason for each
+
+* **`calls`/`uses`/`references`/`imports`/`extends`/`implements` TARGETS are still bare leaves** —
+  *(SUPERSEDED by passes 5 and 6 below: this is the state at pass 4's HEAD, and the target side is
+  exactly what the next two passes moved — `calls` target-determinacy 19.1% → 29.1% overall on the
+  same draw, `contains` 34.2% → 70.3%. The paragraph is kept because its measurement — the witness
+  count — is what justified the Phase-2 joiner, and because a pass's limits should stay readable at
+  the HEAD they were true at.)* —
+  1,100,719 of 1,162,163 endpoints on the full corpus. They name declarations the file does not
+  own (callees, opened modules, written types), so spelling them qualified is a JOIN problem,
+  not a spelling problem: it needs the open-aware cross-project symbol pool measured in this
+  pass's own witness count (11,809 corpus files scanned; **94.1% of external callee sites have
+  an in-corpus declaration**, including `fsharp/src/FSharp.Core/*.fs`, `expecto` and `Deedle`).
+  That is Phase 2 and it is not claimed here.
+* **Unattached endpoints rose 33,002 → 34,471 (+1,469)**, and the population is named: they are
+  3+ segment fqn targets whose spelling is not unique in the pool (`contains … -> new
+  System.IDisposable.Dispose`, 23 of them; `FsAutoComplete.LspHelpers.FcsPos`, 6; …), where the
+  store's strategy 3 takes everything after the **FIRST** dot — `IDisposable.Dispose` — and no
+  symbol carries that name. In the baseline arm those same edges were classified `ambiguous`,
+  i.e. strategy 3 attached them to an arbitrary same-named symbol. So this is **-22,559
+  arbitrary attachments** traded for +1,469 honest unattachments, which is the direction the
+  programme wants, and the store-side fix (strategy 3 should use the LAST segment, matching what
+  strategy 2 means by a name) is a measured recommendation for the indexer's owner, not a change
+  this lane made.
+* **The fixture `forbidRelationships` rows keep the OLD (bare) spelling**, and that is deliberate
+  rather than stale: a forbid row exists to catch a REGRESSION, so it must be spelled the way the
+  reverted code would spell the edge — and the lane's mutants revert by transforming RESULTS,
+  which reproduces the pre-fix bare spelling exactly (`fsharp/self-containing-edge` emits
+  `source: s.ownerName, target: s.name`). Two drafts of the expectation updater guessed
+  otherwise and both were wrong (below). The limitation this leaves is stated: a FUTURE
+  regression that emits a self-containment in the NEW spelling would not trip those exact-string
+  rows. The spelling-independent guard is a leaf-equality invariant in the fixture runner
+  (`no contains edge whose source leaf equals its target leaf`), which is recorded here as the
+  follow-up rather than implemented, because it belongs to the shared runner and affects all 46
+  lanes.
+* **The F5 differential's draw ROTATES per sweep state**, so no MISSING/unexplained delta is
+  claimed. Three runs inside this pass read 2,410 / 2,878 / 1,863 analyzer edges and 58 / 65 / 75
+  unexplained rows, all on DIFFERENT 60-file samples; at this HEAD it is 60 files, tree-truth
+  4,350, covered 99.8%, MISSING 7, unexplained 75 (4%), unexplained-by-label `calls=75`. The
+  neutrality proof above is what settles the question the rotating draw cannot.
+
+### Gates at this pass's HEAD
+
+| gate | result |
+|---|---|
+| `run-fixtures.ts --lang fsharp` | **11 / 11 PASS** (62 endpoint values re-spelled across 8 expectation files, mechanically from the analyzer's own output) |
+| `mutate-analyzer.ts --lang fsharp` | **24 / 24 CAUGHT** (two new: `edge-source-spelled-bare`, `containment-endpoints-spelled-bare`) |
+| `tsc --noEmit` | clean |
+| corpus A/B | table above, plus the neutrality proof |
+
+### Three things this pass got wrong, recorded because instruments caught them and not reading
+
+1. The expectation updater's **first** draft found each array with
+   `text.indexOf("\"expectRelationships\"")` — which matches the array's NAME inside the
+   fixture's prose `rationale` — then scanned forward into whichever array it reached first. Four
+   `forbidRelationships` rows were read as expect rows that way and re-spelled to the analyzer's
+   spelling, **inverting** them: a forbid that exists to catch a regression was rewritten into the
+   exact row the regression would emit, so it fired on correct output.
+2. The **second** draft anchored the array correctly and still ran the expect-row MATCH for
+   forbid rows. `fsharp/qualified-name-seam`'s row forbidding the bare-source `overrides Speak`
+   found exactly one edge (`Dog.Speak -> Animal.Speak`, the correct emission) and adopted it —
+   the same inversion by a different route. The lesson is in the code now: a forbid row is never
+   re-spelled from a match, and the two rows that COULD be settled were settled by simulating the
+   regression (remove the rule, observe the emission, restore the rule).
+3. `ta = tb = collections.Counter()` — a chained assignment to ONE object — made the first A/B
+   **totals** print +0.0p while every per-label row moved. It was caught only because the
+   per-label numbers summed to exactly twice the total, which is the arithmetic signature of the
+   aliasing. The per-label table was right; the headline was not, and a headline is what gets
+   quoted.
+
+## M60 ONTOLOGY LANE, PASS 5 — the target side, and a reason on every residual (2026-10-07)
+
+### The defect pass 4 left standing
+
+Pass 4 moved edge SOURCES to the identity the file published and left the TARGET side exactly
+where it was. That is the side a consumer resolves against, and it was spelled as a bare leaf:
+the qualifier the source code WROTE was read and discarded at the emission site, so a call to
+`Seq.map` was published as `map` — a name 349 symbols in the corpus answer to. Six labels whose
+SOURCES are scopes the file published (`references`, `imports`, `uses`, the object-expression
+`implements` and `contains`) were still bare for the same reason pass 4 fixed `calls`.
+
+### FS-P5-1 — every scope-sourced edge names its scope the way the file published it
+
+`publish` now fills `fqnOfName` (name → the fqn it minted) beside `publishedNames`, first-wins,
+which mirrors the store's own construction at `parallel-indexer.ts:3238`. `qualifyScope(n)` =
+`fqnOfName.get(n) ?? n` is applied to the six labels above, and the lookup is first-wins for the
+same reason the store is: two same-named declarations in one file must resolve the same way in
+both places. A name with no entry returns itself, so the change is additive in the same sense
+FS-P4-1 is.
+
+The first-wins choice is worth stating as a choice. The alternative — "qualify only when the name
+is unambiguous IN THE FILE" — makes the spelling depend on a property of the whole file at a
+point in the walk where only a prefix has been seen. Determinism beats a sharper rule that cannot
+be evaluated where it is needed, and the store applies the same first-wins rule to the same name.
+
+### FS-P5-2/3/4 — the target: exact when the file can PROVE it, and a reason when it cannot
+
+Two halves, and the split between them is the point.
+
+1. When the file can prove the identity, the target IS that identity. A name the file published
+   resolves through `fqnOfName`, whose spelling is what the store registers as `qualified_name`
+   (`pool-worker.ts:1055` reads `metadata.fqn`, minted in `publish`). `this.M` is provable for the
+   same reason — the enclosing type is a symbol this file published — and `base.M` is provable
+   when the base type is.
+2. When the file cannot prove it, the edge keeps its leaf AND carries `metadata.targetResolution`
+   plus `metadata.targetQualifier` (the discarded qualifier). That is what makes the residual
+   auditable instead of unexplained, and it is the input a resolution layer needs: `Seq.map`
+   cannot be recovered from `map` by any amount of guessing downstream, which is why preserving
+   the qualifier is the analyzer's half of the join rather than the joiner's.
+
+The identity is `${IMMEDIATE OWNER NAME}.${NAME}` and not the parent's full path, because that is
+the store's own definition rather than a simplification: `publish` mints `metadata.fqn` from
+`ownerName`, which is the innermost scope segment, so a member of `Full.Name.Space.Shape` is
+published as `Shape.Describe`. Verified on the corpus rather than assumed: in
+`Bolero/tests/Client/Main.fs` the module symbol's own NAME is the dotted header
+(`Bolero.Test.Client.Main`, one scope segment) while its enum `Page` is stored as
+`Bolero.Test.Client.Main.Page` and `Page`'s case `EndPoint` as `Page.EndPoint`.
+
+### The A/B at pass 5 — src 71.6% → 76.8%, tgt 28.3% → 31.3%
+
+Same 3,000-file draw, both arms through production `parseFile`, both scored against the
+full-corpus pool with the store's own strategy 1/2/3 model. Cumulative from the pre-pass-4
+baseline: source-determinate 187,370 → 274,190 (+86,820), target-determinate 79,911 → 111,755
+(+31,844), S3-arbitrary 243,870 → 207,625, unattached 33,002 → 37,549.
+
+Two facts about the target side, measured rather than asserted (`.tmp-probe/fs-target-audit.py`,
+which keys on the file's own published `qualifiedName` set — the exact string the store keys the
+symbol under, so it is a proof and not a similarity):
+
+```
+dotted targets 117,215   determinate as written 69,082   as the bare leaf 37,606
+  contains   58,298 dotted targets, ALL 58,298 provable in-file   <- what FS-P4-2 bought
+  calls      35,081 dotted: own-qname 25,266  own-last-qualifier 163  leaf-only 524  foreign 9,128
+```
+
+and the 9,128 `foreign` `calls` targets are the honest ones — `BenchmarkDotNet.Attributes`,
+`Fake.Core.TargetOperators`, `System.Text` — namespaces the corpus does not define at all.
+
+### The residual, named: +4,547 unattached, and why that is the direction the programme wants
+
+Every one of the newly unattached targets is a 3+-segment path, and the store's strategy 3 takes
+everything after the **FIRST** dot:
+
+```
+calls        3 seg   0 -> 2,920        contains   3 seg    12 ->   924
+calls        2 seg   0 ->   385        contains   4 seg    12 ->   322
+calls        5 seg   0 ->    97        contains   5 seg     0 ->   235
+```
+
+For 2,687 of the 2,920 the leaf spelling would have been `ambiguous` — attached to an ARBITRARY
+same-named symbol by strategy 3 — and for the rest (`imports`/`references` 3-segment, 317 each) it
+would have been determinate by name uniqueness. So the trade is **−22,559 arbitrary attachments for
++4,547 honest unattachments**, and the store-side fix (strategy 3's tail should be the LAST
+segment, which is what strategy 2 means by a name) is a measured recommendation for the indexer's
+owner, not a change this lane made. Priced: under a last-segment strategy 3 the same arm's dotted
+targets read determinate 70,034 instead of 69,082 and the "looser than the leaf" class falls from
+4,900 to 3,948. The residual that does NOT go away under that fix is named too: 895 `contains`
+target names are cases where strategy 1 matches TWO symbols while the LEAF would have been
+determinate: this lane publishes a symbol whose NAME is a dotted module header
+(`Bolero.Test.Client.Main`), and such a name collides in the store's key space with the qualified
+name of a member of it (`Bolero.Test.Client.Main.Page`). Those 895 are a fact about the qname space
+that no spelling on this side can fix — the same name is a legitimate qname of two different symbols.
+
+### FS-P5 residual 2 — `calls` emitted 146 MORE edges, and it is the dedup key
+
+`pushRel` dedups on `source|type|target|line`. Two same-line calls that the bare spelling merged
+into ONE fact are two facts once the endpoints are spelled — which is the correct direction, and
+the whole count is an increase (on the final arm: 168 files grew, 0 shrank, +440). Witnesses, both
+from the same instrument:
+
+```
+Grace/src/Grace.CLI/Command/Repository.CLI.fs   leafkey (initHandler, Create)  6 -> 7
+  arm A only ever wrote  initHandler -> Create
+  arm B               Repository.initHandler -> Create | GraceError.Create
+                                              | GraceReturnValue.Create | ExceptionResponse.Create
+FSharpPlus/src/FSharpPlus/Control/Collection.fs  leafkey (Filter, Invoke)  1 -> 2
+  arm B               Filter.Filter -> OfSeq.Invoke  and  -> ToSeq.Invoke
+```
+
+### Gates at pass 5
+
+| gate | result |
+|---|---|
+| `run-fixtures.ts --lang fsharp` | 11 / 11 PASS |
+| `mutate-analyzer.ts` scoped | 24 / 24 CAUGHT |
+| `tsc --noEmit` | clean |
+
+## M60 ONTOLOGY LANE, PASS 6 — the qualifier the source wrote, priced before it was used (2026-10-07)
+
+### FS-P6-1 — a call chain is not a path
+
+F# writes a fluent call as ONE `dot_get` whose TEXT is the whole chain. The walk read that text as
+a callee path, split it on `.`, and because the chain's first segment happened to be a name the
+file published, the identity branch returned THE ENTIRE CHAIN as an edge target. Measured on the
+draw: 514 `calls` targets are not names at all —
+`ArgumentParser.Create<'Template'>().ToParseResults`, `parser.PrintUsage().Contains`,
+`router.GetRoute(model).TrimStart`, `Existential.FromType(t).Accept`. A target carrying a parameter
+list can never be a store identity, so every one of those edges was unresolvable BY CONSTRUCTION
+while looking like a resolved name in the graph.
+
+A path is now a path only if every segment is a name, and a chain's target is the last NAME in it,
+with the chain text kept as `targetQualifier` and the reason `call-chain-receiver`.
+
+### FS-P6-2 — `in-file-qualified` now means the path is an identity this file published
+
+Pass 5 asked whether the path's FIRST SEGMENT was a name the file knew, which is a different
+question from "is this path an identity I published". The two differ exactly where the defect is:
+`Foo.member` where only `Foo` is local, and a chain whose head is local (FS-P6-1). The rule is now
+a membership test against `publishedQnames`, the values `publish` mints, so the two halves of the
+claim cannot drift.
+
+### FS-P6-3 — the discarded qualifier, and the theorem that makes it safe
+
+The store resolves `target_external` with three strategies, in order (`parallel-indexer.ts`
+4282/4305/4357, read from the source rather than assumed):
+
+| | strategy | determinate when |
+|---|---|---|
+| S1 | `target_external == qualified_name` | the identity is unique in the project |
+| S2 | `target_external == name AND name unique` | requires NO dot |
+| S3 | dotted → `name ==` everything after the **first** dot, `MIN(id)` | never: it is the arbitrary pick, made deterministic |
+
+so for a TWO-segment target S3's tail IS the leaf and the candidate set is IDENTICAL to the bare
+leaf's — while S1 becomes reachable. **`${qualifierLeaf}.${leaf}` is therefore provably never worse
+than the leaf.** That is a statement about the store, not a hope about the corpus, and it is why
+this is a spelling change rather than a guess.
+
+PRICED BEFORE IT WAS IMPLEMENTED (`.tmp-probe/fs-p6-price.py`, on the pass-5 arm, which carries the
+qualifier the old code discarded, so the counterfactual is exact rather than modelled):
+
+| class | edges with a qualifier | → determinate | → non-determinate |
+|---|---|---|---|
+| `calls` / `external-type-or-module` | 68,453 | **+11,511** | −1,781 |
+| `calls` / `opened-module` | 1,260 | **+198** | −29 |
+| `calls` / `receiver-value` (lowercase) | 21,993 | +109 | **−510** |
+| `instantiates` (both classes) | 147 | 0 | −11 |
+| **the two module-like classes** | 69,713 | **+11,709** | −1,810 |
+
+EVERY one of the 11,709 is a `q_cnt == 1` hit — an identity exactly one symbol in the corpus holds
+(`build` → `StringExpr.build`, `fold` → `Array.fold`, `exec` → `DotNet.exec`, `compare` →
+`Unchecked.compare`, `find` → `Array.find`). The 1,810 the other way are NOT a loss and the reason
+matters: they are cases where the BARE name coincides with some symbol's `qualified_name` (a
+module-less script binding literally named `choose`) while `${last}.${leaf}` names a real identity
+held by TWO symbols — `seq.fs` and `seq.fsi` both declare `Seq.choose`, which is what a `.fsi` file
+IS — and the store attaches those through S1 to the identity the source wrote.
+
+The lowercase class is the negative half and it is measured, not stylistic: a lowercase qualifier is
+a VALUE, no symbol is ever stored as `value.member`, and applying the same respelling there loses 4.7
+edges for every one it gains. Those keep the leaf and their `targetQualifier`.
+
+### FS-P6-4 — the position: a callee and a written type are stored differently
+
+A member is stored as `${ownerName}.${name}` where `ownerName` is the innermost scope segment, so a
+CALLEE keeps the LAST TWO segments (`Fabulous.Imaging.Image.Map` → `Image.Map`,
+`Microsoft.FSharp.Collections.Seq.map` → `Seq.map`). A TYPE is stored with its whole namespace as
+ONE owner (`Bolero.Test.Client.Main.Page`), so a written type keeps the FULL path. `instantiates`
+asks for the type position even though it is emitted from the same expression shape as `calls`:
+`new X()` names a TYPE, and the price table agrees (0 bought, 11 lost).
+
+The FULL written path was also priced against the two-segment form and lost: +10,599 / −2,781
+against +11,511 / −1,781, because a 3+-segment target whose tail is not its leaf falls through S3 to
+NOTHING where the two-segment form's tail IS the leaf.
+
+### The A/B at pass 6 — the canonical table, 3,000 files, both arms on the store's own model
+
+| label | edges A → B | source determinate | target determinate |
+|---|---|---|---|
+| `calls` | 210,532 → **210,972** | 60.2% → **86.0%** (+26.0p) | 19.1% → **29.1%** (+10.0p) |
+| `contains` | 58,298 → 58,298 | 42.4% → **64.8%** (+22.4p) | 34.2% → **70.3%** (+36.2p) |
+| `references` | 49,919 → 49,919 | 35.8% → **63.5%** (+27.7p) | 25.8% → 25.8% |
+| `imports` | 15,339 → 15,339 | 26.3% → **30.4%** (+4.1p) | 17.0% → 17.0% |
+| `uses` | 18,157 → 18,157 | 64.5% → **85.0%** (+20.4p) | 14.0% → **14.7%** (+0.7p) |
+| `instantiates` | 1,508 → 1,527 | 49.0% → **87.1%** (+39.2p) | 37.3% → **40.5%** (+3.7p) |
+| `extends` | 1,187 → 1,187 | 49.7% → **78.3%** (+28.6p) | 39.2% → 39.2% |
+| `implements` | 891 → 891 | 51.2% → **72.7%** (+21.5p) | 49.9% → 49.9% |
+| `overrides` | 952 → 952 | 56.9% → 56.9% | 30.0% → 30.0% |
+| **TOTAL** | 356,783 → **357,242** | **52.5% → 76.8%** (+24.4p) | **22.4% → 34.2%** (+11.9p) |
+
++87,042 source-determinate edges, +42,333 target-determinate, −43,794 arbitrary attachments, and
+unattached **33,002 → 34,922** — i.e. FS-P6 bought back 2,627 of the 4,547 pass 5 spent.
+
+The `calls` edge count moves (+440 over the whole two passes: +146 is pass 5's, +294 is pass 6's)
+and the mechanism is the one pass 5 named: `pushRel` dedups on `source|type|target|line`, and two
+same-line calls the bare spelling merged into one fact are two facts once the endpoints are
+spelled. Every file-level change on the draw is an INCREASE (168 files grew, 0 shrank).
+
+### The target residual, by class, with the reason each one carries
+
+This is the table that answers "what is left, and why" — every `calls` target on the draw, sorted by
+population, from `.tmp-probe/fs-p6-price.py` on the final arm:
+
+| class | edges | determinate | what it means |
+|---|---|---|---|
+| `bare-external` | 65,299 | 8,707 | written unqualified, declared nowhere in this file. No spelling can fix it: the name is not an identity and the source wrote no qualifier. |
+| `external-type-or-module` | 65,152 | **21,651** | written qualified, kept as written. The corpus has no such declaration in 43,501 cases (BCL / not in the draw). |
+| `in-file-declaration` | 21,461 | **18,901** | the bare name of a binding this file published, spelled exactly. 88% determinate — the one class where an unqualified call is still an identity. |
+| `receiver-value` | 18,035 | 1,925 | a VALUE's member (`parser.PrintUsage`). Unknowable without type inference; the receiver is preserved as `targetQualifier`. |
+| `local-binding` | 17,761 | 3,874 | a `let` in a BODY, which this lane does not publish, so no symbol exists to attach to. |
+| `module-member` | 8,662 | 2,180 | 3+ segments with a module-like segment before the leaf, respelled to the store's shape. |
+| `call-chain-receiver` | 8,357 | 1,106 | a chain's last NAME, on an unknown receiver. |
+| `in-file-qualified` | 3,269 | **2,236** | the path as written IS an identity this file published. |
+| `self-member` | 2,738 | 664 | `${enclosingType}.${M}` — provable because the type is published here. |
+| others (`opened-module` 167, `base-member-external` 69, `base-member` 2) | 238 | 59 | each with its own reason. |
+| **`not-a-name`** | **0** | — | the class exists for a target no store can hold, and after the operator arm below it is EMPTY. |
+
+### Two things this pass got wrong, and how each was caught
+
+1. **The class census caught a rule bug within an hour of the rule shipping.** `not-a-name` held 393
+   edges whose targets were `(=)`, `(+)`, `(-)`: F# names an operator FUNCTION by writing it in
+   parentheses, its grammar hands exactly that to this branch (`long_identifier_or_op`), and the
+   name test did not accept it. The class that exists for "a target no store can hold" was holding
+   393 real names. Fixed by adding an operator arm to the name test — `(ctr CancellationToken.None)`
+   still fails it on purpose, because that is an APPLICATION used as a receiver and not a name —
+   and `not-a-name` measures 0. A census of the classes is what found it; no fixture could, because
+   no fixture had ever written `(+) f x`.
+2. **A partial read of a running artifact printed a smaller total than the sum of its own rows.**
+   The first look at the final arm read 2,990 of 3,000 rows and reported 355,765 edges against
+   per-label rows summing to 357,242 — a 1,477 gap that looks exactly like a rule deleting edges.
+   It was the instrument: `open()` on a file another process is still appending to. The lesson is
+   the same one this lane already paid for with `M14.0.F4.json` — a measurement taken while the
+   producer is still writing is not a measurement — and the check that catches it is arithmetic:
+   per-label rows must sum to the total.
+
+### What this pass did NOT do, and the reason for each
+
+* **`references` (25.8%) and `imports` (17.0%) targets did not move.** Their non-determinate mass is
+  38,968 bare and 10,951 dotted TYPE/namespace names, most of which are BCL or framework namespaces
+  the draw does not contain (`System`, `System.IO`, `Microsoft.FSharp.Core`). Respelling those is the
+  cross-file join, not a spelling rule: the analyzer cannot see another file's declarations, and the
+  one position where the store's shape differs (a type carries its whole namespace) is exactly the
+  position where inventing a qualifier would be a fabrication.
+* **`overrides` targets did not move** (30.0% before and after, 624 arbitrary, 42 unattached). They
+  are already spelled `${base}.${member}` by FS-P3-1, and the remaining non-determinacy is the base
+  class being external — a fact about the corpus, not about the spelling.
+* **`exports` remains RULED** (pass 1): the analysis is unchanged and this pass did not revisit it.
+* **The `new IFoo` object-expression symbols are left alone on purpose.** 1,901 `contains` targets and
+  ~6,700 `calls` sources carry a `new `-prefixed name (`new IFunc.Invoke`). It is not a spelling
+  defect: the file PUBLISHES the synthetic class symbol under that name, so the qname is internally
+  consistent and resolvable, and the name is pinned by two fixtures (`override-target`,
+  `name-surface`) which is where the convention's rationale lives.
+
+### Gates at this pass's HEAD
+
+| gate | result |
+|---|---|
+| `run-fixtures.ts --lang fsharp` | **12 / 12 PASS** — one new fixture, `fsharp/call-target-spelling`, whose 11 expect rows pin one `targetResolution` class each and whose 4 forbid rows pin the revert shapes |
+| `mutate-analyzer.ts` (`BB_MUTANT_ONLY="fsharp/"`, dev-scoped: prints, writes no canonical artifact) | **28 / 28 CAUGHT**, 0 survived — four new: `qualified-callee-reduced-to-leaf`, `call-chain-spelled-as-a-path`, `target-resolution-reason-dropped`, `derived-endpoint-spelled-bare` |
+| `tsc --noEmit` | clean |
+| corpus A/B | the canonical table above |
+
+Why the new fixture exists at all: the audit that produced `.tmp-probe/fs-target-audit.py` grepped
+the lane's 11 expectation files for `targetResolution` and matched **zero rows**. Every reason this
+pass emits — the entire justification for "determinate or explained" — could have been deleted in a
+one-line edit with the whole suite staying green. That is the gap `fsharp/call-target-spelling`
+closes, and the four new mutants are each read off the result's own metadata so they cannot go
+vacuous when a fixture is renamed.
 
 ## Issue
 

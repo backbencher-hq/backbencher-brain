@@ -800,7 +800,34 @@ export function filterNoiseRelationships(rels: any[], language: string, declared
     // accidentally emits `node.type` emits a name the file never declares, while
     // a variable the file declares is a real node in the graph. So the list keeps
     // its power against the bug it was written for and stops eating the graph.
-    if (NOISE_TARGETS.has(leaf) && !(declaredNames && declaredNames.has(String(r.target ?? r.to ?? "")))) {
+    // M60 FS-P4-3. THE EXEMPTION MUST BE TESTED ON THE SAME STRING AS THE NOISE TEST.
+    //
+    // The noise test is on the target's LEAF (`NOISE_TARGETS.has(leaf)`) and the
+    // exemption was on the target AS WRITTEN. For a bare endpoint those are the same
+    // string and the asymmetry is invisible; for a QUALIFIED one they are not, and the
+    // exemption silently stops applying — so a file that declares `tearDown` has its own
+    // containment edge eaten as framework noise.
+    //
+    // Not hypothetical, and found by measuring a spelling change rather than by reading
+    // this function. `FsCheck/src/FsCheck/StateMachine.fs` declares `let tearDown` and
+    // emits `contains FsCheck.Experimental.StateMachine -> StateMachine.tearDown@209`:
+    //
+    //   engine path 115 contains   production path 114   the missing one is that edge
+    //
+    // and it is the ONLY difference between the two paths on that file, so the
+    // production filter is what deleted it.
+    //
+    // Scoped over the same 3,000-file corpus draw before and after the fsharp lane's
+    // endpoint change: edges whose target leaf is in `NOISE_TARGETS` and whose name the
+    // file DECLARES — 12 of 12 exempted before, 0 of 11 after. The filter was eating
+    // exactly the edges it exists to protect, and only for endpoints whose spelling had
+    // moved away from the bare name. Testing BOTH spellings keeps the block's power
+    // (a name this file does not declare is still dropped) and restores the exemption
+    // for every lane that spells an endpoint qualified.
+    const declaredTarget =
+      !!declaredNames &&
+      (declaredNames.has(String(r.target ?? r.to ?? "")) || declaredNames.has(leaf))
+    if (NOISE_TARGETS.has(leaf) && !declaredTarget) {
       // M60 LUA-16: `NOISE_TARGETS` bundles three groups whose names are noise
       // ONLY in the languages that own the convention, and all three were applied
       // to every language. Measured over every Lua file of two pinned corpora, the

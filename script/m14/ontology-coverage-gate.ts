@@ -293,7 +293,25 @@ clean: CLEAN_RULED,
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
 // ---------------------------------------------------------------- corpus
+//
+// THE EXCLUSIONS ARE PART OF THE POPULATION CLAIM, so they are counted here and printed
+// below rather than skipped silently. Two were, until this was measured:
+//
+//   * a path `git ls-files` lists but the working tree does not have — 2 of the 33,755
+//     tracked .dart files in this corpus (`pb-reference/examples/{add,list}_people.dart`);
+//   * a file over the SIZE CAP. The cap used to be 512 KB, which admitted 33,692 .dart
+//     files and excluded 61 with no line in the output saying so. 46 of those 61 sit
+//     between 512 KB and 1 MB, which is exactly the range the ENGINE still parses as a
+//     full AST (`pool-worker.ts` FULL_AST_LIMIT = 1 MB), so those 46 were analyzable and
+//     unmeasured — a coverage number that counted them out of its own denominator.
+//     The cap is now the engine's own limit, and what remains excluded is stated: above
+//     1 MB the engine itself degrades to structural extraction, and above 5 MB it returns
+//     an empty fallback with zero symbols, so those files could not be measured as
+//     analyzers whatever this gate did.
+const SIZE_CAP = 1024 * 1024
 const files: { repo: string; dir: string; rel: string; abs: string; text: string }[] = []
+const excluded = { tracked: 0, absent: 0, overCap: 0, wrongLanguage: 0 }
+let overCapLargest = 0
 for (const e of readdirSync(CR)) {
   const dir = path.join(CR, e)
   try { if (!statSync(dir).isDirectory()) continue; execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" }) } catch { continue }
@@ -301,14 +319,40 @@ for (const e of readdirSync(CR)) {
   try { tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }).split("\0").filter(Boolean) } catch { continue }
   for (const rel of tracked) {
     const abs = path.join(dir, rel)
+    excluded.tracked++
     let text: string
-    try { if (statSync(abs).size > 512 * 1024) continue; text = readFileSync(abs, "utf8") } catch { continue }
+    let size: number
+    try {
+      size = statSync(abs).size
+      if (size > SIZE_CAP) {
+        // COUNTED IN THIS LANE'S TERMS, by name: the file is never read, so a content-based
+        // detection is impossible and reporting every language's bundles as this lane's
+        // exclusions would be a number about the corpus wearing this lane's label.
+        if (detectLanguageFromPath(abs) === LANG) { excluded.overCap++; overCapLargest = Math.max(overCapLargest, size) }
+        continue
+      }
+      text = readFileSync(abs, "utf8")
+    } catch {
+      // `continue` here is a file git tracks and this process cannot read. Counted the same
+      // way, and for the same reason.
+      if (detectLanguageFromPath(abs) === LANG) excluded.absent++
+      continue
+    }
     if (detectLanguageFromPath(abs, text) !== LANG) continue
     files.push({ repo: e, dir, rel, abs, text })
   }
 }
 console.log(`ontology coverage gate — ${LANG}`)
-console.log(`corpus: ${files.length} admitted files\n`)
+console.log(
+  `corpus: ${files.length} admitted files — and this lane EXCLUDED ` +
+  `${excluded.absent} tracked-but-unreadable/absent + ${excluded.overCap} over the ` +
+  `${(SIZE_CAP / 1024 / 1024).toFixed(0)} MB cap (largest ${(overCapLargest / 1024 / 1024).toFixed(1)} MB). ` +
+  `Above that cap the engine itself extracts structurally (FULL_AST_LIMIT), and above 5 MB it returns ` +
+  `an empty fallback with zero symbols, so those files are outside any analyzer claim — stated, not silent. ` +
+  `Excluded by path name, because a file over the cap is never read. ` +
+  `${excluded.tracked} tracked paths were walked.`,
+)
+console.log()
 
 // ---------------------------------------------------------------- what is emitted
 const observed = new Map<Type, { n: number; files: Set<string> }>()
