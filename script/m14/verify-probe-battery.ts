@@ -138,7 +138,11 @@ async function probeVue(
     // could pass while the pipeline dispatched the block differently.
     const eng: any = await import("../../src/ast/engine")
     const res = await eng.ASTEngine.parseFile("probe.vue", src)
-    const got = res.relationships.map((r: any) => `${r.type}:${r.source}->${r.target}`)
+    // `got` is DECLARED, not inferred: the engine entry is imported dynamically, so the
+    // array arrived as `any` and the `(g: string, e: string)` match helpers below had no
+    // contextual type to check. Every element is the `label:source->target` string the
+    // helpers spell, and saying so is what the rest of this file already assumes.
+    const got: string[] = res.relationships.map((r: any) => `${r.type}:${r.source}->${r.target}`)
     const matches = (g: string, e: string) =>
       e.includes("->") ? g === e : g.split(":")[0] === e.split(":")[0] && g.split("->")[1] === e.split(":")[1]
     const missing = expect.filter((e) => !got.some((g) => matches(g, e)))
@@ -195,7 +199,7 @@ async function probeLang(
     // form `label:target` matches ANY source; `label:source->target` must
     // match exactly (distinguishes `calls:useGives->gives` from the HSD19
     // self-call fabrication `calls:gives->gives`, same target).
-    const got = res.relationships.map((r: any) => `${r.type}:${r.source}->${r.target}`)
+    const got: string[] = res.relationships.map((r: any) => `${r.type}:${r.source}->${r.target}`)
     const matches = (g: string, e: string) =>
       e.includes("->") ? g === e : g.split(":")[0] === e.split(":")[0] && g.split("->")[1] === e.split(":")[1]
     const missing = expect.filter((e) => !got.some((g) => matches(g, e)))
@@ -290,7 +294,7 @@ async function probeMarkdown(
     // The PRODUCTION entry, for reason 1 above.
     const eng: any = await import("../../src/ast/engine")
     const res = await eng.ASTEngine.parseFile("probe.md", src)
-    const got = (res.relationships ?? []).map((r: any) => `${r.type}:${r.target}`)
+    const got: string[] = (res.relationships ?? []).map((r: any) => `${r.type}:${r.target}`)
     const has = (g: string, e: string) => (e.includes("->") ? g === e : g === e)
     const missing = expect.filter((e) => !got.some((g) => has(g, e)))
     const fabricated = forbid.filter((f) => got.some((g) => has(g, f)))
