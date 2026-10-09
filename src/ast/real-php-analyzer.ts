@@ -648,8 +648,23 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const baseNode = baseClause?.namedChild(0) ?? null
         const rawBase = baseClause?.namedChild(0)?.text
         const baseName = baseClause ? this.heritageTarget(rawBase ?? "", className) : undefined
-        const baseUnresolvable =
-          !!rawBase && rawBase !== baseName && baseName === className
+        // PHPD43 (final review): the self-reference test is `baseName === className`, NOT
+        // `rawBase !== baseName && baseName === className`.
+        //
+        // The old form only caught the QUALIFIED route to a self-reference (`extends \\Foo` inside
+        // `Foo`: qualification stripped, leaf is the class's own name) and let the BARE route through
+        // (`extends Foo` inside `Foo`), where `rawBase === baseName` made the guard false and the
+        // analyzer published `extends Foo -> Foo`. Both spellings name the declaration itself — in a
+        // namespace, an unqualified name resolves to the current namespace FIRST, so there is no
+        // second class it could mean — and PHP fatals on both ("cannot extend itself"). The graph
+        // answered each with a confident self-loop.
+        //
+        // The separable case is unaffected, and that is the whole reason this is a ONE-condition rule
+        // rather than "drop heritage when the leaf repeats": `class Forms\\Setup\\FeaturesForm extends
+        // \\Forms\\User\\FeaturesForm` resolves to `Forms\\User\\FeaturesForm`, which is NOT the
+        // declaration's own name, so it survives with its qualification. What is dropped is exactly
+        // what cannot be told apart from the declaration itself.
+        const baseUnresolvable = !!baseName && baseName === className
         const interfaces: string[] = []
         const ifaceClause = this.findChildByType(node, "class_interface_clause")
         if (ifaceClause) {
@@ -657,7 +672,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             const iface = ifaceClause.namedChild(i)
             if (!iface) continue
             const ifaceName = this.heritageTarget(iface.text, className)
-            if (ifaceName === className && iface.text !== ifaceName) continue // unresolvable same-name interface
+            // PHPD43: a clause that resolves to the class's OWN name is not an interface it implements,
+            // in EITHER spelling. See `baseUnresolvable` above for why the bare route is included and
+            // why the separable same-leaf case survives.
+            if (ifaceName === className) continue
             interfaces.push(ifaceName)
             relationships.push({
               source: className,
@@ -816,7 +834,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             // single-segment, e.g. `interface Foo extends \Foo`) is
             // unresolvable in the leaf graph: skip it (no self-loop).
             const parentName = this.heritageTarget(parent.text, ifaceName)
-            if (parentName === ifaceName && parent.text !== parentName) continue
+            // PHPD43: `interface Foo extends Foo` (either spelling) is not an extends edge; see
+            // `baseUnresolvable` in the class branch for the two routes and the surviving control.
+            if (parentName === ifaceName) continue
             extended.push(parentName)
             relationships.push({
               source: ifaceName,
@@ -893,6 +913,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             const iface = ifaceClause.namedChild(i)
             if (!iface) continue
             const ifaceName = this.heritageTarget(iface.text, enumName)
+            // PHPD43 (final review): the guard the class and interface branches have had since PHPD10
+            // and this branch NEVER did. `enum Foo implements \\Foo` published `implements Foo -> Foo`
+            // and mirrored the same string into `metadata.superTypes` — a self-loop written into the
+            // column that exists to be WALKED. The asymmetry survived every gate in the lane because
+            // the differential's oracle already skips this shape for enums (`heritageOrSkip(c.text,
+            // enumCls)`), so the two sides disagreed only on an input the pinned 60-file draws happen
+            // never to contain. `validation/m14/fixtures/php/enum-self-heritage.php` is that input.
+            if (ifaceName === enumName) continue
             implementedInterfaces.push(ifaceName)
             relationships.push({
               source: enumName,

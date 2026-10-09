@@ -2900,6 +2900,97 @@ unbounded. This also settles an open question honestly: the whole-population cen
 times during this round, and this measurement is what rules the change out as the cause — per-file parse is
 roughly 3x slower under the load than it was when the earlier whole-population run succeeded.
 
+## Round: the FINAL REVIEW — one false-claim path closed, and it was a differential blind spot — PHPD43 (2026-10-09)
+
+A completion review is only worth what it finds, so this one was run as an adversarial pass over the lane's
+own invariants rather than as a re-run of its gates. It found one false-claim path, one blind spot that
+could have hidden more, and confirmed that the deferred asymmetry from round 5 was a real defect.
+
+### 1. The finding: `enum Foo implements \Foo` published a self-loop
+
+PHPD10 established that `heritageTarget(raw, ownName)` returns the declaration's OWN name when a heritage
+clause cannot be separated from it, and the class and interface branches SKIP such a clause rather than
+publish a self-edge. **The enum branch never got that guard.** So `enum Foo implements \Foo` published
+`implements Foo -> Foo` — and mirrored `Foo` into `metadata.superTypes`, a self-loop written into the column
+that exists to be WALKED. A consumer following that column would walk from a node to itself.
+
+### 2. The blind spot, which is the more useful half of the finding
+
+**The oracle already had the rule** (`heritageOrSkip(c.text, enumCls)`), so the two sides disagreed only on
+an input the pinned 60-file draws happen never to contain. A differential cannot report a disagreement
+between two implementations that agree on every input they receive, and every gate in this lane receives
+fixtures rather than corpora. The lesson is worth stating plainly because it generalises past php: *a gate
+that agrees with the implementation on every input it is given is not evidence about the inputs it is not
+given.*
+
+Authoring the input is therefore part of the fix, and the fixture came first:
+`validation/m14/fixtures/php/enum-self-heritage.php` failed with **six** problems (four `meta.superTypes`
+rows and four forbid rows, deduplicated by the runner's reporting), the extra one being a self-`extends` on
+an interface.
+
+### 3. The rule, and why it is now ONE condition instead of two
+
+Reading the shapes rather than patching the guard showed the guard itself was under-specified. There are TWO
+routes to a self-reference and the old condition only caught one:
+
+| route | spelling | old guard |
+|---|---|---|
+| qualified single segment | `enum Foo implements \Foo` | caught (`rawBase !== baseName` is true) |
+| bare | `enum Foo implements Foo` | **missed** (`raw === target`, so the guard was false) |
+
+Both name the declaration itself — in a namespace, an unqualified name resolves to the current namespace
+first, so there is no second class it could mean — and PHP fatals on both. The unified rule is one condition:
+**a heritage clause whose RESOLVED target equals the declaration's own name is dropped**
+(`baseUnresolvable = baseName === className`, and the same test at the three `implements`/`extends` sites).
+The separable case is untouched and that is the point: `class Forms\Setup\FeaturesForm extends
+\Forms\User\FeaturesForm` resolves to a name that is NOT the declaration's own, so it keeps its heritage AND
+its qualification. The oracle's `heritageOrSkip` was widened the same way in the same commit, because a truth
+source that keeps a row the analyzer stopped emitting is a `MISSING`, not a disagreement worth having.
+
+### 4. The population price — and the honest number is ZERO
+
+A new re-runnable counter, `script/m60/php-self-heritage-count.ts` (same admission rule as the census, so
+the two instruments describe the same population), counts heritage edges whose `source === target` and
+symbols whose `superTypes` lists themselves:
+
+- **600-file stride frame: 0 self-referencing of 497 heritage edges** — and **0 on the same frame with the
+  pre-fix analyzer checked out**, i.e. a real A/B, not a before/after from memory.
+- **1,500-file frame (29 % of the population): 0 of 1,213.**
+
+So this fix removes no edge that exists in the admitted population today. That is the finding, not a
+disappointment: the asymmetry was a **latent fabrication path**, and the reason it was worth closing is that
+its cost of being wrong is a confident lie, its cost of being closed is a fixture — evidenced by the fact
+that a lane with six gates and 21 mutants never saw it. Claiming "N edges cleaned" here would have been
+false, and this is the number the lane publishes instead.
+
+### 5. Mutants, both directions
+
+Two, because the rule has a failure mode on each side and they are caught by different rows:
+
+- `php/self-heritage-emitted` — re-manufactures the shape (every class-like declaration with no heritage
+  gets `superTypes: [own name]` and an edge naming itself). Caught by **2 fixtures**: `enum-self-heritage`
+  and `heritage-published`, so deleting the narrow fixture would not silently lose the mutant.
+- `php/self-heritage-over-reach` — widens the rule to "the target's LEAF repeats the name", which is the
+  plausible simplification a later author makes and which passes every NEGATIVE row in the fixture. Caught
+  by **3 fixtures**: `enum-self-heritage` (its SEPARABLE control), `heritage-published` (`FeaturesForm`) and
+  `same-leaf-inheritance` — the third was not predicted when the mutant was written, which is what a
+  control-of-controls is for.
+
+### 6. What the review did NOT find, stated so its absence is a claim too
+
+The lane's other deferred item — the same-leaf asymmetry in the ENUM branch's payload — is closed by the
+same rule, because the payload is assembled from the same list the edge is. The remaining known defects are
+the two **store-wide** ones recorded in PHPD42 (the rank deciding rows with no published receiver, and
+re-store row loss), and both are out of this lane. No third one was found by reading the analyzer against
+its own invariants, which is the review's actual output.
+
+### 7. Gates re-run on the reviewed tree
+
+`tsc` clean · **30/30 php fixtures** (the new one included) · **23/23 mutants caught, 0 survived** ·
+differential `covered 100% MISSING=0 | unexplained=0 heuristic=0` on both pinned draws · `orphan-endpoint`
+PASS · `verify-label-coverage` php `217 | 217` · rel-type gate: php in no un-audited row · the seam gate and
+the owner-resolution gate unchanged and green (this round touched the analyzer, not the store).
+
 ---
 
 # PHP — DECLARED DONE (2026-10-09)
@@ -2914,9 +3005,10 @@ summary. A reader who disagrees with the verdict has something to run.
 | 1 | every emitted relationship type is compared against truth | **met** | `verify-label-coverage.ts` -> php `217 / 217`, no undeclared and no declared gap; `rel-type-coverage-gate.ts` -> php in no un-audited row, no DERIVATION row; the ten types account for the population exactly (103,190 + 155,016 + 35,112 + 28,630 + 13,848 + 10,296 + 3,110 + 1,106 + 58 + 2 = 350,368) |
 | 2 | the differential agrees on both pinned corpora | **met** | `differential.ts --lang php` -> `covered 100% MISSING=0`, `unexplained=0 heuristic=0` on phpunit and phpmyadmin |
 | 3 | no oracle is derived from the implementation it checks | **met** | `php-oracle-independence.ts` -> PASS |
-| 4 | the pins can FAIL | **met** | `mutant-check.mts` -> 21/21 caught, 0 survived, clean baseline 0 problems |
+| 4 | the pins can FAIL | **met** | `mutant-check.mts` -> 23/23 caught, 0 survived, clean baseline 0 problems |
 | 5 | every `contains` target is published by its own file | **met** | `orphan-endpoint-gate.mts` -> STRICT orphaned contains targets 0 |
-| 6 | an analyzer fact survives the WORKER and the STORE | **met** | `php-store-pipeline-seam.ts` -> A 8/8 carried byte-identical, B member identity, C the edges are present, D where a member read is bound. Falsified the way it is claimed: remove the one widened line and A returns to 0 and FAIL |
+| 6 | a heritage clause that names the declaration itself is not published as heritage | **met** | `enum-self-heritage.php` (six rows, incl. the two controls that separate this rule from "drop when the leaf repeats"); population count 0 of 1,213 over 1,500 files, and 0 on the pre-fix analyzer over the same frame — a latent path, closed |
+| 7 | an analyzer fact survives the WORKER and the STORE | **met** | `php-store-pipeline-seam.ts` -> A 8/8 carried byte-identical, B member identity, C the edges are present, D where a member read is bound. Falsified the way it is claimed: remove the one widened line and A returns to 0 and FAIL |
 | 7 | a member read is bound by a RULE wherever a rule exists | **met, with a stated ceiling** | `owner-resolution-gate.mts` incl. its two signal controls and IDEMPOTENT; the census's phase A now equals phase B with `resolved:MISLANDED` absent |
 | 8 | what is NOT resolved is enumerated and bounded, not hidden | **met** | `reason-census.mts` -> every unexplained endpoint classified (see below) |
 | 9 | the lane asserts nothing it cannot support | **met for php's own edges** | no `contains` orphan, no unexplained edge, no MISLANDED row on the owner-carrying population |
@@ -2942,12 +3034,14 @@ summary. A reader who disagrees with the verdict has something to run.
 
 ## What changed to get here, in one line each
 
-The label axis closed first (10/10 emitted and audited). Then six defects on the far side of the boundary:
+The label axis closed first (10/10 emitted and audited). Then seven defects on the far side of the boundary:
 heritage published on the symbol, member identity qualified as `Owner.member`, the worker carrying
 `metadata.superTypes` (which no consumer had ever received), the store's `brain_symbol.super_types` column
 filled (which made `override-retarget` run for the first time in php's life), the owner channel made
-authoritative for member reads that name their receiver, and a store seam GATE so the next such fact cannot
-die in transit unobserved.
+authoritative for member reads that name their receiver, a store seam GATE so the next such fact cannot die
+in transit unobserved, and (final review) one unified rule against publishing a heritage clause that names
+the declaration itself — found by reading the lane against its own invariants after every gate was already
+green.
 
 ## The one carried-over item
 

@@ -1335,12 +1335,35 @@ the exact rows and the experiments, not edited.
   in a paragraph. Not claimed: that owner-LESS member reads resolve (the type-inference wall, 107,313
   endpoints, now the population's largest honest-unknown class), nor that the resolved COUNT is the
   headline — the headline is that 6,114 rows stopped asserting a receiver they do not have.
+- **php round 9 (PHPD43): the final review.** Run adversarially over the lane's own invariants rather than as
+  a re-run of its gates, because every gate was already green. It found one **false-claim path**: PHPD10's
+  guard against a heritage clause that resolves to the declaration's OWN name was in the class and interface
+  branches and had **never been added to the enum branch**, so `enum Foo implements \Foo` published
+  `implements Foo -> Foo` and mirrored `Foo` into `metadata.superTypes` — a self-loop in the column that
+  exists to be WALKED. **The blind spot is the more useful half**: the differential's oracle already had the
+  rule, so the two sides disagreed only on an input the pinned 60-file draws never contain — a gate that
+  agrees with the implementation on every input it is given is not evidence about the inputs it is not given.
+  Reading the shapes showed the guard was also under-specified: it caught the QUALIFIED route
+  (`implements \Foo`) and missed the BARE one (`implements Foo`, where `raw === target` made it false), and
+  the two are now ONE condition — a clause whose resolved target is the declaration's own name is dropped —
+  mirrored into the oracle's `heritageOrSkip` in the same commit. The separable case is untouched, which is
+  the whole reason it is one condition rather than "drop when the leaf repeats".
+  **Population price: ZERO.** A new re-runnable counter (`script/m60/php-self-heritage-count.ts`, same
+  admission rule as the census) reads 0 self-referencing of 497 heritage edges on a 600-file frame — and 0
+  on the same frame with the PRE-fix analyzer checked out, a real A/B — and 0 of 1,213 on a 1,500-file frame.
+  So the fix removes no edge that exists today: it closes a latent fabrication path, whose cost of being
+  wrong is a confident lie and whose cost of being closed is a fixture. Two mutants, one per direction
+  (`php/self-heritage-emitted`, caught by 2 fixtures; `php/self-heritage-over-reach`, caught by 3 — the third
+  being `same-leaf-inheritance`, unpredicted, which is what a control-of-controls is for). **30/30 fixtures ·
+  23/23 mutants · differential green on both draws.** No third defect found by reading the analyzer against
+  its invariants.
 - **php — DECLARED DONE (2026-10-09).** The declaration is in `docs/analyzers/real-php-analyzer.md`, at the
   end, written as nine exit criteria each with the command that shows it — a reader who disagrees has
   something to run. In one line: every emitted type is compared against truth (php `217/217`, no
   un-audited row), both pinned draws are `MISSING=0 unexplained=0`, the oracles are independent, 21/21
-  mutants are caught, no `contains` target is orphaned, analyzer facts survive the worker (proved
-  falsifiable), a member read is bound by a rule wherever one exists, and what is NOT resolved is
+  mutants are caught (23/23 after the final review), no `contains` target is orphaned, analyzer facts
+  survive the worker (proved falsifiable), a member read is bound by a rule wherever one exists, a heritage
+  clause naming the declaration itself is not published as heritage, and what is NOT resolved is
   enumerated and bounded. NOT claimed: that every edge resolves — 107,313 endpoints are the
   type-inference wall, and the honest answer there is "not known" rather than a guess. Two store-wide
   defects remain reported-and-unfixed (the rank deciding rows with no published receiver, pinned by name so

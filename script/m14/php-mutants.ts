@@ -660,5 +660,85 @@ const PHP_MEMBER_IDENTITY_MUTANTS: Mutant[] = [
   },
 ]
 
+/**
+ * SELF-HERITAGE, PHPD43 (final review).
+ *
+ * Both directions of the rule `a heritage clause that resolves to the declaration's OWN name is not a
+ * heritage clause`, because that rule has a failure mode on each side and they are caught by different
+ * rows of the same fixture:
+ *
+ *   - the FABRICATION direction is the pre-fix state, and it is the reason the fixture exists;
+ *   - the OVER-REACH direction is the plausible simplification a later author makes ("drop heritage
+ *     when the leaf repeats"), which passes every negative row in the fixture and fails its
+ *     SEPARABLE control. A gate made only of negatives would call it a fix.
+ *
+ * Both are RESULT-level transforms like everything in this file, so neither reverts the analyzer's
+ * source: the first re-manufactures the shape a self-referencing clause used to produce (a declaration
+ * whose parent is itself) on every class-like declaration with no heritage, and the second deletes
+ * heritage whose TARGET's leaf equals the declaration's name — which is the separable case, the one
+ * the rule must KEEP.
+ */
+const PHP_SELF_HERITAGE_MUTANTS: Mutant[] = [
+  {
+    id: "php/self-heritage-emitted",
+    language: "php",
+    defectClass: "fabricated-relationship",
+    description:
+      "re-manufactures a declaration whose parent is ITSELF: every class-like symbol with no heritage gets `superTypes: [own name]` and an edge naming itself (an interface `extends` itself, a class or enum `implements` itself). This is the shape `enum Foo implements \\Foo` produced before PHPD43 — an edge and a column entry that assert a parent which cannot exist — and it is fabricated on the RESULT so it does not depend on a source shape being present. Caught by php/enum-self-heritage on both halves at once (its four `meta.superTypes: null` rows and its four self-edge forbid rows, plus the two stronger rows that forbid ANY `implements` targeting the enum and ANY `extends` targeting the interface), and independently by php/heritage-published's `NoHeritage` / `PlainIface` absence rows — so a future author who deleted the self-heritage fixture for being narrow would still lose this mutant.",
+    transform: r => {
+      const heritageOf = (s: any): unknown => s?.metadata?.superTypes
+      const symbols = (r?.symbols ?? []).map((s: any) => {
+        if (!CLASS_LIKE_KINDS.has(String(s?.kind))) return s
+        const list = heritageOf(s)
+        if (Array.isArray(list) && list.length > 0) return s
+        return { ...s, metadata: { ...(s?.metadata ?? {}), superTypes: [String(s.name)] } }
+      })
+      const relationships = [...((r?.relationships ?? []) as any[])]
+      for (const s of (r?.symbols ?? []) as any[]) {
+        if (!CLASS_LIKE_KINDS.has(String(s?.kind))) continue
+        const list = heritageOf(s)
+        if (Array.isArray(list) && list.length > 0) continue
+        relationships.push({
+          source: String(s.name),
+          target: String(s.name),
+          type: String(s.kind) === "interface" ? "extends" : "implements",
+          confidence: 1,
+          line_number: s?.range?.startLine ?? 1,
+          metadata: { phpSpecific: true },
+        })
+      }
+      return { ...r, symbols, relationships }
+    },
+  },
+  {
+    id: "php/self-heritage-over-reach",
+    language: "php",
+    defectClass: "lost-relationship",
+    description:
+      "widens the rule from \"the target IS the declaration\" to \"the target's LEAF repeats the declaration\" — the simplification that reads as tidier and is WRONG, because `class Forms\\Setup\\FeaturesForm extends \\Forms\\User\\FeaturesForm` is a real base in another namespace and the qualification is the disambiguation. Drops both the `superTypes` entry and the edge whose target leaf equals its source's name. Caught by THREE fixtures, and the third was not predicted when this mutant was written: php/enum-self-heritage's SEPARABLE control (`Separable` must keep `Fixture\\EnumSelf\\Separable` and its `implements` edge), php/heritage-published's `FeaturesForm` row, and php/same-leaf-inheritance — whose whole subject is the separable shape, which is why it fires. The two named controls exist precisely because a fixture of only negatives cannot tell this mutant from the fix.",
+    transform: r => {
+      const dropped = new Set<string>()
+      const symbols = (r?.symbols ?? []).map((s: any) => {
+        if (!CLASS_LIKE_KINDS.has(String(s?.kind))) return s
+        const list = s?.metadata?.superTypes
+        if (!Array.isArray(list) || list.length === 0) return s
+        const keep = list.filter((n: any) => String(n).split("\\").pop() !== String(s.name))
+        if (keep.length === list.length) return s
+        dropped.add(String(s.name))
+        const { superTypes: _dropped, ...rest } = s.metadata
+        return { ...s, metadata: keep.length ? { ...rest, superTypes: keep } : rest }
+      })
+      const relationships = ((r?.relationships ?? []) as any[]).filter((x: any) => {
+        const t = String(x?.type)
+        if (t !== "implements" && t !== "extends") return true
+        if (!dropped.has(String(x?.source))) return true
+        return String(x?.target ?? "").split("\\").pop() !== String(x?.source)
+      })
+      return { ...r, symbols, relationships }
+    },
+  },
+]
+
 PHP_MUTANTS.push(...PHP_HERITAGE_MUTANTS)
 PHP_MUTANTS.push(...PHP_MEMBER_IDENTITY_MUTANTS)
+PHP_MUTANTS.push(...PHP_SELF_HERITAGE_MUTANTS)
