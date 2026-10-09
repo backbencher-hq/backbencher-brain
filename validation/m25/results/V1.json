@@ -9,7 +9,7 @@
   "mutantsCaught": 6,
   "mutantsTotal": 6,
   "negativeCases": 3,
-  "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
+  "currentCommit": "f9ff276fa44e322b26358a57e7fad989c5853a75",
   "machine": {
     "kernel": "Darwin 23.6.0",
     "cpu": "Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
@@ -29,7 +29,7 @@
   },
   "verifierCommand": "npx tsx script/m25/verify-harness-core.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-10-09T15:20:41.211Z",
+  "generatedAt": "2026-10-09T20:03:56.345Z",
   "os": "darwin",
   "verdict": {
     "realComponentFailures": 0
@@ -40,7 +40,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-09T15:20:41.213Z",
-    "contentSha256": "773718bd322b0e679f2954310c5dcdf1b70c5f127e0beab201b8d2cf0b247766"
+    "sealedAt": "2026-10-09T20:03:56.346Z",
+    "contentSha256": "3f761416915821f8329042f990c67234ca48f5255d19e3121c5cafbb35599fdd"
   }
 }
