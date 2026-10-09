@@ -101,6 +101,33 @@ fi
 # The census must also AGREE with HEAD, or "0 regexes" may just mean "the artifact is
 # stale". verify-regex-census.ts is what checks that, so run it too: a passing count
 # from a stale census is the same false assurance this file used to give.
+#
+# ── AND UNTIL 2026-10-09 THIS FILE DISCARDED THAT VERDICT ───────────────────────
+#
+# The line below ran the verifier, piped its output through `tail -3`, and then exited
+# with `$rc` — the exit code of the PYTHON CENSUS-COUNT step above, not of the verifier.
+# The two steps answer different questions (is the artifact's count zero? does the
+# artifact match HEAD?) and this script reported the first while printing the second:
+#
+#     $ bash script/m14/no-regex-gate.sh ; echo $?
+#       MISSING real-yaml-analyzer.ts:2284:/\/+$/
+#       regex census gate FAILED
+#       0                                    <-- a FAIL printed, and exit 0
+#
+# With a census artifact dated 2026-10-08 holding 0 usages, the count step said "0 regex
+# literals, by AST census" and the verifier said FAILED — and the shell reported PASS to
+# every caller, `npm run verify` included. The gate that enforces this programme's
+# hardest rule was green while its own output was red. Both steps now decide the exit
+# code, and a stale artifact is named as the reason rather than read as a clean tree.
 echo "--------------------------------------------------------------------------"
 npx tsx "$GATE" 2>&1 | tail -3
-exit $rc
+vrc=${PIPESTATUS[0]}
+if [ $rc -eq 0 ] && [ $vrc -ne 0 ]; then
+  echo "  ^ the census COUNT said clean, but the census does not AGREE with HEAD."
+  echo "    A stale or empty artifact is not a pass. Regenerate it:"
+  echo "      npx tsx script/m12/regex-census.ts --head"
+fi
+if [ $rc -ne 0 ] || [ $vrc -ne 0 ]; then
+  exit 1
+fi
+exit 0

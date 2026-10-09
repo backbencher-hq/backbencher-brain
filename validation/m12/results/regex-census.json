@@ -2,13 +2,163 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-07T08:14:41.673Z",
+  "generatedAt": "2026-10-09T22:26:51.559Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 0,
+  "totalRegexUsages": 12,
   "analyzersScanned": 48,
-  "byClassification": {},
-  "byReceiverCategory": {},
-  "perFile": []
+  "byClassification": {
+    "needs_review": 12
+  },
+  "byReceiverCategory": {
+    "identifier": 7,
+    "other": 5
+  },
+  "perFile": [
+    {
+      "file": "real-dart-analyzer.ts",
+      "count": 8,
+      "usages": [
+        {
+          "file": "real-dart-analyzer.ts",
+          "line": 2233,
+          "column": 11,
+          "source": "/^[A-Za-z_$][A-Za-z0-9_$]*$/",
+          "operation": "test",
+          "receiver": "dt",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-dart-analyzer.ts",
+          "line": 2322,
+          "column": 47,
+          "source": "/\\?+$/",
+          "operation": "replace",
+          "receiver": "String(text ?? \"\")",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-dart-analyzer.ts",
+          "line": 2323,
+          "column": 14,
+          "source": "/^[A-Za-z_$][A-Za-z0-9_$]*$/",
+          "operation": "test",
+          "receiver": "leaf",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-dart-analyzer.ts",
+          "line": 3803,
+          "column": 65,
+          "source": "/\\?+$/",
+          "operation": "replace",
+          "receiver": "String(explicit)",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-dart-analyzer.ts",
+          "line": 3804,
+          "column": 27,
+          "source": "/^[A-Za-z_$][A-Za-z0-9_$]*$/",
+          "operation": "test",
+          "receiver": "typeName",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-dart-analyzer.ts",
+          "line": 3827,
+          "column": 19,
+          "source": "/^[A-Z]/",
+          "operation": "test",
+          "receiver": "text",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-dart-analyzer.ts",
+          "line": 3849,
+          "column": 54,
+          "source": "/\\?+$/",
+          "operation": "replace",
+          "receiver": "String(p?.type ?? \"\")",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-dart-analyzer.ts",
+          "line": 3850,
+          "column": 19,
+          "source": "/^[A-Za-z_$][A-Za-z0-9_$]*$/",
+          "operation": "test",
+          "receiver": "typeName",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-yaml-analyzer.ts",
+      "count": 4,
+      "usages": [
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 2283,
+          "column": 38,
+          "source": "/\\\\/g",
+          "operation": "replace",
+          "receiver": "projectRoot",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 2283,
+          "column": 58,
+          "source": "/\\/+$/",
+          "operation": "replace",
+          "receiver": "projectRoot.replace(/\\\\/g, \"/\")",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 2284,
+          "column": 35,
+          "source": "/\\\\/g",
+          "operation": "replace",
+          "receiver": "filePath",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-yaml-analyzer.ts",
+          "line": 2284,
+          "column": 55,
+          "source": "/\\/+$/",
+          "operation": "replace",
+          "receiver": "filePath.replace(/\\\\/g, \"/\")",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    }
+  ]
 }
