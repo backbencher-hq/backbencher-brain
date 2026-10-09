@@ -74,21 +74,43 @@ const LANES = {
   CLEAN_B:     ["clean", "real-clean-analyzer", "Clyde"],               // 109 (THIN)
 }
 
+/**
+ * Files to measure: an even STRIDE across the whole population, not the first N.
+ *
+ * Why this changed: the previous version returned as soon as it had `want` files, i.e. the
+ * first N in directory order. Measured on the SQL lane's corpus (duckdb, 594 files): the
+ * first 120 are benchmark query files (benchmark/<suite>/queries/) SELECTs, and only **5 of 120 (4.2%)** contain
+ * any CREATE/ALTER/DROP, against **108 of 594 (18.2%)** corpus-wide. Every type whose
+ * construct lives in DDL therefore COULD NOT FIRE in the default sample — `contains` was
+ * reported silent on 120 files while firing 1,070 edges with 1,070 resolved on all 594.
+ * A "SILENT" column produced by file order is not a finding about the analyzer.
+ *
+ * The walk now collects a bounded population, sorts it (deterministic), and strides evenly
+ * across it, so the sample is representative by construction and the population size is
+ * printed with every row — an instrument must declare its population.
+ */
 function pickFiles(dir, exts, want, cap = 400) {
-  const out = []
+  const POP_CAP = Number(process.env.BB_SAMPLE_POP || 20000)
+  const all = []
   const walk = (d, depth) => {
-    if (out.length >= want || depth > 20) return
+    if (all.length >= POP_CAP || depth > 20) return
     let ents; try { ents = readdirSync(d, { withFileTypes: true }) } catch { return }
     for (const e of ents) {
-      if (out.length >= want) return
+      if (all.length >= POP_CAP) return
       const p = join(d, e.name)
       if (e.isDirectory()) { if (!/node_modules|\.git/.test(e.name)) walk(p, depth + 1) }
       else if (exts.some((x) => e.name.endsWith(x))) {
-        try { if (statSync(p).size < 400_000) out.push(p) } catch {}
+        try { if (statSync(p).size < 400_000) all.push(p) } catch {}
       }
     }
   }
-  walk(dir, 0); return out.slice(0, cap)
+  walk(dir, 0)
+  all.sort()
+  if (all.length <= want) return all.slice(0, cap)
+  const stride = all.length / want
+  const out = []
+  for (let i = 0; i < want; i++) out.push(all[Math.floor(i * stride)])
+  return [...new Set(out)].slice(0, cap)
 }
 
 const { getParser } = await import(`${REPO}/src/ast/engine.ts`)
@@ -140,7 +162,7 @@ for (const L of targets) {
     } catch (e) { errs.push(String(e).slice(0, 40)) }
   }
   const fired = [...tally.entries()].filter(([, n]) => n > 0).map(([t]) => t).sort()
-  report.push([L, errs.length && !parsed ? `ALL ${files.length} FILES FAILED: ${errs[0]}` : `${parsed}/${files.length} parsed`, tally.size, fired, tally])
+  report.push([L, errs.length && !parsed ? `ALL ${files.length} FILES FAILED: ${errs[0]}` : `${parsed}/${files.length} parsed (sample of the corpus, even stride)`, tally.size, fired, tally])
 }
 for (const [L, note, n, fired, tally] of report) {
   console.log(`${L.padEnd(13)} ${String(n).padStart(2)} types fired   ${note}`)
