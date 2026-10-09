@@ -17,7 +17,7 @@ import { mkdtempSync, rmSync, statSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import Database from "better-sqlite3"
-import { reclaimSpace, spaceReport, checkpointWal } from "../../src/ast/index-space"
+import { reclaimSpace, spaceReport, checkpointWal, shouldVacuumAfterWipe } from "../../src/ast/index-space"
 
 let failures = 0
 function check(label: string, cond: boolean, detail = "") {
@@ -85,6 +85,28 @@ check("vacuum time is measured, not claimed", typeof reclaimed.vacuumMs === "num
 // A database that is NOT full of holes must not pay for a VACUUM.
 const second = reclaimSpace(db, dbPath, { vacuum: true })
 check("a compact database is not vacuumed again", second.vacuumed === false, JSON.stringify(second))
+
+// ── the wipe-path decision must not consult `freelist_count` ────────────────
+// Measured on the real 3.33 GB project database: immediately after every row was
+// deleted, `freelist_count` still read 0, so a ratio test skipped the VACUUM while
+// 1,358 MB of the file was holes. The wipe path decides on what it knows itself.
+const REAL_DB_BYTES = 3_331_702_784
+check(
+  "a wipe that deleted rows from a large file vacuums",
+  shouldVacuumAfterWipe({ rowsDeleted: 733_271, dbBytes: REAL_DB_BYTES }) === true,
+)
+check(
+  "a wipe of an already-empty database does not",
+  shouldVacuumAfterWipe({ rowsDeleted: 0, dbBytes: REAL_DB_BYTES }) === false,
+)
+check(
+  "a small file is not vacuumed even when rows went",
+  shouldVacuumAfterWipe({ rowsDeleted: 500, dbBytes: 10 * 1024 * 1024 }) === false,
+)
+check(
+  "the byte floor is configurable, so a tiny database can opt in",
+  shouldVacuumAfterWipe({ rowsDeleted: 1, dbBytes: 1024 * 1024, minBytes: 0 }) === true,
+)
 
 db.close()
 rmSync(dir, { recursive: true, force: true })

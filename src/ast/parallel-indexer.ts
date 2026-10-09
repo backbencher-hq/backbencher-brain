@@ -6165,7 +6165,7 @@ export interface FileChange {
  * (and inode) intact, so every open connection sees the fresh index right
  * away with no restart needed.
  */
-export function wipeProjectData(rawDb: any): void {
+export function wipeProjectData(rawDb: any): { rowsDeleted: number } {
   // M54.P1: bulk destructive op — FK OFF avoids any dependency-ordering
   // surprise mid-wipe, then the open-time policy is restored per the
   // BB_FK_ENFORCE seam (same contract as storeResults' finally).
@@ -6181,9 +6181,15 @@ export function wipeProjectData(rawDb: any): void {
     "brain_index_status",
     "brain_file",
   ]
+  // The count is RETURNED because the caller cannot otherwise tell a wipe that
+  // emptied a 3 GB file from one that ran on an already-empty database — and
+  // `freelist_count` is not a substitute: measured on the real 3.33 GB project
+  // database, it still read 0 pages free immediately after every row was deleted.
+  let rowsDeleted = 0
   for (const t of tables) {
     try {
-      rawDb.run(`DELETE FROM ${t}`)
+      const info = rawDb.run(`DELETE FROM ${t}`)
+      rowsDeleted += Number(info?.changes ?? 0)
     } catch {}
   }
   // temp resolution tables (per-connection; safe to clear if present)
@@ -6198,6 +6204,7 @@ export function wipeProjectData(rawDb: any): void {
   } else {
     rawDb.run("PRAGMA foreign_keys = ON")
   }
+  return { rowsDeleted }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

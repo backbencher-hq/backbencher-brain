@@ -74,6 +74,24 @@ export function spaceReport(rawDb: any, dbPath: string): SpaceReport {
   return { dbBytes, walBytes, freelistBytes, freeRatio, checkpointed: false, vacuumed: false, vacuumMs: null }
 }
 
+/**
+ * Should a force-wipe vacuum the file it just emptied?
+ *
+ * NOT decided on `freelist_count`. Measured on the real 3.33 GB project database:
+ * immediately after `wipeProjectData` deleted every row, `freelist_count` read 0,
+ * so the ratio test did not fire and the rebuild wrote into 3.33 GB of holes — and
+ * a later read of the same file showed 347,751 free pages (1,358 MB, 42.8%). The
+ * counter lags the deletes until a checkpoint, and a checkpoint can be refused
+ * while another connection (a running MCP server) holds a read snapshot.
+ *
+ * What the wipe path knows WITHOUT asking SQLite: it just deleted `rowsDeleted`
+ * rows from a file of `dbBytes`. That is the evidence this decides on.
+ */
+export function shouldVacuumAfterWipe(input: { rowsDeleted: number; dbBytes: number; minBytes?: number }): boolean {
+  const minBytes = input.minBytes ?? 256 * 1024 * 1024
+  return input.rowsDeleted > 0 && input.dbBytes >= minBytes
+}
+
 export interface ReclaimOptions {
   /**
    * VACUUM when the file is mostly free pages. Only worth it where the file is
