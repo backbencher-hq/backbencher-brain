@@ -33,7 +33,8 @@
 import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
 import { createHash } from "node:crypto"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 // `arg` used to be typed `(...): string | undefined`, which made all five option
 // constants below `string | undefined` even though every one of them passes a
@@ -59,7 +60,8 @@ const REPOS = "$HOME/fixtures/repositories"
 const REPO = arg("--repo", "kong")
 const ROOT = join(REPOS, REPO)
 const NEW_WASM = arg("--new", "$HOME/fixtures/grammars/npm-0.4.1.wasm")
-const OLD_WASM = arg("--old", "$HOME/backbencher-brain/wasm/tree-sitter-lua.wasm")
+const CHECKOUT = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
+const OLD_WASM = arg("--old", join(CHECKOUT, "wasm", "tree-sitter-lua.wasm"))
 const OUT = arg("--out", "$HOME/fixtures/out/lua-grammar-ab.json")
 const LIST = arg("--list", "")
 

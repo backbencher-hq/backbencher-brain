@@ -15,7 +15,8 @@
 import { readFileSync } from "node:fs"
 import { execSync } from "node:child_process"
 import * as path from "node:path"
-const ROOT = "$HOME/backbencher-brain"
+import { fileURLToPath } from "node:url"
+const ROOT = process.env.BB_REPO || path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 const { phpStaticCallableName, PHP_BUILTINS } = await import(path.join(ROOT, "src/ast/real-php-analyzer.ts"))
 const wts: any = await import("web-tree-sitter")

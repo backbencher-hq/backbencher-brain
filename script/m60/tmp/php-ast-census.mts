@@ -12,8 +12,9 @@
 import { readFileSync, existsSync } from "node:fs"
 import { execSync } from "node:child_process"
 import * as path from "node:path"
+import { fileURLToPath } from "node:url"
 
-const ROOT = "$HOME/backbencher-brain"
+const ROOT = process.env.BB_REPO || path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const CORPORA = [
   { name: "phpunit", dir: "$HOME/fixtures/repositories/phpunit" },
   { name: "phpmyadmin", dir: "$HOME/fixtures/repositories/phpmyadmin" },

@@ -6,7 +6,9 @@
  * is written from the grammar's own shapes and not by re-reading the analyzer.
  */
 import { readFileSync } from "node:fs"
-const ROOT = "$HOME/backbencher-brain"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
+const ROOT = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const wts: any = await import("web-tree-sitter")
 const P: any = wts.Parser ?? wts.default ?? wts
 await P.init({ locateFile: () => `${ROOT}/node_modules/web-tree-sitter/tree-sitter.wasm` })

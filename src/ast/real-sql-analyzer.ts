@@ -65,7 +65,8 @@ type ParseState = {
    *  statement, and only the statement. */
   localCtes: Set<string>
   /** First declaration of each replaceable name in this file, by 1-based line,
-   *  keyed `kind:name` so two DIFFERENT objects that share a name cannot collide.
+   *  keyed `kind:name` so two DIFFERENT objects that share a name cannot collide —
+   *  and, for a FUNCTION or PROCEDURE, keyed `kind:name(argtype,argtype,…)` as well.
    *
    *  `CREATE OR REPLACE FUNCTION f` is a REPLACEMENT in PostgreSQL's own words,
    *  and the corpus carries it in quantity: 666 OR REPLACE declarations over the
@@ -80,8 +81,34 @@ type ParseState = {
    *  7 and its `CREATE TRIGGER f` at line 25 counted as one redefinition, and they
    *  are two different objects that share a name. That was a documented intent with
    *  no implementation behind it until pass 2, and it is why the analyzer emitted
-   *  22 `overrides` edges where the construct probe measured 15. */
+   *  22 `overrides` edges where the construct probe measured 15.
+   *
+   *  THE ARGUMENT TYPES ARE PART OF THE KEY, and that is the same defect one level
+   *  down. PostgreSQL identifies a ROUTINE by (schema, name, input argument types),
+   *  not by name: `CREATE OR REPLACE FUNCTION f(a int)` followed by
+   *  `CREATE OR REPLACE FUNCTION f(a int, b int)` creates a SECOND function and
+   *  replaces nothing — `\df f` returns two rows. Keyed on the name, the analyzer
+   *  published a replacement the language does not perform. Measured on the
+   *  60-file incoming-gate population: `overrides` emitted 14 edges and **0 of them
+   *  resolved to exactly one declaration — all 14 were ambiguous**, and the
+   *  ambiguous names are the corpus's own overloads (`overloaded` 2 declarations,
+   *  `overloaded_default` 4, `overloaded_html_form` 3, `overloaded_unnamed_param`
+   *  5). The count of declarations a target matched WAS the overload count, which
+   *  is what a name-keyed identity predicts and what a signature-keyed one removes.
+   *  VIEWS are deliberately NOT signature-keyed: PostgreSQL has no view overloading,
+   *  so two `CREATE OR REPLACE VIEW v` really are one object replacing itself.
+   *
+   *  Only the INPUT types take part. `RETURNS TABLE (…)` declares OUT parameters,
+   *  which are not part of the call signature; they are appended by
+   *  `callableParameters` with `direction: "out"` and are filtered out here. */
   redeclared: Map<string, number>
+  /** `${kind}:${name}` of every replaceable declaration already seen in this file,
+   *  WITHOUT the signature. Its only job is to tell an OVERLOAD from a first
+   *  declaration: a `CREATE OR REPLACE FUNCTION f(...)` whose signature is new but
+   *  whose name this file already declares is a second function, not a replacement,
+   *  and that suppression is counted in `ambiguity.overloadNotReplacementSkipped`
+   *  rather than left as the silent absence of an edge. */
+  routineNames: Set<string>
   /** `kind path line` of every include directive already recorded, so the resync
    *  and EXECUTE-literal passes cannot record the same `\ir` a second time. The
    *  relationship itself is deduplicated by type/source/target; this guards the
@@ -209,6 +236,18 @@ const INFORMATION_SCHEMA_VIEWS = new Set([
   "role_table_grants", "role_routine_grants", "trigger", "triggers", "views",
 ])
 const PLATFORM_SCHEMAS = new Set(["vault", "auth", "storage", "extensions", "realtime", "graphql", "pgsodium", "pgtle"])
+
+/**
+ * The grammar's mode keywords on a `function_argument`.
+ *
+ * Read as NODE TYPES rather than searched for in the parameter's text, because a
+ * parameter may legitimately be named `out` or `in` — `CREATE FUNCTION f(out int)`
+ * declares a parameter whose TYPE is `int` and whose name is `out` — and a text
+ * match cannot tell that from the mode keyword. The pinned grammar emits
+ * `keyword_out` for the mode and `identifier` for the name, so the node type is
+ * the discriminator the language itself provides.
+ */
+const MODE_KEYWORD_TYPES = new Set(["keyword_in", "keyword_out", "keyword_inout", "keyword_variadic"])
 
 function classifyExternalTarget(
   target: string,
@@ -638,6 +677,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       relationshipKeys: new Set(),
       relationshipsByKey: new Map(),
       redeclared: new Map(),
+      routineNames: new Set<string>(),
       includeKeys: new Set(),
       symbolKeys: new Set(),
       declarationKeys: new Set(),
@@ -674,6 +714,8 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         includeNonLiteral: 0,
         extensionImportsEmitted: 0,
         overridesEmitted: 0,
+        overloadNotReplacementSkipped: 0,
+        pgCatalogMarkedExternal: 0,
         instantiationsEmitted: 0,
         reservedNameSymbolsSuppressed: 0,
         indexOwnersAdopted: 0,
@@ -2007,18 +2049,31 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     // measured 15 same-kind OR REPLACE redeclarations against the analyzer's 22
     // emitted `overrides` edges, and the 7-edge gap was exactly this. The field
     // comment was right about the failure and wrong about where it was enforced.
-    const key = `${node.type}:${name}`
+    //
+    // AND ON THE ARGUMENT TYPES, for a routine. See `redeclared` for the gate
+    // measurement that forced it: 14 `overrides` edges, 0 resolved, 14 ambiguous,
+    // where the declaration count a target matched was exactly the overload count.
+    const nameKey = `${node.type}:${name}`
+    const key = `${nameKey}${this.routineSignature(node, state)}`
     const line = node.startPosition.row + state.slice.rowOffset + 1
     const replaces = this.directChild(node, "keyword_replace") !== null
     if (!replaces) {
       // Not a replacement, but the first declaration of this name is still worth
       // recording: a LATER `CREATE OR REPLACE` of the same name replaces THIS one.
       if (!state.redeclared.has(key)) state.redeclared.set(key, line)
+      state.routineNames.add(nameKey)
       return
     }
     const prior = state.redeclared.get(key)
     if (prior === undefined) {
+      // A NEW SIGNATURE UNDER A NAME THIS FILE ALREADY DECLARES IS AN OVERLOAD,
+      // NOT A REPLACEMENT. PostgreSQL keys a routine on (schema, name, input
+      // argument types), so this declaration adds a second function and replaces
+      // nothing. Counted rather than silently dropped, so the suppression is a
+      // number a reader can check instead of an edge that merely is not there.
+      if (state.routineNames.has(nameKey)) state.ambiguity.overloadNotReplacementSkipped++
       state.redeclared.set(key, line)
+      state.routineNames.add(nameKey)
       return
     }
     this.addRelationship(ASTEngine.RelationshipType.Overrides, state.fileModuleName, name, state, {
@@ -2029,7 +2084,96 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       replacementLine: line,
     })
     state.redeclared.set(key, line)
+    state.routineNames.add(nameKey)
     state.ambiguity.overridesEmitted++
+  }
+
+  /**
+   * The argument-type list that makes a ROUTINE's identity, as a key suffix.
+   *
+   * PostgreSQL does not identify a function by its name. `CREATE OR REPLACE
+   * FUNCTION f(a int)` and `CREATE OR REPLACE FUNCTION f(a int, b int)` are two
+   * functions that coexist, which is why `\df f` prints two rows — so an
+   * `overrides` edge between them asserts a replacement the language never
+   * performs. Only the INPUT types participate: `RETURNS TABLE (…)` declares OUT
+   * parameters and is not part of the call signature.
+   *
+   * Returns `""` for every non-routine kind. A VIEW has no arguments and no
+   * overloading, so `CREATE OR REPLACE VIEW v` twice really is one object
+   * replacing itself, and the key stays name-only exactly as before.
+   *
+   * The types are lowercased and comma-joined so a spelling difference that
+   * PostgreSQL does not distinguish (`INTEGER` / `integer`) cannot split one
+   * identity into two keys.
+   */
+  private routineSignature(node: Node, state: ParseState): string {
+    if (node.type !== "create_function" && node.type !== "create_procedure") return ""
+    const args = this.directChild(node, "function_arguments")
+    if (!args) return "()"
+    const types: string[] = []
+    for (const argument of this.namedChildren(args)) {
+      if (argument.type !== "function_argument") continue
+      const param = this.functionArgument(argument, state)
+      // An `out` parameter is not part of the call signature — it is part of the
+      // RESULT, and the CREATE FUNCTION reference says so in as many words: two
+      // functions are the same if they share "the same names and INPUT argument
+      // types, ignoring any OUT parameters".
+      if (param?.direction === "out") continue
+      types.push(this.argumentTypeText(argument, state).toLowerCase())
+    }
+    return `(${types.join(",")})`
+  }
+
+  /**
+   * One parameter's declared type, read even when the parameter has NO NAME.
+   *
+   * WHY THIS IS NOT `functionArgument(...).type`. A PostgreSQL parameter may be
+   * written without a name — `CREATE FUNCTION f(integer, text)` is legal and is
+   * the form the corpus's own overloads use. `functionArgument` looks for the
+   * parameter's name first and returns `null` when there is none, so reading the
+   * type through it collapsed every unnamed parameter to the empty string: the
+   * 60-file incoming-gate population's remaining `overrides` edges after the
+   * first signature fix were `overloaded_unnamed_param` (5 declarations),
+   * `overloaded_unnamed_json_jsonb_param` (3), `color` (2) and `isodate` (2) —
+   * every one of them a set of unnamed-parameter overloads whose types the key
+   * could not see.
+   *
+   * The discriminator is CHILD ORDER, not a search, and that is the pinned
+   * grammar's own layout: the mode keyword (if any) comes first, then the
+   * parameter NAME if it has one, then the type. `firstIdentifier` cannot be used
+   * to find the name, because an unnamed `object_reference` type such as
+   * `my_type` contains an `identifier` descendant of its own and would be
+   * mistaken for the parameter's name — the same shape-versus-role error that
+   * produced the fabricated FK on every custom-typed column (SQL-D1).
+   *
+   * The `array_size_definition` suffix is KEPT: PostgreSQL treats `integer[]` and
+   * `integer` as different input argument types, so dropping the `[]` would merge
+   * two distinct routines.
+   */
+  private argumentTypeText(argument: Node, state: ParseState): string {
+    // A user-defined type is a FIELD the grammar sets, so this arm is a parse fact
+    // rather than a guess about spelling.
+    const custom = argument.childForFieldName?.("custom_type")
+    if (custom) {
+      const sized = this.namedChildren(argument).some((c) => c.type === "array_size_definition")
+      return `${this.referenceText(custom, state)}${sized ? "[]" : ""}`
+    }
+    const children = this.namedChildren(argument)
+    let i = 0
+    while (i < children.length && MODE_KEYWORD_TYPES.has(children[i].type)) i++
+    // A named parameter: the name is the first child after the mode keyword, and
+    // everything after it up to DEFAULT/`=` is the type.
+    if (children[i]?.type === "identifier") {
+      return this.spanAfter(argument, children[i], (c) => c.type === "keyword_default" || c.type === "literal")
+    }
+    // UNNAMED: there is no name, so the remaining children ARE the type. Joined
+    // with a space so `double precision` and `integer []` keep a stable spelling.
+    const parts: string[] = []
+    for (; i < children.length; i++) {
+      const t = children[i].text.trim()
+      if (t.length > 0) parts.push(t)
+    }
+    return parts.join(" ")
   }
 
   // ---------------------------------------------------------------- tables
@@ -3595,6 +3739,42 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     if (externalKind) {
       state.externalTargets![externalKind]++
       metadata = { ...metadata, external: externalKind }
+      /**
+       * THE ARBITER CANNOT READ THE LINE ABOVE, and this is the half of the
+       * classification it can.
+       *
+       * `script/m14/incoming-rule.ts` accepts an external claim only when a key in
+       * its `EXTERNAL_KEYS` is `=== true`. `external` IS one of those keys, but this
+       * lane writes a KIND into it (`"pg_class"` -> the string `"postgresCatalog"`),
+       * so `isMarkedExternal` reads the edge as unmarked and the incoming gate
+       * reports it as a plain `unresolved` gap even though the analyzer said what it
+       * was. MEASURED over the 1,526-file pooled census: of 191 not-resolved edges
+       * carrying `metadata.external`, 6 were valued `true` (the `CREATE EXTENSION`
+       * imports arm) and **185 were kind strings the arbiter cannot see** —
+       * `postgresCatalog` 125, `informationSchema` 52, `platform` 8. Marking all 185
+       * would verify 0 and REFUTE 0 (none has an identifier-shaped owner to look up),
+       * so the claim cannot be checked either way by the population.
+       *
+       * ONLY `postgresCatalog` IS MARKED, and the reason is that it is the one arm
+       * where the claim is a documented fact about the LANGUAGE rather than a guess
+       * about a name. PostgreSQL's own schema chapter: "`pg_catalog` is always
+       * effectively part of the search path. If it is not named explicitly in the
+       * path then it is implicitly searched BEFORE searching the path's schemas",
+       * and "with the default search path, an unqualified reference to your table
+       * name would then be resolved as the system table instead". So an unqualified
+       * `pg_class` denotes the system catalog and cannot denote a project table,
+       * whatever the project declares. `informationSchema` is NOT marked because its
+       * bare-name arm is a list of ordinary words (`tables` 20, `columns` 13,
+       * `views` 6, `table_constraints` 9) and a project table with one of those names
+       * is reachable by search-path order; `platform` is NOT marked because it fires
+       * on helper FUNCTION names (`algorithm_sign` 4, `url_decode` 3, `encrypt_pass`
+       * 1) whose owning schema is not part of the target string. Both stay
+       * `unresolved` and are counted in the spec rather than excused here.
+       */
+      if (externalKind === "postgresCatalog") {
+        metadata = { ...metadata, external: externalKind, isExternal: true }
+        state.ambiguity.pgCatalogMarkedExternal++
+      }
     }
     // The dedup key, and why `memberKind` is part of the IDENTITY rather than only of the payload.
     //

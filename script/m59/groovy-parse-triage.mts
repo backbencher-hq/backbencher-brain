@@ -16,8 +16,10 @@
 // Usage: tsx script/m59/groovy-parse-triage.mts [--top N]
 import * as fs from "node:fs"
 import { execSync } from "node:child_process"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
-const REPO = "$HOME/backbencher-brain"
+const REPO = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const CORPUS = process.env.GROOVY_CORPUS ?? "$HOME/fixtures/xml/repos/grails-core"
 
 // Same roots the lane audit declares as non-source, and matched the SAME way: by

@@ -16,9 +16,10 @@
 //
 // NO REGEX. readdirSync + endsWith + Map lookups only.
 import { readFileSync, readdirSync, statSync } from "node:fs"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
-const REPO = "$HOME/backbencher-brain"
+const REPO = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
 
 function walkVue(dir, out, depth = 0) {

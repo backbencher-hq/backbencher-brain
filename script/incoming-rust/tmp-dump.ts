@@ -1,10 +1,12 @@
 import { readFileSync } from "node:fs"
 import { RealRustAnalyzer } from "../../src/ast/real-rust-analyzer"
 import * as path from "node:path"
+import { fileURLToPath } from "node:url"
 const wts: any = await import("web-tree-sitter")
 const WSP = wts.Parser ?? wts.default
 const WSL = wts.Language ?? wts.default?.Language
-await WSP.init({ locateFile: () => "$HOME/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.wasm" })
+const REPO = process.env.BB_REPO || path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
+await WSP.init({ locateFile: () => path.join(REPO, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
 const p = new WSP()
 p.setLanguage(await WSL.load(readFileSync(path.join(process.cwd(), "wasm", "tree-sitter-rust.wasm"))))
 const file = process.argv[2]

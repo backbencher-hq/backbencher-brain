@@ -25,9 +25,10 @@
 // POPULATION IS DERIVED, never a hand-written file list (honesty contract
 // "an instrument must declare the population it covered").
 import { readFileSync, readdirSync, writeFileSync, existsSync, statSync } from "node:fs"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
-const REPO = "$HOME/backbencher-brain"
+const REPO = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
 const OUT = process.env.OUT || "script/vue-merge/evidence"
 const { ASTEngine } = await import(`${REPO}/src/ast/engine.ts`)

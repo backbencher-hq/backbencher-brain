@@ -31,8 +31,10 @@
 import * as fs from "node:fs"
 import { execSync } from "node:child_process"
 import { createHash } from "node:crypto"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
-const REPO = "$HOME/backbencher-brain"
+const REPO = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const SHIPPED = `${REPO}/wasm/tree-sitter-groovy.wasm`
 const CORPUS = process.env.GROOVY_CORPUS ?? "$HOME/fixtures/xml/repos/grails-core"
 
