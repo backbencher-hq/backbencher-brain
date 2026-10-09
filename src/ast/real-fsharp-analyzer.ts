@@ -150,7 +150,12 @@ const TYPE_POSITION_KINDS = new Set<string>([
 
 
 export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
-  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  public analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    context?: ASTEngine.AnalyzeContext,
+  ): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -1060,7 +1065,29 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // cannot be an in-file declaration even when a declaration of that name exists
           // elsewhere in the file. Recorded so `targetSpelling` can decline the
           // qualification instead of attaching the call to the wrong symbol.
-          const localName = this.nameOfDeclarationLeft(node) ?? this.findChild(node, (n) => n.type === "identifier")?.text
+          // FS-P16. THE LOCAL'S NAME, READ BY THE READER THAT GETS IT RIGHT.
+          //
+          // This used `nameOfDeclarationLeft(node)` with a straight `findChild(identifier)` fallback,
+          // and for F#'s most common local shape — `let k = Kennel()` — BOTH answered the CALLEE.
+          // The left-hand `k` is not an `identifier` (the grammar carries the binding name as a
+          // pattern, which is why `nameOfDeclarationLeft` searches for an `identifier_pattern`
+          // first), so the descendant search fell through to the first identifier in the RHS, and
+          // its `< left.endIndex` bound could not exclude anything: `left` is the WHOLE declaration,
+          // so the end of the RHS is inside it. Measured with the lane's own analyzer on the
+          // minimal shapes (`/tmp/fs-local-dump.mts`):
+          //
+          //     let k = Kennel()        -> calls Use.Go -> Kennel   res=local-binding
+          //     let zzz = Kennel()      -> calls Use.Go -> Kennel   res=local-binding
+          //     let k = Other()         -> calls Use.Go -> Other    res=local-binding
+          //
+          // i.e. the class was the LAST name in the declaration regardless of the local's name, so a
+          // call to a project type's CONSTRUCTOR was asserted to be a call to a local binding
+          // — a false reason, and one that also hid the edge from the project-index refinement
+          // (which refines the classes that mean "not this file", and `local-binding` claims to be
+          // this file). `declaredBindingName` reads the `*_declaration_left` FIRST and falls back to
+          // the left's own identifier, which is the same correction its own header records for the
+          // `let rec … and …` group.
+          const localName = this.declaredBindingName(node)
           if (localName) localNames.add(String(localName))
           // Still walk children so calls inside locals attribute to the
           // enclosing function (e.g. `let doubled = items |> List.map ...`).
@@ -2120,8 +2147,9 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // FS-D4: the R9 declared-type reference graph. See extractDeclaredTypeRefs.
     this.extractDeclaredTypeRefs(rootNode, pushRel, publishedNames, fqnOfName, typeFqnOfName)
 
-    // FS-D8: the EXPORT surface. F#'s importable units are the ones an `open` can
-    // bind:
+    // FS-D8: the EXPORT surface — the importable-unit set, and (FS-D13, below the payload
+    // push) the `exports` RELATIONSHIP that carries the same set into the graph. F#'s
+    // importable units are the ones an `open` can bind:
     //   * a file-scope unit — a namespace, a module, a type (a DU case is reachable
     //     through its type, never on its own);
     //   * a MODULE's own members, because `open M` binds them directly. F# is the
@@ -2167,6 +2195,77 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (exportedNames.has(s.name)) continue
       exportedNames.add(s.name)
       exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: visibility as any })
+
+      // FS-D13, THE EDGE. The payload above is the file's importable-unit set, and until
+      // this rule it reached the parse result and nothing else — so an F# symbol had no
+      // `exports` row in the graph while Swift's `public`, R's roxygen and Lua's chunk
+      // return all had one, and `src/lsp/rich_hover.ts` ("outgoing: exports", "incoming:
+      // exported by") answered "exported by" for no F# symbol in the corpus.
+      //
+      // WHY THE LABEL IS NOT A SECOND NAME FOR `contains`, which is the one objection the
+      // old ruling rested on. The two ask different questions over the same symbols:
+      // `contains` is MEMBERSHIP (every child of every scope: type members, record fields,
+      // DU cases, `private`/`internal` lets) while `exports` is the IMPORTABLE-UNIT SET.
+      // The programme's own contract says exactly this, in the fixture runner's M49
+      // exports-family invariant (`script/m14/run-fixtures.ts:1471`): "haskell/ocaml-style
+      // MODULE-owned symbols (`import Data.User (mkUser)` binds mkUser directly — the
+      // module is the namespace, members are importable by name)" are exports, while
+      // "NOT type-owned members … membership rides Contains". F# is the haskell/ocaml
+      // shape, so this rule emits the module-owned members and the file's own top-level
+      // units, and nothing a `contains` row would have to answer for twice.
+      //
+      // THE TWO ENDPOINTS, both spelled by rules this lane already settled:
+      //   * the TARGET is the symbol's PUBLISHED IDENTITY — `metadata.fqn` when the funnel
+      //     minted one, the bare name otherwise — which is the same spelling `contains`
+      //     (FS-P7-2), the declared-type graph and the store's `qualified_name` use. A
+      //     leaf here would put `Speak` in the graph instead of `Dog.Speak` and the edge
+      //     would bind to whichever same-named symbol the project declares first.
+      //   * the SOURCE is the scope that PUBLISHES it: the enclosing module/namespace's
+      //     published identity, which is exactly what `contains` already names as the
+      //     parent (one lookup, `fqnByName`, built above for that emission). A file's own
+      //     top-level unit (a `module M`/`namespace N` header) has no owner, and for those
+      //     the source is `Global` — this lane's established spelling for a file-scope
+      //     source (FS-D10: "a module-less file must source its file-level edges from
+      //     `Global`, never from the opened name itself"). No symbol is invented from the
+      //     filename, which is the fabrication the Lua lane's ruling refuses.
+      //
+      // WHAT THIS RULE DOES NOT DO: it does not re-read visibility, kinds or the `.fsi`
+      // surface/definition merge. Every one of those decisions is the payload's, and this
+      // edge is emitted from the SAME entry in the SAME loop, so the payload channel and
+      // the graph cannot disagree about what the file publishes — the failure mode
+      // (Rust's M60 #910) that a second, parallel filter would reintroduce.
+      const exportTarget =
+        typeof (s.metadata as any)?.fqn === "string" ? ((s.metadata as any).fqn as string) : s.name
+      const exportOwner = s.ownerName || s.scope
+      const exportParent = exportOwner ? fqnByName.get(String(exportOwner)) || String(exportOwner) : null
+      pushRel(
+        exportParent || "Global",
+        exportTarget,
+        ASTEngine.RelationshipType.Exports,
+        1.0,
+        {
+          nodeType: s.metadata?.nodeType || "symbol",
+          // WHICH rule of the FS-D8 surface published this name, so a consumer can tell an
+          // export from a containment row without re-deriving the filter.
+          exportForm: "module-surface",
+          declaredKind: s.kind,
+          visibility,
+          publishedBy: exportOwner ? "enclosing-scope" : "file-scope",
+          // The SAME three-valued source class `contains` writes (FS-P7-1), because the
+          // lookup and its two failure modes are the same lookup: a top-level unit is not
+          // an ambiguity, an owner the file published twice is, and a source that fell
+          // back to the bare owner name says so rather than reading as a declaration.
+          sourceResolution: exportParent
+            ? "in-file-declaration"
+            : ownerlessUnitNames.has(String(exportOwner))
+              ? "ownerless-unit"
+              : (parentNameCounts.get(String(exportOwner)) ?? 0) > 1
+                ? "ambiguous-owner-name"
+                : "in-file-declaration",
+          targetResolution: "published-identity",
+        },
+        s.range?.startLine,
+      )
     }
 
     // FS-P7-1, the decision half. The walk marked WHAT KIND of name each target is; this is
@@ -2217,6 +2316,172 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const baseInFile = publishedTypeNames.has(writtenBase)
       md.targetResolution = marker === UNRESOLVED_INTERFACE
         ? (baseInFile ? "interface-member" : "interface-member-external")          : (baseInFile ? "base-member" : "base-member-external")
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // FS-P10. THE PROJECT-INDEX REFINEMENT — the classes that say "not this file"
+    // become classes that say WHICH "not this file".
+    //
+    // WHY THIS EXISTS, and why it is the thing the index is FOR. Every class the two
+    // passes above can produce for a name this file does not publish is a class about
+    // EXTERNALITY, and none of them was answerable by one file:
+    //
+    //   bare-external           — "no identity for this name here", which the name
+    //                             `external` asserts is elsewhere and the class cannot
+    //                             support: on the 3,000-file draw this is 65,296 `calls`
+    //                             edges, and a slice of them are this file's OWN later
+    //                             declarations (the walk fills `fqnOfName` as it goes, so a
+    //                             forward reference looks external at emit time).
+    //   external-type-or-module — "the owner is module-like and not opened here", 68,453
+    //                             `calls` edges, of which the project owning that very name is
+    //                             the cross-file case and is indistinguishable from FSharp.Core.
+    //   base-member-external, interface-member-external — an override whose base type this
+    //                             file does not declare. The base being declared in ANOTHER
+    //                             FILE of the project is exactly the population pass 8 counted
+    //                             and then had to leave stranded.
+    //
+    // Priced before it was written, on the same 3,000-file draw and pool the pass-6/8/11/13/15
+    // tables use (`.tmp-probe/fs-p16-index-refine.py`, arm rows-pass15-meta.ndjson): the
+    // project's own declaration set answers "is this name declared anywhere in this project"
+    // for every one of those classes, and the answer splits each of them in two.
+    //
+    // WHAT IT DOES NOT DO, stated because the omission is a decision. It re-classifies; it
+    // does NOT re-spell. Pass 15 measured the sound re-spelling population at 929 edges of
+    // 357,591 (0.26%) — the project must publish an owner that ENDS WITH the written one, and
+    // a bare "the project has exactly one `map`" rule is UNSOUND (`String.map` would be
+    // rewritten to `Seq.map`). 929 edges do not justify changing what the analyzer WRITES; a
+    // consumer that joins on the identity can see the project's own symbol table directly, and
+    // that is the store's job, not a second guess written into the edge.
+    //
+    // It also does not refine `external-namespace`, and the reason is a gap in the SHARED
+    // index rather than a decision here: `ProjectIndex` carries declared TYPES and MEMBERS
+    // (`typeKinds`, `typeMembers`, `symbolNames`), and F# declares a module or a namespace in
+    // neither — so `open Deedle` has nothing in the index to be tested against. Adding a
+    // namespace channel to the shared type is a contract change across forty-eight lanes and
+    // is recorded as such rather than approximated with a test that would mostly answer
+    // "nothing is declared" to a question about declarations.
+    //
+    // Gated on the index being genuinely present: with no index every class is exactly
+    // what it was, byte for byte, which is what keeps the fixture runner's flat fixtures and
+    // every per-file caller on the pre-index contract.
+    const projectIndex: any = (context as any)?.projectIndex
+    if (projectIndex && relationships.length > 0) {
+      const projectTypes: Map<string, string> | undefined = projectIndex.typeKinds
+      const projectNames: Set<string> | undefined = projectIndex.symbolNames
+      const projectMemberMap: Map<string, Set<string>> | undefined = projectIndex.typeMembers
+      const projectBaseMap: Map<string, string[]> | undefined = projectIndex.typeBases
+      const knowsType = (n: string): boolean => n.length > 0 && (projectTypes?.has(n) ?? false)
+      const knowsName = (n: string): boolean =>
+        n.length > 0 && ((projectNames?.has(n) ?? false) || knowsType(n))
+      // The base's member set, INHERITANCE-CLOSED, because F# inherits an interface's members
+      // through another interface (`interface IFoo inherit IBar`). Cycle-guarded: a type graph
+      // with a cycle must terminate at "nothing known" rather than hang a whole index run.
+      const memberClosure = (t: string, seen = new Set<string>()): Set<string> => {
+        const direct = projectMemberMap?.get(t)
+        if (direct === undefined) return new Set<string>()
+        if (seen.has(t)) return new Set<string>()
+        seen.add(t)
+        const out = new Set<string>(direct)
+        for (const b of projectBaseMap?.get(t) ?? []) {
+          for (const m of memberClosure(b, seen)) out.add(m)
+        }
+        return out
+      }
+      for (const rel of relationships) {
+        const md = rel.metadata as Record<string, any> | undefined
+        if (!md) continue
+        const cls = String(md.targetResolution ?? "")
+        const target = String(rel.target ?? "")
+        const leaf = target.split(".").pop() ?? ""
+        // The owner the SOURCE wrote, in preference order: the qualifier this walk discarded,
+        // the written type spelling an emission site preserved, otherwise the target's own
+        // path. All three are the same fact recorded by different sites, and the test uses the
+        // most specific one that exists rather than pretending they are the same string.
+        const writtenOwner = ((): string => {
+          const q = typeof md.targetQualifier === "string" ? md.targetQualifier : ""
+          const w = typeof md.targetWritten === "string" ? md.targetWritten : ""
+          const qt = typeof md.qualifiedType === "string" ? md.qualifiedType : ""
+          const own = target.includes(".") ? target.slice(0, target.lastIndexOf(".")) : ""
+          return q || w || qt || own
+        })()
+        const ownerHead = writtenOwner.split(".")[0] ?? ""
+        const ownerLeaf = writtenOwner.split(".").pop() ?? ""
+        let next = ""
+        if (cls === "bare-external") {
+          // The name itself, because a bare target has no owner and the question is whether the
+          // PROJECT declares that name at all. `in-project-name` is deliberately not spelled
+          // `in-project-declaration`: the index records that a declaration EXISTS, not that
+          // this edge binds to it, and a class named for the binding would be the confident
+          // wrong answer this lane's standard forbids.
+          if (knowsName(leaf)) next = "in-project-name"
+        } else if (cls === "external-type-or-module") {
+          // The OWNER, because that is what the class is about: `Seq.map`'s question is `Seq`.
+          //
+          // FS-P17 WIDENED THIS FROM `knowsType` TO `knowsName`, because the index now records
+          // module and namespace headers as names (`nameOnlyNodes`) and a module owner is the
+          // whole point of the class: on the 3,000-file draw **23,995** of this class's edges hang
+          // off a module name the project declares, against the 819 a binding channel reaches.
+          //
+          // The test is the WRITTEN OWNER AS A WHOLE PATH and not its leaf, and the difference is
+          // the difference between a claim and a guess: `FSharp.Core.Seq.map`'s owner is
+          // `FSharp.Core.Seq`, and a project that declares a `Seq` module does not make THAT path
+          // in-project — testing the leaf would refine it, which is the confident wrong answer
+          // this lane's standard forbids. The cost is a miss (a multi-segment external path whose
+          // last segment is a project name stays external) and misses are recorded, not hidden.
+          //
+          // THE CLAIM, PRECISELY, because "in-project" would be a bigger one: the project declares
+          // a declaration whose name EQUALS the written owner. In F# a dotted member path's owner
+          // can only be a type or a module, so the ordinary reading is right — but the index's
+          // name set also holds bindings and members, so a binding that happens to share the
+          // owner's name would satisfy the test without the owner being material. Measured where
+          // it matters: on the Argu corpus the class moved 139 edges and BOTH shadowing owners
+          // (`String`, `Seq`) are real modules (`src/Argu/Utils.fs:26,37`), so the imprecision is
+          // 0 of 178 refinements there. It is stated instead of fixed because fixing it means a
+          // THIRD schema channel for module names (a new `ProjectIndex` field, its serialiser and
+          // its version), and shadowing an owner name with a binding is not a shape this corpus
+          // has. The store's own attachment rate is the honest reading of the value: 260/260
+          // `in-project-type`, 126/126 `in-project-name`, 36/36 `in-project-namespace`, and
+          // 49/178 `in-project-type-or-module` — the last one low precisely because F# projects
+          // redeclare FSharp.Core module names.
+          if (knowsType(writtenOwner) || knowsName(writtenOwner)) next = "in-project-type-or-module"
+        } else if (cls === "external-namespace") {
+          // FS-P17. An `open`'s target IS the name — `open Fixture.Project.Domain` spells the
+          // namespace's whole header, and the index records a namespace or module header as exactly
+          // that string (verified against the tree: `namespace Fixture.Project.Domain` is a
+          // `namespace` node whose `long_identifier` TEXT is the dotted path, and the analyzer
+          // publishes its own module symbol under the same spelling).
+          //
+          // EXISTENCE, not reachability, and the residual is stated: a nested module is recorded
+          // under its own name (`Inner`, whose written form is `Outer.Inner`), and `open System.IO`
+          // in a project that declares `namespace System.IO` reads in-project — which is TRUE, the
+          // project does declare it, and is the same shadowing ambiguity every `in-project-*` class
+          // here carries rather than claiming the resolver bound it.
+          if (knowsName(target)) next = "in-project-namespace"
+        } else if (cls === "external-type") {
+          if (knowsName(leaf)) next = "in-project-type"
+        } else if (cls === "base-member-external" || cls === "interface-member-external") {
+          const baseLeaf = ownerLeaf
+          if (knowsType(baseLeaf)) {
+            next = cls === "interface-member-external" ? "interface-member-in-project" : "base-member-in-project"
+            // The MEMBER half, and it is the reason this tier is worth having: an override
+            // asserted against a base that is a project type and does NOT declare the member is
+            // the fabricated-edge defect the python and dart lanes each measured before their
+            // companion tier existed. Reported as METADATA rather than by dropping the edge —
+            // dropping would be a silent gap, and this lane's standard is a measured reason.
+            // "Unknown" is recorded as silence: a base with no indexed members at all (the spec
+            // indexes `member_defn`, not fields) has no member set to answer with, and asserting
+            // `lacks` from an empty set would invent the very defect this reports.
+            if (projectMemberMap?.has(baseLeaf)) {
+              const members = memberClosure(baseLeaf)
+              if (members.size > 0 && !members.has(leaf)) md.baseInProjectLacksMember = true
+            }
+          }
+        }
+        if (next !== "") {
+          md.targetResolution = next
+          md.projectIndexRefined = true
+        }
+      }
     }
 
     // FS-P8 — THE EXTERNAL CLAIM, and it is a claim the incoming gate can REFUTE.
