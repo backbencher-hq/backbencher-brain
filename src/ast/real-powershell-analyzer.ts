@@ -426,6 +426,65 @@ const externalReadingOf = (t: string): "cmdlet" | "qualified" | null => {
 }
 
 /**
+ * PS38 — CAN THE ARBITER CHECK A CLAIM ON THIS TARGET WITHOUT ASKING ABOUT A NAME THE TARGET
+ * DOES NOT NAME?
+ *
+ * `verifyExternalClaim` (script/m14/incoming-rule.ts) verifies an external claim one of two
+ * ways, and only one of them is a question this analyzer's own guard answered:
+ *
+ *   no dotted owner   the arbiter asks about the TARGET ITSELF when the spelling is a plain
+ *                     identifier, and answers UNVERIFIABLE when it is not (`Get-ChildItem`
+ *                     carries a hyphen, so it is the second case). Either way the thing looked
+ *                     up is a string the edge names, and the claim is consulted only where the
+ *                     key space answers the target NOTHING (`classifyEdge` reads the count
+ *                     first), so this arm can never be refuted BY CONSTRUCTION.
+ *   a dotted owner    the arbiter asks about the OWNER — everything before the LAST dot —
+ *                     which the edge does NOT name and `declaredInFile(target)` never guarded.
+ *                     A project that publishes an unrelated `Text` refutes the claim on
+ *                     `[Text.UTF8Encoding]::new()`, and it did: 82 such refutations measured
+ *                     over the 978-file corpus, ALL of them on a BARE owner (`Text`,
+ *                     `powershell` from `powershell.exe`, `3` from `#requires -Version 3.0`,
+ *                     `Test` from `[Test.User32]::GetPlacement`), and ZERO on a qualified one.
+ *
+ * So the readable key is published where the arbiter asks about the target itself or about an
+ * owner that is ITSELF QUALIFIED — a namespace path such as `System.IO`, which is the owner of
+ * `System.IO.Path::Combine`. This is a rule about WHICH QUESTION the checker will ask, not
+ * about which targets are external: `externalTarget`/`externalVia` keep publishing the reading
+ * on the withheld edges, and a withheld claim is one the arbiter was never able to check
+ * honestly. It is deliberately NOT "mark only what verifies" — 47 of the 49 withheld edges at
+ * `powershell ps1 60` WOULD have verified; they are given up with the 2 the project answers,
+ * because no per-file rule can tell `System.Version` (owner `System`) from `Text.UTF8Encoding`
+ * (owner `Text`) apart: the difference is what the PROJECT declares, and this analyzer reads
+ * one file.
+ *
+ * Zero regex, like every predicate in this file: the owner split is `lastIndexOf`, the
+ * "the arbiter will skip this owner" test is a char-code scan for `:` `/` and whitespace.
+ */
+const arbiterOwnerOf = (t: string): string | null => {
+  const dot = t.lastIndexOf(".")
+  if (dot <= 0) return null
+  return t.slice(0, dot)
+}
+const arbiterCanCheckOwner = (t: string): boolean => {
+  const owner = arbiterOwnerOf(t)
+  if (owner === null) return true
+  for (let i = 0; i < owner.length; i++) {
+    if (owner.charCodeAt(i) === 46 /* . */) return true
+  }
+  // A BARE OWNER IS LOOKED UP, so the claim would be checked against a name the edge does not
+  // carry — UNLESS the owner itself carries a byte the arbiter refuses to look up (`:` `/`
+  // whitespace), in which case the outcome is UNVERIFIABLE and the claim cannot be called
+  // false. The byte set mirrors `verifyExternalClaim`'s own `[:/\s]` test EXACTLY, which is
+  // why `\` is NOT in it: that regex does not reject a backslash, so an owner like `Foo\Bar`
+  // IS looked up and is not safe to publish against.
+  for (let i = 0; i < owner.length; i++) {
+    const c = owner.charCodeAt(i)
+    if (c === 58 /* : */ || c === 47 /* / */ || c === 32 || c === 9 || c === 10 || c === 13) return true
+  }
+  return false
+}
+
+/**
  * Is this declared type a PowerShell TYPE ACCELERATOR rather than a project
  * type?
  *
@@ -2848,6 +2907,60 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (via) {
         rel.metadata.externalTarget = true
         rel.metadata.externalVia = via
+        // PS38 — THE ARBITER'S SPELLING OF THE SAME CLAIM, and the whole defect it repairs
+        // is one key name.
+        //
+        // `incoming-gate.ts` reads a claim from an EXPLICIT list of keys
+        // (`EXTERNAL_KEYS`, script/m14/incoming-rule.ts) and `externalTarget` is not in it.
+        // So every edge this pass marks — the cmdlets and the .NET/module spellings, the
+        // lane's whole cause-C reading — arrived at the arbiter as an UNMARKED edge, which
+        // is indistinguishable there from a broken one. Measured at `powershell ps1 60`:
+        // 5,877 unresolved of 9,911 edges, 0 external, and 1,938 of those 5,877 already
+        // carried this analyzer's own externality reading.
+        //
+        // `isExternalTarget` IS in that list and is the same claim word for word, so this is
+        // a RE-SPELLING and not a widening: the guard above (`declaredInFile(target)`) and
+        // the reading (`externalReadingOf`) are unchanged, `externalVia` still says which
+        // reading fired, and NOT ONE EDGE IS ADDED.
+        //
+        // BUT IT IS NOT PUBLISHED ON EVERY MARKED EDGE, AND THAT RESTRICTION IS THE SECOND
+        // HALF OF PS38. `verifyExternalClaim` checks a claim one of two ways: with no dotted
+        // owner it asks about the TARGET ITSELF (or cannot ask at all, for a spelling that is
+        // not an identifier), and with a dotted owner it asks about the OWNER — a string the
+        // edge does NOT name and this analyzer never guarded. That second question can be
+        // answered by a declaration of something else entirely. Measured over the whole
+        // 978-file corpus with the census beside this lane: 82 marked edges are REFUTED, and
+        // every one of the 82 has a BARE owner — `Text.UTF8Encoding` (owner `Text`, from
+        // `[Text.UTF8Encoding]::new()` in Grace/scripts/capture-artifact-size.ps1:115),
+        // `powershell.exe` (owner `powershell`), the `#requires -Version 3.0` literal (owner
+        // `3`), and `Test.User32::GetPlacement` (owner `Test`; the run creates that type with
+        // `Add-Type -Name User32 -Namespace Test`, ConsoleHost.Tests.ps1:1012, and an
+        // unrelated Pester file declares `class Test` at
+        // Scripting.Classes.BasicParsing.Tests.ps1:508). ZERO of the 82 has a qualified owner.
+        //
+        // So the readable key is published only where the arbiter's question is one this
+        // target's own spelling settles (`arbiterCanCheckOwner`, below): no dotted owner (the
+        // target itself is asked, or nothing is), or an owner that is ITSELF qualified — the
+        // namespace path of a .NET type, which is what `System.IO.Path::Combine`'s `System.IO`
+        // is. The claim is not withdrawn from the other edges: `externalTarget`/`externalVia`
+        // still publish the reading on them exactly as before PS38.
+        //
+        // MEASURED, `powershell ps1 60` (analyzer digest 52392fbdd74156f2; census
+        // `validation/m14/fixtures/powershell/incoming-split.mts --nf 60 --all`, which
+        // re-measures the gate's own numbers exactly):
+        //   published 1,889 = 178 verified + 1,711 unverifiable + 0 REFUTED
+        //   withheld     49 = 47 would-verify + 2 the project answers, left to the old key
+        // and corpus-wide (978 files, 160,306 edges): unresolved 75,964 → 50,558 with 26,773
+        // edges carrying the key — 2,296 verified, 23,110 unverifiable, 0 REFUTED — at a
+        // payload cost of +642,552 B (1.815% of the lane's relationship JSON).
+        //
+        // TWO KEYS RATHER THAN A RENAME, and the reason is not compatibility: the m60 mutant
+        // suite (`script/m60/powershell-mutants.ts`, `powershell/externality-*`) is written
+        // against `externalTarget` and is NOT in this lane's write scope, so dropping the old
+        // spelling would silently disarm four mutants whose whole job is to kill the
+        // shape-only rule this pass exists to avoid. Cost, measured on the shipped output:
+        // one 24-byte `,"isExternalTarget":true` per published edge.
+        if (arbiterCanCheckOwner(target)) rel.metadata.isExternalTarget = true
         continue
       }
       // A qualified spelling is not a bare-word name at all: `$env:PATH` and `Foo::Bar` are

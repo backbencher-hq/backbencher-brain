@@ -1451,3 +1451,114 @@ over and has been removed**: there is no powershell regex census instrument, and
 count was 8, not 0. The Regex inventory section above already said so; the Evidence
 section contradicted it. The live claim is the gated one — `script/m60/powershell-zero-regex.ts`
 — which counts the analyzer's own source and fails if a regex returns.
+
+## PS38 (append-only record, 2026-10-09) — the incoming side: the arbiter's key, the ambiguity column, and `overrides`
+
+This section is APPENDED rather than woven in, because every number above it was measured at a
+different revision and rewriting them would destroy the comparison. The lane's incoming column
+was the worst unresolved-to-edge ratio in the fleet; this is what it was, what moved, and what
+was RULED rather than chased.
+
+### 1. `isExternalTarget` — the claim was published under a key the arbiter does not read
+
+`script/m14/incoming-gate.ts powershell ps1 60`, before PS38:
+
+```
+VERDICT: FAIL — 1192 ambiguous + 5877 unresolved of 9911 edges
+totals: resolved 2842 · ambiguousByDecl 1192 · unresolved 5877 · markedExternal 0
+```
+
+1,938 of those 5,877 already carried this analyzer's PS-B16 externality reading
+(`externalTarget` + `externalVia`). The gate takes a claim from an EXPLICIT list
+(`EXTERNAL_KEYS`, `script/m14/incoming-rule.ts`) and `externalTarget` is not in it, so all
+1,938 arrived unmarked — and an unmarked external is indistinguishable at the gate from a
+broken edge. PS38 emits `isExternalTarget: true` (in the list; the same claim word for word)
+on the edges the existing reading marks: `declaredInFile(target)` and `externalReadingOf` are
+unchanged and **not one edge is added**.
+
+It is NOT published on every marked edge, and that restriction is the measured half. The
+arbiter asks about the TARGET ITSELF when the target has no dotted owner, and about the OWNER
+— a string the edge does not name — when it has one. Corpus-wide, 82 marked edges were
+REFUTED, every one with a BARE owner, zero with a qualified one:
+
+| target | arbiter owner | answering declaration |
+|---|---|---|
+| `Text.UTF8Encoding` (`[Text.UTF8Encoding]::new()`) | `Text` | Grace/scripts/capture-artifact-size.ps1:115 |
+| `powershell.exe`, `cmd.exe`, `whoami.exe` | `powershell`, `cmd`, `whoami` | unrelated names in the same repos |
+| `3.0` (`#requires -Version 3.0`) | `3` | a symbol named `3` |
+| `Test.User32::GetPlacement` | `Test` | `class Test`, Scripting.Classes.BasicParsing.Tests.ps1:508 (the type itself is created by `Add-Type -Name User32 -Namespace Test`, ConsoleHost.Tests.ps1:1012) |
+
+So the readable key is published only where the arbiter asks about the target itself or about
+an owner that is ITSELF QUALIFIED (`System.IO` in `System.IO.Path::Combine`). The withheld
+edges keep `externalTarget`/`externalVia` exactly as before; nothing claims less than it did.
+
+After (`powershell ps1 60`, analyzer digest `52392fbdd74156f2`):
+
+```
+VERDICT: FAIL — 1192 ambiguous + 3988 unresolved of 9911 edges; 1711 external claim(s)
+         unverifiable (178 verified + 1711 unverifiable external)     [externalRefuted = 0]
+```
+
+Whole corpus (978 `.ps1` files, 160,306 edges, census `--nf 60 --all`):
+
+```
+unresolved 75,964 -> 50,558     26,773 edges carry the key
+  2,296 verified · 23,110 unverifiable · 0 REFUTED · 1,367 the project answers (mark inert)
+  payload +642,552 B (1.815% of the lane's relationship JSON)
+```
+
+Artifacts: `validation/m14/fixtures/powershell/measurements/` — `incoming-gate-ps1-60-before.json`,
+`incoming-gate-ps1-60-after-narrowed.json`, `incoming-split-ps1-60-all-{before,after-narrowed}.json`.
+The census re-measures the gate's own numbers exactly (`COMPARE … AGREE`), because it imports
+the rule rather than copying it. Pinned by `externality-arbiter-psb17` (19/19 powershell
+fixtures pass): every positive row has a negative twin of the same shape, including the
+withheld broad-owner row.
+
+### 2. The 1,192 ambiguous — RULED irreducible, with the split
+
+`validation/m14/fixtures/powershell/incoming-split.mts --nf 60 --all`, 219 distinct names
+behind the 1,192 edges:
+
+| bucket | edges | why it cannot move |
+|---|---|---|
+| `multiFile` | 927 (77.8%) | the colliding declarations are in DIFFERENT files of one repo; PowerShell binds a bare name at RUN time (dot-source, caller scope, module exports), and no field an edge can carry names which file is meant. `$expected` is declared 9 times across 6 files of one repo. |
+| `oneFileDiffOwner` | 142 | one file, different owner scopes |
+| `oneFileSameOwnerDiffKind` | 123 | one file, one owner, the name published under two KINDS (kind signatures: `variable` 546, `property\|variable` 323, `property` 297, `class\|property` 22, `constructor` 4) — a variable and a hashtable key of one spelling are different symbols |
+| `oneFileSameOwnerSameKind` | 0 | — |
+
+The only conceivable repair (the 123 kind-distinct groups, 10.3%) would require the analyzer to
+stop publishing one of two distinct symbols — changing SYMBOL identity to move a resolution
+metric. Corpus-wide the same walk reads 48,866 ambiguous of 160,306 (30.5%), so the sample is
+not an outlier. Ruled in `script/m14/spec/powershell-completeness.json` PSD9.
+
+### 3. `overrides` — SILENT in the stride, EMITTED on the corpus
+
+The firing instrument's default stride (120 files of the corpus) reads
+`8 types fired — implements overrides SILENT`. That is a SAMPLING ARTIFACT, and the whole-corpus
+measurement says so in two independent instruments:
+
+* `npx tsx validation/m14/fixtures/powershell/pass3-probes.ts --only P15` over all 1,181
+  admitted files: **273 class declarations** (chain depth 0:247, 1:22, 2:4), **26 with a base
+  clause declared in the same file**, **12 hop-1 derived/base member pairs**, **12 of 12
+  published**, 0 transitive pairs;
+* `NFILES=1000 bun script/m14/firing-check.mjs POWERSHELL` — the whole admitted population, no
+  stride: **10 types fired**, `overrides:12`, `implements:3`, nothing silent.
+
+All 12 `overrides` edges come from ONE file,
+`powershell/test/powershell/Language/Classes/scripting.Classes.inheritance.tests.ps1` (13 corpus
+files carry a base clause at all), which is why an even stride keeps missing them: 400 files
+went on missing it after 120 did. The hop-2+ branch of the chain walk and
+derived-property-over-base-property remain UNEXERCISED (0 sites each) and P15 reports them as
+untested rather than correct. No analyzer change was made for this type. Ruled in PSD8.
+
+### 4. What was NOT marked, and why
+
+The re-spelling leaves 3,988 unresolved. The obvious widening — mark the 2,104 command-position
+`calls` edges carrying `noDeclarationInFile` — measures well (2,099 would verify, 5 unverifiable,
+0 refuted) and is REJECTED: `noDeclarationInFile` is a fact about the emitting FILE, and this
+lane's own docstring rules it non-actionable ("a `$local` no file declares and a cmdlet are
+indistinguishable under it, and only the second is external by construction"). The class has no
+shape evidence (`dotnet`, `WriteLine`, `Describe`, `It`, `Should`), and 74 of its 2,102 edges
+name a declaration the same repository publishes, which the analyzer cannot see from one file.
+Ruled in PSD10 with the gain recorded (unresolved would fall to ~1,884) so a later round can
+take it deliberately rather than by accident.
