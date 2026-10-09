@@ -1198,6 +1198,24 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     }
     console.log()
   }
+  // THE REFUTED CLAIMS, PRINTED WHOLE AND UNCAPTIONED BY ANYTHING ELSE.
+  //
+  // A refuted claim is the one outcome that says the analyzer's OWN claim is false, and the verdict
+  // counts it against the lane — so a count with no names is not actionable. It was: measured
+  // 2026-10-09, a whole riverpod run printed `extFAIL 4` while the worklist above printed four
+  // `calls`/`instantiates` names and not one of the four. The worklist is a sample by design; this
+  // is not, because there is nothing here to sample down — a refuted claim is rare by construction
+  // (a lane that refuted many would be failing every run) and every one of them is a defect.
+  const refuted = [...rep.rows.values()].flatMap((r) =>
+    r.project.refutedNames.map((x) => ({ ...x, type: r.type })),
+  )
+  if (refuted.length) {
+    console.log(
+      `EXTERNAL CLAIMS THE POPULATION REFUTES (counted AGAINST the lane — the owner these name IS published):`,
+    )
+    for (const x of refuted) console.log(`  ${w(x.type, 14)} ${x.name}`)
+    console.log()
+  }
   console.log(`VERDICT: ${v.pass ? "PASS" : "FAIL"} — ${v.reason}`)
   if (!ident(v.totals, v.pooled)) {
     console.log(

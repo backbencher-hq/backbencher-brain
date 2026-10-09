@@ -355,6 +355,19 @@ export type Outcomes = {
   /** the colliding TARGET STRINGS, so the gap is a list a lane can act on */
   ambiguousNames: { name: string; declarations: number; kinds: string }[]
   unresolvedNames: { name: string; type: string }[]
+  /**
+   * THE REFUTED CLAIMS, BY NAME — its own list, and it is not a convenience.
+   *
+   * `externalRefuted` is the ONE column that says a claim is FALSE, and it is counted against the
+   * lane, so a reader who sees `4` and cannot see WHICH four has exactly one available response:
+   * re-run the whole lane hoping they appear. MEASURED 2026-10-09 on a whole riverpod run: the
+   * report printed `extFAIL 4` and not one of the four names, because `unresolvedNames` is capped
+   * at 25 and ordinary `unresolved` rows fill it first (and the worklist prints only four names per
+   * type on top of that). A cap exists so one pathological name cannot produce a 40,000-line
+   * report; it must not be able to swallow the outcome a lane has to ACT on. Filled only by
+   * `externalRefuted`, so no other bucket can crowd it out.
+   */
+  refutedNames: { name: string; type: string }[]
 }
 
 export const emptyOutcomes = (): Outcomes => ({
@@ -362,7 +375,7 @@ export const emptyOutcomes = (): Outcomes => ({
   markedExternal: 0, externalVerified: 0, externalVerifiedByOwner: 0, externalVerifiedByProjectFacts: 0,
   externalUnverified: 0, externalRefuted: 0,
   bindingVerified: 0, bindingRefuted: 0, bindingUnverified: 0,
-  ambiguousNames: [], unresolvedNames: [],
+  ambiguousNames: [], unresolvedNames: [], refutedNames: [],
 })
 
 /**
@@ -415,6 +428,10 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
       // the verdict counts it as bad, so a lane cannot mark its way to a PASS.
       out.markedExternal++
       out.externalRefuted++
+      // INTO ITS OWN LIST FIRST, so the cap below can never be the reason a refuted claim is
+      // invisible. Both lists are kept: `unresolvedNames` goes to the worklist that orders by
+      // type, and this one is printed whole by the report.
+      if (out.refutedNames.length < 25) out.refutedNames.push({ name: tgt, type: label })
       if (out.unresolvedNames.length < 25) {
         out.unresolvedNames.push({
           name: `${tgt}   [external claim REFUTED — the population publishes ${targetOwner(tgt)}]`,

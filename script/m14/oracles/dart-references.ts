@@ -80,8 +80,9 @@
  * uninterpretable.
  *
  * An UNNAMED extension (`extension on String {}`) is deliberately absent from the
- * tree-derived set: it is published under its target type's name, so admitting it
- * would make every mention of `String` in the file resolve to this file's extension.
+ * tree-derived set: it is published under a SYNTHESIZED name no source can spell
+ * (`unnamed_extension_String`), so admitting it would put a name in the resolver
+ * that no code writes.
  *
  * ## SOURCE ATTRIBUTION
  *
@@ -232,17 +233,21 @@ function typeDeclarationName(n: any): { name: string; unnamedExtension: boolean 
     const id = n.childForFieldName?.("name") ?? namedChildren(n).find((c: any) => c.type === "type_identifier")
     return id ? { name: id.text, unnamedExtension: false } : null
   }
-  // `extension on String {}` declares no name. The analyzer publishes it under its
-  // TARGET TYPE's name, so that is the name an enclosing mention must resolve
-  // against — and it is why such an extension publishes no edge to that type: the
-  // source and the target are then the same symbol, and a self-dependency is not a
-  // dependency. The name is still kept OUT of the visible set, or every mention of
-  // `String` in the file would resolve to this file's extension.
+  // `extension on String {}` declares no name, so it is published under a SYNTHESIZED one
+  // — `unnamed_extension_String`, or bare `unnamed_extension` when the `on` type is not an
+  // identifier — so that it never occupies a REAL declaration's name. The spelling has to
+  // match `DART_UNNAMED_EXTENSION` in `real-dart-analyzer.ts` to the CHARACTER, because it
+  // is the SOURCE every mention inside the body is attributed to; that is the one thing this
+  // file's "shared: nothing" rule cannot buy, and the differential fixture is what holds the
+  // two together. The name is still kept OUT of the visible set: nothing in source can spell
+  // it, so admitting it would put a name no code writes into the resolver.
   if (n.type === "extension_declaration" && !n.childForFieldName?.("name")) {
     for (const c of namedChildren(n)) {
-      if (c.type === "type_identifier" || c.type === "void_type") return { name: c.text, unnamedExtension: true }
+      if (c.type === "type_identifier" || c.type === "void_type") {
+        return { name: `unnamed_extension_${c.text}`, unnamedExtension: true }
+      }
     }
-    return null
+    return { name: "unnamed_extension", unnamedExtension: true }
   }
   const name = n.childForFieldName?.("name")?.text
   if (!name) return null
@@ -355,7 +360,13 @@ export function deriveDartReferencesTruth(
     if (n.type === "type_identifier") {
       const parent = n.parent
       const position = parent ? parent.type : ""
-      if (!PUBLISHED_ELSEWHERE.has(position)) {
+      // THE SUBJECT OF AN UNNAMED EXTENSION IS NOT A MENTION ITS BODY MAKES — the analyzer's
+      // `isUnnamedExtensionSubject`, and the reason is there: the extension's published name is
+      // DERIVED from that type, so an edge from the synthesized name to its own subject would
+      // name a source no index keeps. `extension M on M2 {}` is NAMED and keeps its `M -> M2`.
+      const unnamedExtensionSubject =
+        position === "extension_declaration" && parent?.childForFieldName?.("name") === null
+      if (!PUBLISHED_ELSEWHERE.has(position) && !unnamedExtensionSubject) {
         // Under a `qualified` name the `type_identifier` IS the type and its own
         // text says which: `prefix.Type` keeps `prefix` in an `identifier` sibling
         // and `Type.member` keeps `member` in one, so there is nothing to strip.

@@ -111,6 +111,41 @@ function isCapitalized(text: string): boolean {
 const IMPLICIT_DYNAMIC_TYPE = "dynamic"
 
 /**
+ * THE NAME AN UNNAMED EXTENSION IS PUBLISHED UNDER.
+ *
+ * `extension on String { ... }` is legal Dart: an extension with no name of its own. Until this
+ * round the analyzer gave it the TARGET TYPE — `name = node.childForFieldName("name")?.text ||
+ * targetType` — and that is a NAME-KEYED lie: the project then publishes a declaration called
+ * `String` that is not `String`, so every consumer that decides BY NAME reads the wrong answer.
+ *
+ * MEASURED, whole project, through the pool (`validation/m14/fixtures/dart/unnamed-extension-price.ts`):
+ *
+ *   riverpod   41 unnamed extensions, 19 sharing a name with a REAL declaration of the same project
+ *              (`ProviderBase` x5, `RiverpodAnalysisResult` x2, `_DataRecord`, `Node`,
+ *              `ProviderListenableOrFamily`, `_ProviderOverride`, `_FamilyOverride`, and `Object`
+ *              from `packages/riverpod/test/feature/offline_test.dart` — whose six members also
+ *              published the AMBIGUOUS targets `Mutation.constructor`/`label`/`key`/`call`/`run`).
+ *   proxicall   1 (`BusinessDiscoveryCubit`).   dart-http   2, neither colliding.
+ *
+ * The `Object` row is the expensive one, and it is why this is a defect rather than untidiness:
+ * with an index the analyzer retargets `Object.hashCode` / `Object.operator ==` / `Object.toString`
+ * to the dart:core interface and marks the claim `isExternalBase`; the arbiter verifies an external
+ * claim by looking the OWNER up, found the ANONYMOUS EXTENSION, and REFUSED 31 claims that are
+ * true. The gate counts a refused claim against the lane, so the lie was published as the lane's
+ * own defect (`/tmp/dartgate/gate-riverpod-index.log`: `extFAIL 31`).
+ *
+ * So an unnamed extension publishes a SYNTHESIZED name that is no declaration's, in the family's
+ * spelling for a declaration the source never named (`anonymous_Comparator`, real-java-analyzer.ts;
+ * `anonymous_impl`, real-rust-analyzer.ts): `unnamed_extension_<target>`, or the bare
+ * `unnamed_extension` when the `on` type is not an identifier (java's `anonymous_class` fallback).
+ * The prefix is load-bearing in one more place — `isIndexArtifactName` (src/ast/
+ * analysis-exclusions.ts) drops `^(anonymous|anon|unnamed)[_-]`, so the synthesized symbol never
+ * reaches the index by construction, which is the honest state for a declaration that has no name
+ * to jump to. `metadata.targetType` still carries the subject, so nothing about it is lost.
+ */
+const DART_UNNAMED_EXTENSION = "unnamed_extension"
+
+/**
  * Positions where a `type_identifier` is a type mention the analyzer has ALREADY
  * published under another label, plus the one position where it is not a mention
  * of a type at all.
@@ -740,9 +775,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         case "extension_declaration": {
           const targetType = this.extensionTargetType(node)
-          // Unnamed extensions (`extension on String {...}`) take the target
-          // type as their name so their members keep an owner scope.
-          const name = node.childForFieldName("name")?.text || targetType
+          // AN UNNAMED EXTENSION IS PUBLISHED UNDER ITS OWN SYNTHESIZED NAME, never under
+          // its target type's — see `DART_UNNAMED_EXTENSION` for the measurement that forced
+          // it. The SAME spelling has to reach the scope push below, because the push is what
+          // gives the members their owner: one rule, two sites, one helper.
+          const name = this.extensionPublishedName(node)
           if (name) {
             const comments = this.collectComments(node)
             patterns["Extensions"] = true
@@ -1991,11 +2028,9 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (see `collectTypeMention`).
     //
     // Same-file types come from the symbol table the first pass just built.
-    // UNNAMED EXTENSIONS ARE EXCLUDED, and that exclusion is load-bearing:
-    // `extension on String {}` is published under the name of its TARGET type, so
-    // admitting it would make every mention of `String` in the file resolve to
-    // this file's extension — an edge to a symbol that is not the type the code
-    // names.
+    // UNNAMED EXTENSIONS ARE EXCLUDED, and this is the second half of the rule
+    // `DART_UNNAMED_EXTENSION` states: their published name is SYNTHESIZED, so nothing in
+    // source spells it, and admitting it would put a name no code writes into the resolver.
     const visibleTypes = new Set<string>()
     for (const s of symbols) {
       const kind = s.kind as ASTEngine.SymbolKind
@@ -2244,8 +2279,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         return nm || owner
       }
       if (t === "extension_declaration" || t === "extension_type_declaration") {
-        const nm = n.childForFieldName?.("name")?.text || this.extensionTargetType(n)
-        return nm || owner
+        // THE SYNTHESIZED NAME, not the target type: an `instantiates`/`uses` row emitted
+        // inside an unnamed extension's body must name the same owner its `contains` row
+        // does, and `extensionPublishedName` is that one rule.
+        return this.extensionPublishedName(n) || owner
       }
       if (t === "mixin_declaration") {
         // mixin name is a direct identifier child (no name field)
@@ -3106,10 +3143,20 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // implementations of one rule share.
     const name = n.text
     if (!name || name === IMPLICIT_DYNAMIC_TYPE) return
-    // SELF-REFERENCE IS NOT A DEPENDENCY. An unnamed extension is published under
-    // its target type's name, so without this `extension on String` publishes
-    // `String references String`.
+    // SELF-REFERENCE IS NOT A DEPENDENCY.
     if (name === source) return
+    // THE SUBJECT OF AN UNNAMED EXTENSION IS NOT A MENTION ITS BODY MAKES.
+    //
+    // `extension on Z3 {}` is published as `unnamed_extension_Z3`, so the `on Z3` mention
+    // would read `unnamed_extension_Z3 references Z3` — an edge whose SOURCE is a name the
+    // store does not keep (`isIndexArtifactName` drops the synthesized prefix). The subject
+    // is already published as the extension's OWN identity (`metadata.targetType`), so the
+    // edge would add a source no index can resolve and nothing a reader cannot read off the
+    // declaration itself.
+    //
+    // A NAMED extension keeps its edge: `extension M on M2 {}` still reads `M -> M2`, pinned
+    // by `verify-dart-references.ts` ("a NAMED extension's target").
+    if (this.isUnnamedExtensionSubject(n)) return
     if (!visibleTypes.has(name)) return
     // A mention of a TYPE VARIABLE resolves to the variable, not to a type that
     // happens to share its spelling. Ancestor-walked rather than tracked in the
@@ -4268,6 +4315,39 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     // `extension on String` (unnamed extension) — the first type identifier
     return undefined
+  }
+
+  /**
+   * THE NAME AN EXTENSION IS PUBLISHED UNDER — ONE rule at BOTH sites that need it (the symbol
+   * emitter and `resolveOwner`), because a member whose published scope and whose container's name
+   * disagree is a `contains` edge that names nothing.
+   *
+   * A named extension is published under its own name. An unnamed one has none, so it takes the
+   * family's synthesized spelling — see `DART_UNNAMED_EXTENSION` for why borrowing the target
+   * type's name was a defect rather than untidiness, and what it cost. The `undefined` fallback is
+   * `DART_UNNAMED_EXTENSION` itself, mirroring java's `anonymous_class` (real-java-analyzer.ts):
+   * a declaration that HAS members and no name still needs an owner string, and the alternative is
+   * leaking those members into whatever scope surrounded them.
+   */
+  private extensionPublishedName(node: Node): string | undefined {
+    const declared = node.childForFieldName?.("name")?.text
+    if (declared) return declared
+    const target = this.extensionTargetType(node)
+    return target ? `${DART_UNNAMED_EXTENSION}_${target}` : DART_UNNAMED_EXTENSION
+  }
+
+  /**
+   * Is this `type_identifier` the `on` SUBJECT of the UNNAMED extension that encloses it?
+   *
+   * The subject is part of the extension's own identity — `extensionPublishedName` derives the
+   * published name FROM it — so it is not a mention the body makes. Only an UNNAMED extension is
+   * covered: `extension M on M2 {}` publishes `M -> M2` and must keep doing so (pinned by
+   * `verify-dart-references.ts`).
+   */
+  private isUnnamedExtensionSubject(n: Node): boolean {
+    const parent = n.parent
+    if (!parent || parent.type !== "extension_declaration") return false
+    return parent.childForFieldName?.("name")?.text === undefined
   }
 
   private extractAnnotations(node: Node): string[] | undefined {

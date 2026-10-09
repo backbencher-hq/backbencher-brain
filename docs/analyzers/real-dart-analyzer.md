@@ -4784,3 +4784,154 @@ a local read as a bare name too: `real-javascript-analyzer.ts` (bare-read path, 
 `real-php-analyzer.ts` (`metadata.isLocalRead`, bare target). Their populations are not this lane's,
 so nothing was changed there — but the phantom link is not a dart-specific defect, and the fix's
 mechanism (an unspeakable separator plus a claim the arbiter can check) is portable as-is.
+
+## The name an unnamed extension publishes — and the 31 true claims it cost
+
+**The arbiter found this, not the analyzer's own instrumentation.** Nothing in this lane's probes was
+looking for it; the gate's `extFAIL` column counted claims the PROJECT REFUTES, and the only way to
+read that column was "the lane's analyzer marks edges external that are not external". The reading was
+wrong, and what follows is why.
+
+### What the code did
+
+`extension on String { ... }` is legal Dart — an extension with no name of its own. The analyzer gave
+it one, and the intent was sound (an owner scope for the members):
+
+```ts
+const name = node.childForFieldName("name")?.text || targetType   // the defect
+```
+
+The consequence is a NAME-KEYED lie. The project then publishes a declaration called `String` — or
+`Object`, or `ProviderBase`, or `Mutation` — that is not that declaration, and every consumer that
+decides BY NAME reads the wrong answer: the resolver counts a duplicate declaration where there is
+one, and the arbiter looks up an owner that is not the owner.
+
+### The price, paid before the fix was written
+
+`validation/m14/fixtures/dart/unnamed-extension-price.ts` walks whole projects through the pool and
+counts, for each unnamed extension, whether its published name is also published by a NON-extension
+kind in the same project:
+
+```
+dart-http    2 unnamed extensions,  0 colliding,   0 edges naming one of their members
+riverpod    41 unnamed extensions, 19 colliding,  20 edges naming one of their members
+proxicall    1 unnamed extension,   1 colliding,   0 edges naming one of their members
+```
+
+riverpod's collisions are spread over eleven names (`ProviderBase` x5, `RiverpodAnalysisResult` x2,
+`_DataRecord`, `Node`, `ProviderListenableOrFamily`, `_ProviderOverride`, `_FamilyOverride`, `Mutation`
+— whose six members then published the AMBIGUOUS targets `Mutation.constructor`/`label`/`key`/`call`/
+`run` — and `Object`).
+
+**The `Object` row is the expensive one, and it is why this is a defect rather than untidiness.** With an
+index the analyzer retargets `Object.hashCode` / `Object.operator ==` / `Object.toString` to the
+dart:core interface and marks the claim `isExternalBase`; the arbiter verifies an external claim by
+looking the OWNER up, found the ANONYMOUS EXTENSION, and refused claims that are TRUE. riverpod, whole
+project, `--index` (`/tmp/dartgate/gate-riverpod-index.log`): **`extFAIL 31`**, counted against the lane
+by the gate's own verdict — the instrument reporting the lane's defect was describing its own
+truthfulness gap.
+
+### The fix, and the family it follows
+
+An unnamed extension now publishes a SYNTHESIZED name that is no declaration's, in the family's own
+spelling for a declaration the source never named — `anonymous_Comparator` (`real-java-analyzer.ts`,
+where the javadoc says "noise name, never leaks into the index"), `anonymous_impl`
+(`real-rust-analyzer.ts`). Dart's spelling is `unnamed_extension_<target>`, or the bare
+`unnamed_extension` when the `on` type is not an identifier, mirroring java's `anonymous_class`
+fallback. One helper (`extensionPublishedName`) serves both sites that need it — the symbol emitter and
+`resolveOwner` — because a member whose `scope` and whose container's NAME disagree is a `contains` edge
+that names nothing.
+
+The prefix is load-bearing in a second place, and it is the reason the noise spelling is the RIGHT
+answer rather than a dodge: `isIndexArtifactName` (`src/ast/analysis-exclusions.ts`) drops
+`^(anonymous|anon|unnamed)[_-]`, so the synthesized symbol never reaches the index by construction.
+That is the honest state for a declaration that has no name to jump to, and it is the same state java's
+anonymous classes are in. `metadata.targetType` still carries the subject, so nothing about it is lost.
+
+### The half of the rule that must NOT be over-applied
+
+Renaming is not the whole change; the rule has a second half, and it exists because the name is DERIVED
+from the `on` type. The subject is therefore part of the extension's identity, not a mention its body
+makes, so `collectTypeMention` skips it (`isUnnamedExtensionSubject`) and so does the oracle. Without
+that guard the fix would have ADDED `references unnamed_extension_Z3 -> Z3` — an edge whose SOURCE is a
+name the store does not keep, which reads resolved in the gate and resolves to nothing in the index.
+The guard is UNNAMED-only: `extension M on M2 {}` still publishes `M -> M2`, pinned by
+`verify-dart-references.ts` ("a NAMED extension's target") and by the new fixture below.
+
+`script/m14/oracles/dart-references.ts` derives the same spelling independently — that file's rule is
+"shared: nothing" — so the two implementations are held together by the differential, not by an import.
+
+### Pinned
+
+`validation/m14/fixtures/dart/unnamed-extension-name.{dart,expectation.json}`, four ways: the
+synthesized name for a target the file declares (`unnamed_extension_Local`) and for one it does not
+(dart:core's `Object`, the row that cost the 31 claims); the member ownership that rides on it; a NAMED
+extension keeping its own name AND its `references` edge to its subject; and no edge from an unnamed
+extension to its own subject. Three `forbidSymbols`/`forbidRelationships` rows hold the PRE-FIX shapes
+— `{name: "Object", kind: "extension"}` and the ambiguous member target `Local.localish` — because a
+fixture that only asserted the new spelling would not catch a regression that reintroduced the old one
+alongside it.
+
+### What the gate says after, on the project where the harm was measured
+
+riverpod, whole project, `--index`, same revision, before → after:
+
+```
+type          edges     resolved      amb(decl)     amb(kind)     unresolved   extOK      extFAIL
+calls         12020     3595 → 3591   5535 → 5539   1060 → 1060   2352 → 2352    0 → 0       0 → 0
+uses          22319     4460 → 4459   7144 → 7145   2687 → 2687   1693 → 1693    0 → 0       0 → 0
+contains      18207     5978 → 5979  12229 → 12229      0 → 0         0 → 0     0 → 0       0 → 0
+imports        4215     2585 → 2585      0 → 0          0 → 0        48 → 48  1582 → 1582   0 → 0
+references     8774     5218 → 5508   3556 → 3266     340 → 35        0 → 0     0 → 0       0 → 0
+exports          53       49 → 49        0 → 0          0 → 0         2 → 2     2 → 2       0 → 0
+extends        4647     3109 → 3120    242 → 230      18 → 1      1296 → 1297    0 → 0       0 → 0
+implements      244      139 → 146      77 → 69       10 → 2        28 → 29     0 → 0       0 → 0
+overrides      5552     3158 → 3156    219 → 219      0 → 0      2135 → 2135    9 → 36    31 → 4
+instantiates   6363     2124 → 2095   2180 → 2165    20 → 5      2059 → 2103    0 → 0       0 → 0
+TOTAL         82394    30415 → 30688 31182 → 30862  4135 → 3790  9613 → 9659  1593 → 1620  31 → 4
+```
+
+`extFAIL 31 → 4`, and 27 of the 31 joined the VERIFIED side (`extOK 9 → 36`): the population that had
+been refusing 31 true claims now confirms them.
+
+### Two movements that are not obviously improvements, and are
+
+The classification is a PURE FUNCTION of the target and the key space, and this change touched the key
+space in exactly two ways: it REMOVED a borrowed name where no other declaration published it, and it
+ADDED a synthesized name. So the only edges that can move are the ones whose target was a borrowed
+name — and both movements in the table are those.
+
+- **`extFAIL 31 → 4` and `references` resolved `5218 → 5508`, amb(kind) `340 → 35`.** A duplicate
+declaration deleted from the key space can only reduce ambiguity, and the ambiguity it removes is a
+real type being counted twice.
+- **`instantiates` resolved `2124 → 2095`, unresolved `2059 → 2103`.** Twenty-nine edges STOPPED
+resolving, and that is the fix working. Their targets are names the anonymous extension was the ONLY
+publisher of — `String`, `Object`, `DartType`, `LibraryElement` — which are dart:core and analyzer-package
+types riverpod does not contain. `String.fromCharCode(...)` "resolved" to a local `extension on String`
+that the caller does not name: a FALSE resolution, deleted. The unresolved column is the honest place
+for an edge that names a type outside the population, and the gate's rule is that such an edge is
+unresolved rather than laundered.
+
+The residual 4 are the same 40-claim marker set, all owner-lookup refutations, and they are a DIFFERENT
+question from this one — an analyzer gap rather than a naming lie. They are not visible by name in the
+report, because the 25-slot worklist is filled by plain `unresolved` rows before a refuted claim can
+reach it; that truncation is a defect in the arbiter's own reporting rather than in this lane's code,
+and it is fixed there (a refuted claim is the one outcome that must never be truncated away).
+
+### The residual, stated rather than argued away
+
+Two `extension on String` in one project now publish ONE synthesized name, exactly as two
+`new Comparator() {}` both publish `anonymous_Comparator` in java. Removing that would need a line- or
+path-derived name, which is the artifact spelling `isIndexArtifactName` exists to reject. Measured after
+the fix, same instrument:
+
+```
+dart-http    2 unnamed extensions,  0 colliding,  0 shared,  0 edges
+riverpod    42 unnamed extensions,  0 colliding, 14 shared,  4 edges
+proxicall    1 unnamed extension,   0 colliding,  0 shared,  0 edges
+```
+
+The 41 → 42 is the fix's own footprint and not corpus drift: an unnamed extension whose `on` type is
+not an identifier (`extension on AnyNotifier<Object?, Object?>`) used to publish NO symbol at all, so
+its members leaked into whatever scope enclosed it; it now publishes the bare `unnamed_extension` and
+owns them — java's `anonymous_class` fallback, for java's reason.
