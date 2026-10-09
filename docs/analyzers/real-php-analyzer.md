@@ -2889,3 +2889,73 @@ comparing the hashes across different draws would be comparing two different 60-
 PASS with §2 rewritten. NOT re-run: `verify-truth-existence.ts`, which drives the differential across
 every lane and is a claim about the ORACLE REGISTRY — this round adds no label and no oracle, so it cannot
 move it.
+
+### 8. Cost, measured because the claim lives in a hot path
+
+The claim runs inside `storeResults` and `resolveRelationships`, so it was A/B'd on one fixed frame rather
+than assumed cheap: **600 files, the same stride frame, store 16.7 s before and 17.1 s after (+2.4 %)**, with
+parse 61.9 s -> 64.3 s. The withdrawal's row walk is bounded by the rows that already have a receiver, and
+the pass's per-row update is the one this lane's census has been running all along, so nothing new is
+unbounded. This also settles an open question honestly: the whole-population census did NOT finish three
+times during this round, and this measurement is what rules the change out as the cause — per-file parse is
+roughly 3x slower under the load than it was when the earlier whole-population run succeeded.
+
+---
+
+# PHP — DECLARED DONE (2026-10-09)
+
+This is a declaration, so it is written as exit criteria with the command that shows each one, not as a
+summary. A reader who disagrees with the verdict has something to run.
+
+## The criteria, and where each one stands
+
+| # | criterion | state | evidence (re-runnable) |
+|---|---|---|---|
+| 1 | every emitted relationship type is compared against truth | **met** | `verify-label-coverage.ts` -> php `217 / 217`, no undeclared and no declared gap; `rel-type-coverage-gate.ts` -> php in no un-audited row, no DERIVATION row; the ten types account for the population exactly (103,190 + 155,016 + 35,112 + 28,630 + 13,848 + 10,296 + 3,110 + 1,106 + 58 + 2 = 350,368) |
+| 2 | the differential agrees on both pinned corpora | **met** | `differential.ts --lang php` -> `covered 100% MISSING=0`, `unexplained=0 heuristic=0` on phpunit and phpmyadmin |
+| 3 | no oracle is derived from the implementation it checks | **met** | `php-oracle-independence.ts` -> PASS |
+| 4 | the pins can FAIL | **met** | `mutant-check.mts` -> 21/21 caught, 0 survived, clean baseline 0 problems |
+| 5 | every `contains` target is published by its own file | **met** | `orphan-endpoint-gate.mts` -> STRICT orphaned contains targets 0 |
+| 6 | an analyzer fact survives the WORKER and the STORE | **met** | `php-store-pipeline-seam.ts` -> A 8/8 carried byte-identical, B member identity, C the edges are present, D where a member read is bound. Falsified the way it is claimed: remove the one widened line and A returns to 0 and FAIL |
+| 7 | a member read is bound by a RULE wherever a rule exists | **met, with a stated ceiling** | `owner-resolution-gate.mts` incl. its two signal controls and IDEMPOTENT; the census's phase A now equals phase B with `resolved:MISLANDED` absent |
+| 8 | what is NOT resolved is enumerated and bounded, not hidden | **met** | `reason-census.mts` -> every unexplained endpoint classified (see below) |
+| 9 | the lane asserts nothing it cannot support | **met for php's own edges** | no `contains` orphan, no unexplained edge, no MISLANDED row on the owner-carrying population |
+
+## What "done" does NOT mean
+
+- **NOT that every edge resolves.** It means every edge has an honest answer, and the ones that are not
+  resolved are unresolved ON PURPOSE with the reason recorded. The remaining population is the
+  type-inference wall: a member read off a local variable, a parameter, a return value or a property has no
+  receiver the analyzer can name from one file, which is 107,313 endpoints of 169,156 ambiguous ones. No
+  rule reaches them, and inventing one would trade an honest unknown for a confident guess — the exact
+  failure mode the lane spent this arc removing.
+- **NOT that the graph is complete.** 44,641 endpoints are file-local variables and 10,644 name a bare name
+  no admitted file declares; those are properties of the corpus and the language, not defects.
+- **NOT that the shared store is sound.** Two defects are reported and unfixed, both **store-wide and not
+  php's to fix** (workstream §8): the insert-time ranking still decides the rows with NO published receiver
+  (pinned by name in `owner-resolution-gate.mts` §2 so it cannot change silently), and re-storing a project
+  can permanently LOSE a cross-file relationship row (`parallel-indexer.ts:2928-2929`; measured 70 -> 69,
+  order-dependent). The second is the one to fix next, and it is worth being precise about why it does not
+  block this declaration: a lost edge is ABSENT, which an agent reads as "no evidence", whereas the defect
+  this arc removed made the graph ASSERT a receiver the code does not have. Absence is survivable; a false
+  claim is not.
+
+## What changed to get here, in one line each
+
+The label axis closed first (10/10 emitted and audited). Then six defects on the far side of the boundary:
+heritage published on the symbol, member identity qualified as `Owner.member`, the worker carrying
+`metadata.superTypes` (which no consumer had ever received), the store's `brain_symbol.super_types` column
+filled (which made `override-retarget` run for the first time in php's life), the owner channel made
+authoritative for member reads that name their receiver, and a store seam GATE so the next such fact cannot
+die in transit unobserved.
+
+## The one carried-over item
+
+The committed `validation/m60/php/store-resolution-census.json` is the PRE-claim whole-population
+measurement, and `store-resolution-census.owner-channel.json` is the post-claim 1,500-file frame. A
+post-claim WHOLE-population artifact is outstanding, and it is outstanding because the machine would not run
+it — three attempts, each killed at ~10 minutes while per-file parse ran 3x slower than during the run that
+succeeded. It is a re-measurement, not an open question: the property it would confirm (no owner-carrying
+row bound to a non-receiver, non-ancestor) is already asserted by the fixture gate where the wrong answer is
+reachable, and observed on two frames. The command is
+`bun validation/m14/fixtures/php/store-resolution-census.mts --files 0`.

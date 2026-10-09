@@ -1335,4 +1335,15 @@ the exact rows and the experiments, not edited.
   in a paragraph. Not claimed: that owner-LESS member reads resolve (the type-inference wall, 107,313
   endpoints, now the population's largest honest-unknown class), nor that the resolved COUNT is the
   headline — the headline is that 6,114 rows stopped asserting a receiver they do not have.
+- **php — DECLARED DONE (2026-10-09).** The declaration is in `docs/analyzers/real-php-analyzer.md`, at the
+  end, written as nine exit criteria each with the command that shows it — a reader who disagrees has
+  something to run. In one line: every emitted type is compared against truth (php `217/217`, no
+  un-audited row), both pinned draws are `MISSING=0 unexplained=0`, the oracles are independent, 21/21
+  mutants are caught, no `contains` target is orphaned, analyzer facts survive the worker (proved
+  falsifiable), a member read is bound by a rule wherever one exists, and what is NOT resolved is
+  enumerated and bounded. NOT claimed: that every edge resolves — 107,313 endpoints are the
+  type-inference wall, and the honest answer there is "not known" rather than a guess. Two store-wide
+  defects remain reported-and-unfixed (the rank deciding rows with no published receiver, pinned by name so
+  it cannot drift silently; and re-store row loss at `parallel-indexer.ts:2928-2929`) — the second is next,
+  and it is the absence-shaped failure rather than the false-claim-shaped one this arc removed.
 - Zero regexes: **yes** (18 → 0; laptop A's handoff records they have not matched this).
