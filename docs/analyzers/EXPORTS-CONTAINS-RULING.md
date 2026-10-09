@@ -111,11 +111,11 @@ the analyzer exactly as the runner does (`getParser` → `analyze(root, content,
 "fixtures/<lang>/<file>")`) and applies the invariant's own admission rule verbatim:
 
 ```
-$ npx tsx validation/m14/fixtures/exports-ruling/export-name-status.ts --lanes=<41 lanes> --per=40
-FLEET 1,160 files parsed (40-file even stride per lane; 29 lanes had a corpus present,
-      12 A-lane checkouts are absent on this machine and are DECLARED, not measured)
-TOTALS   export ENTRIES 17,350   top-level 17,164   MEMBER 0   NO SYMBOL 186
-         export EDGES    3,463   top-level  2,979   MEMBER 0   NO SYMBOL 484
+$ npx tsx validation/m14/fixtures/exports-ruling/export-name-status.ts --lanes=<47 lanes> --per=40
+FLEET 1,400 files parsed (40-file even stride per lane; 34 lanes had a corpus present,
+      13 checkouts are absent on this machine and are DECLARED, not measured)
+TOTALS   export ENTRIES 17,655   top-level 17,469   MEMBER 0   NO SYMBOL 186
+         export EDGES    3,924   top-level  3,440   MEMBER 0   NO SYMBOL 484
 ```
 
 | lane | entries | top-level | MEMBER | no symbol | edges | no-symbol targets |
@@ -126,15 +126,52 @@ TOTALS   export ENTRIES 17,350   top-level 17,164   MEMBER 0   NO SYMBOL 186
 | ERLANG | 438 | 430 | 0 | 8 | 438 | 8 |
 | FSHARP | 342 | 342 | 0 | 0 | 342 | **298** |
 | MAKE | 108 | 108 | 0 | 0 | 108 | 0 |
-| ZIG / CLEAN / R / GRAPHQL / HCL / SCSS / SOLIDITY / RUST / C# | — | all | 0 | 0 | — | 0 |
-| 12 lanes | 0 files parsed — corpus checkout absent, DECLARED | | | | | |
+| ZIG / CLEAN / R / GRAPHQL / HCL / SCSS / SOLIDITY / RUST / C / NIM / JSON / HCL / SCSS | — | all | 0 | 0 | — | 0 |
+| the invariant's OWN family — JAVA_GRAILS / JAVA_GRAPHQLJAVA / GROOVY_GEB / KOTLIN_KX / SCALA_CATS / CSHARP_GQL | 305 | 305 | **0** | 0 | 461 | 0 |
+| 13 lanes | 0 files parsed — corpus checkout absent, DECLARED | | | | | |
 
-**`MEMBER` is 0 in every lane.** The clause the M49 invariant was written for — refusing a
-bare member name — has no hit on this population at all; the invariant's entire live effect is
-on the NO-SYMBOL class.
+### Corrections to this table, stated rather than silently applied
+
+Three things were wrong or missing when the table was first published, and the ruling's own
+crux — `MEMBER` 0 — is one of them. All three are fixed above; the ruling does not change.
+
+1. **The `MEMBER` reading was an artifact of the field read, and `MEMBER` 0 is the corrected
+   one.** The first version of the probe walked `parseFile`, whose symbol rows rewrite
+   `ownerName: s.ownerName || s.scope`; the invariant tests the analyzer's RAW `s.ownerName`,
+   so an owner-less symbol read as owner-`"global"` and classified as a MEMBER. Measured: lua's
+   62 entries read **top-level 0 / MEMBER 39 / NO SYMBOL 23** under the buggy read and
+   **top-level 39 / MEMBER 0 / NO SYMBOL 23** under the corrected one (`analyze()` at
+   `run-fixtures.ts:753`'s own call shape). The table above was built with the corrected probe
+   and is now confirmed on 1,400 files: **MEMBER 0 after correcting the field read** — not a
+   bare zero.
+2. **The `make` lane was reported as a wiring error and excluded from the totals.** Its parser
+   language is `make` and its analyzer file is `real-makefile-analyzer.ts`, and the lane table
+   carried one field for both, so 47 real exports read as a zero. Re-derived: **40 files, 108
+   entries, 108 edges, all top-level**. The first table's totals were therefore short by one
+   lane: entries 17,242 → 17,655, edges 3,355 → 3,924 across all three corrections.
+3. **The clause's own population was DECLARED ABSENT rather than measured.** The member clause
+   exists for the JVM/C# family, and the five corpora its lanes name (`java-lib`, `kotlin`,
+   `scala`, `groovy`, `csharp-sample`) do not exist on this machine — so the first table's
+   `MEMBER 0` was a zero over lanes that never reach the clause. This machine DOES carry that
+   family elsewhere in the corpus, and the re-derivation points the lanes at checkouts that
+   exist, chosen by extension count: grails-core and graphql-java (`.java`, 200 each),
+   kotlinx-coroutines (`.kt`, 200), cats-effect (`.scala`, 200), geb (`.groovy`, 200),
+   gql-graphql-dotnet (`.cs`, 200). Measured: **305 entries / 461 edges, MEMBER 0.**
+
+**`MEMBER` is 0 in every lane, INCLUDING the family the clause was written for.** The clause is
+not vacuous: it is a regression guard whose violation is in the runner's own comment —
+`java/groovy overloads emitted ["Svc","greet","greet"] before the JAD3/G3 member-export
+reversal`. It reads 0 today because those lanes were FIXED, which is what a guard looks like
+when it works. What is measured is that no lane on this population emits a member-named export,
+so extending the ADMISSION beside it cannot collide with it.
+
+**The cost figure does not move; the denominator does.** `NO SYMBOL` is **186 names / 484 edges**
+in every one of the three readings (the first spliced table, the MAKE-corrected one, this
+re-derivation). What moved is the population the share is taken against: 484/3,355 = 14.4% →
+484/3,463 = 14.0% → **484/3,924 = 12.3%**.
 
 **(a) Require a symbol.** Cost, measured by the same table: 186 export names and **484 export
-edges** fleet-wide (484/3,463 = **14.0%**) would be refused or deleted. It is not a cleanup of lua alone — it
+edges** fleet-wide (484/3,924 = **12.3%**) would be refused or deleted. It is not a cleanup of lua alone — it
 would delete **JavaScript's `plain`/`ref`**, which pass today (see §5) and be a **regression
 against a documented, currently-green capability**; and it would delete lua's returned-table
 surface, which the lane's own census says was 366 of Kong's 1,309 files and 33 of Luvit's 199
@@ -208,8 +245,8 @@ language list is not a ruling; it is an accident of which lane hit it first.
 edge is a RESOLVABLE graph edge — a claim that a specific declaration is published — then the
 change is the opposite: lua drops the returned-table-key surface *and* `javascript`'s CJS
 exemption must be revisited in the same commit, because `module.exports = { plain, ref }` is
-the identical shape and passes today. Measured, that branch removes 484 of 3,463 exports edges
-fleet-wide (14.0%) and 186 export names, and it removes `exports` from every language whose
+the identical shape and passes today. Measured, that branch removes 484 of 3,924 exports edges
+fleet-wide (12.3%) and 186 export names, and it removes `exports` from every language whose
 surface is a value rather than a symbol table — which is json's lesson repeating a fifth time.
 
 ## Recommendation
@@ -248,5 +285,5 @@ bun run script/m14/run-fixtures.ts --lang lua
 bun run script/m14/run-fixtures.ts --lang javascript
 npx tsx validation/m14/fixtures/exports-ruling/export-name-status.ts --file=lua:<repo>/validation/m14/fixtures/lua/export-edges.lua
 npx tsx validation/m14/fixtures/exports-ruling/export-name-status.ts --file=javascript:<repo>/validation/m14/fixtures/javascript/cjs-export-methods.js
-npx tsx validation/m14/fixtures/exports-ruling/export-name-status.ts --lanes=BASH,FSHARP,ZIG,LUA,JULIA,NIM,PHP,POWERSHELL,R_LANG,DART,SQL,GRAPHQL,PROTOBUF,JSON_B,YAML,CSS_B,SCSS,HCL,TOML_B,XML_B,MARKDOWN_B,CLEAN_B,JAVASCRIPT,RUST,ERLANG,ELIXIR,C,SOLIDITY,MAKE --per=40
+npx tsx validation/m14/fixtures/exports-ruling/export-name-status.ts --lanes=BASH,FSHARP,ZIG,LUA,JULIA,NIM,PHP,POWERSHELL,R_LANG,DART,SQL,GRAPHQL,PROTOBUF,JSON_B,YAML,CSS_B,SCSS,HCL,MAKE,TOML_B,XML_B,MARKDOWN_B,CLEAN_B,JAVA_GRAILS,JAVA_GRAPHQLJAVA,GROOVY_GEB,KOTLIN_KX,SCALA_CATS,CSHARP_GQL,JAVASCRIPT,RUST,ERLANG,ELIXIR,C,SOLIDITY --per=40
 ```
