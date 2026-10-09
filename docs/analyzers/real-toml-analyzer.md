@@ -1100,25 +1100,58 @@ lanes. The honest state of this cell is therefore **APPLICABLE and UNIMPLEMENTED
 blocked on a store decision** — which is a different claim from "not applicable", and
 the only reason it can be made at all is that the applicability was measured.
 
-**THE FIX IS READY; IT IS NOT APPLIED.** Variant B above is a two-line change to
-`parallel-indexer.ts` — match the whole name instead of `SUBSTR(...)`, and add the
-`COUNT(*) = 1` guard — and it is proved on real indexed data in both directions. It is
-not applied because that file is another lane's in-flight work, and because its blast
-radius is NOT yet measured: Strategy 3 is shared by every lane that emits a dotted
-target (typescript's dotted names, hcl, yaml and others), so changing the match from
-suffix to full-name can move edges in languages this work never touched. Measuring that
-is the remaining work, and it needs the shared file to itself.
+**THE FIX PROPOSED IN THE PREVIOUS REVISION IS MEASURED HARMFUL AND IS WITHDRAWN.**
 
-Two consequences worth stating, because they are the honest shape of the remaining
-debt:
+Variant B was measured only against this construct (250 toml edges) and looked
+strictly better. Measured against the whole index it is destructive. Strategy 3's
+suffix match is not an accident — it is the documented reason the strategy exists:
 
-- Applying it does NOT unblock the 1,267 inheritance sites on its own. It makes them
-  SAFE to emit: the 304 that bind uniquely would resolve and the 645 ambiguous would
-  become external rather than fabricated. Emitting them is the second half, and it
-  should follow the measurement, not precede it.
-- The same change is what would let the 331 `imports` path targets resolve, and what
-  stands between the 124 ambiguous incoming edges and a clean incoming story — one
-  shared-store decision carrying three lanes' debt.
+```
+edge says      ASTEngine.LanguageAnalyzer
+symbol holds   t0128_engine.ASTEngine.LanguageAnalyzer
+```
+
+so the comparison must be on a suffix of `qualified_name`. Blast radius on this
+repository's live index — 5,771 bound dotted relationships:
+
+| how the bound symbol matched | count | Variant B |
+|---|---|---|
+| exact `qualified_name` | 776 | keeps |
+| **suffix only** | **3,053** | **destroys** |
+| no `qualified_name` | 0 | — |
+
+**Variant B would unbind 3,053 of 5,771 dotted edges — 53% — across typescript, hcl,
+yaml and every other lane that emits a qualified dotted name.** Real examples of the
+shape it would destroy: `.NET -> corpus-mapping.languageFamilies..NET`,
+`.resx -> corpus-mapping.unknownExtensions..resx`. It bought precision on one
+construct by deleting correct edges in every other. Withdrawn.
+
+**THE ACTUAL CAUSE, NAMED PRECISELY.** The two adversarial false edges bind a symbol
+whose **full name matches exactly** (`workspace.package.edition`) — but that name is
+declared by BOTH roots, so no single declaration is right. The binder is the
+**eager insert-time resolve**, which reads a partially-populated database and attaches
+whatever was stored first. That is the defect Strategy 3's own comment names:
+
+> "the ONLY resolver for a dotted target was therefore the eager one at INSERT time,
+> which reads a partially-populated database and binds whatever file happened to be
+> stored first."
+
+**It is pre-existing and not caused by this emission** — it is simply the first thing
+to reach it with a target that is genuinely ambiguous at project scope. The correct
+fix is therefore narrow and already the right direction: make the eager resolve
+**refuse an ambiguous dotted target and let the pass decide**, because the pass reads
+the complete symbol set. The three resolution strategies (`_res_qsuffix` by suffix,
+`_res_qsuffix` by unique leaf, and Strategy 3c's ranking) all run after every symbol
+exists and can answer correctly; the eager one cannot.
+
+**SO THE EMISSION STAYS OUT** — not because the construct is inapplicable, and not
+because the analysis is wrong, but because shipping an emitter onto a resolver that is
+known to fabricate on ambiguous dotted targets would trade a documented gap for
+undocumented false edges. It returns the moment the eager resolve refuses ambiguity.
+
+**What this costs, stated plainly.** 1,267 applicable sites stay unimplemented, of
+which 949 name a key their workspace root really declares and 304 would bind to
+exactly one symbol. Every one of those numbers is measured and re-runnable.
 
 ### What was verified before any of it was called done
 
