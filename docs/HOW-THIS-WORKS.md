@@ -257,14 +257,24 @@ Verified this session, re-runnable:
 | Extension skeleton / auto-index / status surface | `verify-extension-skeleton`, `verify-auto-index`, `verify-status-surface` | 44/44, 43/43, 32/32 |
 | Type safety | `npm run typecheck` | 0 errors |
 
-**Not established — real open defects, each with a gate that shows it:**
+**Not established — each with a gate that shows it:**
 
 | Defect | Where you see it |
 |---|---|
-| Usage link has no index-backed `file:line` target | fails in `script/m25/verify-harness-core.ts` **and** in the VS Code in-editor run |
-| Budget gate has no measurements for hover / definition / references / documentSymbol / workspaceSymbol | `verify-harness-core.ts` |
-| Backup-copy import does not rewrite `project_id`; move rewrites 600 of 701 `brain_file.path` rows | `script/m23/verify-p3-edge-cases.ts` |
+| In-editor debounced reindex never returns the marker to fresh (marker reads `status: missing`) | `script/m25/run-vscode-e2e.mts`, 1 of 91 checks. Needs your two in-editor clicks. |
 | No embedding provider configured, so semantic search falls back to local word vectors | `bb doctor` |
+
+**Resolved since this section was first written, with the evidence:**
+
+- *The usage link has no index-backed target* — the assertion was wrong, not the
+  renderer. The link is emitted with a declared address caveat inside the label,
+  so the exact-string check could never match. Fixed in `feature-assertions.ts`;
+  V1 is 27/27 with 6/6 mutants, and six producer mutants now turn it red.
+- *Backup-copy import does not rewrite rows* — a live `brain.db` copied with
+  `copyFileSync` is missing every row, because the committed rows live in the
+  `-wal` sidecar until a checkpoint. Measured: `brain.db` 4,096 bytes with zero
+  tables, `brain.db-wal` 1.78 MB holding the row. Fixed in `project-registry.ts`
+  **and** in the gate's own fixture, which made the same mistake. m23 is 9/9.
 
 The last one is worth acting on: run `bb setup` and semantic search gets
 measurably better. Until then it is a weaker fallback, and `bb doctor` says so.
