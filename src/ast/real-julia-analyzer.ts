@@ -131,6 +131,67 @@ function unquoteOperatorMember(text: string): string {
 }
 
 /**
+ * DOES THIS TEXT CARRY SOURCE LAYOUT — whitespace or a comment marker — rather than being a
+ * SPELLING?
+ *
+ * This is the lane's key-publication defect stated as one test. A published key is a NAME: a
+ * Julia identifier, or a dotted path of them, or an operator. A string containing a newline, an
+ * interior run of spaces, or a `#` is not a name — it is a SOURCE SPAN that was read as one, and
+ * it cannot be matched, cannot be a target, and poisons every name-based lookup.
+ *
+ * MEASURED, whole corpus (941 files, `validation/m14/fixtures/julia/key-shape-census.ts`, before
+ * this guard): 50 published symbol names, 51 relationship targets and 1 relationship source
+ * carried layout, across 37 files. Every symbol one was kind `constant`; the largest was 16,207
+ * characters of `Compiler/src/abstractinterpretation.jl` — a whole struct body with its comments
+ * and inner constructors. The mechanism is ERROR RECOVERY: `const x::T` with no `=` is legal
+ * Julia (a const field in a `mutable struct`) and this grammar cannot parse it, so the parser
+ * welds several fields into one `binary_expression` and `lhs.text` becomes the whole run.
+ *
+ * Whitespace is tested per CHARACTER (`ch.trim() === ""`), the same predicate `collapseSpace`
+ * uses, so a Unicode space is layout here too. `#` is included because a Julia identifier cannot
+ * contain it, so its presence in a candidate key is proof the text is source rather than a name.
+ */
+function hasLayout(text: string): boolean {
+  for (const ch of text) if (ch.trim() === "" || ch === "#") return true
+  return false
+}
+
+/**
+ * THE MACRO'S NAME, when error recovery has welded the call's ARGUMENTS into the
+ * `macro_identifier` node.
+ *
+ * Measured, whole corpus (941 `.jl` files, `validation/m14/fixtures/julia/key-shape-census.ts`):
+ * after the symbol-name half of this defect was fixed (0 span symbol names), TWO published `calls`
+ * targets were still source spans with the macro's arguments welded onto the name —
+ * `"atomic anynonpass::UInt8\n\n    results_lock::ReentrantLock\n    results::Vector"`
+ * (stdlib/Test/src/Test.jl:1523, really `@atomic`) and `"eval begin\n    B57267"`
+ * (test/syntax.jl:4301, really `@eval`). A macro identifier is ONE token, so whitespace inside
+ * that node is proof of error recovery, and the macro's real name is its FIRST token — the text
+ * still opens with the token the source spelled.
+ *
+ * WHY PROJECT THE FIRST TOKEN RATHER THAN REFUSE THE KEY: a target carrying a newline is dropped
+ * downstream by `pool-worker.ts`'s garbage-target filter, so refusing here would DELETE a call the
+ * source really makes — the LUA-13 defect class, where a payload masquerading as a name silently
+ * removes an edge from the graph. Reading the first token keeps the call and names it with the
+ * only token that is a name. The guard still refuses when the recovered first token is itself
+ * un-name-like (`#`, or a sigil-only remnant), because then there is no name to keep.
+ *
+ * Zero regex, like every predicate in this file: the scan is char-code whitespace, and `hasLayout`
+ * is the same per-character predicate the rest of the lane's key-publication rule uses.
+ */
+function macroNameOf(text: string): string {
+  const t = stripSigil(text, "@")
+  for (let i = 0; i < t.length; i++) {
+    const c = t.charCodeAt(i)
+    if (c === 10 /* \n */ || c === 13 /* \r */ || c === 9 /* \t */ || c === 32 /* space */) {
+      const first = t.slice(0, i)
+      return hasLayout(first) ? "" : first
+    }
+  }
+  return hasLayout(t) ? "" : t
+}
+
+/**
  * Every run of whitespace collapsed to one space, with the ends trimmed.
  *
  * This is the `overrides` method-signature key's layout normalisation: `f( x )` and `f(x)` are the
@@ -677,8 +738,14 @@ export class RealJuliaAnalyzer {
           // `contains` oracle, which derives `Foo45350 contains x45350` from Julia's containment
           // rule and the analyzer had no edge for it to match. The NAME is the typed expression's
           // first child; its second is the type, which is a reference and not part of the name.
-          const nameNode = lhs.type === "typed_expression" ? this.pos(lhs, 0) ?? lhs : lhs
-          const name = nameNode.text.trim()
+          //
+          // THAT FIX WAS NOT ENOUGH, and the census is what showed it. It unwrapped exactly one
+          // node type, so every OTHER shape whose `.text` is not a name kept publishing a span —
+          // 50 symbol names carrying whitespace or a comment across 33 files, the largest 16,207
+          // characters. `nameOf` below resolves the binding position to the declaration's OWN
+          // NAME through every wrapper the grammar can put there, and returns "" for a node that
+          // does not name anything, which is a REFUSAL rather than a fabricated key.
+          const name = this.nameOf(lhs)
           if (!name || IMPLICIT_OR_CONSTANT.has(name)) break
           // A binding inside a macro's body is part of QUOTED code that expands at the CALL SITE,
           // so it is not a declaration OF the macro. `macro cached(expr) quote local v = …; v end`
@@ -920,7 +987,10 @@ export class RealJuliaAnalyzer {
         // ---------------------------------------------------------------- macro calls
         case "macrocall_expression": {
           const nameNode = this.firstNamedChildOfType(node, "macro_identifier")
-          const name = nameNode ? stripSigil(nameNode.text, "@") : ""
+          // `macroNameOf`, not `stripSigil(nameNode.text, "@")`: the node's text is a NAME only
+          // while the grammar kept the callee a single token. See its docstring — two corpus
+          // macros recovered as a welded span and published the whole argument region as a target.
+          const name = nameNode ? macroNameOf(nameNode.text) : ""
 
           // `@ccall strlen(s::Ptr{UInt8})::Csize_t` names a C SYMBOL, not a Julia binding. Its
           // callee is a plain `call_expression` in the tree, so the walk reaches the ordinary call
@@ -1080,7 +1150,7 @@ export class RealJuliaAnalyzer {
             ?? this.namedChildren(node).find((c) => c.id !== value.id && (c.type === "quote_expression" || c.type === "operator"))
           if (!member) break
           const memberName = member.type === "quote_expression"
-            ? (this.pos(member, 0)?.text.trim() ?? unquoteOperatorMember(member.text))
+            ? (this.pos(member, 0) && !hasLayout(this.pos(member, 0)!.text) ? this.pos(member, 0)!.text.trim() : this.quotedName(member))
             : member.text.trim()
           if (!memberName) break
           relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.Uses, memberName, node, 0.9,
@@ -1532,7 +1602,7 @@ export class RealJuliaAnalyzer {
     // `struct Circle <: Shape` published no `extends` edge at all, on a file with zero ERROR
     // nodes, which is the quietest possible failure. The node being asked about may BE the name.
     if (node.type === "identifier") return node.text.trim()
-    if (node.type === "macro_identifier") return stripSigil(node.text, "@")
+    if (node.type === "macro_identifier") return macroNameOf(node.text)
     if (node.type === "operator") return node.text.trim()
     // A subtype/where chain: the declared name is on the LEFT, the bound on the right.
     if (node.type === "binary_expression") {
@@ -1730,6 +1800,96 @@ export class RealJuliaAnalyzer {
    *
    * `Base.:(==)` puts the operator in a `quote_expression`, so the last segment can be either.
    */
+  /**
+   * THE NAME A NODE DECLARES, or "" when the node names nothing.
+   *
+   * One resolver for every position that must publish a NAME — a binding's left-hand side, a
+   * `where` bound's parameter — because the alternative is what this lane shipped: a `.text.trim()`
+   * at each site, each of which is correct for the shapes its author had in mind and a source SPAN
+   * for every other shape. The defect is not that any one site was careless; it is that "take the
+   * node's text" is a rule that has no answer to "what if the node is not a name".
+   *
+   * The walk descends the LEFT-most positional child through every wrapper this grammar can place
+   * around a declared name, and STOPS at a node it can spell:
+   *
+   *   typed_expression   `x::Int`        -> `x`      (child 1 is the type, a reference)
+   *   binary_expression  `T<:Real`       -> `T`      (left operand; the right is a bound)
+   *   parametrized_type  `Foo{T}`        -> `Foo`    (the base name, NOT the parameter list)
+   *   field_expression   `A.B`           -> `A.B`    (the whole path is the identity)
+   *   parenthesized/wrapped forms        -> their first child
+   *
+   * and returns "" for anything else — an `ERROR` node from a broken parse, a `tuple_expression`
+   * (which declares SEVERAL names and is therefore not one name), a literal, a comment. A refusal
+   * costs a symbol the grammar could not spell; publishing the node's text instead costs a key
+   * that no lookup can ever match, which is strictly worse.
+   *
+   * MEASURED on the whole corpus by `validation/m14/fixtures/julia/key-shape-census.ts`.
+   */
+  private nameOf(node: Node, depth = 0): string {
+    if (depth > 8) return ""
+    switch (node.type) {
+      case "identifier":
+      case "operator":
+        return node.text.trim()
+      case "macro_identifier":
+        return stripSigil(node.text, "@")
+      case "scoped_identifier":
+      case "field_expression":
+        return this.fieldPath(node)
+      case "quote_expression":
+        return this.quotedName(node)
+      case "typed_expression":
+      case "unary_typed_expression":
+      case "binary_expression":
+      case "parenthesized_expression":
+      case "where_expression":
+      case "parametrized_type_expression":
+      case "curly_expression": {
+        const first = this.pos(node, 0)
+        return first ? this.nameOf(first, depth + 1) : ""
+      }
+      default:
+        return ""
+    }
+  }
+
+  /**
+   * The name a `quote_expression` spells — `:(==)` for the quoted operator, or the quoted symbol
+   * itself when the node's text is a SPAN rather than a spelling.
+   *
+   * The distinction is the whole point. `Base.:(==)` puts `:(==)` in a `quote_expression` and that
+   * text IS a spelling, so it is kept exactly as it was (27 corpus occurrences of that one name).
+   * A `quote_expression` recovered over a broken region spans the reparsed remainder of the file —
+   * `julia/base/broadcast.jl`'s `:.>:` followed by the next line's `Expr(...)` came out as
+   * `":.>:\n        Expr"` and was published as a FUNCTION's name, with seven relationships
+   * sourced from it. A node whose text carries layout is not a name at all, so this refuses: the
+   * inner symbol is not read either, because when the wrapper spans a region the parser did not
+   * understand, the "inner operator" is whatever token it recovered on and spelling it would be a
+   * fabricated name rather than a missing one.
+   */
+  private quotedName(node: Node): string {
+    const t = node.text.trim()
+    return hasLayout(t) ? "" : t
+  }
+
+  /**
+   * The quoted-OPERATOR member's name for a field READ — `x.:(==)` reads `==`, not `:(==)`.
+   *
+   * Unwrapped rather than spelled because that is what the read names: the operator, whose
+   * spelling in the path position (`Base.:(==)`) keeps the wrapper so the qualified form stays
+   * distinguishable from a plain `.` member.
+   *
+   * The layout guard is the key-publication rule reaching this site too. A `quote_expression`
+   * recovered over a broken region has a text that is a source span, and a span is not a name, so
+   * it is REFUSED here rather than unwrapped into a fabricated operator.
+   */
+  private quotedOperatorMember(node: Node): string {
+    if (hasLayout(node.text)) return ""
+    const inner = this.pos(node, 0)
+    if (inner && !hasLayout(inner.text)) return inner.text.trim()
+    return unquoteOperatorMember(node.text)
+  }
+
   private fieldPath(node: Node): string {
     if (node.type === "identifier") return node.text.trim()
     // A PARAMETRIC name is a `parametrized_type_expression`, not a `field_expression`:
@@ -1742,8 +1902,12 @@ export class RealJuliaAnalyzer {
       const base = this.pos(node, 0)
       return base ? this.fieldPath(base) : ""
     }
-    if (node.type === "quote_expression") return node.text.trim()
-    if (node.type === "macro_identifier") return stripSigil(node.text, "@")
+    // THE SPAN TRAP, and it is the one this function published: `node.text` is a name only while
+    // the quote wraps a symbol. When error recovery puts a whole region inside the quote, the text
+    // is a source span (`":.>:\n        Expr"`, 17 characters across two lines) and `quotedName`
+    // refuses it rather than publishing a key no lookup can match.
+    if (node.type === "quote_expression") return this.quotedName(node)
+    if (node.type === "macro_identifier") return macroNameOf(node.text)
     if (node.type === "operator") return node.text.trim()
     if (node.type === "where_expression" || node.type === "parenthesized_expression") {
       const inner = this.pos(node, 0)
@@ -1753,10 +1917,12 @@ export class RealJuliaAnalyzer {
       const kids = this.namedChildren(node)
       const receiver = kids[0]
       const member = kids[kids.length - 1]
-      if (!receiver || !member) return node.text.trim()
+      // A `field_expression` with no children, or one recovered over a broken region, has no path
+      // to spell. Refusing is the same rule as the quote case above: a span is not a name.
+      if (!receiver || !member) return ""
       const head = this.fieldPath(receiver)
       const tail = this.fieldPath(member)
-      return head && tail ? `${head}.${tail}` : head || tail || node.text.trim()
+      return head && tail ? `${head}.${tail}` : head || tail || ""
     }
     return ""
   }
@@ -1971,7 +2137,7 @@ export class RealJuliaAnalyzer {
       const segs = this.namedChildren(node).filter((x) => x.type === "identifier")
       return segs.length ? segs[segs.length - 1]!.text.trim() : node.text.trim()
     }
-    if (node.type === "macro_identifier") return stripSigil(node.text, "@")
+    if (node.type === "macro_identifier") return macroNameOf(node.text)
     if (node.type === "call_expression") return this.calleeName(node) ?? ""
     // `list_litteral` WAS HERE, misspelled and unreachable. The grammar produces no such node over
     // the 971 admitted corpus files, and the two spellings that do exist — `tuple_expression` and
