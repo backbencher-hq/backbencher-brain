@@ -79,6 +79,13 @@ export const EXTERNAL_KEYS = [
  */
 export type ExternalClaim =
   | { kind: "owner" | "projectFacts" | "binding" }
+  // THE FILE CLAIM — "this target names an admitted FILE", checked against the project's own file
+  // list. `candidates` is every spelling the loader's conventions produce, because which one the
+  // loader will use is a property of the loader and not of the source (see `FILE_CLAIM_KEY`).
+  | { kind: "projectFile"; candidates: string[] }
+  // THE REFERENCE CLAIM — `<owner>/<repo>@<ref>` or `docker://…`, verified by the spelling and
+  // refuted by the key space (see `REMOTE_REF_CLAIM_KEY`).
+  | { kind: "remoteRef" }
   // BUCKET 3 — A DECLARED CAUSE, and deliberately NOT an external claim.
   //
   // `base` is the reason the analyzer states (`baseBeyondRunScope`'s value: the heritage base
@@ -95,12 +102,19 @@ export type ExternalClaim =
  * parameters or lambda parameters as symbols (DARTD8), so the string can never name a
  * declaration, and the only thing to check is whether the SPELLING says so.
  *
- * The spelling is `<callable>#<binding>` (`BINDING_SEP`, src/ast/types.ts). `#` cannot appear
- * in an identifier in any language of this family, which is what makes this claim checkable
- * by the ARBITER rather than by the analyzer that wrote it: presence of the separator is a
- * fact about the string, and "no published key contains the separator" is a fact about the
- * key space, asserted once per run (see `separatorFreeKeys` — a population tripwire, not a
- * per-edge lookup, because the key space is still being built while the walk classifies).
+ * The spelling is `<callable><BINDING_SEP><binding>` (`BINDING_SEP`, src/ast/types.ts). The
+ * separator is U+0000, and it was `#` until 2026-10-09: `#` cannot appear in an IDENTIFIER, but
+ * the tripwire below is over PUBLISHED KEYS, and nine of laptop B's 23 lanes publish keys that
+ * contain it — a CSS ID selector is written `#sidebar`, a markdown label `code_block#2`, an HCL
+ * address `aws#2.region`, a TOML key `units#2.name`. In each of those runs EVERY binding claim
+ * was unverifiable, because a target carrying `#` could name a real declaration. U+0000 cannot
+ * appear in a key structurally: keys are built from tree-sitter node text, and a NUL byte
+ * terminates a source document rather than naming anything in it.
+ *
+ * So presence of the separator is a fact about the string, and "no published key contains the
+ * separator" is a fact about the key space, asserted once per run (see `separatorFreeKeys` — a
+ * population tripwire, not a per-edge lookup, because the key space is still being built while
+ * the walk classifies).
  */
 export const BINDING_CLAIM_KEY = "localBinding"
 
@@ -108,6 +122,74 @@ export const BINDING_CLAIM_KEY = "localBinding"
  *  claim: both are specific, and an edge carrying both is verified on the binding spelling
  *  first because that one is a statement about the target itself. */
 export const IMPORT_CLAIM_KEY = "importOutsideProject"
+
+/**
+ * THE FILE CLAIM: "the target names a FILE this project admits".
+ *
+ * A FIFTH claim kind, and it exists because the other four cannot accept one shape: a target that
+ * is a relative FILE PATH with an extension. Measured on the yaml lane's `!include <path>` tag
+ * applications (`functions: !include "s1/functions/functions.yaml"` in Hasura's metadata
+ * testdata), the path is a real dependency on a real file, and every existing bucket REFUSES it:
+ *
+ *   owner       -> `targetOwner` is `s1/functions/functions`, which is not identifier-shaped, so
+ *                  the claim is unverifiable (`verifyExternalClaim`), which blocks a PASS;
+ *   cause       -> accepted only when the reason is an identifier EQUAL to the target's owner, so
+ *                  a path is REFUTED rather than declared (`classifyEdge`);
+ *   projectFacts-> `verifyImportClaim` reads `package:` and `dart:` payloads only;
+ *   binding     -> `#`-spelled callables, nothing to do with a file's name.
+ *
+ * So this is the missing arbiter: the claim is checked against THE PROJECT'S OWN FILE LIST, which
+ * the gate builds from the unsampled admitted corpus (`ProjectFacts.files`, repo-relative POSIX
+ * paths). It is a claim about the PROJECT, so the project can and does refute it.
+ *
+ * CANDIDATES, NOT ONE PATH, and that is the honest shape rather than a convenience: a YAML
+ * `!include` path is resolved by the LOADER, and the corpus contains two live conventions —
+ * Hasura writes include paths relative to the INCLUDING FILE's directory
+ * (`metadata/databases/databases.yaml` includes `s1/functions/functions.yaml`, and
+ * `metadata/databases/s1/functions/functions.yaml` is the file), while pyyaml-include's test data
+ * writes them relative to the REPO ROOT (`tests/data/0.yaml` includes
+ * `tests/data/include.d/1.yaml`). Both were read off the corpus, not assumed. The analyzer cannot
+ * know which loader will run, so it states the candidates and the project decides: VERIFIED when
+ * ANY candidate is an admitted file (the dependency is confirmed and the spelling ambiguity is
+ * irrelevant), REFUTED when NONE is (then the include names something this project does not have,
+ * which is a finding, not a pass).
+ *
+ * WHAT KEEPS IT FROM BEING A LAUNDERING HOLE. It is read only where the target names NOTHING in
+ * the key space, so it can never raise `resolved`; it is REFUTED by the project's own file list
+ * rather than accepted from the analyzer's word; and the gate builds the same list for every lane
+ * that admits the claim, from the same unsampled population the verdict is about.
+ */
+export const FILE_CLAIM_KEY = "importProjectFile"
+
+/**
+ * THE REFERENCE CLAIM: "the target is a REFERENCE, not a declaration" — verified by its SPELLING,
+ * and refuted outright if the key space answers it.
+ *
+ * A SIXTH claim kind, and it exists because one shape is checkable by nothing the project owns but
+ * is nevertheless checkable: a pinned reference to code that lives outside the corpus. MEASURED
+ * over this corpus's workflow files: **7,265 remote action uses** (`actions/checkout@v6`,
+ * `r-lib/actions/setup-r@v2`, `owner/repo/path@ref`) and **13 `docker://` images**. Their targets
+ * have no identifier-shaped owner to look up (`targetOwner` splits on the last `.` and these have
+ * none), and they name no file in the project, so every existing bucket reads them UNVERIFIABLE —
+ * which blocks a PASS while telling nobody anything.
+ *
+ * The mechanism is the BINDING claim's (`BINDING_CLAIM_KEY`), applied to a different string, and it
+ * is the same two-sided check:
+ *
+ *   1. THE SPELLING decides whether the claim is even admissible — a remote ref is
+ *      `<owner>/<repo>[<subpath>]@<ref>` with no whitespace, a non-empty ref after the LAST `@`, at
+ *      least one segment before it, and a docker ref is `docker://<image>`. A broken edge such as
+ *      `Foo.Bar` cannot carry this claim, so it cannot be used to excuse one.
+ *   2. THE KEY SPACE can REFUTE it: an edge marked this way whose target IS a published declaration
+ *      is refuted rather than verified. "Nothing here answers this name" is the fact being claimed,
+ *      and the population is the thing that knows.
+ *
+ * WHAT IT DOES NOT DO: it never raises `resolved` (it is read only where the target names nothing),
+ * and it does not claim the referenced action EXISTS — nothing in this corpus can check a GitHub
+ * repository. What it states, checkably, is that the target is a reference and not a declaration,
+ * which is what makes the edge's own metadata honest instead of a gap wearing a marker.
+ */
+export const REMOTE_REF_CLAIM_KEY = "remoteRef"
 
 /**
  * BUCKET 3'S MARKER: "the base this edge names is beyond THIS RUN's reach".
@@ -154,6 +236,20 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
   // cannot launder a gap with it — the claim is refuted outright when the target names a
   // declaration (see `classifyEdge`).
   if (md[BINDING_CLAIM_KEY] === true) return { kind: "binding" }
+  // The file claim is checked before the population claims, and the order is a decision: an edge
+  // that says "this names an admitted file" is making a statement the project can CHECK, while
+  // "this is outside the project" is the weaker, unverifiable-for-paths statement about the same
+  // target. Routing to the checkable one is what keeps a lane from being excused by the weaker
+  // marker it could attach to the same edge.
+  if (md[REMOTE_REF_CLAIM_KEY] === true) return { kind: "remoteRef" }
+  const fileClaim = md[FILE_CLAIM_KEY]
+  if (typeof fileClaim === "string" && fileClaim.length > 0) {
+    return { kind: "projectFile", candidates: [fileClaim] }
+  }
+  if (Array.isArray(fileClaim)) {
+    const candidates = fileClaim.filter((c: any): c is string => typeof c === "string" && c.length > 0)
+    if (candidates.length > 0) return { kind: "projectFile", candidates }
+  }
   if (md[IMPORT_CLAIM_KEY] === true) return { kind: "projectFacts" }
   const cause = md[CAUSE_CLAIM_KEY]
   const hasCause = typeof cause === "string" && cause.length > 0
@@ -255,6 +351,70 @@ export type ProjectFacts = {
  *   UNVERIFIABLE  the target is not a `package:`/`dart:` specifier at all (another scheme,
  *                 or a shape neither side can turn into a path). Counted, never merged.
  */
+/**
+ * CAN THE PROJECT REFUTE A FILE CLAIM?
+ *
+ * VERIFIED    at least one candidate spelling is in the project's admitted file list, so the
+ *             dependency the edge asserts is confirmed by evidence the analyzer never saw. The
+ *             spelling ambiguity is dissolved rather than resolved: which loader convention the
+ *             file will be read by does not change the fact that the project has the file.
+ * REFUTED     no candidate is admitted: the project has looked for the file this edge depends on
+ *             and does not have it. This is a finding about the edge, and it is counted.
+ *
+ * `verifyImportClaim` below is a DIFFERENT function on purpose — it answers package/SDK questions
+ * from a lane's own conventions, and folding a path check into it would make one function two
+ * rules, which is the shape this programme keeps paying for.
+ */
+export function verifyFileClaim(
+  facts: ProjectFacts,
+  candidates: string[],
+): "externalVerified" | "externalRefuted" {
+  for (const c of candidates) if (facts.files.has(c)) return "externalVerified"
+  // A DIRECTORY the project fills COUNTS, and the reason is the dependency's own shape: a local
+  // GitHub action (`./ci-actions/.github/actions/setup`, 501 of them in this corpus) is a DIRECTORY
+  // — the thing that pulls its `action.yml` in is what the edge depends on — so an exact-file test
+  // would refute every one of them while the project plainly has them. Admission is by PREFIX, and
+  // the prefix is a whole path segment so `ci/x` cannot be satisfied by `ci/xy/z.yml`.
+  //
+  // Cost: one pass over the project's admitted files per candidate directory. Only edges that name
+  // a directory reach it (nothing else does — a file candidate returns above), so this is bounded
+  // by the local-action population rather than by the corpus.
+  for (const c of candidates) {
+    const prefix = c + "/"
+    for (const f of facts.files) if (f.startsWith(prefix)) return "externalVerified"
+  }
+  return "externalRefuted"
+}
+
+/**
+ * IS THE SPELLING A PINNED REFERENCE? The arbiter's half of the claim, and it reads the string
+ * only — no corpus, no project, no analyzer.
+ *
+ *   `docker://hashicorp/terraform:1.9`      -> a container image
+ *   `actions/checkout@v6`                  -> a pinned remote action
+ *   `r-lib/actions/setup-r-dependencies@v2` -> a subpath inside a remote action's repository
+ *
+ * REFUSED, and each refusal is a shape a wrong edge could wear:
+ * `./local/action` (a project path, which carries the FILE claim instead), a bare `Foo.Bar`
+ * (no `/` before the `@`, so nothing about it is a reference), a URI with a scheme
+ * (`https://x` — an external reference claims nothing about a project path and is verified by the
+ * owner claim), whitespace anywhere, and an empty owner, repo or ref.
+ */
+export function verifyRemoteRefClaim(tgt: string): "externalVerified" | "externalUnverified" {
+  if (tgt.startsWith("docker://")) return tgt.length > "docker://".length ? "externalVerified" : "externalUnverified"
+  if (/\s/.test(tgt)) return "externalUnverified"
+  if (tgt.includes("://")) return "externalUnverified"
+  if (tgt.startsWith(".") || tgt.startsWith("/")) return "externalUnverified"
+  const at = tgt.lastIndexOf("@")
+  if (at <= 0 || at === tgt.length - 1) return "externalUnverified"
+  const left = tgt.slice(0, at)
+  const ref = tgt.slice(at + 1)
+  if (ref.includes("/")) return "externalUnverified"
+  if (!left.includes("/")) return "externalUnverified"
+  for (const seg of left.split("/")) if (seg.length === 0) return "externalUnverified"
+  return "externalVerified"
+}
+
 export function verifyImportClaim(
   facts: ProjectFacts,
   tgt: string,
@@ -332,7 +492,7 @@ export type Classified = {
   kinds: string
   /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
    *  mechanism that produced the number, not only the number. */
-  verifiedBy?: "owner" | "projectFacts" | "binding"
+  verifiedBy?: "owner" | "projectFacts" | "binding" | "spelling"
 }
 
 /**
@@ -362,6 +522,18 @@ export function classifyEdge(
     const outcome = verifyBindingClaim(tgt)
     return { outcome, decls, kinds: kindText, verifiedBy: outcome === "bindingVerified" ? "binding" : undefined }
   }
+  // THE REFERENCE CLAIM, checked before the count for the binding claim's own reason: the claim says
+  // "this is not a declaration", so a declaration that answers the target REFUTES it — even though
+  // the edge would otherwise read as a happy `resolved`. The refutation is the interesting half:
+  // it is what stops a lane from marking a name the project actually declares.
+  if (claim !== null && claim.kind === "remoteRef") {
+    if (decls > 0) return { outcome: "externalRefuted", decls, kinds: kindText }
+    const outcome = verifyRemoteRefClaim(tgt)
+    return {
+      outcome, decls, kinds: kindText,
+      verifiedBy: outcome === "externalVerified" ? "spelling" : undefined,
+    }
+  }
   if (claim !== null && claim.kind === "cause" && claim.conflict) {
     // The count is deliberately not consulted: the defect is in the EDGE's own metadata (it
     // claims to be both outside the population and beyond this run) and it is exactly as wrong
@@ -383,6 +555,15 @@ export function classifyEdge(
     if (claim.kind === "projectFacts") {
       if (!facts) return { outcome: "externalUnverified", decls, kinds: kindText }
       const outcome = verifyImportClaim(facts, tgt)
+      return { outcome, decls, kinds: kindText, verifiedBy: outcome === "externalVerified" ? "projectFacts" : undefined }
+    }
+    if (claim.kind === "projectFile") {
+      // NO FACTS MEANS NO CHECK, and an unchecked claim is never clean — the same rule the
+      // project-facts branch above states. This is what a lane sees when it emits the claim to a
+      // caller that did not build a project's file list (a fixture runner, say), and it is the
+      // honest reading: the claim may well be true, and nothing here can say so.
+      if (!facts) return { outcome: "externalUnverified", decls, kinds: kindText }
+      const outcome = verifyFileClaim(facts, claim.candidates)
       return { outcome, decls, kinds: kindText, verifiedBy: outcome === "externalVerified" ? "projectFacts" : undefined }
     }
     const outcome = verifyExternalClaim(declCount, tgt)
@@ -416,7 +597,7 @@ export type Outcomes = {
   externalVerifiedByOwner: number
   /** of `externalVerified`: confirmed by the project's own pubspec files and file list */
   externalVerifiedByProjectFacts: number
-  /** targets spelled as a BINDING (`<callable>#<binding>`) and not naming a declaration */
+  /** targets spelled as a BINDING (`<callable><BINDING_SEP><binding>`) and not naming a declaration */
   bindingVerified: number
   /** marked as a binding but spelled so it CAN name a declaration — counted against the lane */
   bindingRefuted: number

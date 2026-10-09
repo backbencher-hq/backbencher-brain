@@ -116,12 +116,14 @@ import { BINDING_SEP } from "../../src/ast/types"
 // consumes it. Re-exported below so a caller of this module keeps working unchanged.
 import {
   EXTERNAL_KEYS, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
+  FILE_CLAIM_KEY, REMOTE_REF_CLAIM_KEY,
   emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY,
   type ExternalClaim, type ProjectFacts,
   type Outcome, type Classified, type Outcomes,
 } from "./incoming-rule"
 export {
   EXTERNAL_KEYS, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
+  FILE_CLAIM_KEY, REMOTE_REF_CLAIM_KEY,
   emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY,
 }
 export type { ExternalClaim, ProjectFacts, Outcome, Classified, Outcomes }
@@ -284,6 +286,23 @@ function discoverFiles(lang: string, ext: string, maxFiles: number, onlyRepos?: 
 const DART_FACT_WALK_SKIP = new Set([
   ".git", ".hg", ".svn", "node_modules", ".dart_tool", ".symlinks", "build", "coverage", ".pub-cache", "out",
 ])
+
+/**
+ * THE PROJECT'S OWN FILE LIST, for the lanes whose imports name FILES rather than packages.
+ *
+ * Built from the UNSAMPLED admitted list (a fact about the project, not about this run's budget)
+ * and keyed repo-relative with POSIX separators, which is the spelling a claim must use. No walk
+ * of the tree: the admitted list IS the answer, and a walk would answer a different question
+ * ("what is on disk", including files this programme refuses to parse).
+ */
+function projectFactsForFiles(repoRoot: string, admitted: string[]): ProjectFacts {
+  const files = new Set<string>()
+  for (const abs of admitted) {
+    const rel = path.relative(repoRoot, abs)
+    if (rel.length > 0) files.add(rel.split(path.sep).join("/"))
+  }
+  return { packages: new Set<string>(), files, sdkLib: false }
+}
 
 function projectFactsForDart(repoRoot: string, admitted: string[]): ProjectFacts {
   const files = new Set<string>()
@@ -487,11 +506,16 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       if (list) list.push(f)
       else admittedByRepo.set(repo, [f])
     }
-    // Only dart's analyzer makes this claim today. A lane that adds one opts in here, and a
-    // lane that does not pays nothing: no walk, no map, and no claim can arise for it.
-    if (ext.toLowerCase() !== "dart") return null
+    // TWO FACT BUILDERS, ONE PER QUESTION. Dart's `imports` name packages and SDK libraries, so
+    // its facts come from walking the checkout for `pubspec.yaml` files; a lane whose imports
+    // name FILES (yaml's `!include`) needs only the admitted list, which costs a `path.relative`
+    // per file and no walk at all. Until 2026-10-09 this returned `null` for every lane but dart,
+    // so a file claim from any other lane could only ever be UNVERIFIABLE — which blocks a PASS
+    // — and that is the shape the yaml lane hit with two `!include` edges it was right about.
     const out = new Map<string, ProjectFacts>()
-    for (const [repo, list] of admittedByRepo) out.set(repo, projectFactsForDart(repo, list))
+    for (const [repo, list] of admittedByRepo) {
+      out.set(repo, ext.toLowerCase() === "dart" ? projectFactsForDart(repo, list) : projectFactsForFiles(repo, list))
+    }
     return out
   })()
 
@@ -547,10 +571,21 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     }
     let r: any
     try {
+      // M60 yaml lane (2026-10-09): the population is fed the file's PROJECT ROOT, not its
+      // own directory. Two reasons, and the second is the one that forced it:
+      //
+      //   * this gate resolves every endpoint against "the file's OWN PROJECT (production's
+      //     scope)" and groups files by repository, so `repoOf(f)` IS the project the
+      //     verdict is about. Handing the analyzer `dirname(f)` described a project the
+      //     gate does not measure;
+      //   * a file-scoped identity needs the root to be computed AT ALL. With no root a
+      //     lane can only fall back to the filesystem basename, which is the collision this
+      //     gate counts — so an unrooted population would measure the defect and not the
+      //     fix, on the same input.
       const idx = indexInfo?.byRepo.get(repoOf(f))
       r = idx === undefined
-        ? await parseFile(f, path.dirname(f))
-        : await parseFile(f, path.dirname(f), { projectIndex: idx } as any)
+        ? await parseFile(f, repoOf(f), { projectRoot: repoOf(f) } as any)
+        : await parseFile(f, repoOf(f), { projectIndex: idx, projectRoot: repoOf(f) } as any)
     } catch {
       failed++
       continue
@@ -754,6 +789,24 @@ function selfTest(): { ok: boolean; failures: string[] } {
   //
   // AND ONE OF EACH CLAIM KIND, because `verifyExternalClaim` and `verifyImportClaim` are two
   // checks and a control that exercises only the first would let the second accept anything.
+  // THE FILE CLAIM — verified by the project's OWN file list, refuted by it, and unverifiable with
+  // no list. `sdk/lib/async/async.dart` is the one path this control's facts admit, so the first
+  // plant verifies on its SECOND candidate (the shape a loader-ambiguous `!include` produces), the
+  // second is refuted by the same list, and the third is the claim with no evidence to check it.
+  // AN ARRAY, NOT A MAP, and the first version of this control was a map — which collapsed the
+  // refuted and no-facts plants into one entry because they share a target, and the control's own
+  // count assertion (expected 4 REFUTED, got 3) is what caught it before any lane number was
+  // reported. A control that silently drops its own cases is the failure this programme keeps
+  // paying for, one layer up.
+  const filePlants: { tgt: string; candidates: string[]; withFacts: boolean }[] = [
+    // VERIFIED on the SECOND candidate: the shape a loader-ambiguous `!include` produces (Hasura's
+    // spelling first, which this control's facts do not admit, then the admitted one).
+    { tgt: "s1/functions/functions.yaml", candidates: ["databases/s1/functions/functions.yaml", "sdk/lib/async/async.dart"], withFacts: true },
+    // REFUTED: every candidate denied by the project's file list.
+    { tgt: "absent/dir/missing.yaml", candidates: ["absent/dir/missing.yaml"], withFacts: true },
+    // UNVERIFIABLE: the same claim with no evidence supplied at all.
+    { tgt: "absent/dir/missing.yaml", candidates: ["absent/dir/missing.yaml"], withFacts: false },
+  ]
   const ownerClaims = new Set([
     "AbsentThing.build",              // owner not published -> verified
     "Object.hashCode",                // owner published     -> REFUTED
@@ -782,6 +835,11 @@ function selfTest(): { ok: boolean; failures: string[] } {
   let verifiedByOwner = 0
   let verifiedByFacts = 0
   let verifiedBySpelling = 0
+  // A SEPARATE COUNTER for the reference claim's spelling checks. Sharing one counter split the
+  // binding assertion above in half — it read 4 against an expected 2 while both claims were
+  // working — and a control that cannot tell two mechanisms apart reports a bug in whichever one
+  // it happens to assert about.
+  let verifiedByRefSpelling = 0
   for (const t of [
     "alpha", "beta", "gamma", "delta",
     "AbsentThing.build", "Object.hashCode", "package:flutter/material.dart:*",
@@ -795,6 +853,44 @@ function selfTest(): { ok: boolean; failures: string[] } {
     got[c.outcome]++
     if (c.verifiedBy === "projectFacts") verifiedByFacts++
   }
+  // THE FILE CLAIM's three cases, classified through THE ONE RULE like every other plant, so the
+  // control exercises the branch the yaml lane's `!include` edges take rather than a copy of it.
+  for (const p of filePlants) {
+    const c = classifyEdge(
+      declCount, kinds, p.tgt,
+      { kind: "projectFile", candidates: p.candidates },
+      p.withFacts ? facts : undefined,
+    )
+    got[c.outcome]++
+    if (c.verifiedBy === "projectFacts") verifiedByFacts++
+  }
+  // THE DIRECTORY HALF of the same claim: a local GitHub action (`./dir`) names a DIRECTORY, and
+  // this control's facts admit `sdk/lib/async/async.dart`, so the directory above it must verify by
+  // prefix while a directory nothing sits under must be refuted. One of each, because the rule's
+  // two branches are what a wrong implementation would collapse into one.
+  for (const dir of ["sdk/lib/async", "absent/dir"]) {
+    const c = classifyEdge(declCount, kinds, `./${dir}`, { kind: "projectFile", candidates: [dir] }, facts)
+    got[c.outcome]++
+    if (c.verifiedBy === "projectFacts") verifiedByFacts++
+  }
+  // THE REFERENCE CLAIM, and the ways to abuse it. THE PLANT IS THE WHOLE TARGET, and this line is
+  // where the control caught its author: refutation looks the TARGET up in the key space, so
+  // planting a shorter name (`ci/action`) left `ci/action@v1` unseen, verified it by spelling, and
+  // the count assertion reported 8 verified / 5 refuted against an expected 7 / 6. The rule was
+  // right and the plant was wrong, which is the useful direction for a control to fail in.
+  declCount.set("ci/action@v1", 1)
+  const refPlants: string[] = [
+    "actions/checkout@v6",           // VERIFIED by the spelling
+    "docker://alpine:3.21",          // VERIFIED — the container shape
+    "ci/action@v1",                  // REFUTED — the key space answers it
+    "Foo.Bar",                       // UNVERIFIABLE — not a reference shape at all
+    "./local/action",                 // UNVERIFIABLE — a PROJECT path, which the file claim covers
+  ]
+  for (const t of refPlants) {
+    const c = classifyEdge(declCount, kinds, t, { kind: "remoteRef" })
+    got[c.outcome]++
+    if (c.verifiedBy === "spelling") verifiedByRefSpelling++
+  }
 
   // THE BINDING CLAIM, and the one case that must be caught is the one this round was built
   // on: a target MARKED as a binding whose spelling a declaration answers. `counter` is
@@ -802,10 +898,10 @@ function selfTest(): { ok: boolean; failures: string[] } {
   // well as in `local-read-phantom.ts`, so a future edit that consults the count before the
   // claim fails HERE instead of silently reading `resolved`.
   const bindingPlants = new Map<string, boolean>([
-    ["run#counter", true],   // spelled as a binding, nothing answers it -> VERIFIED
-    ["lonely#x", true],      // same, second site                          -> VERIFIED
-    ["counter", true],       // marked, but a declaration answers it       -> REFUTED
-    ["binder#", true],       // separator with nothing after it            -> UNVERIFIED
+    [`run${BINDING_SEP}counter`, true],   // spelled as a binding, nothing answers it -> VERIFIED
+    [`lonely${BINDING_SEP}x`, true],      // same, second site                          -> VERIFIED
+    ["counter", true],                    // marked, but a declaration answers it       -> REFUTED
+    [`binder${BINDING_SEP}`, true],       // separator with nothing after it            -> UNVERIFIED
   ])
   declCount.set("counter", 1)
   for (const [t] of bindingPlants) {
@@ -823,6 +919,22 @@ function selfTest(): { ok: boolean; failures: string[] } {
   }
   if (externalClaimOf({ metadata: { isExternalBase: true } })?.kind !== "owner") {
     failures.push("control: `isExternalBase` no longer routes to the owner claim")
+  }
+  if (externalClaimOf({ metadata: { [REMOTE_REF_CLAIM_KEY]: true } })?.kind !== "remoteRef") {
+    failures.push("control: `remoteRef` did not route to the reference claim")
+  }
+  if (externalClaimOf({ metadata: { [FILE_CLAIM_KEY]: ["a/b.yaml"] } })?.kind !== "projectFile") {
+    failures.push("control: `importProjectFile` did not route to the file claim")
+  }
+  // AND THE WEAKER MARKER ON THE SAME EDGE MUST NOT WIN. `importProjectFile` is a statement the
+  // project's file list can CHECK; `isExternalBase` is one it cannot check at all for a path
+  // target. If the external marker routed first, a lane could attach both and be excused by the
+  // unverifiable one — the same laundering the binding claim's ordering prevents.
+  if (externalClaimOf({ metadata: { [FILE_CLAIM_KEY]: ["a/b.yaml"], isExternalBase: true } })?.kind !== "projectFile") {
+    failures.push(
+      "control: an edge carrying BOTH a file claim and an external marker routed to the external " +
+      "marker — the checkable claim is being excused by the unverifiable one",
+    )
   }
 
   // BUCKET 3 — THE DECLARED CAUSE, and its two anti-laundering properties are PLANTED here rather
@@ -858,7 +970,11 @@ function selfTest(): { ok: boolean; failures: string[] } {
       `is being consulted before the count and can move a resolution number`,
     )
   }
-  if (verifyBindingClaim("run#counter") !== "bindingVerified") {
+  // Built from the constant, not typed as a literal: this control hardcoded `run#counter`, so
+  // when the separator moved (see BINDING_SEP in src/ast/types.ts — nine lanes publish keys
+  // containing `#`, which made every binding claim in their runs unverifiable) the control
+  // would have kept testing the OLD spelling and passed a claim path that no longer worked.
+  if (verifyBindingClaim(`run${BINDING_SEP}counter`) !== "bindingVerified") {
     failures.push("control: a correctly spelled binding target did not verify")
   }
   if (verifyBindingClaim("run.counter") !== "bindingRefuted") {
@@ -888,21 +1004,32 @@ function selfTest(): { ok: boolean; failures: string[] } {
   // marked edge) and the refuted count drops to 0 and fails the control — which is the only
   // reason the number it prints can be believed.
   // 3 verified: the absent owner, and the two project-facts claims the project does not contain.
-  if (got.externalVerified !== 3) failures.push(`control: expected 3 verified external claims, got ${got.externalVerified}`)
-  // 3 refuted: a published owner, a declared package, an SDK library the project carries.
-  if (got.externalRefuted !== 3) {
+  // THE ARITHMETIC IS THE ASSERTION, so it is written out rather than implied. 7 verified:
+  // 1 owner (`AbsentThing.build`) + 2 project-facts package/SDK + 1 file claim verified on its
+  // second candidate + 1 file claim verified by DIRECTORY prefix + 2 reference claims verified by
+  // SPELLING (a remote action and a docker image).
+  if (got.externalVerified !== 7) failures.push(`control: expected 7 verified external claims, got ${got.externalVerified}`)
+  // 6 refuted: a published owner, a declared package, an SDK library the project carries, a file
+  // claim with no admitted candidate, a directory claim nothing sits under, and a reference claim
+  // whose target IS a published declaration.
+  if (got.externalRefuted !== 6) {
     failures.push(
-      `control: expected 3 REFUTED external claims (owner published, package declared, SDK file ` +
-      `present), got ${got.externalRefuted} — a claim is being accepted without evidence`,
+      `control: expected 6 REFUTED external claims (owner published, package declared, SDK file ` +
+      `present, file claim with no candidate, directory with nothing under it, reference claim on a ` +
+      `DECLARED target), got ${got.externalRefuted} — a claim is being accepted without evidence`,
     )
   }
-  // 2 unverifiable: a URI with no identifier owner, and a project-facts claim with NO facts
-  // supplied. The second is the one that matters: an unchecked claim must never read clean.
-  if (got.externalUnverified !== 2) failures.push(`control: expected 2 unverifiable external claims, got ${got.externalUnverified}`)
-  if (verifiedByOwner !== 1 || verifiedByFacts !== 2) {
+  // 4 unverifiable: a URI with no identifier owner, a project-facts claim with NO facts supplied, a
+  // FILE claim with NO facts supplied, and a reference claim on a target that is not a reference
+  // shape (plus the project path, which the file claim owns and this one must refuse). The point of
+  // the last three: an unchecked claim must never read clean, and a lane must not be able to buy a
+  // PASS by marking an edge with a claim whose evidence the run never built or the spelling denies.
+  if (got.externalUnverified !== 5) failures.push(`control: expected 5 unverifiable external claims, got ${got.externalUnverified}`)
+  if (verifiedByOwner !== 1 || verifiedByFacts !== 4 || verifiedByRefSpelling !== 2) {
     failures.push(
-      `control: expected the 3 verified claims to split 1 owner / 2 project-facts, got ` +
-      `${verifiedByOwner} / ${verifiedByFacts}`,
+      `control: expected the 7 verified claims to split 1 owner / 4 project-facts / 2 reference ` +
+      `claims verified by spelling (the 2 binding claims are counted separately), got ` +
+      `${verifiedByOwner} / ${verifiedByFacts} / ${verifiedByRefSpelling}`,
     )
   }
   // THE BINDING COUNTS. 2 verified from 2 spelled plants, 1 refuted (the plant whose spelling a
@@ -977,7 +1104,7 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
       pass: false, edges, totals: t, pooled,
       reason:
         `${rep.bindingSpelling.keys} published key(s) contain the binding separator ` +
-        `\`${rep.bindingSpelling.separator}\` ${JSON.stringify(rep.bindingSpelling.examples)}, so a target ` +
+        `\`${showSep(rep.bindingSpelling.separator)}\` ${JSON.stringify(rep.bindingSpelling.examples).replace(/\\u0000/g, "\\\\u0000")}, so a target ` +
         `carrying it can name a declaration — every binding claim in this run is unverifiable`,
     }
   }
@@ -1107,7 +1234,7 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     "extFAIL = claim the project REFUTES, counted against the lane",
   )
   console.log(
-    `bindOK = a target SPELLED as a binding (\`<callable>${rep.bindingSpelling.separator}<binding>\`), which no ` +
+    `bindOK = a target SPELLED as a binding (\`<callable>${showSep(rep.bindingSpelling.separator)}<binding>\`), which no ` +
     `declaration can answer · bind? = a separator with nothing after it · ` +
     `bindFAIL = marked as a binding but spelled so it CAN name a declaration, counted against the lane`,
   )
@@ -1130,7 +1257,7 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   // edges while the space is still being built.
   console.log(
     `separator tripwire: ${rep.bindingSpelling.keys} published key(s) contain ` +
-    `\`${rep.bindingSpelling.separator}\` of ${v.edges} edges measured` +
+    `\`${showSep(rep.bindingSpelling.separator)}\` of ${v.edges} edges measured` +
     (rep.bindingSpelling.keys > 0
       ? ` — ${JSON.stringify(rep.bindingSpelling.examples)} — THE CLAIM'S EVIDENCE IS VOID IN THIS POPULATION`
       : ` (0 required: a declaration name carrying it would make a binding claim unfalsifiable)`),
@@ -1315,6 +1442,10 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   console.log("Scope of a PASS: this population, this analyzer digest, resolution only. It does NOT")
   console.log("say the edges point at the RIGHT declaration — that is differential.ts's question.")
 }
+
+/** The separator is U+0000 (src/ast/types.ts): printing it raw puts control bytes in logs and
+ *  makes them look binary to grep. One helper, so every report line escapes it the same way. */
+const showSep = (sep: string): string => sep.replace(/\u0000/g, "\\u0000")
 
 const argv = process.argv.slice(2)
 const JSON_OUT = argv.includes("--json")

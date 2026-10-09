@@ -167,19 +167,27 @@ export interface UniversalSymbol {
  * was about the FAMILY's contract, and the defect is that the SPELLING did not carry it.
  *
  * `#` cannot appear in an identifier in any language of this family (`[A-Za-z_$]` and the
- * alphanumerics that follow it, in every spelling), so a target containing it cannot be a
- * declaration's name once the spelling carries it — which is what makes the claim checkable by
- * the ARBITER rather than by the analyzer that wrote it: `verifyBindingClaim`
- * (script/m14/incoming-rule.ts) requires the separator's presence AND that no published key in
- * the project contains it.
+ * alphanumerics that follow it, in every spelling) — TRUE, and not enough. The tripwire that
+ * makes this claim checkable is over PUBLISHED KEYS, not identifiers, and a published key is
+ * not always an identifier: a CSS ID selector is written `#sidebar`, a markdown label
+ * `code_block#2`, an HCL address `aws#2.region`, a TOML key `units#2.name`, a julia struct
+ * `layer::ScopeLayer\n # For provenance`. Measured across laptop B's 23 lanes, NINE of them
+ * publish keys containing `#`, and in each of those runs EVERY binding claim became
+ * unverifiable — the gate could not tell a binding spelling from a declaration's name
+ * (validation/m14/results/incoming-laptop-b.log). The lane cannot fix it by renaming: `#` is
+ * the language's own syntax in CSS and SCSS, so the separator is what has to move.
+ *
+ * U+0000 cannot appear in a published key, and that is structural rather than conventional:
+ * tree-sitter parses TEXT, keys are built from node text, and a NUL byte in source terminates
+ * the document rather than naming anything in it. It is also invisible to the leaf rules below
+ * (no consumer splits on NUL), which is the property that ruled out `.` and `:`.
  *
  * Deliberately NOT `.` and NOT `:`. Consumers take the LEAF of an unresolved target as "the
  * name this edge is about" (`src/intelligence/patterns/orphans.ts`: after the last colon, then
  * after the last dot), which would reduce a dotted or colon-joined spelling straight back to
- * the bare local name and reopen the false name match this constant exists to close. `#` is
- * unchanged by that rule, and it is the notation the family already reads as "member of".
+ * the bare local name and reopen the false name match this constant exists to close.
  */
-export const BINDING_SEP = "#"
+export const BINDING_SEP = "\u0000"
 
 export interface UniversalRelationship {
   source?: string
