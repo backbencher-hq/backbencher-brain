@@ -4,8 +4,15 @@
 // relationship types that actually come out. This is question 2 of the six,
 // and it is the one source-derivation cannot answer.
 import { readFileSync, readdirSync, statSync } from "node:fs"
-import { join } from "node:path"
-const REPO = "$HOME/backbencher-brain"
+import { join, dirname } from "node:path"
+import { fileURLToPath } from "node:url"
+// Resolved from THIS file's location, not hardcoded. It was
+// "$HOME/backbencher-brain", which does not exist on this laptop
+// ($HOME/mcp/backbencher-brain) — so the instrument the programme mandates for
+// coverage claims could not run here at all, and every laptop-B lane number came from
+// source derivation instead. 57 scripts in this tree carry the same hardcoded path;
+// this one is fixed because it is the arbiter. Override with BB_REPO if ever needed.
+const REPO = process.env.BB_REPO || join(dirname(dirname(dirname(fileURLToPath(import.meta.url)))))
 const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
 
 const LANES = {
@@ -33,6 +40,38 @@ const LANES = {
   VUE:         ["vue", "real-vue-analyzer", "vuejs"],
   SVELTE:      ["svelte", "real-svelte-analyzer", "shadcn-svelte"],
   HTML:        ["html", "real-html-analyzer", "vuejs"],
+
+  // ── LAPTOP B — 23 lanes, added 2026-10-09. They were absent from this map entirely,
+  // so every B lane's coverage number came from source derivation while this instrument
+  // (the only one that answers "does it FIRE") could not run for them at all.
+  //
+  // Corpus chosen by MEASUREMENT, not by name: one pass over fixtures/repositories
+  // (199 repos, 371,015 files) picking the repo holding the most files of the lane's
+  // extensions. The number after each entry is that count. `clean` is the one thin lane
+  // (109 files in Clyde, 74 in clean-stdlib) — measured, not assumed.
+  BASH:        ["bash", "real-bash-analyzer", "bash-completion"],       // 556
+  FSHARP_B:    ["fsharp", "real-fsharp-analyzer", "fsharp"],            // 5,057
+  ZIG:         ["zig", "real-zig-analyzer", "zig"],                     // 2,946
+  LUA:         ["lua", "real-lua-analyzer", "kong"],                    // 1,155
+  JULIA:       ["julia", "real-julia-analyzer", "julia"],               // 921
+  NIM:         ["nim", "real-nim-analyzer", "nim"],                     // 3,907
+  PHP:         ["php", "real-php-analyzer", "phpunit"],                 // 2,535
+  POWERSHELL:  ["powershell", "real-powershell-analyzer", "powershell"],// 500
+  R_LANG:      ["r", "real-r-analyzer", "ggplot2"],                     // 360
+  DART:        ["dart", "real-dart-analyzer", "dart-sdk"],              // 22,348
+  SQL:         ["sql", "real-sql-analyzer", "duckdb"],                  // 594
+  GRAPHQL:     ["graphql", "real-graphql-analyzer", "gql-gqlgen"],      // 141
+  PROTOBUF:    ["protobuf", "real-protobuf-analyzer", "pb-googleapis"], // 128
+  JSON_B:      ["json", "real-json-analyzer", "shadcn-svelte"],         // 2,349
+  YAML:        ["yaml", "real-yaml-analyzer", "ansible"],               // 1,610
+  CSS_B:       ["css", "real-css-analyzer", "pico"],                    // 238
+  SCSS:        ["scss", "real-scss-analyzer", "bulma"],                 // 179
+  HCL:         ["hcl", "real-hcl-analyzer", "terragrunt"],              // 2,283
+  MAKE:        ["make", "real-makefile-analyzer", "otp"],               // 342
+  TOML_B:      ["toml", "real-toml-analyzer", "cargo"],                 // 431
+  XML_B:       ["xml", "real-xml-analyzer", "libxslt"],                 // 538
+  MARKDOWN_B:  ["markdown", "real-markdown-analyzer", "redwood"],       // 2,082
+  CLEAN_B:     ["clean", "real-clean-analyzer", "Clyde"],               // 109 (THIN)
 }
 
 function pickFiles(dir, exts, want, cap = 400) {
@@ -75,6 +114,11 @@ for (const L of targets) {
     groovy: [".groovy"], haskell: [".hs"], swift: [".swift"], perl: [".pl", ".pm"], clojure: [".clj", ".cljs"],
     vb: [".vb", ".bas", ".frm", ".cls"], vue: [".vue"], svelte: [".svelte"], html: [".html", ".htm"], css: [".css"],
     csharp: [".cs"], java: [".java"], "objective-c": [".m"], typescript: [".ts", ".tsx"], javascript: [".js", ".mjs"],
+    bash: [".sh", ".bash"], fsharp: [".fs", ".fsi", ".fsx"], zig: [".zig"], lua: [".lua"],
+    julia: [".jl"], nim: [".nim"], php: [".php"], powershell: [".ps1", ".psm1"], r: [".r", ".R"],
+    dart: [".dart"], sql: [".sql"], graphql: [".graphql", ".gql"], protobuf: [".proto"], json: [".json"],
+    yaml: [".yml", ".yaml"], scss: [".scss"], hcl: [".hcl", ".tf"], make: ["Makefile", ".mk"],
+    toml: [".toml"], xml: [".xml"], markdown: [".md"], clean: [".icl", ".dcl"],
     elixir: [".ex", ".exs"], cpp: [".cpp", ".cc", ".h"], ruby: [".rb"], erlang: [".erl", ".hrl"], c: [".c", ".h"] }[lang] || []
   const files = pickFiles(dir, exts, Number(process.env.NFILES||120))
   if (!files.length) { report.push([L, `NO CORPUS under ${corpusDir}`, 0, []]); continue }
