@@ -72,6 +72,40 @@ function isDottedIdentifier(s: string): boolean {
   return !prevDot
 }
 
+/**
+ * `[A-Za-z_$][A-Za-z0-9_$]*` by char code — the SINGLE-segment sibling of `isDottedIdentifier`,
+ * and the replacement for the four `/^[A-Za-z_$][A-Za-z0-9_$]*$/` tests that were this lane's
+ * share of the fleet's no-regex gate.
+ *
+ * This is a predicate about a STRING THE SOURCE WROTE (a field type or parameter type read off
+ * the tree), not a claim about a node type the grammar may or may not emit, so a character walk
+ * is the same test and not a dead branch: the class is ASCII, both ends are anchored, and there
+ * is no quantifier subtlety. Char codes rather than `includes` so the class cannot drift from
+ * `isDottedIdentifier`'s by a locale-aware comparison.
+ */
+function isPlainIdentifier(s: string): boolean {
+  if (s.length === 0) return false
+  const start = s.charCodeAt(0)
+  if (!((start >= 97 && start <= 122) || (start >= 65 && start <= 90) || start === 95 || start === 36)) return false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (!((c >= 97 && c <= 122) || (c >= 65 && c <= 90) || (c >= 48 && c <= 57) || c === 95 || c === 36)) return false
+  }
+  return true
+}
+
+/**
+ * Drop every trailing `?` — Dart's nullable-type suffix (`String?`, `List<int>?`), the four
+ * `.replace(/\?+$/, "")` sites. A backward walk is the same rule as `\?+$`: all of them, only
+ * at the end, and the string is returned unchanged when there are none (which is the common
+ * case, so the common path allocates nothing).
+ */
+function stripNullableSuffix(text: string): string {
+  let end = text.length
+  while (end > 0 && text.charCodeAt(end - 1) === 63 /* ? */) end--
+  return end === text.length ? text : text.slice(0, end)
+}
+
 function unquote(text: string): string {
   if (text.length >= 2) {
     const first = text[0]
@@ -2230,7 +2264,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of symbols) {
       if (!s.ownerName) continue
       const dt = String((s.metadata as any)?.dataType ?? "")
-      if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(dt)) fieldTypeByField.set(`${s.ownerName}.${s.name}`, dt)
+      if (isPlainIdentifier(dt)) fieldTypeByField.set(`${s.ownerName}.${s.name}`, dt)
     }
     /**
      * A QUALIFIED TARGET or null, AND WHY — the second half is the RECEIVER AVAILABILITY CUT.
@@ -2319,8 +2353,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
      * would then have to resolve through arguments it has not read, so it declines.
      */
     const plainTypeName = (text: string | undefined | null): string | undefined => {
-      const leaf = String(text ?? "").replace(/\?+$/, "")
-      return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(leaf) ? leaf : undefined
+      const leaf = stripNullableSuffix(String(text ?? ""))
+      return isPlainIdentifier(leaf) ? leaf : undefined
     }
 
     /**
@@ -3800,8 +3834,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.findChildByType(n, "initialized_variable_definition")?.childForFieldName?.("name")?.text
         if (name && !out.has(name)) {
           const explicit = this.extractFieldType(n, n)
-          const typeName = explicit ? (String(explicit).replace(/\?+$/, "")) : this.constructedTypeName(n)
-          if (typeName && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(typeName)) out.set(name, typeName)
+          const typeName = explicit ? stripNullableSuffix(String(explicit)) : this.constructedTypeName(n)
+          if (typeName && isPlainIdentifier(typeName)) out.set(name, typeName)
         }
       }
       for (const c of n.namedChildren ?? []) if (c) stack.push(c)
@@ -3824,7 +3858,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           ? value
           : null
     const text = head?.text
-    if (!text || !/^[A-Z]/.test(text)) return undefined
+    if (!text || !isCapitalized(text)) return undefined
     return text
   }
 
@@ -3846,8 +3880,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     for (const p of params) {
       const name = String(p?.name ?? "")
-      const typeName = String(p?.type ?? "").replace(/\?+$/, "")
-      if (name && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(typeName)) out.set(name, typeName)
+      const typeName = stripNullableSuffix(String(p?.type ?? ""))
+      if (name && isPlainIdentifier(typeName)) out.set(name, typeName)
     }
     return out
   }
