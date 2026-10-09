@@ -18,7 +18,25 @@ export type DetectedLanguage =
   | "solidity"
 
 export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
-  ts: "typescript", tsx: "tsx", js: "javascript", cjs: "javascript", mjs: "javascript", jsx: "javascript",
+  // `.mts` was missing from this table entirely, so 490 tracked files in this repository —
+  // much of the m12/m14 gate suite among them — were rejected by `detectLanguageFromPath`
+  // before a grammar could even be chosen, and the engine answered "Unsupported file type".
+  // `.mts` is a TypeScript ES module: same language, explicit module system.
+  //
+  // Measured before declaring, by script/m12/measure-extension-coverage.ts over every
+  // tracked `.mts` file in the tree:
+  //
+  //   490 files   490 parsed   8 error files   54 error nodes   0 threw
+  //   18,586 symbols   54,485 relationships   2,115 imports
+  //
+  // 98.4% parse clean, and the 8 imperfect files are gate fixtures rather than library code.
+  // The 18,586 symbols were invisible to the index — the difference between "bb indexes
+  // TypeScript" and the truth of what this repository is written in.
+  //
+  // `.cts` is deliberately NOT declared: the measured corpus is ZERO files, so there is
+  // nothing to support a claim about it (the same rule that kept `.jul` undeclared). Add it
+  // with its numbers once a corpus exists.
+  ts: "typescript", tsx: "tsx", mts: "typescript", js: "javascript", cjs: "javascript", mjs: "javascript", jsx: "javascript",
   html: "html", htm: "html", vue: "vue", svelte: "svelte", css: "css",
   // scss is its own language, not a css dialect. It was mapped to "css" here while
   // the CSS grammar was the only wasm available, which is a decision made for lack of
