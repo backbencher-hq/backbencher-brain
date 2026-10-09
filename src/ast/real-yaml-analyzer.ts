@@ -57,6 +57,14 @@ import { ASTEngine } from "./engine"
 
 interface YamlContext {
   filePath: string
+  /**
+   * The project root this file was parsed against, when the caller knows it.
+   *
+   * Absent means "this caller did not say which project the file is in", and the document
+   * identity falls back to the filesystem basename — which is what it was before this
+   * field existed, and therefore what every fixture that passes no root still asserts.
+   */
+  projectRoot?: string
   content: string
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
@@ -501,9 +509,11 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     content: string,
     filePath: string,
+    context?: ASTEngine.AnalyzeContext,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
     const ctx: YamlContext = {
       filePath,
+      projectRoot: typeof context?.projectRoot === "string" ? context.projectRoot : undefined,
       content,
       symbols: [],
       relationships: [],
@@ -559,7 +569,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       parent: null,
       parentPath: "",
       pointerPath: "",
-      document: this.documentName(filePath, 1),
+      document: this.documentName(filePath, 1, ctx.projectRoot),
       depth: 0,
       siblingKeys: new Set(),
     }, ctx)
@@ -727,7 +737,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private visitDocument(node: Node, current: VisitContext, ctx: YamlContext, stack: { node: Node; context: VisitContext }[]): void {
-    const documentName = this.documentName(ctx.filePath, ctx.documentCount + 1)
+    const documentName = this.documentName(ctx.filePath, ctx.documentCount + 1, ctx.projectRoot)
     ctx.documentCount++
     if (ctx.documentCount > 1) this.addPattern(ctx, "Multi-document YAML")
     if (!ctx.anchors.has(documentName)) ctx.anchors.set(documentName, new Map())
@@ -844,7 +854,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.addPattern(ctx, "Grammar Error Recovery")
 
     if (!current.parent) {
-      const documentName = this.documentName(ctx.filePath, ctx.documentCount + 1)
+      const documentName = this.documentName(ctx.filePath, ctx.documentCount + 1, ctx.projectRoot)
       // AN IDENTITY IS NOT A DECLARATION. A root-level ERROR has no `document` node, so
       // the source contains no document declaration and the analyzer must not invent one
       // named after the file stem. The M12 ground truth caught exactly this: for
@@ -1164,7 +1174,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.addImport(ctx, includePath, "yaml_tag_include", keyNode, true)
       this.addRelationship(ctx, path, includePath, ASTEngine.RelationshipType.Imports, {
         relationshipType: "yaml_tag_include",
-        isExternal: true,
+        ...this.tagIncludeClaim(includePath, ctx),
       }, (symbol.metadata?.tagLine as number) ?? line)
     }
   }
@@ -1275,7 +1285,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.addImport(ctx, tag.includePath, "yaml_tag_include", itemNode, true)
       this.addRelationship(ctx, current.parentPath, tag.includePath, ASTEngine.RelationshipType.Imports, {
         relationshipType: "yaml_tag_include",
-        isExternal: true,
+        ...this.tagIncludeClaim(tag.includePath, ctx),
       }, tag.line)
     } else if (tag?.shortName) {
       this.addRelationship(ctx, current.parentPath, tag.shortName, ASTEngine.RelationshipType.References, {
@@ -1294,7 +1304,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.addImport(ctx, tag.includePath, "yaml_tag_include", node, true)
       this.addRelationship(ctx, source, tag.includePath, ASTEngine.RelationshipType.Imports, {
         relationshipType: "yaml_tag_include",
-        isExternal: true,
+        ...this.tagIncludeClaim(tag.includePath, ctx),
       }, tag.line)
       return
     }
@@ -1427,7 +1437,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.Calls, {
           relationshipType: "yaml_workflow_call",
           evidenceClass: "structural",
-          isExternal: !local,
+          ...this.actionUseClaim(use.action, ctx),
           resolved: false,
           unresolvedReason: local ? "workflow-in-same-repository-not-indexed" : "workflow-in-another-repository",
         }, use.line)
@@ -1436,7 +1446,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!isWorkflow) {
         this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.References, {
           relationshipType: "yaml_action_use_unverified",
-          isExternal: true,
+          ...this.actionUseClaim(use.action, ctx),
           resolved: false,
           unresolvedReason: "file-shape-is-not-a-github-workflow",
         }, use.line, 0.7, "shape-not-workflow")
@@ -1449,7 +1459,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.addImport(ctx, use.action, "yaml_action_use", undefined, !use.action.startsWith("./") && !use.action.startsWith("docker://"), use.line)
       this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.Imports, {
         relationshipType: "yaml_action_use",
-        isExternal: !use.action.startsWith("./") && !use.action.startsWith("docker://"),
+        ...this.actionUseClaim(use.action, ctx),
       }, use.line)
     }
   }
@@ -2247,7 +2257,166 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return 1
   }
 
-  private documentName(filePath: string, documentIndex: number): string {
+  /**
+   * A document's PROJECT-RELATIVE directory chain, dot-joined, or "" when it cannot be known.
+   *
+   * Dot-joined rather than slash-joined on purpose: everything downstream treats a dotted
+   * string as a path (`Schema.X.properties`, `spec.containers[0]`), so a slash here would
+   * introduce a second, undeclared convention into the same key space.
+   *
+   * Empty when the root is unknown OR the file does not sit under it (a relative filePath
+   * against an absolute root, which is how several callers run). Refusing to guess is the
+   * point: a WRONG scope is worse than no scope, because the scope's whole job is to be the
+   * part of the identity that cannot collide.
+   */
+  private static documentDirScope(filePath: string, projectRoot?: string): string {
+    const rel = RealYamlAnalyzer.projectRelativePath(filePath, projectRoot)
+    if (rel === null) return ""
+    const cut = rel.lastIndexOf("/")
+    if (cut < 0) return ""
+    return rel.slice(0, cut).split("/").filter((s) => s.length > 0).join(".")
+  }
+
+  /** The file's own path relative to its project root, POSIX-normalised, or null when unknown. */
+  private static projectRelativePath(filePath: string, projectRoot?: string): string | null {
+    if (!projectRoot) return null
+    const root = projectRoot.replace(/\\/g, "/").replace(/\/+$/, "")
+    const file = filePath.replace(/\\/g, "/").replace(/\/+$/, "")
+    if (root.length === 0 || file === root || !file.startsWith(root + "/")) return null
+    return file.slice(root.length + 1)
+  }
+
+  /** Collapse `.`, `..` and duplicate separators; null when the path escapes its root. */
+  private static normalizePosix(p: string): string | null {
+    const parts: string[] = []
+    for (const seg of p.split("/")) {
+      if (seg.length === 0 || seg === ".") continue
+      if (seg === "..") {
+        if (parts.length === 0) return null
+        parts.pop()
+        continue
+      }
+      parts.push(seg)
+    }
+    return parts.length > 0 ? parts.join("/") : null
+  }
+
+  /**
+   * THE CANDIDATE SPELLINGS a tag include could name INSIDE this project.
+   *
+   * A `!include` path is resolved by the LOADER, and the corpus runs two live conventions — Hasura
+   * resolves it against the including FILE's directory (`metadata/databases/databases.yaml`
+   * includes `s1/functions/functions.yaml`, and that file exists beside it), while pyyaml-include's
+   * test data resolves it against the REPO ROOT (`tests/data/0.yaml` includes
+   * `tests/data/include.d/1.yaml`). Both were read off the corpus, not guessed, and an analyzer
+   * cannot know which loader will read the file. So it states both candidate spellings and the
+   * ARBITER decides: the gate's file claim verifies when any candidate is an admitted file of the
+   * project (script/m14/incoming-rule.ts, `FILE_CLAIM_KEY`), and is REFUTED when none is.
+   *
+   * Null means "no claim can be made", and it is returned rather than an empty list so the caller
+   * keeps the weaker `isExternal` marker it used before: a URL include, or a file whose project
+   * root this run does not know (every fixture that passes no root), is exactly the case where the
+   * candidate set would be a fabrication.
+   */
+  private relativePathCandidates(written: string, ctx: YamlContext): string[] | null {
+    if (written.includes("://")) return null
+    const rel = RealYamlAnalyzer.projectRelativePath(ctx.filePath, ctx.projectRoot)
+    if (rel === null) return null
+    const cut = rel.lastIndexOf("/")
+    const dir = cut >= 0 ? rel.slice(0, cut) : ""
+    const trimmed = written.startsWith("./") ? written.slice(2) : written
+    const rooted = trimmed.startsWith("/")
+    const out: string[] = []
+    const add = (p: string): void => {
+      const n = RealYamlAnalyzer.normalizePosix(p)
+      if (n !== null && !out.includes(n)) out.push(n)
+    }
+    add(rooted ? trimmed.slice(1) : dir.length > 0 ? `${dir}/${trimmed}` : trimmed)
+    if (!rooted) add(trimmed)
+    return out.length > 0 ? out : null
+  }
+
+  /**
+   * The claim a tag-include import carries. The file claim when the candidates are known (the
+   * project's own file list can confirm it), and the older `isExternal` marker otherwise — never
+   * both, because the rule routes the file claim first and an edge carrying both would be excused
+   * by the weaker one (`incoming-rule.ts`'s control plants exactly that pairing).
+   */
+  private tagIncludeClaim(includePath: string, ctx: YamlContext): Record<string, unknown> {
+    const candidates = this.relativePathCandidates(includePath, ctx)
+    return candidates !== null ? { importProjectFile: candidates } : { isExternal: true }
+  }
+
+  /**
+   * THE CLAIM A `uses:` TARGET CARRIES, decided by what the target actually names.
+   *
+   * Three shapes, measured over this corpus's workflow files rather than assumed: **7,265**
+   * remote actions (`actions/checkout@v6`, `r-lib/actions/setup-r@v2`), **501** local ones
+   * (`./ci-actions/.github/actions/setup` — a DIRECTORY), and **13** container images
+   * (`docker://hashicorp/terraform:1.9`).
+   *
+   *   docker://…            a container image                -> the REFERENCE claim (spelling)
+   *   ./… or ../…           a path in THIS project           -> the FILE claim (the project's list)
+   *   anything else         a pinned remote action reference -> the REFERENCE claim (spelling)
+   *
+   * The alternative for the first and third is what the lane did until now — `isExternal: true` on
+   * a target with no identifier-shaped owner — which the gate reads as UNVERIFIABLE, blocks a PASS
+   * on, and can say nothing else about. The alternative for the second is worse: it was marked NOT
+   * external and resolved to nothing, so a local action read as a broken edge. All three now carry
+   * a claim the arbiter can check, and a claim it can refute.
+   *
+   * When no project root is known the local shape keeps `isExternal: false` — the pre-existing
+   * behaviour — because a candidate set without a root would be a fabrication, and the file claim
+   * with no evidence is exactly what the rule's control refuses.
+   */
+  private actionUseClaim(action: string, ctx: YamlContext): Record<string, unknown> {
+    if (action.startsWith("docker://")) return { remoteRef: true }
+    if (action.startsWith("./") || action.startsWith("../")) {
+      const candidates = this.relativePathCandidates(action, ctx)
+      return candidates !== null ? { importProjectFile: candidates } : { isExternal: false }
+    }
+    return { remoteRef: true }
+  }
+
+  /**
+   * A document's IDENTITY, and it is scoped to the file.
+   *
+   * ## The defect this fixes
+   *
+   * The identity was the filesystem BASENAME, and a basename is not unique in a project.
+   * Measured on a 60-file stride of the yaml corpus: `hostports0.yaml` occurs **156 times**
+   * in one repository (Kubernetes' pod-security-admission testdata, once per API version
+   * and once per pass directory) and `Chart.yaml` **243 times** across the helm charts.
+   * Every member of every one of those documents was published under the same name —
+   * `hostports0.spec.containers[0]` had 156 declarations — so the `contains` edge asserting
+   * that containment could not be walked in either direction: the shared resolver resolves a
+   * bare name only under `HAVING COUNT(*) = 1`, and an exact-key match has to be unique too.
+   * The incoming gate read **78 ambiguous edges of 1,512** on that stride.
+   *
+   * ## The rule, and why it is the only sound one
+   *
+   * A file-scoped symbol's identity must contain the file. The basename is the ONE part of
+   * the path that is not unique; the project-relative directory chain is the part that is,
+   * and it is stable across machines in a way the absolute path is not. The BASENAME STAYS
+   * THE LAST SEGMENT, which is what keeps the leaf of every member path (`...v1.37.fail` +
+   * `hostports0` -> `hostports0`) unchanged for the store's leaf matching.
+   *
+   * ## Price, measured before the code was written
+   *
+   * `script/m14/incoming-gate.ts yaml yaml 60` with the identity scoped: **ambiguous 78 -> 0,
+   * unresolved 0 -> 0, resolved 1,432 -> 1,510** (+78, i.e. every previously-ambiguous edge
+   * now resolves and NO edge that resolved before stopped resolving). That last clause is the
+   * one the fleet worklist asked to be checked rather than assumed: it is the evidence that
+   * nothing in this corpus spells a document by its basename, so scoping the identity cannot
+   * break an incoming reference.
+   *
+   * ## What it does NOT do
+   *
+   * It does not make the BASENAME key unique — `hostports0` is still published by 156 files,
+   * because the basename is the readable name a human uses. It makes the QUALIFIED PATH
+   * unique, and that path is what `contains` emits and what strategy 1 matches exactly.
+   */
+  private documentName(filePath: string, documentIndex: number, projectRoot?: string): string {
     const slash = filePath.lastIndexOf("/")
     const base = slash >= 0 ? filePath.slice(slash + 1) : filePath
     let stem = base
@@ -2257,7 +2426,9 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     else if (lower.endsWith(".yaml")) stem = base.slice(0, -5)
     else if (lower.endsWith(".yml")) stem = base.slice(0, -4)
     stem = stem.trim() || "document"
-    return documentIndex === 1 ? stem : `${stem}#${documentIndex}`
+    const scope = RealYamlAnalyzer.documentDirScope(filePath, projectRoot)
+    const scoped = scope.length > 0 ? `${scope}.${stem}` : stem
+    return documentIndex === 1 ? scoped : `${scoped}#${documentIndex}`
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {

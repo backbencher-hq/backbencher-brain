@@ -2405,6 +2405,28 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
      * in production, which is recorded as a known limitation rather than papered over.
      */
     overrideCompanionVisibility?: Map<string, Map<string, string>>
+    /**
+     * THE PROJECT ROOT the file being parsed belongs to. ADDITIVE and optional: absent
+     * means "this caller does not know which project this file is in", which is the
+     * behaviour of every analyzer before this field existed.
+     *
+     * It exists because of a defect class the incoming gate named and the yaml lane
+     * measured: a FILE-SCOPED symbol published under its filesystem BASENAME collides
+     * with every same-named file in the same project. `hostports0.yaml` occurs 156 times
+     * in one repo and `Chart.yaml` 243 times, and every member of those documents
+     * (`hostports0.spec.containers[0]`) was therefore a name with 156 declarations — so a
+     * `contains` edge asserting containment could not be walked in either direction. The
+     * gate read 78 such edges for yaml on a 60-file stride; with the document identity
+     * scoped by its project-relative directory chain the same stride reads 0 ambiguous,
+     * 0 unresolved, and +78 resolved.
+     *
+     * A file-scoped identity is the ONLY spelling that can be unique here, and uniqueness
+     * requires knowing where the file sits in its project. The absolute path cannot be
+     * used: it differs per machine, so a name derived from it would differ per machine
+     * too. Supplied by `pool-worker.ts` (which receives it in `parse_batch`) and by
+     * `run-fixtures.ts`/the differential for the callers that need to measure it.
+     */
+    projectRoot?: string
     [key: string]: any
   }
 

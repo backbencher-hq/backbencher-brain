@@ -1617,7 +1617,14 @@ process.on("message", async (msg: any) => {
       if (indexCache === null) return undefined
       const ext = extnameOf(filePath)
       const built = indexCache.get(ext)
-      return built === undefined ? undefined : { projectIndex: built }
+      if (built === undefined) return undefined
+      // M60 yaml lane (2026-10-09): `projectRoot` rides the same context as the index, and
+      // for the same reason — a per-file analyzer cannot answer a question about where the
+      // file sits WITHOUT being told. `projectPath` is already in the `parse_batch` message
+      // (`pool-worker.ts:1574`) and was until now passed only to `parseFile`'s second
+      // argument, where no analyzer could see it. Additive: a caller that supplies no root
+      // gets exactly the pre-existing behaviour.
+      return { projectIndex: built, projectRoot: String(projectPath ?? "") || undefined }
     }
     // 45s per-file self-timeout; env-configurable (BB_FILE_TIMEOUT_MS) so
     // deterministic crash/timeout fixtures die fast (M21.W1).

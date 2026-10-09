@@ -665,6 +665,93 @@ analyzer, and 0/0 in both directions is what a fitted referee looks like.
 - Review: `reviews/yaml/master-review.md`, `reviews/yaml/research-and-plan.md`
 - Docs: this file
 
+## M60 INCOMING GATE, PASS 1 — the document identity scoped to its file (2026-10-09)
+
+The incoming gate read this lane as **78 ambiguous + 0 unresolved of 1,512 edges** on a 60-file
+stride, and the cause was one function. A document's identity was its filesystem BASENAME, and a
+basename is not unique in a project: `hostports0.yaml` occurs **156 times** in one repository
+(Kubernetes' pod-security-admission testdata, once per API version and once per pass directory) and
+`Chart.yaml` **243 times** across the helm charts. Every member of every one of those documents was
+published under the same string — `hostports0.spec.containers[0]` had 156 declarations — so a
+`contains` edge asserting that containment could not be walked in either direction: the shared
+resolver resolves a bare name only under `HAVING COUNT(*) = 1`, and an exact-key match has to be
+unique too.
+
+### The rule
+
+A file-scoped symbol's identity must contain the FILE. The basename is the one part of a path that
+is not unique; the project-relative directory chain is the part that is, and it is stable across
+machines in a way the absolute path is not. The basename STAYS THE LAST SEGMENT — which is what keeps
+the leaf of every member path unchanged for the store's insert-time leaf matching — and the chain is
+DOT-joined, because everything downstream already treats a dotted string as a path and a slash would
+introduce a second convention into the same key space. With no root known the identity falls back to
+the basename, so every fixture that passes no root asserts exactly what it asserted before.
+
+### What had to change to make it possible
+
+An analyzer is handed a file, not a project, so the root had to reach it. `AnalyzeContext` gained
+`projectRoot` (additive and optional, like `projectIndex` before it); `pool-worker.ts` fills it from
+the `projectPath` already present in its `parse_batch` message; the in-process path in
+`parallel-indexer.ts` passes it too; and `script/m14/incoming-gate.ts` — which had been handing the
+analyzer `dirname(f)`, a project the gate does not measure — now hands it `repoOf(f)`, the same
+repository the verdict resolves against.
+
+### Price, measured before the change was written
+
+| instrument | before | after |
+|---|---|---|
+| `incoming-gate.ts yaml yaml 60` | 78 ambiguous + 0 unresolved of 1,512 (FAIL) | **0 ambiguous + 0 unresolved of 1,512; resolved 1,432 -> 1,510** |
+| verdict reason | the ambiguity | only the 2 file-path `imports` claims (below) |
+
+The +78 with **zero movement in `unresolved`** is the clause the fleet worklist asked to be checked
+rather than assumed: it is the evidence that nothing in this corpus spells a document by its
+basename, so scoping the identity cannot break an incoming reference. Measured twice — once with a
+scratch heuristic scoped by the last two directories (0 ambiguous, 0 unresolved, +78), then with the
+shipped rule deriving the full chain from the real project root (identical numbers) — because a
+heuristic that happens to clear one corpus is not the same as a rule.
+
+### The remaining blocker is NOT this lane's, and it is the interesting half
+
+Two `imports` edges remain — both `!include <path>` tag applications, e.g.
+`functions: !include "s1/functions/functions.yaml"` in Hasura's metadata testdata. Their target is a
+FILE PATH with an extension, and the gate's rule set has **no bucket that can accept one**:
+
+- an external claim is verified by looking up the target's OWNER, and `targetOwner` of
+  `s1/functions/functions.yaml` is `s1/functions/functions` — not identifier-shaped, so the claim is
+  UNVERIFIABLE (`script/m14/incoming-rule.ts:314-325`);
+- a declared cause (`baseBeyondRunScope`) is accepted only when the reason is itself an identifier
+  AND equals the target's owner, so a path is REFUTED rather than declared (`incoming-rule.ts:372-378`);
+- the project-facts claim verifies `package:` and `dart:` shapes only (`verifyImportClaim`).
+
+So a lane that emits file-path imports cannot PASS, whatever it does — the gate is missing the
+verification, not the lane missing a rule. The edge itself is real and load-bearing:
+`src/intelligence/analysis/dependencies.ts` reads `imports` edges for file-to-file dependencies
+precisely because `brain_import.resolved_symbol_id` is routinely null. Deleting the edge to buy a
+verdict would hide a dependency, and marking it external would be a claim the population cannot
+check — which is what the gate's third bucket exists to make visible rather than to swallow.
+
+The fix belongs in the shared rule: a path-shaped claim verified against `ProjectFacts.files` (which
+the gate already builds per repository). It is priced here and left unbuilt because it is a
+fleet-level change and every lane with a file-path import is behind the same wall.
+
+### Commands
+
+```
+npx tsx script/m14/incoming-gate.ts yaml yaml 60        # 0 ambiguous, 0 unresolved, 2 ext?
+npx tsx script/m14/run-fixtures.ts yaml                 # no regressions
+npx tsc --noEmit                                        # clean
+```
+
+### Recorded conflict
+
+`src/ast/real-css-analyzer.ts:2098-2104` declines exactly this class on the ground that "the store
+binds by name and a disambiguator invented here would be a second, invented naming convention". The
+ruling is not wrong about the store, but it is a claim about INCOMING references spelling basenames,
+and for this lane that is measurably false (0 unresolved after scoping). The convention is therefore
+proposed here as a fleet decision rather than assumed: if it is adopted, css/bash/html/javascript
+publish the same shape and their counted `relative-ambiguous-basename` classes become 0 for the same
+measured price; if it is rejected, this lane's change stands alone and the conflict is on the record.
+
 ## Issue
 
 M14.7 / M60 / M49 #286. Closes the YAML analyzer wave: 24 measured defect classes, grammar

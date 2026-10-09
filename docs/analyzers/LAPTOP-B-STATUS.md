@@ -1368,5 +1368,53 @@ the exact rows and the experiments, not edited.
   type-inference wall, and the honest answer there is "not known" rather than a guess. Two store-wide
   defects remain reported-and-unfixed (the rank deciding rows with no published receiver, pinned by name so
   it cannot drift silently; and re-store row loss at `parallel-indexer.ts:2928-2929`) — the second is next,
-  and it is the absence-shaped failure rather than the false-claim-shaped one this arc removed.
+  and it is the absence-shaped failure rather than  the false-claim-shaped one this arc removed.
+- **fsharp — DECLARED DONE (2026-10-09).** The declaration is at the end of `docs/analyzers/real-fsharp-analyzer.md`,
+  written as eight exit criteria each with the command that shows it. In one line: every emitted type is compared
+  against truth (`5386/5386`, un-audited column empty — the last two, `imports` and `uses`, got oracle arms in
+  pass 19, and `script/m60/rel-type-coverage-gate.ts` now prints **no fsharp row at all**), the differential agrees
+  on two draws (99.9% covered; the residual is `calls` — no calls oracle exists for this language, declared — and
+  `overrides`' bare-target spelling when the base is not in the same file, also declared), the oracle has **zero
+  imports** so independence is structural rather than promised, the fsharp mutants are 36/36 caught, fixtures are
+  15/15 with `no regressions`, the project index is registered AND read (600 refined edges on `Argu`, 471 of them
+  attached to a symbol), and what is NOT resolved carries a reason and a `closes_when`. The part worth keeping is
+  that pass 19's own claim is FALSIFIABLE: disabling the two arms makes the harness's own guard fire —
+  `COMPARED WITH NO TRUTH: imports (115 comparable, 0 truth), uses (44 comparable, 0 truth)` — because a label
+  compared against nothing reads from the outside exactly like a label with nothing wrong, and that is the
+  asymmetry cost this programme four `contains` losses. NOT claimed: that every edge resolves (59.1% of the
+  non-file classes need a CLAIM rather than a wider index — the one candidate rule was priced at 72% refuted and
+  refused), that the graph is complete (`.fsi`/`.fsx` excluded from the incoming key space by decision, 604
+  zero-symbol files = 123 of 150,114 unresolved edges), or that the incoming gate PASSES — its FAIL reason is the
+  fleet's `#` binding-separator contract, which F# hits only because its backtick identifiers legally contain `#`.
+  Two store-wide defects remain reported-and-unfixed (the insert-time leaf lookup, which makes every lane's
+  qualification work invisible — 274 of 274 dotted `calls` attached by leaf, 0 by exact qname — and re-store row
+  loss at `parallel-indexer.ts:2928-2929`). Next reachable work is ranked by `docs/analyzers/INCOMING-WORKLIST.md`:
+  **yaml** is 20 ambiguous edges and 0 unresolved from a PASS, and json (22,256 edges) and sql sit behind the SAME
+  root cause — a module symbol published under its basename, colliding across files.
+- **yaml — the basename collision, fixed and measured (2026-10-09).** The incoming gate read the lane at
+  **78 ambiguous + 0 unresolved of 1,512 edges** on a 60-file stride, and the cause was ONE function: a
+  document's identity was its filesystem basename. A basename is not unique in a project — `hostports0.yaml`
+  occurs **156 times** in one repo (Kubernetes pod-security-admission testdata) and `Chart.yaml` **243 times** —
+  so `hostports0.spec.containers[0]` had 156 declarations and the `contains` edge asserting that containment
+  could be walked in neither direction. Scoping the identity by the file's PROJECT-RELATIVE directory chain
+  (basename last, so the store's leaf matching is unchanged; dot-joined, so no second path convention enters
+  the key space) takes the gate to **0 ambiguous, 0 unresolved, resolved 1,432 → 1,510**. The +78 with ZERO
+  movement in `unresolved` is the clause the fleet worklist asked to be checked rather than assumed: it is the
+  evidence that nothing in this corpus spells a document by its basename. It needed one additive field
+  (`AnalyzeContext.projectRoot`, filled by the worker from the `projectPath` it already received) and the gate
+  handing the analyzer the repository it actually resolves against (`repoOf(f)`, where it had been passing
+  `dirname(f)` — a project the verdict does not measure). Measured twice: with a scratch heuristic scoped by the
+  last two directories, then with the shipped rule deriving the full chain from the real root — identical
+  numbers, because a heuristic that clears one corpus is not a rule. The lane's remaining verdict reason is
+  **2 `!include <path>` `imports` edges, and that is a GATE gap rather than a lane defect**: a path-shaped
+  target has no bucket (an owner claim needs an identifier-shaped owner, a declared cause needs an
+  identifier-shaped reason EQUAL to the target's owner, and the project-facts claim verifies only `package:`
+  and `dart:` shapes), so no lane emitting file-path imports can PASS whatever it does. The edge is real —
+  `dependencies.ts` reads `imports` for file-to-file dependencies precisely because `resolved_symbol_id` is
+  routinely null — so deleting it to buy a verdict would hide a dependency. The shared fix (a path claim
+  verified against the project's own file list, which the gate already builds per repository) is priced in the
+  lane doc and not yet built. `real-css-analyzer.ts:2098-2104` declines this same convention on the ground that
+  a per-lane disambiguator would be invented; the conflict is on the record with the measurement that
+  distinguishes the two cases (css's premise is about incoming references spelling basenames, which for yaml
+  is measurably false), and adopting it fleet-wide would clear css/bash/html/javascript for the same price.
 - Zero regexes: **yes** (18 → 0; laptop A's handoff records they have not matched this).
