@@ -461,10 +461,29 @@ export function targetOwner(tgt: string): string | null {
  *   REFUTED    the key space DOES publish the owner. The claim "this names something outside
  *              the corpus" is then false about the owner, and the edge is reported as what
  *              it is: unresolved. It is never counted clean.
- *   UNVERIFIABLE  the target has no identifier-shaped owner to look up (a module URI such
- *              as `package:flutter/material.dart:*`, or a bare unqualified name). The index
- *              cannot confirm or deny, so this is a THIRD bucket — visible, counted, and
- *              deliberately not merged into either of the other two.
+ *   UNVERIFIABLE  the target has nothing identifier-shaped to look up (a module URI such
+ *              as `package:flutter/material.dart:*`, a path, or a member spelling like
+ *              `operator ==`). The index cannot confirm or deny, so this is a THIRD bucket —
+ *              visible, counted, and deliberately not merged into either of the other two.
+ *
+ *              A BARE UNQUALIFIED NAME USED TO LAND HERE, AND THAT WAS WRONG. The old rule
+ *              required a DOTTED owner (`targetOwner` = everything before the last dot), so
+ *              a target with no dot could never be verified — and since a PASS requires
+ *              `externalUnverified === 0`, a PASS was UNREACHABLE for every lane whose
+ *              targets are bare names, however honest its marking. Three lanes proved it
+ *              independently in one session: php (2,478 of 2,483 unresolved targets have no
+ *              dot — 2,321 bare, 157 backslash-qualified), bash (every command is a bare
+ *              name), fsharp. The lane cannot fix that by marking differently; the rule had
+ *              to be fixed.
+ *
+ *              A bare name IS checkable, and by the same fact the owner lookup uses: the key
+ *              space counts a symbol under BOTH its `name` and its `qualifiedName`
+ *              (incoming-gate.ts `countKey`), so "does any declaration carry this name" is a
+ *              question the population answers directly. Note what this can and cannot do:
+ *              the claim is consulted only where `decls === 0` (classifyEdge), so for a bare
+ *              target the direct lookup returns 0 by construction — this makes VERIFIED
+ *              REACHABLE, it can never turn a resolved edge into anything else, and it cannot
+ *              manufacture a REFUTED. The path/URI case is untouched and still unverifiable.
  *
  * Calibrated on this programme's own record: `docs/analyzers/INCOMING-WORKLIST.md` says an
  * unmarked external "counts against a lane, because a genuinely-external target and a
@@ -476,7 +495,13 @@ export function verifyExternalClaim(
   tgt: string,
 ): "externalVerified" | "externalRefuted" | "externalUnverified" {
   const owner = targetOwner(tgt)
-  if (owner === null) return "externalUnverified"
+  // NO DOTTED OWNER: ask about the TARGET ITSELF when it is a plain identifier, and stay
+  // unverifiable when it is not (a path or URI cannot be a published symbol's name, so a
+  // lookup returning 0 would prove nothing about the claim).
+  if (owner === null) {
+    if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(tgt)) return "externalUnverified"
+    return (declCount.get(tgt) ?? 0) > 0 ? "externalRefuted" : "externalVerified"
+  }
   // `:`, `/` or whitespace means the owner is not an identifier — a URI scheme, a path, or
   // a member spelling like `operator ==`. No published symbol can be keyed by it, so a
   // lookup would return 0 for a reason that has nothing to do with the claim.
@@ -492,7 +517,7 @@ export type Classified = {
   kinds: string
   /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
    *  mechanism that produced the number, not only the number. */
-  verifiedBy?: "owner" | "projectFacts" | "binding" | "spelling"
+  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling"
 }
 
 /**
@@ -567,7 +592,16 @@ export function classifyEdge(
       return { outcome, decls, kinds: kindText, verifiedBy: outcome === "externalVerified" ? "projectFacts" : undefined }
     }
     const outcome = verifyExternalClaim(declCount, tgt)
-    return { outcome, decls, kinds: kindText, verifiedBy: outcome === "externalVerified" ? "owner" : undefined }
+    // WHICH MECHANISM CONFIRMED IT, kept apart on purpose. A dotted target is verified
+    // through its OWNER; a bare identifier through the TARGET itself (see
+    // verifyExternalClaim). Sharing one label would let a control for one mechanism pass
+    // while the other is broken — the failure this file's reference-spelling counter was
+    // added to stop, recorded at `verifiedByRefSpelling` in incoming-gate.ts.
+    const viaTarget = targetOwner(tgt) === null
+    return {
+      outcome, decls, kinds: kindText,
+      verifiedBy: outcome === "externalVerified" ? (viaTarget ? "target" : "owner") : undefined,
+    }
   }
   if (decls > 1) {
     return { outcome: (kindSet?.size ?? 0) > 1 ? "ambBoth" : "ambDeclOnly", decls, kinds: kindText }

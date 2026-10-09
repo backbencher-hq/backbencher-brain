@@ -811,6 +811,7 @@ function selfTest(): { ok: boolean; failures: string[] } {
     "AbsentThing.build",              // owner not published -> verified
     "Object.hashCode",                // owner published     -> REFUTED
     "package:flutter/material.dart:*", // no identifier owner -> unverified
+    "NoSuchBareThing",                // BARE identifier, unpublished -> verified via the TARGET
   ])
   // The project's own facts, planted here exactly as `projectFactsForDart` builds them from a
   // real checkout: one package it declares, one SDK library it carries, one path it admits.
@@ -833,6 +834,10 @@ function selfTest(): { ok: boolean; failures: string[] } {
     causeDeclared: 0, causeRefuted: 0,
   }
   let verifiedByOwner = 0
+  // The bare-name path is a SECOND mechanism producing `externalVerified`, and it gets its own
+  // counter for the same reason `verifiedByRefSpelling` exists: one counter for two mechanisms
+  // reports a bug in whichever mechanism it happens to assert about.
+  let verifiedByTarget = 0
   let verifiedByFacts = 0
   let verifiedBySpelling = 0
   // A SEPARATE COUNTER for the reference claim's spelling checks. Sharing one counter split the
@@ -843,10 +848,16 @@ function selfTest(): { ok: boolean; failures: string[] } {
   for (const t of [
     "alpha", "beta", "gamma", "delta",
     "AbsentThing.build", "Object.hashCode", "package:flutter/material.dart:*",
+    // Added WITH the bare-name path, not after it: a plant that is in `ownerClaims` but
+    // missing from this list is never classified, so the counter it feeds stays 0 and the
+    // assertion below fails — which is how this omission was caught, by the gate refusing
+    // to report any lane rather than by a reviewer noticing.
+    "NoSuchBareThing",
   ]) {
     const c = classifyEdge(declCount, kinds, t, ownerClaims.has(t) ? { kind: "owner" } : null)
     got[c.outcome]++
     if (c.verifiedBy === "owner") verifiedByOwner++
+    if (c.verifiedBy === "target") verifiedByTarget++
   }
   for (const [t, withFacts] of factClaims) {
     const c = classifyEdge(declCount, kinds, t, { kind: "projectFacts" }, withFacts ? facts : undefined)
@@ -1004,11 +1015,12 @@ function selfTest(): { ok: boolean; failures: string[] } {
   // marked edge) and the refuted count drops to 0 and fails the control — which is the only
   // reason the number it prints can be believed.
   // 3 verified: the absent owner, and the two project-facts claims the project does not contain.
-  // THE ARITHMETIC IS THE ASSERTION, so it is written out rather than implied. 7 verified:
+  // THE ARITHMETIC IS THE ASSERTION, so it is written out rather than implied. 8 verified:
   // 1 owner (`AbsentThing.build`) + 2 project-facts package/SDK + 1 file claim verified on its
   // second candidate + 1 file claim verified by DIRECTORY prefix + 2 reference claims verified by
-  // SPELLING (a remote action and a docker image).
-  if (got.externalVerified !== 7) failures.push(`control: expected 7 verified external claims, got ${got.externalVerified}`)
+  // SPELLING (a remote action and a docker image) + 1 BARE IDENTIFIER (`NoSuchBareThing`, verified
+  // through the target itself — the path that makes a PASS reachable for bare-name lanes).
+  if (got.externalVerified !== 8) failures.push(`control: expected 8 verified external claims, got ${got.externalVerified}`)
   // 6 refuted: a published owner, a declared package, an SDK library the project carries, a file
   // claim with no admitted candidate, a directory claim nothing sits under, and a reference claim
   // whose target IS a published declaration.
@@ -1025,6 +1037,28 @@ function selfTest(): { ok: boolean; failures: string[] } {
   // the last three: an unchecked claim must never read clean, and a lane must not be able to buy a
   // PASS by marking an edge with a claim whose evidence the run never built or the spelling denies.
   if (got.externalUnverified !== 5) failures.push(`control: expected 5 unverifiable external claims, got ${got.externalUnverified}`)
+  // THE BARE-TARGET PATH, asserted in all three directions. It exists because a PASS was
+  // UNREACHABLE for every lane whose targets are bare names (php: 2,478 of 2,483 unresolved
+  // targets have no dot; bash: every command is a bare name), and since a PASS requires
+  // `externalUnverified === 0`, honest marking could never get those lanes there.
+  if (verifyExternalClaim(declCount, "NoSuchBareThingAtAll") !== "externalVerified") {
+    failures.push("control: a bare identifier the key space does not publish did not verify as external")
+  }
+  if (verifyExternalClaim(declCount, "alpha") !== "externalRefuted") {
+    failures.push("control: a bare identifier the key space DOES publish was not refuted — the direct lookup is not reading the key space")
+  }
+  if (verifyExternalClaim(declCount, "package:flutter/material.dart:*") !== "externalUnverified") {
+    failures.push("control: a URI-shaped target verified as external — a path is not a published name and a lookup proves nothing about it")
+  }
+  if (verifyExternalClaim(declCount, "./vendor/thing.php") !== "externalUnverified") {
+    failures.push("control: a PATH-shaped target verified as external")
+  }
+  if (verifiedByTarget !== 1) {
+    failures.push(
+      `control: expected 1 external claim confirmed through the TARGET itself, got ${verifiedByTarget} — ` +
+      `the bare-name path is not labelled apart from the owner path, so a broken one would pass`,
+    )
+  }
   if (verifiedByOwner !== 1 || verifiedByFacts !== 4 || verifiedByRefSpelling !== 2) {
     failures.push(
       `control: expected the 7 verified claims to split 1 owner / 4 project-facts / 2 reference ` +
