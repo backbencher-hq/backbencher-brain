@@ -1285,4 +1285,26 @@ the exact rows and the experiments, not edited.
   asserted absent). Note that this census — like every number in the bullets above — measures the
   ANALYZER's endpoints; the store's own binding of those rows is a separate layer, and round 6 is
   the first instrument this lane has that reads it.
+- **php round 7 (PHPD41): the hierarchy never crossed the worker boundary.** Round 6 left the owner
+  pass's ancestor stage "load-bearing" and the column it reads was NULL on **0 of 4,940** class-like
+  symbols in a production-path store — while the analyzer published `metadata.superTypes` on every
+  one it could resolve and the lane's roundtrip fixture proved the COLUMN writable. The drop was
+  `src/ast/pool-worker.ts`'s per-symbol metadata allowlist (CSS + markdown + four bash keys +
+  `isDeclaration`, under its own rule "only keys a READER CONSUMES belong here"), which did not name
+  `superTypes`; every instrument in the lane calls `ASTEngine.parseFile` and so structurally cannot
+  see the seam (MD-5's "unpinnable", not "unpinned"). `script/m60/php-store-pipeline-seam.ts` is the
+  missing case: it indexes through `indexProjectParallel` and asserts analyzer-carried vs
+  store-carried per fact. It read **8 carried / 0 stored** before the fix and 8/8 after; removing
+  exactly the one widened line returns it to 0 and FAIL. Full-population effect, on one frame and one
+  commit with the line as the only variable: `classLikeWithSuperTypes` **0 → 3,805 of 4,940**,
+  resolving distinct parent names **0 of 0 → 221 of 332**, phase-B `inheritedResolved` **0 → 3,506**,
+  `mislandings repaired` **4,698 → 5,964** — and `override-retarget.ts`, which returned at its first
+  line for every php store ever built, now runs. **A 537-row drop in `resolved:owner` looked like a
+  regression and is not this change**: a third run with the line removed reproduced the committed
+  artifact only on that key, proving the baseline had drifted across ~3.5h of indexer commits
+  (`4c072d50b`, `028be23b7`, `886bfb069`) — so the census artifact's `resolved:owner`/`null:*` split is
+  not comparable across 2026-10-08 12:30, and every key this round claims is, because OFF and ON share
+  a commit. Not claimed: that the store's own binding improves (phase B gives the pass its whole
+  input; the insert-time ranking still claims those rows first — that is the ranking round's number),
+  nor that 3,805 is a shortfall (NULL is the honest "declares no supertypes").
 - Zero regexes: **yes** (18 → 0; laptop A's handoff records they have not matched this).

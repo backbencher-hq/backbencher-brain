@@ -664,7 +664,7 @@ export function nameTheSymbolRule(s: any, lang: string): string {
  * call.
  */
 const JS_FAMILY_LANGUAGES = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
-const CSS_FAMILY_LANGUAGES = new Set(["css", "scss", "less"])
+const CSS_FAMILY_LANGUAGES = new Set(["css", "scss", "sass", "less"])
 const NOISE_TARGET_FAMILIES: Record<string, Set<string>> = {}
 for (const n of [
   "namedChild", "childForFieldName", "namedChildren", "childCount", "namedChildCount",
@@ -1217,6 +1217,43 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             if (m.isImplicitBinding === true) out.isImplicitBinding = m.isImplicitBinding
             if (typeof m.bindingSite === "string") out.bindingSite = m.bindingSite
             if (typeof m.isArray === "boolean") out.isArray = m.isArray
+
+            // ── the type hierarchy, M60/php (and every other lane that
+            // declares one) ──────────────────────────────────────────────────
+            // SDJ-8 writes this key into `brain_symbol.super_types` at
+            // `parallel-indexer.ts` and the comment there says it is "published
+            // by every analyzer on symbol.metadata.superTypes and discarded
+            // here". It was right about the discard, and the discard was not at
+            // that binding: it was HERE, in the allowlist above, which did not
+            // name the key. So the binding read `undefined` for every symbol in
+            // every language and wrote NULL for all of them, and a column that
+            // SDJ-8 documents as the hierarchy a consumer walks was, on real
+            // projects, empty.
+            //
+            // Measured on php, through the production path, with
+            // `script/m60/php-store-pipeline-seam.ts`: the analyzer published
+            // `metadata.superTypes` on 8 of 8 class-like symbols in two fixture
+            // sources and the store held the column on **0** — while the same
+            // two sources' `extends`/`implements` EDGES (11 rows) arrived
+            // intact. On a real project the count was 0 of 4,940. That gap is
+            // not a rendering detail: `override-retarget.ts` opens with
+            // `if (supertypes.size === 0) return out`, so a NULL column means the
+            // pass never runs and php has no project-wide hierarchy at all — not
+            // a thin one, none — and the `owner+inherited` resolution lever the
+            // ambiguity census priced at 24,223 endpoints cannot be implemented
+            // by any downstream consumer until the column carries the fact.
+            //
+            // The rule above still holds, and it is why this is a one-key
+            // widening rather than "forward metadata": the reader is
+            // enumerable and there is exactly one of it
+            // (`parallel-indexer.ts`'s INSERT). Unlike the CSS/markdown/bash
+            // blocks this key is NOT language-scoped — kotlin, scala, php, go
+            // and the rest all publish it under this exact name — so a
+            // per-language switch here would only move the drop somewhere
+            // nobody looks. Carried only when non-empty, mirroring the store's
+            // own emptiness test: `[]` and absent are one fact downstream, and
+            // the store already writes NULL for both.
+            if (Array.isArray(m.superTypes) && m.superTypes.length > 0) out.superTypes = m.superTypes
             return Object.keys(out).length > 0 ? out : undefined
           })(),
           snippet,

@@ -2631,3 +2631,134 @@ asserting they are absent. The round-5 finding stands beside it — re-storing t
 cross-file relationship row permanently (`parallel-indexer.ts:2928-2929`). Both are reported with the
 exact rows and the experiments that reproduce them; neither is edited here, and the pass added in this
 round is written so that fixing either one needs no change to it: it fills NULL and nothing else.
+
+## Round: the hierarchy never crossed the worker boundary — PHPD41 (2026-10-09)
+
+The round above ends with `brain_symbol.super_types` as the pass's ancestor channel and with the walk
+"load-bearing". It was load-bearing and it was EMPTY, and this round is that measurement.
+
+### 1. The measurement that started it
+
+A store built through the **production** path (5,094 files, 350,368 edges, whole admitted php
+population — `bun validation/m14/fixtures/php/store-resolution-census.mts --files 0`) reported:
+
+```
+hierarchy in store  0 of 4,940 class-like symbol(s) carry super_types
+                    0 of 0 distinct parent name(s) resolve to exactly one class-like symbol
+```
+
+Zero, and not because the analyzer declined to publish. `heritage-published.php` pins the payload on 8
+symbols and `store-heritage-roundtrip.mts` proves the COLUMN is writable — the two facts were true and
+the column was still NULL, which means the two instruments agreed about a layer neither of them reads.
+
+### 2. Where the fact died, and why no gate in this lane could see it
+
+`real-php-analyzer.ts` publishes `metadata.superTypes`; `parallel-indexer.ts` reads
+`symbol.metadata?.superTypes` and writes the column. Between them sits `src/ast/pool-worker.ts`'s
+per-symbol projection, whose `metadata` is a **narrow per-language allowlist** — CSS keys, markdown
+keys, four bash keys, `isDeclaration` — maintained under the file's own stated rule: *only keys a
+READER CONSUMES belong here*. `superTypes` was not on it, so the key was dropped for every symbol in
+every language and the reader read `undefined`.
+
+Every other instrument in this lane calls `ASTEngine.parseFile` (or `run-fixtures.ts`, which does),
+which returns the ANALYZER's object and never crosses the worker boundary. So the payload was pinned
+in one place and the column was proven writable in another, while the seam between them was covered by
+neither. `store-heritage-roundtrip.mts` did not drop the ball by oversight: it hand-builds its symbols
+and calls `storeResults`, which is already the far side. This is MD-5's shape exactly — the markdown
+lane recorded the same hole as *unpinnable* rather than *unpinned*, because the one instrument that
+CAN see the worker had no case for that language.
+
+Two consequences were measured, not assumed. `override-retarget.ts` opens with
+`if (supertypes.size === 0) return out`, so php's project-wide override retarget never ran — it could
+not, in any store, for any project. And `member-owner-resolution.ts`'s ancestor stage could not walk.
+
+### 3. The fix, and the gate written first
+
+`script/m60/php-store-pipeline-seam.ts` is the case that was missing: it indexes a php project through
+`indexProjectParallel` — the REAL pipeline, worker pool included — then reads brain.db and asserts,
+per fact, BOTH halves.
+
+- **A** — what the analyzer published (`ASTEngine.parseFile`, projection bypassed) against what the
+  store kept. `ANALYZER CARRIES / STORE DROPS` is the failure, named as a seam defect. Plus
+  exactness (the stored array is byte-identical to the analyzer's) and named absolute pins, so an
+  all-empty payload cannot pass.
+- **B** — every stored member named `persist` carries `Owner.persist` and no stored row carries the
+  bare name (the round-above identity fix, now pinned on the far side of the seam).
+- **C** — the `extends`/`implements` edges are present, so a zero in A can never be read as "the
+  analyzer emitted nothing".
+
+It was run BEFORE the fix and read `analyzer carries 8 · store carries 0` — the defect reproduced as a
+FAIL row rather than asserted from the source. The fix is one line plus the comment that earns it:
+`if (Array.isArray(m.superTypes) && m.superTypes.length > 0) out.superTypes = m.superTypes`, carried
+only when non-empty because `[]` and absent are one fact downstream (the store writes NULL for both).
+Deliberately NOT language-scoped: the reader is enumerable and there is exactly one of it, and kotlin,
+scala, go and the rest publish the same key under the same name, so a per-language switch would only
+move the drop somewhere nobody looks.
+
+**Falsifiability, run rather than claimed**: with that one line replaced by a comment the gate returns
+`store carries 0` and FAIL; restored, `8/8` and PASS.
+
+### 4. The population effect, and the method that separated it from someone else's
+
+The full-population census re-run is an A/B on one variable, and it needs a third run to be read
+honestly. `resolved:owner` fell by 537 while `null:receiver-name` rose by 537, which is the direction
+that means "rows the store had bound are no longer bound" — a regression shape, and not one this
+change can produce: nothing in the projection or the store NULLs a `target_symbol_id`, and
+`retargetCrossFileOverrides` only rewrites `overrides.target_external`. So the seam line was removed
+and the whole population re-run a third time:
+
+| key | committed (2026-10-08) | OFF-full (line removed) | ON-full (HEAD) |
+|---|---|---|---|
+| `classLikeWithSuperTypes` | 0 / 4940 | 0 / 4940 | **3805 / 4940** |
+| distinct parent names resolving | 0 of 0 | 0 of 0 | **221 of 332** |
+| `resolved:ancestor` | 0 | 0 | **2,176** |
+| `resolved:MISLANDED` | 4,813 | 4,813 | **6,114** |
+| `resolved:not-a-member` | 21,528 | 21,528 | **18,051** |
+| `resolved:owner` | 39,060 | **38,523** | 38,523 |
+| `null:receiver-name` | 79 | **616** | 616 |
+| `inheritedResolved` | 0 | 0 | **3,506** |
+| `putOnAncestor` | 0 | 0 | **3,506** |
+| `notDeclared` | 31,669 | 31,669 | **28,122** |
+| `ambiguousInChain` | 2,095 | 2,095 | **2,136** |
+| `mislandings repaired` | 4,698 | 4,698 | **5,964** |
+
+OFF-full and ON-full agree on `resolved:owner` and `null:receiver-name` to the digit, so those 537
+rows are NOT this change — the committed artifact predates ~3.5 hours of **indexer-side commits**
+(`4c072d50b`, `028be23b7`, `886bfb069`) and the baseline had drifted. That is a finding in its own
+right and it is recorded below rather than absorbed into this round's numbers: the census artifact's
+`resolved:owner`/`null:*` split is not comparable across that boundary, while every key this round
+claims IS comparable, because OFF and ON share a commit and a frame.
+
+The claim this round makes is therefore bounded and reproducible: on one frame, one corpus and one
+commit, the seam line is the only difference, and it moves the hierarchy from absent to present and
+the ancestor stage from structurally-zero to **3,506 rows**. `notDeclared` falls by 3,547 = the 3,506
+inherited plus the 41 `ambiguousInChain`, and the phase-A re-bucketing balances exactly
+(+2,176 ancestor + 1,301 MISLANDED = −3,477 not-a-member), which is what a coherent mechanism looks
+like rather than a number that moved.
+
+### 5. What this round does NOT claim
+
+- **NOT that the 3,506 rows are a resolution quality win in the store's own binding.** Phase B is the
+  owner channel *given its whole input* — the census clears every owner-carrying row to NULL and lets
+  the pass run. The store's insert-time ranking still claims those rows first, so the production
+  effect of the ancestor stage is limited to the NULLs the ranking left; how many stored rows actually
+  move is the ranking round's number, not this one's.
+- **NOT that 3,805 of 4,940 is a shortfall.** The other 1,135 class-like symbols either declare no
+  heritage or declare one the analyzer cannot resolve, and `heritage-published.php` pins ABSENT (not
+  `[]`) for exactly that case — `class InvalidArgumentException extends \InvalidArgumentException`
+  whose base is the class's own name. The column's NULL is its honest "declares no supertypes".
+- **NOT that the walk is sound on its own.** The ancestor stage keys on the bare `name` (round above,
+  §5), and 111 of 332 distinct parent names still resolve to more than one class-like symbol — the
+  pass declines those rather than picking, which is why 3,506 < the 24,223 the census priced.
+- **NOT that this was php-only.** The allowlist is one file shared by every language that publishes
+  `metadata.superTypes`; this round measured the php consequence because that is the lane with an
+  instrument pointed at the store.
+
+### 6. Gates re-run after the change
+
+`tsc` clean · **29/29 php fixtures** · **21/21 php mutants caught, 0 survived, clean baseline 0
+problems** (`bun validation/m14/fixtures/php/mutant-check.mts`) · differential `covered 100%
+MISSING=0 | unexplained=0 heuristic=0` on both pinned draws, hashes unchanged (`b1cc09a5008f9885`,
+`08ee2a6e64090e61` — the analyzer's output did not move, which is the point of a store-side fix) ·
+`php-oracle-independence` PASS · rel-type-coverage-gate: php in no un-audited row · orphan-endpoint
+PASS · `PHP_MUTANTS 21 WIRED` · the new seam gate PASS.
