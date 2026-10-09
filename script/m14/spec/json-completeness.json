@@ -54,7 +54,42 @@
   },
   "gap": {
     "description": "JSON has no names. A key is unique only WITHIN its object, and the store resolves relationship endpoints by name, so 64.54% of the lane's endpoints are ambiguous and 1.97% name no symbol. This is a property of the LANGUAGE, not a defect, and it is NOT closed by a store-side change: measured, name resolves 32.92% uniquely, qualifiedName 5.25%, and EITHER only 34.92% — the two indexes barely compose because `contains` sources are bare names while `references` sources are full paths, so the information is not present in the edge.",
-    "status": "DECISION FOR THE OWNER — not taken by this lane. Closing it needs the analyzer either to name an ambiguous endpoint by its path or to disambiguate duplicated symbol names after the walk. Measured in reviews/json/m60-closure.md section 7."
+    "status": "DECISION FOR THE OWNER — not taken by this lane. Closing it needs the analyzer either to name an ambiguous endpoint by its path or to disambiguate duplicated symbol names after the walk. Measured in reviews/json/m60-closure.md section 7.",
+    "_denominator": "THE APPLICABILITY DENOMINATOR, because `1/10` on the board's FIRED column is not this lane's contract. The firing instrument samples ONE corpus for this lane (shadcn-svelte, 2,349 JSON files of theme and config documents) where only `contains` fires. On a deterministic 400-file stride of the WHOLE admitted population (14,009 files across 153 repos) EIGHT labels are applicable and measured: contains 130,787 · references 895 · uses 212 · extends 200 · exports 37 · calls 5 · imports 1 · overrides 1, against implements 0 and instantiates 0 (`npx tsx script/m14/incoming-gate.ts json json 400`). Numerator (what fires) and denominator (what is applicable) therefore come from DIFFERENT instruments — the firing log and the gate's own per-label edge table — and the denominator shrinks only where a label is RULED with a corpus measurement, which is what JSON-G1 and JSON-G2 record. It is 8, not 1, and not 10: `calls` is the npm-script convention (215 invocations across 79 files) and `extends` is `allOf` composition, both of which this lane's own design_decision entries already rule on.",
+    "gaps": [
+      {
+        "id": "JSON-G1",
+        "severity": "ruled",
+        "label": "implements",
+        "missing": "`implements` is not emitted, and no JSON construct could carry it.",
+        "measured_size": "INSTRUMENT A: the wired grammar produced 13 distinct node types over a deterministic 400-file stride of the admitted population — string:185,057 · string_content:184,772 · pair:110,301 · number:37,288 · escape_sequence:33,302 · object:29,751 · array:16,362 · true:2,139 · false:1,370 · null:1,287 · document:400 · ERROR:23 · comment:15 — and NOT ONE of them declares a type, a clause or a member, which is what an interface relation needs at either end (`bun .tmp-probe/json-lane/json-grammar-probe.mts 400`). INSTRUMENT B: 0 `implements` edges of 132,138 emitted on the same stride. The lane's corpus audit reached the same verdict by a third route and says why: '`implements`/`instantiates` PASSED, and this time the pass is a measurement rather than an absence of looking: 3,245 composition-keyword occurrences classified by meaning' (design_decision BD-audit-rulings).",
+        "ruling": "RULED INAPPLICABLE. A JSON document states data, not types: there is no interface, no type declaration and no member clause, so an `implements` edge has no endpoint to name at EITHER end. Overturn: any node type in a future grammar that declares a type or a clause, or any emitted `implements` edge."
+      },
+      {
+        "id": "JSON-G2",
+        "severity": "ruled",
+        "label": "instantiates",
+        "missing": "`instantiates` is not emitted, and no JSON construct could carry it.",
+        "measured_size": "INSTRUMENT A: the same 13 node types over the same 400-file stride contain no call, no application, no `new` and no constructor — the grammar's whole vocabulary is values, containers and text (`bun .tmp-probe/json-lane/json-grammar-probe.mts 400`). INSTRUMENT B: 0 `instantiates` edges of 132,138 on that stride (`npx tsx script/m14/incoming-gate.ts json json 400`). Corroborated by the corpus audit's second half: 274 constructor-spelling keys classified by the VALUE's role, none of which constructs anything (design_decision BD-audit-rulings).",
+        "ruling": "RULED INAPPLICABLE. Construction is an EXPRESSION, and a JSON document has no expressions: every value is a literal or a container of literals. Overturn: any node type that evaluates an expression, or any emitted `instantiates` edge."
+      },
+      {
+        "id": "JSON-G3",
+        "severity": "open",
+        "node_type": "array",
+        "missing": "A document whose TOP-LEVEL value is an array publishes the same qualified identity TWICE when two elements share a nested key shape: `DictionaryInference[1].rec2.1` and its child `.a` are each published twice, so the `contains` and `overrides` edges that name them are ambiguous by declaration inside one file.",
+        "measured_size": "1 of 400 documents (`FSharp.Data/tests/FSharp.Data.Tests/Data/DictionaryInference.json`), 2 duplicated identities, 2 duplicated edges — and it is the WHOLE of the lane's ambiguous column at that scope: the 400-file gate reads 5 ambiguous edges (4 `contains` + 1 `overrides`), every one of them this file (`bun .tmp-probe/json-lane/json-dup-probe.mts 400`).",
+        "ruling": "OPEN, and deliberately not fixed in the round that found it: the array walk is the part of this analyzer with the most recorded defect history (the bracketed-index rule, the nested-array item name, the top-level-array offset), so a late edit to it would be a change made with no fixture for the shape. The shape is now measured and named, which is what a next pass needs."
+      },
+      {
+        "id": "JSON-G4",
+        "severity": "open",
+        "label": "imports/references file claim",
+        "missing": "A `$ref` naming a sibling FILE carries `metadata.importProjectFile` — the arbiter's file claim — on both its `imports` and its `references` edge, and the arbiter cannot verify it: `incoming-gate.ts:700` supplies the project's file facts only for a `projectFacts` claim, so a `projectFile` claim is classified with no facts and reads `externalUnverified`.",
+        "measured_size": "1 file-naming `$ref` on the 400-file stride (`hasura-engine/contrib/metadata-types/src/metadata-schemas/QueryCollectionsYAML.schema.json` -> `contrib/metadata-types/src/metadata-schemas/HasuraMetadataV2.schema.json`, a tracked file in the same project), and its two edges are the lane's entire `ext?` column. Corpus-wide there are 82 file-naming `$ref`s, 81 of which name a file that IS present (`bun .tmp-probe/json-lane/json-fileref-probe.mts 20000`).",
+        "ruling": "OPEN, ARBITER-SIDE. The lane cannot fix it — the claim is true and the candidate is the tracked path. The one-line change belongs to the gate (pass `facts` for `projectFacts` OR `projectFile`), which is why it is REPORTED rather than worked around: a lane that drops a true claim to make a column read cleanly is the defect this programme keeps paying for."
+      }
+    ]
   },
   "design_decision": {
     "description": "Each construct's ruling, with the evidence that makes it falsifiable. A prose justification alone is not accepted: script/m14/ontology-coverage-gate.ts re-measures every ruling and fails when a ruled type's construct actually occurs.",

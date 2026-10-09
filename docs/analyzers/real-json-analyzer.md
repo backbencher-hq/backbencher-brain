@@ -1485,3 +1485,124 @@ every json instrument imports, so the lane's denominator is stated once and the 
 re-deriving it. Until then, ratios **within** one instrument are sound (this lane's
 17,803 of 120,464 is self-consistent, and the A/B ran on a fixed file list) and ratios
 **between** instruments — this probe against the census table above — must not be quoted.
+
+## 2026-10-09 — the lane becomes READABLE, and the three defects that made it unreadable
+
+The board showed `json  1/10 · INCOMING FAIL ?/?/? · EXT CLM 9? · GAPS gaps≠array`. The `?/?/?` is
+not a zero and not a crash: the gate computed a full table and then returned a verdict branch whose
+reason string prints none of it. The cause was on the LANE side, three defects in the analyzer, and
+all three are now fixed and measured.
+
+### 1. Why the verdict printed no totals
+
+`incoming-gate.ts` has four verdict branches. Three name numbers (`N ambiguous + M unresolved of T
+edges`); the fourth — `bad === 0 && externalUnverified > 0` — names only the unverifiable claims.
+json landed in the fourth: **24,115 edges, 24,106 resolved, 0 ambiguous, 0 unresolved**, and 9
+external claims the arbiter could not reach. So the lane was too CLEAN to be legible, and the 9
+claims were the defect behind it.
+
+### 2. The 9 claims were a false claim, not an external dependency
+
+All nine came from ONE file — Kubernetes' vendored draft-04 meta-schema,
+`.../gnostic-models/jsonschema/schema.json` — whose `definitions.schemaArray.items` is
+`{ "$ref": "#" }`. `#` is the JSON-Schema ROOT POINTER, the most local reference a document can
+write, and two rules got it wrong for the same reason: they test `startsWith("#/")`, which a bare
+`#` fails.
+
+| rule | before | after |
+|---|---|---|
+| `referenceTarget` | `#` fell through to the raw string — a target no symbol can be named, so the edge named nothing | `#` resolves to `ctx.rootName`, the published identity of the document root |
+| the external marker | `isExternal: !refPath.startsWith("#/")` → `true`, a corpus claim about a pointer into the file's own document | `isExternal: !isLocalPointer(refPath)` → `false`; a pointer that names a location this document does not publish is a BROKEN pointer, not an external one (`reasonCode` already said so) |
+
+Measured after: `references` 29 of 29 resolved, `ext?` 0, and the verdict prints its totals again.
+**At the 60-file stride the lane now PASSES**: `VERDICT: PASS — every one of 24,115 edges ... resolves
+to exactly one declaration, or carries a claim the project confirms` (instrument self-test PASS).
+
+### 3. Escaped JSON Pointers did not bind
+
+`#/paths/~1w-e-i-r-d___n-a-m-e/get` names the key `/w-e-i-r-d___n-a-m-e`. `referenceTarget` joined the
+fragment with `replaceAll("/", ".")`, producing `…paths.~1w-e-i-r-d___n-a-m-e.get`, which matches
+nothing — 3 unresolved edges on a 400-file draw, all three from hasura's `example_oas5.json`. The
+fragment is now decoded **segment-wise** (RFC 6901: `~1` → `/`, `~0` → `~`) and only then joined, so
+a `/` inside a key survives as the key's own character — which is how the analyzer publishes it
+(`example_oas5.paths./w-e-i-r-d___n-a-m-e.get`). Measured after: all three bind to the exact
+published identity.
+
+### 4. The file-shaped `$ref`, the file claim, and a gate-side blocker
+
+A `$ref` naming a sibling FILE carries a path-shaped target, and a path can NEVER be verified by the
+arbiter's owner lookup — it would be an `ext?` claim forever. The arbiter has a claim kind for
+exactly this shape (`importProjectFile`, verified against the project's OWN admitted file list), so
+both edges of such a `$ref` now carry it, with the candidate computed from the referring file's
+project-relative directory and the specifier (folded, and `null` when folding escapes the project —
+a wrong candidate would be REFUTED, and a refutation counts against the lane exactly as an
+unresolved edge does). Corpus measurement: **82 file-naming `$ref`s, 81 name a file that is
+present**, 1 is a dangling vendored rekor schema.
+
+**It still reads `ext?`, and that is a GATE bug, not a lane one**: `incoming-gate.ts:700` supplies
+the project's file facts only for a `projectFacts` claim —
+
+```ts
+const facts = e.claim?.kind === "projectFacts" ? projectFacts?.get(e.repo) : undefined
+```
+
+— so a `projectFile` claim reaches `classifyEdge` with `facts === undefined` and returns
+`externalUnverified`. The gate's own control passes facts explicitly for the file claim
+(`incoming-gate.ts:869-883`), which is why the control is green while the live path cannot verify.
+One-line fix, arbiter-side: `…kind === "projectFacts" || …kind === "projectFile"`. Verified
+independently: the candidate `contrib/metadata-types/src/metadata-schemas/HasuraMetadataV2.schema.json`
+is a tracked file in that project.
+
+### 5. `exports` entry points were named by their bare key — 22 of 37 edges ambiguous
+
+The manifest pass emitted `exports -> main` / `-> .` / `-> ./sub` / `-> fixture-bin`: the KEY as
+written. Every `package.json` has a `main`, so on a 400-file draw **22 of the lane's 37 `exports`
+edges were ambiguous** (2-4 declarations each) — one edge attributed to N documents, the same
+defect the document-identity scoping closed for `contains`. The target is now the entry point's own
+position (`package.main`, `package.exports..`, `package.exports../sub`, `package.bin.fixture-bin`),
+which is exactly the `qualifiedName` the symbol table publishes and the same spelling `contains`
+uses; the fixture `json/manifest/package` pins the four new targets and FORBIDS the bare ones, the
+way that file already forbade the bare dependency target.
+
+### Measured after, both scopes
+
+| scope | edges | resolved | amb(decl) | unresolved | extOK | ext? | extFAIL | verdict |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| 60-file stride (before) | 24,115 | 24,106 | 0 | 0 | 0 | 9 | 0 | FAIL, no totals printed |
+| **60-file stride (after)** | 24,115 | **24,115** | 0 | 0 | 0 | **0** | 0 | **PASS**, totals printed |
+| 400-file stride (before fixes) | 132,138 | 132,106 | 27 | 4 | 0 | 1 | 0 | FAIL |
+| **400-file stride (after fixes)** | 132,138 | **132,131** | **5** | **0** | 0 | **2** | 0 | FAIL — 5 ambiguous + 0 unresolved, 2 unverifiable (the gate bug above) |
+
+`npx tsx script/m14/incoming-gate.ts json json 60` and `… json 400`. Firing is unchanged on the
+instrument's own corpus (`JSON_B 1 types fired, 120/120, contains:2425`), fixtures `--lang json`
+**17/17**, `tsc --noEmit` clean.
+
+### 6. The applicability denominator is 8, not 1 and not 10
+
+The firing instrument samples ONE corpus for this lane — shadcn-svelte, 2,349 JSON files of theme
+and config documents — where only `contains` fires. On a 400-file stride of the whole admitted
+population (14,009 files, 153 repos) EIGHT labels are applicable and measured: `contains` 130,787 ·
+`references` 895 · `uses` 212 · `extends` 200 · `exports` 37 · `calls` 5 · `imports` 1 ·
+`overrides` 1, against `implements` 0 and `instantiates` 0. So the numerator (what fires) and the
+denominator (what is applicable) come from different instruments, and only the two ruled labels
+shrink it — each with a corpus measurement, in `script/m14/spec/json-completeness.json`
+`gap.gaps` (JSON-G1, JSON-G2), where the lane's gap list is now an ARRAY the board can count
+(`GAPS 4` instead of `gaps≠array`). The other two entries are open and measured: JSON-G3 is the
+duplicate-identity defect below, JSON-G4 is the arbiter-side file-claim blocker.
+
+### 7. What is still open, named
+
+* **A duplicate published identity, 1 document in 400.** `FSharp.Data/tests/.../DictionaryInference.json`
+  is a top-level array whose two elements share a nested key shape, so `DictionaryInference[1].rec2.1`
+  and `.a` are each published TWICE. It is the whole of the lane's 400-file ambiguous column (5
+  edges: 4 `contains` + 1 `overrides`). Not fixed: the array walk carries the most defect history in
+  this analyzer, and the shape now has a name and a measurement instead of a late guess
+  (`bun .tmp-probe/json-lane/json-dup-probe.mts 400`).
+* **`completeness-inventory.ts --lang json` refuses the lane** ("unknown language json") — the lane
+  is not registered in that instrument's config, which is a shared file. Reported, not touched.
+* **The unowned dirty pair is committed, not inherited silently.** `src/ast/project-scoped-identity.ts`
+  (new, shared), its use in this analyzer, the revert mutant, and the gate that catches it were
+  modified/untracked with no owner. They are landed with proof: the gate PASSes, the mutant is
+  CAUGHT (0 → 3 failures), and the gate FAILS with exactly 4 assertions when the scope is dropped
+  (simulated, then restored and verified by sha256). The measurement they rest on
+  (`validation/m14/measurements/json-ambiguity-split-601-after.json`) was already committed.
