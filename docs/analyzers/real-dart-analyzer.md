@@ -5038,6 +5038,45 @@ analyzer could see, and it is a DIFFERENT claim from "the base is outside the PR
 is an external claim, only the second should be verified against the project's key space, and the
 180x gap between the two populations is the size of the question — not a 4-claim cleanup.
 
+### WHERE THE AMBIGUITY ACTUALLY COMES FROM, measured — and it kills the cheap fix
+
+`validation/m14/fixtures/dart/ambiguity-cause-census.ts` splits the ambiguous column by CAUSE, with
+information the run already has, using the gate's own key space and per-project scope (validated by
+reconciliation: on dart-http its `calls` row is 1341 resolved / 1055 ambiguous, and its `unresolved` is
+the gate's 2248 PLUS the 65 bindings the gate reports in their own column — to the edge):
+
+```
+repo         edges      ambiguous   amb(SAME-FILE)    amb(CROSS-FILE)
+dart-http      19097       2884       177   (6.1 %)    2707   (93.9 %)
+riverpod       79316      30729       382   (1.2 %)   30347   (98.8 %)
+proxicall     778108      92614       595   (0.6 %)   92019   (99.4 %)
+TOTAL         876521     126227      1154   (0.9 %)  125073   (99.1 %)
+```
+
+SAME-FILE means every declaration answering the target is declared in the file that EMITTED the edge
+— the file knew its own declarations and did not use them, so it is a pure analyzer defect. CROSS-FILE
+means the declarations live elsewhere, so no local work can close it.
+
+**0.9 %. That is the entire value of the analyzer-local qualification idea**, and it is worth stating
+plainly because the intuition said the opposite: "the analyzer should qualify what it can see" sounds
+like the big lever, and it is already done (`calls qualifier` resolves 96,271 of 109,215 on the
+index-assisted population). What is left is `close` shared by 32 files, `add` by 5, `stream` by 5,
+`headers` by 7 — a bare MEMBER name, which no amount of looking at the emitting file can attribute.
+
+The consequence for the roadmap is larger than the number:
+
+- **The ambiguous column cannot be converted to `resolved` by analyzer-local work.** It needs the
+  IDENTITY of the declaration (the receiver's static type, then its owner), and that knowledge lives
+  outside the file. Where the receiver's type IS knowable in-file the analyzer should qualify it; where
+  it is knowable only project-wide it needs the index; where neither holds (`dynamic`, untyped
+  parameters, JSON-decoded values) NO spelling can name a declaration, and the honest destination is
+  bucket 3.
+- **So the next instrument is the receiver-availability cut** over exactly this cross-file mass: of
+  these 125,073 edges, how many have a receiver whose type is (a) knowable in-file, (b) knowable only
+  from the project index, (c) not knowable at all. (a) is resolution the analyzer should already be
+  doing; (b) is the size of the index argument; (c) is bucket 3's true population — and until it is
+  measured, every one of those three numbers is a guess.
+
 ### The residual, stated rather than argued away
 
 Two `extension on String` in one project now publish ONE synthesized name, exactly as two
