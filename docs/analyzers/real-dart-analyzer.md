@@ -5160,6 +5160,67 @@ that CAUGHT the fake-`Object` defect (31 riverpod overrides refused while an unn
 published under `Object`). A class of defect that has already occurred once is worth 128 honest
 refutations on the one project that carries the SDK's own sources.
 
+### THE RECEIVER AVAILABILITY CUT, measured — and it REFRAMES the biggest lever
+
+`validation/m14/fixtures/dart/receiver-availability-cut.ts`, over the three whole projects
+(dart-http 335, riverpod 1,295, proxicall 2,351 = 3,981 files). The cause is produced inside
+`qualifiedTarget` at the branch that decides, so no second implementation of the qualification rule
+exists to drift from it. THREE REPOS, BARE ROWS ONLY (`calls` 69,667 + `uses` 117,913 = 187,580 of
+197,102 rows; the rest were qualified):
+
+```
+cause                            calls: bare   amb  unres    uses: bare   amb  unres
+receiverTypeOutsideRun                  40657  21520  13796         62244  37993  15456
+receiverUnnamed                         19843   4680  11796         11067   5782   2845
+receiverMemberOutsideRun                 7287   3900    866           532    386     62
+libraryScopeCallee                       1597   1022      0             -      -      -
+(unlabelled: other `uses` shapes)          283    148    114         44070  30011   8850
+TOTAL bare                              69667  31270  26572        117913  74172  27213
+```
+
+**1. THE BIGGEST LEVER IS A SPELLING LOSS, NOT A TYPING GAP — and this is the finding that changes
+the next round.** Of the 105,442 AMBIGUOUS bare rows, **59,513 (56.4%) have the receiver's type NAME
+WRITTEN at the site** (a field, a parameter, `this`) and the analyzer published the bare member anyway.
+Those rows are not waiting on receiver-type INFERENCE: the file already says what the receiver is, and
+the edge threw that information away. Emitting `WrittenType.member` is a spelling change with the
+mechanism the imports and contains rounds already proved, and it is a far smaller piece of work than
+the "infer the receiver type" lever the earlier sizing implied. The line to hold: the spelling must be
+VERIFIED against what the project publishes (`qualifiedTarget` already refuses a spelling nothing
+answers), so this is not a licence to invent names.
+
+**2. Bucket 3's true population among ambiguous rows is 4,680 + 5,782 = 10,462 (9.9 %)**, the
+`receiverUnnamed` rows: a call result, an index expression, a cascade — no owner name at the site, so
+no spelling reaches a declaration. Its unresolved siblings are 14,641 (27.2 % of the 53,785 unresolved
+bare rows). Worth stating plainly: the class the contract was written for is a TENTH of the bare
+ambiguity, not half of it.
+
+**3. THE UNRESOLVED MAJORITY IS A TYPE TABLE, NOT AN INDEX ARGUMENT.** 29,252 of the 53,785
+unresolved bare rows (54.4 %) are `receiverTypeOutsideRun` whose target no file in the project
+declares: the receiver's type is a SDK/package type (`String`, `Future`, `Stream`, `package:test`), so
+an index OF THIS PROJECT cannot reach it and the member name is unknown here. That is a
+builtin/SDK member table question — or an honest external claim — and it is a different piece of work
+from "add `.dart` to `PROJECT_INDEX_EXTENSIONS`".
+
+**4. `libraryScopeCallee` is confirmed twice over.** 1,597 rows, 0 UNRESOLVED, and 1,022 ambiguous —
+973 of them on riverpod alone. The zero is the refinement's own check: a library-scope name declared in
+the file always finds its declaration, which is exactly what "correctly spelled" should look like. The
+1,022 ambiguities are a NAME-COLLISION class (`test`, `main`, `group` declared in many files), whose
+fix is file-qualifying a library-scope target — the imports round's mechanism, applied to calls.
+
+**5. THE CENSUS IS 28.6 % INCOMPLETE, and it says so.** 30,159 ambiguous `uses` rows (40.5 % of `uses`
+ambiguity) carry NO cause, because the other `uses` arms (interpolation reads, global reads, subscript
+bases) are not instrumented yet. Those are the next iteration of the instrument, not a resolved
+category, and every share above is therefore a share OF THE LABELLED PART with its unlabelled sibling
+printed beside it.
+
+**6. The key space is the gate's, copied deliberately** (`incoming-gate.ts:595-620`: every symbol
+contributes its `name` AND its `qualifiedName` when they differ, counted as one declaration). The
+first version of this instrument counted only `Owner.member` and reported 60,367 of 79,667 bare calls
+unresolved against the gate's whole-corpus 59,531 for six repos — a census disagreeing with the
+instrument it exists to explain. Recorded for the fourth time in this document because it is the same
+mistake every time: a key space that is *nearly* the other one produces a number that is *nearly*
+right, and both are wrong.
+
 ### WHERE THE AMBIGUITY ACTUALLY COMES FROM, measured — and it kills the cheap fix
 
 `validation/m14/fixtures/dart/ambiguity-cause-census.ts` splits the ambiguous column by CAUSE, with
