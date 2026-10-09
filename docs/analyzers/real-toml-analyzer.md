@@ -855,6 +855,70 @@ The `references` row was the lane's single DERIVATION finding before #919: emitt
 stored, and compared against nothing. `rel-type-coverage-gate.ts --langs=toml` now
 reports CHECK 1 **clean**. Computed by `pass2-probes.ts`, which prints both sets.
 
+### Is the denominator 2 or 10? An applicability audit that refuses to assume
+
+The arbiter prints `emitted 2/10 ruled-sound 8`. Read as a score that says a fifth
+of the work is done, which is the opposite of what the measurement means — and
+`ONTOLOGY-WORKSTREAM-STATE.md:604` already caught that shape once ("Reporting
+`1/10` misrepresents finished work as broken work") and then watched the same
+instrument keep printing the raw count. So the denominator is the question this
+section answers.
+
+`script/m14/toml-applicability-audit.ts` answers it WITHOUT re-running the ruling
+table's own eight probes, because re-running an instrument on its own question
+cannot refute that instrument. It takes a whole-corpus **union inventory** — every
+node type, every key name, every value kind, every declaration — and asks, once,
+what TOML's grammar contains in total. It carries a **positive control**: the
+Gradle alias is known to occur 167 times on this corpus, so if the same walk does
+not find it the audit refuses to publish a verdict and exits 2. A silent instrument
+and a clean result are otherwise indistinguishable, and this lane's own header
+records a probe that read 0 against a construct that occurs 167 times.
+
+```
+$ npx tsx script/m14/toml-applicability-audit.ts --files=2000
+corpus: 1483 tracked .toml files · 1483 measured · 0 excluded
+POSITIVE CONTROL FIRED: 167 version-catalogue aliases across 5 files (>= 20 required)
+
+  types in the ontology           : 10
+  EMITTED (construct exists)      : 2  [contains, references]
+  RULED, verified by MEASUREMENT  : 5  [calls, uses, extends, implements, instantiates]
+  RULED, sound but ARGUABLE       : 0
+  RULED, UNVERIFIED               : 3  [imports, exports, overrides]
+
+  APPLICABLE (measured)           : 7 of 10
+  REPORTED : 7/7 APPLICABLE, MEASURED
+             NOT 2/10 — that form scores finished work as 20%
+```
+
+**So the answer is neither 2/10 nor 2/2. It is 7/7 measured, with 3 rulings still
+unverified.** That is a larger claim than "the remaining 8 are all inapplicable",
+and it is the one the evidence supports:
+
+- **5 are verified by measurement** — `calls`, `uses`, `extends`, `implements`,
+  `instantiates`. The grounds are structural rather than name-based: TOML's
+  grammar contains no expression node, no type-declaration node, no interface node
+  and no construction node, so there is nothing for a call, a typed use, a
+  supertype, a conformance clause or an instantiation to be written in. That does
+  not depend on which key names the corpus happens to use, which is what makes it
+  stronger than the shape probes.
+- **3 are NOT verified**, and this is the part the arbiter's green row concealed.
+  `exports` rests on a JUDGEMENT — that a crate's public surface is its Rust source
+  rather than its manifest — and the **json lane reached the opposite conclusion on
+  the same type**, so two lanes currently hold contradictory verdicts on identical
+  reasoning. `imports` is where the audit and the ruling table disagree
+  numerically: the ruling dismisses 216 file-valued strings as "lists a tool is
+  told about", while the audit finds **173 of them are SINGLE-valued** — every one
+  a `path = "..."` key in a Julia `Project.toml`, naming a dev-dependency that
+  exists on disk. A single-valued key naming a real file is a path-dependency
+  declaration, which is closer to an import than to a list. `overrides` is measured
+  0 replacements but rests on the reading that a repeated table header is a spec
+  violation rather than a second-definition-wins.
+
+**Applicability is not coverage, and the two must not be reported as one number.**
+Both emitted types fire, but `references` fires on the Gradle catalogue only; the
+Cargo workspace-inheritance population (`x.workspace = true`, 1,269 sites) is the
+SAME type and is not implemented. A "7/7" that hid that would be true and useless.
+
 ### The ruling table, and the arbiter's own verdict
 
 `script/m14/toml-ruled.ts` holds nine entries — every type the analyzer does not
