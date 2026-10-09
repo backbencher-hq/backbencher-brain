@@ -1,0 +1,122 @@
+{
+  "record": "taint-plan-stats",
+  "claim": "the cross-symbol taint pass's cost on a large index was a planner incident, not work: the same statement on the same data cost 520.2s planned without statistics — the state every fresh index is in, because the pipeline's ANALYZE runs at the end — and 1.7s with them, for identical output",
+  "generatedAt": "2026-10-09T00:00:29.062Z",
+  "currentCommit": "a069b5d1d4d4f86f218925b3939cc96baabf9727",
+  "corpus": {
+    "repo": "aspnetcore",
+    "indexPath": "/tmp/bb-aspnet",
+    "projectId": "fa0ef574c5f3abfa3f42687580bee22a4c186196",
+    "indexedFiles": 12177,
+    "symbols": 196030,
+    "relationships": 1134292,
+    "taintRows": 19903,
+    "unresolvedSourceFlows": 16343,
+    "unresolvedSinkFlows": 1963
+  },
+  "statement": "CROSS_SYMBOL_TAINT_QUERY (src/ast/parallel-indexer.ts) — exported so the probe runs the production text, not a replica of it",
+  "producerCommand": "BB_DATA_DIR=<dir> npx tsx script/perf/probe-taint-plan-stats.ts <projectId> [--blind] [--revert]",
+  "arms": {
+    "oneProcessAb": {
+      "what": "script/perf/probe-taint-plan-stats.ts --revert, both sqlite_stat tables deleted, one process, one state",
+      "statsBefore": {
+        "stat1": 0,
+        "stat4": 0
+      },
+      "referenceBlind": {
+        "groups": 1530,
+        "distinctSourceFlows": 1242,
+        "ms": 520239
+      },
+      "fixedPass": {
+        "flows": 1530,
+        "ms": 1711,
+        "storedRows": 1242
+      },
+      "statsAfter": {
+        "stat1": 4,
+        "stat4": 96
+      },
+      "ratio": 304.1
+    },
+    "manuallyTimedBlind": {
+      "what": "the same statement, both statistics tables deleted, timed with the sqlite3 CLI (an independent process, and the measurement that found the defect)",
+      "ms": 546080,
+      "groups": 1530,
+      "cpuUserMs": 362037,
+      "cpuSysMs": 145544,
+      "verbatim": "Run Time: real 546.080 user 362.037117 sys 145.544825"
+    },
+    "stat1AbsentStat4Present": {
+      "what": "the same statement with sqlite_stat1 deleted but sqlite_stat4 still present — a rescue path, and the reason both tables have to go to reproduce the defect",
+      "referenceMs": 113,
+      "fixedPassMs": 1515,
+      "groups": 1530,
+      "verdict": "identical"
+    },
+    "warm": {
+      "what": "the same probe with both statistics tables present",
+      "referenceMs": 110,
+      "fixedPassMs": 1748,
+      "groups": 1530,
+      "verdict": "identical"
+    },
+    "pipeline": {
+      "before": {
+        "what": "the cold full index of this corpus at the pre-fix build",
+        "taintMs": 440793,
+        "verbatim": "✓ taint(440793ms) + health(830ms)"
+      },
+      "after": {
+        "what": "`bb index <aspnetcore> --post` with BOTH statistics tables deleted first (the fresh-index state), post-fix build",
+        "log": "/tmp/aspnet-post-fixed2.log",
+        "totalSecs": 358,
+        "phases": {
+          "relationships": 202066,
+          "enrichment": 94800,
+          "gravity": 17752,
+          "taint": 1307,
+          "health": 1132,
+          "integrity": 15106,
+          "vectorBlobs": 307,
+          "analyze": 25403
+        },
+        "taintLine": "✓ taint(1307ms) + health(1132ms)"
+      },
+      "afterStat1OnlyDeleted": {
+        "what": "the same --post with only sqlite_stat1 deleted — stat4 was present, so this run does NOT isolate the fix; kept so the weaker experiment is not confused with the stronger one",
+        "log": "/tmp/aspnet-post-fixed.log",
+        "totalSecs": 382.3,
+        "phases": {
+          "relationships": 219745,
+          "enrichment": 96946,
+          "gravity": 17643,
+          "taint": 6056,
+          "health": 1195,
+          "integrity": 12825,
+          "vectorBlobs": 243,
+          "analyze": 27590
+        }
+      }
+    }
+  },
+  "equivalence": {
+    "storedRowsMatchingAReferenceGroup": 1242,
+    "storedRowsNotMatching": 0,
+    "sourcesResolvedByTheStatementWithoutAStoredRow": 0,
+    "verdict": "identical"
+  },
+  "findings": [
+    "The statement's plan is chosen when it is prepared, and the pipeline's ANALYZE runs at the END of post-processing, so a fresh index plans against tables whose sizes it has never measured. On this corpus that plan is 304x slower: 520239 ms blind against 1711 ms with the statistics the fix creates, in one process on one state, same 1530 groups out.",
+    "The fix is inside the pass, so every caller gets it (the full and the bounded post paths both call resolveCrossSymbolTaints): it ANALYZEs the four indexes the statement can use BEFORE preparing it — 0.98s measured on this 4GB index in a fresh process (0.01+0.00+0.50+0.47s; the whole-database ANALYZE the same pipeline runs later reports 25.4-27.6s, so the plan costs a fraction of what the run already pays) — and skips names a database's schema does not have instead of throwing. An earlier draft of this record said 6.0s; that figure was not reproducible on re-measurement and is corrected here rather than left standing.",
+    "Either statistics table alone can steer the planner to the good plan: with stat1 deleted but stat4 present the statement is 0.1s (measured). That is why the blind arm deletes both, and why an earlier acceptance run that deleted only stat1 was re-run before any claim was made about it.",
+    "In the real pipeline the phase went 440,793 ms (pre-fix cold full index) → 1,307 ms (post-fix --post, both statistics tables deleted first). The pre-fix number and the blind measurement agree in magnitude, which is what makes the attribution safe."
+  ],
+  "limitations": [
+    "One corpus shows the blowup: element-plus resolves 0 flows and the pool tiers resolve 0, so on those the phase is ~1s either way. A statement that returns no rows can still be slow — that is exactly what happened here — but this record cannot show the defect on a corpus with no taint flows.",
+    "The blind arm is expensive by nature (520-546s on this index); the probe makes it opt-in (--blind) for that reason.",
+    "Timings are one shared machine (load1 5-15 through these runs). The blind arm is CPU-bound (507s of its 546s was user+sys), so load inflates it; the fixed arm is small enough to be load-sensitive.",
+    "The equivalence check compares the pass's STORED rows against the groups the statement produces. It is per row because the pass writes one resolution per flow row while the statement can produce several sinks for one source (244 sources carry 2-3 sinks here).",
+    "This record measures one statement. The same blind-plan hazard applies to any derived phase that queries a table the run just wrote and the pipeline has not analyzed yet; only the taint statement has been measured and fixed."
+  ]
+}
