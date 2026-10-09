@@ -3619,6 +3619,28 @@ naming: this time the claim was written about a change that never landed, which 
 see, because a `_closed` block is invisible to both gates. `contains`'s own entry is untouched and
 still correct (its oracle exists and is deliberately unwired).
 
+### 19.4b Reproducing this pass
+
+The instruments this section's numbers come from are committed beside the lane's other probes, in
+`validation/m14/fixtures/fsharp/` (the `.tmp-probe/fsharp-lane/` copies named above are the
+originals they were run from; the copies are byte-identical and take the same arguments):
+
+| instrument | command | what it answers |
+|---|---|---|
+| `fs-exports-census.mts` | `bun validation/m14/fixtures/fsharp/fs-exports-census.mts 300` | the grammar inventory (node types, `access_modifier`, `[<CompiledName>]`) and the FS-D8 surface, over a deterministic draw of the admitted population |
+| `fs-exports-overlap.mts` | `bun validation/m14/fixtures/fsharp/fs-exports-overlap.mts 300` | whether the surface's adjacency is a second name for `contains` — the pair overlap, measured |
+| `fs-corpus-dump.mts` | `bun validation/m14/fixtures/fsharp/fs-corpus-dump.mts` | the whole admitted population: per-file symbols (name, qualified name, kind, owner, line) and export entries, JSONL |
+| `fs-unresolved-split.mts` | `bun validation/m14/fixtures/fsharp/fs-unresolved-split.mts 60` | the arbiter's columns reproduced, then the unresolved population split by class against the corpus dump |
+| `p11-remeasure.py` | `python3 validation/m14/fixtures/fsharp/p11-remeasure.py <rels.tsv>` | the pass-11 table, re-derived from a store's reading |
+| `p11-identity-vs-leaf.py` | `python3 validation/m14/fixtures/fsharp/p11-identity-vs-leaf.py <brain.db> <rels.tsv>` | does the store attach the identity written, or a leaf candidate |
+| `p11-rule-ab.py` | `python3 validation/m14/fixtures/fsharp/p11-rule-ab.py <brain.db> <rels.tsv>` | the legacy leaf rule replayed against the same edges |
+
+MEASURED, per instrument: each was run from BOTH locations during this pass and agreed (the census
+smoke run from the fixtures copy reads 773 entries in 97 of 119 files on a 120-file draw). NOTE for
+a reader re-running `fs-corpus-dump.mts`: the first version of it leaked its trees and recorded
+`failed 7760 of 11,807` — a failure curve that reads like a corpus property. `tree.delete()` is in
+the committed version, and the committed run reads `failed 0`.
+
 ### 19.5 Gates at this pass's HEAD
 
 | gate | result |
