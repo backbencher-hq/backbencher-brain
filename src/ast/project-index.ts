@@ -58,6 +58,11 @@ export type DeclarationKind =
   // class, and "unknown" would read as "we looked and could not tell", which is a
   // different and worse claim than "this is a mixin".
   | "mixin"
+  // F#'s declaration kinds. Added to the union for the reason "class" and "mixin" were: a
+  // shared type is not the place to pretend one language's record is another's struct, and
+  // "unknown" would read as "we looked and could not tell", which a record is not.
+  | "record"
+  | "union"
   | "extension"
   | "extension_type"
   | "unknown"
@@ -98,6 +103,18 @@ export interface DeclarationSpec {
    */
   scopeNodes?: string[]
   /**
+   * Read a declaration's OWN name from its node, when the grammar does not put it in a `name`
+   * field. ONE hook for the type, its members and the owning type of a base, because a grammar
+   * that spells one of them differently usually spells all three differently. F# is the case:
+   * a clause carries `type_name` (`type_name > identifier`), a member is named two levels down
+   * (`member_defn > method_or_prop_defn.name = property_or_ident`, whose `method` field is the
+   * part after the instance dot, so `member this.Speak()` names itself `Speak`), and an
+   * ABSTRACT member's name is the first `identifier` of its `member_signature`. The generic
+   * `childForFieldName("name")` reads "" for every one of those, i.e. an index of the right
+   * shape holding nothing. Absent the hook the behaviour is byte-for-byte what it was.
+   */
+  nameResolver?: (node: Node) => string
+  /**
    * Read a declaration's DIRECT base names from its own node. Preferred over `baseNodes` when
    * the grammar does not put bases in a node carrying an `ancestor` field: python's live in
    * `class_definition.superclasses` -> `argument_list`, where an entry is an `identifier` or a
@@ -105,6 +122,44 @@ export interface DeclarationSpec {
    * `inheritance_specifier.ancestor` predates this hook and keeps the older path unchanged.
    */
   baseResolver?: (node: Node) => string[]
+  /**
+   * Node types that DECLARE A NAME the index must record in `symbolNames` while claiming NO
+   * `DeclarationKind` for it. FS-P17, and the reason is a measured gap rather than a convenience:
+   * the F# spec indexed declared types and `member_defn` members, and F#'s most common
+   * declarations are neither. `let f x = …` is a BINDING and `module M` / `namespace M` are
+   * SCOPES, so a call to a module-level function and an `open` of a sibling module both looked
+   * exactly like FSharp.Core. Priced on the 3,000-file draw: 16,456 edges hang off the binding
+   * channel and **24,215** off the scope channel — together more than the 32,778 the shipped
+   * width reaches (`.tmp-probe/fs-p16-index-refine.py`, the `+BINDINGS`/`+SCOPES` columns).
+   *
+   * IT IS A SEPARATE FIELD FROM `typeNodes` ON PURPOSE, and the reason is the duplicate-kind rule
+   * below: putting a binding into `typeNodes` means giving it a `DeclarationKind`, and a name that
+   * is both a function and a type would then DOWNGRADE the type to `unknown` — the same defect
+   * pass 14 avoided for `.fsi` pairs, and it would break the one question `typeKinds` exists for.
+   * Names only, no kinds, no `typeMembers` attribution either: a module's members are not a TYPE's
+   * members, and `buildResolutionTables` would otherwise answer "does this base declare this
+   * member" from a module.
+   *
+   * Recorded only where `scopes === 0`: a `let` inside a function body is a LOCAL, and a local is
+   * not a project declaration — F# needs `function_or_value_defn` in `scopeNodes` for that test to
+   * mean anything, which is the same correction PY-7 records for python closures.
+   */
+  nameOnlyNodes?: string[]
+  /**
+   * Resolve a declaration's KIND from its own node, when the grammar spells TWO DIFFERENT kinds
+   * with the SAME node type. `typeNodes` is a static map, so it can only answer a question the
+   * grammar already separated — and F# does not separate this one: `type I = abstract member M :
+   * int` (an interface) and `type C() = member this.M() = 1` (a class) are both
+   * `anon_type_defn`, so the static map filed every F# interface as a class. Measured on this
+   * lane's own fixture pair before the hook existed: `type ITagged = abstract member Tag : …`
+   * read `kind=class`, and the downstream question the kind exists for ("is this base an
+   * interface?") would then be answered WRONG rather than unanswered — which is the one outcome
+   * this index refuses, and the reason `unknown` exists as a kind at all.
+   *
+   * Returning `undefined` means "the static `typeNodes` kind still stands", so a grammar with no
+   * such ambiguity omits the hook and every previous language reads exactly what it read.
+   */
+  kindResolver?: (node: Node) => DeclarationKind | undefined
 }
 
 export const SOLIDITY_DECLARATION_SPEC: DeclarationSpec = {
@@ -259,6 +314,307 @@ export const DART_DECLARATION_SPEC: DeclarationSpec = {
   },
 }
 
+/**
+ * The F# declaration shapes, as the GRAMMAR names them, verified against the tree rather than
+ * remembered: `.tmp-probe/p10-tree.mts validation/m14/fixtures/fsharp/override-target.fs 5`
+ * prints every node and field quoted below.
+ *
+ * WHY F# NEEDED THIS AT ALL. `analyze` on this lane has never received a project index, so every
+ * cross-file question was answered per file: pass 8 measured the classes it costs — 65,215 edges
+ * whose name more than one `.fs` in the project declares, 3,689 declared in the project's `.fsi`
+ * files only, and the in-project half of a 150,114-edge out-of-project population. This spec is
+ * the prerequisite: without it `buildProjectIndex*` cannot read a single F# declaration.
+ *
+ * THE CLAUSE IS THE DECLARATION. `type X() = …` parses as ONE `type_definition` holding a
+ * CLAUSE node per type, so F#'s mutual group (`type A = … and B = …`) is several types in one
+ * node and each clause carries its own `type_name`. That is the shape FS-P9 measured 157
+ * unnamed members in — a first-name read published them nowhere — which is why the spec lists
+ * clause types and not the `type_definition` wrapper.
+ *
+ * TWO DELIBERATE OMISSIONS, each because including it would make the index WRONG rather than
+ * larger:
+ *
+ *   · `type_declaration` (a bodyless `type Surface`) is the grammar's forward declaration, and an
+ *     F# signature pair (`Surface.fsi` + `Surface.fs`) states it in one file and defines it in
+ *     the other. Indexing both would hit `indexTree`'s different-kind rule and downgrade a real
+ *     `class`/`interface` to `unknown` for every signature pair — the kind is the one thing the
+ *     downstream question ("is this base an interface?") needs, so the name is left to the
+ *     clause that carries a kind.
+ *   · `type_extension` (`type Foo with member …`) does not DECLARE a type; its members attach to
+ *     one declared elsewhere, and treating it as a declaration would publish a second `Foo` of
+ *     kind `unknown`, with the same kind-downgrade effect on the real one.
+ *
+ * `anon_type_defn` covers both `type X() = …` and an interface written as bare `abstract member`s
+ * (`type ITagged = abstract member Tag : unit -> string`, the fixture's own shape). The grammar
+ * does not distinguish them, so the spec reports `class` and does NOT guess: `typeMembers` and
+ * `typeBases` — what the cross-file question actually reads — are unaffected by the guess either
+ * way, and a wrong `interface` would be a confident wrong answer about a base's kind.
+ */
+const FSHARP_TYPE_NODES: Record<string, DeclarationKind> = {
+  // `anon_type_defn` is BOTH a class and an interface — see FSHARP_KIND_RESOLVER below, which is
+  // the whole reason the hook exists. The static entry is the CLASS reading, because a clause
+  // with a constructor is the shape that cannot be an interface, and it is what an index build
+  // with no resolver falls back to.
+  anon_type_defn: "class",
+  record_type_defn: "record",
+  union_type_defn: "union",
+  interface_type_defn: "interface",
+  enum_type_defn: "enum",
+  // An abbreviation (`type Address = int64<address>`) declares a NAME and no kind of its own —
+  // it IS whatever it aliases, which this index cannot see. `unknown` is therefore the accurate
+  // answer here rather than the evasive one it would be for a record.
+  type_abbrev_defn: "unknown",
+  delegate_type_defn: "unknown",
+}
+
+/**
+ * FS-P16. IS THIS `anon_type_defn` AN INTERFACE?
+ *
+ * The grammar does not say, and F# writes almost every interface as a clause of abstract members
+ * — `type ITagged = abstract member Tag : unit -> string` and `type ITagged = interface end`
+ * produce DIFFERENT node types (`anon_type_defn` and `interface_type_defn`), so the static map
+ * got the `interface end` spelling right and filed the common one as a class. The lane's own
+ * pass-14 spec fixture missed it because it pinned `interface end` — an unpinned spelling that
+ * looked like coverage, which is the same shape of defect this lane keeps finding elsewhere.
+ *
+ * THE RULE IS CLASS EVIDENCE FIRST, and every rule below is a node the tree actually has
+ * (verified by dumping all four shapes rather than by reading the grammar's docs):
+ *
+ *   `type AbstractThing() = abstract member A : int`  `primary_constr_args`     -> a class
+ *   `type WithField = val mutable X : int …`          `member_defn` with no `member_signature`
+ *                                                                                -> a class
+ *   `type WithBoth() = abstract member A … member this.M() = 1`   the concrete member has
+ *                                                     `method_or_prop_defn`, i.e. a body -> a class
+ *   `[<AbstractClass>] type Abstractish = abstract member A : int`   the attribute is a SIBLING
+ *                                                     of the clause, inside `type_definition`
+ *                                                                                -> a class
+ *   `type IChild = inherit ITagged … abstract member C : int`       no constructor, no concrete
+ *                                                     member, an INHERITANCE of another interface
+ *                                                                                -> an interface
+ *
+ * The last row is not an oversight: an F# interface may inherit another interface, so `inherit`
+ * cannot be class evidence. What separates the two is the CONSTRUCTOR and a member WITH A BODY,
+ * and the residual is stated rather than implied — a clause with an `inherit`, only abstract
+ * members, no constructor argument list and no `[<AbstractClass>]` would read as an interface.
+ * Both class shapes above are pinned by the spec fixture, so the rule's boundary is a test and
+ * not a comment; and the analyzer's own symbol kind for the same clause is `interface`
+ * (13,908 `method` / 140 `interface` symbols on the pass-16 draw), so the two readers of one tree
+ * can be compared on the fixture instead of trusted separately.
+ */
+function fsharpKindResolver(node: Node): DeclarationKind | undefined {
+  if (node.type !== "anon_type_defn") return undefined
+  let members = 0
+  let sawBody = false
+  const visit = (n: Node): void => {
+    for (const c of n.namedChildren) {
+      if (!c) continue
+      // A nested clause is its own subject. Descending into it would let a type declared inside a
+      // class body decide the ENCLOSING clause's kind.
+      if (FSHARP_TYPE_NODES[c.type] !== undefined) continue
+      if (c.type === "member_defn") {
+        members++
+        // An abstract member is `member_defn > member_signature`; a field (`val mutable X`) and a
+        // concrete member (`member this.M() = …`) are `member_defn` with anything else.
+        let abstract = false
+        for (const inner of c.namedChildren) if (inner?.type === "member_signature") abstract = true
+        if (!abstract) sawBody = true
+        continue
+      }
+      visit(c)
+    }
+  }
+  visit(node)
+  // A clause with NO member is not an interface: `type Empty = class end` is an empty class and
+  // `type Probe = abstract member A : int` has one. Zero members is the class reading.
+  if (members === 0 || sawBody) return undefined
+  for (const c of node.namedChildren) if (c?.type === "primary_constr_args") return undefined
+  const parent = node.parent
+  if (parent) {
+    for (const c of parent.namedChildren) {
+      if (c?.type === "attributes" && /\bAbstractClass\b/.test(c.text)) return undefined
+    }
+  }
+  return "interface"
+}
+
+export const FSHARP_DECLARATION_SPEC: DeclarationSpec = {
+  typeNodes: FSHARP_TYPE_NODES,
+  kindResolver: fsharpKindResolver,
+  // FS-P17, the two named channels. `function_or_value_defn` is F#'s binding node (`let f x = …`,
+  // `let value = 3`) and its identity is the name the analyzer already PUBLISHES for a top-level
+  // binding; `module_defn` and `namespace` are the scope headers, and the analyzer publishes those
+  // as the whole dotted header too (`module Fixture.Project.Domain` names its symbol
+  // `Fixture.Project.Domain`). Both are recorded WITHOUT a kind — see `nameOnlyNodes`.
+  // `named_module` is the FILE-HEADER form (`module Alpha.Beta.Gamma` as the first line) and it is
+  // a DIFFERENT node from `module_defn` entirely — found by dumping the tree, not by reading the
+  // grammar's docs. It is also the most important entry in this list: it is how most F# files
+  // declare their module, and its name is what another file writes targets against.
+  nameOnlyNodes: ["function_or_value_defn", "module_defn", "namespace", "named_module"],
+  // `member this.Speak() = …`, `override this.Speak() = …` and `abstract member Tag : …` are all
+  // `member_defn` — which is exactly the callable surface `overrides` reads. F# properties are
+  // accessors and ARE overridable, so a `member this.Tag` counts; fields are not listed because
+  // they cannot be overridden, the same reasoning PY-21 and DARTD16 record for their grammars.
+  memberNodes: ["member_defn"],
+  memberNodesCallable: ["member_defn"],
+  // A member inside an OBJECT EXPRESSION belongs to the anonymous implementation, not to the
+  // function that encloses it. The fixture has the shape: `let mock = { new System.IDisposable
+  // with override this.Dispose() = () … }` — without this, `Dispose` and `Tag` are published as
+  // members of whatever type the `let` sits in.
+  // FS-P17 adds TWO scope nodes to the object expression, and the second one is a defect the first
+  // draft of this channel shipped rather than a refinement of it. Measured on the lane's own twelve
+  // fixtures (`/tmp/fs-names.mts`): with only `function_or_value_defn` as a scope, the NAME-ONLY
+  // list contained `local` (declared at `call-ownership.fs:67` inside a member body) and `built`
+  // (`call-target-spelling.fs:63`, the same shape) — a local declared in a project DECLARATION, so
+  // every bare call to a name that happens to match a local anywhere in the corpus would be
+  // refined to `in-project-name`. The reason the first draft missed it: a scope node suppresses its
+  // CHILDREN, and a `let` directly inside a member body has no `function_or_value_defn` ABOVE it —
+  // the binding IS the node being visited, so `scopes` was still 0. `member_defn` is what starts
+  // the scope where a body begins.
+  //
+  // Both are scopes for MEMBERS as well as for names: a member inside a nested binding belongs to
+  // the nested binding's object expression, not to the type around it. Neither changes the member
+  // attribution of the member itself — `scopes` is tested BEFORE this increment — which the spec
+  // fixture confirms by reading 22 types-with-members and the same member sets after the change.
+  scopeNodes: ["object_expression", "function_or_value_defn", "member_defn"],
+  nameResolver: (node: Node): string => {
+    // FS-P17: the three shapes added for `nameOnlyNodes`, read from the tree rather than assumed
+    // (`/tmp/fs-mod-dump.mts` prints all four). A dependency-free reader is not available here, so
+    // each is a bounded walk over the node's own direct children:
+    //
+    //   `namespace Fixture.Project.Domain`   the name IS the `long_identifier`'s TEXT
+    //   `module A.B.C =`                     the direct `identifier` children joined, which is the
+    //                                        dotted header the analyzer publishes as the symbol
+    //   `let f (a: string) = …`              the first identifier inside `*_declaration_left` —
+    //                                        the pattern's TEXT is the whole signature (FS-D6), so
+    //                                        its first identifier is the only name here
+    if (node.type === "namespace" || node.type === "named_module") {
+      for (const c of node.namedChildren) {
+        if (c?.type === "long_identifier" || c?.type === "identifier") return c.text
+      }
+      return ""
+    }
+    if (node.type === "module_defn") {
+      const ownName = (n: Node): string => {
+        const parts: string[] = []
+        for (const c of n.namedChildren) {
+          if (c?.type === "identifier" || c?.type === "long_identifier") parts.push(c.text)
+        }
+        return parts.join(".")
+      }
+      const own = ownName(node)
+      if (own === "") return ""
+      // The QUALIFIED path, because that is what a file outside the enclosing namespace writes:
+      // `module Helpers` inside `module Fixture.Project.Domain` is `Fixture.Project.Domain.Helpers`
+      // to every other file in the project, and recording only `Helpers` would leave
+      // `open Fixture.Project.Domain.Helpers` looking exactly like FSharp.Core — measured on the
+      // FS-P10 fixture pair before this climb existed. The chain is read from the PARENT pointers,
+      // which is what the tree gives; a `namespace` ancestor contributes its own dotted header.
+      const chain: string[] = [own]
+      let p: Node | null = node.parent
+      while (p) {
+        if (p.type === "module_defn") {
+          const outer = ownName(p)
+          if (outer !== "") chain.unshift(outer)
+        } else if (p.type === "namespace" || p.type === "named_module") {
+          // A file-header module (`module Fixture.Project.Domain`) is a scope exactly as a
+          // namespace is, and it is the more common of the two in this corpus: without this branch
+          // a `module Helpers = …` inside one is recorded as `Helpers` alone, so a sibling file's
+          // `open Fixture.Project.Domain.Helpers` stays external for no reason a reader could see.
+          for (const c of p.namedChildren) {
+            if (c?.type === "long_identifier" || c?.type === "identifier") {
+              chain.unshift(c.text)
+              break
+            }
+          }
+          break
+        }
+        p = p.parent
+      }
+      return chain.join(".")
+    }
+    if (node.type === "function_or_value_defn") {
+      for (const c of node.namedChildren) {
+        if (c?.type !== "function_declaration_left" && c?.type !== "value_declaration_left") continue
+        const idents: string[] = []
+        const stack: Node[] = [c]
+        while (stack.length > 0) {
+          const n = stack.shift()!
+          if (n.type === "identifier" && n.text) idents.push(n.text)
+          for (const inner of n.namedChildren) if (inner) stack.push(inner)
+        }
+        if (idents.length > 0) return idents[0]!
+      }
+      return ""
+    }
+    for (const c of node.namedChildren) {
+      if (!c) continue
+      // A clause's `type_name` is an UNNAMED child of the clause — the `type_name` FIELD is on
+      // that node's own `identifier`, one level deeper. Verified against the tree: asking the
+      // clause for a `type_name` field returns undefined and reads every type as "" — an index
+      // of the right shape holding nothing, which is what the first cut of this spec did.
+      if (c.type === "type_name") return c.childForFieldName("type_name")?.text ?? c.text
+      // `member_defn > method_or_prop_defn`, whose `name` field is a `property_or_ident`
+      // carrying `method` = the part after the instance dot.
+      if (c.type === "method_or_prop_defn") {
+        const method = c.childForFieldName("name")?.childForFieldName("method")
+        if (method?.text) return method.text
+      }
+      // `member_defn > member_signature`, whose first child IS the identifier.
+      if (c.type === "member_signature") {
+        for (const inner of c.namedChildren) {
+          if (inner && inner.type === "identifier" && inner.text) return inner.text
+        }
+      }
+    }
+    return node.childForFieldName("name")?.text ?? ""
+  },
+  baseResolver: (node: Node): string[] => {
+    const out: string[] = []
+    // The base's OWN name is the LAST segment of the written path — `System.IO.MemoryStream` is
+    // filed as `MemoryStream`, the same rule the Solidity and python resolvers apply, so the
+    // lookup keys on the name a project would have declared. Read from the `simple_type`'s own
+    // `long_identifier` rather than by collecting every `identifier` in the subtree: the first
+    // cut collected identifiers in POP order, which ends on the FIRST segment (`System`) — the
+    // wrong name, and a shape the shared `baseNodes` path in `indexTree` also has (it walks with
+    // a stack and takes the last identifier popped). Scoping the read to the path also keeps a
+    // generic argument (`Dictionary<string, Foo>`) from becoming the base.
+    const pushLeaf = (n: Node): void => {
+      let written = ""
+      for (const c of n.namedChildren) {
+        if (!c) continue
+        if (c.type === "long_identifier" || c.type === "identifier") {
+          written = c.text
+          break
+        }
+      }
+      if (written === "") written = n.text
+      const segment = written.split(".").filter((s) => s.length > 0).pop() ?? ""
+      const clean = segment.replace(/[<(].*$/, "")
+      if (clean !== "") out.push(clean)
+    }
+    const visit = (n: Node, isRoot: boolean): void => {
+      for (const c of n.namedChildren) {
+        if (!c) continue
+        // A member's body is not a base list, and an object expression's `interface … with`
+        // describes the ANONYMOUS implementation, not this type's bases.
+        if (c.type === "member_defn" || c.type === "object_expression") continue
+        // A type declared inside this one is its own subject; the clause types above are already
+        // in the index under their own name.
+        if (!isRoot && FSHARP_TYPE_NODES[c.type] !== undefined) continue
+        if (c.type === "class_inherits_decl" || c.type === "interface_implementation") {
+          for (const inner of c.namedChildren) {
+            if (inner && inner.type === "simple_type") pushLeaf(inner)
+          }
+          continue
+        }
+        visit(c, false)
+      }
+    }
+    visit(node, true)
+    return out
+  },
+}
+
 function addTo<K>(map: Map<K, Set<string>>, key: K, value: string): void {
   let set = map.get(key)
   if (!set) {
@@ -282,15 +638,24 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
   const stack: { node: Node; owner: string | null; scopes: number }[] = [
     { node: root, owner: null, scopes: 0 },
   ]
+  /** The declaration's own name: the spec's hook when it has one, the grammar's `name` field
+   *  otherwise — which is every previous language, so nothing that used this file before
+   *  reads a different name. */
+  const nameOf = (n: Node): string =>
+    spec.nameResolver !== undefined ? spec.nameResolver(n) : (n.childForFieldName("name")?.text ?? "")
   while (stack.length > 0) {
     const { node, owner, scopes } = stack.pop()!
     let nextOwner = owner
     let nextScopes = scopes + (spec.scopeNodes?.includes(node.type) ? 1 : 0)
 
-    const kind = spec.typeNodes[node.type]
+    const staticKind = spec.typeNodes[node.type]
+    let kind = staticKind
+    if (staticKind !== undefined && spec.kindResolver !== undefined) {
+      const resolved = spec.kindResolver(node)
+      if (resolved !== undefined) kind = resolved
+    }
     if (kind !== undefined) {
-      const nameNode = node.childForFieldName("name")
-      const name = nameNode?.text ?? ""
+      const name = nameOf(node)
       if (name !== "") {
         // A name declared twice with DIFFERENT kinds is a compile error in Solidity;
         // recording `unknown` rather than letting the last writer win means a
@@ -306,9 +671,33 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
       }
     }
 
+    // FS-P17. The NAME-only channel: a declaration whose name a target can write and whose kind
+    // this index does not claim. Placed before the member/base branches and after the type branch,
+    // so a node listed in both reads its kind AND its name (the type branch already adds the name)
+    // rather than being recorded twice — a Set makes the second add a no-op, but the ORDER is
+    // what keeps this branch from having to know which nodes overlap.
+    if (
+      spec.nameOnlyNodes !== undefined &&
+      scopes === 0 &&
+      spec.typeNodes[node.type] === undefined &&
+      spec.nameOnlyNodes.includes(node.type)
+    ) {
+      const name = nameOf(node)
+      if (name !== "") {
+        index.symbolNames.add(name)
+        // A DOTTED header also records its LAST SEGMENT, because both spellings are names a source
+        // writes for the same declaration: `Fixture.Project.Domain.Helpers` is what a file outside
+        // the namespace writes and `Helpers` is what a file inside it writes, and an index that
+        // recorded only one of them would refine one and miss the other for no reason a reader
+        // could see. The claim is existence either way ("the project declares a name spelled like
+        // this"), which is the same claim `symbolNames` already carries.
+        const dot = name.lastIndexOf(".")
+        if (dot > 0) index.symbolNames.add(name.slice(dot + 1))
+      }
+    }
+
     if (owner !== null && scopes === 0 && spec.memberNodes.includes(node.type)) {
-      const nameNode = node.childForFieldName("name")
-      const name = nameNode?.text ?? ""
+      const name = nameOf(node)
       if (name !== "") {
         addTo(index.typeMembers, owner, name)
         index.symbolNames.add(name)
@@ -347,8 +736,7 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
     }
 
     if (spec.baseResolver !== undefined && kind !== undefined) {
-      const nameNode = node.childForFieldName("name")
-      const ownerName = nameNode?.text ?? ""
+      const ownerName = nameOf(node)
       if (ownerName !== "") {
         for (const baseName of spec.baseResolver(node)) {
           if (baseName === "") continue

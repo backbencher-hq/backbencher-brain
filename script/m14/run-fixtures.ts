@@ -604,10 +604,17 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // index came back EMPTY for python — no types, no members, no bases — which is a
       // subtler failure than an error, because an empty index feeds every consumer a
       // confident "nothing is declared anywhere".
+      // FS-P16: fsharp joins python here for the same reason and with a louder measurement —
+      // the F# spec is what resolves an abstract-member clause to `interface` and what reads a
+      // clause's name out of an UNNAMED `type_name` child. Built with Solidity's spec an F#
+      // sub-directory fixture gets an index of the right shape holding nothing, which reads as
+      // "nothing is declared anywhere" rather than as "the wrong spec ran".
       const spec =
         runLangLang === "python"
           ? mod.PYTHON_DECLARATION_SPEC
-          : undefined
+          : runLangLang === "fsharp"
+            ? mod.FSHARP_DECLARATION_SPEC
+            : undefined
       const built = await mod.buildProjectIndexFromDisk(
         path.join(ROOT, "wasm", `tree-sitter-${runLangLang}.wasm`),
         subDirs.get(sub)!.map((f) => path.join(dir, sub, f)),
