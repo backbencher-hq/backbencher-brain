@@ -3685,3 +3685,140 @@ with FS-P16 present in BOTH arms.
 - **The firing and incoming numbers are this population at this commit.** The corpus grew under pass
   18's numbers too; both instruments now print their population, and a re-run against a grown corpus
   is a different measurement.
+
+## M60 ONTOLOGY LANE, PASS 20 — the external claim is RETIRED (extFAIL 4 → 0), and the lane's last two regex literals are gone (2026-10-09)
+
+Two defects this lane carried out of pass 19, both closed, and one of them closes by REMOVING a
+mechanism rather than by fixing an edge.
+
+### 20.1 The four refuted claims, named, and why the fix is the whole class
+
+`npx tsx script/m14/incoming-gate.ts fsharp fs 60` printed, in pass 19:
+
+```
+EXTERNAL CLAIMS THE POPULATION REFUTES (counted AGAINST the lane — the owner these name IS published):
+  imports        Fabulous.Avalonia.View          references     Fabulous.Avalonia.View
+  imports        Fabulous.Maui.View              references     Fabulous.Maui.View
+```
+
+They are two files, each contributing one `open type` on both labels
+(`bun .tmp-probe/fsharp-lane/fs-unresolved-split.mts 60`, refuted rows):
+
+| file | target | what answers it |
+|---|---|---|
+| `Fabulous/samples/avalonia/Gallery/Pages/DrawLineAnimationPage.fs` | `Fabulous.Avalonia.View` | **`type View = class end`** at `Fabulous/src/avalonia/Fabulous.Avalonia/_Element.fs:9`, under `namespace Fabulous.Avalonia` — 324 files in that project declare the namespace |
+| `Fabulous/samples/maui/Calculator/App.fs` | `Fabulous.Maui.View` | **`type View =`** at `Fabulous/src/maui/Fabulous.MauiControls/Widgets.fs:13`, under `namespace Fabulous.Maui` — 123 files declare it; the sample opens `Fabulous.Maui` two lines above the claimed target |
+
+So the TARGET is a declaration in the project — not merely its owner — and the marker IS a false
+claim. (Both files write `open type`, which is why each contributes the target on two labels.) The mechanism was FS-P8's final pass,
+which marks an edge external when its `targetResolution` is a PATH class (`external-namespace`,
+`external-type-or-module`, `module-member`, `opened-module`) or a BASE class
+(`base-member-external`, `interface-member-external`) and the owner has two or more segments whose
+ROOT this file does not declare. **Every one of those classes is a statement about THIS FILE** —
+the `external-namespace` assignment is literally `publishedQnames.has(target) ? "in-file-declaration"
+: "external-namespace"` — and the marker turned it into a statement about the PROJECT, which is
+exactly the escalation `incoming-rule.ts` exists to check and the gate is entitled to refute.
+
+**The class was priced at the scope production resolves in**, one line per claim, joined against
+every admitted file of that claim's own repository (`bun .tmp-probe/fsharp-lane/fs-extclaim-probe.mts 200`,
+key space from the 11,807-file corpus dump):
+
+| class | true (owner nowhere in the corpus) | false (owner DECLARED in the corpus) | true rate |
+|---|---:|---:|---:|
+| `external-namespace` | 238 | **100** | **70.4%** |
+| `base-member-external` | 15 | **69** | **17.9%** |
+| `interface-member-external` | 1 | 0 | — |
+
+423 claims on that draw. The false ones are the ordinary shape of a multi-file F# project, not an
+exotic case, and they are named rather than counted: `Internal.Utilities` (10), `FSharp.Test` (6),
+`FSharp.Compiler` (6), `Microsoft.FSharp` (4), `Fabulous.Avalonia` (2), `Fabulous.Maui` (2),
+`LibExecution.Builtin` (2), `Internal.Utilities.Library` (2). The gate's own 60-file stride verified
+120 of 124 claims **because its key space IS 60 files**, so an owner absent from the SAMPLE reads as
+absent from the PROJECT — the laundering the rule file warns about in as many words.
+
+**No per-file discriminator rescues them, and that was measured before the class was dropped.** The
+best candidate — refuse the claim when the file itself names the owner as a dependency — leaves the
+gate's columns like this (`fs-extclaim-probe.mts 60`):
+
+| claims on the stride | outcome |
+|---|---|
+| owner not named by the file | 64 verified, 0 refuted |
+| owner named by the file | 50 verified + 4 REFUTED (depth 2), 4 verified (depth 3), 2 verified (depth 1) |
+
+so the rule would remove 4 false claims and 56 TRUE ones. This lane's bar for a claim rule is the one
+pass 13 applied to `calls` (28.0% verified was DECLINED with its number recorded); at project scope
+neither class here clears it. The claim pass is therefore RETIRED, the `targetResolution` reason codes
+stay (they are file-local and true as written), and the analyzer no longer writes `isExternalTarget`
+anywhere. What would bring a claim back is evidence that is not the file: `ctx.projectIndex` can
+answer "does this project declare this owner" POSITIVELY (pass 14 built the F# DeclarationSpec, pass
+15 priced the joiner), and a claim made only where the index says no is provable rather than shaped.
+
+**After:** `npx tsx script/m14/incoming-gate.ts fsharp fs 60`
+
+| | edges | resolved | amb(decl) | unresolved | extOK | extFAIL |
+|---|---:|---:|---:|---:|---:|---:|
+| before | 9,183 | 3,781 | 407 | 4,871 | 120 | **4** |
+| after | 9,183 | 3,781 | 407 | **4,995** | **0** | **0** |
+
+`VERDICT: FAIL — 407 ambiguous + 4,995 unresolved of 9,183 edges` (the refuted-claim clause is gone;
+it will never read PASS on this population, and the 124 edges moved into `unresolved` are the honest
+column for them). Instrument self-test PASS. The fixture `fsharp/import-and-use` asserted
+`meta.isExternalTarget: true` on the `System.Collections.Generic` pair; both rows now pin the edge
+WITHOUT the marker and two forbid rows pin the retirement — the direction that can fail.
+
+### 20.2 The last two regex literals in this lane are gone
+
+`bash script/m14/no-regex-gate.sh` was failing with two entries from this file
+(`real-fsharp-analyzer.ts:329` and `:409`); a third (`/[:/\s]/`) sat in the retired claim pass and
+went with it.
+
+* `IS_NAME = /^(`{2}[^`]*`{2}|`[^`]*`|[A-Za-z_][A-Za-z0-9_']*|\([^()\s]+\))$/` is now a character
+  walk over the four written-name forms — double-backtick-quoted, single-backtick-quoted, plain
+  identifier, and a parenthesised operator NAME — with `isIdentStart`/`isIdentPart`/`isSpaceChar`
+  helpers. The operator arm is the measured one (`(=)`, `(+)`: 393 edges moved from `not-a-name`
+  to `bare-external` when it was added) and the whitespace/parenthesis refusals are its own,
+  because `(ctr CancellationToken.None).AsTask` is a chain and not an operator name.
+* `written.replace(/\.$/, "")` is `prefix.endsWith(".") ? prefix.slice(0, -1) : prefix`.
+* **No node-type literal was added to replace them.** The predicate answers a question about a
+  STRING the source wrote; expressing it as a node-type test would add a branch per form, would
+  still fall back to text for the quoted forms, and a node type the grammar does not emit is
+  exactly the dead branch this lane's `handled_verified` census exists to catch. Behaviour is pinned
+  by `fsharp/call-target-spelling` and `fsharp/name-surface`, both green.
+
+**After**, measured: `npx tsx script/m12/verify-regex-census.ts` lists **0 `real-fsharp-analyzer.ts`
+entries** (it listed 3). The fleet gate still reports FAILED, and the residual is neither this lane's
+nor this lane's to fix, stated with its numbers:
+
+| residual | count | evidence |
+|---|---:|---|
+| `real-dart-analyzer.ts` literals at HEAD | **8** | `:2233 :2322 :2323 :3803 :3804 :3827 :3849 :3850` |
+| `real-yaml-analyzer.ts` literals at HEAD | **4** | `:2283`–`:2284` |
+| the pinned census artifact | **0 entries** | `validation/m12/results/regex-census.json`, 588 B, `generatedAt 2026-10-07T08:14:41Z`, `describes "HEAD blobs"` |
+
+The artifact is the reason the SHELL gate still exits 0 while the verifier exits 1: the shell
+script's status comes from the python step, which counts the artifact's in-scope rows (0), and the
+last line is the verifier's own verdict, whose exit code the script does not propagate. Regenerating
+the artifact and fixing the two other lanes are `script/m12/**` and their owners' files.
+
+### 20.3 Corrections to PASS 19, and one thing PASS 19 got right
+
+* PASS 19's gate table recorded `... and 4 external claim(s) REFUTED by the project` as the lane's
+  state. That is superseded: the four are gone because the CLASS is gone, not because the refutation
+  was wrong. The refutation was right.
+* PASS 19's §19.3 said "at most **133 of 4,871 (2.7%)** are classed external at all" and left the
+  marker question open for them. That classification stands and is now the REASON nothing is marked:
+  every class in it is assigned by a file-local test, and the project-scope truth rate of the two
+  biggest is in the table above.
+* PASS 19's claim that the lane's fixtures pass 15/15 still holds after both changes.
+
+### 20.4 Gates at this pass's HEAD
+
+| gate | result |
+|---|---|
+| `bun script/m14/firing-check.mjs FSHARP_B` | **10 / 10 fired**, 120/120 parsed, `exports:1109` — unchanged by either change in this pass |
+| `npx tsx script/m14/incoming-gate.ts fsharp fs 60` | FAIL — **407 ambiguous + 4,995 unresolved of 9,183**, `extOK 0`, **`extFAIL 0`**; self-test PASS; tripwire 0 |
+| `npx tsx script/m14/run-fixtures.ts --lang fsharp` | **15 / 15 PASS**, no regressions (also re-run after landing the FS-P16/P17 pair) |
+| `npx tsx script/m12/verify-regex-census.ts` | exit 1 on **12** missing literals, **0 of them this file's** (dart 8, yaml 4) |
+| `bash script/m14/no-regex-gate.sh` | shell exit 0; prints the verifier's FAILED above — unchanged by this pass except that this lane is gone from it |
+| `npx tsc --noEmit` | clean |
+| full fixture suite | **zig 0 → 2 and dart 0 → 7 regressions OBSERVED AND NOT THIS LANE'S** — re-run by the lead, owners assigned; this lane's `--lang fsharp` run is green, and neither file is referenced by the two changes above |
