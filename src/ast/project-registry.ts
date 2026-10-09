@@ -354,6 +354,43 @@ export function importDbFile(dbFilePath: string, toId: string, newPath: string,
     if (!isBrainDb) return { adopted: false, toId, reason: `not a brain DB (no brain_file table): ${src}` }
 
     mkdirSync(dstDir, { recursive: true })
+    // Checkpoint the SOURCE before copying it.
+    //
+    // Every brain.db is opened in WAL mode (src/storage/db.node.ts:
+    // `db.pragma("journal_mode = WAL")`). In WAL mode the committed rows live in
+    // the `-wal` sidecar until a checkpoint folds them into the main file, and
+    // `copyFileSync(src, dstDb)` copies ONLY the main file. So this copied a
+    // 4096-byte SQLite header with zero tables and then re-keyed it — and the
+    // re-key worked, because an empty database re-keys trivially. The import
+    // reported success and produced an empty index.
+    //
+    // Measured 2026-10-09, on this machine, immediately after indexing:
+    //   brain.db            4096 bytes, no tables
+    //   brain.db-wal        1,779,872 bytes, 1 row in brain_file
+    //   copyFileSync copy   4096 bytes, no brain_file table
+    //   the real db         1 row
+    // and `importDbFile` then refused its own input with
+    // "not a brain DB (no brain_file table)" — which is the refusal working
+    // correctly on a file that really was empty.
+    //
+    // TRUNCATE rather than the default PASSIVE: PASSIVE returns without waiting
+    // and may copy nothing, which is the bug again. TRUNCATE blocks until the
+    // WAL is folded in, and leaves no -wal behind.
+    //
+    // A checkpoint needs a writer, so the probe handle is opened READ-WRITE here
+    // (the read-only probe above is closed by now). If the checkpoint cannot run
+    // we copy the sidecars too rather than silently producing a partial import —
+    // an honest degraded copy, never a quietly empty one.
+    try {
+      BrainDatabase.openByPath(src).exec("PRAGMA wal_checkpoint(TRUNCATE)")
+      BrainDatabase.closeByPath(src)
+    } catch {
+      BrainDatabase.closeByPath(src)
+      // Fall back to copying the sidecars alongside the main file.
+      for (const suffix of ["-wal", "-shm"]) {
+        if (existsSync(src + suffix)) copyFileSync(src + suffix, dstDb + suffix)
+      }
+    }
     copyFileSync(src, dstDb)
     const raw = BrainDatabase.openByPath(dstDb)
     if (fromId && fromId !== toId) {
