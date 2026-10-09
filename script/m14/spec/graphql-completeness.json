@@ -1,0 +1,235 @@
+{
+  "language": "graphql",
+  "grammar": "tree-sitter-graphql.wasm (vendored and patched; PascalCase node types by contract — see grammars/tree-sitter-graphql/README.md)",
+  "_authority": "This file was WRITTEN by the graphql lane on 2026-10-09 because it did not exist: the board read `no spec`, which is not the same as zero gaps, and nothing could tell a reader what this lane admits to. Every number below is either (a) measured by `validation/m14/fixtures/graphql/census-graphql-grammar.mts` — a production-path walk of the whole admitted corpus, its full output committed beside this file — or (b) attributable to a named programme run. NOTHING here is a classification by the F8 census (`script/m12/bash-node-types-compare.ts`'s counterpart for this lane has not been run): the `handled_verified` / `internal_silent` split below rests on a LITERAL SCAN of the analyzer's PascalCase comparisons plus the observed node-type vocabulary, which is a weaker instrument than the census and is labelled as such on both buckets. Where this file does not know something it says `UNMEASURED`.",
+  "_measured": {
+    "date": "2026-10-09",
+    "corpus": "gql-gqlgen — 143 tracked .graphql/.gql files, all parsed, 0 failures",
+    "instrument": "bun validation/m14/fixtures/graphql/census-graphql-grammar.mts (output: validation/m14/fixtures/graphql/census-graphql-grammar.txt)",
+    "firing_instrument": "bun script/m14/firing-check.mjs GRAPHQL — 6 types fired, 120/120 parsed (even stride)",
+    "distinct_node_types_observed": 72,
+    "edges_emitted_whole_corpus": {
+      "contains": 1580,
+      "references": 1877,
+      "exports": 795,
+      "uses": 527,
+      "overrides": 190,
+      "implements": 113,
+      "calls": 0,
+      "extends": 0,
+      "imports": 0,
+      "instantiates": 0
+    },
+    "symbol_kinds_emitted": {
+      "property": 1517,
+      "class": 554,
+      "function": 101,
+      "enum_member": 63,
+      "interface": 54,
+      "type": 54,
+      "enum": 24,
+      "namespace": 8,
+      "method": 8,
+      "variable": 4
+    }
+  },
+  "handled_verified": {
+    "_description": "Node types the analyzer CONSULTS at a type position (a PascalCase literal compared against the node's kind, extracted by literal scan) AND that the pinned grammar produces on this corpus. A type here means the analyzer DECIDES on it, not that its behaviour is pinned by a fixture — this lane has NO committed fixtures yet, which is itself a gap entry (GQ-G5). Types the analyzer consults but that this corpus does not exercise are listed separately below rather than counted as verified.",
+    "types": [
+      "Alias",
+      "Argument",
+      "Arguments",
+      "ArgumentsDefinition",
+      "DefaultValue",
+      "Definition",
+      "Description",
+      "Directive",
+      "DirectiveDefinition",
+      "DirectiveLocation",
+      "DirectiveLocations",
+      "Directives",
+      "Document",
+      "EnumTypeDefinition",
+      "EnumValue",
+      "EnumValueDefinition",
+      "ExecutableDefinition",
+      "ExecutableDirectiveLocation",
+      "Field",
+      "FieldDefinition",
+      "FieldsDefinition",
+      "FragmentDefinition",
+      "FragmentName",
+      "FragmentSpread",
+      "ImplementsInterfaces",
+      "InputFieldsDefinition",
+      "InputObjectTypeDefinition",
+      "InputValueDefinition",
+      "InterfaceTypeDefinition",
+      "ListType",
+      "Name",
+      "NamedType",
+      "NonNullType",
+      "ObjectTypeDefinition",
+      "ObjectTypeExtension",
+      "OperationDefinition",
+      "OperationType",
+      "OperationTypeDefinition",
+      "ScalarTypeDefinition",
+      "SchemaDefinition",
+      "SchemaExtension",
+      "StringValue",
+      "Type",
+      "TypeCondition",
+      "TypeDefinition",
+      "TypeExtension",
+      "TypeSystemDefinition",
+      "TypeSystemDirectiveLocation",
+      "TypeSystemExtension",
+      "UnionMemberTypes",
+      "UnionTypeDefinition",
+      "Value",
+      "Variable",
+      "VariableDefinition",
+      "VariableDefinitions"
+    ],
+    "consulted_but_not_observed_in_this_corpus": [
+      "Extension",
+      "GraphQL",
+      "InlineFragment",
+      "Query",
+      "SourceFile"
+    ],
+    "consulted_but_not_observed_note": "Five literals the analyzer compares against that the 143-file corpus never produced. `SourceFile`/`GraphQL`/`Query` are the vendored grammar's alternate root and entry names (the corpus's root is `source_file`, snake_case, plus `Document`), and `InlineFragment`/`Extension` are shapes the corpus does not contain — an inline fragment and a bare extension node. UNMEASURED: whether these are dead branches (the F8 class) or shapes another corpus would exercise; the F8 census is the instrument that decides it and has not been run for this lane."
+  },
+  "internal_silent": {
+    "_description": "Node types the pinned grammar PRODUCES on this corpus that the analyzer's literal scan never consults. This bucket is a WORKING LIST, not a ruling: the programme's standard is that a type here is structural plumbing (punctuation, comments, wrappers) and correctly emits nothing, and that a type which is NOT plumbing is a gap. Each entry below is marked by what it looks like, and NONE has been verified by a fixture yet — GQ-G4 tracks that verification.",
+    "structural_candidates": [
+      "comma",
+      "comment"
+    ],
+    "wrapper_candidates": [
+      "Definition",
+      "Document",
+      "Name",
+      "Selection",
+      "SelectionSet",
+      "Type",
+      "Value"
+    ],
+    "extension_kinds_not_seen_by_the_literal_scan": [
+      "EnumTypeExtension",
+      "InputObjectTypeExtension",
+      "InterfaceTypeExtension",
+      "ObjectTypeExtension",
+      "ScalarTypeExtension",
+      "UnionTypeExtension",
+      "EnumValuesDefinition"
+    ],
+    "extension_kinds_note": "The analyzer handles extensions through an `EXTENSION_TO_DEFINITION` map and a `type.endsWith(\"Extension\")` test, so these kinds ARE reached — the literal scan above cannot see a dispatch that is not a literal comparison. UNMEASURED: the map is the authority and has not been read against these seven names; recorded here so the next turn checks it rather than re-deriving it.",
+    "value_and_selection_nodes": [
+      "BooleanValue",
+      "IntValue",
+      "ListValue",
+      "ObjectValue",
+      "ObjectField",
+      "ERROR"
+    ],
+    "value_and_selection_note": "Literal values inside arguments/`DefaultValue`. `ERROR` is the universal tree-sitter recovery node (every parser produces it; the wasm ABI's node-type table does not list it) and one file in this corpus has one. UNMEASURED whether any of these should produce a relationship; they are listed so the question is asked."
+  },
+  "gap": {
+    "_description": "Confirmed or suspected unemitted semantics, as a MACHINE-READABLE ARRAY because a prose-only gap field is what produced a wrong '57 gaps' count in this programme. The board counts this array. FOUR entries are the four silent relationship types the firing instrument reports; each is `severity: UNMEASURED` because this lane has not yet counted the construct on the corpus — the honest state is 'nobody has measured the denominator', and the next turn replaces it with sites/files or an implementation. GQ-G5 records that the lane has no fixtures at all, which is why nothing in this file can be called pinned.",
+    "gaps": [
+      {
+        "id": "GQ-G1",
+        "severity": "UNMEASURED",
+        "relationship_type": "calls",
+        "missing": "The analyzer emits no `calls` edge. Whether GraphQL HAS a call-shaped construct is the question the denominator must answer, and three candidate shapes exist that must each be counted or refuted on the tree: a field SELECTION (`user { name }` — the closest thing to an invocation), a directive APPLICATION (`@deprecated`), and an executable OPERATION entry point (`query Foo`).",
+        "next_step": "Count each candidate shape on the 143-file corpus and the whole `.graphql` corpus, then either emit (a field selection as `calls` would duplicate the `references` edge already emitted — that duplication is the thing to measure before implementing) or rule with the count.",
+        "provenance": "firing instrument 2026-10-09: `calls` SILENT, and the whole-corpus census emits 0."
+      },
+      {
+        "id": "GQ-G2",
+        "severity": "UNMEASURED",
+        "relationship_type": "extends",
+        "missing": "GraphQL HAS inheritance-like constructs the analyzer models differently: `extend type X` (a type EXTENSION, which the analyzer folds into the extended type as members with `metadata.inExtension`), interface IMPLEMENTATION (emitted as `implements`), and union membership (emitted as `uses`). Whether any of them is an `extends` edge in the ontology's sense — a type declaring another type as its supertype — is unmeasured.",
+        "next_step": "Count `TypeExtension`/`TypeSystemExtension` nodes (69 files / 88 nodes and 68 files / 83 nodes observed) and decide whether an extension is an `extends` edge or, as the analyzer currently assumes, membership folded into the type.",
+        "provenance": "firing instrument 2026-10-09: `extends` SILENT."
+      },
+      {
+        "id": "GQ-G3",
+        "severity": "UNMEASURED",
+        "relationship_type": "imports",
+        "missing": "GraphQL has no import statement in the language. A schema is assembled by CONCATENATION outside the language (`#import` comments in graphql-tools, `graphql-import`, code generation), so the construct may not exist as syntax at all.",
+        "next_step": "Count any file-level inclusion directive or `#import` comment on the corpus; if the answer is zero by grammar construction, rule it INAPPLICABLE with the grammar inventory as the evidence (the bash lane's BD7 shape).",
+        "provenance": "firing instrument 2026-10-09: `imports` SILENT."
+      },
+      {
+        "id": "GQ-G4",
+        "severity": "UNMEASURED",
+        "relationship_type": "instantiates",
+        "missing": "GraphQL declares types; it does not construct instances. No constructor syntax exists in the grammar.",
+        "next_step": "Confirm against the grammar's own node-type table (no constructor node type) and the corpus (0 candidate nodes), then rule INAPPLICABLE with both counts rather than prose.",
+        "provenance": "firing instrument 2026-10-09: `instantiates` SILENT."
+      },
+      {
+        "id": "GQ-G5",
+        "severity": "OPEN",
+        "relationship_type": "(fixtures)",
+        "missing": "THIS LANE HAS NO COMMITTED FIXTURES. Every claim in this file is therefore measured but unpinned: `validation/m14/fixtures/graphql/` contains the census instrument and its output, and no fixture/expectation pair exists. A regression in this analyzer would be caught by the firing instrument's counts changing, not by an assertion about which edge is wrong.",
+        "next_step": "Write fixtures for the four firing types with the shapes the census says are commonest — an object type with fields (`contains`), an interface implementation (`implements`), a field type reference (`uses`), an enum value reference (`references`) — each in both directions, before any behaviour is changed."
+      },
+      {
+        "id": "GQ-G6",
+        "severity": "OPEN",
+        "relationship_type": "(incoming)",
+        "missing": "The programme's gate reads `FAIL — 455 ambiguous + 2,317 unresolved of 11,158 edges` (`npx tsx script/m14/incoming-gate.ts graphql graphql 60`). The lane has not split that column, and the split is the second deliverable: external (spec-builtin scalars and directives, cross-file schema references), in-corpus targets that must resolve (defects), and the rest with counts.",
+        "next_step": "Classify the unresolved set with the gate's own rule and a whole-project key space, as the bash lane's `probe-bash-incoming-split.mts` does, and report both scopes.",
+        "provenance": "programme run 2026-10-09 (supervisor), not yet re-run by this lane."
+      }
+    ]
+  },
+  "design_decision": {
+    "description": "What this analyzer has DECIDED, as the file itself states it. These are quoted from the analyzer's own header contract and marked UNVERIFIED-BY-ME: the next turns confirm each against the tree before any of them is called a ruling of this spec.",
+    "decisions": [
+      {
+        "id": "GQ1",
+        "status": "UNVERIFIED BY THIS SPEC",
+        "question": "What is an `extend type X` — a second symbol, or members of the extended type?",
+        "resolution": "The analyzer's header states: an extension's members are emitted with `ownerName` = the extended type and `metadata.inExtension = true`; whether the extension also produces a symbol depends on whether the same file DECLARES the type (a pre-pass decides), because a second symbol would be a duplicate identity while a file with only the extension needs one for the `contains` edge to have a source."
+      },
+      {
+        "id": "GQ2",
+        "status": "UNVERIFIED BY THIS SPEC",
+        "question": "How is a field selection targeted, given that an executable document does not carry the parent type?",
+        "resolution": "The analyzer's header states: a selection is qualified `<Type>.<field>` only when the document itself says what type the selection is on (a fragment or inline fragment type condition); otherwise the target is the bare field name and `metadata.selectionPath` carries the full path. This is the one decision that directly shapes the 455 ambiguous column, because a bare field name is declared once per type that has it."
+      },
+      {
+        "id": "GQ3",
+        "status": "UNVERIFIED BY THIS SPEC",
+        "question": "Does `implements` flatten the left-recursive `ImplementsInterfaces` tree?",
+        "resolution": "The analyzer's header states: `ImplementsInterfaces` is left-recursive, so `A & B & C` nests as `I > I > I`, and every `NamedType` in the subtree is collected — correct for the nested and the flattened shape alike. The census observes 113 `implements` edges in 21 files, so the shape occurs and is measurable."
+      }
+    ]
+  },
+  "label_coverage": {
+    "_description": "UNMEASURED. This key exists because the fleet's spec shape has it and a missing key reads as a claim of nothing to declare. Each of the six firing types needs an explicit label contract (what its source and target ARE) before it can be counted as covered; the next turns measure them per type rather than assert them here.",
+    "types": {
+      "contains": "UNMEASURED",
+      "references": "UNMEASURED",
+      "exports": "UNMEASURED",
+      "uses": "UNMEASURED",
+      "overrides": "UNMEASURED",
+      "implements": "UNMEASURED"
+    }
+  },
+  "_incoming_side": {
+    "_description": "The second acceptance criterion, quoted from the programme run of 2026-10-09 and NOT yet reproduced by this lane: `npx tsx script/m14/incoming-gate.ts graphql graphql 60` → `FAIL — 455 ambiguous + 2,317 unresolved of 11,158 edges`, instrument self-test PASS. No external marker exists on any edge today (the lane marks nothing), which is the state the bash lane started from and the reason its first deliverable was a split rather than a marker.",
+    "classes_hypothesised_not_measured": [
+      "spec-builtin scalars and directives (`String`, `Int`, `Boolean`, `ID`, `Float`, `@deprecated`, `@skip`, `@include`) — declared by the GraphQL specification, not by any file in the corpus",
+      "cross-file schema references — a field's return type declared in another `.graphql` file of the same project, which a 60-file stride key space cannot see",
+      "executable references — field selections and fragment spreads whose target is a field name declared on a type the document does not name"
+    ],
+    "next_step": "Split with the gate's own rule against a whole-project key space, then mark only the classes a LANGUAGE FACT justifies, with the metadata key set to boolean `true`.",
+    "warning_recorded_from_other_lanes": "A STRING value under an EXTERNAL_KEYS key is inert: two lanes lost 88 and 185 edges to exactly that. And refutations cluster on single-segment owners (zig: 259 refuted at one dot, 0 at two or more; powershell: 82, all bare) — so a claim should be published only where the arbiter asks about the target itself or about a qualified owner."
+  }
+}
