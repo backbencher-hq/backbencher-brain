@@ -611,5 +611,22 @@
         "now": "The oracle exists: `script/m14/oracles/php-overrides.ts`, imported and registered in `script/m14/differential.ts`. The label is no longer compared-with-no-truth, so the declaration is withdrawn rather than kept as a stale suppression — a declaration that outlives its defect hides the next one. Complete over its SUBSET and bounded there on purpose: the base must be declared in the SAME FILE, because php keys every edge on the LEAF name (phpunit declares three `TestSuite` classes and two `Assert` classes, one vendored, with different method sets), so a cross-file base is a guess and produces no edge on EITHER side — the fixtures php/cross-file-override and php/external-override pin that. Proof: validation/m14/fixtures/php/overrides-truth-crosscheck.mts sweeps the whole admitted population with the local parser (5,094 files, 3,100 candidates) and compares against `parseFile`: 2 truth edges, 2 analyzer edges, 0 MISSING, 0 unexplained, with the comparator run on pairs one edge apart as positive controls, and with the analyzer's total asserted against `perType.overrides.edges` in validation/m60/php/reason-census.json."
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_from": "PHPD40: 'TEN of ten types fire … NUMERATORS (whole phpunit corpus, 3,231 .php files): `exports:3` and `overrides:1`' — the two types the 120-file firing log reads SILENT are a corpus-density artefact, measured on the whole corpus."
   }
 }

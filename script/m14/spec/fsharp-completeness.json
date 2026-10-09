@@ -495,5 +495,22 @@
         "now": "The oracle exists and is compared. `script/m14/fsharp-truth-oracle.ts` derives `uses` from `attribute`, which is the one F# construct a `uses` edge is FOR: it NAMES a type, applies it as a marker and never invokes it, so it is not a call (no application), not a reference (no written annotation), not a base, not an implementation and not a construction. The target is the attribute type's LEAST segment (`[<Xunit.Fact>]` names `Fact`, which is the spelling a consumer binds by) EXCEPT where this file declares a symbol under that name, when the target is that declaration's qualified name, because the written name is then provably the file's own identity rather than a same-named type from elsewhere. Two refusals are stated as rules rather than left to the read: the `target` FIELD is skipped (`[<return: Struct>]` attaches the attribute to the return, and reading the keyword as the dependency cost 11 edges in a 200-file draw), and an attribute's ARGUMENT is never read (`[<Obsolete(\"x\")>]` names `Obsolete` and nothing inside `\"x\"`). Admitted to the compared set beside `imports`, with the same measurement behind it (`5386 | 5386` un-audited-empty; no fsharp row in the coverage gate; neither label in `unexplained-by-label` across two draws; and the COMPARED-WITH-NO-TRUTH guard firing at 44 comparable `uses` edges when the arm is disabled)."
       }
     ]
+  },
+  "coverage": {
+    "_note": "IMPLEMENTED = all ten. Declared after the exports/contains ruling (docs/analyzers/EXPORTS-CONTAINS-RULING.md) to replace prose mining.",
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [],
+    "corpusUnexercised": []
   }
 }

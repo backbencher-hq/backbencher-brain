@@ -158,5 +158,31 @@
         "resolution": "RULED: YES, and the gate falsified the exclusion twice before the corpus was consulted properly. `allOf` is the only JSON Schema keyword that means 'must satisfy all of these' — `anyOf` and `oneOf` mean ALTERNATIVES, which have no ontology type, and their `$ref`s correctly contribute only `references`. Two ref forms compose, and the corpus has both: `#/…` INSIDE the document, and a SIBLING FILE carrying a fragment (`dataTypeBase.json#`), which is at once an `imports` (it names a file), a `references` (it is a `$ref`) and an `extends` (its role here is composition). Requiring `#/` dropped the file form and reported success, 3 edges short, with every gate green. One form is DECLINED and stated rather than left silent: a bare `#` resolves to the document root, which at the root is the schema itself and so a tautology, and there is one such case in the corpus. Decided from the tree, no regex, so the lane's zero-regex contract holds. Pinned by validation/m14/fixtures/json/AllOf.json, which asserts both composing forms AND the `anyOf` negative, and killed by two mutants: one drops `extends` outright, one narrows it to the intra-document form."
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "overrides"
+    ],
+    "excluded": [
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "JSON-G1: 'RULED INAPPLICABLE. A JSON document states data, not types … no endpoint to name at EITHER end' — INSTRUMENT A, 13 distinct node types over a 400-file stride"
+      },
+      {
+        "label": "instantiates",
+        "evidence": "grammar-absence",
+        "from": "JSON-G2: 'RULED INAPPLICABLE. Construction is an EXPRESSION, and a JSON document has no expressions' — INSTRUMENT A"
+      }
+    ],
+    "corpusUnexercised": [],
+    "_from": "BD-ontology: 'EIGHT are emitted — contains, uses, references, imports, exports, extends, calls, overrides. TWO are excluded by the language: implements and instantiates.'"
   }
 }

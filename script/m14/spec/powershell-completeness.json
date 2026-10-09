@@ -340,5 +340,22 @@
         "closes_when": "a implements oracle exists for this language; then admit it and reconcile"
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_from": "PSD8: 'THE CONSTRUCT EXISTS AND `overrides` EMITS — the SILENCE IS A SAMPLING ARTIFACT' (1,181-file census, 273 class declarations, 26 with a same-file base clause); docs/analyzers/real-powershell-analyzer.md:222 '`implements` | EMITTED | 3 edges | 2 files'; pinned by validation/m14/fixtures/powershell/class-inherit-psa2 (the `implements` row this fixture exists for)."
   }
 }

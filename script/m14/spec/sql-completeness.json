@@ -536,5 +536,29 @@
       "why": "The lane calls analyzer.analyze() directly, so the engine's setGrammar handoff in parseRaw never ran for it, and analyze is synchronous while Language.load is not. Every recovery pass was therefore INERT in the fixture lane. The cost was not theoretical: the resync could not be pinned by any synthetic fixture and needed its own corpus gate, and a mutant that deleted the EXECUTE pass 'passed' by never running. Two traps, both hit: setGrammar is STATIC so it must be reached through analyzer.constructor, and an ambiguity between two grammar rules is a reason to DECLARE the conflict, not to delete a capability.",
       "evidence": "validation/m60/sql/execute-literal-recovery.json (harnessBugFoundAndFixed)"
     }
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "overrides"
+    ],
+    "excluded": [
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "SQL-D13/SQL-D18: no supertype clause in the grammar; SQL has no interface type"
+      },
+      {
+        "label": "instantiates",
+        "evidence": "grammar-absence",
+        "from": "SQL-D24 + SQL-D13: a cast constructs a value but is not object construction; 4,406 cast nodes carry no constructor semantics"
+      }
+    ],
+    "corpusUnexercised": [],
+    "_from": "SQL-D11: 'the EARLIER RULING IS FALSIFIED and `imports` is now EMITTED'; SQL-D12/SQL-D21 give `overrides` EMITTED; SQL-D5 measures `references` on '441 files / 6,917 edges' with its target rule (bare leaf, qualified text kept in metadata), so references is emitted AND exercised. `exports` and `extends` remain unimplemented (SQL-D16 rules exports out on the DATABASE-scope ground) — recorded as gaps rather than folded into either column. NOTE: the hand table's 5/8 omitted `references`; the generated 6/8 stands on D5's measurement."
   }
 }

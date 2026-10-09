@@ -293,9 +293,15 @@ function asTypeName(v: unknown): string | null {
 }
 type Exclusion = { label: string; evidence: "grammar-absence" | "zero-sites" | "unclassified"; from: string; quote: string }
 type Coverage = {
-  /** does the spec declare ANY relationship-type coverage (an exclusion, an emitted set, or a
-   *  field-valued ruling)? `false` is "not declared", which must never render as "none". */
+  /** does the spec declare ANY relationship-type coverage? A well-formed `coverage` block, an
+   *  exclusion, an emitted set or a field-valued ruling. `false` is "not declared", which must
+   *  never render as "none". */
   coverageDeclared: boolean
+  /** where the declaration came from: the structured block, or prose/fields */
+  declaredBy: "spec coverage block" | "spec prose + firing log"
+  /** applicable, not implemented, not excluded — the honest remainder, named rather than folded
+   *  into `corpus-unexercised` (a zero-sites type is unimplemented, not "implemented but unexercised") */
+  gaps: string[] | null
   implemented: string[] | null
   implementedFrom: string
   declaredEmitted: string[] | null
@@ -443,6 +449,38 @@ function deriveCoverage(lane: string, firedTypes: string[] | null, silent: strin
   const rel = `${SPEC_DIR}/${lane}-completeness.json`
   let doc: any = null
   try { doc = JSON.parse(readFileSync(resolve(ROOT, rel), "utf8")) } catch { /* state below */ }
+  // THE DECLARED BLOCK WINS. The lead approved killing the prose miner: a lane states its
+  // coverage in `coverage`, the board reads the field, and a lane that has not declared one
+  // reads `not declared` rather than a guess. The prose path below stays ONLY as a fallback for
+  // the lanes that have not migrated yet, and it is deliberately CONSERVATIVE — measured, the
+  // loosened version produced FALSE exclusions for julia, dart and yaml, and a false exclusion
+  // shrinks the denominator and inflates n/N, which is the one error direction that flatters.
+  const blk = doc?.coverage
+  if (blk && typeof blk === "object" && Array.isArray(blk.implemented)) {
+    const impl = TYPES.filter((t) => blk.implemented.includes(t))
+    const exc: Exclusion[] = []
+    for (const x of Array.isArray(blk.excluded) ? blk.excluded : []) {
+      const lab = asTypeName(x?.label)
+      if (lab === null) continue
+      const ev = x?.evidence === "grammar-absence" ? "grammar-absence" : x?.evidence === "zero-sites" ? "zero-sites" : "unclassified"
+      exc.push({ label: lab, evidence: ev as Exclusion["evidence"], from: String(x?.from ?? "declared"), quote: `coverage.excluded ${lab}` })
+    }
+    const gAbs = exc.filter((x) => x.evidence === "grammar-absence").map((x) => x.label)
+    const uncl = exc.filter((x) => x.evidence === "unclassified").map((x) => x.label)
+    const applicable = TOTAL_TYPES - gAbs.length - uncl.length
+    const unex = (Array.isArray(blk.corpusUnexercised) ? blk.corpusUnexercised : [])
+      .map((x: any) => (typeof x === "string" ? x : asTypeName(x?.label) ?? ""))
+      .filter((x: string) => typeSet.has(x))
+    const gaps = TYPES.filter((t) => !impl.includes(t) && !gAbs.includes(t) && !uncl.includes(t) && !unex.includes(t))
+    // THE DECLARATION MUST CLOSE. implemented + unexercised + gaps === applicable, or the block
+    // is internally inconsistent and says so — a declared number that does not add up is a
+    // defect in the declaration, not a rounding.
+    if (impl.length + unex.length + gaps.length !== applicable) {
+      addNote(`coverage block does not close: implemented ${impl.length} + unexercised ${unex.length} + gaps ${gaps.length} ≠ applicable ${applicable}`, lane)
+    }
+    return { coverageDeclared: true, declaredBy: "spec coverage block", gaps, implemented: impl, implementedFrom: "spec coverage block",
+      declaredEmitted: impl, fired: firedTypes, excluded: exc, unexercised: unex, applicable, spec: rel, specState: "read" }
+  }
   const excluded: Exclusion[] = []
   let declared: string[] | null = null
   let coverageDeclared = false
@@ -530,7 +568,11 @@ function deriveCoverage(lane: string, firedTypes: string[] | null, silent: strin
     ? TYPES.filter((t) => !implemented.includes(t) && !grammarAbsence.includes(t) && !unclassified.includes(t))
     : null
   if (declared !== null && declared.length > 0) coverageDeclared = true
-  return { coverageDeclared, implemented, implementedFrom, declaredEmitted: declared, fired, excluded, unexercised, applicable, spec: rel, specState }
+  const gAbs2 = excluded.filter((x) => x.evidence === "grammar-absence").map((x) => x.label)
+  const uncl2 = excluded.filter((x) => x.evidence === "unclassified").map((x) => x.label)
+  const gaps = applicable === null || implemented === null ? null
+    : TYPES.filter((t) => !implemented.includes(t) && !gAbs2.includes(t) && !uncl2.includes(t) && !(unexercised ?? []).includes(t))
+  return { coverageDeclared, declaredBy: "spec prose + firing log", gaps, implemented, implementedFrom, declaredEmitted: declared, fired, excluded, unexercised, applicable, spec: rel, specState }
 }
 
 // ------------------------------------------------------------------ one row
@@ -606,9 +648,11 @@ function buildRow(lane: string, ext: string, firing: ReturnType<typeof parseFiri
       inc?.ext ? `${inc.ext.count}${inc.ext.kind}` : "—",
       gapCell,
       cov.applicable === null ? "no spec" : `${cov.implemented === null ? "?" : cov.implemented.length}/${cov.applicable}`,
+      cov.declaredBy,
       !cov.coverageDeclared ? "not declared"
         : cov.excluded.map((x) => `${x.label}(${x.evidence === "grammar-absence" ? "G" : x.evidence === "zero-sites" ? "0" : "?"})`).join(" ") || "none",
       cov.unexercised === null ? "—" : cov.unexercised.length === 0 ? "none" : cov.unexercised.join(" "),
+      cov.gaps === null ? "—" : cov.gaps.length === 0 ? "none" : cov.gaps.join(" "),
       g.date ?? (mtimeMs === null ? "no file" : `${stamp(mtimeMs).slice(0, 10)}~`),
       stale,
     ],
@@ -623,7 +667,7 @@ function buildRow(lane: string, ext: string, firing: ReturnType<typeof parseFiri
         contract: "implemented / applicable",
         implemented: cov.implemented, implementedFrom: cov.implementedFrom,
         applicable: cov.applicable, coverageDeclared: cov.coverageDeclared, declaredEmitted: cov.declaredEmitted, fired: cov.fired,
-        corpusUnexercised: cov.unexercised,
+        corpusUnexercised: cov.unexercised, gaps: cov.gaps, declaredBy: cov.declaredBy,
         excluded: cov.excluded.map((x) => ({ label: x.label, evidence: x.evidence, from: x.from })),
         arithmetic: cov.applicable === null ? "no spec: not derived"
           : `applicable = 10 - ${cov.excluded.filter((x) => x.evidence === "grammar-absence").length} grammar-absence - ${cov.excluded.filter((x) => x.evidence === "unclassified").length} unclassified = ${cov.applicable}; corpus-unexercised = applicable - implemented`,
@@ -692,7 +736,7 @@ if (JSON_MODE) {
     lanes: rows.map((r) => r.json), summary, notes,
   }, null, 2))
 } else {
-  const headers = ["LANE", "FIRED", "SILENT", "INCOMING", "EXT CLM", "GAPS", "IMPL/APPL", "EXCLUDED (class)", "CORPUS-UNEXERCISED", "LAST COMMIT", "STALE"]
+  const headers = ["LANE", "FIRED", "SILENT", "INCOMING", "EXT CLM", "GAPS", "IMPL/APPL", "EXCLUDED (class)", "CORPUS-UNEXERCISED", "UNIMPLEMENTED (gaps)", "FROM", "LAST COMMIT", "STALE"]
   const widths = headers.map((h, i) => Math.max(h.length, ...rows.map((r) => r.cells[i].length)))
   const line = (cells: string[]) => cells.map((c, i) => c + " ".repeat(Math.max(0, widths[i] - c.length))).join("  ")
   console.log(`language board — ${rows.length} laptop-B lanes — READ-ONLY — ${stamp(Date.now())}`)
@@ -728,7 +772,9 @@ if (JSON_MODE) {
   console.log(`                      node/keyword inventory: the language cannot express it, so it leaves the denominator), 0 zero-sites (the`)
   console.log(`                      construct exists but occurs 0 times in OUR corpus: it STAYS in the denominator as corpus-unexercised),`)
   console.log(`                      ? unclassified (ruled out, evidence class unreadable: its own bucket, never promoted to G)`)
-  console.log(`          CORPUS-UNEXERCISED = applicable, implemented, and no construct in our corpus to fire on (yaml calls needs a workflow file)`)
+  console.log(`          CORPUS-UNEXERCISED = declared implemented with no construct in our corpus to fire on (its own block key names the proof)`)
+  console.log(`          UNIMPLEMENTED (gaps) = applicable, not implemented, not excluded — the remainder the declaration leaves open`)
+  console.log(`          FROM = which declaration the row was derived from: 'spec coverage block' (structured, preferred) or the prose fallback`)
   console.log(`          STALE = worst of firing+incoming vs the analyzer's content mtime (fallback: last commit if the file is gone)`)
   console.log(`                  a commit that postdates a log without an mtime change is NOT stale and is listed in a note; ~ = no commit date`)
   for (const n of notes) console.log(`NOTE      ${n}`)

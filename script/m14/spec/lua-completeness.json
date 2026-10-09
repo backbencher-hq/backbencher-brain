@@ -174,5 +174,27 @@
         "ruling": "NOT A DEFECT — an instrument-scope effect, recorded so the column is never read as 2,222 broken edges. A complete-key-space run moves every one of the 1,112 out of `unresolved`; 815 of them land in `ambiguous`, which is the number the next pass should work on."
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "BD-implements: 'RULED, and `implements` is the type it rules. Instrument A: the pinned grammar produced 100 distinct node types across 1,875 corpus files, and NONE of the six node types that would express it is among them'"
+      }
+    ],
+    "corpusUnexercised": [],
+    "_from": "BD-ontology: 'NINE are emitted — calls, uses, contains, imports, references, exports, extends, overrides, instantiates — and ONE is ruled: `implements`.'"
   }
 }

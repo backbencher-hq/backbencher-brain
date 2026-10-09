@@ -693,5 +693,35 @@
       }
     ],
     "description": "Owner rulings — never silent absence (ZIGD2 added by the F6 fixture-coverage gate, CORRECTED 2026-09-28; Z11-Z20 added by the 2026-09-28 deep review, whose instrument set is script/m14/tmp/zigw-*.ts: a grammar census over 3,839 files in three corpora, a symbol-kind dispatch census (358 cells), a declared-type graph audit, a hostile synthetic battery, a dump-based A/B, and an oracle red-team. Every count in those entries is a measurement.)"
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "instantiates"
+    ],
+    "excluded": [
+      {
+        "label": "extends",
+        "evidence": "grammar-absence",
+        "from": "ZIG.O.1 (instrument A): no inheritance in the grammar — 0 of 28 probed inheritance words"
+      },
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "ZIG.O.2 (instrument A): an interface is an `opaque` container plus function POINTERS; no declaring name"
+      },
+      {
+        "label": "overrides",
+        "evidence": "zero-sites",
+        "from": "ZIG.O.3 — the construct is expressible and occurs 0 times in the corpus, so by the class definition it STAYS IN the denominator (the hand table excluded it; corrected 2026-10-09)"
+      }
+    ],
+    "corpusUnexercised": [],
+    "_from": "ZIG.O.4 gives `instantiates` EMITTED ('ZIG.D.1's claim that it could not was FALSIFIED by measurement … Production parseFile emits instantiates for a construction of a type the file names')."
   }
 }

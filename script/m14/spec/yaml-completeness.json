@@ -418,5 +418,38 @@
         "probe": "`find $HOME/fixtures/repositories/ansible -name '*.yaml' | wc -l` -> 13; `-name '*.yml'` -> 2,069. The gate prints its own population, which is how this was caught: `population: 13 parsed of 13 sampled (corpus has 13 .yaml files across 1 repos; stride sample)`. Any yaml number quoted in this programme must say which population it is about."
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "contains",
+      "uses",
+      "references",
+      "imports",
+      "extends",
+      "overrides"
+    ],
+    "excluded": [
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "YAML-D10: 'RULED — YAML has no construct that expresses interface satisfaction'; instrument A: 47 distinct node types, 0 declaration nodes"
+      },
+      {
+        "label": "instantiates",
+        "evidence": "grammar-absence",
+        "from": "YAML-D11: 'RULED — YAML has no construct that expresses construction of a value'; instrument A: 0 construction nodes, 0 tags with construction semantics"
+      }
+    ],
+    "corpusUnexercised": [
+      {
+        "label": "calls",
+        "proof": "YAML-D9 declares it EMITTED ('196 occurrences in 92 of the 16371 admitted yaml files'), but YAML-D14 measures the FIRING corpus: '`bun validation/m14/fixtures/yaml/lane-census.ts … 0` -> `calls 0 edges, 0 sites in 2,076 files`' — implemented, exercised only by validation/m14/fixtures/yaml/workflow-call-role"
+      },
+      {
+        "label": "exports",
+        "proof": "YAML-D5: '`imports`/`exports` are emitted from tag and key SHAPES' — the tag half is `!include`, and the same entry records 'ZERO `!include` in any of the eight corpora, so the tag half rests on fixtures'"
+      }
+    ],
+    "_from": "YAML-D12 gives `overrides` EMITTED with a whole-corpus measurement ('20 duplicate-key pairs in 17 of the 16371 admitted yaml files'), so it is implemented; YAML-D10/D11 are the two grammar-absence exclusions. NOTE the arithmetic: 6 implemented + 2 unexercised = 8 applicable, and the hand table's 7/8 is NOT reproduced — see the coverage report."
   }
 }
