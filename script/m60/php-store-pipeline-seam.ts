@@ -72,6 +72,89 @@ const SOURCES = [
   "validation/m14/fixtures/php/member-identity.php",
 ]
 
+/**
+ * CHECK D's source, written here rather than copied from a fixture, and built to make the WRONG
+ * answer reachable rather than merely unlikely.
+ *
+ * The store's insert-time resolver (`resolveTargetStmt`) attaches a bare member name to
+ * `ORDER BY COALESCE(s.is_declaration,0) ASC, (s.file_id = ?) DESC, (f.language = ?) DESC, s.id
+ * LIMIT 1`, i.e. same-file first and then the lexicographically smallest symbol id — and an id is
+ * `${projectId}:${relativePath}:${name}:${line}`, so when nothing in the citing file declares the
+ * name, the winner is the ALPHABETICALLY FIRST declaration anywhere in the project. Three
+ * declarations of `act` are placed so that the wrong ones (`ZetaStore`, `UpsilonStore`) both sort
+ * before the right one (`WidgetBase`), which makes the mislanding deterministic instead of
+ * occasional.
+ *
+ * The four rows, and why each is here:
+ *
+ *   `SubWidget::run` -> `$this->act()`   the class does NOT declare it and its base DOES: PHP's own
+ *                                        lookup says `WidgetBase::act`, and the analyzer published
+ *                                        `metadata.owner: SubWidget` because `$this` states the
+ *                                        receiver outright. The honest answer is reachable; the
+ *                                        ranking's answer is a different class.
+ *   `SubWidget::run` -> `$this->own()`   declared by the receiver itself: the arm a pass that went
+ *                                        straight to the ancestors would get wrong.
+ *   `Broken::go`     -> `$this->act()`   its base is UNRESOLVABLE (`\Totally\Outside\Thing`), so the
+ *                                        analyzer publishes no `super_types` for `Broken` and nothing
+ *                                        in the chain declares `act`. The honest answer is NULL, and
+ *                                        this is the row that a resolver preferring a stranger over
+ *                                        silence gets wrong.
+ *   `WidgetBase::act`, `ZetaStore::act`, `UpsilonStore::act`  exist as SYMBOLS, so D3's NULL is a
+ *                                        refusal and not an absence — the gate asserts they landed.
+ */
+const SRC_MEMBER_CHANNEL = `<?php
+
+namespace Fixture\\Seam;
+
+class ZetaStore
+{
+    public function act(): int
+    {
+        return 1;
+    }
+}
+
+class UpsilonStore
+{
+    public function act(): int
+    {
+        return 2;
+    }
+}
+
+abstract class WidgetBase
+{
+    public function act(): int
+    {
+        return 3;
+    }
+}
+
+class SubWidget extends WidgetBase
+{
+    public function own(): int
+    {
+        return 4;
+    }
+
+    public function run(): int
+    {
+        $this->act();
+        $this->own();
+        return 0;
+    }
+}
+
+class Broken extends \\Totally\\Outside\\Thing
+{
+    public function go(): int
+    {
+        $this->act();
+        return 0;
+    }
+}
+`
+
 /** Named pins — the absolute expectations, so an analyzer that publishes nothing cannot pass. */
 const PINNED_HERITAGE: Array<{ owner: string; contains: string[]; note: string }> = [
   { owner: "WithBaseAndInterfaces", contains: ["Base", "Second", "Labeled"], note: "both halves at once" },
@@ -109,6 +192,7 @@ async function main(): Promise<void> {
   for (const rel of SOURCES) {
     writeFileSync(path.join(project, "src", path.basename(rel)), readFileSync(path.join(ROOT, rel)))
   }
+  writeFileSync(path.join(project, "src", "member-channel.php"), SRC_MEMBER_CHANNEL)
 
   console.log("php store seam (production path)")
   console.log(`  project: ${project}`)
@@ -184,6 +268,11 @@ async function main(): Promise<void> {
   else fail("C: no extends/implements edges stored — check A's zero is unreadable until this is understood")
 
   // ---- CHECK A: does the column carry what the analyzer published?
+  // Scoped to the names CHECK A measured, because CHECK D's source now shares the store: a name
+  // filter rather than a file filter, and it is exact rather than approximate — D's identifiers
+  // (`ZetaStore`, `UpsilonStore`, `WidgetBase`, `SubWidget`, `Broken`) do not occur in either
+  // fixture, which the `matches exactly 1 stored row` assertion below would catch if they ever did.
+  const analyzerNames = new Set(analyzerHeritage.map((h) => h.name))
   const storedByName = new Map<string, any[]>()
   for (const s of symbols) {
     const k = String(s.name)
@@ -191,7 +280,9 @@ async function main(): Promise<void> {
     list.push(s)
     storedByName.set(k, list)
   }
-  const storeCarriedRows = symbols.filter((s) => s.super_types !== null && s.super_types !== undefined)
+  const storeCarriedRows = symbols.filter(
+    (s) => s.super_types !== null && s.super_types !== undefined && analyzerNames.has(String(s.name)),
+  )
   const storeCarried = storeCarriedRows.length
   console.log(`  store carries super_types on ${storeCarried} symbol(s)`)
 
@@ -299,6 +390,91 @@ async function main(): Promise<void> {
     }
     if (bare.length === 0 && missing.length === 0) {
       ok(`B: all ${members.length} stored ${MEMBER_NAME} member(s) carry an owner-qualified name (${[...qnames].sort().join(", ")})`)
+    }
+  }
+
+  // ---- CHECK D: the member channel — where a member read was actually BOUND.
+  //
+  // A, B and C are about FACTS arriving. This one is about a fact arriving at the right place, which
+  // is the only thing an agent reading the graph can be wrong about: `SubWidget::run` calling
+  // `$this->act()` and the store saying `ZetaStore::act` is not an unresolved edge, it is a confident
+  // false statement about which class a method call reaches.
+  const memberRows = db
+    .prepare(
+      `SELECT r.id, r.target_external, r.target_symbol_id, s.name AS source_name,
+              t.name AS target_name, t.qualified_name AS target_qname
+         FROM brain_relationship r
+         LEFT JOIN brain_symbol s ON s.id = r.source_symbol_id
+         LEFT JOIN brain_symbol t ON t.id = r.target_symbol_id
+        WHERE r.project_id = ? AND r.relationship_type IN ('calls','uses')`,
+    )
+    .all(pid) as any[]
+
+  const landedOn = (sourceName: string, target: string): string | null | undefined => {
+    const rows = memberRows.filter((r) => String(r.source_name) === sourceName && String(r.target_external) === target)
+    if (rows.length === 0) return undefined // no such row at all: a different failure than a NULL
+    const row = rows.find((r) => r.target_symbol_id !== null && r.target_symbol_id !== undefined)
+    return row ? String(row.target_qname) : null
+  }
+
+  // D0 — the row set itself. A resolver that DELETED edges to avoid binding them would look like a
+  // success on D1-D3, so the rows the analyzer emitted are counted in the store first.
+  {
+    const emitted = (await ASTEngine.parseFile(path.join(project, "src", "member-channel.php"), SRC_MEMBER_CHANNEL)) as any
+    const emittedMemberRows = (emitted.relationships ?? []).filter(
+      (r: any) => r.type === "calls" || r.type === "uses",
+    ).length
+    const storedMemberRows = memberRows.filter((r) => r.id.includes("member-channel")).length
+    if (emittedMemberRows === storedMemberRows && emittedMemberRows > 0) {
+      ok(`D0: all ${emittedMemberRows} member row(s) of member-channel.php are in the store — a NULL below is a refusal, not an absence`)
+    } else {
+      fail(`D0: member-channel.php emitted ${emittedMemberRows} member row(s) and the store holds ${storedMemberRows}`)
+    }
+  }
+
+  // D4 (control) — the declarations the wrong answer would have to come from must EXIST, or D1/D3
+  // pass for the wrong reason.
+  for (const qn of ["ZetaStore.act", "UpsilonStore.act", "WidgetBase.act", "SubWidget.own"]) {
+    const present = symbols.some((s) => String(s.qualified_name) === qn)
+    if (present) ok(`D4: ${qn} is a stored symbol, so it is available to be chosen wrongly`)
+    else fail(`D4: ${qn} is not in the store — CHECK D cannot distinguish a correct refusal from a missing declaration`)
+  }
+
+  // D1 — inherited read: the receiver does not declare it, its base does. PHP's own lookup.
+  {
+    const land = landedOn("run", "act")
+    if (land === undefined) fail("D1: no `$this->act()` row from `SubWidget::run` at all")
+    else if (land === null) {
+      fail(
+        "D1: `SubWidget::run -> $this->act()` is UNRESOLVED, but `WidgetBase` declares `act` and `metadata.owner` names the receiver — an honest NULL is still a hole where PHP's own lookup has an answer",
+      )
+    } else if (land.endsWith("WidgetBase.act")) {
+      ok("D1: `$this->act()` in the subclass lands on WidgetBase.act — the declared ancestor, not the alphabetically first stranger")
+    } else {
+      fail(
+        `D1: \`$this->act()\` in \`SubWidget::run\` landed on ${land} — ${land.split(".")[0]} does not declare it and is not an ancestor of SubWidget. This is the confident-wrong-edge shape: nothing about the row is marked unresolved.`,
+      )
+    }
+  }
+
+  // D2 — the receiver's OWN declaration: the arm a straight-to-the-ancestors rule would break.
+  {
+    const land = landedOn("run", "own")
+    if (land === undefined) fail("D2: no `$this->own()` row from `SubWidget::run` at all")
+    else if (land && land.endsWith("SubWidget.own")) ok("D2: `$this->own()` lands on the receiver's own declaration")
+    else fail(`D2: \`$this->own()\` landed on ${land === null ? "NULL" : land} — expected the receiver's own SubWidget.own`)
+  }
+
+  // D3 — no answer is reachable: the base is unresolvable, so nothing in the chain declares `act`.
+  {
+    const land = landedOn("go", "act")
+    if (land === undefined) fail("D3: no `$this->act()` row from `Broken::go` at all")
+    else if (land === null) {
+      ok("D3: `$this->act()` behind an unresolvable base stays NULL — the honest \"not known\", not a stranger")
+    } else {
+      fail(
+        `D3: \`$this->act()\` behind the unresolvable base \\Totally\\Outside\\Thing landed on ${land} — that class is neither the receiver nor an ancestor, and the edge is stored as resolved.`,
+      )
     }
   }
 

@@ -98,6 +98,100 @@ export type MemberOwnerResolutionResult = {
   ambiguousInChain: number
 }
 
+/**
+ * The owner channel's CLAIM over the rows that state their own receiver.
+ *
+ * ## The defect this closes
+ *
+ * `storeResults`' `resolveTargetStmt` attaches a bare member name to the nearest same-named symbol
+ * and otherwise to the LEXICOGRAPHICALLY SMALLEST id — `${projectId}:${relativePath}:${name}:${line}`,
+ * compared as TEXT. A member name is not identifying (`act` is a method on many classes at once), so
+ * for a member read whose own file does not declare the name the winner is whichever declaration
+ * sorts first. The row is then stored RESOLVED, and nothing about it says the choice was arbitrary.
+ *
+ * That is the shape that makes an agent hallucinate rather than abstain: `SubWidget::run` calling
+ * `$this->act()` with the graph answering `ZetaStore::act` is not an unresolved edge, it is a
+ * confident false statement about which method the call reaches — and the honest answers are both
+ * available (PHP's own lookup says the declared ancestor; where nothing declares it, the answer is
+ * "not known").
+ *
+ * ## What it does
+ *
+ * A relation carrying `metadata.owner` is one whose receiver the ANALYZER could name (`$this->`,
+ * `self::`, `static::`, `parent::`, `C::`), which is exactly the input `resolveMemberTargetsByOwner`
+ * implements a rule for. So those rows are WITHDRAWN from the name-based binding and re-resolved by
+ * the owner channel: the pass is authoritative for them, and a row it declines is left NULL rather
+ * than handed back to the ranking.
+ *
+ * The withdrawal is not cosmetic: the pass only ever fills a NULL, so without it the ranking's wrong
+ * answer would simply survive. Both halves are in one function on purpose — a caller that withdrew
+ * and then failed to re-resolve would silently delete every owner-carrying binding in the project.
+ *
+ * Measured on php's whole admitted population (5,094 files, 350,368 edges) by
+ * `validation/m14/fixtures/php/store-resolution-census.mts`, which builds this exact configuration as
+ * its phase B: 40,699 rows owner-resolved by the ranking become **45,166**, and 5,964 of the 6,114
+ * rows the ranking had bound elsewhere move to a declaration the receiver's own chain holds. The
+ * trade it does make is stated rather than hidden: a row the ranking happened to get right and the
+ * pass declines becomes an honest NULL instead of a lucky guess.
+ *
+ * ## Scope, by the DATA and not by a language switch
+ *
+ * The predicate is the presence of a receiver on the relation, not the file's language, because that
+ * is what makes the pass applicable. php is the only lane publishing the key today (`withMemberOwner`
+ * in `real-php-analyzer.ts`), so the blast radius is php today and widens automatically for any lane
+ * that later publishes the same fact. A project with no owner-carrying rows costs one indexed
+ * prefilter query and nothing else.
+ *
+ * It never creates or deletes an edge and never touches a row of another relationship type: `calls`
+ * and `uses` are the pass's input, so they are the only types withdrawn, and a row that is withdrawn
+ * is re-bound or left NULL by the same pass that would have been handed it anyway.
+ */
+export function claimOwnerCarryingTargets(
+  rawDb: any,
+  projectId: string,
+): MemberOwnerResolutionResult & { withdrawn: number } {
+  const withdrawnIds: string[] = []
+  try {
+    // The LIKE is a PREFILTER that the index can answer cheaply; the test is the parsed key below.
+    // It cannot match `ownerKind` (whose key text is `"ownerKind":`), and a literal `"owner":`
+    // inside some other metadata string is still rejected by the parse.
+    const candidates = rawDb
+      .prepare(
+        `SELECT id, metadata FROM brain_relationship
+          WHERE project_id = ? AND relationship_type IN ('calls','uses')
+            AND target_symbol_id IS NOT NULL AND metadata IS NOT NULL AND metadata LIKE '%"owner":%'`,
+      )
+      .all(projectId) as any[]
+    for (const r of candidates) {
+      let owner = ""
+      try {
+        const parsed = JSON.parse(String(r?.metadata ?? "{}"))
+        if (parsed && typeof parsed === "object" && typeof (parsed as any).owner === "string") {
+          owner = (parsed as any).owner
+        }
+      } catch {
+        // Unparseable metadata is not a receiver: the row keeps the binding it has.
+      }
+      if (!owner) continue
+      withdrawnIds.push(String(r.id))
+    }
+    if (withdrawnIds.length > 0) {
+      const clear = rawDb.prepare(
+        `UPDATE brain_relationship SET target_symbol_id = NULL
+          WHERE id = ? AND target_symbol_id IS NOT NULL`,
+      )
+      for (const id of withdrawnIds) clear.run(id)
+    }
+  } catch {
+    // A withdrawal that throws mid-way leaves the rows it already cleared unresolved, and the pass
+    // below is exactly the recovery for that — it re-binds them from the receiver. It is NOT true
+    // that a failure leaves everything as it was, and saying so would be the kind of comment that
+    // stops the next reader from checking.
+  }
+  const out = resolveMemberTargetsByOwner(rawDb, projectId)
+  return { ...out, withdrawn: withdrawnIds.length }
+}
+
 export function resolveMemberTargetsByOwner(rawDb: any, projectId: string): MemberOwnerResolutionResult {
   const out: MemberOwnerResolutionResult = {
     scanned: 0,

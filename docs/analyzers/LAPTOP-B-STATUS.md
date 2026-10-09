@@ -1304,7 +1304,35 @@ the exact rows and the experiments, not edited.
   artifact only on that key, proving the baseline had drifted across ~3.5h of indexer commits
   (`4c072d50b`, `028be23b7`, `886bfb069`) — so the census artifact's `resolved:owner`/`null:*` split is
   not comparable across 2026-10-08 12:30, and every key this round claims is, because OFF and ON share
-  a commit. Not claimed: that the store's own binding improves (phase B gives the pass its whole
-  input; the insert-time ranking still claims those rows first — that is the ranking round's number),
-  nor that 3,805 is a shortfall (NULL is the honest "declares no supertypes").
+  a commit. Not claimed at that commit: that the store's own binding improves (phase B gives the pass
+  its whole input; the insert-time ranking still claimed those rows first), nor that 3,805 is a
+  shortfall (NULL is the honest "declares no supertypes"). **The first of those was superseded the next
+  day — see round 8.**
+- **php round 8 (PHPD42): the owner channel is AUTHORITATIVE for the rows that state their receiver.**
+  `resolveTargetStmt` attaches a bare member name to the LEXICOGRAPHICALLY SMALLEST id when the citing
+  file does not declare it, and stores the row RESOLVED — so `SubWidget::run` calling `$this->act()` was
+  answered `ZetaStore::act`, a confident false statement about which method the call reaches. That is
+  the exact shape that makes an agent hallucinate rather than abstain, and both honest answers were
+  available. `claimOwnerCarryingTargets` (`src/ast/member-owner-resolution.ts`) now withdraws every row
+  carrying a relation-level `metadata.owner` from whatever bound it and lets the owner+ancestor rule
+  decide — declining to NULL rather than handing the row back. Called at BOTH resolution sites
+  (`storeResults`' inline strategies AND `resolveRelationships`' linear plan), each immediately before
+  the cross-language pass, and idempotent because a real run reaches both. Scope is by the DATA, not a
+  language switch: php is the only lane publishing a receiver (`withMemberOwner`), so the blast radius
+  is php today and widens by itself if another lane publishes the same fact. **The gate came first and
+  was RED**: `php-store-pipeline-seam.ts` CHECK D landed `$this->act()` on `UpsilonStore.act` for both the
+  inherited read and the unresolvable-base read; after the change it lands on `WidgetBase.act`, on the
+  receiver's own declaration, and on an honest NULL respectively, with the wrong-answer symbols asserted
+  present so a NULL is a refusal and not an absence. Population, on a 1,500-file stride frame (29% of the
+  5,094 admitted files — the whole-population run needs ~7 min and did not complete on a loaded box,
+  twice): **phase A equals phase B to the digit, `resolved:MISLANDED` and `resolved:not-a-member` gone
+  entirely, `mislandings repaired 0 of 0`** — 9,712 owner rows resolved, 10,457 refused. Artifact
+  `validation/m60/php/store-resolution-census.owner-channel.json`; the committed whole-population
+  artifact is still the PRE-claim measurement and regenerating it is outstanding work, not an open
+  question. `owner-resolution-gate.mts` §2 went red by design (it pinned the defect) and now pins the
+  answers a rule can defend — while KEEPING the one row the rank still decides (`goPlain`, no published
+  receiver) pinned to its old wrong answer, so the scope of the change is visible in a gate rather than
+  in a paragraph. Not claimed: that owner-LESS member reads resolve (the type-inference wall, 107,313
+  endpoints, now the population's largest honest-unknown class), nor that the resolved COUNT is the
+  headline — the headline is that 6,114 rows stopped asserting a receiver they do not have.
 - Zero regexes: **yes** (18 → 0; laptop A's handoff records they have not matched this).

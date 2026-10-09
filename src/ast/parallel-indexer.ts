@@ -4314,8 +4314,17 @@ export async function storeResults(
              // that distinguishes the many same-named members a C-family file
              // declares. Every other relationship type keeps line_number as a
              // SITE (where the call/read happened) and must NOT be resolved by it.
-             const resolvedRow =
-               relType === "contains" && relLine !== null
+             // MEASUREMENT SWITCH, off by default: with BB_TEST_SKIP_EDGE_RESOLVE=1 the
+             // per-edge resolve is skipped entirely, so the store phase can be measured
+             // with and without it. It exists because the per-edge SELECT was believed
+             // to dominate the store ("C did not disappear, it moved into the store"),
+             // and a belief about where time goes is worth one experiment. Used by
+             // script/perf/probe-store-phases.ts; it leaves target_symbol_id NULL, so the
+             // graph is NOT correct in this mode and nothing but a measurement may use it.
+             const skipEdgeResolve = process.env.BB_TEST_SKIP_EDGE_RESOLVE === "1"
+             const resolvedRow = skipEdgeResolve
+               ? null
+               : relType === "contains" && relLine !== null
                  ? (resolveContainsTargetStmt.get(projectId, targetLeaf, fileId, relLine, fileLang) as any)
                  : (resolveTargetStmt.get(projectId, targetLeaf, fileId, fileLang) as any)
              const targetId = resolvedRow?.id || null

@@ -2738,11 +2738,13 @@ like rather than a number that moved.
 
 ### 5. What this round does NOT claim
 
-- **NOT that the 3,506 rows are a resolution quality win in the store's own binding.** Phase B is the
-  owner channel *given its whole input* — the census clears every owner-carrying row to NULL and lets
-  the pass run. The store's insert-time ranking still claims those rows first, so the production
-  effect of the ancestor stage is limited to the NULLs the ranking left; how many stored rows actually
-  move is the ranking round's number, not this one's.
+- **NOT that the 3,506 rows are a resolution quality win in the store's own binding — AT THE TIME.**
+  Phase B is the owner channel *given its whole input* — the census clears every owner-carrying row to
+  NULL and lets the pass run. At this commit the insert-time ranking still claimed those rows first, so
+  the production effect of the ancestor stage was limited to the NULLs the ranking left. **SUPERSEDED
+  THE NEXT DAY (PHPD42)**: the ranking no longer claims them, which is why this bullet is left standing
+  rather than deleted — the measurement below it is what justified taking that decision, and a reader
+  should see the two in the order they happened.
 - **NOT that 3,805 of 4,940 is a shortfall.** The other 1,135 class-like symbols either declare no
   heritage or declare one the analyzer cannot resolve, and `heritage-published.php` pins ABSENT (not
   `[]`) for exactly that case — `class InvalidArgumentException extends \InvalidArgumentException`
@@ -2762,3 +2764,128 @@ MISSING=0 | unexplained=0 heuristic=0` on both pinned draws, hashes unchanged (`
 `08ee2a6e64090e61` — the analyzer's output did not move, which is the point of a store-side fix) ·
 `php-oracle-independence` PASS · rel-type-coverage-gate: php in no un-audited row · orphan-endpoint
 PASS · `PHP_MUTANTS 21 WIRED` · the new seam gate PASS.
+
+## Round: the owner channel is AUTHORITATIVE for the rows that state their receiver — PHPD42 (2026-10-09)
+
+The round above put the hierarchy in the store and measured what the owner channel *would* resolve. This
+round lets it resolve.
+
+### 1. The defect this closes, stated as the lie it told
+
+`resolveTargetStmt` attaches a bare member name to the nearest same-named symbol and otherwise to the
+LEXICOGRAPHICALLY SMALLEST id — `${projectId}:${relativePath}:${name}:${line}`, compared as TEXT. A
+member name is not identifying: `act` is a method on many classes at once. So for a member read whose
+own file does not declare the name, the winner is whichever declaration sorts first, and the row is
+stored **RESOLVED** with nothing recording that the choice was a tie-break.
+
+That is the shape that makes an agent hallucinate instead of abstaining. `SubWidget::run` calling
+`$this->act()` with the graph answering `ZetaStore::act` is not an unresolved edge — it is a confident
+false statement about which method the call reaches, and the answers are both available: PHP's own
+lookup says the declared ancestor, and where nothing declares it the answer is "not known".
+
+### 2. What was changed
+
+`claimOwnerCarryingTargets` (`src/ast/member-owner-resolution.ts`) withdraws every row carrying a
+relation-level `metadata.owner` from whatever bound it and hands it to `resolveMemberTargetsByOwner`,
+which is authoritative for those rows — a row it declines is left NULL rather than handed back to the
+ranking. Both halves are in one function deliberately: a withdrawal that failed to re-resolve would
+silently delete every owner-carrying binding in the project. It is called at BOTH resolution sites
+(`storeResults`' inline strategies and `resolveRelationships`' linear plan), each time immediately
+before the cross-language pass so that pass sees the final target, and it is idempotent — which matters
+precisely because a real run reaches both sites.
+
+### 3. Where it is scoped, and by what
+
+By the DATA, not by a language switch: a relation carrying `metadata.owner` is one whose receiver the
+analyzer could NAME (`$this->`, `self::`, `static::`, `parent::`, `C::`). php is the only lane publishing
+that key today (`withMemberOwner` in `real-php-analyzer.ts` — grepping every analyzer for a relation-level
+`owner` finds no other, and Solidity's `metadata.ownerKind` is a symbol field rather than a receiver), so
+the blast radius is php today and widens automatically for any lane that later publishes the same fact.
+A project with no owner-carrying rows costs one indexed prefilter query.
+
+### 4. Evidence, in the order it came in
+
+The gate was extended FIRST, and it was red before the change (`script/m60/php-store-pipeline-seam.ts`,
+CHECK D — the first check in this lane that asserts where a member read was BOUND rather than whether a
+fact arrived):
+
+- `D1` `SubWidget::run` -> `$this->act()` landed on **UpsilonStore.act** — a class that neither declares
+  it nor is an ancestor. FAIL.
+- `D3` `Broken::go` -> `$this->act()` behind an unresolvable base landed on **UpsilonStore.act** as well.
+  FAIL.
+
+Three declarations of `act` are placed so both wrong ones sort before the right one, so the mislanding is
+deterministic rather than occasional. After the change: D1 lands on `WidgetBase.act`, D2 (`$this->own()`)
+on the receiver's own declaration, D3 stays **NULL**, and `D4` asserts the symbols the wrong answer would
+have come from exist — so a NULL is a refusal and not an absence.
+
+The population measurement is the census, on a **1,500-file stride frame** (29% of the 5,094 admitted
+files; `validation/m60/php/store-resolution-census.owner-channel.json`), because the whole-population run
+needs ~7 minutes and did not complete on a loaded box — twice. What it shows:
+
+```
+PHASE A — the store's own binding, untouched
+  resolved:owner      9155
+  resolved:ancestor    557
+  MISSING ENTIRELY: resolved:MISLANDED, resolved:not-a-member, resolved:receiver-unknown
+  null               10457   (receiver-identity 6628, receiver-absent 3063, receiver-name 490, ambiguous 276)
+
+PHASE B — every owner-carrying row reset to NULL, pass re-run
+  ownerResolved  9155      inheritedResolved  557      resolved  9712
+  putOnReceiver  9155      putOnAncestor      557
+  mislandings repaired  0 of 0
+```
+
+**Phase A equals phase B to the digit and there are ZERO mislandings left to repair.** The
+confident-wrong-edge class is not reduced, it is empty: every owner-carrying row is now on the receiver,
+on a real ancestor, or honestly NULL.
+
+NO PRE-CHANGE RUN OF THIS FRAME EXISTS, and saying which number this replaces would be a claim about a
+run nobody made. What the whole-population pre-change run held for the two keys that are now absent is
+4,813 `resolved:MISLANDED` and 21,528 `resolved:not-a-member` of 350,368 edges; the frame-level
+comparison that IS like-for-like is phase A against phase B inside this one artifact, where the two agree
+row for row.
+
+Caveats, stated because the frame is a frame. A stride sample puts a class's parent outside the frame
+(54 of 191 distinct parent names resolve here, against 221 of 332 on the whole population), so the
+ancestor half is UNDERSTATED and 557 is a lower bound — the whole-population phase-B measurement from
+the round above is 3,506. And the trade is real and is not hidden behind the win: **10,457 rows that the
+rank had bound, some rightly, are now NULL**, because a receiver that is outside the admitted files
+(3,063) or a name no ancestor declares (6,420) is exactly the type-inference wall, and the honest answer
+there is "not known" rather than a declaration that sorts first.
+
+### 5. One gate went RED on purpose, and was changed on purpose
+
+`owner-resolution-gate.mts` §2 existed to PIN the defect by name — its own header said "the day it
+changes this gate goes red and the change is acknowledged rather than absorbed". It went red on exactly
+four rows, and the four are now pins recording answers a rule can defend. The FIFTH row was kept pinned
+to the old defective answer: `goPlain -> persist`, whose receiver is a local variable, so the analyzer
+publishes no `owner`, no rule can reach it, and the rank still decides. That row is the scope of the
+change visible in the gate rather than in a paragraph — if it ever starts resolving correctly, some other
+mechanism did it and this gate says so instead of taking the credit. `IDEMPOTENT` still passes, which is
+the property that makes a two-site call safe.
+
+### 6. What this round does NOT claim
+
+- **NOT that owner-less member reads are resolved.** They are outside the pass by construction and keep
+  the rank's behaviour — the type-inference wall, 107,313 endpoints on the whole population, and now the
+  population's largest single honest-unknown class.
+- **NOT that the count of resolved edges went up.** It went up on the whole population (40,699 -> 45,166
+  in the round above) but the FIX's headline is subtraction: 6,114 rows stopped asserting a receiver they
+  do not have. On this frame the store resolves 9,712 owner rows and refuses 10,457.
+- **NOT that the whole-population artifact was regenerated.** The committed
+  `store-resolution-census.json` is still the PRE-claim measurement, and the new file is the 1,500-file
+  post-claim one. Regenerating the whole-population artifact under the new store is outstanding work, and
+  it is outstanding because the machine would not run it — not because the question is open.
+
+### 7. Gates re-run
+
+`tsc` clean · **29/29 php fixtures** · **21/21 php mutants caught, 0 survived, clean baseline 0 problems**
+· differential `covered 100% MISSING=0 | unexplained=0 heuristic=0` on both pinned draws (the run rotated
+to `rot 16`, so the draw and its hashes differ from the previous round's `rot 15` — both are green, and
+comparing the hashes across different draws would be comparing two different 60-file samples) ·
+`php-oracle-independence` PASS · rel-type-coverage-gate: php in no un-audited row · orphan-endpoint PASS ·
+`verify-label-coverage` php `217 | 217` · the seam gate PASS including CHECK D · the owner-resolution gate
+PASS with §2 rewritten. NOT re-run: `verify-truth-existence.ts`, which drives the differential across
+every lane and is a claim about the ORACLE REGISTRY — this round adds no label and no oracle, so it cannot
+move it.
