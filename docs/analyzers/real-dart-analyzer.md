@@ -5038,6 +5038,57 @@ analyzer could see, and it is a DIFFERENT claim from "the base is outside the PR
 is an external claim, only the second should be verified against the project's key space, and the
 180x gap between the two populations is the size of the question — not a 4-claim cleanup.
 
+### BUILT 2026-10-09 — bucket 3, and the claim split by what it is actually about
+
+The contract above was written first and then implemented, in the smallest shape that removes the
+falsehood without moving a single row. The analyzer now asks what the RUN could see before it chooses
+which claim to make (`real-dart-analyzer.ts`, the first-heritage fallback in
+`extractOverrideRelationships`):
+
+```
+seesProject   (a companion map exists — `projectIndex.typeMembers`, or the same thing supplied
+               by a caller)        -> `isExternalBase`, UNCHANGED. It looked, and it did not
+                                       find the base. The arbiter can confirm that.
+!seesProject                        -> `baseBeyondRunScope: <base>` — the base this RUN could not
+                                       reach. NOT in `EXTERNAL_KEYS`, never an external claim.
+`Object` (either way)               -> `isExternalBase`, because nothing was out of reach: the
+                                       file NAMED dart:core's root. The claim is then about the
+                                       project, and the lookup that checks it BITES — 31 riverpod
+                                       claims were refused by it while a fake `Object` existed.
+```
+
+THE EDGE SET IS IDENTICAL. No row was added, removed, or re-confidenced — only the KEY an edge carries
+— and `dart/object-interface-override`'s `expectRelationshipCount: overrides 8` still holds, which is
+the check that says so.
+
+Bucket 3 is a COLUMN, not a marker to be believed. `incoming-gate.ts` reports `causeOK` / `causeFAIL`
+as its own pair beside `bindOK` / `bindFAIL`, on both tables, and in the marker-set diagnostic; the
+verdict counts `causeRefuted` as bad and `causeDeclared` as neither good nor bad (it can never enter
+`resolved`, which is the property that keeps it from moving a resolution number). The rule
+(`incoming-rule.ts`, `CAUSE_CLAIM_KEY`) enforces two things the AUTHOR of the marker cannot check for
+itself:
+
+```
+MUTUAL EXCLUSION   an edge carrying a declared cause AND an external claim is `causeRefuted`
+                   BEFORE the count is read — "I could not see it" and "it is outside the
+                   population" are two books on one edge, and that pair is exactly how a lane
+                   would try to be verified and excused at once.
+THE REASON IS READ the stated base must be identifier-shaped AND must BE the target's own owner.
+                   A cause naming anything else is refuted, because a stated reason that is not
+                   about this edge is not a reason.
+NOT READ WHERE IT  the claim is consulted ONLY where the target names nothing in the key space,
+COULD MISLEAD       so bucket 3 can re-label a GAP and nothing else. A marker on a resolvable
+                   target still reads `resolved` — asserted in the gate's control, not argued.
+```
+
+All four are PLANTED in the gate's control (1 well-formed cause -> declared; three -> refuted: a base
+that is not the target's owner, a marker with no reason, and the two-books conflict), so an edit that
+deletes either check fails the control instead of silently counting.
+
+The fourth property the contract demands — a SECOND IMPLEMENTATION agreeing the base is unreachable —
+is NOT implemented, and the column is described as a reported, non-scoring count rather than a verified
+one. That is the oracle half, and it is the next round's work rather than a claim made here.
+
 ### WHERE THE AMBIGUITY ACTUALLY COMES FROM, measured — and it kills the cheap fix
 
 `validation/m14/fixtures/dart/ambiguity-cause-census.ts` splits the ambiguous column by CAUSE, with

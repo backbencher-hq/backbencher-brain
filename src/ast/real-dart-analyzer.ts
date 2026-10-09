@@ -1676,6 +1676,24 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const companionForPass2: Map<string, Set<string>> | undefined =
       overrideCompanion ?? dartCompanionFor(projectIndex)
+    // WHAT THIS RUN COULD SEE, as a fact about the RUN rather than about the project.
+    //
+    // A companion map IS the project's type inventory: it exists only when someone handed
+    // this run `projectIndex.typeMembers` (or an equivalent stand-in for the cross-repository
+    // index), so its PRESENCE is the difference between "I looked for this base in the
+    // project and it is not there" and "I could not look". MEASURED, and the reason this
+    // distinction is load-bearing rather than pedantic: the gate verifies an `isExternalBase`
+    // claim by looking the base's OWNER up in the PROJECT's key space, and production hands
+    // dart no index at all (`parallel-indexer.ts` PROJECT_INDEX_EXTENSIONS names only `.sol`).
+    // On that population the same claim is refuted 16,894 times and verified 10,731 times:
+    // 61% of the claims the arbiter examines are bases the analyzer could not have reached —
+    // another FILE of the same project or the Flutter framework are the same thing to it.
+    //
+    // So the claim is split by what it is about: a base this run cannot reach is a fact about
+    // the RUN (`baseBeyondRunScope`, its own column in the gate, never folded into `resolved`
+    // and never verified against the project), while `isExternalBase` is kept — unchanged — for
+    // the runs that really did look and really did not find it.
+    const seesProject = companionForPass2 !== undefined
 
   // DARTD16's cross-file pass is implemented, documented, and — until now —
   // unreachable: `overrideCompanion` is an OPTIONAL context field that no caller in
@@ -1909,7 +1927,28 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!refuted) {
               target = first
               confidence = 0.8
-              metadata = { isOverride: true, relationshipType: "method_override", isExternalBase: true }
+              // The marker must not make a claim about the PROJECT that this run cannot
+              // check. With project knowledge the external claim is exactly right — the
+              // analyzer did look the base up and did not find it — and the arbiter (which
+              // has the whole project) can confirm it, which is what those 93 index-assisted
+              // refutations measure. Without it, the only true thing to say is about the RUN,
+              // and it is said in the gate's own bucket-3 column: `baseBeyondRunScope` carries
+              // the base the run could not reach, is deliberately NOT one of `EXTERNAL_KEYS`,
+              // and can never raise a resolution number.
+              //
+              // `Object` IS THE ONE EXCEPTION, and it is not a carve-out for convenience: the
+              // claim `baseBeyondRunScope` says the run could not REACH the base, and when the
+              // base the file itself names is `Object`, nothing was out of reach — `Object` is
+              // dart:core's root, declared by the language rather than by any file in the
+              // population. What `isExternalBase` then claims is that the PROJECT does not
+              // publish `Object`, which the arbiter checks by looking the owner up, and that
+              // check BITES: 31 riverpod claims were refused by it while a fake `Object`
+              // existed (the unnamed-extension defect, fixed 2026-10-09). Reporting it as a
+              // declared cause would move a checked claim into an unchecked column, which is
+              // the one direction bucket 3 must never be used in.
+              metadata = seesProject || first === DART_OBJECT_TYPE
+                ? { isOverride: true, relationshipType: "method_override", isExternalBase: true }
+                : { isOverride: true, relationshipType: "method_override", baseBeyondRunScope: String(first) }
               // THE OBJECT INTERFACE IS THE ONE OVERRIDE TARGET THAT NEEDS NO
               // EVIDENCE ABOUT THE BASE.
               //

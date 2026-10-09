@@ -329,7 +329,14 @@ function projectFactsForDart(repoRoot: string, admitted: string[]): ProjectFacts
 /** A type's edge count plus its two scopes. `Outcomes` itself lives in `incoming-rule.ts`,
  *  because a census has to count with the same tally this verdict does. */
 /** One marker set's PROJECT-scope outcomes — see `Row.marks`. */
-type MarkBucket = { resolved: number; amb: number; unres: number; ext: number; bind: number }
+type MarkBucket = {
+  resolved: number; amb: number; unres: number; ext: number; bind: number
+  /** BUCKET 3 — edges whose marker set declares a cause (`baseBeyondRunScope`). Its own count
+   *  for the same reason bindings have one: it is neither a resolution nor a gap, and a reader
+   *  choosing the next round needs to see HOW MUCH of the remainder rests on the analyzer's
+   *  stated reason rather than on a resolution. */
+  cause: number
+}
 
 type Row = {
   type: Type
@@ -635,7 +642,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       )
       markKeys.sort()
       const sig = markKeys.length ? markKeys.join("+") : "(no marker)"
-      if (!row.marks.has(sig)) row.marks.set(sig, { resolved: 0, amb: 0, unres: 0, ext: 0, bind: 0 })
+      if (!row.marks.has(sig)) row.marks.set(sig, { resolved: 0, amb: 0, unres: 0, ext: 0, bind: 0, cause: 0 })
       // DEFERRED, not classified here — see `PendingEdge`. The three fields that decide the
       // outcome travel with the edge; everything else (the counts, the marks, the name lists)
       // is written in the classification pass below, so no column can be filled from a
@@ -668,6 +675,10 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // (nothing is missing). Folding it into `unres` would make the diagnostic disagree
       // with the table it exists to explain.
       case "bindingVerified": case "bindingRefuted": case "bindingUnverified": marks.bind++; break
+      // BUCKET 3, in its own count here too — and note what it does NOT do: it never reaches
+      // `marks.resolved`, so a marker set carrying a declared cause cannot read as handled in
+      // the diagnostic that orders the remaining work.
+      case "causeDeclared": case "causeRefuted": marks.cause++; break
       // `unresolved` AND `externalRefuted`: a refuted claim is not clean, and folding it in
       // with the verified ones would hide the one outcome that is a lane's own defect.
       default: marks.unres++
@@ -766,6 +777,7 @@ function selfTest(): { ok: boolean; failures: string[] } {
     resolved: 0, ambBoth: 0, ambDeclOnly: 0, unresolved: 0,
     externalVerified: 0, externalRefuted: 0, externalUnverified: 0,
     bindingVerified: 0, bindingRefuted: 0, bindingUnverified: 0,
+    causeDeclared: 0, causeRefuted: 0,
   }
   let verifiedByOwner = 0
   let verifiedByFacts = 0
@@ -811,6 +823,40 @@ function selfTest(): { ok: boolean; failures: string[] } {
   }
   if (externalClaimOf({ metadata: { isExternalBase: true } })?.kind !== "owner") {
     failures.push("control: `isExternalBase` no longer routes to the owner claim")
+  }
+
+  // BUCKET 3 — THE DECLARED CAUSE, and its two anti-laundering properties are PLANTED here rather
+  // than argued: (a) the stated reason must be the edge's own owner, and (b) the marker may not
+  // sit on an edge that ALSO claims to be outside the population. Each plant below is one of
+  // those two properties broken, except the first, which is the shape that must pass.
+  const causePlants: { tgt: string; claim: ExternalClaim }[] = [
+    { tgt: "BeyondThing.build", claim: { kind: "cause", base: "BeyondThing", conflict: false } },
+    { tgt: "BeyondThing.build", claim: { kind: "cause", base: "OtherThing", conflict: false } },
+    { tgt: "BeyondThing.build", claim: { kind: "cause", base: "", conflict: false } },
+    { tgt: "BeyondThing.build", claim: { kind: "cause", base: "BeyondThing", conflict: true } },
+  ]
+  for (const p of causePlants) got[classifyEdge(declCount, kinds, p.tgt, p.claim).outcome]++
+  if (externalClaimOf({ metadata: { baseBeyondRunScope: "BeyondThing" } })?.kind !== "cause") {
+    failures.push("control: `baseBeyondRunScope` did not route to the declared-cause claim")
+  }
+  const twoBooks = externalClaimOf({ metadata: { baseBeyondRunScope: "X", isExternalBase: true } })
+  if (twoBooks?.kind !== "cause" || !twoBooks.conflict) {
+    failures.push(
+      "control: an edge carrying BOTH a declared cause and an external claim did not route to the " +
+      "conflicted cause — bucket 3 could be used to be verified AND excused at once",
+    )
+  }
+  // THE PROPERTY THAT MAKES IT SAFE TO REPORT: a declared cause can never raise `resolved`, which
+  // it achieves by being read ONLY where the target names nothing. A marker on a target the key
+  // space DOES answer must therefore still read `resolved` — never `causeDeclared`.
+  const causeOnResolvable = classifyEdge(
+    declCount, kinds, "counter", { kind: "cause", base: "Counter", conflict: false },
+  ).outcome
+  if (causeOnResolvable !== "resolved") {
+    failures.push(
+      `control: a declared cause on a resolvable target read \`${causeOnResolvable}\` — the marker ` +
+      `is being consulted before the count and can move a resolution number`,
+    )
   }
   if (verifyBindingClaim("run#counter") !== "bindingVerified") {
     failures.push("control: a correctly spelled binding target did not verify")
@@ -876,6 +922,19 @@ function selfTest(): { ok: boolean; failures: string[] } {
   if (verifiedBySpelling !== 2) {
     failures.push(`control: expected 2 binding claims verified BY THE SPELLING, got ${verifiedBySpelling}`)
   }
+  // BUCKET 3'S COUNTS. 1 declared from the one well-formed plant; 3 REFUTED — a base that is not
+  // this edge's owner, a marker with no reason at all, and the two-books conflict. Delete either
+  // check and this fails, which is the same launder-detection the external and binding counts have.
+  if (got.causeDeclared !== 1) {
+    failures.push(`control: expected 1 declared cause, got ${got.causeDeclared}`)
+  }
+  if (got.causeRefuted !== 3) {
+    failures.push(
+      `control: expected 3 REFUTED declared causes (base is not the target's own owner, no reason ` +
+      `given, and cause+external on one edge), got ${got.causeRefuted} — bucket 3 is accepting a ` +
+      `marker without checking its reason`,
+    )
+  }
   return { ok: failures.length === 0, failures }
 }
 
@@ -897,6 +956,8 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
     into.bindingVerified += r.bindingVerified
     into.bindingRefuted += r.bindingRefuted
     into.bindingUnverified += r.bindingUnverified
+    into.causeDeclared += r.causeDeclared
+    into.causeRefuted += r.causeRefuted
   }
   for (const r of rep.rows.values()) {
     edges += r.edges
@@ -923,16 +984,24 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
   // A REFUTED external claim is a bad edge. It is not in `unresolved` (that column is
   // "carries no external claim") and must not be, but it is counted here so that a lane
   // whose large population is external-LOOKING cannot buy a PASS with a marker.
-  const bad = t.ambiguousByDecl + t.unresolved + t.externalRefuted + t.bindingRefuted
+  // `causeRefuted` IS IN `bad`, and `causeDeclared` deliberately is NOT: a declared cause is a
+  // stated reason that passed its own checks (its column is reported, never folded into a
+  // resolution), while a refuted one is a claim whose own spelling does not check out. The
+  // asymmetry is what keeps bucket 3 honest in both directions.
+  const bad = t.ambiguousByDecl + t.unresolved + t.externalRefuted + t.bindingRefuted + t.causeRefuted
   const ext = `${t.externalVerified} verified + ${t.externalUnverified} unverifiable external`
   const bind =
     `${t.bindingVerified} binding(s) spelled as a binding` +
-    (t.bindingUnverified > 0 ? ` + ${t.bindingUnverified} unverifiable` : "")
+    (t.bindingUnverified > 0 ? ` + ${t.bindingUnverified} unverifiable` : "") +
+    (t.causeDeclared > 0 ? ` + ${t.causeDeclared} declared cause(s) beyond this run's reach` : "")
   const scope = `of ${edges} edges, resolved against the file's OWN PROJECT (production's scope)`
   if (bad === 0 && t.externalUnverified === 0 && t.bindingUnverified === 0) {
     return {
       pass: true, edges, totals: t, pooled,
       reason: `every one ${scope} resolves to exactly one declaration, or carries a claim the project confirms (${ext}; ${bind})`,
+      // NOT REACHABLE TODAY FOR DART, and left in place because it is the shape a PASS takes: the
+      // per-file column carries declared causes, which do not score, so this branch is entered only
+      // where the residue is empty — see the contract in `docs/analyzers/real-dart-analyzer.md`.
     }
   }
   if (bad === 0) {
@@ -947,6 +1016,7 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
       `${t.ambiguousByDecl} ambiguous + ${t.unresolved} unresolved ${scope}` +
       (t.externalRefuted > 0 ? `, and ${t.externalRefuted} external claim(s) REFUTED by the project` : "") +
       (t.bindingRefuted > 0 ? `, and ${t.bindingRefuted} binding claim(s) REFUTED — a target marked as a binding whose spelling can name a declaration` : "") +
+      (t.causeRefuted > 0 ? `, and ${t.causeRefuted} declared cause(s) REFUTED — the stated base is not the edge's own owner, or the edge also claims to be outside the population` : "") +
       (t.externalUnverified > 0 ? `; ${t.externalUnverified} external claim(s) unverifiable (${ext})` : ""),
   }
 }
@@ -1015,14 +1085,16 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   const header =
     w("type", 14) + w("edges", 9) + w("resolved", 10) + w("amb(decl)", 11) +
     w("amb(kind)", 11) + w("unresolved", 12) + w("extOK", 8) + w("ext?", 8) +
-    w("extFAIL", 9) + w("bindOK", 9) + w("bind?", 8) + "bindFAIL"
+    w("extFAIL", 9) + w("bindOK", 9) + w("bind?", 8) + w("bindFAIL", 10) +
+    w("causeOK", 9) + "causeFAIL"
   console.log(header)
-  console.log("-".repeat(117))
+  console.log("-".repeat(136))
   const line = (label: string, r: Outcomes, edges: string | number) =>
     w(label, 14) + w(edges, 9) + w(r.resolved, 10) + w(r.ambiguousByDecl, 11) +
     w(r.ambiguousByKind, 11) + w(r.unresolved, 12) +
     w(r.externalVerified, 8) + w(r.externalUnverified, 8) + w(r.externalRefuted, 9) +
-    w(r.bindingVerified, 9) + w(r.bindingUnverified, 8) + String(r.bindingRefuted)
+    w(r.bindingVerified, 9) + w(r.bindingUnverified, 8) + w(r.bindingRefuted, 10) +
+    w(r.causeDeclared, 9) + String(r.causeRefuted)
   for (const type of ALL_TYPES) {
     const r = rep.rows.get(type)!
     console.log(line(type, r.project, r.edges))
@@ -1039,12 +1111,18 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     `declaration can answer · bind? = a separator with nothing after it · ` +
     `bindFAIL = marked as a binding but spelled so it CAN name a declaration, counted against the lane`,
   )
+  console.log(
+    `causeOK = bucket 3: the target names nothing here and the edge DECLARED why (a base beyond ` +
+    `the run's reach), so it is stated rather than claimed — NEVER folded into resolved · ` +
+    `causeFAIL = a declared cause whose own reason does not check out, counted against the lane`,
+  )
   // The columns are NOT disjoint groups of equal standing: `amb(kind)` is a SUBSET of
   // `amb(decl)` (both are printed because a lane reads them for different reasons), and saying
   // so here is cheaper than the reader re-deriving it — the sum is the check.
   console.log(
     `amb(kind) is a SUBSET of amb(decl), printed beside it for comparison: ` +
-    `resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL = the edge count, exactly.`,
+    `resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + ` +
+    `causeOK + causeFAIL = the edge count, exactly.`,
   )
   // THE POPULATION HALF OF THE BINDING CLAIM. A per-edge verification of the spelling is
   // only honest while the separator really is unspeakable as a name here, and that is a fact
@@ -1076,7 +1154,7 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   const markRows: { type: Type; sig: string; b: MarkBucket }[] = []
   for (const type of ALL_TYPES) {
     for (const [sig, b] of rep.rows.get(type)!.marks) {
-      if (b.amb + b.unres + b.bind > 0) markRows.push({ type, sig, b })
+      if (b.amb + b.unres + b.bind + b.cause > 0) markRows.push({ type, sig, b })
     }
   }
   if (markRows.length) {
@@ -1086,9 +1164,9 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     )
     console.log(
       w("type", 14) + w("metadata KEYS on the edge", 52) + w("resolved", 10) + w("amb", 9) +
-      w("unres", 9) + w("extClaim", 10) + "binding",
+      w("unres", 9) + w("extClaim", 10) + w("binding", 9) + "cause",
     )
-    console.log("-".repeat(113))
+    console.log("-".repeat(122))
     for (const type of ALL_TYPES) {
       const mine = markRows
         .filter((m) => m.type === type)
@@ -1098,22 +1176,29 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
         // remaining work. They are printed below instead, so neither is hidden.
         .sort((x, y) => y.b.amb + y.b.unres - (x.b.amb + x.b.unres))
         .slice(0, 5)
+      // BINDINGS AND DECLARED CAUSES are both printed below the ranking rather than inside it:
+      // neither is remaining WORK in the sense the top of this table means (a verified binding
+      // has nothing left to do, and a declared cause is a stated, count-not-score bucket), and
+      // ranking either with the gaps would hide what actually remains.
       const bindOnly = markRows
-        .filter((m) => m.type === type && m.b.bind > 0 && !mine.includes(m))
-        .sort((x, y) => y.b.bind - x.b.bind)
+        .filter((m) => m.type === type && (m.b.bind > 0 || m.b.cause > 0) && !mine.includes(m))
+        .sort((x, y) => y.b.bind + y.b.cause - (x.b.bind + x.b.cause))
       const show = (m: { type: Type; sig: string; b: MarkBucket }) =>
         console.log(
           w(m.type, 14) + w(m.sig.length > 50 ? `${m.sig.slice(0, 47)}...` : m.sig, 52) +
-          w(m.b.resolved, 10) + w(m.b.amb, 9) + w(m.b.unres, 9) + w(m.b.ext, 10) + String(m.b.bind),
+          w(m.b.resolved, 10) + w(m.b.amb, 9) + w(m.b.unres, 9) + w(m.b.ext, 10) +
+          w(m.b.bind, 9) + String(m.b.cause),
         )
       for (const m of mine) show(m)
       for (const m of bindOnly) show(m)
     }
-    console.log("-".repeat(113))
+    console.log("-".repeat(122))
     console.log(
       `extClaim = a claim on this marker set the project VERIFIED or that no check can reach · ` +
-      `binding = edges on this marker set SPELLED as a binding. Grouped by KEY only: a value would ` +
-      `split one marker into a signature per symbol it names.`,
+      `binding = edges on this marker set SPELLED as a binding · ` +
+      `cause = edges on this marker set whose analyzer DECLARED why it could not reach the base ` +
+      `(bucket 3; never a resolution, and its own column so it cannot be mistaken for one). ` +
+      `Grouped by KEY only: a value would split one marker into a signature per symbol it names.`,
     )
   }
   console.log()

@@ -77,7 +77,14 @@ export const EXTERNAL_KEYS = [
  * `package:` target could in principle carry either claim, and choosing the check by shape
  * would be guessing at what the analyzer meant.
  */
-export type ExternalClaim = { kind: "owner" | "projectFacts" | "binding" }
+export type ExternalClaim =
+  | { kind: "owner" | "projectFacts" | "binding" }
+  // BUCKET 3 — A DECLARED CAUSE, and deliberately NOT an external claim.
+  //
+  // `base` is the reason the analyzer states (`baseBeyondRunScope`'s value: the heritage base
+  // this run could not reach) and `conflict` says the edge ALSO carries an external claim,
+  // which is the one pairing the rule refuses outright.
+  | { kind: "cause"; base: string | null; conflict: boolean }
 
 /**
  * The marker key that means "the target names a BINDING, not a declaration".
@@ -102,6 +109,43 @@ export const BINDING_CLAIM_KEY = "localBinding"
  *  first because that one is a statement about the target itself. */
 export const IMPORT_CLAIM_KEY = "importOutsideProject"
 
+/**
+ * BUCKET 3'S MARKER: "the base this edge names is beyond THIS RUN's reach".
+ *
+ * A DIFFERENT CLAIM FROM `isExternalBase`, and the difference is the whole reason the column
+ * exists. `isExternalBase` says "the population does not contain this" — a claim about the
+ * PROJECT, which the arbiter verifies against the project's key space. `baseBeyondRunScope`
+ * says "the run that wrote this edge could not look" — a claim about the RUN, which no lookup
+ * in a bigger key space can confirm or deny: the gate HAVING the base is not evidence the
+ * analyzer did.
+ *
+ * MEASURED 2026-10-09, per-file (production's population — `parallel-indexer.ts`
+ * PROJECT_INDEX_EXTENSIONS names only `.sol`, so a `.dart` file is parsed with no context at
+ * all): of the `isExternalBase` claims the arbiter examined, 16,894 were REFUTED and 10,731
+ * verified. The refutations are not analyzer bugs — they are the analyzer being asked a
+ * question only an index can answer, which is what the two-population split in
+ * `docs/analyzers/real-dart-analyzer.md` records.
+ *
+ * WHAT KEEPS IT FROM BEING A LAUNDERING HOLE. Three properties, each one checkable by the
+ * arbiter rather than by the analyzer that wrote it, and none of them a matter of trust:
+ *
+ *   1. It can NEVER raise `resolved`. It is read only where the target names NOTHING in the
+ *      key space, so it can only ever re-label an edge that is already a gap.
+ *   2. It is MUTUALLY EXCLUSIVE with every claim in `EXTERNAL_KEYS`. An edge carrying both is
+ *      `causeRefuted` before the count is even read — "I could not see it" and "it is outside
+ *      the population" are two different books on one edge, and that pair is what a lane would
+ *      write to be verified AND excused at once.
+ *   3. Its REASON is checked against its own target: `base` must be an identifier and must BE
+ *      the target's owner, so the stated cause has to be the edge's own base rather than a
+ *      sentence attached to whatever was convenient.
+ *
+ * The fourth property the contract requires — a SECOND IMPLEMENTATION agreeing that this base
+ * really is unreachable — is not implemented here and is not claimed to be: it is the oracle
+ * half of the bucket-3 contract, and until it exists the column is a reported, non-scoring
+ * count rather than a verified one. Said here so the column cannot be read as stronger than it is.
+ */
+export const CAUSE_CLAIM_KEY = "baseBeyondRunScope"
+
 export function externalClaimOf(rel: any): ExternalClaim | null {
   const md = rel?.metadata
   if (!md || typeof md !== "object") return null
@@ -111,11 +155,19 @@ export function externalClaimOf(rel: any): ExternalClaim | null {
   // declaration (see `classifyEdge`).
   if (md[BINDING_CLAIM_KEY] === true) return { kind: "binding" }
   if (md[IMPORT_CLAIM_KEY] === true) return { kind: "projectFacts" }
+  const cause = md[CAUSE_CLAIM_KEY]
+  const hasCause = typeof cause === "string" && cause.length > 0
   for (const k of EXTERNAL_KEYS) {
     if (k === IMPORT_CLAIM_KEY) continue
-    if (md[k] === true) return { kind: "owner" }
-    if (Array.isArray(md[k]) && md[k].length > 0) return { kind: "owner" }
+    if (md[k] === true || (Array.isArray(md[k]) && md[k].length > 0)) {
+      // BOTH BOOKS ON ONE EDGE. Reported as a CAUSE rather than as an external claim so the
+      // conflict is visible in bucket 3's own column; the conflict flag is what the rule
+      // refutes on, and it is refuted BEFORE the count is read (see `classifyEdge`).
+      if (hasCause) return { kind: "cause", base: cause, conflict: true }
+      return { kind: "owner" }
+    }
   }
+  if (hasCause) return { kind: "cause", base: cause, conflict: false }
   return null
 }
 
@@ -140,6 +192,12 @@ export type Outcome =
   // different things. The lane reports it in its own column, and `bindingRefuted` counts
   // against the lane exactly as `externalRefuted` does.
   | "bindingVerified" | "bindingRefuted" | "bindingUnverified"
+  // BUCKET 3 speaks in its own outcomes for the same reason bindings do: a declared cause is
+  // not a resolution (nothing was resolved) and not a gap (the reason is stated), so folding
+  // it into either column would misstate one of two different things. It is reported in its
+  // own column and NEVER raises `resolved`; `causeRefuted` is a claim-integrity defect and is
+  // counted against the lane.
+  | "causeDeclared" | "causeRefuted"
 
 /**
  * IS THE TARGET SPELLED AS A BINDING? The one check whose evidence is the target itself.
@@ -304,8 +362,24 @@ export function classifyEdge(
     const outcome = verifyBindingClaim(tgt)
     return { outcome, decls, kinds: kindText, verifiedBy: outcome === "bindingVerified" ? "binding" : undefined }
   }
+  if (claim !== null && claim.kind === "cause" && claim.conflict) {
+    // The count is deliberately not consulted: the defect is in the EDGE's own metadata (it
+    // claims to be both outside the population and beyond this run) and it is exactly as wrong
+    // on a resolvable target as on an unresolvable one.
+    return { outcome: "causeRefuted", decls, kinds: kindText }
+  }
   if (decls === 0) {
     if (claim === null) return { outcome: "unresolved", decls, kinds: kindText }
+    if (claim.kind === "cause") {
+      // READ ONLY WHERE THE TARGET NAMES NOTHING — property 1 of `CAUSE_CLAIM_KEY`: a declared
+      // cause can only re-label a gap, never turn one into a resolution, so this column cannot
+      // move a resolution number in either direction. The two spelling checks are the arbiter's
+      // (property 3): the reason must be identifier-shaped and must be the target's own owner.
+      const shaped = typeof claim.base === "string" && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(claim.base)
+      const owner = targetOwner(tgt)
+      const consistent = shaped && owner === claim.base
+      return { outcome: consistent ? "causeDeclared" : "causeRefuted", decls, kinds: kindText }
+    }
     if (claim.kind === "projectFacts") {
       if (!facts) return { outcome: "externalUnverified", decls, kinds: kindText }
       const outcome = verifyImportClaim(facts, tgt)
@@ -356,6 +430,25 @@ export type Outcomes = {
   ambiguousNames: { name: string; declarations: number; kinds: string }[]
   unresolvedNames: { name: string; type: string }[]
   /**
+   * BUCKET 3 — edges whose target names nothing in this key space and whose analyzer stated a
+   * cause (`baseBeyondRunScope`) instead of claiming the base is outside the population.
+   *
+   * NOT A RESOLUTION AND NOT COUNTED AS ONE: nothing was resolved. Reported beside
+   * `bindingVerified` for the same reason — a class of edges that is honest to emit, dishonest
+   * to fold into a resolution number. See `CAUSE_CLAIM_KEY` for what it may and may not claim.
+   */
+  causeDeclared: number
+  /**
+   * A DECLARED CAUSE THE RULE REFUTES — its stated base is not an identifier, is not the
+   * target's own owner, or the edge carries an external claim at the same time. Counted
+   * against the lane, exactly as `bindingRefuted` and `externalRefuted` are, so bucket 3 cannot
+   * be written onto edges whose stated reason does not check out.
+   */
+  causeRefuted: number
+  /** the declared causes' spellings, so the bucket is a list a lane can audit and not just a
+   *  number — capped like every other name list. */
+  causeNames: { name: string; type: string }[]
+  /**
    * THE REFUTED CLAIMS, BY NAME — its own list, and it is not a convenience.
    *
    * `externalRefuted` is the ONE column that says a claim is FALSE, and it is counted against the
@@ -375,7 +468,8 @@ export const emptyOutcomes = (): Outcomes => ({
   markedExternal: 0, externalVerified: 0, externalVerifiedByOwner: 0, externalVerifiedByProjectFacts: 0,
   externalUnverified: 0, externalRefuted: 0,
   bindingVerified: 0, bindingRefuted: 0, bindingUnverified: 0,
-  ambiguousNames: [], unresolvedNames: [], refutedNames: [],
+  causeDeclared: 0, causeRefuted: 0,
+  ambiguousNames: [], unresolvedNames: [], refutedNames: [], causeNames: [],
 })
 
 /**
@@ -435,6 +529,29 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
       if (out.unresolvedNames.length < 25) {
         out.unresolvedNames.push({
           name: `${tgt}   [external claim REFUTED — the population publishes ${targetOwner(tgt)}]`,
+          type: label,
+        })
+      }
+      break
+    case "causeDeclared":
+      // ITS OWN COLUMN, and never `resolved` — nothing was resolved. The lane reports it
+      // beside `bindingVerified` so a reader sees how much of the graph rests on a stated
+      // cause, which is the opposite of what folding it into a resolution number would do.
+      out.causeDeclared++
+      if (out.causeNames.length < 25) out.causeNames.push({ name: tgt, type: label })
+      break
+    case "causeRefuted":
+      // A CLAIM-INTEGRITY DEFECT, counted against the lane like every other refuted claim: the
+      // stated cause either does not name this edge's own base or the edge also claims to be
+      // outside the population. It is NOT `unresolved` — that column means "carries no claim" —
+      // and it is never clean.
+      out.causeRefuted++
+      if (out.refutedNames.length < 25) {
+        out.refutedNames.push({ name: `${tgt}   [declared cause REFUTED]`, type: label })
+      }
+      if (out.unresolvedNames.length < 25) {
+        out.unresolvedNames.push({
+          name: `${tgt}   [declared cause REFUTED — the stated base is not this edge's own owner]`,
           type: label,
         })
       }
