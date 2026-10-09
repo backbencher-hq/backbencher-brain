@@ -1493,7 +1493,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: {
                 relationshipType: "zig_function_call",
                 callExpression: n.text.slice(0, 60),
-                ...(ext ? { zigExternalRef: true, zigImportAlias: ext.alias, zigImportModule: ext.module } : {}),
+                ...this.zigExternalMetadata(ext),
               },
             })
           }
@@ -1622,7 +1622,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: {
                 relationshipType: "zig_field_access",
                 fieldAccessExpression: n.text.slice(0, 60),
-                ...(ext ? { zigExternalRef: true, zigImportAlias: ext.alias, zigImportModule: ext.module } : {}),
+                ...this.zigExternalMetadata(ext),
               },
             })
           }
@@ -2439,6 +2439,63 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * THE EXTERNAL CLAIM'S METADATA, and the ONE place the `zigExternalRef` KEY is decided.
+   * Three emission sites (calls, field reads, declared-type references) all call this,
+   * because three copies of "may I claim this" is three rules.
+   *
+   * WHY THE CLAIM IS NOT ALWAYS ADMISSIBLE, measured rather than argued. The incoming
+   * arbiter reads `zigExternalRef` as an OWNER claim — "the target names a declaration
+   * whose OWNER the project does not publish" — and verifies it by looking the owner up
+   * (`script/m14/incoming-rule.ts`, `verifyExternalClaim`). For a target the receiver walk
+   * produced, the owner is everything before the LAST dot, and when the receiver path is
+   * exactly ONE segment long, that owner IS the alias:
+   *
+   *     `std.mem`            owner `std`      -> the file's own `const std = @import("std")`
+   *     `std.mem.Allocator`  owner `std.mem`  -> no declaration carries that name
+   *
+   * Z35 publishes that import binding as a `constant` named for the alias, so the owner of
+   * a one-segment path is ALWAYS a published declaration and the claim is ALWAYS refuted.
+   * MEASURED on the gate's own 60-file stride sample (565 marked edges, via
+   * `validation/m14/fixtures/zig/external-claim-audit.ts`), cross-tabulated by target depth
+   * because `owner === alias` is exactly the one-dot case:
+   *
+   *     1 dot:   extOK   1   extFAIL 259
+   *     2 dots:  extOK 223   extFAIL   0
+   *     3 dots:  extOK  60   extFAIL   0
+   *     4 dots:  extOK  21   extFAIL   0
+   *     5 dots:  extOK   1   extFAIL   0
+   *
+   * and all 259 were answered by a `constant` named for the alias, in the edge's own file.
+   * The key was asserting a claim the project can check and does refute — this lane's own
+   * defect, not a marker-spelling accident — and the fix is to stop asserting it where it
+   * cannot survive the lookup.
+   *
+   * WHAT IS NOT LOST. The QUALIFICATION stays: the target is still `std.mem`, not the bare
+   * leaf `mem`, which is the Z66 defect fix and is untouched by this. The receiver is still
+   * identified on the edge — `zigImportAlias`, `zigImportModule` and the post-pass's
+   * `targetScope: "file-external"` are all still written — so a consumer can still exclude
+   * the edge by a rule instead of by a guess. What is dropped is one key whose meaning the
+   * family defines as "the owner is not published", which is false here.
+   *
+   * THE RESIDUAL RISK, stated rather than hidden: a project that declares a symbol literally
+   * named `std.mem` (a quoted identifier, `@"std.mem"`) would refute a two-segment claim too.
+   * It is not zero, and it is what the arbiter's refutation is FOR — a deep-path claim that
+   * ever reads refuted is a defect this lane can see.
+   */
+  private zigExternalMetadata(
+    ext: { target: string; alias: string; module: string } | null,
+  ): Record<string, unknown> {
+    if (!ext) return {}
+    const receiver = { zigImportAlias: ext.alias, zigImportModule: ext.module }
+    const dot = ext.target.lastIndexOf(".")
+    // Admissible only where the claim's own owner is not the alias the walk started from.
+    // `lastIndexOf` cannot be -1 here (the target is always `${alias}.${segments}`); the
+    // guard keeps the predicate total rather than relying on that.
+    if (dot <= 0 || ext.target.slice(0, dot) === ext.alias) return receiver
+    return { zigExternalRef: true, ...receiver }
+  }
+
+  /**
    * Did `from` reach `decl` (a `variable_declaration`) THROUGH its type annotation?
    *
    * True for `var x: c.Foo = ...` and `var x: ?c.Bar = null`, false for the two
@@ -2553,7 +2610,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           ...(this.nodeLine(site) ? { line_number: this.nodeLine(site)! } : {}),
           metadata: {
             relationshipType: "declared_type",
-            ...(ext ? { zigExternalRef: true, zigImportAlias: ext.alias, zigImportModule: ext.module } : {}),
+            ...this.zigExternalMetadata(ext),
           },
         })
       }
