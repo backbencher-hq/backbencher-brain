@@ -102,6 +102,18 @@ flush dominate; enrichment is secondary.** Note this run's shape differs from a
 cold full index — see the wall-clock caveat at the end of this document before
 using it to reason about first runs.
 
+**A phase's time can be a plan rather than work, and on a fresh index the plan is
+chosen blind.** The pipeline runs `ANALYZE` at the END of the derived pass, so a
+fresh index prepares these statements against tables nothing has measured. One
+cold run reported 440.8s for the taint phase; the same statement, same data and
+same 1,530 resolved flows cost **520.2s planned without statistics and 1.7s with
+them** — and a post pass on the same index after the fix reported the phase at
+1.3s. Resolution, enrichment and gravity query tables the run has just written
+too; only the taint statement has been measured and fixed so far
+(`validation/m60/results/taint-plan-stats.json`, probe:
+`script/perf/probe-taint-plan-stats.ts`). Before attributing a slow phase to its
+algorithm, check whether its plan was chosen blind.
+
 ## Where the time goes
 
 Measured bottleneck classification across five repositories, taking the median
