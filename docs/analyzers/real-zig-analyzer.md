@@ -6731,3 +6731,167 @@ question is not a grammar question at all. That is why the correctness claim for
   overturn condition depends on one would not flip.
 - **`[BB-HANG]` cost this pass its arbiter exit code**, so the gate's exit status
   is not a usable signal for zig on a warm checkpoint.
+
+---
+
+## M14 laptop-B: the refuted claims, the three silent types, and the two incoming columns
+
+Pass of 2026-10-10. Every number below was produced by a command printed beside it, on the
+gate's own population (production `parseFile`, `script/m14/incoming-gate.ts` discovery, even
+stride), and every ruling is in `script/m14/spec/zig-completeness.json` as `ZIG.E.1`,
+`ZIG.I.1` and the re-measurement notes on `ZIG.O.1`–`ZIG.O.3`.
+
+### L.1 The 259 refuted claims were a false claim, and the fix is the claim's scope
+
+**p30 RE-DERIVED, and it was stale in both halves.** `script/m14/incoming-rule.ts` cited this
+lane's p30 artifact for the whole external-marking mechanism ("2,189 recoverable + 5,009
+external edges"). Re-run on p30's own draw rule (`find <root> -name '*.zig' | sort | head -400`,
+one process per arm) with the current analyzer and corpus,
+`npx tsx validation/m14/fixtures/zig/incoming-abc-class.ts <root> 400`:
+
+| metric | p30 (2026-10-05) | re-derived (2026-10-10) |
+|---|---|---|
+| `causeC.markedEdgesAllShapes` | 5,009 | **4,688** |
+| `causeC.markedDistinctTargets` | 1,039 | 1,033 (still **all** unresolved) |
+| `causeC.markedByType` | calls 1,721 / references 366 / uses 2,922 | calls 1,721 / references 366 / **uses 2,601** |
+| `engineArm.recoverableEdges` | 2,189 | **8,021** |
+| `productionRuleBPopulation.edges` | 2,189 | **8,020** |
+| `productionArm.unresolvedTargets` | 3,383 | 9,005 |
+
+Both cited numbers moved. The Lead landed the corrected citation in `incoming-rule.ts`
+(commit `099d95eb3`); this lane's artifact is
+`validation/m14/fixtures/zig/measurements/incoming-abc-400-M14B-rederive.json`.
+
+**What the gate does with the marks, and why 259 were refuted.** The rule reads
+`zigExternalRef` as an OWNER claim — "the target names a declaration whose OWNER the project
+does not publish" — and verifies it by looking the owner up. For a receiver path of ONE
+segment, that owner IS the alias the source wrote (`std.mem` → owner `std`), and Z35 publishes
+`const std = @import("std")` as a `constant` named `std`. Measured with the new instrument
+`npx tsx validation/m14/fixtures/zig/external-claim-audit.ts --sample 60`, cross-tabulated by
+target depth because `owner === alias` is exactly the one-dot case:
+
+| target depth | extOK | extFAIL | ext? |
+|---|---|---|---|
+| 1 dot | 1 | **259** | 0 |
+| 2 dots | 223 | 0 | 0 |
+| 3 dots | 60 | 0 | 0 |
+| 4 dots | 21 | 0 | 0 |
+| 5 dots | 1 | 0 | 0 |
+
+All 259 were answered by a `constant` named for the alias, **in the edge's own file**
+(`answersInSameFile` true for all 84 distinct refuted targets), and not one was answered by a
+declaration of the member the target names. The owners: `std` 199, `builtin` 23, `tracy` 9,
+`glib` 7, `build_options` 7, `system_defaults` 5, `objc` 4, `translate_c` 2, `version_data` 2,
+`gobject` 1. **The claim was false as the family defines it, not merely mis-spelled** — the
+five-day-old p30 measurement could not see this because it asked a different question (does the
+target name a declaration?) and got `no` for all 1,039 targets, which is still true.
+
+**The fix.** `real-zig-analyzer.ts::zigExternalMetadata` is now the ONE place the key is
+decided; all three emission sites (calls, field reads, declared-type references) call it. The
+key is written only where the claim's own owner is not the alias the walk started from. Nothing
+else moved: the qualification (`std.mem`, never the leaf `mem` — Z66's fix) is untouched, and
+`zigImportAlias`, `zigImportModule` and the post-pass's `targetScope: "file-external"` are still
+written, so a consumer can still exclude those edges by a rule.
+
+```
+npx tsx script/m14/incoming-gate.ts zig zig 60
+  before: FAIL — 3447 ambiguous + 4251 unresolved of 18606 edges,
+          and 259 external claim(s) REFUTED by the project
+  after : FAIL — 3447 ambiguous + 4511 unresolved of 18606 edges, 0 refuted
+npx tsx validation/m14/fixtures/zig/external-claim-audit.ts --sample 60
+  after : marked 305 · extOK 305 · extFAIL 0 · ext? 0
+bun script/m14/firing-check.mjs ZIG
+  7 types fired, counts identical to before the fix
+  (calls 3265 contains 2678 exports 1035 imports 179 instantiates 98 references 667 uses 3287)
+```
+
+Cost, stated rather than buried: the 259 refuted plus ONE two-segment claim that happened to
+verify ran to 260 edges now reading `unresolved` (4,251 → 4,511), so the verdict's `bad` moved
+7,957 → 7,958 while the number of claims the project can refute went to zero. The residual risk
+is in the source: a project declaring a symbol literally named `std.mem` would refute a deep
+claim too, and such a refutation would be a defect this lane can see.
+
+Fixture rows re-pinned, with the measurement in each row's own note: `zig/alias-receiver`
+(3 rows) and `zig/target-scope` (1 row) asserted the marker on two-segment targets. The
+deep-path rows (`std.debug.assert`, `std.io.getStdOut`, `g.Object.new`) keep the marker, so a
+rule that dropped the key everywhere fails. `npx tsx script/m14/run-fixtures.ts --lang zig` →
+**16 pass / 0 fail**.
+
+### L.2 The three silent types: ruled absent, re-measured on the WHOLE corpus
+
+`bun script/m14/firing-check.mjs ZIG` reads `7 types fired` with
+`SILENT (constructible but produced nothing): extends implements overrides` — the analyzer
+contains no reference to those three relationship types at all (the only matches for the words
+in the file are a variable named `Implements` and the TS `implements ASTEngine.LanguageAnalyzer`).
+A sample cannot certify absence, so the census was re-run over **every** admitted file
+(3,834 files, draw `sha256:2f3545f9…`, the same draw the spec's rulings were measured on):
+
+```
+npx tsx validation/m14/fixtures/zig/construct-probe.ts --sample 0      # 11/11 controls ok, 5 negative
+npx tsx validation/m14/fixtures/zig/zig-ruled-probe.ts --sample 0      # 10/10 controls ok, 7 negative
+```
+
+| question | measurement (whole corpus) |
+|---|---|
+| does a supertype SLOT exist at all? | 1,797 non-member children of type declarations in 443 files: 1030 enum-backing-type · 369 nested-executable-block · 275 packed-struct-field-count · 122 union-tag-type · 1 error-recovery · **0 UNCLASSIFIED** — and UNCLASSIFIED is the only bucket a supertype slot could occupy |
+| is there an inheritance WORD in the grammar? | 0 of 28 probed words present as a node type/keyword, 0 of 28 as a field name; 239 declared node types, 232 produced by the corpus; keyword calibration 11/11 |
+| is there a conformance clause? | no — `implements` is modelled in Zig as an `opaque` container plus a table of function POINTERS, and a pointer-to-function type is an anonymous `function_signature` (ZIGD2: 960 corpus-wide, all anonymous) |
+| could a redefinition stand in for an override? | the gate's own probe reads **0 hits in 0 files**; raw same-scope duplicates 19 (member 8, function 4, binding 7), and 0 survive the exclusions (quoted-diagnostic OFF/error-member ON 19 · OFF/OFF 21 · **ON/ON 0** · ON/OFF 1); B3 duplicate members are 9 of 9 inside `test/cases/compile_errors/`, 0 outside |
+
+So `extends`, `implements` and `overrides` are RULED INAPPLICABLE, per type, with a corpus
+measurement and a firing control that can fail — not "we did not find one". The re-measured
+numbers are appended to `ZIG.O.1`–`ZIG.O.3` in the spec rather than restated as new rulings.
+
+### L.3 The two incoming columns, split and ruled (not chased)
+
+```
+npx tsx validation/m14/fixtures/zig/unresolved-split.ts --sample 60
+  self-check: 18606 edges / 4511 unresolved / 0 refuted / 305 verified (the gate's own totals)
+```
+
+**UNRESOLVED 4,511, by what the receiver is:** binding-receiver **2,725 (60.4%)** ·
+no-receiver 707 · path-import-member 516 · bare-module-member 253 (the two-segment module
+members of L.1, correctly qualified and correctly unclaimed) · declaration-receiver 229 ·
+unclassified 81. The dominant class is the leaf of a member access on a LOCAL
+(`self.allocator.alloc` → `alloc`, `zcu.intern_pool` → `intern_pool`): the family publishes no
+locals or parameters (DARTD8), and the member's declaring container is reachable only by knowing
+the receiver's **type**, which is not in the file. That is ZIG.GAP.3's population arriving in
+the incoming column, unchanged in kind — and it is the reason no marker was invented for it: a
+bare leaf names nothing in particular, and `verifyExternalClaim`'s bare path would happily
+verify a claim that is not true.
+
+**AMBIGUOUS 3,447, by what the receiver is:** binding-receiver 2,175 · no-receiver 610 ·
+declaration-receiver 383 · path-import-member 202 · unclassified 71 · bare-module-member 6.
+The decisive measurement is the **same-file candidate** — how many declarations of the edge's
+own target its own file publishes: **2,566 of 3,447 (74.4%)** do, so a per-file tiebreak in the
+shared name→declaration resolver would settle them and this analyzer cannot (it does not own
+resolution). The 881 without one are dominated by module paths — `std` 113 and `builtin` 29 of
+the no-receiver edges — and an import binding is declared once PER FILE, so a module path can
+never be a unique name.
+
+**The sample-artifact hypothesis is REFUTED, measured rather than assumed.** If the stride
+sample were the cause, a complete key space would shrink both columns. `npx tsx
+script/m14/incoming-gate.ts zig zig 0 --repo=zls` (90 files, the whole project, nothing
+sampled) reads 4,450 ambiguous + 2,944 unresolved of 15,622, with claims marked 2,424 /
+verified 1,326 / **refuted 1,098** — the refutation *grows* from 47 in the 60-file draw to
+1,098 when the key space is complete, because every file that binds `std` publishes the name.
+Neither column is an artifact of the draw.
+
+### L.4 What this pass could not settle
+
+- **The two whole-corpus census jobs were killed by a failed turn** (load average above 10 on
+  this 8-core laptop), leaving 0-byte logs. They were re-run to completion later in the pass;
+  the numbers above are from the completed runs, and the killed attempts are reported here as
+  killed rather than as negative results.
+- **`validation/m14/fixtures/zig/ruled-gate.ts` exits 2 before reaching its diff**, on a
+  pre-existing shape divergence: the shared gate's `Ruled` type has grown per-language fields
+  (`bash`, `julia`, `css`, … , `zig`, `id`, `run`, `reason`, `src`) that this lane's local
+  restatement does not mirror. That is a report-to-supervisor item the instrument itself names,
+  it predates this pass, and no number above depends on it.
+- **The `path-import-member` (516 unresolved) and `declaration-receiver` (229) classes are
+  named, not fixed.** Both are shapes where the receiver is a project file or a file-scope
+  declaration and the edge's spelling does not key the member the index holds. No claim can
+  make them resolve, which is why this pass did not write one.
+- **The whole-corpus arm of the incoming gate was not run** (`maxFiles 0` over 3,844 files).
+  One repository whole (`zls`) was, because it is the arm that tests the sample hypothesis, and
+  that is the only question this pass needed it for.
