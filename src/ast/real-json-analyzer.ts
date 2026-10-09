@@ -12,6 +12,7 @@
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { applyDocumentScope, documentDirScope } from "./project-scoped-identity"
 
 interface JsonContext {
   /** The document node, so a manifest pass can read the root object without
@@ -21,6 +22,12 @@ interface JsonContext {
    *  written feature can have: it looks implemented. */
   rootNode: Node
   filePath: string
+  /** The project root this file was parsed against, when the caller knows it.
+   *
+   *  Absent means "this caller did not say which project the file is in", and the document
+   *  identity falls back to the filesystem basename — which is what it was before this field
+   *  existed, and therefore what every fixture that passes no root still asserts. */
+  projectRoot?: string
   content: string
   rootName: string
   symbols: ASTEngine.UniversalSymbol[]
@@ -139,10 +146,16 @@ function isPathReference(value: string): boolean {
 }
 
 export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
-    const rootName = this.documentName(filePath)
+  analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    context?: ASTEngine.AnalyzeContext,
+  ): ASTEngine.ParseResult {
+    const rootName = this.documentName(filePath, context?.projectRoot)
     const ctx: JsonContext = {
       filePath,
+      projectRoot: typeof context?.projectRoot === "string" ? context.projectRoot : undefined,
       content,
       rootName,
       symbols: [],
@@ -1699,7 +1712,35 @@ const bracket = parent.lastIndexOf("[")
     }
   }
 
-  private documentName(filePath: string): string {
+  /**
+   * A document's IDENTITY, and it is scoped to the file.
+   *
+   * ## The defect this fixes
+   *
+   * The identity was the filesystem BASENAME, and every `package.json` in a project publishes a
+   * module symbol named `package`. Measured over a 601-file stride of the json corpus
+   * (`validation/m14/measurements/json-ambiguity-split-601-after.json`): 90 colliding target names
+   * across 1,218 collision symbols, and the `package.*` family — `package.dependencies` alone
+   * carries 3 declarations — is the bucket that file scoping resolves on its own. So the `contains`
+   * edge asserting that `package` owns `dependencies` could not be walked in either direction:
+   * the shared resolver binds a bare name only under `HAVING COUNT(*) = 1`, and an exact-key match
+   * has to be unique too.
+   *
+   * ## The rule
+   *
+   * Scoping by the project-relative directory chain, dot-joined, basename last. Dot-joined because
+   * every downstream consumer already reads a dotted string as a path; basename last because the
+   * leaf of every member path is computed by slicing a fixed number of characters off the module
+   * prefix, so moving the basename would break that arithmetic. The full rule and its three
+   * properties are in `src/ast/project-scoped-identity.ts`, which is shared on purpose.
+   *
+   * ## What it does NOT do
+   *
+   * It does not make the BASENAME key unique — `package` is still published by every package.json,
+   * because the basename is the readable name a human uses. It makes the QUALIFIED PATH unique,
+   * and that path is what `contains` emits and what exact-match resolution binds.
+   */
+  private documentName(filePath: string, projectRoot?: string): string {
     const slash = filePath.lastIndexOf("/")
     const base = slash >= 0 ? filePath.slice(slash + 1) : filePath
     const lower = base.toLowerCase()
@@ -1714,9 +1755,20 @@ const bracket = parent.lastIndexOf("[")
     // `.json5` files are tracked corpus-wide) and wrong in the direction that makes
     // the module symbol disagree with the documented identity.
     for (const suffix of [".json", ".jsonc", ".json5"]) {
-      if (lower.endsWith(suffix)) return base.slice(0, base.length - suffix.length) || "document"
+      if (lower.endsWith(suffix)) return this.scoped(base.slice(0, base.length - suffix.length) || "document", filePath, projectRoot)
     }
-    return base || "document"
+    return this.scoped(base || "document", filePath, projectRoot)
+  }
+
+  /**
+   * Fold the project-relative directory chain onto the document's stem.
+   *
+   * One place, so the scope cannot be applied on one return path and missed on another — the
+   * early-return shape this replaced is exactly how a document keeps its basename on the branch
+   * that strips an extension and gets scoped on the branch that does not.
+   */
+  private scoped(stem: string, filePath: string, projectRoot?: string): string {
+    return applyDocumentScope(stem, documentDirScope(filePath, projectRoot))
   }
 
   private fileEndsWith(filePath: string, suffix: string): boolean {
