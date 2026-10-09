@@ -2229,9 +2229,10 @@ private extractAssignment(
    * name (`export "1=2"`, `export "a b=c"`) is refused here too rather than published.
    */
   private staticNameOfDeclarationString(node: Node): string | null {
-    if (node.type === "raw_string" || node.type === "ansi_c_string") {
-      return this.nameFromLiteralRun(this.stripQuotes(node.text))
-    }
+    // A TERMINAL argument carries its literal in its own text — a `raw_string`, an
+    // `ansi_c_string`, a bare `word`. Naming those node types here would add three literals to
+    // the lane's grammar census for no gain, and the shape test is the same for all of them.
+    if (node.namedChildCount === 0) return this.nameFromLiteralRun(this.stripQuotes(node.text))
     let literal = ""
     let computed = false
     const scan = (n: Node): void => {
@@ -2239,18 +2240,11 @@ private extractAssignment(
         const c = n.namedChild(i)
         if (!c) continue
         switch (c.type) {
-          case "string_content":
-          case "word":
-            literal += c.text
-            break
-          case "raw_string":
-          case "ansi_c_string":
-            literal += this.stripQuotes(c.text)
-            break
           case "simple_expansion":
           case "expansion":
           case "command_substitution":
           case "arithmetic_expansion":
+            // The NAME is decided at run time. There is nothing to publish.
             computed = true
             break
           case "concatenation":
@@ -2261,8 +2255,13 @@ private extractAssignment(
             scan(c)
             break
           default:
-            // An unrecognised shape is not evidence of a literal name: stop, publish nothing.
-            return
+            // Every other child of a declaration argument is literal TEXT — the `string_content`
+            // inside a `string`, a `word`, a `raw_string`, a quoted chunk. It is NOT trusted as a
+            // name on that basis: `isShellIdentifierName` refuses anything that is not a shell
+            // name, so a shape this walk does not recognise can only make the answer `null`,
+            // never a fabricated target.
+            literal += this.stripQuotes(c.text)
+            break
         }
         if (literal.includes("=")) return
       }
