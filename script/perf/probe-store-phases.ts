@@ -33,7 +33,7 @@ if (!dir) {
 }
 
 const run = (label: string, env: Record<string, string>) => {
-  const dataDir = path.join(REPO, `.store-phase-${label}`)
+  const dataDir = path.join(REPO, `.store-phase-${label.replace(/[^a-z0-9]/gi, "-")}`)
   rmSync(dataDir, { recursive: true, force: true })
   const out = spawnSync("npx", ["tsx", "script/perf/profile-stages.ts", dir, label], {
     cwd: REPO,
@@ -72,8 +72,12 @@ const run = (label: string, env: Record<string, string>) => {
 
 const results: any[] = []
 for (let i = 0; i < repeats; i++) {
-  results.push(run("resolve", {}))
-  results.push(run("skipresolve", { BB_TEST_SKIP_EDGE_RESOLVE: "1" }))
+  // Interleaved arms, same session, same machine: the OLD product behaviour (eager resolve
+  // forced back on) against the NEW one (eager skipped for non-contains edges, the pass
+  // resolves them). Interleaving is what makes the difference attributable to the change
+  // rather than to whatever else the machine was doing between the two runs.
+  results.push(run("eager(old)", { BB_TEST_FORCE_EDGE_RESOLVE: "1" }))
+  results.push(run("pass(new)", {}))
 }
 console.log("\n=== store phase, with and without the per-edge resolve ===")
 for (const r of results) {
@@ -82,14 +86,14 @@ for (const r of results) {
     `  ${r.label.padEnd(12)} dbFlushMs ${String(r.dbFlushMs).padStart(6)}  parseMs ${String(r.parseMs).padStart(6)}  wall ${String(r.wallMs).padStart(6)}  rels ${r.rels}  nullTargets ${String(r.nullTargets).padStart(6)}  resolution ${r.resolutionHash}`,
   )
 }
-const withResolve = results.filter((r) => r && r.label === "resolve").map((r) => r.dbFlushMs)
-const without = results.filter((r) => r && r.label === "skipresolve").map((r) => r.dbFlushMs)
+const withResolve = results.filter((r) => r && r.label === "eager(old)").map((r) => r.dbFlushMs)
+const without = results.filter((r) => r && r.label === "pass(new)").map((r) => r.dbFlushMs)
 if (withResolve.length && without.length) {
   const avg = (a: number[]) => Math.round(a.reduce((x, y) => x + y, 0) / a.length)
   const w = avg(withResolve)
   const o = avg(without)
   console.log(
-    `\n  mean dbFlushMs: ${w} with the resolve, ${o} without — difference ${w - o} ms ` +
+    `\n  mean dbFlushMs: ${w} eager(old) vs ${o} pass(new) — difference ${w - o} ms ` +
       `(${(((w - o) / w) * 100).toFixed(1)}% of the store phase)`,
   )
 }

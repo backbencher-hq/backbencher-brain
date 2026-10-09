@@ -4364,7 +4364,28 @@ export async function storeResults(
              // So removing it safely needs a dotted/qualified resolver in the pass AND a
              // reconciliation of those 249 bindings. Until then this switch measures the
              // cost and the eager resolve stays.
-             const skipEdgeResolve = process.env.BB_TEST_SKIP_EDGE_RESOLVE === "1"
+             const skipEdgeResolve =
+               process.env.BB_TEST_SKIP_EDGE_RESOLVE === "1" ||
+               // `skipResolution` means "a resolution pass will follow" — what the flag has
+               // always meant to its CALLERS (the worker pool stores every chunk with it;
+               // the in-process path clears it only on the final batch). It used to skip
+               // only the block after this loop, so the eager SELECT ran anyway.
+               //
+               // It can be skipped now because the pass covers every shape a non-`contains`
+               // edge can have: bare names by `_i13_pick`, dotted names by strategy 3 (added
+               // for exactly this), `<module>:<item>` by the import resolver. The pass reads
+               // the COMPLETE symbol set, so its answer does not depend on which worker
+               // finished first — which is what makes the graph reproducible at all.
+               //
+               // `contains` keeps its eager resolve: strategy checks in the pass exclude it
+               // and it has no other resolver.
+               // BB_TEST_FORCE_EDGE_RESOLVE=1 is the A/B arm: it restores the old behaviour
+               // so the store phase can be measured both ways in one session, on one machine,
+               // interleaved. It changes nothing about the final graph (the pass resolves these
+               // rows either way) — it only decides WHERE they are resolved.
+               (process.env.BB_TEST_FORCE_EDGE_RESOLVE !== "1" &&
+                 options.skipResolution === true &&
+                 relType !== "contains")
              const resolvedRow = skipEdgeResolve
                ? null
                : relType === "contains" && relLine !== null
@@ -4947,8 +4968,111 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
         AND brain_relationship.project_id = '${projectId}'
     `)
 
-    const resolved = (r1?.changes || 0) + (r2?.changes || 0)
-    log.debug("relationship resolution completed", { resolved, unresolved })
+    const resolvedBeforeDotted = (r1?.changes || 0) + (r2?.changes || 0)
+
+    // Strategy 3 (M60 determinism fix): a DOTTED target, by SUFFIX on qualified_name.
+    //
+    // An edge written `ASTEngine.LanguageAnalyzer` could not be matched by strategy 1,
+    // because a stored `qualified_name` is prefixed with the file stem:
+    //
+    //     edge says      ASTEngine.LanguageAnalyzer
+    //     symbol holds   t0128_engine.ASTEngine.LanguageAnalyzer
+    //
+    // so the exact comparison can never be true for those rows, and the `_i13_*` plan
+    // excludes dots and colons by construction. The ONLY resolver for a dotted target was
+    // therefore the eager one at INSERT time, which reads a partially-populated database
+    // and binds whatever file happened to be stored first. Measured on n200 before this
+    // strategy: 1,200 dotted edges unattached and 322 of 62,085 bindings differing between
+    // two identical runs, every one of them this shape.
+    //
+    // The lookup table is built the same way strategies 1 and 2 build theirs — one pass over
+    // the symbols, indexed once — rather than a correlated `substr()` per relationship. The
+    // correlated form was tried first and worked (dotted unattached 1,200 -> 424) but cost
+    // 68 s of post-processing (13 s -> 82 s on n200), because a function on the column cannot
+    // use an index. MIN(id) keeps the tie-break deterministic, as in strategies 1 and 2.
+    rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qsuffix (suffix TEXT, symbol_id TEXT NOT NULL, file_id TEXT)`)
+    rawDb.run(`DELETE FROM _res_qsuffix`)
+    rawDb.run(
+      `
+      WITH RECURSIVE suffixes(suffix, rest, id, file_id) AS (
+        SELECT qualified_name, qualified_name, id, file_id
+        FROM brain_symbol
+        WHERE project_id = ? AND qualified_name IS NOT NULL
+        UNION ALL
+        SELECT substr(rest, instr(rest, '.') + 1), substr(rest, instr(rest, '.') + 1), id, file_id
+        FROM suffixes WHERE instr(rest, '.') > 0
+      )
+      INSERT INTO _res_qsuffix (suffix, symbol_id, file_id)
+      SELECT suffix, MIN(id), MIN(file_id) FROM suffixes WHERE instr(suffix, '.') > 0 GROUP BY suffix
+    `,
+      projectId,
+    )
+    rawDb.run(`CREATE INDEX IF NOT EXISTS _res_qsuffix_idx ON _res_qsuffix(suffix)`)
+
+    const r3 = rawDb.run(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_qsuffix.symbol_id,
+          is_cross_file = CASE WHEN _res_qsuffix.file_id != COALESCE(
+            (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1), ''
+          ) THEN 1 ELSE 0 END
+      FROM _res_qsuffix
+      WHERE brain_relationship.target_external = _res_qsuffix.suffix
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.target_external IS NOT NULL
+        AND instr(brain_relationship.target_external, '.') > 0
+        AND brain_relationship.project_id = '${projectId}'
+    `)
+    // Strategy 3b: the LEAF of a dotted or qualified target, when that leaf is unique
+    // in the project.
+    //
+    // Strategy 3 matches the dot-path, which is precise but fails whenever the referring
+    // analyzer writes a module the symbol's `qualified_name` does not carry — measured: a
+    // target `ASTEngine.SymbolKind` whose symbol is stored as `t0172_types.SymbolKind`.
+    // The eager resolve used to catch those by matching the leaf name (with a proximity
+    // ranking that depended on which file was stored first). This restores the coverage
+    // without the ordering dependence, and it keeps strategy 2's contract: bind only when
+    // the name is UNAMBIGUOUS (`cnt = 1`), so a qualified reference never silently lands
+    // on one of several same-named symbols elsewhere in the project.
+    //
+    // The leaf is computed in JS over the DISTINCT unresolved target names (a few hundred),
+    // not per row: SQLite has no "substring after the last occurrence" function, and a
+    // correlated expression here is precisely the shape that made the first version of
+    // strategy 3 cost 68 s of post-processing.
+    const leafUpdate = rawDb.prepare(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_name.symbol_id,
+          is_cross_file = CASE WHEN _res_name.file_id != COALESCE(
+            (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1), ''
+          ) THEN 1 ELSE 0 END
+      FROM _res_name
+      WHERE _res_name.name = ?
+        AND _res_name.cnt = 1
+        AND brain_relationship.target_external = ?
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.project_id = '${projectId}'
+    `)
+    const dottedStillNull = rawDb.prepare(`
+      SELECT DISTINCT target_external AS t FROM brain_relationship
+      WHERE target_symbol_id IS NULL AND target_external IS NOT NULL AND project_id = ?
+        AND (instr(target_external, '.') > 0 OR instr(target_external, ':') > 0)
+    `).all(projectId) as Array<{ t: string }>
+    let resolvedByLeaf = 0
+    for (const { t } of dottedStillNull) {
+      const leaf = t.split(/[.:]/).pop()
+      if (!leaf) continue
+      const res = leafUpdate.run(leaf, t)
+      resolvedByLeaf += res?.changes || 0
+    }
+
+    const resolved = resolvedBeforeDotted + (r3?.changes || 0) + resolvedByLeaf
+    log.debug("relationship resolution completed", {
+      resolved,
+      resolvedByQualifiedExact: r1?.changes || 0,
+      resolvedByUniqueName: r2?.changes || 0,
+      resolvedByDottedSuffix: r3?.changes || 0,
+      resolvedByUniqueLeaf: resolvedByLeaf,
+      unresolved,
+    })
 
     // Strategy 4 (M60, review JD2): the `<module>:<item>` import form.
     //
