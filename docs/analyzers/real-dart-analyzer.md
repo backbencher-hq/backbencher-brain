@@ -5095,6 +5095,54 @@ The consequence for the roadmap is larger than the number:
   doing; (b) is the size of the index argument; (c) is bucket 3's true population — and until it is
   measured, every one of those three numbers is a guess.
 
+### The four levers, sized from the ARBITER's own marker table
+
+A first cut of that decomposition is already in the record and needed no new run: the gate's marker
+table says WHICH MARKER SET each non-resolved edge carries, and the marker encodes what the analyzer
+KNEW at emission. From `incoming-dart-arm5-fixed.log` (index-assisted whole corpus, ambiguity 1,273,522):
+
+```
+LEVER 1 — NAME THE CONTAINER (the emitting file pins it, no outside knowledge needed)
+   contains (no marker)                        97,843
+   calls qualifier                             39,467
+   calls isLocalRead+qualifier                     84
+   uses  isBareRead+qualifier                  27,577
+                                                --------
+                                               164,971   13.0 %
+
+LEVER 2 — NAME A FILE-SCOPED IDENTITY FROM THE INDEX (the run ALREADY resolved the name through
+it, so it holds the mapping that makes it unique; `isIndexResolved` is that marker)
+   references isIndexResolved+isTypeMention   308,482   24.2 %
+
+LEVER 3 — NEEDS THE RECEIVER'S TYPE (a bare member read or call: no qualifier, nothing local to name)
+   uses  isMemberRead                         301,464
+   calls (no marker)                          234,043
+   uses  isInterpolationRead                   70,482
+   uses  isSubscriptBase                       11,609
+   calls isCascade / isLocalRead                4,791
+                                                --------
+                                               622,389   48.9 %
+
+LEVER 4 — TYPE-NAME AND HERITAGE COLLISIONS
+   instantiates (no marker) + isConstructorInvocation  48,002
+   uses isGlobalRead                           22,118
+   extends (no marker) + isMixinOn              14,369
+   overrides isOverride+relationshipType         9,998
+   implements isImplements                       7,068
+                                                --------
+                                               101,555    8.0 %
+```
+
+**These are LOWER bounds and the arithmetic says so: the four sum to 1,197,397 of 1,273,522, and the
+missing 76,125 is in marker sets the table did not print** (it shows up to five per type, ordered by
+remaining work — the counting rule and not a discrepancy). Stated with the same status as every other
+material claim in this document: measured, reconciled as far as the instrument reaches, and named.
+
+What the sizing says, in one line: **half the ambiguity is Lever 3** — a bare member name whose receiver
+this run never typed — and Lever 3 is exactly the population bucket 3 exists for once the receiver is
+proved untyped. Lever 2 is the index argument, and it is 24 % rather than "all of it". Lever 1 is the
+only part with no dependency on anything outside the file.
+
 ### The residual, stated rather than argued away
 
 Two `extension on String` in one project now publish ONE synthesized name, exactly as two
