@@ -90,7 +90,7 @@ const testRepoMap: Record<string, string> = {
   "scala3": "scala",
   "svelte": "svelte",
   "swift-nio": "swift",
-  "terraform": "hcl",
+  "terraform": "terraform",
   "tree-sitter-clean": "clean",
   "vue-core": "vue",
   "zig": "zig",

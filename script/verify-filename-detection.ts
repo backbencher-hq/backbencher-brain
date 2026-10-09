@@ -113,7 +113,7 @@ console.log("\nexisting detection is unchanged")
     ["UPPER.TS", "typescript"],
     ["a.py", "python"],
     ["a.scss", "scss"],
-    ["a.sass", "css"],
+    ["a.sass", "sass"],
     ["a.json", "json"],
     ["a.rs", "rust"],
     ["a.go", "go"],

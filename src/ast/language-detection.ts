@@ -1,5 +1,5 @@
 export type DetectedLanguage =
-  | "typescript" | "tsx" | "javascript" | "html" | "vue" | "svelte" | "css" | "scss" | "json" | "yaml" | "graphql"
+  | "typescript" | "tsx" | "javascript" | "html" | "vue" | "svelte" | "css" | "scss" | "sass" | "json" | "yaml" | "graphql"
   | "c" | "cpp" | "rust" | "go" | "zig" | "nim"
   | "java" | "kotlin" | "scala" | "groovy"
   | "python" | "ruby" | "php" | "lua" | "perl" | "elixir" | "erlang"
@@ -10,7 +10,7 @@ export type DetectedLanguage =
   // reusing the managed-OO ontology, and why `<:` is published as `extends` only.
   | "julia"
   | "csharp" | "vb" | "fsharp" | "r" | "sql"
-  | "bash" | "powershell" | "hcl" | "objective-c"
+  | "bash" | "powershell" | "hcl" | "terraform" | "objective-c"
   | "markdown" | "toml" | "xml" | "protobuf" | "make"
   // The Solidity lane routes `.sol` below (SOL-21). Its absence here meant the route
   // table could not satisfy its own value type, so `detectLanguageFromPath` returned a
@@ -23,10 +23,21 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   // scss is its own language, not a css dialect. It was mapped to "css" here while
   // the CSS grammar was the only wasm available, which is a decision made for lack of
   // an alternative and then left in place after the alternative existed — the shape of
-  // claim that outlives the reason for it. `sass` and `less` still map to "css" and
-  // are DECLARED: 0 files of each across 13 corpora, so this table can neither support
-  // nor refute a claim about them.
-  scss: "scss", sass: "css", less: "css",
+  // claim that outlives the reason for it.
+  //
+  // `sass` was in exactly that state and worse: it mapped to "css" while being DECLARED
+  // in SUPPORTED_LANGUAGES, so `sass` was a language no extension could ever select —
+  // the registry advertised a lane the router could not enter, and the coverage gate
+  // reported it as unreachable. It is routed to its own name now. The GRAMMAR is still
+  // the css one (there is no tree-sitter-sass here), and that grammar cannot represent
+  // indented syntax — the measured consequence is that a real .sass file parses with
+  // ERROR nodes. Naming the lane honestly is what makes that visible per-language
+  // instead of hiding it inside "css"; fixing the fidelity needs a sass grammar, which
+  // is a separate piece of work and is recorded in script/m60/routing-outlier-census.ts.
+  //
+  // `less` still maps to "css" deliberately: LESS is a CSS superset and it is NOT in
+  // SUPPORTED_LANGUAGES, so no unreachable language is declared by leaving it here.
+  scss: "scss", sass: "sass", less: "css",
   json: "json", jsonc: "json", yml: "yaml", yaml: "yaml", graphql: "graphql", gql: "graphql",
   c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", "c++": "cpp", hpp: "cpp", hxx: "cpp",
   rs: "rust", go: "go", zig: "zig",
@@ -82,7 +93,15 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   swift: "swift", dart: "dart", cs: "csharp", csx: "csharp", vb: "vb", fs: "fsharp", fsi: "fsharp", fsx: "fsharp",
   r: "r", sql: "sql", sh: "bash", bash: "bash", zsh: "bash", ps1: "powershell", psm1: "powershell", psd1: "powershell",
   sol: "solidity",
-  tf: "hcl", tfvars: "hcl", tofu: "hcl", hcl: "hcl", m: "objective-c", mm: "objective-c",
+  // Terraform is HCL, and `.tf` files ARE Terraform — the same relationship `sass`
+  // had with `css` above, resolved the same way. `terraform` was declared in
+  // SUPPORTED_LANGUAGES with an analyzer and a grammar arm while every `.tf`/`.tfvars`/
+  // `.tofu` file routed to `hcl`, so the language was unreachable and the coverage gate
+  // failed on it. The grammar is unchanged (tree-sitter-hcl parses Terraform, measured
+  // clean: the gate's .tf fixture yields 8 symbols with no ERROR nodes); what changes is
+  // that the lane is named after the thing the files are, so `--language terraform`
+  // can find them. `.hcl` keeps its own name for the generic-HCL case.
+  tf: "terraform", tfvars: "terraform", tofu: "terraform", hcl: "hcl", m: "objective-c", mm: "objective-c",
   md: "markdown", markdown: "markdown", toml: "toml", proto: "protobuf",
   // M60 XML lane: `xml` was routed for `.xml`/`.xsd`/`.dtd` only, while the wired
   // grammar's OWN `tree-sitter.json` declares `file-types: [xml, svg, xsd, xslt,

@@ -145,7 +145,7 @@ export const EXTENSION_RELATION: Record<string, { relation: Relation; lang: stri
   // No F10 lane samples these, so no rate exists. They are named (not omitted)
   // so the gap is visible; `unmeasured` rows never convict and never pass.
   jsonc: { relation: "other-format", lang: "json", note: "JSON with comments (tsconfig.json, wrangler.jsonc): tree-sitter-json has no comment production. No json lane exists in F10 — UNMEASURED" },
-  sass: { relation: "other-format", lang: "css", note: "indented-syntax Sass (no braces, no semicolons): tree-sitter-css cannot represent it. No css lane exists in F10 — UNMEASURED" },
+  sass: { relation: "other-format", lang: "sass", note: "indented-syntax Sass (no braces, no semicolons): tree-sitter-css cannot represent it, and the sass lane uses that grammar because no tree-sitter-sass exists here. Routing .sass to its own name (M12 reachability fix) makes the ERROR-node result visible per language instead of hiding it inside 'css'. Fidelity needs a sass grammar — UNMEASURED against a sass corpus" },
   less: { relation: "other-format", lang: "css", note: "LESS is a CSS superset with variables/mixins; the css grammar's handling of it is unmeasured. No css lane exists in F10 — UNMEASURED" },
 }
 

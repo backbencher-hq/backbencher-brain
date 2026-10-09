@@ -315,3 +315,7 @@ ide/zed/bb-lsp/target/
 # Add with `git add -f` if the programme chooses to pin cited evidence; this rule
 # exists so that choice is deliberate rather than a `git add -A` accident.
 .tmp-probe/fs-verdict-state/*.ndjson
+
+# Scratch project + data dir for script/m12/verify-language-coverage.ts (self-cleaning,
+# but a --keep run leaves ~50 MB of fixture copies and a brain DB behind).
+.langcov/
