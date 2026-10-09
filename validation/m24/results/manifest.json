@@ -40,13 +40,13 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "baab3ab52433169b2c4f9aec2ba963837c6dd9b0",
+        "currentCommit": "425f022f38aa01862ec44bf973fd73af1486e293",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 24,
         "failed": 0,
         "negativeCases": 11,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
+        "blockedReason": "no check failed — relevant uncommitted files at measure time: script/m24/verify-closure.ts"
       }
     },
     {
@@ -57,7 +57,7 @@
       "scope": "LSP 0-based UTF-16 <-> index 1-based lines/byte columns conversion component with mutation suite",
       "evidence": {
         "status": "verified",
-        "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
+        "currentCommit": "425f022f38aa01862ec44bf973fd73af1486e293",
         "verifierCommand": "npx tsx script/m24/verify-positions.ts",
         "evidenceFile": "P1.json",
         "passed": 48,
@@ -84,7 +84,7 @@
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
       "evidence": {
         "status": "verified",
-        "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
+        "currentCommit": "425f022f38aa01862ec44bf973fd73af1486e293",
         "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
         "evidenceFile": "P2.json",
         "passed": 34,
@@ -124,7 +124,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
+        "currentCommit": "425f022f38aa01862ec44bf973fd73af1486e293",
         "verifierCommand": "npx tsx script/m24/verify-server.ts",
         "evidenceFile": "L1.json",
         "passed": 142,
@@ -154,7 +154,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
+        "currentCommit": "425f022f38aa01862ec44bf973fd73af1486e293",
         "verifierCommand": "npx tsx script/m24/verify-hover.ts",
         "evidenceFile": "L2.json",
         "passed": 58,
@@ -184,7 +184,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
+        "currentCommit": "425f022f38aa01862ec44bf973fd73af1486e293",
         "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
         "evidenceFile": "L3.json",
         "passed": 122,
@@ -214,7 +214,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
+        "currentCommit": "425f022f38aa01862ec44bf973fd73af1486e293",
         "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
         "evidenceFile": "L4.json",
         "passed": 50,
@@ -244,7 +244,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
+        "currentCommit": "425f022f38aa01862ec44bf973fd73af1486e293",
         "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
         "evidenceFile": "L5.json",
         "passed": 97,
@@ -274,7 +274,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
+        "currentCommit": "425f022f38aa01862ec44bf973fd73af1486e293",
         "verifierCommand": "npx tsx script/m24/verify-harness.ts",
         "evidenceFile": "V1.json",
         "passed": 24,
@@ -302,7 +302,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
+        "currentCommit": "425f022f38aa01862ec44bf973fd73af1486e293",
         "verifierCommand": "npx tsx script/m24/verify-docs.ts",
         "evidenceFile": "D1.json",
         "passed": 47,
@@ -330,7 +330,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
+        "currentCommit": "425f022f38aa01862ec44bf973fd73af1486e293",
         "verifierCommand": "npx tsx script/m24/verify-closure.ts",
         "evidenceFile": "X1.json",
         "passed": 69,
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-09T15:22:20.282Z",
-    "contentSha256": "68f92b355cac84de17986a67cd6d26ee1dd61086e034ce96a5765b10bb9c80f3"
+    "sealedAt": "2026-10-09T21:04:15.239Z",
+    "contentSha256": "83db64a5568aa68463be15b4c8c9743f0a4c94884bba70b0c950b066ba3d6cae"
   }
 }

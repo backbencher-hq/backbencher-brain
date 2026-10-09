@@ -15,6 +15,7 @@ import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { getUnifiedHealth } from "../../src/intelligence/health/health-provider"
 import { BrainTools } from "../../src/ast/tools"
+import { parseM22Ledger, findIssueByCode } from "./ledger-shape.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m22/results")
@@ -85,7 +86,7 @@ async function run() {
   writeFileSync(path.join(RESULTS, "D1-D2.json"), JSON.stringify(result, null, 2) + "\n")
   for (const code of ["D1", "D2"]) {
     try {
-      const led = JSON.parse(readFileSync(path.join(ROOT, "validation/m22/ledger.json"), "utf8"))
+      const led = parseM22Ledger(readFileSync(path.join(ROOT, "validation/m22/ledger.json"), "utf8"))
       const e = Object.values(led.issues).find((i: any) => i.code === code)
       if (e) { e.status = finalStatus; e.passed = passed; e.failed = checks - passed; e.commit = commit; e.evidenceFile = "D1-D2.json" }
       writeFileSync(path.join(ROOT, "validation/m22/ledger.json"), JSON.stringify(led, null, 2) + "\n")
