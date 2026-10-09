@@ -198,3 +198,69 @@ npx tsx validation/m14/fixtures/bash/probe-bash-source-path-shapes.mts --nf 60
 bun run script/m14/run-fixtures.ts --lang bash          # 34 fixtures
 bun validation/m14/fixtures/bash/probe-bash-no-regex.mts # 0 regex literals, 61 files
 ```
+
+## Project scope, and the one dangling edge (appended after the lane was closed)
+
+Both scopes, the gate's own words (captures committed under
+`validation/m14/fixtures/bash/incoming-bash-sh-*.json`):
+
+```
+npx tsx script/m14/incoming-gate.ts bash sh 60   (60-file stride, 117 repos)
+  FAIL - 188 ambiguous + 845 unresolved of 2,590; markedExternal 10 (0 verified, 10 unverifiable, 0 refuted)
+npx tsx script/m14/incoming-gate.ts bash sh 0    (all 2,360 files, 1m43s)
+  FAIL - 41,931 ambiguous + 27,219 unresolved of 112,823; markedExternal 749 (1 verified, 748 unverifiable, 0 refuted)
+```
+
+**Same edges, two key spaces** (`probe-bash-incoming-split.mts --ext sh --nf 60 --repo-wide`, whose
+sample column reproduces the gate exactly — 1547/188/845 — and which caught a bug in its own first
+rewrite: one global key space read 291 ambiguous against the gate's 188 because production resolves
+PER PROJECT):
+
+| scope | resolved | ambiguous | unresolved |
+|---|---|---|---|
+| sample (60 files) | 1547 | 188 | 845 |
+| project (whole project, same edges) | 1286 | 715 | 579 |
+
+**266 of the 845 (31.5%) are sample budget, not defects.** But the correction also moves 261 edges out
+of `resolved` and adds 527 to `ambiguous`: a name with one declaration in a 60-file sample has several
+project-wide, so `resolved` becomes honestly ambiguous rather than staying resolved. The bad column
+(amb + unres) **grows** with the budget: 1,033 → 1,294. bash's dominant column is ambiguity — a property
+of bare-name targets (`fail` ×3, `args` ×2, `version` ×4-5), not of the sample.
+
+**Residue at project scope (579 edges / 141 names):** calls external PATH-resolved 398 / 56 (declared
+nowhere in the project, `type -t` = file); uses environment/shell-supplied 100 / 54; calls unresolvable
+on this host 65 / 19; imports + references path-shaped 16 / 6. In-corpus-and-unresolved: **0** in the
+sample.
+
+At whole-corpus scope the same classes are calls-external 15,394 / 230, uses-env 6,064 / 1,554,
+calls-unresolvable 4,840 / 469, paths 920 / 336 — and there the in-corpus-and-unresolved count is
+**1**, which is worth its own paragraph because it is a measurement, not a rounding error.
+
+### The one in-corpus edge production cannot answer
+
+`contains: usage -> this @7` in `vault/.github/scripts/install-cob.sh`, whose line 7 is `this=$1` inside
+`usage()`. The analyzer is **right**: `this` is a legal POSIX shell variable and the analyzer publishes
+`this:variable@7 owner=usage`. Production drops the symbol — `src/ast/pool-worker.ts` keeps a UNIVERSAL
+denylist containing `this` (lines 545-570) applied to every language — so the containment edge dangles.
+Bash is the seventh lane to produce a legitimate declaration of a name on that list; the same comment
+already records lua's `local this`, and the signature matches the SQL row it quotes: *"3 of 18,325
+symbols; 1 of 11,786 `contains` edges left naming nothing"*. Measured whole-corpus:
+`probe-bash-contains-residue.mts` → exactly 1 such edge, confirmed in the gate's own JSON
+(`contains unresolved=1`, `unresolvedNames: [{name: "this"}]`).
+
+The fix is a one-line product change in the denylist register (`src/ast/pool-worker.ts`, outside this
+lane's write scope), **not** in this analyzer: suppressing the declaration here would hide a real bash
+variable to make a dangling edge disappear — the failure mode BA-G1 refuses.
+
+### Ruled, not marked: the bare-identifier external class
+
+Marking the 398 PATH-resolved call edges as `isExternal` would read `externalVerified` wherever the
+project does not declare the name and be **REFUTED** wherever it does, because a single-file analyzer
+cannot know the project's key space. `probe-bash-wide-marker-cost.mts --nf 60` measures the trade: of
+809 `calls` edges, 176 local, 115 path targets, **443** bare identifiers the project does not declare
+and **75** it does — 48 of them `kubectl`, and five are targets the project declares as *functions*
+(`ExitWithExitCode`, `InstallDotNet`, `create_and_use_new_namespace`, `cmd`), i.e. real in-corpus
+dependencies the claim would deny. 443 verified for 75 refuted is a scoring trade, not a truth trade, so
+the marker stays path-invoked only (BD12) and the class is ruled with its counts above.
+
+BA-G1 (`unset`) remains the lane's only open gap, priced at 289 sites in 122 files.
