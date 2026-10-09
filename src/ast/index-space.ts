@@ -94,40 +94,50 @@ export interface ReclaimOptions {
  * happened and a test can assert it.
  */
 export function reclaimSpace(rawDb: any, dbPath: string, opts: ReclaimOptions = {}): SpaceReport {
+  // ORDER MATTERS, and the first version had it wrong: it measured the freelist
+  // BEFORE checkpointing. In WAL mode the pages a wipe just freed are still in the
+  // WAL, so `freelist_count` still described the pre-wipe file — measured on a
+  // 2,328 MB file whose rows had just been deleted, the VACUUM branch did not fire
+  // and the rebuild wrote into all of it. Checkpoint first, then measure, then
+  // decide.
+  const checkpointed = checkpointWal(rawDb)
   const before = spaceReport(rawDb, dbPath)
-  const report: SpaceReport = { ...before, checkpointed: checkpointWal(rawDb) }
 
   const ratioFloor = opts.vacuumAboveRatio ?? 0.25
   const byteFloor = opts.vacuumAboveBytes ?? 64 * 1024 * 1024
   const wantVacuum = opts.vacuum === true && before.freelistBytes >= byteFloor && before.freeRatio >= ratioFloor
 
+  let vacuumed = false
+  let vacuumMs: number | null = null
   if (wantVacuum && process.env.BB_INDEX_VACUUM !== "0") {
     const started = Date.now()
     try {
       rawDb.exec("VACUUM")
-      report.vacuumed = true
+      vacuumed = true
     } catch (e: any) {
       opts.log?.("VACUUM skipped", { error: String(e?.message ?? e) })
     }
-    report.vacuumMs = Date.now() - started
+    vacuumMs = Date.now() - started
+    // VACUUM writes the compacted database THROUGH the WAL, so the file itself
+    // does not shrink until the next checkpoint. Without this second checkpoint
+    // the report says "vacuumed" beside an unchanged byte count — which is what
+    // the first version of this function did, and what
+    // script/perf/verify-space-reclaim.ts caught.
+    if (vacuumed) checkpointWal(rawDb)
   }
 
   // Re-read after the rewrite: the point of the exercise is the numbers AFTER.
   const after = spaceReport(rawDb, dbPath)
-  return {
-    ...after,
-    checkpointed: report.checkpointed,
-    vacuumed: report.vacuumed,
-    vacuumMs: report.vacuumMs,
-    freelistBytes: after.freelistBytes,
-    freeRatio: after.freeRatio,
-  }
+  return { ...after, checkpointed, vacuumed, vacuumMs }
 }
 
 /** One line, in the units a human reads. */
 export function formatSpace(report: SpaceReport): string {
   const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`
   const parts = [`db ${mb(report.dbBytes)}`, `wal ${mb(report.walBytes)}`]
+  // The free share is what the VACUUM decision turns on, so a run states it
+  // rather than leaving a reader to wonder why a 2.3 GB file was left alone.
+  if (report.freeRatio > 0) parts.push(`${(report.freeRatio * 100).toFixed(0)}% free`)
   if (report.vacuumed && report.vacuumMs !== null) parts.push(`vacuumed in ${(report.vacuumMs / 1000).toFixed(1)}s`)
   return parts.join(", ")
 }

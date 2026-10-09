@@ -298,6 +298,29 @@ async function cmdIndex(
   const { reclaimSpace: reclaimEndSpace, formatSpace: formatEndSpace } = await import("../ast/index-space")
   const endSpace = reclaimEndSpace(db, BrainDatabase.getDbPath(pid), { vacuum: false })
   console.log(`  index space: ${formatEndSpace(endSpace)}`)
+  // The index is complete; its VECTORS may not be. The background embedding
+  // drainer holds the event loop until its queue empties, so the command can sit
+  // silent for minutes AFTER the summary — measured 2026-10-08: a 427 s index
+  // followed by ~10 minutes of no output at all, which is indistinguishable from a
+  // hang (bb's own closing line invites reporting exactly that). Announce the wait,
+  // bound it, and report how it ended.
+  const { pendingEmbeddingCount, flushBackgroundEmbeddings } = await import("../ast/parallel-indexer")
+  const pendingAtEnd = pendingEmbeddingCount()
+  if (pendingAtEnd > 0) {
+    const waitMs = Number(process.env.BB_EMBEDDING_DRAIN_WAIT_MS || 300000)
+    const waitSecs = Math.round(waitMs / 1000)
+    console.log(
+      `  finishing ${pendingAtEnd.toLocaleString()} embedding(s) — the index and its relationships are already complete; these are vectors (waiting up to ${waitSecs}s)`,
+    )
+    const drain = await flushBackgroundEmbeddings({ timeoutMs: waitMs })
+    if (drain.resolved === "drained") {
+      console.log("  ✓ embedding queue drained")
+    } else {
+      console.log(
+        `  ⚠ ${drain.pendingItems.toLocaleString()} embedding(s) still queued after ${waitSecs}s — semantic search is partial for those symbols; run \`bb index --changed\` to finish them`,
+      )
+    }
+  }
   // A run that indexed nothing new is a success, but "✓ indexed 0 files" reads
   // like a failure to anyone who ran `bb index` expecting work to happen. Say
   // what actually happened instead: the project is already current.

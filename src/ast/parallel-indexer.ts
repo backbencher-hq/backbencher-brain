@@ -2093,6 +2093,20 @@ const backgroundEmbedJobs: BackgroundEmbedJob[] = []
 let backgroundEmbedActive = false
 let backgroundEmbedQueuedItems = 0
 let embeddingFlushWaiters: Array<() => void> = []
+
+/**
+ * How much background embedding work is still queued.
+ *
+ * The drainer keeps the event loop alive until its queue empties, so a command
+ * that has already printed its index summary can sit silent for as long as the
+ * provider takes — measured 2026-10-08: a 427 s index followed by ~10 minutes of
+ * no output at all, which reads exactly like a hang (and bb's own closing line
+ * invites reporting a perceived hang). Exported so a CLI can say what it is
+ * waiting for instead of leaving the user to guess.
+ */
+export function pendingEmbeddingCount(): number {
+  return backgroundEmbedQueuedItems
+}
 const EMBED_QUEUE_ITEM_CAP = Number(process.env.BB_EMBEDDING_QUEUE_LIMIT || 25000)
 
 // M21.E2: production counters for the embedding queue lifecycle. These are
