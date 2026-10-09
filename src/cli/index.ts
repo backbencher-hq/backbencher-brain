@@ -880,7 +880,16 @@ Indexing far slower than expected? Run \`bb status\` for per-phase timings and
 Full reference: man bb, or docs/indexing/ in the repository.
 `)
     .action(async (dir: string | undefined, opts: any) => {
-      await cmdIndex(dir, opts)
+      // Commander negation: `--no-setup` sets opts.setup = false (default true);
+      // translate it to the option cmdIndex reads — the same shape bb search
+      // already uses for --no-auto-refresh. The camelCase of the flag name is
+      // NOT the key Commander produces: `opts.noSetup` is never set by any parse
+      // of `--no-setup`, so reading it left the flag silently inert (measured:
+      // the notice printed with AND without the flag, and `opts` was
+      // `{setup:false}`). The m30 hook gate passed throughout because it injects
+      // HOOK_NO_SETUP directly — it covered the hook, not the CLI wiring. That
+      // wiring now has an end-to-end check in script/m30/verify-first-run-hook.ts.
+      await cmdIndex(dir, { ...opts, noSetup: opts.setup === false })
     })
 
   const setupCmd = program
