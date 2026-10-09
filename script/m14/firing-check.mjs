@@ -113,23 +113,76 @@ function pickFiles(dir, exts, want, cap = 400) {
   return [...new Set(out)].slice(0, cap)
 }
 
-const { getParser } = await import(`${REPO}/src/ast/engine.ts`)
+// ── THE PRODUCTION PATH IS `parseFile`, NOT `parse` + `analyze` (corrected 2026-10-09)
+//
+// This instrument's header has always said it runs "the PRODUCTION path
+// (getParser -> parseFile -> analyze)". It did not. Until this commit the loop called
+// `getParser(lang)`, `parser.parse(content, f)` and `new Cls().analyze(rootNode, content, f)`
+// directly — which is the ANALYZER path, not the production path. `ASTEngine.parseFile`
+// does four things that loop never did:
+//
+//   1. builds the AnalyzeContext (vue/svelte SFC script trees, html embedded blocks,
+//      markdown's companion INLINE grammar trees);
+//   2. detects the language from the path instead of trusting the caller;
+//   3. runs the analyzer under a timeout and, on a WASM trap, falls back to REGEX
+//      extraction with `metadata.fallback === true`;
+//   4. reports the second silent crash path (`metadata.analysisVersion === "2.0-basic-fallback"`).
+//
+// The consequence was measured, not argued, on the markdown lane (`.tmp-probe/md-path-probe.mts`,
+// 60 files drawn by the same even stride, both paths over the SAME files in one process):
+//
+//   BARE (this instrument, before)  contains:2070
+//   PROD (engine.parseFile)         contains:2070   uses:759   references:31
+//
+// `uses` is the ONLY edge type by which a markdown document declares where it points, it is
+// emitted by the inline-companion half of the analyzer, and this instrument could not see it at
+// all — so the board read markdown as `1 types fired` against its own lane doc's `uses` evidence.
+// A context-dependent lane measured on this path is under-measured BY CONSTRUCTION.
+//
+// The fix is to call `parseFile` and take the relationships it returns. The tally stays
+// relationship-type-keyed, and a file the engine DEGRADED (regex fallback, or the basic-fallback
+// crash path) is now counted and disclosed instead of silently becoming evidence that the
+// analyzer emits nothing.
+const { parseFile } = await import(`${REPO}/src/ast/engine.ts`)
 const { RelationshipType } = await import(`${REPO}/src/ast/types.ts`)
 const ALL = [...new Set(Object.values(RelationshipType))]
 console.log(`enum has ${ALL.length} types: ${ALL.join(" ")}\n`)
+
+// ── THE INSTRUMENT'S OWN CONTROL ──────────────────────────────────────────────
+// Rule-book §7: a guard with no live hits must be shown firing on a planted case, and
+// §"a gate that cannot fail is not a gate". The defect corrected above was invisible for
+// exactly one reason: nothing here could tell the two paths apart. This control parses a
+// PLANTED document — a markdown heading plus a link, whose `uses` edge exists only when
+// the engine has built the companion inline context — through `parseFile`, and REFUSES TO
+// REPORT if that edge does not come out. It gives the same answer on every machine because
+// it needs no corpus, and it fails loudly rather than printing a table no one can trust.
+if (process.env.BB_FIRING_SKIP_CONTROL !== "1") {
+  const planted = "# Probe\n\nSee [the target](./target.md) and <https://example.invalid/x>.\n"
+  let ok = false, got = ""
+  try {
+    const r = await parseFile(`${REPO}/.firing-check-control.md`, planted)
+    const types = (r.relationships ?? []).map((x) => x.relationshipType ?? x.type).filter(Boolean)
+    got = [...new Set(types)].sort().join(" ")
+    ok = types.includes("uses")
+  } catch (e) { got = `THREW ${String(e).slice(0, 60)}` }
+  console.log(`instrument self-test: ${ok ? "PASS" : "FAIL"} — planted markdown link through parseFile: uses ${ok ? "FIRED" : "DID NOT FIRE"} (types seen: ${got || "(none)"})`)
+  console.log(`instrument self-test: population is the corpus sample below; a SILENT type is a claim about THESE files, not the language\n`)
+  if (!ok) { console.error("firing-check CONTROL FAILED — the parseFile path did not surface a markdown `uses` edge, so this run's SILENT column cannot be trusted. Refusing to report."); process.exit(3) }
+}
 
 const lane = process.argv[2]
 const targets = lane && lane !== "all" ? [lane] : Object.keys(LANES)
 const report = []
 for (const L of targets) {
   const [lang, mod, corpusDir] = LANES[L]
-  let modPath, Cls
+  // The ANALYZER still has to exist and export a class — that check is kept, because
+  // "NO ANALYZER CLASS EXPORTED" is a different finding from "the engine fell back".
+  let Cls
   try {
-    modPath = `${REPO}/src/ast/${mod}.ts`
-    const m = await import(modPath)
+    const m = await import(`${REPO}/src/ast/${mod}.ts`)
     Cls = Object.values(m).find((v) => typeof v === "function" && /Analyzer$/.test(v.name))
-  } catch (e) { report.push([L, `IMPORT FAIL ${String(e).slice(0, 60)}`, 0, []]); continue }
-  if (!Cls) { report.push([L, "NO ANALYZER CLASS EXPORTED", 0, []]); continue }
+  } catch (e) { report.push([L, `IMPORT FAIL ${String(e).slice(0, 60)}`, 0, [], new Map(), 0, 0]); continue }
+  if (!Cls) { report.push([L, "NO ANALYZER CLASS EXPORTED", 0, [], new Map(), 0, 0]); continue }
 
   const dir = join(CORPUS, corpusDir)
   const exts = { rust: [".rs"], python: [".py"], go: [".go"], kotlin: [".kt", ".kts"], scala: [".scala"],
@@ -143,16 +196,22 @@ for (const L of targets) {
     toml: [".toml"], xml: [".xml"], markdown: [".md"], clean: [".icl", ".dcl"],
     elixir: [".ex", ".exs"], cpp: [".cpp", ".cc", ".h"], ruby: [".rb"], erlang: [".erl", ".hrl"], c: [".c", ".h"] }[lang] || []
   const files = pickFiles(dir, exts, Number(process.env.NFILES||120))
-  if (!files.length) { report.push([L, `NO CORPUS under ${corpusDir}`, 0, []]); continue }
+  if (!files.length) { report.push([L, `NO CORPUS under ${corpusDir}`, 0, [], new Map(), 0, 0]); continue }
 
   const tally = new Map(), errs = []
-  let parsed = 0
+  let parsed = 0, degraded = 0
   for (const f of files) {
     try {
       const content = readFileSync(f, "utf8")
-      const parser = await getParser(lang)
-      const pr = await parser.parse(content, f)   // tree-sitter parse
-      const res = new Cls().analyze(pr.rootNode, content, f)
+      // THE PRODUCTION PATH. `parseFile` detects the language from the path, builds the
+      // AnalyzeContext, and returns the analyzer's own relationships.
+      const res = await parseFile(f, content)
+      const md = res?.metadata ?? {}
+      // A DEGRADED file is not analyzer evidence. `fallback` is set by the regex
+      // extraction path in parseFile's catch; "2.0-basic-fallback" is the signature of
+      // the analyzer timing out or blowing the JS stack (0 symbols, no `fallback`).
+      const isDegraded = md.fallback === true || md.analysisVersion === "2.0-basic-fallback"
+      if (isDegraded) { degraded++; errs.push(`degraded:${String(md.fallbackReason ?? md.analysisVersion).slice(0, 30)}`); continue }
       parsed++
       for (const r of res.relationships || []) {
         const t = r.relationshipType ?? r.type
@@ -162,9 +221,12 @@ for (const L of targets) {
     } catch (e) { errs.push(String(e).slice(0, 40)) }
   }
   const fired = [...tally.entries()].filter(([, n]) => n > 0).map(([t]) => t).sort()
-  report.push([L, errs.length && !parsed ? `ALL ${files.length} FILES FAILED: ${errs[0]}` : `${parsed}/${files.length} parsed (sample of the corpus, even stride)`, tally.size, fired, tally])
+  const note = errs.length && !parsed ? `ALL ${files.length} FILES FAILED: ${errs[0]}`
+    : `${parsed}/${files.length} parsed (sample of the corpus, even stride)`
+      + (degraded > 0 ? `  [${degraded} DEGRADED — regex fallback / basic-fallback, excluded, not analyzer evidence]` : "")
+  report.push([L, note, tally.size, fired, tally, degraded, files.length])
 }
-for (const [L, note, n, fired, tally] of report) {
+for (const [L, note, n, fired, tally, degraded] of report) {
   console.log(`${L.padEnd(13)} ${String(n).padStart(2)} types fired   ${note}`)
   if (fired?.length) console.log(`   ${fired.map((t) => `${t}:${tally.get(t)}`).join("  ")}`)
   const silent = ALL.filter((t) => !fired?.includes(t))
