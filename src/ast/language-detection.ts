@@ -261,8 +261,21 @@ function stripCommentsAndStrings(src: string): string {
  * measured is how a router starts disagreeing with the analyzers it feeds. The
  * bash lane's own census is the evidence for the bash entry; another lane's
  * evidence should add its own.
+ *
+ * `node` now has that evidence, and only `node`. Measured across every tracked
+ * file in this repository, there are exactly three extensionless files carrying a
+ * shebang: two `/bin/sh` (ide/zed/bb-lsp/bin/bb-lsp-server and
+ * script/git-hooks/pre-push, both already routed) and `bin/bb`, the shipped CLI
+ * launcher — `#!/usr/bin/env node`, 13 lines of real JavaScript with a top-level
+ * await, and until now invisible to the index. `python` and `ruby` have a
+ * measured corpus of ZERO files here, so they stay absent until a corpus exists,
+ * exactly as `.cts` stayed out of EXTENSION_LANGUAGE.
  */
 const SHEBANG_LANGUAGE: ReadonlyArray<readonly [string, DetectedLanguage]> = [
+  ["/usr/bin/env node", "javascript"],
+  ["/usr/bin/node", "javascript"],
+  ["/usr/local/bin/node", "javascript"],
+  ["/bin/node", "javascript"],
   ["/bin/bash", "bash"],
   ["/usr/bin/bash", "bash"],
   ["/usr/bin/env bash", "bash"],

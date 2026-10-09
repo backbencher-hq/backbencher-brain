@@ -32,6 +32,7 @@ import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
 import { resolveImportTargets } from "./import-resolution"
 import { retargetCrossFileOverrides } from "./override-retarget"
+import { claimOwnerCarryingTargets } from "./member-owner-resolution"
 import { ASTEngine } from "./engine"
 
 const log = Log.create({ service: "parallel-indexer" })
@@ -334,7 +335,12 @@ export const ParallelIndexerConfig = {
     /.*Sftp.*\.json$/,
     /\/gen\/.*\.(ts|js)$/,
     // === PERFORMANCE & WEB ASSET DIRECTORIES ===
-    /\/perf\//,
+    // `/perf/` used to be here and in the compiled-mode list. Removed: it hid real
+    // source in this repository (measured: 17 tracked files with a valid extension,
+    // including the worker-pool gate), and a benchmark tree is a handful of small
+    // files — hiding it is not worth hiding source by mistake. Projects that keep
+    // generated benchmark data there can exclude it in .bbignore, which now also
+    // works in reverse (`!path`) because the built-in rules became overridable.
     /\/Microbenchmarks\//,
     /\/wwwroot\//,
     /\/testassets\//,
@@ -963,13 +969,21 @@ async function discoverAndFilterFiles(
       await processFile(f)
     }
   } else {
-    const walk = async (dir: string, ig: ReturnType<typeof ignore>, depth = 0) => {
+    const walk = async (dir: string, ig: ReturnType<typeof ignore>, depth = 0, forceInclude = false) => {
       if (depth > 50) return
       try {
         const entries = await readdir(dir, { withFileTypes: true })
 
-        // Stop if we find a .git folder in a subdirectory (nested project boundary)
-        if (dir !== projectPath && entries.some((e) => e.isDirectory() && e.name === ".git")) {
+        // Stop if we find a nested project boundary in a subdirectory.
+        //
+        // `.git` is a DIRECTORY in a normal checkout but a FILE in a submodule and in a
+        // linked worktree. Testing only for the directory meant every submodule and every
+        // worktree was walked as if it were first-party source; the file form is what git
+        // actually writes in both cases.
+        if (
+          dir !== projectPath &&
+          entries.some((e) => (e.isDirectory() || e.isFile()) && e.name === ".git")
+        ) {
           return
         }
 
@@ -1006,23 +1020,44 @@ async function discoverAndFilterFiles(
           if (entry.isDirectory() && [".git", ".svn", ".hg", ".cache", ".nyc_output", ".venv", ".next", ".nuxt", ".svelte-kit", ".turbo"].includes(entry.name)) continue
           const fullPath = path.join(dir, entry.name)
           const relativePath = path.relative(projectPath, fullPath)
+          const ignorePath = relativePath + (entry.isDirectory() ? "/" : "")
+
+          // ── an explicit `!pattern` is consulted FIRST ──────────────────────
+          // Every rule below this point is a DEFAULT, and a default a user cannot
+          // override is a bug. Measured in this repository before this change: the
+          // compiled-mode list hid 17 first-party files (`script/perf/**`, including
+          // the gate that verifies the worker pool) and `/bin/` hid the shipped
+          // `bin/bb` launcher, and NO ignore file could bring any of them back —
+          // `shouldSkip` ran before `.bbignore`/`.gitignore` and supported no negation.
+          //
+          // So the ignore verdict is read first, and an explicit un-ignore (or being
+          // inside a directory that was explicitly un-ignored) escapes the built-in
+          // skips for that subtree. Normal ignoring is unchanged: a file the ignore
+          // files ignore is still skipped below.
+          const verdict = localIg.test(ignorePath)
+          const forced = forceInclude || verdict.unignored
 
           // === COMPILED-MODE SAFE DIRECTORY FILTER (v2) ===
-          // This runs BEFORE shouldSkip and localIg checks.
-          // Uses simple string checks guaranteed to survive minification.
+          // Kept as plain string checks so they survive minification, but no longer
+          // unconditional: `forced` is the user's explicit override.
+          //
+          // `/perf/` was REMOVED here. It is a plausible default for someone else's
+          // benchmark tree, but in this repository it silently excluded real source
+          // (measured: 17 tracked files with a valid extension), and a benchmark
+          // directory is not something bb should decide to hide on the user's behalf
+          // when the cost of indexing it is a handful of small files.
           if (
-            relativePath.includes("/perf/") ||
-            relativePath.includes("/Microbenchmarks/") ||
-            relativePath.includes("/wwwroot/") ||
-            relativePath.includes("/coverage/") ||
-            relativePath.includes("/node_modules/") ||
-            relativePath.includes("/dist/") ||
-            relativePath.includes("/build/") ||
-            relativePath.includes("/.git/") ||
-            relativePath.includes("/obj/") ||
-            relativePath.includes("/obj/") ||
-            relativePath.includes("/bin/") ||
-            relativePath.includes("/testData/")
+            !forced &&
+            (relativePath.includes("/Microbenchmarks/") ||
+              relativePath.includes("/wwwroot/") ||
+              relativePath.includes("/coverage/") ||
+              relativePath.includes("/node_modules/") ||
+              relativePath.includes("/dist/") ||
+              relativePath.includes("/build/") ||
+              relativePath.includes("/.git/") ||
+              relativePath.includes("/obj/") ||
+              relativePath.includes("/bin/") ||
+              relativePath.includes("/testData/"))
           ) {
             continue
           }
@@ -1030,13 +1065,12 @@ async function discoverAndFilterFiles(
           // Skip patterns are project-relative: a skip dir must be INSIDE the
           // project. Matching the absolute path would also skip any project
           // rooted under a skipped directory (e.g. ~/.vscode/tmp fixtures).
-          if (shouldSkip("/" + relativePath)) continue
+          if (!forced && shouldSkip("/" + relativePath)) continue
 
-          if (localIg.ignores(relativePath + (entry.isDirectory() ? "/" : ""))) continue
-          if (localIg.ignores(relativePath + (entry.isDirectory() ? "/" : ""))) continue
+          if (verdict.ignored) continue
 
           if (entry.isDirectory()) {
-            promises.push(walk(fullPath, localIg, depth + 1))
+            promises.push(walk(fullPath, localIg, depth + 1, forced))
           } else if (entry.isFile()) {
             // Two gates, cheapest first: the PURE path-only check admits every
             // recognised extension with no I/O, and only an extensionless file
@@ -1055,9 +1089,18 @@ async function discoverAndFilterFiles(
     }
 
     const rootIg = ignore()
-    // User-controlled ignore list + performance/benchmark directories
+    // Built-in ignore globs. These are DEFAULTS and are overridable: the user's
+    // .bbignore is added BELOW, and last-match-wins means an explicit `!pattern`
+    // there re-includes any of them. That ordering is the reason these can stay
+    // while the walk's other two rule layers had to be changed (they ran before the
+    // ignore files and supported no negation).
+    //
+    // `**/perf/**` was REMOVED from this list for the same measured reason it was
+    // removed from the walk: it hid real source in this repository (17 tracked files
+    // with a valid extension, the worker-pool gate among them) and a benchmark
+    // directory costs a handful of small files to index. A project that keeps
+    // generated benchmark data under perf/ can exclude it in .bbignore.
     rootIg.add([
-      "**/perf/**",
       "**/Microbenchmarks/**",
       "**/wwwroot/**",
       "**/testassets/**",
@@ -4521,6 +4564,28 @@ export async function storeResults(
            if (imp4.resolved > 0) log.debug("import-target resolution (M60 JD2, inline)", { scanned: imp4.scanned, resolved: imp4.resolved })
          }
 
+         // The OWNER CHANNEL's claim over the rows that state their own receiver.
+         //
+         // Placed here, immediately before the cross-language pass and after every
+         // name-based strategy, for one reason: it RE-BINDS rows, so every pass below
+         // has to see the final target rather than the ranking's guess. A member read
+         // whose receiver the analyzer could name is a row a rule exists for, and the
+         // ranking's answer for it is chosen by `s.id` TEXT order, which is a tie-break
+         // and not a fact about PHP — see `claimOwnerCarryingTargets` for the full note,
+         // the measurement on php's whole population, and the trade it makes.
+         {
+           const ownerClaim = claimOwnerCarryingTargets(rawDb as any, projectId)
+           if (ownerClaim.withdrawn > 0) {
+             log.debug("member owner resolution (owner channel authoritative)", {
+               withdrawn: ownerClaim.withdrawn,
+               scanned: ownerClaim.scanned,
+               resolved: ownerClaim.resolved,
+               inheritedResolved: ownerClaim.inheritedResolved,
+               declined: ownerClaim.ownerAmbiguous + ownerClaim.ambiguousInChain + ownerClaim.notDeclared,
+             })
+           }
+         }
+
          // Cross-language normalization (polyglot fixture finding, M26 addendum):
          // the strategies above recompute is_cross_file but left is_cross_language
          // and bridge_mechanism stale for rows they resolve — so a TS->JS edge
@@ -5023,6 +5088,25 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
     `)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_src`)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_pick`)
+
+    // The OWNER CHANNEL's claim over the rows that state their own receiver, for the
+    // same reason and in the same position as the call in `storeResults`: after every
+    // name-based strategy (including this pass's own plan, which is the one that binds
+    // the deferred population in the worker-pool flow) and before the cross-language
+    // pass, so that pass sees the target this channel chose. See
+    // `claimOwnerCarryingTargets` in `member-owner-resolution.ts`.
+    {
+      const ownerClaim = claimOwnerCarryingTargets(rawDb as any, projectId)
+      if (ownerClaim.withdrawn > 0) {
+        log.debug("member owner resolution (owner channel authoritative)", {
+          withdrawn: ownerClaim.withdrawn,
+          scanned: ownerClaim.scanned,
+          resolved: ownerClaim.resolved,
+          inheritedResolved: ownerClaim.inheritedResolved,
+          declined: ownerClaim.ownerAmbiguous + ownerClaim.ambiguousInChain + ownerClaim.notDeclared,
+        })
+      }
+    }
 
     // Cross-language normalization (polyglot fixture finding, M26 addendum):
     // this pass is the one that resolves forward references in the default

@@ -94,3 +94,12 @@ validation/m12/ground-truth/
 # (freshness reported them missing until the next run purged them).
 .bb-*/
 
+
+# ── The built-in rules are defaults, and this is now the way to override one ──
+# `bin/` is in bb's built-in skip list because it usually holds build output. In this
+# project it also holds `bin/bb`, the shipped CLI launcher (`#!/usr/bin/env node`, 13
+# lines of real JavaScript). Until the walk learned to consult an explicit `!pattern`
+# BEFORE the built-in skips, no ignore file could bring that file back — the presence
+# of this line is the demonstration that the override now works, and it is deliberate
+# rather than incidental.
+!bin/
