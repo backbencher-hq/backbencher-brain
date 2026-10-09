@@ -697,7 +697,16 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     const marks = row.marks.get(e.sig)!
     // The evidence for a `projectFacts` claim is the project's own files, and it is looked up
     // HERE, from the same map phase 1 built from the admitted list — never from the analyzer.
-    const facts = e.claim?.kind === "projectFacts" ? projectFacts?.get(e.repo) : undefined
+    //
+    // A `projectFile` CLAIM NEEDS THE SAME EVIDENCE, and until 2026-10-10 it did not get it:
+    // the lookup was gated on `projectFacts` alone, so every `projectFile` claim was classified
+    // with `facts === undefined` and therefore returned `externalUnverified` — which blocks a
+    // PASS. The gate's own control passes facts explicitly for this claim kind, so the CONTROL
+    // was green while the live path could never verify one. The json lane found it with a
+    // falsifier rather than a complaint: 82 file-shaped `$ref` edges carry `importProjectFile`,
+    // 81 of them naming a file that EXISTS in the project, and all of them read `ext?`.
+    const needsFacts = e.claim?.kind === "projectFacts" || e.claim?.kind === "projectFile"
+    const facts = needsFacts ? projectFacts?.get(e.repo) : undefined
     const pc = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts)
     tally(row.project, pc, e.tgt, e.label)
     tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts), e.tgt, e.label)
