@@ -323,3 +323,4 @@ ide/zed/bb-lsp/target/
 # Scratch projects for script/perf/verify-discovery-overrides.ts. Contains a synthetic
 # `.git` FILE to model a submodule boundary, which must never be committed.
 .discovery-scratch/
+.store-honesty/

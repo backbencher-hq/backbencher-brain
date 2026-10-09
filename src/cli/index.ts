@@ -335,7 +335,26 @@ async function cmdIndex(
   // like a failure to anyone who ran `bb index` expecting work to happen. Say
   // what actually happened instead: the project is already current.
   const parsedNothing = Number(stats.summary?.newlyParsed ?? 0) === 0 && !stats.cancelled
-  if (parsedNothing) {
+  // An INCOMPLETE index must not be reported as a finished one.
+  //
+  // A store batch can roll back (constraint violation, full disk) and be skipped. The
+  // indexer recovers what it can, and whatever it could not save is counted in
+  // `missingAfterRecovery`. Before this, such a run printed the same "✓ indexed N files"
+  // as a clean one, with a persisted status of "complete" — the user's only clue that
+  // files were missing was that search did not find them. Measured by injecting a single
+  // batch failure (script/perf/verify-store-failure-honesty.ts).
+  const missing = Number(stats.summary?.missingAfterRecovery ?? 0)
+  const storeFailures = Number(stats.summary?.storeFailures ?? 0)
+  if (missing > 0) {
+    console.log(
+      `⚠ indexed ${files} files — but ${missing} of the ${stats.totalFiles} discovered file(s) could NOT be stored ` +
+        `(${storeFailures} store batch(es) rolled back). The index is INCOMPLETE.`,
+    )
+    console.log(
+      `  This is a write failure, not a parse failure: check free disk space and that the database is writable, then re-run.`,
+    )
+    process.exitCode = 1
+  } else if (parsedNothing) {
     const unchanged = Number(stats.summary?.unchanged ?? 0)
     const skipped = Number(stats.summary?.skipped ?? 0)
     console.log(
@@ -343,6 +362,11 @@ async function cmdIndex(
     )
   } else {
     console.log(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`)
+  }
+  if (missing === 0 && storeFailures > 0) {
+    // The rollbacks happened but recovery saved every file: the index is complete and
+    // the run is a success, yet the user should still know it was not uneventful.
+    console.log(`  note: ${storeFailures} store batch(es) rolled back and were recovered — the index is complete`)
   }
   console.log(`  stats: ${JSON.stringify({ totalFiles: stats.totalFiles, processed: stats.processedFiles, errors: stats.errorFiles })}`)
   // Embedding outcomes and the models present in the index.

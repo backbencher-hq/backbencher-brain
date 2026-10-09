@@ -444,6 +444,24 @@ export interface ParallelIndexingStats {
      * So `derivedPass` is not a consistency statement, and the count below is.
      */
     derivedPass?: "full" | "bounded" | "deferred" | "skipped-unchanged" | "partial"
+    /**
+     * Store batches that rolled back during this run, and the files they carried.
+     *
+     * A rollback means those files are NOT in the index. Before this field the only
+     * trace was a stderr line, and a run that lost batches still reported success and
+     * persisted `status: "complete"` — measured: injecting a single batch failure made
+     * the CLI print `✓ indexed 12 files` with no indication that anything was missing.
+     */
+    storeFailures?: number
+    storeFailureFiles?: number
+    /**
+     * Files this run discovered that are absent from `brain_file` AFTER the recovery
+     * pass. This is the state of the index, not a guess about it: the pass above
+     * re-processes what a rollback cost, and whatever it could not save is counted
+     * here. Non-zero means the index is incomplete, and every consumer that reports
+     * health, counts or "complete" has to be able to see that.
+     */
+    missingAfterRecovery?: number
     /** Relationships this project holds whose target could not be attached to a
      *  stored symbol: `target_symbol_id IS NULL AND target_external IS NOT NULL`.
      *  The row is present and counted, but it is not an edge — traversal reads it
@@ -1471,7 +1489,16 @@ export async function processWithWorkerPool(
 
   // Streaming DB batch
   let pendingDbBatch: FileResult[] = []
-  const dbPromises: Array<Promise<{ symbols: number; relationships: number; imports: number; failed?: boolean }>> = []
+  const dbPromises: Array<
+    Promise<{
+      symbols: number
+      relationships: number
+      imports: number
+      failed?: boolean
+      rolledBackBatches?: number
+      rolledBackFiles?: number
+    }>
+  > = []
 
   // Stall-bounded flush (opt-in, measured — the DEFAULT is deliberately the cheap
   // end, because correctness no longer depends on shortening the block; the
@@ -1496,12 +1523,21 @@ export async function processWithWorkerPool(
   const FLUSH_CHUNK_FILES = Number(process.env.BB_DB_FLUSH_CHUNK || 20)
   const flushDbBatch = async (
     batchToStore: FileResult[],
-  ): Promise<{ symbols: number; relationships: number; imports: number; failed?: boolean }> => {
+  ): Promise<{
+    symbols: number
+    relationships: number
+    imports: number
+    failed?: boolean
+    rolledBackBatches?: number
+    rolledBackFiles?: number
+  }> => {
     if (batchToStore.length === 0) return { symbols: 0, relationships: 0, imports: 0 }
     const flushStart = Date.now()
     let symbols = 0
     let relationships = 0
     let imports = 0
+    let rolledBackBatches = 0
+    let rolledBackFiles = 0
     try {
       for (let i = 0; i < batchToStore.length; i += FLUSH_CHUNK_FILES) {
         const chunk = batchToStore.slice(i, i + FLUSH_CHUNK_FILES)
@@ -1509,13 +1545,15 @@ export async function processWithWorkerPool(
         symbols += stats.symbols
         relationships += stats.relationships
         imports += stats.imports
+        rolledBackBatches += stats.rolledBackBatches ?? 0
+        rolledBackFiles += stats.rolledBackFiles ?? 0
         // Yield between chunks: this is the line that keeps the loop responsive.
         if (i + FLUSH_CHUNK_FILES < batchToStore.length) {
           await new Promise((r) => setImmediate(r))
         }
       }
       if (telemetry) telemetry.dbFlushMs += Date.now() - flushStart
-      return { symbols, relationships, imports }
+      return { symbols, relationships, imports, rolledBackBatches, rolledBackFiles }
     } catch (e: any) {
       if (telemetry) telemetry.dbFlushMs += Date.now() - flushStart
       // Same contract as before chunking: a failed batch is reported as failed and
@@ -1523,7 +1561,14 @@ export async function processWithWorkerPool(
       // subtracted back out — the counts here are the batch's, not a running total,
       // and under-reporting a failed batch is the honest direction to err.
       log.error("storeResults failed", { error: e?.message, batchSize: batchToStore.length, chunkFiles: FLUSH_CHUNK_FILES })
-      return { symbols: -1, relationships: -1, imports: -1, failed: true }
+      return {
+        symbols: -1,
+        relationships: -1,
+        imports: -1,
+        failed: true,
+        rolledBackBatches: 1,
+        rolledBackFiles: batchToStore.length,
+      }
     }
   }
 
@@ -2061,10 +2106,19 @@ export async function processWithWorkerPool(
           pendingDbBatch = []
         }
         Promise.all(dbPromises).then((storedStats) => {
-          const finalStored: { symbols: number; relationships: number; imports: number; failed?: boolean } = {
+          const finalStored: {
+            symbols: number
+            relationships: number
+            imports: number
+            failed?: boolean
+            storeFailures?: number
+            storeFailureFiles?: number
+          } = {
             symbols: 0,
             relationships: 0,
             imports: 0,
+            storeFailures: 0,
+            storeFailureFiles: 0,
           }
           for (const s of storedStats) {
             // FIX: Handle failed batches - don't add negative values
@@ -2073,8 +2127,15 @@ export async function processWithWorkerPool(
                 symbols: s.symbols,
                 relationships: s.relationships,
               })
+              finalStored.storeFailures! += s.rolledBackBatches ?? 1
+              finalStored.storeFailureFiles! += s.rolledBackFiles ?? 0
               continue
             }
+            // Rolled-back batches inside an otherwise successful call: counted, not
+            // swallowed. These files are absent from the index, and the run has to be
+            // able to say so instead of reporting a clean "complete".
+            finalStored.storeFailures! += s.rolledBackBatches ?? 0
+            finalStored.storeFailureFiles! += s.rolledBackFiles ?? 0
             finalStored.symbols += s.symbols
             finalStored.relationships += s.relationships
             finalStored.imports += s.imports
@@ -2829,10 +2890,47 @@ export async function storeResults(
   projectPath: string,
   results: FileResult[],
   options: { skipResolution?: boolean } = {},
-): Promise<{ symbols: number; relationships: number; imports: number }> {
+): Promise<{
+  symbols: number
+  relationships: number
+  imports: number
+  /** Batches that rolled back during this call — their files are NOT in the index. */
+  rolledBackBatches?: number
+  /** How many files those rolled-back batches carried (an upper bound on the loss). */
+  rolledBackFiles?: number
+}> {
   let totalSymbols = 0
   let totalRelationships = 0
   let totalImports = 0
+  // A rollback used to be swallowed: the batch was skipped, a line went to stderr, and
+  // the run went on to report success with a status of "complete". Measured consequence:
+  // a full disk (or any constraint failure) produced `✓ indexed N files` with N silently
+  // smaller and nothing in the persisted status to say so. The counters below are how
+  // that becomes a fact the run can report.
+  let rolledBackBatches = 0
+  let rolledBackFiles = 0
+  // Test hook, OFF by default and named after the existing worker hooks.
+  //
+  //   BB_TEST_FAIL_STORE_ONCE=1    the FIRST batch of the first storeResults call throws
+  //                                — the rollback that recovery can still rescue.
+  //   BB_TEST_FAIL_STORE_ALWAYS=1  EVERY batch throws — the full-disk case, where the
+  //                                recovery pass cannot save the run either.
+  //
+  // Both exercise the rollback path end to end without needing a full disk. Used by
+  // script/perf/verify-store-failure-honesty.ts.
+  const failOnce = process.env.BB_TEST_FAIL_STORE_ONCE === "1"
+  const failAlways = process.env.BB_TEST_FAIL_STORE_ALWAYS === "1"
+  // MODULE-level, not per-call: the recovery pass calls storeResults again, and a
+  // per-call flag made "fail once" fail once per call — so recovery re-injected and
+  // the run lost every file instead of exercising the path where recovery works.
+  const injectFailure = () => {
+    if (failAlways) return true
+    if (failOnce && !(globalThis as any).__bbInjectedStoreFailure) {
+      ;(globalThis as any).__bbInjectedStoreFailure = true
+      return true
+    }
+    return false
+  }
 
   const rawDb = await BrainDatabase.getRawInstance(projectId)
   // M54.P1 (#727): FK enforcement is ON at every open AND during the bulk
@@ -4423,11 +4521,20 @@ export async function storeResults(
        warn: (m: string, ctx: Record<string, unknown>) => log.warn(m, ctx),
      })
      try {
+       // Injected failure for the verification gate (see failOnce above): the batch
+       // rolls back exactly as a constraint violation or a full disk would.
+       if (injectFailure()) {
+         throw new Error(
+           `injected store failure (BB_TEST_FAIL_STORE_${failAlways ? "ALWAYS" : "ONCE"}=1)`,
+         )
+       }
        tx(batch)
        totalSymbols += batchSymbols
        totalRelationships += batchRelationships
        totalImports += batchImports
      } catch (error) {
+       rolledBackBatches++
+       rolledBackFiles += batch.length
        // #737: before skipping, re-run the batch file-by-file under capturing
        // wrappers to identify the exact violating row (previous behavior printed
        // only the driver message, leaving the rollback undiagnosable).
@@ -4676,7 +4783,7 @@ export async function storeResults(
      }
    } // Close the if (!options.skipResolution) block
  
-   return { symbols: totalSymbols, relationships: totalRelationships, imports: totalImports }
+   return { symbols: totalSymbols, relationships: totalRelationships, imports: totalImports, rolledBackBatches, rolledBackFiles }
   } finally {
     // M54.P1: restore the open-time FK policy on EVERY exit path (success,
     // throw, early return). The connection is process-cached and shared —
@@ -5984,6 +6091,42 @@ export async function indexProjectParallel(
     // Clean up memory by clearing full results
     results.length = 0
 
+    // ── the run's final honesty check ─────────────────────────────────────────
+    // A store batch can roll back (constraint violation, a full disk) and be skipped.
+    // The recovery pass above usually rescues those files; when it cannot — the disk
+    // is still full — nothing used to say so, and the run reported success with a
+    // status of "complete". So the FINAL STATE is measured rather than assumed: which
+    // of the files this run discovered are absent from brain_file? Measured after a
+    // cancelled run this is non-zero by design, which is why the status rule below
+    // treats cancellation as its own outcome rather than as incompleteness.
+    let missingAfterRecovery = 0
+    if (!stats.cancelled) {
+      try {
+        const rawDb = await BrainDatabase.getRawInstance(projectId)
+        const storedPaths = new Set(
+          (rawDb.prepare(`SELECT path FROM brain_file WHERE project_id = ?`).all(projectId) as any[]).map(
+            (r: any) => r.path,
+          ),
+        )
+        missingAfterRecovery = files.filter((f) => !storedPaths.has(f) && !shouldSkipCli(f)).length
+      } catch {
+        // Best-effort: this check must never break a run that would otherwise finish.
+      }
+    }
+    if (stats.summary) {
+      stats.summary.storeFailures = stored.storeFailures ?? 0
+      stats.summary.storeFailureFiles = stored.storeFailureFiles ?? 0
+      stats.summary.missingAfterRecovery = missingAfterRecovery
+    }
+    if (missingAfterRecovery > 0 || (stored.storeFailures ?? 0) > 0) {
+      log.error("index is INCOMPLETE", {
+        storeFailures: stored.storeFailures ?? 0,
+        storeFailureFiles: stored.storeFailureFiles ?? 0,
+        missingAfterRecovery,
+        discoveredFiles: files.length,
+      })
+    }
+
     // Get total global stats including previously indexed ones to return correct totals
     const dbStats = await getIndexingStats(projectId)
     stats.symbolsExtracted = dbStats.symbols
@@ -6044,7 +6187,12 @@ export async function indexProjectParallel(
       filesParsed: stats.successFiles,
       symbolsIndexed: stats.symbolsExtracted,
       relationshipsIndexed: stats.relationshipsFound,
-      status: stats.errorFiles > 0 ? "partial" : "complete",
+      // "complete" is a claim about the INDEX, so it is decided by the index: parse
+      // errors, or files this run discovered that are still absent after recovery.
+      // A batch that rolled back and WAS recovered does not make the index partial —
+      // it is reported separately as storeFailures.
+      status:
+        stats.errorFiles > 0 || (stats.summary?.missingAfterRecovery ?? 0) > 0 ? "partial" : "complete",
       errors: stats.structuredErrors,
       performanceStats: perfStats,
       codebaseFingerprintProjectPath: projectPath,
@@ -6080,7 +6228,27 @@ export async function indexProjectParallel(
       // timing/outcome contract (M21.I2), zero duplicated phase logic.
       // M43.P1: this call is inside an indexProjectParallel run that already
       // holds the project lock — lockHeld=true prevents a self-deadlock.
-      const post = await runPostProcessing(projectId, { logger: _log, lockHeld: true })
+      let post: Awaited<ReturnType<typeof runPostProcessing>>
+      try {
+        post = await runPostProcessing(projectId, { logger: _log, lockHeld: true })
+      } catch (postErr: any) {
+        // "no index for project … run bb index first" is the right message for a project
+        // that was never indexed, and the WRONG one for this run: if we discovered files
+        // and stored none of them, the index is empty because the STORE failed — a full
+        // disk, a read-only database — and the user needs that cause, not an instruction
+        // to run the command they just ran. Measured: with every batch failing, the CLI
+        // printed "error: no index for project aff3f165 — … run bb index first" and the
+        // real reason appeared only in a log line.
+        if (missingAfterRecovery > 0) {
+          throw new Error(
+            `${missingAfterRecovery} of ${files.length} discovered file(s) could NOT be stored ` +
+              `(${stored.storeFailures ?? 0} store batch(es) rolled back), so there is nothing to derive ` +
+              `from and the index is INCOMPLETE. This is a write failure, not a parse failure: check free ` +
+              `disk space and that the database is writable, then re-run. (underlying: ${postErr?.message ?? postErr})`,
+          )
+        }
+        throw postErr
+      }
       phases.postProcessingMs = Date.now() - postProcessingStart
       phases.postProcessingPhases = post.phases
 
@@ -6188,7 +6356,12 @@ export async function indexProjectParallel(
         filesParsed: stats.successFiles,
         symbolsIndexed: stats.symbolsExtracted,
         relationshipsIndexed: stats.relationshipsFound,
-        status: stats.errorFiles > 0 ? "partial" : "complete",
+        // "complete" is a claim about the INDEX, so it is decided by the index: parse
+      // errors, or files this run discovered that are still absent after recovery.
+      // A batch that rolled back and WAS recovered does not make the index partial —
+      // it is reported separately as storeFailures.
+      status:
+        stats.errorFiles > 0 || (stats.summary?.missingAfterRecovery ?? 0) > 0 ? "partial" : "complete",
         errors: stats.structuredErrors,
         performanceStats: {
           schemaVersion: 1,
