@@ -128,7 +128,31 @@ function fingerprint(evidenceFile: string): string | null {
       delete f.p95WarmMs // declared measurement, excluded from the fingerprint
     }
   }
-  return JSON.stringify(raw)
+  // NESTED timestamps count too. `delete raw.generatedAt` above only reaches the
+  // top level, and D1.json carries four `claimSources[]` entries that each record
+  // their own `generatedAt`. So re-running the suite changed those four while
+  // leaving everything else identical, and this check reported D1 as NOT
+  // byte-identical — a structural false FAIL that no run could ever satisfy,
+  // because the gate re-runs its own suite on the way to computing this.
+  //
+  // Stripped by KEY rather than by position, so a timestamp appearing at any depth
+  // is excluded and a field that merely shares a name elsewhere is not silently
+  // kept by accident. `p95WarmMs` is excluded the same way for the same reason: it
+  // is a declared measurement, not a claim about the code.
+  const TIMESTAMP_KEYS = new Set(["generatedAt", "sealedAt"])
+  const stripVolatile = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(stripVolatile)
+    if (node !== null && typeof node === "object") {
+      const out: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+        if (TIMESTAMP_KEYS.has(k) || k === "p95WarmMs") continue
+        out[k] = stripVolatile(v)
+      }
+      return out
+    }
+    return node
+  }
+  return JSON.stringify(stripVolatile(raw))
 }
 
 console.log("M24.X1 closure-gate verifier\n")
@@ -224,6 +248,28 @@ for (const { code, script, evidenceFile } of SUITE) {
   }
 }
 check("X1: full evidence set regenerates byte-identical", byteIdentical)
+//
+// WHAT THIS CHECK CAN AND CANNOT DETECT — measured, not assumed.
+//
+// It compares the evidence file's fingerprint before and after a re-run of the
+// SAME suite, in the same process, moments apart. So it detects NONDETERMINISM:
+// an evidence file that does not reproduce from identical inputs. That is real
+// and worth having.
+//
+// It does NOT detect DRIFT. Planting a real change in a producer (verify-docs.ts
+// emitting `issue: "496-TAMPERED"` instead of `"496"`) left this check reporting
+// byte-identical, because pass 1 had already run that same tampered producer and
+// written the tampered evidence; pass 2 reproduced it faithfully. Verified the
+// tamper was real by computing the fingerprint OUTSIDE the gate, where it did
+// differ (`identical? False`). Two earlier mutants of mine were also uncaught here
+// for the same reason — writing a marker field under an env var, and appending to
+// FINGERPRINT_ALGORITHM — and both still reported 69/69.
+//
+// The check is left in place and its verdict is correct: it is a determinism
+// check, which is what "regenerates byte-identical" can mean when the inputs
+// cannot change mid-run. It is NOT evidence that the evidence matches HEAD; that is
+// script/m61/verify-claim-fingerprints.ts and each gate's `currentCommit`. Recorded
+// because the old wording implied more than it delivers.
 
 // ---------------------------------------------------------------------------
 // Negative checks — the gate must be able to FAIL
