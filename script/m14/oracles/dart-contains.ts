@@ -56,8 +56,24 @@
  * disagreement into a phantom.
  *
  * The container name is the UNQUALIFIED identifier — Dart has no qualified class
- * names in a file — and matching is site-agnostic on `owner -> target`, so this
- * needs no file or owner disambiguation.
+ * names in a file — and matching is site-agnostic on `owner -> target`.
+ *
+ * ## THE TARGET IS THE MEMBER'S PUBLISHED SPELLING, and this is not a cosmetic choice
+ *
+ * `owner -> member` was this oracle's spelling until 2026-10-08, when the analyzer moved
+ * `contains` targets to the member's PUBLISHED spelling (`Owner.member`) — because a bare member
+ * name repeated across a project (`value`, `build`, `props`) is ambiguous BY CONSTRUCTION, and the
+ * price was measured before the change was built: 267,878 ambiguous rows would resolve, and the
+ * whole-corpus gate confirmed it (530,368 -> 72,183 in riverpod alone; the lane's largest single
+ * type went 169,829 -> 628,181 resolved). THIS FILE DID NOT MOVE WITH IT, and the consequence was
+ * the one a stale oracle always has: `verify-dart-contains` went red with 18 disagreements, so
+ * `contains` — the lane's largest relationship type — had no working independent check at all
+ * until this edit. The verifier was doing its job; the truth side was the side that was wrong.
+ *
+ * MEASURED, and it is why this is stated as a mirror rather than a guess: the analyzer emits
+ * `symbol.scope ? `${symbol.scope}.${symbol.name}` : symbol.name`
+ * (`real-dart-analyzer.ts`, `addContainmentRelationships`), and the container in this walk IS the
+ * scope. There is no second convention to reconcile — one call site, one rule.
  */
 
 export type DartContainsEdge = { label: "contains"; from: string; target: string }
@@ -243,7 +259,10 @@ export function deriveDartContainsTruth(root: any): DartContainsEdge[] {
     // bindings write `static core$_.int binarySearch$1(` themselves. A controlled
     // probe confirmed the analyzer publishes the bare name for two same-named
     // constructors and three same-named methods alike. So: no invention here.
-    for (const nm of ordered) add(owner, nm)
+    // THE PUBLISHED SPELLING, exactly as the analyzer publishes it: the member's name qualified by
+    // the container that owns it. See the header for the round that moved it and the 18-row
+    // disagreement a stale truth side produced when only the analyzer moved.
+    for (const nm of ordered) add(owner, `${owner}.${nm}`)
   }
 
   const visit = (n: any): void => {

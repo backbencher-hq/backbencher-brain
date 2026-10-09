@@ -163,7 +163,36 @@ function memberName(n: any): string | null {
   // The lane contract: constructors are published under the family name, with the
   // named segment in metadata. `Class.named` is not the symbol name, and a
   // constructor_signature reached through a wrapper is still that family name.
-  if (CONSTRUCTOR_SIGNATURES.has(target.type)) return "constructor"
+  //
+  // BUT THE NODE TYPE DOES NOT DECIDE, and this is the second half of the rule — the
+  // half this file was missing for a round. `tree-sitter-dart` has no node for a method
+  // declared WITHOUT a return type, so
+  //
+  //     class A3<X, Y, Z> { wrap() => A3<A3<X, X, X>>(); }
+  //
+  // parses as `method_signature > constructor_signature` with field(name) = `wrap`
+  // (printed by `.tmp-probe/dt-ctor-shape.mts`): structurally identical to a real
+  // constructor, and its OWN NAME FIELD says `wrap`. Reading the type alone published
+  // `constructor` for a member the source names `wrap` — a NAME LIE on the TRUTH side,
+  // which is the direction this file's header says is the worst one, because it
+  // manufactures agreement with a wrong analyzer instead of catching it. The analyzer
+  // fixed exactly this under DARTD22 (`isRealConstructor`); the oracle did not move.
+  //
+  // The test that IS exact is the LANGUAGE'S naming rule, not the grammar's node choice:
+  // a constructor is named after its class and the unnamed one is spelled `.new`, while a
+  // MEMBER MAY NOT share its class's name — that is a compile error. So
+  // `name === owner || name === "new"` holds for every constructor and for no method.
+  // An OWNERLESS signature (no enclosing type at all) is not this rule's business and
+  // stays on the family name, exactly as the analyzer's rule leaves it.
+  if (CONSTRUCTOR_SIGNATURES.has(target.type)) {
+    const lead = target.childForFieldName?.("name")?.text ?? null
+    const owner = enclosingTypeNameOf(target)
+    if (lead === null || lead === "new" || owner === "" || lead === owner) return "constructor"
+    // A METHOD the grammar mislabelled. Its own name is the answer, and returning it HERE
+    // keeps the fall-through guard below out of the way — that guard only knows
+    // function/getter/setter signatures and would answer null for this node type.
+    return lead
+  }
   if (!target.name && target.type !== "operator_signature") {
     const isSig = target.type === "function_signature" || target.type === "getter_signature" ||
       target.type === "setter_signature"
@@ -211,6 +240,24 @@ const isSignature = (t: string): boolean =>
  */
 const isLambdaSignature = (n: any): boolean =>
   n?.type === "function_signature" && n.parent?.type === "lambda_expression"
+
+/**
+ * The name of the TYPE that encloses `n`, read from the PARENT chain, or "" when there is none.
+ *
+ * Exists for the constructor test above, whose rule is stated over the enclosing type's name
+ * ("a constructor is named after its class"). The analyzer derives the same value from its own
+ * `scopeStack` in the symbol pass and from a parent walk in the relationship passes, and those two
+ * must agree or an edge's source and the symbol it names are decided by different rules.
+ */
+function enclosingTypeNameOf(n: any): string {
+  let cur = n?.parent
+  let guard = 0
+  while (cur && guard++ < 64) {
+    if (TYPE_DECLARATIONS.has(cur.type)) return typeDeclarationName(cur)?.name ?? ""
+    cur = cur.parent
+  }
+  return ""
+}
 
 /** The name a type declaration publishes, and whether it is an UNNAMED extension. */
 function typeDeclarationName(n: any): { name: string; unnamedExtension: boolean } | null {

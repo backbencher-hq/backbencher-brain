@@ -282,10 +282,22 @@ async function main(): Promise<void> {
   // expectation here too.
   //
   // (a) tree-sitter-dart resolves `wrap() => A<A<X,X,X>, …>()` to
-  // `method_signature > constructor_signature`, so the SOURCE is the family name
-  // `constructor` — the name the analyzer publishes for that symbol.
-  await checkBoth("an expression-bodied member the grammar calls a constructor names the constructor family",
-    `class A3<X, Y, Z> { wrap() => A3<A3<X, X, X>>(); }`, ["constructor -> A3"])
+  // `method_signature > constructor_signature` — and the NODE TYPE DOES NOT DECIDE. The
+  // signature's own name field says `wrap`; a constructor is named after its class
+  // (`A3()`, `A3.new()`) and a MEMBER MAY NOT share its class's name (a compile error), so
+  // the member here is a METHOD and the SOURCE is its own name — which is the symbol the
+  // analyzer publishes (DARTD22). This row asserted the opposite until 2026-10-09: the
+  // oracle read the type alone and published `constructor` for a member named `wrap`, a
+  // name lie on the TRUTH side, which is the direction that manufactures agreement with a
+  // wrong analyzer instead of catching it. `.tmp-probe/dt-ctor-shape.mts` prints the
+  // grammar and the analyzer's answer side by side.
+  await checkBoth("a member the grammar mislabels as a constructor keeps its OWN name",
+    `class A3<X, Y, Z> { wrap() => A3<A3<X, X, X>>(); }`, ["wrap -> A3"])
+  // ...and the POSITIVE control, so the rule above cannot be satisfied by simply never
+  // naming the family: a REAL constructor's body still attributes its mention to
+  // `constructor`, which is the name the analyzer publishes for that symbol.
+  await checkBoth("a REAL constructor still attributes its mention to the constructor family",
+    `class B4 { B4(C4 c) => null; } class C4 { }`, ["constructor -> C4"])
   // (b) a LOCAL FUNCTION is not a published symbol, so its type mention folds to the
   // function that encloses it — the source half must never name a symbol the index
   // cannot bind.
