@@ -981,10 +981,27 @@ export async function parseFile(filePath: string, projectPath: string, context?:
     }
 
     if (ext === ".dart") {
-      fs.appendFileSync(
-        bbDiagnosticsLogPath("worker-debug.log"),
-        `[Worker] ASTEngine.parseFile returned ${parsed?.relationships?.length || 0} relationships for ${filePath}\n`,
-      )
+      // WRAPPED, and the reason is measured rather than defensive habit. This debug line used
+      // to be an unguarded `fs.appendFileSync`, six lines below an identical write to
+      // `parse-errors.log` that IS wrapped in try/catch. Where the diagnostics directory is
+      // not writable — a read-only `$HOME` in a sandbox, a full disk, a container with `~/.bb`
+      // mounted read-only — the write THREW, and it threw AFTER `parseFile` returned, so the
+      // whole file fell through to the extractFallback path. The dart lane measured the
+      // consequence with a controlled A/B on the same 60 files and the same stride:
+      //
+      //     as run (unwritable diagnostics dir):     79 edges,  12 ambiguous,   0 unresolved
+      //     BB_DATA_DIR=/tmp/bb-data (writable):  8,112 edges, 530 ambiguous, 2,273 unresolved
+      //
+      // 102.7x the denominator, and the incoming gate's own summary said
+      // `parse failures: 0   degraded (regex fallback): 60` — an honest report of a lane
+      // measured on its fallback path. A DEBUG LOG MUST NEVER DECIDE WHETHER AN ANALYZER RUNS.
+      // Swallowing a failed diagnostic write is correct: the log is optional, the parse is not.
+      try {
+        fs.appendFileSync(
+          bbDiagnosticsLogPath("worker-debug.log"),
+          `[Worker] ASTEngine.parseFile returned ${parsed?.relationships?.length || 0} relationships for ${filePath}\n`,
+        )
+      } catch {}
     }
 
     // Stage 5: Universal Multi-Language Taint Data-Flow Extraction
@@ -1388,10 +1405,19 @@ export async function parseFile(filePath: string, projectPath: string, context?:
     }
 
     if (ext === ".dart") {
-      fs.appendFileSync(
-        bbDiagnosticsLogPath("worker-debug.log"),
-        `[Worker] Returning object with ${ret.relationships?.length || 0} relationships for ${filePath}\n`,
-      )
+      // THE SECOND of the two dart debug writes, and the one that actually decided the
+      // measurement. Wrapping only the first left the degradation in place: the controlled
+      // A/B still read `degraded (regex fallback): 60` and 79 edges with an unwritable
+      // diagnostics directory, against 8,112 edges with a writable one. This write sits on
+      // the success path immediately before `return ret`, so its throw aborted the return and
+      // the caller fell through to the fallback — i.e. a debug line decided whether the
+      // analyzer ran. Both are wrapped now; the log is optional, the parse is not.
+      try {
+        fs.appendFileSync(
+          bbDiagnosticsLogPath("worker-debug.log"),
+          `[Worker] Returning object with ${ret.relationships?.length || 0} relationships for ${filePath}\n`,
+        )
+      } catch {}
     }
 
     return ret
