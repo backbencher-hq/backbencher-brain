@@ -963,6 +963,62 @@ only, while the Cargo workspace-inheritance population (`x.workspace = true`, 1,
 sites) is the same type and is also unimplemented. Even "2/3 implemented" overstates
 how much of each applicable type is covered.
 
+### `imports` — a path dependency, and the two things that were blocking it
+
+The applicability audit overturned this lane's own ruling that `imports` is
+inapplicable, so the type is now emitted. Two questions had to be answered before
+the code was written, and both were answered by measurement rather than assumption.
+
+**What is the target?** Not a resolved symbol — that is not available. A document's
+module symbol is its **file stem**, and the corpus holds **744 files named
+`Cargo.toml`** publishing the module `Cargo`, so **0 of 318** dependency sites
+could resolve to a unique symbol. The store's qualified-name strategy does not
+rescue it either: `qualified_name` is a *within-document* path (`parent.child`) and
+the pass dedups it project-wide with `MIN(id)`, so 744 candidates would resolve to
+one arbitrary document. The target is therefore **the path as written**, which
+matches nothing, and the store keeps the name with a NULL id — exactly the shape
+`traceCallees`'s unresolved arm exists to read. Verified end to end against the real
+schema before any of it was written: the row comes back as `ext:../b/Cargo.toml`.
+
+**What is the edge, and what is not?** Six sections declare a dependency
+(`dependencies`, `dev-dependencies`, `build-dependencies`, `workspace.dependencies`,
+Julia's `[sources]`, `[patch.crates-io]`). Everything else is excluded, and the
+exclusions are the interesting half:
+
+- `bin` and `lib` name **this crate's own source** (`src/main.rs`), so an edge
+  there would make every crate depend on itself.
+- a `path` key outside a dependency section is ordinary data — so the exclusion is
+  by **SECTION**, not by key name. Keying on the name is what made `clippy.toml`
+  report `path×15` redefinitions before its array-of-inline-tables was scoped.
+- an array of inline tables is a **list**, however its elements are spelled.
+
+**One defect the work surfaced that the audit alone could not.** The analyzer
+emitted all 331 sites and `parseFile` delivered only those whose leaf happened to
+survive the universal identifier sanitizer: `extractLeaf("..")` splits on `.` to
+`["", "", ""]`, whose last segment is empty, so `leaf.length < 1` fired. The `..`
+and `../..` forms are most of a Julia `[sources]` section, so they were deleted
+silently while `crates/build-rs` survived — and the analyzer reported having emitted
+them. This is the same defect bash recorded for its own `imports` (M14 #277), and
+the fix is the same narrowly-scoped exemption: two languages, two path-shaped labels,
+a target over 200 characters or containing a newline still refused, so a fabricated
+`calls -> ../x` cannot be laundered through it.
+
+**What the fixture does NOT prove, established by mutation rather than assumed.**
+Removing the toml exemption leaves every expectation in `path-dependencies.toml`
+**green**: the sanitizer lives in `pool-worker.ts`, and although toml is on this
+runner's `ASTEngine.parseFile` production-parity list, `engine.ts` does not apply
+that filter. This is the known-zeros gap bash's note describes, and it is recorded
+in the fixture header rather than left for the next reader to assume coverage. The
+sanitizer fix is verified separately by calling pool-worker's own
+`filterNoiseRelationships` — the function real indexing runs — over the analyzer's
+output: **4/4** on the fixture, **1/1** on a Julia `[sources]` document, **13/13** on
+cargo's root manifest.
+
+Two analyzer mutants die on the fixture: removing the section exclusion (caught by
+`bin.main`, which would make the crate depend on itself) and reading the inner key
+as the outer one (the mistake the audit's first version made, which reported 0 on a
+331-site population).
+
 ### The ruling table, and the arbiter's own verdict
 
 `script/m14/toml-ruled.ts` holds nine entries — every type the analyzer does not

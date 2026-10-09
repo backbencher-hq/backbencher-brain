@@ -730,7 +730,23 @@ export function filterNoiseRelationships(rels: any[], language: string, declared
     // defect class BD4 exists to prevent — from being laundered through this
     // exemption. The differential is what proves both halves: its oracle
     // corroborates the path rows and expects no braced call rows.
-    if (language === "bash" && (r.type === "imports" || r.type === "references" || r.relationshipType === "imports" || r.relationshipType === "references")) {
+    // M60 (#919, toml lane): the SAME exemption, for the SAME reason, for toml's
+    // `imports`. A path dependency's target is the path AS WRITTEN —
+    // `[sources] Documenter = { path = ".." }` — and `extractLeaf("..")` splits on
+    // `.` to `["", "", ""]`, whose last segment is the EMPTY string, so
+    // `leaf.length < 1` deleted the edge on the way to the index. Measured on the
+    // corpus: the analyzer collected all 331 path-dependency sites and
+    // `parseFile` delivered only those whose leaf happened to survive, so the
+    // relative paths that are most of a Julia manifest's `[sources]` section
+    // (`..`, `../..`) were deleted silently while `crates/build-rs` survived.
+    //
+    // It is the same category as the data paths above and as bash's, so it gets
+    // the same narrowly-scoped exemption: only these two languages, only the two
+    // path-shaped labels, and still refusing a target over 200 characters or
+    // containing a newline. A `calls`/`contains` target that is a path is still
+    // garbage and is still dropped, which is what keeps a fabricated
+    // `calls -> ../x` from being laundered through this.
+    if ((language === "bash" || language === "toml") && (r.type === "imports" || r.type === "references" || r.relationshipType === "imports" || r.relationshipType === "references")) {
       if (target.length > 200 || target.includes("\n")) return false
       return true
     }

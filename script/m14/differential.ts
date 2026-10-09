@@ -12335,13 +12335,22 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
     }
     return leaf
   }
-  // PHPD10 mirror: returns undefined when qualification cannot disambiguate
-  // a same-leaf base/interface (global single-segment: `class Foo extends
-  // \\Foo`) — the analyzer emits NO edge there (self-loop would be
-  // fabrication); the oracle must not fabricate truth for it either.
+  // PHPD10 mirror, widened by PHPD43 (final review): returns undefined when the
+  // clause resolves to the declaration's OWN name, in EITHER spelling.
+  //
+  // The old form (`t === ownName && raw !== t`) covered only the qualified route
+  // (`class Foo extends \\Foo`); the bare route (`enum Foo implements Foo`) has
+  // `raw === t`, so the guard did not fire and BOTH sides agreed on a truth row for
+  // a declaration whose parent is itself. That agreement is why no gate saw it: a
+  // differential cannot report a disagreement between two implementations that share
+  // the same defect.
+  //
+  // The separable case is untouched — `class Forms\\Setup\\FeaturesForm extends
+  // \\Forms\\User\\FeaturesForm` resolves to a name that is NOT the declaration's own,
+  // so its heritage and its truth row both survive with the qualification kept.
   const heritageOrSkip = (raw: string, ownName: string): string | undefined => {
     const t = heritageTarget(raw, ownName)
-    if (t === ownName && raw !== t) return undefined
+    if (t === ownName) return undefined
     return t
   }
   // PHP-E mirror: sole-`...` arguments never invoke (first-class callable).
@@ -21634,6 +21643,46 @@ export function deriveTomlEdges(root: any, moduleName: string): { label: string;
   const byFinalSeg = new Map<string, string[]>()
   /** owning key name -> the aliases its INLINE table declares. */
   const inlineRefs: { owner: string; alias: string }[] = []
+  /** `foo = { path = "..." }` in a DEPENDENCY section, emitted after the walk. */
+  const depEdges: { from: string; target: string }[] = []
+
+  // ---- `imports`: a path dependency, derived independently ----------------
+  //
+  // `[sources] Documenter = { path = ".." }` and `[dependencies] foo = { path =
+  // "../foo" }` say the manifest cannot be built without another unit. Sections
+  // that name THIS crate's own source — `bin`, `lib` — are excluded, because an
+  // edge to them would assert the manifest needs something it already is.
+  //
+  // The target is the path AS WRITTEN, which matches no symbol and is stored as
+  // an external target. Derived here rather than recomputed from disk on purpose:
+  // whether a path resolves is the applicability audit's question, and an oracle
+  // that answered it here would be a second number to keep in step.
+  const DEP_SECTIONS = new Set([
+    "dependencies",
+    "dev-dependencies",
+    "build-dependencies",
+    "workspace.dependencies",
+    "sources",
+    "patch.crates-io",
+  ])
+  /** The `path` an inline table declares, read off the tree. The dependency is the
+   *  OUTER key and `path` is the inner one — a probe reading the outer key as
+   *  `path` sees nothing, which is how this construct was first missed. */
+  const pathDependencyOf = (pair: any): string | null => {
+    const value = valueOfPair(pair)
+    if (!value || value.type !== "inline_table") return null
+    for (const inner of kids(value)) {
+      if (inner.type !== "pair") continue
+      const ik = keyNodeOf(inner)
+      if (!ik) continue
+      const isegs = segmentsOf(ik)
+      if (isegs[isegs.length - 1] !== "path") continue
+      const v = quotedText(valueOfPair(inner))
+      if (v && v.length > 0) return v
+    }
+    return null
+  }
+
 
   /** The pair's VALUE — the last named child that is not a comment.
    *
@@ -21727,6 +21776,10 @@ export function deriveTomlEdges(root: any, moduleName: string): { label: string;
       const pairName = allocate(kp)
       emit(name, pairName)
       surveyPair(c, pairName)
+      if (DEP_SECTIONS.has(path)) {
+        const dep = pathDependencyOf(c)
+        if (dep !== null) depEdges.push({ from: pairName, target: dep })
+      }
     }
   }
 
@@ -21756,6 +21809,13 @@ export function deriveTomlEdges(root: any, moduleName: string): { label: string;
     if (refSeen.has(k)) continue
     refSeen.add(k)
     edges.push({ label: "references", from: owner, target: cands[0] as string })
+  }
+
+  for (const { from, target } of depEdges) {
+    const k = `imports|${from}|${target}`
+    if (refSeen.has(k)) continue
+    refSeen.add(k)
+    edges.push({ label: "imports", from, target })
   }
   return edges
 }
@@ -23962,7 +24022,17 @@ async function main() {
           // nothing — toml's single DERIVATION finding, and a finding that a stale
           // walk checkpoint could not surface either, because a resumed run
           // publishes a verdict from 0 freshly-measured files.
-          ...(lang === "toml" ? ["contains", "references"] : []),
+          //
+          // M60 (#919, second half): `imports` joins for the same reason. The
+          // applicability audit overturned this lane's own ruling that `imports`
+          // was inapplicable: asked by ROLE rather than by name-shape, the corpus
+          // carries 331 dependency-shaped `path = "..."` sites, 318 of which reach
+          // a directory holding a real Cargo.toml / Project.toml. The edge names
+          // the path as written and resolves to nothing (a module symbol is its
+          // FILE STEM and the corpus holds 744 Cargo.toml files), so the store
+          // keeps it as an external target — which is why the oracle derives the
+          // path string rather than a manifest name.
+          ...(lang === "toml" ? ["contains", "references", "imports"] : []),
           ...(lang === "scss" ? ["uses", "references", "imports", "contains"] : []),
 
           // scss: `deriveScssEdges` derives `uses` (`@include` -> a declared mixin,

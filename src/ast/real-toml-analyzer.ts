@@ -592,6 +592,53 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const ambiguousFinalSegments = new Set<string>()
     const pendingAliases: { source: string; keyPath: string; alias: string; line: number }[] = []
 
+    /**
+     * Sections that DECLARE A DEPENDENCY on another unit.
+     *
+     * Not every `path = "..."` is a dependency. `[bin] name = "x"` and
+     * `[lib] path = "src/lib.rs"` name THIS crate's own source, and an edge to
+     * them would assert that the manifest needs something it already is. These
+     * six sections instead say "this manifest cannot be built without another
+     * unit, and here is where it lives".
+     *
+     * `workspace.dependencies` and `[patch.<registry>]` are included because both
+     * name a unit the workspace or the build genuinely takes from elsewhere;
+     * Julia's `[sources]` overrides where a declared dependency is loaded from.
+     */
+    const DEPENDENCY_SECTIONS = new Set([
+      "dependencies",
+      "dev-dependencies",
+      "build-dependencies",
+      "workspace.dependencies",
+      "sources",
+      "patch.crates-io",
+    ])
+    /** `foo = { path = "../foo" }` sites, emitted after the walk. */
+    const pendingImports: { source: string; pathValue: string; section: string; line: number }[] = []
+
+    /**
+     * The `path` a dependency declares, read off the inline table.
+     *
+     * The DEPENDENCY is the outer key and `path` is the inner one, so a probe that
+     * reads the outer key as `path` sees nothing at all — which is what the
+     * applicability audit's first version did, and it reported 0 on a population
+     * the corpus carries 331 times.
+     */
+    const pathDependencyOf = (pair: Node): string | null => {
+      const value = valueOf(pair)
+      if (!value || value.type !== "inline_table") return null
+      for (const inner of (value.namedChildren ?? []) as Node[]) {
+        if (inner.type !== "pair") continue
+        const ik = keyOf(inner)
+        if (!ik) continue
+        const isegs = segmentsOf(ik)
+        if (isegs[isegs.length - 1] !== "path") continue
+        const v = stringValueOf(valueOf(inner))
+        if (v && v.length > 0) return v
+      }
+      return null
+    }
+
     const emitKey = (pair: Node, path: string, owner: string): void => {
       const keyNode = keyOf(pair)
       if (!keyNode) return
@@ -739,6 +786,17 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const segs = segmentsOf(ck)
           if (!namesSomething(segs)) continue
           emitKey(child, `${name}.${joinPath(segs)}`, name)
+          if (DEPENDENCY_SECTIONS.has(path)) {
+            const depPath = pathDependencyOf(child)
+            if (depPath !== null) {
+              pendingImports.push({
+                source: `${name}.${joinPath(segs)}`,
+                pathValue: depPath,
+                section: path,
+                line: ck.startPosition.row + 1,
+              })
+            }
+          }
         }
       } else if (node.type === "pair") {
         // A key before any header belongs to the implicit root table.
@@ -854,6 +912,51 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (aliasEdges > 0) patterns.push(`alias-refs x${aliasEdges}`)
     if (aliasUnresolved > 0) patterns.push(`alias-unresolved x${aliasUnresolved}`)
     if (aliasAmbiguous > 0) patterns.push(`alias-ambiguous x${aliasAmbiguous}`)
+
+    // ---- `imports`: a path dependency, emitted AFTER the walk ---------------
+    //
+    // The target is the PATH AS WRITTEN, not a resolved symbol, and that is the
+    // honest form rather than a shortcut. Measured on the corpus: 331 dependency
+    // sites, 318 of which name a directory that really holds a `Cargo.toml` /
+    // `Project.toml`, and **0 of which could resolve to a unique symbol** — a
+    // document's module symbol is its FILE STEM, and this corpus holds 744 files
+    // named `Cargo.toml` publishing the module `Cargo`. The store's qualified-name
+    // strategy does not rescue it: `qualified_name` is a WITHIN-DOCUMENT path
+    // (`parent.child`) and the pass dedups it project-wide with `MIN(id)`, so 744
+    // candidates would resolve to one arbitrary document.
+    //
+    // So the edge names the path, matches no symbol, and the store keeps the NAME
+    // with a NULL id — which is precisely the shape `traceCallees`'s unresolved
+    // arm exists to read. Verified end to end against the real schema: the row
+    // comes back as `ext:../b/Cargo.toml`. That is an edge a consumer can read and
+    // traverse, where today the same dependency is not in the graph at all.
+    //
+    // Deliberately no filesystem access here. This analyzer is a pure AST reader
+    // running in a worker pool; whether a path resolves is the applicability
+    // audit's question (`script/m14/toml-applicability-audit.ts` measures it with
+    // the filesystem), and a second answer computed here would be a second number
+    // to keep in step with the first.
+    let importEdges = 0
+    for (const { source, pathValue, section, line } of pendingImports) {
+      importEdges++
+      relationships.push({
+        source,
+        target: pathValue,
+        type: ASTEngine.RelationshipType.Imports,
+        confidence: 1.0,
+        line_number: line,
+        metadata: {
+          tomlSpecific: true,
+          isPathDependency: true,
+          dependencySection: section,
+          // Declared, not resolved. The consuming tool turns this path into a
+          // module; nothing in the document does.
+          resolvedBy: null,
+          evidenceClass: "structural",
+        },
+      })
+    }
+    if (importEdges > 0) patterns.push(`path-deps x${importEdges}`)
 
     // Structural observations, published as `patterns` so a consumer can see the
     // document's SHAPE without re-parsing it. None of these is a defect claim.

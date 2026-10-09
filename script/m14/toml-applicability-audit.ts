@@ -617,13 +617,19 @@ async function main(): Promise<void> {
   console.log(`  types in the ontology           : ${TYPES.length}`)
   console.log(`  EMITTED and implemented         : ${emitted.length}  [${emitted.join(", ")}]`)
   console.log(`  APPLICABLE, NOT implemented     : ${applicableUnimplemented.length}  [${applicableUnimplemented.map((v) => v.type).join(", ") || "none"}]`)
-  console.log(`  RULED, verified by MEASUREMENT  : ${ruled}  [${strong.map((v) => v.type).join(", ")}]`)
-  console.log(`  RULED, UNVERIFIED               : ${unverified.length}  [${unverified.map((v) => v.type).join(", ") || "none"}]`)
-  console.log(`                                    ${emitted.length}+${applicableUnimplemented.length}+${ruled}+${unverified.length} = ${emitted.length + applicableUnimplemented.length + ruled + unverified.length} of ${TYPES.length}`)
+  // RULED is the TOTAL of the two lines beneath it. Printing "verified 6" and
+  // "unverified 1" as peers let the sum be read as 6 ruled — which is what a
+  // reader checking the arithmetic against 10 - 3 = 7 correctly caught. The
+  // ruled total is stated first, and the split is its breakdown.
+  const ruledTotal = ruled + unverified.length
+  console.log(`  RULED inapplicable              : ${ruledTotal}  (10 - ${applicable} applicable)`)
+  console.log(`     of which verified by MEASUREMENT: ${ruled}  [${strong.map((v) => v.type).join(", ")}]`)
+  console.log(`     of which UNVERIFIED            : ${unverified.length}  [${unverified.map((v) => v.type).join(", ") || "none"}]`)
+  console.log(`                                    ${emitted.length}+${applicableUnimplemented.length}+${ruledTotal} = ${emitted.length + applicableUnimplemented.length + ruledTotal} of ${TYPES.length}`)
 
   console.log(`\n  APPLICABLE = ${applicable} of ${TYPES.length}   (types whose construct EXISTS in the language)`)
   console.log(`  IMPLEMENTED = ${emitted.length}/${applicable} of those — the figure that is actually a completion score`)
-  console.log(`  RULED       = ${ruled} by measurement, ${unverified.length} still open`)
+  console.log(`  RULED       = ${ruledTotal} (${ruled} verified by measurement, ${unverified.length} open)`)
   console.log(`\n  NOT ${emitted.length}/${TYPES.length}. That form counts an unimplemented-but-applicable type as`)
   console.log(`  "not done" and a measured-absence ruling as "missing work", so finished work scores 20%.`)
   if (applicableUnimplemented.length > 0) {
