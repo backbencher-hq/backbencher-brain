@@ -5170,7 +5170,8 @@ exists to drift from it. THREE REPOS, BARE ROWS ONLY (`calls` 69,667 + `uses` 11
 
 ```
 cause                            calls: bare   amb  unres    uses: bare   amb  unres
-receiverTypeOutsideRun                  40657  21520  13796         62244  37993  15456
+receiverTypeOutsideRun                  24302  12583   8090         30173  18136   6623
+receiverTypeUnknown                     16355   8937   5706         32071  19857   8833
 receiverUnnamed                         19843   4680  11796         11067   5782   2845
 receiverMemberOutsideRun                 7287   3900    866           532    386     62
 libraryScopeCallee                       1597   1022      0             -      -      -
@@ -5178,28 +5179,53 @@ libraryScopeCallee                       1597   1022      0             -      -
 TOTAL bare                              69667  31270  26572        117913  74172  27213
 ```
 
-**1. THE BIGGEST LEVER IS A SPELLING LOSS, NOT A TYPING GAP — and this is the finding that changes
-the next round.** Of the 105,442 AMBIGUOUS bare rows, **59,513 (56.4%) have the receiver's type NAME
-WRITTEN at the site** (a field, a parameter, `this`) and the analyzer published the bare member anyway.
-Those rows are not waiting on receiver-type INFERENCE: the file already says what the receiver is, and
-the edge threw that information away. Emitting `WrittenType.member` is a spelling change with the
-mechanism the imports and contains rounds already proved, and it is a far smaller piece of work than
-the "infer the receiver type" lever the earlier sizing implied. The line to hold: the spelling must be
-VERIFIED against what the project publishes (`qualifiedTarget` already refuses a spelling nothing
-answers), so this is not a licence to invent names.
+**CORRECTION, made in this round and BEFORE the first version of these numbers was quoted anywhere
+else: the lumped class did not mean what it was said to mean.** The first run reported one cause,
+`receiverTypeOutsideRun`, with 59,513 ambiguous rows, and this document briefly read that as "56.4 % of
+bare ambiguity is a SPELLING loss — the receiver's type name is written at the site". **It was
+counting two different things as one, and it took the fixture dump to notice**: the marker carried
+`receiverType: "ext"`, a LOWERCASE receiver — a VALUE whose declared type the run never resolved, not
+a type it could not see. Dart capitalizes type names and lowercases values, and that is the evidence
+the decline now splits on:
+
+```
+receiverTypeOutsideRun   a CAPITALIZED head: `ExternalThing.make()` — the type's NAME is in the
+                         source, so the target can be spelled `ExternalThing.make` while no
+                         member table here can confirm it        <- the SPELLING loss
+receiverTypeUnknown      a lowercase head: `ext.frob()` — a value whose declared type this run did
+                         not resolve; nothing at the site names a type <- the RECEIVER-TYPING gap
+```
+
+The 59,513 rows split EXACTLY (30,719 + 28,794 = 59,513, same rows, finer labels), so the correction
+is arithmetic rather than a re-measurement, and it lands ON THE DECISION: **the two biggest labelled
+classes are nearly equal — 29.1 % of bare ambiguity is a spelling loss and 27.3 % is a receiver-typing
+gap** (calls: 12,583 vs 8,937; uses: 18,136 vs 19,857). "Do the cheap spelling change first" is still
+right, but it is a THIRD of the prize, not two thirds, and the typing half does not disappear by
+spelling harder. Recording the correction matters more than the numbers: the instrument existed to
+choose between those two pieces of work, and its first reading would have chosen wrong.
+
+**1. THE SPELLING LOSS IS REAL AND BOUNDED.** 30,719 ambiguous bare rows whose capitalized receiver
+names a type the run cannot see. Emitting `WrittenType.member` uses the mechanism the imports and
+contains rounds already proved, and — as `qualifiedTarget` already does for every other branch — the
+spelling must be VERIFIED against what the project publishes wherever verification is possible. For
+these rows it is not possible (the type is out of run), so the honest implementation is a spelling
+whose existence the project either confirms or refutes at the gate, and that is what the price for it
+has to measure.
 
 **2. Bucket 3's true population among ambiguous rows is 4,680 + 5,782 = 10,462 (9.9 %)**, the
 `receiverUnnamed` rows: a call result, an index expression, a cascade — no owner name at the site, so
 no spelling reaches a declaration. Its unresolved siblings are 14,641 (27.2 % of the 53,785 unresolved
 bare rows). Worth stating plainly: the class the contract was written for is a TENTH of the bare
-ambiguity, not half of it.
+ambiguity, not half of it. `receiverTypeUnknown` is NOT in this bucket: a value's type is knowable in
+principle (its declaration is somewhere), so it belongs to the typing work rather than to the
+"no static name exists" class — which is exactly why the two had to be told apart.
 
-**3. THE UNRESOLVED MAJORITY IS A TYPE TABLE, NOT AN INDEX ARGUMENT.** 29,252 of the 53,785
-unresolved bare rows (54.4 %) are `receiverTypeOutsideRun` whose target no file in the project
-declares: the receiver's type is a SDK/package type (`String`, `Future`, `Stream`, `package:test`), so
-an index OF THIS PROJECT cannot reach it and the member name is unknown here. That is a
-builtin/SDK member table question — or an honest external claim — and it is a different piece of work
-from "add `.dart` to `PROJECT_INDEX_EXTENSIONS`".
+**3. THE UNRESOLVED MASS IS EVENLY SPREAD, and that is the most useful thing this cut says.** 53,785
+unresolved bare rows: `receiverTypeOutsideRun` 14,713 (27.4 %), `receiverTypeUnknown` 14,539 (27.0 %),
+`receiverUnnamed` 14,641 (27.2 %), unlabelled `uses` shapes 8,964 (16.7 %),
+`receiverMemberOutsideRun` 928. No single piece of work takes more than a third of it. The first
+version of this document said "54.4 % of unresolved is a builtin/SDK member table question" — that was
+the lumped class again, and it is wrong by the same 30,719/28,794 split.
 
 **4. `libraryScopeCallee` is confirmed twice over.** 1,597 rows, 0 UNRESOLVED, and 1,022 ambiguous —
 973 of them on riverpod alone. The zero is the refinement's own check: a library-scope name declared in
