@@ -76,3 +76,10 @@ async function main() {
 }
 
 await main()
+
+// MODULE MARKER. This file ends in a top-level `await main()`, which TypeScript
+// only permits at the top level of a MODULE. With no import or export it was a
+// global SCRIPT, so the compiler reported TS1375 and the file could not be run as
+// written. Marking it a module fixes that and scopes its top-level bindings.
+// Nothing is exported; this is a scope declaration, not an API.
+export {}
