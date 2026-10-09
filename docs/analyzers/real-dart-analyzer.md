@@ -5038,6 +5038,42 @@ analyzer could see, and it is a DIFFERENT claim from "the base is outside the PR
 is an external claim, only the second should be verified against the project's key space, and the
 180x gap between the two populations is the size of the question — not a 4-claim cleanup.
 
+### RESTORED 2026-10-09 — both independent checks had stopped agreeing, and the ORACLE was at fault
+
+A failing cross-check is a broken instrument, and two of this lane's were failing. Neither was an
+analyzer defect, which is the one state a differential cannot report: it reads as a lane defect.
+
+```
+contains    `deriveDartContainsTruth` still emitted the BARE member name after the
+            contains-qualification round moved the analyzer to the member's PUBLISHED
+            spelling (`scope.name`). 18 of ~39 `verify-dart-contains` rows disagreed, so
+            `contains` — 700k edges, the lane's second-largest class — had NO working
+            independent check since that round. The oracle now publishes the same spelling.
+references  the oracle called an untyped member `constructor`, because the node TYPE is
+            `constructor_signature`, so `class A3 { wrap() => ... }` published `A3 ->
+            constructor` where the member's own name field says `wrap`. Dart names a
+            constructor after its class (or `.new`) and no member may share its class's
+            name; the analyzer's DARTD22 already encodes that, and the oracle never
+            mirrored it, so it was manufacturing truth rather than checking it.
+```
+
+Both verifiers are green on both sides of the comparison and the fixtures stay 27/27. Neither fix is
+a relaxation: the spelling in the first is more specific, and in the second it is the language's own rule.
+
+### A SECOND MEASUREMENT TRAP, alongside the two populations: the SAMPLE ROTATES
+
+The first attempt to price the oracle restoration was an A/B — the same `--sample 150` differential run
+before and after, from a frozen worktree — and it produced numbers that looked like evidence and were
+not. The two runs sampled DIFFERENT FILES: the log says `rot 4` in one and `rot 5` in the other, and
+`client_pool_test.dart` appears 12 times in one and 0 times in the other. Every figure moves between
+them (`proxicall` tree-truth 30,235 vs 52,271) and none of the movement is the fix.
+
+Recorded here because it is the same class of error as the `--index` mismatch above and it will recur:
+**a differential number is only comparable to another differential number taken over the SAME sample**,
+so a before/after must pin the file list (whole-repo measurement, or an explicit list) rather than rely
+on a sampler that rotates. The numbers this document quotes for the oracle fix are the VERIFIER results,
+not the differential ones, for exactly this reason.
+
 ### BUILT 2026-10-09 — bucket 3, and the claim split by what it is actually about
 
 The contract above was written first and then implemented, in the smallest shape that removes the
