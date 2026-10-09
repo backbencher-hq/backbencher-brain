@@ -1367,3 +1367,81 @@ from the declaration node. Function-local variables are emitted as scoped
 variables; parameters, anonymous function expressions, field/index mutations and
 local reassignments are not declarations. No synthetic Love2D hooks, anonymous
 coroutine symbols, or anonymous table classes are generated.
+## Incoming pass (append-only record, 2026-10-09) — the claims, the split, the gaps, the silent types, the ambiguity
+
+Appended rather than woven in: every number above was measured at another commit, and rewriting
+them would destroy the comparison. Instrument for everything below:
+`validation/m14/fixtures/lua/incoming-split.mts` (it IMPORTS `classifyEdge`/`externalClaimOf`/
+`tally` from `script/m14/incoming-rule.ts` rather than copying them, so its columns cannot drift
+from the gate's, and every run re-measures the gate exactly — `COMPARE … AGREE`).
+
+### 1. The external claims are VERIFIED, not unverifiable
+
+`incoming-gate --json lua lua 60`: `1802 resolved · 1305 ambiguous · 2222 unresolved of 5415 ·
+markedExternal 86 · externalVerified 86 · externalUnverified 0 · externalRefuted 0`. The one marker
+key is `external` (lua54-stdlib, `markStdlibExternal`), every marked target is a BARE IDENTIFIER
+(`format`, `concat`, `open`) and has no arbiter owner, so the arbiter checks the target itself: 86
+verified, 10 of the 96 marked edges the project answers (mark inert), and **0 refutable by
+construction** — a bare-identifier claim is consulted only where the project answers the target
+nothing. A corpus-wide arm (3,250 files) reads 3,525 marked edges with 1,081 verified, 0
+unverifiable, 0 refuted.
+
+The module-path class stays UNMARKED and now has its refutation count: marking every unresolved
+edge refutes 11 claims, 9 of them `imports` whose owner segment is in-project (`kong.deprecation`
+owner `kong`, `cjson.safe` owner `cjson`, `cmp.types` owner `cmp`).
+
+### 2. The 2,222 unresolved, split
+
+| bucket | edges | what it is |
+|---|---|---|
+| declared in the SAME project | 1,112 (50.0%) | 297 would read `resolved`, 815 `ambiguous` at a complete key space — SAMPLE REACH, not a defect |
+| declared in the corpus, another project | 417 (18.8%) | production is project-scoped: not resolvable for this edge, not a defect |
+| declared nowhere | 693 (31.2%) | 232 bare calls (`uint8`,`string` — `_ENV` host globals), 222 receiver-carrying field references, 125 module paths, 40 uses, 38 `Upper` constants, 10 HTTP headers, tail <10 |
+
+Whole-corpus scope, so no column is read alone: 219,981 edges = 42,442 resolved · **140,782
+ambiguous (64.0%)** · 35,676 unresolved. The sample inflates unresolved and deflates ambiguity.
+
+### 3. The `gap` field, which this spec did not have
+
+`script/m14/spec/lua-completeness.json` carried NO `gap` field — unstated, which the board cannot
+distinguish from "no gaps". It now carries `_description` + six measured entries (LUA-G1..G6):
+`implements` ruled by the grammar; the role-resolved supertype-as-argument class (7 sites in 5
+files over 13 factories); the 45 `setmetatable(self, …)` + 374 expression-base sites; module paths
+(6,601 edges, 2,425 in-corpus files vs 3,060 absent, 9 refutations if marked); the missing callee
+shape on `calls` (5,631 host-global targets, fix named: publish what `callee()` already computes);
+and the sample-reach half of the unresolved column.
+
+### 4. The three "silent" types
+
+The default stride (`firing-check.mjs LUA`, 120 of the lane's 400 kong files) reads `7 types fired —
+implements overrides instantiates SILENT`. Whole-population: `NFILES=4000 bun
+script/m14/firing-check.mjs LUA` reads **9 types fired, SILENT: implements**, with `instantiates:8
+overrides:3`. Whole-corpus census type table (3,250 files, 219,981 edges): `overrides 67`,
+`instantiates 122` — matching §3.1's 67-in-38-files and 122-in-65-files — and `implements` absent.
+Two of the three were stride artifacts; the third is ruled by the grammar. No analyzer change.
+
+### 5. The 1,305 ambiguous
+
+684 multiFile (52.4%) · 312 oneFileDiffOwner (23.9%) · 303 oneFileSameOwnerSameKind (23.2%) · 6
+oneFileSameOwnerDiffKind (0.5%), across 566 distinct names. The kinds and markers agree: these are
+bare local/field names (`variable` 1,007 of the kind signatures), and `oneFileSameOwnerSameKind` IS
+the `lua_redefinition` construct the `overrides` type publishes. Ruled irreducible at edge identity
+(spec BD-ambiguity); the option that would move part of the multiFile bucket — targeting the
+qualified path, as `json` does — is a change to what an edge NAMES, not a resolution repair, and it
+would replace LUA-15's container+own-name identity.
+
+### 6. One red fixture fixed, two remain red (pre-existing)
+
+`lua/stdlib-external` was FAILING on its three positive rows because the expectation pinned
+`"meta.external": "true"` — a STRING — while the analyzer publishes the BOOLEAN `true`, and the
+runner compares with `!==`. A string marker is inert for the arbiter too (`EXTERNAL_KEYS` is read
+with `=== true`), so the fixture was pinning the exact spelling the fleet warns about. Corrected to
+`true`: **lua/stdlib-external now PASSES** (11 of 13 fixtures).
+
+Still failing, and NOT touched by this pass — both are recorded `ok: false` in
+`validation/m14/results/M14.0.F3.json`, i.e. red in the baseline before today:
+`lua/export-edges` and `lua/export-shapes`, both with `export invariant violated: export(s) […]
+do not resolve to a top-level symbol (membership rides Contains)`. That is a real contract question
+about `exports` (whether an exported name must be answered by a symbol or may ride its `contains`
+edge), it is the same class as the 52 unresolved `exports` edges in the sample arm, and it needs
+its own ruling rather than a spelling fix.
