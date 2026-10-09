@@ -4936,6 +4936,108 @@ population. The next round is that distinction: ask the project index whether th
 before claiming it is external. It is a claim-integrity question, not a resolution one, which is why it
 is priced separately instead of being folded into this round.
 
+## THE CONTRACT THIS LANE NOW TARGETS: three buckets, and what each must prove
+
+Recorded 2026-10-09, as a deliberate change of GOAL rather than of method. The method that produced
+the last four rounds is kept exactly as it is — the arbiter that counts refuted claims against the
+lane, price-before-build, a fixture with firable forbids, an independent oracle moved in lockstep.
+What changes is what a type's 100 % MEANS, because the old definition is not reachable through this
+lane's remaining work: `resolved` is "a bare name matches exactly one declaration in the key space",
+and a bare name shared by two classes in two files can never satisfy it, however correct the edge is.
+That is a property of a NAME-KEYED RESOLVER, not of Dart, which is statically typed and resolves
+every reference in a valid program.
+
+So a relationship type is COMPLETE when every one of its edges is in exactly one of three buckets:
+
+```
+  resolved         the target names exactly ONE declaration in the key space
++ verified claim   the target provably names something the population does not contain
++ declared cause   the target has NO static name, and the reason is stated and CHECKED
+= every edge the analyzer emitted
+```
+
+**Bucket 2 already exists** and is the reason this contract is credible rather than aspirational:
+an external claim is verified by the ARBITER, never by the analyzer — `owner` (the owner is absent
+from the key space), `projectFacts` (the file is not in the project's own pubspecs or admitted list),
+`binding` (the target's own spelling cannot name a declaration, and the separator tripwire asserts
+that no published key contains it). A lane cannot mark its way to a PASS; 93 refuted claims are the
+proof that the check bites.
+
+**Bucket 3 does not exist yet, and the rule that keeps it from becoming a laundering hole is the
+whole of its design.** A declared cause is NOT verified by the author that wrote it:
+
+- it gets its OWN COLUMN, as bindings do — never folded into `resolved`, so it can never raise a
+  resolution number;
+- the reason must be a FACT ABOUT THE SOURCE the analyzer can point at, and the target must be
+  SPELLED so that it cannot name a declaration (the binding contract's discipline: an unspeakable
+  spelling beats a marker, because the marker is exactly what the store ignores);
+- and it is checked by a SECOND IMPLEMENTATION — the oracle — which must independently agree that
+  this receiver/expression has no static type in this run. One implementation's marker proves
+  nothing; two agreeing is the standard every other label in this lane already meets.
+
+The work the contract implies is the REPRESENTATION, not a type-by-type chase: emit identity-qualified
+targets where the declaration is reachable (the `contains` round proved the mechanism, and the
+enclosing-class qualification already does it for `calls`), infer the receiver type where it is
+in-file, and DECLINE WITH A SPELLED CAUSE where it is `dynamic`, out-of-run, or parse damage. Ambiguity
+is not a defect to be hunted one name at a time: it is the visible price of throwing the disambiguating
+information away at emission, and it moves for `calls`, `uses`, `references`, `instantiates` and
+`contains` at once or not at all.
+
+### THE TWO POPULATIONS, and the measurement error that made this section necessary
+
+The gate measures TWO populations and their tables are NOT comparable — the gate's own header says so,
+and this round still published them side by side by mistake. Recorded here because the error is the
+kind that survives into a roadmap if it is only fixed in the log:
+
+```
+--index      INDEX-ASSISTED. The analyzer is handed a project index, so cross-file base resolution
+             and the widened type-visibility gate are measured: `references` emits 485,073 edges,
+             because a type mention resolves to types the index knows. 33738 files, 6 repos.
+no --index   PER-FILE, AND THIS IS PRODUCTION'S POPULATION: `parallel-indexer.ts`
+             PROJECT_INDEX_EXTENSIONS names only `.sol`, so a `.dart` file in production is parsed
+             with no context at all. `references` emits 73,562 edges — 6.6x fewer, and not because
+             anything is wrong: a mention can only bind to a type THIS FILE declares.
+```
+
+The two numbers that matter, both at this revision, both AFTER the naming round:
+
+```
+population        edges      resolved  amb(decl)  unresolved  extOK   extFAIL  bindOK
+--index  (arm5→)  3793200    1714846   1273522    237712      20828   93       546159
+per-file (arm6)   3403362    1586904   1033665    170692      32623   16894    562544
+```
+
+**The per-file run is the one production actually gets, and on it the lane has 16,894 REFUTED
+external claims** — not 93. That is what promoted this section from bookkeeping to a finding, and it
+reframes the external-base round completely.
+
+### The arbiter and the analyzer are asking DIFFERENT questions, and in production the lane cannot answer the arbiter's
+
+`isExternalBase` is verified by the arbiter looking the OWNER up in the PROJECT's key space
+(`verifyExternalClaim`). The analyzer that writes the claim can see ONE FILE, unless it is handed an
+index — which production does not hand dart. So to the analyzer, a base declared in another file of the
+same project is indistinguishable from a base in the Flutter framework: in both cases it can reach
+neither, and "I could not reach this base" is the only true thing it can say. The arbiter, which HAS
+the whole project, reads that as a refuted claim.
+
+Measured on the per-file population, `isExternalBase` claims whose target names nothing (the only ones
+the arbiter examines — a marked edge whose target DOES resolve never has its claim read at all):
+
+```
+verified by owner lookup (the owner is genuinely absent)   10,731   per-file
+REFUTED     (the owner IS published in this project)       16,894   per-file   <- 61%
+                                                           304 / 93  index-assisted, at the
+                                                                     PRE-naming-fix revision
+                                                                     (arm 5; the post-fix
+                                                                     re-run is arm6-index)
+```
+
+So the claim is not dishonest; it is TESTED AGAINST EVIDENCE ITS AUTHOR COULD NOT HAVE. That is
+precisely the case bucket 3 exists for: "the base is outside THIS RUN" is a fact about what the
+analyzer could see, and it is a DIFFERENT claim from "the base is outside the PROJECT". Only the second
+is an external claim, only the second should be verified against the project's key space, and the
+180x gap between the two populations is the size of the question — not a 4-claim cleanup.
+
 ### The residual, stated rather than argued away
 
 Two `extension on String` in one project now publish ONE synthesized name, exactly as two
