@@ -1019,6 +1019,64 @@ Two analyzer mutants die on the fixture: removing the section exclusion (caught 
 as the outer one (the mistake the audit's first version made, which reported 0 on a
 331-site population).
 
+### What was verified before any of it was called done
+
+Emission is the cheap half. These are the checks that had to pass, and two of them
+caught something real — one of them in the verification harness rather than the
+product.
+
+**Corpus-wide agreement, through the production path.** `parseFile` (not
+`analyze()`) over all **1,483** tracked `.toml` files:
+
+| type | edges | cross-check |
+|---|---|---|
+| `contains` | 25,000 | — |
+| `references` | **167** | matches the adjudication's 167 |
+| `imports` | **331** across 153 files | matches this audit's 331 exactly |
+
+**A 4-site disagreement, chased to its cause — in my own harness.** A verification
+script re-counting the same population through `parseFile` reported **141** where
+this audit said **145**. Its directory walk did not sort, so the deterministic
+stride selected a *different* 742 files; both numbers were correct for their own
+set and the comparison was meaningless while looking exact. Sorting the walk made
+it **145 = 145**. A stride over an unsorted list is not reproducible, and the note
+is now in the audit beside the stride.
+
+**A phantom production defect, caught before it was reported.** The first end-to-end
+index of a document carrying `[sources] Documenter = { path = ".." }` stored **no**
+`imports` row while all 7 `contains` rows survived — which reads exactly like a
+store-side drop. It was not one: **`bin/bb` runs the compiled `dist/`**, which was
+built at 11:03, before this work. The index had run the old code. After
+`npm run build` the edge is stored (`docs/Project.toml imports .. @8`, external,
+confidence 1.0, total 864 → 865, exactly +1) and the consumer returns it:
+
+```
+bb_graph sources.Documenter --direction callees
+  edgesByType {"imports": 1}
+  sources.Documenter --imports--> id=ext:..  isExternal=true  tier=structural
+```
+
+Analyzer → sanitizer → store → the graph engine's unresolved arm → the tool. Worth
+recording that the end-to-end path cannot be verified at all without a build, and
+that a stale `dist/` produces a clean, confident, entirely fictional defect report.
+
+**Blast radius, on a shared file.** The sanitizer change is in `pool-worker.ts`,
+which all 48 lanes run through. The full fixture suite was run against it: **exit 0,
+zero lanes regressed against their recorded baselines.**
+
+**The one interaction that could have broken it.** `resolveImportTargets` runs on
+`imports` rows with a NULL target — which is exactly what this emits. It is scoped by
+`instr(target_external, ':') > 0`, i.e. `<module>:<item>` shapes only. A path target
+contains no colon, so the pass never sees these rows. Verified by reading the query,
+not assumed.
+
+**Still not verified, and stated rather than glossed.** 18 of 1,483 files carry parse
+errors and are measured as un-analyzable; none of them holds a dependency site, which
+was checked rather than assumed. Cross-document targets still resolve to **no symbol**
+(0 of 318 — the 744-file `Cargo` stem collision), so all 331 are external nodes: real
+and traversable, but not symbol-bound. That is the module-namespace question, and it
+is the same change that would clear the 124 ambiguous incoming edges.
+
 ### The ruling table, and the arbiter's own verdict
 
 `script/m14/toml-ruled.ts` holds nine entries — every type the analyzer does not

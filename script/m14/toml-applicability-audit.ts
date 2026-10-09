@@ -80,6 +80,8 @@ function discover(maxFiles: number): { files: string[]; total: number; absent: n
   const walk = (dir: string): void => {
     let entries: fs.Dirent[]
     try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch { return }
+    // Sorted: see the note on the stride below — an unsorted walk makes a
+    // deterministic stride select a different population on every run.
     for (const e of entries.sort((a, b) => a.name.localeCompare(b.name))) {
       const p = path.join(dir, e.name)
       if (e.isDirectory()) {
@@ -98,6 +100,13 @@ function discover(maxFiles: number): { files: string[]; total: number; absent: n
     try { if (fs.statSync(d).isDirectory()) walk(d) } catch { /* an unreadable repo dir is simply not walked */ }
   }
   const step = Math.max(1, Math.floor(all.length / Math.max(1, maxFiles)))
+  // THE STRIDE REQUIRES A DETERMINISTIC ORDER, and that was learned by being
+  // wrong. A verification harness re-counting this lane's `imports` through the
+  // production parseFile path reported 141 against this file's 145 on what it
+  // printed as the same population ("1483 tracked · 742 measured"). Its directory
+  // walk did not SORT, so the stride selected a DIFFERENT 742 files: 141 and 145
+  // were both correct for their own file sets, and the comparison was meaningless
+  // while looking exact. `entries.sort(...)` below is load-bearing, not tidiness.
   return { files: all.filter((_, i) => i % step === 0), total: all.length, absent, overCap }
 }
 
