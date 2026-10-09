@@ -828,7 +828,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       aliasEdges++
       relationships.push({
-        source: `${source}.${keyPath}`,
+        source,
         target,
         type: ASTEngine.RelationshipType.References,
         confidence: 1.0,
@@ -836,6 +836,16 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: {
           tomlSpecific: true,
           isAliasReference: true,
+          // WHICH key inside the owning inline table made the reference. The edge
+          // is anchored at `source` because `source.keyPath` is NOT a node: the
+          // analyzer publishes the inline table's keys as `inlineKeys` metadata on
+          // the owning symbol and never as symbols of their own. Measured over the
+          // corpus, 167 of 167 emitted edges carried a source that bound to 0
+          // symbols in its own file, against 167 of 167 targets binding to exactly
+          // 1 — an edge reachable by no incoming query, since `traceCallers` JOINs
+          // `brain_symbol` on the source. The anchor was carrying the specificity
+          // the metadata now carries.
+          aliasKeyPath: keyPath,
           resolvedBy: "final-segment",
           evidenceClass: "structural",
         },

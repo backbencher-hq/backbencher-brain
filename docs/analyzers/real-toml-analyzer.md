@@ -14,12 +14,26 @@
 > **Pass 2 — the adversarial pass.** Every pass-1 number was re-measured from a
 > cold `parseFile` and every one reproduced. The arbiter
 > (`script/m14/ontology-coverage-gate.ts`) was run against this lane's ruling
-> table for the first time and prints **`references` FALSIFIED at 167
+> table for the first time and printed **`references` FALSIFIED at 167
 > occurrences** — reported, adjudicated and left to the owner in "Pass 2". One
 > pass-1 sentence is **withdrawn** (a key lost with an `ERROR` region: measured 0,
 > not 2 in 2 files), one limitation is **added** (75.5% of edge target names are
 > published by 2 or more files of their own repository), and two probes of this
 > lane's own were wrong before they were right.
+>
+> **Pass 3 — M60 (#919), and the FALSIFIED row turned out to be a MEASUREMENT
+> artifact.** Two of the things above changed, and both change what this page may
+> claim. First, the FALSIFIED verdict came from a walk checkpoint that had settled
+> every file in an EARLIER run and measured none in the one being reported, so the
+> table was computed from 0 of 1,486 files and could only read NOT EMITTED; the gate
+> says so in its own output (`>>> THE TABLE BELOW IS ABOUT 0 OF 1486 FILES`) and
+> then publishes the verdict anyway. Re-run with `--fresh`, the lane emits **167
+> `references` edges across 5 files**, the row reads **EMITTED**, and the arbiter
+> **exits 0** (`emitted 2/10, ruled-sound 8, FALSIFIED 0`). `fd41b19d6` had
+> implemented the adjudication's rules already. Second, those 167 edges were
+> anchored at a symbol name that does not exist — see "The source of a
+> `references` edge was not a node". Both are corrected below rather than left to
+> contradict the gate.
 
 ## Language
 
@@ -123,7 +137,7 @@ Harness: `validation/m14/fixtures/toml/census.ts`.
 | `calls` | **RULED** | 0 | **A: grammar-inventory.** The corpus yields **20** distinct node types (§Language) and none is a function definition, method, or call. **Overturn:** a node type expressing a callable appearing in the inventory — `function_definition`, `call_expression`, `lambda`, `macro_invocation` |
 | `uses` | **RULED** | 0 | **A** (no value-evaluating node type) **+ B: parse-tree-count**, two probes. (i) A key named one of `uses, using, interpolate, interpolation, template, expr`: **1** occurrence in 1,141 files — `proxicall/supabase/config.toml:137`, `template = "Your code is {{ .Code }} ."`, a Go template carried as a string value. (ii) A `string` value containing an interpolation marker (`${`, `{{`, `%(`, `$(`): **366** occurrences in 155 files, and every one inspected is a *template for another tool* rendered before TOML ever reads it — `redwood/__fixtures__/.../redwood.toml:10` `"${WEB_DEV_PORT:8910}"` is a JS template, `traefik/integration/fixtures/acme/acme_base.toml:15` is Go's `{{range}}`. **Overturn:** the grammar producing an interpolation node, or a corpus file whose consumer reads a TOML value as already-interpolated |
 | `imports` | **RULED** | 0 | **B: parse-tree-count**, two probes. (i) A value naming a file that EXISTS on disk relative to the manifest: **216** hits in 68 files, broken out by target extension — `.rs` 146, `.md` 24, no-extension 12, `.txt` 10, **`.toml` 7**, `.py` 5, and 12 more of one each. (ii) The decisive sub-probe, a value naming another **`.toml`** file that exists: **7** hits in 4 files — `cabal/.typos-srcs.toml:6,7` (`extend-exclude` listing typos' own config files), `cargo/triagebot.toml:174,176,178` and `ghostty/typos.toml`, `pb-grpc/examples/python/ruff.toml`. Every one is a **list of files a tool is told about**, which is the shape the arbiter's own header warns about ("a probe that matches a SHAPE rather than a ROLE produces a number, and the number is worth nothing"). **Overturn:** a `.toml` value that a TOML parser is documented to splice into the document |
-| `references` | **RULED** | 0 | **A** (no reference node type) **+ B**, two probes. (i) A key named one of `$ref, ref, refs, reference, references, anchor, alias, target, points_to, link`: **169** hits in **6** files, broken out — `ref` 167, `target` 2. 167 of the 167 `ref` hits are `version.ref = "<name>"` in five Gradle `libs.versions.toml` version catalogues, and the 2 `target` hits are `target = "cgroup1/stats/metrics.pb.txt"` in `docker/vendor/.../Protobuild.toml`. (ii) Cargo's workspace inheritance, `x.workspace = true`: **1,269** hits in 138 files. **See "The two measurements `references` is most likely to be argued about"** — these are real dependencies and they are deliberately not emitted, with the reason stated there. **Overturn:** a TOML-v1.0.0 clause assigning meaning to a key whose value names another key |
+| `references` | **EMITTED** (M60 #919) | **167** | **A** (no reference node type) **+ B**, two probes. (i) A key named one of `$ref, ref, refs, reference, references, anchor, alias, target, points_to, link`: **169** hits in **6** files, broken out — `ref` 167, `target` 2. 167 of the 167 `ref` hits are `version.ref = "<name>"` in five Gradle `libs.versions.toml` version catalogues, and the 2 `target` hits are `target = "cgroup1/stats/metrics.pb.txt"` in `docker/vendor/.../Protobuild.toml`. (ii) Cargo's workspace inheritance, `x.workspace = true`: **1,269** hits in 138 files. **See "The two measurements `references` is most likely to be argued about"** for the adjudication and "The source of a `references` edge was not a node" for what the emission cost. The Gradle half is emitted (167 edges, both endpoints binding); the Cargo half remains unemitted. **Overturn:** a TOML-v1.0.0 clause assigning meaning to a key whose value names another key |
 | `exports` | **RULED** | 0 | **A** (no module surface) **+ B**, two probes. (i) A key named one of `export, exports, expose, exposed, pub, public, publish, main, module, mod, entrypoint`: **144** hits in 65 files — `module` 71, `publish` 49, `main` 16, `public` 6, `exposed` 2. (ii) A `[lib]`/`[[bin]]`/`[[bench]]`/`[[test]]`/`[[example]]` section carrying `name`, `path` or `crate-type`: **173** hits in 90 files. The `publish` hits are `publish = false`, a crates.io flag; the build-target hits name what cargo *builds*, and a crate's public surface is its Rust source, not its `Cargo.toml`. **Overturn:** a construct that publishes a name to a consumer of the document |
 | `extends` | **RULED** | 0 | **A** (no type declaration, so nothing to extend) **+ B**. A key named one of `extends, extend, extends_from, inherits_from, base, parent, superclass, derived_from, template`: **13** hits in 12 files — `base` 11, `extend` 1, `template` 1. All 11 `base` hits are `base = "my_base"` in `cargo/tests/testsuite/cargo_add/*/Cargo.toml`, where `--base` names a **git branch baseline** for `cargo add`, not a supertype. **Overturn:** a header or key whose declaration says "this entity IS-A that one" |
 | `implements` | **RULED** | 0 | **A** (no supertype clause, no interface node) **+ B**. A key named one of `implements, implement, implements_from, iface, interface, contracts`: **0** occurrences in 1,141 files. **Overturn:** a non-zero count |
@@ -543,7 +557,7 @@ the oracle needs the same second pass (§Report to the supervisor).
 | typecheck | clean |
 | honesty gate | **22 failures, none attributable to pass 2** — measured with this lane's changes stashed and the `HONESTY-GATE FAIL` lists byte-identical (22 = 22, `diff` empty): 11 banned terms in other lanes' files, 10 F1–F9 evidence-freshness entries, the freshness rule's own discrimination check, and F7's `analyzer-hygiene-cpp` / `analyzer-hygiene-elixir`. The count is 20 while a regenerated `M14.0.TOML-CENSUS.json` is on disk and 22 with the committed one — report item 6 |
 | M14 pass-2 probes | `pass2-probes.ts` — edge↔owner agreement 19,087/19,087, repo-scope resolution 24.5% unique / 75.5% ambiguous, role probes for `references`/`imports`/`overrides`/`exports`, DERIVATION findings 0 |
-| arbiter (proof run) | `emitted 1/10, ruled-sound 8, FALSIFIED 1, ruled-without-justification 0`, exit 1 on `references` — the run is in "Pass 2" above and in `script/m14/toml-ruled.ts`'s header |
+| arbiter (proof run) | pass 2, as recorded: `emitted 1/10, ruled-sound 8, FALSIFIED 1`, exit 1 on `references`. **Re-measured with `--fresh` (M60 #919): `emitted 2/10, ruled-sound 8, FALSIFIED 0, ruled-without-justification 0`, exit 0** — the pass-2 run had settled every file in an earlier run and measured none, so its table was computed from 0 of 1,486 files |
 
 ### Two probes were wrong before they were right
 
@@ -828,12 +842,18 @@ one are the role probes below, and what they found is not an edge this lane emit
 
 ### DERIVATION findings: **0**
 
-Measured, not asserted: the analyzer emits exactly one relationship type
-(`contains`, 19,087 edges over 1,141 files) and `deriveTomlEdges` in
-`script/m14/differential.ts` derives exactly one label (`contains`, from its
-`emit` helper, which is the only `label:` literal in the function). The
-difference of the two sets is **0**, so nothing this lane stores is compared
-against nothing. Computed by `pass2-probes.ts`, which prints both sets.
+Measured, not asserted. **As of M60 (#919) the analyzer emits two relationship
+types and the oracle derives both**, so the difference of the two sets is **0** and
+nothing this lane stores is compared against nothing:
+
+| type | analyzer emits | oracle derives | label compared |
+|---|---|---|---|
+| `contains` | 19,087 edges over 1,141 files | yes, from its `emit` helper | yes |
+| `references` | 167 edges over 5 files | yes, M60 #919 — a complete final-segment inventory requiring a unique declaration | yes |
+
+The `references` row was the lane's single DERIVATION finding before #919: emitted,
+stored, and compared against nothing. `rel-type-coverage-gate.ts --langs=toml` now
+reports CHECK 1 **clean**. Computed by `pass2-probes.ts`, which prints both sets.
 
 ### The ruling table, and the arbiter's own verdict
 
@@ -868,6 +888,17 @@ Two notes on the arbiter's own text, because both are measurements:
 - **`references` is FALSIFIED and the row is left standing.** Choosing the
   instrument that reads zero would have produced eight green rows and a hidden
   167. The adjudication is next, and it is the owner's to overrule.
+
+- **THE VERDICT ABOVE WAS A CHECKPOINT ARTIFACT, AND THE OWNER'S DECISION WAS
+  RIGHT.** Re-run with `--fresh` — `npx tsx script/m14/ontology-coverage-gate.ts
+  toml --fresh` — the same gate over the same 1,486 files reads `references
+  EMITTED 167 edges in 4+ files`, `emitted 2/10 ruled-sound 8 FALSIFIED 0`, and
+  **exits 0**. The run above measured **0 files in its own run** and settled
+  1,486 from an earlier one, so it could only ever read NOT EMITTED. This is the
+  failure `rel-type-coverage-gate.ts:539-544` warns about for an unreadable
+  audited set — "a lane that cannot be read is not a lane with zero coverage" —
+  applied to a WALK rather than to an oracle, and it was not guarded. Reported as
+  the owner's decision on the row, not as a criticism of it.
 
 ### Adjudicating `references`: 167 that resolve, 1,269 that do not
 
@@ -917,6 +948,58 @@ If the owner overrules (1) and (2), the two rules are:
 248 edges, both ends resolving, 1.3% of the 19,087 this lane already emits. Each
 would need an oracle in `deriveTomlEdges` before it is a DERIVATION finding rather
 than an unbacked edge.
+
+### The source of a `references` edge was not a node
+
+Found in M60 (#919), while closing this lane's DERIVATION finding. It is the
+defect the adjudication's ground (1) could not have predicted and no spelling
+comparison can catch.
+
+The emitted edges were anchored at `libraries.<lib>.version.ref` — the owning key's
+name with the alias key's path appended. **No such symbol is ever published.** An
+inline table's keys are recorded as `inlineKeys` METADATA on the owning symbol, not
+as symbols of their own, so that name identifies nothing:
+
+| | emitted | binds to exactly 1 symbol, in its own file |
+|---|---|---|
+| source | 167 | **0** |
+| target | 167 | **167** |
+
+So the lane's own headline measurement — "167 occurrences, 167 of them resolving"
+— was true of the target and was never true of the source. **An edge whose source
+binds to nothing is unreachable by every incoming query**, because
+`graph-engine.ts` `traceCallers` INNER-JOINs `brain_symbol` on `source_symbol_id`
+(`src/intelligence/graph/graph-engine.ts:729`); the row is dropped before the
+traversal sees it. `bb_graph direction=callers` on the owning key could not return
+it and `bb_impact` could not reason over it — on a lane whose `references` verdict
+had just been reported as the fleet's one FALSIFIED cell.
+
+**Why every gate was green.** The differential compares SPELLINGS, and the oracle
+spelled the same phantom, so the two agreed on 167 of 167 and the lane read 100%
+covered. The DERIVATION check asked whether an oracle derivation existed and, once
+`references` was added, it did. The incoming gate measured 47 of 145 as ambiguous
+and attributed the rest to resolution, because "0 unresolved" is the answer you
+get when a name matches no declaration at all. This is the same shape as the html
+F9 case `deriveTomlEdges`'s own header names: two transcriptions of one reading,
+agreeing by construction.
+
+**The fix** anchors the edge at the OWNING KEY — `libraries.groovy-bom`, a
+published symbol — and carries the specificity the phantom name held in
+`metadata.aliasKeyPath`. Count unchanged at 167; both endpoints now bind 167 of
+167. Pinned by `reference-anchors.toml`, whose `forbidRelationships` names the
+phantom spelling so restoring it fails the fixture: verified by applying the
+mutation and watching the fixture go red on both directions (3 expected edges
+missing, 1 forbidden edge present).
+
+**What this says about the other 45 lanes.** Every analyzer that emits a
+`contains`-style edge from a name it composes rather than from a published symbol
+has this defect, and the DERIVATION check cannot see it because it asks a different
+question. The instrument that would see it is the one already written and already
+reporting: `incoming-gate.ts` counts an endpoint that matches no declaration, but
+its `unresolved` column does not distinguish "names nothing" from "names something
+ambiguous". Making the walk refuse to publish a verdict when it measured 0 files is
+the same class of repair, in the same spirit as `rel-type-coverage-gate.ts`'s
+INPUT ERROR path.
 
 ### Two probes of this lane's own were wrong before they were right
 

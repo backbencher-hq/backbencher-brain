@@ -21604,6 +21604,100 @@ export function deriveTomlEdges(root: any, moduleName: string): { label: string;
     return null
   }
 
+  // ---- `references`: Gradle version-catalogue aliases ----
+  //
+  // A DIFFERENT ROUTE FROM THE ANALYZER'S, deliberately. The analyzer keeps an
+  // INCREMENTAL map from a final segment to the first allocated name that declared
+  // it, and marks the segment ambiguous when a second declaration appears. This
+  // collects a COMPLETE inventory — every final segment mapped to the LIST of names
+  // that declare it — and then requires the alias to name exactly one. The two
+  // reach the same verdict by different means, so agreement is evidence about the
+  // DOCUMENT rather than a restatement of one implementation in another file.
+  //
+  // The construct: `[versions] groovy = "4.0.26"`, and elsewhere in the same
+  // document `groovy-bom = { module = '...', version.ref = 'groovy' }`. The `ref`
+  // key's STRING value names a key of the SAME document, which is the only thing
+  // that makes it a reference rather than a string. Only a key whose LAST segment
+  // is `ref` qualifies — that is what makes it an alias of a sibling declaration
+  // rather than an arbitrary nested field, and why `module` and `group` are ignored.
+  //
+  // The edge is anchored at the OWNING key, which is a published symbol. A `ref`
+  // inside an inline table is not itself a node: the analyzer publishes those keys
+  // as `inlineKeys` metadata, so spelling the source `owner.version.ref` names a
+  // symbol that does not exist, and the edge is reachable by no incoming query.
+  //
+  // Only SCALAR declarations are referenceable. A table named `groovy` is a
+  // namespace, not the version string a `ref` names, and an edge to it would
+  // resolve to something that exists and means something else.
+  const SCALARS = new Set(["string", "integer", "float", "boolean"])
+  /** final segment -> every allocated name that declares it, in document order. */
+  const byFinalSeg = new Map<string, string[]>()
+  /** owning key name -> the aliases its INLINE table declares. */
+  const inlineRefs: { owner: string; alias: string }[] = []
+
+  /** The pair's VALUE — the last named child that is not a comment.
+   *
+   *  `detekt = "1.23.8"   # When upgrading, also upgrade in detekt.yml`
+   *  parses as `pair > bare_key, string, comment`, and a comment IS a named child,
+   *  so "the last named child" is the comment. That made every commented key
+   *  invisible to scalar detection and dropped its `version.ref` alias with it:
+   *  4 of the corpus's 167 aliases sit on a commented line, and the analyzer's own
+   *  first cut had this defect too — which is the class of bug a differential exists
+   *  to find rather than to assume absent, so this function filters by POSITION
+   *  (last non-comment) instead of re-deriving the analyzer's answer. */
+  const valueOfPair = (pair: any): any => {
+    const ks = kids(pair)
+    for (let i = ks.length - 1; i >= 0; i--) {
+      if (ks[i].type !== "comment") return ks[i]
+    }
+    return null
+  }
+  /** A quoted string's content, or null. TOML's basic and literal strings are both
+   *  handled by trimming the delimiter pair; an escape is NOT decoded here, because
+   *  a `ref` value is an identifier and an identifier is never escaped. */
+  const quotedText = (v: any): string | null => {
+    if (!v || v.type !== "string") return null
+    const text = String(v.text ?? "").trim()
+    if (text.length < 2) return null
+    const q = text[0]
+    if (q !== '"' && q !== "'") return null
+    if (text[text.length - 1] !== q) return null
+    return text.slice(1, -1)
+  }
+
+  /** `declaredName` is the pair's OWN allocated name, computed by the walk that
+   *  also emitted its `contains` edge — never recomputed here. Recomputing it from
+   *  the owning section plus the key's segments a second time produced
+   *  `versions.groovy.groovy` for a key declared `groovy` in `[versions]`, and the
+   *  differential caught it as an UNEXPLAINED `references` row on the first corpus
+   *  that contains a Gradle catalogue. The allocation sequence is shared state, so
+   *  there is exactly one place that may name a node. */
+  const surveyPair = (pair: any, declaredName: string): void => {
+    const ck = keyNodeOf(pair)
+    if (!ck) return
+    const value = valueOfPair(pair)
+    const segs = segmentsOf(ck)
+    if (segs.length === 0) return
+    if (value && value.type === "inline_table") {
+      for (const inner of kids(value)) {
+        if (inner.type !== "pair") continue
+        const ik = keyNodeOf(inner)
+        if (!ik) continue
+        const isegs = segmentsOf(ik)
+        if (isegs.length === 0 || isegs[isegs.length - 1] !== "ref") continue
+        const alias = quotedText(valueOfPair(inner))
+        if (!alias) continue
+        inlineRefs.push({ owner: declaredName, alias })
+      }
+      return
+    }
+    if (!value || !SCALARS.has(value.type)) return
+    const finalSeg = segs[segs.length - 1] as string
+    const list = byFinalSeg.get(finalSeg)
+    if (list) list.push(declaredName)
+    else byFinalSeg.set(finalSeg, [declaredName])
+  }
+
   // A TOML document is a FLAT list of sections and root keys: a `table` never
   // contains another `table`, so the recursion below only ever descends into a
   // section's PAIRS, never into a nested table.
@@ -21630,7 +21724,9 @@ export function deriveTomlEdges(root: any, moduleName: string): { label: string;
       if (!ck) continue
       let kp = name
       for (const seg of segmentsOf(ck)) kp = join(kp, seg)
-      emit(name, allocate(kp))
+      const pairName = allocate(kp)
+      emit(name, pairName)
+      surveyPair(c, pairName)
     }
   }
 
@@ -21644,8 +21740,22 @@ export function deriveTomlEdges(root: any, moduleName: string): { label: string;
       if (!ck) continue
       let kp = ""
       for (const seg of segmentsOf(ck)) kp = join(kp, seg)
-      emit(moduleName, allocate(kp))
+      const pairName = allocate(kp)
+      emit(moduleName, pairName)
+      surveyPair(node, pairName)
     }
+  }
+
+  const refSeen = new Set<string>()
+  for (const { owner, alias } of inlineRefs) {
+    const cands = byFinalSeg.get(alias)
+    // No declaration, or more than one: there is no single right answer, and
+    // picking one would be a guess a downstream consumer cannot falsify.
+    if (!cands || cands.length !== 1) continue
+    const k = `references|${owner}|${cands[0]}`
+    if (refSeen.has(k)) continue
+    refSeen.add(k)
+    edges.push({ label: "references", from: owner, target: cands[0] as string })
   }
   return edges
 }
@@ -23838,7 +23948,21 @@ async function main() {
           // second relationship type has a construct that could produce it. Naming
           // `uses` here would compare the analyzer against an oracle that never
           // emits it, which reads as a lane full of unexplained edges.
-          ...(lang === "toml" ? ["contains"] : []),
+          //
+          // M60 (#919): `references` joins the compared set, and the reason the
+          // comment above said `contains` ALONE is no longer true. TOML still
+          // defines no reference — the construct is Gradle's version catalogue, and
+          // the analyzer emits it on 167 edges across 5 files. What changed is that
+          // `deriveTomlEdges` now derives the SAME construct by an independent route
+          // (a complete final-segment inventory requiring a unique declaration,
+          // against the analyzer's incremental first-wins map), so the label is
+          // comparable on the rule this file states: the oracle derives it.
+          //
+          // Without this the lane's 167 edges were stored and compared against
+          // nothing — toml's single DERIVATION finding, and a finding that a stale
+          // walk checkpoint could not surface either, because a resumed run
+          // publishes a verdict from 0 freshly-measured files.
+          ...(lang === "toml" ? ["contains", "references"] : []),
           ...(lang === "scss" ? ["uses", "references", "imports", "contains"] : []),
 
           // scss: `deriveScssEdges` derives `uses` (`@include` -> a declared mixin,
