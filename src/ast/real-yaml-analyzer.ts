@@ -2277,11 +2277,40 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return rel.slice(0, cut).split("/").filter((s) => s.length > 0).join(".")
   }
 
+  /**
+   * A filesystem path in the POSIX convention this analyzer's key space uses: every `\` becomes
+   * `/`, and TRAILING separators are dropped.
+   *
+   * WHY THIS IS A CHARACTER WALK AND NOT TWO `replace` CALLS. The two substitutions it replaces
+   * were `replace(/\\/g, "/")` followed by `replace(/\/+$/, "")` — two regex literals on each of
+   * two lines, i.e. four of the twelve regex usages the fleet's no-regex gate counted on this
+   * lane. The rule is mechanically enforced on ANALYZER source, so the walk is the form that keeps
+   * the gate's statement TRUE rather than waived. This is a predicate about a string the SOURCE
+   * wrote, not a node type the grammar never emits — the distinction the fsharp lane's fix
+   * (b3623467b) draws.
+   *
+   * THE ORDER IS LOAD-BEARING and is preserved exactly. Backslashes fold to `/` FIRST, so a path
+   * ending in `\` is still stripped by the trailing-separator pass; stripping first would leave the
+   * backslash and produce a key with a trailing `\` in it. Semantics are otherwise identical,
+   * including the degenerate cases: `""` stays `""`, and a string of nothing but separators
+   * (`"/"`, `"///"`) becomes `""` because the second pass removes every one of them.
+   */
+  private static toPosixPath(p: string): string {
+    let out = ""
+    for (let i = 0; i < p.length; i++) {
+      const ch = p[i]
+      out += ch === "\\" ? "/" : ch
+    }
+    let end = out.length
+    while (end > 0 && out[end - 1] === "/") end--
+    return out.slice(0, end)
+  }
+
   /** The file's own path relative to its project root, POSIX-normalised, or null when unknown. */
   private static projectRelativePath(filePath: string, projectRoot?: string): string | null {
     if (!projectRoot) return null
-    const root = projectRoot.replace(/\\/g, "/").replace(/\/+$/, "")
-    const file = filePath.replace(/\\/g, "/").replace(/\/+$/, "")
+    const root = RealYamlAnalyzer.toPosixPath(projectRoot)
+    const file = RealYamlAnalyzer.toPosixPath(filePath)
     if (root.length === 0 || file === root || !file.startsWith(root + "/")) return null
     return file.slice(root.length + 1)
   }
