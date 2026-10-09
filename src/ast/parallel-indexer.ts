@@ -1598,9 +1598,22 @@ export async function processWithWorkerPool(
     // .git boundaries, and duplicating that logic is a worse risk than an under-enriched
     // incremental run.
     //
-    // Opt-in per EXTENSION, and the only entry is one this repository has measured the
+    // Opt-in per EXTENSION, and the only entries are ones this repository has measured the
     // benefit of. A language with no entry pays nothing and behaves exactly as before.
-    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity" }
+    //
+    // `.fs` and NOT `.fsi`: an F# signature/definition pair states the same entity twice, and
+    // indexing the `.fsi` too would let a `.fs` file resolve a target to a surface declared only
+    // there — a real population (3,689 edges on the lane's corpus census), but one whose identity
+    // rule (which of the two a target means) is undecided, and an index is the wrong place to
+    // decide it by accident.
+    //
+    // FS-P16. APPLIED TWICE: this block was silently reverted once by a stale write from another
+    // session editing this file, and the symptom was invisible — the run simply produced the
+    // pre-index classes (0 `in-project-*` rows in the store) with no warning anywhere, because a
+    // missing index is a SUPPORTED state. The store-side check that catches it is written down in
+    // `docs/analyzers/real-fsharp-analyzer.md` pass 16: index a small F# project and count
+    // `in-project-*` in `brain_relationship.metadata`; 0 means the registration is gone.
+    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp" }
     let projectIndexes: Record<string, unknown> | undefined
     try {
       const wanted = new Set<string>()
@@ -1619,6 +1632,17 @@ export async function processWithWorkerPool(
         const repoRoot = path.resolve(path.dirname(require("url").fileURLToPath(import.meta.url)), "..", "..")
         const wasmByLang: Record<string, string> = {
           solidity: path.join(repoRoot, "wasm", "tree-sitter-solidity.wasm"),
+          fsharp: path.join(repoRoot, "wasm", "tree-sitter-fsharp.wasm"),
+        }
+        // The SPEC is per language for the reason project-index.ts gives: the generic extractor
+        // reads `childForFieldName("name")`, which is true of Solidity and false of F# three ways
+        // (a clause's name is an UNNAMED `type_name` child, a member is named after the instance
+        // dot, an abstract member's name is its signature's first identifier). A language absent
+        // here keeps Solidity's spec, which is what every pre-existing entry did and is why this
+        // map is additive rather than a rewrite.
+        const specByLang: Record<string, unknown> = {
+          solidity: mod.SOLIDITY_DECLARATION_SPEC,
+          fsharp: mod.FSHARP_DECLARATION_SPEC,
         }
         const { existsSync: wasmExists } = await import("fs")
         const byExt: Record<string, unknown> = {}
@@ -1628,7 +1652,7 @@ export async function processWithWorkerPool(
           if (wasm === undefined || !wasmExists(wasm)) continue
           const subset = files.filter((f) => f.toLowerCase().endsWith(ext))
           if (subset.length === 0) continue
-          const built = await mod.buildProjectIndexFromDisk(wasm, subset, mod.SOLIDITY_DECLARATION_SPEC)
+          const built = await mod.buildProjectIndexFromDisk(wasm, subset, specByLang[lang] ?? mod.SOLIDITY_DECLARATION_SPEC)
           byExt[ext] = mod.serializeProjectIndex(built)
           log.info("project index built", { ext, files: subset.length, types: built.typeKinds.size })
         }
@@ -4321,6 +4345,25 @@ export async function storeResults(
              // and a belief about where time goes is worth one experiment. Used by
              // script/perf/probe-store-phases.ts; it leaves target_symbol_id NULL, so the
              // graph is NOT correct in this mode and nothing but a measurement may use it.
+             // MEASUREMENT SWITCH, off by default: with BB_TEST_SKIP_EDGE_RESOLVE=1 the
+             // per-edge resolve is skipped entirely, so the store phase can be measured
+             // with and without it. It leaves target_symbol_id NULL, so the graph is NOT
+             // correct in this mode and nothing but a measurement may use it.
+             //
+             // Why it exists, and why it is only a switch: the per-edge SELECT was
+             // believed to dominate the store ("C did not disappear, it moved into the
+             // store"). Measured on n200 (62,085 relationships), it costs 2.7-9.8 s of a
+             // 24-44 s store phase — real, but not dominant. Attempting to REMOVE it by
+             // deferring to the resolution pass was tried and reverted twice, because the
+             // resolution fingerprint showed the final graph changing:
+             //   skip every non-contains edge   1,171 edges lost their target (dotted and
+             //                                  qualified names have no other resolver in
+             //                                  the pool path)
+             //   skip only _i13_pick's rows       249 edges bound differently, because the
+             //                                  pass's ranking is not this statement's
+             // So removing it safely needs a dotted/qualified resolver in the pass AND a
+             // reconciliation of those 249 bindings. Until then this switch measures the
+             // cost and the eager resolve stays.
              const skipEdgeResolve = process.env.BB_TEST_SKIP_EDGE_RESOLVE === "1"
              const resolvedRow = skipEdgeResolve
                ? null
