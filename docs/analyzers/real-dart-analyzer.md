@@ -5125,6 +5125,41 @@ The fourth property the contract demands — a SECOND IMPLEMENTATION agreeing th
 is NOT implemented, and the column is described as a reported, non-scoring count rather than a verified
 one. That is the oracle half, and it is the next round's work rather than a claim made here.
 
+### MEASURED — whole corpus, PER-FILE (production's population), before and after, same file list
+
+```
+                    edges     resolved  amb(decl)  unresolved  extOK   ext?  extFAIL  bindOK   bind?  bindFAIL  causeOK  causeFAIL
+arm6   (before)   3403362    1586904   1033665     170692      32623    19    16894   562544    12      0        -         -
+arm7   (after)    3403362    1586904   1033665     170692      21910    19      128   562544    12      0      27479       0
+```
+
+The delta is the whole test, and it closes to the edge:
+
+```
+extOK     32,623 -> 21,910   -10,713   claims that USED to be verified by the owner lookup and now
+                                     state their reason instead (the analyzer no longer claims for them)
+extFAIL   16,894 ->    128   -16,766   claims the project REFUTED, which is what this round was for
+causeOK       0 -> 27,479   +27,479   the declared causes: 10,713 + 16,766 = 27,479, EXACTLY
+causeFAIL     0 ->      0            no edge carried a cause AND an external claim, and every stated
+                                     base was its own target's owner — the two checks never fired
+```
+
+EVERY OTHER COLUMN IS BYTE-IDENTICAL, which is the check that no edge moved: same edges, same
+resolved, same ambiguity, same unresolved, same bindings. The change altered WHICH KEY an override row
+carries and nothing else — verified at corpus scale, not just on the fixture.
+
+The 128-row residue is NAMED rather than waved at (`refutedNames` prints all of them, which is the
+reporting fix from the previous round): every one is an `Object.<member>` override — `Object.length`,
+`Object.operator []`, `Object.path`, `Object.stackTrace`, … — and they are refuted for one reason: the
+**dart-sdk checkout's own sources declare `Object`** (`sdk/lib/core/object.dart`), so on that project the
+claim "the project does not contain `Object`" is false and the gate is RIGHT to say so.
+
+WHY THEY ARE NOT SIMPLY MOVED INTO BUCKET 3, stated as the trade it is: doing that would zero this
+column, and it would also stop the arbiter from examining `Object` claims at all — which is the check
+that CAUGHT the fake-`Object` defect (31 riverpod overrides refused while an unnamed extension was
+published under `Object`). A class of defect that has already occurred once is worth 128 honest
+refutations on the one project that carries the SDK's own sources.
+
 ### WHERE THE AMBIGUITY ACTUALLY COMES FROM, measured — and it kills the cheap fix
 
 `validation/m14/fixtures/dart/ambiguity-cause-census.ts` splits the ambiguous column by CAUSE, with
