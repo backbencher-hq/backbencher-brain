@@ -47,6 +47,7 @@ const GATES: Gate[] = [
   { name: "m62 live-db-snapshot", script: "script/m62/verify-live-db-snapshot.ts" },
   { name: "m62 gate-typecheck ratchet", script: "script/m62/verify-gate-typecheck-coverage.ts" },
   { name: "m62 ledger-reseal", script: "script/m62/verify-ledger-reseal.ts" },
+  { name: "m62 cli-resolution", script: "script/m62/verify-cli-resolution.mts" },
   { name: "m23 p3 edge cases", script: "script/m23/verify-p3-edge-cases.ts" },
   { name: "m24 closure", script: "script/m24/verify-closure.ts" },
   { name: "m24 governance", script: "script/m24/verify-governance.ts" },
@@ -62,17 +63,12 @@ const GATES: Gate[] = [
     honestBlock:
       "downstream of E5: the listing claims VS Code I3 verified while E5's evidence says known-gap, so D1 correctly reports drift. Nothing to fix here until the in-editor leg runs.",
   },
-  {
-    name: "m25 D1i install docs",
-    script: "script/m25/verify-install-docs.ts",
-    honestBlock:
-      "needs the VS Code CLI: `spawnSync /usr/bin/code ENOENT`. Checked and absent on this machine, along with cursor, windsurf, antigravity, zed and helix.",
-  },
+  { name: "m25 D1i install docs", script: "script/m25/verify-install-docs.ts" },
   {
     name: "m25 X1 closure",
     script: "script/m25/verify-closure.ts",
     honestBlock:
-      "spawns every M25 verifier and requires each to exit 0. Its five red legs are E5, D1, D1i and the v1 completion bar, all three of which trace to the in-editor/VS-CLI environment above — verified by reading the failure list rather than assumed.",
+      "spawns every M25 verifier and requires each to exit 0. D1i is green now (it was misconfigured, not unavailable); the remaining red legs are E5, D1 and the v1 completion bar, all tracing to the in-editor run.",
   },
   { name: "m26 external-arm plan", script: "script/m26/verify-external-arm-plan.ts" },
   { name: "m28 registry honesty", script: "script/m28/verify-project-registry-honesty.ts" },

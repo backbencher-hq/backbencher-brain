@@ -3,7 +3,7 @@
   "code": "E6",
   "fork": "antigravity",
   "status": "blocked",
-  "reason": "antigravity CLI not found on PATH — install or record the waiver (E6 honest blocked state)",
+  "reason": "antigravity not found — looked at: legacy: /usr/bin/antigravity",
   "os": "darwin",
   "machine": {
     "kernel": "Darwin 23.6.0",
@@ -12,16 +12,16 @@
     "node": "v22.14.0",
     "runtime": "fork-run"
   },
-  "currentCommit": "b32c5a00d1fa9d7fbe610bd34b168cdec3f3a2cf",
+  "currentCommit": "f9ff276fa44e322b26358a57e7fad989c5853a75",
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-ANTIGRAVITY.json",
-  "generatedAt": "2026-10-08T19:51:45.386Z",
+  "generatedAt": "2026-10-09T20:01:36.385Z",
   "limitations": [
     "fork unavailable on this machine — claim level stays unset; no inheritance from other forks"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-08T19:51:45.386Z",
-    "contentSha256": "7d4c5ab9c20a97cc46059be11f68fdc6068d4b044e9f805e960c81c6393371d8"
+    "sealedAt": "2026-10-09T20:01:36.385Z",
+    "contentSha256": "deff955bcebd07396dd7ffa243ee37ac1154597c0210afe49eda9d396d166c79"
   }
 }
