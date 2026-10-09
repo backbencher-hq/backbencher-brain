@@ -1,0 +1,64 @@
+{
+  "language": "r",
+  "grammar": "tree-sitter-r (pinned wasm, the same grammar the lane's analyzer is compiled against)",
+  "_authority": "CREATED 2026-10-09 as an HONEST PLACEHOLDER, and this line is the most important one in the file: R and graphql were the last two lanes with no machine-readable spec, and a spec that copies another language's rows would be worse than no spec — it would assert. So the SHAPE is bash's (script/m14/spec/bash-completeness.json), and the CONTENT is only what this lane has actually run. Every row that has not been measured says UNMEASURED, in those words, and the empty arrays below mean UNMEASURED, NOT ZERO: no census has walked this lane's corpus for node types, so `handled_verified` and `internal_silent` are empty because nothing has been classified, not because nothing was found. A later turn replaces each UNMEASURED with a number and its command; until then a reader must treat every non-instrument claim here as absent.",
+  "_created": "2026-10-09",
+  "_lane": "R_LANG (firing-check name) / r (engine language id), corpus ggplot2 (360 .R files per script/m14/firing-check.mjs LANES)",
+  "_silent_types_measurement": {
+    "_description": "TWO TYPES ARE SILENT IN THE FIRING INSTRUMENT. For each, the question is NOT 'is it silent' but WHICH of two things silence means: the analyzer cannot express the construct (a defect to implement), or the construct does not occur in the whole population (a ruling). `firing-check.mjs` cannot tell those apart — it samples — so the numerator must come from the instrument and the denominator from a whole-corpus tree measurement. NEITHER HAS BEEN RUN FOR THIS LANE YET.",
+    "commands": [
+      "bun script/m14/firing-check.mjs R_LANG                 # RUN — 120 files, even-stride sample of ggplot2",
+      "NFILES=400 bun script/m14/firing-check.mjs R_LANG      # NOT RUN — the widest population the instrument can reach (cap = 400)",
+      "bun validation/m14/fixtures/r/<census probe>.mts --corpus   # NOT RUN — no whole-corpus census exists for this lane yet"
+    ],
+    "instrument_readings": {
+      "NFILES=120": "8 types fired, 120/120 parsed — calls 1952, contains 861, exports 282, extends 4, implements 72, imports 104, references 109, uses 251. SILENT: overrides instantiates. Reproduced by this lane 2026-10-09 (load 6.65 before the run), and identical to the supervisor's refreshed fleet run.",
+      "NFILES=400": "UNMEASURED",
+      "whole_corpus": "UNMEASURED — no census of the ggplot2 corpus (360 .R files) has been run by this lane."
+    },
+    "verdicts": {
+      "overrides": "UNMEASURED. The instrument reads SILENT at 120 files, and that is the ONLY measured fact. Whether R's analyzer can express an override at all, whether the construct exists in R (S4/R5 class hierarchies and method dispatch are the obvious candidates, and `UseMethod`/`setMethod`/`setGeneric` are the shapes a tree walk would have to count), and whether the corpus contains it, are all open. NOT to be read as a defect and NOT to be read as a ruling: a placeholder asserts neither.",
+      "instantiates": "UNMEASURED, for the same reason and in the same words. R object systems (`setClass`/`new`, R6 `$new()`, reference classes) are the candidate constructs; the corpus measurement that would size them has not been run."
+    },
+    "_do_not_read_this_file_as_complete": "The two UNMEASURED verdicts above are the lane's entire silent-type claim so far, and the incoming columns below are UNMEASURED as well. Any consumer that treats absence here as evidence is reading an unfinished file as a finished one."
+  },
+  "handled_verified": {
+    "_description": "UNMEASURED — deliberately empty. Populating this list requires a census that reads the pinned grammar's own node-type table, the analyzer's type-position literals, and what the corpus actually contains (bash's authority, `script/m12/bash-node-types-compare.ts`, is the shape to follow or reuse). AN EMPTY LIST HERE MEANS 'NOT YET CLASSIFIED', NEVER 'NOTHING IS HANDLED'. The analyzer demonstrably handles declarations, calls, imports and containment — the 120-file instrument fires eight types — but a node-type ledger has not been derived, and writing one from the instrument's output would be source derivation wearing a census's clothes.",
+    "types": []
+  },
+  "internal_silent": {
+    "_description": "UNMEASURED — deliberately empty, for the same reason as `handled_verified`. Nothing has been classified as correctly-inert yet.",
+    "types": []
+  },
+  "gap": {
+    "_description": "UNMEASURED — no gap has been derived, so `gaps` is empty because nothing has been looked for, NOT because the lane is complete. A gap may only be entered against a measurement (sites in files, with the command that counted them), and no such measurement exists for this lane yet.",
+    "gaps": []
+  },
+  "design_decision": {
+    "description": "UNMEASURED — this lane has made no recorded decision yet. Decisions will be entered as they are forced by a measurement, each naming the question, the answer, and what pins it.",
+    "decisions": []
+  },
+  "_incoming_side": {
+    "_description": "THE SECOND ACCEPTANCE CRITERION, and it is UNMEASURED BY THIS LANE. The supervisor's refreshed fleet run reports `npx tsx script/m14/incoming-gate.ts r r 60` -> FAIL — 175 ambiguous + 1714 unresolved of 3055 edges. That reading is CITED, NOT REPRODUCED here; this lane has not yet run the gate or split either column. The split method is settled and is the one this lane used for php: build a key space from the UNSAMPLED admitted population, reproduce the gate's own verdict as a printed self-check so the split is a split OF THE GATE'S NUMBER, then separate (a) targets whose declaration IS in the corpus but outside the sample's key space (key-space BUDGET) from (b) targets that name nothing anywhere in the corpus, and report BOTH scopes side by side.",
+    "gate_line_cited": {
+      "command": "npx tsx script/m14/incoming-gate.ts r r 60",
+      "reading": "FAIL — 175 ambiguous + 1714 unresolved of 3055 edges",
+      "source": "supervisor's refreshed fleet run (controls 23/23), NOT reproduced by this lane yet"
+    },
+    "sample_scope": "UNMEASURED",
+    "project_scope": "UNMEASURED",
+    "budget_share": "UNMEASURED — must be measured, not assumed. The php lane measured 53.4% of its sample column as key-space budget and a 6.6x inflation of the unresolved RATE; fsharp measured 57% and bash 31.5%, while bash's AMBIGUITY column GREW at project scope (1,033 -> 1,294). R's direction is unknown.",
+    "ambiguity": "UNMEASURED — the 175 must be classified by collision dimension (multiFile / oneFileDiffOwner / oneFileSameOwnerDiffKind / sameKind) with `sameKind` as the falsifier class, and ruled if irreducible.",
+    "fleet_policy_that_applies_here": [
+      "A PATH or URI target can never be a published name, so it is NEVER a resolution defect and is never counted as one (php's `require_once 'A.php'` correction, now fleet policy).",
+      "An external marker must be written as the BOOLEAN `true` (or a non-empty array): `incoming-rule.ts` reads `md[key] === true`, so a STRING is inert. php's marker read as unmarked for its whole life because it carried a kind string.",
+      "A bare-identifier claim is now verified through the TARGET itself (the supervisor's `verifyExternalClaim` fix), so `extFAIL` is expected to be 0 — refutations cluster on single-segment owners (zig 1-dot: 1 ok / 259 refuted; powershell: 82 refutations, all bare owners, 0 qualified). If this lane ever reports a non-zero `extFAIL`, that is a finding and not a tuning problem."
+    ]
+  },
+  "_next_in_priority_order": [
+    "(a) Split the 1,714 unresolved at BOTH scopes, measuring the key-space budget share rather than assuming it, and reproduce the gate's verdict as a self-check.",
+    "(b) Measure `overrides` and `instantiates` over the WHOLE corpus with a tree walk (sites in files, never a regex), then implement or rule each on that measurement.",
+    "(c) Classify the 175 ambiguous by collision dimension, with `sameKind` as the falsifier class, and rule it if irreducible.",
+    "STANDING: markers `=== true`, no regex (the fleet gate is GREEN at 0), pathspec commits only, `uptime` before heavy runs, killed commands reported as killed."
+  ]
+}
