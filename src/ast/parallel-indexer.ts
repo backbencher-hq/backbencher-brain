@@ -1408,6 +1408,7 @@ export async function processWithWorkerPool(
   let stalledTotalMs = 0
   let watchdogDeferrals = 0
   let workerKills = 0
+  let poolCompletionLogged = false
   let stallTickAt = Date.now()
   const stallTimer = setInterval(() => {
     const tickNow = Date.now()
@@ -1429,18 +1430,56 @@ export async function processWithWorkerPool(
   let pendingDbBatch: FileResult[] = []
   const dbPromises: Array<Promise<{ symbols: number; relationships: number; imports: number; failed?: boolean }>> = []
 
+  // Stall-bounded flush (opt-in, measured — the DEFAULT is deliberately the cheap
+  // end, because correctness no longer depends on shortening the block; the
+  // deferral policy in watchdog-policy.ts already survives it).
+  //
+  // A `storeResults` call is ONE synchronous pass through better-sqlite3: it holds
+  // the parent's event loop for its whole duration. Measured, same graph both ways
+  // (relHash `2d44228f89e5bb77` at n800, `8b164c3b570db152` at n200):
+  //
+  //   tier  chunk  files  wallMs  parseMs  dbFlushMs  blocks>=1s  blockedMs
+  //   n200      4    196   30,790   24,048     20,165           0          0
+  //   n200     10    196   30,510   24,055     14,619           1      1,535
+  //   n200     20    196   30,214   24,060     13,555           8     10,782
+  //   n800      4    796   55,200   42,786    127,066           1      1,024
+  //   n800     20    796   52,782   41,058     32,406           7     10,294
+  //
+  // Chunking 20 files into 5 transactions costs 4x the store CPU at n800 and is
+  // 2.4 s SLOWER end to end, so it buys responsiveness, not speed. It is kept as a
+  // lever (`BB_DB_FLUSH_CHUNK=4`) for a deployment whose blocks would outlast the
+  // per-file timeout on a much larger database — there, the 4x store cost is
+  // cheaper than waiting out the deferrals.
+  const FLUSH_CHUNK_FILES = Number(process.env.BB_DB_FLUSH_CHUNK || 20)
   const flushDbBatch = async (
     batchToStore: FileResult[],
   ): Promise<{ symbols: number; relationships: number; imports: number; failed?: boolean }> => {
     if (batchToStore.length === 0) return { symbols: 0, relationships: 0, imports: 0 }
     const flushStart = Date.now()
+    let symbols = 0
+    let relationships = 0
+    let imports = 0
     try {
-      const stats = await storeResults(projectId, projectPath, batchToStore, { skipResolution: true })
+      for (let i = 0; i < batchToStore.length; i += FLUSH_CHUNK_FILES) {
+        const chunk = batchToStore.slice(i, i + FLUSH_CHUNK_FILES)
+        const stats = await storeResults(projectId, projectPath, chunk, { skipResolution: true })
+        symbols += stats.symbols
+        relationships += stats.relationships
+        imports += stats.imports
+        // Yield between chunks: this is the line that keeps the loop responsive.
+        if (i + FLUSH_CHUNK_FILES < batchToStore.length) {
+          await new Promise((r) => setImmediate(r))
+        }
+      }
       if (telemetry) telemetry.dbFlushMs += Date.now() - flushStart
-      return stats
+      return { symbols, relationships, imports }
     } catch (e: any) {
       if (telemetry) telemetry.dbFlushMs += Date.now() - flushStart
-      log.error("storeResults failed", { error: e?.message, batchSize: batchToStore.length })
+      // Same contract as before chunking: a failed batch is reported as failed and
+      // the caller skips it. Chunks already committed before the failure are not
+      // subtracted back out — the counts here are the batch's, not a running total,
+      // and under-reporting a failed batch is the honest direction to err.
+      log.error("storeResults failed", { error: e?.message, batchSize: batchToStore.length, chunkFiles: FLUSH_CHUNK_FILES })
       return { symbols: -1, relationships: -1, imports: -1, failed: true }
     }
   }
@@ -1904,14 +1943,18 @@ export async function processWithWorkerPool(
         clearInterval(stallTimer)
         // The pool's own accounting, so a run can be read for what the watchdog
         // did rather than only for how long it took: kills are work lost, and
-        // deferrals are kills that the stall detector prevented.
-        log.info("worker pool complete", {
-          files: files.length,
-          workers: numWorkers,
-          workerKills,
-          watchdogDeferrals,
-          parentStalledMs: stalledTotalMs,
-        })
+        // deferrals are kills that the stall detector prevented. Logged ONCE —
+        // scheduleNext reaches this branch on every pass.
+        if (!poolCompletionLogged) {
+          poolCompletionLogged = true
+          log.info("worker pool complete", {
+            files: files.length,
+            workers: numWorkers,
+            workerKills,
+            watchdogDeferrals,
+            parentStalledMs: stalledTotalMs,
+          })
+        }
         workers.forEach((w) => w.kill())
         if (pendingDbBatch.length > 0) {
           dbPromises.push(flushDbBatch(pendingDbBatch))
