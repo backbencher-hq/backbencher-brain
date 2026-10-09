@@ -746,6 +746,36 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         names.add(sym.name)
         if (sym.scope) names.add(`${sym.scope}.${sym.name}`)
       }
+      // THE KIND TEST, and it is what makes the two SUFFIX sub-tests below sound.
+      //
+      // A chain term is a SINGLE simple selector and its spelling says which kind it is:
+      // `.x` is a class, `#x` an id, `:x` a pseudo, `*` universal, and a bare name is a
+      // tag or attribute name. The published name a suffix test matches is a WHOLE
+      // selector, so its spelling says which kind IT is. Accepting a suffix match across
+      // two different kinds lets a term be satisfied by a selector that matches different
+      // elements — measured on the corpus before this test existed:
+      //
+      //   validation/m14/fixtures/css/single-file-dump.ts geb/doc/site/public/css/semantic.min.css
+      //   contains ".button" -> ".button"   [cssSpecific+isSelectorChain]
+      //   names.has(".button") = false
+      //   names.has("button")  = true
+      //
+      // The file declares `button{overflow:visible}` and no bare `.button` rule anywhere, so
+      // the dotted-LEAF test (`leafOf(".button")` = `button`) emitted a `contains` edge
+      // between two things that are not declarations of that stylesheet — a self-edge on
+      // top of it. Fixture: `validation/m14/fixtures/css/chain-term-kind-must-match.css`.
+      const chainTermKind = (n: string): string => {
+        if (n.length === 0) return ""
+        const c = n.charAt(0)
+        if (c === ".") return "class"
+        if (c === "#") return "id"
+        if (c === ":") return "pseudo"
+        if (c === "*") return "universal"
+        // A tag name and an ATTRIBUTE NAME are both pushed bare (D7: the attribute form
+        // pushes `href`, not `[href^=x]`), so one kind covers both and this test cannot
+        // separate them. Named rather than folded into `type` so the limit is visible.
+        return "bare"
+      }
       const leafOf = (n: string): string => {
         const segs = stripOccurrenceSuffix(n).split(":").filter((x) => x.length > 0)
         const last = segs[segs.length - 1] ?? ""
@@ -754,7 +784,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       // A SCOPED name resolves through its SUFFIX: svelte writes the rule as
       // `.a.svelte-xyz` and publishes `a`, so `.a.svelte-xyz` is a real endpoint
-      // even though it is not itself a symbol.
+      // even though it is not itself a symbol. THE SUFFIX MUST BE THE SAME KIND as the
+      // term (`chainTermKind`), because the published name is a whole selector: the test
+      // asks "is this term published under a longer spelling", never "does the project
+      // declare a selector whose LAST SEGMENT happens to be this word".
       //
       // This was the lane's only super-linear path, and it was invisible to every
       // correctness gate because it is invisible to SMALL inputs. Measured with
@@ -786,16 +819,22 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // have a published name after it" — so walk n's own boundaries and do one
       // hash lookup each. Selector names are short, so this is linear in practice
       // and the semantics are identical.
+      //
+      // EACH SUFFIX SUB-TEST ALSO ASKS THE KIND QUESTION (`chainTermKind`), which is the
+      // one thing the O(1) rewrite above did not carry over: the predicate used to accept
+      // a published name of ANY kind as a suffix of the term. The exact test is untouched
+      // — a published name that IS this term is this term, whatever it is.
       const resolves = (n: string): boolean => {
         if (!n) return false
         if (names.has(n)) return true
+        const kind = chainTermKind(n)
         const l = leafOf(n)
-        if (names.has(l)) return true
+        if (l !== n && chainTermKind(l) === kind && names.has(l)) return true
         for (let i = 0; i < n.length; i++) {
           const c = n[i]
           if (c !== ":" && c !== ".") continue
           const tail = n.slice(i + 1)
-          if (tail.length > 0 && names.has(tail)) return true
+          if (tail.length > 0 && chainTermKind(tail) === kind && names.has(tail)) return true
         }
         return false
       }
