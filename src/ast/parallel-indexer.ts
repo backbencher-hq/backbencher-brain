@@ -17,6 +17,7 @@ import {
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
 import { isIndexArtifactName, isIndexArtifactNameStrict } from "./analysis-exclusions"
+import { decideWatchdog, WATCHDOG_MIN_STALL_MS, WATCHDOG_TICK_MS } from "./watchdog-policy"
 import { isTestFileCandidate } from "./test-classification"
 import { createStoreDiagnostics } from "./store-diagnostics"
 // M50.A2 (#764): dense-vector read accelerator (JSON stays the source of truth).
@@ -1390,6 +1391,38 @@ export async function processWithWorkerPool(
   // startup watchdog is deterministically exercisable in fixtures.
   const workerStartupTimeoutMs = Number(process.env.BB_WORKER_STARTUP_TIMEOUT_MS || 30000)
 
+  // ── Event-loop stall detector: the watchdog must not blame the worker for the
+  // parent's block ─────────────────────────────────────────────────────────────
+  // `handleWorkerTimeout` is a WALL-CLOCK timer in the parent, and the parent is
+  // the only process that touches SQLite — synchronously. One long `flushDbBatch`
+  // therefore expires the timers of every in-flight batch at once, and the pool
+  // is killed as a unit: measured 99 kills in one run, in bursts of exactly 7
+  // (the whole pool), every 3-5 minutes, while the machine sat at load 4.1 and the
+  // same files parsed in 82-520 ms. A worker was never the slow part.
+  //
+  // The tick below measures how long the loop was ACTUALLY blocked, and
+  // `decideWatchdog` refuses to kill a worker for a window the parent spent
+  // blocked. See src/ast/watchdog-policy.ts for the measurements and the rule.
+  let lastStallMs = 0
+  let lastStallEndedAt = 0
+  let stalledTotalMs = 0
+  let watchdogDeferrals = 0
+  let workerKills = 0
+  let stallTickAt = Date.now()
+  const stallTimer = setInterval(() => {
+    const tickNow = Date.now()
+    const lateness = tickNow - stallTickAt - WATCHDOG_TICK_MS
+    stallTickAt = tickNow
+    if (lateness >= WATCHDOG_MIN_STALL_MS) {
+      lastStallMs = lateness
+      lastStallEndedAt = tickNow
+      stalledTotalMs += lateness
+      log.warn("parent event loop was blocked", { ms: lateness, stalledTotalMs })
+    }
+  }, WATCHDOG_TICK_MS)
+  // Never hold the process open for a diagnostic.
+  stallTimer.unref?.()
+
   log.debug("starting worker pool", { numWorkers, files: files.length, batchSize })
 
   // Streaming DB batch
@@ -1492,6 +1525,8 @@ export async function processWithWorkerPool(
         timeout: ReturnType<typeof setTimeout>
         currentFile?: string
         attempts?: number
+        /** Watchdog deferrals granted to this batch (see watchdog-policy.ts). */
+        deferrals?: number
       }
     >()
     let batchCounter = 0
@@ -1537,10 +1572,37 @@ export async function processWithWorkerPool(
         const batch = pendingBatches.get(batchId)
         if (!batch) return
 
+        // An expired timer is only evidence about the worker when the PARENT was
+        // able to observe it. If the event loop spent a large part of this
+        // batch's window blocked in a synchronous store, the worker is innocent:
+        // re-arm and let it finish. Measured failure this prevents: 99 kills in
+        // one run, in bursts of exactly 7 — the whole pool — every 3-5 minutes.
+        const decision = decideWatchdog({
+          now: Date.now(),
+          lastStallMs,
+          lastStallEndedAt,
+          timeoutMs,
+          deferrals: batch.deferrals ?? 0,
+        })
+        if (decision.action === "defer") {
+          batch.deferrals = (batch.deferrals ?? 0) + 1
+          watchdogDeferrals++
+          clearTimeout(batch.timeout)
+          batch.timeout = setTimeout(() => handleWorkerTimeout(worker, batchId), timeoutMs)
+          log.warn("watchdog deferred — the parent's event loop was blocked, the worker was not", {
+            batchId,
+            currentFile: batch.currentFile,
+            stallMs: lastStallMs,
+            deferrals: batch.deferrals,
+          })
+          return
+        }
+
         clearTimeout(batch.timeout)
         pendingBatches.delete(batchId)
 
-        log.warn("Worker timed out or crashed, killing process", { batchId, currentFile: batch.currentFile })
+        workerKills++
+        log.warn("Worker timed out or crashed, killing process", { batchId, currentFile: batch.currentFile, reason: decision.reason })
 
         try {
           worker.kill("SIGKILL")
@@ -1839,6 +1901,17 @@ export async function processWithWorkerPool(
 
     function scheduleNext() {
       if (fileQueue.length === 0 && pendingBatches.size === 0) {
+        clearInterval(stallTimer)
+        // The pool's own accounting, so a run can be read for what the watchdog
+        // did rather than only for how long it took: kills are work lost, and
+        // deferrals are kills that the stall detector prevented.
+        log.info("worker pool complete", {
+          files: files.length,
+          workers: numWorkers,
+          workerKills,
+          watchdogDeferrals,
+          parentStalledMs: stalledTotalMs,
+        })
         workers.forEach((w) => w.kill())
         if (pendingDbBatch.length > 0) {
           dbPromises.push(flushDbBatch(pendingDbBatch))
@@ -1904,6 +1977,7 @@ export async function processWithWorkerPool(
           worker,
           timeout: setTimeout(() => handleWorkerTimeout(worker, batchId), timeoutMs),
           attempts: 1,
+          deferrals: 0,
         })
 
         // RESOLVED 2026-10-02 (branch consolidation): a UNION.
