@@ -173,6 +173,18 @@ async function cmdIndex(
       const raw = await BrainDatabase.getRawInstance(pid)
       wipeProjectData(raw)
       console.log(`wiped ${pid.slice(0, 8)} index in place (file kept)`)
+      // A wipe deletes ROWS, not pages: the file keeps every byte it had, so a
+      // rebuild then writes into an 8 GB file that is almost entirely holes
+      // (measured 2026-10-08: 8.08 GB db + 766 MB WAL after one full index). This
+      // is the safe place to give them back — the writes have stopped, and the
+      // file is about to be rewritten. Deleting the file is NOT the alternative:
+      // keeping it is what keeps a live MCP server's handle valid.
+      const { reclaimSpace, formatSpace } = await import("../ast/index-space")
+      const space = reclaimSpace(raw, BrainDatabase.getDbPath(pid), {
+        vacuum: true,
+        log: (message, meta) => console.log(`  ${message}${meta ? ` ${JSON.stringify(meta)}` : ""}`),
+      })
+      console.log(`  index space: ${formatSpace(space)}`)
     } catch (e: any) {
       console.error(`✗ wipe failed: ${e?.message}`)
     }
@@ -278,6 +290,14 @@ async function cmdIndex(
   const symbols = (db.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
   const rels = (db.prepare("SELECT COUNT(*) c FROM brain_relationship").get() as any).c
   const emb = (db.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any).c
+  // Reclaim the run's WAL. Nothing in bb truncates it, so it is the sum of
+  // everything written since the file was created — the previous full index left
+  // 766 MB beside a 6.9 GB database, and bb_health reported it (correctly) as a
+  // cost on every later read. The writes have stopped here, which is what makes a
+  // TRUNCATE checkpoint cheap and final. A run now states its own footprint.
+  const { reclaimSpace: reclaimEndSpace, formatSpace: formatEndSpace } = await import("../ast/index-space")
+  const endSpace = reclaimEndSpace(db, BrainDatabase.getDbPath(pid), { vacuum: false })
+  console.log(`  index space: ${formatEndSpace(endSpace)}`)
   // A run that indexed nothing new is a success, but "✓ indexed 0 files" reads
   // like a failure to anyone who ran `bb index` expecting work to happen. Say
   // what actually happened instead: the project is already current.
