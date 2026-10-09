@@ -1266,7 +1266,11 @@ async function processInProcess(
         // Per-file timeout race — Bun may fire setTimeout even during CPU-bound WASM
         result = await Promise.race([
           parseFile
-            ? parseFile(file, projectPath)
+            // M60 yaml lane (2026-10-09): the IN-PROCESS path hands the analyzers the
+            // project root too, so a file-scoped identity (a document, a module) is scoped
+            // identically whether the file is parsed in a worker or in this process. The
+            // worker path carries it at `pool-worker.ts`'s `contextFor`.
+            ? parseFile(file, projectPath, { projectRoot: projectPath })
             : extractFallbackResult(file, projectPath),
           new Promise<any>((_, reject) =>
             setTimeout(() => reject(new Error("FILE_TIMEOUT")), FILE_TIMEOUT_MS)
@@ -5064,13 +5068,85 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
       resolvedByLeaf += res?.changes || 0
     }
 
+    // Strategy 3c: the SAME ranking the eager resolve used, applied in the pass.
+    //
+    // Strategy 3b binds a leaf only when it is UNAMBIGUOUS (`cnt = 1`), which is right for a
+    // bare name but far too strict for a dotted one: in this repository (200,574 symbols)
+    // almost no leaf is unique, so 3b barely fires. Measured on a full index: the eager resolve
+    // attached 3,257 MORE edges than the pass did (+2,049 dotted, +2,244 colon), because it was
+    // RANKING candidates (definition first, then same file, then same language, then lowest id)
+    // and taking the best. The pass has to rank the same way, or removing it is a coverage
+    // regression — which is exactly what the full-index comparison caught.
+    //
+    // It can, and deterministically: the eager resolve ranked against the symbols stored SO FAR,
+    // so its answer depended on which worker finished first. This runs after the load over the
+    // complete symbol set with the same ORDER BY, so the winner is a function of the corpus.
+    //
+    // The ranking is computed once into a temp table with ROW_NUMBER() (window functions are
+    // already used elsewhere in this file — `_res_name` is built with COUNT(*) OVER), keyed by
+    // (target name, source symbol). The UPDATE then joins on that key. The obvious form — a
+    // correlated ORDER BY ... LIMIT 1 inside the SET — does NOT work here: SQLite answers
+    // `no such column: brain_relationship.source_symbol_id` three levels deep, which aborted the
+    // whole phase and left 45,037 attachments at 33,464 (measured).
+    if (dottedStillNull.length > 0) {
+      rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_leafmap (full TEXT PRIMARY KEY, leaf TEXT NOT NULL)`)
+      rawDb.run(`DELETE FROM _res_leafmap`)
+      const insertLeaf = rawDb.prepare(`INSERT OR IGNORE INTO _res_leafmap (full, leaf) VALUES (?, ?)`)
+      for (const { t } of dottedStillNull) {
+        const leaf = t.split(/[.:]/).pop()
+        if (leaf) insertLeaf.run(t, leaf)
+      }
+      rawDb.run(`DROP TABLE IF EXISTS temp._res_best`)
+      rawDb.run(
+        `
+        CREATE TEMP TABLE _res_best AS
+        SELECT full, src_id, symbol_id, symbol_file FROM (
+          SELECT r.target_external AS full,
+                 r.source_symbol_id AS src_id,
+                 s.id AS symbol_id,
+                 s.file_id AS symbol_file,
+                 ROW_NUMBER() OVER (
+                   PARTITION BY r.target_external, r.source_symbol_id
+                   ORDER BY COALESCE(s.is_declaration, 0) ASC,
+                            (s.file_id = (SELECT b.file_id FROM brain_symbol b WHERE b.id = r.source_symbol_id)) DESC,
+                            (f.language = (SELECT f2.language FROM brain_file f2
+                                            WHERE f2.id = (SELECT b2.file_id FROM brain_symbol b2 WHERE b2.id = r.source_symbol_id))) DESC,
+                            s.id ASC
+                 ) AS rn
+          FROM brain_relationship r
+          JOIN _res_leafmap m ON m.full = r.target_external
+          JOIN brain_symbol s ON s.project_id = ? AND s.name = m.leaf
+          LEFT JOIN brain_file f ON f.id = s.file_id
+          WHERE r.project_id = ? AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL
+        ) WHERE rn = 1
+      `,
+        projectId,
+        projectId,
+      )
+      rawDb.run(`CREATE INDEX IF NOT EXISTS _res_best_idx ON _res_best(full, src_id)`)
+      const r3c = rawDb.run(`
+        UPDATE brain_relationship
+        SET target_symbol_id = b.symbol_id,
+            is_cross_file = CASE WHEN b.symbol_file != COALESCE(
+              (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id), ''
+            ) THEN 1 ELSE 0 END
+        FROM _res_best b
+        WHERE b.full = brain_relationship.target_external
+          AND b.src_id IS brain_relationship.source_symbol_id
+          AND brain_relationship.target_symbol_id IS NULL
+          AND brain_relationship.target_external IS NOT NULL
+          AND brain_relationship.project_id = '${projectId}'
+      `)
+      resolvedByLeaf += r3c?.changes || 0
+    }
+
     const resolved = resolvedBeforeDotted + (r3?.changes || 0) + resolvedByLeaf
     log.debug("relationship resolution completed", {
       resolved,
       resolvedByQualifiedExact: r1?.changes || 0,
       resolvedByUniqueName: r2?.changes || 0,
       resolvedByDottedSuffix: r3?.changes || 0,
-      resolvedByUniqueLeaf: resolvedByLeaf,
+      resolvedByLeafFallback: resolvedByLeaf,
       unresolved,
     })
 
