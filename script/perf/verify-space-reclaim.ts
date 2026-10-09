@@ -61,6 +61,28 @@ check(
 // checkpointWal must be honest about succeeding on an idle connection.
 check("checkpointWal reports success on an idle database", checkpointWal(db) === true)
 
+// ── and it must NOT claim a checkpoint SQLite refused ───────────────────────
+// A refused `wal_checkpoint(TRUNCATE)` does not throw: it returns busy:1 while a
+// reader holds a snapshot of WAL frames the checkpoint would have to discard. The
+// condition needs the WAL to GROW after that snapshot is taken — a reader whose
+// snapshot is current does not block a truncate (the first version of this test got
+// that wrong and passed a checkpoint that was never refused). The first version of
+// checkpointWal ignored the returned row entirely and reported true regardless.
+{
+  const blocker = new Database(dbPath)
+  blocker.exec("BEGIN")
+  blocker.prepare("SELECT COUNT(*) c FROM payload").get() // snapshot at the current WAL frame
+  insert.run(blob) // WAL grows past that snapshot, from another connection
+  insert.run(blob)
+  const refused = checkpointWal(db)
+  const walAfterRefusal = statSync(`${dbPath}-wal`).size
+  blocker.exec("COMMIT")
+  blocker.close()
+  check("a checkpoint refused by a concurrent reader reports false, not true", refused === false)
+  check("and the WAL is still there afterwards", walAfterRefusal > 0, `${walAfterRefusal} bytes`)
+  check("and on an idle connection it reports true again", checkpointWal(db) === true)
+}
+
 const postCheckpoint = spaceReport(db, dbPath)
 check(
   "AFTER a checkpoint the freed pages are visible (this is the ordering fix)",

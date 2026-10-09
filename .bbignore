@@ -84,3 +84,13 @@ validation/m60/target-spelling-register.json
 validation/m60/script-surface-baseline.json
 validation/m49/regex-debt-register.json
 validation/m12/ground-truth/
+
+# ── Local measurement databases and scratch roots ───────────────────────────
+# Found by auditing the index against `git ls-files`: three files —
+# `.bb-bench/status`, `.bb-prof/status`, `.bb-scope/status` — were indexed out of
+# throwaway databases created for the index-speed measurements, because nothing
+# excluded them and bb honours only .gitignore/.bbignore. They are regenerable
+# data, never source, and their rows then outlive the directories they came from
+# (freshness reported them missing until the next run purged them).
+.bb-*/
+

@@ -39,12 +39,25 @@ export interface SpaceReport {
 }
 
 /**
- * Truncate the WAL. Best effort: a checkpoint can be refused while another
- * connection holds a read snapshot, which is normal, not an error.
+ * Truncate the WAL, and report whether SQLite ACTUALLY did it.
+ *
+ * A refused checkpoint does not throw: `PRAGMA wal_checkpoint(TRUNCATE)` returns
+ * a row `{busy, log, checkpointed}` and sets `busy: 1` when another connection
+ * holds a read snapshot — the normal state of this machine, with a live MCP
+ * server attached. The first version of this function discarded that row and
+ * returned `true` unconditionally, so `SpaceReport.checkpointed` could claim a
+ * checkpoint SQLite had refused. Verified against a concurrent read snapshot:
+ * the pragma returns `{busy: 1, log: 3, checkpointed: 3}`, the WAL stays at
+ * 12,392 bytes, and only after the reader releases does it return `busy: 0` and
+ * truncate to 0.
  */
 export function checkpointWal(rawDb: any): boolean {
   try {
-    rawDb.pragma("wal_checkpoint(TRUNCATE)")
+    const result = rawDb.pragma("wal_checkpoint(TRUNCATE)")
+    const row = Array.isArray(result) ? result[0] : result
+    if (row && typeof row === "object" && "busy" in row) return Number(row.busy) === 0
+    // A driver that returns no row cannot be asked; the caller still gets the
+    // measured WAL size afterwards, which is the number that matters.
     return true
   } catch {
     return false
