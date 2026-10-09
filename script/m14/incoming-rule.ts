@@ -21,10 +21,21 @@
  * key must mean the same thing fleet-wide or the number is not comparable between lanes.
  *
  * `zigExternalRef` and `nimStdlibModule` are read from the committed analyzers:
- *   real-zig-analyzer.ts:2281 zigExternalReceiverPath, measured marking 2,189 recoverable
- *     + 5,009 external edges (validation/m14/fixtures/zig/measurements/incoming-abc-400-p30.json)
+ *   real-zig-analyzer.ts zigExternalReceiverPath — p30's numbers were RE-DERIVED on
+ *     2026-10-09 and the citation below was stale in BOTH halves. Same draw rule as p30
+ *     (`find <root> -name '*.zig' | sort | head -400`), one process per arm:
+ *       marked edges           5,009 -> 4,688
+ *       recoverable (leaf published)  2,189 -> 8,021
+ *     and the gate's verdict on the marks was 565 marked edges = extOK 306 · extFAIL 259,
+ *     where EVERY refuted claim has exactly ONE dot and every 2+ dot claim verifies
+ *     (1 dot: 1 ok / 259 refuted · 2 dots: 223/0 · 3 dots: 60/0 · 4 dots: 21/0 · 5 dots: 1/0).
+ *     So the mechanism is sound where the owner is itself qualified and over-reaches where
+ *     the owner is a single segment the project may well publish — the lane's own
+ *     `external-claim-audit.ts` names the declaration answering each refuted claim.
+ *     Artifacts: validation/m14/fixtures/zig/measurements/{incoming-abc-400-p30.json,
+ *     external-claim-audit*}; re-derivation in commit 41c5e4e43.
  *   real-nim-analyzer.ts  meta.nimStdlibModule, measured marking 66 of 485 unbindable
- *     (docs/analyzers/real-nim-analyzer.md:435-449)
+ *     (docs/analyzers/real-nim-analyzer.md:435-449) — NOT yet re-derived; treat as p30 was.
  */
 // The binding separator is a FAMILY constant (src/ast/types.ts) rather than a local copy: the
 // analyzer spells a binding with it and this rule checks that spelling, so two definitions
