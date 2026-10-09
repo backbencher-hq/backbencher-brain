@@ -97,6 +97,18 @@ const SHELL_RESERVED_WORDS = new Set([
 // variables, so they never become Uses edges.
 const SPECIAL_VAR_PUNCTUATION = new Set(["@", "*", "?", "$", "#", "!", "_"])
 
+/**
+ * BD11 -- an `export` whose NAME is decided at run time.
+ *
+ * `export "_${ucname}_COMPLETE=bash_source"` is a real declaration site with no statically
+ * known name: the identifier the shell binds is assembled from a variable's value. It cannot
+ * become an edge (a target containing `$` is a name no symbol can have), so it is recorded as
+ * a pattern -- the same treatment BD4 gives a computed command word, and for the same reason:
+ * the read of the deciding variable IS emitted as `uses`, so the dependency is not lost, and
+ * the site is visible to a reader instead of vanishing between the two.
+ */
+const COMPUTED_EXPORT_NAME_PATTERN = "Computed Export Name"
+
 // Bash variables the shell itself defines. Referencing one is a fact about the
 // runtime, not a project declaration, so it is recorded as a read of a known
 // shell name rather than left to look like an undeclared project variable.
@@ -634,7 +646,7 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.extractAssignment(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners, declSites)
         }
       } else if (node.type === "declaration_command") {
-        this.extractDeclaration(node, symbols, enclosingFunction() || scriptName, functionParams, declaredSymbols, scopeOwners, addRel, declSites)
+        this.extractDeclaration(node, symbols, enclosingFunction() || scriptName, functionParams, declaredSymbols, scopeOwners, addRel, declSites, patterns)
       } else if (node.type === "command") {
         this.extractImplicitBinding(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners, declSites)
         this.extractCommand(node, symbols, imports, patterns, {
@@ -2001,6 +2013,9 @@ private extractAssignment(
       metadata?: Record<string, unknown>,
     ) => void,
     declSites: Map<string, { owner: string; line: number; kind: string }[]>,
+    /** BD11: a declaration site the extractor could see and could NOT name is a pattern,
+     *  not a silent drop -- `export "_${ucname}_COMPLETE=..."` names its variable at run time. */
+    patterns: Set<string>,
   ) {
     const keyword = node.child(0)?.text ?? ""
     if (!DECLARATION_KEYWORDS.has(keyword)) return
@@ -2159,8 +2174,111 @@ private extractAssignment(
         } else {
           emit(child.text, this.nodeToRange(child), childLine)
         }
+      } else if (child.type === "string" || child.type === "concatenation") {
+        // BD11: `export "NAME=value"` is ONE node, and it is not an assignment.
+        //
+        // The grammar hands `export NAME=value` to this loop as a `variable_assignment` child
+        // holding a `variable_name`; it hands `export "NAME=value"` as a SINGLE `string` node
+        // with no `variable_assignment` and no `variable_name` anywhere beneath it, so neither
+        // branch above could ever see it. The form was therefore SILENT -- no symbol, no
+        // `exports` edge, no diagnostic -- while the unquoted form of the same statement
+        // worked.
+        //
+        // MEASURED, corpus-wide (`probe-bash-silent-types.mts --corpus`, 2,962 .sh/.bash files):
+        // 1,598 `exports` edges, and the site-by-site differ (`probe-bash-export-site-diff.mts`)
+        // matched 1,540 of 1,548 declaration sites with the 8 unmatched ALL computed names.
+        // This branch closes the latent shape gap; it does not move the corpus edge count,
+        // because no static quoted site occurs in this corpus -- so the FIXTURE pins it.
+        //
+        // A name assembled from an expansion (`export "_${ucname}_COMPLETE=bash_source"`, the
+        // shape of both sites in the pinned repository) is NOT a name: no symbol can answer to
+        // it, and `exports -> _${ucname}_COMPLETE` would be the fabricated target BD4 refuses
+        // for a computed command word. Those sites emit nothing and are recorded as a pattern,
+        // while the expansion's own `uses` edge still carries the dependency.
+        const name = this.staticNameOfDeclarationString(child)
+        if (name) {
+          if (hasFunctionFlag) {
+            this.markFunctionExported(symbols, name)
+            addRel(owner, name, ASTEngine.RelationshipType.Exports, 1.0, childLine, {
+              bashSpecific: true,
+              exportForm: "function",
+            })
+          } else {
+            emit(name, this.nodeToRange(child), childLine)
+          }
+        } else if (isExport) {
+          patterns.add(COMPUTED_EXPORT_NAME_PATTERN)
+        }
       }
     }
+  }
+
+  /**
+   * BD11 -- the statically-known name inside a declaration whose whole argument is ONE string
+   * node (`export "NAME=value"`, `export "NAME"`, `export 'NAME=value'`).
+   *
+   * The name is read from the node's LITERAL run: the characters up to the first `=` that are
+   * produced by `string_content`/`word`/`raw_string`, with the quotes removed. The moment an
+   * expansion appears before the `=`, the name is decided at RUN TIME and `null` is returned --
+   * there is no name to publish, and publishing the template would be a target no symbol can
+   * ever have.
+   *
+   * FAIL-CLOSED: an unrecognised child shape ends the literal run rather than contributing to
+   * it, so a grammar change makes this quieter instead of wrong. `isShellIdentifierName` is the
+   * same identifier test the rest of the declaration path uses, so a value that is not a shell
+   * name (`export "1=2"`, `export "a b=c"`) is refused here too rather than published.
+   */
+  private staticNameOfDeclarationString(node: Node): string | null {
+    if (node.type === "raw_string" || node.type === "ansi_c_string") {
+      return this.nameFromLiteralRun(this.stripQuotes(node.text))
+    }
+    let literal = ""
+    let computed = false
+    const scan = (n: Node): void => {
+      for (let i = 0; i < n.namedChildCount && !computed; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        switch (c.type) {
+          case "string_content":
+          case "word":
+            literal += c.text
+            break
+          case "raw_string":
+          case "ansi_c_string":
+            literal += this.stripQuotes(c.text)
+            break
+          case "simple_expansion":
+          case "expansion":
+          case "command_substitution":
+          case "arithmetic_expansion":
+            computed = true
+            break
+          case "concatenation":
+          case "string":
+            // `export "A"=1` arrives as a concatenation of a quoted and an unquoted half; it is
+            // SCANNED rather than treated as computed, because its first half is the literal the
+            // name is read from.
+            scan(c)
+            break
+          default:
+            // An unrecognised shape is not evidence of a literal name: stop, publish nothing.
+            return
+        }
+        if (literal.includes("=")) return
+      }
+    }
+    scan(node)
+    if (computed) return null
+    return this.nameFromLiteralRun(literal)
+  }
+
+  /** The identifier before the first `=` in a literal run, or the whole run when it holds no
+   *  `=` (a quoted BARE name: `export "NAME"`). Anything that is not a shell identifier is
+   *  refused -- including the empty string. */
+  private nameFromLiteralRun(literal: string): string | null {
+    const eq = literal.indexOf("=")
+    const name = eq >= 0 ? literal.slice(0, eq) : literal
+    return isShellIdentifierName(name) ? name : null
   }
 
   private collectPositionalFromValue(
