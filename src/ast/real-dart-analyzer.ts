@@ -2084,6 +2084,26 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // row can say which of the two resolved it. Production supplies no index for
     // `.dart`, so there the two are the same set and every row says false.
     const fileTypes = new Set(visibleTypes)
+    // LIBRARY SCOPE — the THIRD scope a bare name binds in, and the one that makes a bare
+    // target CORRECT rather than a receiver the run failed to type.
+    //
+    // Dart resolves an unqualified callee against the enclosing type's members FIRST and the
+    // library's top-level declarations second, so `configure()` inside a class whose chain does
+    // not declare `configure` does not name a member of any type: it names a library-scope
+    // declaration, whose own spelling IS the bare name in this family's key space (a Dart
+    // library is its URI, and a library-scope symbol carries no owner). Counting those rows in
+    // the receiver cut would file "already spelled as correctly as the family allows" under "no
+    // static name reaches this", which is the opposite conclusion a roadmap should draw.
+    //
+    // Type names are excluded because `Foo()` is a CONSTRUCTION and the instantiates arm owns
+    // it; the bare-callee arm never sees it.
+    const libraryScope = new Set<string>()
+    for (const s of symbols) {
+      if (s.ownerName) continue
+      if (fileTypes.has(s.name)) continue
+      if (s.kind === ASTEngine.SymbolKind.EnumMember) continue
+      if (s.name) libraryScope.add(s.name)
+    }
     for (const t of projectIndex?.typeKinds?.keys?.() ?? []) visibleTypes.add(String(t))
 
     // DT-A (first review): in-file named constructors (`Foo.named`) — the
@@ -2213,21 +2233,53 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(dt)) fieldTypeByField.set(`${s.ownerName}.${s.name}`, dt)
     }
     /**
-     * A QUALIFIED TARGET, or null. The owner must be a type this run can SEE, and the
-     * qualified name it produces must be a declaration that exists — this file's symbol
-     * table, or the project index's member table.
+     * A QUALIFIED TARGET or null, AND WHY — the second half is the RECEIVER AVAILABILITY CUT.
+     *
+     * The cut is the decomposition the roadmap is written on: of the edges whose target stayed
+     * a bare member name, how many have a receiver whose type this run could not see (an
+     * index question), how many name a member whose declaring type is outside the run (a
+     * different index question), and how many have NO type name at the site at all (`dynamic`,
+     * an untyped parameter, a call result, an index expression) — which is bucket 3's true
+     * population, and the only one of the three that no amount of indexing can move.
+     *
+     * IT IS REPORTED HERE, INSIDE THE FUNCTION THAT DECIDES, rather than derived afterwards in
+     * a census. A second walker that re-asks "could this have been qualified" would be a second
+     * copy of this rule, and this repository's repeated finding is that two copies of one rule
+     * are two rules — the copy the CENSUS used would be the one that was wrong. The cause
+     * strings are the three null-returning branches below, in order:
+     *
+     *   receiverUnnamed            no owner text at the site (a call result, an index expression,
+     *                              a cascade, a bare callee in library scope). Not typeable here.
+     *   receiverTypeOutsideRun     the owner text names something, but this run cannot see a type
+     *                              declaration for it (an imported type, a prefix, a lowercase
+     *                              receiver whose declared type is elsewhere).
+     *   receiverInFileNotSpelled   the declaring owner IS in this file, and the qualified
+     *                              spelling is not in this file's published symbol table — the
+     *                              one branch that is an analyzer gap rather than missing
+     *                              knowledge, and it is kept separate for exactly that reason.
+     *   receiverMemberOutsideRun   the type is visible here and does not declare the member, so
+     *                              the DECLARING type (a superclass, a mixin, a mixin's own base)
+     *                              is outside the run.
+     *   libraryScopeCallee         the bare name is a LIBRARY-scope declaration of this file —
+     *                              not a receiver problem at all. Set by the bare-callee arm only
+     *                              (see `libraryScope`), because a receiver-qualified member never
+     *                              falls back to library scope and so can never mean this.
      */
-    const qualifiedTarget = (ownerText: string | null, member: string): string | null => {
-      if (!ownerText || !member || !visibleTypes.has(ownerText)) return null
+    const qualifiedTarget = (
+      ownerText: string | null,
+      member: string,
+    ): { target: string | null; cause: string | null } => {
+      if (!ownerText || !member) return { target: null, cause: "receiverUnnamed" }
+      if (!visibleTypes.has(ownerText)) return { target: null, cause: "receiverTypeOutsideRun" }
       const declared = declaringOwner(member, ownerText, membersByOwner)
       if (declared) {
         // the in-file spelling is verified against what the file PUBLISHES, not rebound
         const spelling = `${declared}.${member}`
-        if (fileQualified.has(spelling)) return spelling
-        return null
+        if (fileQualified.has(spelling)) return { target: spelling, cause: null }
+        return { target: null, cause: "receiverInFileNotSpelled" }
       }
-      if (indexDeclares(ownerText, member)) return `${ownerText}.${member}`
-      return null
+      if (indexDeclares(ownerText, member)) return { target: `${ownerText}.${member}`, cause: null }
+      return { target: null, cause: "receiverMemberOutsideRun" }
     }
     /**
      * A declared type name this pass can POINT AT, or undefined. `Widget?` is the same
@@ -2543,10 +2595,19 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               // claim, so the spelling itself says "a binding" and cannot be a declaration's
               // name (see `src/ast/types.ts` and `local-read-phantom.ts`).
               const isBinding = locals.has(leaf)
-              const qualified = isBinding ? null : qualifiedTarget(owner, leaf)
+              const q0 = isBinding ? { target: null, cause: null } : qualifiedTarget(owner, leaf)
+              // THE LIBRARY-SCOPE REFINEMENT, applied only where Dart actually falls back to
+              // library scope. A receiver-qualified member (`ext.frob()`) never binds to a
+              // top-level `frob`, so the chain and selector arms keep their cause as written;
+              // an unqualified callee does fall back, and the fallback is what the fourth case
+              // names. Without this the cut would report a superclass outside the run for a
+              // top-level function declared in the very same file.
+              const q = q0.cause === "receiverMemberOutsideRun" && libraryScope.has(leaf)
+                ? { target: null, cause: "libraryScopeCallee" }
+                : q0
               relationships.push({
                 source: callSource,
-                target: qualified ?? (isBinding ? `${callSource}${BINDING_SEP}${leaf}` : leaf),
+                target: q.target ?? (isBinding ? `${callSource}${BINDING_SEP}${leaf}` : leaf),
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 line_number: this.nodeLine(leafNode),
@@ -2556,7 +2617,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // edge.
                 metadata: {
                   ...(isBinding ? { isLocalRead: true, localBinding: true } : {}),
-                  ...(qualified ? { qualifier: "enclosing" } : {}),
+                  ...(q.target ? { qualifier: "enclosing" } : {}),
+                  // THE RECEIVER CUT, on the rows that stayed bare and only there — a row that
+                  // resolved already says how it resolved (`qualifier`), and a binding has no
+                  // receiver question to answer.
+                  ...(!isBinding && q.cause ? { receiverCause: q.cause } : {}),
                 },
               })
             }
@@ -2603,10 +2668,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             // the leaf, and a lowercase link (`a.b.c()`) does not name a type, so the
             // lookup refuses it and the target stays the bare leaf.
             const ownerCand = links.length > 1 ? before : headOwner(head, owner, localTypes)
-            const qualified = qualifiedTarget(ownerCand, method)
+            const q = qualifiedTarget(ownerCand, method)
             relationships.push({
               source: callSource,
-              target: qualified ?? method,
+              target: q.target ?? method,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               line_number: this.nodeLine(calleeNode),
@@ -2627,7 +2692,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               // often `locals.has(method)` is true where no receiver member exists.
               metadata: {
                 ...(locals.has(method) ? { isLocalRead: true } : {}),
-                ...(qualified ? { qualifier: "chain" } : {}),
+                ...(q.target ? { qualifier: "chain" } : {}),
+                ...(q.cause ? { receiverCause: q.cause } : {}),
               },
             })
           }
@@ -2662,16 +2728,16 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             } else {
               // `Color.red`, `M.off`, `C.total`, `this.count`, `b.count` — the source
               // names the owner and the analyzer used to drop it (see `qualifiedTarget`).
-              const qualified = qualifiedTarget(headOwner(head, owner, localTypes), member)
+              const q = qualifiedTarget(headOwner(head, owner, localTypes), member)
               relationships.push({
                 source: callSource,
-                target: qualified ?? member,
+                target: q.target ?? member,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.9,
                 line_number: this.nodeLine(memberNode),
-                metadata: qualified
+                metadata: q.target
                   ? { isMemberRead: true, qualifier: "head" }
-                  : { isMemberRead: true },
+                  : { isMemberRead: true, ...(q.cause ? { receiverCause: q.cause } : {}) },
               })
             }
           }
@@ -2718,16 +2784,16 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { isNamedConstructor: true, isConstantPattern: true },
             })
           } else {
-            const qualified = qualifiedTarget(head, member)
+            const q = qualifiedTarget(head, member)
             relationships.push({
               source: callSource,
-              target: qualified ?? member,
+              target: q.target ?? member,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               line_number: this.nodeLine(n),
-              metadata: qualified
+              metadata: q.target
                 ? { isMemberRead: true, isConstantPattern: true, qualifier: "pattern" }
-                : { isMemberRead: true, isConstantPattern: true },
+                : { isMemberRead: true, isConstantPattern: true, ...(q.cause ? { receiverCause: q.cause } : {}) },
             })
           }
         }
@@ -2782,16 +2848,16 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             // inherited bare read still emits no edge, which is a separate question from
             // what the edge is CALLED), so the owner is known and the qualified name is
             // checkable against what this file publishes.
-            const qualified = qualifiedTarget(owner, txt)
+            const q = qualifiedTarget(owner, txt)
             relationships.push({
               source: callSource,
-              target: qualified ?? txt,
+              target: q.target ?? txt,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.6,
               line_number: this.nodeLine(n),
-              metadata: qualified
+              metadata: q.target
                 ? { isBareRead: true, qualifier: "enclosing" }
-                : { isBareRead: true },
+                : { isBareRead: true, ...(q.cause ? { receiverCause: q.cause } : {}) },
             })
           } else if (locals.has(txt)) {
             // DT2: bound locals/params read as values (OC-E parity).
