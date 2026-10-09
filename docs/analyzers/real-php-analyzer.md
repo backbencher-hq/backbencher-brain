@@ -3318,3 +3318,137 @@ hole). That file is the Lead's, so it is named here as the next step rather than
   php targets the owner lookup can even attempt, and the claim available to them
   (`importProjectFile`) REFUTES a missing file rather than declaring it external, so they are
   left unmarked and reported.
+
+---
+
+# M14 LAPTOP-B ROUND 2 — the ambiguity column classified, and both scopes of the unresolved one
+
+Appended again, not a rewrite. Round 1 (above) settled the two SILENT types and the external
+marker; this round answers the two columns that did not move, and records the one place where
+MY OWN INSTRUMENT was wrong.
+
+## 0. The rule fix, reproduced
+
+`verifyExternalClaim` no longer requires a dotted owner (the Lead's `7321881c1`, implementing
+the fix this lane proposed). Re-run on this lane:
+
+```
+$ npx tsx script/m14/incoming-gate.ts php php 60
+TOTAL   3257   639 resolved   135 amb(decl)   81 amb(kind)   2395 unresolved   88 extOK   0 ext?   0 extFAIL
+VERDICT: FAIL — 135 ambiguous + 2395 unresolved of 3257 edges ...
+instrument self-test: PASS (control fired)
+```
+
+**extOK 88, ext? 0, extFAIL 0** — the exact 88 claims that were previously unverifiable are now
+verified by the project. Nothing in this lane changed to get there; the 88 are the same edges
+round 1 marked, and the marker only became readable when the key-space question was asked about
+the TARGET for a bare name instead of about a dot-owner that php does not have.
+
+## 1. The 135 ambiguous — CLASSIFIED, then RULED
+
+`validation/m14/fixtures/php/project-scope-census.mts` now carries an OWNER dimension in its key
+space — a declaration's identity is `(file, owner)`, not just the file — and sorts every
+ambiguous name into the four classes the powershell lane used, so two lanes' rulings can be read
+side by side:
+
+```
+SCOPE A — the gate's 60-file sample: 135 ambiguous edges over 20 distinct names
+    multiFile                 11 names    68 edges  (50.4%)
+    oneFileSameOwnerDiffKind   8 names    66 edges  (48.9%)
+    oneFileDiffOwner           1 name      1 edge   ( 0.7%)
+    sameKind                   0 names     0 edges
+
+SCOPE B — whole phpunit: 80,726 ambiguous edges over 1,876 distinct names
+    multiFile               1661 names 78184 edges  (96.9%)
+    oneFileSameOwnerDiffKind 214 names  2541 edges  ( 3.1%)
+    oneFileDiffOwner           1 name      1 edge   ( 0.0%)
+    sameKind                   0 names     0 edges
+```
+
+**`sameKind` — the only class an identity defect could hide in — is EMPTY at BOTH scopes.** That
+emptiness is the falsifier for the ruling, and it is why the column is not chased: every
+ambiguous edge is either a name declared in more than one file, or a method and a property
+sharing a name inside one class — legal PHP, and the family's member-identity question in its
+smallest form.
+
+The mass is the language's own semantics. `$obj->member` and `$obj->run()` dispatch on a VALUE
+whose type a single file cannot know:
+
+```
+    amb 6638x  metadata        4 decls in 3 file(s)   [method|property] MEMBER-ONLY
+    amb 6572x  assertFalse     2 decls in 2 file(s)   [function|method]
+    amb 2404x  assertSame      2 decls in 2 file(s)   [function|method]
+    amb 1259x  telemetryInfo 208 decls in 113 file(s) [method|property] MEMBER-ONLY
+    amb  781x  __construct   654 decls in 653 file(s) [method]          MEMBER-ONLY
+```
+
+73.0% of ambiguous edges (58,901) name MEMBER-ONLY names. Two shapes are worth naming because
+they are NOT defects either: `assertSame`/`assertFalse`/`assertTrue` are published TWICE by
+phpunit itself — as `PHPUnit\Framework\Assert::assertSame` and as the global `assertSame()` in
+`src/Framework/Assert/Functions.php` — so a bare target genuinely denotes two declarations; and
+`PHPUnit\Framework\TestCase` reads 13 declarations across 13 files because vendored copies under
+`tools/.phpstan/vendor/**` declare it too.
+
+The same edges read 135 against a 60-file key space and 80,726 against the whole project with
+NOTHING about the analyzer changing between the two numbers: the column is a key-space fact as
+much as an analyzer one, and reporting either number alone would misstate the lane.
+
+THE REDUCTION PATH, priced and not taken: emitting owner-qualified member targets
+(`Owner.member`) where the receiver's owner is knowable would collapse the multiFile mass. It is
+not done here because the differential's oracle (`script/m14/differential.ts` `derivePhpEdges`)
+emits BARE member targets and the store's resolution plus this lane's fixtures pin that spelling
+— changing the analyzer alone would manufacture differential mismatches that no file in this
+lane's write scope can fix. Recorded as PHPD42 so the next round starts from the price.
+
+## 2. The 2,395 unresolved — BOTH scopes, with the budget share measured
+
+```
+SAMPLE SCOPE   php php 60          3,257 edges   2,395 unresolved (73.5%)  + 88 external-verified
+               claims ignored                    2,483 unresolved
+                 of which key-space budget       1,325  (53.4%) — declared in the corpus, just
+                                                         not in this run's 60 files
+PROJECT SCOPE  php php 0 --repo=phpunit
+                                133,468 edges  14,878 unresolved (11.1%)  + 4,437 external-verified
+               claims ignored                   19,315 unresolved
+                 path-shaped (a FILE path)          172
+                 declared in THIS project             0   <- where a DEFECT would appear
+                 declared in ANOTHER repo         2,138
+                 declared NOWHERE in the corpus  17,005   (4,241 php-src names, 346 distinct)
+```
+
+Read together: **the sample inflates the unresolved RATE by 6.6x (73.5% of edges against 11.1%)
+and 53.4% of its raw column is pure key-space budget.** The project-scope budget share is zero by
+construction, and the 19,315 that remain contain NO resolution defect: every one of them names
+something the project does not declare. Of those, the analyzer can PROVE externality for the
+4,241 php-src-named edges (it carries the table) and cannot for the rest — one file cannot know
+whether a sibling file declares `subscribableDispatcher` — so they stay reported and unmarked
+rather than guessed at.
+
+## 3. MY INSTRUMENT WAS WRONG, and the corpus said so
+
+The first run of this probe reported **2 "declared in THIS project (would be a DEFECT)"** rows,
+named `A.php` and `B.php`. They were the probe's, not the analyzer's: the corpus contains
+`tests/end-to-end/regression/6294/IssueTest6294.php:18` — `require_once 'A.php';` — and
+`tests/end-to-end/regression/6294/A.php` is the file declaring `class A`. The probe split every
+target on its last dot, so an INCLUDE PATH got "owner" `A`, found `class A` in the same project,
+and called it a defect. It is the exact mistake the Lead's rule fix names: a path cannot be a
+published name, so a lookup returning 0 — or 1 — proves nothing. Path-shaped targets now have
+their own bucket (172 at project scope) and are never called defects, and the defect column reads
+**0**.
+
+Also added from the dart lane's warning: the probe counts DEGRADED parses (`fallback`, or
+`analysisVersion 2.0-basic-fallback`) and prints a banner if the count is non-zero. **This run:
+degraded 0**, so no number in this section is measured on a fallback path.
+
+## What this round could NOT determine
+
+- **Which of the multiFile ambiguous edges could be owner-qualified with data the analyzer
+  already holds.** That needs a per-edge receiver-type probe, and it is only worth measuring if
+  the oracle in `script/m14/differential.ts` is in scope — until then the answer cannot change
+  the code.
+- **Whether the 2,138 in-another-repo and 17,005 nowhere edges are external or merely
+  out of this project's view.** One file cannot know; the corpus-wide answer is not a fact the
+  analyzer has.
+- **Whether the 172 path-shaped targets should carry a file claim.** The one claim available
+  (`importProjectFile`) REFUTES a missing file rather than declaring it external, so it is
+  counted against the lane — left unmarked and reported.
