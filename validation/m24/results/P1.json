@@ -218,7 +218,7 @@
       },
       {
         "file": "script/m30/verify-first-run-hook.ts",
-        "line": 402,
+        "line": 448,
         "kind": "non-portable-binary",
         "matched": "sha256sum",
         "api": "execFileSync",
@@ -259,7 +259,7 @@
     ],
     "ok": true
   },
-  "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
+  "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
   "sourceFingerprint": "8f156b68257952e2e20aa72585047fe6348c926646522ea0eb7e08a2899e1ed9",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -270,7 +270,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-10-09T02:30:42.446Z",
+  "generatedAt": "2026-10-09T15:16:00.426Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -284,7 +284,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-09T02:30:42.447Z",
-    "contentSha256": "0c9c93b890419018aa7993c4793d7e23d57c45b1a79223dfa8d3e38db7dc2ee8"
+    "sealedAt": "2026-10-09T15:16:00.428Z",
+    "contentSha256": "af310a4e7c391d1f458cc402bb64610066702f2a6f60e0970f37bf738c753f6e"
   }
 }
