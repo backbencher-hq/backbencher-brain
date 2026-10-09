@@ -5369,3 +5369,87 @@ The 41 → 42 is the fix's own footprint and not corpus drift: an unnamed extens
 not an identifier (`extension on AnyNotifier<Object?, Object?>`) used to publish NO symbol at all, so
 its members leaked into whatever scope enclosed it; it now publishes the bare `unnamed_extension` and
 owns them — java's `anonymous_class` fallback, for java's reason.
+
+---
+
+## 2026-10-09 — three measurements that change how this lane's numbers must be read
+
+### 1. The seven "fixture regressions" were STALE EXPECTATIONS, and the analyzer was never dirty
+
+`npx tsx script/m14/run-fixtures.ts --lang dart` read `{"dart":{"pass":21,"fail":7}}` with
+`FIXTURE REGRESSION dart: 0 -> 7 failures`. All seven failures were rows whose target spelled a
+binding `<callable>#<binding>`. The analyzer does not spell it that way any more, and it is right:
+`BINDING_SEP` (`src/ast/types.ts`) is **U+0000**, changed from `#` by commit `c95c8485f` because `#`
+is a real key character in nine other lanes (a CSS id selector, a markdown label, an HCL address), so
+`verifyBindingClaim` had to reject every binding claim on any run that published one. This analyzer
+spells `${callSource}${BINDING_SEP}${leaf}` (its `calls` and `uses` binding arms).
+
+So the FIXTURES were corrected, not the analyzer — 28 rows across 7 expectation files (25
+`expectRelationships`/`expectRelationshipCount` + 3 `forbidRelationships`). The three forbids matter
+most: a forbid written with `#` can no longer catch the dedup break it exists for, so the separator
+change had silently made them **inert**. Each file gains `correction_2026_10_09` naming the commit,
+the reason and the numbers. After: `{"dart":{"pass":28,"fail":0}}`.
+
+Also measured, because the brief asserted the opposite: `git status --short
+src/ast/real-dart-analyzer.ts` is EMPTY and `.tmp-probe/recovered-dirty-1820/` contains no dart
+analyzer. There was no unowned analyzer edit to adjudicate.
+
+### 2. All eight regex literals are gone, and the replacement is proven output-identical
+
+This lane carried 8 of the fleet no-regex gate's 12 usages — the largest single share. Three distinct
+patterns, three character-wise replacements:
+
+| regex | sites | replacement |
+|---|---|---|
+| `/^[A-Za-z_$][A-Za-z0-9_$]*$/` | 4 | `isPlainIdentifier` (char-code walk, same class, sibling of the existing `isDottedIdentifier`) |
+| `/\?+$/` | 4 | `stripNullableSuffix` (backward walk, end-anchored, all of them) |
+| `/^[A-Z]/` | 1 | `isCapitalized` — ALREADY in this file |
+
+Verification, four instruments: `npx tsx script/m12/verify-regex-census.ts` reports the 8 entries
+absent from the worktree; `bash script/m14/no-regex-gate.sh` lists only `real-yaml-analyzer.ts`'s 4
+once its census artifact is regenerated (the artifact describes HEAD blobs, so it reads STALE for this
+lane's 8 between the fix and the regeneration — that is the verifier working, not a dart regex);
+`run-fixtures.ts --lang dart` stays 28/0; and
+`BB_DART_DIFF_REV=ab6dab8e9 BB_DART_DIFF_N=300 npx tsx validation/m14/fixtures/dart/regex-fix-differential.ts`
+reports **IDENTICAL 300, DIFFERENT 0, FAILED 0** comparing the FULL output of both revisions (every
+symbol and every relationship, metadata included). Counts would not have been enough: "nearly the
+same" is a behaviour change.
+
+### 3. The production path was degraded by unguarded dart-only debug writes — and it undercounted this lane 102.7×
+
+**SUPERSEDED, and the supersession is the point of this paragraph.** The finding below was real and
+the numbers in it were real, and they are NO LONGER the lane's numbers: the pool worker's owner fixed
+the writes (commit `97cb8a581`) and the environment that produced them now reports `parse failures: 0
+degraded (regex fallback): 0` with the full denominator. The env var this section recommends is no
+longer needed, and every dart figure in this document's history measured through the degraded path
+should be re-taken. Kept because the *shape* of the failure — an environment difference that silently
+substitutes a different extractor, and a denominator 100× too small — is the reusable lesson.
+
+`src/ast/pool-worker.ts` wrote a dart-only debug line with `fs.appendFileSync` and no `try/catch`
+(unlike the parse-errors write a few lines above it). Where the bb data dir is not writable, the write
+threw EROFS *after a successful parse*, the worker's catch fell into `extractFallback`, and every dart
+file degraded to a regex extractor's handful of rows. The gate said so in a line that is easy to miss:
+
+```
+parse failures: 0   degraded (regex fallback): 60
+```
+
+Controlled A/B, **the same 60 files and the same stride**, changing only `BB_DATA_DIR`:
+
+| arm | TOTAL edges | ambiguous | unresolved | verdict line |
+|---|---|---|---|---|
+| degraded path (data dir read-only) | **79** | 12 | 0 | FAIL — 12 ambiguous + 0 unresolved of 79 |
+| full path (`BB_DATA_DIR` writable) | **8,112** | 530 | 2,273 | FAIL — 530 ambiguous + 2,273 unresolved of 8,112 |
+
+102.7× the denominator from the environment alone. Re-measured after the fix, with NO env var:
+
+```
+npx tsx script/m14/incoming-gate.ts dart dart 60
+  parse failures: 0   degraded (regex fallback): 0
+  TOTAL 8112 … VERDICT: FAIL — 530 ambiguous + 2273 unresolved of 8112 edges
+```
+
+Every earlier `12 ambiguous + 0 unresolved of 79` statement about this lane measures the fallback
+extractor and not this analyzer. The corrected incoming figures are **530 ambiguous and 2,273
+unresolved of 8,112 edges**, and the column work starts from those.
+
