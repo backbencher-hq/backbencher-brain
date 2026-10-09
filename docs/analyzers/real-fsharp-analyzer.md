@@ -52,7 +52,7 @@ over upstream tree-sitter-fsharp:
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ | `app_expression`/`application_expression` → the callee name, **plus a BARE pipeline** (`infix_expression` whose `infix_op` token is a pipe) since FS-A6 (M60 pass 2) — single pass, deduped by identity in the harness. **FS-A6, and the doc's own pipe claim was half true until it was measured:** the pipe `a \|> List.map` → `map` was read only when the pipeline sat in CALLEE position (`f (x \|> g)`), because only the `application_expression` branch had an `infix_expression` arm. The shape F# is actually written in — a `let` whose BODY is the pipeline — produced nothing: **1,043 bare `\|>` nodes with a NAME on the right, against 580 read in callee position, on a 300-file corpus draw**, i.e. ~11% of the corpus's calls were absent from the label. The operator's TOKEN decides which side carries the callee (`\|>` `\|>>` `>>=` apply the right operand, `<\|` `<<` the left) and `>>` `>>>` `>=>` `<<<` are deliberately absent because they COMPOSE two functions and call neither. **FS-A4, in the same round:** the label was also gated on `fnName.length > 1`, which no property of the program justifies and which dropped every call to a one-letter function — **5,313 occurrences over 6,619 files in 735 files** (2.2% of the label's 246,327 full-extent edges), and the dropped population resolves BETTER than the emitted one (32.4% in-file on a 120-file draw against 22.2%). **Source (owner) is the enclosing callable**, and which callables count is the substance of FS-D10/D12/D13: a top-level `let` owns its initialiser's calls *whatever its kind* (a `let` with no arguments is a Variable, and a script top level has no enclosing callable, so keying on kind dropped 2,520 rows per 200 files); a `default` implementation owns its body's calls (it publishes no symbol — the abstract signature is canonical — but the body belongs to it); an explicit `with get, set` property owns its **setter**'s calls. A recursive `calls f -> f` is emitted: a self-CALL is a fact about the program, while a self-`contains` is not, and the refusal is per-label. **THE TARGET IS NOT ALWAYS THE LEAF, and the pass-4 sentence that said it was is superseded by passes 5 and 6 below.** A `calls` target is spelled by one rule with three outcomes: the identity this file PUBLISHED when the written path (or, for a 3+-segment path, its last two segments) is one of them (`Message.SetInput`, `Seq.map`, `Widget.RenderTo`); `${qualifierLeaf}.${leaf}` when the qualifier the source wrote is module-LIKE and the identity is not provable in-file (`Microsoft.FSharp.Collections.Seq.map` → `Seq.map`, `Array.fold` → `Array.fold` — provably never worse than the leaf, because strategy 3's tail of a two-segment string IS the leaf); and the LEAF otherwise, always with `metadata.targetResolution` naming the class (`local-binding`, `bare-external`, `receiver-value`, `call-chain-receiver`, `base-member-external`, `in-file-declaration`, `in-file-qualified`, `self-member`, `module-member`, `opened-module`, `external-type-or-module`) and `metadata.targetQualifier` carrying the discarded qualifier. Measured: `calls` target-determinacy 19.1% → 29.1%, all labels 22.4% → 34.2% on the 3,000-file draw. Pinned by `fsharp/call-target-spelling` (11 classes, 4 forbids). | 0.8 |
+| calls | ✅ | `app_expression`/`application_expression` → the callee name, **plus a BARE pipeline** (`infix_expression` whose `infix_op` token is a pipe) since FS-A6 (M60 pass 2) — single pass, deduped by identity in the harness. **FS-A6, and the doc's own pipe claim was half true until it was measured:** the pipe `a \|> List.map` → `map` was read only when the pipeline sat in CALLEE position (`f (x \|> g)`), because only the `application_expression` branch had an `infix_expression` arm. The shape F# is actually written in — a `let` whose BODY is the pipeline — produced nothing: **1,043 bare `\|>` nodes with a NAME on the right, against 580 read in callee position, on a 300-file corpus draw**, i.e. ~11% of the corpus's calls were absent from the label. The operator's TOKEN decides which side carries the callee (`\|>` `\|>>` `>>=` apply the right operand, `<\|` `<<` the left) and `>>` `>>>` `>=>` `<<<` are deliberately absent because they COMPOSE two functions and call neither. **FS-A4, in the same round:** the label was also gated on `fnName.length > 1`, which no property of the program justifies and which dropped every call to a one-letter function — **5,313 occurrences over 6,619 files in 735 files** (2.2% of the label's 246,327 full-extent edges), and the dropped population resolves BETTER than the emitted one (32.4% in-file on a 120-file draw against 22.2%). **Source (owner) is the enclosing callable**, and which callables count is the substance of FS-D10/D12/D13: a top-level `let` owns its initialiser's calls *whatever its kind* (a `let` with no arguments is a Variable, and a script top level has no enclosing callable, so keying on kind dropped 2,520 rows per 200 files); a `default` implementation owns its body's calls (it publishes no symbol — the abstract signature is canonical — but the body belongs to it); an explicit `with get, set` property owns its **setter**'s calls. A recursive `calls f -> f` is emitted: a self-CALL is a fact about the program, while a self-`contains` is not, and the refusal is per-label. **THE TARGET IS NOT ALWAYS THE LEAF, and the pass-4 sentence that said it was is superseded by passes 5 and 6 below.** A `calls` target is spelled by one rule with three outcomes: the identity this file PUBLISHED when the written path (or, for a 3+-segment path, its last two segments) is one of them (`Message.SetInput`, `Seq.map`, `Widget.RenderTo`); `${qualifierLeaf}.${leaf}` when the qualifier the source wrote is module-LIKE and the identity is not provable in-file (`Microsoft.FSharp.Collections.Seq.map` → `Seq.map`, `Array.fold` → `Array.fold` — provably never worse than the leaf, because strategy 3's tail of a two-segment string IS the leaf; **but neutral to the store's own attachment, which resolves by the LEAF at insert time before any strategy runs — PASS 11 measures it: 274 of 274 dotted `calls` attached by leaf, 0 by exact qname**); and the LEAF otherwise, always with `metadata.targetResolution` naming the class (`local-binding`, `bare-external`, `receiver-value`, `call-chain-receiver`, `base-member-external`, `in-file-declaration`, `in-file-qualified`, `self-member`, `module-member`, `opened-module`, `external-type-or-module`) and `metadata.targetQualifier` carrying the discarded qualifier. Measured: `calls` target-determinacy 19.1% → 29.1%, all labels 22.4% → 34.2% on the 3,000-file draw — **the pool-uniqueness proxy, which asks whether the written endpoint is an unambiguous identity in the corpus (the question a name-joining consumer asks), not what the store's own insert-time LEAF lookup does; PASS 11 measures that separately.** Pinned by `fsharp/call-target-spelling` (11 classes, 4 forbids). | 0.8 |
 | extends | ✅ | `class_inherits_decl` (`inherit Animal()`) → `Animal`; source = the type. **R10 spelling:** a qualified target is published under the LEAF, with the qualified form kept in `metadata.qualifiedType` — the name this lane would publish for that type as a symbol, which is what a consumer joins on (FS-D9; 13 dotted `implements` + 3 dotted `extends` per 400 files) | 1.0 |
 | implements | ✅ | `interface_implementation` (`interface ILogger with`) → `ILogger`; source = the type. R10 leaf spelling as for `extends`. | 1.0 |
 | instantiates | ✅ | constructor chaining `new() = Point(0, 0)` → `Point` (enclosing constructor body); source = `constructor` | 0.95 |
@@ -1906,6 +1906,12 @@ leaf's — while S1 becomes reachable. **`${qualifierLeaf}.${leaf}` is therefore
 than the leaf.** That is a statement about the store, not a hope about the corpus, and it is why
 this is a spelling change rather than a guess.
 
+*(PASS 11 CORRECTS THE SHAPE OF THIS ARGUMENT, and strengthens the conclusion while emptying the
+price: the store has a stage BEFORE these three — insert time resolves the target by its **leaf** —
+so for a two-segment respelling the two arms are identical by construction, exactly rather than
+"never worse". The `+11,709 / −1,810` priced below is a proxy price for an S1 path a dotted target
+almost never reaches. See PASS 11 for the pipeline and the measurement.)*
+
 PRICED BEFORE IT WAS IMPLEMENTED (`.tmp-probe/fs-p6-price.py`, on the pass-5 arm, which carries the
 qualifier the old code discarded, so the counterfactual is exact rather than modelled):
 
@@ -2218,7 +2224,7 @@ those totals: the unfiltered draft read 35.3%.
 | `run-fixtures.ts --lang fsharp` | **12 / 12 PASS** — 64 rows now pin a reason class (`meta.targetResolution` / `meta.sourceResolution` / `meta.targetWritten`) across SEVEN of the twelve fixtures: `override-target` 18, `call-target-spelling` 12, `declared-type-graph` 12, `import-and-use` 12, `call-ownership` 4, `type-extension-and-containment` 4, `name-surface` 2. Every class this pass introduced now has at least one row that fails if the class is renamed, dropped or INVERTED |
 | `mutate-analyzer.ts` (`BB_MUTANT_ONLY="fsharp/"`) | **32 / 32 CAUGHT**, 0 survived — four new: `in-file-type-spelled-as-its-leaf`, `unresolved-marker-shipped`, `containment-source-reason-dropped`, `override-reason-ignores-whether-the-base-is-local` |
 | `tsc --noEmit` | clean |
-| corpus A/B | the canonical table above — re-walked AFTER the last source edit (`.tmp-probe/fs-verdict-state/rows-pass11-meta.ndjson`, `BB_META_OUT=… npx tsx .tmp-probe/fs-ab-meta.mts walk --cap 3000`) and **byte-identical** (`cmp`) to the arm the table was computed from (`rows-pass10-meta.ndjson`). The table therefore belongs to the code on disk, not to an earlier draft of it — which is the failure mode this lane has been bitten by |
+| corpus A/B | the canonical table above — re-walked AFTER the last source edit (`.tmp-probe/fs-verdict-state/rows-pass11-meta.ndjson`, `BB_META_OUT=… npx tsx .tmp-probe/fs-ab-meta.mts walk --cap 3000`) and **byte-identical** (`cmp`) to the arm the table was computed from (`rows-pass10-meta.ndjson`). The table therefore belongs to the code on disk, not to an earlier draft of it — which is the failure mode this lane has been bitten by. **SCOPED AT PASS 11: that sentence was true at THIS pass's HEAD and is not true of the shipped arm.** The mutual-type-group fix moved the source again, so the arm the shipped code produces is `rows-pass15-meta.ndjson`: 3,000 files, **357,591** edges against the table's 357,242 — `contains` +351, `calls` −8, `instantiates` +4, `implements` +2 — and the 351 are the types the group fix stopped swallowing, every one of them resolved `published-identity` or `in-file-declaration`. Every table in passes 6-8 is therefore the pass-6/7 HEAD's numbers, with the shipped arm's totals named here so no reader has to guess which code a number belongs to. PASS 11 re-scores the shipped arm against the pre-pass-4 baseline. |
 | F5, lane-scoped (`bun script/m14/differential.ts --lang fsharp --emit`) | 60 files, truth 4,984, covered 4,974 (99.8%), analyzer edges 2,913, residual **79 rows, enumerated rather than totalled**: 69 unexplained = `calls` 68 (the oracle does not derive the pipeline arm and the one-character arm) + `instantiates` 1; 10 MISSING = `overrides` 9 (the oracle still derives the pre-fix self-target spelling) + the same `instantiates` row. **Not one of the 69 sits on a label this pass respelled** — that is what leaf-normalized matching means, and here it is checked rather than assumed. The single `instantiates` row (`StructuralUtilities.context -> Threading`, `src/Compiler/Utilities/TypeHashing.fs`) is new to this lane's record and is stated rather than buried: a target read as a type where the oracle reads a namespace — FS-P6-4's position rule, not this pass's. The run wrote `validation/m14/results/M14.0.F5.fsharp.json`, which records its OWN dirt (`laneDirt: src/ast/real-fsharp-analyzer.ts`, `sharedDirt: script/m14/differential.ts`) instead of stamping a clean commit over uncommitted code. |
 
 ### What this pass did NOT do, and the price of each
@@ -2500,7 +2506,1160 @@ is what made that visible — before it, this label carried 17,297 "loose" targe
   F# has no `project-index` spec, so the cross-file population cannot be resolved and can only be
   claimed or left unexplained.
 
+## M60 ONTOLOGY LANE, PASS 11 — the store's own attachment rule, measured on a real index (2026-10-09)
+
+Every endpoint table above scores a spelling with the same proxy: *does the written name occur
+exactly once in the corpus symbol pool?* That proxy is a faithful reading of the strategy block in
+`src/ast/parallel-indexer.ts` and an **incomplete reading of the store**: two stages decide real
+edges and neither is in it — one BEFORE the strategies (insert time) and one AFTER (the linear
+name-resolution plan). This pass measures the store instead of modelling it, then re-derives the
+A/B under the rule that actually runs.
+
+### The pipeline at HEAD, stage by stage (read from the source, then verified against a real index)
+
+| # | stage | rule | decides |
+|---|---|---|---|
+| 0 | insert, `storeResults` (~4119) | `resolveTargetStmt.get(projectId, **targetLeaf**, fileId, fileLang)` — `WHERE s.name = targetLeaf ORDER BY COALESCE(is_declaration,0), (file_id = self) DESC, (language = self) DESC, id LIMIT 1`. `target_external` keeps the FULL written spelling (~4287) | every non-`contains` edge whose leaf names a symbol in the project |
+| 1 | S1 | `target_external == qualified_name`, `MIN(id)` per qname | only rows stage 0 left NULL |
+| 2 | S2 | `target_external == name AND name unique` | only rows 0–1 left NULL |
+| 3 | S3 | dotted → `name == SUBSTR(target_external, INSTR(target_external,'.')+1)`, `MIN(id)` | only rows 0–2 left NULL |
+| 4 | S4 | the `<module>:<item>` import form | only rows 0–3 left NULL |
+| 5 | I13 linear plan (~4740) | every row whose `target_external` has **no `.` and no `:`** is re-resolved to the tier-ranked winner (definition → same file → same language → lowest id). Its `UPDATE` has **no `target_symbol_id IS NULL` guard**, so it overwrites an S1/S2 hit on a dot-free target | the final target of every dot-free, colon-free edge except `contains` |
+| — | `contains` | exempt from 0–5: `resolveContainsTargetStmt` matches `s.name = targetLeaf`, same file first, then the candidate whose `line_start` IS the edge's own line (#612) | every containment edge |
+
+(THE REVISION THIS DESCRIBES: the resolution statements are committed at `1442bde08` and unmodified
+in the working tree — `git diff -- src/ast/parallel-indexer.ts` there touches no `_i13_*`, `_res_*`,
+`resolveTargetStmt`, `resolveContainsTargetStmt`, `target_external`, `INSTR` or `SUBSTR` line — so a
+reader can check the pipeline above against the file without knowing which branch state it is.)
+
+Two properties of that pipeline are invisible to a pool-uniqueness proxy, and both decide edges:
+
+1. **A dotted target is looked up by its LEAF.** The qualifier is not one of stage 0's keys.
+2. **`contains` is not a name question at all.** It is the pin *(leaf, own file, edge's line)*.
+
+The second one means the `contains` rows in every table above are a name-key-space statistic, not
+the store's containment outcome — the store's outcome is the one pass 8 already measured at corpus
+scale: **nine unresolved containment edges out of 173,560**, against a proxy reading of 70.3%.
+
+### The measurement
+
+Instrument: a copy of `Argu` (28 `.fs`) indexed at this HEAD with `BB_DATA_DIR` pointed inside the
+probe directory, so the store is local and disposable — 45 files, 1,407 symbols, 5,414
+relationships, `plan=linear`. Then all **5,082** rows whose source file is `.fs`/`.fsi`/`.fsx`, read
+straight out of `brain_relationship` joined to the `brain_symbol` it stores (`rels.tsv`, the query
+beside it). "Attached by leaf" means the stored symbol's `name` equals the target's last segment;
+"by exact qname" means its `qualified_name` equals the whole written spelling.
+
+| label | dotted targets | attached | by **LEAF** | by exact qname (S1) | bare targets | unattached |
+|---|---:|---:|---:|---:|---:|---:|
+| `calls` | 563 | 274 | **274** | 0 | 734 (all) | 731 |
+| `references` | 153 | 121 | 117 | **4** | 233 (all) | 177 |
+| `uses` | 150 | 150 | **150** | 0 | 58 (all) | 290 |
+| `imports` | 37 | 5 | 1 | **4** | 13 (all) | 52 |
+| `instantiates` | 0 | 0 | — | — | 6 (all) | 0 |
+| `extends` / `implements` | 0 | 0 | — | — | 12 / 81 (all) | 30 / 5 |
+| `contains` | — | 2,109 | *line-pinned: 2,109 of 2,110* | — | — | 1 |
+
+Read the first row as a rule rather than a coincidence: **every dotted F# call the store attached,
+it attached by the leaf.** The eight S1 hits in the whole table are one shape — a target that is a
+module HEADER, whose own `name` IS the dotted string (`Argu.Parser`), so its name is not its leaf.
+
+And the leaf has to be *chosen among*: Argu's 1,407 symbols carry 940 distinct names, and the
+collisions are the ordinary ones (`Usage` ×60, `AltCommandLine` ×46, `Invoke` ×14). Of the 542
+dotted, non-containment targets attached by leaf:
+
+| attachment | edges |
+|---|---:|
+| landed in the edge's own file | 431 |
+| … to a name unique in the project | 224 |
+| … to a COLLIDING name (a ranked pick inside the file) | 207 |
+| landed in a different file | 111 |
+
+Per label, the leaf's uniqueness is where the label's residual goes: dotted `calls` 197 unique / 77
+colliding, `references` 74 / 43, and **`uses` 6 unique against 144 colliding** — the attribute-type
+label is the one where a qualified spelling has the least purchase, because the store's first and
+only usable key for it is a name that 96% of the time belongs to more than one symbol.
+
+### What this says about the tables above, and what it does not
+
+The proxy asks a **name-join** question — "is the written endpoint an unambiguous identity in the
+corpus?" — which is the right question for a consumer that joins on `target_external` (the incoming
+gate, hover, cross-file analysis). It is not the store's attachment question. Both are true about
+the same edges; they are not the same number. Scoring the shipped arm and the pre-pass-4 baseline
+under the store's own rules (`.tmp-probe/fs-ab-faithful.py`, arms `rows.ndjson[:3000]` and
+`rows-pass15-meta.ndjson`):
+
+| arm | src, pool proxy | src, file-local (store's rule) | tgt, pool proxy | tgt, store-faithful | tgt attached-by-rank | tgt unattached |
+|---|---:|---:|---:|---:|---:|---:|
+| baseline (pre-pass-4) | 52.5% | **99.4%** | 22.4% | 28.3% | 227,392 | 28,428 |
+| shipped | 76.5% | **99.5%** | 34.8% | 28.3% | 227,823 | 28,430 |
+
+Three consequences, each of which corrects a claim above rather than restating one:
+
+* **The source side was already ~99.4% attachable at baseline by the store's own rule.** The store's
+  source lookup (`nameToSymbol.get(sourceName) ?? nameToSymbol.get(sourceLeaf)`, then `endsWith`
+  fallbacks over the file's OWN symbols) is generous, and a spelling is tested here against that
+  file's own table only — a lower bound, because the store also accepts a bare name and any suffix
+  match. So the proxy's `52.5% → 76.5%` measures a stricter question than attachability. What pass 5
+  changed is WHICH symbol the file-local lookup lands on (a qualified key hits the entry the source
+  named, instead of whichever same-named symbol the file published first) — a **correctness** gain,
+  which an attachment rate cannot express and the incoming gate is the instrument for.
+* **The target side's `+12.4p` does not survive the store's rule**: forced determinacy is **28.3% in
+  both arms**, because stage 0 keys on the leaf and the respelling does not change the leaf. The
+  `FS-P6-3` theorem reaches its (correct) conclusion for a reason it did not name: for a two-segment
+  respelling the candidate set is IDENTICAL by construction, so the change is *neutral in the store*,
+  and the table's `+11,709 / −1,810` is a proxy price for an S1 path a dotted target almost never
+  reaches (eight S1 hits in 5,082 F# edges here).
+* **What the target-side work did buy in store terms is real and is not those numbers**: targets that
+  are not names at all — the 8,357 chain-shaped ones (`factory.Build().Render()`) and the arity/paren
+  spellings (`(=)`, `add/2`) — now carry the last NAME, which is the only thing stage 0 can look up.
+  Those become attachable (to a ranked same-named candidate) where no rule could place them before.
+  The pool proxy called that class `not-a-name`; the store called it unattachable.
+
+### A store-side recommendation, measured rather than asserted
+
+Stage 0 looks up the leaf, and every later strategy runs only where `target_symbol_id IS NULL`. So
+for a dotted target the store can never prefer the identity the analyzer wrote over a same-named
+symbol elsewhere in the project — the analyzer's qualification is invisible at exactly the point a
+project-scale joiner needs it. Two cheap changes fix that on the store side, in this order: try the
+full spelling (S1) **before** the leaf when the target HAS a dot, and add
+`AND target_symbol_id IS NULL` to stage 5 so the ranked plan cannot overwrite an exact-qname match.
+Neither change is made here — both are the indexer's, and both are reported with the measurement
+above rather than assumed.
+
+### Reproducing it
+
+```
+cp -r <corpus>/Argu .tmp-probe/p11-store/src
+BB_DATA_DIR=$PWD/.tmp-probe/p11-store/data npx tsx src/cli/index.ts index .tmp-probe/p11-store/src --no-setup
+# 45 files, 1,407 symbols, 5,414 relationships, plan=linear, ~23 s
+sqlite3 .tmp-probe/p11-store/data/projects/<hash>/brain.db  # rels.tsv: brain_relationship JOIN brain_symbol
+python3 .tmp-probe/fs-ab-faithful.py <arm.ndjson> 3000      # both arms, both models
+```
+
+The store is inside the probe directory on purpose (`BB_DATA_DIR`), so nothing outside the
+workspace is written and the index is disposable. `.tmp-probe/p11-store/rels.tsv` is the raw
+reading the tables above are computed from; `symnames.txt` is the project's name histogram.
+
+### Gates at this pass's HEAD
+
+| gate | result |
+|---|---|
+| `run-fixtures.ts --lang fsharp` | **13 / 13 PASS** |
+| `mutate-analyzer.ts` (`BB_MUTANT_ONLY="fsharp/"`) | **35 / 35 CAUGHT**, 0 survived (`fsharp/` of 1,873) |
+| `tsc --noEmit` | clean |
+| the store reading | not a gate — a probe, and it asserts nothing; the numbers above are printed, and the store it reads is a disposable one built from a corpus copy |
+
+## M60 ONTOLOGY LANE, PASS 12 — the incoming gate re-read at this HEAD: the three zeros are gone, and the verdict changed its reason (2026-10-09)
+
+Same command as pass 8, on the shipped tree, so the two readings are comparable row for row
+(`.tmp-probe/logs/inc-fs-2026-10-09.txt`, exit 1):
+
+| | edges | resolved | amb(decl) | unresolved | extOK | ext? | extFAIL |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| pass 8 (this pass's predecessor measurement) | 42,116 | 12,208 | 1,046 | 28,862 | **0** | 0 | 0 |
+| now | 42,281 | **13,462 (31.8%)** | 1,436 | **26,672** | **631** | 0 | **80** |
+
+**The three zeros pass 8 called the finding are gone.** The lane now makes 631 verifiable external
+claims on this stride and refutes 80 of them (11.3%), and `resolved` rose 12,208 → 13,462 (+3.0p)
+while `unresolved` fell 28,862 → 26,672. The external-claim rule that did it is the one pass 8
+priced three ways before writing it (93.0% verified), so the prediction and the reading agree.
+
+**The verdict is still FAIL, and the reason is now a different and much smaller one:** the gate's
+separator tripwire fires — **100 published key(s) contain the binding separator `#`** of 42,281
+edges, with the examples `` ``Regression #11`` ``, `` ``#1387 update package in v3`` `` (Bolero's
+test names). The family contract spells a call to a local binding as `<callable>#<binding>`
+(`BINDING_SEP`, `src/ast/types.ts:182`) and the gate asserts that spelling is **unspeakable as a
+declaration name** — an assertion F# breaks, because a backtick-quoted identifier may contain `#`.
+The tripwire therefore voids the binding claims for the whole population rather than for the 100
+keys, which is the conservative direction and is correct as written.
+
+This is a CONTRACT question, not a resolution property of the lane, and it is worth saying what the
+two answers cost before either is taken:
+
+* **Scope the separator per language** — the contract's premise ("no published name can carry it")
+  is a fact about each language's identifier grammar, and F#'s permits it. Cost: the family
+  constant becomes a per-language fact, which touches every lane's arbiter.
+* **Refuse to publish a name containing the separator** — wrong on its face: `` `Regression #11` ``
+  is a real declaration in 22 repositories' test suites, and dropping it would shrink the key space
+  to make a gate green.
+
+The first is the one the measurement supports. Neither is taken here — the tripwire belongs to the
+incoming arbiter, and this lane reports it rather than tuning around it.
+
+## M60 ONTOLOGY LANE, PASS 13 — the claims `calls` and `uses` cannot carry, priced and declined (2026-10-09)
+
+The pass-12 reading has an asymmetry that the columns make plain: `imports` and `references` carry 261
+verified claims each and `overrides` 109, while **`calls` (19,933 unresolved) and `uses` (2,310)
+carry ZERO**. The mechanism is not missing — `md.isExternalTarget` is set by the pass-8 finalizer —
+but its rule is keyed on `targetResolution` classes AND requires an owner with a DOT
+(`pathClass && !owner.includes(".")` → skip), and F# call targets are overwhelmingly one-segment
+owners: on the 3,000-file arm, **96,621 of 100,761 dotted `calls` targets have a one-segment owner**
+(`Seq.map`, `List.map`, `Option.defaultValue`), against 4,140 with more.
+
+Pass 8 already priced the blanket version of this: one owner segment verified **42.8%**, which is why
+the rule requires a dot. The idea worth pricing before giving up is narrower and, in F#, *derivable*
+rather than guessed: those names are the CORE LIBRARY, which F# auto-opens, and the corpus CONTAINS
+its source — `fsharp/src/FSharp.Core/*.fs`, 94 files, **2,418** one-segment published names. So the
+allowlist can be built from evidence instead of taste, and the claim's own test stays the gate's
+(the owner must not be a declaration the project publishes).
+
+PRICED on the shipped arm against the FULL corpus key space (`.tmp-probe/fs-p13-core-claim.py`):
+
+| shape | edges | target resolves in project | file declares the owner | owner not in core | **claimable** | verified | refuted |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `calls`, one-segment owner | 96,621 | 48,855 | 7,073 | 18,236 | **22,457** | 6,298 | **16,159** |
+| `calls`, multi-segment owner | 4,140 | 4,123 | 17 | 0 | 0 | 0 | 0 |
+
+**28.0% verified — worse than the blanket rule it was meant to improve on, and the reason is F#
+itself:** a project routinely declares its own `Seq`/`List`/`Array` (type extensions are the idiom),
+so the claim "this owner is not in the project" is refuted by a SIBLING file's body — something no
+analyzer reading one file can see. The rule is **declined with its number recorded**, and the
+multi-segment row shows why there is nothing else to take there: of 4,140, 4,123 resolve in-project
+already.
+
+### One instrument fact this found, which changes how the stride tables should be read
+
+The gate builds its key space from the files IN THE RUN — `for (const f of files)`
+(`incoming-gate.ts:536`) counts keys from `r.symbols` per parsed file, and the project index is
+passed to `parseFile` as analyzer CONTEXT, not counted. So a 400-file stride samples the KEY SPACE as
+well as the edges: ~15 files per repository against the whole project. The full-corpus run (10,138
+files) is the authoritative reading — **35.1% resolved** — and the 400-file stride (31.8%) is a
+sample. The direction is measured: the same 3,000-file arm scored against the full-corpus key space
+resolves **53,468 of 101,259 `calls` targets** where the stride reads 22.9%.
+
+### What this leaves as the two missing capabilities, named
+
+1. **A cross-file joiner for the in-project population.** The unresolved classes pass 8 named —
+   65,215 project-internal collisions, 3,689 `.fsi`/`.fsx`-only, and the sibling-file collisions the
+   pass-7/8 work measured — are all resolvable in principle and resolved by nothing: the analyzer sees
+   one file, and the store resolves by leaf. This is the one that moves `calls`, `uses`, `references`
+   and `imports` at once.
+2. **A standard-library claim KIND, not another owner rule.** `printfn`, `failwith` and `Some` have no
+   owner at all, so the gate's owner lookup cannot verify them (`targetOwner` returns null for a
+   dot-free target → the `ext?` bucket, which is deliberately not merged with verified and not in
+   `bad`). Claiming them under an owner key would be the laundering the arbiter refuses; the honest
+   instrument is a derived core-member list — the 2,418 names above are already that evidence — with
+   its own verification, which is a shared-contract decision and not this lane's to take alone.
+
+## M60 ONTOLOGY LANE, PASS 14 — the project index F# never had, and the two bugs its first validation caught (2026-10-09)
+
+Every cross-file question this lane has is answered per file, because the F# lane had **no
+`DeclarationSpec`**: `buildProjectIndex*` could not read a single F# declaration, so `AnalyzeContext`
+carried no `projectIndex` for `.fs`, and the classes pass 8 named had no instrument — 65,215 edges
+whose name more than one `.fs` in the project declares, 3,689 declared in the project's `.fsi` files
+only, and the in-project half of the 150,114-edge out-of-project population. This pass builds the
+prerequisite, not the joiner: **the index, with the hook the shared file needed to read F# at all.**
+
+### What was added, and why each piece is where it is
+
+* **`DeclarationSpec.nameResolver`** (one optional hook, `src/ast/project-index.ts`). The generic
+  extractor reads a declaration's name from `childForFieldName("name")` — true of Solidity, python
+  and dart, false of F# three times over: a clause carries `type_name` as an **unnamed child** (the
+  field is one level deeper, on that node's own `identifier`), a member is named
+  `member_defn > method_or_prop_defn.name.method` (the part after the instance dot, so
+  `member this.Speak()` names itself `Speak`), and an abstract member's name is the first `identifier`
+  of its `member_signature`. Absent the hook, every previous language reads the same name it always
+  did, byte for byte.
+* **`FSHARP_DECLARATION_SPEC`**. The clause types are the declarations — `type X() = …` is ONE
+  `type_definition` holding a clause per type, so F#'s mutual group is several types in one node and
+  each clause carries its own `type_name` (the shape FS-P9 measured 157 unnamed members in). Members
+  are `member_defn` only, which is exactly the callable surface `overrides` reads; fields cannot be
+  overridden and are not listed, the same reasoning PY-21 and DARTD16 record. `object_expression` is
+  a scope, so `{ new System.IDisposable with member this.Dispose() = () }` does not publish `Dispose`
+  as a member of whatever type encloses the `let`.
+* **Two deliberate omissions, each because including it would make the index WRONG rather than
+  larger.** `type_declaration` (a bodyless forward declaration) and `type_extension` are not
+  declaration nodes: an F# signature pair states `Surface` in the `.fsi` and defines it in the `.fs`,
+  and `indexTree`'s duplicate-kind rule would then downgrade a real `class`/`interface` to `unknown`
+  for **every** signature pair — the kind being the one field the downstream question ("is this base
+  an interface?") reads.
+
+### The two bugs the first validation caught, in this pass's own code
+
+The spec is data about a grammar, and data about a grammar looks right while reading nothing. Both
+were caught by building the index and printing it, not by reading the spec:
+
+| what the first cut did | what the tree says | why it mattered |
+|---|---|---|
+| asked the clause for a `type_name` FIELD (`childForFieldName`) | `type_name` is an **unnamed child** of the clause; the field is on its `identifier` | `typeKinds.size === 0` for all 12 fixtures — an index of the right shape holding nothing, which is indistinguishable from "no declarations here" |
+| collected `identifier`s in POP order for a base's name | the written path is a `long_identifier`, source order | `inherit System.IO.MemoryStream()` was filed as **`System`**, and `interface System.IDisposable with` likewise — the FIRST segment, the wrong name, on 8 of 8 based types |
+
+The second is also a shape in the SHARED `baseNodes` path of `indexTree` (a LIFO stack taking the
+last identifier popped), which is reported here rather than changed: it is the other lanes' code
+and this pass does not reach into it. The F# resolver scopes its read to the `long_identifier`, which
+also keeps a generic argument (`Dictionary<string, Foo>`) from becoming the base.
+
+### The fixture, and the proof that it can fail
+
+`validation/m14/fixtures/fsharp/project-index-spec.ts` asserts, over the lane's 12 fixtures:
+kind, own members and direct bases for 8 named types; that the **control** (the Solidity spec over
+the same F# files) reads **0** types and 0 names, so the assertions are proving something about the
+F# spec rather than about the pipeline; that `Shape` stays `unknown` (two fixtures declare it with
+different clause kinds — `indexTree`'s rule working, pinned so a later edit cannot "fix" it by
+letting the last writer win); and that the object expression's members are not attributed to the
+enclosing scope. Measured: **42 types, 22 with members, 8 with bases, 67 names; control 0.**
+
+It can fail, verified rather than assumed: the same file with one expectation inverted
+(`Buffer`'s base expected to be `System`) exits **1** and names the assertion
+(`bases(Buffer): got ["MemoryStream"], expected ["System"]`).
+
+### What this does NOT yet do, and the unit that follows
+
+The analyzer still does not READ the index — `real-fsharp-analyzer.ts` contains no reference to
+`projectIndex` — so this pass changes no edge, and the fixture cannot gate an analyzer that does not
+read the index. The next unit is therefore two steps, and both are needed before any number moves:
+(1) register `FSHARP_DECLARATION_SPEC` in the index path that builds per-language indexes for the
+worker (`parallel-indexer.ts`, a file with another thread's uncommitted work in it, so it lands as
+its own hunk); (2) have the analyzer read `ctx.projectIndex` for the two questions it can answer
+across files — is this written identity a declaration this project publishes, and does this base
+declare this member — which is the F# form of the `overrideCompanion` tier that python and dart
+landed, and the instrument the 65,215-edge collision class has been waiting for.
+
+### Gates at this pass's HEAD
+
+| gate | result |
+|---|---|
+| `project-index-spec.ts` (new) | **PASS** — 42 declarations read, control 0, every kind/member/base matched; failure path proven at exit 1 |
+| `run-fixtures.ts --lang fsharp` | **13 / 13 PASS** (the shared-file change is additive; the analyzer path is untouched) |
+| `script/audit-index-modules/verify-import-fingerprint-index.ts` | **50 / 50 checks green** — the other lanes' index behaviour is unchanged |
+| `tsc --noEmit` | clean |
+
+## M60 ONTOLOGY LANE, PASS 15 — what the project index can actually reach, priced before it was wired (2026-10-09)
+
+The spec exists (pass 14); before the analyzer reads it, the reachable population is measured, on the
+same 3,000-file draw and the same frozen pool the pass-6/11/13 prices used
+(`.tmp-probe/fs-p15-index-price.py`). The question is per target: where is the name it spells
+actually declared?
+
+| label | edges | declared in THIS file | the project publishes the identity AS WRITTEN | declared elsewhere under a DIFFERENT owner | declared NOWHERE in the project |
+|---|---:|---:|---:|---:|---:|
+| `calls` | 210,964 | 36,477 | 72,836 | **18,294** | 83,357 |
+| `references` | 49,919 | 10,420 | 18,944 | 1,356 | 19,199 |
+| `imports` | 15,339 | 771 | 6,050 | 1,360 | 7,158 |
+| `uses` | 18,157 | 288 | 3,095 | 0 | 14,774 |
+| `instantiates` | 1,531 | 269 | 310 | 0 | 952 |
+| `extends` / `implements` | 2,080 | 395 | 796 | 0 | 889 |
+| `contains` | 58,649 | 58,649 | 0 | 0 | 0 |
+| `overrides` | 952 | 952 | 0 | 0 | 0 |
+| **TOTAL** | **357,591** | **108,221** | **102,031** | **21,010 (5.9%)** | **126,329 (35.3%)** |
+
+**102,031 edges are already spelled the way the project publishes them** — a name-joining consumer
+resolves those today, and the index adds nothing to them. The interesting column is the fourth.
+
+### The fourth column, and why a unique owner is NOT a licence to re-spell
+
+Of the 21,010: **5,963 have exactly one owner** in the project for that leaf, 14,972 have several,
+and 75 have none (the leaf is a member of a type only). The tempting rule — "the project has one
+`map`, so spell `Seq.map`" — is **unsound**, and this corpus says why: a source that writes
+`String.map` (FSharp.Core's `String` module) would be re-spelled to `Seq.map` because `Seq` is the
+only owner of `map` this project publishes. That is a fabricated edge, not a resolution.
+
+The sound condition is that the project's owner **ends with** the written owner, segment by segment
+— F# writes the innermost module and the project publishes the full path (`Main.Program` written,
+`Bolero.Test.Client.Main.Program` published). Measured under that rule:
+
+| | edges |
+|---|---:|
+| exactly ONE suffix match — **fixable, proven** | **929** |
+| several suffix matches (ambiguous, left as written) | 0 |
+| the written owner is no suffix of any project owner | 20,080 |
+
+**So the index's re-spelling prize is 929 edges (0.26% of the draw), not 21,010.** The remaining
+20,080 name something this index cannot place — an external owner (`String`, `System`) or a name the
+file's `open` list would have to explain — which is the open-aware joiner, a different capability
+from a symbol table.
+
+### What this means for the unit that follows, stated as a decision
+
+Wiring the index is still worth doing, and NOT for the re-spelling: the case is (1) the 929 proven
+identities, (2) a sharper `targetResolution` reason — `bare-external` and `external-type-or-module`
+currently conflate "declared in another file of this project" with "external to the project", and
+those are the 21,010 + 102,031 rows above, and (3) the `overrides`/`implements` half: with
+`typeKinds` and `typeMembers` the analyzer can ask whether the base is a project interface and
+whether it really declares the member, which is the `overrideCompanion` tier python and dart landed
+— the difference between a base that is external because nothing declares it and one that is
+external because the analyzer could not look.
+
+That last one is quality rather than count, and it is the reason to do it: an override edge
+asserted against a base that does not declare the member is exactly the fabricated-edge defect the
+python and dart lanes each measured before this tier existed.
+
+## M60 ONTOLOGY LANE, PASS 16 — the index is WIRED, and the classes that said "not this file" now say which (2026-10-09)
+
+Passes 14 and 15 built the instrument and priced it. This pass connects it, in two places, and the
+classes that every earlier pass could only call "external" are now split by what the PROJECT knows.
+
+### What was wired, and where each half is pinned
+
+| half | change | pin |
+|---|---|---|
+| the index is BUILT for F# | `parallel-indexer.ts` `PROJECT_INDEX_EXTENSIONS` gains `.fs`, `wasmByLang` gains `fsharp`, and the spec is selected per language (`specByLang`) | the STORE reading below — no fixture can fail when this line is missing |
+| the index reaches the fixture runner | `run-fixtures.ts` selects `FSHARP_DECLARATION_SPEC` for a sub-directory F# fixture | `fsharp/fs-p10-project/*` (2 fixtures) |
+| the analyzer READS it | one post-pass in `real-fsharp-analyzer.ts`, keyed on the class, run only when `context.projectIndex` is present | the same fixture's positive rows, and its forbids |
+
+### The rule, and what it deliberately is not
+
+A post-pass (not an emit-time change) rewrites five classes, one class at a time:
+
+    bare-external            -> in-project-name             the project declares a symbol with this NAME
+    external-type            -> in-project-type             the project declares this TYPE
+    external-type-or-module  -> in-project-type-or-module   the project declares the OWNER type
+    base-member-external     -> base-member-in-project      and the base's member set is then CHECKED
+    interface-member-external-> interface-member-in-project
+
+Three properties are load-bearing and each is stated in the code:
+
+1. **Keyed on the CLASS, never on the name.** `k.Best()` keeps `receiver-value` even though `Best`
+   is a name the project declares: the class describes the SPELLING, and re-labelling it would claim
+   an index can bind a value receiver. Pinned by a forbid row that a name-keyed refinement fails.
+2. **`in-project-name` is not called `in-project-declaration`.** The index records that a
+   declaration EXISTS, not that this edge binds to it. The weaker claim is the true one.
+3. **An override against an in-project base is CHECKED for its member.** `baseInProjectLacksMember`
+   is written only when the base is indexed, declares at least one member, and does not declare the
+   member the edge names — the fabricated-override defect python and dart each measured before their
+   companion tiers existed. An empty member set writes nothing: "unknown" is silence here, because
+   asserting `lacks` from an empty set would invent the defect it reports.
+
+NOT done, and this is the decision rather than an omission: **no re-spelling.** Pass 15 priced the
+sound re-spelling population at 929 edges of 357,591 (0.26%); 929 edges do not justify changing what
+the analyzer WRITES, and a consumer that joins on identity can read the project's symbol table
+directly. Also not done: `.fsi` files are not in the index (the signature/definition identity rule is
+undecided), and `external-namespace` is not refined because the SHARED index carries declared types
+and members and no module or namespace names — the 24,215-edge channel priced below, left visible as
+a failing row in the fixture rather than approximated.
+
+### The price, run before the code (`.tmp-probe/fs-p16-index-refine.py`)
+
+3,000-file draw, the same arm and pool as passes 6/8/11/13/15. The five classes that mean "not this
+file" hold **179,481 edges**, and the shipped index settles:
+
+| class | refinable | shipped index (types+members) | + a binding channel | + a scope channel |
+|---|---:|---:|---:|---:|
+| `bare-external` | 84,192 | 10,584 | +15,637 | +220 |
+| `external-type-or-module` | 65,196 | 21,664 | +819 | **+23,995** |
+| `external-type` | 29,259 | 340 | — | — |
+| `base-member-external` | 611 | 29 | — | — |
+| `interface-member-external` | 223 | 161 | — | — |
+| **TOTAL** | **179,481** | **32,778 (18.3%)** | **+16,456** | **+24,215** |
+
+So the refinement is worth shipping and the INDEX'S WIDTH is what binds it: **106,032 edges are
+still unanswered under the widest index**, and two named channels close 40,671 of them. The F# spec
+indexes declared types (`anon_type_defn` and friends) and `member_defn` members; `let f x = …` is a
+BINDING and `module M` is a SCOPE, and neither is in `symbolNames`.
+
+### The store reading, which is the only check that the WIRING works
+
+`Argu` copied into a `BB_DATA_DIR`-scoped store and indexed at this HEAD (45 files, 5,414
+relationships, `plan=linear`), then read back from `brain_relationship.metadata`
+(`.tmp-probe/p16-store/README.md`, `relations-by-class.tsv`):
+
+| class | pre-index | with index |
+|---|---:|---:|
+| `external-type` | 444 | **184** |
+| `external-type-or-module` | 322 | **283** |
+| `bare-external` | 946 | **926** |
+| `in-project-type` | — | **260** |
+| `in-project-type-or-module` | — | **39** |
+| `in-project-name` | — | **20** |
+| `external-namespace` | 170 | 170 (the scope gap, visible in the store) |
+| every other class | unchanged | unchanged |
+
+319 edges refined; **313 of the 319 the store then attached to a symbol.** And `bare-external` falls
+by only 20, which is the price table's `+BINDINGS`/`+SCOPES` finding measured on real output: the
+bulk of that class is calls to module-level `let` functions, which the index does not hold.
+
+**This reading is the gate, not a curiosity.** The wiring in `parallel-indexer.ts` was written,
+verified, and then SILENTLY REVERTED by a stale write from another session editing the same file —
+and nothing failed: the fixture runner builds its own index, so all 15 fixtures stayed green, `tsc`
+stayed clean, and the mutants stayed caught, while every production run fell back to the pre-index
+classes. A missing index is a SUPPORTED state (the pre-SOL-21 behaviour), so it has no error path.
+The detector is the store count: `REFINED (in-project-*) STORED = 0` means the registration is gone.
+
+### Two defects found while building the pin, both in code this lane wrote
+
+**1. Every F# interface was indexed as a CLASS.** The grammar spells `type I = abstract member M : T`
+and `type C() = member …` with the SAME node (`anon_type_defn`), so the static `typeNodes` map filed
+the interface as a class — a confident wrong answer to the one question `typeKinds` exists for ("is
+this base an interface?"). Found by building the index for the new fixture and reading `kind=class`
+off a type whose own source says `abstract member`. The fix is an additive `kindResolver?` hook on
+`DeclarationSpec` (returning `undefined` keeps the static kind, so every other language reads exactly
+what it read) plus `fsharpKindResolver`: class evidence first — a `primary_constr_args` constructor, a
+`member_defn` with no `member_signature` (a `val` field or a member with a body), `[<AbstractClass>]`
+read off the clause's PARENT because the attribute is a sibling — and an interface otherwise.
+**This lane's own pass-14 spec fixture had ENCODED the defect**: it asserted `["ITagged", "class"]`
+with a comment explaining the node type, which was true of the node and false of the kind, while the
+`interface end` spelling was pinned and passing. An unpinned SPELLING that looks like coverage — the
+same shape of defect this lane keeps finding in other lanes.
+
+**2. `let k = Kennel()` registered the CALLEE as a local binding.** The local-name read used
+`nameOfDeclarationLeft(node) ?? findChild(identifier)`, and for F#'s most common local shape both
+answer the callee: the LHS `k` is not an `identifier` (the grammar carries the binding name as a
+pattern), so the descendant search fell through to the first identifier of the RHS — and its
+`startIndex < left.endIndex` bound excludes nothing, because `left` is the WHOLE declaration and the
+RHS is inside it. Measured on the minimal shapes: `let k = Kennel()`, `let zzz = Kennel()`, and
+`let k = Other()` all classified the target `local-binding`, i.e. the class was the last name in the
+declaration regardless of the local's name. Effects: a project type's constructor was asserted to be
+a call to a local binding (false reason), and every such edge was invisible to the index refinement,
+because `local-binding` claims to be this file. Fixed by reading the name with `declaredBindingName`
+(left-first, the correction its own header records for a `let rec … and …` group); the fixture's
+forbid row and two positive rows are the pin, and reverting the one line makes all three fire.
+
+### Gates at this HEAD
+
+- `tsc --noEmit` clean.
+- `fsharp` fixtures **15/15** (13 before this pass; the two new files are the multi-file project).
+- The mutant battery: **36/36 caught** (`BB_MUTANT_ONLY="fsharp/"`, 35 before). The new mutant is
+  `fsharp/project-index-refinement-ignored`, which reverts the five classes AND deletes the markers
+  the refinement writes (so it is a faithful pre-fix state) and is caught by exactly the new fixture.
+- `validation/m14/fixtures/fsharp/project-index-spec.ts` now asserts the corrected kinds, the
+  class-evidence boundaries (`Dep` = `class end` has zero members and is not an interface; `Bad`'s
+  `val` fields; every constructor-bearing clause stays `class`), and FAILS when the `kindResolver`
+  hook is removed — proven by removing it.
+- Both directions of the fixture claim are gated: the with-index direction by the fixture, the
+  without-index direction by the mutant.
+
+### What the next unit is, now measured rather than argued
+
+The **scope channel** (24,215 edges on the draw) is the single largest reachable block, and the
+fixture already has a red row for it: `references`/`imports` to a SIBLING MODULE stay
+`external-namespace` because the shared index has no module names. After that, the **binding channel**
+(16,456) for module-level `let` functions, and the 604 zero-symbol files (measured at 123 of 150,114
+unresolved edges — 0.1%, honest coverage debt, poor resolution value).
+
+## M60 ONTOLOGY LANE, PASS 17 — the index learns modules, namespaces and bindings, and the width stops binding (2026-10-09)
+
+Pass 16 wired the index and measured what its WIDTH could reach: **18.3%** of the 179,481 edges whose
+class said "not this file". The binding constraint was never the rule — it was that the F# spec
+indexed declared types and `member_defn` members, and F#'s two most common declarations are neither.
+This pass adds the name channel and moves the width to **40.9%**.
+
+### The channel: names without kinds
+
+`DeclarationSpec` gains one optional field, `nameOnlyNodes`, and `indexTree` records those nodes in
+`symbolNames` while claiming no `DeclarationKind`. It is separate from `typeNodes` for the reason pass
+14 recorded for `.fsi` pairs: putting a binding there means giving it a kind, and a name that is both
+a function and a type would then DOWNGRADE the type to `unknown` — the one field the downstream
+question ("is this base an interface?") reads. Names only, and no `typeMembers` attribution either:
+a module's members are not a TYPE's members, and `buildResolutionTables` would otherwise answer "does
+this base declare this member" from a module.
+
+The F# spec lists four node types, and getting them right took three tree dumps rather than a reading
+of the grammar's docs:
+
+| node | what it is | why it matters |
+|---|---|---|
+| `function_or_value_defn` | `let f x = …`, `let value = 3` | F#'s most common declaration; owned 16,456 edges |
+| `named_module` | the FILE-HEADER form `module Alpha.Beta.Gamma` | **a different node from `module_defn` entirely**, and the most important entry in the list: it is how most F# files declare their module, and its name is what other files write targets against |
+| `module_defn` | `module M = …`, nested | the owner of every `M.member` target |
+| `namespace` | `namespace A.B` | the path an `open` writes |
+
+Two further facts the dumps settled, each of which the first cut got wrong:
+
+- **A nested module is written QUALIFIED.** `module Helpers = …` inside `module Fixture.Project.Domain`
+  is `Fixture.Project.Domain.Helpers` to every other file, and the first cut recorded `Helpers` alone —
+  so a sibling file's `open Fixture.Project.Domain.Helpers` stayed external for no reason a reader
+  could see. The reader now climbs the PARENT pointers through `module_defn` / `named_module` /
+  `namespace` ancestors and joins the chain, and a dotted name also records its LAST SEGMENT (both
+  spellings are names a source writes, and the claim is existence either way).
+- **A local must not be recorded.** `function_or_value_defn` is ALSO the node of a `let` inside a
+  function body, and the first cut recorded `local` (`call-ownership.fs:67`) and `built`
+  (`call-target-spelling.fs:63`) as project declarations — a local in the project's NAME SET, which
+  would refine any bare call that happens to match it. Measured, not reasoned: `/tmp/fs-names.mts`
+  prints the name-only additions, and those two were in the list. The fix is `scopeNodes` gaining
+  `function_or_value_defn` **and `member_defn`** — and the second one is the whole fix: a scope node
+  suppresses its CHILDREN, and a `let` directly inside a member body has no binding ABOVE it, because
+  the binding IS the node being visited. `member_defn` is where a body begins. Member attribution is
+  untouched (`scopes` is tested before the increment) and the spec fixture confirms it: 42 types, 22
+  with members and the same member sets before and after, while `names` went 67 → 132.
+- **They are names, not kinds.** The spec fixture asserts that none of them appears in `typeKinds`,
+  because a name in `typeKinds` is the one field the downstream question ("is this base an
+  interface?") reads — and it asserts the ABSENCE of the two locals the first cut recorded, which is
+  the whole point of the channel having a scope rule at all.
+
+### The price, re-read (`fs-p16-index-refine.py`, the three width columns are disjoint additions)
+
+| class | refinable | types+members | + bindings | + scopes | **shipped now** |
+|---|---:|---:|---:|---:|---:|
+| `bare-external` | 84,192 | 10,584 | 15,637 | 220 | **26,441** |
+| `external-type-or-module` | 65,196 | 21,664 | 819 | 23,995 | **46,478** |
+| `external-type` | 29,259 | 340 | — | — | 340 |
+| `base-member-external` | 611 | 29 | — | — | 29 |
+| `interface-member-external` | 223 | 161 | — | — | 161 |
+| **TOTAL** | **179,481** | 32,778 (18.3%) | +16,456 | +24,215 | **73,449 (40.9%)** |
+
+106,032 edges of these five classes are still unanswered under this width, and `external-namespace`
+(the `open` population behind `in-project-namespace`) is NOT in this table because the table predates
+the rule — its population is measured in the store instead, below.
+
+### The store reading (`Argu`, 45 files, 5,414 relationships, `plan=linear`)
+
+| class | pass-16 run | pass-17 run |
+|---|---:|---:|
+| `bare-external` | 926 | **820** |
+| `external-type-or-module` | 283 | **144** |
+| `external-namespace` | 170 | **134** |
+| `in-project-name` | 20 | **126** |
+| `in-project-type-or-module` | 39 | **178** |
+| `in-project-namespace` | — | **36** |
+| `in-project-type` | 260 | 260 |
+| every other class | unchanged | unchanged |
+| **refined total** | **319** | **600** |
+
+The refinement nearly DOUBLED on the same corpus, and the attachment rates are the honest reading of
+its value — `in-project-type` **260/260**, `in-project-name` **126/126**, `in-project-namespace`
+**36/36**, `in-project-type-or-module` **49/178**.
+
+That last number is the finding, and it is not a defect of the rule: the unattached examples are
+`String.replicate`, `String.concat`, `Seq.isEmpty`, `Seq.toArray` — and `src/Argu/Utils.fs:26,37`
+declares `module Seq` and `module String`. F# projects redeclare FSharp.Core's module names, exactly
+the shadowing pass 8 measured for owner claims (42.8% refuted) and pass 13 for a stdlib allowlist
+(72% refuted). The class is therefore stated PRECISELY in the code: it claims the project declares a
+declaration whose name EQUALS the written owner — in F# a dotted member path's owner can only be a
+type or a module, so the ordinary reading is right, and the index's name set also holds bindings and
+members, so a binding sharing the owner's name would satisfy the test without the owner being
+material. Measured where it matters: 0 of 178 refinements on this corpus come from that shape (both
+shadowing owners are real modules). It is recorded rather than fixed because fixing it means a THIRD
+schema channel for module names — a new `ProjectIndex` field, its serialiser and its version — for a
+shape this corpus does not have.
+
+### Gates at this HEAD
+
+- `tsc --noEmit` clean.
+- The spec fixture: 42 types, 22 with-members, 8 with-bases, **names 132** (67 before this pass), and
+  the control (Solidity's spec over F# files) still reads 0 types and 0 names.
+- `fsharp` fixtures **15/15**, including the six new rows (two `in-project-namespace` paths, the
+  module-owner call, the binding call) and their forbids.
+- Mutants **36/36 caught**. `fsharp/project-index-refinement-ignored` now reverts SEVEN classes
+  including the two this pass added, and is still caught by exactly `fs-p10-project/fs-p10-client`.
+- The store reading above, which is the only check that the wiring exists at all (pass 16).
+- Neutrality for the other lanes: `nameOnlyNodes` is optional and unset everywhere else, the two
+  scope additions are F#-only, and the index verifier is 50/50 green.
+
+### What is left, measured
+
+106,032 of the 179,481 (59.1%) are outside everything the index can name even now: a target whose
+lede is a **dotted external path** (`FSharp.Core.Seq.map`), an owner that is a type the project does
+not declare, or a bare name nothing in the project declares. Those need a CLAIM, not a wider index —
+pass 13 priced the one candidate rule and declined it at 72% refuted. The F#-specific work that
+remains in the analyzer is the `.fsi` decision (3,689 edges) and the 604 zero-symbol files
+(measured at 123 of 150,114 unresolved edges).
+
+## M60 ONTOLOGY LANE, PASS 18 — the gate re-read, and a corpus that moved underneath the old numbers (2026-10-09)
+
+The verdict instrument was re-run at the same 400-file stride pass 12 used, and two things had to be
+separated before either could be believed.
+
+### The fresh reading
+
+```
+incoming gate — fsharp .fs, 400 parsed of 400 sampled
+  corpus: 10,138 .fs files across 26 repos          <- pass 12's record says 11,809
+  TABLE 1 (PER PROJECT, the verdict's scope)
+  TOTAL  42,281 edges   resolved 13,455   amb(decl) 1,443   unresolved 26,672
+                        extOK 631   ext? 0   extFAIL 80
+  VERDICT: FAIL — 100 published key(s) contain the binding separator `#`
+```
+
+The verdict's REASON is unchanged from pass 12 and is not a resolution failure: F# backtick
+identifiers may contain `#` (`` ``Regression #11`` ``, `` ``#1387 update package in v3`` ``), and the
+family's binding contract asserts `#` is unspeakable as a declaration name. That is a contract fact
+about a shared convention, and it is recorded rather than tuned around.
+
+### The 7-edge delta, and why it is not this lane's
+
+`resolved` reads 13,455 where pass 12 read 13,462. That delta was chased to the bottom rather than
+attributed by intuition, in two steps:
+
+1. **An A/B on the only change since, the local-binding fix.** 300 files, the same `parseFile` and
+the same order, one line reverted (`/tmp/fsa-withfix.ts` restored it afterwards). Edge totals were
+IDENTICAL (56,123 → 56,123), no target spelling moved anywhere, and **1,216 edges were reclassified**:
+
+   | movement | edges |
+   |---|---:|
+   | `calls`: `local-binding` → `bare-external` (the false class removed) | 1,064 |
+   | `calls`: `local-binding` → `in-file-declaration` (now the file's own identity) | 81 |
+   | `calls`: `bare-external` → `local-binding` (genuine locals now recorded) | 67 |
+   | `instantiates`: `local-binding` → `bare-external` | 3 |
+   | `calls`: `in-file-declaration` → `local-binding` | 1 |
+
+2. **The gate's OWN resolution rule, applied to both arms** (per project, exact qualified-name match
+or a bare name whose count in that project is exactly 1 — same files, same key space): `calls`
+**12,930 → 12,992 (+62)**, and every other label IDENTICAL. So the fix IMPROVES the gate's number,
+and the −7 cannot be attributed to it.
+
+The remaining explanation is the header itself: the corpus the gate samples now holds 10,138 `.fs`
+files across 26 repos, and pass 12's record was written against 11,809. **The two readings are not
+comparable, and pass 12's absolute numbers should be re-baselined rather than quoted** — which is a
+correction to this lane's own record, found by insisting that a 0.05% move be explained instead of
+waved at. The instrument now prints its own corpus size for exactly this reason; the reading above
+names it.
+
+## M60 ONTOLOGY LANE, PASS 19 — the last two labels compared, and the audit made falsifiable (2026-10-09)
+
+The lane published two relationship types that were compared against nothing: `imports` (265 edges on
+the coverage gate's 25-file frame) and `uses` (188). Neither was a rule question. Both were real
+analyzer facts whose truth oracle had never been written, and the absence was invisible from every
+other direction — the differential's compared-label allowlist drops a label on the ANALYZER side, so a
+label with no oracle reads from the outside exactly like a label with nothing wrong, and
+`rel-type-coverage-gate` CHECK 1 listed fsharp as `["imports","uses"] un-audited`.
+
+### What landed
+
+Two arms in `script/m14/fsharp-truth-oracle.ts`, derived from the language rather than from the
+analyzer's walk, and both labels admitted to `differential.ts`'s compared set. The stale reason that
+had kept them out — "`uses` is deliberately absent: the lane does not derive it, and admitting it would
+charge every real call edge as unexplained" — was REWRITTEN rather than left beside the change: it was
+a true statement about a missing oracle, and as written it was a trap for the next reader.
+
+- **`imports`** has three forms and each answers "what does the source NAME" differently.
+  `import_decl` (`open X` / `open type X` — one node for both spellings) names the written module path
+  VERBATIM: the R10 leaf rule that governs every other label in this file does not apply, because a
+  module's leaf is not the module. `module_abbrev` (`module X = Y`) names the RIGHT-hand path — the
+  left-hand name is the alias this very file introduces, and a first draft of the analyzer's own arm
+  read the last descendant and emitted the alias as the dependency. `fsi_directive_decl` carries six
+  keywords and only three (`#r`, `#load`, `#I`) name a resource; `#time`, `#help` and `#quit` are REPL
+  controls that touch nothing outside the file, so the keyword is read off the tree instead of the node
+  type being trusted, and the target is the specifier's string CONTENT rather than its spelling.
+- **`uses`** is an attribute application — the one F# construct a `uses` edge is actually for: it NAMES
+  a type, applies it as a marker, and never invokes it, which is why it is not a call, a reference, a
+  base, an implementation or a construction. The target is the attribute type's LEAST segment
+  (`[<Xunit.Fact>]` names `Fact`, the spelling a consumer binds by) except where this file declares a
+  symbol under that name — then the target is that declaration's qualified name, because the written
+  name is provably the file's own identity. Two refusals are stated as rules: the `target` FIELD is
+  skipped (`[<return: Struct>]` attaches the attribute to the return, and reading the keyword as the
+  dependency cost 11 edges in a 200-file draw), and an attribute's ARGUMENT is never read
+  (`[<Obsolete("x")>]` names `Obsolete` and nothing inside `"x"`).
+
+### The reading
+
+| instrument | before | after |
+|---|---|---|
+| `verify-label-coverage.ts`, fsharp row | `4933 \| 4933`, un-audited `imports (265), uses (188)` | **`5386 \| 5386`, un-audited column EMPTY** |
+| `rel-type-coverage-gate.ts` CHECK 1 | `fsharp 2 un-audited: ["imports","uses"]` | **no fsharp row, and no `DERIVATION\|fsharp\|` line** |
+| `verify-truth-existence.ts` | — | fsharp absent from its un-declared list (c and vue are on it for their own labels) |
+| `verify-oracle-coverage.ts` | fsharp baseline `calls,references` | **PASS**; fsharp's compared set recorded as `calls,contains,imports,references,uses` |
+| differential, 60 files | the labels were not compared | 99.9% covered, MISSING 3, unexplained 66 — `calls=65 references=1` |
+| differential, 200 files | the labels were not compared | 99.9% covered, MISSING 15, unexplained 234 — `calls=231 references=3` |
+
+5386 − 4933 = **453 = 265 + 188 exactly**, so the coverage movement is these two labels and nothing
+else. On both draws every residual row is in ANOTHER label, and both of the two largest are pre-existing
+and declared in the lane's spec: `calls` (no calls oracle exists for this language) and `overrides` (the
+oracle's bare-target spelling where the base is not declared in the same file).
+
+### The part worth keeping: the audit is FALSIFIABLE
+
+A coverage claim that cannot fail is decoration, so the arms were disabled and the harness re-run. The
+guard that fired is the harness's own, and it fired on exactly the two labels:
+
+```
+[fsharp] fsharp: COMPARED WITH NO TRUTH: imports (115 comparable, 0 truth), uses (44 comparable, 0 truth)
+[fsharp] ... unexplained=214 (7.4%) | unexplained-by-label: imports=115,calls=53,uses=44,instantiates=1,implements=1
+```
+
+Two facts come out of it. **The population is real** — 115 `imports` and 44 `uses` edges are comparable
+on a 60-file draw, so "neither label in `unexplained-by-label`" is an audit of 159 real edges rather
+than a vacuous zero. And **the arms are what make the claim true**: with no truth behind a label, every
+comparable edge of it is counted as a fabrication — 159 of that draw's 214 `unexplained` rows — which is
+exactly the accusation the two `declared_no_truth` entries existed to prevent.
+
+**And the guard is a HARD FAILURE, not a note.** A second mutated draw (60 files, rotation 7) reads
+`imports (190 comparable, 0 truth), uses (74 comparable, 0 truth)` with `unexplained=335 (6.5%)`, of which
+264 are the two labels' ENTIRE comparable population (190 + 74) — and the harness **exits 6**, where the
+clean run of the same command exits 0. So a later session that drops the arms, or the allowlist entry in
+the other direction, cannot do it quietly: the differential gate fails by construction on exactly this
+criterion. `.tmp-probe/fs-p19-falsify.txt` is the run.
+
+No before/after DELTA on one draw is claimed, and the reason is recorded rather than glossed: the cold
+pool advances between runs, so the mutated and the clean readings are different file sets BY
+CONSTRUCTION. The evidence is the population and the guard, not a difference — a distinction this lane
+paid for in pass 18, where a 7-edge move was chased to the corpus rather than attributed to the code.
+
+### Not claimed
+
+That the two arms agree on constructs the draws did not contain: a nested `module A.B = C` path, and a
+verbatim specifier containing a doubled quote — of which no corpus specifier has one, measured over all
+193 directive nodes this lane's census found. The arms are exact mirrors of the analyzer's READS on the
+same grammar, which is what makes them cheap; it is also their limit, and it is why they are a coverage
+instrument rather than an independent model of F#'s resolution.
+
 ## Issue
 
 
 Closes M12.08 (GitHub issue #147). The 2026-09-28 M14 round above does not close it.
+
+---
+
+# F# — DECLARED DONE (2026-10-09)
+
+This is a declaration, so it is written as exit criteria with the command that shows each one, not as a
+summary. A reader who disagrees with the verdict has something to run.
+
+## The criteria, and where each one stands
+
+| # | criterion | state | evidence (re-runnable) |
+|---|---|---|---|
+| 1 | every emitted relationship type is compared against truth | **met** | `verify-label-coverage.ts` -> fsharp `5386 / 5386`, un-audited column empty; `script/m60/rel-type-coverage-gate.ts` -> no fsharp row in CHECK 1 and no `DERIVATION\|fsharp\|` line; `verify-truth-existence.ts` -> fsharp absent from its un-declared list; `verify-oracle-coverage.ts` -> PASS with fsharp's compared set recorded in `validation/m14/oracle-coverage-baseline.json` |
+| 2 | the differential agrees on the lane's corpus draws | **met, with two DECLARED residue classes** | `differential.ts --lang fsharp --sample 200` -> 99.9% covered, MISSING 15, unexplained 234, `heuristic=0`; every residual row is `calls` (no calls oracle exists — `declared_no_truth`) or `overrides` (the bare-target spelling where the base is not in the same file). This is NOT `MISSING=0`: two classes are declared rather than closed, and they are declared rather than tuned out of the allowlist |
+| 3 | no oracle is derived from the implementation it checks | **met** | `script/m14/fsharp-truth-oracle.ts` has **zero imports** — it takes the tree and the symbol list as arguments, and the two arms of pass 19 are written from the grammar's nodes and fields (the shape census `validation/m14/results/fsharp-shape-census.json`), not from the analyzer's walk |
+| 4 | the pins can FAIL | **met** | `mutate-analyzer.ts` (fsharp's 36 mutants, spread from `script/m14/fsharp-mutants.ts`) -> 36 caught; and for pass 19's own claim, disabling the arms makes the harness's own guard fire: `COMPARED WITH NO TRUTH: imports (115 comparable, 0 truth), uses (44 comparable, 0 truth)` |
+| 5 | the lane's fixtures pass and nothing else regresses | **met** | `script/m14/run-fixtures.ts fsharp` -> `{"fsharp":{"pass":15,"fail":0}}` and `fixture baseline gate: no regressions`; `npx tsc --noEmit` clean |
+| 6 | in-project identity and containment are wired to the project index | **met at the level measured** | the index is registered for `.fs` in `parallel-indexer.ts` (pass 16) and read by the analyzer; a multi-file F# fixture pins all seven refinement classes and their forbids; the store reading on `Argu` shows 600 refined edges (319 before the scope/binding channels), of which **471 attach to a symbol** — `in-project-type` 260/260, `in-project-name` 126/126, `in-project-namespace` 36/36, and `in-project-type-or-module` 49/178, the one class whose owner is a name the store may hold under a module rather than a type |
+| 7 | what is NOT resolved is enumerated and bounded, not hidden | **met** | `label_coverage.declared_no_truth` carries eight labels with a reason and a `closes_when` each; the edge classes are named by cause in passes 12-17 |
+| 8 | the lane asserts nothing it cannot support | **met for fsharp's own edges** | no un-audited label, no unexplained class without a declaration, and the two candidate rules that would have raised the number were PRICED AND DECLINED with the measurement recorded (pass 13: 72% refuted; pass 15: the index's re-spelling prize is 929 edges, 0.26%) |
+
+## What "done" does NOT mean
+
+- **NOT that every edge resolves.** 59.1% of the non-file classes (106,032 of 179,481 edges) need a CLAIM
+  rather than a wider index — a dotted external path the project does not declare, an owner that is a
+  type the project does not declare, or a bare name nothing declares. The one candidate rule that would
+  have reached them was priced at 72% refuted and refused.
+- **NOT that the graph is complete.** `.fsi`/`.fsx` are excluded from the incoming key space by decision
+  (3,689 edges), and 604 files yield no symbols — measured at **123 of 150,114** unresolved edges (0.1%).
+  That is honest coverage debt and poor resolution value, and both are recorded as such.
+- **NOT that the shared store is sound.** Two defects are reported and unfixed, both store-wide and not
+  this lane's to fix: the insert-time leaf lookup (274 of 274 dotted `calls` attached by leaf, 0 by exact
+  qualified name — which makes every lane's qualification work invisible at insert time, including this
+  one's), and re-storing a project can permanently lose a cross-file relationship row
+  (`parallel-indexer.ts:2928-2929`). Absence is survivable; a false claim is not, and this arc removed the
+  false claims.
+- **NOT that the incoming gate PASSES.** Its FAIL reason is the shared binding-separator contract: 100
+  published keys contain `#`, which F# hits only because its backtick identifiers legally contain it
+  (`` ``Regression #11`` ``). That is a fleet decision about a shared convention, not an F# defect, and it
+  is the one criterion this lane does not meet alone.
+
+## Overturn conditions
+
+- **The corpus can move under the numbers.** Pass 18 found the gate's own sample had changed (10,138 `.fs`
+  files across 26 repos where pass 12 recorded 11,809) and re-baselined rather than quoting the old
+  absolutes. The instrument now prints its corpus size for exactly this reason.
+- **The differential's allowlist is a shared physical line.** This lane's entry has been lost four times
+  (`contains`, once to a merge and three times to a rewrite). The canary is criterion 1's fsharp row: if it
+  reports an un-audited label again, the entry was deleted, not the oracle.
+- **If the store stops matching by leaf**, every target class in passes 16 and 17 must be re-read: those
+  classes were measured against INSERT-TIME leaf matching (`extractLeaf`, `parallel-indexer.ts:3867`), and a
+  store that binds by exact qualified name would move them.
+- **If a `calls` oracle is written**, the largest declared residue class changes meaning — the 231
+  `calls` rows the differential currently counts as fabrications become a real check with real answers.
+
+## M60 ONTOLOGY LANE, PASS 19 — `exports` is EMITTED (the ruling is overturned by instrument B), and the store's rule is re-measured (2026-10-09)
+
+Two verdicts and one correction. The correction came first because it changed the premise of the
+first: the store no longer resolves a dotted target by its leaf before anything else, so the
+sentence every pass from 5 to 18 rested on ("274 of 274 dotted `calls` attached by leaf, 0 by exact
+qname") is a reading of a rule that is gone.
+
+### 19.1 The store's attachment rule at this HEAD, re-measured (PASS 11's claim, corrected)
+
+The pass-11 store is a build product and its database was deliberately deleted; what was kept is
+`rels.tsv`, the reading. Rebuilt at this HEAD from the same source with the same command the pass-11
+README gives:
+
+```
+cp -r <corpus>/Argu .tmp-probe/p11-store/src
+BB_DATA_DIR=$PWD/.tmp-probe/p11-store/data npx tsx src/cli/index.ts index .tmp-probe/p11-store/src --no-setup
+# 45 files, 1,407 symbols, 5,414 relationships, plan=linear — identical totals to pass 11
+python3 .tmp-probe/fsharp-lane/p11-remeasure.py .tmp-probe/p11-store/rels-head.tsv
+```
+
+The old artifact is re-read through the SAME script so the definitions are the doc's own, and the
+doc's `by exact qname (S1)` column is recovered exactly: it counts a stored symbol whose **name**
+equals the whole written spelling (a module header), which is why pass 11 could report 0 for `calls`
+while 177 of its 274 attachments already carried a `qualified_name` equal to the target.
+
+| label | store | dotted | attached | by LEAF (name == leaf) | by**NAME**-exact (pass 11's column) | by QNAME (qname == target) | bare | unattached (all) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| `calls` | pass 11 (1442bde08) | 563 | 274 | **274** | 0 | 177 | 1,176 | 1,465 |
+| `calls` | **HEAD** | 581 | 304 | **303** | 0 | **203** | 1,158 | 1,435 |
+| `references` | pass 11 | 153 | 121 | 117 | 4 | 116 | 378 | 410 |
+| `references` | **HEAD** | 153 | 121 | 116 | 5 | **121** | 378 | 410 |
+| `uses` | pass 11 | 150 | 150 | 150 | 0 | 143 | 348 | 348 |
+| `uses` | **HEAD** | 150 | 150 | 150 | 0 | **150** | 348 | 348 |
+| `imports` | pass 11 | 37 | 5 | 1 | 4 | 4 | 33 | 65 |
+| `imports` | **HEAD** | 37 | 5 | 0 | 5 | **5** | 33 | 65 |
+| `contains` | pass 11 | 992 | 991 | 984 | 6 | 985 | 1,118 | 1,119 |
+| `contains` | **HEAD** | 988 | 987 | 980 | 6 | **981** | 1,114 | 1,115 |
+
+**What the doc's sentence was about, and what it is now.** "Attached by leaf" was TRUE as a
+statement about the stored symbol's *name* (303 of 304 at HEAD, 274 of 274 at pass 11) and it is not
+the store's lookup order. The order at HEAD, read from `src/ast/parallel-indexer.ts` and then
+checked against the store, is: **S1 `target_external = qualified_name`, first, for every row**
+(~4946) → S2 unique bare name → **S3 the dotted target as a dot-boundary SUFFIX of
+`qualified_name`** (~5016, the recursive CTE added by `b21f8d8ad`) → S3b the leaf when unique →
+**S3c the leaf RANKED over the complete symbol set** (~5071, `4403697ef`). Pass 11's stage table
+describes the eager resolve that `b21f8d8ad` REMOVED ("stage 0 looks up the leaf, and every later
+strategy runs only where `target_symbol_id IS NULL`"), so the conclusion built on it — "the store
+can never prefer the identity the analyzer wrote over a same-named symbol elsewhere" — does not
+hold at HEAD, and the lane's own overturn condition ("if the store stops matching by leaf, every
+target class in passes 16 and 17 must be re-read") has fired.
+
+The decisive measurement (`python3 .tmp-probe/fsharp-lane/p11-identity-vs-leaf.py <db> <rels>`):
+of the 304 attached dotted `calls` at HEAD, **203 (66.8%) store the symbol whose `qualified_name`
+IS the written target** (177 of 274 = 64.6% at pass 11), and for **all 101 of the rest the store
+holds NO symbol carrying that qname at all** — so S1 had nothing to prefer, the leaf was the only
+candidate, and the residue is not a preference the store made. The class is exactly what pass 11
+named: `Array.filter`/`Seq.filter` (F# Core's modules, which the project does not declare) landing
+on `ParseResults.filter`, 16+14+8… occurrences.
+
+The rule A/B, because "the rule changed" should be a count and not an assertion
+(`python3 .tmp-probe/fsharp-lane/p11-rule-ab.py <db> <rels-head.tsv>`): the LEGACY rule the doc's
+model describes (`name = SUBSTR(target, INSTR(target,'.')+1)`, `MIN(id)`) has a candidate for 216 of
+the 581 dotted `calls`; the store at HEAD attaches the same symbol in **200**, a DIFFERENT symbol in
+**16** (`StringExpr.build` → HEAD `StringExpr.build`, legacy `build`; `AppSettingsConfigurationFileReader.Create`
+→ HEAD itself, legacy `SchemaBuild.Create`), and attaches **nothing where the legacy would have
+attached in 0**. Coverage is not lost and 16 answers moved to the identity written.
+
+NOT claimed: that the two readings are a controlled A/B of the store change alone. The analyzer also
+moved between the two HEADs (dotted `calls` 563 → 581), and the pass-11 database no longer exists,
+so Q3 replays the legacy rule against the HEAD symbol table instead of re-running the old store.
+
+### 19.2 `exports`: instrument A was the wrong instrument, so the ruling is overturned and the edge is emitted
+
+The old ruling (`script/m14/fsharp-ruled.ts`, repeated in the doc and in `fsharp/import-and-use`'s
+forbid row) rests on **instrument A**: the grammar produces no export-declaration node type. That is
+still true and it settles nothing here — the same error `script/m14/lua-ruled.ts` records as json's
+`exports` ruling: "Instrument A is the correct instrument here and the choice is not a default. It is
+correct because the construct needs a NODE TYPE THAT DOES NOT EXIST." An export SURFACE need not be
+an export DECLARATION: F# expresses it with ordinary declarations plus visibility, and CSS's own
+ruling in this programme says so in as many words ("`exports` is NOT ruled on the grammar inventory
+alone"). So instrument B was run over the corpus:
+
+```
+bun .tmp-probe/fsharp-lane/fs-exports-census.mts 300     # a deterministic 288-file draw
+```
+
+| measured on the tree | count |
+|---|---|
+| population | 6,619 `.fs`/`.fsi`/`.fsx` ≤ 512 KB; 288 measured (every 22nd) |
+| distinct node types | 177 |
+| `export_list`/`export_declaration`/`module_export`/`export_stmt`/`export_spec`/`exported_item` | **0 / 0 / 0 / 0 / 0 / 0** |
+| any node type whose NAME contains `export` | **none** |
+| `access_modifier` | `internal` 120, `private` 70, `public` 10 |
+| importable names (the FS-D8 surface, `res.exports`) | **2,535 entries in 245 of 288 files (85.1%)** |
+| … by kind | function 1,692 · class 323 · module 242 · enum 140 · namespace 59 · type 46 · interface 27 · property 6 |
+| `[<CompiledName>]` attribute sites | 0 in the 288-file draw (a 12% sample; not claimed for the corpus) |
+
+**The overlap, priced rather than argued** (`bun .tmp-probe/fsharp-lane/fs-exports-overlap.mts 300`),
+because "`exports` would be a second label for `contains`" was the old ruling's second half:
+
+| | entries |
+|---|---:|
+| surface entries | 2,535 |
+| entries whose symbol has an owner — pair = `ownerFqn -> symbolFqn` | 2,143 |
+| of those, pairs `contains` ALREADY carries | **2,143 (100.00%)** |
+| ownerless entries (a file's own `module`/`namespace` header) — `contains` has no such edge at all | 392 (15.47%) |
+
+That overlap does not make the label a duplicate, and the programme's own contract says why: `contains`
+is MEMBERSHIP (type members, record fields, DU cases, `private`/`internal` lets) while `exports` is
+the IMPORTABLE-UNIT SET, and the M49 exports-family invariant in `script/m14/run-fixtures.ts:1471`
+states the asymmetry in exactly those words — "haskell/ocaml-style MODULE-owned symbols (`import
+Data.User (mkUser)` binds mkUser directly — the module is the namespace, members are importable by
+name)" are exports, "NOT type-owned members … membership rides Contains". F# is that shape.
+
+**What was implemented** (`src/ast/real-fsharp-analyzer.ts`, rule FS-D13 = FSD13 in the lane spec),
+inside the FS-D8 loop so the payload and the graph cannot disagree:
+
+* one `exports` edge per payload entry — no second filter, no re-read of visibility, kinds or the
+  `.fsi` merge;
+* TARGET = the symbol's published identity (`metadata.fqn`, or its bare name) — the same spelling
+  `contains` and the store's `qualified_name` use;
+* SOURCE = the publishing scope's published identity, or `Global` when the file's own top-level unit
+  has no owner (FS-D10's file-scope spelling; no module name is invented from the filename);
+* metadata: `exportForm: module-surface`, `declaredKind`, `visibility`, `publishedBy`,
+  `sourceResolution` (the same three-valued class `contains` writes), `targetResolution:
+  published-identity`.
+
+**Both instruments, before and after.** The firing instrument was re-baselined against a detached
+worktree of this HEAD with my analyzer change absent (`.tmp-probe/fs-base`), carrying the same
+(corrected, even-stride) instrument file:
+
+```
+git worktree add --detach .tmp-probe/fs-base HEAD      # analyzer at HEAD: no FS-D13
+bun script/m14/firing-check.mjs FSHARP_B               # in the worktree, then in this tree
+```
+
+| arm | line |
+|---|---|
+| HEAD, no FS-D13 | `FSHARP_B 9 types fired 120/120 parsed (sample of the corpus, even stride)` — `calls:7519 contains:2105 extends:20 implements:13 imports:261 instantiates:25 overrides:35 references:883 uses:542` — **SILENT: exports** |
+| this tree, FS-D13 | `FSHARP_B 10 types fired 120/120 parsed (sample of the corpus, even stride)` — the same counts plus **`exports:1109`** |
+
+So this lane's 9/10 is not a sampling artifact: the pre-change HEAD worktree is silent under the
+corrected sampler too.
+
+| incoming gate | edges | resolved | amb(decl) | unresolved | extOK | extFAIL |
+|---|---:|---:|---:|---:|---:|---:|
+| before FS-D13 | 8,336 | 2,961 | 380 | 4,871 | 120 | 4 |
+| after FS-D13 | **9,183** | **3,781** | 407 | 4,871 | 120 | 4 |
+| the `exports` rows alone | 847 | **820 (96.8%)** | 27 | **0** | — | — |
+
+`npx tsx script/m14/incoming-gate.ts fsharp fs 60`. Two caveats stated rather than smoothed over:
+the separator tripwire in the two runs is not comparable — the "before" run read 4 published keys
+containing `#` and the "after" run reads 0, because `BINDING_SEP` changed from `#` to `U+0000` in
+`c95c8485f` between them (the fleet fix for exactly F#'s problem); and the edge columns are exactly
+additive, because the only analyzer change is the exports emission (`8,336 + 847 = 9,183`,
+`2,961 + 820 = 3,781`, `380 + 27 = 407`, unresolved unchanged).
+
+`run-fixtures.ts --lang fsharp` went 14/1 → **15/15**: the one failure was the fixture's own forbid
+row, which pinned the old ruling (`forbidden relationship present: {"type":"exports", …}`). It is now
+replaced by five positive pins (the module header via `Global`, and the four module-owned units) plus
+one forbid row pinning that `let Origin` — a VALUE — is NOT exported (FS-D12).
+
+### 19.3 The label's population at corpus scale, and the incoming side split by class
+
+The 288-file draw above is a 12% sample; the whole admitted population was walked with the same
+analyzer (11,807 git-tracked `.fs`/`.fsi`/`.fsx` ≤ 1 MB across 26 repos — the incoming gate's own
+discovery rule), and the payload it produced is the label's true population:
+
+```
+bun .tmp-probe/fsharp-lane/fs-corpus-dump.mts      # 11,807 files, failed 0, 440s
+```
+
+| | |
+|---|---:|
+| export entries (the `exports` label's population) | **115,461** |
+| files that publish at least one | **10,707 of 11,807 (90.7%)** |
+| distinct published names | 74,899 |
+| by kind | function 72,720 · class 14,093 · module 13,587 · enum 5,305 · namespace 4,200 · type 1,962 · method 1,613 · property 1,003 · interface 961 · constructor 17 |
+
+The FS-D8 filter was checked for soundness on that whole population rather than trusted: every
+entry was joined to its symbol by (name, line) — **0 of 115,461 failed to join** — and the owner of
+each owned entry was classified from the file's own symbol table. **97,599 are owned by a
+module/namespace, 17,862 are ownerless units, and 0 are owned by anything else.** So the surface the
+edges are emitted from is the importable-unit set FS-D8 claims, at corpus scale, with no type-member
+leak. (A name-level rather than identity-level owner test remains *possible* in the rule; it is not
+measured as firing anywhere in this population, and that is the distinction being drawn.)
+
+**The incoming side, split by class — because the arbiter's worklist is capped at a few names per
+type.** A census that prints the population must first count the way the arbiter counts, so the
+replica imports `classifyEdge`/`externalClaimOf`/`tally` and reproduces the arbiter's columns before
+it says anything:
+
+```
+bun .tmp-probe/fsharp-lane/fs-unresolved-split.mts 60
+REPLICA: edges 9183, resolved 3781, amb(decl) 407, unresolved 4871, extOK 120, extFAIL 4
+```
+
+— identical to the arbiter's line to the edge, so the split below is measured with the arbiter's own
+rule, not a second opinion about it.
+
+| class (per-project scope, the verdict's) | targets | what it is |
+|---|---:|---|
+| **in-corpus-exact** — the target string IS declared in the project, just not among the 60 sampled files | **3,922 (80.5%)** | the stride samples the KEY SPACE as well as the edges (pass 13's own finding) |
+| in-corpus-owner — the target's OWNER is a project declaration | 459 (9.4%) | a member spelling with no top-level symbol behind it |
+| **nowhere-in-corpus** — declared in no admitted file of the repository | **438 (9.0%)** | the only class an external claim could be about |
+| in-corpus-leaf-only — only the leaf is declared somewhere | 52 (1.1%) | same family as in-corpus-owner |
+
+Per label: `calls` 2,812 exact + 406 owner + 343 nowhere + 27 leaf · `uses` 294 + 56 · `imports`
+128 + 27 + 13 + 6 · `references` 662 + 26 + 32 + 12 · `extends` 6 + 1 · `implements` 15 ·
+`instantiates` 5.
+
+**THE 438, FURTHER SPLIT BY THE ANALYZER'S OWN CLASS** — because "external" has to be evidence and
+not a guess:
+
+| analyzer class | targets | is it markable external? |
+|---|---:|---|
+| bare, `local-binding` | **207** | NO — these name a LOCAL (`Use.Go#k` is the family's spelling for exactly this, and this lane does not use it). Nothing external to mark; the honest fix is the binding claim, priced below |
+| bare, `receiver-value` | 93 | NO — a member read off a VALUE receiver; no declaration exists to name |
+| bare, `bare-external` | 89 | partly — a bare callee this file does not declare, and which the whole project does not either |
+| bare, `external-type` | 31 | yes — a written type the corpus does not declare (`JsonElement`, xunit attributes) |
+| bare, `call-chain-receiver` | 5 | NO — a chain's last name |
+| dotted, `resource-path` | 4 | yes, and by its own claim: `#r`/`#load` paths (`../../bin/netstandard2.0`, `Deedle.fsx`) name a file, not a declaration |
+| bare, `external-namespace` | 4 | yes |
+| dotted, `external-type-or-module` / `module-member` | 3 / 2 | yes, and these are the only shapes the gate's owner lookup can even check |
+
+So at most **133 of 4,871 (2.7%)** are classed external at all, the rest of the nowhere class is
+locals and receiver values the analyzer is right to leave unnamed, and **80.5% of the whole
+unresolved population is in-corpus** — a property of the 60-file key space, not of the edges. The
+last claim is measurable on the same edges, so it was measured: re-classified against a key space
+built from **every admitted file of each repository** (121,369 names, 181,553 qualified names):
+
+| scope | resolved | amb(decl) | unresolved | extOK | extFAIL |
+|---|---:|---:|---:|---:|---:|
+| 60-file stride (the verdict's) | 3,781 | 407 | 4,871 | 120 | 4 |
+| **full corpus, same 9,183 edges** | **3,945** | **3,042** | **2,106** | 88 | 2 |
+
+The stride's `unresolved` is 57% larger than the full-corpus reading of the same edges, and the
+movement goes into `amb(decl)` — a bare leaf that is unique among 60 files is one of many
+declarations project-wide. This is pass 13's finding re-derived at this HEAD, and it is the reason
+no external marker is proposed for the in-corpus classes: `incoming-rule.ts` REFUTES a claim whose
+owner the key space publishes, and these targets are published by their own project.
+
+**What is NOT done, and the price of each.** No external marker is emitted by this pass. The one
+class with a cheap claim (`resource-path`, 4 targets on this stride) is small; the big external-ish
+class (`bare-external` 89 + `external-type` 31) is one-segment, so the gate's owner lookup cannot
+verify it (`targetOwner` returns null → the `ext?` bucket, which blocks a PASS without reducing
+`bad`) and pass 13 already priced the blanket version at **28.0% verified / 72% refuted**. The
+binding claim for the 207 `local-binding` targets is the largest single actionable class and is NOT
+taken here: it changes the TARGET SPELLING of `calls` edges to `<callable>#<binding>`, which the
+differential's oracle does not derive, so it would convert 207 unexplained rows into 207
+MISSING-plus-fabrication rows until `script/m14/fsharp-truth-oracle.ts` teaches the same spelling.
+That is a two-file change and neither file is this pass's.
+
+### 19.4 Two claims in this lane's own spec are refuted at this HEAD (declared, not hidden)
+
+`npx tsx script/m14/verify-label-coverage.ts` and `npx tsx script/m60/rel-type-coverage-gate.ts
+--langs=fsharp` both contradict the `_closed` blocks a previous round wrote for `imports` and
+`uses`:
+
+```
+verify-label-coverage          fsharp  5471 | 4933  UNDECLARED: exports (85), imports (265), uses (188)
+                                        now  5471 | 5471  declared gaps: the same three
+rel-type-coverage-gate         CHECK 1  fsharp 3 un-audited: ["exports","imports","uses"]
+git log --all -S'"imports", "uses"' -- script/m14/differential.ts    → (empty)
+```
+
+The `_closed` text says `imports` "was admitted to this lane's compared set in
+`script/m14/differential.ts`, on its own physical line". **No such line exists** — not at this HEAD,
+not in the `f-sharp` worktree at `d712fa260`, not in any commit on any branch. The oracle half of
+that claim is true (`script/m14/fsharp-truth-oracle.ts` is a real second implementation); the
+allowlist half is not, so both labels are EMITTED-but-UNAUDITED and are declared as such in
+`declared_gaps` now. This is the same failure mode the doc records four times for the shared
+allowlist line — a claim about a shared physical line outliving the line — with one difference worth
+naming: this time the claim was written about a change that never landed, which no instrument can
+see, because a `_closed` block is invisible to both gates. `contains`'s own entry is untouched and
+still correct (its oracle exists and is deliberately unwired).
+
+### 19.5 Gates at this pass's HEAD
+
+| gate | result |
+|---|---|
+| `bun script/m14/firing-check.mjs FSHARP_B` | **10 / 10 fired**, 120/120 parsed, even-stride sample; `exports:1109` (HEAD worktree without FS-D13: 9/10, silent) |
+| `npx tsx script/m14/incoming-gate.ts fsharp fs 60` | FAIL — 407 ambiguous + 4,871 unresolved of 9,183, and 4 external claims REFUTED; separator tripwire 0 (the `#` bottleneck is gone via `c95c8485f`); instrument self-test PASS |
+| `npx tsx script/m14/run-fixtures.ts --lang fsharp` | **15 / 15 PASS** (was 14/1 — the failing fixture pinned the overturned ruling) |
+| `npx tsx script/m14/verify-label-coverage.ts` | fsharp `5471 \| 5471`, gaps declared: `exports`, `imports`, `uses` |
+| `npx tsx script/m14/verify-truth-existence.ts` | exit 0 |
+| `npx tsx script/m60/rel-type-coverage-gate.ts --langs=fsharp` | exit 1 — CHECK 1 reports the 3 un-audited labels (2 pre-existing + `exports`); the fix is the differential's allowlist plus an `exports` oracle, both outside this pass |
+| `npx tsc --noEmit` | clean |
+| `bash script/m14/no-regex-gate.sh` | **FAIL, pre-existing and not this lane's**: the delegated census artifact reports 0 in-scope usages (a false PASS) while `verify-regex-census.ts` prints `MISSING real-fsharp-analyzer.ts:324` and `:404` — two regexes that are present at HEAD and were present before this pass. Reproduced identically in a pristine HEAD worktree, so the state is unchanged by this pass; `script/m12/**` is not this lane's to edit |
+
+**One commit-hygiene fact, recorded because it affects what the commit contains.**
+`src/ast/real-fsharp-analyzer.ts` carried ~200 lines of a PREVIOUS round's uncommitted work in the
+same file (rule `FS-P16`, `declaredBindingName`), and a path-scoped commit cannot separate hunks
+inside one file. The FS-D13 commit therefore contains both, and this pass did not author or verify
+FS-P16. The before/after above is still attributable to FS-D13 and not to chance: the pre-change arm
+is a detached worktree of HEAD (neither change present) and every NON-`exports` count is identical
+between the two arms on the same sample (`calls:7519 contains:2105 imports:261 uses:542 …`), so
+FS-P16 moved no edge count on the firing sample; the incoming before/after was taken in this tree
+with FS-P16 present in BOTH arms.
+
+### 19.6 What this pass did NOT determine
+
+- **The `method`/`property`/`constructor` entries in the corpus-scale payload** (1,613 + 1,003 + 17
+  of 115,461; the 288-file draw carried 6 properties and no methods). The corpus-scale join says 0
+  entries are owned by a non-module/non-namespace owner *by name*, so the FS-D8 filter holds as
+  written; whether a name-level owner test could pass a type member whose owner shares a module's
+  name is NOT measured, and the export edges inherit whatever the payload does.
+- **`module_abbrev` aliases are not published.** `module IO = System.IO` produces one `imports` edge
+  and **no symbol and no export entry** (measured on the lane's own fixture: 10 symbols, none named
+  `IO`), so an alias a consumer could `open` is absent from the surface. The corpus population of that
+  node is 5 occurrences in 5 files (pass 1's probe), so the prize is small — and it is a gap, not a
+  disagreement with FSD10, which rules the alias an import.
+- **F# attribute-name elision is a real spelling gap, measured at 27 targets.** `[<CLIMutable>]`,
+  `[<RequireSubcommand>]`, `[<CustomEquality>]` are written WITHOUT the `Attribute` suffix and the
+  corpus declares `CLIMutableAttribute`, `RequireSubcommandAttribute`, `CustomEqualityAttribute`. Of
+  the 438 nowhere-in-corpus targets, **27 (6.2%) are `uses` targets whose `XAttribute` IS declared in
+  the corpus** — i.e. the written name is elided, and an identity-aware `uses` target (the FS-P7-2
+  treatment already applied to declared TYPES) would bind them. Not fixed here.
+- **The firing and incoming numbers are this population at this commit.** The corpus grew under pass
+  18's numbers too; both instruments now print their population, and a re-run against a grown corpus
+  is a different measurement.
