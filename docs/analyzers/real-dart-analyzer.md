@@ -5057,11 +5057,29 @@ SAME-FILE means every declaration answering the target is declared in the file t
 — the file knew its own declarations and did not use them, so it is a pure analyzer defect. CROSS-FILE
 means the declarations live elsewhere, so no local work can close it.
 
-**0.9 %. That is the entire value of the analyzer-local qualification idea**, and it is worth stating
-plainly because the intuition said the opposite: "the analyzer should qualify what it can see" sounds
-like the big lever, and it is already done (`calls qualifier` resolves 96,271 of 109,215 on the
-index-assisted population). What is left is `close` shared by 32 files, `add` by 5, `stream` by 5,
-`headers` by 7 — a bare MEMBER name, which no amount of looking at the emitting file can attribute.
+**0.9 % is the share where the emitting file itself declares the competing candidates — and that test
+is RIGHT for `calls`, `uses`, `references` and `instantiates`, whose target lives in another file, and
+WRONG for `contains`.** CORRECTION made in this same round, before the 0.9 % was quoted anywhere else. A
+`contains` edge's SOURCE is the container, and the container is declared in the emitting file, so the
+file pins WHICH owner is meant even when other files declare a class of the same name (`HomePage` in
+three files — the app, its i18n copies and its tests: the price instrument printed exactly those rows).
+Measured over the same three projects, per type:
+
+```
+contains ambiguous             14,564    <- LOCALLY CLOSABLE: file-scope the container identity
+everything else ambiguous     111,663    <- needs the declaration's identity from OUTSIDE the file
+TOTAL                         126,227
+```
+
+So the locally closable share is **11.5 %, not 0.9 %, and it is all of `contains`.** The check that this
+correction is not a second mistake is that the class was already priced under its own name:
+`contains-target-price.ts` predicted "ambiguous -> ambiguous 14,564 — every one of them an OWNER-name
+collision", and 187 + 12,229 + 2,148 = 14,564. The instrument and this table agree to the edge.
+
+What is left for the analyzer-local idea is the other 111,663: `close` shared by 32 files, `add` by 5,
+`stream` by 5, `headers` by 7 — a bare MEMBER name, and it is already qualified wherever the file
+allows it (`calls qualifier` resolves 96,271 of 109,215 on the index-assisted population). No amount of
+looking at the emitting file attributes the rest.
 
 The consequence for the roadmap is larger than the number:
 
