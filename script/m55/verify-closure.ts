@@ -205,20 +205,26 @@ const handoffIssue = (manifest.issues.find((i) => i.code === "X1") as unknown as
 // --- C1: the ledger closes at ONE HEAD -----------------------------------------------
 console.log(`\nC1: the ledger closes at one HEAD (${HEAD.slice(0, 12)})`)
 check("C1: the ledger lists the nine declared issues", manifest.issues.length === 9, `${manifest.issues.length}`)
+/** The fields of a sealed evidence record that this gate reads. */
+interface RecShape {
+  status?: string
+  realFailed?: number
+  currentCommit?: string
+}
+
+// The shape is NAMED rather than written inline as `typeof rec`. The
+// self-referential form — `let rec: T | null = null` then `rec = x as typeof rec`
+// — makes TypeScript resolve `typeof rec` back through the declaration it is
+// already analysing, and the narrowed type at every read below collapses to
+// `never`. Fourteen diagnostics came from this one declaration. Naming the
+// shape removes the cycle.
 for (const issue of manifest.issues) {
   const file = path.join(RESULTS, issue.evidence.evidenceFile)
-  let rec: { status?: string; realFailed?: number; currentCommit?: string } | null = null
-  try {
-    const recRead = readEvidenceAllowingLegacy<typeof rec>(file)
-    if (!recRead.ok) {
-      console.error(`refused: ${path.relative(ROOT, file)} — ${recRead.reason} (kind=${recRead.kind}); treating as no evidence`)
-      rec = null
-    } else {
-      rec = recRead.record as typeof rec
-    }
-  } catch {
-    rec = null
+  const recRead = readEvidenceAllowingLegacy<RecShape>(file)
+  if (!recRead.ok) {
+    console.error(`refused: ${path.relative(ROOT, file)} — ${recRead.reason} (kind=${recRead.kind}); treating as no evidence`)
   }
+  const rec: RecShape | null = recRead.ok ? recRead.record : null
   if (issue.code === "X1") {
     // X1 is the auditor: its own record is written by this run at the audit HEAD
     // (asserted below, after the write). Requiring a pre-existing pin would make
@@ -238,14 +244,27 @@ for (const issue of manifest.issues) {
 
 // --- C2: the lane ladder re-audited at the same HEAD ---------------------------------
 console.log("\nC2: the M24->M44 lane ladder re-audited at the audit HEAD")
-let ladder: { status?: string; passed?: number; gatesTotal?: number; currentCommit?: string; gates?: Array<{ name: string; script: string; rc: number; ok: boolean }> } | null = null
-try {
-  const ladderRead = readEvidenceAllowingLegacy<typeof ladder>(LADDER)
-  if (ladderRead.ok) ladder = ladderRead.record as typeof ladder
-  else console.error(`refused: ${path.relative(ROOT, LADDER)} — ${ladderRead.reason} (kind=${ladderRead.kind}); treating as absent`)
-} catch {
-  ladder = null
+/** One lane's rung in the M24->M44 ladder, as this gate reads it. */
+interface LadderGate {
+  name: string
+  script: string
+  rc: number
+  ok: boolean
 }
+interface LadderShape {
+  status?: string
+  passed?: number
+  gatesTotal?: number
+  currentCommit?: string
+  gates?: LadderGate[]
+}
+
+// Same circular-self-reference defect as `rec` above, named for the same reason.
+const ladderRead = readEvidenceAllowingLegacy<LadderShape>(LADDER)
+if (!ladderRead.ok) {
+  console.error(`refused: ${path.relative(ROOT, LADDER)} — ${ladderRead.reason} (kind=${ladderRead.kind}); treating as no record`)
+}
+const ladder: LadderShape | null = ladderRead.ok ? ladderRead.record : null
 check("C2: the ladder's machine record exists (validation/m53/results/R1.json)", ladder !== null, path.relative(ROOT, LADDER))
 check(
   "C2: the ladder is green and fresh (no lane source changed since it ran)",
