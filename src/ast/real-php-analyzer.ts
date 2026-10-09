@@ -3524,6 +3524,15 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * construction, so a consumer that ignores the key sees exactly the graph it saw before,
    * and a consumer that reads it can stop scoring externals as failures.
    *
+   * THE CLAIM'S SPELLING IS PART OF THE INTERFACE, and getting it wrong is what made this
+   * labelling invisible for its whole life: `metadata.external` is written as the BOOLEAN
+   * `true` (the kind moves to `externalKind`), because the incoming gate's `EXTERNAL_KEYS`
+   * test is `md[key] === true` or a non-empty array (`script/m14/incoming-rule.ts:249-258`)
+   * and a string kind fails it. Measured on the gate's own `php php 60` sample (3,257
+   * edges): 88 unresolved edges carried the label as a string, 0 as `true`. The lua lane
+   * already writes the boolean (`real-lua-analyzer.ts:2023`), so this is the family
+   * spelling, not a local preference.
+   *
    * `calls` is the deliberate exception, and it is not this method: a call to a builtin is
    * filtered at emission by `PHP_BUILTINS` (`processFunctionCall`), which is the lane's
    * existing design and the reason the differential oracle reads that same export. Suppressing
@@ -3575,7 +3584,20 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       const md = ((r as { metadata?: Record<string, unknown> }).metadata ??= {})
-      md.external = kind
+      // THE VALUE IS A BOOLEAN, and that is an interface contract rather than a style
+      // choice. The incoming gate reads a claim with `md[key] === true` (or a NON-EMPTY
+      // ARRAY) over `EXTERNAL_KEYS` — `script/m14/incoming-rule.ts:249-258` — and this lane
+      // was writing the KIND (`"php-internal-class"`, …) into `metadata.external`, so every
+      // php-src label it has ever emitted was INVISIBLE to the arbiter and read as an edge
+      // with no claim at all. Measured 2026-10-09 on the gate's own 60-file stride sample
+      // (`php php 60`, 3,257 edges): 88 unresolved edges carried `metadata.external` as a
+      // STRING and 0 carried it as `true`. The family already spells the claim this way
+      // (`real-lua-analyzer.ts:2023` writes `metadata.external = true`), and the gate's
+      // contract is stated in the same terms, so the boolean is the spelling that is read.
+      // `externalKind` keeps the classification the string carried — nothing is lost — and
+      // `metadata.externalLabelling.byKind` still counts it for the corpus walk.
+      md.external = true
+      md.externalKind = kind
       labelled++
       byKind[kind] = (byKind[kind] ?? 0) + 1
     }
