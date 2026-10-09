@@ -1019,6 +1019,72 @@ Two analyzer mutants die on the fixture: removing the section exclusion (caught 
 as the outer one (the mistake the audit's first version made, which reported 0 on a
 331-site population).
 
+### Cargo workspace inheritance — APPLICABLE, PROVEN, and deliberately NOT emitted
+
+`x.workspace = true` is the largest unimplemented population in this lane, and it is
+a `references` edge. It was researched to a decision rather than estimated:
+
+| measurement | figure |
+|---|---|
+| inheritance sites | **1,267** |
+| a workspace root manifest is findable by walking up | 1,267 (100%) |
+| the root actually declares that inherited key | **949** (75%) |
+| the target binds to **exactly one** symbol at project scope | **304** |
+| the target is declared by 2+ manifests (ambiguous) | **645** |
+
+Two spellings, and the difference decides whether a site is found at all:
+
+```toml
+[package]  edition.workspace = true         -> workspace.package.edition
+[dependencies] serde = { workspace = true } -> workspace.dependencies.serde
+```
+
+The bare form names its entry by the key that **owns** the inline table. Reading it
+as the key itself resolves every such site to `workspace.dependencies` with an empty
+leaf — 747 of 1,267, and the entire dependency-inheritance population missed. Three
+successive wrong readings of the same construct are recorded in the research because
+each produced a confident, plausible, wrong number: 0 of 1,267 (wrong header),
+1,267 of 1,267 unresolvable (key folded into the section), and 747 with an empty leaf.
+
+**It was implemented, verified against the differential, and then NOT shipped** —
+because the end-to-end experiment found it unsafe.
+
+Analyzer emission plus an independent oracle derivation agreed perfectly (100%
+covered, 0 unexplained). Indexed for real, 250 inheritance edges stored: **219 bound,
+31 left external, 140 flagged `is_cross_file`**, and every resolved edge landed in
+the correct workspace root. That is the good case, and it is the case a smaller
+project always produces — with one root, every target is unique.
+
+So the experiment was built to produce the BAD case: **two independent workspaces in
+one project**, which is what the corpus actually contains (`workspace.package.edition`
+is declared by **14** manifests). Result:
+
+```
+alpha/crates/a/Cargo.toml -> alpha/Cargo.toml   workspace.package.edition   CORRECT
+beta/crates/b/Cargo.toml  -> alpha/Cargo.toml   workspace.package.edition   *** FALSE EDGE ***
+```
+
+**4 of 4 resolved edges crossed workspaces.** Unresolvable targets were handled
+honestly (`workspace.dependencies.serde`, declared nowhere, correctly stayed
+external); **ambiguous** ones were bound to an arbitrary declaration. The mechanism
+is pre-existing: `parallel-indexer.ts:4723-4734`, Strategy 3, resolves a dotted
+target with `MIN(sym.id)` — deterministic, and exactly that is the problem: it picks
+a winner among several rather than declining. This emission would be the first thing
+to reach it with cross-file dotted targets.
+
+**Why it is not emitted.** An edge pointing at the wrong declaration is the mistake
+this repository names as the expensive one — it turns a rename into wrong advice.
+There is no lane-local fix: the analyzer sees one file and cannot know whether a name
+is unique across the project, and the store's uniqueness rule is shared by all 48
+lanes. The honest state of this cell is therefore **APPLICABLE and UNIMPLEMENTED,
+blocked on a store decision** — which is a different claim from "not applicable", and
+the only reason it can be made at all is that the applicability was measured.
+
+The fix, when someone owns shared infrastructure: make Strategy 3 decline when its
+candidate set has more than one member, the way `_res_name_unique` already declines
+(`HAVING COUNT(*) = 1`). That would leave the 304 uniquely-bindable edges resolving
+and the 645 ambiguous ones external — the same honesty `imports` already gets.
+
 ### What was verified before any of it was called done
 
 Emission is the cheap half. These are the checks that had to pass, and two of them
