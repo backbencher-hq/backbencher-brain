@@ -4913,10 +4913,28 @@ for an edge that names a type outside the population, and the gate's rule is tha
 unresolved rather than laundered.
 
 The residual 4 are the same 40-claim marker set, all owner-lookup refutations, and they are a DIFFERENT
-question from this one — an analyzer gap rather than a naming lie. They are not visible by name in the
-report, because the 25-slot worklist is filled by plain `unresolved` rows before a refuted claim can
-reach it; that truncation is a defect in the arbiter's own reporting rather than in this lane's code,
-and it is fixed there (a refuted claim is the one outcome that must never be truncated away).
+question from this one — an analyzer gap rather than a naming lie. They were invisible by name: the
+25-slot worklist is filled by plain `unresolved` rows before a refuted claim can reach it, and the
+worklist prints four names per type on top of that — so a run printed `extFAIL 4` and not one of the
+four. That truncation was a defect in the ARBITER's reporting rather than in this lane's code, and it
+is fixed there: refuted claims now have their own list and are printed whole, because a refuted claim
+is the one outcome a lane has to ACT on. They are the only four in riverpod, verbatim:
+
+```
+overrides      ElementWithFuture.resultForValue
+overrides      ElementWithFuture.setValueFromState
+overrides      _ProviderRefreshable._addListener
+overrides      SyncProviderTransformerMixin.transform
+```
+
+Two of the three owners are `base mixin`s DECLARED IN THIS PROJECT — `_ProviderRefreshable`
+(`packages/riverpod/lib/src/core/element.dart:22`) and `SyncProviderTransformerMixin`
+(`packages/riverpod/lib/src/core/provider_listenable_transformer.dart:266`) — so the arbiter is right
+and the analyzer is wrong: `isExternalBase` is a FALLBACK that fires when no evidence refutes the base,
+and "the cross-file companion could not find the member" is not evidence that the base is outside the
+population. The next round is that distinction: ask the project index whether the BASE is declared
+before claiming it is external. It is a claim-integrity question, not a resolution one, which is why it
+is priced separately instead of being folded into this round.
 
 ### The residual, stated rather than argued away
 
