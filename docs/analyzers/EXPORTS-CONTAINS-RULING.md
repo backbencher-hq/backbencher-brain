@@ -106,12 +106,12 @@ and it does not by itself decide any verdict.
 
 ## 4. The cost of each option, measured
 
-The fleet census — `validation/m14/fixtures/exports-ruling/export-name-status.ts`, which calls
+The fleet census — `validation/m14/census/exports-ruling/export-name-status.ts`, which calls
 the analyzer exactly as the runner does (`getParser` → `analyze(root, content,
 "fixtures/<lang>/<file>")`) and applies the invariant's own admission rule verbatim:
 
 ```
-$ npx tsx validation/m14/fixtures/exports-ruling/export-name-status.ts --lanes=<47 lanes> --per=40
+$ npx tsx validation/m14/census/exports-ruling/export-name-status.ts --lanes=<47 lanes> --per=40
 FLEET 1,400 files parsed (40-file even stride per lane; 34 lanes had a corpus present,
       13 checkouts are absent on this machine and are DECLARED, not measured)
 TOTALS   export ENTRIES 17,655   top-level 17,469   MEMBER 0   NO SYMBOL 186
@@ -189,7 +189,7 @@ analyzer change, and this ruling does not assume it.
 ## 5. The evidence that decides it: the same role is ALREADY admitted for JavaScript
 
 ```
-$ npx tsx validation/m14/fixtures/exports-ruling/export-name-status.ts --file=javascript:<repo>/validation/m14/fixtures/javascript/cjs-export-methods.js
+$ npx tsx validation/m14/census/exports-ruling/export-name-status.ts --file=javascript:<repo>/validation/m14/fixtures/javascript/cjs-export-methods.js
 EXPORT NAMES AND WHAT ANSWERS THEM
   run    TOP-LEVEL (no-owner)
   val    TOP-LEVEL (no-owner)
@@ -283,7 +283,7 @@ own price.
 npx tsx script/m14/incoming-gate.ts lua lua 60
 bun run script/m14/run-fixtures.ts --lang lua
 bun run script/m14/run-fixtures.ts --lang javascript
-npx tsx validation/m14/fixtures/exports-ruling/export-name-status.ts --file=lua:<repo>/validation/m14/fixtures/lua/export-edges.lua
-npx tsx validation/m14/fixtures/exports-ruling/export-name-status.ts --file=javascript:<repo>/validation/m14/fixtures/javascript/cjs-export-methods.js
-npx tsx validation/m14/fixtures/exports-ruling/export-name-status.ts --lanes=BASH,FSHARP,ZIG,LUA,JULIA,NIM,PHP,POWERSHELL,R_LANG,DART,SQL,GRAPHQL,PROTOBUF,JSON_B,YAML,CSS_B,SCSS,HCL,MAKE,TOML_B,XML_B,MARKDOWN_B,CLEAN_B,JAVA_GRAILS,JAVA_GRAPHQLJAVA,GROOVY_GEB,KOTLIN_KX,SCALA_CATS,CSHARP_GQL,JAVASCRIPT,RUST,ERLANG,ELIXIR,C,SOLIDITY --per=40
+npx tsx validation/m14/census/exports-ruling/export-name-status.ts --file=lua:<repo>/validation/m14/fixtures/lua/export-edges.lua
+npx tsx validation/m14/census/exports-ruling/export-name-status.ts --file=javascript:<repo>/validation/m14/fixtures/javascript/cjs-export-methods.js
+npx tsx validation/m14/census/exports-ruling/export-name-status.ts --lanes=BASH,FSHARP,ZIG,LUA,JULIA,NIM,PHP,POWERSHELL,R_LANG,DART,SQL,GRAPHQL,PROTOBUF,JSON_B,YAML,CSS_B,SCSS,HCL,MAKE,TOML_B,XML_B,MARKDOWN_B,CLEAN_B,JAVA_GRAILS,JAVA_GRAPHQLJAVA,GROOVY_GEB,KOTLIN_KX,SCALA_CATS,CSHARP_GQL,JAVASCRIPT,RUST,ERLANG,ELIXIR,C,SOLIDITY --per=40
 ```

@@ -1541,7 +1541,7 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     // MEASURED: `--lang lua` was {"pass":11,"fail":2} — export-edges/export-shapes refused
     // the returned-table keys — and is 13/0 after; `--lang javascript` stays 74/0, which is
     // the ruling's own evidence base; the member clause still fires on a planted member name
-    // in a lane that does not declare the role (validation/m14/fixtures/exports-ruling/
+    // in a lane that does not declare the role (validation/m14/census/exports-ruling/
     // invariant-guard-proof.ts).
     const viaModuleValueSurface = (result.exports ?? []).some(
       (e: any) => e.metadata?.viaCommonJs || e.metadata?.luaSpecific,

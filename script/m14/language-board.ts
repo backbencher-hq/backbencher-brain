@@ -57,6 +57,9 @@ const INCOMING_LOG = process.env.BB_BOARD_INCOMING ?? "validation/m14/results/in
 const SPEC_DIR = process.env.BB_BOARD_SPEC_DIR ?? "script/m14/spec"
 const TOTAL_TYPES = 10 // the ontology's ten relationship types: `fired + SILENT` must sum to this
 const JSON_MODE = process.argv.slice(2).includes("--json")
+/** `--coverage` prints ONLY the derivation per lane, with every source named — the inspection
+ *  mode used to audit the extractor against the lanes whose specs are prose rather than fields. */
+const COVERAGE_MODE = process.argv.slice(2).includes("--coverage")
 const NOTES = new Map<string, string[]>() // note -> lanes that raised it (grouped, so notes stay short)
 const addNote = (note: string, lane: string) => NOTES.set(note, [...(NOTES.get(note) ?? []), lane])
 const fatal = (msg: string): never => { console.error(`FATAL: ${msg}`); process.exit(1) }
@@ -248,6 +251,288 @@ function readGaps(lane: string) {
   return { path: rel, state: "array" as GapState, count: g.gaps.length as number | null, specCount: null, proseKeys }
 }
 
+
+// ------------------------------------------------------------------ implemented / applicable
+/**
+ * THE CONTRACT COLUMN: `implemented / applicable`, derived from the lane's own spec.
+ *
+ * FIRED n/10 is not the contract. The denominator of the contract excludes only what the lane
+ * has PROVEN not-applicable, and those proofs are not equally strong, so the classes are
+ * printed beside every exclusion instead of being flattened into the count:
+ *
+ *   grammar-absence  a node-type/keyword inventory over the whole grammar: the language cannot
+ *                    express the construct. STRONGEST — it leaves the denominator.
+ *   zero-sites       the construct EXISTS in the language and occurs 0 times in OUR corpus.
+ *                    WEAKER, and it therefore STAYS IN the denominator as corpus-unexercised.
+ *   unclassified     the spec rules the label out and the evidence class could not be read
+ *                    from it. Reported as its own bucket and excluded from `applicable`
+ *                    exactly as the lead's rule states — never promoted to grammar-absence.
+ *
+ * THE ARITHMETIC, printed in the row so it is auditable there:
+ *   applicable        = 10 − grammar-absence − unclassified
+ *   corpus-unexercised= applicable − implemented   (types the lane implements with no corpus
+ *                       construct to fire on: yaml's `calls` needs a workflow file)
+ *   implemented       = the spec's DECLARED emitted set (preferred) ∪ the firing log's fired set,
+ *                       restricted to `applicable`. `implementedFrom` names which source spoke.
+ *
+ * NOTHING IS RENDERED AS A ZERO THAT WAS NOT MEASURED: a lane whose spec declares no emitted set
+ * and whose firing row is absent reads `implemented ?`, and a label whose class cannot be read
+ * lands in `unclassified` rather than being counted as a proven exclusion.
+ */
+const TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"]
+const typeSet = new Set(TYPES)
+/** A field value that IS a relationship-type name, allowing the `relationship:` and
+ *  `relationship resolution:` prefixes the specs use, and a trailing parenthetical. */
+function asTypeName(v: unknown): string | null {
+  if (typeof v !== "string") return null
+  let t = v.trim()
+  for (const pre of ["relationship resolution:", "relationship:", "type:"]) if (t.toLowerCase().startsWith(pre)) t = t.slice(pre.length).trim()
+  const par = t.indexOf("(")
+  if (par >= 0) t = t.slice(0, par).trim()
+  return typeSet.has(t) ? t : null
+}
+type Exclusion = { label: string; evidence: "grammar-absence" | "zero-sites" | "unclassified"; from: string; quote: string }
+type Coverage = {
+  /** does the spec declare ANY relationship-type coverage (an exclusion, an emitted set, or a
+   *  field-valued ruling)? `false` is "not declared", which must never render as "none". */
+  coverageDeclared: boolean
+  implemented: string[] | null
+  implementedFrom: string
+  declaredEmitted: string[] | null
+  fired: string[] | null
+  excluded: Exclusion[]
+  unexercised: string[] | null
+  applicable: number | null
+  spec: string
+  specState: string
+}
+
+/** Every text this derivation is allowed to read from one entry, in the spec's own words. */
+function entryTexts(e: any): string[] {
+  const out: string[] = []
+  for (const k of ["ruling", "resolution", "decision", "missing", "measured", "measured_size", "probe", "why", "describe", "_description", "overturn"]) {
+    const v = e?.[k]
+    if (typeof v === "string") out.push(v)
+  }
+  return out
+}
+const has = (s: string, needles: string[]): boolean => {
+  const up = s.toUpperCase()
+  return needles.some((n) => up.includes(n))
+}
+
+/** The class of a ruling's EVIDENCE, in the spec's own words and fields. */
+function evidenceClass(e: any, texts: string[]): Exclusion["evidence"] {
+  const inst = typeof e?.instrument === "string" ? e.instrument.toLowerCase() : ""
+  // An explicit `instrument` field WINS: the lane has already classified its own evidence.
+  if (inst.startsWith("a")) return "grammar-absence"
+  if (inst.startsWith("b")) return "zero-sites"
+  const blob = texts.join(" ")
+  // A whole-grammar vocabulary/wording test is the grammar-absence signal. It is checked
+  // BEFORE the corpus-count signal, because a lane that proves the grammar cannot express a
+  // construct usually ALSO reports the corpus count of the construct it cannot see — and
+  // reading that count as the class would demote the strongest evidence to the weakest.
+  if (has(blob, ["INSTRUMENT A", "GRAMMAR-INVENTORY", "NODE TYPES", "NODE TYPE", "NODE-TYPE", "DECLARATION NODE", "GRAMMAR PRODUCES", "PINNED GRAMMAR", "GRAMMAR HAS NO", "NO PRODUCTION", "GRAMMAR CANNOT", "HAS NO PRODUCTION", "DISTINCT NODE TYPES"])) return "grammar-absence"
+  if (has(blob, ["0 OCCURRENCES", "ZERO OCCURRENCES", "OCCURS 0", "0 TIMES", "0 SITES", "ZERO SITES", "0 IN THE CORPUS", "CORPUS CENSUS", "COUNTED ON THE TREE", "ACROSS 1,", "OVER THE WHOLE CORPUS"])) return "zero-sites"
+  return "unclassified"
+}
+const NOT_APPLICABLE = ["INAPPLICABLE", "NOT APPLICABLE", "NO CONSTRUCT", "HAS NO CONSTRUCT", "EXCLUDED BY THE LANGUAGE", "RULED OUT", "CANNOT BE EXPRESSED", "NOTHING FOR AN", "HAS NO ", "OUT OF THE DENOMINATOR", "IS NOT EMITTED", "NOT EMITTED", "NO DECLARATION FORM", "NO CONSTRUCT TO", "REMAINS EXCLUDED", "IS EXCLUDED", "ARE EXCLUDED", "EXCLUDED IS", "AND ONLY ", "NONE OF THE"]
+/** The NEGATIVE polarity of an entry that exists to RULE ON one label: `NO, and the measurement
+ *  is positive...` (zig O.1), `RULED — YAML has no construct...` (yaml D10), `NONE of the six
+ *  node types` (lua BD-implements). Kept separate from NOT_APPLICABLE so a field-valued entry is
+ *  classified by ITS OWN verdict rather than by prose markers anywhere in its text. */
+const NEGATIVE_MARK = ["INAPPLICABLE", "NOT APPLICABLE", "NO,", "NO.", "NO —", "NEVER", "CANNOT", "HAS NO ", "HAVE NO ", "NONE OF", "IS NOT ", "ARE NOT ", "DOES NOT ", "0 NODE", "0 ", "ZERO "]
+// POSITIVE markers only, and the NEGATED spellings are checked FIRST: "EMITTED" alone matches
+// "is NOT emitted", which silently cancelled the two json exclusions this table is built on.
+const EMITTED_MARK = ["IS EMITTED", "ARE EMITTED", "NOW EMITTED", "EMITTED,", "BOTH ARE IMPLEMENTED", "BOTH FIRE", "FALSIFIED", "WITHDRAWN", "AND `OVERRIDES` EMITS", "EMITS —", "IS IMPLEMENTED", "ARE IMPLEMENTED"]
+const NEGATED_EMITTED = ["NOT EMITTED", "IS NOT EMITTED", "ARE NOT EMITTED", "NEVER EMITTED", "NOTHING IS EMITTED"]
+
+/** The declared EMITTED set: `counts.emitted_edges` keys with a positive count, or an
+ *  "N are emitted — a, b, c" sentence. Both are the spec's own words about its own output. */
+function declaredEmittedSet(e: any): string[] | null {
+  const counts = e?.counts
+  if (counts && typeof counts === "object") {
+    const em = (counts as any).emitted_edges
+    if (em && typeof em === "object") {
+      const got = Object.entries(em).filter(([k, v]) => typeSet.has(k) && typeof v === "number" && v > 0).map(([k]) => k)
+      if (got.length > 0) return got
+    }
+  }
+  for (const t of entryTexts(e)) {
+    const UP = t.toUpperCase()
+    // "TEN of ten types fire" declares the WHOLE set with no list to read (php PHPD40).
+    if (UP.includes("TEN OF TEN TYPES FIRE") || UP.includes("10 OF 10 TYPES FIRE")) return [...TYPES]
+    const toks = words(t)
+    for (let i = 0; i < toks.length; i++) {
+      const w = bare(toks[i]).toLowerCase()
+      if (w !== "emitted" && w !== "emits" && w !== "fire" && w !== "fires") continue
+      // "TEN of ten types fire" is a declaration of the WHOLE set, with no list to read.
+      if (toks.slice(i, i + 4).map((x) => bare(x).toLowerCase()).join(" ").startsWith("fire of ten")) return [...TYPES]
+      if (toks.slice(Math.max(0, i - 1), i + 3).map((x) => bare(x).toLowerCase()).join(" ").includes("of ten types fire")) return [...TYPES]
+      // A set declaration is "N are emitted — a, b, c" or "lanes emits SEVEN — a, b". Walk
+      // forward collecting type names, and STOP at the boundary that ends the list: a number
+      // word (the next clause counts something else) or an exclusion marker.
+      const got: string[] = []
+      for (let j = i + 1; j < Math.min(toks.length, i + 40); j++) {
+        const raw = toks[j]
+        const b = bare(raw).toLowerCase()
+        if (["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "but", "excluded", "ruled", "neither"].includes(b)) break
+        if (raw.endsWith(".") || raw.endsWith(";")) break
+        if (typeSet.has(b)) got.push(b)
+      }
+      if (got.length >= 3) return [...new Set(got)]
+    }
+  }
+  return null
+}
+
+/**
+ * Labels a sentence RULES OUT, taken from the spec's own prose because some lanes declare it
+ * nowhere else: "ONE is ruled: `implements`" (lua BD-implements), "TWO are excluded by the
+ * language: implements and instantiates" (json BD-ontology). A set-phrase is read only when its
+ * own sentence carries a not-applicable marker, and the labels are collected from the tokens
+ * between that marker and the end of the sentence.
+ */
+function proseRuledLabels(text: string): string[] {
+  const toks = words(text)
+  const STOP = new Set(["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "but", "while", "and", "or", "the", "a", "by", "for", "is", "are", "it", "its"])
+  // `bare()` strips the colon, so the marker set is spelled without it. `no`/`not`/`neither`
+  // are deliberately ABSENT: with them the extractor read fsharp's prose as excluding
+  // `instantiates` (a type the lane emits and fires) — a FALSE exclusion shrinks the
+  // denominator and inflates the ratio, which is worse here than a missing one.
+  const MARK = new Set(["ruled", "excluded", "inapplicable"])
+  const out: string[] = []
+  for (let i = 0; i < toks.length; i++) {
+    const b = bare(toks[i]).toLowerCase()
+    if (!MARK.has(b)) continue
+    for (let j = i + 1; j < Math.min(toks.length, i + 14); j++) {
+      const raw = toks[j]
+      const w = bare(raw).toLowerCase()
+      if (raw.endsWith(".") || raw.endsWith(";")) break
+      if (w !== "" && STOP.has(w) && out.length > 0) break
+      if (typeSet.has(w)) out.push(w)
+    }
+    if (typeSet.has(b)) out.push(b)
+  }
+  return [...new Set(out)]
+}
+
+/**
+ * EXCLUSIONS DECLARED AS ZEROS IN `counts` — CSS-D14's shape: the census object carries one key
+ * per construct it looked for, with the count it found, plus `vocabulary_candidates_found` whose
+ * EMPTY arrays are the grammar-absence half. A key naming a type with a 0 value is a zero-site
+ * exclusion; an empty candidate array for a type is a grammar-absence exclusion.
+ */
+function countsExclusions(e: any, id: string): Exclusion[] {
+  const out: Exclusion[] = []
+  const c = e?.counts
+  if (!c || typeof c !== "object") return out
+  for (const [k, v] of Object.entries(c)) {
+    if (typeof v === "number" && v === 0 && typeSet.has(k)) out.push({ label: k, evidence: "zero-sites", from: `counts:${id}:${k}`, quote: `${k} = 0` })
+  }
+  const vocab = (c as any).vocabulary_candidates_found
+  if (vocab && typeof vocab === "object") {
+    for (const [k, v] of Object.entries(vocab)) {
+      if (typeSet.has(k) && Array.isArray(v) && v.length === 0) out.push({ label: k, evidence: "grammar-absence", from: `counts:${id}:vocabulary_candidates_found.${k}`, quote: `no node type expresses ${k}` })
+    }
+  }
+  return out
+}
+
+function deriveCoverage(lane: string, firedTypes: string[] | null, silent: string[] | null): Coverage {
+  const rel = `${SPEC_DIR}/${lane}-completeness.json`
+  let doc: any = null
+  try { doc = JSON.parse(readFileSync(resolve(ROOT, rel), "utf8")) } catch { /* state below */ }
+  const excluded: Exclusion[] = []
+  let declared: string[] | null = null
+  let coverageDeclared = false
+  const fieldEmitted = new Set<string>()
+  let specState = doc === null ? "no spec" : "read"
+  if (doc !== null) {
+    const entries: Array<{ kind: string; e: any }> = []
+    const g = doc?.gap
+    if (Array.isArray(g?.gaps)) for (const e of g.gaps) if (e && typeof e === "object") entries.push({ kind: "gap.gaps", e })
+    const dd = doc?.design_decision
+    if (Array.isArray(dd?.decisions)) for (const e of dd.decisions) if (e && typeof e === "object") entries.push({ kind: "design_decision", e })
+    for (const { kind, e } of entries) {
+      const texts = entryTexts(e)
+      const blob = texts.join(" ")
+      const id = String(e.id ?? e.label ?? "?")
+      const status = String(e.status ?? "")
+      if (status.toUpperCase() === "SUPERSEDED") continue
+      // the declared emitted set
+      const decl = declaredEmittedSet(e)
+      if (decl !== null && declared === null) declared = decl
+      // a label this entry RULES ON
+      // The null-safe positive/negated test: a NEGATED emitted phrase cannot cancel a ruling.
+      const emitted = has(blob, EMITTED_MARK) && !has(blob, NEGATED_EMITTED)
+      const label = asTypeName(e.subject) ?? asTypeName(e.label) ?? asTypeName(e.relationship) ?? asTypeName(e.node_type)
+      // A FIELD-VALUED label means this entry exists to RULE ON that type, so its own POLARITY
+      // decides — positive marker => emitted, negative marker => excluded, neither => the entry
+      // is about the type without ruling it, and it is not counted either way. Requiring the
+      // generic NOT_APPLICABLE prose as well is what lost zig's three exclusions (whose verdict
+      // is the word "NO") and lua's BD-implements.
+      // THE VERDICT MUST BE STATED UP FRONT. Measured: with the whole text searched, an entry
+      // that merely DESCRIBES how a type is emitted matched a negative word somewhere in its
+      // prose (julia's overrides/implements, dart's contains, yaml's calls all read as excluded
+      // from text that says the opposite). A lane's specs in this fleet state the verdict in the
+      // first sentence — "RULED — YAML has no construct…", "NO, and the measurement…",
+      // "EMITTED, and ZIG.D.1's claim…" — so the polarity test reads only the head of the text.
+      const head = blob.slice(0, 160)
+      if (label !== null) coverageDeclared = true
+      // BOTH STATES CAN BE TRUE AT ONCE, and conflating them was a real bug the planted
+      // zero-sites case caught: the construct EXISTS and is implemented, and it occurs 0 times in
+      // our corpus. That is an exclusion RECORD (`zero-sites`, which stays in the denominator) and
+      // an implemented label at the same time. The first version treated the positive marker as
+      // cancelling the exclusion, so the record vanished and the row read as if the spec had said
+      // nothing. Polarity now decides the RECORD; the positive marker independently feeds the
+      // declared-emitted set.
+      if (label !== null && (has(head, NEGATIVE_MARK) || has(blob, NOT_APPLICABLE))) {
+        excluded.push({ label, evidence: evidenceClass(e, texts), from: `${kind}:${id}`, quote: head.slice(0, 120) })
+      }
+      // …and the labels a sentence rules out, which some lanes declare nowhere else.
+      if (has(blob, NOT_APPLICABLE) && !emitted) {
+        for (const lab of proseRuledLabels(blob)) {
+          excluded.push({ label: lab, evidence: evidenceClass(e, texts), from: `${kind}:${id}(prose)`, quote: blob.slice(0, 120) })
+        }
+      }
+      for (const x of countsExclusions(e, id)) excluded.push(x)
+      // A FIELD-VALUED label with a POSITIVE emitted marker is the lane stating "this type is
+      // emitted": yaml D12 (`overrides` EMITTED), zig ZIG.O.4 (`instantiates`), powershell PSD8,
+      // sql D11. It is structured evidence — the label is a field, the verdict is a marker — so
+      // it feeds the DECLARED EMITTED set, not the exclusions.
+      if (label !== null && emitted) fieldEmitted.add(label)
+    }
+    // A label ruled under TWO entries (yaml D10 and an older D2) is one exclusion.
+    const seen = new Map<string, Exclusion>()
+    for (const x of excluded) if (!seen.has(x.label)) seen.set(x.label, x)
+    excluded.length = 0
+    excluded.push(...seen.values())
+  }
+  const grammarAbsence = excluded.filter((x) => x.evidence === "grammar-absence").map((x) => x.label)
+  const zeroSites = excluded.filter((x) => x.evidence === "zero-sites").map((x) => x.label)
+  const unclassified = excluded.filter((x) => x.evidence === "unclassified").map((x) => x.label)
+  const applicable = doc === null ? null : TOTAL_TYPES - grammarAbsence.length - unclassified.length
+  if (declared === null && fieldEmitted.size > 0) declared = TYPES.filter((t) => fieldEmitted.has(t))
+  else if (declared !== null) declared = TYPES.filter((t) => declared!.includes(t) || fieldEmitted.has(t))
+  const fired = firedTypes
+  let implemented: string[] | null = null
+  let implementedFrom = "not declared"
+  if (doc !== null) {
+    const union = new Set<string>([...(declared ?? []), ...(fired ?? [])])
+    if (union.size > 0) {
+      implemented = TYPES.filter((t) => union.has(t) && !grammarAbsence.includes(t) && !unclassified.includes(t))
+      implementedFrom = declared !== null && fired !== null ? "spec-declared ∪ firing-log"
+        : declared !== null ? "spec-declared" : "firing-log"
+    }
+  }
+  const unexercised = implemented !== null && applicable !== null
+    ? TYPES.filter((t) => !implemented.includes(t) && !grammarAbsence.includes(t) && !unclassified.includes(t))
+    : null
+  if (declared !== null && declared.length > 0) coverageDeclared = true
+  return { coverageDeclared, implemented, implementedFrom, declaredEmitted: declared, fired, excluded, unexercised, applicable, spec: rel, specState }
+}
+
 // ------------------------------------------------------------------ one row
 function buildRow(lane: string, ext: string, firing: ReturnType<typeof parseFiring>, incoming: ReturnType<typeof parseIncoming>) {
   // Labels: the firing log upper-cases and suffixes some lanes (`FSHARP_B`, `R_LANG`); try both.
@@ -275,6 +560,17 @@ function buildRow(lane: string, ext: string, firing: ReturnType<typeof parseFiri
     addNote(`${gaps.path}'s \`gap\` object has no \`gaps\` array (siblings: ${gaps.proseKeys.join(", ") || "none"}) — not counted, not zero`, lane)
   if (gaps.state === "gap-is-array") addNote(`${gaps.path} puts the list on \`gap\` itself (${gaps.specCount} entries), not \`gap.gaps\` — reported, not counted`, lane)
   if (gaps.state === "bad-json") addNote(`${gaps.path} is not parseable JSON`, lane)
+
+  // THE CONTRACT COLUMN — derived from the lane's own spec (see `deriveCoverage`).
+  const firedTypes: string[] | null = f === null ? null
+    : Object.keys(f.types).filter((k) => (f.types[k] ?? 0) > 0).length > 0
+      ? Object.keys(f.types).filter((k) => (f.types[k] ?? 0) > 0)
+      : silent === null ? null : TYPES.filter((t) => !silent.includes(t))
+  const cov = deriveCoverage(lane, firedTypes, silent)
+  if (cov.specState === "no spec") addNote(`no spec ${cov.spec} — implemented/applicable is NOT DERIVED (not 0/0)`, lane)
+  if (cov.implemented === null && cov.specState !== "no spec") addNote("the spec declares no emitted set and the firing log has no row: `implemented` is `?`, which is not zero", lane)
+  for (const x of cov.excluded) if (x.evidence === "unclassified")
+    addNote(`${cov.spec}: ${x.from} rules \`${x.label}\` out and its evidence class could not be read — counted as UNCLASSIFIED, which leaves the denominator; classify it rather than letting it pass as grammar-absence`, lane)
 
   // Analyzer change: the repo's convention is src/ast/real-<lane>-analyzer.ts.
   const analyzerPath = `src/ast/real-${lane}-analyzer.ts`
@@ -309,6 +605,10 @@ function buildRow(lane: string, ext: string, firing: ReturnType<typeof parseFiri
       !inc ? "not in log" : `${inc.verdict ?? "?"} ${inc.amb ?? "?"}/${inc.unres ?? "?"}/${inc.edges ?? "?"}`,
       inc?.ext ? `${inc.ext.count}${inc.ext.kind}` : "—",
       gapCell,
+      cov.applicable === null ? "no spec" : `${cov.implemented === null ? "?" : cov.implemented.length}/${cov.applicable}`,
+      !cov.coverageDeclared ? "not declared"
+        : cov.excluded.map((x) => `${x.label}(${x.evidence === "grammar-absence" ? "G" : x.evidence === "zero-sites" ? "0" : "?"})`).join(" ") || "none",
+      cov.unexercised === null ? "—" : cov.unexercised.length === 0 ? "none" : cov.unexercised.join(" "),
       g.date ?? (mtimeMs === null ? "no file" : `${stamp(mtimeMs).slice(0, 10)}~`),
       stale,
     ],
@@ -319,6 +619,16 @@ function buildRow(lane: string, ext: string, firing: ReturnType<typeof parseFiri
         externalClaim: inc.ext, externalVerified: inc.extVerified, externalUnverifiable: inc.extUnverifiable,
         countersFrom: inc.countersFrom, instrumentSelfTest: inc.selfTest, raw: inc.line },
       gaps: { spec: gaps.path, state: gaps.state, declared: gaps.count, gapItselfEntries: gaps.specCount, notCountedKeys: gaps.proseKeys },
+      coverage: {
+        contract: "implemented / applicable",
+        implemented: cov.implemented, implementedFrom: cov.implementedFrom,
+        applicable: cov.applicable, coverageDeclared: cov.coverageDeclared, declaredEmitted: cov.declaredEmitted, fired: cov.fired,
+        corpusUnexercised: cov.unexercised,
+        excluded: cov.excluded.map((x) => ({ label: x.label, evidence: x.evidence, from: x.from })),
+        arithmetic: cov.applicable === null ? "no spec: not derived"
+          : `applicable = 10 - ${cov.excluded.filter((x) => x.evidence === "grammar-absence").length} grammar-absence - ${cov.excluded.filter((x) => x.evidence === "unclassified").length} unclassified = ${cov.applicable}; corpus-unexercised = applicable - implemented`,
+        spec: cov.spec, specState: cov.specState,
+      },
       analyzer: { conventionPath: analyzerPath, exists: mtimeMs !== null, lastCommitDate: g.date, lastCommitMs: g.ms, mtimeMs, effectiveChangeMs: change },
       staleness: { verdict: stale, firing: fs, incoming: is, commitAfterLog,
         rule: "content mtime (fallback: last commit when the file is gone) vs each log's mtime; row = worst" },
@@ -359,6 +669,18 @@ const summary = {
 const notes = [...NOTES].map(([note, who]) => `${[...new Set(who)].join(", ")}: ${note}`)
 
 // ------------------------------------------------------------------ output
+if (COVERAGE_MODE) {
+  for (const r of rows) {
+    const c = r.json.coverage
+    console.log(`${r.lane.padEnd(12)} ${String(c.implemented === null ? "?" : c.implemented.length)}/${c.applicable === null ? "?" : c.applicable}  from=${c.implementedFrom}`)
+    console.log(`             coverageDeclared=${c.coverageDeclared} declared=${c.declaredEmitted === null ? "not declared" : JSON.stringify(c.declaredEmitted)}`)
+    console.log(`             fired=${c.fired === null ? "?" : JSON.stringify(c.fired)}`)
+    for (const x of c.excluded) console.log(`             EXCLUDED ${x.label.padEnd(12)} ${x.evidence.padEnd(16)} ${x.from}`)
+    console.log(`             unexercised=${c.corpusUnexercised === null ? "?" : JSON.stringify(c.corpusUnexercised)}`)
+    console.log(`             ${c.arithmetic}`)
+  }
+  process.exit(0)
+}
 if (JSON_MODE) {
   console.log(JSON.stringify({
     board: "language-board", readOnly: true, generatedAt: new Date().toISOString(),
@@ -370,7 +692,7 @@ if (JSON_MODE) {
     lanes: rows.map((r) => r.json), summary, notes,
   }, null, 2))
 } else {
-  const headers = ["LANE", "FIRED", "SILENT", "INCOMING", "EXT CLM", "GAPS", "LAST COMMIT", "STALE"]
+  const headers = ["LANE", "FIRED", "SILENT", "INCOMING", "EXT CLM", "GAPS", "IMPL/APPL", "EXCLUDED (class)", "CORPUS-UNEXERCISED", "LAST COMMIT", "STALE"]
   const widths = headers.map((h, i) => Math.max(h.length, ...rows.map((r) => r.cells[i].length)))
   const line = (cells: string[]) => cells.map((c, i) => c + " ".repeat(Math.max(0, widths[i] - c.length))).join("  ")
   console.log(`language board — ${rows.length} laptop-B lanes — READ-ONLY — ${stamp(Date.now())}`)
@@ -379,13 +701,34 @@ if (JSON_MODE) {
   console.log(`incoming  ${INCOMING_LOG} mtime ${stamp(incomingSrc.mtimeMs)} — ${incoming.byLabel.size}/${rows.length} lanes read`)
   console.log(`\n${line(headers)}\n${widths.map((w) => "-".repeat(w)).join("  ")}`)
   for (const r of rows) console.log(line(r.cells))
+  const covRows = rows.filter((r) => r.json.coverage.applicable !== null)
+  const covSum = {
+    derived: covRows.length,
+    implemented: covRows.reduce((n, r) => n + (r.json.coverage.implemented?.length ?? 0), 0),
+    applicable: covRows.reduce((n, r) => n + (r.json.coverage.applicable ?? 0), 0),
+    grammarAbsence: covRows.reduce((n, r) => n + r.json.coverage.excluded.filter((x: any) => x.evidence === "grammar-absence").length, 0),
+    zeroSites: covRows.reduce((n, r) => n + r.json.coverage.excluded.filter((x: any) => x.evidence === "zero-sites").length, 0),
+    unclassified: covRows.reduce((n, r) => n + r.json.coverage.excluded.filter((x: any) => x.evidence === "unclassified").length, 0),
+    unexercised: covRows.reduce((n, r) => n + (r.json.coverage.corpusUnexercised?.length ?? 0), 0),
+  }
   console.log(`\nSUMMARY   ${summary.lanes} lanes · incoming PASS ${summary.incomingPass} · fire 10/10 ${summary.firedAll10} · declared gaps ${summary.declaredGaps} (gap.gaps elements only, ${summary.gapArrays} lanes) · STALE ${summary.stale} · unknown ${summary.unknown} · current ${summary.current}`)
+  console.log(`CONTRACT  ${covSum.derived}/${summary.lanes} lanes have a spec to derive from · implemented ${covSum.implemented}/${covSum.applicable} across them · excluded: ${covSum.grammarAbsence} grammar-absence + ${covSum.zeroSites} zero-sites (kept IN the denominator) + ${covSum.unclassified} unclassified · corpus-unexercised ${covSum.unexercised}`)
   console.log(`LEGEND    FIRED n/10 = relationship types that fired (the log's own denominator; fired + SILENT must be 10)`)
   console.log(`          SILENT = types the lane can construct but produced nothing; NOT LISTED = no SILENT line despite <10 fired`)
   console.log(`          INCOMING = verdict + amb/unres/edges; ? = the log does not print that number (NOT zero); not in log = lane absent
                     a PASS row's 0/0 is the verdict's own "every edge resolves" claim (JSON: countersFrom)`)
   console.log(`          EXT CLM = external claims the verdict singles out: u unverifiable, R REFUTED, ? other wording, — none named`)
   console.log(`          GAPS = number of gap.gaps array elements; no spec / no field / gaps≠array / gap[]=N* are NOT zeros (see notes)`)
+  console.log(`          IMPL/APPL = implemented / applicable, DERIVED FROM THE LANE'S OWN SPEC (read-only; no analyzer runs)`)
+  console.log(`                      applicable = 10 - grammar-absence - unclassified; corpus-unexercised = applicable - implemented`)
+  console.log(`                      implemented = the spec's declared emitted set (union) the firing log's fired set, restricted to applicable;`)
+  console.log(`                      JSON carries implementedFrom (which source spoke) and the arithmetic as a string. '?' = not declared, NOT zero`)
+  console.log(`          EXCLUDED = 'not declared' when the spec declares no coverage at all (which is NOT 'none'); otherwise the ruled labels`)
+  console.log(`                      with their EVIDENCE CLASS beside each: G grammar-absence (a whole-grammar`)
+  console.log(`                      node/keyword inventory: the language cannot express it, so it leaves the denominator), 0 zero-sites (the`)
+  console.log(`                      construct exists but occurs 0 times in OUR corpus: it STAYS in the denominator as corpus-unexercised),`)
+  console.log(`                      ? unclassified (ruled out, evidence class unreadable: its own bucket, never promoted to G)`)
+  console.log(`          CORPUS-UNEXERCISED = applicable, implemented, and no construct in our corpus to fire on (yaml calls needs a workflow file)`)
   console.log(`          STALE = worst of firing+incoming vs the analyzer's content mtime (fallback: last commit if the file is gone)`)
   console.log(`                  a commit that postdates a log without an mtime change is NOT stale and is listed in a note; ~ = no commit date`)
   for (const n of notes) console.log(`NOTE      ${n}`)
