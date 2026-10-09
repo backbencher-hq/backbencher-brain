@@ -2550,6 +2550,7 @@ private extractAssignment(
       // attribution pass runs AFTER the walk and would otherwise have to re-derive
       // the shape from a node it no longer holds.
       commandInErrorRecovery: this.isInsideErrorNode(node) || undefined,
+      ...this.externalCommandEvidence(cmdName, isLocal),
       bashSpecific: true,
     })
   }
@@ -2666,6 +2667,46 @@ private extractAssignment(
    * that installs the trap, the target is the handler's command NAME, and the
    * signal rides along in metadata.
    */
+  /**
+   * THE INCOMING MARKER -- `isExternal`, and the evidence that is allowed to carry it.
+   *
+   * `script/m14/incoming-rule.ts` treats an external target as a DECLARED EXCEPTION rather than
+   * a defect, but only when the lane MARKS it, and the marker is a claim the corpus checks: an
+   * unmarked external target and a broken edge are otherwise indistinguishable. MEASURED before
+   * this method existed (`incoming-gate.ts bash sh 60`): 855 unresolved of 2,590 edges, of which
+   * 631 are `calls`, and ZERO edges carried any external marker -- the lane was asserting
+   * nothing about the half of its graph that leaves the repository.
+   *
+   * A FIRST, WIDER VERSION OF THIS RULE WAS MEASURED AND WITHDRAWN, and the measurement is the
+   * reason this one is narrow. It marked every call in a file that contains no `source`/`.` and
+   * no `eval`, on the argument that bash can then only resolve the name through PATH. On the
+   * gate's own population that marked 435 edges and an audit of the marked set
+   * (`probe-bash-incoming-split.mts`, whole-project declaration index) found **82 of them name
+   * a `function_definition` the same repository declares** -- 62 of them
+   * `kube::test::get_object_assert` in kubernetes. The argument is false for a LIBRARY file: a
+   * file that sources nothing may itself be sourced by another file that has already defined the
+   * name, so "this file cannot define it" does not mean "the project cannot supply it". A marker
+   * that is wrong 18.9% of the time is worse than no marker, because the number it removes stops
+   * meaning anything.
+   *
+   * So one shape remains, and it is a fact about the NAME rather than about the file:
+   *
+   *   PATH-INVOKED (`/bin/expr`, `./otp_build`)   the command word contains `/`, and a shell
+   *       function name cannot contain `/`. The shell is being handed a FILE to execute; the
+   *       target can never be a project declaration, whatever else the file does.
+   *
+   * WHAT IS NOT MARKED, and it is the honest half: an unqualified call to a name this file does
+   * not define. Whether the project declares it elsewhere is a fact about the CORPUS, which a
+   * single-file analyzer does not have, and the wider rule's 82 refuted claims are the price of
+   * pretending otherwise. Those edges stay in `unresolved` and are reported there -- the bash
+   * lane's residual is a measured number, not a laundered one.
+   */
+  private externalCommandEvidence(cmdName: string, isLocal: boolean): Record<string, unknown> {
+    if (isLocal) return {}
+    if (!cmdName.includes("/")) return {}
+    return { isExternal: true, externalEvidence: "pathInvokedCommand" }
+  }
+
   private handleTrap(
     node: Node,
     ctx: {
@@ -2737,6 +2778,7 @@ private extractAssignment(
         isExternalCommand: !isLocal,
         resolvedWithinFile: isLocal,
         signals: signals.length > 0 ? signals : ["EXIT"],
+        ...this.externalCommandEvidence(firstToken, isLocal),
         bashSpecific: true,
       })
       emittedAny = true
