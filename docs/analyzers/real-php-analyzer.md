@@ -3232,8 +3232,10 @@ TOTALS: edges 3257   ambiguous 135   unresolved 2483
 - **(a) 1,325 edges name declarations that ARE in the corpus.** They are unresolved because a
   60-file stride over 5,094 files does not contain the declaring file. This is the budget, not
   the analyzer: running one whole project instead —
-  `npx tsx script/m14/incoming-gate.ts php php 0 --repo=phpunit` — resolves **114,153 of 133,468**
-  edges against the same analyzer.
+  `npx tsx script/m14/incoming-gate.ts php php 0 --repo=phpunit` — resolves **33,427 of 133,468**
+  edges (25.0%) against the same analyzer, where the 60-file stride resolves 639 of 3,257 (19.6%).
+  The gain is real and partial, because 80,726 of the 133,468 edges are ambiguous against a
+  whole-project key space — that is the member-identity wall, and no sample size fixes it.
 - **(b) 1,158 edges name nothing anywhere in the admitted corpus**, and only 35 of those are
   php-src names by the analyzer's own table. The rest are library and framework names the
   analyzer cannot prove external from one file (`PHPStan\Analyser\Scope`, `subscribableDispatcher`,
@@ -3280,13 +3282,17 @@ up `targetOwner(tgt)` — everything before the **last dot** — and the verdict
 requires `externalUnverified === 0`. PHP's namespace separator is a BACKSLASH and its member
 targets are BARE, so:
 
-- 2,478 of the 2,483 unresolved targets are bare (`Countable`, `Iterator`, `stdClass`, `text`),
-- 157 of the `imports` targets are backslash-qualified FQNs (`PHPUnit\Framework\TestCase`),
-- and the only 5 dotted targets are FILE PATHS — `smartypants.php`,
-  `__DIR__/../src/FirstPartyClass.php` — where the dot is the extension, so `targetOwner` reads
-  the basename before `.php` as an "owner".
+- **2,478 of the 2,483 unresolved targets have NO DOT AT ALL** — 2,321 bare (`Countable`,
+  `Iterator`, `stdClass`, `text`) and 157 backslash-qualified FQNs (`PHPUnit\Framework\TestCase`)
+  — so `targetOwner` returns null for every one of them,
+- and the remaining 5 are dotted targets that look owner-shaped but are FILE PATHS —
+  `smartypants.php`, `__DIR__/../src/FirstPartyClass.php` — where the dot is the extension, so
+  `targetOwner` reads the basename before `.php` as an "owner".
 
-For every one of those 2,478 bare targets `targetOwner` returns null, so even a PERFECTLY marked
+(2,321 + 157 + 5 = 2,483; the shape histogram is printed per relationship type by the census, so
+this arithmetic is checkable rather than asserted.)
+
+Because `targetOwner` returns null for all 2,478 dotless targets, even a PERFECTLY marked
 php lane lands in `externalUnverified` and FAILS with `N external claim(s) name no identifier-
 shaped owner`. The one verify path that can fire for php is an accident of file extensions. No
 key in `EXTERNAL_KEYS` changes this (`binding`, `remoteRef` and `importProjectFile` are all
