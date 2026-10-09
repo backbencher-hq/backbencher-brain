@@ -79,12 +79,12 @@
     "declaredAbsentOses": [
       "win32"
     ],
-    "filesScanned": 168,
-    "spawnSitesJudged": 541,
+    "filesScanned": 184,
+    "spawnSitesJudged": 559,
     "spawnSitesByReach": {
-      "directCallSitesResolvedByName": 230,
-      "localWrapperCallSitesArgumentScanned": 266,
-      "commandComputedAtRuntimeNotJudgedByName": 45
+      "directCallSitesResolvedByName": 242,
+      "localWrapperCallSitesArgumentScanned": 273,
+      "commandComputedAtRuntimeNotJudgedByName": 44
     },
     "findings": [],
     "plantedDefectsCaught": 14,
@@ -169,12 +169,44 @@
     },
     "outOfLaneFindings": [
       {
+        "file": "script/lanes/incoming-rust/perf.ts",
+        "line": 127,
+        "kind": "non-portable-binary",
+        "matched": "nproc",
+        "api": "execFileSync",
+        "reason": "GNU coreutils CPU counter; absent on macOS, which also has no /proc/cpuinfo."
+      },
+      {
         "file": "script/m14/tmp/c-audit/census.ts",
         "line": 445,
         "kind": "non-portable-binary",
         "matched": "nproc",
         "api": "execSync",
         "reason": "GNU coreutils CPU counter; absent on macOS, which also has no /proc/cpuinfo."
+      },
+      {
+        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/sql/hang-isolate.mts",
+        "line": 80,
+        "kind": "non-portable-binary",
+        "matched": "md5sum",
+        "api": "execFileSync",
+        "reason": "GNU coreutils checksum tool; absent on macOS (`md5`)."
+      },
+      {
+        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/zig/large-file-route.ts",
+        "line": 64,
+        "kind": "gnu-only-command-form",
+        "matched": "find -printf",
+        "api": "execFileSync",
+        "reason": "GNU find's -printf; BSD find has no such primary (measured: `find: -printf: unknown primary or operator`)."
+      },
+      {
+        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/zig/parse-robustness.ts",
+        "line": 75,
+        "kind": "gnu-only-command-form",
+        "matched": "find -printf",
+        "api": "execFileSync",
+        "reason": "GNU find's -printf; BSD find has no such primary (measured: `find: -printf: unknown primary or operator`)."
       },
       {
         "file": "script/m14/tmp/vue-mr/loadavg.ts",
@@ -215,11 +247,19 @@
         "matched": "sha256sum",
         "api": "execFileSync",
         "reason": "GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
+      },
+      {
+        "file": "script/m60/run-sql-source-mutants.ts",
+        "line": 87,
+        "kind": "non-portable-binary",
+        "matched": "md5sum",
+        "api": "execFileSync",
+        "reason": "GNU coreutils checksum tool; absent on macOS (`md5`)."
       }
     ],
     "ok": true
   },
-  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
   "sourceFingerprint": "8f156b68257952e2e20aa72585047fe6348c926646522ea0eb7e08a2899e1ed9",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -230,7 +270,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-10-05T22:37:53.242Z",
+  "generatedAt": "2026-10-09T02:21:58.959Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -244,7 +284,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:37:53.243Z",
-    "contentSha256": "82a461e5610ac3c0452b65734a90e508e267baff9233a77ce2424ff41994b2dc"
+    "sealedAt": "2026-10-09T02:21:58.960Z",
+    "contentSha256": "74e02418f8357e133ea1f906f6e8850b6387026cf874dd799329011b4eebda6f"
   }
 }
