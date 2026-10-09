@@ -890,34 +890,78 @@ POSITIVE CONTROL FIRED: 167 version-catalogue aliases across 5 files (>= 20 requ
              NOT 2/10 — that form scores finished work as 20%
 ```
 
-**So the answer is neither 2/10 nor 2/2. It is 7/7 measured, with 3 rulings still
-unverified.** That is a larger claim than "the remaining 8 are all inapplicable",
-and it is the one the evidence supports:
+**The adjudication, after the audit was run at full corpus.** The first run left
+three rulings unverified. Two were resolved by measurement and one did not:
 
-- **5 are verified by measurement** — `calls`, `uses`, `extends`, `implements`,
-  `instantiates`. The grounds are structural rather than name-based: TOML's
-  grammar contains no expression node, no type-declaration node, no interface node
-  and no construction node, so there is nothing for a call, a typed use, a
-  supertype, a conformance clause or an instantiation to be written in. That does
-  not depend on which key names the corpus happens to use, which is what makes it
-  stronger than the shape probes.
-- **3 are NOT verified**, and this is the part the arbiter's green row concealed.
-  `exports` rests on a JUDGEMENT — that a crate's public surface is its Rust source
-  rather than its manifest — and the **json lane reached the opposite conclusion on
-  the same type**, so two lanes currently hold contradictory verdicts on identical
-  reasoning. `imports` is where the audit and the ruling table disagree
-  numerically: the ruling dismisses 216 file-valued strings as "lists a tool is
-  told about", while the audit finds **173 of them are SINGLE-valued** — every one
-  a `path = "..."` key in a Julia `Project.toml`, naming a dev-dependency that
-  exists on disk. A single-valued key naming a real file is a path-dependency
-  declaration, which is closer to an import than to a list. `overrides` is measured
-  0 replacements but rests on the reading that a repeated table header is a spec
-  violation rather than a second-definition-wins.
+```
+  types in the ontology           : 10
+  EMITTED and implemented         : 2  [contains, references]
+  APPLICABLE, NOT implemented     : 1  [imports]
+  RULED, verified by MEASUREMENT  : 6  [calls, uses, extends, implements, overrides, instantiates]
+  RULED, UNVERIFIED               : 1  [exports]
+                                    2+1+6+1 = 10 of 10
 
-**Applicability is not coverage, and the two must not be reported as one number.**
-Both emitted types fire, but `references` fires on the Gradle catalogue only; the
-Cargo workspace-inheritance population (`x.workspace = true`, 1,269 sites) is the
-SAME type and is not implemented. A "7/7" that hid that would be true and useless.
+  APPLICABLE = 3 of 10   (types whose construct EXISTS in the language)
+  IMPLEMENTED = 2/3 of those — the figure that is actually a completion score
+```
+
+**`imports` IS APPLICABLE, and the ruling table is wrong on that row.** The ruling
+dismissed 216 file-valued strings as "lists a tool is told about". Asked by ROLE
+instead of by name-shape — does a key that DECLARES A DEPENDENCY point at a path
+reaching another real manifest? — the corpus answers **331 dependency-shaped
+`path = "…"` sites, of which 317 resolve to a directory holding a
+`Cargo.toml` / `Project.toml`: 96% resolution.** The shapes are `[dependencies]`,
+`dev-dependencies`, `build-dependencies`, `workspace.dependencies`, Julia's
+`[sources]`, and `[patch.crates-io]`. A path dependency says the manifest cannot be
+built without another unit, which is an import in the plainest sense. It is written
+as an ordinary inline table, which is exactly why instrument A could not see it and
+why the ruling's own dismissal does not reach it. This is now the lane's cheapest
+remaining win: the construct is measured, the resolution is 96%, and it is a
+cross-document edge that makes toml's incoming side answer "what does this manifest
+depend on".
+
+**`overrides` is SOUND, and it took four corrections to establish.** The redefinition
+probe first reported **147** scalar keys declared twice in one document. Each was a
+scoping defect in the probe, not a population in the corpus:
+
+1. counted by FINAL SEGMENT rather than full PATH, so `Documenter` under `[deps]`
+   and again under `[weakdeps]` collapsed into one (147 → 38);
+2. inline-table keys were not scoped to their inline table, so `guava.module` and
+   `jetty.module` counted as one declaration (38 → 20);
+3. the count was SUMMED ACROSS DOCUMENTS, so `project.name` declared once in eleven
+   files read as eleven redefinitions of one (20 → 4);
+4. an ARRAY of inline tables (`authors = [{name = …}]`) was not scoped either (4 → 0).
+
+The settled number is **0 scalar redefinitions**, **1 repeated plain table header**
+corpus-wide, and **110 repeated array-of-tables headers, which TOML appends to** so
+nothing is replaced. The honest ground for this ruling is that size, not the reading.
+An earlier draft of the audit also claimed the parser flags that one repeated header
+as an ERROR; it does not, and that claim is withdrawn rather than kept because it
+sounded like evidence.
+
+**`exports` stays UNVERIFIED, and a claim made about it here was wrong.** An earlier
+draft said "the json lane reached the opposite conclusion". It does not:
+`json-ruled.ts` holds ONE entry (`instantiates`) and no `exports` ruling at all.
+json does not rule on `exports`, it **implements** it, at
+`src/ast/real-json-analyzer.ts:905`. So the two lanes took opposite branches rather
+than publishing contradictory reasoning, and neither has published a measurement
+that settles which branch is right — json's own `exports` is additionally
+un-audited (it sits in json's 6 un-audited types). On this type the config lanes are
+collectively unadjudicated, and toml's `exports` ruling is a judgement (a crate's
+public surface is its Rust source, not its manifest) that no measurement supports.
+
+**The right way to state this lane's state is three numbers, not one.**
+
+- **APPLICABLE 3 of 10** — contains, references, imports. A denominator of 10 scores
+  six measured absences as missing work.
+- **IMPLEMENTED 2 of those 3** — the actual completion score. `imports` is measured
+  to exist and is not emitted.
+- **RULED 6 by measurement, 1 open.**
+
+And applicability is still not coverage: `references` fires on the Gradle catalogue
+only, while the Cargo workspace-inheritance population (`x.workspace = true`, 1,269
+sites) is the same type and is also unimplemented. Even "2/3 implemented" overstates
+how much of each applicable type is covered.
 
 ### The ruling table, and the arbiter's own verdict
 

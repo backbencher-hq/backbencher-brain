@@ -152,8 +152,14 @@ interface Doc {
   dir: string
   /** every key path this document declares, scalar or not */
   declared: Set<string>
-  /** final segments of SCALAR declarations, with how many times each appears */
-  scalarSegs: Map<string, number>
+  /** FULL dotted PATHS of scalar declarations, with how many times each appears.
+   *  Keyed by PATH, not by final segment: `Documenter` under `[deps]` and again
+   *  under `[weakdeps]` is two distinct keys at two distinct paths, and TOML
+   *  forbids redefining a key PATH. The first cut of this probe counted by leaf
+   *  and reported 147 "scalar keys declared twice" in a corpus that contains no
+   *  such redefinition — a cross-section collision dressed as an override
+   *  population, which is precisely the error the verdict is supposed to detect. */
+  scalarPaths: Map<string, number>
   /** header path -> times declared, split by whether it is an array-of-tables */
   plainHeaders: Map<string, number>
   arrayHeaders: Map<string, number>
@@ -170,6 +176,14 @@ interface Survey {
   valueKinds: Map<string, Map<string, number>>
   fileNaming: { leaf: string; arrayValued: boolean; rel: string; line: number }[]
   supertypeLike: { leaf: string; rel: string; line: number }[]
+  /** `foo = { path = "..." }` inside a section that DECLARES A DEPENDENCY on
+   *  another unit — as opposed to one that names this crate's OWN source, which
+   *  is what `bin`/`lib` mean. Resolution is checked against the filesystem. */
+  depSites: number
+  depResolvesToManifest: number
+  depSelfReferential: number
+  depUnresolvable: number
+  depExamples: string[]
   inlineAliases: number
   aliasFiles: Set<string>
   files: number
@@ -177,7 +191,9 @@ interface Survey {
 
 const newSurvey = (): Survey => ({
   nodeTypes: new Map(), keyLeaves: new Map(), plainHeaders: new Map(), arrayHeaders: new Map(),
-  valueKinds: new Map(), fileNaming: [], supertypeLike: [], inlineAliases: 0, aliasFiles: new Set(), files: 0,
+  valueKinds: new Map(), fileNaming: [], supertypeLike: [],
+  depSites: 0, depResolvesToManifest: 0, depSelfReferential: 0, depUnresolvable: 0, depExamples: [],
+  inlineAliases: 0, aliasFiles: new Set(), files: 0,
 })
 
 /** Does `name` name a file that EXISTS, relative to the manifest? Resolved on
@@ -194,16 +210,28 @@ const PUBLISH_SHAPE = /^(export|exports|expose|exposed|pub|public|publish|main|m
 const INHERITANCE_SHAPE = /^(extends|extend|extends_from|inherits_from|base|parent|superclass|derived_from|template|implements|implement|implements_from|iface|interface|contracts)$/
 
 function surveyFile(root: any, s: Survey, rel: string, dir: string): Doc {
-  const doc: Doc = { rel, dir, declared: new Set(), scalarSegs: new Map(), plainHeaders: new Map(), arrayHeaders: new Map(), aliasHits: 0 }
+  const doc: Doc = { rel, dir, declared: new Set(), scalarPaths: new Map(), plainHeaders: new Map(), arrayHeaders: new Map(), aliasHits: 0 }
 
   // Pass A — DECLARATIONS ONLY. Walked first so the ROLE questions below can ask
   // "does this value name something THIS DOCUMENT declares", which is the only
   // form of that question a single forward pass can answer correctly.
-  const collect = (n: any): void => {
+  // `inInline` marks a pair nested inside an INLINE TABLE's value. Such a key is
+  // scoped to its own inline table: `guava = { module = ... }` and
+  // `jetty = { module = ... }` declare `guava.module` and `jetty.module`, which are
+  // different keys. Counting them as one path reported `libraries.module×4` on a
+  // Gradle catalogue and `libraries.version.ref×5`, i.e. the redefinition probe
+  // firing on the very construct this lane correctly emits `references` from.
+  // `sectionIsArray` marks a `[[array-of-tables]]` header. Each instance APPENDS a
+  // new element, so `name` under the 11th `[[project]]` is a different key from the
+  // first — not a redefinition. Counting them reported `project.name×11` in a
+  // document that redefines nothing.
+  const collect = (n: any, section: string, inInline = false, sectionIsArray = false): void => {
     s.nodeTypes.set(n.type, (s.nodeTypes.get(n.type) ?? 0) + 1)
     if (n.type === "table" || n.type === "table_array_element") {
       const h = keyNodeOf(n)
       if (h) {
+        section = segmentsOf(h).join(".")
+        sectionIsArray = n.type === "table_array_element"
         const p = segmentsOf(h).join(".")
         doc.declared.add(p)
         const m = n.type === "table" ? doc.plainHeaders : doc.arrayHeaders
@@ -217,17 +245,40 @@ function surveyFile(root: any, s: Survey, rel: string, dir: string): Doc {
       if (!k) return
       const segs = segmentsOf(k)
       if (segs.length === 0) return
-      const leaf = segs[segs.length - 1] as string
-      doc.declared.add(leaf)
+      doc.declared.add(segs[segs.length - 1] as string)
       const v = valueOfPair(n)
-      if (isScalar(v)) doc.scalarSegs.set(leaf, (doc.scalarSegs.get(leaf) ?? 0) + 1)
+      if (isScalar(v) && !inInline && !sectionIsArray) {
+        const full = section ? `${section}.${segs.join(".")}` : segs.join(".")
+        doc.scalarPaths.set(full, (doc.scalarPaths.get(full) ?? 0) + 1)
+      }
     }
-    for (const c of kids(n)) collect(c)
+    // An ARRAY of inline tables scopes its keys just as an inline table does:
+    // `authors = [{name = "..."}]` and `disallowed-methods = [{path = "..."}]` each
+    // element has its own `name`/`path`. Propagating only on `inline_table` left
+    // those unscoped and reported `project.name×2` and `path×15` as redefinitions in
+    // documents that redefine nothing — the last of four scoping defects this probe
+    // carried, each of which manufactured a population out of a scoping mistake.
+    const childInInline = n.type === "pair" && (valueOfPair(n)?.type === "inline_table" || valueOfPair(n)?.type === "array")
+    for (const c of kids(n)) collect(c, section, inInline || childInInline, sectionIsArray)
   }
-  collect(root)
+  collect(root, "")
+
+  // Sections that DECLARE A DEPENDENCY on another unit, versus sections that name
+  // this crate's OWN source. `bin`/`lib` name `main.rs`/`src/lib.rs` — the crate's
+  // own files, which is not a dependency in any reading. `dependencies`,
+  // `dev-dependencies`, `workspace.dependencies`, `sources` and `patch.*` each say
+  // "this document needs another unit, and here is where it lives", which is a
+  // dependency in the plainest sense and is the question instrument A could not
+  // reach, because it is written as an ordinary inline table.
+  const DEP_SECTIONS = new Set(["dependencies", "dev-dependencies", "build-dependencies", "workspace.dependencies", "sources", "patch.crates-io"])
+  const MANIFESTS = ["Cargo.toml", "Project.toml", "JuliaProject.toml"]
 
   // Pass B — THE ROLE QUESTIONS, now that every declaration is known.
-  const roles = (n: any): void => {
+  const roles = (n: any, section: string): void => {
+    if (n.type === "table" || n.type === "table_array_element") {
+      const h = keyNodeOf(n)
+      if (h) { const ns = segmentsOf(h).join("."); for (const c of kids(n)) roles(c, ns); return }
+    }
     if (n.type === "pair") {
       const k = keyNodeOf(n)
       const v = valueOfPair(n)
@@ -249,6 +300,36 @@ function surveyFile(root: any, s: Survey, rel: string, dir: string): Doc {
           // candidate filter, and every candidate is counted either way.
           if (INHERITANCE_SHAPE.test(leaf) && doc.declared.has(str)) s.supertypeLike.push({ leaf, rel, line })
         }
+        // The IMPORTS question, asked by ROLE: does a key that DECLARES A
+        // DEPENDENCY point at a path that reaches another real manifest?
+        //   [dependencies] foo = { path = "../foo" }
+        // The dependency is the OUTER key and `path` is the inner one, so a probe
+        // that reads the outer key as `path` sees nothing — which is what the
+        // first version of this did, and it reported 0 on a population of 331.
+        if (v.type === "inline_table" && DEP_SECTIONS.has(section)) {
+          const outer = segs.join(".")
+          for (const inner of kids(v)) {
+            if (inner.type !== "pair") continue
+            const ik = keyNodeOf(inner)
+            if (!ik) continue
+            const is = segmentsOf(ik)
+            if (is[is.length - 1] !== "path") continue
+            const target = stringOf(valueOfPair(inner))
+            if (!target) continue
+            s.depSites++
+            const abs = path.resolve(dir, target)
+            if (abs === dir) { s.depSelfReferential++; continue }
+            let ok = false
+            try { ok = fs.statSync(abs).isDirectory() && MANIFESTS.some((m) => fs.existsSync(path.join(abs, m))) } catch { ok = false }
+            if (ok) {
+              s.depResolvesToManifest++
+              if (s.depExamples.length < 4) s.depExamples.push(`${section}.${outer} → ${target}`)
+            } else {
+              s.depUnresolvable++
+              if (s.depExamples.length < 8) s.depExamples.push(`UNRESOLVED ${section}.${outer} → ${target}`)
+            }
+          }
+        }
         // The POSITIVE CONTROL construct, and the only place a `ref` alias is
         // recognised: inside an inline table, last segment `ref`, string value
         // naming a key this document declares.
@@ -265,9 +346,9 @@ function surveyFile(root: any, s: Survey, rel: string, dir: string): Doc {
         }
       }
     }
-    for (const c of kids(n)) roles(c)
+    for (const c of kids(n)) roles(c, section)
   }
-  roles(root)
+  roles(root, "")
   return doc
 }
 
@@ -277,8 +358,13 @@ function surveyFile(root: any, s: Survey, rel: string, dir: string): Doc {
  * ------------------------------------------------------------------ */
 interface Verdict {
   type: Type
+  /** true when the type's construct is MEASURED ABSENT, so the ruling holds. */
   sound: boolean
-  grade: "strong" | "arguable"
+  /** `applicable-unimplemented` is neither sound nor unverified: the construct was
+   *  MEASURED TO EXIST and the lane does not emit it. That is the one category the
+   *  raw count could not express, and it is the reason `emitted 2/10` is the wrong
+   *  number twice over. */
+  grade: "strong" | "arguable" | "applicable-unimplemented"
   question: string
   answer: string
   examples: string[]
@@ -316,18 +402,19 @@ function adjudicate(s: Survey, docs: Doc[]): Verdict[] {
     examples: [],
   })
 
+  // `imports` is adjudicated by the DEPENDENCY-SHAPED probe, not the generic
+  // file-naming one. The generic probe is reported too, because the gap between
+  // them is the finding: it counts every key naming a real file (including `bin`
+  // and `lib`, which name this crate's OWN source) and the ruling table dismissed
+  // that whole population. The dependency-shaped subset is the part that survives.
   const singleNamed = s.fileNaming.filter((f) => !f.arrayValued)
-  const arrayNamed = s.fileNaming.filter((f) => f.arrayValued)
   V.push({
     type: "imports",
-    sound: singleNamed.length === 0,
-    grade: singleNamed.length === 0 ? "strong" : "arguable",
-    question: "does any SINGLE-valued key name a file that EXISTS on disk, in a position the document could not work without?",
-    answer: `${s.fileNaming.length} values name a file that exists, and ${singleNamed.length === 0 ? "ALL of them are array-valued" : `${singleNamed.length} of them are single-valued`}. An array is a list a tool is TOLD ABOUT — a CI trigger list, a set of files NOT to touch, a glob. A single-valued include would be an import, and the count is ${singleNamed.length}.`,
-    examples: [
-      ...singleNamed.slice(0, 6).map((f) => `SINGLE ${f.rel}:${f.line} ${f.leaf}`),
-      ...arrayNamed.slice(0, 3).map((f) => `array  ${f.rel}:${f.line} ${f.leaf}`),
-    ],
+    sound: false,
+    grade: "applicable-unimplemented",
+    question: "does a key that DECLARES A DEPENDENCY point at a path reaching another real manifest?",
+    answer: `${s.depSites} \`path\` sites sit in a DEPENDENCY section (dependencies, dev-dependencies, build-dependencies, workspace.dependencies, sources, patch.*), and ${s.depResolvesToManifest} of them resolve to a directory that holds a Cargo.toml / Project.toml — ${s.depSites === 0 ? 0 : Math.round((s.depResolvesToManifest / s.depSites) * 100)}% resolution. ${s.depSelfReferential} are self-referential and ${s.depUnresolvable} do not resolve. A path dependency is a dependency in the plainest sense: \`[dependencies] foo = { path = "../foo" }\` says this manifest cannot be built without another unit, and that unit's manifest is a real file. **THE RULING TABLE IS WRONG ON THIS ROW** and the audit reports it unverified rather than rounding it up. Note the shape it is written in — an ordinary inline table — is exactly why instrument A could not see it and why the ruling's own dismissal ("lists a tool is told about") does not reach it.`,
+    examples: s.depExamples,
   })
 
   const pubCount = sum(s.keyLeaves, PUBLISH_SHAPE)
@@ -367,15 +454,22 @@ function adjudicate(s: Survey, docs: Doc[]): Verdict[] {
   for (const d of docs) {
     for (const [p, c] of d.plainHeaders) if (c >= 2) repeatedPlain++
     for (const [p, c] of d.arrayHeaders) if (c >= 2) repeatedArray++
-    for (const [leaf, c] of d.scalarSegs) if (c >= 2) scalarTwice.set(leaf, (scalarTwice.get(leaf) ?? 0) + 1)
+    // Count REPEATS WITHIN this document only. Summing across documents measured
+    // "declared in 2 or more files", which is a name collision between files and not
+    // a redefinition inside one — it reported `project.name×11` for eleven documents
+    // that each declared `project.name` exactly once.
+    for (const [full, c] of d.scalarPaths) if (c >= 2) scalarTwice.set(full, (scalarTwice.get(full) ?? 0) + 1)
   }
-  const scalarRepeats = [...scalarTwice].filter(([, c]) => c >= 2)
+  // `scalarTwice` now holds ONE entry per (document, path) that repeats, so every
+  // entry in it IS a redefinition; the >= 2 filter that used to live here was what
+  // conflated "repeated in one document" with "present in two documents".
+  const scalarRepeats = [...scalarTwice]
   V.push({
     type: "overrides",
     sound: scalarRepeats.length === 0,
     grade: "strong",
     question: "does any redeclaration REPLACE a prior declaration, rather than append, or violate the spec?",
-    answer: `${repeatedPlain} plain table headers are declared 2+ times — TOML v1.0.0 FORBIDS redefining a table, so that is a spec violation in the corpus rather than an override, and an override reading would be the second definition WINNING, which the spec does not permit. ${repeatedArray} array-of-tables headers are declared 2+ times, and TOML APPENDS to those, so nothing is replaced. ${scalarRepeats.length} scalar keys are declared twice within one document. A replacement therefore has no construct anywhere in the grammar.`,
+    answer: `${repeatedPlain} plain table header is declared 2+ times in the whole corpus, in 1 file. ${repeatedArray} array-of-tables headers are declared 2+ times, and TOML APPENDS to those, so nothing is replaced. ${scalarRepeats.length} scalar keys are declared twice within one document. THE CORRECTION to an earlier draft of this file: it claimed the single repeated plain header is "a spec violation, and the parser flags it" — the parser does NOT flag it (0 of the files carrying a repeated plain header produce an ERROR node), so that half was asserted rather than measured. The population is nonetheless 1 site in ${s.files} files, and the spec reading (redefining a table is invalid) is what makes it a violation rather than a second-definition-wins override. The MEASURED argument is the size: there is no replacement construct to find.`,
     examples: scalarRepeats.slice(0, 4).map(([k, c]) => `${k}×${c}`),
   })
 
@@ -503,7 +597,7 @@ async function main(): Promise<void> {
   console.log("-".repeat(96))
   const verdicts = adjudicate(s, docs)
   for (const v of verdicts) {
-    const mark = !v.sound ? "UNVERIFIED " : v.grade === "strong" ? "SOUND      " : "SOUND?     "
+    const mark = v.grade === "applicable-unimplemented" ? "APPLICABLE! " : !v.sound ? "UNVERIFIED " : v.grade === "strong" ? "SOUND      " : "SOUND?     "
     console.log(`\n${v.type.toUpperCase().padEnd(13)} ${mark}`)
     console.log(`  asked     ${v.question}`)
     console.log(`  answered  ${v.answer}`)
@@ -511,31 +605,36 @@ async function main(): Promise<void> {
   }
 
   const emitted = TYPES.filter((t) => t === "contains" || t === "references")
+  const applicableUnimplemented = verdicts.filter((v) => v.grade === "applicable-unimplemented")
   const strong = verdicts.filter((v) => v.sound && v.grade === "strong")
-  const arguable = verdicts.filter((v) => v.sound && v.grade === "arguable")
-  const unverified = verdicts.filter((v) => !v.sound)
+  const unverified = verdicts.filter((v) => !v.sound && v.grade !== "applicable-unimplemented")
+  const applicable = emitted.length + applicableUnimplemented.length
+  const ruled = strong.length
 
-  console.log("\n" + "=".repeat(96))
+  console.log("=".repeat(96))
   console.log("THE DENOMINATOR")
   console.log("=".repeat(96))
   console.log(`  types in the ontology           : ${TYPES.length}`)
-  console.log(`  EMITTED (construct exists)      : ${emitted.length}  [${emitted.join(", ")}]`)
-  console.log(`  RULED, verified by MEASUREMENT  : ${strong.length}  [${strong.map((v) => v.type).join(", ")}]`)
-  console.log(`  RULED, sound but ARGUABLE       : ${arguable.length}  [${arguable.map((v) => v.type).join(", ") || "none"}]`)
+  console.log(`  EMITTED and implemented         : ${emitted.length}  [${emitted.join(", ")}]`)
+  console.log(`  APPLICABLE, NOT implemented     : ${applicableUnimplemented.length}  [${applicableUnimplemented.map((v) => v.type).join(", ") || "none"}]`)
+  console.log(`  RULED, verified by MEASUREMENT  : ${ruled}  [${strong.map((v) => v.type).join(", ")}]`)
   console.log(`  RULED, UNVERIFIED               : ${unverified.length}  [${unverified.map((v) => v.type).join(", ") || "none"}]`)
+  console.log(`                                    ${emitted.length}+${applicableUnimplemented.length}+${ruled}+${unverified.length} = ${emitted.length + applicableUnimplemented.length + ruled + unverified.length} of ${TYPES.length}`)
 
-  const applicable = emitted.length + strong.length
-  const conditional = emitted.length + strong.length + arguable.length
-  console.log(`\n  APPLICABLE (measured)           : ${applicable} of ${TYPES.length}`)
-  console.log(`  APPLICABLE (counting arguable)  : ${conditional} of ${TYPES.length}  <- the defensible ceiling`)
-  console.log(`\n  REPORTED : ${applicable}/${applicable} APPLICABLE, MEASURED`)
-  console.log(`             NOT ${emitted.length}/${TYPES.length} — that form scores finished work as ${(emitted.length / TYPES.length * 100).toFixed(0)}%`)
-  if (arguable.length > 0) console.log(`             ${conditional}/${conditional} APPLICABLE IF the ${arguable.length} arguable ruling(s) are accepted`)
+  console.log(`\n  APPLICABLE = ${applicable} of ${TYPES.length}   (types whose construct EXISTS in the language)`)
+  console.log(`  IMPLEMENTED = ${emitted.length}/${applicable} of those — the figure that is actually a completion score`)
+  console.log(`  RULED       = ${ruled} by measurement, ${unverified.length} still open`)
+  console.log(`\n  NOT ${emitted.length}/${TYPES.length}. That form counts an unimplemented-but-applicable type as`)
+  console.log(`  "not done" and a measured-absence ruling as "missing work", so finished work scores 20%.`)
+  if (applicableUnimplemented.length > 0) {
+    console.log(`  ${applicableUnimplemented.length} type(s) are APPLICABLE AND UNIMPLEMENTED — measured to exist, not emitted.`)
+    console.log(`  Those are the cheapest remaining wins in this lane: the construct is already counted.`)
+  }
 
-  console.log(`\n  APPLICABILITY IS NOT COVERAGE. Both emitted types fire, but \`references\` fires on the`)
-  console.log(`  Gradle catalogue only. The Cargo workspace-inheritance population — \`x.workspace = true\`,`)
-  console.log(`  1,269 sites on this corpus — is the SAME type and is NOT implemented. So ${applicable}/${applicable}`)
-  console.log(`  is true about APPLICABILITY and says nothing about how much of each applicable type is covered.`)
+  console.log(`\n  APPLICABILITY IS NOT COVERAGE, and the two are reported separately above.`)
+  console.log(`  \`references\` fires on the Gradle catalogue only; the Cargo workspace-inheritance population`)
+  console.log(`  (\`x.workspace = true\`, 1,269 sites) is the SAME type and is NOT implemented either, so even`)
+  console.log(`  ${emitted.length}/${applicable} overstates how much of each applicable type is covered.`)
 
   if (unverified.length > 0) {
     console.log(`\n  ${unverified.length} ruling(s) are UNVERIFIED by this audit: ${unverified.map((v) => v.type).join(", ")}`)
