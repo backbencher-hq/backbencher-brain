@@ -59,6 +59,22 @@ try {
 
   const backupDb = path.join(base, "backups", "my-backup-copy.db")
   mkdirSync(path.dirname(backupDb), { recursive: true })
+  // Checkpoint before copying. This fixture was making the same mistake the
+  // PRODUCT made: every brain.db is WAL (src/storage/db.node.ts), the committed
+  // rows live in the `-wal` sidecar until a checkpoint folds them into the main
+  // file, and copyFileSync copies only the main file.
+  //
+  // Measured here immediately after indexing: brain.db was a 4096-byte header,
+  // brain.db-wal held the single brain_file row, and the copy had no
+  // brain_file table at all. `importDbFile` then refused its input with
+  // "not a brain DB (no brain_file table)" — the refusal working correctly on a
+  // file that really was empty — and S1 failed for two runs while S2, which reads
+  // the live db, passed. The fixture was testing the wrong file.
+  //
+  // Fixed in src/ast/project-registry.ts as well, because a user running
+  // `bb index --import` on a copied brain.db hits exactly this.
+  BrainDatabase.openByPath(srcDb).exec("PRAGMA wal_checkpoint(TRUNCATE)")
+  BrainDatabase.closeByPath(srcDb)
   copyFileSync(srcDb, backupDb)
 
   const moved = path.join(base, "moved-proj")
