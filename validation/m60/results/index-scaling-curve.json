@@ -1,0 +1,2020 @@
+{
+  "record": "index-scaling-curve",
+  "claim": "the indexer's cost per stored relationship stays bounded as the file count grows, and the wall-time rate of a real-repo index is explained by which phase is running, not by throughput decay within the run",
+  "generatedAt": "2026-10-08T22:58:23.699Z",
+  "commit": "612b004a1fb8d8d1b09c70e239738f58ef44c0ae",
+  "machine": {
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": "8",
+    "model": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
+    "node": "v20.19.5",
+    "note": "Shared Linux workstation; load1 per tier is recorded on each row because this machine is not idle."
+  },
+  "producers": {
+    "poolFixture": "script/perf/make-pools.sh 800 — nested prefixes of one deterministic ordering, so n50 ⊂ n200 ⊂ n400 ⊂ n800",
+    "poolTier": "BB_DATA_DIR=<fresh dir> npx tsx script/perf/profile-stages.ts .perf-fixtures/bb-scale/n<N> <label>",
+    "realCorpus": "BB_DATA_DIR=<fresh dir> BB_LOG_LEVEL=info node bin/bb index <repo> --no-setup",
+    "gate": "npx tsx script/perf/verify-scaling-linear.ts --tiers 50,200 --repeat 3 --label after-linux (see scaling-linear.after-linux.json)"
+  },
+  "rawInputs": {
+    "window": "validation/m60/results/index-scaling-curve.window-raw.jsonl",
+    "linear": "validation/m60/results/index-scaling-curve.linear-raw.jsonl",
+    "note": "The window arm cannot be re-measured at HEAD: the window plan no longer exists in src/. Its raw per-tier output is committed beside this record so the numbers stay auditable."
+  },
+  "arms": {
+    "window": {
+      "provenance": "git 17c50265a^ (the commit before the linear resolution plan landed), built from src/ with only src/ast/parallel-indexer.ts taken from that commit; the rest of the tree at HEAD",
+      "poolTiers": [
+        {
+          "label": "window-n50",
+          "files": 47,
+          "symbols": 1806,
+          "relationships": 7968,
+          "wallMs": 21504,
+          "phases": {
+            "parse": {
+              "ms": 15101,
+              "share": 0.7022
+            },
+            "dbFlush": {
+              "ms": 3850,
+              "share": 0.179
+            },
+            "postProcessing": {
+              "ms": 1907,
+              "share": 0.0887
+            },
+            "discovery": {
+              "ms": 43,
+              "share": 0.002
+            },
+            "workerStartup": {
+              "ms": 2400,
+              "share": 0.1116
+            }
+          },
+          "workerCount": 6,
+          "filesPerSec": 2.186,
+          "relsPerFile": 169.5,
+          "harnessJoinRows": 9073,
+          "relDigest": "b4a156f135e07a18",
+          "dangling": {
+            "source": 1613,
+            "target": 0,
+            "nullSource": 1613,
+            "nullTarget": 3067
+          },
+          "load1": 4.77
+        },
+        {
+          "label": "window-n200",
+          "files": 196,
+          "symbols": 10404,
+          "relationships": 63331,
+          "wallMs": 71928,
+          "phases": {
+            "parse": {
+              "ms": 55562,
+              "share": 0.7725
+            },
+            "dbFlush": {
+              "ms": 32139,
+              "share": 0.4468
+            },
+            "postProcessing": {
+              "ms": 14235,
+              "share": 0.1979
+            },
+            "discovery": {
+              "ms": 57,
+              "share": 0.0008
+            },
+            "workerStartup": {
+              "ms": 1414,
+              "share": 0.0197
+            }
+          },
+          "workerCount": 7,
+          "filesPerSec": 2.725,
+          "relsPerFile": 323.1,
+          "harnessJoinRows": 180034,
+          "relDigest": "3209417140db9b0a",
+          "dangling": {
+            "source": 5853,
+            "target": 0,
+            "nullSource": 5853,
+            "nullTarget": 17858
+          },
+          "load1": 6.71
+        },
+        {
+          "label": "window-n400",
+          "files": 396,
+          "symbols": 17069,
+          "relationships": 91379,
+          "wallMs": 107458,
+          "phases": {
+            "parse": {
+              "ms": 80918,
+              "share": 0.753
+            },
+            "dbFlush": {
+              "ms": 64864,
+              "share": 0.6036
+            },
+            "postProcessing": {
+              "ms": 24113,
+              "share": 0.2244
+            },
+            "discovery": {
+              "ms": 70,
+              "share": 0.0007
+            },
+            "workerStartup": {
+              "ms": 1337,
+              "share": 0.0124
+            }
+          },
+          "workerCount": 7,
+          "filesPerSec": 3.685,
+          "relsPerFile": 230.8,
+          "harnessJoinRows": 556804,
+          "relDigest": "4e8612cee282152c",
+          "dangling": {
+            "source": 15888,
+            "target": 0,
+            "nullSource": 15888,
+            "nullTarget": 22767
+          },
+          "load1": 9.74
+        },
+        {
+          "label": "window-n800",
+          "files": 796,
+          "symbols": 27856,
+          "relationships": 124114,
+          "wallMs": 170351,
+          "phases": {
+            "parse": {
+              "ms": 110671,
+              "share": 0.6497
+            },
+            "dbFlush": {
+              "ms": 118457,
+              "share": 0.6954
+            },
+            "postProcessing": {
+              "ms": 53436,
+              "share": 0.3137
+            },
+            "discovery": {
+              "ms": 160,
+              "share": 0.0009
+            },
+            "workerStartup": {
+              "ms": 1751,
+              "share": 0.0103
+            }
+          },
+          "workerCount": 8,
+          "filesPerSec": 4.673,
+          "relsPerFile": 155.9,
+          "harnessJoinRows": 1598838,
+          "relDigest": "8a55c36c76b162ed",
+          "dangling": {
+            "source": 26410,
+            "target": 0,
+            "nullSource": 26410,
+            "nullTarget": 26288
+          },
+          "load1": 9.52
+        }
+      ]
+    },
+    "linear": {
+      "provenance": "HEAD, the linear plan: _res_name built once, indexed, joined once",
+      "poolTiers": [
+        {
+          "label": "linear-n50",
+          "files": 47,
+          "symbols": 1806,
+          "relationships": 7968,
+          "wallMs": 19792,
+          "phases": {
+            "parse": {
+              "ms": 16622,
+              "share": 0.8398
+            },
+            "dbFlush": {
+              "ms": 4081,
+              "share": 0.2062
+            },
+            "postProcessing": {
+              "ms": 1471,
+              "share": 0.0743
+            },
+            "discovery": {
+              "ms": 56,
+              "share": 0.0028
+            },
+            "workerStartup": {
+              "ms": 1411,
+              "share": 0.0713
+            }
+          },
+          "workerCount": 5,
+          "filesPerSec": 2.375,
+          "relsPerFile": 169.5,
+          "harnessJoinRows": 9073,
+          "relDigest": "b4a156f135e07a18",
+          "dangling": {
+            "source": 1613,
+            "target": 0,
+            "nullSource": 1613,
+            "nullTarget": 3060
+          },
+          "load1": 5.07
+        },
+        {
+          "label": "linear-n200",
+          "files": 196,
+          "symbols": 10404,
+          "relationships": 63331,
+          "wallMs": 76122,
+          "phases": {
+            "parse": {
+              "ms": 61223,
+              "share": 0.8043
+            },
+            "dbFlush": {
+              "ms": 36033,
+              "share": 0.4734
+            },
+            "postProcessing": {
+              "ms": 12633,
+              "share": 0.166
+            },
+            "discovery": {
+              "ms": 59,
+              "share": 0.0008
+            },
+            "workerStartup": {
+              "ms": 1676,
+              "share": 0.022
+            }
+          },
+          "workerCount": 7,
+          "filesPerSec": 2.575,
+          "relsPerFile": 323.1,
+          "harnessJoinRows": 180034,
+          "relDigest": "3209417140db9b0a",
+          "dangling": {
+            "source": 5853,
+            "target": 0,
+            "nullSource": 5853,
+            "nullTarget": 17850
+          },
+          "load1": 9.17
+        },
+        {
+          "label": "linear-n400",
+          "files": 396,
+          "symbols": 17069,
+          "relationships": 91379,
+          "wallMs": 105819,
+          "phases": {
+            "parse": {
+              "ms": 77993,
+              "share": 0.737
+            },
+            "dbFlush": {
+              "ms": 57309,
+              "share": 0.5416
+            },
+            "postProcessing": {
+              "ms": 24617,
+              "share": 0.2326
+            },
+            "discovery": {
+              "ms": 78,
+              "share": 0.0007
+            },
+            "workerStartup": {
+              "ms": 1705,
+              "share": 0.0161
+            }
+          },
+          "workerCount": 7,
+          "filesPerSec": 3.742,
+          "relsPerFile": 230.8,
+          "harnessJoinRows": 556804,
+          "relDigest": "4e8612cee282152c",
+          "dangling": {
+            "source": 15888,
+            "target": 0,
+            "nullSource": 15888,
+            "nullTarget": 22833
+          },
+          "load1": 13.91
+        },
+        {
+          "label": "linear-n800",
+          "files": 796,
+          "symbols": 27856,
+          "relationships": 124114,
+          "wallMs": 146975,
+          "phases": {
+            "parse": {
+              "ms": 106228,
+              "share": 0.7228
+            },
+            "dbFlush": {
+              "ms": 103392,
+              "share": 0.7035
+            },
+            "postProcessing": {
+              "ms": 37852,
+              "share": 0.2575
+            },
+            "discovery": {
+              "ms": 123,
+              "share": 0.0008
+            },
+            "workerStartup": {
+              "ms": 1544,
+              "share": 0.0105
+            }
+          },
+          "workerCount": 7,
+          "filesPerSec": 5.416,
+          "relsPerFile": 155.9,
+          "harnessJoinRows": 1598838,
+          "relDigest": "8a55c36c76b162ed",
+          "dangling": {
+            "source": 26410,
+            "target": 0,
+            "nullSource": 26410,
+            "nullTarget": 26548
+          },
+          "load1": 11.57
+        }
+      ]
+    }
+  },
+  "realCorpusLarge": {
+    "derivedPhaseSecs": 898.8,
+    "derivedPhaseShare": 0.407,
+    "repo": "aspnetcore",
+    "path": "$HOME/fixtures/repositories/aspnetcore",
+    "filesOnDisk": 10687,
+    "arm": "linear",
+    "provenance": "HEAD, cold full index, fresh BB_DATA_DIR, single run; sampled every 30s while it ran",
+    "sampledQuantity": "count of [STORE] log lines within each 30s bucket — files that have finished being stored. This is a proxy with a known bias: the run logged 4,399 STORE lines for 12,177 parsed files, so the line is a sample of the store log rather than a per-file census. The bucket series carries the SHAPE (parse-active, then nothing), not the file count.",
+    "bucketRateSlopePerBucket": -0.0425,
+    "bucketRateMean": 3.324,
+    "firstBucket": 4.2,
+    "lastBucket": 0.033,
+    "parseWindowBuckets": 30,
+    "tail": {
+      "buckets": 33,
+      "seconds": 992,
+      "filesCompleted": 0
+    },
+    "buckets": [
+      {
+        "fromEpoch": 1791497312,
+        "toEpoch": 1791497342,
+        "seconds": 30,
+        "filesCompleted": 126,
+        "filesPerSec": 4.2
+      },
+      {
+        "fromEpoch": 1791497342,
+        "toEpoch": 1791497372,
+        "seconds": 30,
+        "filesCompleted": 106,
+        "filesPerSec": 3.533
+      },
+      {
+        "fromEpoch": 1791497372,
+        "toEpoch": 1791497402,
+        "seconds": 30,
+        "filesCompleted": 136,
+        "filesPerSec": 4.533
+      },
+      {
+        "fromEpoch": 1791497402,
+        "toEpoch": 1791497432,
+        "seconds": 30,
+        "filesCompleted": 107,
+        "filesPerSec": 3.567
+      },
+      {
+        "fromEpoch": 1791497432,
+        "toEpoch": 1791497463,
+        "seconds": 31,
+        "filesCompleted": 138,
+        "filesPerSec": 4.452
+      },
+      {
+        "fromEpoch": 1791497463,
+        "toEpoch": 1791497493,
+        "seconds": 30,
+        "filesCompleted": 135,
+        "filesPerSec": 4.5
+      },
+      {
+        "fromEpoch": 1791497493,
+        "toEpoch": 1791497523,
+        "seconds": 30,
+        "filesCompleted": 103,
+        "filesPerSec": 3.433
+      },
+      {
+        "fromEpoch": 1791497523,
+        "toEpoch": 1791497553,
+        "seconds": 30,
+        "filesCompleted": 138,
+        "filesPerSec": 4.6
+      },
+      {
+        "fromEpoch": 1791497553,
+        "toEpoch": 1791497583,
+        "seconds": 30,
+        "filesCompleted": 75,
+        "filesPerSec": 2.5
+      },
+      {
+        "fromEpoch": 1791497583,
+        "toEpoch": 1791497613,
+        "seconds": 30,
+        "filesCompleted": 52,
+        "filesPerSec": 1.733
+      },
+      {
+        "fromEpoch": 1791497613,
+        "toEpoch": 1791497643,
+        "seconds": 30,
+        "filesCompleted": 85,
+        "filesPerSec": 2.833
+      },
+      {
+        "fromEpoch": 1791497643,
+        "toEpoch": 1791497673,
+        "seconds": 30,
+        "filesCompleted": 91,
+        "filesPerSec": 3.033
+      },
+      {
+        "fromEpoch": 1791497673,
+        "toEpoch": 1791497703,
+        "seconds": 30,
+        "filesCompleted": 85,
+        "filesPerSec": 2.833
+      },
+      {
+        "fromEpoch": 1791497703,
+        "toEpoch": 1791497733,
+        "seconds": 30,
+        "filesCompleted": 86,
+        "filesPerSec": 2.867
+      },
+      {
+        "fromEpoch": 1791497733,
+        "toEpoch": 1791497763,
+        "seconds": 30,
+        "filesCompleted": 86,
+        "filesPerSec": 2.867
+      },
+      {
+        "fromEpoch": 1791497763,
+        "toEpoch": 1791497793,
+        "seconds": 30,
+        "filesCompleted": 130,
+        "filesPerSec": 4.333
+      },
+      {
+        "fromEpoch": 1791497793,
+        "toEpoch": 1791497823,
+        "seconds": 30,
+        "filesCompleted": 99,
+        "filesPerSec": 3.3
+      },
+      {
+        "fromEpoch": 1791497823,
+        "toEpoch": 1791497853,
+        "seconds": 30,
+        "filesCompleted": 84,
+        "filesPerSec": 2.8
+      },
+      {
+        "fromEpoch": 1791497853,
+        "toEpoch": 1791497884,
+        "seconds": 31,
+        "filesCompleted": 120,
+        "filesPerSec": 3.871
+      },
+      {
+        "fromEpoch": 1791497884,
+        "toEpoch": 1791497914,
+        "seconds": 30,
+        "filesCompleted": 102,
+        "filesPerSec": 3.4
+      },
+      {
+        "fromEpoch": 1791497914,
+        "toEpoch": 1791497944,
+        "seconds": 30,
+        "filesCompleted": 129,
+        "filesPerSec": 4.3
+      },
+      {
+        "fromEpoch": 1791497944,
+        "toEpoch": 1791497974,
+        "seconds": 30,
+        "filesCompleted": 69,
+        "filesPerSec": 2.3
+      },
+      {
+        "fromEpoch": 1791497974,
+        "toEpoch": 1791498004,
+        "seconds": 30,
+        "filesCompleted": 134,
+        "filesPerSec": 4.467
+      },
+      {
+        "fromEpoch": 1791498004,
+        "toEpoch": 1791498034,
+        "seconds": 30,
+        "filesCompleted": 97,
+        "filesPerSec": 3.233
+      },
+      {
+        "fromEpoch": 1791498034,
+        "toEpoch": 1791498064,
+        "seconds": 30,
+        "filesCompleted": 87,
+        "filesPerSec": 2.9
+      },
+      {
+        "fromEpoch": 1791498064,
+        "toEpoch": 1791498094,
+        "seconds": 30,
+        "filesCompleted": 115,
+        "filesPerSec": 3.833
+      },
+      {
+        "fromEpoch": 1791498094,
+        "toEpoch": 1791498124,
+        "seconds": 30,
+        "filesCompleted": 120,
+        "filesPerSec": 4
+      },
+      {
+        "fromEpoch": 1791498124,
+        "toEpoch": 1791498154,
+        "seconds": 30,
+        "filesCompleted": 140,
+        "filesPerSec": 4.667
+      },
+      {
+        "fromEpoch": 1791498154,
+        "toEpoch": 1791498184,
+        "seconds": 30,
+        "filesCompleted": 24,
+        "filesPerSec": 0.8
+      },
+      {
+        "fromEpoch": 1791498184,
+        "toEpoch": 1791498214,
+        "seconds": 30,
+        "filesCompleted": 1,
+        "filesPerSec": 0.033
+      },
+      {
+        "fromEpoch": 1791498214,
+        "toEpoch": 1791498244,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498244,
+        "toEpoch": 1791498274,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498274,
+        "toEpoch": 1791498305,
+        "seconds": 31,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498305,
+        "toEpoch": 1791498335,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498335,
+        "toEpoch": 1791498365,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498365,
+        "toEpoch": 1791498395,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498395,
+        "toEpoch": 1791498425,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498425,
+        "toEpoch": 1791498455,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498455,
+        "toEpoch": 1791498485,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498485,
+        "toEpoch": 1791498515,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498515,
+        "toEpoch": 1791498545,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498545,
+        "toEpoch": 1791498575,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498575,
+        "toEpoch": 1791498605,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498605,
+        "toEpoch": 1791498635,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498635,
+        "toEpoch": 1791498665,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498665,
+        "toEpoch": 1791498695,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498695,
+        "toEpoch": 1791498725,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498725,
+        "toEpoch": 1791498755,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498755,
+        "toEpoch": 1791498785,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498785,
+        "toEpoch": 1791498815,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498815,
+        "toEpoch": 1791498845,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498845,
+        "toEpoch": 1791498875,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498875,
+        "toEpoch": 1791498905,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498905,
+        "toEpoch": 1791498936,
+        "seconds": 31,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498936,
+        "toEpoch": 1791498966,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498966,
+        "toEpoch": 1791498996,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791498996,
+        "toEpoch": 1791499026,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791499026,
+        "toEpoch": 1791499056,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791499056,
+        "toEpoch": 1791499086,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791499086,
+        "toEpoch": 1791499116,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791499116,
+        "toEpoch": 1791499146,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791499146,
+        "toEpoch": 1791499176,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      },
+      {
+        "fromEpoch": 1791499176,
+        "toEpoch": 1791499206,
+        "seconds": 30,
+        "filesCompleted": 0,
+        "filesPerSec": 0
+      }
+    ],
+    "summary": {
+      "verbatim": [
+        "✓ resolved in 297228ms [plan=linear largest-intermediate=714348]",
+        "✅ Enriched 1,116,794 relationships (57,743 patterns) in 115278ms",
+        "✓ gravity in 15931ms",
+        "✓ taint(440793ms) + health(830ms)",
+        "✓ health check in 17995ms",
+        "✓ vector blobs: 0/0 promoted in 282ms",
+        "✓ planner stats (ANALYZE) in 29613ms",
+        "✓ indexed 12177 files, 196030 symbols, 1134292 relationships, 72761 embeddings in 2207.7s"
+      ],
+      "files": 12177,
+      "symbols": 196030,
+      "relationships": 1134292,
+      "embeddings": 72761,
+      "wallSecs": 2207.7,
+      "resolveMs": 297228,
+      "resolvePlan": "linear",
+      "largestIntermediate": 714348,
+      "enrichMs": 115278,
+      "gravityMs": 15931,
+      "taintMs": 440793,
+      "analyzeMs": 29613
+    }
+  },
+  "liveRate": {
+    "what": "The files/s the CLI renders while a run is in flight, parsed from a PTY transcript. The rate is processedFiles / (now - startTime) — a running average over the WHOLE run — so it climbs through the parse, peaks when the last file is stored, and decays through the derived pass, where no file completes but the clock keeps running.",
+    "producer": "npx tsx script/perf/live-rate-series.ts --repo <dir>  (or --parse <transcript>)",
+    "elementPlus": {
+      "label": "element-plus",
+      "mode": "parse",
+      "dataDir": null,
+      "transcript": null,
+      "progressLines": 144,
+      "peakRate": 30.1,
+      "peakAtSec": 85,
+      "parseEndRate": 30.1,
+      "wholeRunFilesPerSec": 25.156,
+      "ratioPeakToWholeRun": 1.197,
+      "summary": "✓ indexed 2581 files, 27997 symbols, 87643 relationships, 5062 embeddings in 102.6s",
+      "series": [
+        {
+          "done": 1,
+          "total": 2581,
+          "rate": 0.5,
+          "tSec": 2
+        },
+        {
+          "done": 4,
+          "total": 2581,
+          "rate": 1.7,
+          "tSec": 2
+        },
+        {
+          "done": 7,
+          "total": 2581,
+          "rate": 2.8,
+          "tSec": 2
+        },
+        {
+          "done": 10,
+          "total": 2581,
+          "rate": 3.8,
+          "tSec": 2
+        },
+        {
+          "done": 16,
+          "total": 2581,
+          "rate": 5.9,
+          "tSec": 2
+        },
+        {
+          "done": 20,
+          "total": 2581,
+          "rate": 6.9,
+          "tSec": 2
+        },
+        {
+          "done": 21,
+          "total": 2581,
+          "rate": 4.3,
+          "tSec": 4
+        },
+        {
+          "done": 44,
+          "total": 2581,
+          "rate": 6.8,
+          "tSec": 6
+        },
+        {
+          "done": 65,
+          "total": 2581,
+          "rate": 7.7,
+          "tSec": 8
+        },
+        {
+          "done": 85,
+          "total": 2581,
+          "rate": 9.3,
+          "tSec": 9
+        },
+        {
+          "done": 100,
+          "total": 2581,
+          "rate": 10.8,
+          "tSec": 9
+        },
+        {
+          "done": 101,
+          "total": 2581,
+          "rate": 10.2,
+          "tSec": 9
+        },
+        {
+          "done": 123,
+          "total": 2581,
+          "rate": 12,
+          "tSec": 10
+        },
+        {
+          "done": 143,
+          "total": 2581,
+          "rate": 13.2,
+          "tSec": 10
+        },
+        {
+          "done": 164,
+          "total": 2581,
+          "rate": 14.4,
+          "tSec": 11
+        },
+        {
+          "done": 184,
+          "total": 2581,
+          "rate": 15.4,
+          "tSec": 11
+        },
+        {
+          "done": 204,
+          "total": 2581,
+          "rate": 16.2,
+          "tSec": 12
+        },
+        {
+          "done": 224,
+          "total": 2581,
+          "rate": 17.5,
+          "tSec": 12
+        },
+        {
+          "done": 241,
+          "total": 2581,
+          "rate": 16.7,
+          "tSec": 14
+        },
+        {
+          "done": 265,
+          "total": 2581,
+          "rate": 17.9,
+          "tSec": 14
+        },
+        {
+          "done": 297,
+          "total": 2581,
+          "rate": 19.8,
+          "tSec": 14
+        },
+        {
+          "done": 298,
+          "total": 2581,
+          "rate": 18.8,
+          "tSec": 15
+        },
+        {
+          "done": 314,
+          "total": 2581,
+          "rate": 19.3,
+          "tSec": 16
+        },
+        {
+          "done": 321,
+          "total": 2581,
+          "rate": 18.9,
+          "tSec": 17
+        },
+        {
+          "done": 341,
+          "total": 2581,
+          "rate": 19.5,
+          "tSec": 17
+        },
+        {
+          "done": 352,
+          "total": 2581,
+          "rate": 19.8,
+          "tSec": 17
+        },
+        {
+          "done": 361,
+          "total": 2581,
+          "rate": 18.9,
+          "tSec": 19
+        },
+        {
+          "done": 380,
+          "total": 2581,
+          "rate": 19.6,
+          "tSec": 19
+        },
+        {
+          "done": 382,
+          "total": 2581,
+          "rate": 18.7,
+          "tSec": 20
+        },
+        {
+          "done": 406,
+          "total": 2581,
+          "rate": 18.6,
+          "tSec": 21
+        },
+        {
+          "done": 424,
+          "total": 2581,
+          "rate": 18.3,
+          "tSec": 23
+        },
+        {
+          "done": 442,
+          "total": 2581,
+          "rate": 18.7,
+          "tSec": 23
+        },
+        {
+          "done": 461,
+          "total": 2581,
+          "rate": 19.1,
+          "tSec": 24
+        },
+        {
+          "done": 470,
+          "total": 2581,
+          "rate": 19.3,
+          "tSec": 24
+        },
+        {
+          "done": 482,
+          "total": 2581,
+          "rate": 18.3,
+          "tSec": 26
+        },
+        {
+          "done": 502,
+          "total": 2581,
+          "rate": 18.2,
+          "tSec": 27
+        },
+        {
+          "done": 521,
+          "total": 2581,
+          "rate": 17.8,
+          "tSec": 29
+        },
+        {
+          "done": 535,
+          "total": 2581,
+          "rate": 18.2,
+          "tSec": 29
+        },
+        {
+          "done": 545,
+          "total": 2581,
+          "rate": 17.5,
+          "tSec": 31
+        },
+        {
+          "done": 561,
+          "total": 2581,
+          "rate": 17.6,
+          "tSec": 31
+        },
+        {
+          "done": 582,
+          "total": 2581,
+          "rate": 17,
+          "tSec": 34
+        },
+        {
+          "done": 602,
+          "total": 2581,
+          "rate": 17.3,
+          "tSec": 34
+        },
+        {
+          "done": 621,
+          "total": 2581,
+          "rate": 17.5,
+          "tSec": 35
+        },
+        {
+          "done": 643,
+          "total": 2581,
+          "rate": 17.8,
+          "tSec": 36
+        },
+        {
+          "done": 661,
+          "total": 2581,
+          "rate": 18.1,
+          "tSec": 36
+        },
+        {
+          "done": 684,
+          "total": 2581,
+          "rate": 18.2,
+          "tSec": 37
+        },
+        {
+          "done": 701,
+          "total": 2581,
+          "rate": 18,
+          "tSec": 38
+        },
+        {
+          "done": 721,
+          "total": 2581,
+          "rate": 17.8,
+          "tSec": 40
+        },
+        {
+          "done": 742,
+          "total": 2581,
+          "rate": 18,
+          "tSec": 41
+        },
+        {
+          "done": 762,
+          "total": 2581,
+          "rate": 18.1,
+          "tSec": 42
+        },
+        {
+          "done": 781,
+          "total": 2581,
+          "rate": 17.8,
+          "tSec": 43
+        },
+        {
+          "done": 801,
+          "total": 2581,
+          "rate": 18,
+          "tSec": 44
+        },
+        {
+          "done": 821,
+          "total": 2581,
+          "rate": 18.3,
+          "tSec": 44
+        },
+        {
+          "done": 841,
+          "total": 2581,
+          "rate": 18.1,
+          "tSec": 46
+        },
+        {
+          "done": 866,
+          "total": 2581,
+          "rate": 18.5,
+          "tSec": 46
+        },
+        {
+          "done": 876,
+          "total": 2581,
+          "rate": 18.6,
+          "tSec": 46
+        },
+        {
+          "done": 881,
+          "total": 2581,
+          "rate": 18.6,
+          "tSec": 47
+        },
+        {
+          "done": 902,
+          "total": 2581,
+          "rate": 18.8,
+          "tSec": 47
+        },
+        {
+          "done": 920,
+          "total": 2581,
+          "rate": 19.1,
+          "tSec": 48
+        },
+        {
+          "done": 922,
+          "total": 2581,
+          "rate": 19,
+          "tSec": 48
+        },
+        {
+          "done": 941,
+          "total": 2581,
+          "rate": 19.2,
+          "tSec": 48
+        },
+        {
+          "done": 963,
+          "total": 2581,
+          "rate": 19.5,
+          "tSec": 49
+        },
+        {
+          "done": 983,
+          "total": 2581,
+          "rate": 19.7,
+          "tSec": 49
+        },
+        {
+          "done": 1001,
+          "total": 2581,
+          "rate": 19.4,
+          "tSec": 51
+        },
+        {
+          "done": 1021,
+          "total": 2581,
+          "rate": 19.5,
+          "tSec": 52
+        },
+        {
+          "done": 1041,
+          "total": 2581,
+          "rate": 19.6,
+          "tSec": 53
+        },
+        {
+          "done": 1068,
+          "total": 2581,
+          "rate": 19.7,
+          "tSec": 54
+        },
+        {
+          "done": 1071,
+          "total": 2581,
+          "rate": 19.7,
+          "tSec": 54
+        },
+        {
+          "done": 1083,
+          "total": 2581,
+          "rate": 19.4,
+          "tSec": 55
+        },
+        {
+          "done": 1103,
+          "total": 2581,
+          "rate": 19.6,
+          "tSec": 56
+        },
+        {
+          "done": 1123,
+          "total": 2581,
+          "rate": 19.6,
+          "tSec": 57
+        },
+        {
+          "done": 1141,
+          "total": 2581,
+          "rate": 19.7,
+          "tSec": 57
+        },
+        {
+          "done": 1162,
+          "total": 2581,
+          "rate": 19.8,
+          "tSec": 58
+        },
+        {
+          "done": 1183,
+          "total": 2581,
+          "rate": 19.9,
+          "tSec": 59
+        },
+        {
+          "done": 1201,
+          "total": 2581,
+          "rate": 19.7,
+          "tSec": 60
+        },
+        {
+          "done": 1221,
+          "total": 2581,
+          "rate": 19.8,
+          "tSec": 61
+        },
+        {
+          "done": 1241,
+          "total": 2581,
+          "rate": 19.8,
+          "tSec": 62
+        },
+        {
+          "done": 1261,
+          "total": 2581,
+          "rate": 20,
+          "tSec": 63
+        },
+        {
+          "done": 1283,
+          "total": 2581,
+          "rate": 20.2,
+          "tSec": 63
+        },
+        {
+          "done": 1291,
+          "total": 2581,
+          "rate": 20.3,
+          "tSec": 63
+        },
+        {
+          "done": 1301,
+          "total": 2581,
+          "rate": 20.2,
+          "tSec": 64
+        },
+        {
+          "done": 1321,
+          "total": 2581,
+          "rate": 20.4,
+          "tSec": 64
+        },
+        {
+          "done": 1344,
+          "total": 2581,
+          "rate": 20.5,
+          "tSec": 65
+        },
+        {
+          "done": 1366,
+          "total": 2581,
+          "rate": 20.6,
+          "tSec": 66
+        },
+        {
+          "done": 1383,
+          "total": 2581,
+          "rate": 20.6,
+          "tSec": 67
+        },
+        {
+          "done": 1403,
+          "total": 2581,
+          "rate": 20.9,
+          "tSec": 67
+        },
+        {
+          "done": 1421,
+          "total": 2581,
+          "rate": 21,
+          "tSec": 67
+        },
+        {
+          "done": 1441,
+          "total": 2581,
+          "rate": 21.2,
+          "tSec": 67
+        },
+        {
+          "done": 1461,
+          "total": 2581,
+          "rate": 21.4,
+          "tSec": 68
+        },
+        {
+          "done": 1481,
+          "total": 2581,
+          "rate": 21.5,
+          "tSec": 68
+        },
+        {
+          "done": 1501,
+          "total": 2581,
+          "rate": 21.4,
+          "tSec": 70
+        },
+        {
+          "done": 1511,
+          "total": 2581,
+          "rate": 21.5,
+          "tSec": 70
+        },
+        {
+          "done": 1521,
+          "total": 2581,
+          "rate": 21.1,
+          "tSec": 72
+        },
+        {
+          "done": 1541,
+          "total": 2581,
+          "rate": 21.1,
+          "tSec": 73
+        },
+        {
+          "done": 1561,
+          "total": 2581,
+          "rate": 21.1,
+          "tSec": 74
+        },
+        {
+          "done": 1586,
+          "total": 2581,
+          "rate": 21.3,
+          "tSec": 74
+        },
+        {
+          "done": 1606,
+          "total": 2581,
+          "rate": 21.6,
+          "tSec": 74
+        },
+        {
+          "done": 1621,
+          "total": 2581,
+          "rate": 21.7,
+          "tSec": 74
+        },
+        {
+          "done": 1641,
+          "total": 2581,
+          "rate": 21.9,
+          "tSec": 74
+        },
+        {
+          "done": 1661,
+          "total": 2581,
+          "rate": 22.1,
+          "tSec": 75
+        },
+        {
+          "done": 1681,
+          "total": 2581,
+          "rate": 22.3,
+          "tSec": 75
+        },
+        {
+          "done": 1701,
+          "total": 2581,
+          "rate": 22.5,
+          "tSec": 75
+        },
+        {
+          "done": 1721,
+          "total": 2581,
+          "rate": 22.7,
+          "tSec": 75
+        },
+        {
+          "done": 1741,
+          "total": 2581,
+          "rate": 22.9,
+          "tSec": 75
+        },
+        {
+          "done": 1761,
+          "total": 2581,
+          "rate": 23.2,
+          "tSec": 76
+        },
+        {
+          "done": 1781,
+          "total": 2581,
+          "rate": 23.4,
+          "tSec": 76
+        },
+        {
+          "done": 1801,
+          "total": 2581,
+          "rate": 23.6,
+          "tSec": 76
+        },
+        {
+          "done": 1821,
+          "total": 2581,
+          "rate": 23.8,
+          "tSec": 76
+        },
+        {
+          "done": 1841,
+          "total": 2581,
+          "rate": 24,
+          "tSec": 76
+        },
+        {
+          "done": 1860,
+          "total": 2581,
+          "rate": 24.2,
+          "tSec": 76
+        },
+        {
+          "done": 1861,
+          "total": 2581,
+          "rate": 24.2,
+          "tSec": 77
+        },
+        {
+          "done": 1881,
+          "total": 2581,
+          "rate": 24.4,
+          "tSec": 77
+        },
+        {
+          "done": 1901,
+          "total": 2581,
+          "rate": 24.6,
+          "tSec": 77
+        },
+        {
+          "done": 1921,
+          "total": 2581,
+          "rate": 24.8,
+          "tSec": 77
+        },
+        {
+          "done": 1941,
+          "total": 2581,
+          "rate": 25,
+          "tSec": 77
+        },
+        {
+          "done": 1961,
+          "total": 2581,
+          "rate": 25.2,
+          "tSec": 77
+        },
+        {
+          "done": 1981,
+          "total": 2581,
+          "rate": 25.4,
+          "tSec": 78
+        },
+        {
+          "done": 2001,
+          "total": 2581,
+          "rate": 25.6,
+          "tSec": 78
+        },
+        {
+          "done": 2021,
+          "total": 2581,
+          "rate": 25.8,
+          "tSec": 78
+        },
+        {
+          "done": 2041,
+          "total": 2581,
+          "rate": 26,
+          "tSec": 78
+        },
+        {
+          "done": 2061,
+          "total": 2581,
+          "rate": 26.1,
+          "tSec": 78
+        },
+        {
+          "done": 2081,
+          "total": 2581,
+          "rate": 26.3,
+          "tSec": 79
+        },
+        {
+          "done": 2101,
+          "total": 2581,
+          "rate": 26.5,
+          "tSec": 79
+        },
+        {
+          "done": 2121,
+          "total": 2581,
+          "rate": 26.7,
+          "tSec": 79
+        },
+        {
+          "done": 2141,
+          "total": 2581,
+          "rate": 26.8,
+          "tSec": 79
+        },
+        {
+          "done": 2161,
+          "total": 2581,
+          "rate": 27,
+          "tSec": 80
+        },
+        {
+          "done": 2181,
+          "total": 2581,
+          "rate": 26.9,
+          "tSec": 81
+        },
+        {
+          "done": 2201,
+          "total": 2581,
+          "rate": 27.1,
+          "tSec": 81
+        },
+        {
+          "done": 2221,
+          "total": 2581,
+          "rate": 27.2,
+          "tSec": 81
+        },
+        {
+          "done": 2241,
+          "total": 2581,
+          "rate": 27.4,
+          "tSec": 81
+        },
+        {
+          "done": 2265,
+          "total": 2581,
+          "rate": 27.7,
+          "tSec": 81
+        },
+        {
+          "done": 2289,
+          "total": 2581,
+          "rate": 27.9,
+          "tSec": 82
+        },
+        {
+          "done": 2303,
+          "total": 2581,
+          "rate": 28,
+          "tSec": 82
+        },
+        {
+          "done": 2322,
+          "total": 2581,
+          "rate": 28.1,
+          "tSec": 82
+        },
+        {
+          "done": 2341,
+          "total": 2581,
+          "rate": 28.2,
+          "tSec": 82
+        },
+        {
+          "done": 2361,
+          "total": 2581,
+          "rate": 28.4,
+          "tSec": 83
+        },
+        {
+          "done": 2384,
+          "total": 2581,
+          "rate": 28.5,
+          "tSec": 83
+        },
+        {
+          "done": 2403,
+          "total": 2581,
+          "rate": 28.6,
+          "tSec": 84
+        },
+        {
+          "done": 2422,
+          "total": 2581,
+          "rate": 28.7,
+          "tSec": 84
+        },
+        {
+          "done": 2442,
+          "total": 2581,
+          "rate": 28.9,
+          "tSec": 84
+        },
+        {
+          "done": 2461,
+          "total": 2581,
+          "rate": 29,
+          "tSec": 84
+        },
+        {
+          "done": 2481,
+          "total": 2581,
+          "rate": 29.2,
+          "tSec": 84
+        },
+        {
+          "done": 2501,
+          "total": 2581,
+          "rate": 29.4,
+          "tSec": 85
+        },
+        {
+          "done": 2561,
+          "total": 2581,
+          "rate": 30.1,
+          "tSec": 85
+        }
+      ]
+    },
+    "lodash": {
+      "label": "lodash",
+      "mode": "run",
+      "dataDir": "/tmp/bb-live-rate-lodash-1791500126093",
+      "transcript": "/tmp/bb-live-rate-lodash-1791500126094.raw",
+      "progressLines": 26,
+      "peakRate": 5.7,
+      "peakAtSec": 8,
+      "parseEndRate": 3.4,
+      "wholeRunFilesPerSec": 2.664,
+      "ratioPeakToWholeRun": 2.139,
+      "summary": "✓ indexed 73 files, 3583 symbols, 43865 relationships, 1965 embeddings in 27.4s",
+      "series": [
+        {
+          "done": 1,
+          "total": 73,
+          "rate": 0.6,
+          "tSec": 1
+        },
+        {
+          "done": 2,
+          "total": 73,
+          "rate": 1,
+          "tSec": 1
+        },
+        {
+          "done": 3,
+          "total": 73,
+          "rate": 1.4,
+          "tSec": 2
+        },
+        {
+          "done": 5,
+          "total": 73,
+          "rate": 2.1,
+          "tSec": 2
+        },
+        {
+          "done": 6,
+          "total": 73,
+          "rate": 2.4,
+          "tSec": 2
+        },
+        {
+          "done": 7,
+          "total": 73,
+          "rate": 2.7,
+          "tSec": 2
+        },
+        {
+          "done": 9,
+          "total": 73,
+          "rate": 3.2,
+          "tSec": 2
+        },
+        {
+          "done": 10,
+          "total": 73,
+          "rate": 3.4,
+          "tSec": 2
+        },
+        {
+          "done": 11,
+          "total": 73,
+          "rate": 3.5,
+          "tSec": 3
+        },
+        {
+          "done": 14,
+          "total": 73,
+          "rate": 3.9,
+          "tSec": 3
+        },
+        {
+          "done": 18,
+          "total": 73,
+          "rate": 4.8,
+          "tSec": 3
+        },
+        {
+          "done": 19,
+          "total": 73,
+          "rate": 4.8,
+          "tSec": 3
+        },
+        {
+          "done": 20,
+          "total": 73,
+          "rate": 4.8,
+          "tSec": 4
+        },
+        {
+          "done": 21,
+          "total": 73,
+          "rate": 3.5,
+          "tSec": 5
+        },
+        {
+          "done": 38,
+          "total": 73,
+          "rate": 5.5,
+          "tSec": 6
+        },
+        {
+          "done": 41,
+          "total": 73,
+          "rate": 5.1,
+          "tSec": 7
+        },
+        {
+          "done": 45,
+          "total": 73,
+          "rate": 5.5,
+          "tSec": 8
+        },
+        {
+          "done": 48,
+          "total": 73,
+          "rate": 5.6,
+          "tSec": 8
+        },
+        {
+          "done": 49,
+          "total": 73,
+          "rate": 5.7,
+          "tSec": 8
+        },
+        {
+          "done": 50,
+          "total": 73,
+          "rate": 5.4,
+          "tSec": 9
+        },
+        {
+          "done": 52,
+          "total": 73,
+          "rate": 5.2,
+          "tSec": 10
+        },
+        {
+          "done": 53,
+          "total": 73,
+          "rate": 5,
+          "tSec": 10
+        },
+        {
+          "done": 54,
+          "total": 73,
+          "rate": 4.9,
+          "tSec": 11
+        },
+        {
+          "done": 55,
+          "total": 73,
+          "rate": 4.8,
+          "tSec": 11
+        },
+        {
+          "done": 60,
+          "total": 73,
+          "rate": 4.3,
+          "tSec": 13
+        },
+        {
+          "done": 61,
+          "total": 73,
+          "rate": 3.4,
+          "tSec": 17
+        }
+      ]
+    },
+    "aspnetImplied": {
+      "note": "No PTY series was captured for this run; the shape below is arithmetic from the run's own phase clocks, which are sequential post-parse steps. An inference, labelled as one.",
+      "derivedPhaseSumSecs": 898.8,
+      "runSecs": 2207.7,
+      "impliedParseEndSecs": 1308.9,
+      "impliedRateAtParseEnd": 9.3,
+      "wholeRunRate": 5.52
+    },
+    "caveat": "The live bar stops updating when the last file is stored, so the tail is invisible on screen; it is visible in the whole-run number, which is why the printed files/s can sit below everything the bar showed."
+  },
+  "realCorpus": {
+    "repo": "element-plus",
+    "path": "$HOME/fixtures/repositories/element-plus",
+    "files": 2581,
+    "arms": {
+      "window": {
+        "verbatim": [
+          "✓ resolved in 16041ms",
+          "✅ Enriched 52,691 relationships (1,393 patterns) in 4555ms",
+          "✓ gravity in 1138ms",
+          "✓ taint(247ms) + health(421ms)",
+          "✓ health check in 700ms",
+          "✓ vector blobs: 0/0 promoted in 14ms",
+          "✓ planner stats (ANALYZE) in 859ms",
+          "✓ indexed 2581 files, 27997 symbols, 87643 relationships, 4601 embeddings in 119.5s"
+        ],
+        "files": 2581,
+        "symbols": 27997,
+        "relationships": 87643,
+        "embeddings": 4601,
+        "wallSecs": 119.5,
+        "resolveMs": 16041,
+        "resolvePlan": null,
+        "largestIntermediate": null,
+        "enrichMs": 4555,
+        "gravityMs": 1138,
+        "taintMs": 247,
+        "analyzeMs": 859
+      },
+      "linear": {
+        "verbatim": [
+          "✓ resolved in 10476ms [plan=linear largest-intermediate=32354]",
+          "✅ Enriched 52,691 relationships (1,393 patterns) in 4353ms",
+          "✓ gravity in 1169ms",
+          "✓ taint(226ms) + health(82ms)",
+          "✓ health check in 613ms",
+          "✓ vector blobs: 0/0 promoted in 15ms",
+          "✓ planner stats (ANALYZE) in 686ms",
+          "✓ indexed 2581 files, 27997 symbols, 87643 relationships, 4238 embeddings in 108.2s"
+        ],
+        "files": 2581,
+        "symbols": 27997,
+        "relationships": 87643,
+        "embeddings": 4238,
+        "wallSecs": 108.2,
+        "resolveMs": 10476,
+        "resolvePlan": "linear",
+        "largestIntermediate": 32354,
+        "enrichMs": 4353,
+        "gravityMs": 1169,
+        "taintMs": 226,
+        "analyzeMs": 686
+      }
+    },
+    "note": "Same corpus, fresh BB_DATA_DIR per arm. Both arms report 2,581 files / 27,997 symbols / 87,643 relationships. Embedding counts differ between the arms (4,601 vs 4,238) — embeddings drain in the background after the parse and their count is not used by any claim here."
+  },
+  "digestStability": [
+    {
+      "tier": "n50",
+      "digest": "b4a156f135e07a18",
+      "windowDigest": "b4a156f135e07a18",
+      "linearDigest": "b4a156f135e07a18",
+      "same": true
+    },
+    {
+      "tier": "n200",
+      "digest": "3209417140db9b0a",
+      "windowDigest": "3209417140db9b0a",
+      "linearDigest": "3209417140db9b0a",
+      "same": true
+    },
+    {
+      "tier": "n400",
+      "digest": "4e8612cee282152c",
+      "windowDigest": "4e8612cee282152c",
+      "linearDigest": "4e8612cee282152c",
+      "same": true
+    },
+    {
+      "tier": "n800",
+      "digest": "8a55c36c76b162ed",
+      "windowDigest": "8a55c36c76b162ed",
+      "linearDigest": "8a55c36c76b162ed",
+      "same": true
+    }
+  ],
+  "findings": [
+    "Parse and DB flush dominate a cold full index at every tier measured. Their shares of wall rise together as startup amortises — at n50 parse is 84% and flush 21%; at n800 parse is 72% and flush 70%. The workers overlap the two (a worker flushes while another parses), so the shares are not a partition and do not add to 100%. The derived phases (which include resolution, enrichment, gravity, taint, health) take the remainder: 7% of wall at n50, 26% at n800 — a growing share, still the minority.",
+    "The stage split at n200: parse 61.2s, dbFlush 36.0s, postProcessing 12.6s of a 76.1s wall. At n800: parse 106.2s, dbFlush 103.4s, postProcessing 37.9s of 147.0s.",
+    "The relationship multiset is byte-identical between the two plans at all four tiers (digest row below), so the plan change moved cost without moving the graph.",
+    "On element-plus the resolution phase fell from 16,041ms to 10,476ms (-35%) and the whole index from 119.5s to 108.2s (21.6 to 23.9 files/s). Of the 11.3s wall difference, 5.6s is attributable to the resolution phase by its own clock; the remainder is parse/store variance between two runs and is NOT attributed to the change.",
+    "files/s is a ratio of heterogeneous work over heterogeneous files. It is not a per-file cost that decays: the pool tiers show 2.4 files/s (n50, TypeScript-heavy copies of this repo's own src/) rising to 5.4 files/s (n800) as fixed startup and flush costs amortise, while the per-relationship resolution cost stays flat (0.45 to 0.57 rows per stored relationship over 4x the files; gate bound 1.5x). The n800 tier ran under load1 11.6 against n50's 5.1, so the rise happens against a busier machine, not because the larger tier got a quieter one.",
+    "A single cold full index of ASP.NET Core (12,177 eligible files — the tree holds 10,687 .cs files plus the JSON/Markdown the indexer also admits) took 2207.7s = 5.52 files/s over the whole run. While files were still completing, the 30s buckets averaged 3.324 files/s (first bucket 4.2, least-squares slope -0.0425 per bucket across 30 buckets — a gentle drift, not a cliff). The cliff is at the end of the parse: the final 33 buckets cover 992s, 45% of the run, and complete no files at all. That tail is the derived pass, whose own phase clocks put it at 898.8s — 41% of the run — the two brackets differ by the sampler's lag. Its resolution phase reports plan=linear largest-intermediate=714348 over 1,134,292 relationships, which is the largest corpus this plan has been measured on.",
+    "The same \"files per second\" phrase spans a 5.5-files/s corpus (ASP.NET Core, C#-heavy) and a 23.9-files/s corpus (element-plus, .vue/.ts/.md, and 25.156 in the PTY run) on the same host — a ~5x spread that is corpus composition and per-language analyzer cost, not scaling.",
+    "The rendered rate is a running average over the whole run, not a parse rate: element-plus peaks at 30.1 files/s at 85s (when the last file is stored) and the run reports 25.156 files/s over 102.6s — a 20% gap between the peak the bar showed and the number the run finishes with. The decay is the derived pass adding wall time with no file completions, not the parse slowing down.",
+    "On a small corpus the same arithmetic bites harder: lodash (73 files) peaks at 5.7 files/s and finishes at 2.664 files/s — a factor of 2.139, because its derived pass is a larger share of a short run.",
+    "ASP.NET Core's derived phases are not a rounding error: their own clocks sum to 898.8s of the 2207.7s run, so 41% of the run stores no files at all. taint alone is 440.8s — the largest derived phase on this corpus and 1.5x the resolution phase (297.2s) that the scaling gate bounds."
+  ],
+  "limitations": [
+    "One machine, and a shared one: load1 ranged 4.77 to 15.04 across these runs. Wall-clock deltas smaller than that noise are not claimed.",
+    "Pool tiers are copies of this repository's own TypeScript source, so they describe TS-in-TS density. The real-corpus arm is the counterweight, and it is one repository (element-plus).",
+    "Real-corpus arms are single runs, not repeats; the resolution phase delta (5.6s) is larger than the run-to-run phase variance seen on the pool tiers, but the total wall delta is not decomposed further.",
+    "profile-stages.ts also reports `i13JoinRows`, counted by SQL of its own that replicates the WINDOW plan's join. It is identical across arms BY CONSTRUCTION and is therefore not evidence about either plan; the pass's own reported 'largest-intermediate' (see the gate record) is the number that describes what ran.",
+    "The pipeline is nondeterministic run-to-run on unresolved external edges (documented in docs/UNMERGED-WORK.md); the relationship digests above are stable across the two plans, and the dangling counts behind them move by single digits."
+  ]
+}

@@ -18,6 +18,9 @@ const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const COMPONENT = path.join(ROOT, "src/setup/setup-wizard.ts")
 const MUTANT_PATH = path.join(ROOT, "src/setup/.setup-hook-mutant.ts")
 const EVIDENCE_PATH = path.join(ROOT, "validation/m30/results/S2.json")
+// The CLI action, for the wiring check below: the hook API taking `noSetup` as a
+// boolean is one thing, `--no-setup` reaching it from the command line is another.
+const CLI_COMPONENT = path.join(ROOT, "src/cli/index.ts")
 
 let checks = 0
 let passed = 0
@@ -173,6 +176,26 @@ async function main() {
 main()
 `
 
+// CLI-arm script: drives the REAL `bb index` action through runCli with the flag
+// as it is TYPED. The hook-level checks below hand `noSetup` a boolean directly,
+// and that is exactly how the flag stayed silently inert: Commander parses
+// `--no-setup` into `{setup:false}`, the action read `opts.noSetup` (a key no
+// parse ever sets), and every check below still passed because none of them
+// crossed the CLI boundary.
+const CLI_SCRIPT = `
+import { runCli } from __COMPONENT__
+async function main() {
+  try {
+    const argv = ["index", process.env.HOOK_CLI_PROJECT ?? "."]
+    if (process.env.HOOK_CLI_FLAG === "1") argv.push("--no-setup")
+    await runCli(argv)
+  } catch (e: any) {
+    console.log("CLI-ERROR:" + String(e?.message ?? e))
+  }
+}
+main()
+`
+
 // ---------------------------------------------------------------------------
 // Positive checks
 // ---------------------------------------------------------------------------
@@ -203,6 +226,29 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   const j = fixtureJSON(res)[0]
   check("S2: --no-setup reports reason=flag", j?.prompted === false && j?.reason === "flag", JSON.stringify(j))
   check("S2: --no-setup emits no notice", !res.stdout.includes("no embedding key"), res.stdout.slice(0, 200))
+}
+
+// 3b. The flag as TYPED reaches the hook: `bb index --no-setup` must suppress
+// the notice end to end. The control leg (same command, flag absent) is what
+// makes this a measurement rather than a tautology — if the environment were
+// already "configured" or the notice simply never printed, the control fails
+// loudly instead of the suppression passing for the wrong reason. Measured with
+// the wiring broken: control notice=1, flagged notice=1, i.e. this check fails.
+{
+  const project = mkdtempSync(path.join(os.tmpdir(), "m30-s2-cli-"))
+  mkdirSync(path.join(project, "src"), { recursive: true })
+  writeFileSync(path.join(project, "src", "a.ts"), "export const x = 1\n")
+  const control = await runHook(CLI_SCRIPT, { HOOK_CLI_PROJECT: project }, CLI_COMPONENT, 60000)
+  const controlSawNotice = control.stdout.includes("no embedding key")
+  check("S2: CLI control (no flag) prints the notice", control.ok && controlSawNotice, control.stdout.slice(0, 200))
+  const flagged = await runHook(CLI_SCRIPT, { HOOK_CLI_PROJECT: project, HOOK_CLI_FLAG: "1" }, CLI_COMPONENT, 60000)
+  check(
+    "S2: `bb index --no-setup` suppresses the notice (the control proves it is printed without the flag)",
+    flagged.ok && controlSawNotice && !flagged.stdout.includes("no embedding key"),
+    flagged.stdout.slice(0, 200),
+  )
+  check("S2: `bb index --no-setup` still runs the command", flagged.ok && !flagged.stdout.includes("CLI-ERROR:"), flagged.stdout.slice(0, 200))
+  rmSync(project, { recursive: true, force: true })
 }
 
 // 4. Configured env skips hook.
