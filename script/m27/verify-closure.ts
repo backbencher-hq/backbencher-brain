@@ -15,7 +15,6 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { join } from "node:path"
 import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
-import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = join(import.meta.dirname ?? ".", "../..")
 const RESULTS = join(ROOT, "validation/m27/results")

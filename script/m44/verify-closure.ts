@@ -34,7 +34,7 @@
 
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { existsSync, readdirSync } from "node:fs"
+import { readdirSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"

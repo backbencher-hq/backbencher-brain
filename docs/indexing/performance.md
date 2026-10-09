@@ -51,7 +51,7 @@ wall times, one host:
 | cabal | Haskell | 2,140 | 19,137 | 141.0s | `validation/m11/fp-known-limitations.md:40` |
 | elixir | Elixir + Erlang | 616 | 11,189 | 192.4s | `validation/m11/fp-known-limitations.md:38` |
 | zig | Zig | 2,950 | 164,506 | 211s | `validation/m11/systems-known-limitations.md:33` |
-| julia | Julia | 941 | 27,560 | 168–208s | `docs/analyzers/julia.md:166` |
+| julia | Julia | 941 | 27,560 | 168–208s | `validation/m12/corpus-manifest.json` (the julia entry: 941 `*.jl` files, `corpusSymbols` 27,560) + `docs/analyzers/real-julia-analyzer.md:2147` (the timing) |
 | grails | Groovy | 7,114 | 64,719 | 494.6s | `reviews/groovy/master-review-2026-09-29.md:436-441` |
 
 Note the shape: `cabal` has more files than `elixir` but takes **less** time;
@@ -102,6 +102,18 @@ flush dominate; enrichment is secondary.** Note this run's shape differs from a
 cold full index — see the wall-clock caveat at the end of this document before
 using it to reason about first runs.
 
+**A phase's time can be a plan rather than work, and on a fresh index the plan is
+chosen blind.** The pipeline runs `ANALYZE` at the END of the derived pass, so a
+fresh index prepares these statements against tables nothing has measured. One
+cold run reported 440.8s for the taint phase; the same statement, same data and
+same 1,530 resolved flows cost **520.2s planned without statistics and 1.7s with
+them** — and a post pass on the same index after the fix reported the phase at
+1.3s. Resolution, enrichment and gravity query tables the run has just written
+too; only the taint statement has been measured and fixed so far
+(`validation/m60/results/taint-plan-stats.json`, probe:
+`script/perf/probe-taint-plan-stats.ts`). Before attributing a slow phase to its
+algorithm, check whether its plan was chosen blind.
+
 ## Where the time goes
 
 Measured bottleneck classification across five repositories, taking the median
@@ -128,6 +140,65 @@ Practical consequences:
   22,767ms) but *slower* on the memory control (39,775ms vs 25,482ms). The
   evidence file states these were disjoint sequential samples, "not a
   same-input benchmark". Treat "add workers" as unproven.
+
+## Does throughput decay as the index grows?
+
+There is a recorded curve now. It says the per-file rate does not fall because
+later files are more expensive — but the number a run finishes with *is* lower
+than the number the bar showed at its best, for a different reason.
+
+`validation/m60/results/index-scaling-curve.json` holds nested pool tiers
+(n50 ⊂ n200 ⊂ n400 ⊂ n800 — prefixes of one deterministic ordering of this
+repository's own TypeScript, materialised by `script/perf/make-pools.sh`, each
+indexed into a fresh data dir by `script/perf/profile-stages.ts`), two real
+corpora indexed through the CLI, and the rendered `files/s` series of two runs.
+It carries two arms — the resolution plan before and after the linear fix — and
+the raw per-tier output is committed beside it.
+
+Pool tiers, after-arm, on the Linux workstation (load1 5.1–13.9 across the runs;
+each tier is a superset of the tier above it):
+
+| Tier | Files | Relationships | Wall | files/s | parse | dbFlush | derived |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| n50 | 47 | 7,968 | 19.8s | 2.4 | 84% | 21% | 7% |
+| n200 | 196 | 63,331 | 76.1s | 2.6 | 80% | 47% | 17% |
+| n400 | 396 | 91,379 | 105.8s | 3.7 | 74% | 54% | 23% |
+| n800 | 796 | 124,114 | 147.0s | 5.4 | 72% | 70% | 26% |
+
+Three things to read out of it:
+
+- **files/s rises with size here, it does not fall** — 2.4 → 5.4 over 17× the
+  files, and the largest tier ran against *more* machine load than the smallest.
+  The small tiers are where discovery, worker startup and the first flush are a
+  larger fraction of a short run.
+- **Parse and DB flush are the run at these sizes**, and workers overlap them, so
+  the two columns are not a partition and do not add up to 100%.
+- **The derived phases grow as a share of the run** (7% → 26% across these tiers,
+  41% at the 12k-file corpus below). What does *not* grow is the per-relationship
+  cost of resolution: 0.45 candidate rows per stored relationship at 47 files →
+  0.57 at 196 files, a 1.25× growth over 4× the files, and resolve milliseconds
+  per relationship at 1.03×. Both growth factors are gated
+  (`validation/m60/results/scaling-linear.after-linux.json`).
+
+The two arms of that curve produce the same *graph* at every tier: the
+relationship-multiset digest is byte-identical between the window plan and the
+linear plan at n50, n200, n400 and n800. What changed is cost, not output.
+
+### The rate the bar shows is not a parse rate
+
+The `X/s` on the progress line — and in `bb status` while a run is in flight — is
+`processed files / elapsed-since-start`: a running average over the **whole**
+run. It climbs while the pool is saturating, peaks when the last file is stored,
+and then decays through the derived pass, where no file completes and the clock
+keeps running. `script/perf/live-rate-series.ts` captures it. On element-plus
+(2,581 files) the recorded series peaks at **30.1 files/s at 85s**, and the run
+as a whole reports 102.6s — **25.2 files/s**. That 20% gap is the tail, not a
+parse slowdown. On lodash (73 files, 27.4s) the same arithmetic is starker: peak
+5.7 files/s, whole run 2.7 files/s.
+
+So a figure like "22 files/s" is a whole-run number: files divided by everything
+the run did, tail included. The parse-only rate is always higher, and the gap is
+as large as the derived pass is.
 
 ## Measured anchors, full index, from scratch
 
@@ -164,6 +235,13 @@ are not additive.)
 | ASP.NET Core | 10,431 | 132,744 | 161s + 92s + 77s + 68s, four slices | verified, finalization deferred per slice (`validation/m19/results/S2-timings.json:55,109,163,217`) |
 | IntelliJ Community | 69,509 | 1,071,964 | **not claimed** | counts verified; a single fresh 1,000-file batch took 1,216.9s, so a complete cold run was outside the verification window (`validation/m19/results/S3.json:116`, `:129-131`) |
 | groovy (grails) | 7,114 | 64,719 | 494.6s | single process, all tracked files, 0 failures |
+| ASP.NET Core | 12,177 | 196,030 | 2,207.7s | one cold run at this repository's HEAD, full derived pass: 898.8s of the 2,207.7s (41%) is post-processing — `taint` alone is 440.8s, larger than the 297.2s resolution phase (`validation/m60/results/index-scaling-curve.json`) |
+
+The last row is a different measurement from the four-slice row above it: a
+single cold run, on a later build, with the derived pass included rather than
+deferred per slice. Its shape is the one worth carrying away — **41% of a 37-minute
+index stores no files at all**, so a `files/s` figure for a corpus this size is
+dominated by work that has nothing to do with files.
 
 The IntelliJ row is the important one. A complete cold full-index wall time for
 a repo of that size has **not been measured** and this repository does not
@@ -219,10 +297,12 @@ In descending order of effect:
   records **no** `index_cold` or `index_warm_reindex` row. Those budgets have
   never been measured. Treat them as unverified.
 - **No throughput figure is claimed for the three M19 anchors.**
-  `validation/m19/results/S1.json` records milliseconds only. The one
-  files-per-second in this area, 18.1 for element-plus, comes from a different,
-  second run of that corpus on a different host
-  (`validation/mA/results/probe-index-ux.json`).
+  `validation/m19/results/S1.json` records milliseconds only. The 18.1
+  files-per-second for element-plus comes from a different, second run of that
+  corpus on a different host (`validation/mA/results/probe-index-ux.json`); the
+  newer figures on this page — 23.9 and 25.2 files/s for element-plus, 5.5 for
+  ASP.NET Core — come from `validation/m60/results/index-scaling-curve.json` and
+  are one machine's and two builds', not a portable rate.
 - **Per-language analyzer timings are not comparable across languages.**
   `validation/m60/analyzer-budget-register.json:24-30` records that 39 of 41
   lanes carry an unresolved scoring debt and that no complexity artifact in the

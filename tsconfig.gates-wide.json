@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "outDir": null,
+    "strict": false,
+    "noImplicitAny": false,
+    "baseUrl": ".",
+    "rootDir": "."
+  },
+  "include": [
+    "script/**/*.ts",
+    "script/**/*.mts",
+    "src/ast/pool_worker_globals.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests",
+    "script/m12/**",
+    "script/m14/**",
+    "script/incoming-rust/rust-contains-oracle-check.ts",
+    "script/m14/tmp/elixir-274/validation/m14/fixtures/typescript/error-ranges.ts",
+    "script/m14/tmp/elixir-274/validation/m14/fixtures/typescript/import-target-shapes.ts",
+    "script/m14/tmp/elixir-274/validation/m14/fixtures/typescript/class-expression-members.ts"
+  ]
+}

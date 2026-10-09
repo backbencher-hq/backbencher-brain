@@ -548,7 +548,6 @@ export interface ImpactResultLike {
   /** M63.T2: HOW each shown dependent is a dependent, and how many of them are
    *  here only because the owner-cascade RANGE widened. Optional so hand-built
    *  fixtures keep type-checking; a surface that receives it says so out loud. */
-  impact?: never
   cascade?: { exact: number; member: number; rangeFolded: number } | null
 }
 
