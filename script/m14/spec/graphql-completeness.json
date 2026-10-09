@@ -157,10 +157,10 @@
       },
       {
         "id": "GQ-G3",
-        "severity": "UNMEASURED",
+        "severity": "MEASURED",
         "relationship_type": "imports",
-        "missing": "GraphQL has no import statement in the language. A schema is assembled by CONCATENATION outside the language (`#import` comments in graphql-tools, `graphql-import`, code generation), so the construct may not exist as syntax at all.",
-        "next_step": "Count any file-level inclusion directive or `#import` comment on the corpus; if the answer is zero by grammar construction, rule it INAPPLICABLE with the grammar inventory as the evidence (the bash lane's BD7 shape).",
+        "missing": "CORRECTED: `imports` is NOT absent from the language. The firing instrument reads 0 because the gql-gqlgen corpus contains no import form, but on the GATE's wider population (1,606 tracked .graphql files in 22 repos) the analyzer emits 6 `imports` edges, all of them .graphql paths (`c.graphql`, `b.graphql`, `./10.model.graphql`), and all 6 are unresolved at sample scope. So the construct exists and is EMITTED; the silent reading is a corpus artefact, and the remaining question is only whether those 6 paths should resolve (are the target files in the same project?).",
+        "next_step": "Check whether each of the 6 import targets names a file inside its own project; if yes the edge is an in-corpus import the gate can resolve, if no it is a path-addressed module outside the run's key space.",
         "provenance": "firing instrument 2026-10-09: `imports` SILENT."
       },
       {
@@ -180,10 +180,10 @@
       },
       {
         "id": "GQ-G6",
-        "severity": "OPEN",
+        "severity": "MEASURED",
         "relationship_type": "(incoming)",
-        "missing": "The programme's gate reads `FAIL — 455 ambiguous + 2,317 unresolved of 11,158 edges` (`npx tsx script/m14/incoming-gate.ts graphql graphql 60`). The lane has not split that column, and the split is the second deliverable: external (spec-builtin scalars and directives, cross-file schema references), in-corpus targets that must resolve (defects), and the rest with counts.",
-        "next_step": "Classify the unresolved set with the gate's own rule and a whole-project key space, as the bash lane's `probe-bash-incoming-split.mts` does, and report both scopes.",
+        "missing": "SPLIT, sample scope: of 2,317 unresolved, **2,188 (94.4%) are licensed by the GraphQL specification** (built-in scalars 2,108, spec directives 40, introspection types 40) and 129 are the rest (110 `uses` type/field names, 8 project-undefined directives, 6 import paths, 5 executable type names). The IN-CORPUS column is UNMEASURED until the whole-project key space is built. Separately, the 455 ambiguous are exactly the 455 edges targeting a non-unique key (421 duplicate keys).",
+        "next_step": "Build the project key space (`--repo-wide`) to measure the in-corpus column, then implement the boolean `isExternal` marker on the three spec-builtin classes and re-run both scopes.",
         "provenance": "programme run 2026-10-09 (supervisor), not yet re-run by this lane."
       }
     ]
@@ -223,13 +223,120 @@
     }
   },
   "_incoming_side": {
-    "_description": "The second acceptance criterion, quoted from the programme run of 2026-10-09 and NOT yet reproduced by this lane: `npx tsx script/m14/incoming-gate.ts graphql graphql 60` → `FAIL — 455 ambiguous + 2,317 unresolved of 11,158 edges`, instrument self-test PASS. No external marker exists on any edge today (the lane marks nothing), which is the state the bash lane started from and the reason its first deliverable was a split rather than a marker.",
-    "classes_hypothesised_not_measured": [
-      "spec-builtin scalars and directives (`String`, `Int`, `Boolean`, `ID`, `Float`, `@deprecated`, `@skip`, `@include`) — declared by the GraphQL specification, not by any file in the corpus",
-      "cross-file schema references — a field's return type declared in another `.graphql` file of the same project, which a 60-file stride key space cannot see",
-      "executable references — field selections and fragment spreads whose target is a field name declared on a type the document does not name"
-    ],
-    "next_step": "Split with the gate's own rule against a whole-project key space, then mark only the classes a LANGUAGE FACT justifies, with the metadata key set to boolean `true`.",
-    "warning_recorded_from_other_lanes": "A STRING value under an EXTERNAL_KEYS key is inert: two lanes lost 88 and 185 edges to exactly that. And refutations cluster on single-segment owners (zig: 259 refuted at one dot, 0 at two or more; powershell: 82, all bare) — so a claim should be published only where the arbiter asks about the target itself or about a qualified owner."
+    "_description": "The second acceptance criterion, MEASURED this time rather than quoted. `npx tsx script/m14/incoming-gate.ts graphql graphql 60` reproduces the programme run exactly: `FAIL - 455 ambiguous + 2,317 unresolved of 11,158 edges` (capture: validation/m14/fixtures/graphql/incoming-graphql-60.json), and the lane's census (`validation/m14/fixtures/graphql/probe-graphql-incoming-split.mts`, which imports the gate's own rule) AGREES with it edge for edge: 8386 resolved / 455 ambiguous / 2,317 unresolved. No edge carries an external marker today.",
+    "split_at_sample_scope": {
+      "_how": "The 2,317 unresolved, classified by EVIDENCE rather than by convenience. `--repo-wide` (the whole-project key space) is NOT yet in this measurement: load on the shared laptop was 15-19 during the run and the project key space parses every file of every sampled repository. The split below is therefore the SAMPLE-scope split, and the IN-CORPUS column is UNMEASURED rather than empty, because a declaration outside the 60 parsed files is invisible to this scope by construction.",
+      "external_licensed_by_the_specification": {
+        "edges": 2188,
+        "share_of_unresolved": "94.4%",
+        "classes": {
+          "spec scalars (references)": {
+            "edges": 2106,
+            "names": 5,
+            "examples": [
+              "String",
+              "ID",
+              "Int",
+              "Float",
+              "Boolean"
+            ]
+          },
+          "spec directives (uses)": {
+            "edges": 40,
+            "names": 3,
+            "examples": [
+              "@deprecated",
+              "@specifiedBy",
+              "@oneOf"
+            ]
+          },
+          "introspection types (uses)": {
+            "edges": 40,
+            "names": 18,
+            "examples": [
+              "__Type",
+              "__Type.kind",
+              "__Type.name",
+              "__schema",
+              "__Type.fields"
+            ]
+          },
+          "spec scalar (uses)": {
+            "edges": 2,
+            "names": 1,
+            "examples": [
+              "String"
+            ]
+          }
+        },
+        "language_fact": "The GraphQL specification predeclares the five built-in scalars, its introspection types and its executable/type-system directives; no project file declares them and the spec forbids redefining the built-in scalars. That is the evidence a marker is allowed to rest on, and the arbiter refutes the claim if a project declares the name itself.",
+        "marker_state": "NOT YET IMPLEMENTED (next item). `isExternal` must be the BOOLEAN `true` — a string is inert and two lanes lost 88 and 185 edges to exactly that."
+      },
+      "in_corpus": {
+        "edges": "UNMEASURED at sample scope",
+        "why": "A target declared by a file outside the 60-file stride is indistinguishable from an absent one here. The bash lane's equivalent measurement moved 266 of 845 edges into this column once the project key space was built; the same run is the next item for this lane."
+      },
+      "the_rest": {
+        "edges": 129,
+        "classes": {
+          "uses: a type name no file in the project declares": {
+            "edges": 110,
+            "names": 62,
+            "examples": [
+              "name",
+              "ofType",
+              "kind",
+              "description",
+              "args",
+              "user"
+            ],
+            "reading": "Most of these are FIELDS of introspection types reached without their owner (`name`, `kind`, `ofType`, `description`, `args` are all `__Type`/`__Field` fields) — a class the lane can either qualify at emission or rule, and the count is the price of each."
+          },
+          "uses: a directive with no definition in the project": {
+            "edges": 8,
+            "names": 4,
+            "examples": [
+              "@withAdditionalProperties",
+              "@shareable",
+              "@md",
+              "@mock"
+            ],
+            "reading": "Federation and custom directives whose definitions live in a schema this project does not carry. Not spec built-ins, so no language fact licenses them as external."
+          },
+          "imports: a .graphql path": {
+            "edges": 6,
+            "names": 5,
+            "examples": [
+              "c.graphql",
+              "b.graphql",
+              "./10.model.graphql"
+            ]
+          },
+          "references: a type name no file declares": {
+            "edges": 5,
+            "names": 5,
+            "examples": [
+              "RecursiveInput",
+              "SearchFilter",
+              "D",
+              "Model10",
+              "User"
+            ]
+          }
+        }
+      }
+    },
+    "ambiguity_characterised": {
+      "edges": 455,
+      "finding": "The ambiguity is fully explained by key non-uniqueness, measured rather than assumed: 421 published keys are declared more than once in their project and **exactly 455 edges target a non-unique key** — the two numbers are the same column. Top names from the gate's worklist: `Error.message` 26, `Error` 19, `Query` 17, `PageInfo` 12, `schema.query` 9, `@key` 8.",
+      "ruling_candidate": "Irreducible by emission alone: `Query` and `Error` are declared in several schema files of a project, and a bare `Query` target genuinely does not name one. The lever, if one is taken, is target QUALIFICATION (`Type.field`), which the analyzer already does where the document names the type; the 455 names are the ones where it does not."
+    },
+    "key_uniqueness": {
+      "keys_containing_hash": 0,
+      "keys_declared_more_than_once_sample_scope": 421,
+      "edges_targeting_a_non_unique_key": 455,
+      "note": "Recorded because this programme's `#`-suffixed keys made nine lanes' claims unverifiable before the separator moved, and the supervisor asked this lane to check before trusting any name-based count. This lane publishes ZERO keys containing `#` — the separator worry does not apply here — and the duplicate-key count is the ambiguity column above."
+    },
+    "next_step": "Run the same census with `--repo-wide` when load allows, to move edges from `unresolved` into the sample-budget column and to give the IN-CORPUS column a real number; then implement the boolean `isExternal` marker on the three spec-builtin classes (2,188 edges) and re-run the gate at both scopes."
   }
 }
