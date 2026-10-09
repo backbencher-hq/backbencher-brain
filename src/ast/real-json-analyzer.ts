@@ -12,7 +12,7 @@
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
-import { applyDocumentScope, documentDirScope } from "./project-scoped-identity"
+import { applyDocumentScope, documentDirScope, projectRelativePath } from "./project-scoped-identity"
 
 interface JsonContext {
   /** The document node, so a manifest pass can read the root object without
@@ -774,6 +774,17 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!refPath) continue
       const target = this.referenceTarget(ctx, refPath)
       const source = String(ref.metadata?.fullPath || ref.name)
+      // THE FILE CLAIM, and it exists because a path-shaped target is UNVERIFIABLE by the
+      // arbiter's owner lookup BY DESIGN: `verifyExternalClaim` cannot look up an owner holding
+      // `/`, so a `$ref` naming a sibling document could only ever be an `ext?` claim — which
+      // blocks a PASS and tells nobody anything. The arbiter has a claim kind for exactly this
+      // shape (`incoming-rule.ts` `FILE_CLAIM_KEY`): the target names a FILE, checked against the
+      // project's own admitted file list, which the gate builds from the UNSAMPLED corpus (so the
+      // claim is verified by evidence the analyzer never saw). Corpus measurement, whole admitted
+      // population: 82 file-naming `$ref`s, 81 of which name a file that is present (1 dangling,
+      // a vendored rekor schema) — so the claim is true 81 times and refuted once, and the one
+      // refutation is a real finding about vendored code rather than a false claim about it.
+      const fileCandidate = this.fileRefCandidate(ctx, refPath)
       // A file-naming `$ref` is BOTH a dependency and a reference. Emitting only
       // `references` was the omission; emitting only `imports` would lose the
       // pointer, so a `$ref` that names a file now carries both, which is what it is.
@@ -788,6 +799,8 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
             jsonSpecific: true,
             importForm: "json_schema_ref",
             resolvedPath: false,
+            // the dependency this edge asserts, in the spelling the project's own file list uses
+            ...(fileCandidate ? { importProjectFile: fileCandidate } : {}),
             evidenceClass: "structural",
           },
         })
@@ -801,7 +814,18 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: {
           relationshipType: "json_reference",
           refPath,
-          isExternal: !refPath.startsWith("#/") || !ctx.symbolMap.has(target),
+          // THE EXTERNAL CLAIM, and it is a claim about the CORPUS, so it may only be made where
+          // the shape says the target is outside this document. A LOCAL POINTER never is: `#`
+          // (the root) and `#/a/b` (a location in this file) are answered by this file. Before
+          // this test, `#` was marked external by `!refPath.startsWith("#/")` — nine edges in one
+          // vendored meta-schema — and a URI/path-shaped target can never be verified by the
+          // gate's owner lookup, so those nine made the lane's verdict unreadable: the arbiter
+          // returns a branch that prints no amb/unres/edges totals (measured, 2026-10-09).
+          // A pointer that names a location this document does not publish is a BROKEN pointer,
+          // not an external one; `reasonCode` says exactly that and the confidence carries it.
+          // A `$ref` that names a FILE carries the file claim instead, on both labels, so the two
+          // rows for one dependency are adjudicated the same way.
+          ...(fileCandidate ? { importProjectFile: fileCandidate } : { isExternal: !this.isLocalPointer(refPath) }),
           // Honesty contract §4 point 1: anything below 1.0 carries a machine-readable code.
           // The 0.8 case is exactly one thing — the pointer names a location this document
           // does not declare — so the code says so, and the 1.0 case says the opposite.
@@ -910,11 +934,22 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (document.type !== "document") return
     const rootObject = document.namedChildren?.find((c: any) => c.type === "object")
     if (!rootObject) return
-    const emit = (name: string, line: number) => {
+    const emit = (name: string, line: number, parent?: string) => {
       if (name.length === 0) return
+      // THE TARGET IS THE ENTRY POINT'S OWN IDENTITY, not the bare key it is written under.
+      // `main` is a key of EVERY `package.json`, so the bare spelling named 2-4 declarations on
+      // a 400-file draw (22 of the lane's 37 `exports` edges ambiguous, 0 unresolved) — an
+      // ambiguous edge is ONE edge attributed to N documents, which is the same defect the
+      // document-identity scoping closed for `contains`. The key HAS a position in this
+      // document and the symbol table publishes that position (`<identity>.main`,
+      // `<identity>.exports.<subpath>`), so the target is spelled from the same segments the
+      // `contains` targets use — the parent is passed in because an `exports` sub-path hangs one
+      // level deeper than `main`/`bin`, and a flat `${rootName}.${name}` would have named
+      // `<identity>./package.json` for a key that lives at `<identity>.exports./package.json`.
+      const target = [ctx.rootName, ...(parent ? [parent] : []), name].join(".")
       ctx.relationships.push({
         source: ctx.rootName,
-        target: name,
+        target,
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1,
         line_number: line,
@@ -937,7 +972,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
             const binPair = value.namedChild(k)
             if (binPair?.type !== "pair") continue
             const binName = this.keyText(binPair)
-            if (binName) emit(binName, binPair.startPosition.row + 1)
+            if (binName) emit(binName, binPair.startPosition.row + 1, "bin")
           }
         }
       } else if (key === "exports") {
@@ -947,7 +982,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
             const sub = value.namedChild(k)
             if (sub?.type !== "pair") continue
             const subPath = this.keyText(sub)
-            if (subPath) emit(subPath, sub.startPosition.row + 1)
+            if (subPath) emit(subPath, sub.startPosition.row + 1, "exports")
           }
         }
       }
@@ -1328,11 +1363,96 @@ const bracket = parent.lastIndexOf("[")
     return true
   }
 
+  /**
+   * A `$ref`'s TARGET, and a local pointer is a pointer INTO THIS DOCUMENT.
+   *
+   * The gate found the defect this fixes (`incoming-gate.ts json json 60`): nine `references`
+   * edges whose target was the literal string `#` and whose metadata said `isExternal: true`,
+   * all nine from one file — kubernetes' vendored draft-04 meta-schema
+   * (`.../gnostic-models/jsonschema/schema.json`), whose `definitions.schemaArray.items` is
+   * `{ "$ref": "#" }`. `#` is the JSON-Schema ROOT POINTER ("the schema itself"), so it is the
+   * most local reference a document can write, and BOTH rules below got it wrong for the same
+   * reason: they test `startsWith("#/")`, and a bare `#` is not that prefix.
+   *
+   *   the TARGET   fell through to the raw `#` — a string no symbol can be named, so the edge
+   *                named nothing. It now resolves to `ctx.rootName`, which IS the published
+   *                identity of the document root (the module symbol `analyze` pushes first), so
+   *                the pointer binds to the thing it points at.
+   *   the MARKER   (see the emission site) called it EXTERNAL, which is a claim about the corpus
+   *                that a pointer into the file's own document cannot support — the same
+   *                file-local-class-as-corpus-claim error the fsharp lane retired this week.
+   *
+   * Measured after: the gate reads 29 of 29 `references` resolved, `ext?` 0, `extFAIL` 0 — and
+   * the verdict, which had been returning a branch that prints NO totals, prints them again.
+   */
   private referenceTarget(ctx: JsonContext, refPath: string): string {
+    // the ROOT pointer: `#` names the document itself, whose published identity is rootName.
+    if (refPath === "#") return ctx.rootName
     if (!refPath.startsWith("#/")) return refPath
-    const fragment = refPath.slice(2).replaceAll("/", ".")
-    const local = `${ctx.rootName}.${fragment}`
+    // SEGMENT-WISE, because a JSON-Pointer segment can CONTAIN a `/` and this analyzer keeps that
+    // slash inside the key's own name. `#/paths/~1w-e-i-r-d___n-a-m-e/get` names the key
+    // `/w-e-i-r-d___n-a-m-e`, which is published as `…paths./w-e-i-r-d___n-a-m-e.get`; replacing
+    // every `/` in the fragment with `.` produced `paths.~1w-e-i-r-d___n-a-m-e.get` and matched
+    // nothing — measured on hasura's `example_oas5.json`, where all three of its unresolved
+    // local pointers are exactly this shape (RFC 6901 `~1` = `/`, `~0` = `~`).
+    const local = [ctx.rootName, ...refPath.slice(2).split("/").map((seg) => this.decodePointerSegment(seg))].join(".")
     return ctx.symbolMap.has(local) ? local : refPath
+  }
+
+  /** RFC 6901: within a pointer segment, `~1` is `/` and `~0` is `~`, decoded in that order. */
+  private decodePointerSegment(segment: string): string {
+    if (!segment.includes("~")) return segment
+    let out = ""
+    for (let i = 0; i < segment.length; i++) {
+      if (segment[i] === "~" && i + 1 < segment.length) {
+        const next = segment[i + 1]
+        if (next === "0") { out += "~"; i++; continue }
+        if (next === "1") { out += "/"; i++; continue }
+      }
+      out += segment[i]
+    }
+    return out
+  }
+
+  /**
+   * IS THIS `$ref` A LOCAL POINTER? A pointer into the file's own document — `#` (the root) or
+   * `#/a/b` (a location inside it) — is answered by the document and by nothing else, so it is
+   * neither an import nor an external target. Everything else (`./other.json`,
+   * `schemas/x.json#/defs/Y`, `https://…`) names something the document does not contain.
+   */
+  private isLocalPointer(refPath: string): boolean {
+    return refPath === "#" || refPath.startsWith("#/")
+  }
+
+  /**
+   * THE FILE A `$ref` NAMES, in the spelling the PROJECT's own file list uses — or `null`.
+   *
+   * `null` is the honest answer whenever the path cannot be derived soundly: no project root was
+   * supplied, the referring file does not sit under the root, the refPath is not a relative
+   * document path (a URL, an absolute path, a bare fragment), or folding `..` escapes the project
+   * (a sibling checkout is not an admitted file, and claiming one would be REFUTED by the gate).
+   * A wrong candidate is worse than none: the arbiter refutes a file claim it cannot find, and a
+   * refutation is counted against the lane exactly as an unresolved edge is.
+   */
+  private fileRefCandidate(ctx: JsonContext, refPath: string): string | null {
+    if (!this.isFileNamingRef(refPath)) return null
+    const self = projectRelativePath(ctx.filePath, ctx.projectRoot)
+    if (self === null) return null
+    const cut = self.lastIndexOf("/")
+    const dir = cut < 0 ? "" : self.slice(0, cut + 1)
+    const noFragment = refPath.split("#")[0]
+    if (noFragment.length === 0) return null
+    const out: string[] = []
+    for (const seg of (dir + noFragment).split("/")) {
+      if (seg.length === 0 || seg === ".") continue
+      if (seg === "..") {
+        if (out.length === 0) return null // escapes the project root — not an admitted file
+        out.pop()
+        continue
+      }
+      out.push(seg)
+    }
+    return out.length > 0 ? out.join("/") : null
   }
 
   private isReference(key: string, value: Node): boolean {
