@@ -317,6 +317,15 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
      * chain, on a receiver whose type the file cannot know, which is the receiver-value class
      * and not a path at all.
      */
+    // IS A WRITTEN PATH SEGMENT A NAME? A character walk, not a regex — the lane rule is
+    // absolute and `script/m14/no-regex-gate.sh` enforces it mechanically.
+    //
+    // The four forms, and each one was read off the grammar's own output rather than guessed:
+    //   ``…``   a backtick-quoted identifier            `let ``type`` x`
+    //   `…`     a single-backtick-quoted identifier     rare, but the grammar produces it
+    //   X       a plain identifier                      `[A-Za-z_][A-Za-z0-9_']*`
+    //   (op)    an operator NAME in parentheses         `(=)`, `(+)`, `(>>=)`
+    //
     // The operator arm is not a detail. F# names an operator FUNCTION by writing it in
     // parentheses — `(=)`, `(+)`, `(-)` — and its grammar hands exactly that to this branch,
     // because the callee node for those is a `long_identifier_or_op`. Without the arm, the
@@ -326,8 +335,51 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `bare-external` and the class is empty. Whitespace and parentheses are excluded inside
     // the operator on purpose: `(ctr CancellationToken.None).AsTask` is a call CHAIN whose
     // receiver is an application, not an operator name.
-    const IS_NAME = /^(`{2}[^`]*`{2}|`[^`]*`|[A-Za-z_][A-Za-z0-9_']*|\([^()\s]+\))$/
-    const isName = (s: string): boolean => IS_NAME.test(s)
+    //
+    // WHY A WALK RATHER THAN A NODE-TYPE TEST: this predicate answers a question about a
+    // STRING the source wrote, and the four forms are string shapes. Reading them off the tree
+    // would need a node type per form and would still have to fall back to the text for the
+    // quoted forms — and a node type the grammar does not emit for one of them is a dead
+    // branch this lane's own census exists to catch (`handled_verified` in the lane spec lists
+    // every node type with the count that proves the rule is LIVE). A character walk has no
+    // such failure mode: every branch below is exercised by the corpus, and the behaviour is
+    // pinned by `fsharp/call-target-spelling` and `fsharp/name-surface`.
+    const isIdentStart = (c: string): boolean =>
+      (c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || c === "_"
+    const isIdentPart = (c: string): boolean =>
+      isIdentStart(c) || (c >= "0" && c <= "9") || c === "'"
+    /** `\s` as the operator arm means it: the ASCII whitespace plus the Unicode spaces. */
+    const isSpaceChar = (c: string): boolean => {
+      if (c === " " || c === "\t" || c === "\n" || c === "\v" || c === "\f" || c === "\r") return true
+      if (c === "\u00a0" || c === "\ufeff" || c === "\u1680" || c === "\u2028" || c === "\u2029" || c === "\u202f" || c === "\u205f" || c === "\u3000") return true
+      const cp = c.codePointAt(0) ?? 0
+      return cp >= 0x2000 && cp <= 0x200a
+    }
+    const isName = (s: string): boolean => {
+      if (s.length === 0) return false
+      // backtick-quoted, the DOUBLE form first: its inner text may not contain a backtick, so
+      // it is not reachable through the single form (` ``X`` ` has inner `` `X` `` there).
+      if (s.startsWith("`")) {
+        const q = s.length >= 4 && s.startsWith("``") ? 2 : 1
+        const close = q === 2 ? "``" : "`"
+        if (s.length < q * 2 || !s.endsWith(close)) return false
+        return !s.slice(q, s.length - q).includes("`")
+      }
+      // an operator NAME: `(op)`, at least one character inside, no whitespace and no nested
+      // parentheses — `(ctr CancellationToken.None).AsTask` is a chain, not an operator.
+      if (s.startsWith("(")) {
+        if (s.length < 3 || !s.endsWith(")")) return false
+        for (let i = 1; i < s.length - 1; i++) {
+          const c = s[i]
+          if (c === "(" || c === ")" || isSpaceChar(c)) return false
+        }
+        return true
+      }
+      // a plain identifier
+      if (!isIdentStart(s[0])) return false
+      for (let i = 1; i < s.length; i++) if (!isIdentPart(s[i])) return false
+      return true
+    }
     const localNames = new Set<string>()
     const openedScopes = new Set<string>()
     /**
@@ -406,7 +458,11 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!parts.every(isName)) {
         const last = [...parts].reverse().find(isName)
         if (last) {
-          const cut = written.slice(0, written.lastIndexOf(last)).replace(/\.$/, "")
+          // the qualifier is everything before the last name, minus the separator dot that
+          // produced it. A trailing-dot test, not a regex: `replace(/\.$/, "")` was the
+          // second half of this lane's last regex literal.
+          const prefix = written.slice(0, written.lastIndexOf(last))
+          const cut = prefix.endsWith(".") ? prefix.slice(0, -1) : prefix
           return { target: last, resolution: "call-chain-receiver", ...(cut ? { qualifier: cut } : {}) }
         }
         return { target: written, resolution: "not-a-name" }
@@ -2513,14 +2569,15 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `Expect(2540)`, `System(2118)`, `Array(1943)`, `String(1604)` are the top refuting
     // owners, which is to say FSharp.Core-shaped names a project redeclares.
     //
-    // The third row is the shipped rule, and its root test is the one thing the analyzer can
+    // The third row WAS the shipped rule, and its root test is the one thing the analyzer can
     // check that the gate cannot: whether the path's ROOT is a segment THIS FILE already
     // declares. That test is what separates a path into somebody else's tree from a path into
     // the file's OWN project (`FSharp.Compiler.Syntax`, `Grace.CLI.Common`, `Fake.Core` —
     // 338 of the 822 refutations, 41%, for 170 verified edges). The remaining 484 refuted
     // claims are, by construction, the CROSS-FILE case: the declaration IS in the project and
-    // the analyzer cannot see another file. They are not hidden — the gate counts them in its
-    // `extFAIL` column and the pass-8 record states them.
+    // the analyzer cannot see another file. It counted them in the gate's `extFAIL` column and
+    // shipped anyway; the retirement below prices that column at the scope production uses and
+    // finds it 30% false, which is why the rule no longer runs.
     //
     // NOT marked, deliberately: `bare-external`, `local-binding`, `receiver-value`,
     // `call-chain-receiver` and `self-member` name a VALUE or this file's own member, so
@@ -2529,47 +2586,50 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // blocking a pass. `resource-path` (`#r`/`#load`/`#I` literals) is a file path or a URI,
     // not a namespace path, and its owners carry `:` or `/` — excluded by the same shape test
     // the gate applies, not by a second rule.
-    const EXTERNAL_PATH_CLASSES = new Set([
-      "external-namespace",
-      "external-type-or-module",
-      "module-member",
-      "opened-module",
-    ])
-    const EXTERNAL_BASE_CLASSES = new Set([
-      "base-member-external",
-      "interface-member-external",
-    ])
-    const fileRoots = new Set<string>()
-    for (const s of symbols) {
-      for (const key of [String(s.name ?? ""), String((s as any).qualifiedName ?? (s.metadata as any)?.fqn ?? "")]) {
-        const dot = key.indexOf(".")
-        if (dot > 0) fileRoots.add(key.slice(0, dot))
-      }
-    }
-    for (const rel of relationships) {
-      const md = rel.metadata as Record<string, any> | undefined
-      if (!md || md.isExternalTarget === true) continue
-      const cls = String(md.targetResolution ?? "")
-      const pathClass = EXTERNAL_PATH_CLASSES.has(cls)
-      const baseClass = EXTERNAL_BASE_CLASSES.has(cls)
-      if (!pathClass && !baseClass) continue
-      const target = String(rel.target ?? "")
-      const cut = target.lastIndexOf(".")
-      if (cut <= 0) continue
-      const owner = target.slice(0, cut)
-      // The gate's own shape test, mirrored rather than approximated: an owner holding `:`,
-      // `/` or whitespace can be neither confirmed nor denied, so a claim on it is noise.
-      if (owner.length === 0 || /[:/\s]/.test(owner)) continue
-      const root = owner.split(".")[0] ?? ""
-      if (root.length > 0 && fileRoots.has(root)) continue
-      // A path class needs a PATH: one owner segment is a module NAME, not a namespace path,
-      // and that is the 42.8% row above. The override classes are different and were
-      // measured separately — their owner is a BASE TYPE's leaf (`Exception.ToString`,
-      // `MemoryStream.Flush`) and verifies 454 of 514, because the class itself already
-      // asserts the base is not a type this file declares.
-      if (pathClass && !owner.includes(".")) continue
-      md.isExternalTarget = true
-    }
+    //
+    // ══════════════════════════════════════════════════════════════════════════════════════
+    // FS-P8 IS RETIRED (2026-10-09). THE CLAIM IS NO LONGER EMITTED — the reason codes are,
+    // and they are all still true; it is the CORPUS-WIDE claim a single file cannot support.
+    //
+    // The rule above marked an edge external when its `targetResolution` was one of the PATH
+    // classes (`external-namespace`, `external-type-or-module`, `module-member`,
+    // `opened-module`) or the BASE classes (`base-member-external`, `interface-member-external`)
+    // and the owner had ≥2 segments whose ROOT this file does not declare. EVERY ONE of those
+    // classes is a statement about THIS FILE ("this file does not publish this path",
+    // `targetResolution` is assigned a few hundred lines up), and the marker turned it into a
+    // statement about the PROJECT — which is what the incoming gate then adjudicates, and what
+    // it refutes. Measured, on the gate's own rule and populations:
+    //
+    //   the gate's 60-file stride    120 of 124 claims verified (96.8%) — because the key
+    //                                space IS 60 files, so an owner absent from the SAMPLE
+    //                                reads as absent from the PROJECT
+    //   the claim's own PROJECT       `external-namespace`  238 true / 100 false = 70.4%
+    //   (a 200-file draw adjudicated  `base-member-external` 15 true /  69 false = 17.9%
+    //    against every admitted file  `interface-member-external` 1 true / 0 false
+    //    of the claim's repository)   — 423 claims, `.tmp-probe/fsharp-lane/fs-extclaim-probe.mts`
+    //
+    // The false ones are the ordinary shape of a multi-file F# project, not an exotic case:
+    // `Internal.Utilities` (10), `FSharp.Test` (6), `FSharp.Compiler` (6), `Microsoft.FSharp`
+    // (4), `Fabulous.Avalonia` (2), `Fabulous.Maui` (2), `LibExecution.Builtin` (2) — every one
+    // a namespace name the corpus itself declares, claimed external because a 60-file sample
+    // did not contain it. The gate's contract calls that out in as many words ("a gate that
+    // accepts it unverified is a gate that can be laundered"), and production resolves at
+    // PROJECT scope, which is the scope where 30% of the class is refuted.
+    //
+    // This lane's bar for a claim rule is the one pass 13 set for `calls`: 28.0% verified was
+    // DECLINED with its number recorded rather than shipped. Neither class here clears that bar
+    // at project scope. NO PER-FILE DISCRIMINATOR RESCUES THEM, and that was measured too: the
+    // best candidate — the file itself names the owner as a dependency — removes all four of the
+    // gate's stride refutations only by removing 56 VERIFIED claims as well (56 of the 60
+    // owner-naming claims are true), i.e. it trades four false claims for fifty-six true ones.
+    //
+    // WHAT WOULD BRING THE CLAIM BACK: evidence that is not the file. `context.projectIndex`
+    // (pass 14 built the F# DeclarationSpec, pass 15 priced the joiner) can answer "does this
+    // project declare this owner" POSITIVELY, and a claim made only where the index says no is
+    // provable rather than shaped. Until the analyzer is handed that index, this lane claims
+    // nothing: an unmarked external edge is a gap the gate reports honestly, while a marked
+    // in-corpus edge is a false statement counted against the lane — and only one of those two
+    // errors can be laundered.
 
     return {
       language: "fsharp",
