@@ -1746,6 +1746,24 @@ export async function processWithWorkerPool(
       }
     }
 
+    // Which workers have signalled `ready`. A worker that dies BEFORE that is a
+    // startup failure, not a batch loss, and counting it is what makes the
+    // restart cap below a cap.
+    //
+    // The bug this closes: `clearStartupTimer(worker)` is the first statement of
+    // the `exit` handler, so a worker that died quickly could never trip the
+    // startup watchdog, and nothing on the exit path incremented
+    // `startupFailures`. A runtime that crashes before `ready` therefore forked a
+    // replacement forever — zero files parsed, no error reported, the run simply
+    // hung. Counted once per worker through countStartupFailure so the several
+    // paths that can observe the same death cannot double-count it.
+    const readyWorkers = new Set<ChildProcess>()
+    const countStartupFailure = (w: ChildProcess) => {
+      if ((w as any)._bbStartupCounted) return
+      ;(w as any)._bbStartupCounted = true
+      onStartupFailure()
+    }
+
     function createWorker(workerId: number) {
       // Worker pool: fork a child process that enters pool-worker IPC mode.
       const { workerPath, workerArgs } = resolvePoolWorkerFork()
@@ -1772,7 +1790,7 @@ export async function processWithWorkerPool(
           workerId,
           timeoutMs: workerStartupTimeoutMs,
         })
-        onStartupFailure()
+        countStartupFailure(worker)
         try { worker.kill("SIGKILL") } catch (e: any) {}
       }, workerStartupTimeoutMs)
       ;(worker as any)._bbStartupTimer = startupTimer
@@ -1807,10 +1825,39 @@ export async function processWithWorkerPool(
       worker.stderr?.on("data", relayWorker("worker"))
       worker.stdout?.on("data", relayWorker("worker-out"))
 
+      // A worker's IPC channel can fail ASYNCHRONOUSLY, and an unhandled 'error'
+      // event on a ChildProcess kills the PARENT — taking the whole index run with
+      // it, which is the failure class the dispatch guard's comment claims to have
+      // fixed. The try/catch around `worker.send()` cannot see this: it only
+      // catches a synchronous throw. Reproduced on Node v22.22.1 — a dispatch into
+      // a worker that died while the parent was blocked in a synchronous store
+      // returned `true`, and the write then failed with EPIPE as an unhandled
+      // 'error' (process exit 7); after the `exit` event the same send returns
+      // false AND emits ERR_IPC_CHANNEL_CLOSED (exit 1).
+      //
+      // So every worker carries an error handler for its whole life. The batch it
+      // held is requeued by the `exit` handler, which follows; this handler's job
+      // is to make the failure a worker loss instead of a run loss, and to retire
+      // the worker deterministically so that requeue actually happens.
+      worker.on("error", (err: Error) => {
+        log.warn("worker IPC error — retiring the worker so its batch is requeued", {
+          workerId,
+          error: String((err as any)?.message ?? err),
+        })
+        deadWorkers.add(worker)
+        clearStartupTimer(worker)
+        const deadIdx = idleWorkers.indexOf(worker)
+        if (deadIdx !== -1) idleWorkers.splice(deadIdx, 1)
+        if (!readyWorkers.has(worker)) countStartupFailure(worker)
+        try { worker.kill("SIGKILL") } catch {}
+        scheduleNext()
+      })
+
       worker.on("message", (msg: any) => {
         try {
           if (msg.type === "ready") {
             clearStartupTimer(worker)
+            readyWorkers.add(worker)
             idleWorkers.push(worker)
             scheduleNext()
           } else if (msg.type === "engine_fail") {
@@ -1889,6 +1936,17 @@ export async function processWithWorkerPool(
           const idx = idleWorkers.indexOf(worker)
           if (idx !== -1) idleWorkers.splice(idx, 1)
 
+          // A worker that dies before it ever signalled `ready` is a STARTUP
+          // failure. Without this the restart cap could never be reached (see
+          // readyWorkers): the counter only advanced from the startup watchdog,
+          // which clearStartupTimer above has just disarmed for exactly this
+          // worker, and from the warmup send. A runtime that crashes on boot
+          // therefore forked replacements forever with nothing parsed and nothing
+          // reported. Counted before the replacement decision below, so that
+          // decision sees the failure it is deciding about.
+          if (!readyWorkers.has(worker)) countStartupFailure(worker)
+          readyWorkers.delete(worker)
+
           pendingBatches.forEach((batch, batchId) => {
             if (batch.worker === worker) {
               log.warn("Worker died unexpectedly during batch", { batchId, code, signal })
@@ -1931,8 +1989,7 @@ export async function processWithWorkerPool(
       } catch (err: any) {
         log.warn("warmup send failed; treating the worker as dead", { workerId, error: String(err?.message ?? err) })
         deadWorkers.add(worker)
-        startupFailures++
-        if (telemetry) telemetry.workerStartupFailures = startupFailures
+        countStartupFailure(worker)
         try { worker.kill("SIGKILL") } catch {}
         if (fileQueue.length > 0) scheduleNext()
       }
