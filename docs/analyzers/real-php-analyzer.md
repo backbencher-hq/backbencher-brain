@@ -3053,3 +3053,262 @@ succeeded. It is a re-measurement, not an open question: the property it would c
 row bound to a non-receiver, non-ancestor) is already asserted by the fixture gate where the wrong answer is
 reachable, and observed on two frames. The command is
 `bun validation/m14/fixtures/php/store-resolution-census.mts --files 0`.
+
+---
+
+# M14 LAPTOP-B ROUND — the two SILENT types, and the incoming gate (2026-10-09)
+
+This section is APPENDED, not a rewrite. It answers two questions that were put to this lane
+with numbers attached, and in both cases the number was right and the reading of it was wrong.
+Every figure below is a command output, and each command is written out so it can be re-run.
+
+## 1. `exports` and `overrides` are SILENT in the firing instrument — are they missing?
+
+**No. Both are implemented, both fire, and the SILENT column is a statement about corpus
+density, not about the analyzer.** The instrument the programme mandates answers "does the type
+fire" over a SAMPLE, and this lane's two rare types have an applicable population of 3 sites and
+1 site in 3,231 files. A representative draw is expected to contain none, and it does.
+
+### The instrument's own line (re-run to confirm)
+
+```
+$ bun script/m14/firing-check.mjs PHP
+PHP            8 types fired   120/120 parsed (sample of the corpus, even stride)
+   calls:1298  contains:766  extends:75  implements:25  imports:411  instantiates:197  references:193  uses:1303
+   SILENT (constructible but produced nothing): exports overrides
+
+$ NFILES=400 bun script/m14/firing-check.mjs PHP
+PHP            8 types fired   400/400 parsed (sample of the corpus, even stride)
+   calls:4851  contains:2512  extends:256  implements:88  imports:1578  instantiates:736  references:553  uses:5806
+   SILENT (constructible but produced nothing): exports overrides
+```
+
+400 is the instrument's ceiling (`pickFiles`'s `cap`), so this is as much of the corpus as the
+arbiter will ever look at in one run.
+
+NOTE ON A MOVING TARGET, because it changed the answer's shape mid-round: when this round
+opened, `pickFiles` returned the first N files in DIRECTORY ORDER, and on phpunit that is 300
+vendored PHPStan files under `tools/.phpstan/vendor/**` — the 120- and 400-file samples never
+reached `tests/` at all. The instrument has since been fixed (by the Lead) to walk a bounded
+population, sort it and stride EVENLY, which is strictly better: the sample is now
+representative. Both readings give SILENT for these two types, and the second one is the
+interesting one — a representative sample still shows nothing, which is exactly why the
+denominator has to be measured rather than inferred from the column.
+
+### The denominator, measured on the instrument's own path
+
+`validation/m14/fixtures/php/silent-type-census.mts` reproduces the instrument's `pickFiles`
+VERBATIM (so the sample it measures is the sample the arbiter takes — it reproduces the tally
+exactly at both 120 and 400, above), runs the same production path (`getParser` -> `parse` ->
+`new Cls().analyze`), and takes its denominator from the TREE through the lane's registered
+oracles (`derivePhpExportsTruth`, `derivePhpOverridesTruth`), which share no code with the
+analyzer.
+
+```
+$ bun validation/m14/fixtures/php/silent-type-census.mts 120      # and 400
+=== INSTRUMENT SAMPLE n=120 (120/120 parsed) ===
+fired 8 types: calls:1298  contains:766  extends:75  implements:25  imports:411  instantiates:197  references:193  uses:1303
+SILENT: exports overrides
+  exports    tree(applies) 0   instrument(emits) 0   MISSED 0   applicable files: NONE
+  overrides  tree(applies) 0   instrument(emits) 0   MISSED 0   applicable files: NONE
+
+$ WHOLE=1 bun validation/m14/fixtures/php/silent-type-census.mts 120
+=== WHOLE phpunit CORPUS (3231/3231 parsed) ===
+fired 10 types: calls:45291  contains:17862  exports:3  extends:2059  implements:688  imports:12062  instantiates:5474  overrides:1  references:4653  uses:45526
+SILENT: (none)
+  exports    tree(applies) 3   instrument(emits) 3   MISSED 0   applicable files: tests/bootstrap.php(2) tests/end-to-end/generic/_files/auto_prepend_file.php(1)
+  overrides  tree(applies) 1   instrument(emits) 1   MISSED 0   applicable files: tools/.phpstan/vendor/.../NoParamTypeRemovalRule/Fixture/SkipConstruct.php(1)
+```
+
+**TEN of ten types fire over the corpus, and MISSED is 0 in both directions.** `exports` has 3
+sites in 2 files; `overrides` has 1 site in 1 file. Out of 3,231 files that is a per-file density
+of 0.06% and 0.03% — a 120-file draw contains one of them about 7% of the time, and the draw this
+round did not.
+
+### The whole-population cross-checks, where a 2-file population can actually be compared
+
+```
+$ npx tsx validation/m14/fixtures/php/exports-truth-crosscheck.mts
+  files compared        18   (the audit's publication set, not a draw)
+  truth edges           58
+  analyzer edges        58
+  MISSING (truth-only)  0
+  unexplained (an-only) 0
+PASS — 58 truth edge(s) and 58 analyzer edge(s) agree on all 18 file(s) that carry the label
+
+$ npx tsx validation/m14/fixtures/php/overrides-truth-crosscheck.mts
+  files swept (local parser)   5094
+  candidate files (parseFile)  3100
+  truth edges                  2
+  analyzer edges               2
+  MISSING (truth-only)         0
+  unexplained (analyzer-only)  0
+PASS — 2 truth edge(s) and 2 analyzer edge(s) agree across 3100 candidate file(s)
+```
+
+### The widenings that DO exist, priced rather than argued
+
+Neither is a missing edge; each is a DIFFERENT reading of the label, so neither was implemented
+here — and the price is recorded so the next reader decides with a number.
+
+```
+$ npx tsx validation/m14/fixtures/php/exports-scope-census.mts
+EMITTED  file-scope define('NAME', ...) literal   58 sites in 18 files   <- the analyzer's whole applicable set
+WIDER    class_declaration        4638 sites in 4608 files
+WIDER    interface_declaration     235 sites in 234 files
+WIDER    trait_declaration          18 sites in 18 files
+WIDER    enum_declaration           49 sites in 49 files
+WIDER    function_definition       321 sites in 33 files
+WIDER    const_declaration           0 sites in 0 files
+WIDER TOTAL named file-level declarations        5261
+CONTROL vs the committed audit: audit files 18, publications 58; this walker over THOSE files: 58 sites in 18 files
+  files whose per-file count differs: 0
+```
+
+A declaration-based `exports` (ruby's `fileUnit -> symbol`, python's module names, go's
+capitalized declarations) would add **5,261** edges. PHPD33 rules define()-only because a
+declared name is ALREADY a symbol in the file, and `script/m14/oracles/php-exports.ts` models
+that rule; widening it is a spec-and-oracle change (both outside this lane's write scope), not an
+analyzer fix. **The export boundary is 5,261 declarations wide and it is a boundary, not an
+omission** — that is the number PHPD33's reason never had.
+
+```
+$ npx tsx validation/m14/fixtures/php/override-scope-census.mts
+type declarations with a direct base       3114
+SAME-FILE override edges (deduped)         2   <- the analyzer's subset
+   CONTROL vs the oracle's committed total  2   MATCH
+CROSS-FILE override edges (deduped)        1233   <- NOT emitted, by ruling
+   base leaf UNAMBIGUOUS (1 declaring file) 781
+   base leaf AMBIGUOUS   (>1 declaring file) 452
+EXTERNAL base clauses                       68  (no admitted file declares the base)
+files carrying a cross-file site           755
+```
+
+Cross-file `overrides` is **1,233 edges in 755 files**, and — this is the part the ruling's own
+ambiguity argument did not cover — **781 of them have a base leaf declared by exactly ONE
+admitted file**, so they are not blocked by leaf ambiguity but by the analyzer's inability to see
+another file at all. That is the sized gap now recorded in the spec
+(`gap.gaps[PHP-CROSS-FILE-OVERRIDES]`), and it is a gap rather than a defect.
+
+THE WALKER'S FIRST VERSION WAS WRONG AND THE CONTROL IS WHY IT IS NOW RIGHT: it walked base
+clauses RECURSIVELY, so a base clause belonging to an anonymous class nested in a method body was
+attributed to the OUTER class, and it read 20 same-file sites where the oracle reads 2. A census
+that disagrees with the oracle on the covered half cannot be trusted about the uncovered half, so
+the walker now mirrors `derivePhpOverridesTruth` exactly (direct `base_clause` child only,
+`baseIdentity` for a qualified same-leaf base, deduped per `base.method`) and asserts its
+same-file total against the oracle's committed 2. It exits non-zero if that control fails.
+
+## 2. The incoming gate: FAIL, and what the 2,483 unresolved actually are
+
+```
+$ npx tsx script/m14/incoming-gate.ts php php 60
+VERDICT: FAIL — 135 ambiguous + 2483 unresolved of 3257 edges, resolved against the file's OWN PROJECT
+  (the same edges under the pooled corpus key space: 194 ambiguous + 2403 unresolved)
+instrument self-test: PASS (control fired)
+```
+
+### The split the gate cannot make, and the self-check that makes it the gate's own number
+
+`validation/m14/fixtures/php/incoming-census.mts` rebuilds that stride sample and its key space
+(name + qualifiedName per repo, the gate's own `classifyEdge` IMPORTED rather than
+re-implemented), and builds a second key space from the UNSAMPLED admitted population — 5,094
+`.php` files across 9 repos, 21,225 distinct names + 33,318 qualifiedNames from 4,944 files
+carrying symbols. It reproduces the gate's verdict EXACTLY, so the split is a split of the gate's
+own number:
+
+```
+=== SELF-CHECK against incoming-gate.ts php php 60 ===
+  gate printed: 135 ambiguous + 2483 unresolved of 3257 edges
+  this census : 135 ambiguous + 2483 unresolved of 3257 edges
+  MATCH — the split above is a split of the gate's own number
+
+TOTALS: edges 3257   ambiguous 135   unresolved 2483
+        (a) declared-in-corpus, out of this run's budget : 1325
+        (b) NOT declared anywhere in the admitted corpus : 1158
+            of (b): declared by php-src (phpInternalKind): 35
+        already carrying metadata.external               : 88
+```
+
+- **(a) 1,325 edges name declarations that ARE in the corpus.** They are unresolved because a
+  60-file stride over 5,094 files does not contain the declaring file. This is the budget, not
+  the analyzer: running one whole project instead —
+  `npx tsx script/m14/incoming-gate.ts php php 0 --repo=phpunit` — resolves **114,153 of 133,468**
+  edges against the same analyzer.
+- **(b) 1,158 edges name nothing anywhere in the admitted corpus**, and only 35 of those are
+  php-src names by the analyzer's own table. The rest are library and framework names the
+  analyzer cannot prove external from one file (`PHPStan\Analyser\Scope`, `subscribableDispatcher`,
+  `RequestHandlerInterface`, …), so they are REPORTED and deliberately not marked: marking a name
+  the analyzer cannot prove is outside the population is the laundering the contract forbids.
+
+### The marker was invisible, and the fix is measured
+
+`labelExternalTargets` has always written `metadata.external = <kind>` — a STRING. The gate's
+`EXTERNAL_KEYS` test is `md[key] === true` (or a non-empty array)
+(`script/m14/incoming-rule.ts:249-258`), so **every php-src label this lane ever emitted read as
+an edge carrying no claim at all**. Measured on the gate's sample: 88 labelled edges, 0 of them
+boolean. The fix is one line plus a moved field — `md.external = true`, kind to `md.externalKind`
+— and the family already spells it that way (`real-lua-analyzer.ts:2023`).
+
+```
+BEFORE: VERDICT: FAIL — 135 ambiguous + 2483 unresolved of 3257 edges
+AFTER : VERDICT: FAIL — 135 ambiguous + 2395 unresolved of 3257 edges; 88 external claim(s)
+        unverifiable (0 verified + 88 unverifiable external)
+```
+
+Unresolved fell by **exactly the 88 labelled edges**, and the verdict now NAMES the residual class
+instead of hiding it behind one number. At project scale the effect is larger:
+
+```
+$ npx tsx script/m14/incoming-gate.ts php php 0 --repo=phpunit
+BEFORE: FAIL — 80726 ambiguous + 19315 unresolved of 133468 edges
+AFTER : FAIL — 80726 ambiguous + 14878 unresolved of 133468 edges; 4437 external claim(s)
+        unverifiable (0 verified + 4437 unverifiable external)
+```
+
+4,437 edges — 23% of the project-scale unresolved population — stopped reading as gaps with no
+claim and started declaring themselves php-src externals. Regression evidence for the change:
+`npx tsx script/m14/run-fixtures.ts --lang php` -> 30/30 PASS, and
+`npx tsx validation/m14/fixtures/php/mutant-check.mts` -> all 23 mutants caught, clean baseline 0
+problems.
+
+### A PASS is UNREACHABLE for php by marking, and that is a fact about the rule
+
+This is the finding to act on, and it is not about this analyzer.
+
+`verifyExternalClaim` (`script/m14/incoming-rule.ts:467-478`) verifies an owner-claim by looking
+up `targetOwner(tgt)` — everything before the **last dot** — and the verdict's PASS condition
+requires `externalUnverified === 0`. PHP's namespace separator is a BACKSLASH and its member
+targets are BARE, so:
+
+- 2,478 of the 2,483 unresolved targets are bare (`Countable`, `Iterator`, `stdClass`, `text`),
+- 157 of the `imports` targets are backslash-qualified FQNs (`PHPUnit\Framework\TestCase`),
+- and the only 5 dotted targets are FILE PATHS — `smartypants.php`,
+  `__DIR__/../src/FirstPartyClass.php` — where the dot is the extension, so `targetOwner` reads
+  the basename before `.php` as an "owner".
+
+For every one of those 2,478 bare targets `targetOwner` returns null, so even a PERFECTLY marked
+php lane lands in `externalUnverified` and FAILS with `N external claim(s) name no identifier-
+shaped owner`. The one verify path that can fire for php is an accident of file extensions. No
+key in `EXTERNAL_KEYS` changes this (`binding`, `remoteRef` and `importProjectFile` are all
+refuted-or-unverifiable for these spellings — the include-path targets in particular: claiming
+`importProjectFile` makes the project check the file list and REFUTE a missing include, which is
+counted against the lane).
+
+The narrow, checkable fix belongs in the rule and not in this lane: when a target has no
+identifier-shaped owner, verify the TARGET itself (`decls === 0` is the same fact the owner
+lookup already uses, and the claim still cannot raise `resolved`, so it is not a laundering
+hole). That file is the Lead's, so it is named here as the next step rather than worked around.
+
+## What this round could NOT determine
+
+- **Whether the 1,070 non-php-src, not-in-corpus names are external or merely out of scope.**
+  A single file cannot know whether `PHPStan\Analyser\Scope` is declared by a sibling file, and
+  the census's corpus-wide answer ("not in the 5,094 admitted files") is not a fact the analyzer
+  has. Marking them would be a claim nobody checked.
+- **How much of the whole-project 80,726-ambiguous population is a member-identity problem.**
+  It is the known type-inference wall and it is a different question from this round's; the
+  4,437-edge marker effect is measured against it and is not affected by it.
+- **Whether the 5 dotted include-path targets should carry a file claim.** They are the only
+  php targets the owner lookup can even attempt, and the claim available to them
+  (`importProjectFile`) REFUTES a missing file rather than declaring it external, so they are
+  left unmarked and reported.
