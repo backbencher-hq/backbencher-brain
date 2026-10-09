@@ -34,8 +34,19 @@
  *     `external-claim-audit.ts` names the declaration answering each refuted claim.
  *     Artifacts: validation/m14/fixtures/zig/measurements/{incoming-abc-400-p30.json,
  *     external-claim-audit*}; re-derivation in commit 41c5e4e43.
- *   real-nim-analyzer.ts  meta.nimStdlibModule, measured marking 66 of 485 unbindable
- *     (docs/analyzers/real-nim-analyzer.md:435-449) — NOT yet re-derived; treat as p30 was.
+ *   real-nim-analyzer.ts  meta.nimStdlibModule, RE-DERIVED 2026-10-10 with
+ *     `npx tsx validation/m14/fixtures/nim/external-marker-rederive.ts --sample 400` over the
+ *     5,846-file nim corpus (400 parsed, production `parseFile`, production's per-project
+ *     resolution scope): the marker ships on 365 edges in that draw, 100% of them `std/`-shaped,
+ *     and **350 of the 809** `imports` edges declared nowhere in their own project are marked —
+ *     43.3%, against the 13.6% the original sentence recorded (66 of 485).
+ *
+ *     THE TWO POPULATIONS ARE NOT THE SAME MEASUREMENT and must not be compared as one: the
+ *     original was measured by the lane's own whole-corpus probe, which resolves a target
+ *     against per-repo `.nim` stems AND whole-corpus symbol names; the re-derivation uses the
+ *     PROJECT scope the gate's verdict is about, which is strictly narrower. Both halves of the
+ *     original sentence moved, so it is replaced rather than amended — a citation that has been
+ *     superseded twice in one session (zig, then nim) is the reason these cells carry dates.
  */
 // The binding separator is a FAMILY constant (src/ast/types.ts) rather than a local copy: the
 // analyzer spells a binding with it and this rule checks that spelling, so two definitions
