@@ -3,7 +3,7 @@
   "milestone": "M24",
   "githubMilestone": 24,
   "title": "bb_lsp — The Server (IDE Program v0)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m24/M24-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "updatedAt": "2026-08-31T00:00:00.000Z",
@@ -26,7 +26,7 @@
       "code": "G1",
       "githubIssue": 487,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "authority, ledger, closure gate, npm run verify wiring",
       "acceptanceCriteria": [
         "machine-readable ledger with all 11 M24 issues",
@@ -39,14 +39,14 @@
         "document limitations"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
+        "status": "verified",
+        "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 24,
         "failed": 0,
         "negativeCases": 11,
-        "blockedReason": "no check failed — relevant uncommitted files at measure time: script/m24/verify-closure.ts"
+        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
     },
     {
@@ -57,7 +57,7 @@
       "scope": "LSP 0-based UTF-16 <-> index 1-based lines/byte columns conversion component with mutation suite",
       "evidence": {
         "status": "verified",
-        "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
+        "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
         "verifierCommand": "npx tsx script/m24/verify-positions.ts",
         "evidenceFile": "P1.json",
         "passed": 48,
@@ -84,7 +84,7 @@
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
       "evidence": {
         "status": "verified",
-        "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
+        "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
         "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
         "evidenceFile": "P2.json",
         "passed": 34,
@@ -124,7 +124,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
+        "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
         "verifierCommand": "npx tsx script/m24/verify-server.ts",
         "evidenceFile": "L1.json",
         "passed": 142,
@@ -154,7 +154,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
+        "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
         "verifierCommand": "npx tsx script/m24/verify-hover.ts",
         "evidenceFile": "L2.json",
         "passed": 58,
@@ -184,7 +184,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
+        "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
         "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
         "evidenceFile": "L3.json",
         "passed": 122,
@@ -214,7 +214,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
+        "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
         "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
         "evidenceFile": "L4.json",
         "passed": 50,
@@ -244,7 +244,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
+        "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
         "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
         "evidenceFile": "L5.json",
         "passed": 97,
@@ -274,7 +274,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
+        "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
         "verifierCommand": "npx tsx script/m24/verify-harness.ts",
         "evidenceFile": "V1.json",
         "passed": 24,
@@ -302,7 +302,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
+        "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
         "verifierCommand": "npx tsx script/m24/verify-docs.ts",
         "evidenceFile": "D1.json",
         "passed": 47,
@@ -330,7 +330,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
+        "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
         "verifierCommand": "npx tsx script/m24/verify-closure.ts",
         "evidenceFile": "X1.json",
         "passed": 69,
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-09T02:26:01.150Z",
-    "contentSha256": "5fddca8685f5e84adfde5b57630877c8faf6ba4696093c09a5ccdb4c82ef6750"
+    "sealedAt": "2026-10-09T02:34:15.191Z",
+    "contentSha256": "1dc7c0c152e3b976851962e8a936b0e0b91d9d5ddffe2eb9ff864855d8105eba"
   }
 }

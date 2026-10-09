@@ -2,27 +2,24 @@
   "issue": "M24.G1",
   "code": "G1",
   "milestone": "M24",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 29,
   "passed": 29,
   "failed": 0,
   "negativeCases": 11,
-  "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
-  "workingTreeRelevantChanges": [
-    "script/m24/verify-closure.ts"
-  ],
+  "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m24/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-09T02:26:01.127Z",
+  "generatedAt": "2026-10-09T02:34:15.167Z",
   "ledger": "validation/m24/results/manifest.json",
   "limitations": [
     "This gate validates governance metadata and mutation response; it does not verify LSP feature implementations.",
     "A run with relevant uncommitted M24 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "no check failed - relevant uncommitted files at measure time: script/m24/verify-closure.ts",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-09T02:26:01.154Z",
-    "contentSha256": "e007811bc3d5d6e7e0070edb3d52b091c86b35bb4e8da85b22699707ae392517"
+    "sealedAt": "2026-10-09T02:34:15.194Z",
+    "contentSha256": "c94cef5568f1dad6528f92965b07b1f827b8b5c304001b7e8479027b3edc6938"
   }
 }

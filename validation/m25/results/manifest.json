@@ -40,14 +40,14 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "3536e36cbb7fd0f5454468f114c3295a2bc783de",
+        "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 84,
-        "failed": 2,
+        "passed": 85,
+        "failed": 1,
         "realFailed": 0,
         "negativeCases": 21,
-        "blockedReason": "2 check(s) failed: G1: M24 bar — ledger closed with all 11 issues verified (mechanical); G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
+        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
     },
     {
@@ -384,7 +384,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-09T02:26:01.668Z",
-    "contentSha256": "b7a86ca646ec9d625e2129bcd3534074d4880d39b59c61e4c764f2e33c11c79b"
+    "sealedAt": "2026-10-09T02:34:15.773Z",
+    "contentSha256": "9f4dfa59e0d1128828768ba4ea595c3bbd7a19c099504b2a7e4e4ea4661ae208"
   }
 }
