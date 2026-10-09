@@ -4892,13 +4892,18 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
 // CROSS-SYMBOL TAINT RESOLUTION (called from worker)
 // ============================================================================
 
-export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<number> {
-  log.debug("starting cross-symbol taint resolution", { projectId })
-  const { BrainDatabase } = await import("../brain/database")
-  const rawDb = await BrainDatabase.getRawInstance(projectId)
-  const now = Date.now()
-
-  const query = `
+/**
+ * The cross-symbol taint statement, exported so the measurement that guards its
+ * plan (`script/perf/probe-taint-plan-stats.ts`) runs THIS text rather than a
+ * hand-copied replica of it.
+ *
+ * That is not a style preference. `script/perf/verify-scaling-linear.ts` counted
+ * candidates with a replica of the plan it was supposed to be measuring, so
+ * replacing the plan changed nothing in its number and the gate stayed red on
+ * code that no longer performed the join. A probe that re-types the statement it
+ * reports on measures the probe.
+ */
+export const CROSS_SYMBOL_TAINT_QUERY = `
     WITH Sources AS (
       SELECT id, source_symbol_id
       FROM brain_taint_flow
@@ -4934,6 +4939,58 @@ export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<nu
     GROUP BY flow_source_id, flow_sink_id, target_symbol_id
     LIMIT 10000
   `
+
+export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<number> {
+  log.debug("starting cross-symbol taint resolution", { projectId })
+  const { BrainDatabase } = await import("../brain/database")
+  const rawDb = await BrainDatabase.getRawInstance(projectId)
+  const now = Date.now()
+
+  // ── THIS STATEMENT IS PLANNED BLIND ON A FRESH INDEX, AND THE BLIND PLAN IS 600× ──
+  //
+  // The query below joins brain_taint_flow (both CTEs) to brain_relationship, and
+  // SQLite chooses its join order when the statement is PREPARED. On a fresh index
+  // there are no statistics to choose with: the pipeline's `ANALYZE` runs at the
+  // END, after this phase, so the planner is looking at two tables whose sizes it
+  // has never measured. It then scans the taint table once per source row instead
+  // of probing it.
+  //
+  // MEASURED on the ASP.NET Core index (12,177 files, 1,134,292 relationships,
+  // 19,903 taint rows, 16,343 sources / 1,963 sinks), same data, same statement:
+  //
+  //   sqlite_stat1 absent — the state during a cold run    546.1 s → 1,530 flows
+  //   sqlite_stat1 present — the state after ANALYZE         0.9 s → 1,530 flows
+  //
+  // Same rows out, 600× the time, and 507 s of that 546 s was CPU (user+sys) — the
+  // planner doing work, not IO or a lock wait. That is the whole of the
+  // `taint(440793ms)` a 37-minute cold index reported: nothing in this pass is
+  // slow, the plan was. Same defect class as the `_i13_src` index note above:
+  // ANALYZE at the end of the pipeline means every derived phase plans against
+  // statistics that do not yet describe what it joins.
+  //
+  // These four are the indexes the measured-good plan uses. Analyzing just them
+  // costs 0.98 s on that index, measured in a fresh process (0.01 + 0.00 + 0.50 +
+  // 0.47 s) against the 25.4-27.6 s the whole-database ANALYZE reports from the
+  // same pipeline: the plan is bought for a fraction of a cost the run already
+  // pays. They are looked up first so a database whose schema
+  // predates one of them analyzes what it has instead of throwing: a missing index
+  // must not fail the phase, it must only fail to help it. Best-effort for the same
+  // reason — a statistics refresh that cannot run must not lose the flows.
+  try {
+    const wanted = ["brain_taint_source_idx", "brain_taint_sink_idx", "brain_rel_source_cross_idx", "brain_rel_target_idx"]
+    const present = new Set(
+      (
+        rawDb
+          .prepare(`SELECT name FROM sqlite_master WHERE type = 'index' AND name IN (${wanted.map(() => "?").join(", ")})`)
+          .all(...wanted) as any[]
+      ).map((r) => String(r.name)),
+    )
+    for (const idx of wanted) if (present.has(idx)) rawDb.exec(`ANALYZE ${idx}`)
+  } catch (err: any) {
+    log.warn("taint planner-statistics refresh failed", { error: err?.message })
+  }
+
+  const query = CROSS_SYMBOL_TAINT_QUERY
 
   try {
     const flows = rawDb.prepare(query).all(projectId, projectId) as any[]
