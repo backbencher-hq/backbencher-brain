@@ -3518,6 +3518,26 @@ dotted imports would verify by owner lookup and are still not marked: a relative
 naming a file the project does not admit is a dangling internal reference, and the file claim
 that would be the honest instrument is refuted for them by construction.
 
+**The scope split, which is the sharper form of external-vs-in-corpus.** The gate prints two key
+spaces on one run: `TABLE 1` (per project) reads 4,883 unresolved and `TABLE 2` (pooled corpus)
+reads 4,742 — so **141 targets are declared in another repository** of the corpus and **4,742 are
+declared nowhere in the 1,174-file corpus at all**. The 141 are cross-project references rather
+than externals; the 4,742 are the external-or-dead mass, and no per-file analyzer can separate
+those two from inside one file.
+
+**Marking: refused, on the fleet's own two precedents.** php documents that 2,478 of its 2,483
+unresolved targets have no dot at all and that even a perfectly marked php lane lands in
+`externalUnverified` and FAILS (`docs/analyzers/real-php-analyzer.md:3279-3296`); fsharp rules
+that its 18,028 bare targets stay unclaimed and cannot be claimed, because a bare name has no
+owner and marking one reads `externalUnverified`, which blocks a pass anyway
+(`docs/analyzers/real-fsharp-analyzer.md:2422-2426`). bash marks only the narrow subset its
+language PROVES cannot be a project declaration — a command word containing `/` cannot be a shell
+function name, ten edges, zero refuted, pinned in both directions
+(`docs/analyzers/bash.md:140-150`). CSS has no such per-file fact for a custom property: any
+stylesheet may declare any custom property, so "the project does not declare this" is a
+project-level claim a per-file analyzer cannot support and `verifyExternalClaim` cannot refute —
+an unfalsifiable marker is worse than a stated gap.
+
 ## The one real defect in this column, fixed
 
 `contains` + `isSelectorChain` edges are emitted only where both chain terms resolve, and
