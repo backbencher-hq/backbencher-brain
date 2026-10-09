@@ -99,7 +99,7 @@
       "owner": "src/lsp owner — NOT edited by the m24 lane-1 repair"
     }
   ],
-  "currentCommit": "058bc7e93c0b2b4258433bcb533f9e21a175cb27",
+  "currentCommit": "2446e31ddaac8dc8f2638f1da5d7915c26d00c5a",
   "sourceFingerprint": "0cf0aeffbf56055754eba2adc8431c0a6e34df8720a69e78fd9262c3a91c5daf",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -110,7 +110,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
   "evidenceFile": "P2.json",
-  "generatedAt": "2026-10-09T02:33:00.999Z",
+  "generatedAt": "2026-10-09T15:18:19.157Z",
   "limitations": [
     "Watcher exercised through real fs.watch on a temp directory. THIS RUN'S OS IS IN `measuredOs`, and the watcher event classes the claims are scoped to are in `watcherEventClasses`; the per-run event counts are printed to the run log rather than recorded, because they vary between runs of the same commit and evidence must regenerate byte-identically (contract §8.2, §10.2: platform scope is declared per claim, other OSes declared absent, never assumed).",
     "The convergence legs (G1, G2, G3, G4, G5 recovery, G7) assert convergence WITHIN a declared bound (6000 ms) and stability across a 150 ms window, rather than at the instant drain() returned: watcher delivery latency is the platform's. The one-directional guarantee — never fresh before the reindex lands — is asserted at full strength, and the 'pendingReindex never clears' mutant proves the bounded wait cannot hide a stuck monitor.",
@@ -121,7 +121,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-09T02:33:00.999Z",
-    "contentSha256": "e2143b3918dd1f149e19231218701f3135b3ece75999aa64a84ad32785187185"
+    "sealedAt": "2026-10-09T15:18:19.157Z",
+    "contentSha256": "b88dda8524b2c15933ddd43851d57db1a424717406477d8ff4771928ba4d916b"
   }
 }
