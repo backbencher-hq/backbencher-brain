@@ -57,9 +57,6 @@ import { fileURLToPath } from "node:url"
 // A gate that cannot execute is not a gate, and the mutant battery looked green
 // only because its failure was being read as a pass.
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-// NOTE: `REPO` below is a CORPUS repo name, not this project. That is why the output path
-// reads ROOT explicitly and must not be spelled with REPO.
-const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : "all"
 
 const argv = process.argv.slice(2)
 const arg = (n: string) => {
