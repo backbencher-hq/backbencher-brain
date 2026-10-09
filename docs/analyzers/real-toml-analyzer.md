@@ -1057,20 +1057,40 @@ project always produces — with one root, every target is unique.
 
 So the experiment was built to produce the BAD case: **two independent workspaces in
 one project**, which is what the corpus actually contains (`workspace.package.edition`
-is declared by **14** manifests). Result:
+is declared by **14** manifests). Measured on that project, and on the 19-member
+cargo subset with a single root:
 
-```
-alpha/crates/a/Cargo.toml -> alpha/Cargo.toml   workspace.package.edition   CORRECT
-beta/crates/b/Cargo.toml  -> alpha/Cargo.toml   workspace.package.edition   *** FALSE EDGE ***
-```
+| | cargo (one workspace) | two-root (adversarial) |
+|---|---|---|
+| **shipped** | 219 correct, **0 false**, 31 unbound | 2 correct, **2 false**, 4 unbound |
+| variant A — suffix match + uniqueness guard | 16 correct, 0 false, 234 unbound | 0 correct, 0 false |
+| **variant B — full-name match + uniqueness guard** | **219 correct, 0 false**, 31 unbound | **0 correct, 0 false** |
 
-**4 of 4 resolved edges crossed workspaces.** Unresolvable targets were handled
-honestly (`workspace.dependencies.serde`, declared nowhere, correctly stayed
-external); **ambiguous** ones were bound to an arbitrary declaration. The mechanism
-is pre-existing: `parallel-indexer.ts:4723-4734`, Strategy 3, resolves a dotted
-target with `MIN(sym.id)` — deterministic, and exactly that is the problem: it picks
-a winner among several rather than declining. This emission would be the first thing
-to reach it with cross-file dotted targets.
+**A CORRECTION TO THIS PAGE, TWICE.** An earlier draft of this section reported "4 of
+4 resolved edges crossed workspaces", then a second reading reported a 64% false-edge
+rate on the cargo subset. Both were wrong, and both were wrong in MY measurement, not
+in the product: the verdict test compared a target file's `relative_path` against a
+source file's, and a workspace root's `relative_path` is the bare string
+`Cargo.toml`. The correct test is whether the target's **directory** is an ancestor of
+the source's. With that, the single-workspace case is **219 correct and 0 false**, and
+the adversarial case is **2 false**. The defect is real and the fix below is measured;
+the numbers that overstated it were an artefact of a string-prefix test on a path that
+is not a prefix.
+
+**The fix, measured rather than argued — variant B.** Strategy 3 looks the target up
+by everything after the FIRST dot, so `workspace.package.edition` is matched against
+the name `package.edition` — which means something else entirely in a member manifest
+(its own `[package] edition`). The `workspace.` prefix is not decoration; it is the
+only thing separating the inherited value from the local one, and stripping it is what
+makes the match wrong. Variant B matches the **whole** name and binds only when the
+candidate set has exactly one member, which is what `_res_name_unique` already does
+(`HAVING COUNT(*) = 1`). It keeps the shipped recall exactly (219 of 219) in the case
+where the answer is knowable, and refuses all of it in the case where it is not — which
+is the correct answer there, because with two roots no single declaration is right.
+
+Variant A (uniqueness guard on the suffix match) is too conservative: stripping the
+qualifier first leaves almost nothing uniquely matchable, so it throws away 203 of 219
+correct edges to buy precision it did not need.
 
 **Why it is not emitted.** An edge pointing at the wrong declaration is the mistake
 this repository names as the expensive one — it turns a rename into wrong advice.
@@ -1080,10 +1100,25 @@ lanes. The honest state of this cell is therefore **APPLICABLE and UNIMPLEMENTED
 blocked on a store decision** — which is a different claim from "not applicable", and
 the only reason it can be made at all is that the applicability was measured.
 
-The fix, when someone owns shared infrastructure: make Strategy 3 decline when its
-candidate set has more than one member, the way `_res_name_unique` already declines
-(`HAVING COUNT(*) = 1`). That would leave the 304 uniquely-bindable edges resolving
-and the 645 ambiguous ones external — the same honesty `imports` already gets.
+**THE FIX IS READY; IT IS NOT APPLIED.** Variant B above is a two-line change to
+`parallel-indexer.ts` — match the whole name instead of `SUBSTR(...)`, and add the
+`COUNT(*) = 1` guard — and it is proved on real indexed data in both directions. It is
+not applied because that file is another lane's in-flight work, and because its blast
+radius is NOT yet measured: Strategy 3 is shared by every lane that emits a dotted
+target (typescript's dotted names, hcl, yaml and others), so changing the match from
+suffix to full-name can move edges in languages this work never touched. Measuring that
+is the remaining work, and it needs the shared file to itself.
+
+Two consequences worth stating, because they are the honest shape of the remaining
+debt:
+
+- Applying it does NOT unblock the 1,267 inheritance sites on its own. It makes them
+  SAFE to emit: the 304 that bind uniquely would resolve and the 645 ambiguous would
+  become external rather than fabricated. Emitting them is the second half, and it
+  should follow the measurement, not precede it.
+- The same change is what would let the 331 `imports` path targets resolve, and what
+  stands between the 124 ambiguous incoming edges and a clean incoming story — one
+  shared-store decision carrying three lanes' debt.
 
 ### What was verified before any of it was called done
 
