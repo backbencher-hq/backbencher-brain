@@ -2250,9 +2250,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
      *
      *   receiverUnnamed            no owner text at the site (a call result, an index expression,
      *                              a cascade, a bare callee in library scope). Not typeable here.
-     *   receiverTypeOutsideRun     the owner text names something, but this run cannot see a type
-     *                              declaration for it (an imported type, a prefix, a lowercase
-     *                              receiver whose declared type is elsewhere).
+     *   receiverTypeOutsideRun     a CAPITALIZED owner text names a type this run cannot see (an
+     *                              imported type, a prefix): the type's NAME is in the source, so
+     *                              the target can be spelled `Type.member` even though no member
+     *                              table here can confirm it.
+     *   receiverTypeUnknown       a lowercase owner text whose declared type this run did not
+     *                              resolve — a VALUE, not a type. No spelling at the site reaches
+     *                              a declaration; this is the receiver-typing gap.
      *   receiverInFileNotSpelled   the declaring owner IS in this file, and the qualified
      *                              spelling is not in this file's published symbol table — the
      *                              one branch that is an analyzer gap rather than missing
@@ -2268,9 +2272,28 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     const qualifiedTarget = (
       ownerText: string | null,
       member: string,
-    ): { target: string | null; cause: string | null } => {
+    ): { target: string | null; cause: string | null; typeName?: string } => {
       if (!ownerText || !member) return { target: null, cause: "receiverUnnamed" }
-      if (!visibleTypes.has(ownerText)) return { target: null, cause: "receiverTypeOutsideRun" }
+      // TWO DIFFERENT DECLINES, and the first draft of this cut did not tell them apart — the dump
+      // did. Dart capitalizes type names and lowercases values, which is the one piece of evidence
+      // the source itself carries here:
+      //
+      //   `ExternalThing.frob()` — a CAPITALIZED head is a TYPE this run cannot see. The name is
+      //   written in the source, so the edge could publish `ExternalThing.frob` (a spelling that
+      //   is more specific than the bare member and that a project index can resolve) instead of
+      //   dropping it: this is a SPELLING loss.
+      //
+      //   `ext.frob()` — a lowercase head is a VALUE whose declared type this run did NOT resolve
+      //   (the type lives in the declaration of `ext`, which `headOwner` fell back past). Nothing
+      //   at the site names a type, so no spelling change reaches it: this is a RECEIVER-TYPING
+      //   gap, and reporting it as "the type is outside the run" — which the first draft did, by
+      //   using the head TEXT as the type — would have counted a typing gap as a spelling loss in
+      //   the very census written to decide which of the two to build.
+      if (!visibleTypes.has(ownerText)) {
+        return isCapitalized(ownerText)
+          ? { target: null, cause: "receiverTypeOutsideRun", typeName: ownerText }
+          : { target: null, cause: "receiverTypeUnknown" }
+      }
       const declared = declaringOwner(member, ownerText, membersByOwner)
       if (declared) {
         // the in-file spelling is verified against what the file PUBLISHES, not rebound
@@ -2281,6 +2304,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (indexDeclares(ownerText, member)) return { target: `${ownerText}.${member}`, cause: null }
       return { target: null, cause: "receiverMemberOutsideRun" }
     }
+    /**
+     * THE CUT'S METADATA, built in ONE place so no site can record a cause without its type or a
+     * type without its cause — the same reason the cause is produced inside the rule that decides
+     * it. A row the analyzer qualified carries nothing here: the cut labels bare rows only.
+     */
+    const receiverCut = (q: { cause: string | null; typeName?: string }): Record<string, unknown> =>
+      q.cause ? { receiverCause: q.cause, ...(q.typeName ? { receiverType: q.typeName } : {}) } : {}
+
     /**
      * A declared type name this pass can POINT AT, or undefined. `Widget?` is the same
      * declaration as `Widget` (the operand of `?` is the type), and a generic or record
@@ -2621,7 +2652,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                   // THE RECEIVER CUT, on the rows that stayed bare and only there — a row that
                   // resolved already says how it resolved (`qualifier`), and a binding has no
                   // receiver question to answer.
-                  ...(!isBinding && q.cause ? { receiverCause: q.cause } : {}),
+                  ...(isBinding ? {} : receiverCut(q)),
                 },
               })
             }
@@ -2693,7 +2724,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: {
                 ...(locals.has(method) ? { isLocalRead: true } : {}),
                 ...(q.target ? { qualifier: "chain" } : {}),
-                ...(q.cause ? { receiverCause: q.cause } : {}),
+                ...receiverCut(q),
               },
             })
           }
@@ -2737,7 +2768,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 line_number: this.nodeLine(memberNode),
                 metadata: q.target
                   ? { isMemberRead: true, qualifier: "head" }
-                  : { isMemberRead: true, ...(q.cause ? { receiverCause: q.cause } : {}) },
+                  : { isMemberRead: true, ...receiverCut(q) },
               })
             }
           }
@@ -2793,7 +2824,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               line_number: this.nodeLine(n),
               metadata: q.target
                 ? { isMemberRead: true, isConstantPattern: true, qualifier: "pattern" }
-                : { isMemberRead: true, isConstantPattern: true, ...(q.cause ? { receiverCause: q.cause } : {}) },
+                : { isMemberRead: true, isConstantPattern: true, ...receiverCut(q) },
             })
           }
         }
@@ -2857,7 +2888,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               line_number: this.nodeLine(n),
               metadata: q.target
                 ? { isBareRead: true, qualifier: "enclosing" }
-                : { isBareRead: true, ...(q.cause ? { receiverCause: q.cause } : {}) },
+                : { isBareRead: true, ...receiverCut(q) },
             })
           } else if (locals.has(txt)) {
             // DT2: bound locals/params read as values (OC-E parity).
