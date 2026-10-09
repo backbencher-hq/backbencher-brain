@@ -24,6 +24,14 @@
 // A file count below this is effectively instant; we say so rather than showing
 // a spinner the user never needed to see.
 const SMALL_PROJECT_FILES = 150
+// Below this, even "a few minutes" is a lie: a 7-file project finishes in seconds.
+const TINY_PROJECT_FILES = 50
+// Encouragement bands below this file count are noise, not progress.
+const ENCOURAGEMENT_MIN_FILES = 50
+// How far back the throughput window looks when estimating the remaining time.
+const RATE_WINDOW_MS = 45_000
+// Per-file allowance used to scale "longer than we expect" to the project's size.
+const EXPECTED_MS_PER_FILE = 250
 // Above this, indexing is long enough that the user needs to be told it is normal
 // and that they are expected to wait rather than assume the process is hung.
 const BIG_PROJECT_FILES = 4000
@@ -45,15 +53,20 @@ export const SUPPORT_EMAIL = "support@backbencher.cc"
  * Bands are keyed on completion percentage, not file counts, so the wording
  * tracks the run the user is actually watching.
  */
-export function encouragementFor(pct: number, isBigProject: boolean): string | null {
+export function encouragementFor(pct: number, isBigProject: boolean, totalFiles = Number.MAX_SAFE_INTEGER): string | null {
+  // Encouragement is for runs long enough to need it. On a 7-file project the first
+  // update is "1/7 files" = 14%, and announcing "a quarter of the way in" there is
+  // noise dressed as progress — measured on a real 7-file run, which finished in 2s.
+  if (totalFiles < ENCOURAGEMENT_MIN_FILES) return null
   if (pct >= 100) return null
   if (pct >= 95) return "almost there — finishing up"
   if (pct >= 80) return "in the final stretch"
   if (pct >= 50) return "past the halfway mark"
   if (pct >= 25) return "a quarter of the way in"
-  // Only the long-run projects get the "go away" line, and only at the start —
-  // telling a small project to grab a coffee would be absurd.
-  if (isBigProject && pct < 10) return null
+  // Below 25% there is nothing to encourage. (The old code had a branch here that
+  // returned null for big projects and then returned null anyway — dead code whose
+  // comment claimed a "go away" line this function never had. That line is printed
+  // once, up front, by expectationFor.)
   return null
 }
 
@@ -100,9 +113,15 @@ export function formatDuration(ms: number | null | undefined): string {
 /**
  * What the user should expect up front, based on project size. Used as a single
  * reassuring line rather than repeated nagging.
+ *
+ * The tiny band exists because "a few minutes at most" was printed for a 7-file
+ * project that finished in two seconds — measured — which teaches the user that the
+ * tool's estimates are not worth reading. The module docstring always promised a
+ * "a moment" band; this is it.
  */
 export function expectationFor(totalFiles: number): string {
   if (totalFiles <= 0) return "nothing to index — the index is already up to date"
+  if (totalFiles < TINY_PROJECT_FILES) return "a moment — this is a tiny project"
   if (totalFiles < SMALL_PROJECT_FILES) return "this is a small project — a few minutes at most"
   if (totalFiles < BIG_PROJECT_FILES) return "this will take a few minutes"
   return "large project — this takes a while. Grab a coffee; bb keeps working in the background"
@@ -113,15 +132,79 @@ function countWithCommas(n: number | undefined): string {
   return n.toLocaleString()
 }
 
-/** Remaining-time estimate from observed throughput. "…" until it is knowable. */
-export function estimateRemainingMs(stats: IndexProgressStats, startedAt: number): number | null {
+/** One (timestamp, files-done) observation, for the windowed rate. */
+export interface RateSample {
+  at: number
+  files: number
+}
+
+/**
+ * Files per second over the RECENT window, not since the run began.
+ *
+ * Why not the cumulative average: the file mix changes as a run proceeds, and an
+ * average over the whole run answers a question nobody asked — measured on a real
+ * index, the ETA slid 33m -> 25m -> 19m -> 8m -> 25m -> 14m -> 20m as faster and
+ * slower files arrived, because every one of those numbers was the mean of
+ * everything that had happened so far. Two samples inside the window are enough to
+ * describe the last stretch; with fewer, the caller falls back to the average.
+ */
+export function windowedFilesPerSecond(samples: RateSample[], windowMs = RATE_WINDOW_MS): number | null {
+  if (samples.length < 2) return null
+  const newest = samples[samples.length - 1]
+  const inWindow = samples.filter((s) => newest.at - s.at <= windowMs)
+  const oldest = inWindow.length >= 2 ? inWindow[0] : samples[samples.length - 2]
+  const dt = (newest.at - oldest.at) / 1000
+  const df = newest.files - oldest.files
+  if (dt <= 0.5 || df <= 0) return null
+  return df / dt
+}
+
+/**
+ * Remaining-time estimate. "…" (null) until it is knowable, and it never claims a
+ * run is finished while work remains.
+ *
+ * `phaseNote` — when the file loop is done but derived phases still run, the honest
+ * answer is not a duration but "finishing": measured on a 15.1-minute command whose
+ * files were all processed at 5m33s, the old estimator printed `eta=0s` for the
+ * remaining two-thirds of the run.
+ */
+export function estimateRemainingMs(
+  stats: IndexProgressStats,
+  startedAt: number,
+  samples: RateSample[] = [],
+  now: number = Date.now(),
+): number | null {
   const { processedFiles, totalFiles } = stats
   if (!totalFiles || processedFiles <= 0) return null
-  const elapsed = Date.now() - startedAt
+  const elapsed = now - startedAt
   if (elapsed < 1000) return null // too little signal to be honest about
   const remaining = totalFiles - processedFiles
   if (remaining <= 0) return 0
+  const windowed = windowedFilesPerSecond(samples)
+  if (windowed !== null && windowed > 0) {
+    // A burst (a page of unchanged files, say) must not claim the rest is instant:
+    // the windowed rate is clamped to twice the run's own average before it is used.
+    const cumulative = processedFiles / (elapsed / 1000)
+    const rate = Math.min(windowed, cumulative * 2)
+    if (rate > 0) return (remaining / rate) * 1000
+  }
   return (elapsed / processedFiles) * remaining
+}
+
+/** The ETA text: never "0s" while the run still has phases to finish. */
+export function formatEta(remainingMs: number | null, filesDone: boolean): string {
+  if (remainingMs === null) return "…"
+  if (remainingMs <= 0) return filesDone ? "finishing" : "…"
+  return formatDuration(remainingMs)
+}
+
+/**
+ * How long a project of this size may take before a run counts as slower than
+ * expected. Scales with the file count, because a fixed threshold cannot be right for
+ * both a 200-file library and a 10,000-file monorepo.
+ */
+export function expectedDurationMs(totalFiles: number): number {
+  return Math.max(SLOW_RUN_MS, totalFiles * EXPECTED_MS_PER_FILE)
 }
 
 export class IndexProgressRenderer {
@@ -135,6 +218,17 @@ export class IndexProgressRenderer {
   private lastLineLength = 0
   private announcedExpectation = false
   private lastEncouragementBand = -1
+  /** Recent (timestamp, files-done) observations, for the windowed rate. Bounded. */
+  private samples: RateSample[] = []
+
+  /** Keep only what the window needs, so a long run cannot grow this without bound. */
+  private recordSample(files: number): void {
+    const at = Date.now()
+    const last = this.samples[this.samples.length - 1]
+    if (last && last.files === files) return
+    this.samples.push({ at, files })
+    while (this.samples.length > 2 && at - this.samples[0].at > RATE_WINDOW_MS * 2) this.samples.shift()
+  }
 
   constructor(opts: IndexProgressOptions) {
     this.stream = opts.stream
@@ -169,6 +263,7 @@ export class IndexProgressRenderer {
       this.begin()
     }
     this.maybeEncourage(stats)
+    this.recordSample(stats.processedFiles)
     if (this.isTTY) {
       const now = Date.now()
       if (now - this.lastRenderAt < 80) return // smooth, cheap, ~12fps
@@ -188,7 +283,7 @@ export class IndexProgressRenderer {
     if (total <= 0) return
     const done = stats.processedFiles + (stats.skippedFiles ?? 0)
     const pct = Math.min(100, Math.floor((done / total) * 100))
-    const line = encouragementFor(pct, isBigProject(total))
+    const line = encouragementFor(pct, isBigProject(total), total)
     if (!line) return
     // One announcement per band, identified by which band the run is in.
     const band = pct >= 95 ? 95 : pct >= 80 ? 80 : pct >= 50 ? 50 : pct >= 25 ? 25 : 0
@@ -208,8 +303,9 @@ export class IndexProgressRenderer {
     const done = stats.processedFiles + (stats.skippedFiles ?? 0)
     const pct = total > 0 ? Math.min(100, Math.floor((done / total) * 100)) : 0
     const rate = typeof stats.filesPerSecond === "number" ? `${stats.filesPerSecond.toFixed(1)}/s` : "?"
-    const remaining = estimateRemainingMs(stats, this.startedAt)
-    const eta = remaining === null ? "…" : formatDuration(remaining)
+    const remaining = estimateRemainingMs(stats, this.startedAt, this.samples)
+    const filesDone = stats.processedFiles >= total
+    const eta = formatEta(remaining, filesDone)
     const elapsed = formatDuration(this.elapsedMs)
 
     // Fixed-width bar so the line does not jitter as digits change width.
@@ -266,8 +362,8 @@ export class IndexProgressRenderer {
 
     this.lastNonTtyBucket = bucket
     this.lastRenderAt = now
-    const remaining = estimateRemainingMs(stats, this.startedAt)
-    const eta = remaining === null ? "…" : formatDuration(remaining)
+    const remaining = estimateRemainingMs(stats, this.startedAt, this.samples)
+    const eta = formatEta(remaining, stats.processedFiles >= total)
     this.stream.write(
       `[index] ${pct}% ${countWithCommas(done)}/${countWithCommas(total)} files` +
         ` elapsed=${formatDuration(this.elapsedMs)} eta=${eta}` +
@@ -293,10 +389,15 @@ export class IndexProgressRenderer {
     const elapsed = this.elapsedMs
     if (!result.ok) return
 
-    const mins = elapsed / 60_000
-    if (mins >= 5) {
+    // "Longer than we expect" has to depend on the project, or it fires on healthy
+    // runs: a flat 5-minute threshold printed it for a 7-minute index of 5,086 files,
+    // which IS the expected time — measured — and a message that says something is
+    // wrong when it is not is worse than saying nothing. The allowance scales with the
+    // discovered file count, with the old 3-minute floor for small projects.
+    const expectedMs = expectedDurationMs(result.totalFiles)
+    if (elapsed >= expectedMs) {
       this.stream.write(
-        `\nThat took ${formatDuration(elapsed)} — longer than we expect.\n` +
+        `\nThat took ${formatDuration(elapsed)} — longer than we expect for ${countWithCommas(result.totalFiles)} files.\n` +
           `If it felt like it hung, that is worth reporting: ${SUPPORT_EMAIL}\n`,
       )
     } else if (elapsed >= SLOW_RUN_MS) {
