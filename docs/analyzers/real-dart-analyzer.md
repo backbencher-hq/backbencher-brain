@@ -5528,3 +5528,148 @@ Every earlier `12 ambiguous + 0 unresolved of 79` statement about this lane meas
 extractor and not this analyzer. The corrected incoming figures are **530 ambiguous and 2,273
 unresolved of 8,112 edges**, and the column work starts from those.
 
+
+## 2026-10-10 — the spelling the census was written to price, ADOPTED; and the before-table it lands against
+
+### The canonical PER-FILE table, corrected — arm8 (`incoming-dart-arm8-perfile.log`)
+
+The whole-corpus per-file run, taken after the `contains` ruling went live and after bucket 3 split
+the claims. It is the table the spelling change below is measured against, and one row of it is the
+reason the ruling mattered:
+
+```
+type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK  extFAIL  bindOK   causeOK
+calls         662188   266158    0        330527     176899     59531       0      0        5972     0
+uses          1337664  248758    0        478210     267080     54118       0      0        556564   0
+contains      700388   700388    97797    0          0          0           0      0        0        0
+imports       105308   81965     0        0          0          2854        20474  0        0        0
+references    73561    29380     0        44181      18002      0           0      0        0        0
+exports       2030     1887      0        0          0          89          50     0        0        0
+extends       38185    15395     0        13957      7982       8832        0      0        0        0
+implements    12404    4682      0        6980       3467       736         0      0        0        0
+overrides     316123   275068    0        9291       672        2771        1386   128      0        27479
+instantiates  155428   61018     0        52717      24425      41693       0      0        0        0
+TOTAL         3403279  1684699   97797    935863     498527     170624      21910  128      562536   27479
+```
+
+**`contains` reads 700,388 resolved / 97,797 collision-flagged / ZERO ambiguous**, where arm7 (which
+predated the ruling) read 602,591 / 97,797. The 97,797 did not disappear — they moved into the
+`collRes` column and the outcome became `resolved`, which is what production's
+`resolveContainsTargetStmt` does with them (file-first, `LIMIT 1`): the tie-break is DISCLOSED rather
+than charged as a gap, and the indexer's own measurement of such picks is printed beside the column
+(37,318 of 49,729 wrong). Nothing else in the table should be quoted against arm5 — that run was
+index-assisted, and its `references` (485,073 edges) comes from an expression pass that the
+no-index population gates down to 73,561 here. TWO POPULATIONS, one number each.
+
+### The receiver-type spelling — the price, the decision, and what it supersedes
+
+`qualifiedTarget` declined every bare member whose receiver type the run could not see, keeping the
+leaf even when it held the type's NAME. The census (below) priced the alternative against the gate's
+own key space, per row, over the whole dart population — 33,738 files admitted across the
+population's 7 names, 5 of which carried rows, and 276,383 priced rows in total:
+
+```
+                        priced     amb -> RESOLVED   resolved -> unresolved   amb -> unresolved   amb -> amb
+calls                   126,295        +45,861              -3,892                 27,230          24,821
+uses                    150,088        +63,585              -3,563                 28,743          17,066
+TOTAL                   276,383       +109,446              -7,455                 55,973          41,887
+```
+
+The losses are the point as much as the wins: those 7,455 rows resolved today only because the bare
+LEAF happened to be unique in the project, and the more specific target refuses the coincidence. The
+55,973 that resolve neither way carry `baseBeyondRunScope: <Type>` — the declared cause built for
+exactly this situation, read by the gate ONLY where the target names nothing, so a spelling can never
+buy a resolution with an exemption. 41,887 stay ambiguous even spelled (two files declaring the same
+owner AND member name), and that residue is the honest floor of this lever.
+
+ADOPTED 2026-10-10 (`ab900b82c`). The implementation is one branch plus the metadata ternary fix the
+fixture dump caught: three emission sites wrote `q.target ? {qualifier: ...} : {...receiverCut(q)}`,
+so the moment the spelling made `q.target` non-null the claim stopped being attached, and a `uses`
+read of `args.first` came out as `List.first` with NO marker — a spelling whose non-resolution the
+gate would have charged to the lane. `receiverCut` now returns the claim for a spelled row and `{}`
+otherwise, and it is appended in BOTH arms of all three.
+
+TWO PINNED CONVENTIONS ARE SUPERSEDED, recorded in the fixtures rather than decided silently:
+
+- **DT-A's "an unknown cross-file `X.y()` stays a leaf call"** (`dart/member-value-reads`) — `X.y`
+  is now spelled, and the old leaf shape is a `forbidRelationships` row so the convention cannot
+  come back quietly;
+- **R7's suppression** of `RemoteFailure.unknown(...)` (`dart/unknown-endpoint-r7`) — the row was
+  dropped because the LEAF `unknown` is a placeholder no declaration answers; naming the OWNER makes
+  it publishable, so the row returns as `RemoteFailure.unknown` with its claim. R7's two REJECTED
+  alternatives stay rejected and still forbidden (`load calls RemoteFailure`, and the `instantiates`
+  promotion), and the bare `unknown` endpoint stays forbidden: the change names the constructor,
+  never the type alone.
+
+A third effect the fixtures found and the prose would have missed: an UN-DEDUP. A spelled read no
+longer collides on (source, type, target) with an untyped read of the same leaf, so
+`uses useAll -> A.count` and `uses run -> List.length` now survive beside their bare twins — and in
+`payload-and-complexity` the same method reads `length` on a receiver it cannot type (bare, cut
+cause) AND on one it knows to be `List` (spelled, claim). The first version of that fixture FORBADE
+the bare twin; the runner refused it, which is how the second receiver was found.
+
+FOUR MUTANTS, each fired in the frozen worktree and each caught by a different pin: revert the
+spelling (the updated fixtures plus the superseded-leaf forbids); spell lowercase heads too (the
+`receiverTypeUnknown` boundary rows); spell WITHOUT the claim (the forbid that matches a spelled row
+whose claim is null); spread it to the `receiverMemberOutsideRun` branch (case A's pin and three
+other fixtures). Suite 29/29 with the new `dart/receiver-spelling` fixture, `tsc --noEmit` clean.
+arm9 (`incoming-dart-arm9-spelled.log`) is the corpus measurement of this commit, taken from a
+worktree frozen at it, for comparison against the arm8 table above.
+
+### Bucket 3 gets its fourth property — an independent oracle, and what it says
+
+`CAUSE_CLAIM_KEY`'s contract requires four properties; three were arbiter-checked and the fourth —
+a SECOND IMPLEMENTATION agreeing the base really is beyond the run's reach — was not implemented, so
+`causeOK` was a reported count rather than a verified one. `cause-claim-oracle.ts` is that
+implementation and shares nothing with the analyzer: comments and string literals are blanked from
+the source text, declarations are read from what remains, and an import's target is resolved
+textually against the importing file's directory. Its verdict is the falsifiable half — **the base
+must not be declared in the emitting file** (the file's own declarations were in the run's hands) —
+and it passes: **dart-http, 246 claims, 0 refuted**. The rest is decomposed instead of judged, which
+is where its roadmap value is:
+
+```
+(b) named by an import of the emitting file   closable with NO index — the analyzer reads files, it
+                                              just does not read the one it imports
+(c) declared elsewhere, not imported          the index class
+(d) declared nowhere in the project           outside the population, where an index-assisted run
+                                              states `isExternalBase`
+dart-http: (b) 37 · (c) 30 · (d) 179 of 246
+```
+
+THE ORACLE EARNED ITS KEEP BEFORE READING A CORPUS FILE: its control refused to start the walk
+because `extension on String` was being read as a declaration of a type named `on`. A control that
+only asserts the happy path would have let that through. Its full-population run is chained behind
+arm9 (`cause-claim-oracle-arm9.log`).
+
+### Two avenues CLOSED with measurements, so they stop being listed as next steps
+
+- **The `libraryScopeCallee` collisions have no spelling fix.** The imports round's mechanism —
+  target as the FILE's identity — looked available because a dart library's `Module.qualifiedName`
+  IS its path; but a top-level DECLARATION's is its plain name (`HttpProfileProxyData`), so a
+  file-qualified callee target matches no `qualified_name` in the store, and Strategy 3's suffix
+  table is built only from qualified_names containing a dot, so a top-level function contributes no
+  suffix at all. Emitting it would turn 1,022 ambiguities into 1,022 unresolved. The class needs a
+  store-side same-file preference, which is not this lane's to change.
+- **`receiverInFileNotSpelled` is EMPTY** — 0 rows on every project measured (dart-http, riverpod,
+  proxicall, flutter-packages, dart-sdk), which is the fourth time this document says a named class
+  turned out to have no population once the instrument that could see it ran.
+
+### The census's own corrections, and the cut's coverage
+
+The receiver cut is now the gate's walk, not a mirror of it (`3def5192c`): it CALLS `parseFile` with
+the gate's call shape (`f, repo, { projectRoot }`), counts a symbol's `name` and `qualifiedName` as
+one declaration, counts DEGRADED files and parse throwers, and applies the gate's admission rule
+(`SIZE_CAP` 1 MB; tracked-but-absent files counted and NAMED — `pb-reference`'s 2 tracked paths the
+working tree does not have were previously reported as an empty repository). Three key-space bugs and
+two population bugs, all the same mistake wearing different hats, are recorded in the instrument's
+header. It is also now 100 % LABELLED (`f155f4ec9`): on riverpod alone the one
+`(no cause: other bare shape)` bucket held 3,901 `uses` rows — 40.5 % of that project's `uses`
+ambiguity reported as "unknown" while every edge was saying it was an interpolation read, a global
+read or a subscript base. The non-receiver shapes are read off the edges' own markers and printed
+under a `shape:` prefix, kept apart from the `receiverCause` values produced at the qualification
+decision because these rows never reached it. Whole-population run: 7 names, 6 of them carrying
+.dart files, 33,738 files admitted — dart-sdk alone is 25,727 files / 549,280 project keys, and its
+2 DEGRADED files are the deep-nesting tests, named rather than dropped. `pb-reference` is the 7th
+name and admits ZERO files: its 2 tracked `.dart` paths are absent from the working tree, which the
+census now says out loud instead of printing an empty repository.
