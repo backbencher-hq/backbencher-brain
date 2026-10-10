@@ -78,29 +78,47 @@ instead of "a THROW skips the disarm". Arm C is the claim about the tree as chec
 leaked guard would keep the process alive and exit 1 ~120 s later. Raw outputs:
 `probe-hang-live.txt`, `probe-hang-poison.txt`, `probe-hang-conc4-and-unicode.txt`.
 
+**SUPERSEDED LATER THE SAME DAY — THE TRAP REPRODUCED, AND THE PROCESS SURVIVED IT.** The two
+paragraphs below said the trap did not reproduce and that 780 clean parses do not retire it. They
+were right to be cautious, and they were superseded by the third whole-corpus census run at 22:27
+(`measurements/r-census-overrides-instantiates.current.txt`):
+
+```
+[BB-PARSE-ERR] r | $HOME/fixtures/repositories/r-testthat/R/edition.R | memory access out of bounds
+files walked: 2184   degraded (regex fallback): 1   parse failures: 0   traps ([BB-PARSE-ERR]): 1
+EXIT code=0 after 122451ms total (walk 122447ms; post-walk drain 4ms)
+```
+
+That is the whole verdict in one run. A REAL trap occurred, on a file no earlier run had named; the
+walk declared it (`degraded 1`), finished, and the process exited **0** with a **4 ms** drain and
+**no `[BB-HANG]`** — which is exactly what the `finally` disarm predicts and what the Oct-5 engine
+could not do. So: the trap is REAL and still occurring; the LEAK is FIXED; nothing hangs.
+
+Two further facts came with it, both correcting earlier text here:
+
+- **The trap is not load-correlated.** It fired at load **4.68**, the *lowest* of the three
+  whole-corpus runs (12.71 and ~5.4 trapped 0). The reload-storm/memory-pressure hypothesis below is
+  therefore **weakened by measurement**, not supported: the trap rate is unchanged from Oct 5
+  (3 traps in 6,552 parses then, 1 in 6,552 today) while the reload storm is gone.
+- **The named file is innocent alone, again.** `r-testthat/R/edition.R` (sha256 `8f610683…`) was
+  parsed **40 times consecutively: 0 traps, 0 degraded**. That is the same signature as
+  `scale-hue.R` — the guard names the last parse that threw, and the file it names is not the cause.
+
 | run | population | parses | 1-min load | degraded | traps | exit | post-walk drain |
 |---|---|---|---|---|---|---|---|
 | ggplot2, 2 workers | 360 `.R` (whole, no stride) | 360 | 12.28 | **0** | 0 | 0 | 3,338 ms |
 | ggplot2, 4 workers (the Oct-5 shape) | 360 `.R` | 360 | 9.74 | **0** | 0 | 0 | 3,891 ms |
 | `ggplot2/R/scale-hue.R` ×30 | 1 file, sha256 `9c524ebf…` | 30 | 9.75 | **0** | 0 | 0 | 9,189 ms |
 | `r-cli/R/unicode.R` ×30 | 1 file, sha256 `cf8dccd2…` | 30 | 12.34 | **0** | 0 | 0 | 9,504 ms |
+| `r-testthat/R/edition.R` ×40 | 1 file, sha256 `8f610683…` | 40 | 7.75 | **0** | 0 | 0 | 9,497 ms |
+| **whole corpus, 4 workers** | **2,184 `.R`, no stride** | **2,184** | **4.68** | **1** | **1** | **0** | **4 ms** |
 
 A drain shorter than 120 s with exit 0 is the leak test: it cannot be satisfied if a bomb is pending.
 
-**What is NOT established:** the trap was NOT reproduced today, and 780 clean parses do not retire
-it. At the Oct-5 pooled rate (4.58e-4) today's 780 parses had only a **~30 %** chance of showing one;
-seeing at least one with 95 % confidence needs ≈ **6,550** parses. The zero bounds the rate, it does
-not prove absence. The trap is real — it is in `r-b-pair-verify.txt`'s own first line.
-
-**Candidate cause of the trap, stated as a hypothesis and not as a measurement:** on 2026-10-05 a
-2,184-file walk logged ~10 `language parser loaded` lines, because the once-per-500-files parser
-recreation also dropped and RELOADED the grammar; `8f0e0c930`'s body measures each `Language.load`
-of a grammar at ~2.4 MB of RSS that web-tree-sitter 0.25.9 never returns (no `Language.delete`), so
-the mitigation whose comment reads "prevents WASM memory accumulation" was itself accumulating. A
-WASM linear-memory exhaustion on an 8-core laptop shared by 20+ agents is exactly the shape that
-traps intermittently and names a different innocent file each run. Today the same walk logs ONE
-`language grammar allocated` for 360 files. The reload storm is gone; whether the trap is gone for
-the same reason is **not** proven by that correlation.
+**What the zero parses still do not settle:** the three clean whole-corpus runs bound the trap rate
+at roughly one per 2,184-file walk; they do not locate its cause, and this lane has NOT found one.
+The trap is contextual, not file-determined and not load-determined, and every file it has ever
+named parses cleanly alone.
 
 ### 1.5 Consequence for every other R figure
 
@@ -175,3 +193,45 @@ for the same reason (`0 passed, 1 failed` in the lane runner; `21 pass / 1 fail`
 gate), and restoring it returns both to green.
 
 Artifacts: `measurements/r-fixtures-canonical-gate.txt`, `measurements/r-fixtures-lane-runner.txt`.
+
+---
+
+## 4. `118` vs `95` — CLOSED. The counter was the defect; the collapse was not.
+
+The whole-corpus census counts **95** `overrides` edges in 8 files, while the analyzer's own
+`metadata.callAttribution.overridesEdgesEmitted`, summed over the same walk, read **118**. Two counts
+of one fact, 23 apart, and the spec carried the gap as an open item rather than smoothing it.
+
+`validation/m14/fixtures/r/probe-overrides-edge-accounting.ts` splits the gap instead of guessing at
+it, because exactly two stages sit between the two numbers and only one of them is a defect:
+
+| stage | before the fix | kind |
+|---|---|---|
+| 1. self-report → `analyze()` | **23** | the analyzer's own `(type, source, target)` collapse |
+| 2. `analyze()` → production `parseFile` | **0** | `filterNoiseRelationships` removes nothing |
+
+Stage 1 is **benign and correct**: the `overrides` pass increments once per `(class, base, member)`
+triple, so two bases declaring the same member name for one class emit the same edge twice, and
+collapsing them is right — it is one semantic fact. The 23 are fully located: **14** in
+`R6/tests/testthat/test-clone.R`, **8** in `R6/tests/testthat/test-finalizer.R`, **1** in
+`R6/tests/testthat/test-portable-inheritance.R` — files that redeclare one class name many times.
+Stage 2 is **0**, which is the good news for the product path: nothing the analyzer proves for this
+type is deleted on the way to the index.
+
+The defect was the NAME. The analyzer published the pass's **emission** count under
+`overridesEdgesEmitted`. It now publishes the post-collapse count, and carries the emission count
+and the collapse beside it (`overridesEmissionsBeforeDedup` = 118,
+`overridesEmissionsCollapsedByDedup` = 23), so nothing is dropped and the name is true.
+
+The census then reports **AGREE** — 95 self-reported against 95 measured — over the whole corpus, one
+degraded file included (see §1.4, and note `edition.R` emits neither type, so it cannot move either
+count).
+
+**CONTROL (the guard can fail):** reverting the counter to the pre-fix line reproduces `118 / 95 / 95`
+exactly, and the probe exits **1** with `DRIFT: 118 / 95 / 95` and
+`DRIFT: 118 - 23 != 118`. Restoring the fix returns it to **0**. So the equality the census now reads
+is an assertion that has been shown to be falsifiable, not a coincidence of two numbers that happen
+to match.
+
+Artifacts: `probe-overrides-edge-accounting.{ts,txt}`,
+`measurements/r-census-overrides-instantiates.current.txt`.
