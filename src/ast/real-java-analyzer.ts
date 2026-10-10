@@ -2296,6 +2296,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     this.classifyEvidenceTier(relationships)
+    // M14 incoming: mark the targets this file CANNOT bind to a declaration here, so the
+    // incoming gate counts them as a declared exception instead of an unresolved edge. Same
+    // principle as the typescript lane's marker (real-typescript-analyzer.ts:4030), on a Java
+    // vocabulary and with a narrower proof set — see the method for what is NOT marked.
+    this.markExternalTargets(relationships, symbols, imports)
 
     return {
       symbols,
@@ -3859,6 +3864,114 @@ currentPackage,
     if (segments.length > 0 && STDLIB_ROOTS.has(segments[0])) return true
     if (STDLIB_ROOTS.has(call)) return true
     return false
+  }
+
+  /**
+   * M14 incoming — the external-target marker, and only for the PROVABLE cases.
+   *
+   * `script/m14/incoming-gate.ts` counts an edge as resolved (one declaration), ambiguous
+   * (several), or unresolved. A JDK symbol is a fourth thing — legitimately outside the
+   * corpus — and an unmarked edge of that kind is indistinguishable from a broken one, so it
+   * counts against the lane. Measured before this marker existed on java (200 files,
+   * `npx tsx script/m14/incoming-gate.ts java java 200 --json`): **16,021 unresolved of 26,095
+   * edges, `markedExternal 0` on EVERY type**, and `imports` 2,716 of 2,716 unresolved.
+   *
+   * Only two facts are provable from a single file, so only two are asserted:
+   *   - the target carries a JVM-platform / Kotlin-stdlib qualifier (`java.`, `javax.`,
+   *     `jakarta.`, `jdk.`, `sun.`, `com.sun.`, `kotlin.`, `kotlinx.`);
+   *   - the target's ROOT segment is a local name the file IMPORTS from such a module, and the
+   *     file does not declare that name itself.
+   *
+   * Deliberately NOT marked, because the prefix proves nothing about a single file:
+   *   - `org.` / `com.` third-party packages — in a multi-module build `com.acme` IS project
+   *     source, the same reason `com.sun` and `com.mycompany` were separated in `isJavaBuiltin`;
+   *   - wildcard imports (`import java.util.*`) — the file never names the type;
+   *   - java.lang simple names used with no import (`String`, `Object`, `System`). They are
+   *     *probably* the platform types, and "probably" is what this marker must not say: an
+   *     unproven marker hides a genuine unresolved edge behind a claim the file cannot make.
+   *     They stay counted against the lane until a rule can prove them.
+   */
+  private markExternalTargets(
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    imports: ASTEngine.ImportInfo[],
+  ): number {
+    const JVM_ROOTS = ["java.", "javax.", "jakarta.", "jdk.", "sun.", "com.sun.", "kotlin.", "kotlinx."]
+    const isJvmModule = (name: string): boolean => JVM_ROOTS.some((r) => name.startsWith(r))
+
+    const declared = new Set<string>()
+    for (const s of symbols) {
+      const n = String(s?.name ?? "")
+      if (n.length > 0) declared.add(n)
+      const q = String((s as { qualifiedName?: string })?.qualifiedName ?? "")
+      if (q.length > 0) declared.add(q)
+    }
+
+    // Local name -> module, taken from THIS file's own import list. The analyzer already
+    // emitted it for the engine, so the proof is the lane's own output rather than a guess
+    // about a classpath the analyzer cannot see.
+    const importedFromJvm = new Map<string, string>()
+    for (const im of imports as any[]) {
+      const module = String(im?.module ?? "")
+      if (module.length === 0 || !isJvmModule(module)) continue
+      if (im?.isNamespace === true || im?.metadata?.isWildcard === true || module.endsWith(".*")) continue
+      const items = Array.isArray(im?.items) ? im.items : []
+      let named = false
+      for (const it of items) {
+        const n = String(it?.name ?? it?.alias ?? "")
+        if (n.length > 0) {
+          importedFromJvm.set(n, module)
+          named = true
+        }
+      }
+      if (!named) {
+        const leaf = module.slice(module.lastIndexOf(".") + 1)
+        if (leaf.length > 0 && leaf !== "*") importedFromJvm.set(leaf, module)
+      }
+    }
+
+    let marked = 0
+    for (const r of relationships as any[]) {
+      const target = String(r?.target ?? "")
+      if (target.length === 0) continue
+      const md = (r.metadata ?? (r.metadata = {})) as Record<string, unknown>
+      if (md.isExternalTarget === true) continue
+      // A name this file declares is project code, whatever it is called.
+      if (declared.has(target)) continue
+
+      // Module URIs — the `<module>:<name>` form this lane emits for `imports`.
+      const colon = target.indexOf(":")
+      if (colon > 0 && !target.startsWith("/") && !target.includes("/")) {
+        const module = target.slice(0, colon)
+        if (isJvmModule(module)) {
+          md.isExternalTarget = true
+          md.externalReason = "builtin-module"
+          md.externalSpecifier = module
+          marked++
+        }
+        continue
+      }
+
+      if (isJvmModule(target)) {
+        md.isExternalTarget = true
+        md.externalReason = "builtin-lib-type"
+        md.externalSpecifier = JVM_ROOTS.find((p) => target.startsWith(p)) ?? ""
+        marked++
+        continue
+      }
+
+      const root = target.split(".")[0]
+      if (root.length === 0 || declared.has(root)) continue
+      const module = importedFromJvm.get(root)
+      if (module !== undefined) {
+        md.isExternalTarget = true
+        md.externalReason = "builtin-lib-type"
+        md.externalReceiver = root
+        md.externalSpecifier = module
+        marked++
+      }
+    }
+    return marked
   }
 
   private getAnnotationValue(node: any, annotationName: string, key: string): string | undefined {
