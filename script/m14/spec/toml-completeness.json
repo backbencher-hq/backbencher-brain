@@ -40,6 +40,15 @@
         "instrument": "validation/m14/fixtures/toml/tools/construct-census.ts (commit 840bffea9)",
         "consequence": "this is the SAME ontology type as the 167 alias `references` edges the lane does emit (Gradle version catalogues, resolvedBy=final-segment), so the type's corpus coverage is partial rather than absent; it is recorded here as an OPEN item with a size and NOT folded into the coverage number, because a blocker quietly absorbed into a ratio is a number nobody can check",
         "why_not_fixed": "the alias pass resolves a key whose VALUE is the name of another key in the same document; `workspace = true` is a boolean that defers to a DIFFERENT document, and resolving it means locating and reading that document's manifest \u2014 a cross-file resolution the analyzer deliberately does not do from a pure AST worker (see the `imports` note in src/ast/real-toml-analyzer.ts on why paths are emitted unresolved). Not attempted without a design ruling; recorded, not guessed"
+      },
+      {
+        "id": "TOML-G2",
+        "status": "OPEN",
+        "missing": "the incoming residual: 13 `imports` edges whose target names nothing the project has, left UNCLAIMED and unresolved on purpose",
+        "measured": "Whole admitted population (1,485 .toml files), `npx tsx script/m14/incoming-gate.ts toml toml 0`: imports 331 edges \u2014 318 carry `importProjectFile` and the project CONFIRMS all 318 (extOK 318, extFAIL 0, ext? 0), 13 name a directory that does not exist. Every one of the 13 is cargo's own `cargo_add` test fixture (tests/testsuite/cargo_add/**), where `path = \"./dependency\"` is written to NOT exist because the test asserts that failure. The candidate split and the filesystem-versus-admitted-list cross-tab were measured by `.tmp-toml/imports-claim-probe2.mts`: 318 verify, 13 do not, and the two tests disagree on ZERO of the 331",
+        "instrument": "src/ast/real-toml-analyzer.ts `dependencyFileClaim`, gated on the manifest's presence; measured by script/m14/incoming-gate.ts TABLE 1",
+        "consequence": "residual is 13 of 25,531 edges (0.1%), all 13 named and located rather than hidden. They are NOT marked external or given a claim the project would refute: a refuted claim is counted against the lane exactly as an unresolved edge is, so marking them would move the number without making the graph truer. The honest statement about a dependency on a directory that does not exist is that it names nothing here",
+        "why_not_fixed": "the target directory genuinely does not exist, so no true statement about it can verify; these are intentionally-broken fixtures of cargo's own test suite, not corpus defects, and they are the exact set the applicability audit independently measured as '13 do not resolve' with the filesystem"
       }
     ]
   },

@@ -62,9 +62,61 @@
  * file's characters.
  */
 import * as path from "path"
+import { statSync } from "fs"
 import { ASTEngine } from "./engine"
 import { applyDocumentScope, documentDirScope } from "./project-scoped-identity"
 import type { Node } from "web-tree-sitter"
+
+/**
+ * THE MANIFESTS A PATH DEPENDENCY POINTS AT. A `path` dependency names a DIRECTORY in every tool
+ * that reads these formats (Cargo, Julia's Pkg, pyproject), and the directory is a real dependency
+ * because of the manifest inside it — so the FILE is what a project's own admitted list can confirm
+ * by EXACT match, and the directory is not (the gate's prefix arm would need an admitted file under
+ * it anyway, which is the same fact one step less precise).
+ */
+const DEPENDENCY_MANIFESTS = ["Cargo.toml", "Project.toml", "JuliaProject.toml", "pyproject.toml", "Package.toml"]
+
+/**
+ * THE FILE CLAIM for a path dependency, or null when no claim can be MADE.
+ *
+ * `imports` targets are paths as written, and the graph has to say something true about them. The
+ * gate can verify one statement — "this target names a file of the project" — against the
+ * project's own admitted file list (`FILE_CLAIM_KEY`, incoming-rule.ts), and it REFUTES a
+ * candidate that names nothing. So the claim is emitted only where the manifest is really there,
+ * which is the condition under which the gate will verify it; a target that names nothing stays
+ * UNCLAIMED and unresolved rather than carrying a statement the project would refute.
+ *
+ * MEASURED over the whole admitted population (`.tmp-toml/imports-claim-probe2.mts`, 331 `imports`
+ * edges): 318 candidates verify, 13 name nothing, and the filesystem test below agrees with the
+ * gate's admitted-list verdict on all 331 — zero claimed-but-refuted, zero unclaimed-but-verifiable.
+ * The 13 are cargo's own `cargo_add` fixtures, whose `path = "./dependency"` intentionally names a
+ * directory that does not exist because the test asserts that failure; they are ruled with a count
+ * rather than marked external to make the number smaller.
+ *
+ * Null is returned — never a guess — when there is no project root, when the value is not a plain
+ * relative path (a URL, an absolute path, a glob, whitespace), or when it escapes the project.
+ * A WRONG claim is worse than no claim: the gate counts a refutation against the lane exactly as it
+ * counts an unresolved edge, and a fabricated candidate would manufacture the refutation.
+ */
+function dependencyFileClaim(written: string, filePath: string, projectRoot: string | null): string | null {
+  if (projectRoot === null || projectRoot.length === 0) return null
+  const w = written.trim()
+  if (w.length === 0 || w.length > 300) return null
+  for (const ch of [" ", "\t", "*", "?", "<", ">", "|", "{", "}", "$"]) if (w.includes(ch)) return null
+  if (w.startsWith("/") || w.startsWith("~") || w.includes("://")) return null
+  const root = path.resolve(projectRoot)
+  const abs = path.resolve(path.dirname(filePath), w)
+  const posix = path.relative(root, abs).split(path.sep).join("/")
+  if (posix === ".." || posix.startsWith("../")) return null // outside the project: nothing to claim
+  const isFile = (p: string): boolean => {
+    try { return statSync(p).isFile() } catch { return false }
+  }
+  for (const m of DEPENDENCY_MANIFESTS) {
+    const cand = posix.length === 0 ? m : `${posix}/${m}`
+    if (isFile(path.join(root, cand))) return cand
+  }
+  return posix.length > 0 && isFile(path.join(root, posix)) ? posix : null
+}
 
 /** TOML's bare-key alphabet is A-Za-z0-9_-; a quoted key is anything in quotes. */
 function isBareKeyChar(code: number): boolean {
@@ -460,6 +512,9 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // which is why the fixtures, which are handed no project root, spell exactly as before.
     const stem = path.basename(filePath, path.extname(filePath)) || "document"
     const moduleName = applyDocumentScope(stem, documentDirScope(filePath, context?.projectRoot))
+    /** The project this file belongs to, when the caller said — the scope a `path` dependency is
+     *  resolved against, and the only thing that makes a file claim computable at all. */
+    const projectRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
     /** A symbol's identity as the RESOLVER sees it: file-scoped, unique in the project. The
      *  module keeps its own name (it is already scoped), every member is prefixed by it. */
     const qualified = (name: string): string => (name === moduleName ? moduleName : `${moduleName}.${name}`)
@@ -976,14 +1031,33 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // comes back as `ext:../b/Cargo.toml`. That is an edge a consumer can read and
     // traverse, where today the same dependency is not in the graph at all.
     //
-    // Deliberately no filesystem access here. This analyzer is a pure AST reader
-    // running in a worker pool; whether a path resolves is the applicability
-    // audit's question (`script/m14/toml-applicability-audit.ts` measures it with
-    // the filesystem), and a second answer computed here would be a second number
-    // to keep in step with the first.
+    // THE CLAIM ON TOP OF THAT (2026-10-09). "Names no symbol" is not the same as "says nothing
+    // checkable": the gate can verify that the target names a FILE OF THE PROJECT, and a `path`
+    // dependency's directory is a real dependency precisely because of the manifest inside it. So
+    // each edge carries `importProjectFile` with that manifest's project-relative path when the
+    // file is really there — MEASURED over the whole admitted population: 318 of 331 verify, 13
+    // name nothing, and the filesystem test agrees with the gate's admitted-list verdict on all
+    // 331 (zero claimed-but-refuted, zero unclaimed-but-verifiable).
+    //
+    // WHY THE FILESYSTEM IS NOW READ, after a header note that said it deliberately was not: the
+    // claim has to be TRUE for the gate to verify it, and the only way to know is to ask whether
+    // the manifest is there. The earlier design could avoid the question because it claimed
+    // nothing at all — an honest option that left every `imports` edge unresolved, which is exactly
+    // the state this replaces. The check is one `statSync` per candidate on the ALREADY-COMPUTED
+    // absolute path, it never decides a symbol identity, and it is the same fact the applicability
+    // audit measures. The 13 that name nothing are cargo's own `cargo_add` fixtures, where
+    // `path = "./dependency"` is written to NOT exist because the test asserts that failure; they
+    // are ruled with a count in the completeness spec rather than marked external to shrink the
+    // number, and they stay unresolved on purpose.
     let importEdges = 0
     for (const { source, pathValue, section, line } of pendingImports) {
       importEdges++
+      // THE FILE CLAIM, or nothing. A `path` dependency names a directory, and the statement the
+      // gate can CHECK is that this target names a file of the project (`FILE_CLAIM_KEY`). It is
+      // emitted only where the manifest is really there (see `dependencyFileClaim`), so the gate
+      // verifies it; a target naming nothing carries NO claim and stays an unresolved edge that
+      // this lane rules with a count, rather than a statement the project would refute.
+      const fileClaim = dependencyFileClaim(pathValue, filePath, projectRoot)
       relationships.push({
         source: qualified(source),
         target: pathValue,
@@ -994,9 +1068,11 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           tomlSpecific: true,
           isPathDependency: true,
           dependencySection: section,
-          // Declared, not resolved. The consuming tool turns this path into a
-          // module; nothing in the document does.
+          // Still declared, not resolved: the consuming tool turns this path into a
+          // module and nothing in the document does. The claim below is about the
+          // PATH, not about a symbol.
           resolvedBy: null,
+          ...(fileClaim !== null ? { importProjectFile: fileClaim } : {}),
           evidenceClass: "structural",
         },
       })
