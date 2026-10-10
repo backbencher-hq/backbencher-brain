@@ -393,3 +393,53 @@ first predicate is an exact equality on the normalized target.
 
 The CONTROL in the probe keeps that from being a constant: identical bare spellings on both sides
 report "covered and explained", so the predicates can answer both ways.
+
+---
+
+## 7. Step 1 LANDED — the oracle derives the binding spelling (inert by construction? no: by measurement)
+
+`script/m14/fsharp-truth-oracle.ts` now spells a `calls` target `<callable>#<binding>` when its own
+walk finds the callee to be a LOCAL. The set is built by that walk from this file's own `let`s and is
+deliberately not read from the analyzer: a spelling copied from the side it exists to check would make
+the differential a tautology.
+
+**The measured signature, against the corrected criterion:**
+
+| | baseline | step 1 | expected |
+|---|---:|---:|---|
+| `MISSING` | 10 | **93** | `10 + N` |
+| `unexplained` | 69 | **69** | unchanged |
+| `analyzer-edges` | 3,136 | **3,136** | unchanged (no analyzer change) |
+| sample hash | `2143f8bdc90fe3f1` | `2143f8bdc90fe3f1` | same draw |
+
+**N is counted independently, not read off the delta.** `count-local-binding-truth.ts` re-derives the
+oracle's truth over the harness's OWN 60 files (printed under `BB_F5_SHOW_FILES=1`, and the probe
+refuses to run if the log's hash is not the harness's):
+
+```
+sample: 60 files listed, 60 parsed   (hash 2143f8bdc90fe3f1 verified in the log)
+oracle truth edges on this sample: 5467      <- matches the differential's own tree-truth=5467
+of which carry BINDING_SEP ('#'): 83   <= N
+```
+
+So `MISSING − 10 = 83 = N`. The derivation is FIRING — which, under the corrected criterion, is the
+pass; under the original one it would have been read as failure.
+
+Artifacts: `measurements/differential-step1.txt`, `differential-step1-files.txt`,
+`local-binding-truth-count.txt`.
+
+**THE TWO FACTS A FUTURE `#`-SPELLING LANE WILL HIT** (§6.3, and here because they belong where the
+next reader is, not only in a thread):
+
+1. **`lastSegment` does not split on `#`.** `normTarget("dataLoader#asIndex")` is
+   `"dataLoader#asIndex"`, not `"asIndex"` — the normalizer splits on `::` and `.` only. Any lane
+   that adopts a separator spelling changes its coverage arithmetic the moment it does.
+2. **The `unexplained` predicate has a containment arm.** It matches when the TRUTH target merely
+   *contains* the analyzer's normalized target, so `"dataLoader#asIndex".includes("asIndex")` keeps a
+   bare analyzer edge explained. That asymmetry is why step 1 can move `MISSING` and cannot move
+   `unexplained` — and it is also why an oracle-only mistake is visible on one side only.
+
+**N = 83 against an analyzer class of ≈210 at this sample size** (from §6's 1,403-per-400-files
+scaling) says the two rules already disagree by a factor of ~2.5 before step 2. Step 2 will therefore
+NOT return `MISSING` to exactly 10, and that residue is the finding: the oracle's scope-derived rule
+versus the analyzer's file-wide `localNames`. §8 records it.

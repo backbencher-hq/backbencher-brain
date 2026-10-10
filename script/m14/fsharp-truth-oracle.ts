@@ -348,6 +348,18 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
   const isPublished = (n: string | null | undefined): boolean => !!n && published.has(n)
   const fileScope = fileScopeName(root)
 
+  // ── LOCAL BINDINGS — derived HERE, so the binding spelling is PREDICTED and not copied ──────
+  //
+  // A `let` inside a body is a LOCAL: the walk below says so at the `inBody && t !== "member_defn"`
+  // branch, and the lane's contract is that a local publishes no symbol. A callee spelled with a
+  // local's name therefore names a BINDING, not a declaration, and the convention for saying so is
+  // the separator spelling `<callable>#<binding>` (`BINDING_SEP`, src/ast/types.ts).
+  //
+  // This set is built by THIS walk, over THIS file, from the language. It is deliberately NOT read
+  // from the analyzer's output: the differential exists so the two derivations can disagree, and a
+  // spelling taken from the side it is meant to check turns the comparison into a tautology.
+  const localBindings = new Set<string>()
+
   const emit = (label: string, from: string, to: string, n: any, declaredOn?: string) => {
     if (!from || !to) return
     // A SELF-EDGE is refused for CONTAINMENT only, and the scope of the refusal is the
@@ -591,6 +603,9 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
       if (inBody && t !== "member_defn") {
         owner = callOwner
         body = inBody
+        // The local's NAME, collected for the binding spelling at the `calls` emit below.
+        const localName = thisBindingName(node)
+        if (localName) localBindings.add(String(localName))
       } else {
         const name = thisBindingName(node)
         // The PROPERTY-GETTER CONTRACT, derived from the language rather than copied: an
@@ -705,7 +720,11 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
               // coincidence: this one names a type the constructor is a member of.
               emit("instantiates", owner, leaf, node)
             } else {
-              emit("calls", owner, leaf, node)
+              // THE BINDING SPELLING, derived from this file's own `let`s. A callee naming a
+              // LOCAL has no declaration to resolve to, and the convention for saying so is
+              // `<callable>#<binding>` — the same convention the analyzer's binding claim uses,
+              // reached here by an independent walk so the differential can still disagree.
+              emit("calls", owner, localBindings.has(leaf) ? `${owner}#${leaf}` : leaf, node)
             }
           }
         }
