@@ -319,48 +319,59 @@ edges. Measured whole-population by `npx tsx script/m14/residual-gate.ts --lane 
 | **TOTAL** | **155,643** | **34,492** | **87,509** | **33,642** | **77.8%** |
 
 `resolved 22.2%`, `extFAIL 0`, `bindFAIL 0`, `causeFAIL 0` — nothing here is a broken claim; it is all
-unresolved or ambiguous resolution.
+unresolved or ambiguous resolution. **Read this table as the PRE-CORRECTION model**: `fa2dc27e8`
+taught the gate that `contains` resolves by its own statement, and the correction is what collapsed
+the 68,299 bucket below. The table is kept because it is the worklist the lane was handed, and the
+store measurement under it is what priced the bucket.
 
-### Cause 1 — `contains` amb(decl) **68,299** (56% of the 121,151 residual): the published identifier
-### space is MODULE-LOCAL, and one repository holds many independent modules
+### Cause 1 — `contains` amb(decl) 68,299: an INSTRUMENT artifact, priced against the STORE
 
-A `contains` edge is `owner -> child`, where the child is the symbol the analyzer just declared in the
-SAME file. Resolution is project-scoped (the file's own repository) and asks whether the target string
-names exactly ONE declaration there — so a path like `project.license`, `listener.tcp` or
-`schema_version` becomes ambiguous the moment two independent modules, examples or fixtures inside one
-repository use the same local name. The edge is not wrong; its NAME is not unique in the space it is
-resolved against.
+The gate's count model classified `contains` by declaration count, so a target whose name occurs twice
+in a repository read ambiguous. Production does not work that way: `contains` is resolved at INSERT
+time by `resolveContainsTargetStmt` — `ORDER BY (s.file_id = ?) DESC, (s.line_start = ?) DESC … LIMIT 1`
+— the edge's OWN FILE first, exactly one row, with no "N candidates" state. xml-lane found it
+(count model 94.1% ambiguous vs store 98.4% bound) and the gate now models it.
 
-Evidence, SAMPLE scope (600 of 4,047 admitted files; the incoming gate's marker table groups by
-metadata KEY, and every `contains` edge carries the same key `hclSite`, so the marker is not the
-differentiator):
+Measured here with the store itself
+(`validation/m14/fixtures/hcl/tools/store-binding-truth.mts`, report
+`validation/m14/fixtures/hcl/store-binding-truth.terraform.json`), one project, same files, model and
+store side by side:
 
-```
-contains   amb  schema_version          2 declarations  [property]
-contains   amb  project                 2 declarations  [class]
-contains   amb  project.license         2 declarations  [property]
-contains   amb  project.copyright_year  2 declarations  [property]
-exports    amb  disable_mlock           4 declarations  [property]
-exports    amb  listener.tcp            6 declarations  [class]
-references amb  step.generate_ssh_key   2 declarations  [class]
-```
+| type | store rows | bound | same file | other file | unbound | model resolved | model amb |
+|---|---|---|---|---|---|---|---|
+| contains | 1,046 | **1,042 (99.6%)** | **1,010 (96.6%)** | 32 | 4 | 125 (12.0%) | 503 (48.1%) |
+| exports | 215 | 213 (99.1%) | 169 | 44 | 2 | 35 | 179 |
+| references | 25 | 22 | 20 | 2 | 3 | 5 | 2 |
+| imports | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
+| **total** | **1,287** | **1,277 (99.2%)** | **1,199 (93.2%)** | **78 (6.1%)** | **10 (0.8%)** | **165 (18.9%)** | **684 (78.3%)** |
 
-The shapes are mixed and that is the finding: BARE local attribute keys (`schema_version`, `project`,
-`disable_mlock`) and SHORT module-local dotted paths (`project.license`, `listener.tcp`,
-`step.generate_ssh_key`) — neither carries a file or module scope. So the lever the other lanes used
-applies in its general form, and the gate says so itself: "endpoint keys indexed: name + 3355
-qualifiedName alias(es) — a lane that publishes a FILE-SCOPED qualified name and targets that path is
-measured, not missed."
+So the bucket that was 56% of this lane's residual **collapses against the store**: `project.license`,
+`listener.tcp`, `schema_version` are exactly the shape production binds to the edge's own file. THE
+FILE-SCOPING PRICE IS NOT PAID — no public identifier-space change, no fixture churn.
 
-**What the fix would cost, stated before it is done:** file-scoping the qualified name changes this
-lane's PUBLIC identifier space — every `contains`/`exports`/`references` target string — so every
-fixture pin (`aws_instance.web`, `function.double`, `target._common`), the spec's examples and this
-page move with it. That is a lane-wide change and the next item, not a patch.
+**The cause that remains is the OTHER-FILE rate: 78 edges (6.1%).** Those are edges bound to an
+identically named declaration in a DIFFERENT file — `basic_set_null/main.tf`'s
+`tfcoremock_set.set` binding to `basic_set/main.tf`'s declaration, `.terraform.lock.hcl` files
+binding to another lock file's `registry.terraform.io/...` — which happens when the edge's own module
+does not declare (or the index does not hold) the name it spells. That is a wrong edge a name-space
+change WOULD fix, and it is priced at 78 edges for this project, not 68,299 — a different decision
+from the one the model's number suggested, and one that needs the whole population before it is taken.
+
+### A population finding the comparison forced: the gates classify files the indexer never reads
+
+The probe asked production's OWN discovery (`discoverIndexableFiles`) what it would index, and for
+terraform the answer is **78 of 2,299 HCL files — 2,221 (96.6%) sit under `testdata/`** and are skipped
+by the indexer's built-in ignore for test-data directories, which the `ignore` package matches
+CASE-INSENSITIVELY (measured: that one glob reports `ignored=true` for `testdata/x.tf` AND for
+`a/testData/b.tf`). The ontology and incoming gates build their population from `git ls-files` + the
+language router, so their HCL tables classify edges from files production NEVER INDEXES. Both numbers
+are therefore reported here, and the store comparison above runs over the indexer-eligible set
+(`indexer-eligible 78 of 2299 copied; top exclusions testdata=2221`).
 
 **KILLED, reported as KILLED:** the whole-population `incoming-gate.ts hcl hcl 0` run never started —
-`flock -w 600` returned exit 9 (the heavy lock was held by another lane for the whole window), and a
-second attempt's window was lost the same way. The marker table above is therefore SAMPLE scope,
-labelled; the counts in the table are the residual gate's own whole-population run.
+`flock -w 600` returned exit 9 (the heavy lock was held by another lane for the whole window). The
+marker table quoted earlier is SAMPLE scope, labelled; the residual table above is the residual gate's
+own whole-population run.
 
 **The `xml-ruled.ts` question, answered rather than assumed:** HCL has NO ruling table —
 `script/m14/hcl-ruled.ts` does not exist and `RULED_BY_LANG` has no `hcl` entry — so an element-only
@@ -388,6 +399,10 @@ npx tsx script/m14/ontology-coverage-gate.ts hcl --fresh
 # the shared gate's space check, and its own control (the control also runs unasked, and exits 3)
 npx tsx script/m14/ontology-coverage-gate.ts --self-test
 
+# the store-level truth (needs a writable data dir; see the probe's header)
+BB_DATA_DIR=$PWD/.tmp-hcl/bb-data npx tsx validation/m14/fixtures/hcl/tools/store-binding-truth.mts
+
+# the residual worklist
 # the fixture lane
 npx tsx script/m14/run-fixtures.ts --lang hcl
 ```
