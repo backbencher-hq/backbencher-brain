@@ -130,8 +130,10 @@ if (LANE) {
   const w = (s: any, n: number) => (String(s) + " ".repeat(n)).slice(0, n)
   console.log(`residual gate — ${LANE}, WHOLE admitted population, production scope\n`)
   console.log(`${w("type", 14)} ${w("edges", 9)} ${w("resolved", 9)} ${w("ofWhich", 8)} ${w("amb(decl)", 10)} ${w("unresolved", 11)} ${w("extFAIL", 8)} ${w("bindFAIL", 9)} ${w("causeFAIL", 10)} ${w("residual%", 10)}`)
-  console.log(`  "ofWhich" = resolved edges whose target had MORE THAN ONE declaration, so production's`)
-  console.log(`  tie-break chose the row (the indexer measures 37,318 of 49,729 such picks as WRONG).`)
+  console.log(`  "ofWhich" = resolved edges on a name with MORE THAN ONE declaration in the project — an`)
+  console.log(`  UPPER BOUND on arbitrary bindings, not a count of them: both resolvers prefer the edge's own`)
+  console.log(`  FILE second, so a collision the own file settles uniquely is determinate. Only the store can`)
+  console.log(`  split it (the indexer measures 37,318 of 49,729 such picks as WRONG). 0 = no colliding name.`)
   console.log("-".repeat(112))
   for (const r of [...rows].sort((a, b) => (b.amb + b.unres) - (a.amb + a.unres))) {
     if (r.edges === 0) continue

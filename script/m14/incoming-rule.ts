@@ -609,9 +609,27 @@ export type Classified = {
    * symbol**. So "a declaration was found" and "the declaration the edge meant was found" are
    * different facts, and a lane reporting only `resolved` will hide the second.
    *
-   * `true` on a `resolved` outcome whose target has more than one declaration in the key space:
-   * the edge binds, and WHICH row it binds to is decided by the tie-break rather than by the
-   * edge. It is reported in its own column, never folded into `resolved` or into `ambiguous`.
+   * `true` on a `resolved` outcome whose target has more than one declaration in the key space.
+   * It is reported in its own column, never folded into `resolved` or into `ambiguous`.
+   *
+   * IT IS AN UPPER BOUND, NOT A COUNT OF ARBITRARY PICKS — and that distinction is a correction to
+   * this flag's own first version, made after measuring make (`contains` 1,106 resolved, 143 flagged,
+   * 12.9%). BOTH resolvers put the edge's own file SECOND in their ORDER BY:
+   *
+   *     resolveContainsTargetStmt  ORDER BY (s.file_id = ?) DESC, (s.line_start = ?) DESC, …
+   *     resolveTargetStmt          ORDER BY COALESCE(s.is_declaration,0) ASC, (s.file_id = ?) DESC, …
+   *
+   * so a collision is DETERMINATE whenever the edge's own file declares that name exactly once —
+   * the preference picks it and no tie-break is involved. This flag cannot see that, because
+   * `classifyEdge` is handed a name-keyed count and no file. It fires on "the PROJECT has more than
+   * one", which is a superset of "the choice was arbitrary".
+   *
+   * SO READ IT AS: "this many resolved edges belong to a name that collides somewhere in the
+   * project". The subset that is genuinely arbitrary is bounded above by this and is only known by
+   * reading the store (edge `line_number` against symbol `line_start`; hcl-lane's
+   * `store-binding-truth.mts` is the working example). A lane must not treat the number as a defect
+   * count, and must not treat 0 as proof that every pick was determined — 0 does mean no colliding
+   * name was involved at all, which is the strongest reading available here.
    */
   boundAmongCollision?: boolean
   /** the distinct kinds among them, `|`-joined — empty when there are none */
