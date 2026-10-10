@@ -192,3 +192,72 @@ survive.
 - The store instrument writes `~/.bb/projects/<id>`; under this sandbox `/` is read-only outside the
   workspace, so it must run with `HOME` relocated into the workspace. Without that it dies `ENOENT`
   in a way that reads like a code error.
+
+---
+
+## The `twin` class is NOT 4,782 wrong edges — it is a name-collision artifact. Fix size: 0.
+
+**APPENDED, not woven in** (the state table, §1–§3 and the `uses` gap note above are another writer's
+records and are left untouched).
+
+The residual gate's `twin` column reads **references 4,137 · extends 645 = 4,782**, and its own column
+header calls that *"ONLY another file answers (a wrong edge)"*. Both numbers reproduce exactly
+(`measurements/residual-gate-xml.txt`). The class is not what the header says.
+
+**WHAT THE CLASSIFIER ACTUALLY TESTS.** `classifyIntent` (`incoming-gate.ts:433-445`):
+
+```
+decls = declarations of the target NAME in the project
+if none                      -> noDeclaration
+if none in the EDGE'S FILE   -> arbitraryTwin        <-- the twin column
+```
+
+It is a **NAME test that does not read claims**. For `contains`/`exports` that is a defect by
+construction — those must name an identity their own file minted. For `references`/`extends` it is what
+a cross-document reference *is*, and the same function's own docstring is weaker than the column
+header: it calls the class *"exactly when the store's `s.id` tie-break picks a foreign declaration"* —
+a RISK, and it says so for the sibling class in the same paragraph.
+
+**MEASURED, 600-file even stride of the 11,552-file population** (`probe-twin-class.ts`, raw in
+`measurements/twin-class-size.txt`): 476 `references`+`extends` edges, **236 twins**. Bucketed by the
+analyzer's OWN class, which the gate's name test never consults:
+
+| analyzer class | claim | twins |
+|---|---|---:|
+| `builtin` | `isExternalTarget` | **233** |
+| `external` | `isExternalTarget` | **3** |
+| `in-document` | — | **0** |
+
+**Every twin already carries the correct external claim, and not one is in-document.** The
+owner-qualification ceiling asked for is also measured, and it is **0**: of the 236, none has an
+own-file declaration of the same leaf (`CEILING 0`), and none has an own file that names the declaring
+file (`REFERENCED 0`) — so no spelling change reaches any of them either.
+
+**VERIFIED ON THE FLAGGED CASE, the rule this lane applies to every instrument:**
+`phpunit/schema/10.2.xsd` emits `restrictDeprecations -references-> boolean`, and line 27 of that file
+is
+
+```xml
+<xs:attribute name="restrictDeprecations" type="xs:boolean" default="false"/>
+```
+
+`boolean` is the **XSD builtin**; the file declares it zero times, correctly. It is "in the corpus"
+only because four unrelated files declare a symbol of that name —
+`libxslt/tests/exslt/common/object-type.1.xsl`, `otp/lib/xmerl/test/xmerl_xsd_SUITE_data/{mim,mim2,sis/mim}.xsd`,
+`Aporia/share/gtksourceview-2.0/language-specs/language.rng` — none of which the phpunit schema has any
+relationship to. The edge is right, the analyzer's claim is right, and the column counts it as wrong
+because the corpus is a union.
+
+**RULING: the fix is 0 analyzer edges.** There is nothing to repair — the edges name what the source
+writes (`xs:boolean`), the lane already classifies and claims them, and the 4,782 is a property of a
+name test over an 11,552-file union. Reporting this as a 4,782-edge defect would have attributed a
+`references`-shaped column to a lane whose analyzer is correct on every sampled instance. **The column
+header, not the lane, is what needs the wider fix** — `references`/`extends` twins are cross-document
+references, and the header's *"a wrong edge"* is only true of `contains`/`exports`.
+
+**FALSIFIER.** This ruling holds only while the twins are all claimed external. The probe counts
+`in-document` twins explicitly and prints them; **that count is 0**. If a future run shows an
+`in-document` twin, the ruling is refuted for that edge and the lane has a real defect there. The
+sample is 236 twins from a 600-file stride; the whole-population split is the next measurement if a
+reader needs the absolute count, and the class is uniform enough in this draw that the conclusion is
+unlikely to move.
