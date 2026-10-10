@@ -468,11 +468,20 @@ cannot tell them apart.
 So the claim is written for `each` only (zero refutations in the sample) or NOT AT ALL — and the honest
 answer at this size is not at all, because a claim over 128 edges that refutes 29 of them would put
 `extFAIL` above 0 and make the lane's `uses` row look better while adding 29 false externalities to
-the graph. What WOULD justify the full claim is an instrument change, not an analyzer one: the claim
-kind needs a NAMESPACE form — "this target's root is a language namespace, not a declaration" —
-carrying the analyzer's root list as its evidence, so the verifier checks the root against that list
-instead of against the symbol table. That is a shared-gate design change and it is recorded here
-rather than landed unilaterally.
+the graph. What WOULD justify the full claim is an instrument change, not an analyzer one: a NAMESPACE form of
+the claim, and the Lead has settled its design (authorized as a separate instrument task, deliberately
+NOT landed at the end of a turn and not by this lane alone):
+
+* a NEW claim kind — the target asserts *"my root is a language namespace, not a declaration"* —
+  carrying the analyzer's root list (`count, each, self, path, terraform`) as its evidence;
+* the verifier checks the target's ROOT against THAT LIST, never against the symbol table — which is
+  the only way the collision above stops mattering;
+* it must stay REFUTABLE: a target whose root is not in the declared list is `externalRefuted`, so the
+  kind cannot become a blanket excuse;
+* the list is PART OF THE CLAIM, so widening it is a visible, reviewable act rather than a silent one.
+
+With that kind, all 1,909 `uses` edges claim cleanly and `extFAIL` stays 0 for a structural reason —
+which is what the current mechanism cannot deliver, and what this measurement showed.
 
 ### A population finding the comparison forced: the gates classify files the indexer never reads
 
