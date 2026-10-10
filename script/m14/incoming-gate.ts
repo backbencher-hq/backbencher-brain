@@ -132,7 +132,16 @@ export type { ExternalClaim, ProjectFacts, Outcome, Classified, Outcomes }
 export const LANES_B: Record<string, string> = {
   bash: "sh", fsharp: "fs", zig: "zig", lua: "lua", julia: "jl", nim: "nim",
   php: "php", powershell: "ps1", r: "r", dart: "dart", sql: "sql", graphql: "graphql",
-  protobuf: "proto", json: "json", yaml: "yaml", css: "css", scss: "scss",
+  protobuf: "proto", json: "json",
+  // BOTH SPELLINGS, because one language does not become a different population by being spelled
+  // `.yml`. Measured on ansible: 13 `.yaml` files against 2,068 `.yml` (2,081 combined), so the
+  // `--all` table was measuring 0.6% of the lane's files and reporting the 13-file verdict as the
+  // lane's. `firing-check.mjs` has always admitted both (`yaml: [".yml", ".yaml"]`), which is
+  // exactly how the two instruments came to disagree (HANDOFF §5.2).
+  yaml: "yaml,yml",
+  css: "css", scss: "scss",
+  // `make: "mk"` cannot admit a bare `Makefile` — `admitByExtension` matches a trailing
+  // `.`+ext, and that file has no extension at all. Reported rather than silently redefined here.
   hcl: "tf", make: "mk", toml: "toml", xml: "xml", markdown: "md", clean: "icl",
 }
 
@@ -177,7 +186,26 @@ const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
  * sampled 1,250, so the number and the command that produced it disagreed by half with
  * nothing in the output saying so.
  */
-function discoverFiles(lang: string, ext: string, maxFiles: number, onlyRepos?: Set<string>): {
+/**
+ * WHICH FILES ARE THIS LANE'S POPULATION — now a SET of extensions, because the caller's single
+ * argument was silently acting as a population filter.
+ *
+ * HANDOFF §5.2, measured: `firing-check.mjs` admits BOTH `.yml` and `.yaml`, while this gate
+ * admitted the one extension it was handed. On ansible that is 2,082 files against **13** — the
+ * same language, the same lane, two populations, and the smaller one was reported as if it were
+ * the lane's incoming result. A gate whose population depends on a spelling is measuring the
+ * spelling.
+ *
+ * `yaml,yml` now admits both. A single extension keeps its old exact behaviour, so no existing
+ * invocation changes meaning; and the admitted set is PRINTED with the population, so the two
+ * numbers can no longer disagree without the disagreement being visible in the output.
+ */
+function admitByExtension(rel: string, exts: string[]): boolean {
+  const low = rel.toLowerCase()
+  return exts.some((e) => low.endsWith(`.${e}`))
+}
+
+function discoverFiles(lang: string, ext: string, exts: string[], maxFiles: number, onlyRepos?: Set<string>): {
   files: string[]; total: number; repos: number
   /** THE UNSAMPLED ADMITTED POPULATION — `files` before the stride. A project fact (is this
    *  path in the population at all?) must be answered from THIS, not from the sample, or a
@@ -227,7 +255,7 @@ function discoverFiles(lang: string, ext: string, maxFiles: number, onlyRepos?: 
       continue
     }
     for (const rel of tracked) {
-      if (!rel.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) continue
+      if (!admitByExtension(rel, exts)) continue
       const abs = path.join(dir, rel)
       try {
         // THE SIZE CAP IS PART OF THE POPULATION CLAIM, so it is counted and printed.
@@ -461,7 +489,10 @@ async function projectIndexesFor(
 }
 
 async function measure(lang: string, ext: string, maxFiles: number, useIndex: boolean, onlyRepos?: Set<string>) {
-  const { files, admitted, total, repos, absent, overCap, overCapLargest } = discoverFiles(lang, ext, maxFiles, onlyRepos)
+  // `yaml,yml` → ["yaml","yml"]; a bare `yaml` keeps its exact old meaning, so no existing
+  // invocation changes population. The admitted set travels into the report and is printed.
+  const exts = ext.split(",").map((e) => e.trim().toLowerCase().replace(/^\./, "")).filter(Boolean)
+  const { files, admitted, total, repos, absent, overCap, overCapLargest } = discoverFiles(lang, ext, exts, maxFiles, onlyRepos)
 
   // name -> how many DECLARATIONS publish it, and the distinct kinds among them.
   // Both, because the whole point of this gate is that the kind-count is not the
@@ -750,7 +781,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   for (const m of projectDecl.values()) scanSeparator(m.keys())
 
   return {
-    lang, ext, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, rows,
+    lang, ext: exts.join(","), admittedExts: exts, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, rows,
     bindingSpelling: { separator: BINDING_SEP, keys: separatorKeys, examples: separatorExamples },
     // THE EXCLUSIONS TRAVEL WITH THE POPULATION. A reader comparing two runs has to be able
     // to see whether the population moved under them, and a lane returning to a number it
@@ -1200,6 +1231,13 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     `population: ${rep.parsed} parsed of ${rep.files.length} sampled ` +
     `(corpus has ${rep.total} .${rep.ext} files across ${rep.repos} repos; stride sample)`,
   )
+  // THE ADMITTED SPELLINGS ARE PART OF THE POPULATION CLAIM (HANDOFF §5.2). Printed on their own
+  // line so a run against half the lane's files cannot be read as a run against the lane: on
+  // ansible `.yaml` alone is 13 files and `.yaml,.yml` is 2,082, same language, same lane.
+  console.log(
+    `population: admitted extensions = ${rep.admittedExts.map((e) => `.${e}`).join(", ")} ` +
+    `(${rep.admittedExts.length === 1 ? "ONE spelling — check the lane does not carry another" : "both spellings admitted"})`,
+  )
   console.log(
     rep.index === null
       ? `project index: NOT USED — this is the per-file population, which is NOT the one ` +
@@ -1555,6 +1593,8 @@ function t0(rep: Report): number {
 // census reads the rule rather than executing a walk.
 if (rest.length < 2) {
   console.error("usage: npx tsx script/m14/incoming-gate.ts <lang> <extension> [maxFiles]")
+  console.error("       <extension> may be a COMMA-SEPARATED LIST — `yaml,yml` for one language whose")
+  console.error("       files carry two spellings, `.yaml` for a question about one of them.")
   console.error("       npx tsx script/m14/incoming-gate.ts --all [maxFiles]")
   console.error("       maxFiles 0 = the WHOLE admitted corpus. A positive value stride-samples it,")
   console.error("       and stride against a corpus that has grown since the number was chosen")
