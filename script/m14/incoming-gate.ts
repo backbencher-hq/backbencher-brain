@@ -1392,11 +1392,22 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   )
   console.log()
   console.log(`TABLE 1 — PER PROJECT, the scope production resolves in (this is the verdict's):`)
+  // THE HEADER MUST BE IN THE EMITTER'S ORDER, and it was not. `line()` emits
+  // `edges, resolved, resolvedAmongCollision, amb(decl), …` while this header listed `collRes`
+  // THIRD-FROM-LAST, so the printed table mislabelled every column from `amb(decl)` onward and
+  // read `ext?` under the heading `extFAIL`. Reported by json-lane, which proved it against the
+  // instrument's OWN VERDICT SENTENCE rather than against a parser: kubernetes' verdict reads
+  // "(3 verified + 38 unverifiable external)" — the header's mapping calls that `extFAIL 38`,
+  // the emitter's mapping calls it `ext? 38, extFAIL 0`, and the sentence decides.
+  //
+  // The damage was not cosmetic: it is where the Lead's "82 refuted" and json-lane's "46 / 42 /
+  // 120" all came from — four wrong numbers, all reading `ext?` in the `extFAIL` slot, all of
+  // them REFUTATIONS THAT DID NOT EXIST. A header is part of the measurement.
   const header =
-    w("type", 14) + w("edges", 9) + w("resolved", 10) + w("amb(decl)", 11) +
+    w("type", 14) + w("edges", 9) + w("resolved", 10) + w("collRes", 9) + w("amb(decl)", 11) +
     w("amb(kind)", 11) + w("unresolved", 12) + w("extOK", 8) + w("ext?", 8) +
     w("extFAIL", 9) + w("bindOK", 9) + w("bind?", 8) + w("bindFAIL", 10) +
-    w("collRes", 9) + w("causeOK", 9) + "causeFAIL"
+    w("causeOK", 9) + "causeFAIL"
   console.log(header)
   console.log("-".repeat(148))
   const line = (label: string, r: Outcomes, edges: string | number) =>

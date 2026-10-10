@@ -44,7 +44,16 @@ for (const name of readdirSync(CR).sort()) {
   if (n >= minFiles) repos.push({ name, files: n })
 }
 
-const TOTAL_KEYS = ["edges", "resolved", "amb", "ambKind", "unres", "extOK", "extQ", "extFAIL", "bindOK", "bindQ", "bindFAIL", "causeOK", "causeFAIL"]
+// TABLE 1's COLUMN ORDER, and it must track `incoming-gate.ts` exactly. `collRes` was inserted
+// after `resolved` in 2a42ae815 and THIS LIST WAS NOT UPDATED, so every field after `resolved`
+// shifted by one and `extFAIL` read `extQ`: a whole-fleet json run reported 82 REFUTED claims
+// where the truth was 0 refuted and 82 unverifiable. The verdict line said "can neither confirm
+// nor deny" the whole time — the parsing, not the graph, was wrong, and it was about to send a
+// lane hunting a regression that did not exist.
+//
+// FIXED POSITIONALLY IS STILL FRAGILE, so the row is now verified by width before it is read:
+// if the column count does not match, the repo is reported UNMEASURED rather than misread.
+const TOTAL_KEYS = ["edges", "resolved", "collRes", "amb", "ambKind", "unres", "extOK", "extQ", "extFAIL", "bindOK", "bindQ", "bindFAIL", "causeOK", "causeFAIL"]
 const sum = Object.fromEntries(TOTAL_KEYS.map((k) => [k, 0]))
 const perRepo = []
 let failed = 0, unmeasured = 0
@@ -66,7 +75,14 @@ for (const r of repos) {
     perRepo.push({ repo: r.name, files: r.files, measured: false, note: "NO TOTAL ROW — killed, OOM, or control refused" })
     continue
   }
-  const nums = line.trim().split(/\s+/).slice(1).map((x) => Number(x.replace(/,/g, "")))
+  const raw = line.trim().split(/\s+/).slice(1)
+  if (raw.length !== TOTAL_KEYS.length) {
+    // A WIDTH MISMATCH IS A PARSING DEFECT, NOT A MEASUREMENT — refuse rather than misread.
+    unmeasured++
+    perRepo.push({ repo: r.name, files: r.files, measured: false, note: `TOTAL row has ${raw.length} columns, expected ${TOTAL_KEYS.length} — column order changed; this parser must be updated before its numbers mean anything` })
+    continue
+  }
+  const nums = raw.map((x) => Number(x.replace(/,/g, "")))
   const row = Object.fromEntries(TOTAL_KEYS.map((k, i) => [k, nums[i]]))
   for (const k of TOTAL_KEYS) sum[k] += row[k] || 0
   const isPass = (verdictLine || "").includes("PASS")
