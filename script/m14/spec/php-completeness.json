@@ -219,14 +219,14 @@
       },
       {
         "id": "PHP-INCLUDE-PATHS",
-        "type": "incoming residual — include/require path targets; the file-claim route MEASURED and declined",
-        "status": "RULED 2026-10-10: ruled with its count",
-        "size": "208 `imports` edges carry an include/require path (`metadata.relationshipType: \"include_path\"`). A file claim would VERIFY **2** of them, REFUTE **185**, and 21 have no computable candidate (a URL, an absolute path, or one that escapes the project)",
-        "whyItIsOpen": "The paths name files the ADMITTED population does not contain — `vendor/autoload.php` is untracked or absent, `__DIR__` is a PHP magic constant the analyzer keeps as literal text rather than resolving, and one names a sibling checkout. A claim is a statement the project can check and a miss REFUTES, so 185 of these can carry no claim at all",
-        "whatWouldCloseIt": "A resolver that reads the filesystem AND a project whose included files are admitted (`__DIR__` is resolvable in pure String, but the files it points at are still outside the admitted list). FALSIFIER: if the admitted population ever includes those files, the verify count moves and this ruling is refuted",
-        "measuredBy": "npx tsx validation/m14/fixtures/php/tools/include-claim-crosstab.mts (production path; json's candidate arithmetic, the gate's admitted-file facts, and the filesystem test the analyzer would gate on, cross-tabulated)",
-        "artifact": ".tmp-php-include-crosstab.log",
-        "control": "the cross-tab is EXACT in both directions — fs TRUE but gate REFUTES: 0, fs FALSE but gate VERIFIES: 0 — so a claim gated on `statSync` would close 2 edges and refute none; and 2 edges is why the mechanism is NOT built: the surface it adds (a claim key, a fixture migration, a refutation risk if the two files ever leave the population) is larger than what it closes"
+        "type": "incoming residual — include/require path targets; the file-claim route MEASURED, BUILT for 147, and the rest ruled",
+        "status": "PARTIALLY CLOSED 2026-10-10 (147 edges) and the remainder RULED with its count",
+        "size": "208 `imports` edges carry an include/require path (`metadata.relationshipType: \"include_path\"`). **147 of them now carry a VERIFIED file claim** — 145 after resolving `__DIR__`/`__FILE__`, 2 already spelled file-relative. The remaining 61: 22 whose resolved path names a file the admitted population does not carry (untracked `vendor/autoload.php`, a `.inc`, a `.phar`), 21 with no computable candidate (a URL, an absolute path, one that escapes the project), and 18 that never carried a magic constant and never resolved",
+        "whyItIsOpen": "for the 61 that remain: their paths name files the ADMITTED population does not contain, or name no file at all. A claim is a statement the project can check and a miss REFUTES, so they can carry none",
+        "whatWouldCloseIt": "a project whose included files are admitted (vendoring them, or admitting the extensions those includes use). FALSIFIER: if the admitted population ever carries those files, the verify count moves and the ruled remainder of this entry is refuted",
+        "measuredBy": "npx tsx validation/m14/fixtures/php/tools/magic-constant-include-probe.mts and include-claim-crosstab.mts (production path; json's candidate arithmetic, the gate's admitted-file facts, and the filesystem test the analyzer gates on, cross-tabulated)",
+        "artifact": ".tmp-php-magic2.log, .tmp-php-include-crosstab.log, .tmp-php-include-after.log",
+        "control": "the cross-tab is EXACT in both directions. BEFORE the fix: 188 of the 208 paths carried a magic constant and **0 of them verified** — `__DIR__` kept as literal text is a string that can never match anything. AFTER resolving the constants in pure String and restricting candidates to `.php` — required rather than convenient, because the arbiter's facts hold admitted `.php` paths only — the cross-tab reads **verify 145, REFUTE 0**; the single disagreement the UNRESTRICTED set had was a `.inc` file that exists on disk and is not admitted, which is exactly what the extension rule removes. Whole-population verdict: imports unresolved 3,691 -> 3,544, extFAIL 0, resolved and ambiguous unchanged"
       }
     ],
     "adjudicatedFromGaps": {

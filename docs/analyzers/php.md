@@ -132,25 +132,51 @@ the project's key space, is the same test asserting and checking itself. `extFAI
 structurally 0 and the marker would stop carrying information — the laundering
 `script/m14/incoming-rule.ts` warns about, arrived at honestly.
 
-### The include-path class — the fixable-looking one that is not worth fixing
+### The include-path class — a per-file defect, not a boundary (147 edges closed)
 
 `imports` also carries `include`/`require` paths (`metadata.relationshipType: "include_path"`): **208
-edges** whole population. The file-claim route (json's) was measured before it was built
-(`tools/include-claim-crosstab.mts`, production path, json's candidate arithmetic against the gate's
-admitted-file facts plus the `statSync` guard):
+edges**. The first cross-tab (`tools/include-claim-crosstab.mts`) said a file claim would verify only
+2 and refute 185, which looked like a boundary. It was not: **188 of the 208 carry a PHP magic
+constant** — `require __DIR__ . '/../vendor/autoload.php'` is emitted as
+`__DIR__/../vendor/autoload.php` — and `__DIR__` kept as literal text is a string that can never match
+anything. **0 of the 188 verified.**
 
-| | edges |
-|---|---|
-| a claim would VERIFY | **2** |
-| a claim would REFUTE | **185** |
-| no computable candidate (URL / absolute / escapes) | 21 |
+`__DIR__` is the directory of THE FILE BEING ANALYZED and `__FILE__` is that file: both are known to a
+per-file analyzer, in pure String, with no filesystem. Resolving them
+(`tools/magic-constant-include-probe.mts`, whole population) moves **145** of the 188 onto files the
+project really carries. `claimResolvableIncludes` now does exactly that and attaches
+`metadata.importProjectFile` when:
 
-The cross-tab is exact in both directions (fs true but gate refutes: 0; fs false but gate verifies: 0),
-so a claim gated on `statSync` would close 2 edges and refute none. **It is not built:** 2 edges do not
-justify a claim key, a fixture migration, and a standing refutation risk if those two files ever leave
-the population. The 185 name files the admitted population does not contain — `vendor/autoload.php`
-untracked, `__DIR__` kept as literal text because the analyzer never resolves magic constants, one a
-sibling checkout — and that is a property of the POPULATION, not a spellable defect.
+* the written path is a plain relative path (no URL, no absolute, no glob, no whitespace);
+* after resolving `dirname(__FILE__)`, `__DIR__` and `__FILE__` it lands INSIDE the project;
+* it ends in `.php` — **required, not convenient**: the arbiter's facts are the lane's admitted file
+  list, which holds `.php` paths only, and this is what removes the single disagreement the
+  unrestricted cross-tab found (a `.inc` file that exists on disk and is not admitted);
+* and it exists on disk (`statSync`), which removes the 42 candidates that do not exist at all.
+
+**Why the guard is not optional:** a claim that misses is REFUTED, and `extFAIL` must be 0. After both
+guards the cross-tab is exact in both directions: **verify 145, refute 0.**
+
+Whole-population verdict, `residual-gate --lane php`:
+
+| | imports unresolved | extFAIL | resolved | ambiguous |
+|---|---|---|---|---|
+| before | 3,691 | 0 | 16,368 | 2,275 |
+| after | **3,544** | **0** | 16,368 | 2,275 |
+
+The TARGET stays the path as written — the claim is a statement ABOUT the target, and resolving
+`__DIR__` into the target would invent a spelling no document contains.
+
+**The 61 that remain are ruled**: 22 whose resolved path names a file the admitted population does not
+carry (untracked `vendor/autoload.php`, a `.inc`, a `.phar`), 21 with no computable candidate, 18 that
+never carried a constant and never resolved. *Falsifier:* if the admitted population ever carries
+those files, the verify count moves and the ruling is refuted.
+
+**This is a fleet finding, not a php one.** Every lane whose imports are path-shaped has magic-constant
+spellings — python's `__file__`, ruby's `__dir__`, and the `${rootfsDir}` case that already cost a
+lane 21 edges — and the same probe answers it: resolve the constant in pure String, restrict the
+candidate to the extensions the lane's own admitted list holds, `statSync` the result, and cross-tab
+verify against refute BEFORE emitting.
 
 ## 5. Refuted before it was built
 
