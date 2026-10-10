@@ -257,6 +257,40 @@ checkout does not have (`grails-core`, `Exposed`, `vue-core` — F8's 16 failing
 rows are literally `corpus missing: <repo>`, and regenerating here would replace
 canonical evidence with local "corpus missing" rows).
 
+## The JVM family — three more declarations from one gate (2026-10-10)
+
+The Java gate is now PARAMETERIZED, not copied: `java-incoming-gate.ts <lang> <ext> [sample]`
+(defaults `java java 200`), one instrument, four lanes. Groovy, kotlin and scala each measure
+clean (200/200 parsed, 0 degraded, instrument self-test PASS) and each is a total partition —
+`unclassed 0` and the classes summing to the edge count on all ten types, checked by the gate:
+
+| lane | edges | resolved | external | ambiguous | otherUnresolved | qualified-name aliases | analyzer digest |
+|---|---|---|---|---|---|---|---|
+| groovy | 10,323 | 2,502 | 0 | 555 | 7,266 | 0 | `sha256:df84d8c9b6ca6868` |
+| kotlin | 8,895 | 1,959 | 0 | 1,604 | 5,332 | 1,417 | `sha256:8e0eaa2f0e2d3e28` |
+| scala | 9,628 | 2,736 | 0 | 2,084 | 4,808 | 0 | `sha256:1a9de99c23c1c024` |
+
+`external 0` on every type in all three lanes is a STATE, not a verdict: the provable external
+marker exists only in the Java analyzer today, so every unbound target in these lanes is backlog
+by construction and the ceilings carry the whole population. Marking is future work with the
+Java proof obligation attached. The kotlin lane's 1,417 aliases bind dotted targets where the
+spelling reaches a published name (groovy and scala publish none, recorded in their `meta`).
+
+Wrong-lane substitution is impossible by construction and by control: an unknown lane refuses
+(**exit 2**, naming the known lanes), and a declaration whose `meta.lang` differs from the lane
+being run refuses too (**exit 2**, naming both). The end-to-end ceiling control on kotlin:
+`calls.ambiguous` 352 → 347 → **exit 1**, `calls: ambiguous ceiling 347 violated — measured 352
+(5 REGRESSED)`. All four lanes pass their own gate on the final revision, measured in the clean
+worktree at `ae064f086` (the shared tree carries another lane's uncommitted `src/ast` work, which
+the gate's own dirty-tree guard refuses to ratify).
+
+One repair to the Java declaration came with this: its census note carried the pre-rerun
+figures (third-party 3,542/897; 5+ ambiguity 2,846). A fresh census run (equality control PASS)
+measures **third-party 3,535/893** and **5+ declarations 2,871 over 83 names**, and the note was
+regenerated to those. The regeneration diff against the committed declaration is exactly that
+one line — types, rules and meta byte-identical — which is the proof the parameterization
+changed no Java number.
+
 ## Still to do at integration
 
 - Regenerate `website/src/data/brain-languages.ts` — its `emits` arrays are

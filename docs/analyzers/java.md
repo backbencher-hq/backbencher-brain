@@ -187,7 +187,63 @@ shadow `String`, so the marker cannot claim it) and `third-party` (needs a depen
   fleet gate draws. A corpus-wide figure needs the same sample-size statement the typescript
   lane now prints.
 
+## The JVM family — groovy, kotlin and scala carry declarations too (2026-10-10)
+The ratchet above was never about Java; it is about any lane the fleet instrument can measure.
+All three JVM siblings measure clean with the same instrument (200/200 parsed each, 0 degraded,
+instrument self-test PASS), so `java-incoming-gate.ts` is now PARAMETERIZED by language instead
+of copied per lane — four near-identical 500-line gates would drift and a declaration whose gate
+is a copy is not a control:
+
+```
+npx tsx script/m14/java-incoming-gate.ts                     # java (default, unchanged)
+npx tsx script/m14/java-incoming-gate.ts kotlin kt 200       # lane, extension, sample
+npx tsx script/m14/java-incoming-gate.ts scala scala 200
+```
+
+An unknown lane **refuses** (exit 2, naming the known lanes) rather than falling back to java,
+and a declaration whose `meta.lang` disagrees with the lane being run refuses too — a gate that
+quietly measured one language under another's name would publish numbers about the wrong
+population under the right path. The prose each lane publishes is authored per lane: three notes
+about the shared mechanism, then the census explanation only where a census exists (java).
+
+| lane | corpus | resolved | external | ambiguous | otherUnresolved | edges | aliases | analyzer digest |
+|---|---|---|---|---|---|---|---|---|
+| groovy | 2,748 `.groovy` / 2 repos | 2,502 | 0 | 555 | 7,266 | **10,323** | 0 | `sha256:df84d8c9b6ca6868` |
+| kotlin | 69,123 `.kt` / 5 repos | 1,959 | 0 | 1,604 | 5,332 | **8,895** | 1,417 | `sha256:8e0eaa2f0e2d3e28` |
+| scala | 18,964 `.scala` / 2 repos | 2,736 | 0 | 2,084 | 4,808 | **9,628** | 0 | `sha256:1a9de99c23c1c024` |
+
+Every row is a total partition: `unclassed 0` and the class sum equals the edge count on all ten
+types, checked by the gate rather than assumed. **`external 0` on every type in all three
+lanes is a state, not a verdict**: the provable external marker (`isExternalTarget` +
+`externalReason`) exists only in the Java analyzer today, so by construction every unbound
+target in these three lanes is backlog, every ceiling carries the full population, and the
+kotlin lane's 1,417 `qualifiedNameAliases` bind dotted targets where the spelling reaches a
+published name (groovy and scala publish none, so the alias rule has nothing to bind with —
+recorded in their `meta`). Marking is future work with the Java proof obligation attached; an
+unmarked unresolved edge and a marked one are different claims.
+
+Notable per-type shapes, read from the declarations: groovy `imports` resolves 0 of 1,210
+(import targets are module-qualified, the population publishes no such aliases) while its
+`contains` resolves 1,459 of 1,615 and `exports` 206 of 207; scala `contains` is 903 resolved /
+720 ambiguous with 0 unresolved; kotlin `references` is the biggest type at 2,815 (121
+resolved) and its `exports` resolves 545 of 889. The lane ceilings are what they are — the
+fleet gate's verdict for each of these lanes is still its own (FAIL until repaid); the
+declarations say what is declared and ratcheted, not that the ceilings are small.
+
+The failure paths were exercised end-to-end, not asserted: tightening kotlin
+`calls.ambiguous` 352 → 347 produced **exit 1** with
+`calls: ambiguous ceiling 347 violated — measured 352 (5 REGRESSED)`; running kotlin against
+scala's declaration produced **exit 2** with `declares lang 'scala', not 'kotlin'`; an unknown
+lane (`perl`) produced **exit 2** with the known-lane list. All four lanes pass their own gate
+(`exit 0`) on the final revision of the file; the gate's own six-case positive control still
+runs before any corpus and refuses a verdict if it cannot fail.
+
 ## Verification
+- JVM family declarations (`java-incoming-gate.ts` parameterized): groovy, kotlin and scala
+  each **exit 0 — PASS**, `unclassed 0` and classes summing to edges on all ten types;
+  ceiling-tighten control on kotlin **exit 1** with the violation named; wrong-lane declaration
+  **exit 2**; unknown lane **exit 2**; ran in a clean worktree at the handoff commit because
+  the shared tree carries another lane's uncommitted `src/ast` work (the gate's own refusal)
 - Fixtures: 63 (`validation/m14/fixtures/java/`), incl. type-usage-graph pinning the declared-type graph
 - Corpus: grails-core@HEAD differential 100% coverage / 0 fabrications; perf gate warm-up hardened
 - Grammar audit: PASS (0 unknown node-type references)
