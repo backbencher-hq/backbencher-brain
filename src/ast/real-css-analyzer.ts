@@ -631,6 +631,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // CSS-D15: the file's own identity inside its project, computed once per file and used
     // for every symbol this run publishes. See the FILE SCOPE note above `cssFileScopeOf`.
     this.fileScope = cssFileScopeOf(filePath)
+    this.fileDir = filePath.length > 0 ? path.dirname(filePath) : ""
 
     const ctx: CssContext = {
       symbols: [],
@@ -1536,6 +1537,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   /** The project-unique scope prefix for the file being analyzed; set per `analyze` run. */
   private fileScope = ""
 
+  /** The directory of the file being analyzed, for resolving a RELATIVE import specifier. */
+  private fileDir = ""
+
   private determineSelectorKind(
     hasId: boolean,
     hasClass: boolean,
@@ -2395,15 +2399,57 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    *
    * ## What this does NOT claim
    *
-   * A basename held by more than one stylesheet in the same repo — 12 edges over 2 names in
-   * this window — is published under the basename and stays AMBIGUOUS, because the store
-   * binds by name (`WHERE project_id = ? AND name = ?`) and a disambiguator invented here
-   * would be a second, invented naming convention. That is a finding about the published-name
-   * contract, counted in `css-import-specifier-names.json` as `relative-ambiguous-basename`.
+   * A basename held by more than one stylesheet in the same repo USED to be published under the
+   * bare basename and stay ambiguous, on the ground that any disambiguator would be an invented
+   * naming convention. That is now falsified and fixed: a relative specifier whose sibling exists
+   * on disk targets the SIBLING's own published module name (`siblingImportTarget` above), which
+   * is the file's existing identity rather than a new convention. Measured over the whole
+   * `css,less` population: 51 ambiguous edges resolved, 0 currently-resolving edges put at risk.
    */
+  /**
+   * CSS-D18-FALSIFIER. A RELATIVE specifier names the file BESIDE the importing stylesheet, and
+   * when that file exists on disk the target is that sibling's OWN project-unique module name —
+   * `<its file scope>::<its basename>` — which is not an invented convention but the identity
+   * `publishFileScopedIdentities` already publishes for every file in this lane.
+   *
+   * WHY THIS REPLACES THE LANE'S EARLIER RULING. The paragraph below used to say that a basename
+   * held by more than one stylesheet in a repo "stays AMBIGUOUS, because ... a disambiguator
+   * invented here would be a second, invented naming convention". The falsifier was measured
+   * (`validation/m14/fixtures/css/imports-sibling-falsifier.ts`, whole `css,less` population):
+   * of 106 basename-specifier imports, the 51 whose basename TWO OR MORE admitted files publish
+   * have an ADMITTED SIBLING in **51 of 51** cases, and of the 55 unique-basename ones the 32
+   * with no admitted sibling **do not exist on disk at all** (dangling imports). So an
+   * existence-gated resolution fixes every ambiguous edge and puts NONE of the currently
+   * resolving ones at risk — the risk is measured at ZERO, not assumed.
+   *
+   * `existsSync` is a filesystem read in an analyzer, and that is stated rather than hidden: it
+   * makes the target depend on which sibling is on disk, and a sibling that exists but is NOT
+   * admitted would name a declaration the population does not contain (an unresolved edge where
+   * the bare basename used to resolve). MEASURED on this population: 0 such cases in either
+   * bucket. The alternative — naming a same-basename file in another directory — is what the
+   * bare spelling already does, and it is right only by luck.
+   */
+  private siblingImportTarget(specifier: string): string | null {
+    if (this.fileDir === "" || specifier.length === 0) return null
+    // An absolute path is not a sibling, and a scheme/@/~ spelling was returned before this is
+    // reached. Everything else — `_variables.less`, `./x.css`, `../a/b.css`, `vendor/x.css` — is
+    // resolved against the importing file's own directory, and the EXISTENCE CHECK is the
+    // discriminator rather than the spelling's shape.
+    if (specifier.startsWith("/")) return null
+    const sibling = path.resolve(this.fileDir, specifier)
+    if (!existsSync(sibling)) return null
+    const base = lastPathSegment(sibling)
+    if (base.length === 0) return null
+    const scope = cssFileScopeOf(sibling)
+    if (scope === "") return null
+    return `${scope}::${base}`
+  }
+
   private importTargetName(specifier: string): string {
     if (specifier.startsWith("http:") || specifier.startsWith("https:") || specifier.startsWith("//")) return specifier
     if (specifier.startsWith("@") || specifier.startsWith("~")) return specifier
+    const sibling = this.siblingImportTarget(specifier)
+    if (sibling !== null) return sibling
     const slash = specifier.lastIndexOf("/")
     if (slash < 0) return specifier
     const segment = specifier.slice(slash + 1)
