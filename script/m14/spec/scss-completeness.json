@@ -502,7 +502,8 @@
   "gap": {
     "count": 0,
     "types": {},
-    "note": "Empty, and the search is recorded: every type the grammar declares is either reached or labelled, and the unadjudicated count is reported below rather than folded into a bucket."
+    "gaps": [],
+    "note": "Empty in BOTH forms, and the search is recorded: every type the grammar declares is either reached or labelled, and the unadjudicated count is reported below rather than folded into a bucket. The `gaps` array is the half the BOARD reads — it counts only `gap.gaps` — and it was missing until 2026-10-09, so this object rendered as `gaps≠array` (not counted, and deliberately not read as zero) while `count` and `types` beside it both said 0. The array now agrees with the coverage block below, whose board-computed gap list is also empty: `overrides` is corpusUnexercised, not a gap."
   },
   "design_decision": {
     "unadjudicatedCells": 0,
@@ -563,5 +564,36 @@
       "id": "SCSS-L10",
       "note": "RECOVERY IS STATEMENT-SCOPED, which bounds what error recovery can reach. The read/call scan is invoked for `declaration`, `include_statement`, control-flow and `return_statement` nodes, so a region where the STATEMENT ITSELF was destroyed by the grammar has nothing to hand the scanner and its reads stay invisible even though the walk descends through the error. Measured on `--font-size: #{map.get($input-font-size, $size)}` from `form-item.scss`: 15 error spans and ZERO relationships, where the same read recovered cleanly when the statement node survived. So recovery works where a statement node survives a parse failure and does not where the statement was destroyed. Corpus-wide the descend-through-error walks are worth 229 recovered `variable` reads across 21 files, 5 marked edges, and 4 symbols in `tag.scss` (scope-disambiguated `@each` interfaces and one variable) — real, but the outer walk in particular contributes 0 relationships and has no fixture, which is recorded here rather than left for a reader to assume."
     }
-  ]
+  ],
+  "coverage": {
+    "implemented": [
+      "calls",
+      "contains",
+      "exports",
+      "extends",
+      "imports",
+      "references",
+      "uses"
+    ],
+    "excluded": [
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "instrument A — validation/m14/fixtures/scss/scss-grammar-vocabulary.ts, whose whole run is committed verbatim at validation/m14/fixtures/scss/grammar-vocabulary.txt: over the 137 distinct node types the pinned tree-sitter-scss@1.0.0 wasm PRODUCES (4433 admitted .scss files, 1000 sampled, every 4th of the sorted admitted list), SUPERTYPE reads 0 of 30 probed names present — class_declaration, interface_declaration, trait_declaration, implements_clause, superclass, base_list and the other 25 — while the calibration arm reads 15 of 15 MUST_APPEAR names present (stylesheet, rule_set, declaration, mixin_statement, include_statement, forward_statement, call_expression, …), so the zero is a measurement rather than a broken probe. This agrees with the ruling on the CSS grammar this one is a SUPERSET of: script/m14/spec/css-completeness.json CSS-D14 counts.vocabulary_candidates_found.implements = [] — 0 candidate node types. grammars/tree-sitter-scss/grammar.js adds @extend, @mixin/@include, @function/@return, @use/@forward and the control-flow statements to the CSS base, and not one of them is a conformance clause."
+      },
+      {
+        "label": "instantiates",
+        "evidence": "grammar-absence",
+        "from": "the SAME instrument A run, committed at validation/m14/fixtures/scss/grammar-vocabulary.txt: 4433 admitted .scss files, 1000 sampled, 137 distinct node types produced, and CONSTRUCTOR reads 0 of 10 probed names present — new_expression, object_creation_expression, constructor_invocation, object_literal, instance_creation, allocate_expression and 4 more — against that same 15 of 15 calibration, so the probe was live when it returned the zero. A Sass value is written literally or returned by a @function; no production in this grammar constructs an object. The nearest construct the language has, @include of a @mixin, is a CALL and is declared `uses` here, not `instantiates`. Matches the CSS half: script/m14/spec/css-completeness.json CSS-D14 counts.vocabulary_candidates_found.instantiates = [] — 0 candidate node types."
+      }
+    ],
+    "corpusUnexercised": [
+      {
+        "label": "overrides",
+        "from": "EMITTED, but not exercised by the corpus THIS lane's row is measured on — the shape `make` declared for its own `overrides`. (1) THE ZERO, over the whole corpus rather than a stride: `BB_PICK_CAP=1000 NFILES=400 bun script/m14/firing-check.mjs SCSS` reports 179/179 parsed of 179 admitted, corpus=bulma WHOLE, and `overrides` produces nothing there. There is no site for it to be rejected at either — bulma contains 0 occurrences of the substring `!global`, and a `!global` assignment is the only reassignment this lane emits `overrides` for, so a text search is sound for a ZERO here for the same reason CSS-D14 gives for `@import`. (2) THE EMISSION, so this is a corpus fact and not a capability gap: validation/m14/fixtures/scss/scss-relationship-census.ts records `overrides` 32 edges over 4433 admitted .scss files, identical in all five of the runs its header tabulates (which is what a type that does not move with the flaky-file set looks like), and the width of the class is pinned by validation/m14/fixtures/scss/module-exports-and-global-overrides.expectation.json, which EXPECTS the one honest edge (@mixin probe -> $brand, meta.overridesLine 4) and FORBIDS the three wide readings: $computed (a @function result is not an override), $invented (a `!global` that CREATES a global replaces nothing) and source $brand (an assignment overriding itself). Declared corpusUnexercised rather than implemented because the corpus this row is read from never exercises it."
+      }
+    ],
+    "_from": "MEASURED over the WHOLE corpus, not sampled: `BB_PICK_CAP=1000 NFILES=400 bun script/m14/firing-check.mjs SCSS` reports `179/179 parsed of 179 admitted (even stride)  [corpus=bulma WHOLE]` — calls 102 · contains 845 · exports 65 · extends 52 · imports 69 · references 601 · uses 4 — with implements overrides instantiates producing nothing. The committed 120-file stride in validation/m14/results/firing-laptop-b.current.log reads the same seven fired and the same three SILENT, so the three are genuinely absent from this corpus rather than missed by the sample, which is the question a sample can never answer. The four types both lanes emit — contains · imports · references · uses — are this lane's OWN readings and not CSS's: the delegated walk runs inside the SCSS analyzer and every count above was taken through parseFile.",
+    "_extends_vs_css": "SCSS and CSS do NOT disagree about `extends`, and the difference a reader will notice is explained by the GRAMMAR rather than by the ruling: the .css population cannot contain the construct at all — CSS-D14 counts 0 `@extend` at-rules and 0 candidate node types, so the CSS lane declares it grammar-absence — whereas tree-sitter-scss is `grammar(require('tree-sitter-css/grammar'), {…})` with an `extend_statement` production ADDED to that CSS base — `extend_statement: $ => seq('@extend', choice($._value, $.class_selector), ';')`, a plain rule of the vendored grammar and NOT one of its local patches, grammars/tree-sitter-scss/grammar.js:314 — so `@extend` is real syntax in this language and the type FIRES — 52 edges over the whole 179-file corpus, 38 on the committed 120-file stride, and this lane's `extend_statement` row in handled_verified above records how the target is named. `extends` is the ONE type whose verdict differs between the two lanes, and it differs because their grammars do."
+  }
 }
