@@ -176,7 +176,26 @@ if (LANE) {
   const w = (s: any, n: number) => (String(s) + " ".repeat(n)).slice(0, n)
   console.log(`residual gate — ${LANE}, WHOLE admitted population, production scope\n`)
   console.log(`${w("type", 14)} ${w("edges", 9)} ${w("resolved", 9)} ${w("ofWhich", 8)} ${w("amb(decl)", 10)} ${w("unresolved", 11)} ${w("extFAIL", 8)} ${w("bindFAIL", 9)} ${w("causeFAIL", 10)} ${w("residual%", 10)}${intentBlockSeen ? "  " + w("intended", 9) + w("twin", 6) + w("noDecl", 7) : ""}`)
-  if (intentBlockSeen) console.log(`  "intended" = own file AND own line · "twin" = ONLY another file answers (a wrong edge) · "noDecl" = nothing answers.`)
+  // THE LABEL MUST NOT ASSERT MORE THAN THE CLASSIFIER ESTABLISHES. This legend said
+  // `"twin" = ONLY another file answers (a wrong edge)` — which is true only for the types the
+  // analyzer writes on the target symbol's own line. `classifyIntent` (incoming-gate.ts:433-445) is a
+  // NAME test that does not read claims: `declarations of the target NAME in the project; if none in
+  // the edge's own file -> arbitraryTwin`. For `contains`/`exports` a foreign answer IS a defect by
+  // construction. For `references`/`extends` it is what a CROSS-DOCUMENT REFERENCE IS — the target
+  // lives in another document, so no declaration in the edge's own file is the expected state, not an
+  // anomaly. r-lane found this: 236 sampled xml twins, EVERY ONE already carrying `isExternalTarget`
+  // (builtin 233, external 3), **in-document 0**, and no spelling change reaches any of them
+  // (declaration ceiling 0, referenced ceiling 0). The function's own docstring is weaker than the
+  // header was — it says the class is "exactly when the store's `s.id` tie-break picks a foreign
+  // declaration", a RISK, not proven wrongness. Third time tonight a column's label outran its
+  // computation; the fix is the label, not the arithmetic.
+  if (intentBlockSeen) console.log(`  "intended" = own file AND own line · "twin" = ONLY another file answers · "noDecl" = nothing answers.`)
+  // The type list is named literally rather than imported: this gate SPAWNS `incoming-gate.ts` as a
+  // subprocess and shares no module state with it, so an imported constant would be a second copy that
+  // could silently drift from the one the classifier actually uses. If `LINE_IS_TARGET_LINE` changes
+  // there, this line must change with it — which is the same "one spelling, two places" hazard the
+  // whole handoff warns about, made visible instead of hidden behind an import.
+  if (intentBlockSeen) console.log(`  "twin" is a WRONG EDGE only for contains/exports (the types whose edges the analyzer writes on the target symbol's own line); for other types a foreign declaration is what a cross-document reference IS — a RISK, not proven wrongness.`)
   if (intentBlockSeen && intentWidthBad > 0) console.log(`  (${intentWidthBad} intent ROW(s) did not have 6 columns and were SKIPPED, not reinterpreted.)`)
   console.log(`  "ofWhich" = resolved edges on a name with MORE THAN ONE declaration in the project — an`)
   console.log(`  UPPER BOUND on arbitrary bindings, not a count of them: both resolvers prefer the edge's own`)
