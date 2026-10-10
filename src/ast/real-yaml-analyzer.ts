@@ -1189,7 +1189,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Ansible/Helm file imports, decided by key spelling.
     if (FILE_IMPORT_KEYS.has(key)) {
-      for (const name of this.fileImportTargets(key, valueNode)) {
+      for (const name of this.fileImportTargets(key, valueNode, current.parentPath, current.document)) {
         this.addImport(ctx, name, "yaml_keyword_include", keyNode, true)
         this.addRelationship(ctx, path, name, ASTEngine.RelationshipType.Imports, {
           relationshipType: "yaml_keyword_include",
@@ -1971,7 +1971,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    *                name files inside a role DIRECTORY this analyzer does not resolve, so they are
    *                not this file's imports, and a boolean is not a target at all.
    */
-  private fileImportTargets(key: string, valueNode: Node | null): string[] {
+  private fileImportTargets(key: string, valueNode: Node | null, parentPath: string, document: string): string[] {
     if (ROLE_IMPORT_KEYS.has(key)) {
       const named = this.mappingEntryScalar(valueNode, "name")
       if (named !== null) return [named]
@@ -1979,6 +1979,20 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // scalar of any other shape is that shape's only candidate for a role name.
       return this.scalarValues(valueNode).slice(0, 1)
     }
+    // `include:` IS NOT ALWAYS AN INCLUDE. Under a `matrix:` it is the build-matrix directive a
+    // CI system expands into JOB VARIANTS, and its members are dimensions, languages and shell
+    // commands. MEASURED: powershell's `windows-packaging-reusable.yml` published `x64`,
+    // `preview`, `win7`, `x86`, `stable`, `arm64` as imports of the workflow, and bulma's
+    // `.travis.yml` published `sass`, `node_js`, `gem install sass` and
+    // `node test/dart-sass/dart-sass.js`. Fourteen of this lane's 57 ambiguous `imports` were
+    // exactly these names, and the rest were sitting in the VERIFIED column as claims about
+    // files that do not exist. The parent path is the evidence, and it is the evidence the
+    // `uses:` role already reads.
+    // The document is excluded from the test BY NAME, and the control is why: a file called
+    // `matrix.yml` has the document identity `matrix`, so a bare `/matrix$/` test made every
+    // top-level `include:` in that document invisible. The guard is about a `matrix:` KEY, which
+    // is always a deeper path than the document itself.
+    if (key === "include" && parentPath !== document && /(^|\.)matrix$/.test(parentPath)) return []
     const file = this.mappingEntryScalar(valueNode, "file")
     if (file !== null) return [file]
     // A MAPPING UNDER A FILE KEY IS NOT A LIST OF FILES. Only its `file:` names one (handled
@@ -1989,7 +2003,30 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // and they are why bare identifiers like `time`, `main` and `dnf` appear in `imports`.
     const node = valueNode ? this.scalarNode(valueNode) : null
     if (node && MAPPING_TYPES.has(node.type)) return []
-    // A SEQUENCE is a list of file names (`- include: [a.yml, b.yml]`) and a scalar is one file.
+    // A SEQUENCE names files only when ITS ITEMS ARE SCALARS (`- include: [a.yml, b.yml]`). An item
+    // that is a mapping is a matrix variant or a structured directive, and the scalars inside it
+    // are its FIELDS, not file names — recursing into them is what published `x64` and
+    // `gem install sass` above.
+    if (node && SEQUENCE_TYPES.has(node.type)) {
+      const out: string[] = []
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const item = node.namedChild(i)
+        if (!item) continue
+        // A SEQUENCE ITEM IS ITS OWN NODE TYPE in this grammar (`block_sequence_item`), and it is
+        // NOT in `WRAPPER_TYPES` — so `scalarNode` returns it unchanged and a scalar item looked
+        // like a nested node. The control caught it: `include: [real.yml]` emitted nothing while
+        // `include: [{architecture: x64}]` correctly emitted nothing, i.e. the two cases were
+        // indistinguishable. Unwrap one level, which is what the walker itself does
+        // (`visit`: `firstNamedChild(curr)` for a sequence item).
+        const unwrapped = item.type === "block_sequence_item" ? this.firstNonDecorationChild(item) : item
+        const scalar = unwrapped ? this.scalarNode(unwrapped) : null
+        if (!scalar || !SCALAR_TYPES.has(scalar.type)) continue
+        const text = this.scalarText(scalar)
+        if (text) out.push(text)
+      }
+      return out
+    }
+    // A scalar names one file.
     return this.scalarValues(valueNode)
   }
 
