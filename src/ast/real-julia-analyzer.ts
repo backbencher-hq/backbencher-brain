@@ -1200,6 +1200,58 @@ export class RealJuliaAnalyzer {
     for (const s of symbols) symbolMap.set(`${s.kind}:${s.ownerName || ""}:${s.name}`, s)
     const uniqueSymbols = [...symbolMap.values()]
 
+    /**
+     * A BARE `references` TARGET WHOSE NAME THIS FILE DECLARES EXACTLY ONCE IS RETARGETED TO THAT
+     * DECLARATION'S QUALIFIED KEY — and this is a REFERENCE, not a guess, because the alias belongs
+     * to the same symbol.
+     *
+     * MEASURED FIRST (census.ts §THE references SPLIT, whole 1,985-file population, raw
+     * validation/m14/fixtures/julia/measurements/census-references-split-2026-10-10.txt):
+     * `references` is 50,149 edges, 17,428 ambiguous and 17,686 unresolved; the php-shaped
+     * scope-key rule that the fleet repeats reaches 161 of them (1.0%), and the dotted-leaf rule
+     * reaches 1,988 but would RE-POINT 68 already-resolved edges at a DIFFERENT symbol — dropped
+     * for that reason. The own-key rule is different in kind: the file's own declaration publishes
+     * `owner.name` as an alias OF ITSELF, so `Circle` and `Geom.Circle` are two keys for one
+     * declaration. Ceiling: 2,046 ambiguous edges.
+     *
+     * MONOTONE, WHICH IS THE ARGUMENT FOR TAKING IT. If the bare name resolves to exactly one
+     * declaration in the project, then the alias of that same declaration also resolves to exactly
+     * one — the edge cannot move out of `resolved`, it can only resolve to the same symbol through
+     * a second key. If the bare name is ambiguous, the alias either picks out the file's own
+     * declaration or is itself ambiguous, in which case the edge is no worse than before. So the
+     * rule can move edges ambiguous -> resolved and nothing else, which is the one direction the
+     * residual bar counts.
+     *
+     * THE GUARDS, each of them a way the inference could be wrong:
+     *   - the name must be declared EXACTLY ONCE in this file. Two declarations of one name (a
+     *     top-level one and a nested one) means the file itself cannot say which the reference
+     *     names, and the rule stands down.
+     *   - that single declaration must carry a qualified name. A file-scope declaration has no
+     *     owner to qualify it with, and its bare name is already the answer.
+     *   - dotted targets are untouched. `A.B.C` is a different question — the leaf rule that would
+     *     reach those is the one measured to re-point 68 resolved edges, and it is not taken here.
+     *   - `references` only. The same rule for `calls` and `uses` is a separate measurement: a call
+     *     to a name this file declares may still be a local binding or a dispatched method.
+     *
+     * Placed BEFORE the dedup below, so a retarget that collides with an existing edge collapses
+     * into it instead of publishing the same fact twice.
+     */
+    const declsByName = new Map<string, ASTEngine.UniversalSymbol[]>()
+    for (const s of uniqueSymbols) {
+      const list = declsByName.get(s.name) ?? []
+      list.push(s)
+      declsByName.set(s.name, list)
+    }
+    for (const r of relationships) {
+      if (r.type !== ASTEngine.RelationshipType.References) continue
+      const tgt = String(r.target ?? "")
+      if (!tgt || tgt.includes(".")) continue
+      const decls = declsByName.get(tgt)
+      if (!decls || decls.length !== 1) continue
+      const q = decls[0]!.qualifiedName
+      if (typeof q === "string" && q) r.target = q
+    }
+
     const relMap = new Map<string, ASTEngine.UniversalRelationship>()
     for (const r of relationships) {
       const key = `${r.type}|${r.source}->${r.target}`
