@@ -440,8 +440,16 @@ if (Number(m.population?.degraded ?? 0) > 0) {
 if (UPDATE) {
   const decl = loadDecl()
   const built = buildDecl(m)
-  if (decl?.rules) built.rules = decl.rules // rules are authored prose, not regenerated numbers
-  if (decl?.notes) built.notes = decl.notes
+  // RULES MERGE, CLASS_RULES WINS. The first version replaced `built.rules` with the
+  // previous file's outright, so when the `unclassed` class was added the artifact kept
+  // its old five-less rule block: the gate explained four classes and ratcheted five, and
+  // the declaration shipped a class with no sentence. Found by reading the written file,
+  // which is the only check that could have found it — the gate itself never printed the
+  // rules. Now the authored CLASS_RULES always land, and any key a future declaration
+  // carries that this file has not heard of survives instead of being silently dropped.
+  built.rules = { ...(decl?.rules ?? {}), ...CLASS_RULES }
+  // `notes` are authored in this file too, so they are always rewritten — same staleness
+  // trap as the rules: a preserved prose block cannot describe a class it never heard of.
   writeFileSync(DECL_PATH, JSON.stringify(built, null, 2) + "\n")
   console.log(`wrote ${path.relative(ROOT, DECL_PATH)} (${Object.keys(built.types).length} types declared)`)
   console.log(`analyzer digest: ${built.meta.analyzerDigest}`)
