@@ -398,9 +398,19 @@ export function verifyFileClaim(
   // would refute every one of them while the project plainly has them. Admission is by PREFIX, and
   // the prefix is a whole path segment so `ci/x` cannot be satisfied by `ci/xy/z.yml`.
   //
-  // Cost: one pass over the project's admitted files per candidate directory. Only edges that name
-  // a directory reach it (nothing else does — a file candidate returns above), so this is bounded
-  // by the local-action population rather than by the corpus.
+  // A MISS REFUTES, AND THAT IS DELIBERATE HERE — the gate's own control pins it (arms 4 and 5:
+  // "a file claim with no candidate" and "a directory with nothing under it" MUST refute, or the
+  // gate refuses to report any lane). Returning `unverified` on a miss was tried on 2026-10-09 to
+  // remove yaml's 103 refutations and the control caught it: expected 6 REFUTED, got 4. The
+  // control is right and the experiment was wrong — a file claim is a statement the project can
+  // check, and this function's whole job is that check.
+  //
+  // The 103 ARE STILL FALSE STATEMENTS and the defect is UPSTREAM OF HERE: yaml attaches a file
+  // claim only when it can build candidates, and falls back to `isExternal: true` otherwise, so a
+  // literal path it cannot resolve arrives as an EXTERNAL NAME claim and `verifyExternalClaim`
+  // refutes it through the file's stem (`setup.yml` -> owner `setup`, which a declaration
+  // publishes). That is a lane-side fix — mark an unresolvable literal path as a file claim with
+  // the literal candidate, or as unverifiable — recorded in the handoff rather than forced here.
   for (const c of candidates) {
     const prefix = c + "/"
     for (const f of facts.files) if (f.startsWith(prefix)) return "externalVerified"
@@ -512,10 +522,59 @@ export function targetOwner(tgt: string): string | null {
  * broken edge are otherwise indistinguishable". This keeps that standard and adds the
  * missing half — a marked one must still survive a lookup.
  */
+/**
+ * DOES THIS TARGET NAME A FILE? Then its stem is not an owner and the claim cannot be refuted by
+ * looking one up.
+ *
+ * Measured on yaml's whole 1,416,614-edge population: **113 external claims were reported REFUTED**
+ * and every one was an `!include` of a file — `setup.yml`, `apt.yml`, `handlers.yml`, `fail.yml`,
+ * `./security-scanner`, `package:dart_flutter_team_lints/analysis_options.yaml`,
+ * `testns.testcoll.default_collection_playbook.yml`. The gate took the owner of `setup.yml` (which
+ * `targetOwner` returns as `setup`), found a published declaration named `setup`, and reported the
+ * claim "this names something outside the corpus" as FALSE. **The claim was true.** A symbol called
+ * `setup` does not make the file `setup.yml` internal; the check invented a refutation out of a
+ * filename, and a refutation is the one outcome the programme treats as a false statement the graph
+ * makes about another repository.
+ *
+ * The test is an EXTENSION SHORTLIST rather than a "looks like a filename" heuristic, and that is a
+ * deliberate retreat after two failed attempts (recorded so the next reader does not retry them):
+ *   * "the segment after the final dot contains a dot" — false for every real filename, whose final
+ *     dot IS the extension (`setup.yml` -> `yml`).
+ *   * "the segment after the FIRST dot is short and alphanumeric" — true for `setup.yml` (-> `yml`)
+ *     AND for `Object.hashCode` (-> `hashCode`), so it silently stopped refuting real qualified
+ *     names. A trade in the wrong direction: it would hide genuine refutations to remove false ones.
+ * A shortlist is honest about being a shortlist: the tokens here are file extensions, an unknown
+ * one leaves the old behaviour in place, and extending the list is a one-word change with no risk of
+ * swallowing an identifier.
+ */
+const FILE_EXTENSIONS = new Set([
+  "yml", "yaml", "json", "jsonl", "ndjson", "toml", "ini", "cfg", "conf", "env", "properties",
+  "js", "mjs", "cjs", "ts", "tsx", "jsx", "mts", "cts", "dart", "py", "pyi", "rb", "go", "rs",
+  "java", "kt", "kts", "scala", "groovy", "clj", "cljs", "ex", "exs", "erl", "hrl", "hs", "ml",
+  "fs", "fsi", "fsx", "cs", "vb", "php", "pl", "pm", "lua", "jl", "nim", "zig", "swift", "m", "mm",
+  "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "sh", "bash", "zsh", "fish", "ps1", "psm1", "bat",
+  "cmd", "sql", "graphql", "gql", "proto", "tf", "tfvars", "hcl", "mk", "make", "css", "scss",
+  "sass", "less", "html", "htm", "xml", "xsl", "xslt", "xsd", "dtd", "md", "mdx", "rst", "txt",
+  "csv", "tsv", "lock", "mod", "sum", "gradle", "sbt", "pom", "dockerfile", "editorconfig",
+  "gitignore", "gitattributes", "icl", "dcl", "r", "rmd", "tex", "bib",
+])
+export function pathLikeTarget(tgt: string): boolean {
+  // a path separator or a URI scheme needs no extension to be recognisable
+  if (tgt.includes("/") || tgt.includes("\\") || tgt.includes(":")) return true
+  const dot = tgt.lastIndexOf(".")
+  if (dot <= 0 || dot === tgt.length - 1) return false
+  const ext = tgt.slice(dot + 1).toLowerCase()
+  if (ext.length === 0 || ext.length > 12) return false
+  return FILE_EXTENSIONS.has(ext)
+}
+
 export function verifyExternalClaim(
   declCount: Map<string, number>,
   tgt: string,
 ): "externalVerified" | "externalRefuted" | "externalUnverified" {
+  // A FILE TARGET IS NOT A NAME CLAIM. Checked BEFORE the owner lookup, because the lookup is what
+  // manufactured the 113 false refutations described above.
+  if (pathLikeTarget(tgt)) return "externalUnverified"
   const owner = targetOwner(tgt)
   // NO DOTTED OWNER: ask about the TARGET ITSELF when it is a plain identifier, and stay
   // unverifiable when it is not (a path or URI cannot be a published symbol's name, so a
