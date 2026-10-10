@@ -144,11 +144,187 @@ type Row = {
   problems: string[]
   /** declared implemented but the 120-file log reads SILENT */
   unexplainedSilence: string[]
-  /** of those, the ones whose block cites a corpus-scope measurement (an existing artifact path) */
-  silenceWithCorpusEvidence: string[]
-  /** of those, the ones with no citation at all */
+  /** of those, the ones with a PER-TYPE count in `_implemented_measured` (the structured route) */
+  silenceCounted: string[]
+  /** of those, the ones a citation NAMES beside a count over an existing artifact (the prose route) */
+  silenceProseAttributed: string[]
+  /** of those, the ones with no attribution to THIS type at all — the defect this check exists for */
   silenceUncited: string[]
+  /** one line per silent type saying which route substantiated it, or why none did */
+  silenceDetails: string[]
 }
+
+// ---------------------------------------------------------------- shared token tests
+/**
+ * A token that is a NUMBER, not an identifier. Two earlier versions of the exclusion check were wrong
+ * in opposite directions and both are recorded in that block: v1 accepted any digit (so `ZZ-D1`
+ * satisfied it), v2 demanded a measurement unit (so `=0` failed). The bracket between them is the
+ * real distinction — a measurement contains a number that is not part of a NAME — so a candidate is a
+ * word, punctuation stripped, that either is dotted-and-uppercase or matches a dash-id.
+ */
+function isIdentifierToken(tok: string): boolean {
+  let letters = 0, uppers = 0, dots = 0
+  for (const c of tok) {
+    if (c >= "a" && c <= "z") letters++
+    else if (c >= "A" && c <= "Z") { letters++; uppers++ }
+    else if (c === ".") dots++
+  }
+  if (letters === 0) return false
+  let words = 1
+  for (const c of tok) if (c === ".") words++
+  if (dots >= 1 && uppers / letters > 0.8 && words >= 2) return true
+  let seenDash = false
+  for (let i = 0; i < tok.length; i++) {
+    const c = tok[i]
+    if (c === "-") {
+      if (i === 0 || i + 1 >= tok.length) return false
+      if (!(tok[i - 1] >= "A" && tok[i - 1] <= "Z")) return false
+      if (!(tok[i + 1] >= "A" && tok[i + 1] <= "Z")) return false
+      seenDash = true
+    }
+  }
+  if (!seenDash) return false
+  for (const c of tok) {
+    const ok = (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "-"
+    if (!ok) return false
+  }
+  return true
+}
+/** Does this text contain a COUNT — a digit run in a token that is not an identifier? */
+function hasCountToken(text: string): boolean {
+  for (const raw of text.split(/\s+/)) {
+    const tok = raw.replace(/[(),;'"]/g, "")
+    if (tok === "") continue
+    let digit = false
+    for (const c of tok) if (c >= "0" && c <= "9") digit = true
+    if (digit && !isIdentifierToken(tok)) return true
+  }
+  return false
+}
+/** Path-like tokens a citation could name as its artifact. */
+function pathTokensIn(text: string): string[] {
+  return text.split(/\s+/)
+    .map((w) => w.replace(/[.,;)]+$/, ""))
+    .filter((w) => w.includes("/") && (w.endsWith(".json") || w.endsWith(".md") || w.endsWith(".txt") || w.endsWith(".ts") || w.endsWith(".yaml")))
+}
+/** The bare comparison form of a token: punctuation stripped, lower-cased. */
+const bareToken = (tok: string): string => tok.replace(/[(),;:'"`\]]/g, "").toLowerCase()
+
+/**
+ * Is `t` NAMED BESIDE A COUNT in this text? The window rule is what makes this per-type rather than
+ * per-block: from each mention of `t`, scan forward at most eight tokens and STOP at another type
+ * name or a sentence end — so a citation that names `extends` with 53 edges cannot substantiate
+ * `calls` merely by sharing a paragraph with it.
+ */
+function namesTypeBesideACount(text: string, t: string, allTypes: string[]): boolean {
+  const toks = text.split(/\s+/)
+  const others = new Set(allTypes.filter((x) => x !== t))
+  for (let i = 0; i < toks.length; i++) {
+    if (bareToken(toks[i]) !== t) continue
+    for (let j = i + 1; j < Math.min(toks.length, i + 9); j++) {
+      const raw = toks[j]
+      const b = bareToken(raw)
+      if (others.has(b)) break
+      if (raw.endsWith(".") || raw.endsWith(";") || raw.endsWith(")")) break
+      const tok = raw.replace(/[(),;'"]/g, "")
+      let digit = false
+      for (const c of tok) if (c >= "0" && c <= "9") digit = true
+      if (digit && !isIdentifierToken(tok)) return true
+    }
+  }
+  return false
+}
+
+/**
+ * HOW A SILENT-BUT-DECLARED-IMPLEMENTED TYPE IS SUBSTANTIATED — per type, never per block.
+ *
+ * The defect this replaces was measured on hcl: the check asked whether ANY citation in the block
+ * named an EXISTING file, so `calls` and `overrides` were marked substantiated by citations about
+ * `extends`/`implements`/`instantiates`. One count anywhere cannot substantiate silence in ten
+ * different types. Two routes substantiate one:
+ *
+ *   counted  `coverage._implemented_measured[<type>]` — the convention julia's block established —
+ *            with a non-zero `edges`/`files` AND a `_unit` stating the population, because a count
+ *            with no population claim is the defect this whole programme keeps finding.
+ *   prose    a citation (`_from`, or an exclusion's `from`) that NAMES this type beside a count and
+ *            also names an artifact that EXISTS. Weaker than `counted` — a sentence is not a pointer —
+ *            so it is reported as its own route rather than folded in with it.
+ */
+function substantiationFor(blk: any, t: string, allTypes: string[]): { route: "counted" | "prose" | "none"; detail: string } {
+  const m = blk?._implemented_measured
+  if (m && typeof m === "object" && m[t] && typeof m[t] === "object") {
+    const e = m[t]
+    const edges = typeof e.edges === "number" ? e.edges : null
+    const files = typeof e.files === "number" ? e.files : null
+    const unit = typeof m._unit === "string" ? m._unit.trim() : ""
+    const bad: string[] = []
+    if (edges === null && files === null) bad.push("neither `edges` nor `files` is a number")
+    else if ((edges ?? 0) <= 0 && (files ?? 0) <= 0) bad.push(`the counts are zero (edges=${edges ?? "-"} files=${files ?? "-"})`)
+    if (unit === "") bad.push("`_unit` is missing, so the count's population is unstated")
+    for (const p of pathTokensIn(unit)) if (!existsSync(resolve(ROOT, p))) bad.push(`_unit names ${p}, which does not exist`)
+    if (bad.length === 0) return { route: "counted", detail: `${t}: edges=${edges ?? "-"} files=${files ?? "-"}` }
+    return { route: "none", detail: `${t}: _implemented_measured.${t} is not usable — ${bad.join("; ")}` }
+  }
+  const cites: string[] = []
+  if (typeof blk?._from === "string") cites.push(blk._from)
+  for (const x of Array.isArray(blk?.excluded) ? blk.excluded : []) if (typeof x?.from === "string") cites.push(x.from)
+  for (const c of cites) {
+    if (!namesTypeBesideACount(c, t, allTypes)) continue
+    const existing = pathTokensIn(c).find((p) => existsSync(resolve(ROOT, p)))
+    if (existing) return { route: "prose", detail: `${t}: named beside a count in a citation that also names ${existing} (prose, not pointer-verified)` }
+  }
+  return { route: "none", detail: `${t}: no \`_implemented_measured.${t}\` entry, and no citation names ${t} beside a count over an artifact that exists` }
+}
+
+// ---------------------------------------------------------------- the attribution check's control
+/**
+ * Rule-book §7: a guard with no live hits must be shown firing on a planted case. The defect this
+ * check replaces was invisible because nothing could tell "substantiated by a citation about THIS
+ * type" from "substantiated by a citation about another one" — so the control plants exactly that
+ * pair and requires the two answers to differ. It runs on EVERY invocation and exits 3 if any arm
+ * stops behaving.
+ *
+ * The artifact it cites is a committed fixture (`validation/m14/fixtures/hcl/ruling-space-control.json`),
+ * so the control needs no lane's census to be present.
+ */
+const ATTRIBUTION_CONTROL_ARTEFACT = "validation/m14/fixtures/hcl/ruling-space-control.json"
+function attributionSelfTest(verbose: boolean): { passed: number; failures: string[] } {
+  const A = ATTRIBUTION_CONTROL_ARTEFACT
+  const aboutOther = `NUMERATORS: extends 53 edges over 8 files (HCL-D10; ${A}).`
+  const aboutSame = `NUMERATORS: uses 12 edges over 3 files (whole corpus, ${A}).`
+  const spoofed = `NUMERATORS: uses extends 53 edges over 8 files (${A}).`
+  const arms: Array<{ name: string; want: "counted" | "prose" | "none"; blk: any }> = [
+    { name: "A a citation about ANOTHER type does not substantiate this one", want: "none", blk: { implemented: ["uses"], _from: aboutOther } },
+    { name: "B a per-type `_implemented_measured` count does", want: "counted", blk: { implemented: ["uses"], _from: aboutOther, _implemented_measured: { _unit: `whole corpus over ${A}`, uses: { edges: 12, files: 3 } } } },
+    { name: "C a citation that NAMES this type beside a count does (prose)", want: "prose", blk: { implemented: ["uses"], _from: aboutSame } },
+    { name: "D a mention whose count belongs to the NEXT type name does not", want: "none", blk: { implemented: ["uses"], _from: spoofed } },
+    { name: "E a per-type count with no `_unit` does not (population unstated)", want: "none", blk: { implemented: ["uses"], _from: aboutOther, _implemented_measured: { uses: { edges: 12, files: 3 } } } },
+    { name: "F a per-type count of zero does not", want: "none", blk: { implemented: ["uses"], _from: aboutOther, _implemented_measured: { _unit: `whole corpus over ${A}`, uses: { edges: 0, files: 0 } } } },
+  ]
+  const failures: string[] = []
+  let passed = 0
+  for (const a of arms) {
+    const got = substantiationFor(a.blk, "uses", TYPES).route
+    const ok = got === a.want
+    if (ok) passed++
+    else failures.push(`${a.name}: expected ${a.want}, got ${got}`)
+    if (verbose || !ok) console.log(`  ${ok ? "PASS" : "FAIL"} ${a.name} -> ${got}`)
+  }
+  return { passed, failures }
+}
+{
+  const control = attributionSelfTest(process.argv.includes("--self-test"))
+  const ok = control.failures.length === 0
+  console.log(`silence-attribution self-test: ${ok ? "PASS" : "FAIL"} — ${control.passed}/${control.passed + control.failures.length} arms ` +
+    `(fires on a citation about a DIFFERENT type; passes a per-type count or a prose mention beside a count)`)
+  if (!ok) {
+    console.error("ATTRIBUTION CONTROL FAILED — this gate refuses to report a substantiation its own control cannot distinguish.")
+    for (const f of control.failures) console.error(`  - ${f}`)
+    process.exit(3)
+  }
+  if (process.argv.includes("--self-test")) process.exit(0)
+}
+
 const problemsOf = new Map<string, string[]>()
 const rows: Row[] = []
 const fires = firingPerLane()
@@ -159,17 +335,17 @@ for (const lane of allLanes) {
   const abs = resolve(ROOT, rel)
   const problems: string[] = []
   if (!existsSync(abs)) {
-    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: ["no spec file"], unexplainedSilence: [], silenceWithCorpusEvidence: [], silenceUncited: [] })
+    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: ["no spec file"], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], silenceDetails: [] })
     continue
   }
   let doc: any
   try { doc = JSON.parse(readFileSync(abs, "utf8")) } catch (e) {
-    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: [`unparseable JSON: ${String(e).slice(0, 60)}`], unexplainedSilence: [], silenceWithCorpusEvidence: [], silenceUncited: [] })
+    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: [`unparseable JSON: ${String(e).slice(0, 60)}`], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], silenceDetails: [] })
     continue
   }
   const blk = doc?.coverage
   if (!blk || typeof blk !== "object" || !Array.isArray(blk.implemented)) {
-    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: [], unexplainedSilence: [], silenceWithCorpusEvidence: [], silenceUncited: [] })
+    rows.push({ lane, declared: false, implemented: 0, applicable: null, exclusions: 0, problems: [], unexplainedSilence: [], silenceCounted: [], silenceProseAttributed: [], silenceUncited: [], silenceDetails: [] })
     continue
   }
   const impl: string[] = blk.implemented.filter((t: any) => TYPES.includes(t))
@@ -241,44 +417,10 @@ for (const lane of allLanes) {
         // `A): an interface is an opaque container...` — a whole CLAUSE treated as one identifier —
         // and so failed zig's ZIG.O.2, whose block carries `0 of 28`. A detector that calls a
         // measured block prose trains the reader to ignore it, which is worse than no detector.
-        const isIdentifier = (tok: string): boolean => {
-          let letters = 0, uppers = 0, dots = 0
-          for (const c of tok) {
-            if (c >= "a" && c <= "z") letters++
-            else if (c >= "A" && c <= "Z") { letters++; uppers++ }
-            else if (c === ".") dots++
-          }
-          if (letters === 0) return false
-          let words = 1
-          for (const c of tok) if (c === ".") words++
-          if (dots >= 1 && uppers / letters > 0.8 && words >= 2) return true
-          // dash-id: `XX-D9`, `XX-D9b`, `X.O`-style already covered above
-          let seenDash = false
-          for (let i = 0; i < tok.length; i++) {
-            const c = tok[i]
-            if (c === "-") {
-              if (i === 0 || i + 1 >= tok.length) return false
-              if (!(tok[i - 1] >= "A" && tok[i - 1] <= "Z")) return false
-              if (!(tok[i + 1] >= "A" && tok[i + 1] <= "Z")) return false
-              seenDash = true
-            }
-          }
-          if (!seenDash) return false
-          // the tail must be an identifier tail: letters/digits only, no other punctuation
-          for (const c of tok) {
-            const ok = (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "-"
-            if (!ok) return false
-          }
-          return true
-        }
-        let hasCount = false
-        for (const raw of cited.split(/\s+/)) {
-          const tok = raw.replace(/[(),;'"]/g, "")
-          if (tok === "") continue
-          let digitRun = false
-          for (const c of tok) if (c >= "0" && c <= "9") digitRun = true
-          if (digitRun && !isIdentifier(tok)) { hasCount = true; break }
-        }
+        // The count test now lives in `hasCountToken` above, so the exclusion check and the
+        // silence check cannot drift apart: both ask the same question — is there a number in this
+        // text that is not part of a NAME.
+        const hasCount = hasCountToken(cited)
         if (!hasCount) problems.push(`exclusion "${label}" (${cls}) cites NO COUNT — rule-book §6: a ruling without a count is prose. Cited: "${cited.slice(0, 90)}"`)
         const tok = cited.split(/\s+/).find((wd: string) => wd.includes("/") && (wd.endsWith(".json") || wd.endsWith(".md") || wd.endsWith(".txt") || wd.endsWith(".ts") || wd.endsWith(".yaml")))
         if (tok && !existsSync(resolve(ROOT, tok.replace(/[.,;)]+$/, "")))) problems.push(`exclusion "${label}" cites a file that does not exist: ${tok}`)
@@ -311,25 +453,28 @@ for (const lane of allLanes) {
   //
   // A stride legitimately misses constructs (sql's `contains` read SILENT on 120 files and fired
   // 1,070 edges corpus-wide), so this is only a defect when the block ALSO cites nothing that could
-  // have established the whole-corpus count. `_from` is where a lane records that reading (php's is
-  // the model: "NUMERATORS (whole phpunit corpus, 3,231 .php files)"). A citation that names an
-  // EXISTING file counts; a citation that names a file which is not there does not, because a
-  // reference to a missing artifact is exactly the HCL-D1 failure mode this programme has already
-  // paid for once.
+  // have established the whole-corpus count FOR THAT TYPE.
+  //
+  // PER TYPE, NOT PER BLOCK — and that is a correction, not a nuance. Until 2026-10-09 this loop
+  // collected every citation in the block, kept the tokens that looked like paths, and substantiated
+  // a type if ANY of them existed. Measured on hcl: `calls` and `overrides` were marked substantiated
+  // by citations about `extends`/`implements`/`instantiates`. A check whose purpose is "a declaration
+  // claiming what nothing measured" was satisfied by a measurement of something else, and every
+  // `cited` row on the board was weaker than it read. `substantiationFor` above is the replacement:
+  // a structured per-type count, or a citation that NAMES this type beside a count over an existing
+  // artifact.
   const f = firingFor(lane, fires)
-  const unexplained: string[] = [], withEvidence: string[] = [], uncited: string[] = []
+  const unexplained: string[] = [], counted: string[] = [], prose: string[] = [], uncited: string[] = [], details: string[] = []
   if (f) for (const t of impl) if (f.silent.has(t)) {
     unexplained.push(t)
-    const cites: string[] = []
-    const from = typeof blk._from === "string" ? blk._from : ""
-    if (from !== "") cites.push(from)
-    for (const x of excluded) if (typeof x === "object" && typeof x?.from === "string") cites.push(x.from)
-    const citedFiles = cites.flatMap((c) => c.split(/\s+/)).filter((w) => w.includes("/"))
-    const anyExists = citedFiles.some((w) => existsSync(resolve(ROOT, w.replace(/[.,;)]+$/, ""))))
-    if (anyExists) withEvidence.push(t); else uncited.push(t)
+    const s = substantiationFor(blk, t, TYPES)
+    details.push(s.detail)
+    if (s.route === "counted") counted.push(t)
+    else if (s.route === "prose") prose.push(t)
+    else uncited.push(t)
   }
 
-  rows.push({ lane, declared: true, implemented: impl.length, applicable, exclusions: excluded.length, problems, unexplainedSilence: unexplained, silenceWithCorpusEvidence: withEvidence, silenceUncited: uncited })
+  rows.push({ lane, declared: true, implemented: impl.length, applicable, exclusions: excluded.length, problems, unexplainedSilence: unexplained, silenceCounted: counted, silenceProseAttributed: prose, silenceUncited: uncited, silenceDetails: details })
   if (problems.length) problemsOf.set(lane, problems)
 }
 
@@ -343,9 +488,10 @@ if (JSON_MODE) {
   console.log(`coverage-block gate — ${allLanes.length} lanes, reading ${SPEC_DIR} directly (not the board's rendering)`)
   console.log(`firing log ${FIRING_LOG} — ${fires.size} lane rows\n`)
   console.log(`${w("lane", 12)} ${w("declared", 9)} ${w("impl", 5)} ${w("appl", 5)} ${w("excl", 5)} ${w("silent-but-implemented", 40)} problems`)
+  console.log(`${" ".repeat(12)} ${" ".repeat(9)} ${" ".repeat(5)} ${" ".repeat(5)} ${" ".repeat(5)} (plain = per-type count · ~ = prose-attributed · ? = UNSUBSTANTIATED for this type)`)
   console.log("-".repeat(130))
   for (const r of rows) {
-    const sil = r.unexplainedSilence.map((t) => (r.silenceUncited.includes(t) ? `${t}?` : t)).join(" ")
+    const sil = r.unexplainedSilence.map((t) => (r.silenceUncited.includes(t) ? `${t}?` : r.silenceProseAttributed.includes(t) ? `${t}~` : t)).join(" ")
     console.log(
       `${w(r.lane, 12)} ${w(r.declared ? "yes" : "NO", 9)} ${w(r.declared ? r.implemented : "-", 5)} ` +
       `${w(r.applicable ?? "-", 5)} ${w(r.declared ? r.exclusions : "-", 5)} ` +
@@ -356,17 +502,23 @@ if (JSON_MODE) {
   const broken = rows.filter((r) => r.problems.length > 0)
   const unexplained = rows.filter((r) => r.unexplainedSilence.length > 0)
   const uncited = rows.filter((r) => r.silenceUncited.length > 0)
+  const say = (n: number) => n.toLocaleString()
+  const nCounted = unexplained.reduce((n, r) => n + r.silenceCounted.length, 0)
+  const nProse = unexplained.reduce((n, r) => n + r.silenceProseAttributed.length, 0)
+  const nUncited = unexplained.reduce((n, r) => n + r.silenceUncited.length, 0)
   console.log()
   console.log(`declared ${rows.length - undeclared.length}/${rows.length}   blocks with problems ${broken.length}   lanes with silence ${unexplained.length}   of those, UNCITED ${uncited.length}`)
+  console.log(`SILENT-BUT-DECLARED-IMPLEMENTED, attributed PER TYPE: ${say(nCounted)} with a per-type count · ${say(nProse)} prose-attributed · ${say(nUncited)} UNSUBSTANTIATED`)
   if (undeclared.length) console.log(`NOT DECLARED (board falls back to prose+log, which is conservative but not a contract): ${undeclared.map((r) => r.lane).join(" ")}`)
   if (unexplained.length) {
     console.log()
-    console.log(`SILENT ON THE 120-FILE STRIDE BUT DECLARED IMPLEMENTED — a trailing \`?\` marks a type whose`)
-    console.log(`block cites no existing artifact. Not automatically wrong: sql's \`contains\` read SILENT on 120`)
-    console.log(`files and fired 1,070 edges corpus-wide. But §7.2 wants a MEASURED verdict per silent type,`)
-    console.log(`so each needs a whole-corpus count behind it, and \`?\` means there is nowhere to read one.`)
+    console.log(`SILENT ON THE 120-FILE STRIDE BUT DECLARED IMPLEMENTED — every type below is attributed ON ITS OWN,`)
+    console.log(`never by a citation about a different type. Not automatically wrong: sql's \`contains\` read SILENT on`)
+    console.log(`120 files and fired 1,070 edges corpus-wide. §7.2 wants a MEASURED verdict per silent type, so each`)
+    console.log(`needs a whole-corpus count behind IT, and \`?\` means there is nowhere to read one for that type.`)
     for (const r of unexplained) {
-      console.log(`  ${w(r.lane, 12)} cited: ${w(r.silenceWithCorpusEvidence.join(" ") || "-", 34)} uncited: ${r.silenceUncited.join(" ") || "-"}`)
+      console.log(`  ${w(r.lane, 12)} counted: ${w(r.silenceCounted.join(" ") || "-", 22)} prose: ${w(r.silenceProseAttributed.join(" ") || "-", 22)} uncited: ${r.silenceUncited.join(" ") || "-"}`)
+      for (const d of r.silenceDetails) if (r.silenceUncited.some((t) => d.startsWith(`${t}:`))) console.log(`      ${d}`)
     }
   }
   if (broken.length) {
