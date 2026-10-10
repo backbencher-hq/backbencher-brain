@@ -3322,13 +3322,24 @@ currentPackage,
             isWrite = !!lhs && lhs.startIndex === node.startIndex
           }
           const isDeclaredMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
-          // A bare read of a declared member is sourced at the DECLARING TYPE, not at the
-          // method that reads it. All four `uses` rows this lane's truth expects are
-          // type-sourced -- `User -> id` ("getId() returns field id of the enclosing User
-          // instance"), `User -> name`, `Status -> ACTIVE`, `Status -> PENDING` -- and not
-          // one is method-sourced, so `method ?? owner` guaranteed a false negative for
-          // every one of them.
-          const readSource = owner ?? method
+          // METHOD source, not type source. M49 W15 #814 is an OWNER RULING, not a
+          // preference: the family (java/javascript/swift, with python/dart/cpp already
+          // agreeing) attributes a member read to the METHOD that performs it, so that
+          // `x calls read` + `read uses count` composes into reachability. This block
+          // used to source the bare form at the TYPE (`owner ?? method`) with a comment
+          // claiming "this lane's truth expects" four type-sourced rows — and that claim
+          // is unsupported: the java `uses` oracle (differential.ts deriveJavaUsesTruth)
+          // wildcards the source as `(expr)`, so method-sourcing produces no false
+          // negative there, while the ruling's own fixture pair forbids exactly the
+          // spelling this block emitted. The inconsistency was visible in ONE body: the
+          // dotted read of `this.count` was method-sourced (fixture member-read-source)
+          // while the bare `count` read beside it was type-sourced. The defect had a
+          // fixture and two mutants waiting for it — bare-member-read-uses pinned
+          // `from: bare` and stayed RED, and java/bare-read-type-attribution (re-source
+          // bare reads to the type) SURVIVED the mutation suite because the mutant and
+          // the live code were the same shape. With this fix the fixture passes and the
+          // mutant dies.
+          const readSource = method ?? owner
           const key = readSource ? `${readSource}.#${txt}` : null
           if (
             !memberish &&
