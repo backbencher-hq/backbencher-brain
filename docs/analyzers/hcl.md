@@ -357,6 +357,52 @@ does not declare (or the index does not hold) the name it spells. That is a wron
 change WOULD fix, and it is priced at 78 edges for this project, not 68,299 — a different decision
 from the one the model's number suggested, and one that needs the whole population before it is taken.
 
+### Cause 2 — `exports` amb 18,471: the gate's second count-model artifact, AND a real wrong-binding class under it
+
+The gate's `amb(decl)` for a non-`contains` type is a count model too: production's `resolveTargetStmt`
+is `LIMIT 1` as well, so a row is always written. But the indexer's own comment on that statement is
+decisive about what the row MEANS — it orders by `s.id` alone, which is `${fileId}:${name}:${line}`
+compared as TEXT, so "it is the LEXICOGRAPHICALLY smallest line that wins, NOT the intended symbol",
+with a measured control arm of 37,318 of 49,729 ambiguous edges bound to the WRONG symbol. So the
+honest question is not "resolved or ambiguous" but "bound to the INTENDED declaration or to an
+arbitrary twin".
+
+Measured with the store (terragrunt, even-stride draw of 900 files → **894 indexer-eligible**,
+4,389 symbols, 7,609 relationship rows; report
+`validation/m14/fixtures/hcl/store-binding-truth.terragrunt-900.json`). For `contains` and `exports`
+the analyzer writes the edge on the TARGET SYMBOL's own start line, so OWN FILE + OWN LINE is the
+intent test:
+
+| type | store rows | bound | own file + own line | own file off-line | other file | unbound | model amb |
+|---|---|---|---|---|---|---|---|
+| contains | 5,728 | 5,698 (99.5%) | **5,417 (94.6%)** | 12 | 269 (4.7%) | 30 | 2,632 |
+| exports | 1,273 | 1,272 (99.9%) | **1,075 (84.4%)** | **0** | **197 (15.5%)** | 1 | 1,087 |
+| references | 566 | 503 (88.9%) | 32 (5.7%) | 240 | 231 (40.8%) | 63 | 41 |
+
+Verdict, in two halves:
+
+1. **`exports`' 18,471 "ambiguous" is a count-model artifact in the same way `contains`' 68,299 was** —
+   99.9% of exports rows bind. `fa2dc27e8`'s correction applies to it too; a lane must not rename its
+   identifier space on that number.
+2. **But 15.5% bind to ANOTHER file's identically named declaration, and that is a real wrong edge.**
+   The intent test is exact for exports: **every same-file binding is on its own line (1,075/1,075,
+   0 off-line)**, and 197 rows cross the file boundary — 139 of them landing on a same-line twin in a
+   different file, which is the arbitrary pick the `s.id` ordering produces. `contains` crosses the
+   boundary at 4.7%, `exports` at 15.5%: the store distinguishes them, the gate's single ratio does
+   not. **The gate needs a THIRD outcome** — `bound-to-an-arbitrary-twin` — or the 15.5% hides inside
+   a number that reads as success.
+3. The name-space lever is therefore justified for `exports` (and probably `references`), NOT for
+   `contains`: exports' edge names the DOCUMENT's own export, so a cross-file binding is wrong by
+   construction, while `contains` is resolved by production with its own statement against the edge's
+   own file. Priced from this sample: ~15.5% of 23,103 exports edges ≈ 3,600 rows project-wide, to be
+   confirmed on the whole population before any rename.
+
+`references` in the same sample: the model calls 514 of 566 unresolved, the store binds 503 — so the
+model OVERSTATES unresolved there too (production's I13 pass rebinds a non-dotted target by name
+ranked same-file-first). Its intents are not measurable by line (the edge line is the READ SITE), and
+231 of 503 bound rows cross a file boundary — the next cause to price, and the one where a declared
+external claim (provider types, `var.*` module inputs) is the likely verdict rather than a rename.
+
 ### A population finding the comparison forced: the gates classify files the indexer never reads
 
 The probe asked production's OWN discovery (`discoverIndexableFiles`) what it would index, and for
