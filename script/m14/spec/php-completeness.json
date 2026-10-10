@@ -194,6 +194,28 @@
         "measuredBy": "npx tsx validation/m14/fixtures/php/override-scope-census.mts",
         "artifact": "validation/m14/fixtures/php/override-scope-census.json",
         "control": "same-file edges counted by the same walker == 2 == `derivePhpOverridesTruth`'s committed total over the same 5,094 files"
+      },
+      {
+        "id": "PHP-UNRESOLVED-USES",
+        "type": "incoming residual — DECLARED BOUNDARY of per-file analysis, not a missing emission",
+        "status": "RULED 2026-10-10 (Lead ruling (a)): ruled with its count, NOT closed",
+        "size": "52,917 of 155,016 `uses` edges (34.1%) are unresolved over the whole admitted population (`npx tsx script/m14/residual-gate.ts --lane php`)",
+        "whyItIsOpen": "The targets are generic member names read off a receiver whose TYPE the tree does not state — `request` 1,819, `expected` 1,259, `i` 958, `actual` 761, `node` 545 (whole population, production path). A per-file analyzer knows a receiver's class only for `$this->`, `self::`, `static::`, `parent::` and a NAMED receiver; for `$response->metadata` it knows nothing, and the name itself cannot say which declaration is meant. The owner-qualification pass (cd0c77546) closes exactly the half the file can PROVE — 12,849 edges moved ambiguous -> resolved — and this is the half it cannot. MEASURED, not asserted: only 338 of the 57,729 owner-carrying unresolved edges are this shape in the sense that matters (they carry an owner and the owner's chain is outside the file); the rest have no receiver class at all.",
+        "whatWouldCloseIt": "TYPE RESOLUTION — a different instrument (an index-assisted or type-aware pass that knows what a local variable holds). FALSIFIER: if such an instrument lands and this class does not fall, this ruling is refuted and the work reopens. A per-file name rule cannot close it: any name-keyed rule that bound these would be picking among candidates by a rule nobody chose, which is the defect the owner channel was built to remove.",
+        "measuredBy": "npx tsx validation/m14/fixtures/php/tools/unresolved-shape-probe.mts (PRODUCTION path: `parseFile` from pool-worker)",
+        "artifact": ".tmp-php-unresolved-shape2.log",
+        "control": "the same probe splits the owner-carrying subset from the receiver-less one, so the boundary is shown to be the RECEIVER's type and not the member name; and the incoming gate's own `ofWhich=0` for `uses` proves the resolutions this lane does make are not tie-break picks"
+      },
+      {
+        "id": "PHP-UNRESOLVED-CALLS",
+        "type": "incoming residual — DECLARED BOUNDARY of per-file analysis; an external claim was MEASURED and REFUSED",
+        "status": "RULED 2026-10-10 (Lead ruling (a)): ruled with its count, NOT closed",
+        "size": "21,279 of 103,190 `calls` edges (20.6%) are unresolved over the whole admitted population",
+        "whyItIsOpen": "A vendor library's API called from a project that does not contain the library: PHPUnit's `assertSame` 4,857, `__` 3,315, `assertStringContainsString` 1,078, `willReturn` 882. The analyzer sees ONE FILE, so it cannot know whether the vendor is vendored IN THIS PROJECT — and that is the reason the boundary is real rather than a gap this lane failed to close.",
+        "whatWouldCloseIt": "A PER-PROJECT instrument (the store holds the project key space; the analyzer holds one file). FALSIFIER: if a store-side or index-assisted instrument that is checked by something the store does NOT control lands, this ruling is refuted. A store pass that marks a row external on 'its target names nothing in the project' is REFUSED BY RULING: the gate would then verify with the same test over the same key space, so the claim would verify by construction, extFAIL would become structurally 0, and the marker would stop carrying information — the laundering `incoming-rule.ts` warns about.",
+        "measuredBy": "npx tsx validation/m14/fixtures/php/tools/owner-claim-crosstab.mts (per PROJECT, production path)",
+        "artifact": ".tmp-php-claim-crosstab.log",
+        "control": "THE CLAIM ROUTE WAS MEASURED BEFORE BEING REFUSED: attaching the external marker to owner-carrying member edges would verify 12,235 and REFUTE 67,893 (calls 11,897 verify / 42,780 refute; uses 338 / 25,113) — 5.5 refutations per verification. The same name splits by project (`assertSame` 4,851 verify / 2,400 refute) and the refutations sit exactly where the library IS declared (phpunit 29,444, phpmyadmin 26,869, gql 10,306). Worse than useless, because THE GATE CHECKS A CLAIM BEFORE THE COUNT: a wrongly-attached claim does not merely fail to help, it BREAKS an edge that resolves today."
       }
     ],
     "adjudicatedFromGaps": {
