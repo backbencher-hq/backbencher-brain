@@ -170,11 +170,14 @@ shadow `String`, so the marker cannot claim it) and `third-party` (needs a depen
 - Census (`java-incoming-census.ts`, 200 files): **exit 0**, equality control PASS — every
   per-type count equals `incoming-gate.ts --json`; marker finding **none** (every
   platform-qualified target is marked)
-- Honesty ledger: F3 (fixtures) and F7 (analyzer hygiene, 25 analyzers clean) were fresh
-  before this lane's commits and stale after them, so they were regenerated — in a CLEAN
-  worktree at `e462a3797`, because the shared tree carried another lane's uncommitted
-  JavaScript work (a shared-tree attempt reported vue/svelte/html fixture regressions the
-  clean checkout does not reproduce: 0 regressions there). F3 now records java at 52/63.
-  F1/F2/F4/F5/F8/F9 remain red from pre-existing work (2/12/3/84/3/3 changed inputs before
-  this lane's commits)
+- Honesty ledger, after this round: **F1, F2, F3, F7, F9 current** — every regeneration ran in a
+  CLEAN worktree of the commit it stamps, because the shared tree carries another lane's
+  uncommitted JavaScript work (a shared-tree fixture run reported vue/svelte/html regressions
+  the clean checkout does not reproduce: 0 there). F3 records java at 52/63; F9 went from
+  2 failing probes to **52/52 pass** by repairing the two stale ones (php's deleted 0.5 guess;
+  clean's imported-constructor expectation) — repairable evidence, not silenced checks.
+  **F4, F5, F8 remain red for reasons this machine cannot fix:** F5 and F8 need corpora that do
+  not exist here (`grails-core`, `Exposed`, `vue-core` — F8's 16 failing rows are literally
+  `corpus missing: <repo>`, and regenerating would replace canonical evidence with local
+  "corpus missing" rows), and F4 is a 1,836-mutant run over other lanes' analyzers.
 - Mutation hardening: 4 java-specific mutants ALL CAUGHT (incl. drop-declared-types)

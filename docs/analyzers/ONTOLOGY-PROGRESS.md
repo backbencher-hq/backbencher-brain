@@ -212,8 +212,26 @@ worktree at `e462a3797`** because the shared tree was carrying another lane's
 uncommitted JavaScript work: a first attempt in the shared tree reported fixture
 regressions (vue 5→7, svelte 9→10, html 1→4) that the clean checkout does **not**
 reproduce (0 regressions there), which is the control showing those belong to the
-other lane's working tree. Still red and **pre-existing**: F1/F2/F4/F5/F8/F9,
-each already carrying 2/12/3/84/3/3 changed inputs before this lane's commits.
+other lane's working tree.
+
+The fleet round that followed regenerated the rest of the freshness set the same
+way — every producer in a clean worktree of the commit it stamps: **F1 45/45
+languages**, **F2** (whose input set is all of `script/m14/`, so it re-stales on
+any script edit and was regenerated twice), and **F9 52/52 probes**. F9 had been
+release-blocked by two probes, and neither failure was an analyzer defect: both
+asserted contracts the lanes had already deleted by ruling — php's 0.5
+external-base override guess (M12.PHP-OVERRIDE-AUDIT: 66.7% false, below the 0.7
+publish threshold, so the expectation INVERTS and publishing one now fails the
+probe) and clean's `instantiates -> Just` on a snippet that IMPORTS Just (the
+lane's in-file-by-construction rule refuses it by design; the repaired probe
+declares its constructor and still discriminates HEAD from BODY). A stale probe is
+repaired against its ruling, never silenced.
+
+Still red and **not fixable on this machine**: F5 and F8 need corpora this
+checkout does not have (`grails-core`, `Exposed`, `vue-core` — F8's 16 failing
+rows are literally `corpus missing: <repo>`, and regenerating here would replace
+canonical evidence with local "corpus missing" rows); F4 is a 1,836-mutant run
+over other lanes' analyzers.
 
 ## Still to do at integration
 
@@ -224,6 +242,6 @@ each already carrying 2/12/3/84/3/3 changed inputs before this lane's commits.
   findings, and the fleet run still fails on other lanes' 91 NEW findings against
   a recorded debt of 104 (69 repaid) — that baseline is theirs to refresh.
 - Re-run the m14 grammar, mutation, differential and fixture gates per lane.
-- Refresh the honesty artifacts F1/F2/F4/F5/F8/F9 — stale since before the Java
-  lane's commits (2/12/3/84/3/3 changed inputs), so they are theirs to regenerate,
-  not this lane's.
+- Refresh F4 (mutation, 1,836 mutants) and F5/F8 (differential, corpus census) on a
+  machine that holds the pinned corpora — the artifacts' `corpus missing` rows are
+  an environment property, not a measurement, and must not be overwritten locally.
