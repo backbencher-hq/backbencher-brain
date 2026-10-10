@@ -31,11 +31,27 @@
  * next file starts means the log survives an arbitrary kill, because each line was
  * already on disk before the thing that could kill us began.
  *
- * Two markers, both recorded, neither silently dropped:
+ * Three markers, all recorded, none silently dropped:
  *   `<path>`      walked successfully
- *   `!<path>`     the walk gave up on this file — parse error OR a process-killing
- *                 hang. Re-running SKIPS it, so one poison file costs one file rather
- *                 than every subsequent run.
+ *   `!<path>`     the walk gave up on this file — the parse THREW. Re-running SKIPS it,
+ *                 so one poison file costs one file rather than every subsequent run.
+ *   `?<path>`     this file was IN FLIGHT when the process ended. A hang cannot throw —
+ *                 the 120s bomb is `process.exit()`, and tree-sitter's WASM can trap with
+ *                 `memory access out of bounds` and then hang the NEXT parse — so the
+ *                 marker is written BEFORE the parse starts and a `?` with no `<path>` and
+ *                 no `!<path>` beside it IS the file the run died on. Re-running SKIPS it.
+ *
+ * The `?` marker is the whole difference between a walk that can finish and one that
+ * cannot: measured on the TypeScript corpus (10,328 files), the walk reached ~4,230 files,
+ * trapped on a file that parses CLEAN IN ISOLATION (1.2s, 16 relationships), and the next
+ * parse hung until the guard killed the process. Because the success line for the dead file
+ * was never written, every re-run resumed at the same file and died there again — a stall at
+ * 4,230/10,328 files that looked like a slow corpus rather than a permanent one.
+ *
+ * The cost is stated rather than hidden: a kill sacrifices at most `concurrency` files, and
+ * they are abandoned (never retried) because the file that killed the run is not
+ * distinguishable from the seven that were merely in flight beside it. That is why the
+ * abandoned count is REPORTED, not subtracted.
  *
  * ## The rule this file follows
  *
@@ -59,6 +75,13 @@ export interface WalkStats {
   walked: number
   /** Files abandoned permanently, because they hang or cannot be parsed. */
   skippedBad: number
+  /**
+   * Files abandoned because a PREVIOUS run was killed while they were in flight — a hang,
+   * a WASM trap, an OOM, an interrupt. Counted separately from `skippedBad` because the two
+   * are different evidence: `skippedBad` is a file that threw and was seen throwing, this
+   * is a file that was never heard from again.
+   */
+  died: number
   /** Files present this run but absent from the checkpoint's history. */
   fresh: number
   /**
@@ -72,30 +95,38 @@ export interface WalkStats {
 }
 
 const MARK_BAD = "!"
+const MARK_INFLIGHT = "?"
 
 /**
- * Load a checkpoint into two sets: completed and known-bad.
+ * Load a checkpoint into three sets: completed, known-bad, and never-heard-from-again.
  *
  * Tolerant of a truncated final line, which is what a kill mid-append leaves behind.
  * Dropping one partial path costs one re-walk; refusing to start costs the whole run.
  */
-function loadCheckpoint(path: string): { done: Set<string>; bad: Set<string> } {
+function loadCheckpoint(path: string): { done: Set<string>; bad: Set<string>; died: Set<string> } {
   const done = new Set<string>()
   const bad = new Set<string>()
-  if (!existsSync(path)) return { done, bad }
+  const inflight = new Set<string>()
+  if (!existsSync(path)) return { done, bad, died: new Set<string>() }
   let raw: string
   try {
     raw = readFileSync(path, "utf8")
   } catch {
-    return { done, bad }
+    return { done, bad, died: new Set<string>() }
   }
   for (const line of raw.split("\n")) {
     const t = line.trim()
     if (!t) continue
     if (t.startsWith(MARK_BAD)) bad.add(t.slice(1))
+    else if (t.startsWith(MARK_INFLIGHT)) inflight.add(t.slice(1))
     else done.add(t)
   }
-  return { done, bad }
+  // A `?` whose file also has a `<path>` or `!<path>` line was in flight in a run that
+  // survived it — a stale marker, not a death. Only a `?` with neither is evidence that the
+  // process ended while that file was being parsed.
+  const died = new Set<string>()
+  for (const p of inflight) if (!done.has(p) && !bad.has(p)) died.add(p)
+  return { done, bad, died }
 }
 
 export interface WalkOptions {
@@ -119,11 +150,11 @@ export async function resumableWalk(
   opts: WalkOptions,
 ): Promise<WalkStats> {
   mkdirSync(dirname(checkpointPath), { recursive: true })
-  const { done, bad } = loadCheckpoint(checkpointPath)
+  const { done, bad, died } = loadCheckpoint(checkpointPath)
 
   const isDone = (i: number) => {
     const id = opts.id(i)
-    return done.has(id) || bad.has(id)
+    return done.has(id) || bad.has(id) || died.has(id)
   }
 
   // A file the checkpoint knows about but this run does not offer is history from a
@@ -142,6 +173,7 @@ export async function resumableWalk(
     alreadyDone,
     walked: 0,
     skippedBad: bad.size,
+    died: died.size,
     fresh: 0,
     partial: false,
     checkpoint: checkpointPath,
@@ -162,6 +194,12 @@ export async function resumableWalk(
       const i = todo[cursor++]
       if (i === undefined) return
       const id = opts.id(i)
+      // Written BEFORE the parse, because the failure this guards cannot report itself:
+      // a WASM trap is followed by a HANG, and the hang is answered with process.exit(),
+      // which cannot flush anything. appendFileSync is synchronous, so this line is on disk
+      // before the parse begins, and a kill leaves a `?` behind that names the file.
+      appendFileSync(checkpointPath, `${MARK_INFLIGHT}${id}\n`)
+      appendedSinceFlush++
       try {
         await opts.run(i)
         stats.walked++
@@ -181,7 +219,7 @@ export async function resumableWalk(
   const n = Math.max(1, opts.concurrency ?? 4)
   await Promise.all(Array.from({ length: n }, () => worker()))
 
-  stats.partial = stats.skippedBad > 0 || stats.walked + stats.alreadyDone < count
+  stats.partial = stats.skippedBad > 0 || stats.died > 0 || stats.walked + stats.alreadyDone < count
   opts.onDone?.(stats)
   return stats
 }
@@ -193,7 +231,7 @@ export function resetCheckpoint(path: string): void {
 }
 
 /** Read a checkpoint's contents, for reporting. */
-export function readCheckpoint(path: string): { done: string[]; bad: string[] } {
-  const { done, bad } = loadCheckpoint(path)
-  return { done: [...done], bad: [...bad] }
+export function readCheckpoint(path: string): { done: string[]; bad: string[]; died: string[] } {
+  const { done, bad, died } = loadCheckpoint(path)
+  return { done: [...done], bad: [...bad], died: [...died] }
 }

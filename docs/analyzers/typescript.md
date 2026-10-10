@@ -44,7 +44,15 @@ Same rules as JVM family. Heritage edges structural. Calls usage_contextual.
   `heritage-parameterized-leaves`, `re-export-empty-clause`, `re-export-module-dependency`,
   `type-predicate-and-constraint-refs`, `type-reference-uses-surfaces`. Measured
   2026-10-10 with `bun run script/m14/run-fixtures.ts --lang typescript` at `04b89f377`.
-- Corpus: vue-core@f8975657 differential 100% coverage / 0.9% unexplained
+- Corpus: `vue-core@f8975657` differential 100% coverage / 0.9% unexplained — **not
+  reproducible in this checkout**: there is no `vue-core` directory under the corpus root
+  (the Vue core clone here is named `vuejs`, at a different commit), the pinned revision is
+  not in it, and this machine has no network (`git fetch` → `Proxy CONNECT aborted`). The
+  lane's scoped differential therefore runs on the corpus that IS present —
+  `bun script/m14/differential.ts --repo element-plus --lang typescript` → **exit 0**, 90.3%
+  coverage, `unexplained 23 (2%)` naming only `references` and `uses`. Restoring the pin is a
+  corpus-registry job: clone vuejs/core at `f8975657d7451d8e4291406427e6a8ae5e50c8d5` as
+  `<corpus root>/vue-core` (per `validation/m11/corpus-manifest.json`), then re-run unscoped.
 - Grammar audit: PASS (union oracle: TS + TSX + JS)
 
 ## Relationship-type coverage — all ten, registered (2026-10-09)
@@ -60,5 +68,27 @@ Same rules as JVM family. Heritage edges structural. Calls usage_contextual.
   (28,417 ambiguous · 4,626 by-design · 7,335 not provable) is declared with a
   ceiling per class. "All ten types covered" is measured; "all edges resolve" is
   not the claim — the gate prints the backlog on every run.
+- **Arbiter (emission, whole corpus): 10/10 EMITTED** — `npx tsx
+  script/m14/ontology-coverage-gate.ts typescript` → **exit 0**, walk 10,328/10,328
+  (100.0%), `FALSIFIED 0`, `ruled-without-justification 0`. This used to exit 2 with
+  "no RULING SOURCE" — the lane has no un-emitted type to rule, and the guard read that
+  absence as missing evidence. It now says which verdict it gives: *all 10 EMITTED, this
+  run adjudicates EMISSION, not rulings*.
 - The sweep's measurements live in `docs/analyzers/typescript-ambiguity-sweep.md`;
   the fleet-level registration is in `docs/analyzers/ONTOLOGY-PROGRESS.md`.
+
+## The walk that would not finish (fixed 2026-10-10)
+Full-corpus TS runs kept dying at **4,230/10,328 files** and re-running always resumed
+into the same death. It is not a bad file: the file named in both the trap and the hang
+(`metabase/…/HighlightExpression/utils.ts`, 32 lines) parses clean **alone** in 1.2 s with
+16 relationships. A WASM trap (`memory access out of bounds`) corrupts the tree-sitter
+module, the next parse hangs, and the 120 s guard answers a hang with `process.exit()` —
+which cannot flush a checkpoint. The walk recorded a file only after its parse succeeded,
+so the killer was never recorded and every re-run re-walked it.
+`script/m14/resumable-walk.ts` now appends an **in-flight marker before each parse**; a kill
+leaves `?<path>` behind, the next run abandons that path (reported as
+`ABANDONED-AFTER-KILL`, never retried) and carries on. The walk now covers all 10,328 files
+and the arbiter above is the verdict that was previously unreachable.
+`script/m14/resumable-walk-selftest.ts` drives the path with a real child-process kill
+(7/7 checks); cost, stated rather than hidden: a kill sacrifices up to `concurrency`
+in-flight files, and they are named in the checkpoint.

@@ -416,8 +416,10 @@ if (process.argv.includes("--coverage")) {
   console.log(`lanes this arbiter can rule for: ${LANGS_WITH_TABLES.length}`)
   for (const l of LANGS_WITH_TABLES) console.log(`  ${l}`)
   console.log()
-  console.log("Every other lane exits 2 with no verdict, because an empty table would call every")
-  console.log("un-emitted type RULED-UNJUSTIFIED, and that is a verdict about the TABLE, not the lane.")
+  console.log("Every other lane WITH AN UN-EMITTED TYPE exits 2 with no verdict, because an empty")
+  console.log("table would call that type RULED-UNJUSTIFIED — a verdict about the TABLE, not the lane.")
+  console.log("A lane that emits all ten has nothing to rule on: it is adjudicated on EMISSION, with a")
+  console.log("note saying so, because a walk that measured 10/10 is not the same as a ruling that agreed.")
   console.log("A ruling table encodes that lane's OWN corpus probe — its node types, its counts — so it")
   console.log("is written by the lane that measured it, not centrally. See RULED_BY_LANG above.")
   process.exit(0)
@@ -443,15 +445,31 @@ if (RULED_BY_LANG[LANG] === undefined) {
   // corpus-measured one.
   const unEmittedForGuard = ALL_TYPES.filter((t) => (observed.get(t)?.n ?? 0) === 0)
   const ruledFromSpec = unEmittedForGuard.filter((t) => rulingFor(t) !== null)
-  if (ruledFromSpec.length === 0) {
+  if (unEmittedForGuard.length === 0) {
+    // NOTHING TO RULE ON — and that is not the same as having no ruling source.
+    //
+    // The refusal below exists because an EMPTY table would call every un-emitted type
+    // RULED-UNJUSTIFIED, which is a verdict about the table rather than the lane. With zero
+    // un-emitted types there is nothing to call: demanding a ruling source here asks the
+    // lane to justify an absence that does not exist, and the exit code reads as an
+    // unadjudicated lane when the walk measured all ten types EMITTED.
+    //
+    // Measured: typescript emits all ten on a 4,230-file walk, has no ruling table because
+    // it needs none, and exited 2 here on every run — a lane at 10/10 filed as "no RULING
+    // SOURCE". The verdict below is about EMISSION; it is not a ruling, and it is not
+    // reported as one.
+    console.log(`note: ${LANG} has no ruling TABLE and needs none on THIS walk — all ${ALL_TYPES.length} types are EMITTED.`)
+    console.log(`      There is no un-emitted type for a ruling to justify, so this run adjudicates EMISSION, not rulings.`)
+  } else if (ruledFromSpec.length === 0) {
     console.log(`\nontology coverage gate — no RULING SOURCE for ${LANG}.`)
     console.log(`Refusing to report: with no ruling anywhere, every un-emitted type would be called`)
     console.log(`RULED-UNJUSTIFIED, and that is a verdict about the absence of evidence, not about the lane.`)
     console.log(`Neither RULED_BY_LANG.${LANG} nor script/m14/spec/${LANG}-completeness.json supplies one.`)
     process.exit(2)
+  } else {
+    console.log(`note: ${LANG} has no ruling TABLE; ${ruledFromSpec.length}/${unEmittedForGuard.length} un-emitted types are ruled from its SPEC.`)
+    console.log(`      a spec ruling is prose; a table ruling is a corpus probe. They are not equally strong.`)
   }
-  console.log(`note: ${LANG} has no ruling TABLE; ${ruledFromSpec.length}/${unEmittedForGuard.length} un-emitted types are ruled from its SPEC.`)
-  console.log(`      a spec ruling is prose; a table ruling is a corpus probe. They are not equally strong.`)
 }
 
 // The population this verdict is actually about. A resumed or partial walk produces the
@@ -463,13 +481,17 @@ console.log(
   `walk: ${walkStats.walked + walkStats.alreadyDone}/${walkStats.total} files ` +
     `(${walkedPct.toFixed(1)}%)  newly walked ${walkStats.walked}, resumed ${walkStats.alreadyDone}` +
     (walkStats.skippedBad > 0 ? `  SKIPPED-BAD ${walkStats.skippedBad}` : ``) +
+    (walkStats.died > 0 ? `  ABANDONED-AFTER-KILL ${walkStats.died}` : ``) +
     (walkStats.partial ? `  PARTIAL` : ``),
 )
 if (walkStats.partial) {
   console.log(
     `      every edge count below is over ${walkedPct.toFixed(1)}% of the corpus. ` +
-      `${walkStats.skippedBad} file(s) hang or cannot be parsed and are excluded; re-run to resume, ` +
-      `--fresh to start over. Checkpoint: ${walkStats.checkpoint}`,
+      `${walkStats.skippedBad} file(s) threw while being parsed` +
+      (walkStats.died > 0
+        ? ` and ${walkStats.died} were in flight when an earlier run was killed (a hang cannot throw — see the \`?\` marker in script/m14/resumable-walk.ts)`
+        : ``) +
+      `; all of them are excluded and never retried. Re-run to resume, --fresh to start over. Checkpoint: ${walkStats.checkpoint}`,
   )
 }
 console.log()
