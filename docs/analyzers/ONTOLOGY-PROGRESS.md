@@ -291,6 +291,42 @@ regenerated to those. The regeneration diff against the committed declaration is
 one line — types, rules and meta byte-identical — which is the proof the parameterization
 changed no Java number.
 
+## Four more lanes — python, rust, go and csharp (2026-10-10)
+
+The parameterized gate now declares **eight lanes**. The four added here each measured clean
+(200/200 parsed, 0 degraded, instrument self-test PASS) and each is a total partition —
+`unclassed 0` and the classes summing to the edge count on all ten types:
+
+| lane | corpus | edges | resolved | external | ambiguous | otherUnresolved | digest |
+|---|---|---|---|---|---|---|---|
+| python | 6,145 `.py` / 1 repo | 18,893 | 5,397 | 0 | 2,511 | 10,985 | `sha256:5c8235348c0db9c7` |
+| rust | 110 `.rs` / 1 repo | 55,474 | 17,705 | 0 | 19,384 | 18,385 | `sha256:3202b93bf77f143f` |
+| go | 11,803 `.go` / 1 repo | 13,579 | 3,958 | 0 | 1,348 | 8,273 | `sha256:ae062d1d4f936760` |
+| csharp | 18,237 `.cs` / 1 repo | 20,438 | 4,915 | 0 | 1,225 | 14,298 | `sha256:b54175839b7cb0c8` |
+
+Two controls and one no-op proof bound the increment. The existing four declarations
+**regenerate byte-identical** under the final gate revision (a full re-measure of each, empty
+diff). A C# ceiling-tighten control: `calls.ambiguous` 512 → 507 → **exit 1**,
+`calls: ambiguous ceiling 507 violated — measured 512 (5 REGRESSED)`. And the four new lanes
+were each generated and re-verified with a plain verdict run whose ten-type tables are
+byte-identical across the two runs.
+
+The build closed a victory-lap hole the four new lanes exposed: a lane whose corpus is absent
+measures zero of everything, and a declaration of zeros would pass forever while ratcheting
+nothing. The gate now refuses **exit 3** before `--update` can write anything, when
+`population.parsed` or `corpusTotal` is 0 — proven with `java zzz` (a real corpus, an extension
+nobody has): `FATAL: lane 'java' admitted no corpus (parsed 0, corpus 0) — UNMEASURED, not a
+pass.`
+
+Zeros got prose because a row of zeros reads like a gap and here three different facts produce
+one. **python `implements`** is RULED, with the falsification written out in its canonical doc.
+**go `overrides`** fires 78 times over the whole corpus but 0 times in this 200-file stride
+sample. **csharp `imports`** is a CHANNEL fact: the analyzer carries import SITES on its own
+`imports[]` channel (`ImportInfo[]` → the `brain_import` table, mirrored as `references` edges
+marked `isImport:true`), and the instrument's `imports` row counts relationship-channel rows
+only. Each declaration lists its zero-edge types, the note says what a zero can mean, and the
+ratchet locks all three at 0 until a deliberate re-declaration moves them.
+
 ## Still to do at integration
 
 - Regenerate `website/src/data/brain-languages.ts` — its `emits` arrays are

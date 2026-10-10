@@ -104,6 +104,30 @@ const LANES: Record<string, { ext: string; analyzer: string; decl: string; why: 
     decl: "validation/m14/instruments/scala/incoming-declaration.json",
     why: "the fleet gate MEASURES scala and exits 1 on its fleet-wide bar; this declaration RATCHETS the same measurement per type, so a class can only move deliberately.",
   },
+  python: {
+    ext: "py",
+    analyzer: "src/ast/real-python-analyzer.ts",
+    decl: "validation/m14/instruments/python/incoming-declaration.json",
+    why: "the fleet gate MEASURES python and exits 1 on its fleet-wide bar; this declaration RATCHETS the same measurement per type, so a class can only move deliberately.",
+  },
+  rust: {
+    ext: "rs",
+    analyzer: "src/ast/real-rust-analyzer.ts",
+    decl: "validation/m14/instruments/rust/incoming-declaration.json",
+    why: "the fleet gate MEASURES rust and exits 1 on its fleet-wide bar; this declaration RATCHETS the same measurement per type, so a class can only move deliberately.",
+  },
+  go: {
+    ext: "go",
+    analyzer: "src/ast/real-go-analyzer.ts",
+    decl: "validation/m14/instruments/go/incoming-declaration.json",
+    why: "the fleet gate MEASURES go and exits 1 on its fleet-wide bar; this declaration RATCHETS the same measurement per type, so a class can only move deliberately.",
+  },
+  csharp: {
+    ext: "cs",
+    analyzer: "src/ast/real-csharp-analyzer.ts",
+    decl: "validation/m14/instruments/csharp/incoming-declaration.json",
+    why: "the fleet gate MEASURES C# and exits 1 on its fleet-wide bar; this declaration RATCHETS the same measurement per type, so a class can only move deliberately.",
+  },
 }
 
 const ALL_TYPES = [
@@ -190,6 +214,38 @@ function notesFor(lang: string, m: Measurement): string[] {
         "edge may only join the external class if the analyzer can record WHY the target is " +
         "outside the project (see real-java-analyzer.ts's isExternalTarget + externalReason), " +
         "because an unmarked unresolved edge and a marked one are different claims.",
+    )
+  } else {
+    const markedTypes = ALL_TYPES.filter((t) => Number(m.perType?.[t]?.markedExternal ?? 0) > 0)
+    notes.push(
+      `EXTERNAL IS NONZERO: ${ext} edges carry this lane's provable external marker, on ` +
+        `${markedTypes.length} of ten types (${markedTypes.join(", ")}). Each is an edge the ` +
+        `analyzer can say WHY is outside the project, and the floor binds them: a marker that ` +
+        `stops working is a regression. The unmarked remainder is still backlog, not inferred ` +
+        `third-party — the two are different claims.`,
+    )
+  }
+  if (Number(m.perType?.imports?.edges ?? -1) === 0) {
+    notes.push(
+      "IMPORTS IS 0 EDGES on this walk. The instrument's `imports` row counts relationship-" +
+        "channel rows only (`imports`/`brain_import`). C# carries its import SITES on the " +
+        "analyzer's separate `imports[]` channel (`ImportInfo[]` → the brain_import table, " +
+        "mirrored as `references` edges marked isImport:true), so for that lane the zero is a " +
+        "CHANNEL fact, not an absence — see real-csharp-analyzer.md's channel table. Where a " +
+        "lane carries no import channel at all, the zero is a lane truth instead; either way " +
+        "the ratchet locks it.",
+    )
+  }
+  const zeroTypes = ALL_TYPES.filter((t) => Number(m.perType?.[t]?.edges ?? 0) === 0)
+  if (zeroTypes.length > 0) {
+    notes.push(
+      `ZERO-EDGE TYPES on this walk: ${zeroTypes.join(", ")}. Each is a LOCK, not ` +
+        "automatically a gap — floors and ceilings are 0, so the type cannot move without a " +
+        "deliberate re-declaration. A zero can be a recorded ruling (python's `implements` is " +
+        "RULED, falsification in its canonical doc), a channel fact (see the imports note when " +
+        "import sites travel on the analyzer's own channel), or simply absent from this 200-" +
+        "file stride sample (go's `overrides` fires 78 times over the corpus). Read it against " +
+        "the lane's canonical doc before calling it a gap.",
     )
   }
   if (aliases === 0) {
@@ -580,6 +636,16 @@ if (!m.instrumentSelfTest?.ok) {
 if (Number(m.population?.degraded ?? 0) > 0) {
   console.error(`FATAL: the measurement includes ${m.population.degraded} degraded (regex fallback) parse(s).`)
   console.error("A number about the fallback is not a number about the analyzer. Refusing to ratchet it.")
+  process.exit(3)
+}
+// UNMEASURED IS NOT A PASS. A lane whose corpus is absent measures zero of everything, and a
+// declaration of zeros would pass forever while ratcheting nothing — the exact victory lap this
+// file exists to prevent. The fleet gate says so in its own verdict (`no corpus admitted`); the
+// ratchet reads the population instead of the prose, so the refusal cannot depend on parsing a
+// sentence. Checked BEFORE --update, so a zero declaration can never be written at all.
+if (Number(m.population?.parsed ?? 0) === 0 || Number(m.population?.corpusTotal ?? 0) === 0) {
+  console.error(`FATAL: lane '${LANE_LANG}' admitted no corpus (parsed ${m.population?.parsed}, corpus ${m.population?.corpusTotal}) — UNMEASURED, not a pass.`)
+  console.error("A declaration of zeros ratchets nothing forever; refusing to write or check one.")
   process.exit(3)
 }
 
