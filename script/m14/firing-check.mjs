@@ -98,7 +98,17 @@ function pickFiles(dir, exts, want, cap = 400) {
     for (const e of ents) {
       if (all.length >= POP_CAP) return
       const p = join(d, e.name)
-      if (e.isDirectory()) { if (!/node_modules|\.git/.test(e.name)) walk(p, depth + 1) }
+      // `.github` IS NOT `.git`. This read `/node_modules|\.git/`, a SUBSTRING test, so it pruned
+      // every directory whose NAME contains `.git` — `.github`, `.gitlab`, `.gitbook`. Measured on
+      // the markdown lane's corpus: redwood has 2,105 `.md` files and this walk admitted 2,101; the
+      // 4 it dropped are `/.github/actions/*/README.md`. The census the lane built replicates this
+      // rule exactly and records 2,101, so the loss was invisible in BOTH instruments at once —
+      // which is what a shared admission rule buys you when it is wrong.
+      //
+      // A file inside `.github/` is ordinary project content (CI configs, contribution guides,
+      // reusable-action docs) and it belongs in the population. The vendor and VCS directories are
+      // excluded by EXACT NAME, so no future `.git*` directory is silently pruned by a substring.
+      if (e.isDirectory()) { if (e.name !== "node_modules" && e.name !== ".git") walk(p, depth + 1) }
       else if (exts.some((x) => e.name.endsWith(x))) {
         try { if (statSync(p).size < 400_000) all.push(p) } catch {}
       }
