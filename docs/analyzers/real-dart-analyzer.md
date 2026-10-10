@@ -5552,6 +5552,13 @@ instantiates  155428   61018     0        52717      24425      41693       0   
 TOTAL         3403279  1684699   97797    935863     498527     170624      21910  128      562536   27479
 ```
 
+STATUS OF THE AFTER-TABLE, so this section cannot be read as the finished comparison: the run that
+measures the spelling is **arm9** (`incoming-dart-arm9-spelled.log`, from a worktree frozen at
+`ab900b82c`), and at the time of writing it is 16,000 of 33,738 files in (1,551 s) — 0 failed, 0
+degraded — with the oracle re-run chained behind it in the same shell. No after-column is quoted
+anywhere in this document until that run prints its table, and the numbers below are the BEFORE
+state only.
+
 **`contains` reads 700,388 resolved / 97,797 collision-flagged / ZERO ambiguous**, where arm7 (which
 predated the ruling) read 602,591 / 97,797. The 97,797 did not disappear — they moved into the
 `collRes` column and the outcome became `resolved`, which is what production's
@@ -5650,6 +5657,109 @@ measurable per project (`(b)`'s share of the claims column) before anything is b
 built here: every candidate change of this size gets its price measured first, and the price for
 this one is the oracle's own (b) column over the whole population, which the arm9-chained run
 produces.
+
+**THE PRICE CAME IN AT 238,667 ROWS, AND ITS CONCENTRATION IS THE POINT.** Class (b) is 84 % of the
+claim population (below), and 94 % of (b) is ONE type: sampled and printed, 225,399 of proxicall's
+225,854 class-(b) claims name `AppLocalizations`, declared in the generated `lib/l10n/…` file that
+the emitting file imports relatively — `AppLogger` is 2,165 and `ApiClient` 219 next (a re-run of the
+same classifier on the post-spelling checkout finds 640 distinct names behind the class). So (b)'s
+size is a fact about what these codebases IMPORT, not about how hard
+the lookup is: one generated localization file sits behind a fifth of the entire claim population.
+The class is worth having because it says where an import hop buys the most, file by file — not
+because 84 % of the claims are closeable by any single change.
+
+### The oracle's full-population verdict: 284,377 claims, THREE refuted
+
+(`cause-claim-oracle.log`, 2026-10-10 15:47–16:23, the analyzer as it stood before the receiver-type
+spelling landed. The chained re-run at `ab900b82c` writes `cause-claim-oracle-arm9.log`, because the
+spelling sets the target on rows that were bare and therefore moves this population.)
+
+```
+repo               files admitted   claims   REFUTED     (b) import   (c) index   (d) nowhere
+pb-reference                    0        0          –            –           –             –
+   (its 2 tracked .dart paths are absent from the working tree — counted, named, not dropped)
+nvim-treesitter                 5        0          –            –           –             –
+dart-http                     333      246          0           37          30           179
+riverpod                     1295     6570          0            7        4993          1570
+proxicall                    2350   229636          0       225854         865          2917
+flutter-packages             4028    17445          0         6145        5754          5546
+dart-sdk                    25727    30480          3         6624       23275           578
+TOTAL                             284377          3       238667       34917         10790
+parse failures 0 · degraded files 2
+```
+
+**The falsifiable half is not clean, and the three rows are named rather than netted off:**
+
+```
+dart-sdk/pkg/front_end/lib/src/base/scope.dart:72
+    AbstractTypeParameterScope.getTypeParameter claims base `AbstractTypeParameterScope`, declared here
+dart-sdk/pkg/front_end/lib/src/kernel/expression_generator.dart:7623
+    Selector.withReceiver claims base `Selector`, declared here
+dart-sdk/pkg/front_end/lib/src/type_inference/collection_encoding.dart:1387
+    MapLiteralBuilder.translate claims base `MapLiteralBuilder`, declared here
+```
+
+A refutation means the CLAIM IS FALSE — the emitting file declares the base, so the run had it in
+hand. Three explanations were possible and two are killed by measurement, not by argument:
+
+- **Not a degraded parse.** All three files parse FULL (`fallback: null`,
+  `analysisVersion 4.0.0-m12.11-family-contract`, complexity 276 / 3116 / 1088), so the analyzer read
+  the whole file and still did not publish the class;
+- **not an oracle false positive** — the declarations are real source: `scope.dart:53
+  abstract class AbstractTypeParameterScope(final LookupScope _parent)`,
+  `expression_generator.dart:7495 abstract class Selector(`, `collection_encoding.dart:45
+  abstract class MapLiteralBuilder._(`.
+
+### What the three refutations actually are: a GRAMMAR hole, measured
+
+All three classes are declared with **dart's declaring-constructor (primary-constructor) form** —
+a parameter list between the class name and the heritage clause. The bundled grammar does not know
+it: `wasm/tree-sitter-dart.wasm` returns `hasError=true` with `ERROR` nodes for the declaration, so
+no class node exists for any walk to publish. Minimal repro (`primary-constructor-hole.ts`):
+
+```
+OrdinaryBase  (class OrdinaryBase { … })              error nodes 0 · symbols [module, OrdinaryBase, seed, constructor, doubled, methodOwn]
+PrimaryBase   (class PrimaryBase(final int seed))     error nodes 2 · symbols [module]        ← class AND members gone
+```
+
+**The second shape is worse than a loss.** With an `extends` clause the recovery has somewhere to
+put the members, and it puts them at LIBRARY scope: in the watchdog's `class Impl(String label)
+extends Base`, `Impl.doubled` is published as `{kind: property, ownerName: "", scope: ""}` and
+`Impl.methodOwn` is published as `{kind: "function", ownerName: "", scope: ""}` — **a method
+republished as a top-level function**, i.e. a name that can then falsely resolve against a real
+top-level declaration of the same name, and edges inside such a class attributed to the library
+rather than to the class.
+
+HOW BIG, measured over the gate's own admission rule (33,738 files):
+
+```
+dart-sdk             440 of 25727 admitted files carry the form;   889 declarations
+all other six names    0 of  8011 admitted files carry the form;     0 declarations
+TOTAL                440 of 33738 (1.30%), 889 declarations
+```
+
+So the hole is real, is a dart-sdk-only phenomenon (its front_end and analysis_server use the form
+throughout, dart 3.10's own work on the feature), and it is reachable from no analyzer change: the
+tree is mangled before the analyzer sees it. This is what the fourth property bought — three rows
+out of 284,377 led to a symbol-table hole that no other instrument in the lane could see, because
+every other instrument measures the analyzer's output and this one measures the SOURCE.
+
+**AND IT BOUNDS EVERY TABLE IN THIS DOCUMENT.** dart-sdk's 440 files contribute edges whose class
+scopes the grammar mis-parsed; that is inside arm7's, arm8's and arm9's dart-sdk rows, and no
+analyzer fix can move it. It is a stated ceiling on the measurement, not a footnote.
+
+**The fix is a grammar rebuild, and that is deliberately NOT done here.** The shipped artifact is
+already a LOCAL REBUILD (`tree-sitter-dart-new.wasm`; `reviews/m60-grammar-unmatched-source-read.md`),
+so replacing it is within this lane's precedent — but re-parsing all 33,738 files moves every column
+of every table above, so it is a decision to make with the before/after tables in hand rather than a
+dependency bump to slip in.
+
+**A watchdog keeps it from going stale in either direction** (`primary-constructor-hole.ts`): it
+asserts the hole is STILL PRESENT (a clean parse, a published class, or a member attributed to its
+own primary-constructor class all fail the run — the day the grammar is bumped, this file goes red
+and points at the sections and spec entry to correct), and it re-measures the population on every
+run, so a project that starts using the form shows up as `NEW EXPOSURE` instead of silently widening
+the hole. Spec entry: **DT-PC**.
 
 ### Two avenues CLOSED with measurements, so they stop being listed as next steps
 
