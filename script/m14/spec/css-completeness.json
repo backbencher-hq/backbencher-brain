@@ -647,6 +647,29 @@
       }
     ],
     "corpusUnexercised": [],
-    "_from": "CSS-D14 counts.emitted_edges: contains 238,585 \u00b7 imports 127 \u00b7 overrides 149 \u00b7 references 247,859 \u00b7 uses 2,667 \u2014 the five the lane emits over the whole admitted population (imports/overrides fire 0 times on pico, which is why the firing log reads 3)."
+    "_from": "CSS-D14 counts.emitted_edges: contains 238,585 \u00b7 imports 127 \u00b7 overrides 149 \u00b7 references 247,859 \u00b7 uses 2,667 \u2014 the five the lane emits over the whole admitted population (imports/overrides fire 0 times on pico, which is why the firing log reads 3).",
+    "_implemented_measured": {
+      "_unit": "edges published over the WHOLE 1,174-file css population (85 repos, 0 parse failures, 5 tracked-but-absent, 2 over the 1 MB cap) \u2014 the lane's own census, recorded in `design_decision.CSS-D14.counts.emitted_edges` of this file. THE LANE'S OWN INSTRUMENT POPULATION IS ONE REPO: `firing-check.mjs CSS_B` pins `pico` (238 files), on which imports and overrides fire ZERO times, which is why its log reads `3 types fired \u2014 SILENT imports exports overrides`. Whole-corpus `contains` is 238,585 and pico's share of it is the same order; whole-corpus `imports` is 127 and `overrides` is 149, in the 936 files pico does not contain. Same lesson as bash: a one-repo instrument cannot see a type whose occurrences live elsewhere.",
+      "contains": {
+        "edges": 238585,
+        "populationFiles": 1174
+      },
+      "imports": {
+        "edges": 127,
+        "populationFiles": 1174
+      },
+      "overrides": {
+        "edges": 149,
+        "populationFiles": 1174
+      },
+      "references": {
+        "edges": 247859,
+        "populationFiles": 1174
+      },
+      "uses": {
+        "edges": 2667,
+        "populationFiles": 1174
+      }
+    }
   }
 }
