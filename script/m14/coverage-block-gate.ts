@@ -201,11 +201,21 @@ function hasCountToken(text: string): boolean {
   }
   return false
 }
-/** Path-like tokens a citation could name as its artifact. */
+/**
+ * Path-like tokens a citation could name as its artifact.
+ *
+ * THE SUFFIX LIST IS A HEURISTIC, AND NARROWING IT COST A REAL LANE ITS SUBSTANTIATION. The first
+ * version of this list held `.json/.md/.txt/.ts/.yaml`; json's block cites
+ * `validation/m14/fixtures/json/measurements/json-firing-reconciliation.jsonl`, so all EIGHT of its
+ * silent types read UNSUBSTANTIATED while the citation named each one beside its own count. A
+ * detector that calls a measured block uncited is the same error direction as one that calls prose a
+ * measurement, so the list now covers the artifact shapes these lanes actually commit.
+ */
 function pathTokensIn(text: string): string[] {
+  const ARTIFACT_SUFFIXES = [".json", ".jsonl", ".md", ".txt", ".ts", ".mts", ".yaml", ".yml", ".log", ".csv"]
   return text.split(/\s+/)
     .map((w) => w.replace(/[.,;)]+$/, ""))
-    .filter((w) => w.includes("/") && (w.endsWith(".json") || w.endsWith(".md") || w.endsWith(".txt") || w.endsWith(".ts") || w.endsWith(".yaml")))
+    .filter((w) => w.includes("/") && ARTIFACT_SUFFIXES.some((e) => w.endsWith(e)))
 }
 /** The bare comparison form of a token: punctuation stripped, lower-cased. */
 const bareToken = (tok: string): string => tok.replace(/[(),;:'"`\]]/g, "").toLowerCase()
