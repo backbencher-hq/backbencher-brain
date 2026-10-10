@@ -95,7 +95,7 @@ function parseLog(text: string): Summary[] {
  * analyse. The stdout is on the error object, so it is taken from there.
  */
 function runLane(lang: string): { rows: Array<{ type: string; edges: number; resolved: number; amb: number; ambKind: number; unres: number; extOK: number; extQ: number; extFAIL: number; bindOK: number; bindQ: number; bindFAIL: number; causeOK: number; causeFAIL: number }>; total: any } {
-  const ext = { fsharp: "fs", zig: "zig", lua: "lua", julia: "jl", nim: "nim", php: "php", powershell: "ps1", r: "r", dart: "dart", sql: "sql", graphql: "graphql", protobuf: "proto", json: "json", yaml: "yaml,yml", css: "css", scss: "scss", hcl: "tf", make: "mk", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md", clean: "icl", bash: "sh" }[lang] ?? lang
+  const ext = { fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble", php: "php", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql", protobuf: "proto", json: "json,jsonc", yaml: "yaml,yml", css: "css,less", scss: "scss", hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl", bash: "sh,bash,zsh" }[lang] ?? lang
   let out = ""
   try {
     out = execFileSync("npx", ["tsx", "script/m14/incoming-gate.ts", lang, ext, "0"], { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] })

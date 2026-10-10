@@ -130,9 +130,9 @@ export type { ExternalClaim, ProjectFacts, Outcome, Classified, Outcomes }
 
 /** Laptop B's 23 lanes, from docs/analyzers/PROMPT-LAPTOP-B.md:15 — asserted, not inferred. */
 export const LANES_B: Record<string, string> = {
-  bash: "sh", fsharp: "fs", zig: "zig", lua: "lua", julia: "jl", nim: "nim",
-  php: "php", powershell: "ps1", r: "r", dart: "dart", sql: "sql", graphql: "graphql",
-  protobuf: "proto", json: "json",
+  bash: "sh,bash,zsh", fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble",
+  php: "php", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql",
+  protobuf: "proto", json: "json,jsonc",
   // BOTH SPELLINGS, because one language does not become a different population by being spelled
   // `.yml`. Measured on ansible — 13 `.yaml` files against 2,068 `.yml`, 2,081 combined — so the
   // `--all` table was measuring 0.6% of the lane's files and reporting the 13-file verdict as the
@@ -146,8 +146,8 @@ export const LANES_B: Record<string, string> = {
   // contained one and the board reported 26 lanes, three of them sentences. Comments here stay
   // free of `key: "value"` shapes and of backticks.
   yaml: "yaml,yml",
-  css: "css", scss: "scss",
-  // `make: "mk"` cannot admit a bare `Makefile`, because admitByExtension matches a trailing
+  css: "css,less", scss: "scss",
+  // `make: "mk,mak,makefile"` cannot admit a bare `Makefile`, because admitByExtension matches a trailing
   // dot-plus-ext and that file has no extension at all. Reported rather than silently redefined.
   // XML IS SEVEN SPELLINGS, and the router says so itself: `src/ast/language-detection.ts` maps
   // `.xml .xsd .dtd .svg .xsl .xslt .rng` all to the `xml` language. This table admitted only the
@@ -156,7 +156,7 @@ export const LANES_B: Record<string, string> = {
   // xml-lane, which also noted that this table already records the identical defect and fix for
   // yaml one line above ("one language does not become a different population by being spelled
   // .yml"). The same sentence applies with six more spellings.
-  hcl: "tf", make: "mk", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md", clean: "icl",
+  hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl",
 }
 
 const ALL_TYPES = [
