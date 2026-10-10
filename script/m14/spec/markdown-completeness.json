@@ -1,5 +1,88 @@
 {
  "_comment": "M14.0.SPEC (#290) — markdown completeness classification. Every public NAMED node type of BOTH pinned wasms is in exactly one bucket: 51 distinct from wasm/tree-sitter-markdown.wasm (the block grammar, 207 nodeTypeForId slots) and 26 from wasm/tree-sitter-markdown_inline.wasm (the companion inline grammar, 153 slots), for a UNION of 70 distinct names after the 7 the two share. Silence is guilt: a type in no bucket fails section A, and a type neither grammar produces any more is a stale row and also fails. The handled set was derived MECHANICALLY, not by eye — every double-quoted literal in src/ast/real-markdown-analyzer.ts was intersected with the two grammars' named-type sets (29 of 70), and the 41 un-named types are each classified below with a measured site count over the lane's pinned corpus (scala3@18df09c0, 738 tracked .md files). 29 handled_verified + 39 internal_silent + 2 gap = 70.",
+ "coverage": {
+  "_from": "MEASURED per type on 2026-10-09 from four instruments, each named so it can be re-run. (1) script/m14/firing-check.mjs MARKDOWN_B, NFILES=120 even stride over redwood, instrument self-test PASS: 3 types fired — contains:3479 references:89 uses:1349, 120/120 parsed, 0 degraded. (2) validation/m14/fixtures/markdown/firing-corpus-census.ts: production parseFile over the WHOLE redwood markdown population, 2,101/2,101 parsed, 0 degraded — contains:58,914 uses:23,081 references:1,497 imports:0 calls:0 exports:0 extends:0 implements:0 overrides:0 instantiates:0. (3) the same script's instrument A over BOTH sha256-verified pinned grammars: 108 distinct node types across 17,456 parsed files, 0 of them in any A-row vocabulary, and each row's membership test fires on a planted member (6/6 controls), so the zeroes are a fact about the grammar and not about the filter. (4) validation/m60/markdown/whole-corpus-census.json (17,456 admitted files, production parseFile): imports 105 edges over 74 files — traefik 57, bulma 35, vega 12, scala3 1, redwood 0 — reproduced on current bytes at 105 edges by validation/m14/fixtures/markdown/imports-reverification.json (those four repos, 1,181/1,181 parsed, 0 degraded).",
+  "implemented": ["contains", "references", "uses", "imports"],
+  "excluded": [
+   {
+    "label": "calls",
+    "evidence": "grammar-absence",
+    "from": "MD-D12 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=calls]",
+    "quote": "0 of the 108 node types either pinned grammar produces is any of the nine call names (call_expression, call, function_call, invocation, method_invocation, arguments, command, function_definition, method_definition); the planted control (`document`) FIRES, so the membership test can see a member. Corpus: 0 calls edges over the whole 2,101-file firing population. The census's 8 calls are src/ast/pool-worker.ts extractFallback() regex output (source the literal \"this\", confidence 0.5) on concurrency-degraded files — a sequential whole-corpus run reports 0 degraded and 0 calls."
+   },
+   {
+    "label": "exports",
+    "evidence": "grammar-absence",
+    "from": "MD-D9 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=exports]",
+    "quote": "0 of the 108 node types is any of the eight export names (export_statement, export_declaration, module_exports, public_declaration, visibility_modifier, package_declaration, manifest, plugin_registration); planted control FIRES. The convention half was measured too, because a grammar cannot see a convention: 193 front-matter/first-H1 names over 193 files, and every one names THE DOCUMENT ITSELF, so the edge would be a document->document self-edge (validation/m60/markdown/construct-probe.json B6); the Jekyll title:/permalink: key sits inside minus_metadata, which has zero named children (319 nodes in 319 files, construct-probe.json A1)."
+   },
+   {
+    "label": "extends",
+    "evidence": "grammar-absence",
+    "from": "MD-D7 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=extends]",
+    "quote": "0 of the 108 node types either pinned grammar produces is any of the ten inheritance names (class_declaration, class, class_specifier, interface_declaration, trait_declaration, struct_declaration, inheritance_specifier, superclass, base_class, type_declaration); planted control FIRES. Markdown has no type system: a section is CONTAINED in a section (this lane's `contains`, 58,914 edges over the whole firing population) rather than inheriting from it."
+   },
+   {
+    "label": "implements",
+    "evidence": "grammar-absence",
+    "from": "MD-D8 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=implements]",
+    "quote": "0 of the 108 node types is any of the eight conformance names (implements_clause, extends_clause, interface_implementation, superclass, base_class, constraint, protocol_conformance, mixin); planted control FIRES. The one corpus construct that binds one document to another by FILE is a Jekyll `{% include %}`, and this lane emits it as `imports` (MD-G3), not as a type relationship — there is no type for it to implement."
+   },
+   {
+    "label": "overrides",
+    "evidence": "grammar-absence",
+    "from": "MD-D10 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=overrides]",
+    "quote": "0 of the 108 node types is any of the six override names (redefinition, override_specifier, declaration_replacement, duplicate_definition, method_declaration, member_redeclaration); planted control FIRES. The naive probe was measured on markdown and returns a large non-zero number on the WRONG question: 570 same-parent same-level same-text heading redeclarations and 2,453 repeated heading texts at any scope, against 0 displacements, because a repeated heading gets an ordinal anchor (#slug-1) rather than replacing the first (validation/m60/markdown/overrides-probe.json A/B/C)."
+   },
+   {
+    "label": "instantiates",
+    "evidence": "grammar-absence",
+    "from": "MD-D11 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=instantiates]",
+    "quote": "0 of the 108 node types is any of the eight construction names (new_expression, object_creation_expression, constructor_invocation, class_instance, instance_expression, jsx_element, component_element, tag_name); planted control FIRES. The component reading was measured too and is 0: 1,802 html_block nodes in the draw, 10 containing a <script> and NONE carrying a src, and 0 html_tag with a capitalised name. The census's 3 instantiates edges are the same extractFallback path as `calls` (confidence 0.6); a sequential whole-corpus run reports 0."
+   }
+  ],
+  "corpusUnexercised": [],
+  "_measured": {
+   "firingLog": {
+    "instrument": "script/m14/firing-check.mjs MARKDOWN_B",
+    "population": "120 files, even stride over redwood",
+    "fired": {"contains": 3479, "references": 89, "uses": 1349},
+    "parsed": "120/120",
+    "degraded": 0,
+    "instrumentSelfTest": "PASS — planted markdown link through parseFile: uses FIRED"
+   },
+   "firingCorpusWhole": {
+    "artifact": "validation/m14/fixtures/markdown/firing-corpus-census.json",
+    "population": 2101,
+    "parsed": 2101,
+    "degraded": 0,
+    "types": {"contains": 58914, "uses": 23081, "references": 1497, "imports": 0, "calls": 0, "exports": 0, "extends": 0, "implements": 0, "overrides": 0, "instantiates": 0}
+   },
+   "instrumentA": {
+    "artifact": "validation/m14/fixtures/markdown/firing-corpus-census.json",
+    "unionDistinct": 108,
+    "parsedFiles": 17456,
+    "controlsFired": "6/6",
+    "wasmPins": "block and inline companions both MATCH validation/m14/grammar-pins.json (sha256)"
+   },
+   "importsWholePopulation": {
+    "artifact": "validation/m60/markdown/whole-corpus-census.json",
+    "edges": 105,
+    "files": 74,
+    "measuredOn": "2026-10-04T22:19",
+    "perRepo": {"traefik": 57, "bulma": 35, "vega": 12, "scala3": 1, "redwood": 0}
+   },
+   "importsReverified": {
+    "artifact": "validation/m14/fixtures/markdown/imports-reverification.json",
+    "edges": 105,
+    "population": 1181,
+    "parsed": 1181,
+    "degraded": 0
+   },
+   "silentTypesNote": "The firing log's SILENT line names seven types. SIX are grammar-absence, each measured by instrument A with its own planted control and each already ruled in MD-D7..MD-D12. The SEVENTH, `imports`, is EMITTED and is therefore declared implemented: it has 105 corpus sites over 74 files, just none of them in redwood. `zero-sites` is not its class (the construct exists and occurs) and `corpusUnexercised` is not its class either (the lane implements it and the corpus exercises it), so the firing-corpus silence is recorded here rather than in the denominator arithmetic. This CORRECTS _sectionsBEH.relationship_kinds_produced, which read [contains, uses] and listed both `imports` and `references` as declared absent — stale text from before MD-G3 (imports, 2026-10-03) and MD-D6 (references, internal anchors); both are emitted and fire.",
+   "board": "implemented 4 + corpusUnexercised 0 + gaps 0 = applicable 4 = 10 - 6 grammar-absence - 0 unclassified"
+  }
+ },
  "handled_verified": {
   "types": [
    "atx_h1_marker",
