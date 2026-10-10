@@ -182,6 +182,57 @@ every one of them the same relationship id repeated. The join is gone; the artif
 finding because a probe that manufactures its own finding is the failure this measurement had to
 survive.
 
+## The completion package (four-clause bar) — verdict: NOT YET, by three named shortfalls
+
+Whole population, current revision, every number from the per-type rows
+([`verification-package.json`](../../validation/m14/fixtures/xml/verification-package.json),
+raw [`verify-chain.txt`](../../validation/m14/fixtures/xml/verify-chain.txt)):
+
+| type | edges | resolved | ambiguous | unresolved | residual | cause |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| contains | 189,310 | 189,310 | 0 | 0 | 0.0% | fixed (`fa2dc27e8`); 99.997% determinate |
+| references | 11,108 | 997 | 7,582 | 12 | 68.4% | collisions; twins ruled fix-size-zero; 12 = X13 |
+| extends | 1,429 | 84 | 991 | 0 | 69.3% | unresolved fixed (`76d8aef3c`); collisions remain |
+| calls | 402 | 123 | 279 | 0 | 69.4% | name collisions only — **no ruling yet** |
+| imports | 473 | 2 | 0 | 265 | 56.0% | file-class refused with evidence; URIs claimed |
+| overrides | 3 | 1 | 2 | 0 | 66.7% | collisions on a 3-edge type |
+
+**Clause 2 met in full**: `extFAIL` = `bindFAIL` = `causeFAIL` = 0, per type and in TOTAL.
+**Clause 4**: `contains` determinate (189,305 intended / 0 twin / 0 noDecl); `exports` is
+**not applicable** (0 edges — excluded as grammar-absence); for the types where the line test is
+*not* applicable the gate can only say `sameFileUnproven`, which is **4,072 edges**
+(references 3,445 + extends 346 + calls 279 + overrides 2).
+
+**The three shortfalls, by size:**
+
+1. **Clause 1 — 279 edges (`calls`).** The cause is named and counted (pure name collision; `twin`
+   0, `noDecl` 0, so nothing wrong-file and nothing dangling) but there is no ruling with a
+   falsifier yet. It is enumerable edge by edge.
+2. **Clause 4 — 4,072 edges.** For references/extends/calls/overrides the line test is N/A by
+   construction (`twin` there is a *risk*, not proven wrongness — the corrected legend), so
+   determinacy is unproven and would need a store probe of the same shape as the `contains` one.
+3. **Clause 3 — 12 edges.** The imports-265 refusal **is** evidence-backed: a blanket file claim
+   would REFUTE **59** times (`fileClaimProbe`: 205 candidates admitted, 59 absent). The
+   references-12 refusal is **not** at that standard: a claim would *verify* (they name nothing in
+   the project), so the refusal rests on the analyzer's X13 label — the value may not be a reference
+   at all — and its falsifier (a probe showing all 12 are real external references) is **not run**.
+
+**The 1.83× `contains` factor — narrowed, still open, with the next probe named**
+([`emitted-vs-stored.mts`](../../validation/m14/fixtures/xml/emitted-vs-stored.mts)): reproduced at
+**4,375 emitted vs 7,649 stored = 1.748×**; `calls`/`imports` 1.0, `references` 0.91. The
+parse-ordering hypothesis is **refuted** (identical counts before and after the index) and so is
+row-id duplication. What is established: the excess is store-side and `contains`-only, and the store
+holds **6,704 distinct (source, target, line) triples** against 4,375 emitted edges — more triples
+than edges. The settling probe runs the indexer **in-process over one file with a hook on the
+relationship insert**, recording each inserted row beside that file's own `analyze()` array, which
+decides between "one edge inserted more than once with different source bindings" and "the pool path
+emits more than direct `parseFile`".
+
+**Single-run dependence:** the gate rows were reproduced identically by two whole-population runs at
+this revision, so clauses 1/2/4 do not rest on one run. Every **store**-derived figure does — the
+store is order- and run-dependent (§ the fleet-level finding) — and those are labelled as one run in
+their artifacts.
+
 ## Method notes
 
 - One cause per turn, one commit per verdict; a cause is closed by a before/after over a named
