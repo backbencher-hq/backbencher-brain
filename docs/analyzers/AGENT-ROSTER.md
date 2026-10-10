@@ -40,20 +40,49 @@ a live Team's roster size is fixed at construction.
 
 ## The lanes
 
-| lane | agent | task | first item |
+| lane | agent | task | state |
 |---|---|---|---|
-| markdown | `markdown-lane` | task-1 | coverage block over the corrected `3 types fired` (was 1: instrument defect) |
-| toml | `toml-lane` | task-2 | declared coverage over the whole-corpus census; `references` fires 167 edges corpus-wide where the 120-file sample says SILENT |
-| hcl | `hcl-lane` | task-3 | evidence class per silent type; found HCL-D1 FALSIFIED (rules `calls`/`overrides` inapplicable while the analyzer emits both) |
-| julia | `julia-lane` | task-4 | replace JUL-D1/JUL-D2 `unclassified` with measured classes |
-| r | `r-lane` | task-5 | DONE — [BB-HANG] refuted as a leaked timer; a dead `degraded` counter; `a7d2fb5e6` |
-| clean | `clean-lane` | task-6 | `extends`: `grammar-absence` or `zero-sites`, by measurement |
-| yaml | `yaml-lane` | task-9 | 107 external claims REFUTED once the whole 2,082-file population is measured |
-| json | `json-lane` | task-10 | reconcile the declared 8/8 against the firing log's 1 type |
-| — | subagent `eccce1b6` | task-11 | verify-or-retract the unattributed 882 / 32,359 shared-resolution claim |
-| bash, f#, zig, lua, nim, php, powershell, dart, sql, graphql, protobuf, css, scss, make, xml | — | — | queued: spawned as slots free |
+| markdown | `markdown-lane` | task-1 | **COMPLETE** — board `4/4 from=spec coverage block`, closes; `imports` refuted as empty (105 edges/74 files); 11 fixtures pass; corrected-admission supersession `d0e259811` |
+| toml | `toml-lane` | task-2 | **COMPLETE** — board `3/4`; `exports` deliberately left IN the denominator as a gap rather than ruled away; workspace-inheritance 1,269 sites recorded as an open item; `c5c955a67`, `840bffea9` |
+| hcl | `hcl-lane` | task-3 | in flight — HCL-D1 found FALSIFIED; classes split 2/1, `instantiates` is `zero-sites` and STAYS IN |
+| julia | `julia-lane` | task-4 | in flight — JUL-D1/JUL-D2 `unclassified` → measured classes |
+| r | `r-lane` | task-5 | **COMPLETE** — [BB-HANG] refuted as a leaked timer; a dead `degraded` counter; `a7d2fb5e6`; coverage census next |
+| clean | `clean-lane` | task-6 | in flight — `extends` class by measurement |
+| yaml | `yaml-lane` | task-9 | in flight — 107 (ansible) / 113 (fleet) external claims REFUTED on the whole population |
+| json | `json-lane` | task-10 | in flight — declared 8/8 vs a 1-type firing log, 7 types UNCITED |
+| dart | — | task-12 | queued |
+| sql | — | task-13 | queued |
+| bash, f#, zig, lua, nim, php, powershell, graphql, protobuf, css, scss, make, xml | — | — | queued: spawned as slots free |
 
 Rows read `—` for an unspawned lane ON PURPOSE: an empty cell is not a claim that the lane is fine.
+
+**The queue is owned by the Lead, not by history.** A lane's next item is named in its task, so a freed
+slot starts immediately instead of re-deriving priorities. Tasks `task-1` … `task-13` are the board.
+
+## Where the lanes actually stand, mechanically
+
+`npx tsx script/m14/coverage-block-gate.ts` (and `--strict`) reads every lane's spec directly and
+asserts the closure invariant, the evidence classes, that cited artifacts exist and carry a COUNT, and
+which declared-implemented types the 120-file stride never sees. Its last run:
+
+```
+declared 13/23 · blocks with problems 2 (zig implements, css implements+instantiates cite no count)
+lanes with silence 10 · of those UNCITED 7
+NOT DECLARED: julia nim r dart graphql protobuf scss hcl make xml
+```
+
+That is the programme's real remaining work in one line: **ten lanes still declare no coverage block,
+and seven have a declared-implemented type that nothing in the block can back.**
+
+## Instruments added or corrected this session
+
+| instrument | what it answers |
+|---|---|
+| `firing-check.mjs` (fixed, `f5dec55d3`) | now really runs `engine.parseFile`; carries a planted-link control; `.github` no longer pruned (`28d79cb99`) |
+| `incoming-gate.ts --board-log [--only]` (`2551eba68`) | regenerates the artefact the board reads — it had **no writer** before |
+| `coverage-block-gate.ts` (`9425ef388`, `bf79aa713`) | closure, classes, citation existence AND count, unsupported silence |
+| `language-board.ts` (fixed, `277d5c027`) | defaults now name the CURRENT logs; lane-set parser strips comments |
+| `incoming-gate.ts yaml,yml` (`4ccea0ef1`) | extension argument is a SET; admits 2,082 ansible files, not 13 |
 
 ## Session rules that bind every lane agent
 
