@@ -292,17 +292,20 @@
   "note": "Sections B-H are not carried in this file. B (every relationship kind pinned) and C (the payload matrix) are declared in script/m14/completeness-inventory.ts's LANG_CONFIGS entry, D (>=2 distinct evidenceClass pinned) and E/F (the differential floor and the perf budget) are read from the F3 fixtures and the differential baseline, G from the two docs, and H from M14.CC1.json. markdown reached CONFORMANT and JOINED GATED_LANGS on 2026-09-27 at 8/8. THIS NOTE USED TO SAY OTHERWISE — it claimed markdown was not gated because docs/analyzers/markdown.md did not exist, which stopped being true the moment that file was written, and a self-description of a lane's own gate status that is stale is the same failure as a results artifact quoting a commit that predates the change: the sentence reads as a census of the lane and is a snapshot of an earlier tree. The gate's own output is the authority; this note is a pointer to where the authority lives.",
   "relationship_kinds_produced": [
    "contains",
-   "uses"
+   "references",
+   "uses",
+   "imports"
   ],
+  "_relationship_kinds_produced_corrected": "This list read [contains, uses] until 2026-10-09 and omitted two types the lane EMITS, so the spec told its own readers the lane produces two relationships while the analyzer produces four. Measured on the whole redwood firing population (2,101 .md files, production parseFile, 2,101/2,101 parsed, 0 degraded — validation/m14/fixtures/markdown/firing-corpus-census.json): contains 58,914 · uses 23,081 · references 1,497 · imports 0. Measured on the whole admitted population (17,456 files, production parseFile — validation/m60/markdown/whole-corpus-census.json): contains 334,773 · uses 270,779 · references 16,857 · imports 105. `references` has been emitted since MD-D6 (a bare `#fragment` resolved to the heading it names) and `imports` since MD-G3 (a Jekyll/Liquid `{% include %}` naming a file), and this spec's OWN MD-D8 resolution already named MD-G3 — the BEH list was the last place still saying otherwise.",
   "relationship_kinds_declared_absent": {
-   "imports": "markdown has no module system. There is nothing to import, and a `uses` edge to a relative path is a LINK, not a dependency — bb_doc's Dependencies section stays empty for a .md file for exactly this reason, which is a real consequence of the ruling and not an oversight.",
+   "_corrected": "`imports` and `references` were listed below as declared-absent until 2026-10-09, and both entries were FALSE by measurement: both are emitted and both fire (see _relationship_kinds_produced_corrected, coverage.implemented, and validation/m14/fixtures/markdown/firing-corpus-census.json). They were stale prose from before MD-G3 (2026-10-03) and MD-D6, left behind when the analyzer changed — which is exactly the failure mode this section's own `note` names. The six that remain are the six grammar-absence exclusions in `coverage`, each re-measured on current bytes with a planted control.",
+
    "exports": "a markdown file exports nothing; it is a leaf of the project's file tree.",
    "calls": "no call syntax exists in CommonMark.",
    "extends": "no inheritance syntax exists in CommonMark.",
    "implements": "no interface syntax exists in CommonMark.",
    "overrides": "no member syntax exists in CommonMark.",
-   "instantiates": "no constructor syntax exists in CommonMark.",
-   "references": "the lane declares front-matter keys as a boundary rather than a graph: `title:`, `permalink:`, `redirect_from:` and `weight:` are the cross-file link carriers in a Jekyll site and the block grammar models `minus_metadata` as ONE node with no key/value children, so there is no key to reference from. Declared, with the reason, rather than left silent."
+   "instantiates": "no constructor syntax exists in CommonMark."
   },
   "payload_fields_pinned": {
    "range": "markdown/payload-lines-evidence — every symbol carries a 1-based startLine/endLine, and the store's (file, name, startLine) key is what makes two sites of one construct distinct rows.",
