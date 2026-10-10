@@ -3968,8 +3968,37 @@ export async function storeResults(
             // not the language, decides.
             if (ownerSymbolId && symbol.kind !== ASTEngine.SymbolKind.Instance) {
                // Dedup: skip if the engine already generated a contains for this (owner, child) pair
+               //
+               // THE KEYS DID NOT AGREE, and only on the CHILD half — found by xml-lane (2026-10-10,
+               // `b92ea6fda`), repaired here with the fix it measured (`f0b9b15c9`). The set is built
+               // with BOTH ends leaf-reduced (`${srcLeaf} ${tgtLeaf}`, `:3652-3659`) while this lookup
+               // reduced only the owner and probed the child RAW. For any child name bearing a colon
+               // the keys differ by construction, the guard never fires, and a containment edge the
+               // analyzer already emitted is written a SECOND time. Proven exactly on one file:
+               // analyzer 294 + synthesized 217 = store 511, and replaying the indexer's own two
+               // regexes over the symbol table predicts 217, all colon-named.
+               //
+               // THE OWNER REGEX IS DELIBERATELY LEFT ALONE, and that is the whole of what a first,
+               // "symmetric" repair got wrong. Applying the BUILD-SITE regex
+               // (`/^.*:([^:]+):?\d*$/`) to an `ownerSymbolId` — which always ends `:<line>` —
+               // captures the LINE NUMBER as the leaf: `.*:` is greedy to the last colon and `\d*$`
+               // then matches empty, so `proj:…:xsl:stylesheet:1` yields `1`, not `stylesheet`. This
+               // site's `:\d+$` anchors the digit run into a REQUIRED suffix, so it captures the NAME.
+               // Measured on xml's own probe, same 300-file draw, `emitted` 4,375 in every arm:
+               //     HEAD (the defect)                  stored  7,649   ratio  1.748x
+               //     symmetric repair (both ends)       stored 55,734   ratio 12.74x   <- 7.3x WORSE
+               //     CHILD-ONLY, owner untouched        stored  4,369   ratio  0.999x   <- this
+               // and reproduced on a second repository (dbeaver, 300 files): emitted 23,742 = stored
+               // 23,742, exactly 1.0.
+               //
+               // SO `containsPairs` IS NOT A LEAF-KEYED SET in the way its build site suggests: the
+               // same regex yields a usable leaf from a NAME and a LINE NUMBER from an ID. No future
+               // repair may reuse one regex on both sides; a shape-appropriate leaf (strip `:<digits>`
+               // from ids, then take the last colon segment) or a key over resolved ids is what the
+               // guard actually needs if it is ever generalised.
                const ownerLeaf = ownerSymbolId.replace(/^.*:([^:]+):\d+$/, "$1")
-               const alreadyHasContains = containsPairs.has(`${ownerLeaf} ${symbol.name}`)
+               const childLeaf = String(symbol.name).replace(/^.*:([^:]+):?\d*$/, "$1")
+               const alreadyHasContains = containsPairs.has(`${ownerLeaf} ${childLeaf}`)
                if (!alreadyHasContains) {
                  const fileCount = (fileRelCounters.get(fileId) || 0) + 1
                  fileRelCounters.set(fileId, fileCount)
