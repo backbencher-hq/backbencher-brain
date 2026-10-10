@@ -257,6 +257,30 @@ counting colon-named owned symbols. The fix belongs in `src/ast/parallel-indexer
 key shapes agree, or key the pair set on resolved ids); that file is not this lane's to edit, so it is
 **reported, not fixed**.
 
+**The fix, three arms, and a failed experiment kept on the record.** Same probe, same 300-file draw,
+`emitted` identical at 4,375 in every arm:
+
+| arm | `contains` stored | ratio |
+| --- | ---: | ---: |
+| HEAD (the defect) | 7,649 | 1.748× |
+| symmetric repair — reduce **both** ends with the build regex | **55,734** | 12.74× (**7.3× worse**, run twice, reverted) |
+| **child-only** — reduce the child, leave the owner regex untouched | **4,369** | **0.999×** |
+
+The child-only arm also reads **23,742 emitted = 23,742 stored (exactly 1.0)** on a second
+repository (dbeaver, 300 files). The symmetric repair failed because **the owner half was the
+problem**: the build regex applied to an `ownerSymbolId` — which ends `:<line>` — captures the line
+number as the leaf (`…:xsl:stylesheet:1` → `1`), while the original `:\d+$` anchor forces the
+digit-run into the suffix so the name is captured. Making the regexes "consistent" therefore broke
+`ownerLeaf` for every symbol id and synthesized 48,085 more rows.
+
+**Consequence for the guard, which the next reader needs:** `containsPairs` is **not** a leaf-keyed
+set in the way its build site suggests — the same regex produces a usable leaf from a *name* and a
+line number from an *id*. Any repair must use a shape-appropriate leaf (strip `:<digits>` from ids
+first, then take the last colon segment) or key the pair on resolved ids. The one-line patch is
+[`child-only.patch`](../../validation/m14/fixtures/xml/child-only.patch); it was measured here and
+**handed to the Lead rather than landed**, and `src/ast/parallel-indexer.ts` was restored byte-exact
+to HEAD afterwards (sha256 verified, no diff).
+
 **Single-run dependence:** the gate rows were reproduced identically by two whole-population runs at
 this revision, so clauses 1/2/4 do not rest on one run. Every **store**-derived figure does — the
 store is order- and run-dependent (§ the fleet-level finding) — and those are labelled as one run in
