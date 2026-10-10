@@ -5748,11 +5748,27 @@ every other instrument measures the analyzer's output and this one measures the 
 scopes the grammar mis-parsed; that is inside arm7's, arm8's and arm9's dart-sdk rows, and no
 analyzer fix can move it. It is a stated ceiling on the measurement, not a footnote.
 
-**The fix is a grammar rebuild, and that is deliberately NOT done here.** The shipped artifact is
-already a LOCAL REBUILD (`tree-sitter-dart-new.wasm`; `reviews/m60-grammar-unmatched-source-read.md`),
-so replacing it is within this lane's precedent — but re-parsing all 33,738 files moves every column
-of every table above, so it is a decision to make with the before/after tables in hand rather than a
-dependency bump to slip in.
+**The fix is a grammar rebuild, and it is NOT AVAILABLE UPSTREAM TODAY — checked, not assumed.**
+The form is *primary constructors*, accepted for **dart 3.13**
+(`dart-lang/language`, `accepted/3.13/primary-constructors/feature-specification.md`; the feature
+blog is dated 2026-08-20). The grammar chain advertises support "through dart 3.11", and upstream
+`tree-sitter-dart`'s request to support the 3.12/3.13 forms — **issue #105, opened 2026-10-09** — was
+still OPEN one day before this measurement. So a rebuild from upstream closes nothing: the corpus
+snapshot contains syntax newer than any published grammar, and closing the hole means patching
+`grammar.js` ourselves and rebuilding the wasm — the work upstream is already doing, in a shared
+artifact this lane ships two copies of (`tree-sitter-dart.wasm` and `dart.wasm`, both the local
+rebuild `tree-sitter-dart-new.wasm` per `reviews/m60-grammar-unmatched-source-read.md`). Revisit when
+#105 merges, and re-measure then, because a grammar change moves every column of every table above.
+
+**And there is an in-lane alternative to waiting, which is why this is written down rather than
+filed away:** the class's parameter list could be blanked in the analyzer's copy of the source
+BEFORE parsing, length-preserving so every offset and line number survives — `class Impl(String
+label) extends Base {` becomes `class Impl                 extends Base {`, which the grammar parses
+as a class. It costs the implicit fields the primary constructor declares and it is a transform of
+the input rather than of the tree, so it belongs in an explicit, disclosed place with its own
+fixture (what it recovers: the class and its members; what it cannot: the fields the form implies).
+It is priced by ONE number — how many of 440 files' mis-scoped edges it moves — which is measurable
+with the watchdog's population scan and the gate's arms.
 
 **A watchdog keeps it from going stale in either direction** (`primary-constructor-hole.ts`): it
 asserts the hole is STILL PRESENT (a clean parse, a published class, or a member attributed to its
