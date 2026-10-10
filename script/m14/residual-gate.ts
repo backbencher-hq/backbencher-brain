@@ -94,7 +94,7 @@ function parseLog(text: string): Summary[] {
  * cannot read its instrument's output on a FAIL is useless, because FAIL is the state it exists to
  * analyse. The stdout is on the error object, so it is taken from there.
  */
-function runLane(lang: string): { rows: Array<{ type: string; edges: number; resolved: number; amb: number; ambKind: number; unres: number; extOK: number; extQ: number; extFAIL: number; bindOK: number; bindQ: number; bindFAIL: number; causeOK: number; causeFAIL: number }>; total: any } {
+function runLane(lang: string): { rows: Array<{ type: string; edges: number; resolved: number; ambColl?: number; amb: number; ambKind: number; unres: number; extOK: number; extQ: number; extFAIL: number; bindOK: number; bindQ: number; bindFAIL: number; causeOK: number; causeFAIL: number }>; total: any; intent: Map<string, { intended: number; sameFileUnproven: number; arbitraryTwin: number; noDeclaration: number }>; intentBlockSeen: boolean; intentWidthBad: number } {
   const ext = { fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble", php: "php", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql", protobuf: "proto", json: "json,jsonc", yaml: "yaml,yml", css: "css,less", scss: "scss", hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl", bash: "sh,bash,zsh" }[lang] ?? lang
   let out = ""
   try {
@@ -105,6 +105,52 @@ function runLane(lang: string): { rows: Array<{ type: string; edges: number; res
   }
   const rows: any[] = []
   let total: any = null
+  /**
+   * THE BINDING-INTENT BLOCK, parsed ADDITIVELY and never through TABLE 1's positional reader.
+   *
+   * `incoming-gate.ts` prints it as a separate 6-column table (`type edges intended
+   * sameFileUnproven arbitraryTwin noDeclaration`) after TABLE 2, so reading it cannot shift TABLE 1
+   * and TABLE 1 cannot shift it. That separation is deliberate: the last column inserted into a
+   * positional reader without a width guard produced FOUR FALSE `extFAIL` COUNTS, and hcl-lane
+   * declined to make this change for exactly that reason. The guard below is the condition of the
+   * change: a row whose column count is not 6 is reported UNMEASURED for intent rather than
+   * silently reinterpreted.
+   */
+  const intent = new Map<string, { intended: number; sameFileUnproven: number; arbitraryTwin: number; noDeclaration: number }>()
+  let intentBlockSeen = false
+  let intentWidthBad = 0
+  {
+    let inBlock = false
+    for (const line of out.split("\n")) {
+      const t = line.trim()
+      if (t.startsWith("BINDING INTENT")) { inBlock = true; continue }
+      if (!inBlock) continue
+      if (t === "" || t.startsWith("intended =") || t.startsWith("(exact only") || t.startsWith("For every other") || t.startsWith("not wrong and not")) continue
+      if (t.startsWith("type ")) continue
+      const parts = t.split(/\s+/)
+      if (parts.length === 0) continue
+      // A CANDIDATE ROW is one whose first token is a relationship type. Anything else after the
+      // block is prose or a later table, and the first version of this guard counted those as
+      // width violations and threw away a block it had already parsed correctly. Police the rows,
+      // not the file.
+      if (!TYPES.includes(parts[0])) continue
+      // A SINGLE TOKEN IS NOT A ROW — prose after the block lists type names on their own line
+      // ("calls", "uses") as prose, and counting those as width violations made an honest
+      // disclosure read like five malformed rows. A row has at least a type and an edge count.
+      if (parts.length < 2) continue
+      if (parts.length !== 6) { intentWidthBad++; continue }
+      const nums = parts.slice(1).map((x) => Number(x.replace(/,/g, "")))
+      if (nums.some((n) => !Number.isFinite(n))) continue
+      intentBlockSeen = true
+      intent.set(parts[0], { intended: nums[1], sameFileUnproven: nums[2], arbitraryTwin: nums[3], noDeclaration: nums[4] })
+    }
+  }
+  // THE GUARD IS PER-ROW, NOT GLOBAL. A first version reset the whole block when ANY line failed
+  // the width test — and prose AFTER the block mentions type names on their own line, so a
+  // correctly parsed block was thrown away by unrelated text. A candidate row that does not have
+  // exactly 6 columns is SKIPPED rather than misread, which is the whole requirement: the failure
+  // mode this guards against is reinterpreting a shifted column, and a skipped row cannot do that.
+  // `intentWidthBad` is kept as a disclosure, printed below when non-zero.
   for (const line of out.split("\n")) {
     const t = line.trim()
     const parts = t.split(/\s+/)
@@ -117,7 +163,7 @@ function runLane(lang: string): { rows: Array<{ type: string; edges: number; res
     const r = { type: parts[0], edges: nums[0], resolved: nums[1], ambColl: nums[2], amb: nums[3], ambKind: nums[4], unres: nums[5], extOK: nums[6], extQ: nums[7], extFAIL: nums[8], bindOK: nums[9], bindQ: nums[10], bindFAIL: nums[11], causeOK: nums[12], causeFAIL: nums[13] }
     if (parts[0] === "TOTAL") total = r; else rows.push(r)
   }
-  return { rows, total }
+  return { rows, total, intent, intentBlockSeen, intentWidthBad }
 }
 
 const argv = process.argv.slice(2)
@@ -125,11 +171,13 @@ const JSON_MODE = argv.includes("--json")
 const LANE = argv.includes("--lane") ? argv[argv.indexOf("--lane") + 1] : null
 
 if (LANE) {
-  const { rows, total } = runLane(LANE)
+  const { rows, total, intent, intentBlockSeen, intentWidthBad } = runLane(LANE)
   if (JSON_MODE) { console.log(JSON.stringify({ gate: "residual-gate", lane: LANE, rows, total }, null, 2)); process.exit(0) }
   const w = (s: any, n: number) => (String(s) + " ".repeat(n)).slice(0, n)
   console.log(`residual gate — ${LANE}, WHOLE admitted population, production scope\n`)
-  console.log(`${w("type", 14)} ${w("edges", 9)} ${w("resolved", 9)} ${w("ofWhich", 8)} ${w("amb(decl)", 10)} ${w("unresolved", 11)} ${w("extFAIL", 8)} ${w("bindFAIL", 9)} ${w("causeFAIL", 10)} ${w("residual%", 10)}`)
+  console.log(`${w("type", 14)} ${w("edges", 9)} ${w("resolved", 9)} ${w("ofWhich", 8)} ${w("amb(decl)", 10)} ${w("unresolved", 11)} ${w("extFAIL", 8)} ${w("bindFAIL", 9)} ${w("causeFAIL", 10)} ${w("residual%", 10)}${intentBlockSeen ? "  " + w("intended", 9) + w("twin", 6) + w("noDecl", 7) : ""}`)
+  if (intentBlockSeen) console.log(`  "intended" = own file AND own line · "twin" = ONLY another file answers (a wrong edge) · "noDecl" = nothing answers.`)
+  if (intentBlockSeen && intentWidthBad > 0) console.log(`  (${intentWidthBad} intent ROW(s) did not have 6 columns and were SKIPPED, not reinterpreted.)`)
   console.log(`  "ofWhich" = resolved edges on a name with MORE THAN ONE declaration in the project — an`)
   console.log(`  UPPER BOUND on arbitrary bindings, not a count of them: both resolvers prefer the edge's own`)
   console.log(`  FILE second, so a collision the own file settles uniquely is determinate. Only the store can`)
@@ -138,7 +186,9 @@ if (LANE) {
   for (const r of [...rows].sort((a, b) => (b.amb + b.unres) - (a.amb + a.unres))) {
     if (r.edges === 0) continue
     const resid = r.amb + r.unres + r.extFAIL + r.bindFAIL + r.causeFAIL
-    console.log(`${w(r.type, 14)} ${w(r.edges, 9)} ${w(r.resolved, 9)} ${w(r.ambColl ?? "-", 8)} ${w(r.amb, 10)} ${w(r.unres, 11)} ${w(r.extFAIL, 8)} ${w(r.bindFAIL, 9)} ${w(r.causeFAIL, 10)} ${w(((resid / r.edges) * 100).toFixed(1) + "%", 10)}`)
+    const it = intent.get(r.type)
+    const tail = intentBlockSeen ? "  " + w(it ? it.intended : "-", 9) + w(it ? it.arbitraryTwin : "-", 6) + w(it ? it.noDeclaration : "-", 7) : ""
+    console.log(`${w(r.type, 14)} ${w(r.edges, 9)} ${w(r.resolved, 9)} ${w(r.ambColl ?? "-", 8)} ${w(r.amb, 10)} ${w(r.unres, 11)} ${w(r.extFAIL, 8)} ${w(r.bindFAIL, 9)} ${w(r.causeFAIL, 10)} ${w(((resid / r.edges) * 100).toFixed(1) + "%", 10)}${tail}`)
   }
   if (total) {
     const resid = total.amb + total.unres + total.extFAIL + total.bindFAIL + total.causeFAIL
