@@ -106,7 +106,7 @@ const LANES = {
  * other 156, but nothing in the output said the sample was smaller than asked for. The cap is
  * kept (it bounds wasm memory) and is now DISCLOSED with both numbers.
  */
-function pickFiles(dir, exts, want, cap = 400) {
+function pickFiles(dir, exts, want, cap = Number(process.env.BB_PICK_CAP || 400)) {
   const POP_CAP = Number(process.env.BB_SAMPLE_POP || 20000)
   const all = []
   const walk = (d, depth) => {
@@ -135,13 +135,16 @@ function pickFiles(dir, exts, want, cap = 400) {
   all.sort()
   // `requested` is what the caller asked for; `all.length` is the admitted population. Both are
   // returned so the report can say when the cap, not the corpus, decided the sample size.
-  if (all.length <= want) {
-    const picked = all.slice(0, cap)
-    return { files: picked, admitted: all.length, requested: want, capped: all.length > picked.length }
-  }
-  const stride = all.length / want
+  //
+  // A STRIDE, WHATEVER THE ARITHMETIC WORKS OUT TO. This branch used to read `all.slice(0, cap)` —
+  // a DIRECTORY-ORDER PREFIX — so the moment the request met or exceeded the population the walk
+  // silently reverted to the exact sampling the stride was introduced to end. `bash`'s whole-corpus
+  // census recorded the consequence: "export sites @ 0, redefinitions @ 1271 (the instrument reaches
+  // index < 120)". The stride must therefore be computed from `min(want, all.length)` and applied on
+  // BOTH branches, so `NFILES >= corpus` still walks the corpus instead of its first 400 files.
+  const stride = all.length / Math.min(want, all.length)
   const out = []
-  for (let i = 0; i < want; i++) out.push(all[Math.floor(i * stride)])
+  for (let i = 0; i < Math.min(want, all.length); i++) out.push(all[Math.floor(i * stride)])
   const picked = [...new Set(out)].slice(0, cap)
   return { files: picked, admitted: all.length, requested: want, capped: picked.length < Math.min(want, all.length) }
 }
