@@ -202,7 +202,10 @@ if (process.env.BB_FIRING_SKIP_CONTROL !== "1") {
     ok = types.includes("uses")
   } catch (e) { got = `THREW ${String(e).slice(0, 60)}` }
   console.log(`instrument self-test: ${ok ? "PASS" : "FAIL"} — planted markdown link through parseFile: uses ${ok ? "FIRED" : "DID NOT FIRE"} (types seen: ${got || "(none)"})`)
-  console.log(`instrument self-test: population is the corpus sample below; a SILENT type is a claim about THESE files, not the language\n`)
+  // PREFIXED `#`, because this file IS the board's input: `language-board.ts` counts every
+  // non-header line it does not recognise as `unparsed`, and this prose line was being reported as
+  // 3 unrecognised lines on every board run — noise in the one place a reader looks for signal.
+  console.log(`# instrument self-test: population is the corpus sample below; a SILENT type is a claim about THESE files, not the language\n`)
   if (!ok) { console.error("firing-check CONTROL FAILED — the parseFile path did not surface a markdown `uses` edge, so this run's SILENT column cannot be trusted. Refusing to report."); process.exit(3) }
 }
 
@@ -258,11 +261,25 @@ for (const L of targets) {
     } catch (e) { errs.push(String(e).slice(0, 40)) }
   }
   const fired = [...tally.entries()].filter(([, n]) => n > 0).map(([t]) => t).sort()
+  // THE ROW MUST NAME ITS CORPUS. `json-lane` measured the third mechanism behind a
+  // misleading SILENT column (after SQL's directory-order prefix and markdown's missing
+  // AnalyzeContext): an even stride over the file INDEX is not an even sample of a
+  // construct CLUMPED in one directory. shadcn-svelte is 97.2% `docs/**` theme data, and
+  // 0 of its 25 construct-bearing files fall in the 120-file stride — so 7 types read
+  // SILENT while all 7 fire over the admitted population (contains 3,990,897 · calls 263 ·
+  // implements 113, to name three).
+  //
+  // And `LANES.JSON_B` pins ONE REPOSITORY (`shadcn-svelte`), so `BB_PICK_CAP` cannot lift
+  // the run to a wider population at all: the row is structurally a SINGLE-REPO claim. It
+  // read `JSON_B 1 types fired` and nothing in that line said so. The corpus name and the
+  // admitted-file count now travel with every row, because a reader must be able to tell a
+  // language claim from a one-repo claim without opening this file.
   const shape = picked.capped
-    ? `${parsed}/${files.length} parsed — CAPPED: asked for ${picked.requested} of ${picked.admitted} admitted, the 400-file cap decided the sample`
-    : `${parsed}/${files.length} parsed (sample of the corpus, even stride)`
+    ? `${parsed}/${files.length} parsed of ${picked.admitted} admitted — CAPPED: asked for ${picked.requested}, the 400-file cap decided the sample`
+    : `${parsed}/${files.length} parsed of ${picked.admitted} admitted (even stride)`
+  const corpusNote = `corpus=${corpusDir}${picked.admitted <= files.length && picked.requested >= picked.admitted ? " WHOLE" : ""}`
   const note = errs.length && !parsed ? `ALL ${files.length} FILES FAILED: ${errs[0]}`
-    : shape
+    : `${shape}  [${corpusNote}]`
       + (degraded > 0 ? `  [${degraded} DEGRADED — regex fallback / basic-fallback, excluded, not analyzer evidence]` : "")
   report.push([L, note, tally.size, fired, tally, degraded, files.length])
 }
