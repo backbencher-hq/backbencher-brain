@@ -65,6 +65,20 @@ interface YamlContext {
    * field existed, and therefore what every fixture that passes no root still asserts.
    */
   projectRoot?: string
+  /**
+   * DID THE PINNED GRAMMAR PARSE THIS DOCUMENT AT ALL? `rootNode.hasError`, captured once.
+   *
+   * It exists because a MISS in the pointer index is not one fact. MEASURED over the whole
+   * corpus, 2026-09-10: 762 `references` edges carry
+   * `unresolvedReason=pointer-not-declared-in-file`, and **729 of them (96 %)** sit in the 15
+   * docker `api/docs/*.yaml` files whose root node is an ERROR — while the 183 CLEAN files of
+   * that same repository carry **zero**. The pointer those edges name IS declared:
+   * `api/docs/v1.25.yaml` has `definitions:` at line 131 and `MountType:` at 186, and the Python
+   * reference parser reads the file with 51 definitions. What fails is the grammar (a quoted
+   * scalar whose continuation line is under-indented), and an error-recovered tree is not
+   * evidence that a declaration is missing — so the old reason string stated something false.
+   */
+  parseHadError?: boolean
   content: string
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
@@ -598,7 +612,10 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // Parse errors are collected once by ASTEngine. Keeping that ownership in one
-    // place avoids duplicate warnings for the same ERROR/MISSING node.
+    // place avoids duplicate warnings for the same ERROR/MISSING node. The ONE fact this
+    // analyzer needs from it is whether the tree it is about to index is a clean parse, so it
+    // is read here rather than reconstructed later.
+    ctx.parseHadError = rootNode.hasError === true
     this.collectComments(rootNode, ctx)
     this.visit(rootNode, {
       parent: null,
@@ -1554,9 +1571,15 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         r.confidence = 1
       } else {
         r.metadata.resolved = false
-        r.metadata.unresolvedReason = "pointer-not-declared-in-file"
+        // A MISS ON AN ERROR-RECOVERED TREE IS NOT A MISSING DECLARATION. The pointer index is
+        // built from the tree's own nesting, so when the grammar error-recovers the index can
+        // be keyed by paths the document does not have — and reporting that as
+        // `pointer-not-declared-in-file` states, falsely, that the document lacks the
+        // declaration. Measured: 729 of the corpus's 762 unresolved pointer edges sit in 15
+        // docker spec files with an ERROR root, none in that repo's 183 clean files.
+        r.metadata.unresolvedReason = ctx.parseHadError ? "parse-error-in-document" : "pointer-not-declared-in-file"
         r.confidence = 0.9
-        r.metadata.confidenceReason = "pointer-not-declared-in-file"
+        r.metadata.confidenceReason = r.metadata.unresolvedReason
       }
     }
   }
@@ -2475,14 +2498,28 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    *   `name=a`                    ansible's free-form `key=value`, which is a parameter list
    *   `file=x.yml`                the same, and MEASURED: 5 sites in the ansible population
    *   `'{{ svc }}_cleanup.yml'`   the same, and MEASURED: 6 sites
+   *   `package:lints/core.yaml`   A URI SCHEME, not a path. MEASURED over the whole corpus:
+   *                               **85 refuted edges** — `package:lints/recommended.yaml` 56,
+   *                               `package:dart_flutter_team_lints/analysis_options.yaml` 18,
+   *                               `package:lints/core.yaml` 5, `package:flutter_lints/flutter.yaml`
+   *                               4, `package:foo/foo_package_options.yaml` 1 — every one an
+   *                               `include:` in a Dart `analysis_options.yaml`, whose target is a
+   *                               PUB package resolved by pub, never a path in this project.
+   *   `.vsts-ci/windows/*.yml`    A GLOB. MEASURED: 1 refuted edge (powershell's azure-pipelines
+   *                               path filter). A glob names a SET, so no single candidate can be
+   *                               the thing it names.
    *
    * Everything else is admissible, including a bare `apt.yml` and a `subdir/x.yaml`.
    */
   private static isLiteralPathSpelling(written: string): boolean {
     if (written.length === 0) return false
     if (written.includes("://")) return false
-    // A template or any whitespace: `{{ x }}`, `${x}`, and ansible's `name=a b` free-form.
-    if (/[{}$\s]/.test(written)) return false
+    // A template, any whitespace, or a GLOB: `{{ x }}`, `${x}`, ansible's `name=a b` free-form,
+    // and `dir/*.yml`, which names a set rather than a file.
+    if (/[{}$\s*?]/.test(written)) return false
+    // A URI SCHEME at the start (`package:`, `dart:`, `http:`) is not a path. Anchored, and the
+    // colon must arrive before any separator, so `sub/dir:x.yml` is untouched.
+    if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(written)) return false
     // A free-form `key=value` parameter list is not a path, whatever its tail looks like.
     if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(written)) return false
     return true
