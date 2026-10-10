@@ -2306,7 +2306,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     const qualifiedTarget = (
       ownerText: string | null,
       member: string,
-    ): { target: string | null; cause: string | null; typeName?: string } => {
+    ): { target: string | null; cause: string | null; typeName?: string; claim?: string } => {
       if (!ownerText || !member) return { target: null, cause: "receiverUnnamed" }
       // TWO DIFFERENT DECLINES, and the first draft of this cut did not tell them apart — the dump
       // did. Dart capitalizes type names and lowercases values, which is the one piece of evidence
@@ -2324,9 +2324,24 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       //   using the head TEXT as the type — would have counted a typing gap as a spelling loss in
       //   the very census written to decide which of the two to build.
       if (!visibleTypes.has(ownerText)) {
-        return isCapitalized(ownerText)
-          ? { target: null, cause: "receiverTypeOutsideRun", typeName: ownerText }
-          : { target: null, cause: "receiverTypeUnknown" }
+        if (!isCapitalized(ownerText)) return { target: null, cause: "receiverTypeUnknown" }
+        // THE RECEIVER-TYPE SPELLING, AND WHY ITS CLAIM IS THE HONEST HALF.
+        //
+        // The type's NAME is in the source or in the value's own declaration (`headOwner` resolves
+        // a local, a parameter or a field), so the target can name an owner instead of guessing
+        // that the bare LEAF is unique in the project: `ExternalThing.make` is strictly more
+        // specific than `make`, and it resolves exactly when the project declares
+        // `ExternalThing.make` — measured on the gate's own key space, 966 ambiguous riverpod calls
+        // resolve against 129 previously-resolved rows that stop being resolvable, which is the
+        // trade the census exists to price.
+        //
+        // What makes it SAFE is `baseBeyondRunScope`, whose contract was built for exactly this
+        // situation: the run was handed no project index, so it could not look the owner up. The
+        // claim CANNOT raise a resolution — the gate reads it only where the target names nothing
+        // — and it is checked against the edge's own target owner, so it cannot excuse an unrelated
+        // row. Rows whose spelling DOES resolve never have their claim read, so the spelling is
+        // never bought with an exemption.
+        return { target: `${ownerText}.${member}`, cause: null, typeName: ownerText, claim: ownerText }
       }
       const declared = declaringOwner(member, ownerText, membersByOwner)
       if (declared) {
@@ -2343,8 +2358,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
      * type without its cause — the same reason the cause is produced inside the rule that decides
      * it. A row the analyzer qualified carries nothing here: the cut labels bare rows only.
      */
-    const receiverCut = (q: { cause: string | null; typeName?: string }): Record<string, unknown> =>
-      q.cause ? { receiverCause: q.cause, ...(q.typeName ? { receiverType: q.typeName } : {}) } : {}
+    const receiverCut = (q: { cause: string | null; typeName?: string; claim?: string }): Record<string, unknown> => {
+      // A SPELLED ROW CARRIES THE CLAIM, NOT A CUT CAUSE. The two are mutually exclusive by
+      // construction: the cut labels rows that stayed BARE, and a spelled row did not. Keeping the
+      // split here means no emission site can attach both and no site has to remember the rule.
+      if (q.claim !== undefined) return { baseBeyondRunScope: q.claim }
+      return q.cause ? { receiverCause: q.cause, ...(q.typeName ? { receiverType: q.typeName } : {}) } : {}
+    }
 
     /**
      * A declared type name this pass can POINT AT, or undefined. `Widget?` is the same
@@ -2801,7 +2821,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 confidence: 0.9,
                 line_number: this.nodeLine(memberNode),
                 metadata: q.target
-                  ? { isMemberRead: true, qualifier: "head" }
+                  // THE CLAIM TRAVELS WITH THE SPELLING — see `apply-recv-spell.py` #4: this ternary
+                  // consulted only `q.target`, so the claim was dropped the moment there was a
+                  // target to spell.
+                  ? { isMemberRead: true, qualifier: "head", ...receiverCut(q) }
                   : { isMemberRead: true, ...receiverCut(q) },
               })
             }
@@ -2857,7 +2880,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               confidence: 0.9,
               line_number: this.nodeLine(n),
               metadata: q.target
-                ? { isMemberRead: true, isConstantPattern: true, qualifier: "pattern" }
+                ? { isMemberRead: true, isConstantPattern: true, qualifier: "pattern", ...receiverCut(q) }
                 : { isMemberRead: true, isConstantPattern: true, ...receiverCut(q) },
             })
           }
@@ -2921,7 +2944,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               confidence: 0.6,
               line_number: this.nodeLine(n),
               metadata: q.target
-                ? { isBareRead: true, qualifier: "enclosing" }
+                ? { isBareRead: true, qualifier: "enclosing", ...receiverCut(q) }
                 : { isBareRead: true, ...receiverCut(q) },
             })
           } else if (locals.has(txt)) {
