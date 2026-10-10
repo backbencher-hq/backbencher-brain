@@ -204,8 +204,17 @@ function gateJson(): any {
       { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "inherit"] })
     return JSON.parse(out)
   } catch (e) {
+    // Exit 3 with no stdout is the gate's DIRTY-TREE refusal (or its broken control). Either
+    // way the census has no population to classify, and the gate's own message is the reason:
+    // re-printing it here as a crash would make its refusal look like a bug in the census.
+    const status = (e as { status?: number })?.status
     const stdout = String((e as { stdout?: string | Buffer })?.stdout ?? "")
-    if (stdout.trim().length === 0) throw e
+    if (status === 3 || stdout.trim().length === 0) {
+      const stderr = String((e as { stderr?: string | Buffer })?.stderr ?? "")
+      console.error("the fleet gate refused to measure (see its message above); refusing to census a population that was not measured")
+      if (stderr.trim().length > 0) console.error(stderr.trim())
+      process.exit(3)
+    }
     return JSON.parse(stdout)
   }
 }

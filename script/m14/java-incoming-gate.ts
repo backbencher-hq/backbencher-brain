@@ -259,6 +259,27 @@ if (typeof process === "undefined") throw new Error("node only")
 const argv = process.argv.slice(2)
 const JSON_OUT = argv.includes("--json")
 const UPDATE = argv.includes("--update-baseline")
+const ALLOW_DIRTY = argv.includes("--allow-dirty")
+
+// THE TREE MUST BE A COMMIT. An analyzer-digest binding is not enough: the numbers this gate
+// ratchets come from `pool-worker.ts` parsing the corpus, and this checkout is SHARED — another
+// lane's uncommitted edits to src/ast move the measurement without moving the declaration's
+// digest. That is not hypothetical: the first declaration shipped `overrides 495`, measured in a
+// tree carrying another lane's uncommitted pool-worker/import-resolution work, while a clean
+// checkout of the SAME commit measures `overrides 488` — seven edges of phantom ceiling that
+// would have read as a Java regression (or, worse, as a Java floor) forever. So a dirty src/ast
+// refuses the run with exit 3 instead of ratifying a tree no commit describes; `--allow-dirty`
+// exists for a developer inspecting their own in-flight change, and says so in the output.
+function dirtyAstFiles(): string[] {
+  try {
+    const out = execFileSync("git", ["status", "--porcelain", "--", "src/ast"], {
+      cwd: ROOT, encoding: "utf8",
+    })
+    return out.split("\n").map((l) => l.slice(3).trim()).filter(Boolean)
+  } catch {
+    return []
+  }
+}
 const sampleArg = argv.find((a) => a.startsWith("--sample="))
 const SAMPLE = Number(sampleArg ? sampleArg.split("=")[1] : 200)
 const rest = argv.filter((a) => !a.startsWith("--"))
@@ -437,6 +458,21 @@ if (!control.ok) {
   for (const f of control.failures) console.error(`  ${f}`)
   console.error("Refusing to report a verdict: a probe that cannot fail reads the same when broken.")
   process.exit(3)
+}
+
+const dirty = dirtyAstFiles()
+if (dirty.length > 0 && !ALLOW_DIRTY) {
+  console.error("FATAL: this tree is not a commit — refusing to ratchet a measurement no commit describes.")
+  console.error(`  uncommitted under src/ast (${dirty.length}): ${dirty.slice(0, 8).join(", ")}${dirty.length > 8 ? ", …" : ""}`)
+  console.error("The declared numbers come from pool-worker parsing the corpus, so another lane's")
+  console.error("uncommitted edits move them without moving the analyzer digest. Measure from a")
+  console.error("clean checkout of the commit (git worktree add --detach /tmp/wt <sha>) — or pass")
+  console.error("--allow-dirty to inspect your own in-flight change, understanding the numbers are not")
+  console.error("attributable to any commit.")
+  process.exit(3)
+}
+if (dirty.length > 0 && ALLOW_DIRTY) {
+  console.warn(`WARNING: --allow-dirty — measurement includes ${dirty.length} uncommitted src/ast file(s); not attributable to a commit.`)
 }
 
 const m = measure()
