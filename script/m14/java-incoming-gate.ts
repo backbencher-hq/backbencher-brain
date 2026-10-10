@@ -1,0 +1,505 @@
+/**
+ * java-incoming-gate — Java's INCOMING DECLARATION, the artifact the Java lane did not have.
+ *
+ * WHY THIS EXISTS, as a sentence a reader can check:
+ *
+ *   `script/m14/incoming-gate.ts` MEASURES Java — it prints `ambiguous 5,024` and
+ *   `unresolved 12,738` of 26,095 edges and exits 1, because those numbers are above its
+ *   "all resolved or declared external" bar. A measurement that exits 1 forever is a
+ *   measurement nobody can ratchet, and a ratchet nobody can tighten is a number, not a
+ *   contract. It cannot even ratchet itself: the fleet gate runs 23 lanes and its verdict
+ *   is about the fleet's bar, not about what Java's lane has declared and still owes.
+ *
+ *   TypeScript has the other shape and it worked: every unresolved class is DECLARED in
+ *   `docs/analyzers/typescript-ambiguity-sweep.md` with a rule stating what the class is,
+ *   and a cluster is either repaid or it is on the list. This file is that shape for Java,
+ *   built from the same instrument — not a second measurement of Java, which would be a
+ *   third number about the same population and a worse one (two instruments disagreeing is
+ *   the failure mode the honesty contract exists to prevent; script/m14/verify-honesty.ts).
+ *
+ * WHAT THE CLASSES ARE. Every Java edge, for each of the ten relationship types, falls in
+ * exactly one of four classes, and the four are a total partition of the edges:
+ *
+ *   resolved         target matched exactly one declaration. FLOOR: may not decrease.
+ *   external         target matched no declaration and the edge carries the analyzer's
+ *                    provable external marker (`isExternalTarget` + `externalReason`).
+ *                    FLOOR: may not decrease — a regression here means an edge that could
+ *                    prove it was outside the project now cannot say so.
+ *   ambiguous        target matched two or more declarations. CEILING.
+ *   otherUnresolved  target matched none and carries no marker — the honest backlog,
+ *                    explicitly NOT claimed to be third-party. CEILING.
+ *   unclassed        edges whose target string was empty, so no class was assigned.
+ *                    CEILING 0. An edge in no class is an edge this declaration does not
+ *                    explain, and "not explained" may not silently be a number.
+ *
+ * THE ALGEBRA IS MEASURED, NOT ASSUMED. The first version of this file derived
+ * `otherUnresolved = unresolved - external`, on the assumption that marked edges are counted
+ * inside `unresolved` and then subset out. The instrument does not work that way — the two are
+ * incremented in mutually exclusive branches of the same `decls === 0` test
+ * (incoming-gate.ts:331-340) — and the assumption printed `implements otherUnresolved -10`
+ * on the very first full run: a negative count of things that do not exist. The four classes
+ * are siblings, and they partition the edges exactly:
+ *
+ *     edges = resolved + ambiguous + otherUnresolved + external + unclassed
+ *
+ * which the gate now CHECKS per type (`unclassed`) instead of assuming — on the run below the
+ * unclassed column is 0 for all ten types and the identity can be verified column by column.
+ *
+ * DECLARED IS NOT REPAID. A ceiling is a claim about what is known and accepted, never a
+ * claim that the class is fine. The gate prints, per type, the instrument's 25-name worklist
+ * of the unresolved targets and the declarations crowding each ambiguous one, so the numbers
+ * in this declaration can always be walked back to the things that produced them.
+ */
+import { createHash } from "node:crypto"
+import { execFileSync } from "node:child_process"
+import { readFileSync, writeFileSync } from "node:fs"
+import path from "node:path"
+
+const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
+const ANALYZER = path.join(ROOT, "src/ast/real-java-analyzer.ts")
+const DECL_PATH = path.join(ROOT, "validation/m14/instruments/java/incoming-declaration.json")
+const FLEET_GATE = path.join(ROOT, "script/m14/incoming-gate.ts")
+
+const ALL_TYPES = [
+  "calls", "uses", "contains", "imports", "references",
+  "exports", "extends", "implements", "overrides", "instantiates",
+] as const
+type Type = (typeof ALL_TYPES)[number]
+
+const CLASSES = ["resolved", "external", "ambiguous", "otherUnresolved", "unclassed"] as const
+type Klass = (typeof CLASSES)[number]
+
+/** What each class IS. Shared across types because the definition does not vary by type —
+ *  what varies is the number and the reason it is nonzero, which is what `rules` records. */
+const CLASS_RULES: Record<Klass, string> = {
+  resolved:
+    "target matched exactly one declaration in the 200-file sample's declaration pool " +
+    "(name or qualifiedName alias). A floor, not a ceiling: resolution is the point of the lane.",
+  external:
+    "target matched no declaration and the edge carries the analyzer's provable external " +
+    "marker (isExternalTarget:true + a recorded externalReason). A floor: such an edge must " +
+    "keep being able to say so. Marking is NOT claimed complete — see otherUnresolved.",
+  ambiguous:
+    "target matched two or more declarations. Counted by DECLARATION (incoming-gate.ts) — a " +
+    "name declared in n files counts n. The pool is file-local, so a member name emitted " +
+    "unqualified by one file can collide with another file's declaration of the same word.",
+  otherUnresolved:
+    "target matched no declaration and carries no marker. This is the backlog. It is " +
+    "explicitly NOT asserted to be third-party: each name in it is either (a) a member path " +
+    "of a foreign type the analyzer cannot see, (b) a local declaration question the target " +
+    "spelling defeats, or (c) project code not present in the 200-file sampled pool.",
+  unclassed:
+    "edges with an empty target string. Ceiling 0, always: the instrument can only classify an " +
+    "edge it has a target for, and an empty target is a defect in the emitting type, not a class.",
+}
+
+/** The declaration shape. Numbers are per type; rules are shared; notes are the prose. */
+type Decl = {
+  meta: Record<string, unknown>
+  rules: Record<string, string>
+  notes: string[]
+  types: Record<string, Record<Klass, number>>
+}
+
+type Row = {
+  type: string
+  edges: number
+  resolved: number
+  ambiguousByDecl: number
+  ambiguousByKind: number
+  unresolved: number
+  markedExternal: number
+  ambiguousNames: { name: string; declarations: number; kinds: string }[]
+  unresolvedNames: { name: string; type: string }[]
+}
+
+type Measurement = {
+  lang: string
+  population: Record<string, unknown>
+  verdict: string
+  reason: string
+  instrumentSelfTest: { ok: boolean; failures: string[] }
+  perType: Record<string, Row>
+  totals: Record<string, number>
+}
+
+type Check = { type: string; klass: Klass; declared: number; measured: number; ok: boolean; detail: string }
+type Verdict = { pass: boolean; checks: Check[]; failures: string[] }
+
+/**
+ * The whole verdict, as a pure function of (decl, measured). Pure so the self-test below can
+ * plant a failure and watch it fire — an instrument whose failure mode has never been
+ * exercised is a probe that returns the same reading when broken.
+ */
+function evaluate(decl: Decl, m: Measurement): Verdict {
+  const checks: Check[] = []
+  const failures: string[] = []
+
+  const classesOf = (r: Row): Record<Klass, number> => ({
+    resolved: r.resolved,
+    external: r.markedExternal,
+    ambiguous: r.ambiguousByDecl,
+    // Directly the instrument's unmarked-unbound count. NOT `unresolved - external`:
+    // the two are disjoint classes (see the algebra note at the top of this file), and the
+    // subtraction produced a negative count on the first full run.
+    otherUnresolved: r.unresolved,
+    unclassed: r.edges - (r.resolved + r.ambiguousByDecl + r.unresolved + r.markedExternal),
+  })
+
+  const declaredTypeNames = Object.keys(decl.types)
+  for (const t of declaredTypeNames) {
+    if (!ALL_TYPES.includes(t as Type)) {
+      failures.push(`declaration names type '${t}', which the instrument does not emit — stale declaration`)
+      continue
+    }
+    const row = m.perType?.[t]
+    if (!row) {
+      failures.push(`type '${t}' is declared but the measurement has no row for it — the instrument changed shape`)
+      continue
+    }
+    const measured = classesOf(row)
+    const declared = decl.types[t] as Record<Klass, number>
+    for (const k of CLASSES) {
+      if (typeof declared?.[k] !== "number") {
+        failures.push(`${t}: class '${k}' is not declared. Every class must be declared or the numbers are not explained`)
+        continue
+      }
+      const d = declared[k]
+      const x = measured[k]
+      // THREE bound kinds, not two. `unclassed` is neither a floor nor a ceiling: it is an
+      // identity — the classes sum to `edges` or the measurement does not add up. A negative
+      // unclassed (−1, the classes summing PAST the edge count) passes a `<= 0` ceiling, which
+      // is exactly how the self-test caught this gate treating impossible arithmetic as fine.
+      const kind: "floor" | "ceiling" | "exact" =
+        k === "resolved" || k === "external" ? "floor" : k === "unclassed" ? "exact" : "ceiling"
+      const ok = kind === "floor" ? x >= d : kind === "ceiling" ? x <= d : x === d
+      checks.push({
+        type: t, klass: k, declared: d, measured: x, ok,
+        detail: kind === "floor"
+          ? (ok ? "at or above floor" : `BELOW FLOOR by ${d - x}`)
+          : kind === "ceiling"
+            ? (ok ? "at or under ceiling" : `OVER CEILING by ${x - d}`)
+            : (ok ? "classes sum to edges exactly" : `CLASS SUM OFF BY ${x - d}`),
+      })
+      if (!ok) {
+        failures.push(kind === "floor"
+          ? `${t}: ${k} floor ${d} violated — measured ${x} (${d - x} LOST)`
+          : kind === "ceiling"
+            ? `${t}: ${k} ceiling ${d} violated — measured ${x} (${x - d} REGRESSED)`
+            : `${t}: classes do not sum to edges — measured unclassed ${x}, declared ${d}; the numbers this declaration ratchets are internally inconsistent`)
+      }
+    }
+  }
+  for (const t of ALL_TYPES) {
+    if (!declaredTypeNames.includes(t)) {
+      failures.push(`type '${t}' is absent from the declaration — undeclared is not zero`)
+    }
+  }
+  return { pass: failures.length === 0, checks, failures }
+}
+
+/** Positive control: four planted failures and one clean baseline. Runs before any corpus. */
+function selfTest(): { ok: boolean; failures: string[] } {
+  const out: string[] = []
+  // Arithmetically consistent on purpose: the five classes must sum to `edges`, or the
+  // clean case trips the unclassed check and the control stops being a control.
+  const baseRow = (over: Partial<Row> = {}): Row => ({
+    type: "calls", edges: 95, resolved: 60, ambiguousByDecl: 20,
+    ambiguousByKind: 2, unresolved: 10, markedExternal: 5,
+    ambiguousNames: [], unresolvedNames: [], ...over,
+  })
+  const mkMeas = (over: Partial<Record<Type, Partial<Row>>> = {}): Measurement => {
+    const perType: Record<string, Row> = {}
+    for (const t of ALL_TYPES) perType[t] = baseRow({ type: t, ...(over[t] ?? {}) })
+    return {
+      lang: "java", population: {}, verdict: "FAIL", reason: "",
+      instrumentSelfTest: { ok: true, failures: [] }, perType, totals: {},
+    }
+  }
+  const mkDecl = (): Decl => {
+    const types: Record<string, Record<Klass, number>> = {}
+    for (const t of ALL_TYPES) types[t] = { resolved: 60, external: 5, ambiguous: 20, otherUnresolved: 10, unclassed: 0 }
+    return { meta: {}, rules: CLASS_RULES, notes: [], types }
+  }
+
+  const clean = evaluate(mkDecl(), mkMeas())
+  if (!clean.pass) out.push(`clean measurement did not PASS: ${clean.failures.join("; ")}`)
+
+  const over = evaluate(mkDecl(), mkMeas({ calls: { ambiguousByDecl: 21, unresolved: 9 } }))
+  if (over.pass) out.push(`planted ambiguous over-ceiling (20 -> 21) was NOT caught`)
+
+  const floor = evaluate(mkDecl(), mkMeas({ uses: { resolved: 59, edges: 94 } }))
+  if (floor.pass) out.push(`planted resolved floor regression (60 -> 59) was NOT caught`)
+
+  const ext = evaluate(mkDecl(), mkMeas({ calls: { markedExternal: 4, edges: 94 } }))
+  if (ext.pass) out.push(`planted external floor regression (5 -> 4) was NOT caught`)
+
+  const undeclared = mkDecl()
+  delete undeclared.types.instantiates
+  const und = evaluate(undeclared, mkMeas())
+  if (und.pass) out.push(`undeclared type (instantiates) was NOT caught`)
+
+  const hidden = evaluate(mkDecl(), mkMeas({ calls: { unresolved: 11, edges: 96 } }))
+  // otherUnresolved 11 > 10. The check must fire on the class, not on a re-derived sum.
+  if (hidden.pass) out.push(`otherUnresolved over-ceiling (10 -> 11) was NOT caught`)
+
+  const emptied = evaluate(mkDecl(), mkMeas({ calls: { edges: 96 } }))
+  // One more edge, same classes -> unclassed 1 > 0. An unexplained edge must not be silence.
+  if (emptied.pass) out.push(`planted unclassed edge (0 -> 1) was NOT caught`)
+
+  const offByOne = evaluate(mkDecl(), mkMeas({ uses: { edges: 94 } }))
+  // One FEWER edge than the classes account for -> unclassed -1, which is also impossible.
+  if (offByOne.pass) out.push(`class sum exceeding edges (unclassed -1) was NOT caught`)
+
+  return { ok: out.length === 0, failures: out }
+}
+
+if (typeof process === "undefined") throw new Error("node only")
+
+const argv = process.argv.slice(2)
+const JSON_OUT = argv.includes("--json")
+const UPDATE = argv.includes("--update-baseline")
+const sampleArg = argv.find((a) => a.startsWith("--sample="))
+const SAMPLE = Number(sampleArg ? sampleArg.split("=")[1] : 200)
+const rest = argv.filter((a) => !a.startsWith("--"))
+const LANE_LANG = rest[0] ?? "java"
+const LANE_EXT = rest[1] ?? "java"
+
+function analyzerDigest(): string {
+  return "sha256:" + createHash("sha256").update(readFileSync(ANALYZER)).digest("hex").slice(0, 16)
+}
+
+function measure(): Measurement {
+  // The fleet gate EXITS 1 when it reports FAIL — that is its whole design, and Java is
+  // expected to read FAIL on its bar until the backlog is repaid. So exit 1 is the normal
+  // case here, not an error: the measurement is the JSON on stdout, and it is read from
+  // `error.stdout`. Letting execFileSync's throw escape would make this gate unable to
+  // measure the one lane it exists for — a gate that only works on a green lane is not a
+  // ratchet, it is a victory lap.
+  try {
+    const out = execFileSync(
+      "npx",
+      ["tsx", FLEET_GATE, LANE_LANG, LANE_EXT, String(SAMPLE), "--json"],
+      { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "inherit"] },
+    )
+    return JSON.parse(out) as Measurement
+  } catch (e) {
+    const stdout = String((e as { stdout?: string | Buffer })?.stdout ?? "")
+    if (stdout.trim().length === 0) throw e
+    return JSON.parse(stdout) as Measurement
+  }
+}
+
+function loadDecl(): Decl | null {
+  try {
+    return JSON.parse(readFileSync(DECL_PATH, "utf8")) as Decl
+  } catch {
+    return null
+  }
+}
+
+function buildDecl(m: Measurement): Decl {
+  const types: Record<string, Record<Klass, number>> = {}
+  for (const t of ALL_TYPES) {
+    const r = m.perType[t]
+    types[t] = {
+        resolved: r.resolved,
+        external: r.markedExternal,
+        ambiguous: r.ambiguousByDecl,
+        otherUnresolved: r.unresolved,
+        unclassed: r.edges - (r.resolved + r.ambiguousByDecl + r.unresolved + r.markedExternal),
+      }
+  }
+  return {
+    meta: {
+      lang: LANE_LANG,
+      asked:
+        "the fleet gate MEASURES Java and exits 1 on its fleet-wide bar; this declaration RATCHETS " +
+        "the same measurement per type, so a class can only move deliberately.",
+      instrument: "script/m14/incoming-gate.ts (single measurement; no second instrument)",
+      instrumentVersion: "row schema: edges/resolved/ambiguousByDecl/ambiguousByKind/unresolved/markedExternal + 25-name worklists",
+      sample: SAMPLE,
+      corpusTotal: m.population.corpusTotal,
+      corpusRepos: m.population.repos,
+      parsed: m.population.parsed,
+      qualifiedNameAliases: m.population.qualifiedNameAliases,
+      metric: "ambiguous counted by DECLARATIONS (distinct-file declarations), not distinct kinds",
+      analyzer: "src/ast/real-java-analyzer.ts",
+      analyzerDigest: analyzerDigest(),
+      generated: new Date().toISOString().slice(0, 10),
+      direction:
+        "resolved/external are FLOORS (may not decrease). ambiguous/otherUnresolved/unclassed are " +
+        "CEILINGS (may not increase). The classes are siblings that partition the edges: " +
+        "edges = resolved + ambiguous + otherUnresolved + external + unclassed, and the last " +
+        "of those is checked to be 0 rather than assumed.",
+    },
+    rules: CLASS_RULES,
+    notes: [
+      "A ceiling is a claim about what is known and accepted, never that the class is fine. " +
+      "Repaying a cluster means lowering its ceiling in the same commit that lowers the number.",
+      "This gate shares the instrument with the fleet gate on purpose: two instruments measuring " +
+      "the same population and disagreeing is the failure mode script/m14/verify-honesty.ts exists " +
+      "to catch. One measurement, two verdicts — the fleet's bar and Java's declaration.",
+      "The worklist printed below each type is the instrument's own (up to 25 names per type, " +
+      "per run). A count that cannot be walked back to its names is not a measurement.",
+    ],
+    types,
+  }
+}
+
+function floorCeilTable(v: Verdict, m: Measurement, decl: Decl): string {
+  const w = (s: string | number, n: number) => String(s).padEnd(n)
+  const lines: string[] = []
+  lines.push(w("type", 14) + w("edges", 9) + w("resolved", 22) + w("external", 20) + w("ambiguous", 22) + "otherUnresolved")
+  lines.push("-".repeat(96))
+  for (const t of ALL_TYPES) {
+    const r = m.perType[t]
+    if (!r) continue
+    const d = decl.types[t]
+    const m0 = { resolved: r.resolved, external: r.markedExternal, ambiguous: r.ambiguousByDecl, otherUnresolved: r.unresolved, unclassed: r.edges - (r.resolved + r.ambiguousByDecl + r.unresolved + r.markedExternal) }
+    const cell = (k: Klass, measured: number) => {
+      if (typeof d?.[k] !== "number") return w(`${measured} !UNDECLARED`, 20)
+      const isFloor = k === "resolved" || k === "external"
+      const bad = isFloor ? measured < d[k] : measured > d[k]
+      return w(`${measured} (${isFloor ? ">=" : "<="} ${d[k]})${bad ? " VIOLATED" : ""}`, k === "ambiguous" ? 22 : 20)
+    }
+    lines.push(
+      w(t, 14) + w(r.edges, 9) + cell("resolved", m0.resolved) + cell("external", m0.external) +
+      cell("ambiguous", m0.ambiguous) + cell("otherUnresolved", m0.otherUnresolved) +
+      (m0.unclassed === 0 ? "0" : `UNCLASSED ${m0.unclassed}`),
+    )
+  }
+  lines.push("-".repeat(96))
+  const t = m.totals
+  if (t && typeof t.edges === "number") {
+    const dTot = { resolved: 0, external: 0, ambiguous: 0, otherUnresolved: 0, unclassed: 0 } as Record<Klass, number>
+    for (const tt of ALL_TYPES) {
+      const d = decl.types[tt]
+      for (const k of CLASSES) dTot[k] += d?.[k] ?? 0
+    }
+    const unclassed = t.edges - (t.resolved + t.ambiguousByDecl + t.unresolved + t.markedExternal)
+    lines.push(
+      w("TOTAL", 14) + w(t.edges, 9) +
+      w(`${t.resolved} (>= ${dTot.resolved})`, 22) +
+      w(`${t.markedExternal} (>= ${dTot.external})`, 20) +
+      w(`${t.ambiguousByDecl} (<= ${dTot.ambiguous})`, 22) +
+      `${t.unresolved} (<= ${dTot.otherUnresolved})` +
+      (unclassed === 0 ? "   classes sum to edges" : `   UNCLASSED ${unclassed}`),
+    )
+  }
+  lines.push("")
+  lines.push(v.pass ? "VERDICT: PASS — every class is declared, no floor lost, no ceiling raised." :
+    `VERDICT: FAIL — ${v.failures.length} declaration violation(s).`)
+  for (const f of v.failures) lines.push(`  ${f}`)
+  return lines.join("\n")
+}
+
+function worklist(m: Measurement): string {
+  const w = (s: string | number, n: number) => String(s).padEnd(n)
+  const out: string[] = []
+  for (const t of ALL_TYPES) {
+    const r = m.perType[t]
+    if (!r) continue
+    const other = r.unresolved
+    if (other <= 0 && r.ambiguousByDecl <= 0) continue
+    out.push(`${t}: ${r.ambiguousByDecl} ambiguous, ${other} otherUnresolved (external ${r.markedExternal} declared separately)`)
+    for (const a of r.ambiguousNames.slice(0, 4)) {
+      out.push(`  AMBIG  ${w(a.name, 44)} ${a.declarations} declarations  [${a.kinds}]`)
+    }
+    for (const u of r.unresolvedNames.slice(0, 4)) {
+      out.push(`  UNRES  ${w(u.name, 44)} ${u.type}`)
+    }
+  }
+  if (out.length === 0) out.push("(no ambiguous or otherUnresolved targets in this run)")
+  return out.join("\n")
+}
+
+// THE SELF-TEST RUNS FIRST, ALWAYS — before the corpus, before the declaration. A gate whose
+// own positive control cannot fire must not be allowed to print a verdict about a language.
+const control = selfTest()
+if (!control.ok) {
+  console.error("FATAL: this gate's own positive control did not fire.")
+  for (const f of control.failures) console.error(`  ${f}`)
+  console.error("Refusing to report a verdict: a probe that cannot fail reads the same when broken.")
+  process.exit(3)
+}
+
+const m = measure()
+
+if (!m.instrumentSelfTest?.ok) {
+  console.error("FATAL: the measuring instrument's own self-test did not fire.")
+  for (const f of m.instrumentSelfTest?.failures ?? []) console.error(`  ${f}`)
+  process.exit(3)
+}
+if (Number(m.population?.degraded ?? 0) > 0) {
+  console.error(`FATAL: the measurement includes ${m.population.degraded} degraded (regex fallback) parse(s).`)
+  console.error("A number about the fallback is not a number about the analyzer. Refusing to ratchet it.")
+  process.exit(3)
+}
+
+if (UPDATE) {
+  const decl = loadDecl()
+  const built = buildDecl(m)
+  if (decl?.rules) built.rules = decl.rules // rules are authored prose, not regenerated numbers
+  if (decl?.notes) built.notes = decl.notes
+  writeFileSync(DECL_PATH, JSON.stringify(built, null, 2) + "\n")
+  console.log(`wrote ${path.relative(ROOT, DECL_PATH)} (${Object.keys(built.types).length} types declared)`)
+  console.log(`analyzer digest: ${built.meta.analyzerDigest}`)
+  process.exit(0)
+}
+
+const decl = loadDecl()
+if (!decl) {
+  console.error(`FATAL: no declaration at ${path.relative(ROOT, DECL_PATH)}.`)
+  console.error("An undeclared lane is not a green lane. Run with --update-baseline to declare it once,")
+  console.error("then read every rule in script/m14/java-incoming-gate.ts CLASS_RULES before trusting it.")
+  process.exit(2)
+}
+
+const v = evaluate(decl, m)
+const digestNow = analyzerDigest()
+const digestDecl = String(decl.meta?.analyzerDigest ?? "")
+const digestOk = digestNow === digestDecl
+if (!digestOk) {
+  v.pass = false
+  v.failures.push(
+    `analyzer digest ${digestNow} != declared ${digestDecl}. The declaration is about a specific ` +
+    "analyzer; re-measure and re-declare deliberately (--update-baseline), do not inherit the ceilings.",
+  )
+}
+
+if (JSON_OUT) {
+  console.log(JSON.stringify({
+    lang: LANE_LANG,
+    declared: decl.types,
+    measured: Object.fromEntries(ALL_TYPES.map((t) => {
+      const r = m.perType[t]
+      return [t, r ? {
+        edges: r.edges, resolved: r.resolved, external: r.markedExternal,
+        ambiguous: r.ambiguousByDecl, otherUnresolved: r.unresolved,
+        unclassed: r.edges - (r.resolved + r.ambiguousByDecl + r.unresolved + r.markedExternal),
+      } : null]
+    })),
+    digest: { declared: digestDecl, measured: digestNow, ok: digestOk },
+    verdict: v.pass ? "PASS" : "FAIL",
+    failures: v.failures,
+    checks: v.checks,
+    instrumentSelfTest: control,
+    population: m.population,
+  }, null, 2))
+  process.exit(v.pass ? 0 : 1)
+}
+
+console.log(`java incoming declaration — ${path.relative(ROOT, DECL_PATH)}`)
+console.log(`sample: ${m.population.parsed} parsed of ${m.population.sampled} sampled (corpus ${m.population.corpusTotal} .${LANE_EXT} across ${m.population.repos} repos), stride sample`)
+console.log(`qualifiedName aliases indexed: ${m.population.qualifiedNameAliases}`)
+console.log(`analyzer digest: ${digestNow} (declared ${digestDecl})${digestOk ? "" : "  MISMATCH"}`)
+console.log()
+console.log(floorCeilTable(v, m, decl))
+console.log()
+console.log("WORKLIST (instrument-reported, capped at 25 names per type; first 4 shown per type):")
+console.log(worklist(m))
+console.log()
+console.log("Scope of a PASS: this population, this analyzer digest, these declared classes. It does not")
+console.log("say the ceilings are small — they are the measured backlog, declared and ratcheted.")
+process.exit(v.pass ? 0 : 1)

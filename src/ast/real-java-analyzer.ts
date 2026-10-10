@@ -927,6 +927,20 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const sym: ASTEngine.UniversalSymbol = {
               name,
               kind,
+              // M14 INCOMING — the declaration's QUALIFIED name, published.
+              //
+              // The analyzer has always computed this (`buildFqn`, above, is the
+              // JLS name: package + nesting + own name) and used it internally for
+              // `classHierarchy`, then dropped it: no java symbol carried a
+              // `qualifiedName`, so `pool-worker.ts:1154` filled the field with its
+              // last-resort fallback and `script/m14/incoming-gate.ts` measured
+              // `qualifiedNameAliases: 0` for this lane — against 33,750 for
+              // typescript. What that costs is resolution, not tidiness: an edge
+              // whose target is spelled `com.acme.Foo` (a fully-qualified reference,
+              // an import's module, another package's type) has nothing to match,
+              // because the only key the pool publishes for this declaration is the
+              // leaf `Foo`.
+              qualifiedName: fqn,
               // M59 (#825): the declaration's line, annotations skipped.
               range: this.symbolRange(node),
               visibility,
@@ -1277,6 +1291,18 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const sym: ASTEngine.UniversalSymbol = {
             name: memberName,
             kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
+            // M14 INCOMING — the member's QUALIFIED name, WITHOUT the signature.
+            //
+            // `fqn` above carries it (`Owner.method(int,String)`) and that is the
+            // right key for the override BFS, but no edge spells a signature: an
+            // `overrides` target is `Owner.method` and a `calls` target is
+            // `receiver.method`. Publishing the signature-bearing form would add a
+            // key nothing can match. Overloads therefore share one qualified name —
+            // correct for the JLS (a method's qualified name is `Type.method`;
+            // overloading is a signature matter) and harmless to the candidate
+            // count, which counts DECLARING FILES, so N overloads in one file are
+            // still one candidate.
+            qualifiedName: parentContext ? `${parentContext.fqn}.${memberName}` : memberName,
               // M59 (#825): the declaration's line, annotations skipped.
               range: this.symbolRange(node),
             comments: methodDoc ? [methodDoc] : [],
