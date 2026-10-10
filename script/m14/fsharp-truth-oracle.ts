@@ -765,6 +765,157 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
       if (c) stack.push({ node: c, scope: cur, callOwner: owner, inBody: body, suppressCalls: suppressCalls || isExpressionProperty })
     }
   }
+
+  // ---- the two labels this lane published and truth never derived (FS-P19) ---------
+  //
+  // `imports` and `uses` were EMITTED by the analyzer and derived by NOTHING here, so
+  // `verify-label-coverage.ts` listed them as unaudited (265 and 188 edges on its 25-file
+  // frame) and the differential could not see them at all: the compared-label allowlist
+  // drops a label on the analyzer side, and a label that is dropped is not "unmeasured" —
+  // it is excluded, which from the outside looks exactly like a label with nothing wrong.
+  // This is the same asymmetry `contains` was lost to four times, one label over.
+  //
+  // Both arms are derived from the LANGUAGE, and in each case the question that decides
+  // the target is "what does the source NAME", not "what did the analyzer write":
+  //
+  //   imports  (a) `import_decl` — `open X` / `open type X`. The target is the written
+  //                module path, VERBATIM: `open Microsoft.FSharp.Collections` names that
+  //                namespace and not its leaf, and the leaf rule (R10) that governs every
+  //                other label in this file does not apply, because a module's leaf is not
+  //                the module. Same node for both spellings; the `type` token only changes
+  //                WHAT is opened, not what the path names.
+  //            (b) `module_abbrev` — `module X = Y`. The dependency is the RIGHT-HAND
+  //                path; `X` is the alias this very file introduces, and naming it would
+  //                make every alias a self-dependency (a first draft of the analyzer's own
+  //                arm did exactly that). The grammar makes the alias and the path DIRECT
+  //                children, so reading direct children is what separates them.
+  //            (c) `fsi_directive_decl` — `#r "…"` / `#load "…"` / `#I "…"`. The string
+  //                LITERALLY names the assembly or file compiled against. Six keywords
+  //                share this node and only three name a resource: `#time`, `#help` and
+  //                `#quit` are REPL controls that touch nothing outside the file, so the
+  //                keyword is read off the tree and the other three are refused. The value
+  //                is the string's CONTENT, not its spelling — `#r "nuget: X"` names
+  //                `nuget: X`, and the delimiters are tokens of the grammar, not part of
+  //                the name. (Doubled `""` inside a verbatim string is not un-doubled,
+  //                matching the analyzer's own disclosure: no corpus specifier contains
+  //                one — measured over all 193 directive nodes.)
+  //
+  //   uses     an ATTRIBUTE APPLICATION — `[<Struct>]`, `[<Xunit.Fact>]`, `[<assembly:
+  //            TypeProviderAssembly>]`. It NAMES a type, applies it as a marker and never
+  //            invokes it, which is why it is not a call, a reference, a base, an
+  //            implementation or a construction. The target is the attribute type's
+  //            LEAST segment (`Xunit.Fact` declares `Fact`), except when THIS file
+  //            declares a symbol under that name — then the target is that declaration's
+  //            qualified name, because the written name is provably the file's own
+  //            identity rather than a same-named type from somewhere else. The
+  //            `target` FIELD is skipped (`[<return: Struct>]` attaches `Struct` to the
+  //            return, and reading the keyword as the dependency cost 11 edges in a
+  //            200-file draw). An attribute's ARGUMENT is never read: `[<Obsolete("x")>]`
+  //            names `Obsolete` and nothing inside `"x"`.
+  //
+  // The scope stack is maintained here rather than reused from the walk above because this
+  // pass visits the whole tree unconditionally — the two arms are about nodes the main
+  // walk's chains do not gate on. The idiot check the main walk carries is carried here
+  // too: a parse-recovery region is not a fact about the source.
+  {
+    const isName = (s: string): boolean =>
+      /^(`{2}[^`]*`{2}|`[^`]*`|[A-Za-z_][A-Za-z0-9_']*|\([^()\s]+\))$/.test(s)
+    const resourceKeywords = new Set(["#r", "#load", "#I"])
+
+    /** The names this file DECLARES, first-wins, so a written name can be proven local. */
+    const declaredFqn = new Map<string, string>()
+    for (const s of symbols ?? []) {
+      const nm = s?.name ? String(s.name) : ""
+      if (!nm || declaredFqn.has(nm)) continue
+      const owner = String(s?.ownerName ?? "")
+      declaredFqn.set(nm, owner ? `${owner}.${nm}` : nm)
+    }
+
+    /**
+     * The attribute's written type, reduced the way the language reduces it.
+     *
+     * The descent is through the object construction's TYPE child only — an attribute is
+     * `[<Target: Type(args)>]` and the argument list is an expression, so descending into
+     * every named child would read a name out of `[<Obsolete(nameof(x))>]`'s argument.
+     * A `long_identifier` yields its LAST identifier, because `System.Obsolete` declares
+     * `Obsolete`.
+     */
+    const attrTypeLeaf = (attr: any): string | null => {
+      const queue: any[] = []
+      for (let i = 0; i < attr.namedChildCount; i++) {
+        const c = attr.namedChild(i)
+        if (c && attr.fieldNameForChild(i) !== "target") queue.push(c)
+      }
+      while (queue.length) {
+        const n = queue.shift()
+        if (n.type === "identifier") return String(n.text ?? "") || null
+        if (n.type === "long_identifier") {
+          const ids = namedChildren(n).filter((x: any) => x.type === "identifier")
+          const leaf = ids.length ? ids[ids.length - 1] : n
+          return String(leaf.text ?? "") || null
+        }
+        // The wrappers a written type passes through. `type_argument` is refused rather
+        // than descended: a generic ARGUMENT is not the name being applied.
+        if (n.type === "type_argument" || n.type === "type_arguments") continue
+        for (const k of namedChildren(n)) queue.push(k)
+      }
+      return null
+    }
+
+    /** The string CONTENT of a `string` / `verbatim_string` node, delimiters excluded. */
+    const stringContent = (n: any): string | null => {
+      if (n.type !== "string" && n.type !== "verbatim_string") return null
+      if (n.childCount === 0) return null
+      const first = n.child(0)
+      const last = n.child(n.childCount - 1)
+      if (!first || !last) return null
+      const from = first.endIndex - n.startIndex
+      const to = last.startIndex - n.startIndex
+      if (!(to > from)) return null
+      const value = String(n.text ?? "").slice(from, to)
+      return value.length > 0 ? value : null
+    }
+
+    const stack2: { node: any; scope: string[] }[] = [{ node: root, scope: [] }]
+    while (stack2.length) {
+      const { node: n, scope: sc } = stack2.pop()!
+      if (n.type === "ERROR" || n.isMissing) continue
+      let cur2 = sc
+      if (n.type === "namespace" || n.type === "named_module" || n.type === "module_defn") {
+        const nm = firstChildOfType(n, "identifier") ?? firstChildOfType(n, "long_identifier")
+        if (nm?.text) cur2 = sc.concat([nm.text])
+      }
+      const source = cur2.length ? cur2[cur2.length - 1] : fileScope ?? "Global"
+
+      if (n.type === "import_decl") {
+        const target = firstChildOfType(n, "long_identifier") ?? firstChildOfType(n, "identifier")
+        if (target?.text) emit("imports", source, String(target.text), n)
+      } else if (n.type === "module_abbrev") {
+        const paths = namedChildren(n).filter((c: any) => c.type === "long_identifier")
+        const path = paths.length ? paths[paths.length - 1] : null
+        if (path?.text) emit("imports", source, String(path.text), path)
+      } else if (n.type === "fsi_directive_decl") {
+        let keyword = ""
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (c && !c.isNamed) { keyword = String(c.text ?? ""); break }
+        }
+        if (resourceKeywords.has(keyword)) {
+          const spec = firstChildOfType(n, "string") ?? firstChildOfType(n, "verbatim_string")
+          const value = spec ? stringContent(spec) : null
+          if (value) emit("imports", source, value, spec)
+        }
+      } else if (n.type === "attribute") {
+        const leaf = attrTypeLeaf(n)
+        if (leaf && leaf !== "_" && isName(leaf)) {
+          const local = declaredFqn.get(leaf)
+          emit("uses", source, local && local !== leaf ? local : leaf, n)
+        }
+      }
+
+      for (const c of namedChildren(n)) stack2.push({ node: c, scope: cur2 })
+    }
+  }
   return edges
 
   // ---- local helpers, closures over the walk's own data ---------------------------

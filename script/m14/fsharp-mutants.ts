@@ -862,4 +862,35 @@ export const FSHARP_MUTANTS: Mutant[] = [
       }
     },
   },
+  {
+    id: "fsharp/project-index-refinement-ignored",
+    language: "fsharp",
+    defectClass: "wrong-payload",
+    description:
+      "FS-P16/17 — the PROJECT-INDEX refinement, reverted. The analyzer reads `context.projectIndex` (built once per run, shipped with every batch) and turns the classes that mean 'not this file' into classes that say WHICH 'not this file': `bare-external` -> `in-project-name`, `external-type` -> `in-project-type`, `external-type-or-module` -> `in-project-type-or-module`, `external-namespace` -> `in-project-namespace`, `base-member-external` -> `base-member-in-project`, `interface-member-external` -> `interface-member-in-project`. The last two classes added are the FS-P17 channels (a module owner and a namespace path), and they are in this one map because the defect they revert is the same defect: an analyzer that never reads the index. The pre-fix state is exactly an analyzer that never reads the index, which is what this transform restores — the classes go back, and the markers the refinement writes (`projectIndexRefined`, `baseInProjectLacksMember`) go with them, because a run that never refined cannot have written them. Measured price of the rule it reverts: 32,778 of the 179,481 edges whose class said 'not this file' get a sharper reason on the lane's 3,000-file draw, and the population is named per class in `docs/analyzers/real-fsharp-analyzer.md` pass 16. Caught by fsharp/fs-p10-project/fs-p10-client, whose positive rows assert the refined classes and whose FORBID rows name the pre-fix ones — a fixture that asserted only the positives would be satisfied by a run that emitted both, which is why both halves exist. The index is not a guess: with no index the analyzer is byte-for-byte its old self, so this mutant is also the pin on that property.",
+    transform: (r: any) => {
+      const PRE: Record<string, string> = {
+        "in-project-name": "bare-external",
+        "in-project-type": "external-type",
+        "in-project-type-or-module": "external-type-or-module",
+        "in-project-namespace": "external-namespace",
+        "base-member-in-project": "base-member-external",
+        "interface-member-in-project": "interface-member-external",
+      }
+      let touched = 0
+      const relationships = (r.relationships ?? []).map((x: any) => {
+        const md = x.metadata
+        if (!md || typeof md.targetResolution !== "string") return x
+        const back = PRE[md.targetResolution]
+        if (back === undefined) return x
+        touched++
+        const next: Record<string, any> = { ...md, targetResolution: back }
+        delete next.projectIndexRefined
+        delete next.baseInProjectLacksMember
+        return { ...x, metadata: next }
+      })
+      if (touched === 0) return r
+      return { ...r, relationships }
+    },
+  },
 ]
