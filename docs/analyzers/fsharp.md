@@ -119,15 +119,83 @@ By the analyzer's own resolution class: `bare-external` 4,068 · `external-type`
 Two shapes inside it are already visibly wrong and are not explained by scope, so they are the
 first things a next pass should look at rather than the last:
 
-- **`published-identity` 11** — `contains JS.this`, `exports JS.this`, `exports Module.this`,
-  `contains new T.this`, `contains T.this` (`core/src/stdlib/WebSharper.StdLib/JavaScript.fs`,
-  `fsharp/tests/service/data/SyntaxTree/…`). A member identity whose final segment is the keyword
-  `this` is not a name the project can declare, and the edge's own file is where the identity was
-  built.
+- **`published-identity` 11** — REFUTED as a wrong identity; it is a SHARED-MACHINERY seam. See §4.
 - **`local-binding` 363** — the class `real-fsharp-analyzer.md` §19.3 prices: the target IS a local
   of the callable, and the fix the lane named (the `localBinding` claim) requires the target
   spelling `<callable>#<binding>`, because `verifyBindingClaim` REFUTES a marked edge whose target
   carries no separator. That change lands in this lane's analyzer but its oracle
-  (`script/m14/fsharp-truth-oracle.ts`, outside this lane's write scope) derives the bare spelling,
-  so taking it here would convert this lane's own differential rows into MISSING-plus-fabrication
-  until the oracle learns the same spelling. **Named, sized, and deliberately not taken.**
+  (`script/m14/fsharp-truth-oracle.ts`) derives the bare spelling, so taking it here would convert
+  this lane's own differential rows into MISSING-plus-fabrication until the oracle learns the same
+  spelling. **Named, sized, and deliberately not taken in the pass that found it.**
+
+---
+
+## 4. `published-identity` 11 — the premise is REFUTED, and the defect is a SHARED-MACHINERY seam
+
+The brief called these *"a member identity ending in the keyword `this` … visibly wrong regardless
+of scope"* and asked for the one-line fix. **The identity is not wrong, and the fix is not in this
+lane.** Both halves are measured.
+
+**1. `member this` is legal F# and is declared in this corpus.** `JS.this` is not a mis-derived
+identity — the source declares a member whose NAME is `this`:
+
+```fsharp
+(* core/src/stdlib/WebSharper.StdLib/JavaScript.fs:69-70 *)
+    /// The JavaScript "this" value.
+    [<Inline "this">]
+    static member this = X<obj>
+```
+
+`fsharp/tests/service/data/SyntaxTree/Member/Member 02.fs:5` is the same shape (`[<B>] member this`).
+A rule of the form "a member identity ending in `this` is wrong" would delete real members.
+`As 03.fs` (`type T as this = class end`) is a different fact — there `this` is a SELF-IDENTIFIER, not
+a member — and it is the one shape in the 11 that is arguably mis-minted.
+
+**2. The defect is that the SYMBOL is dropped and the EDGE that names it is not.** Measured by
+calling the analyzer directly against production on the same bytes:
+
+| file | `analyze()` symbols | `parseFile` symbols | edges kept |
+|---|---|---|---|
+| `SyntaxTree/Type/As 03.fs` | `Module`, `this<Module>` | `Module` only | `contains Module -> Module.this`, `exports Module -> Module.this` |
+| `SyntaxTree/Member/Member 02.fs` | `Module`, `T<Module>`, `P1<T>`, `this<T>` | one fewer | `contains Module.T -> T.this` |
+
+`parseFile` filters every symbol through `keepSymbol` (`src/ast/pool-worker.ts:1099`), whose
+`UNIVERSAL` set drops `"this"` and `"super"` **unconditionally**, with this comment at
+`pool-worker.ts:545-548`:
+
+> `// Reserved in essentially every language parsed here. Kept unconditionally`
+> `// because no lane produced a legitimate declaration of any of them.`
+
+**That comment now has a counterexample, and the same file records the procedure for one**
+("REMOVED, each with a lane and a count" — `self`/`Self` were deleted for R/Python/Zig by exactly
+this route). Relationships are not filtered by `keepSymbol` and cannot be: the filter is
+symbol-shaped. So the symbol is dropped and the edge survives, naming nothing.
+
+**3. The class is small, and it is measured rather than extrapolated.**
+`probe-dangling-contains-targets.ts` walks a 2,000-file even stride of the 10,138-file `.fs`
+population (4 workers, 0 degraded, 0 failed, load 12.67 at start) and tests the invariant the
+analyzer's own `contains` pass states — *the target is always an identity THIS FILE minted* —
+against what `parseFile` actually returned:
+
+```
+contains+exports edges seen: 49990
+DANGLING: 4   (0.01%)      by target: T.this:3  FSharpMemberOrFunctionOrValue.this:1
+```
+
+Artifact: `measurements/dangling-contains-targets.txt`. The whole-population `published-identity`
+bucket is 11 of 370,867, so the two readings agree on the size: this is a **correctness** defect,
+not a volume one.
+
+**4. WHY NO LANE-SIDE FIX IS TAKEN, and what the fix is.** Suppressing the edges in this analyzer
+would delete a real member's containment from the graph and leave the symbol filtered anyway — the
+member is lost either way, and the only choice left is whether the graph also carries an edge that
+points at nothing. The defect belongs where the asymmetry is, in shared machinery
+(`src/ast/pool-worker.ts`, outside this lane's write scope):
+
+- **Fix A (preferred, one line):** drop `"this"`/`"super"` from `UNIVERSAL` and move them to the
+  per-language `RESERVED` table for the languages that actually reserve them — the mechanism already
+  exists (`RESERVED[lang]` at `pool-worker.ts:575-582`) and is documented as the route for this.
+- **Fix B (invariant):** if a symbol is filtered, filter the relationships that name it too, so the
+  graph can never carry an edge to a symbol the consumer did not receive.
+
+**Reported to the lead rather than patched here**, with the reproduction above.
