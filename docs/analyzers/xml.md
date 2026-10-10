@@ -1,104 +1,116 @@
 # XML — the residual record
 
 > The analyzer's contract lives in [`real-xml-analyzer.md`](./real-xml-analyzer.md) (not this
-> lane's file to edit this wave). This page is the **residual** record: what is not yet real
-> about the edges xml emits, which population each number is over, and what has been ruled.
-> Machine-readable companion: [`residual-baseline.json`](../../validation/m14/fixtures/xml/residual-baseline.json).
+> lane's file to edit this wave). This page is the **residual** record: what is not yet real about
+> the edges xml emits, which population each number is over, and what has been ruled.
+> Machine-readable companions: [`residual-baseline.json`](../../validation/m14/fixtures/xml/residual-baseline.json)
+> (the first measurement) and [`residual-true-population.json`](../../validation/m14/fixtures/xml/residual-true-population.json)
+> (the re-run after two fleet fixes this lane's findings produced).
 
-## State, 2026-10-09
+## State, 2026-10-10 00:17
 
-The board carries `xml 93.9% residual — 28,477 ambiguous + 332 unresolved of 30,676 edges`.
-Two things are true about that sentence, and both were measured rather than argued.
+Run on the lane's true population — **11,562 files** across its seven admitted spellings, 0
+degraded, `extFAIL 0 · bindFAIL 0 · causeFAIL 0`:
 
-### 1. It is measured over 18% of the lane
+| type | edges | resolved | ambiguous | unresolved | residual |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| contains | 189,310 | 189,310 | 0 | 0 | **0.0%** |
+| calls | 402 | 123 | 279 | 0 | 69.4% |
+| overrides | 3 | 1 | 2 | 0 | 66.7% |
+| references | 11,108 | 997 | 7,582 | 2,529 | **91.0%** |
+| extends | 1,429 | 84 | 991 | 354 | **94.1%** |
+| imports | 473 | 2 | 0 | 471 | **99.6%** |
+| **TOTAL** | **202,725** | **190,517 (94.0%)** | 8,854 | 3,354 | **6.0%** |
 
-| | files | `contains` edges | `references` edges | `imports` edges |
-| --- | ---: | ---: | ---: | ---: |
-| the board's instrument (`incoming-gate.ts xml xml 0`) | **2,081** | 30,205 | 335 | 136 |
-| this lane's declared corpus (`coverage-census.json`) | **11,552** | 188,224 | 11,108 | 468 |
-| share | 18.0% | 16.1% | **3.0%** | 29.1% |
+Raw: [`residual-true-population.txt`](../../validation/m14/fixtures/xml/residual-true-population.txt).
 
-The instrument admits one extension; the language router maps six to `xml`
-(`.xml`, `.xsd`, `.xsl`, `.svg`, `.dtd`, `.rng` — measured through
-`detectLanguageFromPath`). The excluded mass is 8,419 SVG files plus the XSL and XSD
-populations, and it carries 97% of the lane's `references` edges and 84% of its `contains`
-edges. The gap is not a judgement call: `incoming-gate.ts`'s own `LANES_B` table records the
-identical defect and its fix for yaml —
+The board carried `93.9%` earlier the same night. Both halves of that number were wrong, and each
+became a fleet fix:
 
-> `BOTH SPELLINGS, because one language does not become a different population by being spelled
-> .yml. Measured on ansible — 13 .yaml files against 2,068 .yml, 2,081 combined — so the --all
-> table was measuring 0.6% of the lane's files and reporting the 13-file verdict as the lane's.`
+### 1. It was measured over 18% of the lane — FIXED
 
-— and still reads `xml: "xml"`. The one-line change is
-`xml: "xml,xsd,xsl,svg,dtd,rng"` in `script/m14/incoming-gate.ts` (+ the same map in
-`script/m14/residual-gate.ts`). Both files are outside this lane's write scope; reported, not
-edited.
+`incoming-gate.ts xml xml 0` admitted only paths ending `.xml` (`population.corpusTotal = 2081`),
+while the router maps six extensions to `xml` and this lane's declared corpus is 11,552 files. The
+instrument's own `LANES_B` table already recorded this exact defect and its fix for yaml
+(`yaml,yml`: *"one language does not become a different population by being spelled .yml"*) and
+still read `xml: "xml"` — the lesson was written as a value rather than as a rule.
 
-**Consequence for reading this page:** every before/after below names its file population. A
-number without one is not comparable to the board's.
+Fixed in `68138a1c8`. Population now **11,562 files across 126 repos** (2,081 → 11,562), against
+this lane's declared 11,552 — the two agree to 0.1% where they differed by 5.6×. The lane's share
+of the board's number went from 18.0% of its files, 16.1% of its `contains` edges, 3.0% of its
+`references` and 29.1% of its `imports`, to all of it.
 
-### 2. The largest bucket is the gate's model, not the graph
+### 2. `contains` was classified by a resolver production does not use — FIXED
 
-`contains` is 28,413 of the 28,809 residual edges (98.6%). It is not 28,413 broken edges:
+This lane measured it two ways on the same edges:
 
 | | edges | resolved | ambiguous | residual |
 | --- | ---: | ---: | ---: | ---: |
-| gate's key-space model (2,081 `.xml`) | 30,205 | 1,792 | 28,413 | **94.1%** |
+| the gate's count model (2,081 `.xml`) | 30,205 | 1,792 | 28,413 | **94.1%** |
 | the real store (`store-binding-truth-120`, production indexer) | 3,097 | 3,048 bound | — | **1.6% unbound** |
 
-The real-store instrument copies a draw into a scratch project, runs the **production**
-`indexProjectParallel`, and reads `brain_relationship.target_symbol_id` out of the table:
-`bound 3,048` of 3,097 (**98.4%**), of which `boundSameFile 3,033` (**97.9%**),
-`targetUnbound 49` (**1.6%**), `boundOtherFile 15` (0.5%), `crossFileFlagWrong 0`.
+Production resolves a `contains` edge **at insert time** by (leaf name, the edge's OWN FILE first,
+then line) — `resolveContainsTargetStmt`, kept eager for `contains` where every other type defers.
+`classifyEdge` received only a project-wide declaration count and has no file parameter and no line
+parameter, so an edge production binds to its own file's declaration read as ambiguous whenever a
+bare local name (`path`, `name`, `item`, `template`) occurs more than once in the repository.
 
-**Why the two disagree.** Production resolves a `contains` edge **at insert time** by
-`(leaf(target) as a name, the edge's OWN FILE first, then the nearest line)`
-(`parallel-indexer.ts` `resolveContainsTargetStmt`; kept eager for `contains` even where every
-other type defers). The gate's `classifyEdge` receives only a project-wide declaration count
-keyed by name and qualified-name alias — it has no file parameter and no line parameter, so it
-cannot express "the declaration in this edge's own file" and reports a collision whenever a bare
-local name (`path`, `name`, `item`, `template`) occurs more than once in a repository.
+Fixed in `fa2dc27e8`, whose message cites this lane's measurement and whose rule now takes a
+`containsLike` arm. The lane's share of the residual fell from 94.1% to **0.0%**.
 
-The caveat runs **against** the flattering reading, so it is stated: the store draw pools 120
-files from 120 repositories into one key space, which is *harsher* than production's per-repo
-scope; and the gate table is the 2,081-file `.xml` corpus. A same-project run on one repository
-(both instruments) is the next measurement.
+**Same-project confirmation** (one repository, both instruments; raw:
+[`gate-libxslt-same-project.txt`](../../validation/m14/fixtures/xml/gate-libxslt-same-project.txt),
+[`store-truth-libxslt.json`](../../validation/m14/fixtures/xml/store-truth-libxslt.json)):
 
-**What is real for `contains`:** 1.6% unbound and 0.5% cross-file in the store draw. The edges
-themselves are genuine — the lane's containment ledger checks every emitted edge for a real
-nesting behind it on the parse tree: `188,219 of 188,224` confirmed (99.997%). So the only open
-question was ever target resolution, and the endpoints are real.
+| libxslt, 1,143 files, one project | edges | result |
+| --- | ---: | --- |
+| gate model (before the rule fix) | 21,486 | 96.1% ambiguous |
+| real store (`indexProjectParallel`) | 39,293 | **95.4% bound**, **87.0% same-file**, 4.6% unbound, 8.5% cross-file |
 
-Split by what the edges share (whole 11,552-file corpus, `role` metadata):
-`xml_attribute` 111,060 · `xml_element` 64,173 · `xml_namespace` 12,743 · DTD/PI/pseudo 248.
+Two things follow. The mechanism is confirmed at a whole repository's scale, not only on a pooled
+draw. And the honest next question is the **8.5% cross-file** — an eager `LIMIT 1` that prefers the
+own file still falls back to another file's declaration when the name is not declared in the edge's
+own file.
 
-### 3. The real residual, and its mechanism
+*Disclosed, not smoothed over:* on that run the store holds 39,293 `contains` rows while the same
+files through `parseFile` emitted 21,486 (1.83×; the other four types agree within 2%, and the
+earlier 120-file draw showed 1.006×). Unexplained here, in an instrument this lane does not own, so
+the percentages are quoted as **ratios over the stored set** and the absolute counts are flagged.
 
-| type | edges | resolved | ambiguous | unresolved |
-| --- | ---: | ---: | ---: | ---: |
-| contains | 30,205 | 1,792 | 28,413 | 0 |
-| references | 335 | 73 | 64 | **198** |
-| imports | 136 | 2 | 0 | **134** |
+### 3. What is actually left, and the cause now being worked
 
-`extFAIL 0 · bindFAIL 0 · causeFAIL 0`.
+Residual 12,208 edges: `references` 91.0%, `extends` 94.1%, `imports` 99.6%, `calls` 69.4%. The
+unresolved column is 3,354 (references 2,529 + imports 471 + extends 354) and it is the approved
+next cause.
 
-The 332 unresolved edges are the genuine defect class, and the analyzer already knows what they
-are: `real-xml-analyzer.ts` publishes `metadata.resolvable` ∈
-`in-document | builtin | external | unresolved` on exactly these edges. What it does **not**
-publish is any of the claim keys the gate verifies
-(`isExternalTarget`, `importProjectFile`, `importOutsideProject`, … — `incoming-rule.ts`
-`EXTERNAL_KEYS`/`FILE_CLAIM_KEY`/`IMPORT_CLAIM_KEY`). An unmarked external target is
-indistinguishable from a broken one to the gate, which is the gate's stated rule: *"an unmarked
-external edge is indistinguishable from a broken one, so it counts against the lane."*
+The analyzer already publishes the classification the gate needs — `metadata.resolvable` ∈
+`in-document | builtin | external | unresolved` (references) and `in-document | file | external`
+(imports) — and carries **none** of the gate's claim keys, so a target it knows is a built-in
+reaches the gate unmarked and is counted as the lane's defect. The gate's rule: *"an unmarked
+external edge is indistinguishable from a broken one."*
 
-Mapping each resolvable class to its claim is the next cause. It is not a relabel: `builtin`
-and imported-namespace targets are different claims with different verification (owner lookup vs
-the project's own file list), and a claim the key space can answer is **refuted**, not accepted.
+Which claim each class earns is decided from counts, not from the wish to shrink a number
+(`validation/m14/fixtures/xml/resolvable-class-census.mts` cross-tabulates the analyzer's classes
+against the gate's own `classifyEdge`):
+
+| class | targets measured | claim that can verify it | why not another |
+| --- | --- | --- | --- |
+| references `builtin` / `external` | identifiers (`string`, `attribute-name`, …) | `isExternalTarget` → owner claim | verified when undeclared; **never refuted** for a non-identifier spelling |
+| references `unresolved` (X13) | the file does not satisfy them | **none proposed** | calling it "not in the population" asserts a fact the analyzer did not measure |
+| imports `external` (URIs) | `http(s)://…dtd` | `isExternalTarget` → externalUnverified | a URI is path-like, and `verifyExternalClaim` checks `pathLikeTarget` first |
+| imports `file` | relative paths | **priced only** | a file claim REFUTES when no candidate is admitted, and `extFAIL` must stay 0 |
+
+A PASS needs `bad === 0` **and** `externalUnverified === 0`, so a marker that moves an edge from
+`unresolved` to `externalUnverified` lowers the residual column and still does not buy a green row.
+That is the point: it is a true classification, not a short-cut.
 
 ## Method notes
 
 - One cause per turn, one commit per verdict; a cause is closed by a before/after over a named
-  population or by a ruling with evidence (this page's §2).
-- Corpus-scale runs are guarded with `( flock -w 600 9 || exit 9; … ) 9>.bb-heavy.lock`. A run
-  that exits 9 on the lock timeout is reported as **KILLED** with no output, never as a
-  measurement about the lane.
+  population or by a ruling with evidence.
+- Corpus-scale runs are guarded with `( flock … ) 9>.bb-heavy-v2.lock` (the original lock was found
+  stuck with no visible holder). A run that exits 9 on a lock timeout is reported **KILLED** with no
+  output, never as a measurement about the lane.
+- The store instrument writes `~/.bb/projects/<id>`; under this sandbox `/` is read-only outside the
+  workspace, so it must run with `HOME` relocated into the workspace. Without that it dies `ENOENT`
+  in a way that reads like a code error.
