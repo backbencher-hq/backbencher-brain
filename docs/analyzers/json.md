@@ -269,36 +269,55 @@ always defined over.
 
 **Population: 14,009 admitted files, 154 repos, 17/17 chunks measured, 0 unmeasured.**
 
-| | edges | resolved | amb | unresolved | extFAIL | bindFAIL | causeFAIL | residual |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| whole population, BEFORE this turn's fix | 5,588,463 | 5,588,134 | 41 | 3 | 2 | 0 | 0 | **46** |
-| docker alone, before → after the file-claim fix | 8,382 | 8,336 | 0 | 0 | 2 → **0** | 0 | 0 | 2 → 0 |
+| | edges | resolved | amb | unresolved | extOK | ext? | extFAIL | collRes | residual |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **whole population** (154 repos, 14,009 files) | 5,588,463 | 5,588,153 | **22** | **3** | 165 | 120 | **0** | 51 | **25** |
+| docker alone, before → after the file-claim fix | 8,382 | 8,336 | 0 | 0 | 6 | 38 → 40 | 2 → **0** | 0 | 2 → 0 |
 
-The remaining 44 by type, each with its count and its named cause:
+The residual by type, each with its count and its named cause:
 
-- **`overrides` 22 amb of 22 edges** — every one of this lane's override edges. The
-  analyzer's own measurement (recorded at the emission site) classifies them: 22 of 22
-  targets match more than one symbol BY NAME and 14 of 22 BY PATH. Those 14 are the two
-  declarations of ONE key sharing a name AND a qualified path — i.e. the two rows are the
-  same key in the same object, which the document itself does not distinguish. Whether
-  production binds them (a `contains`-shaped resolver preferring the edge's own file and
-  line) or they are genuinely unresolvable in the store's key space is the NEXT question,
-  and it is a measurement against the store, not an argument. **Not yet ruled.**
-- **`contains` 19 amb of 5,546,243** — 19 of 5.5 million, and the same class as the
-  overrides shape (a repeated key inside one object). The `containsLike` reclassification
-  (`fa2dc27e8`) already moved this type from thousands to 19.
-- **`extends` 3 unresolved of 2,981** — target names nothing in the project; classified
-  next.
+- **`overrides` 22 amb of 22 edges** — EVERY override edge this lane emits. The analyzer's
+  own measurement (recorded at the emission site) classifies them: 22 of 22 targets match
+  more than one symbol BY NAME and 14 of 22 BY PATH. Those 14 are the two declarations of
+  ONE key sharing a name AND a qualified path — the two rows are the same key in the same
+  object, which the document itself does not distinguish. Production resolves non-`contains`
+  edges with `resolveTargetStmt`, which is also `LIMIT 1` and therefore always binds
+  (ordering same-name rows by `is_declaration, file_id, language, id`), so the question is
+  whether the store binds these rows or picks arbitrarily: **a measurement against the
+  store, not an argument. Not yet ruled.**
+- **`extends` 3 unresolved of 2,981** — target names nothing in the project; classify next.
+- **Everything else is zero on the residual columns.** `contains` 5,546,243 edges with
+  **0 ambiguous and 0 unresolved**; `references` 26,689 with 0/0; `imports` 82 files-claims
+  with 81 verified and 0 refuted (`imports` resolving at 0 *symbols* is correct for this
+  type — its target is a file, and a file is not a symbol in this document).
 
-**A discrepancy to record, because two measurements of this lane disagreed and the reason
-is an instrument change, not a graph change.** The Lead's chunked reader measured **70**
-residual (68 amb + 2 extFAIL) over the 40 repos with ≥50 `.json` files. My run measures
-**46** over all 154 repos, a strictly larger population (622,066 more edges). The
-difference is commit `fa2dc27e8` — "`contains` was being classified by DECLARATION COUNT;
-production binds it with a different statement" — which landed BETWEEN the two runs:
-duckdb's 30 ambiguous in the Lead's artifact is mostly `contains`, and the current rule
-reads it as 19 across the whole population. **Neither number is wrong; they are different
-rules over different populations, and every residual figure in this doc must name both.**
+**`collRes 51` is the upper bound on resolved edges whose name collided**, all of them
+`contains` — production's tie-break chose the row for those, so no resolved edge here is
+proven arbitrary, but the tighter store test (hcl's `intended`/`arbitrary-twin` split) has
+not been run for this lane. `ofWhich 0` would be the stronger claim and it is **not** what
+this measures.
+
+### The four figures this replaced, and why they were wrong
+
+**All of 46, 42, 120 (mine) and 82 (the Lead's) were artefacts of one instrument defect,
+not measurements.** `incoming-gate.ts` prints TABLE 1's header with `collRes` in position
+13 (`… bindFAIL, collRes, causeOK, causeFAIL`) but `line()` EMITS `resolvedAmongCollision`
+in position 4 (`resolved, collRes, amb(decl), amb(kind), unresolved, …`). Every positional
+reader is therefore shifted by one from `amb(decl)` onward, and the shift reads `ext?` into
+the `extFAIL` slot — which is exactly how a clean lane came to look like one with 82, 46 or
+120 refuted claims. Proof, against the instrument's own sentence:
+
+| chunk | its VERDICT line says | header mapping | emitter mapping |
+| --- | --- | --- | --- |
+| 2 (kubernetes) | `(3 verified + 38 unverifiable external)` | extOK 0 · ext? 3 · extFAIL **38** | extOK 3 · ext? 38 · extFAIL **0** |
+| 13 | `0 ambiguous + 3 unresolved … (100 verified + 38 unverifiable)` | unres 0 · extOK 3 · ext? 100 · extFAIL **38** | unres 3 · extOK 100 · ext? 38 · extFAIL **0** |
+
+The emitter order is the true one. This aggregate now parses by it and carries a **control
+that refuses to report unless each chunk's row agrees with its own verdict sentence —
+17/17 chunks agree**, plus the identity check (`sum of the 11 buckets = 5,588,463 = edges`).
+The header fix is one line in a shared file the Lead owns; it is reported, not patched.
+Recorded because a lane that publishes a number from a shifted table is publishing the
+defect, which is the failure this programme keeps paying for.
 
 ## 7c. The two extFAIL edges, fixed
 
@@ -326,6 +345,14 @@ Artifact: `validation/m14/fixtures/json/measurements/json-docker-extfail-before-
   (`projectFile` claims unverifiable arbiter-side — **now narrowed to genuinely-outside
   targets by §7c**) are unchanged and still open.
 - **The `overrides` 22 and the `extends` 3 are the next two causes**, with the counts above.
+- **`incoming-gate.ts`'s TABLE 1 header disagrees with its own rows** by one column
+  (`collRes` printed at position 13 in the header, emitted at position 4) — a one-line fix
+  in a shared file the Lead owns. Until it lands, EVERY positional reader of TABLE 1 is
+  shifted from `amb(decl)` onward and reads `ext?` as `extFAIL`. Reported with the
+  three-chunk proof (see §7b); the lane's own aggregate now parses by the emitter order and
+  refuses to report when a row disagrees with its verdict line.
+- The residual number is the one to quote for this lane: **25 over 14,009 files**, of which
+  22 are `overrides` and 3 are `extends`; `extFAIL` 0, `bindFAIL` 0, `causeFAIL` 0.
 - **A better file claim than a `stat`**: an exact project file list on the
   `AnalyzeContext` would use the arbiter's own key space (git-tracked, size-capped) instead
   of the on-disk tree. json has no `INDEX_SPECS` entry, so `--index` builds nothing for it,
