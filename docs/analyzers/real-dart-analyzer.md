@@ -5239,8 +5239,25 @@ the lumped class again, and it is wrong by the same 30,719/28,794 split.
 **4. `libraryScopeCallee` is confirmed twice over.** 1,597 rows, 0 UNRESOLVED, and 1,022 ambiguous —
 973 of them on riverpod alone. The zero is the refinement's own check: a library-scope name declared in
 the file always finds its declaration, which is exactly what "correctly spelled" should look like. The
-1,022 ambiguities are a NAME-COLLISION class (`test`, `main`, `group` declared in many files), whose
-fix is file-qualifying a library-scope target — the imports round's mechanism, applied to calls.
+1,022 ambiguities are a NAME-COLLISION class (`test`, `main`, `group` declared in many files).
+
+**AND THE FIX THAT LOOKS AVAILABLE IS NOT — measured, so the temptation is closed with evidence
+rather than left as an obvious next step.** The imports round's mechanism was to spell the target as
+the FILE's identity, because a dart library's `Module.qualifiedName` IS its project-relative path. That
+spelling does not exist for a top-level DECLARATION, and the difference is published, not assumed
+(`.tmp-probe/dt-top-level-fields.mts`, through the pool — the projection the store sees):
+
+```
+kind=module  name="http_profile_request_data"  qualifiedName="pkgs/http_profile/lib/src/http_profile_request_data.dart"
+kind=class   name="HttpProfileProxyData"       qualifiedName="HttpProfileProxyData"
+```
+
+So a file-qualified callee target (`pkgs/.../utils.dart.configure`) matches NO `qualified_name` in the
+store: Strategy 1 (exact) cannot bind it, and Strategy 3 (suffix on `qualified_name`) has nothing to
+suffix on because the stored form carries no path. Emitting it would turn 1,022 ambiguities into 1,022
+UNRESOLVED — a worse number with a more confident spelling. Disambiguating two `configure()`s in
+different files needs a STORE-side rule (a same-file preference in `resolveTargetStmt`, the way
+`resolveContainsTargetStmt` already has one), which is not this lane's to change and is not claimed here.
 
 **5. THE CENSUS IS 28.6 % INCOMPLETE, and it says so.** 30,159 ambiguous `uses` rows (40.5 % of `uses`
 ambiguity) carry NO cause, because the other `uses` arms (interpolation reads, global reads, subscript
