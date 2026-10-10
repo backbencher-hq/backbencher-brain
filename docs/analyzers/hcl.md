@@ -217,11 +217,38 @@ writes **zero** key/value bindings, so its six spec-sourced rulings stay `RULED-
 fires on the observation, not on the fact that a ruling exists. Every flipped lane needs one of two
 things: an attestation that its probe really did enumerate the key space, or a real re-measurement.
 (The `json` walk is the heaviest of the batch and was still running when this page was committed; its
-row is not reported here rather than reported as zero.) A third defect surfaced while surveying,
-**not fixed here**: on a history-trusted checkpoint the gate's `EMITTED` column reflects only the
-freshly re-walked files, so a genuinely emitted type can print `RULED-SOUND` (this is how
-`calls`/`overrides` read before the `--fresh` run). The gate's caveat line says the table is partial;
-the rows themselves do not.
+row is not reported here rather than reported as zero. It was killed for budget after 20 minutes and
+is reported as NOT COMPLETED, never as a zero.)
+
+### 6.1 The same walk hid a SECOND false `RULED-SOUND`, and that one is now a refusal
+
+Surveying the fleet exposed the defect the Lead then made the next task: on a **history-trusted
+checkpoint** the gate's `EMITTED` column covers only the files it re-walked, because the checkpoint
+stores per-file OUTCOMES and not per-file relationship types — so a settled file contributes **no
+edges**. Measured on hcl: a default run re-measured 5 of 4,047 files and printed
+
+```
+calls      RULED-SOUND   NOT EMITTED; the construct occurs 0x on the parse tree. …
+overrides  RULED-SOUND   NOT EMITTED; …
+```
+
+while a fresh walk of the same corpus carries **4 `calls` edges and 68 `overrides` edges**. A false
+`RULED-SOUND` in the default invocation, with no signal in the row.
+
+**Fix.** The walk's population is now computed once, printed, and attached to every row it affects:
+`walk: emitted population 0/4,047 files measured by the analyzer THIS run (4,047 settled by an
+earlier walk and contributing NO edges …) — PARTIAL, so absence is NOT certifiable`. A row that would
+have been `RULED-SOUND` while any offered file was settled, degraded or abandoned now reads
+**`RULED-UNKNOWN`** — a refusal, not a failure, and never a certification. `FALSIFIED` and
+`RULED-UNJUSTIFIED` pass through unchanged: both are findings about the ruling and neither depends on
+the `EMITTED` column. Three control arms cover it (I: a partial walk refuses to certify; J: the same
+ruling on a complete walk still certifies; K: a partial walk does not soften a key-space
+`RULED-UNJUSTIFIED`).
+
+The rule is strict on purpose, and the strictness is visible: on hcl's fresh run **one file of 4,047
+is degraded** by the regex fallback, so `implements` and `instantiates` — attested and verified, 0
+sites in the key space — read `RULED-UNKNOWN` rather than `RULED-SOUND`. Absence is not established
+about a file the analyzer never read, and withholding the certificate is the honest answer.
 
 ## 7. What this page does NOT settle
 
@@ -229,9 +256,12 @@ the rows themselves do not.
    shared). The 4 `calls` and 68 `overrides` edges come from the ontology gate's fresh walk today and
    the prior whole-corpus census; the construct counts (44/53/8, 3,932/444/0, 162/50) are mine.
 2. **The fleet survey is partial by budget, not by intent.** Thirteen lanes were re-walked fresh (the
-   table in §6); `json` was still walking when this page was committed, and `dart`, `fsharp`, `nim`,
-   `zig`, `php`, `yaml`, `julia` and `lua` still need a run — every lane whose status flipped needs
-   its own owner to attest or re-measure.
+   table in §6); `json` was killed for budget after 20 minutes holding the heavy lock — reported as
+   NOT COMPLETED, not as a zero — and `dart`, `fsharp`, `nim`, `zig`, `php`, `yaml`, `julia` and `lua`
+   still need a run. The survey also predates §6.1's population gate: the flips it reports
+   (`RULED-SOUND → RULED-UNJUSTIFIED`) are unaffected, but rows that stayed `RULED-SOUND` there would
+   now additionally need a complete emitted population, so some of them would read `RULED-UNKNOWN`
+   today. Every flipped lane still needs its own owner to attest or re-measure.
 3. **`errorFiles 244` / `missingNodes 6`** in the spec's `corpus` block are the previous census's
    figures and were not re-measured; only `files`, `repos`, `nodes`, and the 63-of-64 grammar-type
    observation were (the last re-confirmed corpus-wide: `template_else_intro` still unobserved, and
