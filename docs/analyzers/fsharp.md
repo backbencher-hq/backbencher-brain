@@ -729,3 +729,54 @@ fail.
 - **OWED, uncoupled, not credited with any number here**: the scope-aware `localNames` — a name that is
   a local in one function should not be a binding in another. It remains right on its own merits and
   moved nothing measured so far.
+
+---
+
+## 11. The scope-aware `localNames` change was MEASURED, FOUND UNJUSTIFIED, AND REVERTED
+
+§10.1 left this OWED and credited with no number: *"a name that is a local in one function should not
+be a binding in another"*. That reasoning is sound, so this pass went to measure its population before
+changing anything — and the first measurement was **wrong in the direction that would have justified a
+change**.
+
+**THE FIRST READING, AND WHY IT WAS AN ARTIFACT.** A probe asked the narrowest question that needs no
+scope analysis to be decisive: for every `calls` edge marked `local-binding`, is there a local
+declaration of that name in the file at or before the edge? A binding cannot be READ before it is
+declared, so a miss would be over-firing beyond argument. It read:
+
+```
+calls edges marked localBinding: 571
+  NO local declaration of that name at or before the edge: 110   (19.3%)
+```
+
+**110 of 571 looked like a defect class worth a change, and it was the PROBE.** The declaration
+collector stripped only `let|and|member`, so `let rec loop guard body = …` yielded the name **`rec`**
+and every lookup missed. Checked against source: `FSharpPlus/src/FSharpPlus/Data/Seq.fs` has
+`let rec loop guard body =` at **:158** and the flagged edge at **:159** — the declaration was one line
+above it.
+
+**THE CORRECTED READING**, same probe, same draw, collector fixed to strip modifiers:
+
+```
+calls edges marked localBinding: 571
+  NO local declaration of that name at or before the edge: 1     (0.2%)
+  not settled by this test (a declaration exists earlier; scope not checked): 570
+```
+
+**ONE edge in 571.** A change that would re-classify every `local-binding` claim in the lane is not
+justified by a population of one, so the change was written, measured, and **REVERTED** —
+`src/ast/real-fsharp-analyzer.ts` is back at `faa946e6c` (FS-D30) with no FS-D31 in it. Its
+differential effect was zero in any case (`MISSING` 10, `unexplained` 68, both unchanged from §10), so
+it was buying no number either.
+
+**THE LEDGER STANDS AS §10.1 WROTE IT**: binding spelling CLOSED · FS-D30 CLOSED · scope-aware
+`localNames` OWED and credited with no number — now with a measured reason to keep it owed rather than
+a reasoned one: its lower-bound population is **1 in 571**, and the test that would settle the
+remaining 570 needs real scope analysis, not a line comparison.
+
+**THE LESSON, AND IT IS THE FOURTH INSTANCE IN THIS LANE.** *A collector that cannot read the name it
+is looking for reports a defect in the CODE.* The first cut of the pipeline probe flagged a correct
+edge because it matched the wrong node on the line; this one flagged 110 correct edges because it
+could not parse `let rec`. Both were caught by checking a single flagged case against source, which is
+the cheapest control there is and the one that keeps paying. Neither was caught by the probe's own
+exit code, and neither would have been caught by a passing test suite.
