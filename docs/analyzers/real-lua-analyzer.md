@@ -1445,3 +1445,77 @@ do not resolve to a top-level symbol (membership rides Contains)`. That is a rea
 about `exports` (whether an exported name must be answered by a symbol or may ride its `contains`
 edge), it is the same class as the 52 unresolved `exports` edges in the sample arm, and it needs
 its own ruling rather than a spelling fix.
+
+### 7. The 140,782 ambiguous at the GATE'S key space — §5's proportions are a 60-FILE artifact
+
+The residual is 80.2% and the ambiguous column is the whole of it: **140,782 of 219,981 edges**
+(`residual-gate.ts --lane lua`, whole admitted population, production scope; artifact
+`measurements/residual-gate-lua.txt`; `extFAIL`/`bindFAIL`/`causeFAIL` all 0). §5 above answered the
+ambiguity question at 1,305 edges over a 60-file key space. This is the same question at the size
+the gate measures.
+
+**THE BUCKET ORDER SURVIVES; THE PROPORTIONS DO NOT.** The same four-way collision split, run at the
+gate's own key space (`incoming-split.mts --nf 4000 --all` — the corpus is 3,250 files, so the
+sample arm IS the full arm and the log prints both as identical; artifact
+`measurements/incoming-split-lua-full.json`):
+
+| bucket | §5, at 60 files | whole population (3,250 files) |
+|---|---|---|
+| multiFile | 684 (52.4%) | **131,914 (93.7%)** |
+| oneFileDiffOwner | 312 (23.9%) | 3,778 (2.7%) |
+| oneFileSameOwnerSameKind | 303 (23.2%) | 4,551 (3.2%) |
+| oneFileSameOwnerDiffKind | 6 (0.5%) | 539 (0.4%) |
+| distinct names | 566 | 15,326 |
+
+A target's declarations can only span the files the key space contains, so a 60-file sample cannot
+see the cross-file collisions the gate counts. **multiFile was never 52.4% of this lane's ambiguity;
+it is 93.7% of it**, and a reader who took 52.4% as the size of the cross-file problem would have
+sized the work at half of what it is.
+
+**CAUSE #1, NAMED AND COUNTED: bare-name targets resolved against a global key space.** The gate's
+marker-set table splits the 140,782 by metadata signature, and the largest single class mapping to
+one type and one mechanism is `(no marker)` = **41,592 edges (29.5%)** — which is exactly the
+`contains` count, because `addContainsRelationships` publishes `owner -> symbol.name` with `{}`
+metadata, leaving the target a bare declaration name and the edge carrying nothing else. The full
+table: `luaSpecific+relationshipType` 46,935 (33.3%) · `(no marker)` 41,592 (29.5%) ·
+`luaSpecific` 29,121 (20.7%) · `luaSpecific+receiver+relationshipType` 21,129 (15.0%) · the four
+`external…` signatures 1,940 (1.4%) · the two `overrides…` signatures 65.
+
+**RULED LEGITIMATE — and the evidence is this lane's own lexical instrument, not an argument.**
+`ambiguity-split.ts` over 3,250 files / 83,906 symbols / 219,981 edges / **0 parse failures, 0
+fallback files** (`validation/m60/lua/ambiguity-split.json`) decomposes ITS OWN multiSymbol
+population of 163,583 edges:
+
+| class | edges | share |
+|---|---|---|
+| B1_lineSettled — Lua's ORDER rule names exactly ONE declaration at the edge's line, in its own file | 94,398 | 57.7% |
+| B2b_fileAbsent — the target is absent from the edge's own file; the collision is entirely in others | 63,881 | 39.0% |
+| B2c_noneVisible — the edge precedes every local declaration of that name | 5,111 | 3.1% |
+| **B3_indistinct — the class the published NAME genuinely cannot separate** | **193** | **0.12%** |
+
+`contains` alone: multiSymbol 43,854 → B1 43,739 (99.7%), **B2b 0**, B2c 0, **B3 115**. There is not
+one `contains` edge in the corpus whose target is absent from its own file, and 99.7% are settled to
+exactly one declaration by the ordinary rule at the line the edge already carries. So the edge is
+TRUE and its target IS one declaration given `(file, line)`; what cannot use either is the arbiter's
+bare-name lookup over a global key space. That is **instrument scope** — the same shape as LUA-G6 on
+the unresolved column — and no analyzer change reaches it without replacing LUA-15's
+container+own-name identity, which BD-ambiguity declined and this measurement does not reopen.
+
+**THE TWO DEFINITIONS ARE NEVER ADDED.** The gate's `ambiguousByDecl` is 140,782 (its rule, its key
+space); the lexical instrument's `multiSymbol` is 163,583 (bare name PLUS `qualifiedName`, deduped on
+file/qualifiedName/kind/line). Every number here is quoted with its instrument, and 140,782 + 193 is
+not a sum of anything.
+
+**FALSIFIER, stated so this ruling can fail:** it holds only while the name-inexpressible class stays
+small. If a later run shows B3_indistinct growing materially, or shows `contains` with a non-zero
+B2b_fileAbsent, this ruling is refuted and the identity change becomes the work.
+
+**NOT RUN, reported as such:** the first attempt at the collision split was killed by the lock, not
+by the measurement — `flock -w 600 9` timed out (exit 9) while another lane held `.bb-heavy.lock`, so
+the run never started. The re-run waited `-w 3600` and completed.
+
+**NEXT CAUSE, from the same tables, for a later pass:** `calls` is the type whose ambiguity is
+mostly NOT lexical — multiSymbol 41,851 → B1 11,473, **B2b 29,274 (70%)**, B2c 1,104, B3 0 — and its
+marker signature is `luaSpecific` alone, i.e. it carries no receiver. LUA-G5 already names the fix
+the analyzer computes and throws away (`callee()`'s shape, `:2177`), and that is where the B2b mass
+for `calls` should be attacked.
