@@ -1,14 +1,28 @@
 # AGENT ROSTER — Laptop B, one agent per lane
 
-**Created 2026-10-09** (the session that picked up `docs/analyzers/HANDOFF.md`). The teammate cap was
-raised to **75**, so the handoff's §6 recommendation is finally affordable: **one permanently named
-agent per lane**, rather than repurposing eight members across twenty-three languages.
+**Created 2026-10-09** (the session that picked up `docs/analyzers/HANDOFF.md`). The intent was the
+handoff's §6 recommendation — **one permanently named agent per lane** rather than repurposing eight
+members across twenty-three languages — so that a lane's context is never diluted by another lane's
+work and a defect is addressed by LANE, never by "whoever was holding it".
 
-**Why this is the shape**: a lane's context is the most expensive thing in this programme to rebuild.
-An agent that owns exactly one analyzer accumulates its grammar quirks, its corpus holes, its own
-refuted claims and its own instruments in ONE context that is never diluted by another lane's work.
-When a defect turns up in `real-r-analyzer.ts` in two months, the Lead sends a message to `r-lane`,
-not to "whoever was holding the R lane at the time".
+**What actually happened, measured, because the plan and the machine disagreed.** The running Team is
+capped at **8 members** and cannot be raised mid-session: the cap is the `agent-team` plugin's
+`maxMembers`, pinned to `8` in `@deepseek-ai/dsh-experimental-agent-team-profile/cordis.patch.yml`,
+and the roster is constructed once from it at plugin init (`TeamRoster(ctx, journal, lifecycle,
+config.maxMembers)`). The `75` that was raised is `@deepseek-ai/dsh-subagent`'s
+`maxActiveSubagents`, which is a **different pool** — subagents, not durable teammates.
+
+So the programme runs **8 durable lane owners on rotation**, plus a subagent pool for
+findings that need a dedicated owner but not a permanent one:
+
+| | mechanism | cap | what it is for |
+|---|---|---|---|
+| lane owners | `spawn_teammate` | **8** | durable identity, messageable by lane across turns |
+| task force | `subagent` | **75** | one bounded, high-risk job with a single verdict |
+
+To raise the teammate cap: add a patch entry to `~/.dsh/profiles/web/cordis.patch.yml` targeting
+`agent-team` with `config: { maxMembers: 75 }`, then restart `dsh web`. The restart is required —
+a live Team's roster size is fixed at construction.
 
 **The roster is also the addressing scheme.** A request is addressed by LANE, never by history.
 
@@ -29,28 +43,15 @@ not to "whoever was holding the R lane at the time".
 | lane | agent | task | first item |
 |---|---|---|---|
 | markdown | `markdown-lane` | task-1 | coverage block over the corrected `3 types fired` (was 1: instrument defect) |
-| toml | `toml-lane` | task-2 | declared coverage over the committed whole-corpus construct census |
-| hcl | `hcl-lane` | task-3 | evidence class for each of the five silent types |
+| toml | `toml-lane` | task-2 | declared coverage over the whole-corpus census; `references` fires 167 edges corpus-wide where the 120-file sample says SILENT |
+| hcl | `hcl-lane` | task-3 | evidence class per silent type; found HCL-D1 FALSIFIED (rules `calls`/`overrides` inapplicable while the analyzer emits both) |
 | julia | `julia-lane` | task-4 | replace JUL-D1/JUL-D2 `unclassified` with measured classes |
-| r | `r-lane` | task-5 | reproduce-or-refute the per-file parser hang, then coverage |
+| r | `r-lane` | task-5 | DONE — [BB-HANG] refuted as a leaked timer; a dead `degraded` counter; `a7d2fb5e6` |
 | clean | `clean-lane` | task-6 | `extends`: `grammar-absence` or `zero-sites`, by measurement |
-| bash | — | — | queued |
-| f# | — | — | queued |
-| zig | — | — | queued |
-| lua | — | — | queued |
-| nim | — | — | queued |
-| php | — | — | queued |
-| powershell | — | — | queued |
-| dart | — | — | queued |
-| sql | — | — | queued |
-| graphql | — | — | queued |
-| protobuf | — | — | queued |
-| json | — | — | queued |
-| yaml | — | — | queued |
-| css | — | — | queued |
-| scss | — | — | queued |
-| make | — | — | queued |
-| xml | — | — | queued |
+| yaml | `yaml-lane` | task-9 | 107 external claims REFUTED once the whole 2,082-file population is measured |
+| json | `json-lane` | task-10 | reconcile the declared 8/8 against the firing log's 1 type |
+| — | subagent `eccce1b6` | task-11 | verify-or-retract the unattributed 882 / 32,359 shared-resolution claim |
+| bash, f#, zig, lua, nim, php, powershell, dart, sql, graphql, protobuf, css, scss, make, xml | — | — | queued: spawned as slots free |
 
 Rows read `—` for an unspawned lane ON PURPOSE: an empty cell is not a claim that the lane is fine.
 
