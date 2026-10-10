@@ -291,3 +291,63 @@ than the handful of edges a name-set change would recover, and it is already lan
 - **Fixtures, five lanes, all green**: fsharp 15/0 · julia 5/0 · lua 13/0 · php 30/0 · css 22/0.
 - **`npx tsc --noEmit`: exit 0, no errors.** The `real-php-analyzer.ts(2432,7)` error recorded earlier
   was fixed by the php lane in the meantime.
+
+---
+
+## 6. `local-binding` — the population is ≈35,559, not 363, and the class is CORRECT
+
+§3 sized this class at **363 edges**. That number is real but it is a SUB-BUCKET: the
+`same-project-exact` slice of the whole-population unresolved split. The population the binding claim
+would actually re-spell is the analyzer's own `local-binding` classification, and that is **100×
+larger**:
+
+| measurement | count |
+|---|---:|
+| `calls` edges in a 400-file even-stride draw | 26,485 |
+| of those, `metadata.targetResolution === "local-binding"` | **1,403** |
+| scaled to the 10,138-file population | **≈ 35,559** |
+| the whole-population `same-project-exact` slice of it (§3's number) | 363 |
+
+Artifact: `measurements/local-binding-size.txt`. **The correction is mine to state**: I briefed 363,
+and the change it authorises touches ~2.7% of every fsharp edge in the graph and changes what those
+edges NAME. That is a consumer-visible identity change and deserves the larger number.
+
+**The classification is CORRECT, spot-checked on its own examples** — this matters because a claim
+that verifies by construction is only worth what its class is worth:
+
+| edge | source check |
+|---|---|
+| `dataLoader -> asIndex` (Deedle `VirtualFrame.fs`) | `let asIndex (dt:DateTimeOffset) = …` at :1034, called at :1035 |
+| `JsonTypeBuilder.getOrCreateType -> normalize` | `let rec normalize topLevel = …` at :163, called at :167/172/179/190 |
+| `TrackingSource.LookupValue -> asLong` | `let asLong = match asLong with …` at :88, called at :93 |
+
+Each names a genuine binding that has no symbol, which is exactly what the claim asserts.
+
+**WHY THE CLAIM VERIFIES BY CONSTRUCTION, said out loud.** With the `<callable>#<binding>` spelling
+the target names no declaration, so `classifyEdge`'s `decls > 0 → bindingRefuted` branch cannot fire,
+and `verifyBindingClaim` sees the separator, so the claim verifies. The claim therefore checks *"is
+this spelled as a binding?"*, not *"is it really one?"* — its value rests entirely on the class being
+right, which is why the table above exists. That is the file's own design ("the separator is the
+fix's whole mechanism… to make a spelling that lost it impossible to pass quietly"), not a loophole
+invented here.
+
+### 6.1 The differential baseline, and what it can see
+
+`bun run script/m14/differential.ts --lang fsharp` — **MISSING=10, unexplained=69 (calls=68,
+instantiates=1)** over 60 files / 3,136 analyzer edges, `hash=2143f8bdc90fe3f1`. Artifact:
+`measurements/differential-before.txt`. The scoped run writes **no** shared artifact (`M14.0.F5 NOT
+written`, and `M14.0.F5.fsharp.json` is untouched).
+
+The sample is large enough to see the change: ~1,403 local-binding calls per 400 files is **≈ 210 at
+60 files**, matching the 207 this lane's own doc recorded for the same shape. So a before/after with
+MISSING and unexplained UNCHANGED is a real test, not a vacuous one.
+
+### 6.2 What remains, and why it is not in this commit
+
+The analyzer side is small: at the `calls` emission sites, a resolution of `local-binding` spells
+`<source>#<binding>` and sets `metadata.localBinding = true`. The ORACLE side is the work — it must
+derive the same spelling **independently from source** (its `emit("calls", owner, leaf, node)` writes
+the bare leaf today, and a spelling taken from the analyzer's output would make the differential a
+tautology). Landing the analyzer half alone would convert ~210 differential rows into
+MISSING-plus-UNEXPLAINED, which is strictly worse than leaving them unnamed — the same conclusion §3
+reached, now with the population measured and the class verified rather than assumed.
