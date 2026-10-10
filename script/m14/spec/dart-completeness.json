@@ -111,7 +111,7 @@
       "new_expression",
       "symbol_literal"
     ],
-    "fixture_only_note": "Master review 3 (reviews/dart/master-review-3.md, F4): these 6 are claimed handled_verified and occur ZERO times in 1,294 ProxiCall/lib files, so their verification rests entirely on fixtures that construct them. `new_expression` is instructive: modern Dart makes `new` optional, so `Foo()` is a type_identifier and the node appears only under an explicit `new` — a legitimate reason for absence, but it means the claim is untested against how the corpus actually writes code. DARTD11's question (are these realizable by any Dart source in the pinned grammar?) is still open for all six. Counted toward handled, but marked here so the total is not read as 93 equally evidenced."
+    "fixture_only_note": "Master review 3 (reviews/dart/master-review-3.md, F4): these 6 are claimed handled_verified and occur ZERO times in 1,294 ProxiCall/lib files, so their verification rests entirely on fixtures that construct them. `new_expression` is instructive: modern Dart makes `new` optional, so `Foo()` is a type_identifier and the node appears only under an explicit `new` \u2014 a legitimate reason for absence, but it means the claim is untested against how the corpus actually writes code. DARTD11's question (are these realizable by any Dart source in the pinned grammar?) is still open for all six. Counted toward handled, but marked here so the total is not read as 93 equally evidenced."
   },
   "internal_silent": {
     "types": [
@@ -222,8 +222,8 @@
       "yield_each_statement",
       "yield_statement"
     ],
-    "corpus_silent_rationale": "function_expression (767 corpus files) and lambda_expression (17) are silent per DARTD2 — local functions, lambdas and function expressions are not module-level symbols. They were never LISTED, which is what left them unclassified rather than unaudited.",
-    "constructor_initializer_note": "initializer_list_entry / field_initializer / initializers are the `<this>.field = value` list a CONSTRUCTOR writes. They emit no symbol of their own because DARTD3 rules Dart constructors have no distinct NAME — the FIELD each entry initializes is the symbol, and DARTD13's post-pass already binds its declared type. Master review 3 (F2) removed these from the GAP list, where they had been asking for a symbol the family ruled out, and bucketed them here instead."
+    "corpus_silent_rationale": "function_expression (767 corpus files) and lambda_expression (17) are silent per DARTD2 \u2014 local functions, lambdas and function expressions are not module-level symbols. They were never LISTED, which is what left them unclassified rather than unaudited.",
+    "constructor_initializer_note": "initializer_list_entry / field_initializer / initializers are the `<this>.field = value` list a CONSTRUCTOR writes. They emit no symbol of their own because DARTD3 rules Dart constructors have no distinct NAME \u2014 the FIELD each entry initializes is the symbol, and DARTD13's post-pass already binds its declared type. Master review 3 (F2) removed these from the GAP list, where they had been asking for a symbol the family ruled out, and bucketed them here instead."
   },
   "gap": {
     "_description": "Re-scoped by master review 3 (reviews/dart/master-review-3.md, F2) against the LIVE ProxiCall corpus. The previous grouping was by NODE TYPE FAMILY, which made the work unplannable: one row lumped eight record types under 'record type/literal symbols' and another lumped nine pattern types under 'destructuring pattern variables as symbols', and those are very different amounts of work. Rows are now one per DEFERRABLE UNIT, ranked by live occurrence count, and the two rows that were never gaps at all are gone (see removed_from_gaps). Occurrence counts are measured over 1,294 ProxiCall/lib files.",
@@ -237,7 +237,7 @@
         "missing": "RE-SCOPED AFTER MEASUREMENT, and the first framing of this row was wrong. It claimed pattern bindings 'deserve what a local declarator gets' and that the names are already computed so only a symbol is missing. Both halves fail against the corpus. (a) A local declarator is NOT a symbol in this lane either -- it goes in the `bound` set, and DT2-C rules reads of bound names as `uses` edges, the same convention TypeScript pins as `interp-uses` and the same reason `uses build -> context` publishes for a parameter. So a pattern-bound name publishing `uses f -> a` with no symbol is CONSISTENT, not a gap. (b) The real question is the navigation one every language shares: should a BINDING be a symbol so a consumer resolving that edge finds a node? That is a family decision, not Dart work. MEASURED on all six pattern forms (if-case, record positional, named field, list with rest, null-check) and every one already behaves exactly as a parameter does.",
         "effort": "DECISION, not construction. If bindings become symbols it is a cross-language change; if they stay bound this row closes as wontfix-by-convention and should be deleted from the gap list.",
         "measured_position": "All six forms verified: `uses` published to the bound name, no symbol, and a read of the name is correctly suppressed as a local. Identical to the parameter treatment, which is the convention.",
-        "shadowing_checked_and_correct": "A shadowing defect was SUSPECTED here and does not exist; recorded because the suspicion and its refutation are both informative. Probe: `class C { final String s; void f(Object? o) { if (o case final String s) print(s); } }` publishes `uses f -> s`, whose target NAME is also a field symbol in the file, so it reads at first like a fabricated member read. The metadata says otherwise: the edge is `confidence 0.9, isLocalRead` — the LOCAL-READ arm — and a genuine field read is `confidence 0.6, isBareRead`. The pattern binding shadows the field exactly as a parameter and a `var` do, all three measured at 0.9/isLocalRead against the 0.6 control. The apparent collision is inherent to a name-keyed graph and is the accepted `interp-uses` situation, not a wrong edge. 2026-10-08 — the collision has since been made IMPOSSIBLE rather than accepted, without touching what the metadata above says: a bound read is spelled `<callable><BINDING_SEP><binding>`, a string no declaration name can equal, so the name-keyed graph never sees the bare name for a binding at all (`BINDING_SEP`, and the arbiter's `verifyBindingClaim`). The refutation recorded here still stands as the record of what the metadata proved; the spelling removed the need for a reader to rely on it. Corpus census agrees: 0 of 1,294 ProxiCall/lib files have a pattern-bound name colliding with a same-file symbol, which is what correct behaviour plus idiomatic naming predicts."
+        "shadowing_checked_and_correct": "A shadowing defect was SUSPECTED here and does not exist; recorded because the suspicion and its refutation are both informative. Probe: `class C { final String s; void f(Object? o) { if (o case final String s) print(s); } }` publishes `uses f -> s`, whose target NAME is also a field symbol in the file, so it reads at first like a fabricated member read. The metadata says otherwise: the edge is `confidence 0.9, isLocalRead` \u2014 the LOCAL-READ arm \u2014 and a genuine field read is `confidence 0.6, isBareRead`. The pattern binding shadows the field exactly as a parameter and a `var` do, all three measured at 0.9/isLocalRead against the 0.6 control. The apparent collision is inherent to a name-keyed graph and is the accepted `interp-uses` situation, not a wrong edge. 2026-10-08 \u2014 the collision has since been made IMPOSSIBLE rather than accepted, without touching what the metadata above says: a bound read is spelled `<callable><BINDING_SEP><binding>`, a string no declaration name can equal, so the name-keyed graph never sees the bare name for a binding at all (`BINDING_SEP`, and the arbiter's `verifyBindingClaim`). The refutation recorded here still stands as the record of what the metadata proved; the spelling removed the need for a reader to rely on it. Corpus census agrees: 0 of 1,294 ProxiCall/lib files have a pattern-bound name colliding with a same-file symbol, which is what correct behaviour plus idiomatic naming predicts."
       },
       {
         "id": "DARTGAP2",
@@ -254,7 +254,7 @@
         "node_type": "record_type, record_type_field, record_type_named_field",
         "live_occurrences": 219,
         "live_files": 38,
-        "missing": "PARTIALLY CLOSED. The type-FIDELITY half is done: a `record_type` is now accepted by all three type extractors (parameter, return, field), which had a fixed five-node allowlist (type_identifier, function_type, nullable_type, void_type) and silently dropped every Dart 3 record. Measured over ProxiCall/lib: 27 return types and 1 parameter regained their declared record type, 0 relationships changed, 0 unexplained payload changes. What REMAINS is the CONTAINMENT half and it is a different, bigger question: a `typedef` over a record type (`typedef Pair = (int, String)`) emits NO `contains` edges for the record's fields, and neither does a typedef over a plain object type (`typedef Cfg = {int count}`) — so this is a CROSS-LANGUAGE family question, not a Dart-record one. The family precedent exists: the typescript-contains oracle's rule 5 rules a type alias over an object literal to be a CONTAINER, adopted there because it was that oracle's single largest disagreement source on real files. Dart's contains comes from the generic differential walker, which does not mirror a typedef-body rule, so landing this requires an ANALYZER change AND a matching change in the dart tree-truth oracle — editing differential.ts, which several lanes share. Named fields keep their names; positional fields are Dart's own `$1`/`$2`, which the corpus already reads (`rec.$1`). Do not build the analyzer half without the oracle half.",
+        "missing": "PARTIALLY CLOSED. The type-FIDELITY half is done: a `record_type` is now accepted by all three type extractors (parameter, return, field), which had a fixed five-node allowlist (type_identifier, function_type, nullable_type, void_type) and silently dropped every Dart 3 record. Measured over ProxiCall/lib: 27 return types and 1 parameter regained their declared record type, 0 relationships changed, 0 unexplained payload changes. What REMAINS is the CONTAINMENT half and it is a different, bigger question: a `typedef` over a record type (`typedef Pair = (int, String)`) emits NO `contains` edges for the record's fields, and neither does a typedef over a plain object type (`typedef Cfg = {int count}`) \u2014 so this is a CROSS-LANGUAGE family question, not a Dart-record one. The family precedent exists: the typescript-contains oracle's rule 5 rules a type alias over an object literal to be a CONTAINER, adopted there because it was that oracle's single largest disagreement source on real files. Dart's contains comes from the generic differential walker, which does not mirror a typedef-body rule, so landing this requires an ANALYZER change AND a matching change in the dart tree-truth oracle \u2014 editing differential.ts, which several lanes share. Named fields keep their names; positional fields are Dart's own `$1`/`$2`, which the corpus already reads (`rec.$1`). Do not build the analyzer half without the oracle half.",
         "effort": "fidelity half: DONE. containment half: medium, and BLOCKED on a paired differential.ts change rather than on the Dart analyzer"
       },
       {
@@ -277,7 +277,7 @@
         "id": "DARTGAP6",
         "severity": "low",
         "node_type": "constructor_tearoff",
-        "missing": "a constructor TEAR-OFF (`WidgetState<State<MyState>>.new`) is a distinct construct from a named constructor, and DARTD3 rules that Dart constructors have no distinct NAME — so whether a tear-off is a symbol or only an `instantiates` edge is an open question, not a missing extractor. Listed so it is not lost; it was dropped in the first re-scope pass, which is how it was found.",
+        "missing": "a constructor TEAR-OFF (`WidgetState<State<MyState>>.new`) is a distinct construct from a named constructor, and DARTD3 rules that Dart constructors have no distinct NAME \u2014 so whether a tear-off is a symbol or only an `instantiates` edge is an open question, not a missing extractor. Listed so it is not lost; it was dropped in the first re-scope pass, which is how it was found.",
         "effort": "decision first"
       }
     ],
@@ -285,7 +285,7 @@
       {
         "node_type": "initializer_list_entry, field_initializer, initializers",
         "was": "listed under 'record type/literal symbols and typed fields'",
-        "why_removed": "NEVER A GAP — they are a constructor's initializer list, and DARTD3 already ruled that Dart constructors have no distinct name, so the row asked for a symbol the family has ruled out. They occur 25+ times each in the live corpus and ARE handled: the field each entry initializes is a real symbol with a real type. Now in internal_silent with the reasoning recorded there. Reviewer error, recorded rather than silently dropped."
+        "why_removed": "NEVER A GAP \u2014 they are a constructor's initializer list, and DARTD3 already ruled that Dart constructors have no distinct name, so the row asked for a symbol the family has ruled out. They occur 25+ times each in the live corpus and ARE handled: the field each entry initializes is a real symbol with a real type. Now in internal_silent with the reasoning recorded there. Reviewer error, recorded rather than silently dropped."
       }
     ],
     "measurement": {
@@ -311,7 +311,7 @@
         "node_type": "local_function_declaration,lambda_expression,function_expression",
         "status": "RULED",
         "question": "Local functions, lambdas, and function expressions are not module-level symbols.",
-        "resolution": "NO locals/lambdas as symbols (M12.11 family contract). A local_function_declaration still becomes the call-source context for calls inside it; lambda_expression and function_expression are silent internals. SUPERSEDED (2026-09, DARTD8): a local_function_declaration is now a silent fold — calls inside it attribute to the enclosing real function (csharp/python/go parity), and it never becomes a call-source context either."
+        "resolution": "NO locals/lambdas as symbols (M12.11 family contract). A local_function_declaration still becomes the call-source context for calls inside it; lambda_expression and function_expression are silent internals. SUPERSEDED (2026-09, DARTD8): a local_function_declaration is now a silent fold \u2014 calls inside it attribute to the enclosing real function (csharp/python/go parity), and it never becomes a call-source context either."
       },
       {
         "id": "DARTD3",
@@ -339,13 +339,13 @@
         "node_type": "field/variable declarations (declaration > <list>)",
         "status": "FIXED",
         "question": "Where is a field's declared type in the parse tree, and how is it extracted without an O(class)^2 ancestor scan?",
-        "resolution": "The explicit type is always a DIRECT child of the declaration container in front of the list (probed dart-typedecl-shapes.ts: instance/static/final/multi-name/top-level all place type_identifier on declaration; inferred `static const x = Ctor(...)` carries none). extractFieldType scans node + declList direct children only. The old parent fallback iterated every class_body member per field — 13.6 s on phosphor_icons_regular.dart (1,512 fields x 3k-member scan); fixed to 252 ms (50x). Same trap hasModifier documents; a bound is not needed since direct-child scans are O(1)."
+        "resolution": "The explicit type is always a DIRECT child of the declaration container in front of the list (probed dart-typedecl-shapes.ts: instance/static/final/multi-name/top-level all place type_identifier on declaration; inferred `static const x = Ctor(...)` carries none). extractFieldType scans node + declList direct children only. The old parent fallback iterated every class_body member per field \u2014 13.6 s on phosphor_icons_regular.dart (1,512 fields x 3k-member scan); fixed to 252 ms (50x). Same trap hasModifier documents; a bound is not needed since direct-child scans are O(1)."
       },
       {
         "id": "DARTD7",
         "node_type": "relationship multiplicity",
         "status": "FIXED",
-        "question": "Calls/instantiates emit ONE row per call site — N sites of the same callee push N identical (type,source,target,confidence) rows. Is multiplicity payload or noise?",
+        "question": "Calls/instantiates emit ONE row per call site \u2014 N sites of the same callee push N identical (type,source,target,confidence) rows. Is multiplicity payload or noise?",
         "resolution": "Noise: 192,761 redundant rows across proxicall (35% of 545,208); oracle/fixtures are presence-based so multiplicity was invisible to every gate. Dedup exact rows at emission (first metadata wins): total corpus relationships 545,208 -> 351,722, dup rows 0. Unique-set semantics mirror the rust #383/go GOD9 qualified_calls lesson."
       },
       {
@@ -359,14 +359,14 @@
         "id": "DARTD9",
         "node_type": "class-member field initializers (no enclosing function)",
         "status": "FIXED",
-        "question": "Instantiates/calls with no function context fell back to the MODULE (file basename) as source — every const field of an icon class attributed to the file, a name that is not a symbol.",
+        "question": "Instantiates/calls with no function context fell back to the MODULE (file basename) as source \u2014 every const field of an icon class attributed to the file, a name that is not a symbol.",
         "resolution": "extractCallRelationships tracks the enclosing class/mixin/enum/extension and uses it before the module fallback: field initializers attribute to the owning class (IconSet -> IconData); the module remains only for true top-level initializers. Csharp parity: parentContext?.rawName || 'global'."
       },
       {
         "id": "DARTD10",
         "node_type": "top-level getter_signature / setter_signature",
         "status": "FIXED",
-        "question": "Top-level getters/setters fell through every dispatch branch (owner undefined, t not function_signature) — silently dropped as symbols while their bodies' calls attributed to a non-declared source.",
+        "question": "Top-level getters/setters fell through every dispatch branch (owner undefined, t not function_signature) \u2014 silently dropped as symbols while their bodies' calls attributed to a non-declared source.",
         "resolution": "Bare top-level getter/setter signatures route to processTopLevelFunction as Property symbols with meta.isTopLevelAccessor/isGetter/isSetter (corpus: translate.dart's `List<String> get _deepLKeys` now declared; non-declared call-source tail 0)."
       },
       {
@@ -380,42 +380,42 @@
         "id": "DARTD12",
         "node_type": "getter/setter pairs (method_signature > getter_signature + setter_signature, same name)",
         "status": "FIXED",
-        "question": "M37 master-review 2 (2026-09-06): seenMembers dedup keyed owner:name without kind — every accessor pair collapsed to one Property symbol (setters carry the value param)",
+        "question": "M37 master-review 2 (2026-09-06): seenMembers dedup keyed owner:name without kind \u2014 every accessor pair collapsed to one Property symbol (setters carry the value param)",
         "answer": "owner:name:kind key; fixture expectSymbolCount value/property/Counter equals:2; mutant dart/accessor-pair-collapsed"
       },
       {
         "id": "DARTD13",
         "node_type": "formal_parameter type extraction (tree-sitter-dart has NO type field)",
         "status": "FIXED",
-        "question": "M37 master-review 2: childForFieldName('type') never matched (probed dart-param-children.ts) — 8,094 corpus params degraded to dynamic; this-params carry type on the sibling field",
+        "question": "M37 master-review 2: childForFieldName('type') never matched (probed dart-param-children.ts) \u2014 8,094 corpus params degraded to dynamic; this-params carry type on the sibling field",
         "answer": "span-matched leading type child (type_identifier/function_type/nullable_type/void_type) + post-pass this-param->field-type binding (O(symbols), no parent scans); expectParameters pins total:double nv:int sides:int; mutant dart/param-types-degraded"
       },
       {
         "id": "DARTD14",
         "node_type": "mixin_declaration on-clause heritage (mixin M on Base implements I)",
         "status": "FIXED",
-        "question": "M37 master-review 2: on-base is a DIRECT type_identifier child (probed dart-mixin-shape.ts) — heritage extractor only looked for superclass children, so mixin on-bases emitted zero edges",
+        "question": "M37 master-review 2: on-base is a DIRECT type_identifier child (probed dart-mixin-shape.ts) \u2014 heritage extractor only looked for superclass children, so mixin on-bases emitted zero edges",
         "answer": "extractClassHeritage handles mixin_declaration direct type_identifier as extends + interfaces/mixins via existing branches; oracle derives the same truth; mutants dart/mixin-on-heritage-dropped"
       },
       {
         "id": "DARTD15",
         "node_type": "enhanced enum heritage (enum Poly implements Shape / with M)",
         "status": "FIXED",
-        "question": "M37 master-review 2: enum_declaration case never called extractClassHeritage — enhanced-enum implements/with edges vanished; in-file interface methods also produced no overrides",
+        "question": "M37 master-review 2: enum_declaration case never called extractClassHeritage \u2014 enhanced-enum implements/with edges vanished; in-file interface methods also produced no overrides",
         "answer": "enum_declaration calls extractClassHeritage; overrides pass covers implements; oracle enum_declaration branch mirrors; mutant dart/enum-heritage-dropped"
       },
       {
         "id": "DARTD16",
         "node_type": "cross-file overrides (@override methods whose bases are declared outside the file)",
         "status": "FIXED",
-        "question": "M37 master-review 2: 34,306 corpus @override sites produced 32 edges — production never passes overrideCompanion (parseFile callers pass no context) and the pass only checked the direct extends base. Fields also faked overrides via un-gated external fallback",
+        "question": "M37 master-review 2: 34,306 corpus @override sites produced 32 edges \u2014 production never passes overrideCompanion (parseFile callers pass no context) and the pass only checked the direct extends base. Fields also faked overrides via un-gated external fallback",
         "answer": "3-pass resolution (in-file BFS over extends+implements+with -> companion -> annotation-gated external first-parent at conf 0.8); fields can never override; oracle n/a (overrides not compared for dart); mutants dart/external-override-dropped + dart/field-override-fabricated"
       },
       {
         "id": "DARTD17",
         "node_type": "cascade_section chained selectors (b..a.b.c(1))",
         "status": "FIXED",
-        "question": "M37 master-review 2: cascade calls resolved to the cascade_selector's first identifier (a) — the leaf method (c) lives in nested unconditional_assignable_selector children",
+        "question": "M37 master-review 2: cascade calls resolved to the cascade_selector's first identifier (a) \u2014 the leaf method (c) lives in nested unconditional_assignable_selector children",
         "answer": "callee chain = last identifier across selector children excluding argument_part (args excluded so b..foo(a.bar) stays foo); covered by existing cascade pins"
       },
       {
@@ -423,14 +423,14 @@
         "node_type": "cascade_section (multi-invocation)",
         "status": "FIXED",
         "question": "OO family closure #613 (dart-http corpus): a cascade section may hold several invocations (..a(x)..b(y)); which selectors are calls?",
-        "answer": "Each selector IMMEDIATELY followed by its own argument_part sibling is an invocation — ..headers.addAll(x) calls addAll (headers is a bare getter), and ..transform(x)..listen(y) calls BOTH (the earlier keep-last-only logic dropped transform). Same per-invocation model mirrored in deriveDartEdges (it previously emitted only the cascade_selector first identifier = getter junk). pinned: family-closure-cascades fixture + dart/cascade-multi-invocation-dropped mutant."
+        "answer": "Each selector IMMEDIATELY followed by its own argument_part sibling is an invocation \u2014 ..headers.addAll(x) calls addAll (headers is a bare getter), and ..transform(x)..listen(y) calls BOTH (the earlier keep-last-only logic dropped transform). Same per-invocation model mirrored in deriveDartEdges (it previously emitted only the cascade_selector first identifier = getter junk). pinned: family-closure-cascades fixture + dart/cascade-multi-invocation-dropped mutant."
       },
       {
         "id": "DARTD19",
         "node_type": "redirecting_factory_constructor_signature (factory X() = _Y;)",
         "status": "FIXED",
         "question": "OO family closure #613 (dart-http generated jni_bindings.dart): does a redirecting factory attribute construction to the implementation class?",
-        "answer": "Yes — factory X() = _Y; emits instantiates X -> _Y (the analyzer already did; the deriveDartEdges oracle lacked the mirror, making those the only unexplained instantiates in dart-http at 200-file depth). Oracle now pushes the redirect target (private _-prefixed names allowed, so no capitalization filter). pinned: family-closure-cascades fixture + dart/factory-redirect-instantiates-dropped mutant."
+        "answer": "Yes \u2014 factory X() = _Y; emits instantiates X -> _Y (the analyzer already did; the deriveDartEdges oracle lacked the mirror, making those the only unexplained instantiates in dart-http at 200-file depth). Oracle now pushes the redirect target (private _-prefixed names allowed, so no capitalization filter). pinned: family-closure-cascades fixture + dart/factory-redirect-instantiates-dropped mutant."
       },
       {
         "id": "DT-A",
@@ -444,7 +444,7 @@
         "id": "DT-B",
         "node_type": "mixin on-base, with-clause (alias resolution)",
         "status": "FIXED",
-        "question": "First review: `mixin M on _i1.Base` extended _i1 and `with _i2.Mixin` used _i2 — the DAD1/DAD2 alias-resolution contract stopped at superclass/interfaces and never reached on/with clauses (both sides leaked identically).",
+        "question": "First review: `mixin M on _i1.Base` extended _i1 and `with _i2.Mixin` used _i2 \u2014 the DAD1/DAD2 alias-resolution contract stopped at superclass/interfaces and never reached on/with clauses (both sides leaked identically).",
         "resolution": "on-bases (all of them) and with-mixins now resolve alias-free on both sides. Gated by fixture dart/member-value-reads extends/uses pins + forbid _i1/_i2 + mutant dart/mixin-on-with-alias-leak.",
         "issue": "M49.DT1 dart first review"
       },
@@ -452,7 +452,7 @@
         "id": "DT-C",
         "node_type": "redirecting_factory_constructor_signature (alias)",
         "status": "FIXED",
-        "question": "First review: `factory Z.make() = _i1.Impl.make` instantiated _i1 (raw first type_identifier) on both sides — DARTD19 only covered unqualified targets.",
+        "question": "First review: `factory Z.make() = _i1.Impl.make` instantiated _i1 (raw first type_identifier) on both sides \u2014 DARTD19 only covered unqualified targets.",
         "resolution": "The redirect class is second-to-last after `=` (singletons stay whole), mirrored in the oracle. Gated by fixture instantiates[C->Impl] + forbid _i1 + mutant dart/redirect-alias-leak.",
         "issue": "M49.DT1 dart first review"
       },
@@ -460,7 +460,7 @@
         "id": "DT-D",
         "node_type": "initializer_list_entry, redirection (super/this)",
         "status": "FIXED",
-        "question": "First review: `B() : super(1)`, `super.named(2)` and `this.named(0)` emitted nothing on either side — every constructor delegation in the language was invisible (super calls take two shapes: initializer entries and redirection nodes).",
+        "question": "First review: `B() : super(1)`, `super.named(2)` and `this.named(0)` emitted nothing on either side \u2014 every constructor delegation in the language was invisible (super calls take two shapes: initializer entries and redirection nodes).",
         "resolution": "super() entries instantiate the resolved superclass (prescan; mixin-application bases excluded as vanishingly rare); this() entries/redirections instantiate the own class. Gated by fixture instantiates[constructor->A/B] + mutants dart/drop-super-ctor-instantiates, dart/drop-this-redirect-instantiates.",
         "issue": "M49.DT1 dart first review"
       },
@@ -469,14 +469,14 @@
         "node_type": "conditional selector chains (investigated, no defect)",
         "status": "RULED",
         "question": "First review: does `a?.b.c()` fabricate calls->b (conditional link read as invocation)? The battery initially suggested it.",
-        "resolution": "No defect — direct probe shows calls->c only on both sides (the three-selector chain resolves the leaf correctly). Pinned as calls->bump in the fixture to lock the conditional-invocation shape.",
+        "resolution": "No defect \u2014 direct probe shows calls->c only on both sides (the three-selector chain resolves the leaf correctly). Pinned as calls->bump in the fixture to lock the conditional-invocation shape.",
         "issue": "M49.DT1 dart first review"
       },
       {
         "id": "DT-F",
         "node_type": "selector/cascade/subscript/interpolation reads",
         "status": "FIXED",
-        "question": "First review: member reads were invisible on both sides (this./obj./static/conditional access, cascade getters, subscript bases, interpolation) — the managed-OO family contract (csharp CS-R1, objc OC-E) unimplemented, lanes blind by circular consistency.",
+        "question": "First review: member reads were invisible on both sides (this./obj./static/conditional access, cascade getters, subscript bases, interpolation) \u2014 the managed-OO family contract (csharp CS-R1, objc OC-E) unimplemented, lanes blind by circular consistency.",
         "resolution": "Reads emit uses@0.9 on both sides: argument-less selectors (callee links, plain-= LHS writes and builtins excluded), argument-less cascade selectors (cascade `=` assigns excluded), subscript bases (index-selector shapes incl. assignable-expression targets; declaration names bind via =-position rule), and string interpolation (template-substitution blanket + $x placeholders, labels excluded). Unqualified bare value reads (RHS, args, returns, conditions) need scope inventory and defer to review 2. Gated by fixture (14 uses pins, 1 write forbid) + 4 mutants.",
         "issue": "M49.DT1 dart first review"
       },
@@ -492,16 +492,16 @@
         "id": "DT2-A",
         "node_type": "bare identifiers bound in scope",
         "status": "FIXED",
-        "question": "Second review: parameters, body locals, loop/for-in/catch/lambda bindings, cascade receivers and constructor-initializer params invisible on both sides — every `return depth`, `foo(k)`, `use(x)` silent (OC-E parity gap).",
-        "resolution": "Exact scope inventory (frames already threaded; for-in/pattern bindings added to the collector; initializer lists bind sibling-signature params): bound names emit uses@0.9 isLocalRead, mutually exclusive with member reads (gate B) by construction. Oracle mirrors frames, bindings and arms exactly (including the direct-child param fix the first lane caught). Gated by fixture dart/value-reads (19 local pins) + mutant dart/drop-local-read-uses. 2026-10-08 — the target is now SPELLED as a binding: `<callable><BINDING_SEP><binding>` (`BINDING_SEP`, src/ast/types.ts) with `metadata.localBinding`, because the STORE resolves a target by NAME and never reads metadata (`parallel-indexer.ts` Strategy 2 admits a bare name declared exactly once in the project), so a bare local name bound to any single declaration carrying it, in any file. The arbiter verifies the claim by the spelling alone (`verifyBindingClaim`: bindingVerified / bindingRefuted / bindingUnverified) and the separator tripwire asserts no published key contains it. Gated additionally by fixture dart/local-read (+ 2 expectations, 26/26) and the instrument validation/m14/fixtures/dart/local-read-phantom.ts (RED on the bare spelling, then CLOSED, with the counterfactual that removing the separator re-creates the false link), and planted as 4 edge cases in the gate's own control.",
+        "question": "Second review: parameters, body locals, loop/for-in/catch/lambda bindings, cascade receivers and constructor-initializer params invisible on both sides \u2014 every `return depth`, `foo(k)`, `use(x)` silent (OC-E parity gap).",
+        "resolution": "Exact scope inventory (frames already threaded; for-in/pattern bindings added to the collector; initializer lists bind sibling-signature params): bound names emit uses@0.9 isLocalRead, mutually exclusive with member reads (gate B) by construction. Oracle mirrors frames, bindings and arms exactly (including the direct-child param fix the first lane caught). Gated by fixture dart/value-reads (19 local pins) + mutant dart/drop-local-read-uses. 2026-10-08 \u2014 the target is now SPELLED as a binding: `<callable><BINDING_SEP><binding>` (`BINDING_SEP`, src/ast/types.ts) with `metadata.localBinding`, because the STORE resolves a target by NAME and never reads metadata (`parallel-indexer.ts` Strategy 2 admits a bare name declared exactly once in the project), so a bare local name bound to any single declaration carrying it, in any file. The arbiter verifies the claim by the spelling alone (`verifyBindingClaim`: bindingVerified / bindingRefuted / bindingUnverified) and the separator tripwire asserts no published key contains it. Gated additionally by fixture dart/local-read (+ 2 expectations, 26/26) and the instrument validation/m14/fixtures/dart/local-read-phantom.ts (RED on the bare spelling, then CLOSED, with the counterfactual that removing the separator re-creates the false link), and planted as 4 edge cases in the gate's own control.",
         "issue": "M49.DT2 dart second review"
       },
       {
         "id": "DT2-B",
         "node_type": "file-scope value names",
         "status": "FIXED",
-        "question": "Second review: top-level variables/constants/functions/accessors read from anywhere (`return gTotal`, `var f = helper`) invisible — members-only inventory stopped at the file boundary.",
-        "resolution": "Top-level values resolve (symbols without ownerName, types excluded); members shadow globals, locals shadow both — all three arms mutually exclusive. Function names as values close the OC-H gap (recursion still calls via callee-skip). Gated by fixture + mutant dart/drop-global-read-uses.",
+        "question": "Second review: top-level variables/constants/functions/accessors read from anywhere (`return gTotal`, `var f = helper`) invisible \u2014 members-only inventory stopped at the file boundary.",
+        "resolution": "Top-level values resolve (symbols without ownerName, types excluded); members shadow globals, locals shadow both \u2014 all three arms mutually exclusive. Function names as values close the OC-H gap (recursion still calls via callee-skip). Gated by fixture + mutant dart/drop-global-read-uses.",
         "issue": "M49.DT2 dart second review"
       },
       {
@@ -509,15 +509,15 @@
         "node_type": "labels, writes, declaration sites, type positions",
         "status": "RULED",
         "question": "Second review: which bare positions must NEVER read, now that reads are the default for bound names?",
-        "resolution": "Named-argument labels (label parent), label definitions and break/continue targets (labeled/break/continue parents), assignment-LHS writes (span-matched, plain `=` only — compound reads per C parity), declaration names (positional), field-initializer targets (first-child positional), callee heads, member-link positions, heritage/type/cast positions (type_identifier), and this/super keywords never read — mirrored exactly both sides. Pinned by forbids (labels, write-only global) + mutants (label/write fabrication).",
+        "resolution": "Named-argument labels (label parent), label definitions and break/continue targets (labeled/break/continue parents), assignment-LHS writes (span-matched, plain `=` only \u2014 compound reads per C parity), declaration names (positional), field-initializer targets (first-child positional), callee heads, member-link positions, heritage/type/cast positions (type_identifier), and this/super keywords never read \u2014 mirrored exactly both sides. Pinned by forbids (labels, write-only global) + mutants (label/write fabrication).",
         "issue": "M49.DT2 dart second review"
       },
       {
         "id": "DT2-D",
         "node_type": "switch-case patterns, interpolation overlap",
         "status": "RULED",
-        "question": "Second review: `InvitationStatus.declined => ...` under `var x = switch` — binding or test? And member+blanket double edges in `${count}`?",
-        "resolution": "Case TESTS never bind: constant patterns bind only through structural descent (record/list/map) to a declaration or for-in head — crossing a switch/if boundary tests (the first lane caught the broad version: 3 MISSING). The member(0.6)+blanket(0.9) double in interpolation is inherited DT1 contract (both sides, lane-neutral, presence-pinned) — ruled, not re-litigated.",
+        "question": "Second review: `InvitationStatus.declined => ...` under `var x = switch` \u2014 binding or test? And member+blanket double edges in `${count}`?",
+        "resolution": "Case TESTS never bind: constant patterns bind only through structural descent (record/list/map) to a declaration or for-in head \u2014 crossing a switch/if boundary tests (the first lane caught the broad version: 3 MISSING). The member(0.6)+blanket(0.9) double in interpolation is inherited DT1 contract (both sides, lane-neutral, presence-pinned) \u2014 ruled, not re-litigated.",
         "issue": "M49.DT2 dart second review"
       },
       {
@@ -525,7 +525,7 @@
         "node_type": "duplicate member / program-scope declarations (#753)",
         "status": "FIXED",
         "question": "When ONE scope declares the same callable name twice, whose BODY does the symbol keep? dart kept the FIRST (the #745 wrong-body family).",
-        "resolution": "LAST declaration wins — the family rule (js pinned last, py #748 both). Implemented as one shared `registerCallable` path: member dedup keys by (kind, name) into `seenMembers`, now a name -> symbol-index Map so the later declaration REPLACES the earlier one in place (same identity, later body/params/line) instead of being dropped, and program scope keys on `module:${name}:${accessorKind}` so a getter/setter pair is two symbols while a true duplicate collapses. Measured first, full extent: 2,547 corpus files, 15 genuine duplicate top-level callables (all in test files), 0 member-scope duplicates that were not census artifacts. Pinned by dart/dup-decl-last-wins and the CAUGHT mutant dart/dup-decl-first-wins.",
+        "resolution": "LAST declaration wins \u2014 the family rule (js pinned last, py #748 both). Implemented as one shared `registerCallable` path: member dedup keys by (kind, name) into `seenMembers`, now a name -> symbol-index Map so the later declaration REPLACES the earlier one in place (same identity, later body/params/line) instead of being dropped, and program scope keys on `module:${name}:${accessorKind}` so a getter/setter pair is two symbols while a true duplicate collapses. Measured first, full extent: 2,547 corpus files, 15 genuine duplicate top-level callables (all in test files), 0 member-scope duplicates that were not census artifacts. Pinned by dart/dup-decl-last-wins and the CAUGHT mutant dart/dup-decl-first-wins.",
         "issue": "#753 (M49-CONV, CONV-DART-2)"
       },
       {
@@ -540,16 +540,16 @@
         "id": "DARTD22",
         "node_type": "enum_constant",
         "status": "FIXED",
-        "question": "Is an enum VALUE (`enum Color { red }` — `(enum_body (enum_constant (identifier)))`) a read of its own enum? The DT-F+ declaration-name gate listed `enum_declaration` (the enum's name) but not the value's node, so every constant was published as `uses Color -> red` on the declaration line.",
-        "resolution": "No. `enum_constant` joins the declaration-name gate on BOTH sides (the analyzer's `isDartDeclNameParent` and the differential oracle's DECL_PARENTS, single rule stated twice) — a bind, never a read. The constants' ARGUMENTS stay ordinary reads. WHY IT OUTLIVED EVERY GATE: the edge was emitted at confidence 0.6, below the M12 harness's 0.7 claim threshold, so it was filed as `unknown` rather than as a false positive and no gate scored it — the M12 #933 triage is the instrument that surfaced it. Pinned by dart/enum-constant-decls and the CAUGHT mutant dart/enum-constant-decl-read.",
+        "question": "Is an enum VALUE (`enum Color { red }` \u2014 `(enum_body (enum_constant (identifier)))`) a read of its own enum? The DT-F+ declaration-name gate listed `enum_declaration` (the enum's name) but not the value's node, so every constant was published as `uses Color -> red` on the declaration line.",
+        "resolution": "No. `enum_constant` joins the declaration-name gate on BOTH sides (the analyzer's `isDartDeclNameParent` and the differential oracle's DECL_PARENTS, single rule stated twice) \u2014 a bind, never a read. The constants' ARGUMENTS stay ordinary reads. WHY IT OUTLIVED EVERY GATE: the edge was emitted at confidence 0.6, below the M12 harness's 0.7 claim threshold, so it was filed as `unknown` rather than as a false positive and no gate scored it \u2014 the M12 #933 triage is the instrument that surfaced it. Pinned by dart/enum-constant-decls and the CAUGHT mutant dart/enum-constant-decl-read.",
         "issue": "#933 (dart half)"
       },
       {
         "id": "DT-C1",
         "node_type": "contains",
-        "status": "RULED — the label is now compared, and closing it took four language facts the first draft got wrong",
-        "question": "Dart published `contains` — 7,698 edges in a 25-file sample, the largest single-label blob the M60 label-coverage sweep found — with no oracle at all and no allowlist entry, so none of it was compared while the lane printed a percentage.",
-        "resolution": "Written from Dart's own containment rule in script/m14/oracles/dart-contains.ts, sharing no rule table or member list with RealDartAnalyzer, and wired with its allowlist entry in the same commit (full mirror, per M49.G7). Four language facts were found by the corpus, not by reading the grammar: (1) `static final X = e;` is a different field shape from `final T x;` — static_final_declaration_list — and handling only the first derived 2 of the 431 properties the jni bindings' `Arrays` publishes; (2) Dart 3 `extension type X._(...)` is its own declaration node, and the jni bindings declare every type that way; (3) `extension X on int` carries an extension_body, not a class_body, so every extension member was invisible; (4) a Dart 2.17+ ENHANCED enum puts fields, methods and constructors directly in the enum_body beside the constants. The oracle also had to STOP inventing: a draft assumed the analyzer disambiguates repeated members with `$1`, `$2` and fabricated that suffix, manufacturing 233 truth rows the analyzer does not publish — a fabrication on the TRUTH side, the direction that quietly inflates coverage. The `$` suffixes are LITERAL in the source (`static core$_.int binarySearch$1(`). Result: proxicall 100% covered / MISSING 0 / unexplained 2.6% (from unmeasured), dart-http 100% / MISSING 0 / unexplained 0%. 19 gate checks in script/m14/verify-dart-contains.ts pin every shape above, including the no-invention rule.",
+        "status": "RULED \u2014 the label is now compared, and closing it took four language facts the first draft got wrong",
+        "question": "Dart published `contains` \u2014 7,698 edges in a 25-file sample, the largest single-label blob the M60 label-coverage sweep found \u2014 with no oracle at all and no allowlist entry, so none of it was compared while the lane printed a percentage.",
+        "resolution": "Written from Dart's own containment rule in script/m14/oracles/dart-contains.ts, sharing no rule table or member list with RealDartAnalyzer, and wired with its allowlist entry in the same commit (full mirror, per M49.G7). Four language facts were found by the corpus, not by reading the grammar: (1) `static final X = e;` is a different field shape from `final T x;` \u2014 static_final_declaration_list \u2014 and handling only the first derived 2 of the 431 properties the jni bindings' `Arrays` publishes; (2) Dart 3 `extension type X._(...)` is its own declaration node, and the jni bindings declare every type that way; (3) `extension X on int` carries an extension_body, not a class_body, so every extension member was invisible; (4) a Dart 2.17+ ENHANCED enum puts fields, methods and constructors directly in the enum_body beside the constants. The oracle also had to STOP inventing: a draft assumed the analyzer disambiguates repeated members with `$1`, `$2` and fabricated that suffix, manufacturing 233 truth rows the analyzer does not publish \u2014 a fabrication on the TRUTH side, the direction that quietly inflates coverage. The `$` suffixes are LITERAL in the source (`static core$_.int binarySearch$1(`). Result: proxicall 100% covered / MISSING 0 / unexplained 2.6% (from unmeasured), dart-http 100% / MISSING 0 / unexplained 0%. 19 gate checks in script/m14/verify-dart-contains.ts pin every shape above, including the no-invention rule.",
         "measured_by": "script/m14/verify-dart-contains.ts, script/m14/tmp/dart-contains-adjudicate.ts"
       }
     ],
@@ -573,9 +573,59 @@
     "_closed_gaps": [
       {
         "label": "imports",
-        "was": "Emitted by the analyzer (65 edges per 15 files on proxicall) and dropped by the allowlist. There is no imports oracle for this lane, so admitting the label today would turn invisible edges into UNEXPLAINED ones rather than into a measurement — the #910 shape in reverse.",
+        "was": "Emitted by the analyzer (65 edges per 15 files on proxicall) and dropped by the allowlist. There is no imports oracle for this lane, so admitting the label today would turn invisible edges into UNEXPLAINED ones rather than into a measurement \u2014 the #910 shape in reverse.",
         "closed": "The oracle exists and the label is admitted: `script/m14/oracles/dart-imports.ts` is pushed as `deriveDartImportsTruth` and `imports` is in the dart arm of the allowlist (script/m14/differential.ts:23186). Recorded here rather than deleted, because a gap that closes silently is indistinguishable from one that was never there."
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [],
+    "corpusUnexercised": [],
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the dart-sdk corpus, BB_PICK_CAP=26000 NFILES=26000 bun script/m14/firing-check.mjs DART \u2192 20,000/20,000 parsed of 20,000 admitted, even stride, `[corpus=dart-sdk WHOLE]`. ALL TEN types fire \u2014 there is nothing to exclude and no gap. The instrument's corpus for this lane is `dart-sdk`, whose admitted population is 25,706 files; the run stopped at 20,000 because `BB_SAMPLE_POP` caps the walk's collected population at 20,000 by default and this run did not raise it. So THIS IS A 20,000-of-25,706 CLAIM, stated rather than rounded up: it is 78% of the corpus by even stride, not the whole corpus.",
+      "calls": {
+        "edges": 390264
+      },
+      "uses": {
+        "edges": 743119
+      },
+      "contains": {
+        "edges": 293803
+      },
+      "imports": {
+        "edges": 61352
+      },
+      "references": {
+        "edges": 40856
+      },
+      "exports": {
+        "edges": 834
+      },
+      "extends": {
+        "edges": 17478
+      },
+      "implements": {
+        "edges": 7045
+      },
+      "overrides": {
+        "edges": 53588
+      },
+      "instantiates": {
+        "edges": 64654
+      }
+    },
+    "_from": "MEASURED, and this is the ONE lane where the answer needs no exclusion and no ruling: all ten types fire, with the smallest margin `exports` at 834 edges. The lane's earlier state was `dart 10/10 from=firing-log`, which was the right NUMBER derived from the wrong source \u2014 the firing log's 120-file stride sample. The number is now derived from a declared block over 20,000 files with per-type counts.\n\nTWO THINGS THIS BLOCK DOES NOT CLAIM, both owed and already recorded in the lane's own doc:\n1. INCOMING RESOLUTION IS THE LANE'S REAL GAP and it is large: whole-corpus incoming reads 1,033,665 ambiguous + 170,692 unresolved of 3.4M edges (validation/m14/results/incoming-laptop-b.current.log), with `overrides` the single worst type because its targets are published owner-qualified and the Flutter framework is 0 files in the declared population. Coverage and resolution are different questions and this block answers only the first.\n2. THE 20,000-FILE CAP. `BB_SAMPLE_POP` defaults to 20,000 and this run left it there, so the population is 78% of the admitted 25,706 by even stride. A later run that raises BB_SAMPLE_POP should reproduce or correct these ten counts \u2014 they are a lower bound on a stride, not a census."
   }
 }
