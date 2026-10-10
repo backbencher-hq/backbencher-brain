@@ -646,3 +646,86 @@ that `completions` is a lambda parameter in scope, which makes the *binding clai
 `calls` edge should exist at all is a separate question about the pipeline contract, and it is the one
 the next pass owns. The lambda arm is kept because it is correct on its own terms and inert here — its
 inertness is the measurement, and reverting it would hide that.
+
+---
+
+## 10. FS-D30 — the pipeline callee was the INPUT, not the callee. 459 nodes at risk, 23 wrong, now 0.
+
+The residue §9.2 localized is an analyzer bug, and it is the shape the whole session was built to
+surface: **an edge that exists and names the wrong thing.**
+
+`real-fsharp-analyzer.ts` built a pipeline's callee from the `infix_expression`'s DIRECT children that
+are name-like, then took the last one for a right-pipe. That is right for `xs |> ignore` — the right
+operand IS a bare name — and wrong for `xs |> f(y)`, because the parser puts an
+`application_expression` on the callee side:
+
+```
+completions |> Array.exists(fun a -> a)
+  child[0] long_identifier_or_op   "completions"
+  child[1] infix_op                "|>"
+  child[2] application_expression  "Array.exists(fun a -> a)"   <- not name-like
+```
+
+`named` therefore held only the LEFT operand, and `named[named.length - 1]` emitted
+`calls -> completions` — the pipeline's INPUT, named as the callee of a call it does not make, in
+direct contradiction of this file's own `PIPELINE_CALLEE_SIDE` map, which says `|>` takes its callee
+from the **right**.
+
+**THE FIX** takes the callee-side operand NODE and reads the name out of it, descending one level when
+the operand is an application (`pipelineCalleeName`). One level and no more, deliberately: descending
+until something name-like appears would read an ARGUMENT on the shapes where the callee is absent.
+
+**BEFORE/AFTER, same 400-file even stride, same population:**
+
+| | before | after |
+|---|---:|---:|
+| pipe `infix_expression` nodes | 5,241 | 5,241 |
+| callee-side operand is a bare name (never affected) | 4,782 | 4,782 |
+| callee-side operand is an application (at risk) | **459** | **459** |
+| of those, emitted an edge naming the OTHER operand | **23** | **0** |
+
+Artifacts: `measurements/pipeline-callee-size.txt` (before), `pipeline-callee-after.txt` (after).
+Instances were real and spread across repos — `FSharp.Formatting … MarkdownUtils.fs:109`
+(`paragraphs |> List.collect(fun …)` emitting `paragraphs`), `Grace Policy.Server.fs:73/235/287`
+(`context |> parse<'T>` emitting `context`), `core … Breaker.fs:437`, `Translator.fs:1458/1560`.
+
+**The known line, before and after:**
+
+```
+before  calls …AssertCtrlSpaceCompletionContains -> …AssertCtrlSpaceCompletionContains#completions
+        {nodeType: infix_expression, isPipelineCall: true, pipelineOperator: "|>", localBinding: true}
+after   calls …AssertCtrlSpaceCompletionContains -> Array.exists
+        {nodeType: infix_expression, isPipelineCall: true, pipelineOperator: "|>",
+         targetResolution: "external-type-or-module", targetQualifier: "Array"}
+```
+
+**AND THE DIFFERENTIAL MOVED PAST ITS BASELINE.** Same draw, hash `2143f8bdc90fe3f1`:
+
+| | baseline | after binding work | after FS-D30 |
+|---|---:|---:|---:|
+| `MISSING` | 10 | 10 | **10** |
+| `unexplained` | 69 | 70 | **68** |
+| `analyzer-edges` | 3,136 | 3,143 | **3,141** |
+
+`unexplained` is now **one better than the baseline it started from**: the pipeline bug explained not
+only §9.2's residue row but one of the original 69 as well. Two separate defects had been hiding behind
+one number, and the staged plan is what separated them.
+
+**PROBE CORRECTION, recorded because it produced a false positive first.** The sizing probe's first
+cut flagged `dark/backend/src/Prelude/Lazy.fs:5`, `let bind f l = lazy ((force << f << force) l)`.
+That is NOT a defect: `<<` maps to `left`, so the callee IS the left operand and the emitted
+`Lazy.force` is correct — the probe had matched the wrong node on the line. It now requires that the
+node's callee side actually YIELD a name before it can be the source of an edge, and the count is 0.
+A probe that reports a defect where the code is right is the same failure as a measurement that cannot
+fail.
+
+**Fixtures 15/15 and `npx tsc --noEmit` exit 0.**
+
+### 10.1 Ledger — what is closed and what is still owed
+
+- **CLOSED**: the binding spelling (both arms, verified; step 1 `MISSING` 10→93 with N=83 counted
+  independently, step 2 back to exactly 10).
+- **CLOSED**: FS-D30, the pipeline callee (23 → 0 on the draw; the known line corrected).
+- **OWED, uncoupled, not credited with any number here**: the scope-aware `localNames` — a name that is
+  a local in one function should not be a binding in another. It remains right on its own merits and
+  moved nothing measured so far.

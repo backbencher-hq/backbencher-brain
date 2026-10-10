@@ -44,6 +44,30 @@ const PIPELINE_CALLEE_SIDE = new Map<string, "left" | "right">([
 ])
 
 /**
+ * The node types that can BE a callee name, used by the pipeline branch.
+ *
+ * MEASURED 2026-10-10 (FS-D30). The pipeline branch used to take the callee from the
+ * `infix_expression`'s DIRECT children that are name-like, and then pick `named[last]` for a
+ * right-pipe. That is correct for `xs |> ignore` — the right operand IS a bare name — and wrong for
+ * `xs |> f(y)`, where the parser puts an `application_expression` on the callee side:
+ *
+ *     completions |> Array.exists(fun a -> a)
+ *       child[0] long_identifier_or_op  "completions"
+ *       child[1] infix_op               "|>"
+ *       child[2] application_expression "Array.exists(fun a -> a)"   <- not name-like
+ *
+ * so `named` held only the LEFT operand and `named[named.length - 1]` emitted `calls -> completions`
+ * — an edge naming the pipeline's INPUT as the callee of a call it does not make, contradicting this
+ * file's own `PIPELINE_CALLEE_SIDE` map three lines up.
+ *
+ * Found by the differential, not by reading: the truth arm derives no such edge, so the row surfaced
+ * as `unexplained` at `Tests.LanguageService.Completion.fs:215`. Sized on a 400-file even stride:
+ * 5,241 pipe nodes, 4,782 with a bare-name callee side (correct today) and **459 with a
+ * non-name-like callee side** — `validation/m14/fixtures/fsharp/measurements/pipeline-callee-size.txt`.
+ */
+const PIPELINE_NAMEY = new Set(["long_identifier", "identifier", "long_identifier_or_op", "dot_expression"])
+
+/**
  * Every grammar node that WRAPS a written type in F#. The name is always inside one of
  * these; the POSITION is decided by the wrapper's parent. Read off the wired grammar
  * (script/m14/tmp/fs001-shape-census.ts over 400 real files) and from
@@ -1923,24 +1947,24 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `a + b` and `x = y` reach this branch constantly and the cheapest possible test is
         // the right one even when its benefit is below the noise floor.
         let opText = ""
+        let opIndex = -1
         for (let i = 0; i < node.childCount; i++) {
           const c = node.child(i)
-          if (c && c.type === "infix_op") { opText = c.text; break }
+          if (c && c.type === "infix_op") { opText = c.text; opIndex = i; break }
         }
         const side = PIPELINE_CALLEE_SIDE.get(opText)
-        if (side && callOwner) {
-          // Only NAME children count, which is what makes `x |> List.map (fun y -> y)` work:
-          // the lambda is a sibling of the name, and asking for the last name rather than the
-          // last child is the difference between reading the pipeline and reading its argument.
-          const named = this.filterChildren(
-            node,
-            (n) =>
-              n.type === "long_identifier" ||
-              n.type === "identifier" ||
-              n.type === "long_identifier_or_op" ||
-              n.type === "dot_expression",
-          )
-          const calleeNode = side === "right" ? named[named.length - 1] : named[0]
+        if (side && callOwner && opIndex >= 0) {
+          // FS-D30. THE CALLEE IS A WHOLE OPERAND, AND AN OPERAND CAN BE AN APPLICATION.
+          //
+          // The old rule read `named` — the DIRECT children that are name-like — and took
+          // `named[named.length - 1]` for a right-pipe. `xs |> ignore` works that way because the
+          // right operand IS a bare name; `xs |> f(y)` does not, because the parser puts an
+          // `application_expression` there and `named` then holds only the LEFT operand, so the edge
+          // named the pipeline's INPUT as the callee. Take the operand NODE instead, and read the
+          // callee name out of it — descending one level when the operand is an application, which is
+          // also what skips a lambda argument without needing the old name filter to do it.
+          const operandNode = node.child(side === "right" ? opIndex + 1 : opIndex - 1)
+          const calleeNode = this.pipelineCalleeName(operandNode)
           const calleeText = calleeNode?.text ?? ""
           const leaf = calleeText.split(".").pop() || calleeText
           if (calleeText.length > 1 && !this.isFSharpBuiltin(calleeText, leaf)) {
@@ -4011,6 +4035,27 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (child && predicate(child)) results.push(child)
     }
     return results
+  }
+
+  /**
+   * The callee NAME inside a pipeline operand (FS-D30).
+   *
+   * An operand is either name-like already (the `xs |> ignore` shape) or an application whose callee
+   * is its FIRST name-like child (the `xs |> Array.exists(fun …)` shape), which is what puts an
+   * `application_expression` on the callee side and defeated the old direct-children filter. One
+   * level of descent is enough for both observed shapes and deliberately not more: descending until
+   * something name-like turns up would read an ARGUMENT on the shapes where the callee is absent.
+   */
+  private pipelineCalleeName(operand: Node | undefined | null): Node | undefined {
+    if (!operand) return undefined
+    if (PIPELINE_NAMEY.has(operand.type)) return operand
+    if (operand.type === "application_expression" || operand.type === "prefixed_expression") {
+      for (let i = 0; i < operand.namedChildCount; i++) {
+        const c = operand.namedChild(i)
+        if (c && PIPELINE_NAMEY.has(c.type)) return c
+      }
+    }
+    return undefined
   }
 
   private findDescendants(node: Node, predicate: (n: Node) => boolean, maxDepth: number = 5): Node[] {
