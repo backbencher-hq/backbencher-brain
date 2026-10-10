@@ -220,3 +220,69 @@ honest):
 - **Performance**: analyzer-only, warm, best of 5, load disclosed — 2.64 → 5.60
   ms/Knode for 2.75× the relationships; **linear within 8%** across a 23× size range.
   Not a speedup, and not claimed as one.
+
+## Coverage — the declared block, and why `extends` is `grammar-absence`
+
+`script/m14/spec/clean-completeness.json` now carries a `coverage` block, so the board's contract
+column derives from a declaration instead of the firing log:
+`clean 9/9 from=spec coverage block`, arithmetic `applicable = 10 − 1 grammar-absence − 0
+unclassified = 9`, and the block closes (9 implemented + 0 unexercised + 0 gaps). The gate
+`script/m14/coverage-block-gate.ts` reads it directly and reports no problem.
+
+**The one exclusion, and the class it earns.** `extends` is the lane's only silent type — 0 edges
+on the corpus — and silence has two causes that a corpus count cannot separate. `extends` is
+`grammar-absence`, not `zero-sites`, and the deciding measurement is the grammar inventory rather
+than the corpus:
+
+- **Instrument A — the pinned wasm's own tables.** 290 declared node types, 29 declared field
+  names; **0 of 22** probed supertype node types and **0 of 17** probed supertype words appear in
+  either, and **0 of 29** field names is a supertype slot. The control is a keyword probe: **22 of
+  23** probed Clean keywords *are* present as declared types, so the negative is the grammar's and
+  not a blind probe.
+- **Instrument B — the arbiter's position census** (`countCleanExtendsConstruct`, the same function
+  the ruling table exports): 2,181 files / 3,107,897 nodes, **5,567 declarations** walked (423
+  `class_declaration`, 2,539 `instance_declaration`, 610 `derive_declaration`, 1,995
+  `class_context`) with **0 direct named children UNCLASSIFIED**. UNCLASSIFIED is the only bucket a
+  supertype clause could occupy. The 312-file tracked population agrees (1,430 declarations, 0).
+
+**The counter-argument, measured and not waved away.** The grammar *does* build a class-level
+`class_context` for `class Ord a | Eq a` — 0 ERROR, 0 MISSING, and the node is a direct child of
+the `class_declaration` (control C1 of
+[`extends-census.ts`](../../validation/m14/fixtures/clean/extends-census.ts); C2/C3 prove the same
+tally does *not* fire for the signature and instance positions the corpus does contain). That slot
+is Clean's **dictionary requirement**, published as `references` by ruling CL-G3 and pinned by
+`extends-probe-roles.icl`, which forbids an `extends` edge on it: the grammar uses the same node and
+the same fields for an instance's `with` composition and therefore records no supertype
+distinction. Clean's `<=` superclass spelling is *silently lost* — `class_declaration` terminated at
+`class Ord a`, then an `operator_definition` re-reading `<` `=` with 0 ERROR nodes to count.
+
+**The corpus is thin, and says so.** Clyde has **109 files**, below the programme's 120 target, so
+**the sample IS the population** — no stride was taken. `NFILES=120 bun
+script/m14/firing-check.mjs CLEAN_B` reads `9 types fired, 109/109 parsed`; the census independently
+walked the same 109 files at 0 failures and reproduced the same nine edge tallies
+(`calls:2143 contains:3621 exports:2589 implements:69 imports:668 instantiates:122 overrides:14
+references:5487 uses:1330`). The corpus zero therefore *corroborates*; the class rests on
+instruments A+B, which measure the grammar.
+
+**Two instrument defects found on the way, both recorded rather than smoothed over.**
+
+1. The `<=` detector in `extends-census.ts` **could not fire on the shape it was written for**. It
+   compared the `operator` child's text to `"<="`, but the grammar tokenises `<=` in that position
+   as `operator("<")` immediately followed by an anonymous `=`. The committed artifact's
+   `0 in 0 file(s)` was therefore a property of the detector, not a measurement of the corpus. The
+   control `C4` (must fire) plus `C5`/`C6` (must not fire off the shape) caught it; the detector is
+   fixed, the controls pass 6/6, and the re-run still reads **0 in 0 files** — the number survived,
+   its provenance did not exist until now.
+2. `script/m14/language-board.ts --coverage` renders rows and then exits *before* the `NOTES` map
+   is printed, so a coverage block that does **not** close looks like an ordinary row in exactly
+   the mode lanes are told to check it with. The closure note is visible only in `--json`/table
+   mode. Demonstrated with a deliberately double-counted block; reported to the Lead. The board
+   file is not this lane's to edit.
+
+Evidence: [`extends-census-controls.txt`](../../validation/m14/fixtures/clean/extends-census-controls.txt),
+[`extends-census-clyde.txt`](../../validation/m14/fixtures/clean/extends-census-clyde.txt),
+[`extends-census-shapes.txt`](../../validation/m14/fixtures/clean/extends-census-shapes.txt),
+[`firing-clean-b-109.txt`](../../validation/m14/fixtures/clean/firing-clean-b-109.txt),
+[`fixtures-clean-summary.txt`](../../validation/m14/fixtures/clean/fixtures-clean-summary.txt),
+[`board-row-clean.txt`](../../validation/m14/fixtures/clean/board-row-clean.txt),
+[`extends-construct-probe.json`](../../validation/m14/fixtures/clean/extends-construct-probe.json).

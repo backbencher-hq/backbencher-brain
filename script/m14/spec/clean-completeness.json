@@ -306,5 +306,36 @@
         "now": "SUPERSEDED. `monad_bind` (50 sites) and `array_generator_sep` (33) are handled and fixture-backed; `char_list` (15) and `open_range_expression` (13) are ruled in CL-D3/CL-D6. The gap is replaced by the single, differently-shaped CL-G1 above."
       }
     ]
+  },
+  "coverage": {
+    "_why_this_block_exists": "The board's contract column is implemented/applicable, and a lane that has not declared its coverage reads `not declared`. Until 2026-10-09 clean read `9/10 from=firing-log coverageDeclared=false` with no declaration at all. This block IS the declaration. `implemented` is the nine types the firing instrument and this lane's own census agree fire; the tenth, `extends`, is excluded BY THE GRAMMAR and classed `grammar-absence`, which is the strongest class and therefore the one this lane must be able to defend line by line. The ruling is registered in the arbiter table `script/m14/clean-ruled.ts`, not re-listed in `design_decision.decisions`, because that bucket is a partition over NODE types (clean-completeness-gate.ts unions its node_type fields) and `extends` is a relationship type.",
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "implements",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [
+      {
+        "label": "extends",
+        "evidence": "grammar-absence",
+        "from": "the extends ruling, measured on TWO instruments: instrument A - 0 of 22 probed supertype node types, 0 of 17 probed supertype words, 0 of 29 declared field names (the grammar declares 290 node types; control: 22 of 23 probed keywords ARE present). Instrument B - 0 UNCLASSIFIED of 5,567 declarations walked in 2,181 files (312-file tracked population: 0 of 1,430). Ruling registered in script/m14/clean-ruled.ts; re-measured 2026-10-09 by validation/m14/fixtures/clean/extends-census.ts, whose controls C1-C6 pass 6/6",
+        "quote": "INSTRUMENT A, the pinned wasm's OWN tables: 290 declared node types, 29 declared field names; 0 of the 22 probed supertype node types and 0 of the 17 probed supertype words appear in either, and 0 of the 29 field names is a supertype slot. CONTROL: 22 of the 23 probed Clean keywords ARE present as declared types, so the negative is the grammar's and not a blind probe. INSTRUMENT B, position census (validation/m14/fixtures/clean/extends-construct-probe.json): 2,181 files, 2,181 parsed, 3,107,897 nodes, 5,567 declarations walked (423 class_declaration + 2,539 instance_declaration + 610 derive_declaration + 1,995 class_context) with 0 direct named children UNCLASSIFIED; the 312-file TRACKED population agrees (1,430 declarations, 0 UNCLASSIFIED). UNCLASSIFIED is the only bucket a supertype clause could occupy. COUNTER-ARGUMENT, measured and not waved away: the grammar DOES build a class-level `class_context` for `class Ord a | Eq a` - 0 ERROR, 0 MISSING, tallied to the class_declaration (control C1, and C2/C3 prove the same tally does NOT fire for the signature and instance positions the corpus does contain). That slot is Clean's DICTIONARY REQUIREMENT, published as `references` (CL-G3) and pinned by `extends-probe-roles.icl`, which FORBIDS an `extends` edge on it, because the grammar uses the same node and fields for an instance's `with` composition and so records no supertype distinction. Clean's `<=` superclass spelling is SILENTLY LOST by the grammar (class_declaration terminated at `class Ord a`, then an operator_definition re-reading `<` `=` with 0 ERROR nodes to count): 0 sites in 0 files over the whole population, now control-backed - C4 must fire on that shape, C5/C6 must not fire off it. THIN CORPUS, STATED RATHER THAN IMPLIED: Clyde has 109 files, below the programme's 120 target, so THE SAMPLE IS THE POPULATION - no stride was taken. `NFILES=120 bun script/m14/firing-check.mjs CLEAN_B` reads `9 types fired, 109/109 parsed`, and this census independently walked the same 109 files at 0 failures and reproduced the same nine edge tallies (calls:2143 contains:3621 exports:2589 implements:69 imports:668 instantiates:122 overrides:14 references:5487 uses:1330). The corpus zero therefore CORROBORATES; the class itself rests on instruments A+B, which are measurements of the grammar and not of this corpus."
+      }
+    ],
+    "corpusUnexercised": [],
+    "_evidence_paths": [
+      "validation/m14/fixtures/clean/extends-census-controls.txt (controls C1-C6, 6/6 PASS)",
+      "validation/m14/fixtures/clean/extends-census-clyde.txt (the 109-file whole-population census)",
+      "validation/m14/fixtures/clean/extends-census-shapes.txt (the capability probe's parse trees)",
+      "validation/m14/fixtures/clean/firing-clean-b-109.txt (NFILES=120 firing-check, 109/109 parsed)",
+      "validation/m14/fixtures/clean/extends-construct-probe.json (instruments A and B, committed)",
+      "script/m14/clean-ruled.ts (the registered ruling: instrument B countOnTree, corroborated by A)"
+    ]
   }
 }
