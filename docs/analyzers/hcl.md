@@ -403,6 +403,44 @@ ranked same-file-first). Its intents are not measurable by line (the edge line i
 231 of 503 bound rows cross a file boundary — the next cause to price, and the one where a declared
 external claim (provider types, `var.*` module inputs) is the likely verdict rather than a rename.
 
+### Cause 3 — `references`: the class split whole-population, and why the claim must NOT be written against it
+
+Whole-population gate run (`incoming-gate.ts hcl hcl 0`, 4,047 `.hcl` files — note this is the
+`.hcl` spelling only; the residual gate's 31,228 references admit more spellings, so the two are
+different populations and both are labelled), BINDING INTENT block:
+
+| type | edges | intended | sameFileUnproven | arbitraryTwin | noDeclaration |
+|---|---|---|---|---|---|
+| references | 10,899 | 0 (line test N/A) | 869 | 1,221 | **8,809** |
+| contains | 40,916 | 40,916 | 0 | 0 | 0 |
+| exports | 8,461 | 8,461 | 0 | 0 | 0 |
+| uses | 164 | 0 | 0 | 32 | 132 |
+| TOTAL | 60,754 | 49,377 | 926 | 1,253 | 9,198 |
+
+The model's reading is "80.8% of references name nothing in the project". **The store says that is an
+overstatement by 8×, and the difference is the I13 pass.** Measured on terragrunt-900
+(`store-binding-truth.terragrunt-900.json`): the model calls **514** of 566 references unresolved while
+the store leaves **63** unbound — production rebinds a NON-DOTTED target by name, same-file first, so
+"the model found no declaration" and "no row was written" are different facts.
+
+**And the same row carries the second finding, which must stay separate:** of the store's 503 bound
+references, **487 (96.8%) bind only after LEAF REDUCTION** — the analyzer publishes a chain
+(`dependency.hello_world.outputs.rendered_template`, `data.aws_caller_identity.current.account_id`) and
+the store matches its LAST SEGMENT. So most of that 88.9% bound is a leaf-name coincidence rather than
+a resolution of the reference, and the middle case — bound by leaf reduction, possibly wrong — has no
+column in either instrument.
+
+**Consequence for the claim, and the reason it is not written yet:** the claim set is the
+STORE-UNBOUND class (63 of 566 in the sample, ≈11%; classes: terragrunt `dependency.*.outputs.*` whose
+module is not in the population, provider-backed attribute chains, `values.*`/`local.*` reads, and in
+the other repos `var.*` roots plus `provider.*`/`terraform.*` aliases), NOT the model's 8,809
+`noDeclaration`. A claim emitted against `noDeclaration` would mark ~8,000 edges external that
+production in fact binds, and would leave the 487 leaf-reduced bindings hidden under it — a residual
+number that moves without the graph getting truer. Per the settled rule these are NAMES genuinely
+outside the population, so the marker is the external claim (owner-verified where undeclared) and
+NEVER a file claim, because a miss refutes and `extFAIL` must stay 0. Before/after on the same
+population is the next step, with the leaf-reduction count printed beside it.
+
 ### A population finding the comparison forced: the gates classify files the indexer never reads
 
 The probe asked production's OWN discovery (`discoverIndexableFiles`) what it would index, and for
