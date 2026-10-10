@@ -7,27 +7,33 @@
 > (the first measurement) and [`residual-true-population.json`](../../validation/m14/fixtures/xml/residual-true-population.json)
 > (the re-run after two fleet fixes this lane's findings produced).
 
-## State, 2026-10-10 00:17
+## State, 2026-10-10 00:45
 
 Run on the lane's true population — **11,562 files** across its seven admitted spellings, 0
 degraded, `extFAIL 0 · bindFAIL 0 · causeFAIL 0`:
 
-| type | edges | resolved | ambiguous | unresolved | residual |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| contains | 189,310 | 189,310 | 0 | 0 | **0.0%** |
-| calls | 402 | 123 | 279 | 0 | 69.4% |
-| overrides | 3 | 1 | 2 | 0 | 66.7% |
-| references | 11,108 | 997 | 7,582 | 2,529 | **91.0%** |
-| extends | 1,429 | 84 | 991 | 354 | **94.1%** |
-| imports | 473 | 2 | 0 | 471 | **99.6%** |
-| **TOTAL** | **202,725** | **190,517 (94.0%)** | 8,854 | 3,354 | **6.0%** |
+| type | edges | resolved | ambiguous | unresolved | residual | unresolved before §3 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| contains | 189,310 | 189,310 | 0 | 0 | **0.0%** | 0 |
+| calls | 402 | 123 | 279 | 0 | 69.4% | 0 |
+| overrides | 3 | 1 | 2 | 0 | 66.7% | 0 |
+| references | 11,108 | 997 | 7,582 | **12** | 68.4% | 2,529 |
+| imports | 473 | 2 | 0 | **265** | 56.0% | 471 |
+| extends | 1,429 | 84 | 991 | **354** | **94.1%** | 354 |
+| **TOTAL** | **202,725** | **190,517 (94.0%)** | 8,854 | **631** | **4.7%** | 3,354 |
 
-Raw: [`residual-true-population.txt`](../../validation/m14/fixtures/xml/residual-true-population.txt).
+Raw: [`residual-after-claims.txt`](../../validation/m14/fixtures/xml/residual-after-claims.txt),
+[`residual-true-population.txt`](../../validation/m14/fixtures/xml/residual-true-population.txt)
+(the 6.0% state before the claim mapping).
 
-> The claim mapping in §3 landed **after** this run: it moves `references` unresolved 198 → 15 and
-> `imports` 134 → 108 on the board's 2,081-file draw, with `extFAIL` still 0. A re-run of this
-> whole-population table with the mapping in place is in flight; until it lands, read the rows above
-> as the state before that cause.
+The claim mapping of §3 is the last column's delta: **unresolved 3,354 → 631 (−81%)** and the
+lane's residual **6.0% → 4.7%**, with `extFAIL` 0 at every step. What is left is `extends` (94.1%)
+and the ambiguity of `references`/`calls`/`extends`.
+
+> `contains` is 189,310 resolved of which **183,888 (97.1%) are resolved AMONG A COLLISION** — the
+> tie-break chose the row. The gate prints that as an upper bound on arbitrary bindings, not a count
+> of wrong ones; only the store can split it (the indexer measures 37,318 of 49,729 such picks as
+> wrong). That is the honest next question on this type, after `extends`.
 
 The board carried `93.9%` earlier the same night. Both halves of that number were wrong, and each
 became a fleet fix:
