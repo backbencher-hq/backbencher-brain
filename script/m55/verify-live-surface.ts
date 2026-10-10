@@ -288,7 +288,32 @@ if (runName === null) {
     status: string
     reason?: string
     bundle: { bundleSha256: string }
-    flows: Array<{ id: string; label: string; status: string; reason?: string; frame?: { path: string; sha256: string } }>
+    // `frame` carried only `{ path, sha256 }` here, but the capture rig writes nine
+    // fields and this gate reads three of them — `path`, `sha256` and `window`.
+    // Under-declaring it made `frame?.window` a diagnostic on a field the type said
+    // did not exist, which is the worst kind of type error: the field is REAL.
+    //
+    // Verified against a manifest this rig actually wrote
+    // (validation/m55/frames/live-14/manifest.json):
+    //   frame keys: flow, label, shows, path, sha256, bytes, capturedAt, window
+    //   window    : {"x":0,"y":0,"width":1920,"height":1080}
+    //
+    // The gate blocks on `window === null` with "the capture rig recorded no window
+    // rectangle", so it depends on the field being there.
+    flows: Array<{
+      id: string
+      label: string
+      status: string
+      reason?: string
+      frame?: {
+        path: string
+        sha256: string
+        bytes?: number
+        capturedAt?: string
+        shows?: unknown
+        window?: { x: number; y: number; width: number; height: number } | null
+      }
+    }>
   }
   const frames = manifest.flows.filter((f) => f.status === "captured" && f.frame !== undefined)
   const framePath = (label: string) => {
@@ -638,7 +663,21 @@ function blockedSessionIsBlocked(r: { status?: string; reason?: string; fixture?
 }
 
 check("R7: the absent-fixture path really is absent (the proof cannot pass vacuously)", !existsSync(ABSENT_FIXTURE), ABSENT_FIXTURE)
-let blockedRecord: { status?: string; reason?: string; fixture?: { present?: boolean; workspace?: string }; flows?: unknown[] } | null = null
+/**
+ * A sealed session record, as this gate reads it. Named rather than inlined as
+ * `typeof blockedRecord` — that self-reference is the same defect fixed in
+ * script/m55/verify-closure.ts: `typeof x` in an assignment resolves to the
+ * NARROWED type at that point, which is `null` before the assignment runs, so every
+ * later read collapsed to `never`.
+ */
+interface BlockedRecordShape {
+  status?: string
+  reason?: string
+  fixture?: { present?: boolean; workspace?: string }
+  flows?: unknown[]
+}
+
+let blockedRecord: BlockedRecordShape | null = null
 try {
   // A blocked session exits non-zero by design (see the rig CLI): the RECORD is
   // the evidence, so the exit code is deliberately not the assertion.
@@ -651,7 +690,7 @@ try {
   // expected for a blocked session
 }
 try {
-  blockedRecord = parseSealedRecord(BLOCKED_PROOF) as typeof blockedRecord
+  blockedRecord = parseSealedRecord<BlockedRecordShape>(BLOCKED_PROOF)
 } catch {
   blockedRecord = null
 }
