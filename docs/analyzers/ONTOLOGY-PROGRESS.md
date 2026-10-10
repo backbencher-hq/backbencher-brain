@@ -327,6 +327,57 @@ marked `isImport:true`), and the instrument's `imports` row counts relationship-
 only. Each declaration lists its zero-edge types, the note says what a zero can mean, and the
 ratchet locks all three at 0 until a deliberate re-declaration moves them.
 
+## Seven more lanes — and two swift defects the ratchet found (2026-10-10)
+
+The declaration set is now **fifteen lanes**. Batch three added swift, ruby, elixir, haskell,
+clojure, erlang and javascript; every row below is a total partition (`unclassed 0`, classes
+summing to edges on all ten types) verified with a plain verdict run at the commit:
+
+| lane | edges | resolved | external | ambiguous | otherUnresolved | digest |
+|---|---|---|---|---|---|---|
+| swift | 3,626 | 1,466 | 0 | 1,125 | 1,035 | `sha256:49f77d9e2258c039` |
+| ruby | 15,002 | 2,185 | 0 | 367 | 12,450 | `sha256:b3d78b8b11d69cb7` |
+| elixir | 30,289 | 16,434 | 0 | 9,483 | 4,372 | `sha256:1bb09da71efff52a` |
+| haskell | 5,380 | 3,250 | 0 | 591 | 1,539 | `sha256:2afacd33c90a30a2` |
+| clojure | 29,810 | 7,097 | 0 | 336 | 22,377 | `sha256:ac2abea4e8411e90` |
+| erlang | 48,611 | 20,112 | **8** | 11,699 | 16,792 | `sha256:e4d82411c4d927ae` |
+| javascript | 23,100 | 4,284 | 0 | 3,373 | 15,443 | `sha256:a5084bea0f3e1830` |
+
+**Erlang is the first non-Java lane with a provable external marker** — 8 edges, all on
+`imports`, each carrying a recorded reason; the floor now binds them (a marker that stops
+working is a regression) and the computed note in its declaration says exactly that.
+
+**Swift found two defects, and the ratchet's own rules refused both.**
+
+*(1) An unexplained edge, and the gate now refuses them at all.* Swift's `contains` emitter
+published one edge with an EMPTY target, from swift-corpus's recovered `let:Boolean` in the
+crasher test `27700-swift-modulefile-loadallmembers.swift` (a nameless declaration the parser
+recovers). The fleet instrument counts that edge in `edges` and skips it in every class
+(`incoming-gate.ts`'s `if (tgt.length === 0) continue`), so it landed in `unclassed` — and
+swift's first declaration LOCKED it and PASSED, because the check was equality: measured 1 ==
+declared 1. The class rule says 0, always, and now the gate enforces its own prose: `--update`
+refuses (exit 3, naming the type) to write any nonzero value, a declaration locking one fails
+(exit 1 — proven against swift's first declaration before it was replaced), and the self-test
+gained the self-consistent-but-locked case that equality alone would pass. The analyzer guards
+the emission at the ownership loop (`if (_owner && s.name && …)`), probed end-to-end: the
+empty-target count over the same 200-file sample went 1 → 0 and swift's declaration now closes
+at `unclassed 0`. Fixtures unchanged by the fix: **17 pass / 4 fail**, the same four before and
+after.
+
+*(2) The `imports` emission is dead code, and it is RECORDED rather than papered over.* The
+emission reads `imp.metadata.module`; `handleImport` pushes the module at the TOP level
+(`imports.push({ module, isExternal, range })`), so no `imports` relationship has ever fired and
+the module dependency travels only on `references` (measured: `imports` 0 edges against 200
+files that certainly import). Four authored fixtures pin the intended contract and fail on this
+analyzer — `swift/imports-exports`, `swift/scoped-import-metadata`, `swift/reexported-import`,
+`swift/exports-visibility` — and they disagree with each other about the target: the ontology
+follow-up demands the MODULE as the target with the spelled path in `metadata.moduleSpecifier`
+and calls a dotted target the R10 failure, while `imports-exports` expects
+`imports root -> Swift.Optional` (the dotted path) for a kind-restricted import. Repairing the
+surface therefore starts by reconciling those two pins, which is a written ruling, not a
+re-run: the zero is LOCKED in swift's declaration and the note names the four fixtures, so the
+repair is a deliberate re-declaration and never a silent change.
+
 ## Still to do at integration
 
 - Regenerate `website/src/data/brain-languages.ts` — its `emits` arrays are
