@@ -516,6 +516,35 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       return { target: leaf, resolution: moduleLike(head) ? "external-type-or-module" : "receiver-value", qualifier }
     }
 
+    /**
+     * THE BINDING SPELLING — a call whose callee names a LOCAL gets `<callable>#<binding>`.
+     *
+     * F# publishes no symbol for a `let` inside a body (FSD12), so a callee spelled with a local's
+     * name names a BINDING and not a declaration. The convention for saying so is the separator
+     * spelling (`BINDING_SEP`, `src/ast/types.ts`), carried by the `localBinding` claim that
+     * `incoming-rule.ts` verifies.
+     *
+     * WHY THE CLAIM CANNOT VOUCH FOR ITSELF, stated here because a reader who sees ~35,559 edges
+     * newly claimed will otherwise assume the gate checked them. With the separator the target names
+     * no declaration, so `classifyEdge`'s `decls > 0 -> bindingRefuted` branch can never fire and
+     * `verifyBindingClaim` sees the separator: the claim checks "is this spelled as a binding?", NOT
+     * "is it really one?". The evidence therefore has to come from somewhere else, and it does — the
+     * class was spot-checked against source before this landed (`let asIndex` Deedle
+     * VirtualFrame.fs:1034 called :1035; `let rec normalize` JsonGenerator.fs:163 called
+     * :167/172/179/190; `let asLong` VirtualFrame.fs:88 called :93), and the differential's truth arm
+     * derives the same spelling by an INDEPENDENT walk (`script/m14/fsharp-truth-oracle.ts`).
+     *
+     * The source is the same expression the edge already uses (`callOwnerQualified ?? callOwner`), so
+     * the owner in the spelling and the edge's source cannot disagree.
+     */
+    const bindingSpelled = (
+      owner: string | undefined,
+      spelled: { target: string; resolution: string; qualifier?: string },
+    ): { target: string; resolution: string; qualifier?: string; localBinding?: true } =>
+      spelled.resolution === "local-binding" && owner
+        ? { ...spelled, target: `${owner}#${spelled.target}`, localBinding: true }
+        : spelled
+
     const publish = (s: ASTEngine.UniversalSymbol): void => {
       if (s?.name) publishedNames.add(s.name)
       const owner = String(s?.ownerName ?? "")
@@ -1915,9 +1944,10 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           const calleeText = calleeNode?.text ?? ""
           const leaf = calleeText.split(".").pop() || calleeText
           if (calleeText.length > 1 && !this.isFSharpBuiltin(calleeText, leaf)) {
-            const spelled = targetSpelling(calleeText, currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined, "member")
+            const callSource = callOwnerQualified ?? callOwner
+            const spelled = bindingSpelled(callSource, targetSpelling(calleeText, currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined, "member"))
             pushRel(
-              callOwnerQualified ?? callOwner,
+              callSource,
               spelled.target,
               ASTEngine.RelationshipType.Calls,
               0.8,
@@ -1927,6 +1957,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                 pipelineOperator: opText,
                 targetResolution: spelled.resolution,
                 ...(spelled.qualifier ? { targetQualifier: spelled.qualifier } : {}),
+                ...(spelled.localBinding ? { localBinding: true } : {}),
               },
               lineOf(calleeNode ?? node),
             )
@@ -1992,9 +2023,10 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                 lineOf(node),
               )
             } else {
-              const spelled = targetSpelling(fnName, enclosingType, "member")
+              const callSource = callOwnerQualified ?? callOwner
+              const spelled = bindingSpelled(callSource, targetSpelling(fnName, enclosingType, "member"))
               pushRel(
-                callOwnerQualified ?? callOwner,
+                callSource,
                 spelled.target,
                 ASTEngine.RelationshipType.Calls,
                 0.8,
@@ -2002,6 +2034,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                   nodeType: type,
                   targetResolution: spelled.resolution,
                   ...(spelled.qualifier ? { targetQualifier: spelled.qualifier } : {}),
+                  ...(spelled.localBinding ? { localBinding: true } : {}),
                 },
                 lineOf(node),
               )

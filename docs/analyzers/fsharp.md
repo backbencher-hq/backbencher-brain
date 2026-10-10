@@ -443,3 +443,75 @@ next reader is, not only in a thread):
 scaling) says the two rules already disagree by a factor of ~2.5 before step 2. Step 2 will therefore
 NOT return `MISSING` to exactly 10, and that residue is the finding: the oracle's scope-derived rule
 versus the analyzer's file-wide `localNames`. §8 records it.
+
+---
+
+## 8. Step 2 LANDED — the analyzer flips, and the criterion's residue is a REAL finding
+
+The analyzer now spells a `local-binding` call `<callable>#<binding>` and sets
+`metadata.localBinding = true`, at both `calls` emission sites (the plain application and the pipeline
+form). The owner in the spelling is `callOwnerQualified ?? callOwner` — the same expression the edge
+already uses as its source, so the two cannot disagree.
+
+| | baseline | step 1 (oracle) | step 2 (both) | step 2 criterion |
+|---|---:|---:|---:|---|
+| `MISSING` | 10 | 93 | **10** | `== 10` **MET, exactly** |
+| `unexplained` | 69 | 69 | **70** | `== 69` **+1 residue** |
+| `analyzer-edges` | 3,136 | 3,136 | **3,143** | — |
+| sample hash | `2143f8bdc90fe3f1` | same | same | same draw |
+
+Artifacts: `measurements/differential-step2.txt`. **MISSING returning to exactly 10 is the strong
+result**: every one of the 83 truth rows the oracle re-spelled is matched by an analyzer edge, so the
+two derivations agree on the spelling for every row the oracle found. Nothing was traded away.
+
+**The +7 `analyzer-edges` is a mechanism, not a leak.** `pushRel` dedupes on
+`(label, source, target)` — so a call to a local that shared a target string with another edge in the
+same owner was previously collapsed into it. Re-spelling separates them, and 7 edges that the graph had
+been reporting as one are now reported as two. They were always two facts.
+
+### 8.1 The residue, named — the analyzer's rule is FILE-WIDE, the oracle's is BODY-SCOPED
+
+`unexplained` moved 69 → **70**, and the criterion says a residue is the scope-vs-file-wide
+disagreement reported as a finding about the analyzer's rule. That is what it is.
+`probe-unexplained-residue.ts` applies the differential's own predicate (containment arm included)
+over the same sample and finds **4 edges carrying the new claim that the truth does not explain**:
+
+```
+calls Parent.FormatEntityFullName -> Parent.FormatEntityFullName#removeModuleSuffix      ServiceAssemblyContent.fs
+calls Parent.FormatEntityFullName -> Parent.FormatEntityFullName#removeGenericParamsCount ServiceAssemblyContent.fs
+calls Legacy…GetCodeFixIfAppliesAsync -> Legacy…GetCodeFixIfAppliesAsync#t               FixIndexerAccessLegacy.fs
+calls UsingMSBuild.AssertCtrlSpaceCompletionContains -> …#completions                     Tests.LanguageService.Completion.fs
+```
+
+The last one is concrete and checkable: in `Tests.LanguageService.Completion.fs`, `completions` is a
+LAMBDA PARAMETER at `:213` inside `AssertCtrlSpaceCompletionContains` (declared `:209`) — and the
+analyzer's `localNames` is accumulated **file-wide** (`real-fsharp-analyzer.ts:1147`), so a name that
+is a local *somewhere in the file* is claimed as a binding *at every call that spells it*. The oracle
+derives its set from bindings in scope on its own walk, so the two disagree exactly here.
+
+**That is a defect in the analyzer's rule, and it is OWED rather than fixed in this commit** — making
+`localNames` scope-aware is a third change with its own before/after, and folding it into the flip
+would destroy the attribution the staged plan exists to create. Its size at this sample is 4 rows
+netting +1 `unexplained`.
+
+### 8.2 A prediction of mine that was WRONG, recorded
+
+§7 predicted the residue would be large, on the arithmetic that 1,403 local-bindings per 400 files is
+~210 at 60 files while the oracle found 83. **The oracle found 83 and the analyzer matched all 83.**
+The error is the scaling: §6's 400-file draw is an even stride over the WHOLE 10,138-file corpus, while
+the differential's sample is a rotating cold-pool draw of 60 files from the compiler repo alone, and
+`local-binding` density is not uniform across repositories. A linear extrapolation from one draw to a
+different draw's population is the same mistake §5.1 records in a different dress.
+
+### 8.3 Fixtures and typecheck
+
+Two fixtures pinned the OLD bare spelling and were updated to pin the new convention, including the
+claim — which is the point of a fixture named `call-target-spelling`:
+
+- `fsharp/call-target-spelling`: `Widget.Render -> helper` → `Widget.Render -> Widget.Render#helper`,
+  with `meta.targetResolution: "local-binding"` and `meta.localBinding: true`.
+- `fsharp/one-char-calls`: `Fixture.OneCharCalls.composed -> f` at `:11` →
+  `…composed -> Fixture.OneCharCalls.composed#f`, with the same two metadata assertions.
+
+Targets were read off the analyzer's actual output, not guessed. **fsharp fixtures 15/15, and
+`npx tsc --noEmit` exit 0.**
