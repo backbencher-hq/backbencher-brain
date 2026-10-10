@@ -483,6 +483,50 @@ NOT landed at the end of a turn and not by this lane alone):
 With that kind, all 1,909 `uses` edges claim cleanly and `extFAIL` stays 0 for a structural reason —
 which is what the current mechanism cannot deliver, and what this measurement showed.
 
+### Cause 5 — the WHOLE-POPULATION store-unbound split, and the four-clause answer
+
+Sixteen repositories, each indexed as its OWN scratch project (one store run each, order preserved;
+a pooled scratch would change the per-project key space), **6,838 indexer-eligible files, 2,491 refused
+by the indexer**. Artefact: `validation/m14/fixtures/hcl/store-binding-truth.whole-population.json`.
+
+| type | store rows | bound | unbound | same file | other file | leaf-reduced |
+|---|---|---|---|---|---|---|
+| contains | 208,167 | 207,993 | 174 | 204,823 | 3,170 | 90,543 |
+| references | 35,379 | 33,297 | **2,082** | 18,995 | 14,302 | **30,194** |
+| exports | 24,863 | 24,851 | 12 | 22,993 | 1,858 | 0 |
+| uses | 1,806 | 1,387 | **419** | 288 | 1,099 | 1,355 |
+| imports | 1,366 | 19 | **1,347** | 17 | 2 | 8 |
+| extends | 53 | 53 | 0 | 29 | 24 | 0 |
+| **total** | **271,638** | **267,604** | **4,034** | — | — | — |
+
+**The claim set for `references` is 2,082 rows (5.9%), by named class**: `data` 511 · `module` 434 ·
+`global` 247 · `var` 212 · `provider` 134 · `local` 99 · `random_string` 73 · `aws` 70 ·
+`aws_instance` 27 · `quality` 23 · `build` 17 · `values` 17 — provider types, module outputs,
+cross-module variable reads. Compare the MODEL's `noDeclaration` 8,809 on the `.hcl`-only population:
+the overstatement is ~4x on a wider population, which is the same direction the terragrunt-900 draw
+found (514 vs 63). **And 30,194 of the 33,297 bound references (90.7%) bind only after LEAF
+REDUCTION** — that column travels with the claim, because it is the difference between "resolved" and
+"matched a leaf name".
+
+`imports` is the clean external/file case: **1,347 of 1,366 unbound**, and the unbound spellings are
+module sources (`cloudposse/stack-config/yaml//modules/remote-state` 271, `git::https://github` 170,
+`cloudposse/label/null` 40 …) — names outside the population, no file claim available.
+`uses` unbound 419 with roots `each` 200 · `path` 168 · `count` 44 · `self` 5 · `terraform` 2 — the
+namespace-claim case, still unbuilt.
+
+### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
+
+| clause | verdict |
+|---|---|
+| 1. every emitted edge of every applicable type resolves to exactly one real declaration | **FAILS — 4,034 store-unbound rows** (references 2,082 · imports 1,347 · uses 419 · contains 174 · exports 12), plus the wrong-binding classes that are bound but not intended: references other-file 14,302 · exports 1,858 · contains 3,170 |
+| 2. ambiguity and unresolved classified by NAMED cause with a measured count | PASSES — every bucket above is split by named root class on the store-unbound population, and the model-vs-store gap is itself named (I13 leaf rebinding) |
+| 3. each cause fixed with a before/after over the SAME population, or ruled legitimate with evidence | PARTIAL — `contains` is RULED (97,339/97,550 resolved; the model bucket was an instrument artifact); `exports` is measured (99.9% bind, 15.5% cross-file); `references`, `uses`, `imports` are NAMED and COUNTED but not yet fixed or ruled |
+| 4. `extFAIL` / `bindFAIL` / `causeFAIL` all zero | **HOLDS — 0 / 0 / 0** |
+
+`hcl` is NOT among the analyzers affected by `a82e4134d` (`projectRoot` never passed): the readers of
+that parameter are dart, json, php, toml, typescript and yaml — **hcl is not one of them**, and this
+lane's numbers are unaffected by that defect rather than merely unexamined for it.
+
 ### A population finding the comparison forced: the gates classify files the indexer never reads
 
 The probe asked production's OWN discovery (`discoverIndexableFiles`) what it would index, and for
