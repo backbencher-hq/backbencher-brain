@@ -4,6 +4,132 @@ This is the yaml lane's **verdict page** for the Laptop-B ontology round: what t
 what the instruments say, and what is still open. The large lane-authored design document is
 [real-yaml-analyzer.md](real-yaml-analyzer.md) — it is not duplicated here.
 
+## COMPLETION PACKAGE — current revision
+
+Whole admitted population: **1,414,847 edges · 18,364 files · 189 repos · 0 failed · 0 degraded.**
+
+```
+npx tsx script/m14/residual-gate.ts --lane yaml          # the four-clause instrument, whole corpus
+npx tsx validation/m14/fixtures/yaml/lane-residual-census.ts   # the enumerator the gate cannot be
+npx tsx validation/m14/fixtures/yaml/include-claim-control.ts
+npx tsx validation/m14/fixtures/yaml/workflow-needs-control.ts
+npx tsx validation/m14/fixtures/yaml/pointer-cause-control.ts
+npx tsx validation/m14/fixtures/yaml/store-scope-probe.ts     # the store layer, no context of its own
+npx tsx script/m14/run-fixtures.ts --lang yaml                # 33 pass / 0 fail
+```
+
+### Clause 1 — per-type residual, each non-zero type with its named cause
+
+| type | edges | resolved | amb(decl) | unresolved | extFAIL | causeFAIL | residual |
+|---|---|---|---|---|---|---|---|
+| contains | 1,380,046 | 1,380,046 | 0 | 0 | 0 | 0 | 0.0 % |
+| uses | 165 | 165 | 0 | 0 | 0 | 0 | 0.0 % |
+| exports | 4,080 | 4,080 | 0 | 0 | 0 | 0 | 0.0 % |
+| extends | 155 | 155 | 0 | 0 | 0 | 0 | 0.0 % |
+| overrides | 26 | 26 | 0 | 0 | 0 | 0 | 0.0 % |
+| calls | 327 | 0 | 0 | 0 | 0 | 0 | 0.0 % |
+| imports | 8,576 | 4 | **43** | 0 | 0 | 0 | 0.5 % |
+| references | 21,472 | 19,028 | **142** | **47** | 0 | 0 | 0.9 % |
+| **TOTAL** | **1,414,847** | **1,403,504 (99.2 %)** | **185** | **47** | **0** | **0** | **232 (0.016 %)** |
+
+Four causes were fixed, each with its before/after on the same instrument. Raw artifacts beside
+each commit; the two current ones are
+[residual-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/residual-yaml-whole-corpus-after.txt)
+and [census-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-after.txt).
+
+| cause | count before → after | commit |
+|---|---|---|
+| a FILE include carried an owner claim (`apt.yml` → owner `apt`) | extFAIL **107 → 18** | `c3a2d71d6` |
+| the claim was made without evidence — a URI scheme, a glob, a runtime-materialised path | extFAIL **18 → 0** | `8ec00358b`, `e3fc6487f` |
+| `scalarValues` recursed into a mapping (role names, `tasks_from`, booleans as imports) | imports amb **75 → 57** | `e3fc6487f` |
+| `include:` under `matrix:` is a CI build-matrix directive, not an include | imports edges **10,152 → 8,576**, imports amb **57 → 43** | `a7f216929` |
+| a `needs:` target was a bare job name, declared once per workflow FILE | references amb **879 → 142** | `e3fc6487f` |
+| the pointer index could not survive ERROR recovery (the grammar flattens the tree) | unresolved **762 → 47** | `5b12b6306` |
+
+The `matrix.include` one is worth its own line because of the direction it fixes: the removed edges
+were not merely ambiguous — **1,090 of them were sitting in `extOK` as VERIFIED claims about files
+that do not exist** (`x64`, `preview`, `win7`, `stable`, and bulma's `gem install sass`). A false
+import edge that RESOLVES is worse than one that does not. `ext?` fell 750 → 299 on `imports`.
+
+### Clause 2 — the must-be-zero columns
+
+`extFAIL = 0`, `bindFAIL = 0`, `causeFAIL = 0`, on the whole population.
+
+Stated plainly so that "0" is not read as a formal PASS: `externalUnverified` is **1,903** and is
+NOT zero. The residual gate counts a claim the project cannot check as accounted-for; `incoming-gate`
+additionally requires `externalUnverified = 0` for a PASS. So this lane is at **residual 232 with
+zero refutations**, not at PASS, and the difference is 1,903 claims whose truth nothing in the
+corpus can confirm (208 `calls`, 299 `imports`, 1,396 `references`).
+
+### Clause 3 — every remaining edge attributed
+
+**The 47 unresolved, split into RULED and merely unresolved.** Both are ruled, and the split is
+produced by `parseHadError` rather than asserted:
+
+| count | reason | ruling |
+|---|---|---|
+| 33 | `pointer-not-declared-in-file` | **RULED** — the documents parse CLEANLY and the pointer is genuinely not declared. Mostly openapi loader fixtures whose `$ref` names a definition the file does not carry. |
+| 14 | `parse-error-in-document` | **RULED, and it is not reachable by the fallback.** See below. |
+
+**The Lead's question, answered: the 14 are genuinely outside anything the analyzer can see.** At
+line 2288 of `docker/api/docs/v1.25.yaml` the parser emits a bare **`flow_node`** — not a
+`block_mapping_pair`. The recovery hoisted `definitions`' members to the top level, and in doing so
+the KEY NODE for `EndpointSpec` does not exist anywhere in the tree: the walk finds no pair whose
+key is `EndpointSpec`, so no declaration can be extracted however the fallback is written. The
+fallback matches against the document's declared paths; a declaration that was never created has no
+declared path, so it correctly REFUSES to bind (`ServiceSpec.properties.EndpointSpec`, line 2282, is
+a different symbol — the `$ref`'s own site). Reaching it would mean synthesising a declaration from
+a stray scalar node, which is fabrication. Signed: one key node per `$ref`, 14 edges, 14 versioned
+spec files.
+
+**The 185 ambiguous, by cause.**
+
+| count | type | cause | disposition |
+|---|---|---|---|
+| 117 | references | **k8s object references whose object the project does not declare.** `secretName: test`, `claimName: test`, `configMap.name: test` in pod-security testdata. The 8 declarations named `test` are UNRELATED: measured — a CRD field (`spec.test`), a CRD schema property, an annotation key (`metadata.annotations.test`), a CircleCI job, and two Taskfile tasks (`tasks.test`) | **RULED.** The reference is outside the project; production's bare-name rule cannot bind it, and binding it would pick one of those eight at random — the indexer's own arm records such picks as wrong 37,318 of 49,729 times. |
+| 43 | imports | **role NAMES** — ansible test roles literally called `a`, `b`, `c`, `test1`, plus `dnf`, `include_role`, `import_role`, `foo`, `role`, `no_log`, `include_vars`, `subversion`, `foobar`, and 3 from `vendor/…/ci.yml`. A role name collides with property keys of the same name | **RULED as inherent** to naming a role; narrowing it further would mean not naming the role at all. |
+| 25 | references | the same shape as the 117: bare names in fixture YAML that collide project-wide (`include` 10, `default` 7, `data` 3, `kubeconfig` 2, `apiserver`, `secret`, `coverage` 1 each) | **RULED** — sibling/resource references to names the fixture's own project does not declare. |
+
+The falsifier for every row above is the enumerator: `lane-residual-census.ts` prints each target
+with its declaration count and its emitting file, so any of these rulings can be re-checked against
+the corpus by another lane without re-deriving the instrument.
+
+`calls` (327): 119 carry a verified external claim and 208 are unverifiable — they are GitHub Actions
+`uses:` targets naming a workflow in another repository at a ref, and nothing in this corpus can
+confirm a GitHub repository. Residual 0.0 %.
+
+### Clause 4 — the tie-break
+
+Restated on the current revision: **`ofWhich` = 4**, all in `contains`, with **`intended` =
+1,380,046 of 1,380,046** — every containment edge binds to a declaration in its OWN file on its own
+line. Against the indexer's control arm of 37,318 wrong picks out of 49,729, this lane has four
+candidates to lose. Every other type is `ofWhich` 0. For `imports`, `twin` 82 is a RISK and not
+proven wrongness: a foreign declaration is what a cross-document import IS.
+
+### Which layer each number came from
+
+**Every number above is the GATE'S MODEL.** `incoming-gate.ts`, `residual-gate.ts`, the census and
+every control pass `projectRoot` explicitly, so this lane's document scope, its
+`<document>.jobs.<id>` targets and its file claims were always scoped in the measurements.
+
+The STORE was a different key space for this lane until `a82e4134d`: `pool-worker.ts`'s
+`contextFor(filePath)` supplied a context only when a project index existed for the extension, and
+`indexCache` is null unless the worker was handed indexes (dart alone) — so production indexed yaml
+with NO `projectRoot`. The store-side check is
+[store-scope-probe.ts](../../validation/m14/fixtures/yaml/store-scope-probe.ts), which passes no
+context of its own (a scope can only appear if the WORKER supplies a root):
+
+```
+store symbols 873 · qualified names 873 · carrying the file's own scope: 873
+model names   873 · carrying the same scope:              873
+names the model has and the store does not: 0
+names the store has and the model does not: 0
+VERDICT: store is SCOPED; layers AGREE name-for-name
+```
+
+So before that commit there were two key spaces for yaml and after it there is one — the numbers
+above describe the model, and the store now publishes the same names, verified rather than assumed.
+
 ## 0. Round 4 — the error-recovered pointers resolve
 
 | `residual-gate --lane yaml` | extFAIL | imports amb | references amb | unresolved | residual |
