@@ -84,6 +84,20 @@ interface JsonContext {
     line: number
     overridesLine: number
   }[]
+  /**
+   * THE IDENTITIES THIS DOCUMENT HAS ALREADY PUBLISHED — one symbol per qualified path.
+   *
+   * A key re-declared in the same object produces one `pair` per occurrence, so the walk created
+   * one IDENTICAL symbol per occurrence: measured in `duckdb/data/json/11152.json`, FOUR symbols
+   * named `fileSize` with the same qualifiedName, the same kind and the same line. The STORE keeps
+   * ONE row for that identity (its insert collapses them), so publishing four puts the analyzer's
+   * declaration count above the product's and makes every edge naming the identity read
+   * `amb(decl)` — which is the whole of this lane's `overrides` residual, 22 edges.
+   *
+   * First occurrence wins, the rule this analyzer already states for the duplicate-key contract and
+   * the rule the store's `MIN(id)` implements. It can only REMOVE a declaration, never add one.
+   */
+  emittedPaths: Set<string>
   /** True when the document uses LSP's `{"kind":"reference","name":X}` literal — a
    *  DISCRIMINATED UNION for "this is a named type", as against `{"kind":"or","items":[…]}`
    *  and `{"kind":"array","element":…}`. Measured over the whole admitted population, 2 of
@@ -174,6 +188,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       dependencySymbols: [],
       dependencyVersions: new Map(),
       overrideCandidates: [],
+      emittedPaths: new Set(),
       usesReferenceLiterals: false,
       usesClassDeclarations: false,
       typeDeclarations: new Map(),
@@ -483,6 +498,12 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           depth: this.pathDepth(path, ctx.rootName),
         },
       }
+      // ONE SYMBOL PER IDENTITY. See `JsonContext.emittedPaths`: a re-declared key yields one
+      // identical symbol per occurrence, the store keeps one row for that identity, and the extra
+      // copies are what made every `overrides` edge read `amb(decl)`. Skipped BEFORE the side
+      // collections below, so the duplicate cannot be counted twice anywhere.
+      if (ctx.emittedPaths.has(path)) continue
+      ctx.emittedPaths.add(path)
       this.addSymbol(ctx, symbol)
 
       if (valueType === "null") ctx.hasNullValues = true
@@ -1218,7 +1239,17 @@ const bracket = parent.lastIndexOf("[")
    * the parse tree, read at the same place the symbol is created.
    */
   private extractDuplicateKeyOverrides(ctx: JsonContext): void {
+    // ONE EDGE PER RE-DECLARED KEY. Three occurrences of a key produce two candidates each with the
+    // same owner and key, and the walk pushed one more candidate per occurrence: measured,
+    // `11152.json` emitted THREE identical `overrides` edges per key, same source, same target,
+    // same line. The store collapses them to one row by its relationship id, so the extra copies
+    // exist only in the model — where they inflate the type's edge count. The FIRST candidate wins,
+    // which is the earliest `overridesLine` and therefore the declaration the key first replaced.
+    const seen = new Set<string>()
     for (const c of ctx.overrideCandidates) {
+      const identity = `${c.ownerPath}\u0000${c.key}`
+      if (seen.has(identity)) continue
+      seen.add(identity)
       ctx.relationships.push({
         source: c.ownerPath,
         target: c.targetPath,
