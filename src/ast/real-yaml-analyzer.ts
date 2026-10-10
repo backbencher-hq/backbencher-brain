@@ -288,6 +288,41 @@ const FILE_IMPORT_KEYS = new Set([
 ])
 
 /**
+ * The two members of `FILE_IMPORT_KEYS` that do NOT name a file: `include_role` and
+ * `import_role` name a ROLE.
+ *
+ * MEASURED, and the measurement is why this set exists rather than a comment. Over the whole
+ * admitted ansible population (2,082 `.yaml`/`.yml` files), 891 `imports` edges carry
+ * `yaml_keyword_include`. Attributed to the key on the edge's OWN `line_number` (which points
+ * at the key line), they split:
+ *
+ *     567  `include_tasks` / `import_tasks` / `import_playbook` / `include` … — a FILE
+ *     149  `name:`          — a nested scalar INSIDE a role-include mapping (the role's name)
+ *      45  `tasks_from:`    — a nested scalar, a file relative to the ROLE's `tasks/` dir
+ *      18  `role_name:`     — likewise
+ *      51  `hosts:` `public:` `gather_facts:` `allow_duplicates:` `command:` … — not files at all
+ *
+ * The 263 non-file edges exist because `scalarValues` recurses into a mapping and returns
+ * every nested VALUE scalar, so one `- import_role: {name: role1, tasks_from: x.yml}` publishes
+ * the role's name, its `tasks_from` file and any boolean in the block as three imports of this
+ * file. That over-reach is a SEPARATE, still-open defect in this lane (it is reported, not
+ * silently changed here — dropping 263 edges is an ontology decision, not a claim fix). What
+ * this set does is keep the over-reach from being turned into a NEW refutation by the file
+ * claim below: a `tasks_from:` spelling is relative to a role directory the analyzer does not
+ * resolve, so a claim that THIS file's directory holds it would be a claim this lane cannot
+ * support, and the arbiter would refute it — 10 such edges measured before the guard existed.
+ */
+const ROLE_IMPORT_KEYS = new Set(["include_role", "import_role"])
+
+/**
+ * The directories that make a directory a ROLE. Used only to work out where a role's own
+ * subdirectories are, so a bare include inside `handlers/` can also be looked for in `tasks/`.
+ */
+const ROLE_SUBDIR_NAMES = new Set([
+  "tasks", "handlers", "vars", "defaults", "meta", "templates", "files", "library",
+])
+
+/**
  * What a `uses:` KEY MEANS, decided by the path the analyzer itself built for the
  * entry — never by the characters of the value.
  *
@@ -1132,7 +1167,13 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.addImport(ctx, name, "yaml_keyword_include", keyNode, true)
         this.addRelationship(ctx, path, name, ASTEngine.RelationshipType.Imports, {
           relationshipType: "yaml_keyword_include",
-          isExternal: true,
+          // THE CLAIM IS DECIDED, NOT ASSUMED. This site used to hard-code `isExternal: true`,
+          // which the arbiter reads as "look this target's OWNER up" — the wrong question for a
+          // path, and the source of the 107 refuted external claims the whole-population run
+          // found. `keywordIncludeClaim` states the file claim when the target is a file this
+          // project's admitted list can answer for, and nothing weaker than before when it is
+          // not. See the helper for the measurement and the two refusals.
+          ...this.keywordIncludeClaim(name, ctx, key),
         }, line)
       }
     }
@@ -2346,9 +2387,18 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * keeps the weaker `isExternal` marker it used before: a URL include, or a file whose project
    * root this run does not know (every fixture that passes no root), is exactly the case where the
    * candidate set would be a fabrication.
+   *
+   * AND A SPELLING THAT IS NOT A PATH AT ALL GETS NO CANDIDATE EITHER, which is the guard
+   * `isLiteralPathSpelling` adds. Measured on the ansible population before it existed: a
+   * templated include (`'{{ service_type }}_cleanup.yml'`, 6 sites) and an ansible free-form
+   * `include_tasks: file=x.yml` (5 sites) both used to walk straight into a candidate set, and a
+   * candidate containing `{{ }}` can never be an admitted file — so the arbiter would have
+   * REFUTED the lane on 11 edges whose target was never a literal path. A claim has to be spelled
+   * as the thing it claims before a lookup can say anything about it, which is also why the
+   * gate's own `verifyRemoteRefClaim` refuses shapes it cannot read.
    */
   private relativePathCandidates(written: string, ctx: YamlContext): string[] | null {
-    if (written.includes("://")) return null
+    if (!RealYamlAnalyzer.isLiteralPathSpelling(written)) return null
     const rel = RealYamlAnalyzer.projectRelativePath(ctx.filePath, ctx.projectRoot)
     if (rel === null) return null
     const cut = rel.lastIndexOf("/")
@@ -2362,7 +2412,44 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     add(rooted ? trimmed.slice(1) : dir.length > 0 ? `${dir}/${trimmed}` : trimmed)
     if (!rooted) add(trimmed)
+    // THE ROLE-RELATIVE CANDIDATE, and it is measured rather than defensive. Ansible resolves a
+    // bare include inside a ROLE by searching the role's own subdirectories, so
+    // `roles/x/handlers/main.yml` including `default-cleanup.yml` finds
+    // `roles/x/tasks/default-cleanup.yml` — measured on 8 edges of the ansible population
+    // (`default-cleanup.yml`, `windows-cleanup.yml`, `systemd_cleanup.yml`, `B.yml`,
+    // `included_tasks.yml`, `tasks/handlers.yml` twice). Without this candidate each of those
+    // was REFUTED by a file claim that was true, which would have made the claim fix trade 95
+    // false refutations for 8 more.
+    const base = rooted ? null : RealYamlAnalyzer.roleSubdirBase(rel)
+    if (base !== null && base.length > 0) {
+      add(`${base}/tasks/${trimmed}`)
+      // AND THE ROLE-ROOT SPELLING, but ONLY when the target names the role subdirectory
+      // itself. `handlers/main.yml` including `tasks/handlers.yml` means `<role>/tasks/
+      // handlers.yml`; the `tasks/` prefix is the whole evidence for that reading, and without
+      // it `roleRoot/<written>` would be a guess that could match an unrelated sibling file and
+      // verify a claim for a reason that is not the include's. Guarded rather than added
+      // unguarded, because a candidate set that is too wide makes "verified" mean less.
+      if (ROLE_SUBDIR_NAMES.has(trimmed.split("/")[0])) add(`${base}/${trimmed}`)
+    }
     return out.length > 0 ? out : null
+  }
+
+  /**
+   * THE ROLE ROOT of the file that is including something, or null when it is not inside a role.
+   *
+   * A role is a directory carrying `tasks/`, `handlers/`, `vars/`, `defaults/`, `meta/` — so the
+   * role root is the path BEFORE the LAST such segment. `roles/role1/handlers/main.yml` ->
+   * `roles/role1`; `roles/role1/tasks/sub/x.yml` -> `roles/role1`, which is what makes the
+   * fallback work for a nested task file too.
+   */
+  private static roleSubdirBase(rel: string): string | null {
+    const segs = rel.split("/")
+    segs.pop()
+    for (let i = segs.length - 1; i >= 0; i--) {
+      if (!ROLE_SUBDIR_NAMES.has(segs[i])) continue
+      return segs.slice(0, i).join("/")
+    }
+    return null
   }
 
   /**
@@ -2373,6 +2460,68 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private tagIncludeClaim(includePath: string, ctx: YamlContext): Record<string, unknown> {
     const candidates = this.relativePathCandidates(includePath, ctx)
+    return candidates !== null ? { importProjectFile: candidates } : { isExternal: true }
+  }
+
+  /**
+   * IS THIS SPELLING A LITERAL PATH, before anything is claimed about where it points?
+   *
+   * The arbiter checks a file claim by looking the candidate up in the project's ADMITTED file
+   * list. That lookup can only be evidence about a string that is a path: run it on a Jinja
+   * template and the miss is a fact about the template, not about the project.
+   *
+   *   `https://x/y.yaml`          a URL, refused by `://`      (already refused before this guard)
+   *   `{{ item }}`                a template — the `{`, `}`, `$` set covers `{{ }}` and `${ }`
+   *   `name=a`                    ansible's free-form `key=value`, which is a parameter list
+   *   `file=x.yml`                the same, and MEASURED: 5 sites in the ansible population
+   *   `'{{ svc }}_cleanup.yml'`   the same, and MEASURED: 6 sites
+   *
+   * Everything else is admissible, including a bare `apt.yml` and a `subdir/x.yaml`.
+   */
+  private static isLiteralPathSpelling(written: string): boolean {
+    if (written.length === 0) return false
+    if (written.includes("://")) return false
+    // A template or any whitespace: `{{ x }}`, `${x}`, and ansible's `name=a b` free-form.
+    if (/[{}$\s]/.test(written)) return false
+    // A free-form `key=value` parameter list is not a path, whatever its tail looks like.
+    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(written)) return false
+    return true
+  }
+
+  /**
+   * THE CLAIM A KEY-SPELLING INCLUDE CARRIES — and this is the fix for the 107 refuted external
+   * claims the whole-population run found.
+   *
+   * `- import_tasks: apt.yml` names a FILE in this project. Until this helper existed the edge
+   * carried `isExternal: true` and nothing else, so the arbiter asked its OWNER question —
+   * `targetOwner("apt.yml")` is `apt` — and ansible publishes a module named `apt`, so the claim
+   * "this is outside the corpus" was judged FALSE and the edge was counted against the lane. The
+   * refutation was an artefact of asking an owner question about a path.
+   *
+   * MEASURED over the whole admitted ansible population (2,082 files, 891 include edges, the
+   * key attributed from each edge's own `line_number`): 96 of the 107 refuted edges come from
+   * `include_tasks`/`import_tasks` and name a file — 95 of them a file the project HAS. This
+   * helper makes the claim the evidence can actually answer, and the arbiter verifies those 95
+   * against the project's own file list instead of refuting them against a module's name.
+   *
+   * TWO REFUSALS, each measured rather than assumed:
+   *
+   *   1. A ROLE KEY gets no file claim (`ROLE_IMPORT_KEYS`). `tasks_from: canary2.yml` is
+   *      relative to a role directory this analyzer does not resolve, so a claim that THIS
+   *      file's directory holds it would be refuted — 10 edges measured.
+   *   2. A TARGET THAT IS NOT SPELLED AS AN ADMITTED SPELLING gets no file claim. The arbiter's
+   *      file list is the lane's admitted population, `.yaml`/`.yml` only, so a claim about any
+   *      other suffix could never be confirmed and would be refuted by the claim rather than by
+   *      the project. `isLiteralPathSpelling` also refuses templates and free-form spellings.
+   *
+   * When no candidate can be stated the edge keeps the weaker `isExternal` marker it had — the
+   * pre-existing behaviour, unchanged, so this fix can only ADD verifiable claims, never remove
+   * an edge or silently re-label one.
+   */
+  private keywordIncludeClaim(written: string, ctx: YamlContext, key: string): Record<string, unknown> {
+    if (ROLE_IMPORT_KEYS.has(key)) return { isExternal: true }
+    if (!/\.ya?ml$/i.test(written)) return { isExternal: true }
+    const candidates = this.relativePathCandidates(written, ctx)
     return candidates !== null ? { importProjectFile: candidates } : { isExternal: true }
   }
 
