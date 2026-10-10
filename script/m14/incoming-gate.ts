@@ -752,9 +752,14 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     // 81 of them naming a file that EXISTS in the project, and all of them read `ext?`.
     const needsFacts = e.claim?.kind === "projectFacts" || e.claim?.kind === "projectFile"
     const facts = needsFacts ? projectFacts?.get(e.repo) : undefined
-    const pc = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts)
+    // CONTAINS GOES THROUGH A DIFFERENT RESOLVER — see `classifyEdge`'s `containsLike`. Production
+    // binds it with `resolveContainsTargetStmt`, which prefers the edge's own file and returns
+    // LIMIT 1, so a name collision is not an ambiguity for this type. Measured by xml-lane: 94.1%
+    // ambiguous under the count model against 98.4% bound in the real store.
+    const isContains = e.label === "contains" || e.type === "contains"
+    const pc = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains)
     tally(row.project, pc, e.tgt, e.label)
-    tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts), e.tgt, e.label)
+    tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts, isContains), e.tgt, e.label)
     switch (pc.outcome) {
       case "resolved": marks.resolved++; break
       case "ambDeclOnly": case "ambBoth": marks.amb++; break

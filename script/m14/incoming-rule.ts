@@ -613,8 +613,31 @@ export function classifyEdge(
   /** the project's own facts, for a `projectFacts` claim. Absent means the check could not
    *  be run at all, and the claim is then UNVERIFIABLE — never quietly accepted. */
   facts?: ProjectFacts,
+  /**
+   * IS THIS EDGE RESOLVED BY A DIFFERENT STATEMENT? `contains` is.
+   *
+   * Production's `resolveContainsTargetStmt` (`parallel-indexer.ts`) is
+   *     WHERE s.project_id = ? AND s.name = ?
+   *     ORDER BY (s.file_id = ?) DESC, (s.line_start = ?) DESC, ... LIMIT 1
+   * — it prefers the edge's OWN FILE, then its own line, and returns exactly ONE row or none. So a
+   * `contains` edge has no "N candidates" state: it binds, or the name is absent. Classifying it by
+   * DECLARATION COUNT therefore reports collisions production does not have, and xml-lane measured
+   * the size of that gap: the gate's count model reads **94.1% ambiguous** where the real store
+   * binds **98.4%, 97.9% of it same-file**.
+   *
+   * `true` means "the project holds at least one declaration of this name, so production's LIMIT 1
+   * binds it" — reported as `resolved`, which is what it is. The resolver that chose WHICH row is
+   * deterministic and disclosed here rather than modelled in full: file first, then line, then
+   * declaration, then language, then id. An unmodelled ordering can pick a different row, but it
+   * cannot fail to pick one, and "ambiguous" was never the alternative.
+   */
+  containsLike?: boolean,
 ): Classified {
   const decls = declCount.get(tgt) ?? 0
+  if (containsLike === true && decls >= 1) {
+    const ks = kinds.get(tgt)
+    return { outcome: "resolved", decls, kinds: [...(ks ?? [])].sort().join("|") }
+  }
   const kindSet = kinds.get(tgt)
   const kindText = [...(kindSet ?? [])].sort().join("|")
   // A BINDING CLAIM IS CHECKED BEFORE THE COUNT, and that ordering is the whole point: the
