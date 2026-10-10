@@ -132,6 +132,26 @@ the project's key space, is the same test asserting and checking itself. `extFAI
 structurally 0 and the marker would stop carrying information — the laundering
 `script/m14/incoming-rule.ts` warns about, arrived at honestly.
 
+### The include-path class — the fixable-looking one that is not worth fixing
+
+`imports` also carries `include`/`require` paths (`metadata.relationshipType: "include_path"`): **208
+edges** whole population. The file-claim route (json's) was measured before it was built
+(`tools/include-claim-crosstab.mts`, production path, json's candidate arithmetic against the gate's
+admitted-file facts plus the `statSync` guard):
+
+| | edges |
+|---|---|
+| a claim would VERIFY | **2** |
+| a claim would REFUTE | **185** |
+| no computable candidate (URL / absolute / escapes) | 21 |
+
+The cross-tab is exact in both directions (fs true but gate refutes: 0; fs false but gate verifies: 0),
+so a claim gated on `statSync` would close 2 edges and refute none. **It is not built:** 2 edges do not
+justify a claim key, a fixture migration, and a standing refutation risk if those two files ever leave
+the population. The 185 name files the admitted population does not contain — `vendor/autoload.php`
+untracked, `__DIR__` kept as literal text because the analyzer never resolves magic constants, one a
+sibling checkout — and that is a property of the POPULATION, not a spellable defect.
+
 ## 5. Refuted before it was built
 
 **The FQN cause does not exist.** An earlier probe reported that publishing every namespaced

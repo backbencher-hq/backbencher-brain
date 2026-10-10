@@ -216,6 +216,17 @@
         "measuredBy": "npx tsx validation/m14/fixtures/php/tools/owner-claim-crosstab.mts (per PROJECT, production path)",
         "artifact": ".tmp-php-claim-crosstab.log",
         "control": "THE CLAIM ROUTE WAS MEASURED BEFORE BEING REFUSED: attaching the external marker to owner-carrying member edges would verify 12,235 and REFUTE 67,893 (calls 11,897 verify / 42,780 refute; uses 338 / 25,113) — 5.5 refutations per verification. The same name splits by project (`assertSame` 4,851 verify / 2,400 refute) and the refutations sit exactly where the library IS declared (phpunit 29,444, phpmyadmin 26,869, gql 10,306). Worse than useless, because THE GATE CHECKS A CLAIM BEFORE THE COUNT: a wrongly-attached claim does not merely fail to help, it BREAKS an edge that resolves today."
+      },
+      {
+        "id": "PHP-INCLUDE-PATHS",
+        "type": "incoming residual — include/require path targets; the file-claim route MEASURED and declined",
+        "status": "RULED 2026-10-10: ruled with its count",
+        "size": "208 `imports` edges carry an include/require path (`metadata.relationshipType: \"include_path\"`). A file claim would VERIFY **2** of them, REFUTE **185**, and 21 have no computable candidate (a URL, an absolute path, or one that escapes the project)",
+        "whyItIsOpen": "The paths name files the ADMITTED population does not contain — `vendor/autoload.php` is untracked or absent, `__DIR__` is a PHP magic constant the analyzer keeps as literal text rather than resolving, and one names a sibling checkout. A claim is a statement the project can check and a miss REFUTES, so 185 of these can carry no claim at all",
+        "whatWouldCloseIt": "A resolver that reads the filesystem AND a project whose included files are admitted (`__DIR__` is resolvable in pure String, but the files it points at are still outside the admitted list). FALSIFIER: if the admitted population ever includes those files, the verify count moves and this ruling is refuted",
+        "measuredBy": "npx tsx validation/m14/fixtures/php/tools/include-claim-crosstab.mts (production path; json's candidate arithmetic, the gate's admitted-file facts, and the filesystem test the analyzer would gate on, cross-tabulated)",
+        "artifact": ".tmp-php-include-crosstab.log",
+        "control": "the cross-tab is EXACT in both directions — fs TRUE but gate REFUTES: 0, fs FALSE but gate VERIFIES: 0 — so a claim gated on `statSync` would close 2 edges and refute none; and 2 edges is why the mechanism is NOT built: the surface it adds (a claim key, a fixture migration, a refutation risk if the two files ever leave the population) is larger than what it closes"
       }
     ],
     "adjudicatedFromGaps": {
