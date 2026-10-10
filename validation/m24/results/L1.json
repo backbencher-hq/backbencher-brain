@@ -2,7 +2,7 @@
   "issue": "490",
   "code": "L1",
   "status": "verified",
-  "currentCommit": "79e496b4808663b930e6ccea9e1160b8d1bc34c8",
+  "currentCommit": "23f05b18d38f178b1f0a8f1eb030a430554f4b06",
   "sourceFingerprint": "1b2d41b65b452b3dcb2e3b7e600e83340c4a69a444e63b3fa58cef5e99a35cab",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -12,7 +12,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-server.ts",
   "evidenceFile": "L1.json",
-  "generatedAt": "2026-10-10T02:03:19.405Z",
+  "generatedAt": "2026-10-10T03:16:47.295Z",
   "passed": 142,
   "failed": 0,
   "failures": [],
@@ -99,7 +99,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-10T02:03:19.405Z",
-    "contentSha256": "5cdaa9bdff7da8977dcfae898a2858f42c1813ea82cf2de10bd0c00436aef41d"
+    "sealedAt": "2026-10-10T03:16:47.296Z",
+    "contentSha256": "4e28dc8d319f5eedc6c6a0c468a991843b816022ab6c003074694ca092420153"
   }
 }

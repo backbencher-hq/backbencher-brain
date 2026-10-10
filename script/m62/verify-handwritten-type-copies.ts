@@ -204,6 +204,24 @@ check(
         .join(", ")} ***`,
 )
 
+// WHY THIS GATE IS NOT IN verify-suite.mts, AND WHY THAT IS RECORDED HERE RATHER
+// THAN INVISIBLY.
+//
+// This gate is RED by design: several gates still hand-write a product type, and each
+// one is an open question about what that gate is measuring — not an environment
+// block. Filing it on the suite's honest-block allowlist would say "cannot run here",
+// which is false: it runs fine here and correctly reports a defect. That is the
+// laundering the allowlist exists to prevent.
+//
+// This gate stays red, and it is not in verify-suite.mts. That is the declaration
+// the coverage gate looks for.
+//
+// It is not invisible, though, and that is what script/m62/verify-suite-coverage.ts is
+// for: a gate in script/m62 that is neither run by the suite, nor on the blocked
+// allowlist, nor declared unresolved in its own header is reported by that gate as a
+// hole in the suite. This header is that declaration. Delete it and the coverage gate
+// goes red — which is the point.
+
 console.log(
   `\n  ${offenders.length} hand-written product type cop${offenders.length === 1 ? "y" : "ies"}.` +
     (offenders.length > 0
