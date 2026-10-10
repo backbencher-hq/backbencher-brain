@@ -441,6 +441,39 @@ outside the population, so the marker is the external claim (owner-verified wher
 NEVER a file claim, because a miss refutes and `extFAIL` must stay 0. Before/after on the same
 population is the next step, with the leaf-reduction count printed beside it.
 
+### Cause 4 — `uses`: the builtin claim CAN miss, so it is NOT written — 29 of 128 sampled edges refute
+
+The proposal was that `uses` is external BY CONSTRUCTION (its label comes from the analyzer's own
+`BUILTIN_ROOTS = {count, each, self, path, terraform}`), so an external claim on it "cannot miss".
+The claim mechanism's own verifier says otherwise, and the check is one line of measurement: a claim
+is REFUTED when the target's OWNER is a declared symbol, so the question is not whether `count.index`
+is a declaration but whether anything in the project is named `count`.
+
+Measured (600-file stride over the 9,329-file population, 16 repos):
+
+| builtin root | `uses` edges | owner declared in the project | verdict |
+|---|---|---|---|
+| `each` | 85 | 0 | safe so far |
+| `path` | 30 | **17 (57%)** | REFUTABLE |
+| `count` | 7 | **7 (100%)** | REFUTABLE |
+| `terraform` | 6 | **5 (83%)** | REFUTABLE |
+| **total** | **128** | **29 (23%)** | a blanket claim would put 29 edges into `extFAIL` |
+
+The refutations are not the verifier misbehaving; they are HCL's own shape. `count = 3` is an
+ATTRIBUTE, and this analyzer publishes attribute keys as symbols, so a project that uses `count`
+declares a symbol named `count`. `include { path = … }` declares `path`. `terraform { … }` declares
+`terraform`. A builtin NAMESPACE and a project DECLARATION can share a spelling, and the owner test
+cannot tell them apart.
+
+So the claim is written for `each` only (zero refutations in the sample) or NOT AT ALL — and the honest
+answer at this size is not at all, because a claim over 128 edges that refutes 29 of them would put
+`extFAIL` above 0 and make the lane's `uses` row look better while adding 29 false externalities to
+the graph. What WOULD justify the full claim is an instrument change, not an analyzer one: the claim
+kind needs a NAMESPACE form — "this target's root is a language namespace, not a declaration" —
+carrying the analyzer's root list as its evidence, so the verifier checks the root against that list
+instead of against the symbol table. That is a shared-gate design change and it is recorded here
+rather than landed unilaterally.
+
 ### A population finding the comparison forced: the gates classify files the indexer never reads
 
 The probe asked production's OWN discovery (`discoverIndexableFiles`) what it would index, and for
