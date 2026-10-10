@@ -373,9 +373,30 @@ export class RealJuliaAnalyzer {
      * look better than it is.
      */
     const pushSym = (s: ASTEngine.UniversalSymbol): void => {
+      // A DECLARATION THAT LIVES IN A SCOPE HAS A QUALIFIED NAME AS WELL AS A BARE ONE, and until
+      // 2026-10-09 it published only the bare one. That is the measured cause of the biggest pure
+      // KEY-SHAPE residual in this lane: every `contains` edge targets its member by bare name, so
+      // a member name that occurs anywhere else in the project (`value`, `name`, `x`, `f`) leaves
+      // the edge ambiguous BY CONSTRUCTION even though the edge's own SOURCE names the owner and
+      // the analyzer has the owner in hand. The incoming gate's resolution model matches a target
+      // against the project's key space of `name + qualifiedName`; with no alias published, there
+      // was no key that could name one member (measured: 0 qualifiedName aliases indexed, and
+      // `contains` 7,162 of 14,329 edges ambiguous).
+      //
+      // The alias is `ownerName.name` — the SAME string the `contains` edge now targets, because an
+      // edge whose target is not a published key resolves to nothing. It is additive: the gate
+      // counts a symbol's alias as THE SAME declaration, never a second one, so no bare-name count
+      // moves.
+      if (s.ownerName && !s.qualifiedName) s.qualifiedName = `${s.ownerName}.${s.name}`
       symbols.push(s)
       this.declaredSymbolKinds.set(s.name, s.kind)
     }
+    /**
+     * The key a `contains` edge targets. It MUST equal the symbol's own `qualifiedName` above, or
+     * the edge names nothing at all — which is worse than the ambiguity it replaces. A member with
+     * no owner keeps the bare name, which is also what its symbol publishes.
+     */
+    const memberKey = (owner: string, name: string): string => (owner ? `${owner}.${name}` : name)
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
@@ -542,7 +563,7 @@ export class RealJuliaAnalyzer {
               ownerName: scope || undefined,
               metadata: { juliaSpecific: true, isBareModule: this.firstNamedChildType(node) === "baremodule" },
             })
-            if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, name, node, 1.0))
+            if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
             activeScope = name
           }
           break
@@ -567,7 +588,7 @@ export class RealJuliaAnalyzer {
             metadata: { juliaSpecific: true, declarationForm: node.type, isMutable: this.hasToken(node, "mutable") },
           })
           declaredTypes.add(name)
-          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, name, node, 1.0))
+          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
 
           // A type's OWN HEAD is not a reference. `struct Circle{T<:Real} <: Shape` names Circle in
           // its own type head, and the `parametrized_type_expression` case below reads that as a
@@ -601,7 +622,7 @@ export class RealJuliaAnalyzer {
               ownerName: name,
               metadata: { juliaSpecific: true, isStructField: true },
             })
-            relationships.push(this.rel(name, ASTEngine.RelationshipType.Contains, field.name, field.node, 1.0))
+            relationships.push(this.rel(name, ASTEngine.RelationshipType.Contains, memberKey(name, field.name), field.node, 1.0))
           }
           break
         }
@@ -650,7 +671,7 @@ export class RealJuliaAnalyzer {
             ownerName: scope || undefined,
             metadata: { juliaSpecific: true, isMacro, hasBlockBody: !!this.firstNamedChildOfType(node, "compound_statement") },
           })
-          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, name, node, 1.0))
+          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
           activeScope = name
           // BD8b: a declaration that REPLACES an earlier one with the same (name, signature) — the
           // only sense in which julia has an override. See `overrideEdgeFor` for the edge shape and
@@ -700,7 +721,7 @@ export class RealJuliaAnalyzer {
           // not invoke it. The node is recorded so the call case can tell a declaration site from
           // an invocation, which is a distinction the tree does not make on its own.
           this.declSites.add(lhs.id)
-          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, name, node, 1.0))
+          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
           // The short form is the form the corpus prefers, so the `overrides` pre-pass admits it
           // too: measuring only `function … end` would have missed every `f(x) = …` redefinition,
           // which is most of them. Same edge, same refusal rules — see `overrideEdgeFor`.
@@ -766,7 +787,7 @@ export class RealJuliaAnalyzer {
             ownerName: scope || undefined,
             metadata: { juliaSpecific: true, binding: node.type.replace("_statement", "") },
           })
-          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, name, node, 1.0))
+          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
           break
         }
 
