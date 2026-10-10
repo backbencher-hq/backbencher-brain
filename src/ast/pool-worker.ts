@@ -1743,17 +1743,41 @@ process.on("message", async (msg: any) => {
       return dot <= 0 ? "" : base.slice(dot).toLowerCase()
     }
     const contextFor = (filePath: string): ASTEngine.AnalyzeContext | undefined => {
-      if (indexCache === null) return undefined
+      const root = String(projectPath ?? "") || undefined
+      // THE ROOT DOES NOT COME FROM THE INDEX, so neither guard may gate it. This function used to
+      // return `undefined` unless a PROJECT INDEX existed for the extension — and `indexCache` is
+      // `null` unless the worker was handed indexes at all, which happens only for languages with an
+      // index spec (`INDEX_SPECS` carries `dart` alone). So for every other language production
+      // handed the analyzer NO CONTEXT, and with it no `projectRoot`.
+      //
+      // Found by json-lane (2026-10-10, `6fc778018`) and measured on both sides: the store held json
+      // qualified names UNSCOPED (`11152[3].fileSize`; 39 symbols across 39 files all named
+      // `functions` with qualified name `functions`) while the gate and every census — which pass
+      // `projectRoot` explicitly — measured them SCOPED (`data.json.11152[3].fileSize`). **The two
+      // instruments were therefore measuring DIFFERENT KEY SPACES**, and every cross-file collision
+      // the document scope exists to prevent was present in production and absent from the model.
+      // It also explains why the store binds these edges so readily: `resolveTargetStmt` matches
+      // `s.name` with `LIMIT 1`, and unscoped names collide heavily, so the tie-break decides far
+      // more often than the gate's numbers suggest.
+      //
+      // NOT json-specific: any lane whose language has no index spec was indexed without a root, so
+      // every analyzer deriving identity from `projectRoot` published one spelling to the gate and
+      // another to the store. Those analyzers are dart, json, php, toml, typescript and yaml — and
+      // dart is the only one with an index spec, so the other five are the blast radius.
+      //
+      // SAFE BY TYPE, not by hope: `AnalyzeContext.projectIndex` is OPTIONAL and ADDITIVE — "an
+      // analyzer that does not read this field behaves exactly as it did before it existed, byte for
+      // byte" — so a context carrying only a root cannot break a reader that wants an index.
+      //
+      // M60 yaml lane (2026-10-09), whose note follows, added `projectRoot` riding the index; the
+      // index was never the right carrier. `projectPath` is in the `parse_batch` message
+      // (`pool-worker.ts:1703`) and was until now passed only to `parseFile`'s second argument,
+      // where no analyzer could see it.
+      if (indexCache === null) return root === undefined ? undefined : { projectRoot: root }
       const ext = extnameOf(filePath)
       const built = indexCache.get(ext)
-      if (built === undefined) return undefined
-      // M60 yaml lane (2026-10-09): `projectRoot` rides the same context as the index, and
-      // for the same reason — a per-file analyzer cannot answer a question about where the
-      // file sits WITHOUT being told. `projectPath` is already in the `parse_batch` message
-      // (`pool-worker.ts:1574`) and was until now passed only to `parseFile`'s second
-      // argument, where no analyzer could see it. Additive: a caller that supplies no root
-      // gets exactly the pre-existing behaviour.
-      return { projectIndex: built, projectRoot: String(projectPath ?? "") || undefined }
+      if (built === undefined) return root === undefined ? undefined : { projectRoot: root }
+      return { projectIndex: built, projectRoot: root }
     }
     // 45s per-file self-timeout; env-configurable (BB_FILE_TIMEOUT_MS) so
     // deterministic crash/timeout fixtures die fast (M21.W1).
