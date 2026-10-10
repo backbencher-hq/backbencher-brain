@@ -217,16 +217,39 @@ raw [`verify-chain.txt`](../../validation/m14/fixtures/xml/verify-chain.txt)):
    the project), so the refusal rests on the analyzer's X13 label — the value may not be a reference
    at all — and its falsifier (a probe showing all 12 are real external references) is **not run**.
 
-**The 1.83× `contains` factor — narrowed, still open, with the next probe named**
-([`emitted-vs-stored.mts`](../../validation/m14/fixtures/xml/emitted-vs-stored.mts)): reproduced at
-**4,375 emitted vs 7,649 stored = 1.748×**; `calls`/`imports` 1.0, `references` 0.91. The
-parse-ordering hypothesis is **refuted** (identical counts before and after the index) and so is
-row-id duplication. What is established: the excess is store-side and `contains`-only, and the store
-holds **6,704 distinct (source, target, line) triples** against 4,375 emitted edges — more triples
-than edges. The settling probe runs the indexer **in-process over one file with a hook on the
-relationship insert**, recording each inserted row beside that file's own `analyze()` array, which
-decides between "one edge inserted more than once with different source bindings" and "the pool path
-emits more than direct `parseFile`".
+**The 1.83× `contains` factor — RESOLVED, and it is a shared-indexer defect, not an instrument
+artifact** ([`insert-hook-finding.json`](../../validation/m14/fixtures/xml/insert-hook-finding.json),
+[`emitted-vs-stored.mts`](../../validation/m14/fixtures/xml/emitted-vs-stored.mts)): reproduced at
+**4,375 emitted vs 7,649 stored = 1.748×** (`calls`/`imports` 1.0, `references` 0.91).
+
+The indexer synthesizes one owner→owned `contains` row per owned symbol (`parallel-indexer.ts`
+#756/M51.A1, `:3955-3984`, flushed `:4208-4213`) and guards it against double-writing with a
+`containsPairs` set — **but the set is built with BOTH ends leaf-reduced**
+(`containsPairs.add(`${srcLeaf} ${tgtLeaf}`)`, regex at `:3651-3659`) **while the lookup reduces only
+the owner and leaves the child raw** (`containsPairs.has(`${ownerLeaf} ${symbol.name}`)`, `:3971`).
+For any name containing a colon the two keys differ by construction, the guard never fires, and a
+containment edge the analyzer already emitted is written a second time. XML is the extreme case
+because prefixed names (`xsl:template`, `doc:reference`) are the norm.
+
+Proven to the edge on one file — `tests/docbook/common/common.xsl`: analyzer **294** contains edges,
+store **511**, difference **217**, and replaying the indexer's own two regexes over the symbol table
+predicts **217** owned symbols whose lookup key is missing from the leaf-reduced set, **all 217
+colon-named**. Prediction == measurement, exactly
+([`insert-hook.json`](../../validation/m14/fixtures/xml/insert-hook.json) `counts.synthesizedPredicted`
+vs `counts.storedContainsMinusAnalyzer`).
+
+*Why the hook itself recorded nothing:* the store runs in **worker threads**, where a main-thread
+`better-sqlite3` patch is invisible (`insertedTotal: 0` while 511 rows appeared). That is worth
+keeping — any probe that patches the driver in the main thread sees no inserts. The answer came from
+the store side plus the indexer's own regexes.
+
+**Impact, stated both ways.** This lane's four clauses do not move: the gate is a key-space model
+over analyzer output and never reads the store, and a duplicated row repeats the same (owner, child)
+pair, so no binding verdict changes. Fleet-wide, **every lane whose symbols carry a colon gets
+duplicate containment edges** — the condition is mechanical, so it can be checked per lane by
+counting colon-named owned symbols. The fix belongs in `src/ast/parallel-indexer.ts` (make the two
+key shapes agree, or key the pair set on resolved ids); that file is not this lane's to edit, so it is
+**reported, not fixed**.
 
 **Single-run dependence:** the gate rows were reproduced identically by two whole-population runs at
 this revision, so clauses 1/2/4 do not rest on one run. Every **store**-derived figure does — the
