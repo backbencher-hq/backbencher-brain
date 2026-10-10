@@ -5642,6 +5642,15 @@ because `extension on String` was being read as a declaration of a type named `o
 only asserts the happy path would have let that through. Its full-population run is chained behind
 arm9 (`cause-claim-oracle-arm9.log`).
 
+**AND ITS (b) CLASS NAMES THE CHEAPEST REMAINING INDEX-FREE LEVER, which is a new finding rather
+than a category.** 37 of dart-http's 246 claims (15 %) name a base the emitting file IMPORTS: the
+analyzer already reads files from disk for its pubspec facts, so resolving ONE hop — publishing the
+imported file's declarations — would close those rows with no project index at all, and the class is
+measurable per project (`(b)`'s share of the claims column) before anything is built. It is not
+built here: every candidate change of this size gets its price measured first, and the price for
+this one is the oracle's own (b) column over the whole population, which the arm9-chained run
+produces.
+
 ### Two avenues CLOSED with measurements, so they stop being listed as next steps
 
 - **The `libraryScopeCallee` collisions have no spelling fix.** The imports round's mechanism —

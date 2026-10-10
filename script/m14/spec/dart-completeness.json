@@ -437,7 +437,7 @@
         "node_type": "selector + argument_part (named construction)",
         "status": "FIXED",
         "question": "First review: `Foo.named()` emitted a dangling calls->named (no such method exists; constructors are literally named 'constructor') while bare `Foo()` correctly instantiated. Same for prefix `p.Foo()` (calls->Foo) and tear-off `Foo.named` (silent).",
-        "resolution": "Receiver-chain walk: capitalized head + in-file named ctor (constructor-symbol knowledge) instantiates the class and drops the leaf call; prefix-qualified capitalized methods instantiate (generated mock code builds this way); static methods (C.create) and unknown cross-file X.y() stay leaf calls. Tear-offs of known named ctors instantiate. Gated by fixture dart/member-value-reads + mutants dart/named-ctor-leaf-call, dart/prefix-ctor-as-call.",
+        "resolution": "Receiver-chain walk: capitalized head + in-file named ctor (constructor-symbol knowledge) instantiates the class and drops the leaf call; prefix-qualified capitalized methods instantiate (generated mock code builds this way); static methods (C.create) stay calls. Tear-offs of known named ctors instantiate. Gated by fixture dart/member-value-reads + mutants dart/named-ctor-leaf-call, dart/prefix-ctor-as-call. THE LEAF-CALL HALF OF THIS RULE IS SUPERSEDED by DT-RS (2026-10-10): 'unknown cross-file X.y() stays a leaf call' is no longer the rule — the owner is now SPELLED and carries a declared cause. The fixture's pin moved from `calls m -> y` to `calls m -> X.y`, and the old leaf shape is a forbid row beside it.",
         "issue": "M49.DT1 dart first review"
       },
       {
@@ -469,7 +469,7 @@
         "node_type": "conditional selector chains (investigated, no defect)",
         "status": "RULED",
         "question": "First review: does `a?.b.c()` fabricate calls->b (conditional link read as invocation)? The battery initially suggested it.",
-        "resolution": "No defect \u2014 direct probe shows calls->c only on both sides (the three-selector chain resolves the leaf correctly). Pinned as calls->bump in the fixture to lock the conditional-invocation shape.",
+        "resolution": "No defect \u2014 direct probe shows calls->c only on both sides (the three-selector chain resolves the leaf correctly). Pinned as calls->bump in the fixture to lock the conditional-invocation shape; the pin moved to `calls -> A.bump` on 2026-10-10 under DT-RS (the receiver's type is named, so the target carries it), which is a target change and not a shape change \u2014 the conditional-invocation shape this entry settled is unchanged.",
         "issue": "M49.DT1 dart first review"
       },
       {
@@ -479,6 +479,14 @@
         "question": "First review: member reads were invisible on both sides (this./obj./static/conditional access, cascade getters, subscript bases, interpolation) \u2014 the managed-OO family contract (csharp CS-R1, objc OC-E) unimplemented, lanes blind by circular consistency.",
         "resolution": "Reads emit uses@0.9 on both sides: argument-less selectors (callee links, plain-= LHS writes and builtins excluded), argument-less cascade selectors (cascade `=` assigns excluded), subscript bases (index-selector shapes incl. assignable-expression targets; declaration names bind via =-position rule), and string interpolation (template-substitution blanket + $x placeholders, labels excluded). Unqualified bare value reads (RHS, args, returns, conditions) need scope inventory and defer to review 2. Gated by fixture (14 uses pins, 1 write forbid) + 4 mutants.",
         "issue": "M49.DT1 dart first review"
+      },
+      {
+        "id": "DT-RS",
+        "node_type": "selector head whose receiver type the run can NAME but not see (X.y(), a?.bump(), a local declared with an explicit type)",
+        "status": "FIXED",
+        "question": "The receiver-availability cut measured 126,295 `calls` and 150,088 `uses` rows whose target stayed a bare member because the receiver's type was not visible in the file, and in most of them the run HELD the type's name. Was the leaf the honest spelling, or was the name?",
+        "resolution": "THE NAME. The target becomes `<Type>.<member>` and carries `baseBeyondRunScope: <Type>` \u2014 the declared cause whose contract is 'the run that wrote this edge could not look the owner up', which the gate reads ONLY where the target names nothing, so the spelling can never buy a resolution with an exemption. Priced per row against the gate's own key space before adopting: calls +45,861 ambiguous->resolved against -3,892 resolved->unresolved; uses +63,585 against -3,563; 55,973 rows that resolve neither way become a named bucket-3 population; 41,887 stay ambiguous even spelled (two files declaring the same owner AND member). LOWER-CASE HEADS KEEP THE LEAF: a value whose declared type the run did not resolve names no type at the site, so there is nothing to spell. Gated by fixture dart/receiver-spelling (the spelling, its claim, and the boundaries: lowercase head, visible type that rescinds it, visible type that does not declare the member) plus the updated dart/member-value-reads, dart/unknown-endpoint-r7, dart/payload-and-complexity and dart/receiver-cause, with four mutants (revert the spelling; spell lowercase heads; spell without the claim; spread to the receiverMemberOutsideRun branch). THIS ALSO SUPERSEDES R7's suppression of `RemoteFailure.unknown(...)` (`dart/unknown-endpoint-r7`): the row returns with its OWNER named, while R7's rejected alternatives (`load calls RemoteFailure`, the `instantiates` promotion) and the bare `unknown` endpoint stay forbidden \u2014 the change names the constructor, never the type alone. Corpus measurement: arm9, against arm8's before-table.",
+        "issue": "2026-10-10 receiver-type spelling"
       },
       {
         "id": "DT-R1",
