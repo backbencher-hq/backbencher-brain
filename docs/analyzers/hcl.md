@@ -10,8 +10,8 @@ it), 1,645,992 **named** nodes. Counted by `validation/m14/fixtures/hcl/tools/co
 artefact `validation/m14/fixtures/hcl/construct-census.current.json`. The walk visits **named**
 children only, so this node count is not comparable with a count that includes anonymous tokens.
 
-**Declared row.** `hcl 7/9 from=spec coverage block` — closure `7 implemented + 0 unexercised +
-2 gaps = 9 applicable = 10 − 1 grammar-absence − 0 unclassified`.
+**Declared row.** `hcl 8/9 from=spec coverage block` — closure `8 implemented + 0 unexercised +
+1 gap = 9 applicable = 10 − 1 grammar-absence − 0 unclassified`.
 
 ---
 
@@ -46,7 +46,7 @@ both in the spec, both measured.
 |---|---|---|---|
 | `calls` | **implemented** | 12,988 `function_call` nodes over 148 distinct callees; exactly **1** declaration of the shape the analyzer reads (`function "bindir"`, `docker/docker-bake.hcl`), the only shape that yields a resolvable edge; **4 corpus edges on 1 file** (ontology-gate fresh walk today, and the prior whole-corpus census) | numerator |
 | `overrides` | **implemented** | **72** blocks named `override*` in 34 files; **71** of the three kinds the analyzer reads in 33 files, **68** carrying a `target`; **68 corpus edges** (gate's fresh walk today) | numerator |
-| `extends` | **GAP — stays IN** | **44** `inherits` sites in **8** docker-bake files naming **53** parents, **53 resolved** to a `target` declared in the same file, **0 unresolved** | gap; denominator 9 |
+| `extends` | **implemented** (HCL-D10, 2026-10-09) | **44** `inherits` sites in **8** docker-bake files naming **53** parents, **53 resolved**, **0 unresolved**; **53 `extends` edges** emitted, 53/53 binding to a declared `target` — label limit measured: 16 of 44 children re-declare an inherited key, so this is merge-reuse, not a subtype hierarchy | numerator |
 | `implements` | **grammar-absence — leaves** | **0 of 18** declaration-shaped node types produced; **0 of 455** distinct block types and **0 of 5,311** distinct attribute keys name one; the only candidate keyword `protocol` has **162 sites in 50 files** and every captured site is data (ALB/SG/enos network protocol or a matrix value) | denominator −1 |
 | `instantiates` | **zero-sites — stays IN** | **3,932** resource/data blocks over **444** distinct type labels; **0** labels declared as an address anywhere in the corpus; the **2** `new` attribute-key sites are data attributes in terraform fixtures | gap; denominator 9 |
 
@@ -73,6 +73,24 @@ own first report to the Lead (and the replacement decision I had drafted) said `
 grammar-absence, on the strength of instrument A. The attribute-key inventory refuted it, and the
 smaller honest denominator is what this page reports.
 
+**Then the gap was closed, and its label's limit was measured with it (HCL-D10).** The analyzer now
+reads `inherits` inside a `target` block and emits one `extends` edge per DECLARED parent, resolved
+after the DFS because docker-bake.hcl's own `binary-cross` inherits `_platforms`, declared BELOW it;
+an unresolved parent publishes nothing, because a dangling `extends` is worse than a missing one.
+Measured: **53 edges over the 8 files, 53/53 binding to a declaration in the same file, 0
+unresolved** — and the gate's hcl row moved from `extends FALSIFIED` to `extends EMITTED 53 edges`.
+The fixture `validation/m14/fixtures/hcl/docker-bake-inherits.tf` was authored BEFORE the change and
+its pre-change run is recorded as **11 pass / 1 fail**; after the change the suite is **12/12**.
+
+The label's limit, stated rather than hidden: `inherits` **merges** definitions, so `extends` here
+asserts reuse-of-a-declaration, not a subtype hierarchy — **16 of the 44** inheriting targets
+re-declare at least one key they also inherit, and 25 of the 53 parent occurrences are abstract bases
+by docker-bake's leading-underscore convention while the rest are functional targets. `extends` is
+the house label for exactly this shape (the yaml lane labels `<<: *base` merge-key reuse `extends`),
+the relation is between declarations, and a change to the parent does propagate to the child. NOT
+published, and therefore declared: a child's re-declaration of an inherited key is **not** a separate
+`overrides` edge (16 sites).
+
 `implements` survives the same test with the opposite result, which is what makes the test a test:
 the only keyword a DSL could have used, `protocol`, occurs 162 times and every captured site is a
 network-protocol value. No corpus construct expresses contract satisfaction, and the grammar
@@ -85,7 +103,7 @@ to 40 sites per word with file:line and text):
 
 | word | sites / files | adjudication |
 |---|---|---|
-| `inherits` | 44 / 8 | **real**: docker-bake target inheritance; 53/53 parents resolve → `extends` GAP |
+| `inherits` | 44 / 8 | **real**: docker-bake target inheritance; 53/53 parents resolve → `extends` EMITTED (53 edges, HCL-D10) |
 | `protocol` | 162 / 50 | data: `protocol = "HTTP"`, `"tcp"`, `matrix.protocol` → not `implements` |
 | `new` | 2 / 2 | data: `new = "a_override new"` in terraform test fixtures → not `instantiates` |
 | `override` | 7 / 7 | data: packer provisioner override maps, tflint fixtures → not an override block |
@@ -130,21 +148,21 @@ scan — reported to the Lead, not touched from this lane.
 
 `script/m14/spec/hcl-completeness.json` → `coverage`:
 
-- **implemented (7):** `calls`, `contains`, `exports`, `imports`, `overrides`, `references`, `uses`
+- **implemented (8):** `calls`, `contains`, `exports`, `extends`, `imports`, `overrides`, `references`, `uses`
 - **excluded (2):** `implements` = `grammar-absence` (0 of 18 / 0 of 455 / 0 of 5,311, with `protocol`
   162 data sites); `instantiates` = `zero-sites` (3,932 blocks / 444 labels / 0 declared)
 - **corpusUnexercised (0)** — `calls` and `overrides` are exercised corpus-wide (4 and 68 edges), so
   they are declared implemented and explained, not parked as unexercised
-- **gaps (2, still in the denominator):** `extends` (HCL-G1), `instantiates` (HCL-G2), both with a
-  falsifier; `gap.gaps` now carries them so the spec and the board's derived column agree
+- **gaps (1, still in the denominator):** `instantiates` (HCL-G2), with a falsifier; `gap.gaps`
+  carries it plus HCL-G1 marked CLOSED, so the spec and the board's derived column agree
 
 Instrument readings, verbatim:
 
 ```
 npx tsx script/m14/coverage-block-gate.ts
-hcl          yes       7     9     2     calls overrides                          -
+hcl          yes       8     9     2     calls extends overrides                  -
 BB_BOARD_FIRING=validation/m14/results/firing-laptop-b.current.log bun script/m14/language-board.ts --coverage
-hcl          7/9  from=spec coverage block
+hcl          8/9  from=spec coverage block
 npx tsx script/m14/ontology-coverage-gate.ts hcl --fresh     # BEFORE the space check (see §6)
 emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
   calls 4 edges in 1+ files · overrides 68 edges · extends/implements/instantiates RULED-SOUND via #HCL-D1a
@@ -153,6 +171,11 @@ key spaces: 35,627 key/value bindings observed over 4047 files (top node types a
 attestation hcl: … VERIFIED nodeTypes=64, blockTypes=455, attributeKeys=5311, extends.constructSites=44
 emitted 7/10   ruled-sound 2   FALSIFIED 1   ruled-without-justification 0
   extends FALSIFIED (44 attested sites) · implements/instantiates RULED-SOUND with the attestation
+npx tsx script/m14/ontology-coverage-gate.ts hcl --fresh     # AFTER HCL-D10 landed
+  extends EMITTED 53 edges · calls 4 · overrides 68
+emitted 8/10   ruled-sound 0   FALSIFIED 0   ruled-without-justification 0   ruled-unknown 2
+npx tsx script/m14/run-fixtures.ts --lang hcl                # before HCL-D10: 11 pass / 1 fail; after:
+summary: {"hcl":{"pass":12,"fail":0}}
 ```
 
 ## 6. The shared gate had the same blind spot — reproduced, fixed, and its fleet effect measured
@@ -268,10 +291,13 @@ about a file the analyzer never read, and withholding the certificate is the hon
    `ERROR` still the one runtime node).
 4. **Recall / precision 0.999931 / 1.000000** belong to the previous 9,079-file population and were
    not re-measured on this one.
-5. **`extends` is measured, not fixed.** The analyzer still emits no `extends` edge; HCL-G1 records the
-   fix shape (a `target`-scoped `inherits` reading), and the ontology gate now fails this lane because
-   of it. The `func` spelling of user-defined functions (0 corpus occurrences) and cross-file function
-   resolution (0 sites) remain the analyzer's declared limitations.
+5. **`extends` is emitted, and its label is a judgment the Lead may overrule.** HCL-D10 publishes 53
+   `extends` edges for docker-bake `inherits`; the relation is a MERGE (16 of 44 children re-declare an
+   inherited key), labelled `extends` on the yaml merge-key precedent. If a reviewer reads that as an
+   overstatement, the honest alternative is to reopen HCL-G1 and unpublish the edges — the measurement
+   needed for that decision is in HCL-D10 and needs no new run. The `func` spelling of user-defined
+   functions (0 corpus occurrences) and cross-file function resolution (0 sites) remain the analyzer's
+   declared limitations.
 6. **`module` blocks are not `instantiates`.** A `module "x" { source = "./child" }` is published as
    `imports` (target = the source string). Whether module instantiation should also be an
    `instantiates` edge is not settled by this census; HCL-G2's falsifier is the test that would
