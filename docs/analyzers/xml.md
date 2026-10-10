@@ -31,9 +31,16 @@ lane's residual **6.0% → 4.7%**, with `extFAIL` 0 at every step. What is left 
 and the ambiguity of `references`/`calls`/`extends`.
 
 > `contains` is 189,310 resolved of which **183,888 (97.1%) are resolved AMONG A COLLISION** — the
-> tie-break chose the row. The gate prints that as an upper bound on arbitrary bindings, not a count
-> of wrong ones; only the store can split it (the indexer measures 37,318 of 49,729 such picks as
-> wrong). That is the honest next question on this type, after `extends`.
+> gate's upper bound, because both resolvers put the edge's own file second. **The exact test has
+> now been run** ([`contains-intent.json`](../../validation/m14/fixtures/xml/contains-intent.json)):
+> of 189,310 containment edges, **189,305 are `intended`** — a declaration in the edge's OWN FILE,
+> ON the edge's own line — with **`twin` 0** (no wrong-file binding) and **`noDecl` 0**; 5 are
+> same-file but off-line. `contains`'s 0.0% residual is therefore genuine and quotable at 99.997%
+> determinate. One caveat is kept rather than closed: `twin` means "nothing in the own file
+> answers", which is weaker than "the store bound it elsewhere" — on libxslt the store probe
+> measured 8.5% `boundOtherFile` (3,320 rows), and that disagreement is not resolvable from this
+> lane (candidates: the disclosed 1.83× row-count anomaly, the eager insert-time resolver, and row
+> duplication — none of them tested here).
 
 The board carried `93.9%` earlier the same night. Both halves of that number were wrong, and each
 became a fleet fix:
