@@ -71,6 +71,10 @@ import { R_RULED } from "./r-ruled"
 import { GRAPHQL_RULED } from "./graphql-ruled"
 import { DART_RULED } from "./dart-ruled"
 import { POWERSHELL_RULED } from "./powershell-ruled"
+// M60 json lane: the lane's MEASURED table, imported like the 18 above. `json-ruled.ts` says it
+// restates the `Ruled` shape "once the supervisor adds the wiring" — this is that wiring, and
+// until it landed the gate read an inline copy instead (see the deleted block below).
+import { JSON_RULED } from "./json-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
@@ -201,64 +205,47 @@ const BASH_RULED: Ruled[] = [
 ]
 
 /**
- * json's seven non-emitted types, each with the construct it would need.
+ * WHERE A LANE'S RULINGS COME FROM, and why json is not inline here.
  *
- * The bash table above is unchanged and still bash's. The two lanes disagree in the
- * most informative way available: bash emits 7 of 10 and rules 3 on a grammar
- * inventory of 164 node types, while json emits 3 of 10 and rules 7 on an inventory of
- * 26 — and the difference between the two is exactly what each language has. Same
- * ontology, same gate, opposite verdicts, and neither is arbitrary.
+ * Every other lane's table is imported from its own `<lang>-ruled.ts` — the lane that MEASURED it
+ * writes it, because a ruling table encodes that lane's corpus probe and its counts, and a central
+ * copy goes stale the moment the lane learns something. json was the exception: the gate carried
+ * an inline five-entry table (ruling `calls`, `implements`, `instantiates`, `overrides`, `imports`
+ * on grammar inventories) while `script/m14/json-ruled.ts` carried the lane's real one, which rules
+ * `instantiates` and nothing else. Two consequences, both measured:
+ *
+ *  1. **The citation was false.** `rulingFor()` labels every ruling `script/m14/<lang>-ruled.ts
+ *     (RULED_BY_LANG.<lang>)`, so the table above printed a verdict citing a file the gate had
+ *     never read. `json-ruled.ts` anticipated exactly this — it restates the `Ruled` shape
+ *     "once the supervisor adds the wiring".
+ *  2. **The stale entries were armed against a regression.** For a type that stops being
+ *     emitted, the gate falsifies a grammar-inventory ruling only if the grammar actually produces
+ *     one of that ruling's declared node types. json's grammar has no `implements_clause`, so had
+ *     `implements` regressed the gate would have printed RULED-SOUND and exited 0 — while the
+ *     corpus carried 113 `implements` edges, all in
+ *     `dart-sdk/third_party/pkg/language_server_protocol/lsp_meta_model.json`. That is the exact
+ *     failure `json-ruled.ts` records having already happened once ("the gate reported RULED-SOUND
+ *     on this type against a grammar that had never heard of a keyword, and the corpus carried 113
+ *     edges' worth of the construct the whole time"). The lane fixed the emission and left the trap
+ *     armed. With the lane's own table the same regression reads RULED-UNJUSTIFIED and turns the
+ *     gate red, which is the correct outcome.
+ *
+ * The deleted table's fifth entry, `imports`, was NOT one of the four unsound ones and is recorded
+ * separately because the distinction matters. It was instrument B with a live `countOnTree` probe
+ * and a real corpus measurement — sound, falsifiable evidence, ruling that a file-to-file `$ref`
+ * occurred 0 times over a 3,334-file corpus. It is gone because its PREMISE was overtaken, not
+ * because its reasoning was bad: the analyzer now implements manifest dependencies as `imports`
+ * (82 edges, measured below, in `package.json` files), which is the same turn the inline comment
+ * beside `exports` already recorded — "a grammar cannot see a CONVENTION, and a Node manifest's
+ * `exports`/`main`/`bin` are conventions written as ordinary object keys". Re-admitting it would
+ * re-arm a ruling whose subject the analyzer now emits.
+ *
+ * Whole-corpus measurement on the wired gate, 14,012 of 14,016 admitted files (4 degraded by the
+ * regex fallback and excluded from EMITTED, named by the gate):
+ *
+ *   emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
  */
-const JSON_RULED: Ruled[] = [
-  { type: "implements", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["implements_clause", "extends_clause", "superclass"], describe: "a supertype clause" },
-  { type: "instantiates", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["new_expression", "object_creation_expression", "constructor_invocation"], describe: "a constructor call" },
-  { type: "overrides", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["redefinition", "override_specifier"], describe: "a second declaration replacing a prior one" },
-  // `exports` WAS here and was removed: it was ruled on a grammar inventory ("no
-  // export_statement node") and that is the same unsound reasoning that produced the
-  // wrong `imports` ruling. A grammar cannot see a CONVENTION, and a Node manifest's
-  // `exports`/`main`/`bin` are conventions written as ordinary object keys. The audit
-  // found 1 of 36 manifests carrying `exports`, so the mass is small and the
-  // principle is not: it is emitted now, and the gate re-measures rather than
-  // trusting this note.
-  // `calls` stays ruled: json has no functions to call, and no convention supplies
-  // one. It is listed so the gate reports on all ten types.
-  { type: "calls", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["function_definition", "method_definition", "call_expression"], describe: "a function definition or call" },
-  {
-    // `imports` is the one that is NOT settled by the grammar, and it is worth
-    // stating why. The grammar has no import node, but that is the wrong question:
-    // an EXTERNAL $ref to another file on disk is a file dependency whatever the
-    // grammar calls it, and the grammar cannot see it because it is a STRING.
-    // So this was measured instead: across the whole 3,334-file corpus, 0 of the
-    // external $refs point at another file — 38 name a URL (a JSON-Schema draft
-    // identifier, i.e. a vocabulary reference) and 12 name something else. There is
-    // no file-to-file $ref to import, so the type has nothing to carry.
-    type: "imports",
-    instrument: "B:parse-tree-count",
-    countOnTree: (root, fileLabel, hits) => {
-      // ONLY the value of a `$ref` key. The first version scanned every `string` in
-      // the document, and it reported the construct 2,651 times across 103 files — of
-      // which the examples were `MANIFEST.json: FILES.json`, a filename sitting in a
-      // `files` array. That is not a $ref, it is a list of files a collection ships,
-      // and the gate correctly refused to accept my measurement: it said the ruling
-      // was falsified by evidence I had manufactured. A probe that matches a SHAPE
-      // rather than a ROLE produces a number, and the number is worth nothing.
-      walkPreorder(root, (n: any) => {
-        if (n.type === "pair") {
-          const k = n.childForFieldName?.("key")
-          const keyText = String(k?.namedChildren?.find((c: any) => c.type === "string_content")?.text ?? "")
-          if (keyText === "$ref") {
-            const v = n.childForFieldName?.("value")
-            const inner = String(v?.text ?? "").replace(/^["']|["']$/g, "")
-            if (!/^https?:\/\//.test(inner) && /\.(json|jsonc|json5|ya?ml|avsc|avdl|proto)(#[^"']*)?$/.test(inner)) {
-              hits.push(`${fileLabel}: ${inner.slice(0, 60)}`)
-            }
-          }
-        }
-      })
-    },
-    describe: "a $ref naming another FILE on disk — a file-to-file dependency",
-  },
-]
+
 
 // Resolved to the UNION — see the note at the imports above. A registry conflict is
 // always "both sides added a lane"; taking one side deletes the other's ruling table
