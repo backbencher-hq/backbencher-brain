@@ -356,24 +356,29 @@ function lastPathSegment(p: string): string {
 // ─────────────────────────────────────────────────────────────────────────────────────────
 
 /**
- * The worker's own garbage rule, and why it constrains what this lane may publish.
+ * THE WORKER BUDGET THAT USED TO CONSTRAIN THIS LANE, and why the guard it forced is RETIRED.
  *
- * `src/ast/pool-worker.ts` `filterNoiseRelationships` drops any target longer than 200
- * characters ("Block garbage targets: source code snippets, malformed names"), and it runs on
- * the analyzer's output on the way to the index. A file-scoped target is longer than the bare
- * one it replaces, so a selector that fits the budget bare can cross it qualified — measured on
- * the 60-file stride: 46 `contains` edges crossed the budget and were DELETED on the way to the
- * index (bare target <= 200, qualified > 200; 318 more were already over it bare and are
- * unaffected; 0 were dropped for any other reason).
+ * Until 2026-10-10 `src/ast/pool-worker.ts` `filterNoiseRelationships` dropped any target longer
+ * than 200 characters, and it runs on the analyzer's output on the way to the index. A
+ * file-scoped target is longer than the bare one it replaces, so a selector that fit the budget
+ * bare could cross it qualified — measured on the 60-file stride: 46 `contains` edges crossed
+ * the budget and were DELETED (bare <= 200, qualified > 200; 318 more were already over it bare;
+ * 0 for any other reason). This lane therefore refused to qualify a target that would cross it,
+ * which kept the change lossless at the price of a visible residual.
  *
- * So the rewrite REFUSES to qualify a target that would cross the budget and leaves the bare
- * name standing: the edge stays published and stays ambiguous — a visible residual of ~468
- * edges over the whole population rather than 468 silently missing PREDICATES. The constant is
- * pinned against the shared function itself, with a control that fails, by
- * `validation/m14/fixtures/css/qualified-target-compat.ts` — if the worker's budget ever moves,
- * that check says so instead of this lane quietly deleting edges again.
+ * THAT TRADE IS NO LONGER NEEDED. The budget now applies to the target's LEAF, where the intent
+ * always was — a code SNIPPET is long in its leaf, a qualified name is long in its SCOPE — and
+ * `pool-worker.ts` records this lane's measurement as the reason. The leaf of a
+ * `<scope>::<name>` target is the bare name's own leaf, unchanged by the prefix, so qualification
+ * cannot move a target across that line at all. The guard is retired rather than kept "for
+ * safety": while it stood it held edges on the BARE spelling, which is exactly the ambiguity
+ * CSS-D15 exists to remove, and the gate's `ofWhich` column (resolved, but bound among a
+ * collision) is where that cost was visible.
+ *
+ * `validation/m14/fixtures/css/qualified-target-compat.ts` still asserts, against the shared
+ * function itself and with a control that fails, that a qualified target survives the worker's
+ * filter — which is what caught the budget moving in the first place.
  */
-const CSS_QUALIFIED_TARGET_BUDGET = 200
 
 /** The checkout root above `filePath`, memoised per directory; null when there is no `.git`. */
 const CSS_PROJECT_ROOT_CACHE = new Map<string, string | null>()
@@ -1318,9 +1323,6 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (covering.length !== 1) continue
         pick = covering[0]
       }
-      // Rule 3: never hand the worker a target its own garbage rule will delete — see
-      // CSS_QUALIFIED_TARGET_BUDGET. The bare name stays, and the edge stays published.
-      if (pick.qname.length > CSS_QUALIFIED_TARGET_BUDGET) continue
       rel.target = pick.qname
     }
   }
