@@ -12,14 +12,29 @@
     "total": 7,
     "caught": 7
   },
-  "currentCommit": "b5ea6a8b6ff3fc27d67cadba9083ed8bce0da271",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "79e496b4808663b930e6ccea9e1160b8d1bc34c8",
+  "sourceFingerprint": "79d161aaabae9ce2784ef666151820cdeac688e8260bb522e1500737b34e4f5e",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m55/verify-relations.ts",
+    "src/brain/database.ts",
+    "src/lsp/graph_usages.ts",
+    "src/lsp/hover.ts",
+    "src/lsp/navigation.ts",
+    "src/lsp/relations.ts",
+    "src/lsp/rich_hover.ts",
+    "script/m55/lsp-wire.ts",
+    "script/m55/t3-fixture.ts"
+  ],
+  "workingTreeRelevantChanges": [
+    "script/m55/verify-relations.ts"
+  ],
   "verifierCommand": "npx tsx script/m55/verify-relations.ts",
   "evidenceFile": "T3.json",
-  "generatedAt": "2026-10-05T17:58:32.087Z",
+  "generatedAt": "2026-10-10T01:12:25.150Z",
   "fixture": {
-    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t3-ws-fX7r1b",
-    "projectId": "302c6f05f10dce11c76123e778b9b43d0a336c00",
+    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t3-ws-E7TADz",
+    "projectId": "1a4e1e915ccbf1fa829be3980a111e6c9ae69879",
     "symbols": 7,
     "rows": 12,
     "expect": {
@@ -135,7 +150,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T17:58:32.088Z",
-    "contentSha256": "a54f9f98dd56173c65502936ebbf0c05cee6d6cdbc78123cd11b58a54076e7d5"
+    "sealedAt": "2026-10-10T01:12:25.151Z",
+    "contentSha256": "ff56191ab6946ac9dc26f3e493110a7ec7799482f1c6ad6659bd58c77364448b"
   }
 }
