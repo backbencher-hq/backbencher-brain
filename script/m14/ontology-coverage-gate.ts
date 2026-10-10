@@ -38,7 +38,7 @@
  * READ-ONLY. Writes nothing.
  */
 import { execFileSync } from "node:child_process"
-import { readFileSync, readdirSync, statSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
@@ -77,7 +77,9 @@ import { POWERSHELL_RULED } from "./powershell-ruled"
 import { JSON_RULED } from "./json-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
-const LANG = process.argv[2] ?? "bash"
+/** The lane is the first NON-FLAG argument: `--self-test` / `--coverage` must not be read as a lane
+ *  name, or `gate --self-test` would look for a language called `--self-test` and exit 2. */
+const LANG = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? "bash"
 const ALL_TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"] as const
 /**
  * EXPORTED so lane ruling tables can import it instead of restating the shape.
@@ -123,6 +125,14 @@ export type Ruled = {
   /** A: node types that would express the construct. B: unused. */
   nodeTypesThatWouldMeanIt?: string[]
   /**
+   * WHICH SPACES this probe enumerated, when the lane can state it. Optional only so the twelve
+   * tables written before the spaces check existed keep compiling; a MISSING declaration in a
+   * language whose corpus writes key/value bindings is now RULED-UNJUSTIFIED, not RULED-SOUND
+   * (see the space-attestation block below — measured on HCL, where a node-type inventory
+   * certified `extends` while 44 `inherits` attribute-key sites sat in the same corpus).
+   */
+  spacesProbed?: ProbeSpace[]
+  /**
    * B only: the count and file count this ruling PUBLISHES, over the corpus the gate
    * discovers. These are the numbers a ruling is accountable to, so they live in the type
    * rather than repeated in prose where they can go stale. julia-ruled's probe reads them
@@ -160,6 +170,231 @@ function walkPreorder(root: any, visit: (n: any) => void): void {
     visit(n)
     for (let i = n.childCount - 1; i >= 0; i--) stack.push(n.child(i))
   }
+}
+
+// ---------------------------------------------------------------- the SPACE attestation
+/**
+ * A ruling that certifies ABSENCE is only as strong as the SPACES its probe enumerated, and until
+ * 2026-10-09 this gate accepted `instrument: "A:grammar-inventory"` as covering the whole question.
+ * It does not, and the failure was measured rather than imagined:
+ *
+ *   `ontology-coverage-gate.ts hcl` printed `extends RULED-SOUND; the construct occurs 0x on the
+ *   parse tree` for a lane whose own whole-corpus census had just measured **44 `inherits` sites in
+ *   8 files, 53 named parents, 53/53 resolving to a `target` declared in the same file**. Docker-bake
+ *   spells inheritance as an ATTRIBUTE KEY (`inherits = ["_common"]`), and no node-type inventory
+ *   can see a construct spelled that way. The false RULED-SOUND is the flattering direction: it
+ *   certifies a ruling that shrinks a denominator.
+ *
+ * So a ruling now declares WHICH SPACES it probed, and the gate cross-checks that declaration
+ * against the corpus it walks:
+ *
+ *   * the walk counts key/value BINDINGS structurally — a node with `=` or `:` between two named
+ *     children, which is HCL's `attribute`, TOML's and JSON's `pair`, YAML's block_mapping_pair,
+ *     CSS's `declaration` — so "this language has attribute syntax" is an OBSERVATION, not an
+ *     assumption about a grammar's name;
+ *   * a vocabulary-based ruling (instrument A, or a spec-text ruling with no table entry) in such a
+ *     language is RULED-UNJUSTIFIED unless its spaces include `attribute-keys`. An instrument-B
+ *     ruling is exempt: it counts a shape on the TREE, which is not a vocabulary blind spot;
+ *   * spaces may be declared per entry (`Ruled.spacesProbed`) or in
+ *     `validation/m14/fixtures/<lang>/ruling-attestation.json`, and an attestation must cite an
+ *     artefact that EXISTS whose pointers actually hold the declared counts.
+ *
+ * The control runs on every invocation (see SPACE_CHECK_SELF_TEST below): it FIRES the check on a
+ * node-type-only ruling, PASSES a ruling that declares both spaces, and FAILS the run (exit 3) if
+ * either arm stops behaving. A guard that cannot fail is not a guard.
+ */
+export type ProbeSpace = "node-types" | "block-types" | "attribute-keys" | "corpus-count"
+type RulingStatus = "EMITTED" | "RULED-SOUND" | "FALSIFIED" | "RULED-UNJUSTIFIED"
+type SpaceAttestation = {
+  lane?: string
+  instrument?: string
+  artefact?: string
+  spacesProbed?: ProbeSpace[]
+  spaceEvidence?: Record<string, { pointer?: string[]; observed?: number }>
+  rulings?: Record<string, { spaces?: ProbeSpace[]; constructSites?: number; pointer?: string[]; note?: string }>
+}
+type KeyEvidence = { nodes: number; topTypes: string[]; sample: string }
+
+function pointerGet(doc: any, ptr: string[]): unknown {
+  let cur: any = doc
+  for (const k of ptr) {
+    if (cur === null || typeof cur !== "object") return undefined
+    cur = Array.isArray(cur) ? cur[Number(k)] : cur[k]
+  }
+  return cur
+}
+
+/** The half of an attestation that can be checked without trusting its author: does the artefact it
+ *  names exist, and does each declared pointer hold the number the attestation declares? */
+function verifyAttestation(att: SpaceAttestation): { problems: string[]; verified: string[] } {
+  const problems: string[] = [], verified: string[] = []
+  let artefact: any = null
+  if (typeof att.artefact === "string" && att.artefact !== "") {
+    const ap = path.resolve(process.cwd(), att.artefact)
+    if (!existsSync(ap)) problems.push(`names artefact ${att.artefact}, which does not exist`)
+    else { try { artefact = JSON.parse(readFileSync(ap, "utf8")) } catch { problems.push(`artefact ${att.artefact} is not parseable JSON`) } }
+  } else if ((att.spacesProbed ?? []).includes("attribute-keys")) {
+    problems.push("declares the attribute-keys space but cites no artefact")
+  }
+  if (artefact !== null) {
+    for (const [space, ev] of Object.entries(att.spaceEvidence ?? {})) {
+      if (!Array.isArray(ev?.pointer)) continue
+      const got = pointerGet(artefact, ev.pointer)
+      if (got === undefined) problems.push(`spaceEvidence.${space}: pointer ${ev.pointer.join(".")} is not in ${att.artefact}`)
+      else if (ev.observed !== undefined && got !== ev.observed) problems.push(`spaceEvidence.${space}: declares ${ev.observed}, ${att.artefact} holds ${String(got)} at ${ev.pointer.join(".")}`)
+      else verified.push(`${space}=${String(got)}`)
+    }
+    for (const [t, r] of Object.entries(att.rulings ?? {})) {
+      if (!Array.isArray(r?.pointer)) continue
+      const got = pointerGet(artefact, r.pointer)
+      if (got === undefined) problems.push(`rulings.${t}: pointer ${r.pointer.join(".")} is not in ${att.artefact}`)
+      else if (r.constructSites !== undefined && got !== r.constructSites) problems.push(`rulings.${t}: declares ${r.constructSites} construct site(s), ${att.artefact} holds ${String(got)} at ${r.pointer.join(".")}`)
+      else verified.push(`${t}.constructSites=${String(got)}`)
+    }
+  }
+  return { problems, verified }
+}
+
+function readAttestation(lang: string): { att: SpaceAttestation | null; rel: string; problems: string[]; verified: string[] } {
+  const rel = `validation/m14/fixtures/${lang}/ruling-attestation.json`
+  const abs = path.resolve(process.cwd(), rel)
+  if (!existsSync(abs)) return { att: null, rel, problems: [], verified: [] }
+  let att: SpaceAttestation
+  try { att = JSON.parse(readFileSync(abs, "utf8")) } catch (e) { return { att: null, rel, problems: [`${rel} is not parseable JSON: ${String(e).slice(0, 60)}`], verified: [] } }
+  return { att, rel, ...verifyAttestation(att) }
+}
+
+/** The verdict for ONE un-emitted type. Pure except for the filesystem reads inside
+ *  `verifyAttestation`, which happen before this is called, so the self-test can drive it. */
+function verdictFor(args: {
+  type: Type
+  ruled: Ruled | undefined
+  ruling: { reason: string; src: string } | null
+  keyEvidence: KeyEvidence
+  nodeTypeCount: number
+  att: SpaceAttestation | null
+  attRel: string
+  attProblems: string[]
+  attVerified: string[]
+}): { status: RulingStatus; detail: string } {
+  const { type, ruled, ruling, keyEvidence, nodeTypeCount, att, attRel, attProblems, attVerified } = args
+  if (!ruling) {
+    return { status: "RULED-UNJUSTIFIED", detail: `NOT EMITTED and its construct is absent, but NO written ruling was found in the spec` }
+  }
+  const entry = att?.rulings?.[type]
+  const spaces: ProbeSpace[] = entry?.spaces ?? ruled?.spacesProbed ?? (entry ? att?.spacesProbed ?? [] : [])
+  const vocabularyBased = ruled === undefined || ruled.instrument === "A:grammar-inventory"
+  // THE KEY-SPACE CHECK — the defect this block exists for. A vocabulary-based ruling cannot see a
+  // construct spelled as an attribute key, and this corpus writes them, so the space must be
+  // declared AND, where an attestation exists, verified.
+  if (vocabularyBased && keyEvidence.nodes > 0 && !spaces.includes("attribute-keys")) {
+    return {
+      status: "RULED-UNJUSTIFIED",
+      detail: `NOT EMITTED, and the probe does not cover the space this language USES: the corpus writes ` +
+        `${keyEvidence.nodes.toLocaleString()} key/value bindings (top node types ${keyEvidence.topTypes.join(", ") || "?"}, e.g. \`${keyEvidence.sample}\`), ` +
+        `so a construct spelled as an attribute key cannot appear in a node-type inventory — that is exactly how HCL's ` +
+        `\`inherits\` hid 44 sites. Declare the probed spaces (\`spacesProbed\` in the lane's Ruled table, or ${attRel} with an ` +
+        `artefact that EXISTS and verifies). Written ruling: ${ruling.src}`,
+    }
+  }
+  if (entry) {
+    if (attProblems.length > 0) {
+      return {
+        status: "RULED-UNJUSTIFIED",
+        detail: `NOT EMITTED; ${attRel} attests the attribute-keys space but does not verify (${attProblems.join("; ")}). ` +
+          `A declaration that cannot be checked is prose, and prose does not shrink a denominator. Written ruling: ${ruling.src}`,
+      }
+    }
+    const sites = entry.constructSites
+    if (sites === undefined) {
+      return {
+        status: "RULED-UNJUSTIFIED",
+        detail: `NOT EMITTED; ${attRel} attests the spaces but states no construct count for \`${type}\` — rule-book §6: a ruling without a count is prose. Written ruling: ${ruling.src}`,
+      }
+    }
+    const note = entry.note ? ` ${entry.note}` : ""
+    if (sites > 0) {
+      return {
+        status: "FALSIFIED",
+        detail: `NOT EMITTED, but the attested probe found ${sites.toLocaleString()} site(s) of the construct in the space that was ` +
+          `missing from the inventory — the type is DERIVABLE, so no ruling can certify it absent: it must be emitted, or measured into a ` +
+          `class that stays in the denominator.${note} Artefact: ${att?.artefact ?? "?"}`,
+      }
+    }
+    return {
+      status: "RULED-SOUND",
+      detail: `NOT EMITTED; attested over ${spaces.join(", ")} — ${att?.artefact ?? "no artefact"} verifies ` +
+        `${attVerified.join(", ") || "the declared spaces"}, and \`${type}\` has 0 construct sites there.${note} Written ruling: ${ruling.src}`,
+    }
+  }
+  const basis = ruled?.instrument === "A:grammar-inventory"
+    ? `the grammar produced ${nodeTypeCount} distinct node types across the corpus and none of the ${(ruled.nodeTypesThatWouldMeanIt ?? []).length} probed names is among them`
+    : ruled?.instrument === "B:parse-tree-count"
+      ? `the tree probe counted 0 occurrences on the tree (instrument B)`
+      : `no Instrument-A/B entry exists for this lane, so the written ruling is certified on its text alone; this corpus writes 0 key/value bindings, so the attribute-key blind spot is not available here`
+  return { status: "RULED-SOUND", detail: `NOT EMITTED; ${basis}. Written ruling: ${ruling.src}` }
+}
+
+// ---------------------------------------------------------------- the space check's own control
+/**
+ * Rule-book §7: a guard with no live hits must be shown firing on a planted case. This control runs
+ * on EVERY invocation (cheap: in-memory arms plus one real file read) and the process exits 3 if any
+ * arm stops behaving. The artefact it verifies against is
+ * `validation/m14/fixtures/hcl/ruling-space-control.json`, a committed fixture, so the control does
+ * not depend on any lane's census being present.
+ */
+const SPACE_CONTROL_ARTEFACT = "validation/m14/fixtures/hcl/ruling-space-control.json"
+const KEYED: KeyEvidence = { nodes: 118304, topTypes: ["attribute=118000", "object_elem=304"], sample: `attribute inherits = ["_common"]` }
+const UNKEYED: KeyEvidence = { nodes: 0, topTypes: [], sample: "" }
+function spaceCheckSelfTest(verbose: boolean): { passed: number; failures: string[] } {
+  const ruledA: Ruled = { type: "extends", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["class_declaration"], describe: "a type declaration another type could extend" }
+  const ruledB: Ruled = { type: "extends", instrument: "B:parse-tree-count", describe: "a second declaration of the same name" }
+  const ruling = { reason: "self-test", src: "self-test" }
+  const goodAtt: SpaceAttestation = {
+    artefact: SPACE_CONTROL_ARTEFACT,
+    spacesProbed: ["node-types", "block-types", "attribute-keys"],
+    spaceEvidence: { nodeTypes: { pointer: ["nodeTypes"], observed: 64 }, attributeKeys: { pointer: ["attributeKeys"], observed: 5311 } },
+    rulings: { extends: { spaces: ["node-types", "block-types", "attribute-keys"], constructSites: 0, pointer: ["sites", "extends"] } },
+  }
+  const presentAtt: SpaceAttestation = { ...goodAtt, rulings: { extends: { spaces: ["node-types", "block-types", "attribute-keys"], constructSites: 44, pointer: ["sites", "extendsPresent"] } } }
+  const missingArtefactAtt: SpaceAttestation = { artefact: "validation/m14/fixtures/hcl/this-file-does-not-exist.json", spacesProbed: ["attribute-keys"], rulings: { extends: { spaces: ["attribute-keys"], constructSites: 0 } } }
+  const contradictedAtt: SpaceAttestation = { ...goodAtt, rulings: { extends: { spaces: ["node-types", "attribute-keys"], constructSites: 99, pointer: ["sites", "extends"] } } }
+  const countlessAtt: SpaceAttestation = { artefact: SPACE_CONTROL_ARTEFACT, spacesProbed: ["attribute-keys"], rulings: { extends: { spaces: ["attribute-keys"] } } }
+  const arm = (name: string, want: RulingStatus, ruled: Ruled | undefined, keyEvidence: KeyEvidence, att: SpaceAttestation | null) => {
+    const v = verdictFor({ type: "extends", ruled, ruling, keyEvidence, nodeTypeCount: 64, att, attRel: "self-test", attProblems: att ? verifyAttestation(att).problems : [], attVerified: att ? verifyAttestation(att).verified : [] })
+    return { name, want, got: v.status, detail: v.detail }
+  }
+  const arms = [
+    arm("A node-type-only ruling in a key-bearing language", "RULED-UNJUSTIFIED", ruledA, KEYED, null),
+    arm("B the same ruling, spaces attested and verified, 0 sites", "RULED-SOUND", ruledA, KEYED, goodAtt),
+    arm("C the same ruling where the attested probe found 44 sites", "FALSIFIED", ruledA, KEYED, presentAtt),
+    arm("D a node-type-only ruling where the corpus writes NO key bindings", "RULED-SOUND", ruledA, UNKEYED, null),
+    arm("E an attestation naming an artefact that does not exist", "RULED-UNJUSTIFIED", ruledA, KEYED, missingArtefactAtt),
+    arm("F an attestation whose declared count contradicts its artefact", "RULED-UNJUSTIFIED", ruledA, KEYED, contradictedAtt),
+    arm("G an attestation that states no construct count", "RULED-UNJUSTIFIED", ruledA, KEYED, countlessAtt),
+    arm("H an instrument-B tree count is not a vocabulary probe", "RULED-SOUND", ruledB, KEYED, null),
+  ]
+  const failures: string[] = []
+  for (const a of arms) {
+    const ok = a.got === a.want
+    if (!ok) failures.push(`${a.name}: expected ${a.want}, got ${a.got}`)
+    if (verbose || !ok) console.log(`  ${ok ? "PASS" : "FAIL"} ${a.name} -> ${a.got}`)
+  }
+  return { passed: arms.length - failures.length, failures }
+}
+
+const SELF_TEST_VERBOSE = process.argv.includes("--self-test")
+{
+  const control = spaceCheckSelfTest(SELF_TEST_VERBOSE)
+  const ok = control.failures.length === 0
+  console.log(`space check self-test: ${ok ? "PASS" : "FAIL"} — ${control.passed}/${control.passed + control.failures.length} arms ` +
+    `(fires on a node-type-only ruling in a key-bearing language; passes an attested one; a ruling contradicted by its own artefact fails)`)
+  if (!ok) {
+    console.error("SPACE CONTROL FAILED — this gate refuses to print a RULED-SOUND its space check cannot certify.")
+    for (const f of control.failures) console.error(`  - ${f}`)
+    process.exit(3)
+  }
+  if (SELF_TEST_VERBOSE) process.exit(0)
 }
 
 const BASH_RULED: Ruled[] = [
@@ -418,13 +653,36 @@ const parser = new WSP()
 parser.setLanguage(await WSL.load(readFileSync(path.join(process.cwd(), "wasm", wasmPath))))
 
 // Instrument A: the grammar's own vocabulary, observed across the whole corpus.
+//
+// AND, in the same pass, the KEY SPACE — the space a node-type inventory cannot enumerate. A node
+// with `=` or `:` between two named children is a key/value BINDING whatever its grammar calls it:
+// HCL's `attribute`, TOML's and JSON's `pair`, YAML's block_mapping_pair, CSS's `declaration`. This
+// is observed structurally rather than assumed from a language's name, which is what lets the space
+// check fire on a real corpus instead of on a list somebody maintains.
 const grammarNodeTypes = new Map<string, number>()
+const keySpaces = { bindings: 0, byType: new Map<string, number>(), samples: [] as string[] }
 for (const f of files) {
   const t = parser.parse(f.text)
   if (!t) continue
-  walkPreorder(t.rootNode, (n: any) => { grammarNodeTypes.set(n.type, (grammarNodeTypes.get(n.type) ?? 0) + 1) })
+  walkPreorder(t.rootNode, (n: any) => {
+    grammarNodeTypes.set(n.type, (grammarNodeTypes.get(n.type) ?? 0) + 1)
+    if (n.childCount >= 3) {
+      const sep = n.child(1)?.type
+      if (sep === "=" || sep === ":") {
+        keySpaces.bindings++
+        keySpaces.byType.set(n.type, (keySpaces.byType.get(n.type) ?? 0) + 1)
+        if (keySpaces.samples.length < 6) keySpaces.samples.push(`${n.type} \`${String(n.text).slice(0, 48).split("\n").join(" ")}\``)
+      }
+    }
+  })
   t.delete?.()
 }
+const keyEvidence: KeyEvidence = {
+  nodes: keySpaces.bindings,
+  topTypes: [...keySpaces.byType.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([t, n]) => `${t}=${n.toLocaleString()}`),
+  sample: keySpaces.samples[0] ?? "",
+}
+const attestation = readAttestation(LANG)
 
 // Instrument B: semantic counts on the tree, where strings and heredocs cannot lie.
 const treeHits = new Map<Type, { occurrences: number; files: number; examples: string[] }>()
@@ -605,14 +863,11 @@ for (const t of ALL_TYPES) {
     }
   }
   const ruling = rulingFor(t)
-  if (!ruling) {
-    rows.push({ type: t, status: "RULED-UNJUSTIFIED", detail: `NOT EMITTED and its construct is absent, but NO written ruling was found in the spec` })
-    continue
-  }
-  const basis = ruled?.instrument === "A:grammar-inventory"
-    ? `the grammar produced ${grammarNodeTypes.size} distinct node types across the corpus and NONE expresses it`
-    : `the construct occurs 0x on the parse tree`
-  rows.push({ type: t, status: "RULED-SOUND", detail: `NOT EMITTED; ${basis}. Written ruling: ${ruling.src}` })
+  const v = verdictFor({
+    type: t, ruled, ruling, keyEvidence, nodeTypeCount: grammarNodeTypes.size,
+    att: attestation.att, attRel: attestation.rel, attProblems: attestation.problems, attVerified: attestation.verified,
+  })
+  rows.push({ type: t, status: v.status, detail: v.detail })
 }
 
 // ---------------------------------------------------------------- the population that was ACTUALLY measured
@@ -640,6 +895,16 @@ for (const t of ALL_TYPES) {
   console.log("")
 }
 
+console.log(`key spaces: ${keyEvidence.nodes.toLocaleString()} key/value bindings observed over ${files.length} files` +
+  (keyEvidence.nodes > 0
+    ? ` (top node types ${keyEvidence.topTypes.join(", ") || "?"}; e.g. ${keyEvidence.sample}) — a VOCABULARY-based ruling in this language must declare the attribute-keys space, or it is RULED-UNJUSTIFIED`
+    : ` — no attribute-key syntax observed, so a vocabulary-based ruling cannot hide a construct that way`))
+console.log(attestation.att
+  ? `attestation ${LANG}: ${attestation.rel} — spaces ${(attestation.att.spacesProbed ?? []).join(", ") || "(none declared)"}; artefact ${attestation.att.artefact ?? "(none)"}` +
+    (attestation.verified.length ? `; VERIFIED ${attestation.verified.join(", ")}` : "") +
+    (attestation.problems.length ? `; PROBLEMS ${attestation.problems.join("; ")}` : "")
+  : `attestation ${LANG}: none — declare \`spacesProbed\` in the lane's Ruled table, or provide ${attestation.rel} with an artefact that exists`)
+console.log("")
 const w = (s: string, n: number) => (s + " ".repeat(n)).slice(0, n)
 console.log(`${w("type", 14)}${w("status", 18)}detail`)
 console.log("-".repeat(120))
@@ -651,7 +916,7 @@ const emitted = rows.filter((r) => r.status === "EMITTED")
 console.log("-".repeat(120))
 console.log(`emitted ${emitted.length}/10   ruled-sound ${rows.filter((r) => r.status === "RULED-SOUND").length}   FALSIFIED ${falsified.length}   ruled-without-justification ${unjustified.length}`)
 if (falsified.length) {
-  console.log(`\n>>> THIS GATE FAILS. ${falsified.map((r) => r.type).join(", ")} ${falsified.length === 1 ? "is" : "are"} claimed inapplicable but ${falsified.length === 1 ? "is" : "are"} demonstrably derivable from real code.`)
+  console.log(`\n>>> THIS GATE FAILS. ${falsified.map((r) => r.type).join(", ")} ${falsified.length === 1 ? "is" : "are"} claimed absent but ${falsified.length === 1 ? "is" : "are"} demonstrably derivable from real code.`)
   console.log(`>>> A differential cannot find this class of defect, because the oracle omits the same type.`)
 }
 process.exitCode = falsified.length + unjustified.length === 0 ? 0 : 1
