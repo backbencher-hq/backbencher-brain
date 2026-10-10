@@ -305,11 +305,34 @@ emit("X2", "M15.X2", "classification-construct census", "x2.json")
         !report.findings.some((f) => f.vulnerabilityType === "sqli"),
         `types=${[...new Set(report.findings.map((f) => f.vulnerabilityType))].join(",")}`,
       )
-      h.ck("X3: cross-file source and sink both resolve", winner.source.file === "a.ts" && winner.sink.file === "b.ts", `src=${winner.source.file} sink=${winner.sink.file}`)
-      h.ck("X3: the collapsed finding kept a non-empty path", winner.path.length > 0, `path.length=${winner.path.length}`)
-      h.ck("X3: state is confirmed", winner.state === "confirmed", `state=${winner.state}`)
-      h.ck("X3: severity is carried through from the row", winner.severity === "high", `severity=${winner.severity}`)
-      h.ck("X3: a boundaries>0 row is flagged crossLanguage", winner.crossLanguage === true, `crossLanguage=${winner.crossLanguage}`)
+      // These five read `winner` WITHOUT the `winner?.` guard the two assertions
+      // above use. That is not a style difference — it is a latent crash.
+      //
+      // `h.require()` (script/m15/security-harness.ts:90) RECORDS the failure and
+      // RETURNS; it does not throw and it does not abort the leg. So when the
+      // injected group does not survive the collapse, line 297 reports
+      // "required precondition absent" and execution continues straight into
+      // `winner?.source.file` on a value that is undefined — a TypeError that buries
+      // the clean precondition message under a stack trace, in exactly the run where
+      // the precondition was the thing that broke.
+      //
+      // Optional chaining is the same fix the two lines above already use, and it
+      // fails HONESTLY rather than silently: with `winner` absent the comparisons
+      // evaluate false, so these assertions report false AND the precondition
+      // failure is still recorded. Nothing is skipped and nothing passes vacuously.
+      h.ck("X3: cross-file source and sink both resolve", winner?.source.file === "a.ts" && winner?.sink.file === "b.ts", `src=${winner?.source.file} sink=${winner?.sink.file}`)
+      // `winner?.path.length` still throws when winner EXISTS but path is
+      // undefined — optional chaining short-circuits on `winner`, not on `path`.
+      // `(winner?.path?.length ?? 0)` covers both, and reports 0 for a missing
+      // path, which is what "not a non-empty path" should say.
+      h.ck(
+        "X3: the collapsed finding kept a non-empty path",
+        (winner?.path?.length ?? 0) > 0,
+        `path.length=${winner?.path?.length ?? 0}`,
+      )
+      h.ck("X3: state is confirmed", winner?.state === "confirmed", `state=${winner?.state}`)
+      h.ck("X3: severity is carried through from the row", winner?.severity === "high", `severity=${winner?.severity}`)
+      h.ck("X3: a boundaries>0 row is flagged crossLanguage", winner?.crossLanguage === true, `crossLanguage=${winner?.crossLanguage}`)
       h.release()
 
       const withMitigated = await analyzeTaintFlows(projectId, { includeMitigated: true, maxResults: 100 })
