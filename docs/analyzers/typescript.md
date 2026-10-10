@@ -41,3 +41,19 @@ Same rules as JVM family. Heritage edges structural. Calls usage_contextual.
 - Fixtures: 76 (`validation/m14/fixtures/typescript/`)
 - Corpus: vue-core@f8975657 differential 100% coverage / 0.9% unexplained
 - Grammar audit: PASS (union oracle: TS + TSX + JS)
+
+## Relationship-type coverage — all ten, registered (2026-10-09)
+- **Firing (production `parseFile`, rxjs 200 files): 10/10**, every type fired,
+  `imports[]` 704 in 195 files — `bun script/m14/firing-check-v2.mjs TYPESCRIPT`
+- **Audited: 10/10** — the differential admits every type the lane emits, and
+  `bun script/m14/ts-deriv-oracle-audit.ts --files 60 --repo rxjs` measures all
+  ten: `imports` 501/501 and `exports` 61/61 at 100%, `calls` 563/563,
+  `contains` 376/376, `references` 83.1% and `uses` 64.8% with triaged families
+- **Incoming: declared, PASS** — `npx tsx script/m14/ts-incoming-gate.ts`, 37
+  classes in `validation/m14/instruments/typescript/incoming-baseline.json`;
+  **31.4% bind / 52.0% bind+declared-external** of 84,111 edges, and the residue
+  (28,417 ambiguous · 4,626 by-design · 7,335 not provable) is declared with a
+  ceiling per class. "All ten types covered" is measured; "all edges resolve" is
+  not the claim — the gate prints the backlog on every run.
+- The sweep's measurements live in `docs/analyzers/typescript-ambiguity-sweep.md`;
+  the fleet-level registration is in `docs/analyzers/ONTOLOGY-PROGRESS.md`.

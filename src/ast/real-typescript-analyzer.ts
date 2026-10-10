@@ -1172,6 +1172,132 @@ function extractImportItems(importNode: Node): string[] {
   return items
 }
 
+/**
+ * The RUNTIME receivers whose members are runtime members and never this
+ * project's declarations. A fixed table, not shape-sniffing: the fleet gate's
+ * own rule is that a lane opts in per key and the key means one thing
+ * (`script/m14/incoming-gate.ts:95`), because "looks like a stdlib name" is the
+ * inference that made `no-regex-gate.sh` report 187 where the truth was 5.
+ *
+ * A receiver listed here is still NOT marked when the file declares or imports
+ * that name — see `markExternalCallTargets`, which checks both first.
+ */
+const RUNTIME_GLOBAL_RECEIVERS = new Set<string>([
+  "console", "JSON", "Math", "Object", "Array", "Promise", "String", "Number", "Boolean",
+  "Map", "Set", "WeakMap", "WeakSet", "Symbol", "Reflect", "Proxy", "Date", "RegExp",
+  "Error", "TypeError", "RangeError", "SyntaxError", "EvalError", "URIError", "AggregateError",
+  "BigInt", "Intl", "globalThis", "process", "Buffer", "window", "document", "global",
+  "setTimeout", "clearTimeout", "setInterval", "clearInterval", "setImmediate", "queueMicrotask",
+  "structuredClone", "fetch", "URL", "URLSearchParams", "TextEncoder", "TextDecoder",
+  "AbortController", "AbortSignal", "performance", "navigator", "localStorage", "sessionStorage",
+  "location", "history", "requestAnimationFrame", "alert",
+])
+
+/**
+ * Names a TYPE-position reference can name that no project declares: the TypeScript
+ * lib, the DOM lib, and the Node type globals. A PINNED table for the same reason
+ * `isBuiltinModule` is one (`:599`) — "looks like a lib type" is the inference that
+ * convicts correct analyzers, so these are enumerated and a file that declares or
+ * relatively imports one of them is excluded BEFORE this list is consulted.
+ */
+const TS_LIB_TYPE_NAMES = new Set<string>([
+  // lib.es* — values and types
+  "Array", "ReadonlyArray", "Object", "Function", "String", "Boolean", "Number", "Symbol",
+  "BigInt", "Math", "JSON", "Date", "RegExp", "Error", "EvalError", "RangeError",
+  "ReferenceError", "SyntaxError", "TypeError", "URIError", "AggregateError", "Promise",
+  "PromiseLike", "Map", "ReadonlyMap", "Set", "ReadonlySet", "WeakMap", "WeakSet", "WeakRef",
+  "FinalizationRegistry", "Proxy", "Reflect", "ArrayBuffer", "SharedArrayBuffer", "DataView",
+  "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array", "Uint16Array", "Int32Array",
+  "Uint32Array", "Float32Array", "Float64Array", "BigInt64Array", "BigUint64Array",
+  "Iterator", "Iterable", "IterableIterator", "AsyncIterator", "AsyncIterable",
+  "AsyncIterableIterator", "Generator", "AsyncGenerator",
+  // utility types
+  "Partial", "Required", "Readonly", "Pick", "Omit", "Record", "Exclude", "Extract",
+  "NonNullable", "Parameters", "ConstructorParameters", "ReturnType", "InstanceType",
+  "ThisParameterType", "OmitThisParameter", "ThisType", "Awaited", "Uppercase", "Lowercase",
+  "Capitalize", "Uncapitalize", "NoInfer",
+  // lib.dom / lib.webworker
+  "HTMLElement", "HTMLDivElement", "HTMLInputElement", "Element", "Node", "NodeList",
+  "Document", "Window", "Event", "EventTarget", "CustomEvent", "MouseEvent", "KeyboardEvent",
+  "Response", "Request", "Headers", "Blob", "File", "FormData", "URL", "URLSearchParams",
+  "TextEncoder", "TextDecoder", "AbortController", "AbortSignal", "ReadableStream", "WritableStream",
+  "ResizeObserver", "IntersectionObserver", "MutationObserver",
+  // Node globals
+  "Buffer", "BufferEncoding", "NodeJS", "ProcessEnv",
+])
+
+/** Global TYPE namespaces a qualified reference can be rooted at (`NodeJS.Timeout`). */
+const GLOBAL_TYPE_NAMESPACES = new Set<string>(["NodeJS", "Intl", "JSX", "Buffer"])
+
+/**
+ * Is this declaration inside a `declare global { ... }` block?
+ *
+ * Grammar, verified by dump: `ambient_declaration > statement_block >
+ * interface_declaration`, while `declare module "x" { ... }` wraps a `module`
+ * child instead — so a statement_block child is what distinguishes the GLOBAL
+ * augmentation. (A `declare module "untyped-pkg"` block is deliberately NOT
+ * flagged: in a `.d.ts` it is the declaration home for an untyped package, not an
+ * augmentation of something declared elsewhere.)
+ *
+ * The flag matters because rxjs declares `Observable` as an interface in 94 files
+ * — 93 of them global augmentations adding one operator each — so a resolution
+ * rule that counts kinds without this flag calls the name ambiguous against
+ * itself (measured: 510 `instantiates` + 458 `references` edges).
+ */
+function isInsideDeclareGlobal(node: Node): boolean {
+  let cur: Node | null = node.parent
+  while (cur) {
+    if (cur.type === "ambient_declaration") {
+      for (let i = 0; i < cur.namedChildCount; i++) {
+        const child = cur.namedChild(i)
+        if (child && child.type === "statement_block") return true
+      }
+      return false
+    }
+    cur = cur.parent
+  }
+  return false
+}
+
+/** The LOCAL names an `import_statement` binds (`{ A as B }` binds B). */
+function boundImportNames(importNode: Node): string[] {
+  const clause = extractImportClause(importNode)
+  const out: string[] = []
+  if (clause.defaultImport) out.push(clause.defaultImport)
+  if (clause.namespaceImport) out.push(clause.namespaceImport)
+  for (const named of clause.namedImports) out.push(named.alias ?? named.name)
+  return out
+}
+
+/** An `import_statement`'s module specifier, with its quotes removed. */
+function unquoteSpecifier(text: string): string {
+  const t = text.trim()
+  if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
+    return t.slice(1, -1)
+  }
+  return t
+}
+
+/** `@scope/name/sub` -> `@scope/name`; `name/sub` -> `name`; `node:fs` -> `fs`. */
+function packageNameOf(specifier: string): string {
+  const s = stripLeading(specifier, "node:")
+  const parts = s.split("/")
+  if (s.startsWith("@")) return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : s
+  return parts[0] ?? ""
+}
+
+/**
+ * The base identifier of a callee as the edge spells it: `a.b.c()` -> `a`,
+ * `?.a.b()` -> `a`, `(a as T).b()` -> "" (the text starts with a paren, and a
+ * cast receiver is not a base this pass is willing to name).
+ */
+function externalReceiverOf(callee: string): string {
+  let s = callee.trim()
+  if (s.startsWith("?.")) s = s.slice(2)
+  const m = /^([A-Za-z_$][\w$]*)/.exec(s)
+  return m?.[1] ?? ""
+}
+
 // ============================================================================
 // TYPE INFERENCE ENGINE - Real type inference from context and usage
 // ============================================================================
@@ -2203,6 +2329,13 @@ class TypeScriptAnalysisRunner {
 
     this.classifyEvidenceTier(relationships)
 
+    // M14 incoming-honesty: an edge to a dependency's member, a Node builtin's
+    // member or a runtime global's member cannot bind to project source, so it is
+    // MARKED rather than left to read as an unresolved binding. Runs after the
+    // edge phases and before the store, because the marker is part of the row.
+    this.warmProjectPackageFacts(projectRoot)
+    this.markExternalTargets(relationships, symbols, rootNode, projectRoot)
+
     // M49 dup-key ruling (#746) post-walk half: all relationship phases
     // (calls/uses/contains/references) have run — now drop the phantom
     // edges sourced from collapsed members' dead bodies.
@@ -2655,6 +2788,7 @@ class TypeScriptAnalysisRunner {
     if (!nameNode) return false
     const name = nameNode.text
     const exportStatus = isNodeExported(node)
+    const isAugmentation = isInsideDeclareGlobal(node)
 
     // Extract extends clause
     const extendsClause = this.extractInterfaceExtends(node)
@@ -2674,6 +2808,12 @@ class TypeScriptAnalysisRunner {
         isDefault: exportStatus.isDefault,
         extends: extendsClause?.names,
         extendsLines: extendsClause?.lines,
+        // `declare global { interface X }` AUGMENTS a declaration that lives
+        // elsewhere; it is still published (see the extractNamespace note about
+        // jsx.d.ts, where the global block is the ONLY declaration home) but it
+        // says so, so a resolution rule can prefer the real declaration instead
+        // of calling the name ambiguous against its own augmentation.
+        ...(isAugmentation ? { isAugmentation: true } : {}),
       },
     }
 
@@ -2826,6 +2966,7 @@ class TypeScriptAnalysisRunner {
     if (!nameNode) return false
     const name = nameNode.text
     const exportStatus = isNodeExported(node)
+    const isAugmentation = isInsideDeclareGlobal(node)
     const typeValue = node.childForFieldName("value")
     const typeParams = this.extractTypeParameters(node)
 
@@ -2858,6 +2999,11 @@ class TypeScriptAnalysisRunner {
         isIntersectionType: typeValue?.type === "intersection_type",
       },
     }
+
+    // Same flag the interface extractor sets, applied after the literal so the
+    // two cannot drift: a `declare global { type X = … }` augments, it does not
+    // declare.
+    if (isAugmentation) symbol.metadata = { ...(symbol.metadata ?? {}), isAugmentation: true }
 
     symbols.push(symbol)
     this.scopeManager.registerSymbol(symbol)
@@ -3814,7 +3960,29 @@ class TypeScriptAnalysisRunner {
         continue
       }
       if (t === "overrides") {
-        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        // STRUCTURAL, and the confidence tail keeps its floor. The evidence
+        // KIND for an override edge is structure: the arm reads the class body's
+        // own members against the base's own declaration and ABSTAINS unless the
+        // base resolves IN FILE (`if (!baseDecl) continue`), so nothing about the
+        // row is derived from how the name is used. The 0.95 carries the residual
+        // NAME-MATCH uncertainty and its reason code; the class carries the kind.
+        //
+        // Measured before this fix: 71 of 71 overrides edges on vuejs @400 and 9
+        // of 9 on rxjs @400 read `usage_contextual`, and every one of them is at
+        // 0.95. Two independent fleet facts say that is the wrong class:
+        //   - `real-csharp-analyzer.ts:2369` and `real-dart-analyzer.ts:2748`
+        //     stamp `structural` for `overrides` unconditionally;
+        //   - `src/lsp/evidence_tier.ts` lists `overrides` in STRUCTURAL_KINDS, so
+        //     the LSP would DERIVE `structural` for such a row — but rule 1 of its
+        //     own derivation makes a STORED legend-tier claim win, so this stamp
+        //     DEMOTED every overrides edge from rank 0 to rank 2 in hover, impact
+        //     and the tier list. The stored claim now agrees with the rule that
+        //     would otherwise classify it.
+        //
+        // The JVM family (java:2369, kotlin:2287) and rust:1470 carry the older
+        // tier mapping this line was copied from; that convention is theirs and is
+        // NOT changed here — the fleet comparison is recorded, not harmonised.
+        md.evidenceClass = conf >= 0.85 ? "structural" : "inferred"
         continue
       }
       if (t === "instantiates") {
@@ -3825,6 +3993,307 @@ class TypeScriptAnalysisRunner {
     }
   }
 
+  /**
+   * DECLARED-EXTERNAL TARGETS — the incoming side's honesty repair for `calls`.
+   *
+   * A `calls` edge to a member of a DEPENDENCY cannot resolve to a declaration in
+   * this project by construction, and neither can a member of a Node builtin or a
+   * runtime global. Left unmarked, every one of those edges is indistinguishable
+   * from a broken binding to the reverse walk that `bb_impact` performs, which is
+   * the shape the fleet gate calls out (`script/m14/incoming-gate.ts:38`): an edge
+   * a lane cannot bind must be MARKED, and the marking is what the gate counts.
+   *
+   * The marker is `metadata.isExternalTarget` — a key `EXTERNAL_KEYS` already
+   * recognizes, so this is the same declaration zig and nim make, not a new rule.
+   *
+   * What is NOT marked, deliberately:
+   *   - a target this file declares (in-file truth wins over any receiver);
+   *   - a receiver this file declares or imports from a RELATIVE path, because
+   *     that module's declarations are project code (`packages/rxjs/spec`
+   *     importing `'rxjs'` is a workspace self-reference, not a dependency);
+   *   - a bare specifier that is a WORKSPACE package, or one this project does
+   *     not declare as a dependency at all — an undeclared bare specifier is
+   *     unknown, not external, and guessing there is how a wrong zero becomes a
+   *     confident one.
+   *
+   * A TYPE-position reference (`references`, `extends`, `implements`) has no receiver
+   * to consult, so it uses the same proofs on the target name itself: bound by an
+   * external import; rooted at a global type NAMESPACE (`NodeJS.Timeout`); or a
+   * TypeScript-lib type (`Promise`, `Partial`, `HTMLElement`). A name the file
+   * declares, or imports from a relative path, is excluded first, so a project
+   * interface named `Record` is never marked.
+   *
+   * So the marker asserts one of exactly four provable facts, recorded in
+   * `externalReason`: `builtin-module`, `dependency-package`, `runtime-global`,
+   * `builtin-lib-type`.
+   */
+  private markExternalTargets(
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    rootNode: Node,
+    projectRoot: string,
+  ): void {
+    const declared = new Set<string>()
+    for (const s of symbols) {
+      const name = String(s?.name ?? "")
+      if (name.length > 0) declared.add(name)
+      const qualified = String((s as { qualifiedName?: string })?.qualifiedName ?? "")
+      if (qualified.length > 0) declared.add(qualified)
+    }
+
+    // Local name -> specifier, for imports the project can prove are external,
+    // and the set of names bound to relative/workspace imports (project code).
+    const externalBound = new Map<string, string>()
+    const localBound = new Set<string>()
+    const isExternalSpecifier = (specifier: string): boolean =>
+      isBuiltinModule(specifier) || this.isExternalPackageSpecifier(specifier, projectRoot)
+
+    for (let i = 0; i < rootNode.namedChildCount; i++) {
+      const stmt = rootNode.namedChild(i)
+      if (!stmt || stmt.type !== "import_statement") continue
+      const sourceNode = stmt.childForFieldName("source")
+      if (!sourceNode) continue
+      const specifier = unquoteSpecifier(sourceNode.text)
+      const isRelative = specifier.startsWith(".") || specifier.startsWith("/")
+      const external = !isRelative && isExternalSpecifier(specifier)
+      for (const name of boundImportNames(stmt)) {
+        if (external) externalBound.set(name, specifier)
+        else localBound.add(name)
+      }
+    }
+    for (const [name, specifier] of this.collectRequireBindings(rootNode)) {
+      const isRelative = specifier.startsWith(".") || specifier.startsWith("/")
+      if (!isRelative && isExternalSpecifier(specifier)) externalBound.set(name, specifier)
+      else localBound.add(name)
+    }
+
+    const markImported = (md: Record<string, unknown>, name: string, specifier: string): void => {
+      md.isExternalTarget = true
+      md.externalReason = isBuiltinModule(specifier) ? "builtin-module" : "dependency-package"
+      md.externalReceiver = name
+      md.externalSpecifier = specifier
+    }
+
+    for (const r of relationships) {
+      const type = String(r.type ?? r.relationshipType ?? "")
+      const target = String(r.target ?? "")
+      if (target.length === 0 || declared.has(target)) continue
+      const md = (r.metadata ?? (r.metadata = {})) as Record<string, unknown>
+      if (md.isExternalTarget === true) continue
+
+      // VALUE positions: the receiver decides.
+      if (type === "calls" || type === "uses") {
+        const callee = String(md.calleeExpression ?? md.fieldAccessExpression ?? md.memberExpression ?? "")
+        const base = externalReceiverOf(callee)
+        if (base.length === 0 || base === "this" || base === "super") continue
+        if (declared.has(base) || localBound.has(base)) continue
+
+        const specifier = externalBound.get(base)
+        if (specifier !== undefined) {
+          markImported(md, base, specifier)
+          continue
+        }
+        if (RUNTIME_GLOBAL_RECEIVERS.has(base)) {
+          md.isExternalTarget = true
+          md.externalReason = "runtime-global"
+          md.externalReceiver = base
+        }
+        continue
+      }
+
+      // TYPE positions: the target name itself is the reference, so the proofs are
+      // applied to it. A relative import or a file declaration wins first — the
+      // check above covers the declaration, and this one the relative binding.
+      if (type === "references" || type === "extends" || type === "implements") {
+        if (localBound.has(target)) continue
+        const bound = externalBound.get(target)
+        if (bound !== undefined) {
+          markImported(md, target, bound)
+          continue
+        }
+        const dot = target.indexOf(".")
+        if (dot > 0) {
+          const head = target.slice(0, dot)
+          if (declared.has(head) || localBound.has(head)) continue
+          // `fs.Stats` under `import * as fs from "node:fs"`: the HEAD is the
+          // external binding, and the qualified target inherits its origin.
+          const headSpecifier = externalBound.get(head)
+          if (headSpecifier !== undefined) {
+            markImported(md, head, headSpecifier)
+            continue
+          }
+          if (GLOBAL_TYPE_NAMESPACES.has(head)) {
+            md.isExternalTarget = true
+            md.externalReason = "runtime-global"
+            md.externalReceiver = head
+          }
+          continue
+        }
+        if (TS_LIB_TYPE_NAMES.has(target)) {
+          md.isExternalTarget = true
+          md.externalReason = "builtin-lib-type"
+          md.externalReceiver = target
+        }
+      }
+    }
+  }
+
+  /** `x = require("spec")` bindings, by local name. Tree-backed, not regex. */
+  private collectRequireBindings(rootNode: Node): Map<string, string> {
+    const out = new Map<string, string>()
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      if (node.type === "variable_declarator") {
+        const name = node.childForFieldName("name")
+        const value = node.childForFieldName("value")
+        if (name && name.type === "identifier" && value && value.type === "call_expression") {
+          const fn = value.childForFieldName("function")
+          const args = value.childForFieldName("arguments")
+          const first = args?.namedChild(0)
+          if (fn && fn.text === "require" && first && first.type === "string") {
+            out.set(name.text, unquoteSpecifier(first.text))
+          }
+        }
+      }
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const child = node.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return out
+  }
+
+  /**
+   * Is this bare specifier a dependency of the project, and NOT a workspace
+   * package of it? Both halves are needed: in a pnpm/npm monorepo a bare
+   * specifier can name the workspace's own source (`'rxjs'` inside rxjs), and
+   * marking that external would be a false claim about project code.
+   *
+   * Dependency NAMES come from the nearest manifest's four dependency maps; what
+   * each resolves to is not read, because the claim being made is about the
+   * specifier's origin, not about a resolved path (the analyzer is
+   * outgoing-only by design and has no binding pass to consult).
+   */
+  private isExternalPackageSpecifier(specifier: string, projectRoot: string): boolean {
+    const pkg = packageNameOf(specifier)
+    if (pkg.length === 0) return false
+    this.warmProjectPackageFacts(projectRoot)
+    if (this.workspacePackageNames(projectRoot).has(pkg)) return false
+    return TypeScriptAnalysisRunner.dependencyPackageCache.get(projectRoot)?.has(pkg) === true
+  }
+
+  /** The nearest ancestor that owns a workspace (pnpm-workspace.yaml), or startDir. */
+  private workspaceRoot(startDir: string): string {
+    const cache = TypeScriptAnalysisRunner.workspaceRootCache
+    const hit = cache.get(startDir)
+    if (hit !== undefined) return hit
+    let cur = startDir
+    let found = startDir
+    while (true) {
+      try {
+        if (fs.statSync(path.join(cur, "pnpm-workspace.yaml")).isFile()) { found = cur; break }
+      } catch { /* keep walking */ }
+      try {
+        const manifest = path.join(cur, "package.json")
+        if (fs.statSync(manifest).isFile()) {
+          const parsed = JSON.parse(fs.readFileSync(manifest, "utf8")) as { workspaces?: unknown }
+          if (parsed.workspaces !== undefined) { found = cur; break }
+        }
+      } catch { /* keep walking */ }
+      const parent = path.dirname(cur)
+      if (parent === cur) break
+      cur = parent
+    }
+    cache.set(startDir, found)
+    return found
+  }
+
+  /**
+   * Package NAMES the workspace publishes. One-level globs only (`packages/*`),
+   * which is what pnpm and npm manifests in this corpus use; a deeper pattern is
+   * not expanded and its packages therefore read as dependencies, so the
+   * unexpanded case is stated here rather than discovered as a wrong mark.
+   *
+   * Warmed alongside the dependency names in `warmProjectPackageFacts`, because
+   * the two answer one question and must be derived from one read.
+   */
+  private workspacePackageNames(projectRoot: string): Set<string> {
+    return TypeScriptAnalysisRunner.workspaceNameCache.get(projectRoot) ?? new Set<string>()
+  }
+
+  /**
+   * One filesystem read per project root, memoized: the dependency names, the
+   * workspace package names, and the workspace root, all derived together so they
+   * cannot disagree with each other about what the project contains.
+   */
+  private warmProjectPackageFacts(projectRoot: string): void {
+    const depCache = TypeScriptAnalysisRunner.dependencyPackageCache
+    if (depCache.has(projectRoot)) return
+
+    const deps = new Set<string>()
+    const names = new Set<string>()
+    const readDeps = (dir: string): void => {
+      try {
+        const manifest = path.join(dir, "package.json")
+        if (!fs.statSync(manifest).isFile()) return
+        const parsed = JSON.parse(fs.readFileSync(manifest, "utf8")) as Record<string, unknown>
+        const name = parsed.name
+        if (typeof name === "string" && name.length > 0) names.add(name)
+        for (const field of ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"]) {
+          const block = parsed[field]
+          if (block && typeof block === "object") {
+            for (const key of Object.keys(block as Record<string, unknown>)) deps.add(key)
+          }
+        }
+      } catch { /* an unreadable or absent manifest contributes nothing */ }
+    }
+
+    readDeps(projectRoot)
+    const wsRoot = this.workspaceRoot(projectRoot)
+    if (wsRoot !== projectRoot) readDeps(wsRoot)
+
+    const globs = this.workspaceGlobs(wsRoot)
+    for (const glob of globs) {
+      if (!glob.endsWith("/*")) continue
+      const base = path.join(wsRoot, glob.slice(0, -2))
+      let entries: string[] = []
+      try {
+        entries = fs.readdirSync(base)
+      } catch { continue }
+      for (const entry of entries) {
+        const dir = path.join(base, entry)
+        try {
+          if (fs.statSync(dir).isDirectory()) readDeps(dir)
+        } catch { /* skip */ }
+      }
+    }
+
+    TypeScriptAnalysisRunner.workspaceNameCache.set(projectRoot, names)
+    TypeScriptAnalysisRunner.dependencyPackageCache.set(projectRoot, deps)
+  }
+
+  /** Workspace globs from pnpm-workspace.yaml, else package.json `workspaces`. */
+  private workspaceGlobs(wsRoot: string): string[] {
+    try {
+      const yaml = fs.readFileSync(path.join(wsRoot, "pnpm-workspace.yaml"), "utf8")
+      const globs: string[] = []
+      for (const line of yaml.split("\n")) {
+        const m = /^\s*-\s*['"]?([^'"#\s]+)['"]?\s*(?:#.*)?$/.exec(line)
+        if (m?.[1]) globs.push(m[1])
+      }
+      if (globs.length > 0) return globs
+    } catch { /* not a pnpm workspace */ }
+    try {
+      const parsed = JSON.parse(fs.readFileSync(path.join(wsRoot, "package.json"), "utf8")) as {
+        workspaces?: string[] | { packages?: string[] }
+      }
+      const ws = parsed.workspaces
+      if (Array.isArray(ws)) return ws
+      if (ws && Array.isArray(ws.packages)) return ws.packages
+    } catch { /* no manifest */ }
+    return []
+  }
 
   private extractIndexSignature(node: Node, symbols: ASTEngine.UniversalSymbol[]): void {
     // [key: string]: T
@@ -4778,6 +5247,151 @@ class TypeScriptAnalysisRunner {
       walk(pat)
       return out
     }
+
+    /**
+     * The names bound by the function-like scope LEXICALLY enclosing `n`: its
+     * parameters — including a constructor's parameter PROPERTIES, which declare
+     * a member AND bind a name — plus every local declarator, loop variable and
+     * catch binding written inside that scope's own extent.
+     *
+     * WHY THIS EXISTS BESIDE `locals` / `refShadowed` / `parameterNamesOf`.
+     * Those three are keyed to the walk's CURRENT SYMBOL, and
+     * `resolveRelationshipSymbol` rebinds to a function-like symbol only for
+     * kinds `Function` and `Method`. A constructor's symbol kind is
+     * `constructor` and an accessor's is `property` (measured: `node.ts`'s
+     * `constructor` and `get isLeaf` come out of `extractSymbols` with exactly
+     * those kinds), so neither rebinds and their bodies and parameter lists were
+     * walked with the CLASS as the current symbol — where the class's own shadow
+     * set sees none of their bindings and every bare read resolves by NAME to a
+     * same-named class member.
+     *
+     * Measured on element-plus @200 files, and each row is a name BOUND at the
+     * site it was emitted from: `Node -> config` (a parameter property,
+     * node.ts:60), `Node -> isLeaf` (:97) and `Node -> isDisabled` (:89) — both
+     * local `const`s read inside an accessor body — and `Store -> config`
+     * (store.ts:32, the same parameter-property shape). The label's oracle walks
+     * scopes rather than shadow sets (`typescript-references.ts` clause 2) and
+     * derives none of the four.
+     *
+     * ONE SUBTREE SCAN PER SCOPE, cached by node id, rather than one per
+     * identifier. Over-approximation is deliberate and matches the model the
+     * method case already has: the analyzer's `locals` also accumulates
+     * declarators from nested blocks and arrows for the rest of the function.
+     */
+    const scopeBindingsCache = new Map<number, Set<string>>()
+    const scopeUnionCache = new Map<number, Set<string>>()
+    const noScopeBindings = new Set<string>()
+    const isFunctionLikeScope = (t: string): boolean =>
+      t === "function_declaration" ||
+      t === "generator_function_declaration" ||
+      t === "function_expression" ||
+      t === "generator_function" ||
+      t === "arrow_function" ||
+      t === "method_definition"
+    /**
+     * The union over EVERY function-like scope enclosing `n`, not only the
+     * nearest one: a binding reaches an inner scope. `(child) => new Node(child,
+     * config, this)` inside a constructor is enclosed by an arrow whose only
+     * parameter is `child` AND by the constructor, whose parameter property
+     * binds `config` — and the nearest-scope-only version left exactly that row
+     * (`Node -> config`, node.ts:77) standing.
+     */
+    const bindingsEnclosing = (n: Node): Set<string> => {
+      const scopes: Node[] = []
+      for (let a = n.parent; a; a = a.parent) {
+        if (isFunctionLikeScope(a.type)) scopes.push(a)
+        else if (a.type === "program" || a.type === "class_body" || a.type === "interface_body") break
+      }
+      if (scopes.length === 0) return noScopeBindings
+      const nearest = scopes[0]
+      if (scopes.length === 1) {
+        const hit = scopeBindingsCache.get(nearest.id)
+        return hit ?? scopeBindingsOf(nearest)
+      }
+      const hitUnion = scopeUnionCache.get(nearest.id)
+      if (hitUnion) return hitUnion
+      const union = new Set<string>()
+      for (const s of scopes) for (const b of scopeBindingsOf(s)) union.add(b)
+      scopeUnionCache.set(nearest.id, union)
+      return union
+    }
+    const scopeBindingsOf = (scope: Node): Set<string> => {
+      const cached = scopeBindingsCache.get(scope.id)
+      if (cached) return cached
+      const out = new Set<string>()
+      // THREE SHAPES, and the field name is measured rather than assumed
+      // (probe against this repo's tree-sitter-typescript):
+      //   `name => name`    arrow_function: `parameter=identifier`   ← SINGULAR
+      //   `(x) => x`        arrow_function: `parameters=formal_parameters`
+      //   `({ p, q }) => p` arrow_function: `parameters=formal_parameters`
+      //   `method_definition` / function declarations: `parameters`
+      // The SINGULAR field is the one that bit: a one-parameter arrow without
+      // parentheses binds `name` under `parameter`, so a lookup of
+      // `parameters` alone returns null and the binding is invisible. R14's
+      // arrow-parameter block above (`if (currentSymbol && currentSymbol ===
+      // prevSymbol && (n.type === "arrow_function" …)) { const params =
+      // n.childForFieldName("parameters"); if (params) … }`) has the same blind
+      // spot; it is left as it stands because this scan now answers the same
+      // question for the guard R14 feeds, and the gap is recorded in the lane's
+      // doc rather than silently repaired in a second place.
+      const params =
+        scope.childForFieldName("parameters") ?? scope.childForFieldName("parameter")
+      if (params) {
+        // A single-parameter arrow may hold that parameter DIRECTLY in the
+        // field (`name => …` is `parameter: identifier`), and iterating
+        // `namedChildren` of an identifier collects nothing — which is how
+        // `map(name => …)`'s `name` survived the first two versions of this
+        // scan.
+        const direct =
+          params.type === "identifier" || params.type.endsWith("_pattern") ? params : null
+        if (direct) {
+          if (direct.type === "identifier") out.add(direct.text)
+          else for (const b of collectPatternNames(direct)) out.add(b)
+        }
+        for (const p of direct ? [] : params.namedChildren) {
+          if (!p) continue
+          if (p.type === "identifier") out.add(p.text)
+          else {
+            // A parameter is `required_parameter` / `optional_parameter` and
+            // holds its binding in the `pattern` field, which is a BARE
+            // `identifier` in the ordinary case — and `collectPatternNames`
+            // reads a pattern's CHILDREN, so passing it a lone identifier
+            // collects nothing. That is how the first version of this scan
+            // still let `readonly data: CascaderOption` and its three siblings
+            // through on node.ts.
+            const pat = p.childForFieldName("pattern")
+            if (pat) {
+              if (pat.type === "identifier") out.add(pat.text)
+              else for (const b of collectPatternNames(pat)) out.add(b)
+            } else if (p.type.endsWith("_pattern")) for (const b of collectPatternNames(p)) out.add(b)
+          }
+        }
+      }
+      const body = scope.childForFieldName("body") ?? scope
+      const stack: Node[] = [body]
+      while (stack.length > 0) {
+        const cur = stack.pop()!
+        if (cur.type === "variable_declarator") {
+          const nm = cur.childForFieldName("name")
+          if (nm) {
+            if (nm.type === "identifier") out.add(nm.text)
+            else for (const b of collectPatternNames(nm)) out.add(b)
+          }
+        } else if (cur.type === "for_in_statement") {
+          const lhs = cur.namedChild(0)
+          if (lhs && lhs.type === "identifier") out.add(lhs.text)
+        } else if (cur.type === "catch_clause") {
+          const binding = cur.namedChild(0)
+          if (binding && binding.type === "identifier") out.add(binding.text)
+        }
+        for (let i = 0; i < cur.namedChildCount; i++) {
+          const c = cur.namedChild(i)
+          if (c) stack.push(c)
+        }
+      }
+      scopeBindingsCache.set(scope.id, out)
+      return out
+    }
     const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null, locals: Set<string>, refShadowed: Set<string>): void => {
       const prevSymbol = currentSymbol
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
@@ -5001,7 +5615,7 @@ class TypeScriptAnalysisRunner {
         // wanted (interp-uses pins `greet -> name` for a template interpolation of
         // its own parameter). Seeding `locals` with parameters silenced those and
         // the fixture caught it. So: suppress the NAME-RESOLVED reference only.
-        if (locals.has(name) || refShadowed.has(name) || parameterNamesOf(currentSymbol).has(name) || rhsOfTypeCheck) {
+        if (locals.has(name) || refShadowed.has(name) || parameterNamesOf(currentSymbol).has(name) || bindingsEnclosing(n).has(name) || rhsOfTypeCheck) {
           // still recurse into children (e.g. nested member paths)
         } else if (!!symbolNames[name] && name !== currentSymbol.name) {
           const key = `${currentSymbol.name}:${name}`
@@ -6863,6 +7477,13 @@ class TypeScriptAnalysisRunner {
   // filesystem-backed (baseDir anchors absolute imports), but it now runs
   // once per directory per process instead of once per analyzed file.
   private static projectRootCache = new Map<string, string>()
+
+  // One filesystem read per project root: the dependency names, the workspace
+  // names, and the workspace root. Memoized like projectRootCache, and for the
+  // same reason — the walk is filesystem-backed but must not run per file.
+  private static dependencyPackageCache = new Map<string, Set<string>>()
+  private static workspaceNameCache = new Map<string, Set<string>>()
+  private static workspaceRootCache = new Map<string, string>()
 
   private findProjectRoot(filePath: string): string {
     let dir = path.dirname(filePath)

@@ -22,7 +22,13 @@ const LANES = {
   CSHARP:      ["csharp", "real-csharp-analyzer", "csharp-sample"],
   JAVA:        ["java", "real-java-analyzer", "java-lib"],
   OBJECTIVE_C: ["objective-c", "real-objective-c-analyzer", "objc"],
-  TYPESCRIPT:  ["typescript", "real-typescript-analyzer", "typescript"],
+  // Corpus switched to rxjs 2026-10-08. The "typescript" corpus is 126 files and
+  // exactly ONE of them contains `implements` (its .d.ts share starves heritage
+  // types), so this lane read SILENT on a type the analyzer emits — a corpus
+  // artifact misread as an analyzer gap. rxjs: 771 .ts, 45 files with
+  // `implements`, 15 with `override`. Measured on the production path: 10/10 at
+  // 200 files, 9/10 at 40 (overrides draws none of its 15 carriers).
+  TYPESCRIPT:  ["typescript", "real-typescript-analyzer", "rxjs"],
   JAVASCRIPT:  ["javascript", "real-javascript-analyzer", "lodash"],
   ELIXIR:      ["elixir", "real-elixir-analyzer", "elixir"],
   CPP:         ["cpp", "real-cpp-analyzer", "cpp-example"],

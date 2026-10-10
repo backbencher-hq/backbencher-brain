@@ -1136,6 +1136,19 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             if (m.isMarkdownFrontMatter === true) out.isMarkdownFrontMatter = m.isMarkdownFrontMatter
             if (m.isRepeatedSite === true) out.isRepeatedSite = m.isRepeatedSite
 
+            // ── typescript, M14 ────────────────────────────────────────────────
+            // `isAugmentation`: set by the TypeScript analyzer on interface and
+            // type-alias declarations that sit inside a `declare global { ... }`
+            // block. Without it here the flag dies at this seam exactly as the
+            // markdown keys did (see below): the analyzer sets it, `analyze()`
+            // returns it, and everything downstream of `parseFile()` sees `false`.
+            // Measured: the direct path reports `Window isAug=true` on
+            // validation/m14/fixtures/typescript/ambient-global.ts while the
+            // parseFile path reported `false` until this line existed. A
+            // resolution rule cannot merge a symbol with its own augmentations if
+            // the fact that they ARE augmentations never crosses the seam.
+            if (m.isAugmentation === true) out.isAugmentation = m.isAugmentation
+
             // ── bash, M60 ─────────────────────────────────────────────────────
             // The bash lane measured that it publishes 13 metadata keys and the
             // intersection with THIS allowlist was ZERO — 13 of 13 keys measure 0%

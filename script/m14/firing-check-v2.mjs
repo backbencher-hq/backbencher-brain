@@ -42,7 +42,16 @@ const BLIND = process.env.BB_BLIND === "1"
 const LANES = {
   RUST:       ["rust", "real-rust-analyzer", "ripgrep", [".rs"]],
   GO:         ["go", "real-go-analyzer", "go-stdlib", [".go"]],
-  TYPESCRIPT: ["typescript", "real-typescript-analyzer", "element-plus", [".ts", ".tsx"]],
+  // Corpus switched to rxjs 2026-10-09, the same correction firing-check.mjs
+  // carries. element-plus is a COMPONENT LIBRARY: 200 code-bearing files and
+  // 1,069 admitted, but only 9 `extends` edges total and a single
+  // `implements` carrier, so this lane read 8/10 with `implements` and
+  // `overrides` SILENT — a corpus artifact misread as an analyzer gap (proved
+  // separately: that one carrier file emits its `Implements` edge, and rxjs
+  // reads 10/10). rxjs: 771 .ts, 45 files with `implements`, 15 with
+  // `override`. element-plus remains the differential's pinned corpus, where a
+  // class-light sample is the point rather than a limitation.
+  TYPESCRIPT: ["typescript", "real-typescript-analyzer", "rxjs", [".ts", ".tsx"]],
   JAVA:       ["java", "real-java-analyzer", "java-lib", [".java"]],
   KOTLIN:     ["kotlin", "real-kotlin-analyzer", "kotlin", [".kt", ".kts"]],
   SCALA:      ["scala", "real-scala-analyzer", "scala", [".scala"]],

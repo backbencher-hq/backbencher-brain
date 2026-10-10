@@ -63,6 +63,7 @@ import { deriveRustContainsTruth } from "./oracles/rust-contains"
 // compared by nothing.
 import { deriveTypeScriptReferencesTruth } from "./oracles/typescript-references"
 import { deriveTypeScriptUsesTruth } from "./oracles/typescript-uses"
+import { deriveImportsExportsTruth } from "./oracles/typescript-imports-exports"
 // M60 Solidity oracle, lane-owned in oracles/ for the same reason the three above
 // are: this shared file keeps one import and one registration of the rule rather
 // than a second copy the lane would have to edit here in parallel. It derives
@@ -22297,6 +22298,27 @@ async function main() {
         for (const e of deriveTypeScriptEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // M60 label-coverage sweep, DERIVATION question 3: `exports` and
+        // `imports` were emitted by this lane, stored, and compared against
+        // NOTHING — the oracle existed and this file never called it
+        // (`grep -c typescript-imports-exports script/m14/differential.ts` was
+        // 0). vue alone publishes 2,789 `imports` rows through that hole, and
+        // every one of them could have been an invented module or a dropped
+        // dependency with the gate reading green, because MISSING=0 asks
+        // whether an edge is EXPLAINABLE, not whether it is TRUE.
+        //
+        // The oracle's own independence note is the reason to trust the
+        // agreement: it shares no helper, name table or classification set
+        // with real-typescript-analyzer.ts, and deliberately does not import
+        // the analyzer's `extractImportItemsWithNodes` or `stringContent`.
+        //
+        // `moduleLeaf` is the same expression the DERIVATION audit used
+        // (ts-deriv-oracle-audit.ts:159), NOT this file's regex-strip idiom
+        // used for the html/toml leaves, so the row this pushes is the row the
+        // audit counted as covered.
+        for (const e of deriveImportsExportsTruth(root, path.basename(relPath, path.extname(relPath)))) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "javascript") {
         // M37.21 #611: wire the dedicated JS calls oracle into the plain
@@ -23231,6 +23253,23 @@ async function main() {
           // typescript to the references and uses sets and dart to imports/exports.
           // Neither list is a subset of the other, so both contributions are kept.
           ...(lang === "zig" ? ["calls", "uses", "references", "imports", "instantiates", "exports", "contains"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "typescript" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" || lang === "typescript" ? ["uses"] : []), ...(lang === "dart" ? ["imports", "exports"] : []),
+          // M60 label-coverage sweep, DERIVATION question 3 (typescript): the two
+          // labels this lane emitted and never compared. Admitting the labels and
+          // registering the oracle are two halves of one change — truth with no
+          // allowance reads as MISSING (the #910 shape) and an allowance with no
+          // truth reports every emitted edge as fabrication (the G7 shape).
+          //
+          // Measured before this (script/m14/ts-deriv-oracle-audit.ts, element-plus
+          // @3e07b0c677, 200 files admitted / 200 parsed): `exports` truth 357,
+          // covered 357, unexplained 0, over 120 files; `imports` truth 1,125,
+          // covered 1,125, unexplained 0, over 186 files — both at 100.0% under
+          // the differential's own matching rule, which is the test that the two
+          // halves agree rather than merely co-exist.
+          //
+          // The audit's declared limitation travels with the number: its oracle is
+          // a second walker over the SAME tree-sitter-typescript 0.23.2 grammar, so
+          // a grammar bug shared by both paths is invisible here.
+          ...(lang === "typescript" ? ["imports", "exports"] : []),
           // M60 K2 (2026-09-27): kotlin joins the uses-audited set.
           // 1,758 `uses` edges on the primary corpus, every one of them from
           // five emission sites that NO oracle derived and the allowlist dropped

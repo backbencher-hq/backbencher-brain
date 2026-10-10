@@ -370,6 +370,20 @@ export function runGate(lanesIn?: string[]): GateRun {
 
 export const findingKey = (f: Finding) => `${f.check}|${f.lang ?? "-"}|${f.detail}`
 
+/**
+ * Restrict recorded debt to the lanes a run actually measured.
+ *
+ * A scoped run that diffs against the WHOLE baseline reports every unmeasured
+ * lane's debt as repaid: `--langs=typescript` read "104 recorded, 0 NEW, 104
+ * repaid" while one lane had been read. Keys are `CHECK|lang|detail`, so the
+ * filter is exact, and an unscoped run is unchanged — nothing is hidden, only
+ * the lanes the run never looked at are left out of the arithmetic.
+ */
+export function scopeFindings(previous: string[], lanes: string[] | undefined): string[] {
+  if (!lanes) return previous
+  return previous.filter((k) => lanes.includes(k.split("|")[1] ?? ""))
+}
+
 /** Shrink-only. A finding not already recorded is a REGRESSION and fails the gate;
  *  a recorded finding that disappears is a REPUTATION that must be written down,
  *  never silently deleted — a debt that erases itself is indistinguishable from a
@@ -498,6 +512,17 @@ export function selfTest(): { passed: number; failures: string[]; skipped: Array
   check("a repaid finding is reported, not silently dropped", diffBaseline([], realFindings).repaid.length === realFindings.length)
   check("a repaid finding is not counted as a regression", diffBaseline([], realFindings).regressions.length === 0)
 
+  // 8b. A SCOPED run must not read another lane's debt as repaid. Without the
+  //     scoping this gate printed "104 recorded, 0 NEW, 104 repaid" for
+  //     `--langs=typescript`, claiming 102 lanes' debt repaid that the run never
+  //     read. The control below is the unscoped call, which must keep all three.
+  const mixed = ["DERIVATION|typescript|a", "DERIVATION|ruby|b", "DERIVATION|ruby|c"]
+  check("a scoped run reports only the lanes it measured", scopeFindings(mixed, ["typescript"]).length === 1)
+  check("an unscoped run keeps the whole recorded debt", scopeFindings(mixed, undefined).length === 3)
+  check("a scoped run cannot report another lane's debt repaid",
+    diffBaseline([], scopeFindings(mixed, ["typescript"])).repaid.length === 1 &&
+    diffBaseline([], mixed).repaid.length === 3)
+
   // 9. The enum parse must be able to go wrong, and be caught. A parser that
   //    silently returns [] makes every check pass for the wrong reason, which is
   //    how four rounds of corpus census reported a clean zero.
@@ -524,6 +549,17 @@ function main() {
   const onlyArg = process.argv.find((a) => a.startsWith("--langs="))
   const lanesIn = onlyArg ? onlyArg.split("=")[1].split(",").map((s) => s.trim()).filter(Boolean) : undefined
   const run = runGate(lanesIn)
+
+  // A scoped run measures ONE lane. Writing its result over the fleet record
+  // replaces a 43-lane claim with a 1-lane one and nothing in the file says so —
+  // `--langs=typescript` on 2026-10-09 wrote a 1-lane artifact over the committed
+  // 43-lane one and deleted 1,693 lines of recorded evidence, leaving a current
+  // timestamp on a claim that was no longer the claim. This is the same defect the
+  // zig `--dumps` default carried (a stale pass silently overwriting the committed
+  // artifact) and the same one differential.ts already guards against with its
+  // `M14.0.F5 NOT written` refusal. The gate had no guard. A scoped run is a probe:
+  // it prints what it measured and writes NOTHING that claims to be the fleet.
+  const scoped = !!lanesIn
 
   const byCheck = new Map<string, Finding[]>()
   for (const f of run.findings) {
@@ -577,33 +613,49 @@ function main() {
   // recorded debt and stays visible rather than being allowed to look like a pass.
   const current = new Set(run.findings.map(findingKey))
   fs.mkdirSync(path.dirname(BASELINE), { recursive: true })
-  const prev: { findings: string[] } = fs.existsSync(BASELINE)
+  const prevAll: { findings: string[] } = fs.existsSync(BASELINE)
     ? JSON.parse(fs.readFileSync(BASELINE, "utf8"))
     : { findings: [] }
+  // A scoped run measured one lane, so only that lane's recorded debt can be
+  // called repaid or regressed — finding keys are `CHECK|lang|detail`, so the
+  // filter is exact. Without it, `--langs=typescript` read "104 recorded, 0 NEW,
+  // 104 repaid", claiming every other language's debt repaid because the run
+  // never looked at it: the same overclaim as writing a scoped artifact over the
+  // fleet one. A lane that was not read is neither repaid nor regressed, and this
+  // line says so by leaving it out of the arithmetic.
+  const prev = { findings: scopeFindings(prevAll.findings, lanesIn) }
   const { regressions, repaid } = diffBaseline([...current], prev.findings)
 
   if (process.argv.includes("--update-baseline")) {
-    fs.writeFileSync(BASELINE, JSON.stringify({
-      schemaVersion: 1, at: new Date().toISOString(),
-      rule: "shrink-only: a finding not recorded is a regression; a recorded finding that disappears must be written down as repaid",
-      findings: [...current].sort(),
-    }, null, 2))
-    console.log(`\nbaseline recorded: ${current.size} findings`)
+    if (scoped) {
+      console.log(`\nbaseline NOT written: this is a scoped run (${lanesIn!.join(",")}), and recording its findings as THE baseline would erase every other lane's recorded debt — a later full run would read that debt as ${prevAll.findings.length - current.size} new regressions.`)
+    } else {
+      fs.writeFileSync(BASELINE, JSON.stringify({
+        schemaVersion: 1, at: new Date().toISOString(),
+        rule: "shrink-only: a finding not recorded is a regression; a recorded finding that disappears must be written down as repaid",
+        findings: [...current].sort(),
+      }, null, 2))
+      console.log(`\nbaseline recorded: ${current.size} findings`)
+    }
   }
 
-  fs.mkdirSync(RESULTS, { recursive: true })
-  fs.writeFileSync(path.join(RESULTS, "rel-type-coverage.json"), JSON.stringify({
-    at: new Date().toISOString(), ...run,
-    inputErrorLanes: run.inputErrors.map((e) => e.lang),
-    baseline: { recorded: prev.findings.length, regressions: regressions.length, repaid: repaid.length, regressionsDetail: regressions },
-  }, null, 2))
+  if (scoped) {
+    console.log(`\nevidence NOT written: validation/m60/results/rel-type-coverage.json is the canonical fleet sweep, and this run measured ${run.lanes.length} lane(s) (${lanesIn!.join(",")}). A scoped artifact here would replace the fleet claim with a smaller one — read the numbers above, and run without --langs= to refresh the record.`)
+  } else {
+    fs.mkdirSync(RESULTS, { recursive: true })
+    fs.writeFileSync(path.join(RESULTS, "rel-type-coverage.json"), JSON.stringify({
+      at: new Date().toISOString(), ...run,
+      inputErrorLanes: run.inputErrors.map((e) => e.lang),
+      baseline: { recorded: prev.findings.length, regressions: regressions.length, repaid: repaid.length, regressionsDetail: regressions },
+    }, null, 2))
+  }
 
   console.log(`\nbaseline: ${prev.findings.length} recorded, ${regressions.length} NEW, ${repaid.length} repaid`)
   if (regressions.length) {
     console.log("REGRESSIONS (not in the recorded debt):")
     for (const r of regressions.slice(0, 20)) console.log(`  ${r}`)
   }
-  console.log(`evidence: validation/m60/results/rel-type-coverage.json`)
+  if (!scoped) console.log(`evidence: validation/m60/results/rel-type-coverage.json`)
   // An input error is NOT a coverage regression and must not be recorded as one,
   // but it must also never exit 0: a green gate that read nothing is the failure
   // mode this whole file exists to prevent.
