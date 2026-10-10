@@ -11,10 +11,10 @@
     "sourceVsWasm": "all 64 declared names present (0 supertypes hidden by design), 64 wasm-named types all declared, 0 built-in extras"
   },
   "corpus": {
-    "_note": "63 of the grammar's 64 named node types occur in the measured corpus; `template_else_intro` does not (no `%{ else }` directive in 9 repos) and is classified from the grammar. `ERROR` is tree-sitter's runtime node, absent from node-types.json by design, and is observed on 244 files.",
-    "files": 9079,
-    "nodes": 1623844,
-    "repos": 9,
+    "_note": "REFRESHED 2026-10-09 by the whole-corpus construct census (validation/m14/fixtures/hcl/tools/construct-census.mts, artefact validation/m14/fixtures/hcl/construct-census.current.json): 9,329 git-tracked .tf/.tfvars/.hcl/.tofu files over 16 repositories under $HOME/fixtures/repositories, 1,645,992 NAMED nodes (the walk visits named children only; a count that includes anonymous tokens is larger and is not this number). 63 of the grammar's 64 named node types occur — `template_else_intro` does not, re-confirmed corpus-wide — and `ERROR` is tree-sitter's runtime node, observed again. The previous numbers (9,079 files / 9 repos / 1,623,844) described a corpus root ($HOME/fixtures/hcl/repos) that NO LONGER EXISTS on this laptop. errorFiles 244 and missingNodes 6 are the PREVIOUS census's figures and were not re-measured here.",
+    "files": 9329,
+    "nodes": 1645992,
+    "repos": 16,
     "grammarNamedTypes": 64,
     "grammarTypesObserved": 63,
     "grammarTypesNotObserved": [
@@ -25,6 +25,33 @@
     ],
     "errorFiles": 244,
     "missingNodes": 6
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "contains",
+      "exports",
+      "imports",
+      "overrides",
+      "references",
+      "uses"
+    ],
+    "excluded": [
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "HCL-D1a instrument A (grammar + keyword inventory over the whole corpus): 0 of 18 declaration-shaped node types are produced by the pinned grammar, and 0 of the 455 distinct corpus block types name a declaration keyword; the only candidate attribute keyword, `protocol`, has 162 sites in 50 files and every captured site is a network-protocol value. Artefact: validation/m14/fixtures/hcl/construct-census.current.json",
+        "quote": "instrument A: grammarVocabularyHits [] for implements; corpusKeywordHits {}; corpusAttributeKeyHits {\"protocol\":162} — adjudicated as DATA, not interface satisfaction"
+      },
+      {
+        "label": "instantiates",
+        "evidence": "zero-sites",
+        "from": "HCL-D1a instrument B (whole-corpus construct count): 3932 resource/data blocks over 444 distinct type labels, and 0 of those labels is declared as an address anywhere in the corpus (a provider type is declared by a provider binary, in no repository); the 2 `new` attribute-key sites are data attributes inside terraform test fixtures. Construct exists, target never does; STAYS IN the denominator. Artefact: validation/m14/fixtures/hcl/construct-census.current.json",
+        "quote": "instrument B: resourceOrDataBlocks 3932, distinctResourceTypeLabels 444, labels declared as addresses 0"
+      }
+    ],
+    "corpusUnexercised": [],
+    "_from": "NUMERATORS: the firing log (validation/m14/results/firing-laptop-b.current.log, 120-file even stride over terragrunt, control PASS) fires contains/exports/imports/references/uses; `calls` and `overrides` read SILENT there because the stride is ONE repo and their construct sites live elsewhere — corpus-wide the prior whole-corpus census recorded calls 4 edges on 1 file and overrides 68 edges on 33 files (docs/analyzers/real-hcl-analyzer.md), and both are pinned by committed fixtures (validation/m14/fixtures/hcl/declared-function-call.expectation.json expects 3 `calls` edges; override-target-not-reference.expectation.json expects 4 `overrides` edges). Whole-corpus reading for this block: validation/m14/fixtures/hcl/construct-census.current.json. NOT EXCLUDED, and therefore still IN the denominator: `extends` — 44 docker-bake `inherits` sites in 8 files naming 53 parents, all 53 resolvable to a `target` declared in the same file, so the construct EXISTS and OCCURS and the type is an unimplemented GAP, not grammar-absence (the same measurement refutes the lane's own earlier instrument-A reading, which probed block types and node types but never the attribute-key vocabulary). CLOSURE: implemented 7 + corpusUnexercised 0 + gaps 2 (`extends`, `instantiates`) = applicable 9 = 10 - 1 grammar-absence - 0 unclassified."
   },
   "handled_verified": {
     "_rule": "the analyzer reads this node to produce a symbol, a relationship, an import, an export, or a metadata value; the behaviour is pinned by a fixture in validation/m14/fixtures/hcl except where corpus.grammarTypesNotObserved says no corpus example exists",
@@ -101,17 +128,51 @@
     ]
   },
   "gap": {
-    "_description": "No confirmed HCL emission gap remains. The two residuals are measured, adjudicated and RULED in design_decision (HCL-D3 the Go-template reference, HCL-D4 the unreachable swallow class) rather than left silent. Reference recall 0.999931 and precision 1.000000 against an independent grammar oracle over 9,079 files; 180,809/180,809 relationships carry the product's `line_number`; 0 empty names, 0 ownerless properties, 0 document/block identity collisions.",
-    "gaps": []
+    "_description": "TWO applicable types are not emitted, both measured, and both therefore still INSIDE the denominator (they are gaps, not exclusions — see the coverage block and HCL-D1a). `extends`: 44 docker-bake `inherits` sites in 8 files naming 53 parents, all 53 resolvable to a `target` declared in the same file, so the construct exists and the type is unimplemented (HCL-G1). `instantiates`: expressible but 0 of the 444 resource/data type labels is declared anywhere in the corpus, so it is zero-sites and deliberately unpublished (HCL-G2). The other residuals remain RULED rather than gaps: HCL-D3 the Go-template reference, HCL-D4 the unreachable swallow class. Reference recall 0.999931 and precision 1.000000 against an independent grammar oracle over the PREVIOUS 9,079-file corpus; 180,809/180,809 relationships carry the product's `line_number`; 0 empty names, 0 ownerless properties, 0 document/block identity collisions. The corpus block above is the refreshed population; those recall/precision figures were NOT re-measured on it.",
+    "gaps": [
+      {
+        "id": "HCL-G1",
+        "type": "extends",
+        "status": "OPEN",
+        "evidence": "construct EXISTS and OCCURS, so the type stays in the denominator",
+        "measured": "44 `inherits` sites in 8 docker-bake files, 53 named parents, 53 resolved to a `target` declared in the same file, 0 unresolved",
+        "from": "instrument validation/m14/fixtures/hcl/tools/construct-census.mts, artefact validation/m14/fixtures/hcl/construct-census.current.json",
+        "fixShape": "a `target`-scoped `inherits` reading in src/ast/real-hcl-analyzer.ts, emitting extends from the target's qualified path to each declared parent",
+        "falsifier": "an `inherits` value that resolves to no `target` declared in the same file"
+      },
+      {
+        "id": "HCL-G2",
+        "type": "instantiates",
+        "status": "OPEN-RULED-NOT-EMITTED",
+        "evidence": "zero-sites; stays in the denominator, deliberately unpublished",
+        "measured": "3932 resource/data blocks over 444 distinct type labels, 0 labels declared as an address anywhere in the corpus; the 2 `new` attribute-key sites are data",
+        "from": "instrument validation/m14/fixtures/hcl/tools/construct-census.mts, artefact validation/m14/fixtures/hcl/construct-census.current.json",
+        "falsifier": "a corpus file declaring a named type — not a mock, not a data-source label, not a resource type — that a resource/data block instantiates"
+      }
+    ]
   },
   "design_decision": {
     "decisions": [
       {
         "id": "HCL-D1",
-        "node_type": "the five unemitted relationship kinds: calls, extends, implements, overrides, instantiates",
-        "status": "RULED",
+        "node_type": "the five unemitted relationship kinds: calls, extends, implements, overrides, instantiates — FALSIFIED, kept as the record",
+        "status": "SUPERSEDED",
         "question": "The relationship taxonomy carries ten kinds. Can HCL express a call graph, a class hierarchy, or object construction?",
-        "resolution": "NOT APPLICABLE, and each half is measured rather than asserted. `extends`/`implements`/`overrides`: HCL has no type declaration, no base clause and no interface implementation among the grammar's 64 named node types, so the kinds are not merely unused but inexpressible. `instantiates`: HCL builds values with `object()`/`list()`, never instances of a declared type. `calls`: 12,977 `function_call` nodes over 144 distinct callees in 9,079 files, and NOT ONE callee resolves to a symbol the project declares, because the grammar provides no syntax for declaring one; the 5 that appear to match are provable name collisions (Terraform core functions `length`, `file`, `timestamp`, `lower`, and the type keyword `object` beside a declared `output \"object\"`). Every `calls` edge would therefore dangle, which is the shape java and groovy suppress with explicit builtin filters. The reference read INSIDE a call is still published. ENFORCED, not merely stated: run-fixtures.ts's UNIVERSAL_FORBIDDEN_RELATIONSHIPS for hcl refuses extends/implements into the reference roots var/local/module/data, and the hcl/builtin-vs-project-reference fixture forbids a `calls` edge to toset/merge/lookup. Adjudication: fixtures/hcl/out/calls-feasibility.json."
+        "resolution": "SUPERSEDED 2026-10-09: this ruling was refuted by measurement in three independent ways, and is kept as the record because a wrong ruling that is quietly deleted cannot warn anyone. (1) It ruled `calls`/`overrides` NOT APPLICABLE while the analyzer emits both — src/ast/real-hcl-analyzer.ts:485 (Overrides) and :528 (Calls) — and this lane's own committed fixtures assert them: validation/m14/fixtures/hcl/declared-function-call.expectation.json expects 3 `calls` edges and validation/m14/fixtures/hcl/override-target-not-reference.expectation.json expects 4 `overrides` edges. A verdict contradicted by the code and the fixtures is a verdict produced by an instrument nobody read. (2) Its cited adjudication artefact, `fixtures/hcl/out/calls-feasibility.json`, DOES NOT EXIST on this laptop, and the instrument that wrote it imports a hardcoded `$HOME/backbencher-brain/src/ast/engine` — a path that does not exist here (the repo is $HOME/mcp/backbencher-brain). A ruling that rests on a missing artifact is not a ruling. (3) Its `extends` half was wrong for a different reason: it probed node types and block types and never the attribute-key vocabulary, and the whole-corpus census found 44 docker-bake `inherits` sites in 8 files whose 53 named parents all resolve to `target` blocks declared in the same file. The measured replacement is HCL-D1a (extends/implements/instantiates) and HCL-D9 (calls/overrides)."
+      },
+      {
+        "id": "HCL-D1a",
+        "node_type": "extends, implements, instantiates — the three types HCL does not emit, each classed by its own measurement",
+        "status": "RULED",
+        "question": "Of the three types the lane does not emit, which one is INEXPRESSIBLE (grammar-absence, leaves the denominator), which is expressible-with-no-bindable-target (zero-sites, stays IN), and which is expressible AND present (a gap that stays IN)?",
+        "resolution": "RULED per type, over the whole corpus (9,329 git-tracked .tf/.tfvars/.hcl/.tofu files, 16 repositories, 1,645,992 named nodes). Instrument: validation/m14/fixtures/hcl/tools/construct-census.mts; artefact: validation/m14/fixtures/hcl/construct-census.current.json. Control: 49 planted keywords were seen as block types AND as attribute keys, and the production path emitted the planted `calls`/`overrides`/`contains` edges, so a corpus zero below is a zero the probe could have seen through. `extends` = A GAP, NOT an exclusion: the HCL container grammar has no inheritance production, but the language as used CAN express inheritance — `inherits = [\"base\"]` inside a docker-bake `target` block names other declarations — and the census measured 44 such sites in 8 files naming 53 parents, 53/53 resolving to a `target` declared in the same file and 0 unresolved. A type whose construct exists and occurs cannot be excluded; it stays in the denominator as unimplemented. This corrects this lane's own earlier instrument-A reading, which enumerated block types and node types but never the attribute-key vocabulary. `implements` = GRAMMAR-ABSENCE: 0 of 18 declaration-shaped node types are produced by the pinned grammar, and 0 of the corpus's 455 distinct block types and 0 of its 5,311 attribute keys name an interface, protocol, trait, impl or satisfies construct; the single candidate keyword, `protocol`, has 162 sites in 50 files and every captured site is DATA (an ALB/security-group/enos network protocol or a matrix value), not contract satisfaction. Leaves the denominator. `instantiates` = ZERO-SITES, and deliberately NOT emitted: the language can express an instantiation (`resource \"T\" \"n\" {}`), so a grammar inventory cannot settle it, and the census measured 3,932 resource/data blocks over 444 distinct type labels with 0 of those labels declared as an address anywhere in the corpus (a provider type is declared by a provider binary, in no repository); the 2 `new` attribute-key sites are data attributes in terraform test fixtures. STAYS IN the denominator. Falsifier for the extends half: an `inherits` value that resolves to no `target` in the same file. Falsifier for the instantiates half: a corpus file declaring a named type that a resource/data block instantiates."
+      },
+      {
+        "id": "HCL-D9",
+        "node_type": "calls and overrides — the two types the handover ruled inapplicable and the analyzer emits",
+        "status": "RULED",
+        "question": "The handover listed `calls` and `overrides` as missing on prose grounds. Do they exist in HCL, and does the analyzer emit them?",
+        "resolution": "RULED, and both are IMPLEMENTED and pinned. `calls`: the ecosystem layers a declaration on top of the container grammar — docker-bake spells it `function \"name\" { … }` — and the census found exactly 1 such declaration (docker/docker-bake.hcl, `function \"bindir\"`) among 12,988 `function_call` nodes over 148 distinct callees; the analyzer emits a `calls` edge only where the SAME FILE declares the callee, so every emitted edge resolves and the 12,988 global/provider calls publish no edge while the reference read inside them is still published. `overrides`: Terraform's test framework spells it `override_resource`/`override_data`/`override_module`; the census counted 71 blocks of those three kinds in 33 files with 68 carrying a `target` (72 blocks named override* in total — the extra one is a bare `overrides` block in vault/enos/modules/target_ec2_spot_fleet/main.tf that the analyzer does not recognise), and the edge is a RETYPE of the `references` edge the target used to carry, so the graph gains no duplicate. Both are pinned by committed fixtures (declared-function-call, override-target-not-reference, builtin-vs-project-reference). The 120-file terragrunt firing stride reads both SILENT because neither construct occurs in terragrunt; that is a fact about the sample, not about the language."
       },
       {
         "id": "HCL-D2",
