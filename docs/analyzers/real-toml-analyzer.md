@@ -1153,6 +1153,74 @@ undocumented false edges. It returns the moment the eager resolve refuses ambigu
 which 949 name a key their workspace root really declares and 304 would bind to
 exactly one symbol. Every one of those numbers is measured and re-runnable.
 
+### The resolver defect, measured fleet-wide — and why it is not this lane's to fix
+
+The eager insert-time resolve is not a toml problem. Measured on this repository's
+own live index (190,213 symbols, 496,886 relationships), it is a fleet-wide precision
+defect that this emission is merely the first thing to expose.
+
+**The fabrication signature, and its defensible core.** A bound edge that points into
+another file while a symbol of the EXACT SAME NAME exists in the edge's own file is
+what a partially-populated insert-time read produces:
+
+| | count |
+|---|---|
+| cross-file dotted edges | 1,543 |
+| ignored an **exact-name** symbol in their OWN file | **882** |
+| ignored a suffix-only local symbol | 36 |
+
+882 is the defensible set — the target's name matched a local symbol exactly, so there
+was a strictly better candidate and it was not taken. Hand-checked examples:
+
+```
+validation/m14/issue-urls.json   target M14.0.F1  -> bound to validation/m14/results/M14.0.F1.json
+validation/m14/issue-urls.json   target M14.1-JVM.java -> bound to validation/m13/corpus-mapping.json
+```
+
+By source language: **json 853**, markdown 18, elixir 9, lua 4, css 4. This is cause A
+from `MASTER-HANDOFF.md:109-131` — a published name that is not an identifier — at
+fleet scale: a string value in one JSON file whose text happens to equal a key name in
+another.
+
+**The fix, and its measured blast radius.** "Prefer a same-file candidate over a
+cross-file one" is a strict improvement: it can only move an edge to a symbol that
+already satisfies the store's own match rule, and it never touches an edge with no such
+candidate.
+
+| | count |
+|---|---|
+| bound edges that HAVE a same-file exact-name candidate | 102,393 |
+| already pointed there (correct — untouched) | 70,034 |
+| **would repoint** | **32,359** (json 31,785, typescript 105, toml 27, hcl 19, tsx 17, markdown 17) |
+
+Of the repoints, **~56 correct a cross-language fabrication** (json→javascript→json 23,
+json→typescript→json 16, markdown→json→markdown 17) — an edge that crossed into
+another language and now stops doing so. The remaining ~32,300 are same-language moves
+to a locally-declared symbol of the same name.
+
+**AND THE NARROW FIX THIS LANE ACTUALLY NEEDS.** Same-file preference does not solve
+workspace inheritance: a member manifest declares no `workspace.package.edition`
+locally, so the edge still reaches across to one of the two roots. What that needs is
+narrower and stricter — **a dotted target whose candidate set has more than one member
+is ambiguous and must be left unbound**, leaving suffix matching completely untouched so
+the `ASTEngine.LanguageAnalyzer -> t0128_engine.ASTEngine.LanguageAnalyzer` shape keeps
+resolving exactly as it does today. That is the same refusal `_res_name_unique` already
+performs (`HAVING COUNT(*) = 1`) applied to the one strategy that lacks it.
+
+**Why none of it is applied here.** Both changes are to `src/ast/parallel-indexer.ts`,
+which another lane is actively working in — it landed `4403697ef` ("rank dotted targets
+in the pass the way the eager resolve did") and `b21f8d8ad` ("resolve dotted targets in
+the pass, so the store path no longer needs its per-edge ORDER BY") within this session.
+Strategy 3c buys **recall** (+3,257 edges) and I have now measured that it does **not**
+buy this **precision**: the two-root adversarial case still produces 2 false edges under
+it. A 32,359-edge change to shared resolution needs its owner's gates and its own lane's
+sign-off, and duplicating that work would be the collision this repository has already
+paid for once.
+
+**What it is worth.** 882 wrong edges today; 1,267 applicable toml sites waiting on the
+refusal half. The measurements above are re-runnable against the live index and are the
+evidence either change needs.
+
 ### What was verified before any of it was called done
 
 Emission is the cheap half. These are the checks that had to pass, and two of them
