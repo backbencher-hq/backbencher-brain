@@ -49,6 +49,15 @@ const LANES = {
   // (199 repos, 371,015 files) picking the repo holding the most files of the lane's
   // extensions. The number after each entry is that count. `clean` is the one thin lane
   // (109 files in Clyde, 74 in clean-stdlib) — measured, not assumed.
+  //
+  // THOSE COUNTS WERE TAKEN UNDER THE BROKEN ADMISSION RULE and four of them are short by
+  // the `.github` files it pruned (fixed in pickFiles, 2026-10-09). Re-measured over the
+  // same 23 repos with the same extension sets and the same 400 KB cap, exact-name pruning:
+  // only `fsharp` 6,611 (+6), `powershell` 506 (+5), `yaml` 2,082 (+5) and `markdown`
+  // 2,105 (+4) move; the other nineteen are identical. The per-entry comments are left
+  // AS MEASURED rather than rewritten, because a population that changed under a fix is
+  // itself evidence — and the instrument PRINTS the population it used on every run, which
+  // is the number to quote. See `validation/m14/results/corpus-populations-admission-fix.txt`.
   BASH:        ["bash", "real-bash-analyzer", "bash-completion"],       // 556
   FSHARP_B:    ["fsharp", "real-fsharp-analyzer", "fsharp"],            // 5,057
   ZIG:         ["zig", "real-zig-analyzer", "zig"],                     // 2,946
@@ -70,7 +79,7 @@ const LANES = {
   MAKE:        ["make", "real-makefile-analyzer", "otp"],               // 342
   TOML_B:      ["toml", "real-toml-analyzer", "cargo"],                 // 431
   XML_B:       ["xml", "real-xml-analyzer", "libxslt"],                 // 538
-  MARKDOWN_B:  ["markdown", "real-markdown-analyzer", "redwood"],       // 2,082
+  MARKDOWN_B:  ["markdown", "real-markdown-analyzer", "redwood"],       // 2,105 (.md under 400 KB, incl. .github — see the admission fix in pickFiles)
   CLEAN_B:     ["clean", "real-clean-analyzer", "Clyde"],               // 109 (THIN)
 }
 
