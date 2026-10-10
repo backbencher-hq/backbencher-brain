@@ -134,14 +134,21 @@ export const LANES_B: Record<string, string> = {
   php: "php", powershell: "ps1", r: "r", dart: "dart", sql: "sql", graphql: "graphql",
   protobuf: "proto", json: "json",
   // BOTH SPELLINGS, because one language does not become a different population by being spelled
-  // `.yml`. Measured on ansible: 13 `.yaml` files against 2,068 `.yml` (2,081 combined), so the
+  // `.yml`. Measured on ansible — 13 `.yaml` files against 2,068 `.yml`, 2,081 combined — so the
   // `--all` table was measuring 0.6% of the lane's files and reporting the 13-file verdict as the
-  // lane's. `firing-check.mjs` has always admitted both (`yaml: [".yml", ".yaml"]`), which is
-  // exactly how the two instruments came to disagree (HANDOFF §5.2).
+  // lane's. `firing-check.mjs` has always admitted both spellings, which is exactly how the two
+  // instruments came to disagree (HANDOFF §5.2).
+  //
+  // READ THIS BEFORE WRITING A COMMENT IN THIS LITERAL. `language-board.ts` parses LANES_B by
+  // splitting the object body on top-level commas and taking `key` before the first colon and
+  // `value` after it — quote-aware, but NOT comment-aware. A comment whose text contains a
+  // COLON-SPACE-QUOTE sequence is therefore read as a lane. The first version of this comment
+  // contained one and the board reported 26 lanes, three of them sentences. Comments here stay
+  // free of `key: "value"` shapes and of backticks.
   yaml: "yaml,yml",
   css: "css", scss: "scss",
-  // `make: "mk"` cannot admit a bare `Makefile` — `admitByExtension` matches a trailing
-  // `.`+ext, and that file has no extension at all. Reported rather than silently redefined here.
+  // `make: "mk"` cannot admit a bare `Makefile`, because admitByExtension matches a trailing
+  // dot-plus-ext and that file has no extension at all. Reported rather than silently redefined.
   hcl: "tf", make: "mk", toml: "toml", xml: "xml", markdown: "md", clean: "icl",
 }
 

@@ -52,8 +52,18 @@ const ROOT = resolve(HERE, "..", "..")
 // malformed artefact and watch the degradation (the board never writes a fixture of its own); the
 // defaults are the real inputs, and nothing else in this file reads the environment.
 const LANES_SRC = process.env.BB_BOARD_LANES ?? "script/m14/incoming-gate.ts"
-const FIRING_LOG = process.env.BB_BOARD_FIRING ?? "validation/m14/results/firing-laptop-b.corrected.log"
-const INCOMING_LOG = process.env.BB_BOARD_INCOMING ?? "validation/m14/results/incoming-laptop-b.after-sep-fix.log"
+// THE DEFAULTS ARE THE PROGRAMME'S CURRENT LOGS. They were not: firing pointed at
+// `firing-laptop-b.corrected.log` (17:39) and incoming at `incoming-laptop-b.after-sep-fix.log`
+// (17:32) while this file's own header, and HANDOFF §1, named
+// `firing-laptop-b.current.log` and `incoming-laptop-b.current.log` as the inputs to refresh and
+// point at. Measured 2026-10-09: `corrected` was 2h11m older than `current` on firing (17:39 vs
+// 19:50) and 45m older on incoming (17:32 vs 18:17), so anyone running the board WITHOUT the
+// env overrides read a board older than the one the session was refreshing — and the fix to
+// `firing-check.mjs` that moved markdown 1 -> 3 types lived entirely in the newer file. A board
+// whose default input is a stale artefact reports a stale programme, whatever its own arithmetic.
+// The env overrides stay, for the reason the comment below gives.
+const FIRING_LOG = process.env.BB_BOARD_FIRING ?? "validation/m14/results/firing-laptop-b.current.log"
+const INCOMING_LOG = process.env.BB_BOARD_INCOMING ?? "validation/m14/results/incoming-laptop-b.current.log"
 const SPEC_DIR = process.env.BB_BOARD_SPEC_DIR ?? "script/m14/spec"
 const TOTAL_TYPES = 10 // the ontology's ten relationship types: `fired + SILENT` must sum to this
 const JSON_MODE = process.argv.slice(2).includes("--json")
@@ -97,6 +107,48 @@ const stamp = (ms: number | null): string => {
 
 // ------------------------------------------------------------------ the lane set, read live
 /** Split on commas that are outside quotes (a lane value must not be able to fake a separator). */
+/**
+ * STRIP LINE AND BLOCK COMMENTS, WITHOUT TOUCHING ANYTHING INSIDE A STRING.
+ *
+ * Why this exists: `readLaneExtensions` is not allowed to `import()` the lane table, so it PARSES
+ * the object literal, and the parse was not comment-aware. Measured 2026-10-09: a comment inside
+ * `LANES_B` whose text contained a COLON-SPACE-QUOTE sequence was read as a lane — the board
+ * printed 24 lanes, the extra one being the sentence `free of `key: "value"` shapes`. The same
+ * happened twice more, once because a BACKTICK in a comment opened a string that `splitOutside`
+ * then refused to close.
+ *
+ * That is not a comment's fault; it is a parser that cannot tell prose from code, and it is this
+ * programme's most repeated defect shape — a check anchored to a formatting choice, which expires
+ * without failing. So comments are removed properly instead of the commenters being warned.
+ *
+ * Comment text and backticks become SPACES and newlines are preserved, so offsets (and therefore
+ * both brace matchers) stay aligned. Backticks are stripped wherever they appear outside a quoted
+ * string: a template literal in this table would be new machinery, while a backtick in PROSE is
+ * the common case, and assuming prose is the safe direction.
+ */
+function stripComments(src: string): string {
+  let out = "", quote = ""
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i]
+    if (quote !== "") {
+      out += ch
+      if (ch === "\\") { out += src[i + 1] ?? ""; i++ }
+      else if (ch === quote) quote = ""
+      continue
+    }
+    if (ch === '"' || ch === "'") { quote = ch; out += ch; continue }
+    if (ch === "`") { out += " "; continue }
+    if (ch === "/" && src[i + 1] === "/") { while (i < src.length && src[i] !== "\n") { out += " "; i++ } out += "\n"; continue }
+    if (ch === "/" && src[i + 1] === "*") {
+      for (i += 2; i < src.length && !(src[i] === "*" && src[i + 1] === "/"); i++) out += src[i] === "\n" ? "\n" : " "
+      out += "  "; i++
+      continue
+    }
+    out += ch
+  }
+  return out
+}
+
 function splitOutside(body: string): string[] {
   const out: string[] = []; let quote = "", cur = ""
   for (const ch of body) {
@@ -112,8 +164,11 @@ const unquote = (s: string): string => {
   return (q === '"' || q === "'" || q === "`") && s[s.length - 1] === q ? s.slice(1, -1) : s
 }
 function readLaneExtensions(): Array<[string, string]> {
-  let src = ""
-  try { src = readFileSync(resolve(ROOT, LANES_SRC), "utf8") } catch { fatal(`cannot read ${LANES_SRC}; the lane set is the board's spine`) }
+  let raw = ""
+  try { raw = readFileSync(resolve(ROOT, LANES_SRC), "utf8") } catch { fatal(`cannot read ${LANES_SRC}; the lane set is the board's spine`) }
+  // COMMENTS GO FIRST. Without this the literal below is parsed as prose-plus-code, and a comment
+  // containing a colon-space-quote or a backtick becomes a lane (measured: 24 lanes for 23).
+  const src = stripComments(raw)
   const decl = src.indexOf("export const LANES_B")
   if (decl < 0) fatal(`no \`export const LANES_B\` declaration in ${LANES_SRC}`)
   const open = src.indexOf("{", decl)
@@ -127,12 +182,27 @@ function readLaneExtensions(): Array<[string, string]> {
   }
   if (open < 0 || end < 0) fatal(`no balanced \`export const LANES_B = { ... }\` literal in ${LANES_SRC}`)
   const pairs: Array<[string, string]> = []
+  const unknown: string[] = []
   for (const part of splitOutside(src.slice(open + 1, end))) {
     const c = part.indexOf(":")
     const k = c < 0 ? "" : unquote(part.slice(0, c).trim()), v = c < 0 ? "" : unquote(part.slice(c + 1).trim())
-    if (k !== "" && v !== "") pairs.push([k, v])
+    // A lane key is an identifier. Anything else a stray comma produced is reported BY NAME rather
+    // than silently returned as a lane — a 24th "lane" called `free of ...` is worse than a fatal,
+    // because it prints a row and looks like data.
+    if (k !== "" && v !== "" && isIdentifierKey(k)) pairs.push([k, v])
+    else if (k !== "" || v !== "") unknown.push(part.trim())
   }
+  if (unknown.length > 0) console.error(`lane set: ${unknown.length} unparseable entry/entries in ${LANES_SRC} ignored: ${unknown.slice(0, 3).map((u) => JSON.stringify(u.slice(0, 60))).join(", ")}`)
   return pairs.length === 0 ? fatal(`LANES_B in ${LANES_SRC} parsed to zero lanes`) : pairs
+}
+/** A lane key looks like `bash`, `fsharp`, `objective-c`. Not a sentence, not a fragment. */
+function isIdentifierKey(k: string): boolean {
+  if (k.length === 0 || k.length > 24) return false
+  for (const ch of k) {
+    const ok = (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9") || ch === "-" || ch === "_"
+    if (!ok) return false
+  }
+  return true
 }
 
 // ------------------------------------------------------------------ input files
