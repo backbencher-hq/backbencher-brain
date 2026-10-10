@@ -4,7 +4,7 @@
   "indexFingerprint": {
     "symbols": 10467,
     "files": 202,
-    "relationships": 62289,
+    "relationships": 62288,
     "externalRelationships": 18229
   },
   "roots": 12,
@@ -2898,6 +2898,7 @@
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:util/source-text.ts:startsWith:157:Buffer:references:157"
       ],
       "callers": [
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:cmdIndex:46:calls:indexProjectParallel:257:m40",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:createWorker:1648:createWorker:calls:1813",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:createWorker:1648:handleWorkerTimeout:calls:1735",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:createWorker:1648:handleWorkerTimeout:calls:1794",
@@ -2919,11 +2920,11 @@
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processInProcess:1139:storeResults:calls:1257",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processInProcess:1139:storeResults:references:1239",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processWithWorkerPool:1376:createWorker:calls:1952",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processWithWorkerPool:1376:createWorker:contains:39",
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processWithWorkerPool:1376:createWorker:contains:147",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processWithWorkerPool:1376:createWorker:references:1952",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processWithWorkerPool:1376:handleWorkerTimeout:contains:38",
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processWithWorkerPool:1376:handleWorkerTimeout:contains:146",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processWithWorkerPool:1376:scheduleNext:calls:1634",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processWithWorkerPool:1376:scheduleNext:contains:40",
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processWithWorkerPool:1376:scheduleNext:contains:148",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processWithWorkerPool:1376:scheduleNext:references:1634",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processWithWorkerPool:1376:storeResults:calls:1405",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:processWithWorkerPool:1376:storeResults:references:1405",
@@ -2938,7 +2939,6 @@
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:scheduleNext:1840:scheduleNext:calls:1946",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:cmdIndex:46:Flags:contains:1",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:cmdIndex:46:Flags:uses:65",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:cmdIndex:46:indexProjectParallel:calls:257",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:runCli:764:cmdIndex:calls:892",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:runCli:764:cmdIndex:references:892",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:runCli:764:cmdUpgrade:calls:1061",
@@ -4640,11 +4640,11 @@
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:util/source-text.ts:startsWith:157:Buffer:references:157"
       ],
       "callers": [
+        "064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:cmdIndex:46:calls:indexProjectParallel:257:m40",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:reindexFilesParallel:6757:indexProjectParallel:calls:6869",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:ast/parallel-indexer.ts:reindexFilesParallel:6757:indexProjectParallel:references:6869",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:cmdIndex:46:Flags:contains:1",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:cmdIndex:46:Flags:uses:65",
-        "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:cmdIndex:46:indexProjectParallel:calls:257",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:runCli:764:cmdIndex:calls:892",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:runCli:764:cmdIndex:references:892",
         "064be526733c31e95c0ac2beb42d209af9bab8e6:rel:064be526733c31e95c0ac2beb42d209af9bab8e6:cli/index.ts:runCli:764:cmdUpgrade:calls:1061",

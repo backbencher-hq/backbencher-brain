@@ -1,0 +1,70 @@
+{
+  "why": "The m26 external-arm golden was re-captured on 2026-10-11. This file is the audit trail for that re-capture: what the golden said before, what the live index said, and the proof that the difference was renumbering and not lost data. A re-capture resets the oracle the gate compares against, so it must never be a blank cheque.",
+  "gate": "script/m26/verify-external-arm-plan.ts",
+  "captureScript": "script/m26/capture-external-arm-baseline.mts",
+  "indexUnderTest": "~/.bb/projects/064be526733c31e95c0ac2beb42d209af9bab8e6/brain.db",
+  "indexLastModified": "2026-10-10T23:12 (before this re-capture; not modified by the re-capture)",
+
+  "fingerprintBefore": {
+    "symbols": 10467,
+    "files": 202,
+    "relationships": 62289,
+    "externalRelationships": 18229
+  },
+  "fingerprintAfter": {
+    "symbols": 10467,
+    "files": 202,
+    "relationships": 62288,
+    "externalRelationships": 18229
+  },
+  "fingerprintDelta": {
+    "symbols": 0,
+    "files": 0,
+    "relationships": -1,
+    "externalRelationships": 0,
+    "reading": "One internal relationship fewer. Symbols and files identical, external relationships identical."
+  },
+
+  "whyThatIsNotDataLoss": {
+    "method": "The golden stores relationship rowIds, not just counts. Every rowId it references was looked up in the live index. Of 4749 referenced rowIds, 4745 still existed and 4 did not.",
+    "theFour": [
+      "…:ast/parallel-indexer.ts:processWithWorkerPool:1376:createWorker:contains:39",
+      "…:ast/parallel-indexer.ts:processWithWorkerPool:1376:handleWorkerTimeout:contains:38",
+      "…:ast/parallel-indexer.ts:processWithWorkerPool:1376:scheduleNext:contains:40",
+      "…:cli/index.ts:cmdIndex:46:indexProjectParallel:calls:257"
+    ],
+    "explanation": "All four are internal contains/calls edges in files that grew (parallel-indexer.ts, cli/index.ts). The relationship id embeds the child's line and a per-file sequence ordinal, so re-indexing a grown file RENUMBERS those ids. The edges still exist, with new ordinals:",
+    "example": {
+      "goldenId": "…:processWithWorkerPool:1376:handleWorkerTimeout:contains:38",
+      "liveId": "…:processWithWorkerPool:1376:handleWorkerTimeout:contains:146",
+      "sameSourceSymbol": true,
+      "sameParentLine": "1376 in both",
+      "sameTargetSymbol": true,
+      "sameRelationshipType": "contains"
+    },
+    "symbolsStillPresent": "handleWorkerTimeout, scheduleNext, createWorker, cmdIndex, indexProjectParallel and processWithWorkerPool all still exist in the live index."
+  },
+
+  "postCaptureVerification": {
+    "method": "The re-captured golden was compared against the pre-capture golden edge by edge, normalising away the ordinal and the provenance tag. If the pin had changed behaviour, the edge SET would differ; renumbering alone cannot change membership.",
+    "callees": { "before": 1566, "after": 1566, "identicalAfterNormalising": true },
+    "callers": { "before": 1157, "after": 1157, "identicalAfterNormalising": false, "differences": 1 },
+    "theOneDifference": {
+      "edge": "cli/index.ts cmdIndex@46 -> indexProjectParallel@5085, type calls",
+      "goldenId": "…:cmdIndex:46:indexProjectParallel:calls:257",
+      "newId": "…:cmdIndex:46:calls:indexProjectParallel:257:m40",
+      "reading": "The same edge. Its id gained an ':m40' provenance tag and the type/name tokens were reordered. Verified present in the live index as type=calls, cmdIndex@46 -> indexProjectParallel@5085. NOT a lost or added relationship.",
+      "note": "648 of 62288 live relationships (1.0%) carry an ':m40' provenance tag. This one is among them."
+    },
+    "rootsIdentical": true,
+    "conclusion": "Edge membership is unchanged apart from one edge whose id gained a provenance tag. The walk returns what it returned. The pin changes the plan, not the answer — which is the claim the gate exists to hold."
+  },
+
+  "canary": {
+    "method": "A re-captured oracle is worthless if it cannot fail. One edge was deleted from the re-captured golden and the gate re-run.",
+    "result": "exit 1, FAIL on the affected root (ast/real-clojure-analyzer.ts:307 analyze). Golden restored byte-identical afterwards and the gate returned to green.",
+    "reading": "The oracle still detects a one-edge difference. It is a live comparison, not a rubber stamp."
+  },
+
+  "knownStructuralProperty": "The golden's 12 roots are drawn from the highest-fan-out symbols in this project, which are in parallel-indexer.ts and cli/index.ts — files that are edited often. So this re-capture will be needed again whenever those files grow. That is a property of the gate, not a one-off, and it is why this file exists rather than a bare commit message."
+}
