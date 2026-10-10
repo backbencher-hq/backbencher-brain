@@ -1313,11 +1313,11 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     w("type", 14) + w("edges", 9) + w("resolved", 10) + w("amb(decl)", 11) +
     w("amb(kind)", 11) + w("unresolved", 12) + w("extOK", 8) + w("ext?", 8) +
     w("extFAIL", 9) + w("bindOK", 9) + w("bind?", 8) + w("bindFAIL", 10) +
-    w("causeOK", 9) + "causeFAIL"
+    w("collRes", 9) + w("causeOK", 9) + "causeFAIL"
   console.log(header)
-  console.log("-".repeat(136))
+  console.log("-".repeat(148))
   const line = (label: string, r: Outcomes, edges: string | number) =>
-    w(label, 14) + w(edges, 9) + w(r.resolved, 10) + w(r.ambiguousByDecl, 11) +
+    w(label, 14) + w(edges, 9) + w(r.resolved, 10) + w(r.resolvedAmongCollision, 10) + w(r.ambiguousByDecl, 11) +
     w(r.ambiguousByKind, 11) + w(r.unresolved, 12) +
     w(r.externalVerified, 8) + w(r.externalUnverified, 8) + w(r.externalRefuted, 9) +
     w(r.bindingVerified, 9) + w(r.bindingUnverified, 8) + w(r.bindingRefuted, 10) +
@@ -1329,6 +1329,7 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   console.log("-".repeat(93))
   console.log(line("TOTAL", v.totals, v.edges))
   console.log(
+    "collRes = of `resolved`: the target had MORE THAN ONE declaration, so production's tie-break chose the row — the indexer measures 37,318 of 49,729 such picks as WRONG · " +
     "extOK = external claim the PROJECT CONFIRMS · " +
     "ext? = claim no check can reach (no identifier owner, and no project fact for it) · " +
     "extFAIL = claim the project REFUTES, counted against the lane",

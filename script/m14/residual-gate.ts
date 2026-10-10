@@ -108,11 +108,13 @@ function runLane(lang: string): { rows: Array<{ type: string; edges: number; res
   for (const line of out.split("\n")) {
     const t = line.trim()
     const parts = t.split(/\s+/)
-    if (parts.length < 14) continue
+    if (parts.length < 15) continue
     if (!TYPES.includes(parts[0]) && parts[0] !== "TOTAL") continue
-    const nums = parts.slice(1).map((x) => Number(x.replace(/,/g, "")))
+    // The gate's TABLE 1 carries no collision column, so it is read from the `resolvedAmongCollision`
+  // line that `incoming-gate` prints per type; absent -> undefined, never zero-by-assumption.
+  const nums = parts.slice(1).map((x) => Number(x.replace(/,/g, "")))
     if (nums.some((n) => !Number.isFinite(n))) continue
-    const r = { type: parts[0], edges: nums[0], resolved: nums[1], amb: nums[2], ambKind: nums[3], unres: nums[4], extOK: nums[5], extQ: nums[6], extFAIL: nums[7], bindOK: nums[8], bindQ: nums[9], bindFAIL: nums[10], causeOK: nums[11], causeFAIL: nums[12] }
+    const r = { type: parts[0], edges: nums[0], resolved: nums[1], ambColl: nums[2], amb: nums[3], ambKind: nums[4], unres: nums[5], extOK: nums[6], extQ: nums[7], extFAIL: nums[8], bindOK: nums[9], bindQ: nums[10], bindFAIL: nums[11], causeOK: nums[12], causeFAIL: nums[13] }
     if (parts[0] === "TOTAL") total = r; else rows.push(r)
   }
   return { rows, total }
@@ -127,12 +129,14 @@ if (LANE) {
   if (JSON_MODE) { console.log(JSON.stringify({ gate: "residual-gate", lane: LANE, rows, total }, null, 2)); process.exit(0) }
   const w = (s: any, n: number) => (String(s) + " ".repeat(n)).slice(0, n)
   console.log(`residual gate — ${LANE}, WHOLE admitted population, production scope\n`)
-  console.log(`${w("type", 14)} ${w("edges", 9)} ${w("resolved", 9)} ${w("amb(decl)", 10)} ${w("unresolved", 11)} ${w("extFAIL", 8)} ${w("bindFAIL", 9)} ${w("causeFAIL", 10)} ${w("residual%", 10)}`)
-  console.log("-".repeat(100))
+  console.log(`${w("type", 14)} ${w("edges", 9)} ${w("resolved", 9)} ${w("ofWhich", 8)} ${w("amb(decl)", 10)} ${w("unresolved", 11)} ${w("extFAIL", 8)} ${w("bindFAIL", 9)} ${w("causeFAIL", 10)} ${w("residual%", 10)}`)
+  console.log(`  "ofWhich" = resolved edges whose target had MORE THAN ONE declaration, so production's`)
+  console.log(`  tie-break chose the row (the indexer measures 37,318 of 49,729 such picks as WRONG).`)
+  console.log("-".repeat(112))
   for (const r of [...rows].sort((a, b) => (b.amb + b.unres) - (a.amb + a.unres))) {
     if (r.edges === 0) continue
     const resid = r.amb + r.unres + r.extFAIL + r.bindFAIL + r.causeFAIL
-    console.log(`${w(r.type, 14)} ${w(r.edges, 9)} ${w(r.resolved, 9)} ${w(r.amb, 10)} ${w(r.unres, 11)} ${w(r.extFAIL, 8)} ${w(r.bindFAIL, 9)} ${w(r.causeFAIL, 10)} ${w(((resid / r.edges) * 100).toFixed(1) + "%", 10)}`)
+    console.log(`${w(r.type, 14)} ${w(r.edges, 9)} ${w(r.resolved, 9)} ${w(r.ambColl ?? "-", 8)} ${w(r.amb, 10)} ${w(r.unres, 11)} ${w(r.extFAIL, 8)} ${w(r.bindFAIL, 9)} ${w(r.causeFAIL, 10)} ${w(((resid / r.edges) * 100).toFixed(1) + "%", 10)}`)
   }
   if (total) {
     const resid = total.amb + total.unres + total.extFAIL + total.bindFAIL + total.causeFAIL

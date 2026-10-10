@@ -594,6 +594,26 @@ export type Classified = {
   outcome: Outcome
   /** how many declarations answer to the target IN THIS KEY SPACE */
   decls: number
+  /**
+   * RESOLVED, BUT AMONG A COLLISION — the third outcome the gate could not express.
+   *
+   * The programme's bar asks whether a relationship is REAL. Production writes a row for every
+   * type with a `LIMIT 1` statement, so it never reaches an "N candidates" state — but the
+   * indexer's own comment on `resolveTargetStmt` says what that binding costs:
+   *
+   *     the statement picks between them by `s.id` alone, which is `${fileId}:${name}:${line}`
+   *     compared as TEXT — so it is the LEXICOGRAPHICALLY smallest line that wins, NOT the
+   *     intended symbol
+   *
+   * with a measured control arm recording **37,318 of 49,729 ambiguous edges bound to the WRONG
+   * symbol**. So "a declaration was found" and "the declaration the edge meant was found" are
+   * different facts, and a lane reporting only `resolved` will hide the second.
+   *
+   * `true` on a `resolved` outcome whose target has more than one declaration in the key space:
+   * the edge binds, and WHICH row it binds to is decided by the tie-break rather than by the
+   * edge. It is reported in its own column, never folded into `resolved` or into `ambiguous`.
+   */
+  boundAmongCollision?: boolean
   /** the distinct kinds among them, `|`-joined — empty when there are none */
   kinds: string
   /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
@@ -636,7 +656,10 @@ export function classifyEdge(
   const decls = declCount.get(tgt) ?? 0
   if (containsLike === true && decls >= 1) {
     const ks = kinds.get(tgt)
-    return { outcome: "resolved", decls, kinds: [...(ks ?? [])].sort().join("|") }
+    // NOTE: production prefers the edge's OWN FILE here, which is a stronger tie-break than the
+    // general statement's — so a collision is still flagged, and the flag reads "more than one
+    // declaration in the project answers to this name", which is exactly what the reviewer needs.
+    return { outcome: "resolved", decls, kinds: [...(ks ?? [])].sort().join("|"), boundAmongCollision: decls > 1 }
   }
   const kindSet = kinds.get(tgt)
   const kindText = [...(kindSet ?? [])].sort().join("|")
@@ -721,6 +744,12 @@ export function classifyEdge(
 export type Outcomes = {
   /** targets resolving to exactly one published declaration */
   resolved: number
+  /**
+   * OF `resolved`: how many resolved while MORE THAN ONE declaration answered to the name, so the
+   * row production wrote was chosen by a tie-break rather than determined by the edge. Never added
+   * to `resolved` or to `ambiguousByDecl` — it is a property OF the resolved ones.
+   */
+  resolvedAmongCollision: number
   /** targets naming MORE THAN ONE published declaration — the number that matters */
   ambiguousByDecl: number
   /** the same targets, counted by DISTINCT KIND — incoming-check's metric, for comparison */
@@ -783,7 +812,7 @@ export type Outcomes = {
 }
 
 export const emptyOutcomes = (): Outcomes => ({
-  resolved: 0, ambiguousByDecl: 0, ambiguousByKind: 0, unresolved: 0,
+  resolved: 0, resolvedAmongCollision: 0, ambiguousByDecl: 0, ambiguousByKind: 0, unresolved: 0,
   markedExternal: 0, externalVerified: 0, externalVerifiedByOwner: 0, externalVerifiedByProjectFacts: 0,
   externalUnverified: 0, externalRefuted: 0,
   bindingVerified: 0, bindingRefuted: 0, bindingUnverified: 0,
@@ -799,6 +828,10 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
   switch (c.outcome) {
     case "resolved":
       out.resolved++
+      // THE THIRD OUTCOME, counted where it is created. A resolved edge whose name has more than
+      // one declaration in this key space is only AS resolved as production's tie-break — see
+      // `Classified.boundAmongCollision`.
+      if (c.boundAmongCollision === true) out.resolvedAmongCollision++
       break
     case "ambDeclOnly":
     case "ambBoth":
