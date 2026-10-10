@@ -1546,6 +1546,15 @@ const ONLY_REPOS = REPO_ARG
   ? new Set(REPO_ARG.slice("--repo=".length).split(",").map((s) => s.trim()).filter(Boolean))
   : undefined
 const rest = argv.filter((a) => !a.startsWith("--"))
+// `--board-log [path]` writes the file the board reads; see the block below `printReport`.
+// A bare `--board-log` (or the next token being another flag) uses the canonical path.
+const BOARD_LOG_INDEX = argv.indexOf("--board-log")
+const BOARD_LOG = BOARD_LOG_INDEX >= 0
+const BOARD_LOG_PATH = (() => {
+  if (!BOARD_LOG) return ""
+  const next = argv[BOARD_LOG_INDEX + 1]
+  return next && !next.startsWith("--") ? next : "validation/m14/results/incoming-laptop-b.current.log"
+})()
 
 // THE CONTROL RUNS FIRST, ALWAYS. Before any lane, before any corpus. An instrument that
 // cannot detect a planted failure must not be allowed to print a verdict about a language.
@@ -1556,6 +1565,65 @@ if (!control.ok) {
   console.error("Refusing to report any lane: a probe that cannot fail returns the same")
   console.error("number as a clean one, which is this programme's most repeated failure.")
   process.exit(3)
+}
+
+/**
+ * `--board-log [path]` — REGENERATE THE ARTEFACT THE BOARD READS.
+ *
+ * The board's incoming column is parsed from `validation/m14/results/incoming-laptop-b.current.log`,
+ * which until now had NO generator in the tree: every lane's row was pasted there by hand from a
+ * separate run. So the log could not be refreshed without re-deriving someone's invocation from
+ * memory, and a lane whose population changed (yaml, after the extension-spelling fix) kept a
+ * number the instrument could no longer produce while the instrument that would contradict it had
+ * no way to write the file. A measurement with no writer is a measurement that ages silently.
+ *
+ * The verdict line is CAPTURED from the printer rather than reformatted, so the file cannot drift
+ * from what a single-lane run prints — the board reads counters out of that sentence, and a second
+ * wording would be a second source of truth. Progress goes to stderr and deliberately not into the
+ * file, because the board counts every unrecognised line as `unparsed`.
+ */
+function captureReport(fn: () => void): string[] {
+  const out: string[] = []
+  const saved = console.log
+  console.log = (...a: unknown[]) => { out.push(a.map(String).join(" ")) }
+  try { fn() } finally { console.log = saved }
+  return out
+}
+
+if (BOARD_LOG) {
+  const lines: string[] = []
+  let failed = 0, unmeasured = 0
+  // `--only <lane>` exists because a whole-fleet regeneration is an hour-scale run and the lanes
+  // it needs to cover are rarely all of them. Without it the only way to refresh ONE lane's row
+  // was to re-run all twenty-three, which is how a lane's number goes stale rather than fixed.
+  const ONLY_INDEX = argv.indexOf("--only")
+  const ONLY = ONLY_INDEX >= 0 ? argv[ONLY_INDEX + 1] : undefined
+  const lanes = ONLY
+    ? Object.entries(LANES_B).filter(([l]) => l === ONLY)
+    : Object.entries(LANES_B)
+  if (lanes.length === 0) {
+    console.error(`--only ${ONLY} names no lane; known: ${Object.keys(LANES_B).join(" ")}`)
+    process.exit(2)
+  }
+  for (const [lang, ext] of lanes) {
+    const max = Number(rest[0] ?? 120)
+    const rep = await measure(lang, ext, max, USE_INDEX, ONLY_REPOS)
+    const v = verdict(rep)
+    const captured = captureReport(() => printReport(rep, control))
+    const verdictLine = captured.find((l) => l.startsWith("VERDICT: ")) ?? `VERDICT: FAIL — printer produced no verdict line`
+    const stLine = captured.find((l) => l.startsWith("instrument self-test: ")) ?? `instrument self-test: NOT RUN`
+    lines.push(`### ${lang}`, verdictLine, stLine)
+    console.error(
+      `${w(lang, 12)} ${rep.parsed}/${rep.files.length} parsed of ${rep.total} admitted ` +
+      `(.${rep.ext})  degraded ${rep.degraded}  ${v.pass ? "PASS" : "FAIL"}`,
+    )
+    if (rep.parsed === 0) unmeasured++
+    else if (!v.pass) failed++
+  }
+  writeFileSync(BOARD_LOG_PATH, lines.join("\n") + "\n")
+  console.error(`\nwrote ${lines.length / 3} lane(s) to ${BOARD_LOG_PATH}`)
+  console.error(`PASS ${lines.filter((l) => l.includes("VERDICT: PASS")).length}   FAIL ${failed}   UNMEASURED ${unmeasured}`)
+  process.exit(0)
 }
 
 if (ALL) {
@@ -1603,6 +1671,10 @@ if (rest.length < 2) {
   console.error("       <extension> may be a COMMA-SEPARATED LIST — `yaml,yml` for one language whose")
   console.error("       files carry two spellings, `.yaml` for a question about one of them.")
   console.error("       npx tsx script/m14/incoming-gate.ts --all [maxFiles]")
+  console.error("       npx tsx script/m14/incoming-gate.ts --board-log [path] [maxFiles]")
+  console.error("         --board-log REGENERATES validation/m14/results/incoming-laptop-b.current.log,")
+  console.error("         the artefact language-board.ts reads. It had no writer until now.")
+  console.error("         Add --index to measure the population production actually parses.")
   console.error("       maxFiles 0 = the WHOLE admitted corpus. A positive value stride-samples it,")
   console.error("       and stride against a corpus that has grown since the number was chosen")
   console.error("       silently truncates the population back to the old size.")
