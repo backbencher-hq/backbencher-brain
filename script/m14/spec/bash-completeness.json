@@ -289,6 +289,37 @@
       }
     ],
     "corpusUnexercised": [],
-    "_from": "MEASURED per type, two populations, both stated because they answer different questions. (1) WHOLE BASH, production parseFile over 2,962 .sh/.bash files in 122 repos (the lane's own census, validation/m14/fixtures/bash/probe-bash-silent-types.mts --corpus, 2962/2962 parsed, 0 failures): calls 42,290 \u00b7 uses 61,765 \u00b7 contains 27,668 \u00b7 imports 518 \u00b7 references 518 \u00b7 exports 1,598 edges in 502 files \u00b7 overrides 19 edges in 12 files \u00b7 extends 0 \u00b7 implements 0 \u00b7 instantiates 0. So SEVEN types fire whole-corpus, and the three exclusions are zero on BOTH halves (grammar inventory and corpus sites). (2) the firing instrument's own population, `bun script/m14/firing-check.mjs BASH`, is ONE REPOSITORY (the lane's LANES entry names the corpus dir `bash-completion`, whose admitted population is 556 files \u2014 NOT the 2,962-file whole-bash population the census walks): calls 4,994 \u00b7 contains 5,241 \u00b7 exports 5 \u00b7 imports 6 \u00b7 references 6 \u00b7 uses 5,317, with overrides 0. A 556-file single-repo stride cannot see 19 edges spread over 12 files, so its SILENT line is a claim about that repo, not about bash \u2014 the rule-book's entry 1, measured a seventh time. `exports` is 1,548 export sites matched site-by-site to their edges, 1,540 matched and the 8 unmatched are ALL computed names (`export \"$name=$val\"`), which no symbol can answer to; 0 static sites are dropped."
+    "_from": "MEASURED per type, two populations, both stated because they answer different questions. (1) WHOLE BASH, production parseFile over 2,962 .sh/.bash files in 122 repos (the lane's own census, validation/m14/fixtures/bash/probe-bash-silent-types.mts --corpus, 2962/2962 parsed, 0 failures): calls 42,290 \u00b7 uses 61,765 \u00b7 contains 27,668 \u00b7 imports 518 \u00b7 references 518 \u00b7 exports 1,598 edges in 502 files \u00b7 overrides 19 edges in 12 files \u00b7 extends 0 \u00b7 implements 0 \u00b7 instantiates 0. So SEVEN types fire whole-corpus, and the three exclusions are zero on BOTH halves (grammar inventory and corpus sites). (2) the firing instrument's own population, `bun script/m14/firing-check.mjs BASH`, is ONE REPOSITORY (the lane's LANES entry names the corpus dir `bash-completion`, whose admitted population is 556 files \u2014 NOT the 2,962-file whole-bash population the census walks): calls 4,994 \u00b7 contains 5,241 \u00b7 exports 5 \u00b7 imports 6 \u00b7 references 6 \u00b7 uses 5,317, with overrides 0. A 556-file single-repo stride cannot see 19 edges spread over 12 files, so its SILENT line is a claim about that repo, not about bash \u2014 the rule-book's entry 1, measured a seventh time. `exports` is 1,548 export sites matched site-by-site to their edges, 1,540 matched and the 8 unmatched are ALL computed names (`export \"$name=$val\"`), which no symbol can answer to; 0 static sites are dropped.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the whole 2,962-file bash population of 2026-10-09 (122 repos, 2962/2962 parsed, 0 failures); `files` is the count of distinct files the type appeared in. Source artifact: validation/m14/fixtures/bash/census-bash-silent-types-2962.txt, instrument validation/m14/fixtures/bash/probe-bash-silent-types.mts --corpus.",
+      "calls": {
+        "edges": 42290,
+        "files": 2704
+      },
+      "uses": {
+        "edges": 61765,
+        "files": 2351
+      },
+      "contains": {
+        "edges": 27668,
+        "files": 2356
+      },
+      "imports": {
+        "edges": 518,
+        "files": 370
+      },
+      "references": {
+        "edges": 518,
+        "files": 370
+      },
+      "exports": {
+        "edges": 1598,
+        "files": 502
+      },
+      "overrides": {
+        "edges": 19,
+        "files": 12
+      }
+    }
   }
 }
