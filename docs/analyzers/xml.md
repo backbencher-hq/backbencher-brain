@@ -135,6 +135,52 @@ A PASS needs `bad === 0` **and** `externalUnverified === 0`, so a marker that mo
 That is the point: it is a true classification, not a short-cut. The 34 unverifiable claims the
 after-run reports are in the verdict line, not hidden behind the smaller residual.
 
+## A fleet-level finding: store binding is order-dependent
+
+The `contains` note above keeps one caveat open — the store probe's 8.5% `boundOtherFile` on libxslt
+against the gate's `twin 0`. One of the three candidates for that gap was the **eager insert-time
+resolver being only as good as the table's state when its batch runs**, and that is testable:
+index the same files twice in different orders and compare the bindings row by row
+(`store-determinism.mts`, two preserved runs in `store-determinism-run2/3.json`).
+
+**It is confirmed.** 300 libxslt files, three arms (sorted, reversed, sorted + eager-forced):
+
+| comparison | run 2 | run 3 | by type |
+| --- | ---: | ---: | --- |
+| sorted vs reversed order | **96 differing** of 7,825 | **96** | all `contains` |
+| eager vs deferred | 26 | 29 | `contains` + **`calls`** |
+| reversed vs eager | 111 | 112 | `contains` + `calls` |
+
+- **Order-dependent.** Reversing the file order changes 96 bindings (1.23%) — same edge key, a
+  different target file. Example: `tests/REC/test-10-1.xsl | li | contains | xsl:text | 15` binds to
+  `doc/EXSLT/devhelp/devhelp2.xsl` sorted, `tests/REC2/svg.xsl` reversed.
+- **Also run-dependent.** Eager-vs-deferred printed 26 differing in run 2 and 29 in run 3 — same
+  probe, same arms. Worker scheduling contributes; the outcome is not a function of (file set,
+  order) alone.
+- **Eager vs deferred changes the graph**, falsifying the in-code claim on
+  `BB_TEST_FORCE_EDGE_RESOLVE` that it "changes nothing about the final graph". `calls` is 17 of
+  those rows in both runs.
+- **Invisible to rate metrics.** `bound 7,109 / unbound 716 / storedRows 7,825` are identical in
+  every arm of every run. Only a per-row comparison sees any of it.
+- **Row duplication is ruled out**: `duplicateIds 0`, `storedRows == joined rows` — candidate (c)
+  of the earlier disclosure does not hold for this draw.
+
+**Mechanism.** `contains` is resolved at INSERT time against the symbol table as it stands when that
+batch runs, and never revisited (the resolution pass skips rows that already have a target). The
+documented tie-break is deterministic over a *complete* table; it is not complete when the row is
+written. That also reconciles the two numbers that started this: the gate asks whether a same-file
+declaration **exists** (it does — `twin 0`), while the eager resolver binds whichever row was
+**visible at insert time** (sometimes another file's).
+
+**Scope stated, not implied:** one repository, 300 files, three arms, two runs. This falsifies
+determinism in this configuration; it does not measure how far it reaches.
+
+*A probe artifact worth recording:* the first version of this instrument joined `brain_symbol` twice
+to read endpoints, and that join fanned out on duplicated symbol rows — 482 phantom "differences",
+every one of them the same relationship id repeated. The join is gone; the artifact is kept in the
+finding because a probe that manufactures its own finding is the failure this measurement had to
+survive.
+
 ## Method notes
 
 - One cause per turn, one commit per verdict; a cause is closed by a before/after over a named
