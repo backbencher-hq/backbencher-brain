@@ -360,6 +360,52 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
   // spelling taken from the side it is meant to check turns the comparison into a tautology.
   const localBindings = new Set<string>()
 
+  /**
+   * The parameter NAMES a `fun_expression` binds.
+   *
+   * `argument_patterns` holds them. A plain parameter is a `long_identifier`; an annotated one is a
+   * `typed_pattern` whose FIRST pattern child is the name and whose `simple_type` sibling holds the
+   * TYPE — so a naive descendant walk would collect `int` from `(x: int)` as if it were a parameter.
+   * A `paren_pattern` is a tuple of several parameters.
+   *
+   * This exists because a lambda parameter is a binding with no symbol, exactly like a `let` in a
+   * body, and the missing arm here was the whole of a 4-row residue (see the `fun_expression` branch
+   * in the walk).
+   */
+  const funParameterNames = (funNode: any): string[] => {
+    const names: string[] = []
+    const params =
+      (funNode?.namedChildren ?? []).find((c: any) => c.type === "argument_patterns") ??
+      (funNode?.namedChildCount ? funNode.namedChild(0) : undefined)
+    if (!params) return names
+    const leaf = (t: string): string => (String(t ?? "").includes(".") ? String(t).split(".").pop()! : String(t ?? ""))
+    const take = (n: any): void => {
+      if (!n) return
+      if (n.type === "long_identifier" || n.type === "long_identifier_or_op" || n.type === "identifier") {
+        const l = leaf(n.text)
+        if (l) names.push(l)
+        return
+      }
+      if (n.type === "identifier_pattern") {
+        take((n.namedChildren ?? []).find((c: any) => c.type.startsWith("long_identifier") || c.type === "identifier"))
+        return
+      }
+      if (n.type === "typed_pattern") {
+        // the parameter POSITION is the first child that is not the type
+        take((n.namedChildren ?? []).find((c: any) => !String(c.type).includes("type") && c.type !== "simple_type"))
+        return
+      }
+      if (n.type === "paren_pattern" || n.type === "tuple_pattern") {
+        for (const c of n.namedChildren ?? []) {
+          if (String(c.type).includes("type")) continue
+          take(c)
+        }
+      }
+    }
+    for (const c of params.namedChildren ?? []) take(c)
+    return names
+  }
+
   const emit = (label: string, from: string, to: string, n: any, declaredOn?: string) => {
     if (!from || !to) return
     // A SELF-EDGE is refused for CONTAINMENT only, and the scope of the refusal is the
@@ -756,6 +802,25 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
     } else if (t === "additional_constr_defn") {
       owner = "constructor"
       body = true
+    } else if (t === "fun_expression") {
+      // A LAMBDA PARAMETER IS A BINDING — `fun completions -> …` binds `completions` with no
+      // symbol, exactly as a `let` inside a body does. A callee spelled with the name therefore
+      // names a binding, and the truth spells it `<callable>#<binding>` like every other binding.
+      //
+      // MEASURED 2026-10-10: this arm was MISSING, and it was the whole of a 4-row residue. In
+      // `Tests.LanguageService.Completion.fs`, `(fun completions -> …)` at :213 is in scope at the
+      // edge `calls …AssertCtrlSpaceCompletionContains -> completions`; the ANALYZER claimed it as a
+      // binding (correctly) and this oracle did not, so the truth carried zero '#' rows for that file
+      // and the analyzer's correct claim read as `unexplained`.
+      //
+      // The fix belongs HERE, in the independent arm, and deliberately NOT in the analyzer: "fixing"
+      // the analyzer would have deleted a correct claim to make the two sides agree, which is tuning
+      // a test to the code. Strengthening the truth arm is the only direction a fix to an oracle may
+      // take.
+      //
+      // Only the NAME SET changes here — `body`, `owner` and `suppressCalls` are left exactly as the
+      // walk already had them, so this arm cannot move any edge that is not a binding spelling.
+      for (const p of funParameterNames(node)) localBindings.add(p)
     }
 
     // ---- the R9 declared-type graph, from POSITION nodes ----

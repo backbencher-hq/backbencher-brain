@@ -607,3 +607,42 @@ file-wide set should ALSO become scope-aware. `completions` is in the analyzer's
 `let`s in this file (e.g. `:226` in a different member) as well as from the `:213` lambda, so the
 claim is right here — but the rule that produced it is right BY NAME, not by scope, and the next
 reader should not read this one correct case as a defence of the file-wide rule.
+
+### 9.2 The approved oracle fix is INERT — and the residue is a DIFFERENT disagreement, named
+
+§9.1 predicted that teaching the oracle to collect `fun_expression` parameters would take
+`unexplained` 70 → 69. **It did not.** Measured, same draw, hash `2143f8bdc90fe3f1`:
+
+| | step 2 | after the lambda arm | expected |
+|---|---:|---:|---|
+| `MISSING` | 10 | **10** | 10 |
+| `unexplained` | 70 | **70** | 69 |
+| `tree-truth` | 5,467 | **5,467** | — |
+| N (truth rows carrying `#`, counted independently) | 83 | **83** | — |
+
+The lambda arm is a correct completeness fix — a `fun completions -> …` parameter IS a binding with no
+symbol — and it changed **nothing** on this sample. Per the lead's instruction, a null result here is
+the finding, not something to absorb: **a second disagreement exists.**
+
+**NAMED: the disagreeing rows are edges the oracle does not DERIVE, not edges it spells differently.**
+The residue row is `calls UsingMSBuild.AssertCtrlSpaceCompletionContains -> …#completions` at
+`Tests.LanguageService.Completion.fs:215`. Its analyzer metadata:
+
+```
+{"nodeType":"infix_expression","isPipelineCall":true,"pipelineOperator":"|>",
+ "targetResolution":"local-binding","localBinding":true}
+```
+
+and the oracle's truth for that file contains **no `calls` row for `completions` at all** — only
+`contains` rows (at `:493`, `:635`, elsewhere). So the spelling was never the difference: one side
+derives a `calls` edge there and the other derives none. The line is
+`let found = completions |> Array.exists(…)`, and `PIPELINE_CALLEE_SIDE` maps `|>` to `right`
+(`real-fsharp-analyzer.ts:39`), so the callee *should* be `Array.exists`; an edge naming `completions`
+— the LEFT operand — is not what that map predicts, and the mechanism deserves its own investigation
+rather than a guess here.
+
+**What is NOT claimed:** that the analyzer is wrong on this row, or that the oracle is. §9.1 settled
+that `completions` is a lambda parameter in scope, which makes the *binding claim* true; whether the
+`calls` edge should exist at all is a separate question about the pipeline contract, and it is the one
+the next pass owns. The lambda arm is kept because it is correct on its own terms and inert here — its
+inertness is the measurement, and reverting it would hide that.
