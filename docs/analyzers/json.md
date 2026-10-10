@@ -5,18 +5,36 @@ retracted, the M60 census table) is `docs/analyzers/real-json-analyzer.md`. **Th
 is the coverage record the board reads**: what the lane declares, which instrument
 measured it, and the reconciliation of the two instruments that disagreed about it.
 
-## The disagreement, stated exactly
+## The row, and the two numbers it replaced
 
-| instrument | population | what it reads |
+**The lane's coverage is `9/10`** — 9 relationship types emitted, 10 applicable, with
+`instantiates` excluded as `zero-sites` and therefore still counted in the denominator.
+`script/m14/spec/json-completeness.json` → `coverage` is the declaration; the board
+(`bun script/m14/language-board.ts --coverage`) prints `json 9/10 from=spec coverage block`.
+
+Why it moved, in one line each, for anyone who meets the old numbers first:
+`8/8` (the previous row) excluded `implements` as grammar-absence — it is **emitted**,
+113 edges over 1 file, so the numerator and the denominator both gain one; `1/10` (the
+firing log) is a **true statement about 120 files** in one repo, not about json. The two
+old numbers below are kept because they are what the disagreement was about:
+
+| instrument | population | what it read (BEFORE the 2026-10-09 correction) |
 | --- | --- | --- |
 | `script/m14/firing-check.mjs JSON_B` (the firing log) | ONE repo — `shadcn-svelte`, 2,369 `.json` files — strided to 120 | `JSON_B 1 types fired — contains:2425`, 120/120 parsed, 0 degraded |
 | `script/m14/language-board.ts --coverage` (the board) | reads `script/m14/spec/json-completeness.json` → `coverage` | `json 8/8 from=spec coverage block` |
 
-`docs/analyzers/HANDOFF.md` §4's footnote records the same pair as "**json 9 emitted vs 1
-fired**" and calls reconciling them open work. It is settled here by measurement, and the
-answer is that **both** numbers are wrong: the log's `1` is a claim about 120 files, and
-the block's `8` was a stale count that had already been overtaken by the lane's own
-fixtures.
+`docs/analyzers/HANDOFF.md` §4's footnote recorded the same pair as "**json 9 emitted vs 1
+fired**" and called reconciling them open work. The reconciliation is this file: **both**
+numbers were wrong, and each was wrong in the direction that made the other look like the
+liar — the log's `1` is a claim about 120 files, and the block's `8` was a stale count that
+the lane's own passing fixture had already overtaken.
+
+**If you are reading the spec's prose, read it with this file.** Its historical fields
+(`gap._denominator`, `design_decision` BD-ontology and BD-audit-rulings) now say what
+changed and bracket the superseded sentences as `SUPERSEDED`; a sentence there that reads
+"EIGHT are emitted … TWO are excluded by the language", or "It is 8, not 1, and not 10",
+or "json emits 8 of 10", is history, not the declaration. The declaration is the
+`coverage` block, and only that block is machine-read.
 
 ## 1. The log's `1` — a population artefact, measured on the arbiter instrument itself
 
@@ -130,6 +148,21 @@ board's own rule-book calls a false exclusion "the one error direction that flat
 - `applicable` = **10**, so the board row is **9/10**, not 8/8 and not 1/10.
 
 Invariant: implemented 9 + corpusUnexercised 0 + gaps 1 (`instantiates`) = 10 = applicable.
+
+`coverage-block-gate.ts --strict` on this block: **no `problems` row**, and every one of the
+seven silences is `cited` — so the block neither relies on `unclassified` (which HANDOFF
+§5.9 flags as shrinking the denominator without the rule allowing it) nor rests on a claim
+with nowhere to read a count from. Nothing in this declaration subtracts a type that no
+instrument has measured.
+
+**One stale number lives outside this lane's write scope and is reported, not edited:**
+`docs/analyzers/real-json-analyzer.md` (~line 122) still frames the lane as "9 applicable
+of 9 (9 emitted, 1 measured-absent)". That is the OLD rule twice over — it counts
+`implements` as emitted *and* lets `instantiates` leave the denominator — and under the
+corrected block the row is 9 of **10**. `docs/analyzers/HANDOFF.md` §4 line 89 (`json |
+8/8 | implements, instantiates (G)`) and `docs/analyzers/LAPTOP-B-STATUS.md` line 63
+(`json 9 emitted vs 1 fired`) carry the same old framing. Posted to the Lead 2026-10-09;
+those three files are theirs.
 
 ## 5. Per-type whole-population counts (the 7 the log reads SILENT)
 
