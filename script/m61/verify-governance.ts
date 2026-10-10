@@ -126,11 +126,33 @@ for (const [label, rel] of PREREQUISITE_RECORDS) {
     check(`G1: ${label} record exists`, false, rel)
     continue
   }
+  // `EvidenceRead<T>` (script/lib/evidence.ts:50) is a discriminated union on `ok`:
+  //
+  //   { ok: true;  record: T; seal }
+  //   { ok: false; reason: string; kind: "missing" | "unparseable" | ... }
+  //
+  // This read both `.record` (only on the ok branch) and `.kind` (only on the fail
+  // branch) without narrowing on `ok` first. The optional chaining made it safe at
+  // RUNTIME — `rec?.status` is undefined when the read failed — but the detail string
+  // on line 133 interpolated `read.kind` unconditionally, so on a SUCCESSFUL read it
+  // printed the literal "undefined" as the failure reason.
+  //
+  // That is not cosmetic in a governance gate. This string is the evidence a reader
+  // sees when they ask why a record did not verify, and for every passing record it
+  // said "undefined" — the one value that tells the reader nothing.
   const read = readEvidence<{ status?: string; gates?: Array<{ ok?: boolean }> }>(abs)
+  if (!read.ok) {
+    check(`G1: ${label} record verifies sealed and green`, false, `${rel} — ${read.kind}: ${read.reason}`)
+    continue
+  }
   const rec = read.record
-  const verified = read.ok && rec?.status === "verified"
+  const verified = rec?.status === "verified"
   const gatesOk = !Array.isArray(rec?.gates) || rec.gates.every((g) => g.ok !== false)
-  check(`G1: ${label} record verifies sealed and green`, Boolean(verified && gatesOk), `${rel} — ${read.kind}${verified ? "" : ` status=${rec?.status}`}${gatesOk ? "" : " (a gate in it failed)"}`)
+  check(
+    `G1: ${label} record verifies sealed and green`,
+    Boolean(verified && gatesOk),
+    `${rel} — sealed and read ok${verified ? "" : ` status=${rec?.status}`}${gatesOk ? "" : " (a gate in it failed)"}`,
+  )
 }
 
 // --- Deliverable 3: the bar re-audit (V1–V6 re-executed every run) ----------------
@@ -249,7 +271,13 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T
   const rec = JSON.parse(readFileSync(src, "utf8")) as Record<string, unknown>
   writeFileSync(tmp, `${JSON.stringify({ ...rec, status: "TAMPERED-BY-G1-NEGATIVE" }, null, 2)}\n`)
   const read = readEvidence(tmp)
-  negative("a tampered record passes the trusted read", !read.ok, `${read.kind}${read.reason ? ` (${read.reason})` : ""}`)
+  // Same union, same un-narrowed read. Narrowed explicitly so the detail string can
+  // only be built on the branch where `kind`/`reason` exist.
+  negative(
+    "a tampered record passes the trusted read",
+    !read.ok,
+    read.ok ? "the tampered record verified — the seal does not detect this tamper" : `${read.kind}${read.reason ? ` (${read.reason})` : ""}`,
+  )
   rmSync(tmp, { force: true })
 }
 {
@@ -261,7 +289,12 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T
 {
   // The projection rule, exercised: an entry that a human typed is DRIFT, while
   // a record re-run at another commit is a stale projection (healed, not drift).
-  const rec = readEvidence<Record<string, unknown>>(path.join(EVIDENCE_DIR, "V1.json")).record ?? {}
+  // `.record` exists only on the ok branch. `?? {}` made this safe at runtime but
+  // also meant an unreadable V1.json silently became an empty record — and the
+  // negative checks below would then be testing drift rules against nothing. State
+  // the absence instead of absorbing it.
+  const v1Read = readEvidence<Record<string, unknown>>(path.join(EVIDENCE_DIR, "V1.json"))
+  const rec: Record<string, unknown> = v1Read.ok ? v1Read.record : {}
   const derived = ledgerEntryFrom(rec, canFailProofs(rec))
   negative("a hand-typed count passes the drift check", entryDrift({ ...derived, passed: (derived.passed ?? 0) + 3 }, derived).length > 0)
   negative("an understated can-fail proof passes the drift check", entryDrift({ ...derived, mutantsTotal: 0 }, derived).length > 0)
@@ -344,7 +377,18 @@ for (const issue of ledger.issues) {
   if (statusDrift) drift.push(statusDrift)
   if (drift.length > 0) driftFindings.push(`${issue.code}: ${drift.join(", ")}`)
   issue.evidence = derived
-  issue.status = derived.status
+  // `LedgerIssue.evidence.status` is declared `status?: string`, so TS widens it to
+  // `string | undefined` here even though `ledgerEntryFrom` ALWAYS sets it —
+  // `status: str(record.status)` at script/m61/governance_core.ts:75, and `str()`
+  // returns "" for anything that is not a string, never undefined.
+  //
+  // So `?? ""` here is not papering over a real possibility; it states the invariant
+  // the function already guarantees. Leaving it off would mean `issue.status` could
+  // become `undefined` at runtime while the ledger on disk says every entry has a
+  // status — and a ledger entry with no status is exactly what the re-audit below
+  // exists to catch, so silently producing one would be the gate manufacturing its
+  // own drift.
+  issue.status = derived.status ?? ""
 }
 for (const h of healed) console.log(`  stale projection healed: ${h}`)
 check("G1: every ledger entry is the derivation of the record it points at (no hand-typed counts)", driftFindings.length === 0, driftFindings.slice(0, 4).join(" | "))

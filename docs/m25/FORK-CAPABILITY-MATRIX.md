@@ -6,8 +6,8 @@ inheritance (contract §1/§2).
 
 | Fork | Version (pinned) | OS | I4 claim | Evidence | Status |
 | --- | --- | --- | --- | --- | --- |
-| cursor | — | — | unset (blocked) | [F-CURSOR.json](../../validation/m25/results/F-CURSOR.json) | blocked: cursor CLI not found on PATH — install or record the waiver (E6 honest blocked s |
-| windsurf | — | — | unset (blocked) | [F-WINDSURF.json](../../validation/m25/results/F-WINDSURF.json) | blocked: windsurf CLI not found on PATH — install or record the waiver (E6 honest blocked |
-| antigravity | — | — | unset (blocked) | [F-ANTIGRAVITY.json](../../validation/m25/results/F-ANTIGRAVITY.json) | blocked: antigravity CLI not found on PATH — install or record the waiver (E6 honest bloc |
+| cursor | — | — | unset (blocked) | [F-CURSOR.json](../../validation/m25/results/F-CURSOR.json) | blocked: cursor not found — looked at: bundle: /Applications/Cursor.app/Contents/Resource |
+| windsurf | — | — | unset (blocked) | [F-WINDSURF.json](../../validation/m25/results/F-WINDSURF.json) | blocked: windsurf not found — looked at: bundle: /Applications/Windsurf.app/Contents/Reso |
+| antigravity | — | — | unset (blocked) | [F-ANTIGRAVITY.json](../../validation/m25/results/F-ANTIGRAVITY.json) | blocked: antigravity not found — looked at: legacy: /usr/bin/antigravity |
 
 Owner spot-check: pending (scheduled per issue #504 closure requirements).
