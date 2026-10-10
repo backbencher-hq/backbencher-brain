@@ -5165,7 +5165,16 @@ refutations on the one project that carries the SDK's own sources.
 `validation/m14/fixtures/dart/receiver-availability-cut.ts`, over the three whole projects
 (dart-http 335, riverpod 1,295, proxicall 2,351 = 3,981 files). The cause is produced inside
 `qualifiedTarget` at the branch that decides, so no second implementation of the qualification rule
-exists to drift from it. THREE REPOS, BARE ROWS ONLY (`calls` 69,667 + `uses` 117,913 = 187,580 of
+exists to drift from it.
+
+**SUPERSEDED NUMBER WARNING, added before anything below was quoted elsewhere:** this table is the
+instrument's DIRECT-analyzer version, taken before the key-space and population corrections (item 6)
+— its key space omitted `Type.member` keys and its population included files the gate never admits,
+so its `unresolved` column is inflated. It is kept only because the SHAPES it established (the exact
+30,719 / 28,794 split, `libraryScopeCallee` at 0 unresolved) are still what the corrected run is
+checked against; the corrected whole-population table replaces the numbers.
+
+THREE REPOS, BARE ROWS ONLY (`calls` 69,667 + `uses` 117,913 = 187,580 of
 197,102 rows; the rest were qualified):
 
 ```
@@ -5246,6 +5255,25 @@ unresolved against the gate's whole-corpus 59,531 for six repos — a census dis
 instrument it exists to explain. Recorded for the fourth time in this document because it is the same
 mistake every time: a key space that is *nearly* the other one produces a number that is *nearly*
 right, and both are wrong.
+
+**That fix was not enough, and the way it was not enough is the same mistake twice more** (`3def5192c`):
+
+  - counting only the member's `name` fixed the bare side, but the DIRECT analyzer path never sets a
+    member's `qualifiedName` — `pool-worker.ts:1069` derives it — so `Type.member` keys did not exist,
+    and the first PRICE OF THE SPELLING CHANGE read `0 wins, every spelling -> unres` on two whole
+    repos. A price that says "the fix never helps" because its key space is missing the keys the fix
+    produces is the most dangerous shape a measurement can take: **it agrees with itself**;
+  - the pool path also projects symbols onto the DB's columns, so the census now **CALLS** the gate's
+    own entry (`parseFile`) with the gate's own call shape (`f, repo, { projectRoot }`) instead of
+    rebuilding any of it — and counts DEGRADED files (`fallback: true`) and parse throwers rather than
+    dropping them.
+
+POPULATION PARITY, on the gate's own admission rule: `SIZE_CAP = 1 MB` (two dart-http files are over
+it, and including them inflated this census's key space by 6 keys — the gap that produced the earlier
+"3,981 files" table), and tracked-but-absent files are counted and NAMED rather than reported as an
+empty repository (`pb-reference` is 2 tracked paths the working tree does not have,
+`examples/{add,list}_people.dart` — which is why the first corrected run printed it as "0 files" with
+no reason stated). A census is a measurement OF a population; it has to say which one.
 
 ### WHERE THE AMBIGUITY ACTUALLY COMES FROM, measured — and it kills the cheap fix
 
@@ -5351,6 +5379,36 @@ What the sizing says, in one line: **half the ambiguity is Lever 3** — a bare 
 this run never typed — and Lever 3 is exactly the population bucket 3 exists for once the receiver is
 proved untyped. Lever 2 is the index argument, and it is 24 % rather than "all of it". Lever 1 is the
 only part with no dependency on anything outside the file.
+
+### What the `contains` ruling does to LEVER 1 — and the control gap it exposed
+
+LEVER 1's biggest row is `contains (no marker) 97,843`, and it is a **count-model number that
+production does not have**. `classifyEdge` carries a `containsLike` branch (`incoming-rule.ts`):
+production binds a `contains` edge with `resolveContainsTargetStmt` —
+`WHERE s.project_id = ? AND s.name = ? ORDER BY (s.file_id = ?) DESC, (s.line_start = ?) DESC … LIMIT 1`
+— which prefers the edge's OWN FILE and returns exactly one row or none, so a name collision is not an
+ambiguity for that type: the edge binds, and the tie-break is disclosed in the `boundAmongCollision`
+column rather than charged as a gap. xml-lane measured the size of the gap the count model reports:
+**94.1 % ambiguous under the count model against 98.4 % bound in the real store, 97.9 % of it same-file.**
+
+That ruling (`fa2dc27e8`, Oct 9 23:46) is IN HEAD, and the last whole-corpus table in this document
+(arm7, Oct 9 15:16) PREDATES it — easy to get the ordering wrong, and it means arm7's `contains` row
+(602,591 resolved / 97,797 ambiguous / 68 unresolved) still reads those edges through the count model.
+The corrected table is arm8, queued behind the receiver-cut census; nothing in this document should
+quote arm7's `contains` ambiguity as work remaining.
+
+**AND THE RULE HAD NO CONTROL.** `fa2dc27e8` wrote the caller's test as
+
+    const isContains = e.label === "contains" || e.type === "contains"
+
+where `e` is a `PendingEdge` and `type` is a field that struct does not have: TS2339 at HEAD. The label
+comparison short-circuits first, so the behaviour was right BY LUCK — and nothing in the instrument
+could have said otherwise, because `selfTest` planted a case for every claim kind and NONE for
+`containsLike`. A rule carrying ~97,800 whole-corpus edges, asserted by no control, one refactor away
+from silently reverting them to ambiguous. The caller's test is now `isContainsEdge(label)` — owned by
+`incoming-rule.ts` and asserted by the control rather than re-spelled there — with four plants
+(predicate broken, rule leaking onto other types, collision flag dropped, and an unpublished target
+resolving anyway) each fired in a sandbox copy of the gate and each reporting its own failure text.
 
 ### The residual, stated rather than argued away
 
