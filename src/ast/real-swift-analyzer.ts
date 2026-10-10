@@ -613,7 +613,15 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Post-loop: contains (real ownership only) + references (imports).
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope
-      if (_owner && s.kind !== ASTEngine.SymbolKind.Extension) {
+      // M14 endpoint integrity: a declaration the parser recovered with NO name
+      // (measured: swift-corpus's validation-test/compiler_crashers_fixed/
+      // 27700-swift-modulefile-loadallmembers.swift, whose `let:Boolean` yields a
+      // symbol with name "") has no target to name. An edge with an empty endpoint
+      // is a defect in the emitting lane: the fleet instrument counts it in `edges`
+      // and then skips it in every class (incoming-gate.ts's `if (tgt.length === 0)
+      // continue`), which is exactly the unclassed edge the declaration gate refuses
+      // to ratchet. The nameless symbol still exists in `symbols` — only the edge is withheld.
+      if (_owner && s.name && s.kind !== ASTEngine.SymbolKind.Extension) {
         const key = `${_owner}\u0000${s.name}`
         if (!emittedContains.has(key)) {
           emittedContains.add(key)
