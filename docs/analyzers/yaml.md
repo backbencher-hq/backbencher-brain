@@ -4,8 +4,60 @@ This is the yaml lane's **verdict page** for the Laptop-B ontology round: what t
 what the instruments say, and what is still open. The large lane-authored design document is
 [real-yaml-analyzer.md](real-yaml-analyzer.md) — it is not duplicated here.
 
-## 1. Coverage — declared, and closing
+## 0. Round 3 — the must-be-zero column is ZERO
 
+| `residual-gate --lane yaml` | extFAIL | imports amb | references amb | unresolved | residual |
+|---|---|---|---|---|---|
+| end of round 2 | 18 | 63 | 142 | 762 | 1,734 |
+| **now** | **0** | **57** | **142** | **762** | **961** |
+
+Raw: [residual-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/residual-yaml-whole-corpus-after.txt)
+· [census-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-after.txt)
+(1,416,423 edges, 18,364 files, 189 repos, 0 failed, 0 degraded). `ofWhich` — resolved edges whose
+target had MORE THAN ONE declaration, so production's tie-break chose the row — is **4**, all in
+`contains` (4 of 1,380,046, and `intended` is 1,380,046/1,380,046: every containment edge binds in
+its OWN file). The indexer measures 37,318 of 49,729 such picks as wrong; this lane has four of
+them to lose.
+
+Three causes, in the Lead's order.
+
+**1. The 18 → 0: a claim is made only where the analyzer has EVIDENCE for it.** The Lead's ruling,
+now the same rule in json, toml and yaml. `verifyFileClaim` refuting a miss is pinned by the gate's
+own control and was NOT weakened; what changed is which edges assert the claim. `projectCarriesFile`
+(one `statSync`, mirroring json-lane exactly, including "an error that is not `ENOENT`/`ENOTDIR`
+counts as present") gates every file claim, and a `uses: ./dir` now claims the action's MANIFEST
+(`action.yml`/`action.yaml`) rather than the directory, which this lane's admitted `.yaml`/`.yml`
+file list could never admit. The 95 verified edges keep verifying; the 18 that named paths the
+project cannot be asked about — directories materialised at run time, a CodeQL query directory
+holding only `.ql`, files ansible's tests deliberately omit — state `isExternal`, which on a
+path-shaped target is `externalUnverified`.
+
+**2. imports 75 → 57 ambiguous: `scalarValues` recursing into a mapping.** One
+`- import_role: {name: role1, tasks_from: x.yml, allow_duplicates: true}` published the role name,
+its sub-file and a BOOLEAN as three imports of this file. Attributed by the key on each edge's own
+`line_number`: of 891 ansible include edges only 567 came from a key that names a file (149 from a
+nested `name:`, 45 `tasks_from:`, 18 `role_name:`, 51 from `hosts:`/`public:`/`gather_facts:` …).
+`fileImportTargets` now follows the key's meaning: a file key takes its scalar, or the `file:`
+sub-key of a mapping (a mapping is NOT a list of files); a role key takes its `name:` or the scalar
+shorthand. Corpus-wide imports went 10,343 → 10,152 edges. The 57 that remain are mostly role NAMES
+(ansible test roles literally called `a`, `b`, `c`) colliding with property keys of the same name —
+inherent to referencing a role by name, not over-emission.
+
+**3. references 879 → 142 ambiguous: a `needs:` target now names the JOB.** `needs: [test]` names a
+job declared once per WORKFLOW FILE, so the bare name has N declarations in the project and
+production's `COUNT(*) = 1` bare-name rule can never bind it — 802 of the 879 measured. The lane
+already publishes each job as `<document>.jobs.<id>`, so the edge now targets that, gated on the
+document's own shape index (`resolveJobInDocument`), which leaves Compose `depends_on` and any name
+that merely looks like a job untouched. The 142 that remain are a different shape — 117 of them are
+ONE k8s testdata name (`test`, 8 declarations).
+
+**Unresolved 762 = 729 + 33, both now truthfully reasoned.** 729 are docker's `api/docs/*.yaml`,
+where the pinned grammar error-recovers and the pointer index is keyed by paths the document does
+not have (round 2's finding). The 33 are `pointer-not-declared-in-file` in files that DO parse
+cleanly — i.e. genuinely undeclared pointers, mostly openapi loader test fixtures. Because the
+reason is now chosen by `parseHadError`, that split is a measurement rather than an assertion.
+
+## 1. Coverage — declared, and closing
 `script/m14/spec/yaml-completeness.json` carries the `coverage` block the board reads
 (`yaml 6/8 from=spec coverage block`):
 
