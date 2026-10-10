@@ -514,6 +514,47 @@ module sources (`cloudposse/stack-config/yaml//modules/remote-state` 271, `git::
 `uses` unbound 419 with roots `each` 200 · `path` 168 · `count` 44 · `self` 5 · `terraform` 2 — the
 namespace-claim case, still unbuilt.
 
+### Cause 6 — the NAME-SPACE LEVER, PRICED at whole population: 4,725 rows, not 19,330
+
+The lever (a FILE-SCOPED identity published and targeted) is priced on the store by asking, per row,
+whether a declaration in the EDGE'S OWN FILE answers to the target while the store bound elsewhere or
+nowhere — that is what a scoped identity would move. Fifteen of sixteen repositories (one store run
+each; **`terraform-aws-components` was KILLED — `timeout` exit 124 after 900 s, its 1,809 eligible
+files are NOT in these totals and are reported as KILLED, never as a zero**), 5,029 indexer-eligible
+files, 129,941 store rows. Artefact: `validation/m14/fixtures/hcl/store-binding-truth.lever-price.json`.
+
+| type | store rows | other-file | unbound | **PRICE (scoped would move)** | of those leaf-reduced | already bind inside the own file |
+|---|---|---|---|---|---|---|
+| contains | 98,899 | 2,462 | 164 | **2,462** | 843 | 96,273 |
+| references | 17,670 | 8,557 | 1,478 | **678** | 85 | 787 |
+| exports | 12,161 | 1,561 | 10 | **1,561** | 0 | 10,590 |
+| uses | 812 | 608 | 169 | **0** | 0 | 0 |
+| imports | 342 | 0 | 334 | **0** | 0 | 0 |
+| **total** | **129,941** | **15,749** | — | **4,725** | **928** | **107,683** |
+
+READ IT AGAINST THE WRONG-BINDING CLASS: 15,749 rows bind to another file, but only **4,725** have an
+own-file declaration a scoped identity could move them to — **the other ~11,000 name a declaration
+that genuinely lives elsewhere or nowhere**, so no rename touches them. The lever is therefore NOT the
+lane's main cause: it is ~1.7% of the store rows in scope, and `references` — the largest residual —
+would move only **678 of its 8,557 cross-file bindings (8%)**.
+
+WHERE IT DOES PAY, exactly as argued: **`exports` 1,561 of 1,561** — every cross-file export binding
+is wrong by construction and a scoped identity fixes all of them. `contains` shows 2,462, which is a
+QUESTION rather than a gain: production resolves `contains` with its own own-file-first statement, so
+a row that bound elsewhere while the own file answers wants explaining before any rename credits it.
+`uses` and `imports` price at zero: their targets are namespaces and module paths with no own-file
+declaration to move to.
+
+THE OVERLAP COLUMN the Lead asked to travel with the price: of the 4,725 movable rows, **928 (20%)
+currently bind only after LEAF REDUCTION** — those are the rows where "bound" is already a leaf-name
+coincidence that a scoped identity would either fix or break, so the net gain cannot be counted as
+4,725 without them.
+
+Conclusion for sequencing: the identity change is NOT the main event (name-space pricing outranks it
+only in the sense that it is now answered), the namespace claim kind and `imports` remain the named
+work, and the ~11,000 cross-file bindings with no own-file declaration are a THIRD defect that neither
+the lever nor a claim addresses — recorded as an open cause with its count.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
