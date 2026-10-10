@@ -38,7 +38,12 @@ Same rules as JVM family. Heritage edges structural. Calls usage_contextual.
   trailing newline by one (family-level, left alone)
 
 ## Verification
-- Fixtures: 76 (`validation/m14/fixtures/typescript/`)
+- Fixtures: **102** (`validation/m14/fixtures/typescript/`) — **96 pass, 6 fail**, and the six
+  are already recorded per-lane in `validation/m14/fixture-baseline.json`, so the fixture gate
+  reports *no regressions* rather than a clean lane: `calls-callee-shape-reduction`,
+  `heritage-parameterized-leaves`, `re-export-empty-clause`, `re-export-module-dependency`,
+  `type-predicate-and-constraint-refs`, `type-reference-uses-surfaces`. Measured
+  2026-10-10 with `bun run script/m14/run-fixtures.ts --lang typescript` at `04b89f377`.
 - Corpus: vue-core@f8975657 differential 100% coverage / 0.9% unexplained
 - Grammar audit: PASS (union oracle: TS + TSX + JS)
 
