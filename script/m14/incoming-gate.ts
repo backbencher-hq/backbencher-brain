@@ -399,6 +399,52 @@ type MarkBucket = {
   cause: number
 }
 
+/**
+ * THE INTENT OF A BINDING — the exact test, beside the name-keyed count model.
+ *
+ * `resolvedAmongCollision` is an UPPER BOUND on arbitrary bindings: `classifyEdge` sees a
+ * name-keyed count and no file, so it fires on "the PROJECT holds more than one declaration",
+ * which is a superset of "the row production wrote is the wrong one". This is the exact test, and
+ * it needs positions, which the gate now keeps: a declaration is `(file, line)` as well as a key.
+ *
+ *   intended            a declaration in the EDGE'S OWN FILE, on the edge's own line, answers to
+ *                       the target. For `contains`/`exports` the analyzer writes the edge on the
+ *                       target symbol's own start line, so the line test is EXACT: measured on
+ *                       terragrunt-900, 1,075 of 1,075 same-file `exports` bindings were on their
+ *                       own line and 0 were off it.
+ *   sameFileUnproven    a declaration in the edge's own file, but not on the edge's line, OR the
+ *                       type's edge line is the READ SITE and not the target's (`references`), so
+ *                       intent is NOT measurable this way and this class must not be read as
+ *                       "wrong" or as "right".
+ *   arbitraryTwin       nothing in the edge's own file answers to the name, but a declaration in
+ *                       ANOTHER file does — exactly when the store's `s.id` tie-break (a TEXT
+ *                       comparison of `${fileId}:${name}:${line}`) picks a foreign declaration.
+ *   noDeclaration       nothing in the project answers to it — the unresolved class.
+ *
+ * Validated against the STORE by validation/m14/fixtures/hcl/tools/store-binding-truth.mts, which
+ * is the reference implementation: its own-file+own-line column is this class read off
+ * `brain_relationship.target_symbol_id` instead of off the key space.
+ */
+type IntentTally = { intended: number; sameFileUnproven: number; arbitraryTwin: number; noDeclaration: number }
+const emptyIntent = (): IntentTally => ({ intended: 0, sameFileUnproven: 0, arbitraryTwin: 0, noDeclaration: 0 })
+/** Types whose edge line IS the target symbol's own start line — the only ones where own-line is an
+ *  intent test. `references` publishes the READ SITE, so it is deliberately absent. */
+const LINE_IS_TARGET_LINE: ReadonlySet<string> = new Set(["contains", "exports"])
+function classifyIntent(
+  tgt: string,
+  srcFile: string,
+  line: number | null,
+  label: string,
+  declPos: Map<string, { file: string; line: number }[]>,
+): keyof IntentTally {
+  const decls = declPos.get(tgt)
+  if (!decls || decls.length === 0) return "noDeclaration"
+  const sameFile = decls.filter((d) => d.file === srcFile)
+  if (sameFile.length === 0) return "arbitraryTwin"
+  if (LINE_IS_TARGET_LINE.has(label) && line !== null && sameFile.some((d) => d.line === line)) return "intended"
+  return "sameFileUnproven"
+}
+
 type Row = {
   type: Type
   edges: number
@@ -412,6 +458,8 @@ type Row = {
    *  signature per symbol it names (`firstHeritageParent=StatelessWidget` for one line).
    *  Printed as a worklist — WHICH markers the unwalkable edges carry, not merely how many. */
   marks: Map<string, MarkBucket>
+  /** the EXACT intent of this type's bindings — see `classifyIntent`; beside the count model */
+  intent: IntentTally
 }
 
 /**
@@ -521,7 +569,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   const projectKinds = new Map<string, Map<string, Set<string>>>()
   const rows = new Map<Type, Row>()
   for (const t of ALL_TYPES) {
-    rows.set(t, { type: t, edges: 0, project: emptyOutcomes(), pooled: emptyOutcomes(), marks: new Map() })
+    rows.set(t, { type: t, edges: 0, project: emptyOutcomes(), pooled: emptyOutcomes(), marks: new Map(), intent: emptyIntent() })
   }
 
   let parsed = 0
@@ -598,8 +646,13 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     sig: string
     /** the PROJECT the edge was emitted in — the key space that decides its outcome */
     repo: string
+    /** the FILE the edge was emitted from and its own line — the exact intent test's two inputs */
+    srcFile: string
+    line: number | null
   }
   const pending: PendingEdge[] = []
+  /** WHERE each declaration lives — see `classifyIntent`. Filled by `countKey` in both key spaces. */
+  const declPos = new Map<string, { file: string; line: number }[]>()
 
   // PROGRESS ON STDERR, because a whole-corpus run is hours and a run whose only output is
   // its last line cannot be told apart from a wedged one. stdout stays exactly the report:
@@ -661,8 +714,14 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     if (!pDecl) projectDecl.set(repo, (pDecl = new Map()))
     let pKinds = projectKinds.get(repo)
     if (!pKinds) projectKinds.set(repo, (pKinds = new Map()))
-    /** the same increment in both key spaces, so a symbol can never be counted in one only */
-    const countKey = (key: string, kind: string) => {
+    /** the same increment in both key spaces, so a symbol can never be counted in one only.
+     *  ALSO records WHERE the declaration lives: the exact intent test needs (file, line), and a
+     *  count cannot answer "is the declaration the edge meant in the edge's own file?". */
+    const countKey = (key: string, kind: string, file: string, line: number | null) => {
+      const at = declPos.get(key)
+      const pos = { file, line: line ?? -1 }
+      if (!at) declPos.set(key, [pos])
+      else if (!at.some((d) => d.file === file && d.line === pos.line)) at.push(pos)
       pooledDecl.set(key, (pooledDecl.get(key) ?? 0) + 1)
       let ps = pooledKinds.get(key)
       if (!ps) pooledKinds.set(key, (ps = new Set()))
@@ -677,7 +736,8 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       const name = String(s?.name ?? "")
       if (name.length === 0) continue
       const symKind = String(s?.kind ?? "")
-      countKey(name, symKind)
+      const symLine = Number((s as any)?.range?.startLine ?? (s as any)?.range?.start_line ?? (s as any)?.line_start ?? (s as any)?.lineStart ?? (s as any)?.startLine ?? (s as any)?.line ?? 0) || null
+      countKey(name, symKind, f, symLine)
 
       // THE QUALIFIED-NAME ALIAS, and this gate's first version omitted it — which is
       // worth recording, because the omission did not produce a small error. It produced
@@ -696,7 +756,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // which is why its json row reads 0.
       const q = String(s?.qualifiedName ?? "")
       if (q.length > 0 && q !== name) {
-        countKey(q, symKind)
+        countKey(q, symKind, f, symLine)
         aliasedKeys++
       }
     }
@@ -727,7 +787,8 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // outcome travel with the edge; everything else (the counts, the marks, the name lists)
       // is written in the classification pass below, so no column can be filled from a
       // half-built key space even by accident.
-      pending.push({ label, tgt, claim, sig, repo: repoOf(f) })
+      const edgeLine = Number((rel as any)?.line_number ?? (rel as any)?.lineNumber ?? (rel as any)?.line ?? 0) || null
+      pending.push({ label, tgt, claim, sig, repo: repoOf(f), srcFile: f, line: edgeLine })
       continue
     }
   }
@@ -759,6 +820,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     const isContains = e.label === "contains" || e.type === "contains"
     const pc = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains)
     tally(row.project, pc, e.tgt, e.label)
+    row.intent[classifyIntent(e.tgt, e.srcFile, e.line, e.label, declPos)]++
     tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts, isContains), e.tgt, e.label)
     switch (pc.outcome) {
       case "resolved": marks.resolved++; break
@@ -1064,6 +1126,27 @@ function selfTest(): { ok: boolean; failures: string[] } {
       `control: the same target classified ${scoped} in project scope and ${pooled} pooled; ` +
       `expected resolved/ambBoth — the two key spaces are not distinct`,
     )
+  }
+
+  // THE INTENT TEST'S OWN CONTROL. Each arm plants a key space with POSITIONS and asserts the class
+  // `classifyIntent` returns — including the arm that must NOT fire: a type whose edge line is the
+  // READ SITE can never read `intended`, however well the file matches.
+  {
+    const planted = new Map<string, { file: string; line: number }[]>([
+      ["alpha", [{ file: "a.tf", line: 5 }]],
+      ["beta", [{ file: "b.tf", line: 9 }]],
+    ])
+    const intentArms: Array<[string, string, string, number | null, Parameters<typeof classifyIntent>[3], string]> = [
+      ["own file, own line, line-valid type", "alpha", "a.tf", 5, "exports", "intended"],
+      ["own file, wrong line, line-valid type", "alpha", "a.tf", 7, "exports", "sameFileUnproven"],
+      ["own file, own line, line-INVALID type is not asserted", "alpha", "a.tf", 5, "references", "sameFileUnproven"],
+      ["only a foreign twin answers", "beta", "a.tf", 9, "exports", "arbitraryTwin"],
+      ["nothing answers", "delta", "a.tf", 1, "exports", "noDeclaration"],
+    ]
+    for (const [name, tgt, src, line, label, want] of intentArms) {
+      const gotIntent = classifyIntent(tgt, src, line, label, planted)
+      if (gotIntent !== want) failures.push(`control (intent): ${name} classified ${gotIntent}, expected ${want}`)
+    }
   }
 
   if (got.resolved !== 1) failures.push(`control: expected 1 resolved, got ${got.resolved}`)
@@ -1473,6 +1556,33 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   // BOTH LISTS, together: a run can have unresolved names and no ambiguous ones (a lane whose
   // targets name nothing at all), and gating the print on the ambiguous list alone would hide
   // exactly that case's worklist.
+  // THE EXACT INTENT SPLIT — see `classifyIntent`. Per TYPE, because the types differ by 3x on the
+  // store (terragrunt-900: `contains` crossed files at 4.7%, `exports` at 15.5%) and a single ratio
+  // hides that. The line test is applied ONLY where the edge line is the target symbol's own start
+  // line, and the note says which types those are.
+  {
+    const withIntent = [...rep.rows.values()].filter((r) => r.intent.intended + r.intent.sameFileUnproven + r.intent.arbitraryTwin + r.intent.noDeclaration > 0)
+    if (withIntent.length) {
+      const intentTotals = withIntent.reduce((a, r) => ({
+        intended: a.intended + r.intent.intended, sameFileUnproven: a.sameFileUnproven + r.intent.sameFileUnproven,
+        arbitraryTwin: a.arbitraryTwin + r.intent.arbitraryTwin, noDeclaration: a.noDeclaration + r.intent.noDeclaration,
+        edges: a.edges + r.edges,
+      }), { intended: 0, sameFileUnproven: 0, arbitraryTwin: 0, noDeclaration: 0, edges: 0 })
+      console.log(`BINDING INTENT — the EXACT test beside the count model's upper bound (resolvedAmongCollision):`)
+      console.log(`  intended = a declaration in the edge's OWN FILE ON the edge's own line answers to the target`)
+      console.log(`  (exact only where the edge line IS the target symbol's line: ${[...LINE_IS_TARGET_LINE].join(", ")}.)`)
+      console.log(`  For every other type the edge line is the READ SITE, so a same-file row is sameFileUnproven —`)
+      console.log(`  not wrong and not right; arbitraryTwin is the file-crossing class in both cases.`)
+      console.log("  " + w("type", 14) + w("edges", 9) + w("intended", 10) + w("sameFileUnproven", 17) + w("arbitraryTwin", 14) + "noDeclaration")
+      for (const r of withIntent) {
+        console.log("  " + w(r.type, 14) + w(r.edges, 9) + w(r.intent.intended, 10) + w(r.intent.sameFileUnproven, 17) + w(r.intent.arbitraryTwin, 14) + String(r.intent.noDeclaration))
+      }
+      console.log("  " + w("TOTAL", 14) + w(intentTotals.edges, 9) + w(intentTotals.intended, 10) + w(intentTotals.sameFileUnproven, 17) + w(intentTotals.arbitraryTwin, 14) + String(intentTotals.noDeclaration))
+      console.log(`  validated against the STORE by validation/m14/fixtures/hcl/tools/store-binding-truth.mts — its`)
+      console.log(`  own-file+own-line column is this class read off brain_relationship.target_symbol_id.`)
+    }
+  }
+
   if (ambList.length || unresList.length) {
     // PER TYPE, not the first 20 names. The lists are filled per type (up to 25 each), and a
     // flat slice of the pooled list prints whatever type happens to come first — measured
