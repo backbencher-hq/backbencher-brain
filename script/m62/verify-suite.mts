@@ -48,6 +48,10 @@ const GATES: Gate[] = [
   { name: "m62 gate-typecheck ratchet", script: "script/m62/verify-gate-typecheck-coverage.ts" },
   { name: "m62 ledger-reseal", script: "script/m62/verify-ledger-reseal.ts" },
   { name: "m62 cli-resolution", script: "script/m62/verify-cli-resolution.mts" },
+  // This one must be IN the suite, which is the interesting part: it reports gates
+  // that are NOT in the suite. A gate that reports holes in the suite and is itself
+  // only reachable by hand is a hole in the suite.
+  { name: "m62 suite-coverage", script: "script/m62/verify-suite-coverage.ts" },
   { name: "m23 p3 edge cases", script: "script/m23/verify-p3-edge-cases.ts" },
   { name: "m24 closure", script: "script/m24/verify-closure.ts" },
   { name: "m24 governance", script: "script/m24/verify-governance.ts" },

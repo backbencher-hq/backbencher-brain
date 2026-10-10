@@ -9,11 +9,11 @@
   "mutantsCaught": 4,
   "mutantsTotal": 4,
   "negativeCases": 4,
-  "currentCommit": "79e496b4808663b930e6ccea9e1160b8d1bc34c8",
+  "currentCommit": "23f05b18d38f178b1f0a8f1eb030a430554f4b06",
   "verifierCommand": "npx tsx script/m25/verify-status-surface.ts",
   "evidenceFile": "E3.json",
   "renderCapture": "validation/m25/results/E3-render-capture.txt",
-  "generatedAt": "2026-10-10T02:13:44.688Z",
+  "generatedAt": "2026-10-10T03:25:43.520Z",
   "os": "darwin",
   "verdict": {
     "realComponentFailures": 0
@@ -25,7 +25,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-10T02:13:44.689Z",
-    "contentSha256": "7842b38e0aaa11888f95ba857cfe57a8e075f0dab1070349c74b7e290dd9888e"
+    "sealedAt": "2026-10-10T03:25:43.520Z",
+    "contentSha256": "8a98ecea6e1e0a28ffe264dd2a0037a8e11f1f70d28fb3ee02858fd5fac444bf"
   }
 }
