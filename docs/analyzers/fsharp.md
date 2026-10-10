@@ -515,3 +515,56 @@ claim — which is the point of a fixture named `call-target-spelling`:
 
 Targets were read off the analyzer's actual output, not guessed. **fsharp fixtures 15/15, and
 `npx tsc --noEmit` exit 0.**
+
+---
+
+## 9. CORRECTION — §8.1's residue is NOT scope-vs-file-wide. Both sides are file-wide.
+
+§8.1 named the 4-row residue as *"the analyzer's rule is FILE-WIDE, the oracle's is BODY-SCOPED"*.
+**That is wrong on both counts**, and the correction matters because the approved next change
+(scope-aware `localNames`) would be aimed at a disagreement that is not there.
+
+`probe-local-binding-set-diff.mts` compares the two derivations row by row over the harness's own 60
+files (`measurements/local-binding-set-diff.txt`):
+
+```
+analyzer calls edges with localBinding=true:  87
+oracle   calls truth rows with '#':           83
+analyzer-only: 40        oracle-only: 36
+```
+
+The 40/36 are **source-spelling** differences, not set differences — and they do not matter, because
+the differential compares `label` and `target` only, and `normTarget` takes the last dot-segment:
+
+```
+A  new IVsRunningDocumentTable.FindAndLockDocument -> new IVsRunningDocumentTable.FindAndLockDocument#next
+T  FindAndLockDocument -> FindAndLockDocument#next
+   normTarget on both sides is "FindAndLockDocument#next"   -> MATCHED
+```
+
+So 83 of the analyzer's 87 re-spellings match, and the residue is the remaining **4** — meaning the
+analyzer's local set contains 4 names the oracle's does not. And the oracle's set is not body-scoped
+either: `localBindings` is declared once per file and added to during the walk, exactly like the
+analyzer's `localNames` (`real-fsharp-analyzer.ts:383`).
+
+**The two sets are built by different predicates and different name readers:**
+
+| | declaration predicate | name reader |
+|---|---|---|
+| analyzer (`:1148`, `:1176`) | `bodyDepth > 0 && (value_declaration \|\| function_or_value_defn)` | `declaredBindingName(node)` |
+| oracle (`fsharp-truth-oracle.ts`, 589-593) | `inBody && t !== "member_defn"` over the same three types | `thisBindingName(node)` |
+
+`Tests.LanguageService.Completion.fs` is the concrete case: the oracle's truth for that file contains
+**zero** rows carrying `#`, while the analyzer re-spells `…AssertCtrlSpaceCompletionContains ->
+…#completions`. `completions` appears at `:50` as a `let` and at `:213` as a LAMBDA PARAMETER; the
+analyzer's predicate reaches it and the oracle's does not. **Which side is right is an open question
+this measurement does not settle** — the call site may well be inside the `:213` lambda, in which case
+the analyzer is right and the ORACLE is the side that must change.
+
+**What this changes about the next change, stated so it is not repeated:** the scope-aware
+`localNames` work is still a real improvement — a name that is a local in one function should not be a
+binding in another — but it is **not the fix for this residue**, and it will not move `unexplained`
+toward 69 on its own. The residue is a set-construction difference, and the honest next step is to
+decide which predicate is right (by reading the call sites of the 4 rows) before changing either side.
+Doing the scope-aware change first and reading whatever number it produces as confirmation would be
+the tuning the lead explicitly asked not to have.
