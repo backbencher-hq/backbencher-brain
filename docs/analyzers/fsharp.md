@@ -568,3 +568,42 @@ toward 69 on its own. The residue is a set-construction difference, and the hone
 decide which predicate is right (by reading the call sites of the 4 rows) before changing either side.
 Doing the scope-aware change first and reading whatever number it produces as confirmation would be
 the tuning the lead explicitly asked not to have.
+
+### 9.1 SETTLED by source — the analyzer is RIGHT on the concrete case, and the ORACLE is the incomplete side
+
+§9 left open which predicate is right. The call site answers it. In
+`Tests.LanguageService.Completion.fs`:
+
+```fsharp
+member private this.AssertCtrlSpaceCompletionContains(fileContents, marker, expected, ?addtlRefAssy) =   // :209
+    this.AssertCtrlSpaceCompletion(
+        fileContents, marker,
+        (fun completions ->                          // :213  a LAMBDA PARAMETER named `completions`
+            Assert.NotEqual(0, completions.Length)   // :214  read
+            let found = completions |> Array.exists(…)   // :215  the pipeline the edge comes from
+```
+
+`completions` is a lambda parameter **in scope** at the edge's site, and a lambda parameter is a
+binding with no symbol — so **the analyzer's `#completions` claim is correct** and the ORACLE is the
+side that is incomplete: its `localBindings` never receives lambda-parameter bindings, which is why
+the truth for this file carries zero `#` rows while the analyzer re-spells one.
+
+That inverts §8.1 twice over: the residue is not scoping, and the side at fault is the TRUTH arm.
+Two consequences worth stating plainly:
+
+1. **The approved scope-aware `localNames` change would not move this number.** It is still a real
+   correctness improvement — a name that is a local in one function should not be a binding in another
+   — but it is a different change with a different justification, and it should not be credited with
+   this residue either way. This is the "if it does not drop, that is the finding" branch, reached
+   before spending the change rather than after.
+2. **The next change is in the oracle**: collect `fun_expression` parameter names into
+   `localBindings` (`fun_expression` is the grammar node — the oracle already reasons about it at
+   `:1129-1130` for the FS-D18 type-position rule). That is a completeness fix to the INDEPENDENT arm,
+   which is the direction that strengthens the differential rather than tuning it, and its expected
+   effect is `unexplained` 70 → 69 with `MISSING` staying 10.
+
+There is a residual question this pass did not settle and should not pretend to: whether the
+file-wide set should ALSO become scope-aware. `completions` is in the analyzer's set from several
+`let`s in this file (e.g. `:226` in a different member) as well as from the `:213` lambda, so the
+claim is right here — but the rule that produced it is right BY NAME, not by scope, and the next
+reader should not read this one correct case as a defence of the file-wide rule.
