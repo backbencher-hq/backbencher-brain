@@ -1943,6 +1943,13 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (resolvableInDocument) {
         ensureTargetSymbol(qname.local, undefined, ASTEngine.SymbolKind.Type, cand.nameNode, { isReferencedDeclaration: true })
       }
+      // THE SAME CLAIM AS THE REFERENCE PASS, for the same reason and with the same refusal.
+      // A derivation base in the `builtin` class (`xs:string`) or the `external` class (declared in
+      // a namespace this document imports) is not a declaration of this population, which is what
+      // `isExternalTarget` claims and what the gate VERIFIES against its key space. A base whose
+      // class is `unresolved` is deliberately NOT marked: the analyzer has measured that this file
+      // does not declare it, not that the population does not.
+      const claimsExternalTarget = isBuiltin || (!resolvableInDocument && !unresolvedBare)
       addRelationship(cand.ownerName, qname.local, ASTEngine.RelationshipType.Extends, {
         role: "xsd_derivation_base",
         attributeName: "base",
@@ -1955,6 +1962,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // both cases and this is what tells a consumer which way.
         derivation: cand.kind,
         resolvable: isBuiltin ? "builtin" : resolvableInDocument ? "in-document" : unresolvedBare ? "unresolved" : "external",
+        ...(claimsExternalTarget ? { isExternalTarget: true } : {}),
         ...(unresolvedBare && RealXmlAnalyzer.XSD_BUILTIN_TYPE_NAMES.has(qname.local) ? { ambiguousWithBuiltin: true } : {}),
         ...(imported ? { importedFrom: imported.path, importedBy: imported.element } : {}),
       }, cand.valueNode)

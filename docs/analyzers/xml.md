@@ -19,12 +19,13 @@ degraded, `extFAIL 0 · bindFAIL 0 · causeFAIL 0`:
 | overrides | 3 | 1 | 2 | 0 | 66.7% | 0 |
 | references | 11,108 | 997 | 7,582 | **12** | 68.4% | 2,529 |
 | imports | 473 | 2 | 0 | **265** | 56.0% | 471 |
-| extends | 1,429 | 84 | 991 | **354** | **94.1%** | 354 |
-| **TOTAL** | **202,725** | **190,517 (94.0%)** | 8,854 | **631** | **4.7%** | 3,354 |
+| extends | 1,429 | 84 | 991 | **0** | **69.3%** | 354 |
+| **TOTAL** | **202,725** | **190,517 (94.0%)** | 8,854 | **277** | **4.5%** | 3,354 |
 
-Raw: [`residual-after-claims.txt`](../../validation/m14/fixtures/xml/residual-after-claims.txt),
+Raw: [`residual-extends.txt`](../../validation/m14/fixtures/xml/residual-extends.txt) (after the
+`extends` claim mapping), [`residual-after-claims.txt`](../../validation/m14/fixtures/xml/residual-after-claims.txt),
 [`residual-true-population.txt`](../../validation/m14/fixtures/xml/residual-true-population.txt)
-(the 6.0% state before the claim mapping).
+(the 6.0% state before any claim mapping).
 
 The claim mapping of §3 is the last column's delta: **unresolved 3,354 → 631 (−81%)** and the
 lane's residual **6.0% → 4.7%**, with `extFAIL` 0 at every step. What is left is `extends` (94.1%)
