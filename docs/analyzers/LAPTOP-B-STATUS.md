@@ -60,8 +60,19 @@ zig          E     E     E     ·     ·     E     E     ·     E     E    | TAB
 **Two columns, two instruments — do not subtract them.** The `E` grid comes from the M60
 coverage gate; `applicable` and `AMB/UNRES` come from `incoming-check` (30-file sample
 for `applicable`, whole-corpus — 600 files per lane, `make` 129, `clean` 164, `r` 21 —
-for `AMB/UNRES`). They **disagree for 11 of 23 lanes** (`json` 9 emitted vs 1 fired;
+for `AMB/UNRES`). They **disagree for 11 of 23 lanes** (`json` 9 emitted vs 1 fired†;
 `sql`, `nim`, `r`, `powershell` 10 vs 5–8). Reconciling them is open work.
+
+† **`json` RESOLVED 2026-10-09, and both numbers were wrong.** The `1 fired` is a
+120-file stride artefact of a corpus that is 97.2% `docs/**` theme data — over the whole
+admitted population (13,951 files, 154 repos) **nine** types fire, and the 25
+construct-bearing files of the stride corpus fall entirely outside the draw. The
+`9 emitted` was wrong too, in the other direction: `implements` was excluded by a stale
+ruling while it emits 113 edges. The lane is `9/10 applicable` with `instantiates` the
+one true zero (`zero-sites`, so it stays in the denominator). See
+`docs/analyzers/json.md`. **This is the general shape**: a firing-log row is a claim
+about its stride and, for lanes whose `LANES` entry pins one repo, about that repo
+alone — rows now print their corpus and admitted count (`c0b9bcdd5`).
 
 ## Per-lane detail
 

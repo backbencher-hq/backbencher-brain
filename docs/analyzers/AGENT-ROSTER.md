@@ -50,7 +50,7 @@ a live Team's roster size is fixed at construction.
 | clean | `clean-lane` | task-6 | **COMPLETE** — `9/9`; found its own `<=` detector could not fire, and the board's `--coverage` mode hiding notes |
 | bash | (Lead) | HANDOFF §5.11 | **COMPLETE** — `7/7`; settled `exports`/`overrides` whole-corpus (1,598 / 19 edges) |
 | yaml | `yaml-lane` | task-9 | in flight — 107 (ansible) / 113 (fleet) external claims REFUTED on the whole population |
-| json | `json-lane` | task-10 | in flight — declared 8/8 vs a 1-type firing log, 7 types UNCITED |
+| json | `json-lane` | task-10 | **COMPLETE** — `9/10`; the log's `1` was a 120-file artefact (the whole population fires 9), and `implements` was a stale exclusion subtracting a type that fires |
 | hcl | `hcl-lane` | task-14 | assigned — the ruling gate certifies RULED-SOUND from node types alone |
 | dart | — | task-12 | queued |
 | sql | — | task-13 | queued |
