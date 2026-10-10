@@ -339,6 +339,45 @@ it cannot manufacture a refutation the blind claim would not already have earned
 17/0 and the zero-regex contract 28/28 both hold; the new check is a `stat`, not a read.
 Artifact: `validation/m14/fixtures/json/measurements/json-docker-extfail-before-after.jsonl`.
 
+## 7d. The `overrides` 22 — measured against the store, and it is not a resolution failure
+
+The gate cannot settle this type: `LINE_IS_TARGET_LINE = {contains, exports}` excludes
+`overrides`, so it reports `sameFileUnproven` by design. So the edges were enumerated from
+the gate's own path and then read against a REAL store (production `indexProjectParallel`,
+then SQL over `brain_relationship`/`brain_symbol`:
+`validation/m14/fixtures/json/tools/store-binding-truth.mts`).
+
+**The 21 enumerated edges, seven repos, are ONE shape.** Every target's declarations are
+the repeated occurrences of ONE key in ONE object of ONE file — no cross-file twin
+anywhere. The filenames say what the construct is: `y_object_duplicated_key.json` and
+`y_object_duplicated_key_and_value.json` (otp), `11152.json` and `format_string_key.json`
+(duckdb), `template.pkr.json` (packer) — JSON-parser test fixtures whose purpose is a
+duplicated key. duckdb alone emits 12: three targets **4× each with identical source,
+target and line**.
+
+**The store read (duckdb, 177/177 files, 13,742 symbols, 27,752 relationships):**
+
+| | analyzer (gate path) | store |
+| --- | ---: | ---: |
+| `overrides` edges | 12 | **6** (same-line duplicates collapse to one row) |
+| symbols for `11152[3].fileSize` | 4 | **1** (line 1) |
+| bound (`target_symbol_id NOT NULL`) | — | **6 of 6** |
+
+**Verdict: nothing is mis-bound.** The 22 read `amb(decl)` because the gate counts
+declarations in *its own* project model, where one qualified name appears 4× (duckdb) or 2×
+(everywhere else); production's key space never holds those duplicates — it keeps one symbol
+per identity and one row per (source, target, type), and the edge binds to it. The honest
+label is **bound but indistinguishable**, and the correct next question is about the
+analyzer's IDENTITY, not about resolution.
+
+**The document-scoped respelling proposed for this lane cannot fix it**: the repeated
+declarations are in the same document *and the same object*, so `<file-scope>::<key>` still
+collides. What could separate them is the declaration's own line — the next measurement,
+because if the analyzer's duplicate symbols are line-identical then no spelling separates
+them and the right fix is to stop emitting N identical symbols/edges for one repeated key at
+the source. Limits: duckdb store-read; the other six repos enumerated but not store-read.
+Full record: `validation/m14/fixtures/json/measurements/json-overrides-store-verdict.jsonl`.
+
 ## 8. Open items
 
 - `JSON-G3` (duplicate identity for a top-level array's second element) and `JSON-G4`
