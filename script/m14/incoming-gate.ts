@@ -1247,6 +1247,13 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
   let edges = 0
   const add = (into: Outcomes, r: Outcomes) => {
     into.resolved += r.resolved
+    // `resolvedAmongCollision` WAS OMITTED HERE, and the error direction flattered — found by
+    // json-lane (2026-10-10, `a802ac5f6`). The TOTAL row printed `collRes 0` while the per-type rows
+    // carried the real values (measured on that lane's own committed run: `contains` collRes 51,
+    // TOTAL 0). A completion package reads the TOTAL, so the omission said exactly one thing — "no
+    // resolved edge depended on the tie-break" — which is the single reading this column exists to
+    // prevent. It is a property OF the resolved rows, so it accumulates like the rest.
+    into.resolvedAmongCollision += r.resolvedAmongCollision
     into.ambiguousByDecl += r.ambiguousByDecl
     into.ambiguousByKind += r.ambiguousByKind
     into.unresolved += r.unresolved
