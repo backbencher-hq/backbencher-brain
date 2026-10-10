@@ -4,7 +4,40 @@ This is the yaml lane's **verdict page** for the Laptop-B ontology round: what t
 what the instruments say, and what is still open. The large lane-authored design document is
 [real-yaml-analyzer.md](real-yaml-analyzer.md) — it is not duplicated here.
 
-## 0. Round 3 — the must-be-zero column is ZERO
+## 0. Round 4 — the error-recovered pointers resolve
+
+| `residual-gate --lane yaml` | extFAIL | imports amb | references amb | unresolved | residual |
+|---|---|---|---|---|---|
+| end of round 2 | 18 | 63 | 142 | 762 | 1,734 |
+| end of round 3 | 0 | 57 | 142 | 762 | 961 |
+| **now** | **0** | **57** | **142** | **47** | **246** |
+
+Whole admitted population, 1,416,423 edges, 18,364 files, 189 repos: **resolved 99.1 %**, extFAIL 0,
+bindFAIL 0, causeFAIL 0, `ofWhich` 4 (all `contains`).
+
+**The 762 → 47: `pointerPath` now survives ERROR recovery.** The grammar does not merely mis-key a
+pointer on a malformed document — it **flattens the tree**. Measured on docker's
+`api/docs/v1.25.yaml`: the root is an ERROR node whose 54 `block_mapping_pair` children include
+`swagger:` at line 12 AND `MountType:` at line 186 — `definitions:` itself is gone and its members
+were hoisted to the top level. So the walk indexes `/MountType` while the document's `$ref` says
+`#/definitions/MountType`, and the declaration is published as `api.docs.v1.25.MountType`.
+`resolvePointerOnRecoveredTree` binds such a `$ref` to the document's own declared path when — and
+only when — the decoded pointer is a SUFFIX of it and the LONGEST match is unique; the binding is
+marked `resolvedVia: document-shape-suffix` at confidence 0.95 rather than posing as an exact hit,
+and it is consulted **only on a tree the grammar errored on**, so no clean-parse resolution can
+move. On that file: 0 → 35 of 36 pointers resolved.
+
+The 47 that remain, both named:
+
+| count | reason | what it is |
+|---|---|---|
+| 33 | `pointer-not-declared-in-file` | files that DO parse cleanly — genuinely undeclared pointers, mostly openapi loader fixtures |
+| 14 | `parse-error-in-document` | docker's 14 versioned specs, all `#/definitions/EndpointSpec`: the declaration sits at line 2288, INSIDE the error region, and is never extracted (`ServiceSpec.properties.EndpointSpec` at line 2282 is a different symbol). The fallback REFUSES rather than binding it — the no-fabrication arm the control pins |
+
+That refusal is the point: a recovered binding that is not unique, or whose target this analyzer
+never published, is left unresolved. An ambiguous `$ref` is not a resolved one.
+
+## 0.1 Round 3 — the must-be-zero column is ZERO
 
 | `residual-gate --lane yaml` | extFAIL | imports amb | references amb | unresolved | residual |
 |---|---|---|---|---|---|

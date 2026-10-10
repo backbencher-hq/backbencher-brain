@@ -1579,6 +1579,25 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         r.metadata.resolvedIn = "file"
         r.confidence = 1
       } else {
+        // THE RECOVERY FALLBACK. On an error-recovered tree the pointer key can be absent for a
+        // reason that has nothing to do with the document: the grammar FLATTENS. MEASURED on
+        // docker's `api/docs/v1.25.yaml`: the root is an ERROR node whose 54 `block_mapping_pair`
+        // children include `swagger:` at line 12 AND `MountType:` at line 186 — `definitions:`
+        // itself is gone and its members were hoisted to the top level, so the walk indexes
+        // `/MountType` while the document's `$ref` says `#/definitions/MountType`. The document
+        // publishes `api.docs.v1.25.MountType`, which is what the `$ref` means.
+        const recovered = this.resolvePointerOnRecoveredTree(pointer, String(r.source ?? ""), ctx)
+        if (recovered !== null) {
+          r.target = recovered
+          r.metadata.resolved = true
+          r.metadata.resolvedIn = "file"
+          // NOT exact: the binding is recovered from the document's own declared paths rather
+          // than from the pointer key, so it is reported at less than full confidence and with
+          // its provenance named, where a reader can tell the two apart.
+          r.metadata.resolvedVia = "document-shape-suffix"
+          r.confidence = 0.95
+          continue
+        }
         r.metadata.resolved = false
         // A MISS ON AN ERROR-RECOVERED TREE IS NOT A MISSING DECLARATION. The pointer index is
         // built from the tree's own nesting, so when the grammar error-recovers the index can
@@ -1591,6 +1610,62 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         r.metadata.confidenceReason = r.metadata.unresolvedReason
       }
     }
+  }
+
+  /**
+   * WHAT A `$ref` MEANT WHEN THE GRAMMAR FLATTENED THE TREE IT POINTS INTO.
+   *
+   * Consulted only for a pointer the exact index missed, and ONLY on a tree the grammar errored
+   * on: on a clean parse the pointer key is the answer and this never runs, so no existing
+   * resolution can move. The evidence is the document's OWN declared paths (`documentShapes`,
+   * keyed by the symbol path the walk built) — the analyzer's published name for the same
+   * declaration, which is what the edge must target to be resolved at all by production.
+   *
+   * The rule, and it refuses more than it accepts:
+   *
+   *   * decode the pointer's segments (`~1` -> `/`, `~0` -> `~`) and join them with `.`;
+   *   * a declared path matches when it IS that string, or when the string ENDS WITH `.` + it —
+   *     i.e. the declaration sits at or below the path the pointer names, which is the shape a
+   *     hoisted level produces (`definitions.MountType` ends with `.MountType`);
+   *   * take the LONGEST match, so the most specific declaration wins;
+   *   * if two declared paths tie at that length, or the winner is not a published symbol path,
+   *     return null and let the edge stay unresolved. A recovered binding that is not unique is
+   *     a fabrication, and an ambiguous `$ref` is not a resolved one.
+   */
+  private resolvePointerOnRecoveredTree(pointer: string, source: string, ctx: YamlContext): string | null {
+    if (!ctx.parseHadError) return null
+    const document = this.documentOfPath(source, ctx)
+    if (document === null) return null
+    const shapes = ctx.documentShapes.get(document)
+    if (!shapes) return null
+    const decoded = pointer
+      .slice(1)
+      .split("/")
+      .map((seg) => seg.split("~1").join("/").split("~0").join("~"))
+      .join(".")
+    if (decoded.length === 0) return null
+    let longest = -1
+    let winner: string | null = null
+    let ties = 0
+    for (const key of shapes.keys()) {
+      if (key.length === 0) continue
+      if (key !== decoded && !decoded.endsWith(`.${key}`)) continue
+      if (key.length > longest) { longest = key.length; winner = key; ties = 1; continue }
+      if (key.length === longest) ties++
+    }
+    if (winner === null || ties !== 1) return null
+    const target = `${document}.${winner}`
+    return ctx.shapeIndex.has(target) ? target : null
+  }
+
+  /** The document a symbol path belongs to: the longest document name that prefixes it. */
+  private documentOfPath(source: string, ctx: YamlContext): string | null {
+    let best: string | null = null
+    for (const document of ctx.documentShapes.keys()) {
+      if (source !== document && !source.startsWith(`${document}.`)) continue
+      if (best === null || document.length > best.length) best = document
+    }
+    return best
   }
 
   /**
