@@ -10,12 +10,12 @@
     "G2: listing claim levels == ledger + per-fork evidence (zero drift) — vscode: I3 claim does not match ledger evidence status (known-gap); antigravity: claimed I4 without a verified pinned run; antigravity: blocked in evidence but not declared blocked on the listing; cursor: claimed I4 without a verified pinned run; cursor: blocked in evidence but not declared blocked on the listing"
   ],
   "negativeCases": 4,
-  "currentCommit": "09a1d643b4fedfd016ebc91c838789f5d82d309c",
+  "currentCommit": "79e496b4808663b930e6ccea9e1160b8d1bc34c8",
   "readmeFingerprint": "1e418d8e23c3c605149f54a3f456964843711423a93521d65792b90d0c12fe82",
   "listingPath": "ide/vscode/README.md",
   "verifierCommand": "npx tsx script/m25/verify-listing.ts",
   "evidenceFile": "D1.json",
-  "generatedAt": "2026-10-10T00:58:36.736Z",
+  "generatedAt": "2026-10-10T02:15:31.493Z",
   "limitations": [
     "The lint is lexical: it proves the listing avoids banned phrasing, not that every sentence is strategically perfect (that word is banned too).",
     "Claim drift is checked against the ledger and F-*.json evidence at run time; a re-run after any evidence change re-derives the allowed claims.",
@@ -23,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-10T00:58:36.738Z",
-    "contentSha256": "9ee08ccf958469066a57da37390953b02e038c000d48bf030e0c4ed25548fef6"
+    "sealedAt": "2026-10-10T02:15:31.494Z",
+    "contentSha256": "fa0a30ae0a87d698a5dbac8388050339d5e29d76fba624c2ea1df129c9a2b6a9"
   }
 }
