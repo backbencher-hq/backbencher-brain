@@ -186,17 +186,83 @@ for (const lane of allLanes) {
     if (cls === "grammar-absence") gAbs.push(label)
     else if (cls === "zero-sites") zero.push(label)
     else { unclassified.push(label); problems.push(`excluded "${label}" is classed "${cls ?? "(none)"}" — only grammar-absence and zero-sites are evidence classes; an unclassified exclusion does NOT shrink the denominator`) }
-    // 4. CORPUS-CITED: a grammar-absence claim must name an artifact that exists.
-    if (cls === "grammar-absence") {
-      if (!from || String(from).trim() === "") problems.push(`grammar-absence "${label}" cites no source`)
+    // 4. CORPUS-CITED. Rule-book §6: "A ruling without a count is prose." A grammar-absence (or
+    // zero-sites) claim must therefore carry BOTH a COUNT and, where it names an artifact, an
+    // artifact that exists.
+    //
+    // The count half is checked because it is the half a prose ruling can never satisfy and a
+    // measured one always can. Measured on bash's block (BD8b): every exclusion cites a design
+    // decision and quotes a sentence — "Bash has no classes and no inheritance, so there is no
+    // superclass for `overrides` to point at" — with NO number anywhere in it. That is precisely the
+    // shape this rule was written for, and a gate that only looked for a filename would pass it.
+    if (cls === "grammar-absence" || cls === "zero-sites") {
+      if (!from || String(from).trim() === "") problems.push(`exclusion "${label}" (${cls}) cites no source`)
       else {
         const cited = String(from)
-        const looksLikePath = cited.includes("/") && (cited.endsWith(".json") || cited.endsWith(".md") || cited.includes(".json "))
-        if (looksLikePath) {
-          // first token that looks like a repo-relative path
-          const tok = cited.split(/\s+/).find((w: string) => w.includes("/"))
-          if (tok && !existsSync(resolve(ROOT, tok.replace(/[.,;)]+$/, "")))) problems.push(`grammar-absence "${label}" cites a file that does not exist: ${tok}`)
+        // A COUNT, not merely a digit — and not a digit inside an IDENTIFIER.
+        //
+        // Two earlier versions of this check were wrong in opposite directions, and both are worth
+        // recording because the second is the interesting one:
+        //   v1 accepted any digit at all, so `ZZ-D1: 'the grammar has no inheritance node'` PASSED
+        //      because the design-decision id contains a `1` — a check satisfied by its own label.
+        //   v2 required the number to be followed by a measurement unit word within three tokens,
+        //      which then FAILED eight real lanes whose counts are written `=0`, `[..]=0`,
+        //      `0 of 28 probed inheritance words`, `at_rules 0`, or inside a path
+        //      (`firing-corpus-census.json`). A detector that calls measured blocks prose is worse
+        //      than no detector: it trains the reader to ignore it.
+        //
+        // What the two failures bracket is the actual distinction: a MEASUREMENT contains a number
+        // that is not part of a name. So every digit run is extracted, and a run only counts if its
+        // token is not an IDENTIFIER. The identifier test is deliberately narrow — a candidate must
+        // be ONE word (punctuation stripped) that either
+        //   * is dotted-and-uppercase (`ZIG.O.1`, `ZIG.O.2`, `T.O.3`), or
+        //   * matches a dash-id: 2+ uppercase letters, a dash, then a letter-and-digit tail
+        //     (`MD-D12`, `SQL-D18`, `CSS-D14`, `JSON-G2`, `BD8b`, `ZZ-D1`).
+        // Measured: the earlier, looser test ("mostly uppercase AND contains a dot") swallowed
+        // `A): an interface is an opaque container...` — a whole CLAUSE treated as one identifier —
+        // and so failed zig's ZIG.O.2, whose block carries `0 of 28`. A detector that calls a
+        // measured block prose trains the reader to ignore it, which is worse than no detector.
+        const isIdentifier = (tok: string): boolean => {
+          let letters = 0, uppers = 0, dots = 0
+          for (const c of tok) {
+            if (c >= "a" && c <= "z") letters++
+            else if (c >= "A" && c <= "Z") { letters++; uppers++ }
+            else if (c === ".") dots++
+          }
+          if (letters === 0) return false
+          let words = 1
+          for (const c of tok) if (c === ".") words++
+          if (dots >= 1 && uppers / letters > 0.8 && words >= 2) return true
+          // dash-id: `XX-D9`, `XX-D9b`, `X.O`-style already covered above
+          let seenDash = false
+          for (let i = 0; i < tok.length; i++) {
+            const c = tok[i]
+            if (c === "-") {
+              if (i === 0 || i + 1 >= tok.length) return false
+              if (!(tok[i - 1] >= "A" && tok[i - 1] <= "Z")) return false
+              if (!(tok[i + 1] >= "A" && tok[i + 1] <= "Z")) return false
+              seenDash = true
+            }
+          }
+          if (!seenDash) return false
+          // the tail must be an identifier tail: letters/digits only, no other punctuation
+          for (const c of tok) {
+            const ok = (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "-"
+            if (!ok) return false
+          }
+          return true
         }
+        let hasCount = false
+        for (const raw of cited.split(/\s+/)) {
+          const tok = raw.replace(/[(),;'"]/g, "")
+          if (tok === "") continue
+          let digitRun = false
+          for (const c of tok) if (c >= "0" && c <= "9") digitRun = true
+          if (digitRun && !isIdentifier(tok)) { hasCount = true; break }
+        }
+        if (!hasCount) problems.push(`exclusion "${label}" (${cls}) cites NO COUNT — rule-book §6: a ruling without a count is prose. Cited: "${cited.slice(0, 90)}"`)
+        const tok = cited.split(/\s+/).find((wd: string) => wd.includes("/") && (wd.endsWith(".json") || wd.endsWith(".md") || wd.endsWith(".txt") || wd.endsWith(".ts") || wd.endsWith(".yaml")))
+        if (tok && !existsSync(resolve(ROOT, tok.replace(/[.,;)]+$/, "")))) problems.push(`exclusion "${label}" cites a file that does not exist: ${tok}`)
       }
     }
   }
