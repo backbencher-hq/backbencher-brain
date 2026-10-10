@@ -303,7 +303,73 @@ about a file the analyzer never read, and withholding the certificate is the hon
    `instantiates` edge is not settled by this census; HCL-G2's falsifier is the test that would
    decide it, and no corpus file currently declares a type a resource block instantiates.
 
-## 8. Reproducing every number here
+## 8. The RESIDUAL worklist — the completion bar, and the first cause named
+
+`hcl 8/9` is the coverage answer and it is not the completion answer. The completion bar is that every
+emitted edge of every applicable type resolves to exactly one real declaration, with zero unexplained
+edges. Measured whole-population by `npx tsx script/m14/residual-gate.ts --lane hcl`:
+
+| type | edges | resolved | amb(decl) | unresolved | residual% |
+|---|---|---|---|---|---|
+| contains | 97,550 | 29,040 | 68,299 | 211 | 70.2% |
+| references | 31,228 | 1,031 | 727 | 29,470 | 96.7% |
+| exports | 23,103 | 4,421 | 18,471 | 211 | 80.9% |
+| uses | 1,909 | 0 | 0 | 1,909 | 100.0% |
+| imports | 1,853 | 0 | 12 | 1,841 | 100.0% |
+| **TOTAL** | **155,643** | **34,492** | **87,509** | **33,642** | **77.8%** |
+
+`resolved 22.2%`, `extFAIL 0`, `bindFAIL 0`, `causeFAIL 0` — nothing here is a broken claim; it is all
+unresolved or ambiguous resolution.
+
+### Cause 1 — `contains` amb(decl) **68,299** (56% of the 121,151 residual): the published identifier
+### space is MODULE-LOCAL, and one repository holds many independent modules
+
+A `contains` edge is `owner -> child`, where the child is the symbol the analyzer just declared in the
+SAME file. Resolution is project-scoped (the file's own repository) and asks whether the target string
+names exactly ONE declaration there — so a path like `project.license`, `listener.tcp` or
+`schema_version` becomes ambiguous the moment two independent modules, examples or fixtures inside one
+repository use the same local name. The edge is not wrong; its NAME is not unique in the space it is
+resolved against.
+
+Evidence, SAMPLE scope (600 of 4,047 admitted files; the incoming gate's marker table groups by
+metadata KEY, and every `contains` edge carries the same key `hclSite`, so the marker is not the
+differentiator):
+
+```
+contains   amb  schema_version          2 declarations  [property]
+contains   amb  project                 2 declarations  [class]
+contains   amb  project.license         2 declarations  [property]
+contains   amb  project.copyright_year  2 declarations  [property]
+exports    amb  disable_mlock           4 declarations  [property]
+exports    amb  listener.tcp            6 declarations  [class]
+references amb  step.generate_ssh_key   2 declarations  [class]
+```
+
+The shapes are mixed and that is the finding: BARE local attribute keys (`schema_version`, `project`,
+`disable_mlock`) and SHORT module-local dotted paths (`project.license`, `listener.tcp`,
+`step.generate_ssh_key`) — neither carries a file or module scope. So the lever the other lanes used
+applies in its general form, and the gate says so itself: "endpoint keys indexed: name + 3355
+qualifiedName alias(es) — a lane that publishes a FILE-SCOPED qualified name and targets that path is
+measured, not missed."
+
+**What the fix would cost, stated before it is done:** file-scoping the qualified name changes this
+lane's PUBLIC identifier space — every `contains`/`exports`/`references` target string — so every
+fixture pin (`aws_instance.web`, `function.double`, `target._common`), the spec's examples and this
+page move with it. That is a lane-wide change and the next item, not a patch.
+
+**KILLED, reported as KILLED:** the whole-population `incoming-gate.ts hcl hcl 0` run never started —
+`flock -w 600` returned exit 9 (the heavy lock was held by another lane for the whole window), and a
+second attempt's window was lost the same way. The marker table above is therefore SAMPLE scope,
+labelled; the counts in the table are the residual gate's own whole-population run.
+
+**The `xml-ruled.ts` question, answered rather than assumed:** HCL has NO ruling table —
+`script/m14/hcl-ruled.ts` does not exist and `RULED_BY_LANG` has no `hcl` entry — so an element-only
+probe cannot be hiding here. Its absence claims come from the spec's HCL-D1a plus
+`validation/m14/fixtures/hcl/ruling-attestation.json`, which attests THREE spaces (node-types,
+block-types, attribute-keys) with pointers the gate verifies, and the key-space check enforces that
+fleet-wide.
+
+## 9. Reproducing every number here
 
 ```bash
 # the firing sample (control prints itself; exit 3 means do not trust the SILENT column)
