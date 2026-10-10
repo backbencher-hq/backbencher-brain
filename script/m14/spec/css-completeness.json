@@ -608,6 +608,77 @@
           "pico_import_statements": "0 of 238 pico .css files contain the substring `@import`, so the 120-file sample's silence for `imports` is the corpus's, not the analyzer's"
         },
         "resolution": "RULED per type, each on the whole admitted population with the probe's own positive control firing (a stylesheet planted with one of every construct it rules on, parsed with the same grammar; the run exits 3 if any control count is 0 \u2014 and it DID exit 3 once, which is how a real probe defect was found: the first counter read `at_keyword` only inside `at_rule`, and `@keyframes` arrives as a dedicated `keyframes_statement` whose keyword is an ANONYMOUS child, so it reported `@keyframes 0` across the corpus while the analyzer was publishing 2,667 keyframe `uses` edges). EMITTED, not silent, and measured at population scale: `imports` 127 edges over 34 files (127 `import_statement` nodes on the tree \u2014 a 1:1 match, so the silence in the firing-check sample is pico's: 0 of pico's 238 files contain `@import`, and a text search is sound for a ZERO because an `import_statement` node cannot exist without that substring); `overrides` 149 edges over 15 files. RULED WITH A ZERO, each with its construct counted on the tree: `extends` \u2014 0 `@extend` at-rules (the sibling css-ruled.ts row records the 46 keyword occurrences in this family all sitting inside ERROR nodes in `.sass` partials, 0 in an at_rule); `calls` \u2014 0 `@function` at-rules, and the 341,686 `call_expression` nodes over 90 distinct function names are all CSS BUILT-INS (`var`, `calc`, `rgba`, `url`), which declare nothing and so cannot be a `calls` target; `exports` \u2014 0 `composes` declarations of any kind and 0 `:export` rule_sets (a convention with no syntax of its own, counted on the tree for the JSON lane's stated reason); `implements`, `instantiates` \u2014 0 of the 64 distinct node types the corpus's parse trees contain is a supertype clause or an object-creation production. `@property` (58) is counted and is not one of the ten relationship types. THE FIVE ZEROS ARE CORPUS FACTS, NOT GRAMMAR FACTS: a CSS-Modules-heavy or `@function`-using repository overturns them, which is exactly how the sibling table's rows are written to be falsified."
+      },
+      {
+        "id": "CSS-D15",
+        "node_type": "ontology:every target whose declaration is in the edge's own file",
+        "status": "RULED",
+        "question": "A CSS name is not unique in its project: `.nav`, `--pico-color` and `fade` are declared in many files at once, so a bare-name target names N declarations and resolves to none of them. Production binds a bare name only when its count in the project is exactly 1 (`parallel-indexer.ts` strategy 2, `_res_name.cnt = 1`), and strategy 3 binds a DOTTED target to MIN(id) of the suffix matches — so a bare `--pico-color` binds to NOTHING and a bare `.btn` binds to an arbitrary file's rule. Should a target that names a declaration the edge's OWN file publishes be respelled to a project-unique qualified name? RULED: yes.",
+        "command": "npx tsx script/m14/incoming-gate.ts css css 0 (the mandated instrument, BEFORE and AFTER); npx tsx validation/m14/fixtures/css/ambiguity-classify.ts 60 (the class split that named the cause, reproducing the gate's 60-file line exactly); npx tsx validation/m14/fixtures/css/qualified-target-compat.ts (the two shared rules the spelling must obey, with controls that fail)",
+        "counts": {
+          "gate_population_after": {
+            "edges": 487744,
+            "resolved": 482678,
+            "ambiguous": 183,
+            "unresolved": 4883,
+            "residualPct": 1.04,
+            "extFAIL": 0,
+            "bindFAIL": 0,
+            "causeFAIL": 0
+          },
+          "recorded_population_before": {
+            "edges": 485882,
+            "resolved": 24412,
+            "ambiguous": 456587,
+            "unresolved": 4883,
+            "residualPct": 95,
+            "note": "the incoming log's line, measured on an earlier corpus state; the population has since grown by 1,862 edges"
+          },
+          "ab_same_population": {
+            "before": {
+              "edges": 487744,
+              "resolved": 24767,
+              "ambiguous": 458094,
+              "unresolved": 4883,
+              "residualPct": 94.92
+            },
+            "after": {
+              "edges": 487744,
+              "resolved": 480795,
+              "ambiguous": 2066,
+              "unresolved": 4883,
+              "residualPct": 1.42
+            },
+            "edgeDeltaPerType": 0,
+            "method": "the pre-change analyzer taken from git (773f966fa^) and the current one, both run over the SAME 1,174-file population with the arbiter's counting rule imported from script/m14/incoming-rule.ts and the worker's own filter applied to both arms"
+          },
+          "gate_stride60": {
+            "before": {
+              "edges": 32432,
+              "resolved": 19291,
+              "ambiguous": 12453,
+              "unresolved": 688
+            },
+            "after": {
+              "edges": 32432,
+              "resolved": 31725,
+              "ambiguous": 19,
+              "unresolved": 688
+            }
+          },
+          "cause_classes": {
+            "CROSS_FILE_TWIN": 456403,
+            "CROSS_FILE_ONLY": 181,
+            "IN_FILE_MULTI": 3,
+            "DUP_EMISSION": 0
+          },
+          "edges_lost": 0,
+          "edges_that_would_have_been_lost_without_the_budget_guard": 468,
+          "fixtures": "20 pass / 0 fail",
+          "fixture_assertions_respelled": 72,
+        "_instrument_revision": "MEASURED ACROSS A MOVING INSTRUMENT, stated because it changes how these numbers should be read. The population and 60-file lines above were taken on the arbiter as it stood at 23:49-23:52. Between then and 00:23 the arbiter gained fa2dc27e8 (23:46 — contains classified with production\u0027s LINE-AWARE statement instead of by declaration count), d43a5fa4d (00:04 — the population gate), 2a42ae815 (00:06 — the collRes third outcome: resolved, but bound among a collision) and bbd13098c (00:08). On the later revision the 60-file gate read edges 32,630 · resolved 31,942 · ambiguous 0 · unresolved 688, and this replication reads 95 ambiguous contains edges for the same scope because it does not yet model the new contains rule — that divergence is the instrument\u0027s to close. The A/B above, whose BOTH arms ran on ONE revision, is the measurement that isolates THIS change: ambiguous 458,094 -> 2,066, residual 94.92% -> 1.42%, delta 0 edges on every type. A residual-gate --lane css re-run on the current revision was QUEUED on the heavy lock when this entry landed and is deliberately NOT quoted; the number to publish is what that run prints, and its ofWhich column is the count of edges still resolving by production tie-break — the count this change exists to reduce."
+        },
+        "resolution": "RULED — landed in src/ast/real-css-analyzer.ts, not attested. THE CAUSE, NAMED AND COUNTED FIRST. validation/m14/fixtures/css/ambiguity-classify.ts (counting rule imported from the arbiter, totals asserted against the gate's own printed line) splits the gate's 456,587 ambiguous edges: CROSS-FILE-TWIN 456,403 = 99.96%, CROSS-FILE-ONLY 181, IN-FILE-MULTI 3, DUP-EMISSION 0. CROSS-FILE-TWIN means the edge's own file declares the target EXACTLY ONCE and every other declaration of that name is in another file — so the language does not make the edge unresolvable; the published SPELLING did. WHAT IS PUBLISHED. Every symbol gains a project-unique `qualifiedName = <file-scope>::<name>`, where the scope is the file's path relative to its checkout root with the extension removed and `.`/`:` sanitised; an edge of type contains/references/uses/overrides is respelled to it only when the edge's own file publishes exactly one declaration of that name, and only when the longer spelling stays within the worker's budget. The bare spelling is kept for a name this file does not declare (a cross-file or external reference) and for `imports`, whose target is ANOTHER file's module — respelling it would point the import at the importing file. The symbol's `name` is untouched, and every rule can only ADD resolution. LOSSLESS, AND MEASURED. An A/B of the pre-change analyzer against the current one over the same 1,174-file population reads 487,744 edges for BOTH arms with delta 0 on every type. That matters because the shared filter `src/ast/pool-worker.ts filterNoiseRelationships` DELETES any target over 200 characters: without the budget guard 468 edges crossed it and were silently missing (the first run of this change read 485,414 against 487,744), so the rewrite refuses to qualify a target that would cross it and leaves the bare name standing — those edges stay published and stay ambiguous. TWO SHARED RULES CONSTRAIN THE SPELLING, both asserted on live analyzer output by validation/m14/fixtures/css/qualified-target-compat.ts, whose controls MUST fire: (1) script/m14/differential.ts matches a truth row on `label + normTarget(target)` and normTarget takes the last `.`/`::` segment, so `::` with a dotless scope preserves the leaf the css differential compares (75 live qualified targets, 0 failures; the controls reject BOTH a one-colon separator and an extension-keeping scope); (2) the 200-character budget above, isolated by two probes with the same short leaf. WHAT REMAINS, NOT FOLDED INTO THE WIN. `references` keeps 180 ambiguous + 4,803 unresolved and `contains` 0 ambiguous + 0 unresolved under the gate; the 183 gate-ambiguous edges are targets the budget guard refused to qualify, the 4,883 unresolved are the class this lane already classifies by marker set (4,803 dotless custom-property reads — the CSS customization hook — plus 80 imports), and a name declared twice in the edge's own file (3 edges) cannot be resolved by any file-scoped spelling because the edge does not say which site it means. extFAIL, bindFAIL and causeFAIL are 0 in both arms. TWO THINGS THIS RULING DOES NOT CLAIM. (a) The mandated run and the A/B disagree on the AFTER ambiguity — the gate reads 183, the A/B replication reads 2,066 — because the two build the project key space from different symbol sets (the gate's comes from parseFile, the replication's from the analyzer's own list). Both read ~95% before and ~1% after; the gate is the arbiter and is quoted as the headline, and the discrepancy is recorded here rather than averaged away. (b) The differential was NOT re-run at its pinned rotation: the normTarget identity, asserted on live targets, is the evidence that its comparison is unchanged, and a scoped run (rotation 1 of a cold pool, not the pinned sample) reported MISSING=2 on `imports` — a type CSS-D15 does not touch — and unexplained=1 on `overrides`, a label the harness itself prints as COMPARED WITH NO TRUTH. THE FIXTURES MOVED BECAUSE THE CONTRACT MOVED: 72 target assertions across 15 expectation files were re-spelled by the deterministic rule `<scope>::<name>` (not transcribed from analyzer output), each file carries a `_targetSpelling` note, and the suite reads 20 pass / 0 fail."
       }
     ]
   },
