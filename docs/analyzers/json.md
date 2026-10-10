@@ -434,3 +434,48 @@ because the wrong version was used to reorder another lane's work.
   The same shape is already visible in two other lanes' rows (markdown's `imports` lives
   in traefik/bulma/vega, none in redwood; sql's `contains` was invisible to the head-N
   draw), so the fix belongs in the instrument.
+
+## 9. COMPLETION PACKAGE — residual 0, and the two classes left are ruled
+
+Full record with every count and its population:
+`validation/m14/fixtures/json/measurements/json-completion-package.jsonl`.
+
+**Population B (the clean full-population figure, the Lead's run, 156 repos, 0 unmeasured):**
+`edges 5,588,516 · resolved 5,588,228 · amb 0 · unres 0 · extOK 168 · extQ 120 · collRes 2 ·
+extFAIL 0 · bindFAIL 0 · causeFAIL 0` → **MUST-BE-ZERO total 0, resolved 99.99%.**
+Population A (this lane, 154 repos, 14,009 files, 17 chunks, row-vs-verdict control 17/17)
+agrees: residual 0, collRes 2 — but it straddled a shared-instrument commit and is labelled
+MIXED-REVISION, so **B is the figure to quote.**
+
+How the two causes closed: **`overrides` 22 → 0** by the dedupe (one symbol per qualified
+path, `86b59431f` — the store's own contract implemented rather than approximated) and
+**`extends` 3 → 0** by giving the file-form `allOf` ref its project-file claim. `contains`
+keeps 5,546,209 edges with 0 amb and 0 unresolved.
+
+**The tie-break (`collRes 2`) is ruled INTENDED, by the store.** Both edges are in
+hasura-engine, and each target has exactly two declarations: one in the edge's own file **on
+the edge's own line** (`install-manifests/azure-container*/azuredeploy.json:4`) and one in its
+`azuredeploy.parameters.json` sibling. Production resolves `contains` with
+`resolveContainsTargetStmt` — `ORDER BY (s.file_id = edge file) DESC, (s.line_start = edge
+line) DESC, … LIMIT 1` — so the first two keys both match and the intended row binds.
+Measured on a store holding **every declaration of both targets** (the 4 files): `contains
+464 · bound 464 · intended 464 · arbitraryTwin 0`. The whole-repo attempt failed (worker pool
+startup, 898 files missed) and is recorded as FAILED, not as a result.
+
+**`extQ 120` is a RULED CLASS** (119 `references` + 1 `imports`), the disposition toml's 13
+and julia's 108 carry. Shape, measured over all 5,588,516 edges: **116 of the 125
+external-marked targets are JSON Schema DRAFT VOCABULARY URIs**
+(`http://json-schema.org/draft-04/schema#/properties/title` and siblings — openapi-spec 38,
+kubernetes 41, docker 40). A URI is not a published symbol name, so `verifyExternalClaim`
+returns unverifiable by design (`targetOwner` of a URI contains `:` and `/`). **Nothing was
+split out to be claimed, and that is measured rather than assumed: of the two path-shaped
+targets carrying a document extension, ZERO name a file present in the project** — claiming
+them would REFUTE them. Falsifier: any of the 120 naming an admitted file (must verify) or a
+project declaration (must be refuted); the census prints that counter.
+
+**Answer: complete against the four clauses** — residual 0, all three refutation columns 0
+(two independent populations), every remaining edge attributed, and the tie-break split by the
+store. **If the owner rules that no external claim may be unverifiable, json fails clause 2 by
+120 edges**, and the failure is structural: those targets are vocabulary URIs, and the only
+alternative to ruling them is to refute them. `r-lane` verifies independently before this is
+recorded.
