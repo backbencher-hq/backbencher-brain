@@ -1094,6 +1094,17 @@ const bracket = parent.lastIndexOf("[")
       const isSiblingFile = !isLocal && this.isFileNamingRef(refPath)
       if (!isLocal && !isSiblingFile) continue
       const target = isLocal ? this.referenceTarget(ctx, refPath) : refPath
+      // THE SIBLING-FILE FORM NEEDS THE FILE CLAIM, and it was the last of this lane's residual
+      // edges. A file-form `allOf` target (`dataTypeBase.json#`) names a FILE, so no symbol answers
+      // it and the arbiter read the edge UNRESOLVED — measured, 3 edges in openapi-spec, all
+      // `…/schemas/v1.2/*.json -> dataTypeBase.json#`, one marker set. `imports` and `references`
+      // solved the same shape with `importProjectFile` (checked against the project's own file
+      // list); this path never carried one, which is the defect. `projectCarriesFile` keeps the
+      // claim true: the file IS in the project here, so the claim VERIFIES, and where a project
+      // does not carry it the edge says `isExternal` instead of asserting something false.
+      const siblingFile = isSiblingFile ? this.fileRefCandidate(ctx, refPath) : null
+      const claimedSibling =
+        siblingFile !== null && this.projectCarriesFile(ctx, siblingFile) ? siblingFile : null
       ctx.relationships.push({
         source: composer,
         target,
@@ -1106,6 +1117,9 @@ const bracket = parent.lastIndexOf("[")
           compositionSite: parent,
           refForm: isLocal ? "intra_document" : "sibling_file",
           resolvedPath: isLocal,
+          ...(claimedSibling
+            ? { importProjectFile: claimedSibling }
+            : isSiblingFile ? { isExternal: true } : {}),
           note: "allOf is a superset-of relationship; anyOf/oneOf are alternatives and emit only `references`",
           reasonCode: "json_schema_all_of",
           evidenceClass: "structural",
