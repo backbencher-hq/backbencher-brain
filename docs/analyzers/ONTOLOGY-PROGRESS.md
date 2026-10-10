@@ -176,12 +176,13 @@ could grow silently. `script/m14/java-incoming-gate.ts` now does the ratchet —
 does **not** re-measure Java with a second instrument: it shells out to the same
 `incoming-gate.ts` and declares THAT measurement, per type, in
 `validation/m14/instruments/java/incoming-declaration.json` (200/200 parsed, 0
-degraded, 26,095 edges, `qualifiedNameAliases 3,040`).
+degraded, **26,389 edges**, `qualifiedNameAliases 3,040` — measured in a clean
+worktree, see the guard below).
 
 Five classes per type, a total partition whose identity the gate CHECKS:
 `edges = resolved + ambiguous + otherUnresolved + external + unclassed`.
-**resolved 5,153** and **external 3,283** are FLOORS; **ambiguous 5,024** and
-**otherUnresolved 12,635** are CEILINGS; **unclassed 0** is an exact bound. The
+**resolved 5,322** and **external 3,283** are FLOORS; **ambiguous 5,156** and
+**otherUnresolved 12,628** are CEILINGS; **unclassed 0** is an exact bound. The
 first version of the gate derived `otherUnresolved = unresolved − external`,
 assuming the marker was counted inside `unresolved`; the instrument increments the
 two in mutually exclusive branches, and the assumption printed
@@ -190,22 +191,41 @@ that impossible arithmetic cannot pass as a clean measurement — a `≤ 0` ceil
 would have accepted −1, because the first version of the check treated it as a
 ceiling; the bound is equality, and 0 is the only admissible value.
 
-Two measured moves, deliberately separated: the external marker reclassifies
+Two measured moves came first, deliberately separated: the external marker reclassifies
 3,283 edges as DECLARED EXCEPTIONS with zero edge churn; publishing each symbol's
 file-scoped `qualifiedName` adds the alias key the pool was missing and **resolves
 103 edges that were counted unresolved** (`imports +10`, `references +87`,
 `implements +1`, `overrides +1`, `instantiates +4`) with `ambiguous` unmoved at
 every type. The declaration is bound to the analyzer digest
-(`sha256:6e2e5693569c62ee`): a changed analyzer fails until re-declared on purpose.
+(`sha256:2a275b904319f6ba`): a changed analyzer fails until re-declared on purpose.
+
+A third move was a FIX, not a reclassification: the bare-read block sourced at
+the enclosing TYPE while the dotted read beside it in the same body was
+METHOD-sourced — the M49 W15 #814 owner ruling, the fixture pair and the mutation
+battery all said method, and the block's "this lane's truth expects" comment was
+unsupported (the java `uses` oracle wildcards the source as `(expr)`). Fixed:
+**+301 `uses` edges, +169 resolved, +132 ambiguous, `otherUnresolved` UNCHANGED**.
+The mutant `java/bare-read-type-attribution` had SURVIVED because mutant and live
+code were the same shape; it is now caught, F4 is down to 15 survivors with ZERO
+Java survivors, and F3's java row moved 52/63 → **53/63**.
+
+The build produced one more lesson worth its paragraph: the first declaration
+shipped `overrides 495`, and a clean checkout of the SAME commit measures 488 —
+seven edges of another lane's uncommitted pool-worker/import-resolution work in a
+shared tree, which would have read as a Java regression forever. The gate now
+REFUSES (exit 3, naming the files) when `src/ast` is dirty: the declared numbers
+come from pool-worker parsing and move without moving the analyzer digest, so a
+dirty tree is not ratifiable. `--allow-dirty` exists for inspecting in-flight
+work and says the numbers are not attributable to a commit.
 
 **The honest sentence:** Java's declaration gate reads **PASS** and the fleet
-gate still reads **FAIL** (5,024 ambiguous + 12,635 unresolved of 26,095). PASS
+gate still reads **FAIL** (5,156 ambiguous + 12,628 unresolved of 26,389). PASS
 means every class is declared, no floor lost, no ceiling raised — not that the
 ceilings are small. Six planted failures are the gate's own control, and the
 end-to-end control was run: `calls.ambiguous` 2,143 → 2,142 → **exit 1**,
 `calls: ambiguous ceiling 2142 violated — measured 2143 (1 REGRESSED)`.
 
-**Evidence and bookkeeping.** F3's artifact now records java at **52/63
+**Evidence and bookkeeping.** F3's artifact now records java at **53/63
 fixtures**. Both F3 and F7 were fresh before this lane's two commits and stale
 after them — this lane's to regenerate — and they were regenerated **in a clean
 worktree at `e462a3797`** because the shared tree was carrying another lane's
@@ -227,11 +247,15 @@ lane's in-file-by-construction rule refuses it by design; the repaired probe
 declares its constructor and still discriminates HEAD from BODY). A stale probe is
 repaired against its ruling, never silenced.
 
+**F4 was regenerated too** (a clean worktree, 1,836 mutants, ~13 min): 1,821
+caught and **15 survivors** — the set is stable, zero regressions, and the Java
+lane's sixteenth survivor died with the bare-read fix above. The survivors that
+remain are other lanes' uncaught mutants, reported rather than hidden.
+
 Still red and **not fixable on this machine**: F5 and F8 need corpora this
 checkout does not have (`grails-core`, `Exposed`, `vue-core` — F8's 16 failing
 rows are literally `corpus missing: <repo>`, and regenerating here would replace
-canonical evidence with local "corpus missing" rows); F4 is a 1,836-mutant run
-over other lanes' analyzers.
+canonical evidence with local "corpus missing" rows).
 
 ## Still to do at integration
 
@@ -242,6 +266,6 @@ over other lanes' analyzers.
   findings, and the fleet run still fails on other lanes' 91 NEW findings against
   a recorded debt of 104 (69 repaid) — that baseline is theirs to refresh.
 - Re-run the m14 grammar, mutation, differential and fixture gates per lane.
-- Refresh F4 (mutation, 1,836 mutants) and F5/F8 (differential, corpus census) on a
-  machine that holds the pinned corpora — the artifacts' `corpus missing` rows are
-  an environment property, not a measurement, and must not be overwritten locally.
+- Refresh F5 (differential) and F8 (corpus census) on a machine that holds the
+  pinned corpora — F8's `corpus missing` rows are an environment property, not a
+  measurement, and must not be overwritten locally.
