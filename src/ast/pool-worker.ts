@@ -710,7 +710,17 @@ export function filterNoiseRelationships(rels: any[], language: string, declared
     // source-code identifiers. Keys such as `<<`, `<tag>`, `type` (HCL
     // `variable` type constraint), or a GraphQL field named `type`/`text` are
     // valid data and must bypass the universal identifier sanitizer.
-    if (language === "json" || language === "yaml" || language === "hcl" || language === "terraform" || language === "graphql") return true
+    //
+    // TOML BELONGS IN THIS LIST, and its absence was dropping edges. Measured by toml-lane
+    // (2026-10-09): `extractLeaf` splits a target on `:` and `.` before the leading-space test
+    // below, so a dotted key whose QUOTED segment contains a colon —
+    // `project.urls."CI: Azure Pipelines"`, valid TOML — yields the leaf ` Azure Pipelines"`,
+    // which starts with a space, so the edge was silently deleted on the way to the index. toml
+    // is a data language exactly like the four above: its targets are dotted key paths, a colon
+    // inside a quoted key is a character in a name rather than punctuation, and no part of the
+    // identifier sanitizer below applies to it. The two path-shaped exemptions further down
+    // (bash, toml's `imports`/`references`) still matter for their own targets and are unchanged.
+    if (language === "json" || language === "yaml" || language === "hcl" || language === "terraform" || language === "graphql" || language === "toml") return true
 
     // M14 #277 (bash): a `source`/`.` target is a FILESYSTEM PATH, which is the
     // same category as the data paths above and not a code identifier — so the
