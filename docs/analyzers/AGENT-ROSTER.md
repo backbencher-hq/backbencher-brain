@@ -42,22 +42,31 @@ a live Team's roster size is fixed at construction.
 
 | lane | agent | task | state |
 |---|---|---|---|
-| markdown | `markdown-lane` | task-1 | **COMPLETE** — board `4/4 from=spec coverage block`, closes; `imports` refuted as empty (105 edges/74 files); 11 fixtures pass; corrected-admission supersession `d0e259811` |
-| toml | `toml-lane` | task-2 | **COMPLETE** — board `3/4`; `exports` deliberately left IN the denominator as a gap rather than ruled away; workspace-inheritance 1,269 sites recorded as an open item; `c5c955a67`, `840bffea9` |
-| hcl | `hcl-lane` | task-3 | in flight — HCL-D1 found FALSIFIED; classes split 2/1, `instantiates` is `zero-sites` and STAYS IN |
-| julia | `julia-lane` | task-4 | in flight — JUL-D1/JUL-D2 `unclassified` → measured classes |
-| r | `r-lane` | task-5 | **COMPLETE** — [BB-HANG] refuted as a leaked timer; a dead `degraded` counter; `a7d2fb5e6`; coverage census next |
-| clean | `clean-lane` | task-6 | in flight — `extends` class by measurement |
+| markdown | `markdown-lane` | task-1 | **COMPLETE** — `4/4 from=spec coverage block`; `imports` refuted as empty (105 edges/74 files); 11 fixtures pass |
+| toml | `toml-lane` | task-2 | **COMPLETE** — `3/4`; `exports` deliberately left IN as a gap; workspace inheritance 1,269 sites recorded open |
+| hcl | `hcl-lane` | task-3 | **COMPLETE** — `7/9`; self-refuted its own `extends` ruling (attribute `inherits`, 44 sites) and found the same blind spot in the shared ruling gate → task-14 |
+| julia | `julia-lane` | task-4 | **COMPLETE** — `9/9`; refuted two exclusions AND the `unclassified` arithmetic description (HANDOFF §5.9) |
+| r | `r-lane` | task-5 | **COMPLETE** — `[BB-HANG]` refuted as a leaked timer; a dead `degraded` counter; coverage census next |
+| clean | `clean-lane` | task-6 | **COMPLETE** — `9/9`; found its own `<=` detector could not fire, and the board's `--coverage` mode hiding notes |
+| bash | (Lead) | HANDOFF §5.11 | **COMPLETE** — `7/7`; settled `exports`/`overrides` whole-corpus (1,598 / 19 edges) |
 | yaml | `yaml-lane` | task-9 | in flight — 107 (ansible) / 113 (fleet) external claims REFUTED on the whole population |
 | json | `json-lane` | task-10 | in flight — declared 8/8 vs a 1-type firing log, 7 types UNCITED |
+| hcl | `hcl-lane` | task-14 | assigned — the ruling gate certifies RULED-SOUND from node types alone |
 | dart | — | task-12 | queued |
 | sql | — | task-13 | queued |
-| bash, f#, zig, lua, nim, php, powershell, graphql, protobuf, css, scss, make, xml | — | — | queued: spawned as slots free |
+| f#, zig, lua, nim, php, powershell, graphql, protobuf, css, scss, make, xml | — | — | queued: spawned as slots free |
 
 Rows read `—` for an unspawned lane ON PURPOSE: an empty cell is not a claim that the lane is fine.
 
 **The queue is owned by the Lead, not by history.** A lane's next item is named in its task, so a freed
-slot starts immediately instead of re-deriving priorities. Tasks `task-1` … `task-13` are the board.
+slot starts immediately instead of re-deriving priorities. Tasks `task-1` … `task-14` are the board.
+
+**Tasks completed this session** (each with a verdict page or spec block, and the raw measurement
+committed): task-1 markdown `4/4` · task-2 toml `3/4` · task-3 hcl `7/9` · task-4 julia `9/9` ·
+task-5 r (hang refuted) · task-6 clean `9/9`. Six lanes, six declarations, and between them **five
+self-refutations** — markdown's `imports`, toml's invented absence, hcl's `extends`, julia's two
+exclusions, clean's `<=` detector that could not fire. Not one of those corrections came from a
+reviewer; every one came from the lane re-measuring its own claim.
 
 ## Where the lanes actually stand, mechanically
 
@@ -66,13 +75,16 @@ asserts the closure invariant, the evidence classes, that cited artifacts exist 
 which declared-implemented types the 120-file stride never sees. Its last run:
 
 ```
-declared 13/23 · blocks with problems 2 (zig implements, css implements+instantiates cite no count)
-lanes with silence 10 · of those UNCITED 7
-NOT DECLARED: julia nim r dart graphql protobuf scss hcl make xml
+declared 15/23 · blocks with problems 0
+lanes with silence 12 · of those UNCITED 6
+NOT DECLARED: nim r dart graphql protobuf scss make xml
 ```
 
-That is the programme's real remaining work in one line: **ten lanes still declare no coverage block,
-and seven have a declared-implemented type that nothing in the block can back.**
+**Every declared block now closes and every exclusion carries a count.** The remaining work is
+therefore two clean shapes rather than a muddle: **eight lanes declare no coverage block at all**, and
+**six lanes have a declared-implemented type that nothing in the block can back** — bash showed what
+that costs and how to settle it (its own census found `exports` 1,598 edges / 502 files whole-corpus
+against an instrument reading 5 in one repo).
 
 ## Instruments added or corrected this session
 
