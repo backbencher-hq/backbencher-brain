@@ -145,20 +145,93 @@ npx tsx script/m14/coverage-block-gate.ts
 hcl          yes       7     9     2     calls overrides                          -
 BB_BOARD_FIRING=validation/m14/results/firing-laptop-b.current.log bun script/m14/language-board.ts --coverage
 hcl          7/9  from=spec coverage block
-npx tsx script/m14/ontology-coverage-gate.ts hcl --fresh
+npx tsx script/m14/ontology-coverage-gate.ts hcl --fresh     # BEFORE the space check (see §6)
 emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
   calls 4 edges in 1+ files · overrides 68 edges · extends/implements/instantiates RULED-SOUND via #HCL-D1a
+npx tsx script/m14/ontology-coverage-gate.ts hcl --fresh     # AFTER the space check
+key spaces: 35,627 key/value bindings observed over 4047 files (top node types attribute=28,222, object_elem=7,398)
+attestation hcl: … VERIFIED nodeTypes=64, blockTypes=455, attributeKeys=5311, extends.constructSites=44
+emitted 7/10   ruled-sound 2   FALSIFIED 1   ruled-without-justification 0
+  extends FALSIFIED (44 attested sites) · implements/instantiates RULED-SOUND with the attestation
 ```
 
-## 6. What this page does NOT settle
+## 6. The shared gate had the same blind spot — reproduced, fixed, and its fleet effect measured
+
+This lane's `extends` correction exposed a defect in the SHARED arbiter, not just in its own ruling.
+`script/m14/ontology-coverage-gate.ts` certified `RULED-SOUND` from a node-type inventory, so on
+2026-10-09 it printed, for this lane:
+
+```
+extends      RULED-SOUND    NOT EMITTED; the construct occurs 0x on the parse tree. Written ruling: script/m14/spec/hcl-completeness.json#HCL-D1a
+```
+
+while the corpus held 44 `inherits` sites with 53/53 resolvable parents. Two defects are visible in
+that one line: the probe was a **node-type inventory** (which cannot see an attribute-key construct),
+and the basis text claimed a **tree count that no probe had taken** — a spec-sourced ruling has no
+Instrument-B entry, so "occurs 0x on the parse tree" was printed without anything having counted.
+
+**Fix (in the shared gate).** The gate now observes the key space structurally — a node with `=` or
+`:` between two named children is a key/value binding in any grammar — and a *vocabulary-based*
+ruling (instrument A, or a spec-text ruling with no table entry) in such a language is
+`RULED-UNJUSTIFIED` unless it declares the `attribute-keys` space. Spaces are declared either as
+`spacesProbed` in the lane's ruling table or in `validation/m14/fixtures/<lang>/ruling-attestation.json`,
+and an attestation must cite an artefact that EXISTS whose JSON pointers hold the declared counts.
+Instrument-B rulings are exempt (a semantic tree count is not a vocabulary blind spot). The gate's own
+control runs on **every** invocation, prints, and exits 3 if any arm stops behaving:
+
+```
+space check self-test: PASS — 8/8 arms (fires on a node-type-only ruling in a key-bearing language;
+passes an attested one; a ruling contradicted by its own artefact fails)
+```
+
+**This lane's attestation** is `validation/m14/fixtures/hcl/ruling-attestation.json`. It declares
+node-types + block-types + attribute-keys and points at the census artefact; the gate verifies
+`nodeTypes=64, blockTypes=455, attributeKeys=5311, extends.constructSites=44` against it. That is why
+`implements`/`instantiates` are `RULED-SOUND` (0 sites in the attested key space) and `extends` is
+**FALSIFIED** — the honest reading of HCL-G1: the type is derivable and unimplemented, so the gate
+should keep failing this lane until it is emitted.
+
+**Fleet effect, measured with a fresh whole-corpus walk per lane** (rows whose status changes are the
+point of the exercise; `RULED-SOUND → RULED-UNJUSTIFIED` means the ruling was certified on a
+vocabulary that cannot see the space the language uses):
+
+| lane | key/value bindings / files | flipped rows |
+|---|---|---|
+| toml | 19,500 / 1,486 | **6** — calls, uses, exports, extends, implements, instantiates |
+| css | 773,735 / 1,228 | **3** — calls, implements, instantiates |
+| bash | 60,454 / 4,224 | **3** — extends, implements, instantiates |
+| sql | 13,979 / 1,964 | **3** — exports, extends, implements |
+| xml | 590,892 / 11,562 | **3** — exports, implements, instantiates |
+| graphql | 141 / 1,911 | **2** — calls, instantiates |
+| scss | 74,468 / 4,433 | **2** — implements, instantiates |
+| hcl | 35,627 / 4,047 | **1 FALSIFIED** — extends (44 attested sites) |
+| protobuf | 193 / 847 | 0 |
+| clean | 2,309 / 312 | 0 |
+| r | 809 / 2,184 | 0 (emits all ten) |
+| powershell | 22,824 / 1,181 | 0 (emits all ten) |
+| markdown | **0** / 17,460 | 0 (no attribute-key syntax at all — the clean control) |
+
+**22 rows across 7 lanes** moved out of `RULED-SOUND`, and 5 surveyed lanes were unaffected — the
+check discriminates rather than failing everything. Markdown is the sharpest control: its corpus
+writes **zero** key/value bindings, so its six spec-sourced rulings stay `RULED-SOUND` — the check
+fires on the observation, not on the fact that a ruling exists. Every flipped lane needs one of two
+things: an attestation that its probe really did enumerate the key space, or a real re-measurement.
+(The `json` walk is the heaviest of the batch and was still running when this page was committed; its
+row is not reported here rather than reported as zero.) A third defect surfaced while surveying,
+**not fixed here**: on a history-trusted checkpoint the gate's `EMITTED` column reflects only the
+freshly re-walked files, so a genuinely emitted type can print `RULED-SOUND` (this is how
+`calls`/`overrides` read before the `--fresh` run). The gate's caveat line says the table is partial;
+the rows themselves do not.
+
+## 7. What this page does NOT settle
 
 1. **My census did not measure edges.** Its edge pass was off (it is opt-in and the machine is
    shared). The 4 `calls` and 68 `overrides` edges come from the ontology gate's fresh walk today and
    the prior whole-corpus census; the construct counts (44/53/8, 3,932/444/0, 162/50) are mine.
-2. **The ontology gate's `extends` probe has the same blind spot instrument A had.** It reports
-   `extends ... RULED-SOUND; construct occurs 0x on the parse tree` because it asks about node types,
-   not attribute keys. Its verdict there is NOT corroboration of grammar-absence; HCL-D1a and HCL-G1
-   are the ruling, and they say the opposite.
+2. **The fleet survey is partial by budget, not by intent.** Thirteen lanes were re-walked fresh (the
+   table in §6); `json` was still walking when this page was committed, and `dart`, `fsharp`, `nim`,
+   `zig`, `php`, `yaml`, `julia` and `lua` still need a run — every lane whose status flipped needs
+   its own owner to attest or re-measure.
 3. **`errorFiles 244` / `missingNodes 6`** in the spec's `corpus` block are the previous census's
    figures and were not re-measured; only `files`, `repos`, `nodes`, and the 63-of-64 grammar-type
    observation were (the last re-confirmed corpus-wide: `template_else_intro` still unobserved, and
@@ -166,15 +239,15 @@ emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
 4. **Recall / precision 0.999931 / 1.000000** belong to the previous 9,079-file population and were
    not re-measured on this one.
 5. **`extends` is measured, not fixed.** The analyzer still emits no `extends` edge; HCL-G1 records the
-   fix shape (a `target`-scoped `inherits` reading). The `func` spelling of user-defined functions
-   (0 corpus occurrences) and cross-file function resolution (0 sites) remain the analyzer's declared
-   limitations.
+   fix shape (a `target`-scoped `inherits` reading), and the ontology gate now fails this lane because
+   of it. The `func` spelling of user-defined functions (0 corpus occurrences) and cross-file function
+   resolution (0 sites) remain the analyzer's declared limitations.
 6. **`module` blocks are not `instantiates`.** A `module "x" { source = "./child" }` is published as
    `imports` (target = the source string). Whether module instantiation should also be an
    `instantiates` edge is not settled by this census; HCL-G2's falsifier is the test that would
    decide it, and no corpus file currently declares a type a resource block instantiates.
 
-## 7. Reproducing every number here
+## 8. Reproducing every number here
 
 ```bash
 # the firing sample (control prints itself; exit 3 means do not trust the SILENT column)
@@ -189,6 +262,9 @@ BB_HCL_CENSUS_EDGES=1 npx tsx validation/m14/fixtures/hcl/tools/construct-census
 npx tsx script/m14/coverage-block-gate.ts
 BB_BOARD_FIRING=validation/m14/results/firing-laptop-b.current.log bun script/m14/language-board.ts --coverage
 npx tsx script/m14/ontology-coverage-gate.ts hcl --fresh
+
+# the shared gate's space check, and its own control (the control also runs unasked, and exits 3)
+npx tsx script/m14/ontology-coverage-gate.ts --self-test
 
 # the fixture lane
 npx tsx script/m14/run-fixtures.ts --lang hcl
