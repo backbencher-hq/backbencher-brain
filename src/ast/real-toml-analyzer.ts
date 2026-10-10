@@ -39,14 +39,23 @@
  * `metadata.inlineKeys`, so nothing is lost — it is a scoping decision, not a
  * deletion.
  *
- * **TOML'S RELATIONSHIP VOCABULARY IS `contains`, AND THAT IS THE WHOLE TRUTH.**
- * Unlike html there is no second type to emit, and inventing one would be worse
- * than a thin graph. A value like `path = "src/main.rs"` is a *string*, and
- * treating path-shaped strings as references would import ecosystem knowledge
- * (which keys are paths in which tool) into a format that has none: TOML defines
- * no include, no import and no reference mechanism at all. So there is no `uses`,
- * and `extends`/`implements`/`instantiates`/`overrides`/`exports` are absent for
- * the same reason they are absent from html — no construct produces them.
+ * **THE RELATIONSHIP VOCABULARY IS `contains`, `imports` AND `references` — MEASURED.** The
+ * early version of this header claimed `contains` alone was "the whole truth"; two later
+ * rulings overturned it, each on a corpus measurement rather than an argument, and the
+ * coverage block in `script/m14/spec/toml-completeness.json` is now the record of all ten
+ * types. `imports` is emitted for a Cargo path dependency (`[dependencies] foo = { path =
+ * "../foo" }`, 331 edges over the corpus, 317 of them naming a real manifest directory).
+ * `references` is emitted for a Gradle version-catalogue alias (`version.ref = "groovy"`
+ * inside an inline table, 167 edges over 5 files). The other six — `calls`, `uses`,
+ * `exports`, `extends`, `implements`, `instantiates`, `overrides` — are `grammar-absence`:
+ * 0 of the pinned grammar's 19 named node types can carry them, and the corpus corroborates
+ * with 0 occurrences or 0 referents. `exports` is the one that is NOT ruled out: 174
+ * publish-shaped key sites exist, so it stays in the denominator as an unimplemented gap.
+ * A value like `path = "src/main.rs"` is still a *string*: the analyzer never treats a
+ * path-shaped string as a reference from an arbitrary key, which is why `imports` is
+ * restricted to dependency sections and why the unresolved-path spelling is deliberate.
+ * OPEN, not folded into any number: the workspace-inheritance half of `references`
+ * (`x.workspace = true`, 1,269 sites in 138 documents) is unimplemented — TOML-G1.
  *
  * Pure-String throughout: `segmentsOf`, `joinPath`, `asciiLower` are index loops.
  * No regex, no source-text scraping — the analyzer reads AST nodes and never the
@@ -54,6 +63,7 @@
  */
 import * as path from "path"
 import { ASTEngine } from "./engine"
+import { applyDocumentScope, documentDirScope } from "./project-scoped-identity"
 import type { Node } from "web-tree-sitter"
 
 /** TOML's bare-key alphabet is A-Za-z0-9_-; a quoted key is anything in quotes. */
@@ -421,13 +431,38 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     content: string,
     filePath: string,
-    _context?: ASTEngine.AnalyzeContext,
+    context?: ASTEngine.AnalyzeContext,
   ): ASTEngine.ParseResult {
     // The engine hands over the PATH, not a module name — every analyzer derives
     // its own. `Cargo.toml` must be the module `Cargo`: a module whose name ends
     // in its own extension collides with nothing but reads as a filename wherever
     // it appears, and `Cargo` is what a user would search for.
-    const moduleName = path.basename(filePath, path.extname(filePath)) || "document"
+    //
+    // ## WHY THE MODULE NAME IS PROJECT-SCOPED (measured, 2026-10-09)
+    //
+    // The basename is the one part of a path that is NOT unique in a project. A cargo
+    // workspace holds a `Cargo.toml` at the root and one under every member — every one of
+    // them publishes `package`, `package.name`, `dependencies.serde` — so a `contains` edge
+    // written `package -> package.name` names N declarations in its own project and cannot
+    // be walked in either direction. Measured through `script/m14/residual-gate.ts --lane
+    // toml` at HEAD: 25,530 edges, **18,971 ambiguous by declaration**, essentially all of it
+    // `contains` (25,033 of the edges), residual 75.6%.
+    //
+    // Production resolves an edge target only by EXACT `qualified_name` match in the project,
+    // or by a bare name whose project-wide count is exactly 1
+    // (`parallel-indexer.ts resolveRelationships`, strategies 1 and 2) — so the fix is the one
+    // json and dart already made: the file-scoped identity is the PROJECT-RELATIVE DIRECTORY
+    // CHAIN plus the stem, and every qualified path under the document carries it. The rule
+    // itself lives in `./project-scoped-identity` rather than here, so this lane cannot grow
+    // a second spelling of it.
+    //
+    // A root-level file has no directory chain, so its scope is "" and its name is unchanged —
+    // which is why the fixtures, which are handed no project root, spell exactly as before.
+    const stem = path.basename(filePath, path.extname(filePath)) || "document"
+    const moduleName = applyDocumentScope(stem, documentDirScope(filePath, context?.projectRoot))
+    /** A symbol's identity as the RESOLVER sees it: file-scoped, unique in the project. The
+     *  module keeps its own name (it is already scoped), every member is prefixed by it. */
+    const qualified = (name: string): string => (name === moduleName ? moduleName : `${moduleName}.${name}`)
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const errors: ASTEngine.ParseError[] = []
@@ -513,6 +548,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // module every top-level key is parentless and the file has no identity.
     symbols.push({
       name: moduleName,
+      qualifiedName: moduleName,
       kind: ASTEngine.SymbolKind.Module,
       range: range(rootNode),
       scope: "",
@@ -655,6 +691,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const line = keyNode.startPosition.row + 1
       symbols.push({
         name,
+        qualifiedName: qualified(name),
         kind: ASTEngine.SymbolKind.Property,
         range: range(pair),
         scope: "",
@@ -671,8 +708,11 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
         },
       })
       relationships.push({
-        source: owner,
-        target: name,
+        // BOTH ENDS CARRY THE FILE-SCOPED IDENTITY. A document-relative target names N
+        // declarations the moment a project holds two manifests with the same shape, and
+        // the resolver can only bind an exact qualified-name match — see the header note.
+        source: qualified(owner),
+        target: qualified(name),
         type: ASTEngine.RelationshipType.Contains,
         confidence: 1.0,
         line_number: line,
@@ -739,6 +779,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
         const relIndex = relationships.length
         symbols.push({
           name,
+          qualifiedName: qualified(name),
           kind: ASTEngine.SymbolKind.Namespace,
           // The section's whole span, from its `[` to the line before the next
           // header — which is exactly the region its keys live in, so a key's
@@ -759,8 +800,8 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           },
         })
         relationships.push({
-          source: owner,
-          target: name,
+          source: qualified(owner),
+          target: qualified(name),
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           line_number: node.startPosition.row + 1,
@@ -852,7 +893,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (implied.length > 0) meta.impliedParents = implied
       else delete meta.impliedParents
       const rel = relationships[rec.relIndex] as { source: string; metadata?: Record<string, unknown> }
-      rel.source = owner
+      rel.source = qualified(owner)
       const relMeta = rel.metadata ?? (rel.metadata = {})
       if (implied.length > 0) relMeta.hasImpliedParents = true
       else delete relMeta.hasImpliedParents
@@ -886,8 +927,8 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       aliasEdges++
       relationships.push({
-        source,
-        target,
+        source: qualified(source),
+        target: qualified(target),
         type: ASTEngine.RelationshipType.References,
         confidence: 1.0,
         line_number: line,
@@ -917,13 +958,17 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     //
     // The target is the PATH AS WRITTEN, not a resolved symbol, and that is the
     // honest form rather than a shortcut. Measured on the corpus: 331 dependency
-    // sites, 318 of which name a directory that really holds a `Cargo.toml` /
-    // `Project.toml`, and **0 of which could resolve to a unique symbol** — a
-    // document's module symbol is its FILE STEM, and this corpus holds 744 files
-    // named `Cargo.toml` publishing the module `Cargo`. The store's qualified-name
-    // strategy does not rescue it: `qualified_name` is a WITHIN-DOCUMENT path
-    // (`parent.child`) and the pass dedups it project-wide with `MIN(id)`, so 744
-    // candidates would resolve to one arbitrary document.
+    // sites, 317 of which name a directory that really holds a `Cargo.toml` /
+    // `Project.toml` (the applicability audit measures that with the filesystem).
+    //
+    // The module identity is file-scoped NOW (see the header note), so `qualified_name`
+    // is no longer a within-document path that 744 `Cargo.toml` files collide on — but
+    // that does not make this target resolvable, and the reason changed rather than
+    // disappearing: the value is a DIRECTORY or a relative path (`../foo`), and the module
+    // symbol of the file it points at is `<dir scope>.<stem>` — which this analyzer cannot
+    // compute without reading the filesystem to learn that directory's own project-relative
+    // chain. Guessing it from the string would manufacture a binding that the resolver's
+    // exact-match strategy would then bind to whatever symbol happened to share the guess.
     //
     // So the edge names the path, matches no symbol, and the store keeps the NAME
     // with a NULL id — which is precisely the shape `traceCallees`'s unresolved
@@ -940,7 +985,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const { source, pathValue, section, line } of pendingImports) {
       importEdges++
       relationships.push({
-        source,
+        source: qualified(source),
         target: pathValue,
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1.0,
