@@ -54,6 +54,60 @@ const RESERVED_ENDPOINT_NAMES: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * `dir(object)` — the CLOSED root's member set: 23 names on CPython 3.10.12.
+ *
+ * Why this lane needs the list written down. The override resolution below has a third
+ * tier: when NO base declares the name, it guesses the first base this file never read.
+ * For every other external base that guess is genuinely open — the question is what an
+ * unread module contains, and nothing here can answer it. `object` is different in kind:
+ * it is the closed root of the python hierarchy, every class inherits its members whether
+ * or not the base list writes it, and its contents are a fact about the interpreter rather
+ * than an assumption about unread code.
+ *
+ * So a guess naming `object` is CHECKABLE, and for a method `object` does not declare it is
+ * a false statement carrying a 0.5 label. MEASURED (script/m14/python-guess-accuracy.ts,
+ * which imports each guessed base and asks `hasattr(base, method)` on the interpreter):
+ * over 184 corpus files the tier emitted 41 guessed edges, TRUE 1 / FALSE 23 / UNKNOWN 17,
+ * and seventeen of the twenty-three FALSE were `object.<method>` — one per method of a
+ * `unittest.TestCase` subclass whose only written base is `object`. The lane's own
+ * differential cannot see this class of defect: its verdict on a guess is vacuous for a
+ * base the file never read, because the oracle's tree does not contain the base either, so
+ * it calls the edge refuted whether it is true or false. The verdict came from CPython.
+ *
+ * The refusal is deliberately narrow — PY-33, pinned by
+ * `validation/m14/fixtures/python/object-base-guess-refused`, whose three classes fix both
+ * boundaries: a `object` guess for a name object DOES declare survives at 0.5 (it is still
+ * a guess, not promoted), and a guess naming any OTHER unreadable base is untouched, so
+ * this is not a removal of the family's third tier (M37.10 pins the tier for
+ * php/ruby/python/js/perl/java/swift, and one lane cannot delete its copy unilaterally).
+ */
+const OBJECT_MEMBERS: ReadonlySet<string> = new Set([
+  "__class__",
+  "__delattr__",
+  "__dir__",
+  "__doc__",
+  "__eq__",
+  "__format__",
+  "__ge__",
+  "__getattribute__",
+  "__gt__",
+  "__hash__",
+  "__init__",
+  "__init_subclass__",
+  "__le__",
+  "__lt__",
+  "__ne__",
+  "__new__",
+  "__reduce__",
+  "__reduce_ex__",
+  "__repr__",
+  "__setattr__",
+  "__sizeof__",
+  "__str__",
+  "__subclasshook__",
+])
+
+/**
  * Publish a member name so it can never BE a reserved bare word.
  *
  * `exports` is the sharpest of the six after `unknown`: an `__all__` entry legitimately
@@ -91,13 +145,59 @@ interface InterfaceBindings {
    *  `metaclass=ABCMeta`, 18 inherit it from a base that does, and the one non-ABC class in
    *  that module, `_CallableGenericAlias`, is not exported). */
   collectionsAbcNames: Set<string>
-  /** `from abc import abstractmethod` and its three relatives. */
-  abstractDecoratorNames: Set<string>
   /** dotted roots this file imports, so `abc.ABC` is self-proving once `abc` is bound. */
   importRoots: Set<string>
-  /** classes THIS file declares abstract — `X.register(Y)` on one of them is a
-   *  conformance declaration with no inheritance behind it. */
+  /**
+   * The LINE each stdlib marker name was BOUND on, by bound name.
+   *
+   * PY-29 — a bare base name has to be read POSITIONALLY, because python evaluates the base
+   * expression against the module globals as they stand on that line. `class ABC:` in the
+   * middle of a file REBINDS a name an `from abc import ABC` above it had bound, so a
+   * subclass declared after the rebinding inherits the LOCAL class whatever the import says;
+   * one declared before it inherits the stdlib one. `python/interface-implements` pins both
+   * sides by name (`AboveTheRebind` / `BelowTheRebind`), and reading the binding without its
+   * line was the whole defect: the pre-pass asked "is `ABC` an interface anywhere in this
+   * file?", which is a different question from "what does `ABC` name HERE?" — and the second
+   * is the one python answers.
+   */
+  markerLines: Map<string, number>
+  /**
+   * Every class THIS FILE declares, with its line and its base list as BOUND DATA.
+   *
+   * This is what makes tier 1 (`in-file-interface-base`) expressible at all: `class
+   * SubAbcBase(AbcBase)` is an interface implementation when `AbcBase`'s own header declares
+   * an interface, and that is a fact about ANOTHER declaration, its bases and their order.
+   * The bases are recorded as strings rather than nodes because this pass runs to completion
+   * before the verdict pass, and a web-tree-sitter wrapper is per-access — a stored node is
+   * a handle whose reads belong to the walk that produced it.
+   */
+  classDecls: PyClassDecl[]
+  /** classes THIS file declares an interface — `X.register(Y)` on one of them is a
+   *  conformance declaration with no inheritance behind it, and a subclass of one is an
+   *  interface implementation by tier 1. */
   localAbstractClasses: Set<string>
+}
+
+/** One base in one class's header, as the pass records it: enough to decide a marker. */
+interface PyBaseRef {
+  /** the base's LEAF name — `abc.ABC` -> `ABC`, `pa.Table[T]` -> `Table`. */
+  leaf: string
+  /** the full dotted spelling when the source wrote one (`abc.ABC`, `typing.Protocol`),
+   *  else null. A subscript records its HEAD's spelling (`typing.Protocol[T]` ->
+   *  `typing.Protocol`), which is PY-29: the head is the qualified name, and reading the
+   *  subscript as a bare name is what made the positional test answer for a spelling the
+   *  source never wrote. */
+  dotted: string | null
+}
+
+/** One class declaration in the file: its line and the header evidence tier 1 needs. */
+interface PyClassDecl {
+  name: string
+  /** 1-based line the class is declared on. */
+  line: number
+  /** `metaclass=ABCMeta` (or `metaclass=abc.ABCMeta`) is on the header. */
+  namesAbcMeta: boolean
+  bases: PyBaseRef[]
 }
 
 interface PythonContext {
@@ -751,8 +851,9 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       abcNames: new Set(),
       protocolNames: new Set(),
       collectionsAbcNames: new Set(),
-      abstractDecoratorNames: new Set(),
       importRoots: new Set(),
+      markerLines: new Map(),
+      classDecls: [],
       localAbstractClasses: new Set(),
     }
     // ONE ITERATIVE WALK, not two recursive ones.
@@ -774,10 +875,6 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // recursion, no call-stack explosions)") — the recursive version was a latent stack
     // overflow on a deeply nested file, which is a correctness risk a timing number does not
     // show.
-    const pendingClasses: { name: string; namesAbcMeta: boolean; decoLeaves: Set<string>; decoDotted: Set<string> }[] = []
-    // class name -> its recorded raw evidence. A name-keyed map, which is what lets the
-    // decorator branch below attach to the class it is lexically inside without an exit frame.
-    const pendingByName = new Map<string, { name: string; namesAbcMeta: boolean; decoLeaves: Set<string>; decoDotted: Set<string> }>()
     const stack: Node[] = [rootNode]
     while (stack.length) {
       const n = stack.pop()!
@@ -816,11 +913,15 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           if (!imported || !bound) continue
           const importedLeaf = imported.slice(imported.lastIndexOf(".") + 1)
+          // PY-29: every marker binding records the LINE it was made on, for the positional
+          // bare-name test. `python/interface-implements` declares a local `class ABC` at L75
+          // and a subclass at L80: without the line, `ABC` looks like the stdlib everywhere
+          // in the file and that subclass gets a fabricated `implements`.
+          const boundLine = n.startPosition.row + 1
           if (mod === "abc") {
-            if (importedLeaf === "ABC" || importedLeaf === "ABCMeta") out.abcNames.add(bound)
-            if (importedLeaf === "abstractmethod" || importedLeaf === "abstractproperty" ||
-                importedLeaf === "abstractclassmethod" || importedLeaf === "abstractstaticmethod") {
-              out.abstractDecoratorNames.add(bound)
+            if (importedLeaf === "ABC" || importedLeaf === "ABCMeta") {
+              out.abcNames.add(bound)
+              out.markerLines.set(bound, boundLine)
             }
           } else if (mod === "typing" || mod === "typing_extensions") {
             // typing_extensions is the backport and is what a library still supporting 3.7
@@ -828,16 +929,22 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             // `from typing_extensions import Protocol` in 21 of its base lists. Accepting
             // only `typing` would have left the corpus's largest source of Protocol
             // declarations relabelled as `extends`.
-            if (importedLeaf === "Protocol") out.protocolNames.add(bound)
+            if (importedLeaf === "Protocol") {
+              out.protocolNames.add(bound)
+              out.markerLines.set(bound, boundLine)
+            }
           } else if (mod === "collections.abc") {
             out.collectionsAbcNames.add(bound)
+            out.markerLines.set(bound, boundLine)
           }
         }
       } else if (n.type === "class_definition") {
-        // Record the class's RAW abstractness evidence; the verdict waits for the file's
-        // bindings, which is the only ordering the single walk has to respect.
+        // Record the class's RAW header evidence — the bases AS WRITTEN and whether the
+        // header names ABCMeta. The tier verdict waits for the whole file's bindings, which
+        // is the only ordering the single walk has to respect.
         const nameNode = this.findChildByType(n, "identifier")
         let namesAbcMeta = false
+        const bases: PyBaseRef[] = []
         const args = this.findChildByType(n, "argument_list")
         if (args) {
           for (let i = 0; i < args.namedChildCount; i++) {
@@ -851,46 +958,19 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
               continue
             }
-            if (this.baseClassLeaf(a) === "ABCMeta") namesAbcMeta = true
+            const leaf = this.baseClassLeaf(a)
+            if (!leaf) continue
+            bases.push({ leaf, dotted: this.baseDottedSpelling(a) })
+            if (leaf === "ABCMeta") namesAbcMeta = true
           }
         }
         if (nameNode?.text) {
-          const entry = { name: nameNode.text, namesAbcMeta, decoLeaves: new Set<string>(), decoDotted: new Set<string>() }
-          pendingByName.set(entry.name, entry)
-          pendingClasses.push(entry)
-        }
-      } else if (n.type === "decorator") {
-        // Attribute the decorator to the ENCLOSING CLASS by walking up the parent chain and
-        // stopping at the first `function_definition`.
-        //
-        // A method's `@abstractmethod` declares the METHOD abstract, not the class, so
-        // crediting it to the class would make every class containing one abstract method an
-        // interface - which is a different claim and a much larger one. The stop-at-function
-        // rule is also what keeps this correct inside an ITERATIVE walk: an explicit node
-        // stack has no exit frame to pop a scope from, and the first version used one,
-        // which silently credited every method decorator in a class to the class.
-        //
-        // `decorator.parent` is the `decorated_definition`, whose `definition` field names
-        // what is actually decorated; it must be a `function_definition` for this decorator
-        // to say anything about a class's abstractness at all.
-        const owner = n.parent
-        if (!owner || owner.type !== "decorated_definition") continue
-        if (owner.childForFieldName("definition")?.type !== "function_definition") continue
-        const classNode = owner.parent
-        if (!classNode || classNode.type !== "class_definition") continue
-        const className = this.findChildByType(classNode, "identifier")?.text
-        if (!className) continue
-        let entry = pendingByName.get(className)
-        if (!entry) {
-          entry = { name: className, namesAbcMeta: false, decoLeaves: new Set(), decoDotted: new Set() }
-          pendingByName.set(className, entry)
-          pendingClasses.push(entry)
-        }
-        const first = n.namedChild(0)
-        if (first?.type === "identifier") entry.decoLeaves.add(first.text)
-        else {
-          const dotted = this.dottedTail(n)
-          if (dotted) entry.decoDotted.add(dotted)
+          out.classDecls.push({
+            name: nameNode.text,
+            line: n.startPosition.row + 1,
+            namesAbcMeta,
+            bases,
+          })
         }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -901,18 +981,108 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Now that the file's bindings are known, settle each class. O(number of classes), not
     // O(tree).
-    for (const c of pendingClasses) {
-      if (!c.name) continue
-      if (c.namesAbcMeta) { out.localAbstractClasses.add(c.name); continue }
-      for (const leaf of c.decoLeaves) {
-        if (out.abstractDecoratorNames.has(leaf)) { out.localAbstractClasses.add(c.name); break }
-      }
-      if (out.localAbstractClasses.has(c.name)) continue
-      for (const d of c.decoDotted) {
-        if (out.importRoots.has("abc") && d.startsWith("abc.")) { out.localAbstractClasses.add(c.name); break }
-      }
+    //
+    // A CLASS DECLARES AN INTERFACE BY ITS HEADER, and by nothing else. The pass this
+    // replaced also accepted `@abstractmethod` on a method — and that is a different claim,
+    // measured false on the interpreter: `__abstractmethods__` is computed by
+    // `ABCMeta.__new__`, so an `@abstractmethod` on a class whose metaclass is `type` is a
+    // marker the interpreter does nothing with. `class ProductBuilder(object)` with four
+    // such decorators (swift-corpus's `swift_build_support/products/product.py:544`) has an
+    // empty `__abstractmethods__` and INSTANTIATES, and the lane was publishing a fabricated
+    // `implements` at confidence 1.0 with `evidenceClass: structural` for every subclass of
+    // such a class. Both spellings are pinned as forbid rows by
+    // `python/interface-declaration-needs-abc-meta` (`SubNoopAbstract`, `SubPlain`), whose
+    // positive rows (`SubAbcBase`, `SubMetaclassBase`, `SubProtocolBase`, `SubParameterised`,
+    // `SubEmptyAbc`) are the three header shapes that DO declare one, at tier 0 and tier 1
+    // alike. The decorator branch that fed it is deleted rather than left dormant: a rule
+    // that fires on a spelling the interpreter ignores is not a rule a later edit should be
+    // able to switch back on by accident.
+    for (const c of out.classDecls) {
+      if (this.pythonDeclaresInterface(c.name, out)) out.localAbstractClasses.add(c.name)
     }
     return out
+  }
+
+  /**
+   * The dotted spelling a base expression was written with, or null for a bare name.
+   *
+   * PY-29: a SUBSCRIPT base records its HEAD's spelling. `typing.Protocol[RuntimeT]` is a
+   * `subscript` whose head is the dotted name `typing.Protocol`, and the pre-pass read
+   * "qualified" as `base.type === "attribute"`, so this head was classified as BARE and
+   * resolved against whatever the file last bound `Protocol` to. In
+   * `python/interface-qualified-subscript-head` that is a LOCAL class three lines below, so
+   * both rows the fixture pins went missing; in the neighbouring fixture the same wrong rule
+   * happens to reach the right answer, which is exactly why one fixture could not falsify it.
+   * `extractClass` already reads that head as qualified for `qualifiedBases` — the same rule,
+   * one position over, in the same file — so this is that rule made shareable rather than a
+   * second convention.
+   */
+  private baseDottedSpelling(node: Node | null | undefined): string | null {
+    if (!node) return null
+    const head = node.type === "subscript" ? node.namedChild(0) : node
+    if (!head) return null
+    return this.dottedTail(head)
+  }
+
+  /**
+   * Is this base an interface the file can PROVE, and by which reading?
+   *
+   * Tier 0 (`stdlib-interface-marker`): the base names a stdlib interface — `abc.ABC` /
+   * `abc.ABCMeta`, `typing`/`typing_extensions.Protocol`, or anything out of
+   * `collections.abc` — and the proof is this FILE's own binding, never the spelling. A
+   * DOTTED base is self-proving once its ROOT is imported here (`import abc` makes `abc.ABC`
+   * unspellable as a user class). A BARE base is positional: the name must be bound to the
+   * marker by an import at or ABOVE the class's own line, and no class declaration may have
+   * rebound it in between, because python evaluates the base expression against the module
+   * globals as they stand on that line.
+   *
+   * Tier 1 (`in-file-interface-base`): the base names a class THIS FILE declares and whose
+   * own header declares an interface — the transitivity python actually has, and the reason
+   * `class Service(Repository)` is an implementation when `Repository(ABC)` is. Recursion is
+   * guarded both by a visited set and by declaration ORDER (a base is declared before the
+   * class that inherits it, or it is not the base), so a cyclic or forward reference cannot
+   * loop or claim an interface that does not exist yet.
+   */
+  private pythonDeclaresInterface(name: string, ib: InterfaceBindings, seen: Set<string> = new Set()): boolean {
+    if (seen.has(name)) return false
+    seen.add(name)
+    const decl = ib.classDecls.find((c) => c.name === name)
+    if (!decl) return false
+    if (decl.namesAbcMeta) return true
+    for (const b of decl.bases) {
+      if (this.pythonMarkerKindForBase(b, decl.line, ib)) return true
+      const inFile = ib.classDecls.find((c) => c.name === b.leaf && c.line < decl.line)
+      if (inFile && this.pythonDeclaresInterface(b.leaf, ib, seen)) return true
+    }
+    return false
+  }
+
+  /**
+   * Tier 0 only: the stdlib marker a base proves, or null.
+   *
+   * Split out from `interfaceBaseKind` because the tier-1 verdict asks this question about
+   * OTHER classes' bases, where there is no AST node in hand — only the recorded spelling
+   * and the line it was written on.
+   */
+  private pythonMarkerKindForBase(base: PyBaseRef, atLine: number, ib: InterfaceBindings): string | null {
+    if (base.dotted) {
+      const root = base.dotted.split(".")[0]
+      if (!ib.importRoots.has(root)) return null
+      if (base.dotted === "abc.ABC" || base.dotted === "abc.ABCMeta") return "abc"
+      if (base.dotted === "typing.Protocol" || base.dotted === "typing_extensions.Protocol") return "typing"
+      if (root === "collections" && base.dotted.startsWith("collections.abc.")) return "collections.abc"
+      return null
+    }
+    const boundLine = ib.markerLines.get(base.leaf)
+    if (boundLine === undefined || boundLine > atLine) return null
+    // A class THIS FILE declares with the same name, above this line, rebinds the name and
+    // wins: the base expression sees the local class, not the import.
+    const shadow = ib.classDecls.find((c) => c.name === base.leaf && c.line < atLine)
+    if (shadow) return null
+    if (ib.abcNames.has(base.leaf)) return "abc"
+    if (ib.protocolNames.has(base.leaf)) return "typing"
+    if (ib.collectionsAbcNames.has(base.leaf)) return "collections.abc"
+    return null
   }
 
 /**
@@ -947,7 +1117,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * way is in the fixture, as a forbid row on `GenericOnly -> Generic` which fails the
    * moment anyone adds `Generic` to the typing set.
    */
-  private interfaceBaseKind(base: Node, ib: InterfaceBindings): string | null {
+  private interfaceBaseKind(base: Node, ib: InterfaceBindings, atLine: number): { kind: string; reasonCode: string } | null {
     const leaf = this.baseClassLeaf(base)
     if (!leaf) return null
     // A DOTTED base is a DIFFERENT BINDING from the bare name, and the bare-name proofs
@@ -965,22 +1135,28 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the base, and the shape is the whole question: `Protocol` proves `Protocol`,
     // `abc.ABC` proves itself once `abc` is bound, and `vendor_base.Protocol` proves
     // nothing until this file has bound `vendor_base`.
-    const isDotted = base.type === "attribute"
-    if (!isDotted) {
-      if (ib.abcNames.has(leaf)) return "abc"
-      if (ib.protocolNames.has(leaf)) return "typing"
-      if (ib.collectionsAbcNames.has(leaf)) return "collections.abc"
+    //
+    // PY-29: the shape is read by `baseDottedSpelling`, so a SUBSCRIPT records its head —
+    // `typing.Protocol[RuntimeT]` is the qualified spelling, not a bare `Protocol`.
+    const written: PyBaseRef = { leaf, dotted: this.baseDottedSpelling(base) }
+    const marker = this.pythonMarkerKindForBase(written, atLine, ib)
+    if (marker) {
+      // `stdlib-interface-marker` is the reason code the fixture set assigns to this tier:
+      // the proof is a stdlib import in this file, and the code names THAT fact rather than
+      // repeating the confidence. `interfaceKind` still carries which module proved it —
+      // `abc`, `typing`, `collections.abc` — because three different proofs with three
+      // different measured bases are not one fact.
+      return { kind: marker, reasonCode: "stdlib-interface-marker" }
     }
-    // The dotted spellings are self-proving once the ROOT is importable in this file:
-    // `abc.ABC` cannot be a user class when the file has `import abc` in it.
-    const dotted = this.dottedTail(base)
-    if (dotted) {
-      const root = dotted.split(".")[0]
-      if (ib.importRoots.has(root)) {
-        if (dotted === "abc.ABC" || dotted === "abc.ABCMeta") return "abc"
-        if (dotted === "typing.Protocol") return "typing"
-        if (root === "collections" && dotted.startsWith("collections.abc.")) return "collections.abc"
-      }
+    // TIER 1 — the base is a class THIS FILE declares and ITS header declares an interface.
+    // `class Service(Repository)` with `class Repository(ABC)` is an interface
+    // implementation, and it is the tier where a header-only rule pays off: the same
+    // fixture (`python/interface-declaration-needs-abc-meta`) pins `SubNoopAbstract` and
+    // `SubPlain` as forbids, so a class whose only abstractness is an `@abstractmethod`
+    // marker is NOT a tier-1 interface and its subclasses stay ordinary inheritance.
+    const inFile = ib.classDecls.find((c) => c.name === leaf && c.line < atLine)
+    if (inFile && this.pythonDeclaresInterface(leaf, ib)) {
+      return { kind: "in-file", reasonCode: "in-file-interface-base" }
     }
     return null
   }
@@ -1116,12 +1292,33 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // than a convention: the proof is an IMPORT IN THIS FILE, so the source itself
           // asserts both that the name is the stdlib's and that the class conforms to it.
           // There is no case where the import exists and the claim is false.
-          const ifaceKind = ctx.interfaceBindings ? this.interfaceBaseKind(arg, ctx.interfaceBindings) : null
+          const ifaceKind = ctx.interfaceBindings
+            ? this.interfaceBaseKind(arg, ctx.interfaceBindings, node.startPosition.row + 1)
+            : null
+          // INCOMING_PY — the base's SPELLING, when the source wrote one: `class
+          // SiblingCase(unittest.TestCase)` names the leaf `TestCase` and proves `unittest`
+          // is the module that carries the lookup, so a consumer can follow the import edge
+          // to the real base instead of guessing among every same-named leaf in the project.
+          // A base spelled as a bare identifier records NOTHING, because `Bare` written alone
+          // has no receiver and `qualified: "Bare"` would be a spelling the source never
+          // wrote — pinned as a negative row by `python/qualified-endpoint-spellings`.
+          // Subscripts mirror `qualifiedBases` below (`pa.Table[T]` qualifies as `pa.Table`):
+          // one rule, two readers, so the exclusion that keeps a qualified base from binding
+          // to a local namesake and the metadata a consumer reads can never disagree.
+          const baseQualifier = ((): string | undefined => {
+            if (arg.type === "attribute") return arg.text
+            if (arg.type === "subscript") {
+              const head = arg.namedChild(0)
+              if (head && head.type === "attribute") return head.text
+            }
+            return undefined
+          })()
           this.pushRel(ctx, className, baseLeaf, ifaceKind
             ? ASTEngine.RelationshipType.Implements
             : ASTEngine.RelationshipType.Extends, 1.0, {
             pythonSpecific: true,
-            ...(ifaceKind ? { interfaceKind: ifaceKind, reasonCode: "interface-base-proven" } : {}),
+            ...(baseQualifier ? { qualified: baseQualifier } : {}),
+            ...(ifaceKind ? { interfaceKind: ifaceKind.kind, reasonCode: ifaceKind.reasonCode } : {}),
           }, this.nodeLine(arg))
         }
       }
@@ -1165,6 +1362,28 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: {
         pythonSpecific: true,
         baseClasses,
+        // PY-35 — THE WALKABLE HERITAGE COLUMN, and it is published from the FULL base list.
+        //
+        // `metadata.superTypes` is the one field the store copies into
+        // `brain_symbol.super_types`, and that column is what the resolution machinery walks
+        // (`member-owner-resolution.ts` builds its ancestor frontier from it,
+        // `override-retarget.ts` reads it, and the pool worker carries it across the
+        // analyzer boundary — the PHPD41 fix, whose allowlist now admits this key). This lane
+        // published `baseClasses` and NOT this, so every python class had a NULL heritage
+        // column: the ancestor walk had no parents for the whole language, and a member read
+        // through a base could not be resolved at all.
+        //
+        // It carries EVERY base, including the ones whose edge is `implements`. That is the
+        // point, and it is the half of PY-34's ruling that keeps `implements` from costing a
+        // fact: a proven interface base still publishes ONE relationship (`implements`, the
+        // most specific true label — pinned by `python/implements-interface-bases` and
+        // `python/interface-qualified-subscript-head`, whose additive `extends` rows this
+        // change removes), while the MRO parent stays reachable for every consumer that
+        // walks the hierarchy, because the column that exists to be WALKED is not the edge
+        // label. A consumer asking "what does this class inherit from" reads the same list
+        // the override resolution does, and gets `Mapping` whether the edge is spelled
+        // `extends` or `implements`.
+        superTypes: baseClasses,
         isEnum,
         ...(enclosingClass ? { isNestedClass: true } : {}),
       },
@@ -1213,14 +1432,6 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           const left = assign.namedChild(0)
           const right = assign.namedChild(assign.namedChildCount - 1)
           if (!left || left.type !== "identifier") continue
-          // Constant-value members. PYD4: `call` is included — `RED =
-          // enum.auto()` is the canonical python Enum idiom (functional API:
-          // `Color = Enum("Color", ["RED"])` aside, auto() members are in
-          // every stdlib enum), and its member NAME is real vocabulary even
-          // when the VALUE is a runtime call. Function-valued (`f = some_fn`)
-          // is already covered by `identifier`; excluded remain only the
-          // multi-target tuple forms.
-          //
           // PY-27, found by the independent differential rather than by a gate: `-1`
           // parses as a `unary_operator` wrapping an `integer`, not as an `integer`,
           // so `unsafe = -1` failed the constant test and CPython's own
@@ -1231,7 +1442,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           //
           // Only a SIGNED NUMERIC literal qualifies. `~x` and `not x` are also
           // `unary_operator` nodes and neither is constant, so the operand is what
-          // decides and the operator is checked rather than assumed.
+          // decides and the operator is checked rather than assumed — and
+          // `python/reserved-endpoint-qualification` pins both spellings as forbids
+          // (`inverted = ~1`, `negated = not True`), because accepting any
+          // `unary_operator` would invent an enum surface the source does not declare.
           //
           // The operator token is an ANONYMOUS child: `unary_operator` over `-1` has
           // `child(0) = "-"` with `isNamed === false` and `namedChild(0) = "1"`. A scan
@@ -1250,7 +1464,41 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             const operand = right.namedChild(right.namedChildCount - 1)
             return !!operand && (operand.type === "integer" || operand.type === "float")
           })()
-          if (right && (signedNumeric || right.type === "string" || right.type === "integer" ||
+          // PY-30 — the CONTAINER spellings are literals too, and a filter keyed on the
+          // value's node type was losing real members.
+          //
+          // `pstats.SortKey` is `class SortKey(str, Enum)` with comma-separated values
+          // (`CALLS = 'calls', 'ncalls'`), which parses as an `expression_list` — NOT a
+          // `tuple`, which is a different node and the whole reason this could not be
+          // repaired by adding one more scalar type — so the analyzer published 5 of its 9
+          // members and lost 4 `contains` edges CPython supports: `SortKey.__members__`
+          // lists all nine and `SortKey.CALLS` resolves. Found by the DERIVATION paydown
+          // (the oracle reported them missing), not by a gate, and pinned now by
+          // `python/literal-versus-computed`: an `expression_list` (`SHADED = 1, 2`,
+          // `BARE = "x", "y"`) and a `list` (`PAIRED = ["a", "b"]`) beside the `string`
+          // shape that always worked.
+          //
+          // The value still has to BE a literal, which is the boundary the two fixtures
+          // hold from both sides: the containers above are written in the source, while a
+          // value COMPUTED by an operator (`~1`, `not True`, `a + b`) is not a member this
+          // branch can read off the tree. That is the same rule the `__all__` branch
+          // applied to name sets one construct away.
+          const literalContainer = !!right && (right.type === "expression_list" ||
+            right.type === "list" || right.type === "tuple" || right.type === "set" ||
+            right.type === "dictionary" || right.type === "concatenated_string")
+          // The NAME rule CPython's Enum actually applies, and it is the reason the
+          // container spelling could not simply be accepted wholesale: a `NAME = value` in
+          // an enum body is a member unless ENUM reserves the name. `__dunder__` and
+          // `_sunder_` attributes are machinery (`_ignore_`, `_order_`, `__members__`), not
+          // members, and `_EnumDict` refuses them for exactly that reason. Before PY-30 the
+          // value filter hid this for the container shapes; widening the filter without
+          // this line would publish `_order_ = "a b c"` — a string, already accepted today —
+          // as an enum member of a class that has three real ones.
+          const reservedByEnum =
+            (left.text.startsWith("__") && left.text.endsWith("__")) ||
+            (left.text.startsWith("_") && left.text.endsWith("_") && left.text.length > 1)
+          if (!reservedByEnum && right && (signedNumeric || literalContainer ||
+              right.type === "string" || right.type === "integer" ||
               right.type === "float" || right.type === "true" || right.type === "false" ||
               right.type === "none" || right.type === "identifier" || right.type === "call")) {
             ctx.symbols.push({
@@ -1681,6 +1929,39 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /**
+   * Is this node inside a `lambda` body that no FUNCTION encloses before it?
+   *
+   * PY-31. `lambda` opens a function scope in python and this analyzer publishes no SYMBOL
+   * for one, so an edge sourced from inside it names a scope the graph does not have. That
+   * was already this lane's rule for `uses` (a member read inside a lambda was declined, and
+   * `python/lambda-body-has-no-call-source` pins that as a forbid so the calls fix cannot
+   * quietly widen it). `calls` did not apply it, so a call inside a lambda written directly
+   * in a CLASS BODY or at MODULE scope was attributed to that class or to that module:
+   * `ShareableList -> decode` is a false statement about a class — a class body does not
+   * call anything, and `ShareableList.decode` is not a name a reader of the graph can go
+   * and look at. MEASURED over 678 real python files: 113 call nodes and 98 attribute nodes
+   * sit inside a lambda body across 43 files, every one attributed to a class or a module.
+   *
+   * The stop at `function_definition` is what keeps the rule narrow, and it is the half that
+   * matters: a lambda INSIDE a def is that def's business — the calls contract has always
+   * attributed a nested body's calls to the enclosing function — so `key=lambda k:
+   * k.strip()` inside `sorted(...)` in a method still publishes `f -> strip`. Callers pair
+   * this with `ctx.currentFunction === undefined` for the same reason and by the same rule:
+   * a lambda whose nearest enclosing named scope is a def is not the defect, whichever way
+   * the walk discovers it.
+   */
+  private insideLambdaWithoutEnclosingFunction(node: Node): boolean {
+    let cur: Node | null = node.parent
+    while (cur) {
+      const t = cur.type
+      if (t === "function_definition") return false
+      if (t === "lambda") return true
+      cur = cur.parent
+    }
+    return false
+  }
+
   private extractAssignment(node: Node, ctx: PythonContext) {
     const left = node.namedChild(0)
     if (!left) return
@@ -1915,6 +2196,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       p = p.parent
     }
 
+    // PY-31 — a lambda is a function scope and this analyzer publishes no symbol for one, so
+    // a call in its body has no source to attach to. Refused only when NO def encloses it:
+    // the source would be a class body or the module, and neither calls anything. See
+    // `insideLambdaWithoutEnclosingFunction` for the measurement and for the half of the
+    // rule that is deliberate (a lambda inside a def keeps that def as its source).
+    if (!ctx.currentFunction && this.insideLambdaWithoutEnclosingFunction(node)) return
+
     const funcChild = node.namedChild(0)
     if (!funcChild) return
 
@@ -2120,8 +2408,23 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             const qualified = recvName && ctx.declaredTypes.has(recvName)
               ? qualifyReservedEndpoint(leaf.text, recvName)
               : leaf.text
+            // PY-25 / INCOMING_PY — the read's ROUTE, which is the whole subject of a member
+            // read in python: `self.stash` and a bare `stash` are the same leaf and two
+            // different facts, and the lane was publishing them identically.
+            // `qualified` carries the chain the SOURCE wrote — `self.stash`, `os.path`,
+            // `pa.Table`, `table.num_rows` — including when the receiver's type is written
+            // down nowhere (`table` is a parameter): the field records the spelling and does
+            // not claim the type is known. `reasonCode: member-read` names the same reading
+            // `calls` names with its dispatch codes, so a consumer filtering by code sees a
+            // read it can follow and a read it cannot as two populations rather than one.
+            // Pinned by `python/dispatch-reason-codes` (`self.stash`, `os.path`) and
+            // `python/qualified-endpoint-spellings` (`pa.Table` through an alias,
+            // `table.num_rows` through a parameter, `rows.num_rows` from another function —
+            // the leaf collision is why the endpoint needs a route and not just a name).
             this.pushRel(ctx, inFn, qualified, ASTEngine.RelationshipType.Uses, 0.9, {
               pythonSpecific: true, isMemberRead: true,
+              qualified: n.text,
+              reasonCode: "member-read",
               ...(qualified !== leaf.text ? { qualifiedTarget: true, receiver: recvName } : {}),
             }, this.nodeLine(leaf))
           }
@@ -2207,21 +2510,55 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       return p.text
     }
 
+    /**
+     * PY-24 — the source is the scope this analyzer's OWN WALK would be in at that node,
+     * replayed over the ancestor chain.
+     *
+     * This used to return the name of the NEAREST enclosing `function_definition`. For a
+     * nested def that is a name nothing published: python binds `def inner` inside `def
+     * outer` as a LOCAL of `outer`, this analyzer's rule is that a def inside a def is not a
+     * symbol, and the main walk therefore attributes a nested body's calls and member reads
+     * to the ENCLOSING function. The type-reference walk had its own resolver and did not
+     * apply that rule, so the annotation on a nested def's parameter published
+     * `references inner -> SomeType` — a source nothing can be traversed from. MEASURED
+     * before the fix, through the production path: 18 such edges on python-codesql (2.8% of
+     * the type) and 60 on CPython's stdlib (4.8%); the corpus shape is
+     * `scripts/regression_test_python.py`, whose `fetch_native`/`fetch_pandas`/`fetch_arrow`
+     * are three nested defs inside `test_tpch` all annotating `rel: duckdb.DuckDBPyRelation`.
+     * Same defect class as PY-4, which returned the keyword `global` as a scope.
+     *
+     * The replay is the walk's model, not a new rule: entering a CLASS sets the class and
+     * CLEARS the function scope (so a def directly in a class body is a Method of that
+     * class, and a def inside a def two levels deep still belongs to the OUTERMOST def on
+     * the path); entering a function while one is already open changes nothing.
+     * The chain is replayed outermost-first, which is what makes the second rule expressible
+     * in one pass. `python/nested-def-reference-source` pins all four shapes — a nested def's
+     * parameter, an annotated assignment two defs deep, a module-scope nested def, and a bare
+     * module-level annotation — and `python/reference-source-scope-and-reason-codes` pins the
+     * two inside a class nested in a function, where the CLASS wins for its own method.
+     */
     const resolveSource = (start: Node): string => {
       // Include the start node itself: a function's return annotation
       // resolves to the function, not its enclosing scope.
-      let p: Node | null =
-        start.type === "function_definition" || start.type === "class_definition" ? start : start.parent
-      while (p) {
-        if (p.type === "function_definition" || p.type === "class_definition") {
-          for (let i = 0; i < p.namedChildCount; i++) {
-            const c = p.namedChild(i)
-            if (!c) continue
-            if (c.type === "identifier") return c.text
+      const chain: Node[] = []
+      let p: Node | null = start
+      while (p) { chain.push(p); p = p.parent }
+      let fn: string | undefined
+      let cls: string | undefined
+      for (let i = chain.length - 1; i >= 0; i--) {
+        const n = chain[i]
+        if (n.type === "class_definition") {
+          const nm = this.findChildByType(n, "identifier")?.text
+          if (nm) { cls = nm; fn = undefined }
+        } else if (n.type === "function_definition") {
+          if (fn === undefined) {
+            const nm = this.findChildByType(n, "identifier")?.text
+            if (nm) fn = nm
           }
         }
-        p = p.parent
       }
+      if (fn !== undefined) return fn
+      if (cls !== undefined) return cls
       // PY-4. This used to return the LITERAL STRING "global" — a Python KEYWORD used
       // as a scope name — whenever a statement had no enclosing function or class. Three
       // things were wrong with it at once.
@@ -2560,8 +2897,16 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // "the first unreadable one" is the only change to the tier's scope. A class with
         // three external bases gets one guessed override, not three: the contract's claim
         // is about the MRO's first candidate, and three edges would be three claims.
+        // PY-33: the one guess this lane can CHECK is the one it must not make when the
+        // answer is already known. `object` is the closed root — `dir(object)` is 23 names
+        // and every class inherits them — so guessing `object.<name>` for a name object does
+        // not declare is not honest suspicion, it is a false statement at 0.5. See
+        // OBJECT_MEMBERS for the measurement and for the two boundaries this refusal keeps:
+        // a name object DOES declare still gets its 0.5 guess, and every other unreadable
+        // base is untouched.
         const firstUnread = bases.find((b) => !declaredClasses.has(b))
-        if (firstUnread !== undefined && !overrideCompanion?.has(firstUnread)) {
+        const objectGuessIsFalse = firstUnread === "object" && !OBJECT_MEMBERS.has(s.name)
+        if (firstUnread !== undefined && !overrideCompanion?.has(firstUnread) && !objectGuessIsFalse) {
           this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${firstUnread}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.5, { reasonCode: "first-parent-guess" }, s.range?.startLine)
         }
         // (The duplicate 60-line rationale that used to follow here, and the
@@ -2954,6 +3299,22 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (t === "contains" || t === "exports" || t === "extends") {
         md.evidenceClass = "structural"
+        continue
+      }
+      if (t === "implements") {
+        // `implements` gets the same tier as `extends` when it is written in the HEADER —
+        // `class Repository(ABC)` is a declaration this parse read, at confidence 1.0, and
+        // `python/interface-implements` pins `evidenceClass: structural` on it.
+        //
+        // NOT for every row of the type, though. The `.register()` form is read from a CALL
+        // SITE (`collections.abc.Sequence.register(Row)`), which is a use of the interface
+        // rather than a declaration in a header, and it is 0.9 because the argument is a
+        // leaf name the analyzer may not have read. Calling that `structural` would put a
+        // usage-derived claim in the tier reserved for what the source says outright, so it
+        // keeps the default. The split is on the SAME boundary the reason codes draw
+        // (`interface-base-proven`-family vs `virtual-registration`), so the two fields
+        // cannot drift into disagreeing about which rows are declarations.
+        md.evidenceClass = (r.confidence ?? 0) >= 0.95 ? "structural" : "usage_contextual"
         continue
       }
       if (t === "imports") { md.evidenceClass = "import_based"; continue }

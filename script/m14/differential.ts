@@ -24121,9 +24121,16 @@ async function main() {
    // These are the labels script/m14/fsharp-truth-oracle.ts derives independently over the same
    // grammar — a second implementation reading one tree, not a re-read of the analyzer's walk.
    // `implements`, `instantiates` and `overrides` are unconditional earlier in the chain. `uses`
-   // is deliberately absent: the lane does not derive it, and admitting it would charge every
-   // real call edge as unexplained.
-...(lang === "fsharp" ? ["contains"] : []),
+   // and `imports` were absent for the reason the coverage gate kept reporting: truth derived
+   // NEITHER, and admitting a label truth does not derive charges every real edge of it as
+   // unexplained. That is a TRUE statement about a MISSING oracle, not a reason to leave the
+   // label uncompared — and it is why the reason is being retired rather than quoted. Both arms
+   // now exist (FS-P19, script/m14/fsharp-truth-oracle.ts: attribute applications, `open X`,
+   // `module X = Y`, and `#r`/`#load`/`#I` specifiers), so both labels are compared. The lane's
+   // coverage gate reads `217/217`-style zero un-audited rows only when this line and the
+   // oracle agree; adding a label HERE without the arm is the asymmetry the four `contains`
+   // losses were made of, and it reads as thousands of MISSING rows rather than as an error.
+...(lang === "fsharp" ? ["contains", "imports", "uses"] : []),
 // 2026-09-29: the compared set was FOUR labels while the oracle derived EIGHT. `extends`,
 // `implements` and `instantiates` were pushed into truth and then dropped here by the
 // allowlist, so they were derived at real cost and compared by nothing — and a lane
