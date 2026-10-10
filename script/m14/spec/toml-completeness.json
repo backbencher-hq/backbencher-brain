@@ -39,7 +39,7 @@
         "measured": "1,269 sites in 138 documents over the 1,485 admitted .toml files of the whole corpus (shape: a pair whose leaf is `workspace` with the boolean value true). The brief carried 1,267 and the in-tree applicability audit 1,269; the whole-corpus count through the production path is 1,269, and the raw run is committed at validation/m14/fixtures/toml/tools/census-whole-corpus.json under workspaceInheritance",
         "instrument": "validation/m14/fixtures/toml/tools/construct-census.ts (commit 840bffea9)",
         "consequence": "this is the SAME ontology type as the 167 alias `references` edges the lane does emit (Gradle version catalogues, resolvedBy=final-segment), so the type's corpus coverage is partial rather than absent; it is recorded here as an OPEN item with a size and NOT folded into the coverage number, because a blocker quietly absorbed into a ratio is a number nobody can check",
-        "why_not_fixed": "the alias pass resolves a key whose VALUE is the name of another key in the same document; `workspace = true` is a boolean that defers to a DIFFERENT document, and resolving it means locating and reading that document's manifest — a cross-file resolution the analyzer deliberately does not do from a pure AST worker (see the `imports` note in src/ast/real-toml-analyzer.ts on why paths are emitted unresolved). Not attempted without a design ruling; recorded, not guessed"
+        "why_not_fixed": "the alias pass resolves a key whose VALUE is the name of another key in the same document; `workspace = true` is a boolean that defers to a DIFFERENT document, and resolving it means locating and reading that document's manifest \u2014 a cross-file resolution the analyzer deliberately does not do from a pure AST worker (see the `imports` note in src/ast/real-toml-analyzer.ts on why paths are emitted unresolved). Not attempted without a design ruling; recorded, not guessed"
       }
     ]
   },
@@ -100,6 +100,21 @@
       }
     ],
     "corpusUnexercised": [],
-    "_from": "DERIVATION. implemented = the three types the production path fires over the WHOLE admitted population (construct-census, commit 840bffea9; raw run validation/m14/fixtures/toml/tools/census-whole-corpus.json): contains 25,033 edges / 1,474 files, imports 331 / 153, references 167 / 5. The 120-file firing log reads only `contains:882 imports:16` and marks references SILENT \u2014 a stride sample that invents an absence \u2014 so this block follows the census, not the sample. The six exclusions are grammar-absence, each carrying a count: 0 of the 19 named node types of the pinned grammar (66 node-type slots, 20 named slots, 1 duplicate named slot) can carry the construct, and the corpus corroborates with 0 occurrences or 0 referents. `exports` is deliberately NOT excluded: the lane's own applicability audit (self-test 14/14, positive control fired 167/167 aliases) reports it UNVERIFIED and exits 1 \u2014 174 publish-shaped key sites exist (118 string-valued: module, publish, main, public, exposed), and nothing in this lane MEASURES that TOML cannot express the relation, so it stays IN the denominator as an unimplemented applicable type (a gap) rather than being promoted to grammar-absence. ARITHMETIC: 3 implemented + 0 corpus-unexercised + 1 gap (exports) = 4 applicable = 10 \u2212 6 grammar-absence \u2212 0 unclassified. RELATED OPEN ITEM, not folded into this ratio: TOML-G1 \u2014 the workspace-inheritance half of `references`, 1,269 sites in 138 documents."
+    "_from": "DERIVATION. implemented = the three types the production path fires over the WHOLE admitted population (construct-census, commit 840bffea9; raw run validation/m14/fixtures/toml/tools/census-whole-corpus.json): contains 25,033 edges / 1,474 files, imports 331 / 153, references 167 / 5. The 120-file firing log reads only `contains:882 imports:16` and marks references SILENT \u2014 a stride sample that invents an absence \u2014 so this block follows the census, not the sample. The six exclusions are grammar-absence, each carrying a count: 0 of the 19 named node types of the pinned grammar (66 node-type slots, 20 named slots, 1 duplicate named slot) can carry the construct, and the corpus corroborates with 0 occurrences or 0 referents. `exports` is deliberately NOT excluded: the lane's own applicability audit (self-test 14/14, positive control fired 167/167 aliases) reports it UNVERIFIED and exits 1 \u2014 174 publish-shaped key sites exist (118 string-valued: module, publish, main, public, exposed), and nothing in this lane MEASURES that TOML cannot express the relation, so it stays IN the denominator as an unimplemented applicable type (a gap) rather than being promoted to grammar-absence. ARITHMETIC: 3 implemented + 0 corpus-unexercised + 1 gap (exports) = 4 applicable = 10 \u2212 6 grammar-absence \u2212 0 unclassified. RELATED OPEN ITEM, not folded into this ratio: TOML-G1 \u2014 the workspace-inheritance half of `references`, 1,269 sites in 138 documents.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE 1,485-file toml population (77 repos, 0 failures) \u2014 validation/m14/fixtures/toml/tools/census-whole-corpus.json, `relationshipTypes`. `files` is the count of distinct files the type appeared in, as the census records it.",
+      "contains": {
+        "edges": 25033,
+        "files": 1474
+      },
+      "imports": {
+        "edges": 331,
+        "files": 153
+      },
+      "references": {
+        "edges": 167,
+        "files": 5
+      }
+    }
   }
 }
