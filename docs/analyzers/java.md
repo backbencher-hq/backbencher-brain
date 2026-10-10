@@ -109,13 +109,45 @@ at its declaration, which is a statement about what is declared and ratcheted, n
 ceiling being small. Fixture control: the 11 failing java fixtures are the SAME SET before and
 after both changes (`--lang java`, 52 pass / 11 fail, baseline gate *no regressions*).
 
+### What the backlog IS, by family — `script/m14/java-incoming-census.ts`
+`12,635 unresolved` is not actionable; the census says what it is. It walks the same 200-file
+sample with the same discovery and classification, and **refuses to print unless its per-type
+counts equal a fresh `incoming-gate.ts --json` run** (the equality control — a family table over
+a different walk is a number about nothing). Measured 2026-10-10, 200/200 parsed:
+
+| family | occurrences | distinct names | by type |
+|---|---|---|---|
+| `member-shaped` (lowerCamelCase) | 4,767 | 827 | calls 4,468, uses 258, references 40 |
+| `third-party` (dotted) | 3,542 | 897 | imports 1,816, references 1,238, overrides 437 |
+| `java-lang-shaped` (JDK list) | 2,110 | **36** | references 1,935, instantiates 168 |
+| `other` (project types, out of sample) | 1,969 | 425 | references 1,493, instantiates 279, extends 93 |
+| `constant-shaped` (ALL_CAPS) | 197 | 95 | uses 197 |
+| `keyword-spelled` | 50 | 2 (`super`, `this`) | calls 48, uses 2 |
+
+and the ambiguity: **5+ declarations 2,846 occurrences over just 83 names** (worst 139
+declarations for one `contains` target), 2 decl 1,280/317, 3 decl 624/109, 4 decl 274/70.
+
+Three families look like defects and are not, with the ruling that makes each one:
+- **`keyword-spelled`** — `super(...)`/`this(...)` keep the keyword as target by an explicit
+  ruling (M14 #419 G2, analyzed at `real-java-analyzer.ts:1613-1641`): the receiver is the
+  honest endpoint and the class's own `extends` edge carries the parent; the differential's
+  oracle mirrors this by design (`differential.ts:1432-1441`), and both spellings are pinned in
+  the fixture `ctor-delegation`.
+- **bare `contains` targets** (`constructor`, member names) — the containment oracle
+  (`deriveJavaContainsTruth`, `differential.ts:1577+`) derives bare member names on both ends
+  from the language's containment rule. Qualifying them would break the oracle, not improve it.
+  The 1,777 ambiguous is the price of the member-name contract, and it is declared and ratcheted.
+- **`other`/project names** (`HubMessage`, `IChunk`) — declared in files OUTSIDE this 200-file
+  sample; a sampling property of the measurement, not a lane defect. `extends` 93 of 108 is
+  the same effect for superclasses.
+
+What remains genuinely unprovable in-file: `java-lang-shaped` (a same-package class may legally
+shadow `String`, so the marker cannot claim it) and `third-party` (needs a dependency model).
+
 ### What Java's incoming round still owes
-- **12,635 `otherUnresolved`.** The biggest named families are third-party packages
-  (`org.`/`com.`, provable only against a dependency model the analyzer does not have),
-  java.lang names used with no import (`String`, `Object`, `Exception`), and member paths whose
-  receiver type the file cannot see (`Closure.getParameterTypes`, `HubMessage.getMessageType`).
-  Ceilings per type are in `validation/m14/instruments/java/incoming-declaration.json`; the
-  gate's worklist prints the instrument's 25-name sample per type.
+- **12,635 `otherUnresolved`** — now explained family by family above; ceilings per type are in
+  `validation/m14/instruments/java/incoming-declaration.json` and the gate prints the
+  instrument's 25-name sample per type.
 - **5,024 ambiguous by declaration** (2,143 of them `calls`) — the pool is file-local, so an
   unqualified member name collides across files (`next` × 2, `constructor` × 5, `Builder` × 4).
   The alias change was the cheapest fix available (target spelling); a real reduction needs a
@@ -135,6 +167,9 @@ after both changes (`--lang java`, 52 pass / 11 fail, baseline gate *no regressi
   declared per type, no floor lost, no ceiling raised, `unclassed 0` and the class sum equals
   the edge count on all ten types; six-case self-test PASS; tightened-ceiling control **exit 1**
   with the violation named
+- Census (`java-incoming-census.ts`, 200 files): **exit 0**, equality control PASS — every
+  per-type count equals `incoming-gate.ts --json`; marker finding **none** (every
+  platform-qualified target is marked)
 - Honesty ledger: F3 (fixtures) and F7 (analyzer hygiene, 25 analyzers clean) were fresh
   before this lane's commits and stale after them, so they were regenerated — in a CLEAN
   worktree at `e462a3797`, because the shared tree carried another lane's uncommitted

@@ -342,6 +342,21 @@ function buildDecl(m: Measurement): Decl {
       "to catch. One measurement, two verdicts — the fleet's bar and Java's declaration.",
       "The worklist printed below each type is the instrument's own (up to 25 names per type, " +
       "per run). A count that cannot be walked back to its names is not a measurement.",
+      "WHAT THE BACKLOG IS: script/m14/java-incoming-census.ts classifies every otherUnresolved " +
+      "target by provable shape and refuses to print unless its per-type counts equal a fresh " +
+      "fleet-gate run. Measured 2026-10-10 (200 files): member-shaped 4,767/827 names (member " +
+      "paths on invisible receivers), third-party 3,542/897 (dotted, needs a dependency model), " +
+      "java-lang-shaped 2,110/36 (unimported JDK names — NOT markable: a same-package class may " +
+      "legally shadow the spelling), other 1,969/425 (project types declared outside the " +
+      "sample), constant-shaped 197/95, keyword-spelled 50/2 (super/this, oracle-mirrored by " +
+      "ruling — see docs/analyzers/java.md). Ambiguity concentrates: 5+ declarations = 2,846 " +
+      "occurrences over just 83 names (worst 139 for one contains target).",
+      "THREE FAMILIES LOOK LIKE DEFECTS AND ARE NOT, each by a recorded ruling: the " +
+      "keyword-spelled super/this call targets (M14 #419 G2; the differential's oracle mirrors " +
+      "them, differential.ts:1432-1441), bare contains targets (the containment oracle derives " +
+      "bare member names on both ends, differential.ts:1577+), and out-of-sample project names " +
+      "(a sampling property of the measurement). A future lane that 'fixes' any of these breaks " +
+      "an oracle or a pinned fixture — read the ruling first.",
     ],
     types,
   }
