@@ -352,7 +352,30 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string): Memb
         ownerId = ownerIds[0]!
       }
 
-      const target = String(row.target_external)
+      // THE TARGET MAY BE OWNER-QUALIFIED (`Owner.member`), and the lookup below is keyed by the
+      // member's BARE name. PHP member names cannot contain a dot — a method, property or class
+      // constant is identifier-shaped (`$this->m()`, `self::CONST`, `C::$prop`) — so the leaf after
+      // the LAST dot is the member name and nothing is lost by taking it. (That is a fact about PHP
+      // and not about targets in general: a dotted target in another language may be a path, which
+      // is why this derivation lives here and is not applied to every lane.)
+      //
+      // WITHOUT THIS THE PASS DECLINED EVERY QUALIFIED ROW, and that was measured rather than
+      // reasoned: `qualifyProvenMemberTargets` (real-php-analyzer.ts) now emits `Owner.member` where
+      // the file proves the member, `claimOwnerCarryingTargets` withdraws every owner-carrying row
+      // from the insert-time rank, and a lookup for a member literally named `Owner.member` finds
+      // nothing — so five pins in validation/m14/fixtures/php/owner-resolution-gate.mts went red with
+      // the row left NULL, a resolution withdrawn and not replaced.
+      //
+      // A QUALIFIED TARGET MAY ONLY BIND IN THE OWNER IT NAMES. `Owner.member` asserts that THIS
+      // owner declares the member, so the ancestor rule is NOT consulted for it: falling through
+      // would bind a leaf some ancestor happens to share, trading a NULL for a WRONG edge that the
+      // incoming gate cannot see (it does not model this pass at all). A qualified target whose owner
+      // does not declare the member therefore stays NULL and is counted with the other not-declared
+      // rows.
+      const rawTarget = String(row.target_external)
+      const dot = rawTarget.lastIndexOf(".")
+      const qualified = dot > 0
+      const target = qualified ? rawTarget.slice(dot + 1) : rawTarget
       const allowed = FILTER_KINDS[String(row.relationship_type)]
       const membersOf = (id: string): { id: string; kind: string }[] =>
         (membersByOwner.get(id)?.get(target) ?? []).filter((m) => !allowed || allowed.has(m.kind))
@@ -365,8 +388,10 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string): Memb
         continue
       }
       if (direct.length > 1) { out.ambiguousInChain++; continue }
+      if (qualified) { out.notDeclared++; continue }
 
-      // Rule 2: nothing in the owner itself — the member is inherited or foreign.
+      // Rule 2: nothing in the owner itself — the member is inherited or foreign. BARE targets only:
+      // a qualified one has already been answered above, or declined.
       const chain = ancestorsOf(ownerId)
       if (chain.length === 0) { out.notDeclared++; continue }
       const inherited = new Map<string, { id: string; kind: string }>()
