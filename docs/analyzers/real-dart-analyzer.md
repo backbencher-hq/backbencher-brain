@@ -5722,13 +5722,14 @@ OrdinaryBase  (class OrdinaryBase { … })              error nodes 0 · symbols
 PrimaryBase   (class PrimaryBase(final int seed))     error nodes 2 · symbols [module]        ← class AND members gone
 ```
 
-**The second shape is worse than a loss.** With an `extends` clause the recovery has somewhere to
-put the members, and it puts them at LIBRARY scope: in the watchdog's `class Impl(String label)
-extends Base`, `Impl.doubled` is published as `{kind: property, ownerName: "", scope: ""}` and
-`Impl.methodOwn` is published as `{kind: "function", ownerName: "", scope: ""}` — **a method
-republished as a top-level function**, i.e. a name that can then falsely resolve against a real
-top-level declaration of the same name, and edges inside such a class attributed to the library
-rather than to the class.
+**A shape where the loss becomes MIS-ATTRIBUTION — and the shapes where it does not, which the
+first statement of this finding got wrong and the table below corrects.** With a positional list and
+an `extends` clause the recovery has somewhere to put the members, and it puts them at LIBRARY
+scope: in the watchdog's `class Impl(String label) extends Base`, `Impl.doubled` is published as
+`{kind: property, ownerName: "", scope: ""}` and `Impl.methodOwn` as
+`{kind: "function", ownerName: "", scope: ""}` — **a method republished as a top-level function**,
+i.e. a name that can then falsely resolve against a real top-level declaration of the same name, and
+edges inside such a class attributed to the library rather than to the class.
 
 HOW BIG, measured over the gate's own admission rule (33,738 files):
 
@@ -5760,15 +5761,57 @@ artifact this lane ships two copies of (`tree-sitter-dart.wasm` and `dart.wasm`,
 rebuild `tree-sitter-dart-new.wasm` per `reviews/m60-grammar-unmatched-source-read.md`). Revisit when
 #105 merges, and re-measure then, because a grammar change moves every column of every table above.
 
-**And there is an in-lane alternative to waiting, which is why this is written down rather than
-filed away:** the class's parameter list could be blanked in the analyzer's copy of the source
-BEFORE parsing, length-preserving so every offset and line number survives — `class Impl(String
-label) extends Base {` becomes `class Impl                 extends Base {`, which the grammar parses
-as a class. It costs the implicit fields the primary constructor declares and it is a transform of
-the input rather than of the tree, so it belongs in an explicit, disclosed place with its own
-fixture (what it recovers: the class and its members; what it cannot: the fields the form implies).
-It is priced by ONE number — how many of 440 files' mis-scoped edges it moves — which is measurable
-with the watchdog's population scan and the gate's arms.
+#### The hole is SHAPE-DEPENDENT, which the first statement of it got wrong
+
+"The class and its members are lost" is true of ONE shape. Measured over six (`dt-pc-shapes`, the
+analyzer against each source, grammar errors beside it):
+
+| shape | grammar errors | class published | members |
+|---|---|---|---|
+| `class P1(final int seed) { … }` | 2 | **NO** | none |
+| `class P5(final int seed);` | 1 | **NO** | none |
+| `class P2({required int seed, …}) { … }` | 5 | yes | params as properties — plus junk (`required@P2`, `int@P2` read as properties) |
+| `class P6(int a, {String? b}) { … }` | 1 | yes | correct (`methodOwn@P6:method`) |
+| `class P4(final int seed) extends B { … }` | 3 | yes | **at LIBRARY scope** (`doubled@<lib>`, `methodOwn@<lib>:function`) |
+| `class P3({…}) extends B { … }` | 2 | yes | correct |
+
+The three oracle refutations are the POSITIONAL shape (`AbstractTypeParameterScope(final LookupScope
+_parent)`, `Selector(final ExpressionGeneratorHelper _helper, final Token token)`) and the POSITIONAL
+ASSIGNMENT of a private name (`MapLiteralBuilder._(…)`) — the two shapes where the class is not
+published at all. The named form is recovered well enough to carry its own members, which is why
+`migration_runner.dart` (409 declarations below) was never refuted: its class IS published. So the
+defect's statement is the table, not a sentence, and the table is what a fix has to satisfy.
+
+#### The in-lane alternative, PRICED — and it does not pay
+
+The grammar cannot be fixed from upstream, so the one in-lane alternative was priced rather than
+assumed: blank the parameter list in the analyzer's copy of the source BEFORE parsing,
+length-preserving so every offset, line and column survives. `primary-constructor-price.ts` parses
+all 440 files TWICE — as they are, and as the transform would present them — so both sides are the
+same files in the same run (and its control proves the copied file alone is inert: an unchanged copy
+in a shadow tree reproduces the in-place inventory exactly, symbols and edges). Result:
+
+```
+409 files transformed · symbols +233 · class-owned +989 · edges +2,529 · owner-qualified sources +784
+EXCLUDED: 135 declarations in 62 files use the NO-BODY form (`class X({ … });`), which the transform
+          cannot repair by blanking — it would leave `class X;`
+```
+
+**The net is positive and the change is still wrong, and the per-file rows are what say so.**
+`migration_runner.dart` 40 symbols → 31, `migration_summary_builder.dart` 40 → 26,
+`pubspec.dart` 20 → 14: those files use the NAMED form, where the analyzer already publishes the
+parameters as class-owned properties, and blanking the list DELETES them — while
+`mocks.dart` 59 → 67 and `ast_scopes.dart` 17 → 19 gain. A primary constructor's parameters ARE the
+class's fields, so a fix that makes the class parse by removing its fields is trading one
+mis-statement for another; the honest version would SYNTHESISE those fields, which a
+length-preserving blank cannot do. And 62 of the 440 files are the no-body form, outside the
+transform's reach entirely. The instrument's own first version blanked the no-body form too, thereby
+deleting classes it was meant to repair (the price it first printed was the price of a bug — the
+exclusion is now a control).
+
+**Verdict: this is not the fix, and it is now priced rather than argued.** The grammar is, which
+means upstream #105 or a local patch of `grammar.js` — one decision, made with these numbers and the
+arm tables in hand.
 
 **A watchdog keeps it from going stale in either direction** (`primary-constructor-hole.ts`): it
 asserts the hole is STILL PRESENT (a clean parse, a published class, or a member attributed to its
