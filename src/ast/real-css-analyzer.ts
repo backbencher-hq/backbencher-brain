@@ -112,6 +112,8 @@ interface CssContext {
   fileSelectorComplexity?: number
   fileNestingDepth?: number
   fileMaxSelectorComplexity?: number
+  /** CSS-D16: `var(--x)` reads marked `isExternalTarget` because this file declares no `--x`. */
+  externalCustomPropertyReads?: number
 }
 
 interface StackFrame {
@@ -1325,6 +1327,40 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       rel.target = pick.qname
     }
+
+    // ── CSS-D16: the external marker on a read this file cannot see ──────────────────────────
+    //
+    // A `var(--x)` read whose property THIS FILE does not declare is a reference to something
+    // the file cannot see: a theme stylesheet, another file's `:root`, or a property the page
+    // never defines at all. The fleet's marker for that shape is `isExternalTarget`, and the
+    // arbiter verifies it in the PROJECT's scope — widened on 2026-10-10 to accept "a spelling
+    // a published name may carry", which is what `--x` is (it was previously refused by a
+    // JS-identifier test that returned the same verdict for a true and a false claim).
+    //
+    // ATTACHED ONLY WHERE THIS FILE PUBLISHES NO SUCH PROPERTY. Where the project declares it,
+    // the edge resolves or is ambiguous and `classifyEdge` never consults the claim — but the
+    // metadata would still carry a statement that is false of the file that wrote it. The
+    // unqualified dotless reads here are exactly the ones the rewrite above declined to
+    // qualify (no local declaration), which is the class the marker describes.
+    //
+    // DOTTED custom-property names are deliberately NOT marked: `verifyExternalClaim` sends a
+    // dotted target down its OWNER branch, where an owner the key space publishes REFUTES the
+    // claim — so marking those could turn an unattributed edge into an extFAIL, which must
+    // stay 0. Measured basis for the dotless class: 5,641 reads over the 1,174-file population,
+    // of which 658 resolve in their project, 180 are ambiguous and 4,803 were unresolved.
+    let marked = 0
+    for (const rel of ctx.relationships) {
+      if (String(rel.type ?? "") !== ASTEngine.RelationshipType.References) continue
+      const target = String(rel.target ?? "")
+      if (!target.startsWith("--") || target.includes(".")) continue
+      if (byName.has(target)) continue
+      rel.metadata = { ...(rel.metadata ?? {}), isExternalTarget: true }
+      marked++
+    }
+    // Published rather than kept private so a fixture can pin the count without re-deriving the
+    // rule; `parseFile` rebuilds file metadata as a fresh literal, so this is for the analyzer
+    // seam only and is not claimed to reach the index.
+    ctx.externalCustomPropertyReads = marked
   }
 
   /**
