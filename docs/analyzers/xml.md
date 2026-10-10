@@ -302,3 +302,51 @@ population: a stride of 19 misses the sibling files that make a schema name the 
 always the `in-document` count, which is 0 at both scales — but the rate was a draw artifact and is
 stated as such. **The ceiling being 0 at BOTH scales is the number that decides the fix question**: no
 spelling change reaches any twin, at 600 files or at 11,552.
+
+### The 15 unclaimed twins — RULED, with counts, and the claim is measurably unavailable
+
+Whole population, printed in full by `probe-twin-class.ts` (`measurements/twin-unclaimed.txt`). They
+are two groups, and both are **the analyzer's own labels for targets it declines to claim** — named
+causes, not unexplained edges:
+
+| group | count | role | target | sites |
+|---|---:|---|---|---|
+| `ambiguousWithBuiltin` | **9** | `attribute_qname_reference` (`<data type="string">`) | `string` | `Aporia/share/gtksourceview-2.0/{language-specs/language2,language-specs/styles,styles/styles}.rng` |
+| `danglingEntityReference` | **6** | `entity_reference` (`&mdash;`, `&copy;`) | `mdash` ×3, `copy` ×3 | `libxslt/tests/docbook/test/{book,book2,condition,gdp-handbook,table,verbtest}.xml` |
+
+**CAN THEY BE CLAIMED? NO, AND THAT IS MEASURED RATHER THAN ASSERTED.** An external claim verifies at
+the arbiter's PROJECT scope only when the project does not publish the target. Both names ARE published
+in their own project:
+
+- `string` is declared under **Aporia** — `share/gtksourceview-2.0/styles/{eggshell,obsidian}.xml`,
+  `share/gtksourceview-2.0/language-specs/language.rng` — the same repository as all nine edges.
+- `mdash` is declared under **libxslt** — `tests/general/bug-24-.xml`,
+  `tests/xmlspec/xmlspec-v21.dtd`, `tests/xmlspec/REC-xml-20001006.xml`,
+  `tests/docbook/html/html.xsl` — the same repository as all six.
+
+So a claim would be adjudicated against a key space that publishes the name and would be refuted,
+taking `extFAIL` off its 0 — the lane's red line, and one that §3 already established as the reason two
+other classes were priced rather than marked. **The analyzer's refusal is the correct answer, not a
+gap.** The nine are ambiguous by construction (`<data type="string">` names a datatype in the RELAX NG
+datatype library while the same repository declares a `string` symbol), and the six name entities a
+DocBook/HTML DTD defines outside the document — a fact the analyzer cannot see from one file, which is
+exactly what the label `danglingEntityReference` records.
+
+**THE BAR'S SECOND ARM FOR xml's `references`, COMPLETE:**
+
+```
+4,767  twins carrying isExternalTarget        (correctly claimed)
+   15  twins declined by the analyzer's own label  (9 ambiguousWithBuiltin + 6 danglingEntityReference)
+    0  twins the analyzer calls in-document
+-----
+4,782  the gate's twin column, reproduced to the edge
+```
+
+**No unexplained remainder.** Every edge in the class is either claimed-verified or declined under a
+label that names its own cause.
+
+**FALSIFIER.** The ruling is that these 15 cannot be claimed *because their names are published in
+their own project*. If a later run shows one of the 15 names absent from its own project — the
+publication list above is the check — then a claim becomes available for that edge and the count moves
+down. The same run should print the class counts; a fifteenth-class twin or a shrinking
+`ambiguousWithBuiltin`/`danglingEntityReference` split is the signal.
