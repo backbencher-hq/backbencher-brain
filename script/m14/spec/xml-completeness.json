@@ -405,50 +405,64 @@
   "review": "reviews/xml/master-review.md",
   "artifacts": "fixtures/xml/out/*.json, fixtures/xml/repositories/MANIFEST.json",
   "coverage": {
+    "_rule": "THE CONTRACT for this lane, in the shape script/m14/coverage-block-gate.ts asserts. `implemented` = a type the PRODUCTION path (parseFile) emits AND the corpus exercises, each with its whole-population count in `_implemented_measured`; `corpusUnexercised` = a type the analyzer emits that no file in this corpus exercises; `excluded` = a type carrying the class `grammar-absence` (which leaves the denominator) or `zero-sites` (which does not), each with a COUNT. Every type in none of those three lists is a GAP and STAYS in the denominator. There is no `unclassified` entry in this block and no `zero-sites` one. THE LINE THIS LANE DRAWS for `grammar-absence`, stated so a reader can contest it: a type is absent only when NEITHER the wired grammar's NODE TYPES NOR the corpus's ELEMENT/ATTRIBUTE NAME SPACES contain a construct whose operand names a declaration THE SAME DOCUMENT carries (or a specification builtin) — the same resolution bar this lane's own edge emission applies, where 1,319 unresolved `references` values are REFUSED rather than published. A construct that occurs with an in-document-resolving operand is NOT absent; it is a gap in this analyzer.",
+    "_from": "validation/m14/fixtures/xml/coverage-census.json — the whole admitted population: 11,552 git-tracked files <= 512 KiB, detectLanguageFromPath === 'xml', over every repository under the corpus root; 46 distinct NAMED node types over 3,349,291 nodes; per-type edges through parseFile; and the element-name and attribute-name key spaces. Re-run: npx tsx validation/m14/fixtures/xml/coverage-census.mts",
     "implemented": [
       "contains",
+      "references",
       "imports",
-      "references"
-    ],
-    "excluded": [
-      {
-        "label": "uses",
-        "evidence": "grammar-absence",
-        "from": "XML-ONTOLOGY-USES (instrument B, parse-tree count): 0 occurrences of `xsl:use-attribute-sets` or `xsl:use-package` \u2014 the only two constructs in any W3C XML vocabulary that ADOPT a named reusable definition \u2014 in the XSLT namespace over a 2,500-file draw. Overturn condition recorded in the ruling. Counts in script/m14/spec/xml-completeness.json. Corpus half: 0 uses edges over all 537 admitted libxslt files."
-      },
-      {
-        "label": "exports",
-        "evidence": "grammar-absence",
-        "from": "XML-ONTOLOGY-EXPORTS (instrument A, grammar inventory): none of 7 export-declaration node types among the 86 the wired grammar produces over 2,787,237 nodes, with 611 string-shaped `<exports>`/`<exportedmodules>` elements adjudicated as gtk-doc/Doxygen payload describing a C library's API rather than an XML export declaration. Counts in script/m14/spec/xml-completeness.json."
-      },
-      {
-        "label": "implements",
-        "evidence": "grammar-absence",
-        "from": "XML-ONTOLOGY-IMPLEMENTS (instrument A): 86 distinct node types over 2,787,237 nodes in the 2,500-file draw, and NONE of the five candidate conformance-clause node types is present. The nearest XML construct is XSD type DERIVATION, which this lane publishes as `extends`, not as conformance. Counts in script/m14/spec/xml-completeness.json."
-      },
-      {
-        "label": "instantiates",
-        "evidence": "grammar-absence",
-        "from": "XML-ONTOLOGY-INSTANTIATES (instrument A): the same 86-node inventory contains no construction form of any kind \u2014 the 86 are prolog, element, attribute and friends. 0 instantiates edges over all 537 admitted files on the corpus half. Counts in script/m14/spec/xml-completeness.json."
-      }
-    ],
-    "corpusUnexercised": [
       "calls",
       "extends",
       "overrides"
     ],
     "_implemented_measured": {
-      "_unit": "edges published through the production path over the WHOLE 537-file xml population (libxslt, no stride, 537/537 parsed, 0 degraded). Instrument: BB_PICK_CAP=1000 NFILES=600 bun script/m14/firing-check.mjs XML_B.",
+      "_unit": "edges published through parseFile over the whole 11,552-file admitted population of 2026-10-09 recorded in validation/m14/fixtures/xml/coverage-census.json; `files` is the count of distinct files the type appeared in. These are the whole-population numbers the 537-file firing stride cannot show: it reads `calls`, `extends` and `overrides` SILENT while the corpus exercises all three.",
       "contains": {
-        "edges": 4873
-      },
-      "imports": {
-        "edges": 99
+        "edges": 188224,
+        "files": 11335
       },
       "references": {
-        "edges": 167
+        "edges": 11108,
+        "files": 406
+      },
+      "extends": {
+        "edges": 1429,
+        "files": 108
+      },
+      "imports": {
+        "edges": 468,
+        "files": 332
+      },
+      "calls": {
+        "edges": 402,
+        "files": 43
+      },
+      "overrides": {
+        "edges": 3,
+        "files": 3
       }
     },
-    "_from": "MEASURED, and this block CORRECTS ITS OWN PREDECESSOR. The block this replaces excluded `contains`, `references` and `imports` as UNCLASSIFIED design decisions \u2014 three types that FIRE (whole corpus: contains 4,873 \u00b7 imports 99 \u00b7 references 167 over 537/537 files). It also carried `extends` as excluded while the lane's own M60 census says `extends` IS EMITTED for XSD `<xs:extension base=>`/`<xs:restriction base=>` type derivation (438 edges). The corrected shape is three-way: the three types the corpus exercises are `implemented`; `calls`, `extends` and `overrides` are EMITTED BY THE SPEC but not exercised by THIS corpus (libxslt is XSLT, not XSD, and carries no competing template rules), so they are `corpusUnexercised` and STAY IN the denominator; and the four the rulings measure as inexpressible are grammar-absence WITH THEIR COUNTS. This is the same correction bash, css, sql and json each needed: an exclusion list must be re-measured against what fires, not inherited."
+    "corpusUnexercised": [],
+    "_gaps_note": "`uses` IS A GAP, and it is the correction this block records. script/m14/xml-ruled.ts's XML-ONTOLOGY-USES probes only the two ELEMENT names xsl:use-attribute-sets and xsl:use-package in the XSLT namespace and measured 0, so an earlier version of this block excluded it on a construct that probe could not see. The construct is XSLT 1.0 §7.1.4's use-attribute-sets, written as an ATTRIBUTE: validation/m14/fixtures/xml/use-construct-census.mts counts 485 use-attribute-sets SITES over the same 11,552-file population — 488 operand tokens, of which 47 name an attribute-set THE SAME FILE declares (libxslt/tests/XSLTMark/attsets.xsl writes <xsl:copy use-attribute-sets=\"attset1 attset2\"> against its own <xsl:attribute-set name=\"attset1\">), and 19 of the 485 sites have a declared scope in scope as a source endpoint. XML therefore EXPRESSES a use and this corpus exercises it with BOTH ends in-document, while src/ast/real-xml-analyzer.ts contains 0 `RelationshipType.Uses` sites — the analyzer emits nothing. A node-type-only probe cannot see an attribute key, the same blind spot that gave HCL a wrong ruling for docker-bake's `inherits = [...]`. Because it is a gap and not a grammar-absence it STAYS in the denominator: applicable 7, not 6. Raw: validation/m14/fixtures/xml/use-construct-census.json",
+    "excluded": [
+      {
+        "label": "exports",
+        "evidence": "grammar-absence",
+        "from": "XML-ONTOLOGY-EXPORTS, re-measured over the whole 11,552-file admitted population in BOTH key spaces. NODE TYPES: 0 of 46 distinct NAMED node types is an export-declaration type (export_declaration, export_statement, export_list, module_export, export_spec, exported_item, public_declaration) and no observed node type name contains `export` (3,349,291 nodes; the 2,500-file ontology census counts 86 types including anonymous punctuation tokens and also returns none). ELEMENT NAMES: 620 elements across 8 files — 610 <exports> plus 1 <exportedmodules> in gtk-doc/Doxygen API descriptions of a C library, 5 <exportFormat> and 4 <pma_xml_export> in phpMyAdmin export configuration; every one is documentation or tool configuration, none declares a public surface of its own document. ATTRIBUTE NAMES: 132 across 77 files — 56 android:exported, a boolean visibility FLAG that names nothing, 68 inkscape:export-filename/-xdpi/-ydpi/-bgcolor on SVG, which name an output PNG for a raster export, 3 exportCode, 3 requiresExportPrivileges, 2 shortenArraysForExportThreshold. 0 of the 752 name-space candidates DECLARES what a document or module publishes. Raw: validation/m14/fixtures/xml/coverage-census.json, validation/m14/fixtures/xml/ontology-census.json. OVERTURN: any node type whose name contains `export`, or an element/attribute whose value names a declaration the same document carries as published.",
+        "quote": "a declaration that names what a document or module PUBLISHES."
+      },
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "XML-ONTOLOGY-IMPLEMENTS, re-measured over the whole 11,552-file admitted population in BOTH key spaces. NODE TYPES: 0 of 46 distinct NAMED node types is a conformance-clause type (implements_clause, extends_clause, superclass, interface_declaration, interface_implementation) and no observed node type name contains `implement`, `interface` or `conform`. ELEMENT NAMES: 275 elements across 11 files — 261 <interface> in Wayland protocol XML, which DECLARE a protocol interface and its requests (declaring an interface is not taking on another type's obligations), plus 4 <implementation>, 4 <interfaces>, 2 <interfacedefinition>, 2 <interfacename>, 2 <oointerface> in OSGi/gtk-doc descriptors. ATTRIBUTE NAMES: 5 across 4 files — 4 interface=, of which 2 sit on an OSGi <provide> naming a Java interface and 2 sit on a Wayland <arg> TYPING an argument (a name reference, which this analyzer already publishes as a `references` edge), and 1 implementation= on a Maven <transformer> naming a Java class. NEAREST MISS, carried rather than buried: those 2 OSGi SCR component descriptors are the one shape in the corpus whose documented semantics ARE provision of an interface, and they name Java types declared OUTSIDE the document, so no edge could resolve in-document; this class claims absence of a relation the DOCUMENT'S OWN declarations carry. Raw: validation/m14/fixtures/xml/coverage-census.json, validation/m14/fixtures/xml/ontology-census.json. OVERTURN: an in-document declaration of the interface in a document that also provides or implements it, or an element/attribute in a vocabulary namespace whose defined semantics are interface satisfaction.",
+        "quote": "a clause in which a declaration takes on the OBLIGATIONS of another type — an implements/extends clause, a superclass, an interface list."
+      },
+      {
+        "label": "instantiates",
+        "evidence": "grammar-absence",
+        "from": "XML-ONTOLOGY-INSTANTIATES, re-measured over the whole 11,552-file admitted population in BOTH key spaces. NODE TYPES: 0 of 46 distinct NAMED node types is a construction form (new_expression, object_creation_expression, constructor_invocation, instantiate_expression, class_instantiation) and no observed node type name contains `new`, `create`, `construct` or `instantiat`. ELEMENT NAMES: 44 elements across 26 files — 17 <systemCreated> (an Ericsson MIM timestamp element), 10 <Created> (an OData timestamp FIELD), 4 <newWizardShortcut>, 3 <newlineChar>, 2 <createArtifactRepository> and 2 <createDependencyReducedPom> (Maven boolean CONFIG switches), 1 <constructor-arg> (a Spring bean's argument, not the construction), 2 <constructors>/<constructorsynopsis> (gtk-doc markup). ATTRIBUTE NAMES: 46 across 2 files — 46 inkscape:tiled-clone-of, an SVG editor link between clones. 0 of the 90 name-space candidates creates an instance of a declared construct. DECLARED LIMITATION, not a claim of absence: the candidate set is the ruling's five construction node types plus the name families new/create/construct/instantiat/clone, so a dependency-injection vocabulary that names its class ONLY in an attribute value (Spring <bean class=...>, Android <activity>) is outside this probe's candidate set and is carried as unmeasured. Raw: validation/m14/fixtures/xml/coverage-census.json, validation/m14/fixtures/xml/ontology-census.json. OVERTURN: any node type whose name contains new/instantiat/create, or an element/attribute naming a declared type it constructs.",
+        "quote": "an expression or element that CREATES an instance of a declared construct."
+      }
+    ]
   }
 }
