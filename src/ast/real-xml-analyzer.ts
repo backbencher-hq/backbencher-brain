@@ -1397,10 +1397,17 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!attributeName) continue
           const value = valueNode ? this.unquote(valueNode.text).trim() : undefined
           if (attributeName === "href" && value) {
+            // A REMOTE href names a file outside this project, and that is the claim the gate can
+            // verify least ambiguously: the key space cannot answer a URI, and `verifyExternalClaim`
+            // returns `externalUnverified` for a path-like target rather than refuting it. A
+            // `file`-class href is NOT marked — see the note on the count census; a file claim
+            // REFUTES when no candidate is an admitted file, and `extFAIL` must stay 0.
+            const targetClass = this.importTargetClass(value)
             addRelationship(label, value, ASTEngine.RelationshipType.Imports, {
               role: "processing_instruction_href",
               attributeName,
-              resolvable: this.importTargetClass(value),
+              resolvable: targetClass,
+              ...(targetClass === "external" ? { isExternalTarget: true } : {}),
             }, valueNode)
             imports.push({
               module: value,
@@ -1742,6 +1749,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (resolvableInDocument) {
         ensureTargetSymbol(qname.local, undefined, ASTEngine.SymbolKind.Type, candidate.nameNode, { isReferencedDeclaration: true })
       }
+      // THE EXTERNAL CLAIM, earned by the analyzer's OWN class. `builtin` names an XML/XSD
+      // built-in and `external` names a declaration in a namespace this document imports — in
+      // both cases the declaration is not in this population, which is precisely what
+      // `isExternalTarget` claims and what the incoming gate VERIFIES against its key space
+      // (`script/m14/incoming-rule.ts` `verifyExternalClaim`). The direction of error is why
+      // this key is safe here while a FILE claim would not be: a target that is not
+      // identifier-shaped (the DTD names `attribute-name`, `element-name`) comes back
+      // `externalUnverified`, never `externalRefuted`, because the rule checks `pathLikeTarget`
+      // FIRST. This can add a classification; it cannot manufacture an `extFAIL`.
+      const claimsExternalTarget = isBuiltin || (!resolvableInDocument && !unresolvedBareReference)
       addRelationship(candidate.ownerName, qname.local, ASTEngine.RelationshipType.References, {
         role: "attribute_qname_reference",
         attributeName: candidate.attributeName,
@@ -1749,6 +1766,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         prefix: qname.prefix,
         namespaceUri: candidate.binding,
         resolvable: isBuiltin ? "builtin" : resolvableInDocument ? "in-document" : unresolvedBareReference ? "unresolved" : "external",
+        ...(claimsExternalTarget ? { isExternalTarget: true } : {}),
         // X13: the name is also a built-in, and this file cannot say whether the
         // document means the built-in or a same-named type an `xs:include` brought
         // in. Recorded so a consumer can see the ambiguity instead of inheriting
@@ -1973,6 +1991,12 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         entityName: cand.name,
         resolvable: declared ? "in-document" : builtin ? "builtin" : "unresolved",
         ...(declared || builtin ? {} : { danglingEntityReference: true }),
+        // `builtin` IS the external claim here: the five predefined entities are not declarations
+        // of this population (or of any document), and a bare identifier is verified by
+        // `verifyExternalClaim` exactly when the key space does not declare it. `unresolved`
+        // (a dangling entity reference) is deliberately NOT marked — the analyzer has not
+        // measured that it is outside the population, only that this file does not declare it.
+        ...(builtin && !declared ? { isExternalTarget: true } : {}),
       }, cand.textNode)
     }
 
@@ -2123,10 +2147,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       range: this.nodeToRange(literal),
       metadata: { isDtdExternalId: true, role, systemId: true },
     })
+    const targetClass = this.importTargetClass(path)
     addRelationship(owner, path, ASTEngine.RelationshipType.Imports, {
       role,
       externalIdKind: "system",
-      resolvable: this.importTargetClass(path),
+      resolvable: targetClass,
+      // A DOCTYPE whose SYSTEM identifier is a URI names a DTD outside this project — the largest
+      // single group of this lane's unresolved edges is exactly this shape
+      // (`http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd`). Path-like, so the owner check
+      // returns externalUnverified and can never refute; a relative `file` path is left unmarked.
+      ...(targetClass === "external" ? { isExternalTarget: true } : {}),
     }, literal)
   }
 

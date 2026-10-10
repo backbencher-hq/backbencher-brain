@@ -24,6 +24,11 @@ degraded, `extFAIL 0 · bindFAIL 0 · causeFAIL 0`:
 
 Raw: [`residual-true-population.txt`](../../validation/m14/fixtures/xml/residual-true-population.txt).
 
+> The claim mapping in §3 landed **after** this run: it moves `references` unresolved 198 → 15 and
+> `imports` 134 → 108 on the board's 2,081-file draw, with `extFAIL` still 0. A re-run of this
+> whole-population table with the mapping in place is in flight; until it lands, read the rows above
+> as the state before that cause.
+
 The board carried `93.9%` earlier the same night. Both halves of that number were wrong, and each
 became a fleet fix:
 
@@ -89,9 +94,21 @@ The analyzer already publishes the classification the gate needs — `metadata.r
 reaches the gate unmarked and is counted as the lane's defect. The gate's rule: *"an unmarked
 external edge is indistinguishable from a broken one."*
 
-Which claim each class earns is decided from counts, not from the wish to shrink a number
+Which claim each class earns was decided from counts, not from the wish to shrink a number
 (`validation/m14/fixtures/xml/resolvable-class-census.mts` cross-tabulates the analyzer's classes
-against the gate's own `classifyEdge`):
+against the gate's own `classifyEdge`) — **and it has now landed**, measured before and after on the
+identical 2,081-file draw (`claim-mapping-before-after.txt`, `claim-mapping.json`):
+
+| | references unresolved | imports unresolved | extOK | ext? | **extFAIL** | residual edges |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| before | 198 | 134 | 0 | 0 | 0 | 396 |
+| after | **15** | **108** | **175** | 34 | **0** | **187** |
+
+Four sites carry `isExternalTarget` (`attribute_qname_reference` and `entity_reference` for the
+analyzer's `builtin`/`external` classes; `processing_instruction_href` and `doctype_external_id`
+for remote import targets). Fixtures unchanged at **31 pass / 0 fail**.
+
+The routing the counts chose, and the two refusals that keep it honest:
 
 | class | targets measured | claim that can verify it | why not another |
 | --- | --- | --- | --- |
@@ -102,7 +119,8 @@ against the gate's own `classifyEdge`):
 
 A PASS needs `bad === 0` **and** `externalUnverified === 0`, so a marker that moves an edge from
 `unresolved` to `externalUnverified` lowers the residual column and still does not buy a green row.
-That is the point: it is a true classification, not a short-cut.
+That is the point: it is a true classification, not a short-cut. The 34 unverifiable claims the
+after-run reports are in the verdict line, not hidden behind the smaller residual.
 
 ## Method notes
 
