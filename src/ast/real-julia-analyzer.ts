@@ -1212,6 +1212,50 @@ export class RealJuliaAnalyzer {
     const uniqueRelationships = [...relMap.values()]
 
     this.classifyEvidenceTier(uniqueRelationships)
+    /**
+     * THE EXTERNAL CLAIM ON AN IMPORT MUST BE FALSIFIABLE, and for a DOTTED target it is not — so
+     * this lane stops making it there.
+     *
+     * `isExternal` is attached in the import case as `!t.name.startsWith(".")`: a claim about the
+     * PROJECT read off one target's spelling, by an analyzer that sees one file. The gate reads it
+     * only where the target names nothing in the project, and then refutes it when the target's
+     * OWNER is a project declaration. MEASURED on the whole 1,985-file population (census.ts §THE
+     * imports EXTERNAL CLAIMS, cross-checked against the gate): of 347 dotted claims, 239 are
+     * REFUTED (205 extFAIL + 3 unverifiable) and 108 are verified — the claim is FALSE 69% of the
+     * time. Every one of the lane's refuted edges is dotted; a bare target's claim is read only
+     * where the target is already absent, so it can never be refuted at all.
+     *
+     * Neither shape can be grounded from one file: the root of `using Graphs.SimpleGraphs` is
+     * declared in ANOTHER file of the Graphs project, and no per-file fact distinguishes that from
+     * `using Changelog.CommonMark` in a project that does not contain Changelog. So the dotted claim
+     * is dropped rather than asserted, and the edge reads `unresolved` — an open gap, which is what
+     * it is. The cost is measured and stated: 108 verified dotted claims become unresolved, and the
+     * must-be-zero extFAIL column goes to 0. A claim that is wrong 69% of the time and cannot be
+     * checked by its own author is not evidence, and dropping it is not the same as hiding it.
+     *
+     * BARE claims are KEPT, and the reason is recorded rather than assumed: they are read only where
+     * the target is absent, so this gate cannot falsify them either — but they are now read at fleet
+     * level as "the analyzer said so", not as project confirmation (a fleet ruling of 2026-10-10),
+     * and dropping julia's 2,411 of them would move edges for no correctness gain in THIS gate.
+     * Julia's version of a checkable basis is its stdlib surface; that belongs with the gate's
+     * `claimBasis` check, not before it.
+     *
+     * A same-file guard is kept as well: a file that DECLARES the root of an import (`module Graphs`
+     * in the same file as `using Graphs.SimpleGraphs`) cannot call it external, and that is a basis
+     * the gate can check independently. It reached 4 edges on its own — recorded because a rule that
+     * was tried and measured small is a measurement, not a failure.
+     */
+    const declaredNames = new Set(uniqueSymbols.map((s) => s.name))
+    for (const r of uniqueRelationships) {
+      if (r.type !== ASTEngine.RelationshipType.Imports) continue
+      const md = r.metadata as Record<string, unknown> | undefined
+      if (!md || md.isExternal !== true) continue
+      const tgt = String(r.target ?? "")
+      const dot = tgt.indexOf(".")
+      const dotted = dot > 0
+      const root = dotted ? tgt.slice(0, dot) : tgt
+      if (dotted || declaredNames.has(root)) md.isExternal = false
+    }
     // There is deliberately NO loop here computing complexity per symbol. The previous version was
     // `if (s.complexity === undefined) s.complexity = this.complexity(rootNode)` — a FULL TREE WALK
     // ONCE PER SYMBOL, and it was also wrong about WHICH complexity it measured: every symbol
