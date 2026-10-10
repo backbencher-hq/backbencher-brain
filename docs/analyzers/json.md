@@ -372,11 +372,34 @@ analyzer's IDENTITY, not about resolution.
 
 **The document-scoped respelling proposed for this lane cannot fix it**: the repeated
 declarations are in the same document *and the same object*, so `<file-scope>::<key>` still
-collides. What could separate them is the declaration's own line — the next measurement,
-because if the analyzer's duplicate symbols are line-identical then no spelling separates
-them and the right fix is to stop emitting N identical symbols/edges for one repeated key at
-the source. Limits: duckdb store-read; the other six repos enumerated but not store-read.
+collides. Limits: duckdb store-read; the other six repos enumerated but not store-read.
 Full record: `validation/m14/fixtures/json/measurements/json-overrides-store-verdict.jsonl`.
+
+### CORRECTION — the declarations DO carry positions, and this lane said otherwise
+
+An earlier version of this section reported that the four `fileSize` declarations carry
+"`range.start.line` UNDEFINED — no position at all", and that claim went to the Lead. **It
+was wrong, and the error was mine**: the probe read `range.start.line`, while
+`pool-worker.parseFile` **flattens** the analyzer's `range` object into flat fields
+(`startLine`, `endLine`, `startIndex`, `endIndex`). Measured, same file, same three layers:
+
+| layer | what it publishes for the 4 declarations |
+| --- | --- |
+| `RealJsonAnalyzer.analyze` | `range: {startLine: 1, startColumn: 2/71/138/205, startIndex: 1/70/137/204, …}` |
+| `engine.parseFile` | identical ranges — no stripping |
+| `pool-worker.parseFile` | `startLine: 1, endLine: 1, startIndex: 1/70/137/204` — **columns dropped**, ranges flattened |
+
+`11152.json` is 5 lines with all four repeated keys on **line 1**, so `startLine: 1` is
+*correct* and `metadata.overridesLine: 1` is correct too — there is no missing-position
+defect, and the "publish positions" work item is withdrawn. What survives is smaller and
+real: **the worker drops the column pair**, so for a one-line document the only remaining
+discriminator is `startIndex`, which no key downstream uses. That is why the duplicate
+declarations are indistinguishable *to the store's key space* — not because their positions
+are absent, but because the position that would separate them is not carried.
+
+The lesson is the programme's own, applied to this lane: a field read under the wrong name
+is not evidence of absence. The correction is recorded here rather than silently edited
+because the wrong version was used to reorder another lane's work.
 
 ## 8. Open items
 
