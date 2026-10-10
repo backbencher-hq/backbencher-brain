@@ -116,10 +116,62 @@ that file. The material needed to close it is this section.
 
 ---
 
-## 2. Coverage declaration
+## 2. Coverage declaration — `10/10`, declared from a whole-corpus measurement
 
-Not yet declared. `script/m14/spec/r-completeness.json` still carries an explicit placeholder —
-`coverageDeclared=false`, `r 8/10 from=firing-log`. The silent types are `overrides` and
-`instantiates`; both need a corpus measurement before either is ruled or called a gap, because R's
-S4/R5/R6/S7 systems express both as ordinary calls, so `grammar-absence` is not available by
-intuition and must be shown by a grammar inventory or refused.
+DECLARED. `script/m14/spec/r-completeness.json` carries a `coverage` block with all ten types in
+`implemented`, no exclusions and nothing corpus-unexercised, so the board reads
+`r 10/10 from=spec coverage block` and the invariant closes (`10 + 0 + 0 === 10 − 0 − 0`).
+
+The two types the 120-file instrument reads SILENT are the whole reason the block exists, and each
+is substantiated by a whole-corpus count rather than by the instrument's zero:
+
+| type | whole-corpus emission | files |
+|---|---|---|
+| `overrides` | 95 edges | 8 |
+| `instantiates` | 3 edges | 2 |
+
+Population: the lane's declared corpus — 2,184 git-tracked `.R` files over 16 repositories
+(`sha256 953c0314…`), **degraded 0**, parse failures 0, `[BB-PARSE-ERR]` traps 0.
+Artifact: `validation/m14/fixtures/r/measurements/r-census-overrides-instantiates.current.txt`.
+
+Neither exclusion class was available, and the spec states which measurement refuses each:
+`grammar-absence` is refuted by emission (R expresses both constructs and this analyzer resolves
+both — the fixtures below pin the edges), and `zero-sites` is refuted for THIS lane's corpus. The
+0x reading holds only for the instrument's single-repo sample: `firing-check.mjs` pins one
+repository per lane (ggplot2, 360 of the lane's 2,184 files). The full rationale, per-type counts
+for all ten types, and the scope argument are in the spec's `_from` / `_implemented_measured`.
+
+---
+
+## 3. The canonical fixture gate — 22/22, and the four failures were a DIALECT
+
+The shared gate now runs this lane: `--lang r` used to discover **zero** of the 22 fixtures, because
+`LANGS.r.ext` is `"r"` and the filter was case-sensitive against `*.R` — a lane with no fixtures run
+and a lane whose fixtures all pass printed the same line (`fceae35d3`). With that fixed the lane read
+**18 pass / 4 FAIL**: F12-edges, F18-direction-and-s7, F21-namespace-depends-on,
+F22-redeclared-class-name.
+
+**All four were one defect, and it was not the overrides bound.** 16 rows across those four fixtures
+carried `"meta": { … }`. The canonical matcher resolves `meta.<key>` dot-paths against
+`actual.metadata[key]` and has no branch for a bare `meta` OBJECT, so the row falls through to
+`actual["meta"] !== v` — no relationship has a top-level `meta` field, so the row is
+**unsatisfiable** and is reported as an `inert assertion` *and* as `expected relationship not found`.
+Every "not found" line in the four failures was exactly one of those 16 rows.
+
+Translating all 38 constraints to `meta.<key>` dot-paths took the gate to **22 pass / 0 fail** with
+**no analyzer change**. That refutes the natural reading of those failures — the one that says the
+recorded bound arrived as a failing test. The bound is real and recorded (62 bases declined by the
+file-scoped `overrides` pass, in the census artifact), but it is not what these four fixtures were
+reporting: the edges they expect ARE emitted, and the rows could not be found.
+
+Cause of the dialect: `validation/m14/fixtures/r/run-r-fixtures.ts` — this lane's own runner —
+documented `meta.<key>` in its header and implemented the legacy bare `meta` object, so the fixtures
+were written against the implementation. It now accepts BOTH, preferring the canonical form, and the
+fixtures use only the canonical form.
+
+**CONTROL (the matcher is not vacuous):** mutating one row — the dplyr `references` row demanding
+`meta.accessOperator: ":::"` where the source writes `::` — fails **both** runners on the same row
+for the same reason (`0 passed, 1 failed` in the lane runner; `21 pass / 1 fail` in the canonical
+gate), and restoring it returns both to green.
+
+Artifacts: `measurements/r-fixtures-canonical-gate.txt`, `measurements/r-fixtures-lane-runner.txt`.
