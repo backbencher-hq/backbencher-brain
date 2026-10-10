@@ -1,5 +1,5 @@
 {
-  "_comment": "M14.0.SPEC (#419) \u2014 toml completeness classification. Every public NAMED node type of the pinned wasm/tree-sitter-toml.wasm is in exactly one bucket. The grammar exposes 20 nodeTypeForId slots but only 19 DISTINCT names: `escape_sequence` is declared twice, which is a grammar quirk rather than two node types. ERROR and MISSING are injected by this gate for EVERY language because the wasm ABI does not list them; neither occurs for this grammar and both are silent here. Silence is guilt: a type in no bucket fails section A, and a type the wasm no longer produces is a stale row and also fails. That rule bites hardest on the four DATETIME types \u2014 none appears anywhere in cargo's 684 files, so their handling is pinned by FIXTURE rather than by the corpus, and a corpus-only lane would have classified them by assumption and called it coverage. SECTION D IS RED AND THAT IS THE HONEST STATE. The gate requires >=2 distinct `evidenceClass` values and TOML has exactly ONE: every edge it emits is `structural`. YAML, the closest config-format precedent, pins four and legitimately so \u2014 a merge key is an inference, an anchor is a reference, an `!include` is a fetch. TOML has none of those constructs: no merge, no anchor, no alias, no include, no import, no reference of any kind. Its whole graph is a nesting the document literally writes. Both routes to a second tier are dishonest and neither was taken: emitting a `uses` edge for a path-shaped string imports ecosystem knowledge about which keys are paths in which tool into a format that defines no references, and tagging an edge to an IMPLIED parent as `inferred` points at a target that is deliberately not a symbol, where an edge to a non-existent node is the unresolvable-identity defect. D stays red until the gate grows a documented single-tier allowance or TOML grows a construct that earns one. E and F are the canonical F5 ceremony, exactly as for html.",
+  "_comment": "M14.0.SPEC (#419) \u2014 toml completeness classification. Every public NAMED node type of the pinned wasm/tree-sitter-toml.wasm is in exactly one bucket. The grammar exposes 20 nodeTypeForId slots but only 19 DISTINCT names: `escape_sequence` is declared twice, which is a grammar quirk rather than two node types. MEASURED, not restated (2026-10-09, commit 840bffea9): enumerating wasm/tree-sitter-toml.wasm through web-tree-sitter's Language API gives 66 node-type slots, of which 20 are NAMED and 19 are distinct named names \u2014 exactly the claim above, with the anonymous punctuation tokens making up the remaining 46 slots (44 distinct). ERROR and MISSING are injected by this gate for EVERY language because the wasm ABI does not list them; neither occurs for this grammar and both are silent here. Silence is guilt: a type in no bucket fails section A, and a type the wasm no longer produces is a stale row and also fails. That rule bites hardest on the four DATETIME types \u2014 none appears anywhere in cargo's 684 files, so their handling is pinned by FIXTURE rather than by the corpus, and a corpus-only lane would have classified them by assumption and called it coverage. SECTION D IS RED AND THAT IS THE HONEST STATE. The gate requires >=2 distinct `evidenceClass` values and TOML has exactly ONE: every edge it emits is `structural`. YAML, the closest config-format precedent, pins four and legitimately so \u2014 a merge key is an inference, an anchor is a reference, an `!include` is a fetch. TOML has none of those constructs: no merge, no anchor, no alias, no include, no import, no reference of any kind. Its whole graph is a nesting the document literally writes. Both routes to a second tier are dishonest and neither was taken: emitting a `uses` edge for a path-shaped string imports ecosystem knowledge about which keys are paths in which tool into a format that defines no references, and tagging an edge to an IMPLIED parent as `inferred` points at a target that is deliberately not a symbol, where an edge to a non-existent node is the unresolvable-identity defect. D stays red until the gate grows a documented single-tier allowance or TOML grows a construct that earns one. E and F are the canonical F5 ceremony, exactly as for html.",
   "handled_verified": {
     "types": [
       "ERROR",
@@ -31,7 +31,17 @@
     "note": "MISSING and `comment` are two types that correctly emit nothing and need no analyzer read. `comment` is a literal: a comment is not an identity, and TOML has no block-comment form, so a `#` line contributes nothing to the graph. MISSING holds across the whole 743-file pool \u2014 zero MISSING nodes, and it is a property of this grammar that a recovery node is always a full ERROR rather than an inserted token. ERROR WAS HERE AND WAS WRONG, and the correction is recorded because the reasoning that put it here is the exact trap the svelte lane fell into on the same day. This note previously read \"NEITHER OCCURS for this grammar\", on the evidence of TWELVE HAND-MADE MALFORMED DOCUMENTS. The corpus was never measured. Measuring it: 2 of 743 files (0.27%) carry an ERROR node \u2014 `cargo/tests/testsuite/cargo_add/invalid_manifest/{in,out}/Cargo.toml`, cargo's own deliberately-invalid manifest fixtures, where `key = invalid-value` is a bare word where TOML requires a value. Two hand-made malformed documents and 743 real ones disagreed, and the real ones were right. ERROR now sits in handled_verified, and the analyzer reports it itself rather than leaving the whole contract to the engine."
   },
   "gap": {
-    "gaps": []
+    "gaps": [
+      {
+        "id": "TOML-G1",
+        "status": "OPEN",
+        "missing": "`references` for the Cargo workspace-inheritance shape: `x.workspace = true` says this key's value is declared by the workspace manifest, and the analyzer's alias pass does not walk it, so these sites emit no edge",
+        "measured": "1,269 sites in 138 documents over the 1,485 admitted .toml files of the whole corpus (shape: a pair whose leaf is `workspace` with the boolean value true). The brief carried 1,267 and the in-tree applicability audit 1,269; the whole-corpus count through the production path is 1,269, and the raw run is committed at validation/m14/fixtures/toml/tools/census-whole-corpus.json under workspaceInheritance",
+        "instrument": "validation/m14/fixtures/toml/tools/construct-census.ts (commit 840bffea9)",
+        "consequence": "this is the SAME ontology type as the 167 alias `references` edges the lane does emit (Gradle version catalogues, resolvedBy=final-segment), so the type's corpus coverage is partial rather than absent; it is recorded here as an OPEN item with a size and NOT folded into the coverage number, because a blocker quietly absorbed into a ratio is a number nobody can check",
+        "why_not_fixed": "the alias pass resolves a key whose VALUE is the name of another key in the same document; `workspace = true` is a boolean that defers to a DIFFERENT document, and resolving it means locating and reading that document's manifest — a cross-file resolution the analyzer deliberately does not do from a pure AST worker (see the `imports` note in src/ast/real-toml-analyzer.ts on why paths are emitted unresolved). Not attempted without a design ruling; recorded, not guessed"
+      }
+    ]
   },
   "design_decision": {
     "decisions": [
@@ -44,5 +54,52 @@
         "consequence": "`escape_sequence` is classified HERE rather than as handled, so the type is accounted for exactly once and the reason it is not walked is on the record rather than being invisible."
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "contains",
+      "imports",
+      "references"
+    ],
+    "excluded": [
+      {
+        "label": "calls",
+        "evidence": "grammar-absence",
+        "from": "construct-census vocabulary.perType.calls, whole corpus 1,485 files / 77 repos: grammarNodeTypesMatchingCount=0 of the pinned grammar's 19 distinct NAMED node types; corpusNodeOccurrencesMatching=0; constructs.callShaped=0; keySites=1 (`function`), referentSites=0",
+        "quote": "0 of the 19 named node types can express a call or name a callable, and 0 call-shaped nodes occur in 1,485 documents"
+      },
+      {
+        "label": "uses",
+        "evidence": "grammar-absence",
+        "from": "construct-census vocabulary.perType.uses: grammarNodeTypesMatchingCount=0 (no type-declaration production); corpusNodeOccurrencesMatching=0; keySites=0; referentSites=0",
+        "quote": "no node type, no key and no occurrence: TOML cannot write a type for a value to be used AS"
+      },
+      {
+        "label": "extends",
+        "evidence": "grammar-absence",
+        "from": "construct-census vocabulary.perType.extends: grammarNodeTypesMatchingCount=0; keySites=14 inheritance-shaped keys (base 11, extend 1, template 1, parent 1), 14 string-valued, referentSites=0 \u2014 none names a declaration the same document makes",
+        "quote": "0 IS-A productions, and the 14 words name nothing the document declares"
+      },
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "construct-census vocabulary.perType.implements: grammarNodeTypesMatchingCount=0; keySites=0; corpusNodeOccurrencesMatching=0",
+        "quote": "no interface production and no interface-naming key in 1,485 documents"
+      },
+      {
+        "label": "overrides",
+        "evidence": "grammar-absence",
+        "from": "construct-census constructs: duplicateKeys = 0 key paths declared twice across 0 of 1,485 documents (path = table header + key, each array-of-tables element its own namespace); vocabulary.perType.overrides.grammarNodeTypesMatchingCount=0",
+        "quote": "TOML forbids redefining a key, and the whole corpus redefines no key path at all"
+      },
+      {
+        "label": "instantiates",
+        "evidence": "grammar-absence",
+        "from": "construct-census vocabulary.perType.instantiates: grammarNodeTypesMatchingCount=0; keySites=0; corpusNodeOccurrencesMatching=0",
+        "quote": "no construction production and no constructor-naming key; every TOML value is a literal"
+      }
+    ],
+    "corpusUnexercised": [],
+    "_from": "DERIVATION. implemented = the three types the production path fires over the WHOLE admitted population (construct-census, commit 840bffea9; raw run validation/m14/fixtures/toml/tools/census-whole-corpus.json): contains 25,033 edges / 1,474 files, imports 331 / 153, references 167 / 5. The 120-file firing log reads only `contains:882 imports:16` and marks references SILENT \u2014 a stride sample that invents an absence \u2014 so this block follows the census, not the sample. The six exclusions are grammar-absence, each carrying a count: 0 of the 19 named node types of the pinned grammar (66 node-type slots, 20 named slots, 1 duplicate named slot) can carry the construct, and the corpus corroborates with 0 occurrences or 0 referents. `exports` is deliberately NOT excluded: the lane's own applicability audit (self-test 14/14, positive control fired 167/167 aliases) reports it UNVERIFIED and exits 1 \u2014 174 publish-shaped key sites exist (118 string-valued: module, publish, main, public, exposed), and nothing in this lane MEASURES that TOML cannot express the relation, so it stays IN the denominator as an unimplemented applicable type (a gap) rather than being promoted to grammar-absence. ARITHMETIC: 3 implemented + 0 corpus-unexercised + 1 gap (exports) = 4 applicable = 10 \u2212 6 grammar-absence \u2212 0 unclassified. RELATED OPEN ITEM, not folded into this ratio: TOML-G1 \u2014 the workspace-inheritance half of `references`, 1,269 sites in 138 documents."
   }
 }
