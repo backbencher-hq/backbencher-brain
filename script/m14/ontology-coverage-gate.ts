@@ -310,6 +310,11 @@ if (process.argv.includes("--fresh")) resetCheckpoint(CHECKPOINT)
 const walkStats = await resumableWalk(CHECKPOINT, files.length, {
   id: (i) => files[i].abs,
   concurrency: 8,
+  // The checkpoint makes a resumed run cheap and makes a poison file cost one file instead of
+  // the whole measurement — and it also means the counts below cover only the files THIS run
+  // parsed. That is why the walk line states its population and why a run that parsed nothing
+  // refuses to give a verdict at all: a fully resumed run used to print
+  // `emitted 0/10` on a walk line reading "100.0%".
   run: async (i) => {
     const f = files[i]
     const r: any = await parseFile(f.abs, f.dir)
@@ -484,6 +489,18 @@ console.log(
     (walkStats.died > 0 ? `  ABANDONED-AFTER-KILL ${walkStats.died}` : ``) +
     (walkStats.partial ? `  PARTIAL` : ``),
 )
+// Say what the counts are a count OF. `walked` is the population this run parsed, and every
+// number below is over it — not over the checkpoint, and not over "100.0% of the corpus" if the
+// pass was truncated. A PASS from this gate means "every emitted type was seen in the files this
+// run parsed", and the reader needs that sentence next to the number.
+console.log(
+  `      the edge counts below are a count over the ${walkStats.walked.toLocaleString()} file(s) ` +
+    `THIS run parsed` +
+    (walkStats.skippedBad + walkStats.died > 0
+      ? `; ${walkStats.skippedBad + walkStats.died} skipped as a throw or a previous kill and never retried`
+      : ``) +
+    `.`,
+)
 if (walkStats.partial) {
   console.log(
     `      every edge count below is over ${walkedPct.toFixed(1)}% of the corpus. ` +
@@ -495,6 +512,26 @@ if (walkStats.partial) {
   )
 }
 console.log()
+
+// A VERDICT OVER ZERO FILES IS A VERDICT ABOUT THE CHECKPOINT.
+//
+// Measured, and it is why this block exists: with the checkpoint complete at
+// 10,328/10,328, a resumed run parsed NOTHING, `observed` stayed empty, and the gate printed
+// `emitted 0/10   ruled-without-justification 9` on a walk line reading "100.0%" — a lane at
+// 10/10 EMITTED filed as nine unjustified rulings, because not one file was looked at.
+// The counts above are the evidence; with none, there is no verdict to give, and a scoped
+// one dressed as a whole-corpus one is the defect this gate exists to catch.
+if (walkStats.walked === 0) {
+  console.log(`\nontology coverage gate — NOTHING MEASURED for ${LANG}.`)
+  console.log(
+    `This run parsed 0 files: ${walkStats.skippedBad + walkStats.died} skipped as a throw or a previous kill` +
+      (walkStats.alreadyDone > 0 ? `, ${walkStats.alreadyDone} skipped as already done` : ``) +
+      `.`,
+  )
+  console.log(`Refusing to report: an emitted / not-emitted table over zero files says what the CHECKPOINT`)
+  console.log(`contains, not what the lane emits. Re-run with --fresh to measure the corpus again.`)
+  process.exit(2)
+}
 
 const rows: Row[] = []
 for (const t of ALL_TYPES) {

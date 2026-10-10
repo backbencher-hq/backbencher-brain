@@ -68,12 +68,19 @@ Same rules as JVM family. Heritage edges structural. Calls usage_contextual.
   (28,417 ambiguous · 4,626 by-design · 7,335 not provable) is declared with a
   ceiling per class. "All ten types covered" is measured; "all edges resolve" is
   not the claim — the gate prints the backlog on every run.
-- **Arbiter (emission, whole corpus): 10/10 EMITTED** — `npx tsx
-  script/m14/ontology-coverage-gate.ts typescript` → **exit 0**, walk 10,328/10,328
-  (100.0%), `FALSIFIED 0`, `ruled-without-justification 0`. This used to exit 2 with
-  "no RULING SOURCE" — the lane has no un-emitted type to rule, and the guard read that
-  absence as missing evidence. It now says which verdict it gives: *all 10 EMITTED, this
-  run adjudicates EMISSION, not rulings*.
+- **Arbiter (emission): 10/10 EMITTED** — `npx tsx script/m14/ontology-coverage-gate.ts
+  typescript` → **exit 0**, `emitted 10/10  FALSIFIED 0  ruled-without-justification 0`,
+  **over the 2,167 files that pass parsed** while the walk stood at 10,328/10,328 across
+  resumes. Both numbers are the claim: the walk's 100% is checkpoint coverage, the table is
+  a count over the files the pass parsed. This used to exit 2 with "no RULING SOURCE" — the
+  lane has no un-emitted type to rule, and the guard read that absence as missing evidence.
+  It now says which verdict it gives: *all 10 EMITTED, this run adjudicates EMISSION, not
+  rulings*; the walk line prints the population its counts cover; and a run that parsed no
+  file at all refuses to report (`NOTHING MEASURED`, exit 2) instead of printing `0/10`
+  off a 100% walk. **A whole-corpus verdict is still out of reach**: three passes that
+  re-walked every file died mid-walk (exit 1, the 120s hang guard, ~4 min in), so 10,328
+  files cannot be parsed in one process — the counts have to travel per file in the
+  checkpoint (open work).
 - The sweep's measurements live in `docs/analyzers/typescript-ambiguity-sweep.md`;
   the fleet-level registration is in `docs/analyzers/ONTOLOGY-PROGRESS.md`.
 
@@ -88,7 +95,9 @@ so the killer was never recorded and every re-run re-walked it.
 `script/m14/resumable-walk.ts` now appends an **in-flight marker before each parse**; a kill
 leaves `?<path>` behind, the next run abandons that path (reported as
 `ABANDONED-AFTER-KILL`, never retried) and carries on. The walk now covers all 10,328 files
-and the arbiter above is the verdict that was previously unreachable.
+in the checkpoint (from 4,230 in two days), and the arbiter above is the verdict that was
+previously unreachable — scoped to the files its pass parsed, which is the only population a
+single process can honestly report.
 `script/m14/resumable-walk-selftest.ts` drives the path with a real child-process kill
 (7/7 checks); cost, stated rather than hidden: a kill sacrifices up to `concurrency`
 in-flight files, and they are named in the checkpoint.

@@ -123,31 +123,50 @@ letting a percentage stand alone. The failure path was exercised end to end (a
 tightened baseline copy → exit 1 with `OVER CEILING` and `UNDECLARED CLASS`), and
 `--update-baseline` is idempotent.
 
-**The arbiter, on the whole 10,328-file corpus (2026-10-10).**
-`npx tsx script/m14/ontology-coverage-gate.ts typescript` — **exit 0**, walk
-**10,328/10,328 (100.0%)**, `emitted 10/10   ruled-sound 0   FALSIFIED 0
-ruled-without-justification 0`. It used to exit 2 with "no RULING SOURCE":
-`rulingFor()` had nothing to read because the lane has **no un-emitted type to
-rule**, and the guard that refuses an empty table fired on that absence. The guard
-now distinguishes the two cases (a lane with un-emitted types and no ruling source
-still refuses), and says which verdict it is giving: *"typescript has no ruling
-TABLE and needs none on THIS walk — all 10 types are EMITTED … this run adjudicates
-EMISSION, not rulings."* A ruling table is the lane's own corpus probe and TS needs
-none; the emission claim is measured by the firing check and the coverage gate, and
-now also by this arbiter over the full corpus — with its scope stated, because
-"10/10 EMITTED" is a statement about emission and not about a ruling that agreed.
+**The arbiter (2026-10-10) — and the population its verdict actually covers.**
+`npx tsx script/m14/ontology-coverage-gate.ts typescript` used to exit 2 with "no
+RULING SOURCE": `rulingFor()` had nothing to read because the lane has **no
+un-emitted type to rule**, and a guard written for an empty ruling table fired on
+that absence. The guard now separates the two cases — a lane with un-emitted types
+and no ruling source still refuses — and says which verdict it gives: *"typescript
+has no ruling TABLE and needs none on THIS walk — all 10 types are EMITTED … this
+run adjudicates EMISSION, not rulings."* A ruling table is the lane's own corpus
+probe; TS needs none, and the emission claim is carried by the firing check and the
+m60 coverage gate, both of which measure it directly.
 
-The walk reaching 100% is itself a repair: it had been stuck at **4,230** for two
-days. A tree-sitter WASM trap (`memory access out of bounds` on a 32-line file that
-parses clean in isolation, 1.2 s, 16 relationships) corrupts the module, the next
-parse hangs, and engine.ts's 120s guard answers a hang with `process.exit()` — which
-can flush nothing. The checkpoint recorded a file only AFTER its parse succeeded, so
-the file that killed the run was never recorded and every re-run resumed into the
-same death. `script/m14/resumable-walk.ts` now writes an **in-flight marker before**
-each parse, so a kill names the file it died on and the next run abandons it instead
-of re-dying on it (cost, stated: up to `concurrency` in-flight files per kill, all
-reported as `ABANDONED-AFTER-KILL`). `script/m14/resumable-walk-selftest.ts` drives
-that path with a real child-process kill — 7/7 checks.
+The pass that produced the verdict: walk **10,328/10,328 (100.0%)** — **2,167 files
+parsed, 8,161 resumed** from the checkpoint — and the counts were over the 2,167 it
+parsed: `emitted 10/10   FALSIFIED 0   ruled-without-justification 0`, exit 0.
+**Both numbers belong in the sentence.** The walk's 100% is what the CHECKPOINT has
+covered across runs; the emission table is a count over the files that pass itself
+parsed. Three later passes that tried to re-walk every file in one process each died
+mid-walk (exit 1, engine.ts's 120s hang guard) after ~4 minutes, so the 10,328-file
+corpus **cannot be parsed in a single process** — the tree-sitter WASM module traps
+after a few thousand parses. A whole-corpus emission verdict therefore needs the
+per-file counts carried in the checkpoint across batched runs: recorded as open
+work, not claimed as done.
+
+Two changes make the wrong version of that sentence impossible rather than merely
+discouraged: the walk line now prints *"the edge counts below are a count over the
+N file(s) THIS run parsed"*, and a run that parsed **zero** files refuses to report
+at all (`NOTHING MEASURED … exit 2`). Measured before the guard: with the checkpoint
+complete, a fully resumed run printed `emitted 0/10   ruled-without-justification
+9` on a walk line reading 100.0% — a lane at 10/10 filed as nine unjustified
+rulings, because not one file was looked at. Verified after: an empty corpus root
+exits 2 with `NOTHING MEASURED`.
+
+**The walk reaching the checkpoint's 100% is itself a repair.** It had been stuck at
+**4,230** files for two days. A tree-sitter WASM trap (`memory access out of bounds`
+on a 32-line file that parses clean in isolation, 1.2 s, 16 relationships) corrupts
+the module, the next parse hangs, and engine.ts's 120s guard answers a hang with
+`process.exit()` — which can flush nothing. The checkpoint recorded a file only AFTER
+its parse succeeded, so the file that killed the run was never recorded and every
+re-run resumed into the same death. `script/m14/resumable-walk.ts` now writes an
+**in-flight marker before** each parse, so a kill names the file it died on and the
+next run abandons it instead of re-dying on it (cost, stated: up to `concurrency`
+in-flight files per kill, all reported as `ABANDONED-AFTER-KILL`).
+`script/m14/resumable-walk-selftest.ts` drives that path with a real child-process
+kill — 7/7 checks.
 
 ## Still to do at integration
 
