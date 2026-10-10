@@ -750,6 +750,54 @@
           "controls": "JS-shaped undeclared -> externalVerified (FIRES) · JS-shaped declared -> externalRefuted (FIRES) · `--pico-color` undeclared -> externalUnverified · `--pico-color` DECLARED -> externalUnverified, i.e. the SHAPE TEST and not the claim is what blocks"
         },
         "resolution": "CROSS-TABBED, BOTH SIDES, AND THE CLAIM IS WITHHELD ON PURPOSE. TARGET SIDE: of the 5,641 dotless custom-property reads, 658 resolve in their own project (one declaration), 138 name a property declared ONLY in another corpus project, and 4,665 name one declared NOWHERE in the 1,174-file population; the remainder is exactly the gate's 180 ambiguous + 4,803 unresolved. So the claim would not be a lie about the population for the 4,665, and it would not be a name claim about a file (css has no business writing a `projectFile` claim for a property — that is the yaml counter-example's shape). VERIFIER SIDE, AND THIS IS THE BLOCKER: `verifyExternalClaim` (`script/m14/incoming-rule.ts:582-585`) handles a dotless target by asking about the TARGET ITSELF, but only when it matches `/^[A-Za-z_$][A-Za-z0-9_$]*$/` — a JS-identifier test. CSS targets are sigiled (`--x`, `.class`, `#id`), so all 5,641 read `externalUnverified`. The branch's stated premise is that `a path or URI cannot be a published symbol's name, so a lookup returning 0 would prove nothing about the claim`; for this lane that premise is FALSE — a custom property IS a published symbol name here (this analyzer publishes the declaration), so a lookup returning 0 proves the project declares no such property. The fourth control makes it undeniable that the test, not the marker, is what blocks: `--pico-color` reads `externalUnverified` whether or not the key space declares it, so a refusal there is not a safety property at all — it is the same verdict for a true and a false claim. WHY NO MARKER IS WRITTEN: attaching one today would move 4,803 edges from `unresolved` to `externalUnverified` — a different NON-PASSING column (`verdict()` requires `externalUnverified === 0`, which the gate's own header states is why the bare-name path was built for php and bash) — while asserting a fact a per-file analyzer cannot see and the arbiter cannot check. That is motion without progress on the one class the objective names, so it stays open and visible. WHAT WOULD UNBLOCK IT, one line in the arbiter (Lead's file, not this lane's): widen the dotless branch from 'is a JS identifier' to 'is a spelling a published name may carry' — still refusing the path/URI shapes `pathLikeTarget` already catches and anything containing whitespace, but admitting the sigils. The gate's own controls at `incoming-gate.ts:1182-1194` already pin the bare-name path in three directions, so the widened test inherits a falsifier rather than needing a new one."
+      },
+      {
+        "id": "CSS-D17",
+        "node_type": "ontology:references to a custom property declared in 2-12 OTHER files of the project",
+        "status": "RULED — inherent in the cascade; no spelling the edge could carry resolves it, and the fixable sub-shapes are measured at zero",
+        "question": "The lane's last large residual is `references` 180 ambiguous. Are they fixable by a spelling, or is the ambiguity a fact about the corpus?",
+        "command": "npx tsx validation/m14/fixtures/css/ambiguity-classify.ts 0   (whole population; the counting rule is imported from the arbiter and the run asserts its totals against the gate's own line)",
+        "counts": {
+          "edges": 180,
+          "distinct_targets": 66,
+          "reading_files": 33,
+          "class": "CROSS-FILE-ONLY — the edge's own file declares the name NOWHERE",
+          "declarations_per_target": "2 files: 78 edges · 3 files: 1 · 6 files: 33 · 8 files: 4 · 10 files: 1 · 12 files: 64",
+          "declaring_files_per_target": "identical to declarations per target — one declaration per file",
+          "fixable_sub_shapes_measured_zero": {
+            "IN-FILE-MULTI (two declarations in ONE file — fixable by line)": 0,
+            "CROSS-FILE-TWIN (the reading file declares it once — resolved by CSS-D15)": 0,
+            "DUP-EMISSION (one node published twice)": 0
+          },
+          "alternative_spelling_in_the_edges_own_file": "noAlt 181 of 181 — there is no qualified spelling the edge could carry that would resolve it",
+          "gate_columns": "references 247,859 · resolved 242,876 · amb 180 · unresolved 0 · extOK 4,803 · ext? 0 · extFAIL 0"
+        },
+        "resolution": "RULED LEGITIMATE, with the falsifier that keeps it a ruling rather than a shrug. These 180 edges read a custom property (`--color-cd-punctuation`, `--color-cd-builtin`, …) that the reading file declares NOWHERE and that the project declares ONCE IN EACH of 2-12 DIFFERENT files — a theme family (light/dark pairs and, for the 64-edge 12-file target, a 12-variant colour scheme). Every one of those declarations genuinely applies; which one the browser resolves is decided by load order, media queries and class state at RUNTIME, and no per-file analyzer can observe it. THE FALSIFIER: any of the 180 whose two declarations sat in ONE file would be the fixable IN-FILE-MULTI shape (a line identifies the site), and any whose reading file declared the name once would already have been resolved by CSS-D15 — BOTH ARE MEASURED AT ZERO, and the arbiter's own scope check agrees (`noAlt` 181 of 181: no file-scoped spelling exists for these edges at all). So this is not a lane defect that a smarter spelling could reach: it is the cascade, using a name the project deliberately defines N times. Basis in the same class the fleet already accepts: yaml's ansible roles genuinely called `a`/`b`/`c`. NOT A CLAIM (the claim was measured and would be false): the read is NOT external — the project DOES declare the name — so an external marker here would be REFUTED wherever it were consulted, and the marker is correctly withheld."
+      },
+      {
+        "id": "CSS-D18",
+        "node_type": "ontology:imports whose specifier is a package, a URL, a bare name, or a file the population does not carry",
+        "status": "RULED — a located, counted external class; no claim can verify these, and marking them would move edges into a column that blocks a PASS",
+        "question": "The lane's last residual type is `imports` 1 ambiguous + 80 unresolved of 127. Is this a declared-external-claim case?",
+        "command": "npx tsx validation/m14/fixtures/css/external-claim-crosstab.ts   (whole population; specifiers grouped by SHAPE, classified with the arbiter's own classifyEdge, no claim attached) and npx tsx validation/m14/fixtures/css/imports-count-decomposition.ts",
+        "counts": {
+          "edges": 127,
+          "by_shape_and_outcome": {
+            "basename": "resolved 46 · unresolved 8 · ambiguous 1",
+            "npm/at-scope": "unresolved 46",
+            "url": "unresolved 17",
+            "bare": "unresolved 9"
+          },
+          "ambiguous": 1,
+          "unresolved": 80,
+          "analyzer_vs_filter": "analyzer emits 127 imports edges; filterNoiseRelationships drops 0 — so this class is untouched by the worker's rules",
+          "claim_kinds_that_could_verify_them": {
+            "projectFile": "REFUTES on a miss, and a specifier the population does not carry is the miss — so a file claim here would manufacture extFAIL, which the Lead's rule forbids",
+            "projectFacts": "verifyImportClaim handles only `package:` / `dart:` forms; an npm scope or a URL returns externalUnverified",
+            "owner": "pathLikeTarget refuses a URI before the owner lookup, so a URL returns externalUnverified — and externalUnverified BLOCKS A PASS in verdict(), so marking moves the edge into a different non-passing column and buys nothing"
+          }
+        },
+        "resolution": "RULED, and the ruling is that NO CLAIM IS WRITTEN. The class is measured by shape: 46 basename specifiers RESOLVE (a file name that is unique in its project), 1 basename is ambiguous, and the remaining 80 are 46 npm/at-scope (`@primer/primitives/…`), 17 URLs (fonts.googleapis.com — `pathLikeTarget` refuses a URI by design), 9 bare names and 8 basenames the population does not carry. Each shape was checked against the claim kinds that could verify it, and none can: a file claim REFUTES on a miss (and these ARE misses), the project-facts verifier knows only `package:`/`dart:` spellings, and the owner verifier refuses a URI — returning `externalUnverified`, which `verdict()` counts against a PASS. So marking would be motion: the edges would move from `unresolved` to `ext?` and the lane would still not pass, while asserting an externality the arbiter cannot check. THE AMBIGUOUS ONE is a basename collision (`custom.css` published as a module by two files): a basename is not an identity, and the fix — resolving a RELATIVE specifier to the target file's project-relative scope — has no measurable beneficiary here, because the population carries NO relative-path specifier at all (every import is a basename, an npm scope, a URL or a bare name), while it would put the 46 currently-resolving basenames at risk of naming a file the population does not admit. FALSIFIER for the whole ruling: an import whose specifier carries a path the project already contains would be fixable by that resolution and is counted here — the measured answer is zero such specifiers."
       }
     ]
   },
