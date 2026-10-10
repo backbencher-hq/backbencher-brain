@@ -55,15 +55,16 @@
   "gap": {
     "description": "JSON has no names. A key is unique only WITHIN its object, and the store resolves relationship endpoints by name, so 64.54% of the lane's endpoints are ambiguous and 1.97% name no symbol. This is a property of the LANGUAGE, not a defect, and it is NOT closed by a store-side change: measured, name resolves 32.92% uniquely, qualifiedName 5.25%, and EITHER only 34.92% — the two indexes barely compose because `contains` sources are bare names while `references` sources are full paths, so the information is not present in the edge.",
     "status": "DECISION FOR THE OWNER — not taken by this lane. Closing it needs the analyzer either to name an ambiguous endpoint by its path or to disambiguate duplicated symbol names after the walk. Measured in reviews/json/m60-closure.md section 7.",
-    "_denominator": "THE APPLICABILITY DENOMINATOR, because `1/10` on the board's FIRED column is not this lane's contract. The firing instrument samples ONE corpus for this lane (shadcn-svelte, 2,349 JSON files of theme and config documents) where only `contains` fires. On a deterministic 400-file stride of the WHOLE admitted population (14,009 files across 153 repos) EIGHT labels are applicable and measured: contains 130,787 · references 895 · uses 212 · extends 200 · exports 37 · calls 5 · imports 1 · overrides 1, against implements 0 and instantiates 0 (`npx tsx script/m14/incoming-gate.ts json json 400`). Numerator (what fires) and denominator (what is applicable) therefore come from DIFFERENT instruments — the firing log and the gate's own per-label edge table — and the denominator shrinks only where a label is RULED with a corpus measurement, which is what JSON-G1 and JSON-G2 record. It is 8, not 1, and not 10: `calls` is the npm-script convention (215 invocations across 79 files) and `extends` is `allOf` composition, both of which this lane's own design_decision entries already rule on.",
+    "_denominator": "THE APPLICABILITY DENOMINATOR, because `1/10` on the board's FIRED column is not this lane's contract. The firing instrument samples ONE corpus for this lane (shadcn-svelte, 2,349 JSON files of theme and config documents) where only `contains` fires. On a deterministic 400-file stride of the WHOLE admitted population (14,009 files across 153 repos) EIGHT labels are applicable and measured: contains 130,787 · references 895 · uses 212 · extends 200 · exports 37 · calls 5 · imports 1 · overrides 1, against implements 0 and instantiates 0 (`npx tsx script/m14/incoming-gate.ts json json 400`). Numerator (what fires) and denominator (what is applicable) therefore come from DIFFERENT instruments — the firing log and the gate's own per-label edge table — and the denominator shrinks only where a label is RULED with a corpus measurement, which is what JSON-G1 and JSON-G2 record. It is 8, not 1, and not 10: `calls` is the npm-script convention (215 invocations across 79 files) and `extends` is `allOf` composition, both of which this lane's own design_decision entries already rule on. CORRECTED 2026-10-09 by the whole-population census, and the correction moves in the OPPOSITE direction to the one this field was written to guard against: the gate's 400-file stride is itself a sample, and on it 8 labels fire while over all 13,951 admitted files NINE fire — `implements` 113 edges over 1 file is real, and the stride's `implements 0` was a 2.9%-draw miss, not a ruling. The denominator is not 8 and the numerator is not 1: it is 9 emitted of 10 applicable, with `instantiates` (0 edges) STAYING IN as zero-sites rather than leaving as grammar-absence. The `1/10` the firing log prints is reproducible and is a true statement about its 120 files — 0 of the 25 construct-bearing files in that corpus were sampled (`validation/m14/fixtures/json/measurements/json-firing-reconciliation.jsonl`).",
     "gaps": [
       {
         "id": "JSON-G1",
-        "severity": "ruled",
+        "severity": "falsified",
         "label": "implements",
         "missing": "`implements` is not emitted, and no JSON construct could carry it.",
         "measured_size": "INSTRUMENT A: the wired grammar produced 13 distinct node types over a deterministic 400-file stride of the admitted population — string:185,057 · string_content:184,772 · pair:110,301 · number:37,288 · escape_sequence:33,302 · object:29,751 · array:16,362 · true:2,139 · false:1,370 · null:1,287 · document:400 · ERROR:23 · comment:15 — and NOT ONE of them declares a type, a clause or a member, which is what an interface relation needs at either end (`bun .tmp-probe/json-lane/json-grammar-probe.mts 400`). INSTRUMENT B: 0 `implements` edges of 132,138 emitted on the same stride. The lane's corpus audit reached the same verdict by a third route and says why: '`implements`/`instantiates` PASSED, and this time the pass is a measurement rather than an absence of looking: 3,245 composition-keyword occurrences classified by meaning' (design_decision BD-audit-rulings).",
-        "ruling": "RULED INAPPLICABLE. A JSON document states data, not types: there is no interface, no type declaration and no member clause, so an `implements` edge has no endpoint to name at EITHER end. Overturn: any node type in a future grammar that declares a type or a clause, or any emitted `implements` edge."
+        "ruling": "RULED INAPPLICABLE. A JSON document states data, not types: there is no interface, no type declaration and no member clause, so an `implements` edge has no endpoint to name at EITHER end. Overturn: any node type in a future grammar that declares a type or a clause, or any emitted `implements` edge.",
+        "correction": "FALSIFIED 2026-10-09 — by this entry's OWN overturn condition, and the entry is kept as the history it is. An emitted `implements` edge exists: the whole-population census counts 113 edges over 1 file (`dart-sdk/third_party/pkg/language_server_protocol/lsp_meta_model.json`, LSP `mixins`), the lane's committed fixture validation/m14/fixtures/json/Inherit.lsp.expectation.json ASSERTS four `implements` edges and passes, and script/m14/json-ruled.ts says so in its header in as many words: 'implements was RULED at pass 1 and is EMITTED now'. The `measured_size` above is the reason the block did not know: INSTRUMENT A is a grammar inventory — the instrument this lane retracted six rulings over — and INSTRUMENT B was a 400-file stride, 2.9% of the population, against a construct carried by ONE file in 13,951. The exclusion is REMOVED from `coverage`; `implements` is implemented."
       },
       {
         "id": "JSON-G2",
@@ -71,7 +72,8 @@
         "label": "instantiates",
         "missing": "`instantiates` is not emitted, and no JSON construct could carry it.",
         "measured_size": "INSTRUMENT A: the same 13 node types over the same 400-file stride contain no call, no application, no `new` and no constructor — the grammar's whole vocabulary is values, containers and text (`bun .tmp-probe/json-lane/json-grammar-probe.mts 400`). INSTRUMENT B: 0 `instantiates` edges of 132,138 on that stride (`npx tsx script/m14/incoming-gate.ts json json 400`). Corroborated by the corpus audit's second half: 274 constructor-spelling keys classified by the VALUE's role, none of which constructs anything (design_decision BD-audit-rulings).",
-        "ruling": "RULED INAPPLICABLE. Construction is an EXPRESSION, and a JSON document has no expressions: every value is a literal or a container of literals. Overturn: any node type that evaluates an expression, or any emitted `instantiates` edge."
+        "ruling": "RULED INAPPLICABLE. Construction is an EXPRESSION, and a JSON document has no expressions: every value is a literal or a container of literals. Overturn: any node type that evaluates an expression, or any emitted `instantiates` edge.",
+        "correction": "CLASS CHANGED 2026-10-09, ruling unchanged: the exclusion stands (0 edges over 13,951 admitted files) but it is evidence class `zero-sites`, NOT `grammar-absence`. The instrument of record is already the right one — script/m14/json-ruled.ts puts this type on B:parse-tree-count precisely because a grammar inventory cannot decide a keyword-shaped construct, and the `measured_size` above leads with INSTRUMENT A. A convention a JSON document can spell and a corpus never exercises STAYS IN the denominator; only a construct the language cannot express leaves it. Effect: applicable is 10, not 9."
       },
       {
         "id": "JSON-G3",
@@ -168,21 +170,23 @@
       "references",
       "exports",
       "extends",
+      "implements",
       "overrides"
     ],
     "excluded": [
       {
-        "label": "implements",
-        "evidence": "grammar-absence",
-        "from": "JSON-G1: 'RULED INAPPLICABLE. A JSON document states data, not types … no endpoint to name at EITHER end' — INSTRUMENT A, 13 distinct node types over a 400-file stride"
-      },
-      {
         "label": "instantiates",
-        "evidence": "grammar-absence",
-        "from": "JSON-G2: 'RULED INAPPLICABLE. Construction is an EXPRESSION, and a JSON document has no expressions' — INSTRUMENT A"
+        "evidence": "zero-sites",
+        "from": "JSON-RULED (script/m14/json-ruled.ts, the lane's ruling table — its ONLY entry): B:parse-tree-count, 0 edges over 13,951 admitted files, with the 23 ungated near-misses classified one by one. Corpus artifact: validation/m14/fixtures/json/measurements/json-census-whole-population.jsonl"
       }
     ],
     "corpusUnexercised": [],
-    "_from": "BD-ontology: 'EIGHT are emitted — contains, uses, references, imports, exports, extends, calls, overrides. TWO are excluded by the language: implements and instantiates.'"
+    "_from": "BD-ontology, CORRECTED 2026-10-09 by whole-population measurement (production parseFile, 13,951 admitted files across 154 repos, 0 excluded, 0 repos without verdict, 0 parse failures): NINE are emitted — contains 3,990,897 · references 17,117 · uses 9,955 · extends 1,780 · exports 1,200 · calls 263 · implements 113 · imports 82 · overrides 22 — and ONE is excluded by a whole-corpus count, instantiates 0. The firing-log row `1 types fired` is a 120-file artefact: 0 of the 25 construct-bearing files in that corpus were sampled, and the same corpus measured WHOLE fires 4 types. Reconciliation record and raw instruments: validation/m14/fixtures/json/measurements/json-firing-reconciliation.jsonl",
+    "_firingLog": {
+      "instrument": "script/m14/firing-check.mjs JSON_B",
+      "row": "JSON_B 1 types fired — contains:2425, 120/120 parsed (sample of the corpus, even stride)",
+      "population": "ONE repo (shadcn-svelte, 2,369 admitted .json files) strided to 120 files; the same corpus measured WHOLE fires 4 types: contains:54575 exports:14 references:8 uses:339",
+      "verdict": "a true statement about 120 files, not a statement about json — see docs/analyzers/json.md §1"
+    }
   }
 }
