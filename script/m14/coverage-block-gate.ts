@@ -185,7 +185,26 @@ for (const lane of allLanes) {
     const from = typeof x === "string" ? "" : x?.from
     if (cls === "grammar-absence") gAbs.push(label)
     else if (cls === "zero-sites") zero.push(label)
-    else { unclassified.push(label); problems.push(`excluded "${label}" is classed "${cls ?? "(none)"}" — only grammar-absence and zero-sites are evidence classes; an unclassified exclusion does NOT shrink the denominator`) }
+    // THE MESSAGE MUST MATCH THE ARITHMETIC, AND IT DID NOT.
+    //
+    // This line said an unclassified exclusion "does NOT shrink the denominator" while the board's
+    // arithmetic string — `applicable = 10 - N grammar-absence - M unclassified = K` — SUBTRACTS it,
+    // and so does line ~279 of this file. `julia-lane` caught the contradiction and pointed out the
+    // direction it flatters: a lane can drop ANY type from the denominator by leaving it
+    // unclassified, so an unmeasured exclusion raises n/N exactly like a measured one while costing
+    // nothing to produce. The old julia row read 8/8 that way; with the stated rule it would read
+    // 8/10, and the spec's JUL-D1/JUL-D2 were precisely such exclusions.
+    //
+    // The arithmetic is left as-is here because the BOARD is the authority on the column and this
+    // gate must not disagree with the row it audits — but the wording is corrected, and the
+    // consequence is reported as a finding rather than buried. See
+    // docs/analyzers/HANDOFF.md §5.9: whether `unclassified` may shrink the denominator is an OPEN
+    // decision, because PROMPT-LAPTOP-B §3.1 allows a denominator to shrink only via a RULED verdict
+    // carrying a corpus measurement, and `unclassified` is by definition unmeasured.
+    else {
+      unclassified.push(label)
+      problems.push(`excluded "${label}" is classed "${cls ?? "(none)"}" — only grammar-absence and zero-sites are evidence classes. NOTE this exclusion STILL shrinks the denominator (the board's arithmetic subtracts it), so an unmeasured claim currently buys the same ratio improvement as a measured one. Classify it.`)
+    }
     // 4. CORPUS-CITED. Rule-book §6: "A ruling without a count is prose." A grammar-absence (or
     // zero-sites) claim must therefore carry BOTH a COUNT and, where it names an artifact, an
     // artifact that exists.

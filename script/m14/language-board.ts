@@ -684,16 +684,23 @@ function buildRow(lane: string, ext: string, firing: ReturnType<typeof parseFiri
   for (const x of cov.excluded) if (x.evidence === "unclassified")
     addNote(`${cov.spec}: ${x.from} rules \`${x.label}\` out and its evidence class could not be read — counted as UNCLASSIFIED, which leaves the denominator; classify it rather than letting it pass as grammar-absence`, lane)
 
-  // Analyzer change: the repo's convention is src/ast/real-<lane>-analyzer.ts.
-  const analyzerPath = `src/ast/real-${lane}-analyzer.ts`
+  // Analyzer change: the repo's convention is src/ast/real-<lane>-analyzer.ts, and two lanes do not
+  // follow it. The board used to build the convention path, find nothing, and then SPECIAL-CASE
+  // `make` with a hand-written note saying where its analyzer really is — which reported the absence
+  // rather than dating the file, so `make` sat at `STALE unknown` with no mtime and no commit date
+  // while the file that decides its freshness was sitting right there. A map is the general form of
+  // that exception: every deviation is named here, and the row gets a real date.
+  const ANALYZER_FILE_DEVIATION: Record<string, string> = {
+    make: "src/ast/real-makefile-analyzer.ts",
+    // `docs/analyzers/real-<lane>-analyzer.md` is not the question here; this maps the ANALYZER.
+  }
+  const analyzerPath = ANALYZER_FILE_DEVIATION[lane] ?? `src/ast/real-${lane}-analyzer.ts`
   const g = gitLastChange(analyzerPath)
   let mtimeMs: number | null = null
   try { mtimeMs = statSync(resolve(ROOT, analyzerPath)).mtimeMs } catch { mtimeMs = null }
   if (g.failed) addNote("`git log` failed: commit dates unavailable (mtime still used where a file exists)", lane)
   if (mtimeMs === null && g.ms === null)
-    addNote(lane === "make"
-      ? `${analyzerPath} does not exist (the lane's analyzer is src/ast/real-makefile-analyzer.ts); the board reports the convention path's absence rather than guessing a date`
-      : `${analyzerPath} does not exist and has no commit — lane last change UNKNOWN`, lane)
+    addNote(`${analyzerPath} does not exist and has no commit — lane last change UNKNOWN`, lane)
 
   // STALENESS — see the header. mtime is the change time; the commit date only dates a gone file.
   const change = mtimeMs ?? g.ms
@@ -793,7 +800,19 @@ if (COVERAGE_MODE) {
     console.log(`             unexercised=${c.corpusUnexercised === null ? "?" : JSON.stringify(c.corpusUnexercised)}`)
     console.log(`             ${c.arithmetic}`)
   }
-  process.exit(0)
+  // THE NOTES BELONG HERE TOO. This mode ends the process, so it used to exit before the notes
+  // were rendered at all — meaning the ONE mode lanes are told to verify a declaration with
+  // could not show a block that does not close. Measured by clean-lane: a spec declaring
+  // `extends` in BOTH `excluded` and `corpusUnexercised` produced
+  //   coverage block does not close: implemented 9 + unexercised 1 + gaps 0 ≠ applicable 9
+  // in `--json`, and an ordinary-looking row in `--coverage`. A verification mode that hides the
+  // failure it exists to reveal is worse than no mode: it certifies.
+  if (notes.length > 0) {
+    console.log()
+    console.log(`NOTES (${notes.length}) — a declaration that does not close is a defect in the DECLARATION:`)
+    for (const n of notes) console.log(`  ${n}`)
+  }
+  process.exit(notes.length > 0 ? 1 : 0)
 }
 if (JSON_MODE) {
   console.log(JSON.stringify({
