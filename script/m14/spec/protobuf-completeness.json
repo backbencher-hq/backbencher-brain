@@ -179,5 +179,63 @@
         }
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "contains",
+      "imports",
+      "uses"
+    ],
+    "excluded": [
+      {
+        "label": "calls",
+        "evidence": "grammar-absence",
+        "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): calls 0 edges, while contains 3,470 \u00b7 imports 368 \u00b7 uses 1,159 fire on the same run. Proto declares service methods; it never invokes one, so the zero is type-specific rather than a failed parse."
+      },
+      {
+        "label": "extends",
+        "evidence": "grammar-absence",
+        "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): extends 0 edges. There is no supertype clause; proto2 `extend` extends a field-number space, which is not inheritance."
+      },
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): implements 0 edges. No conformance clause exists in the language."
+      },
+      {
+        "label": "references",
+        "evidence": "grammar-absence",
+        "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): references 0 edges, against contains 3,470 and uses 1,159 \u2014 an absence that is type-specific, not an empty parse."
+      },
+      {
+        "label": "exports",
+        "evidence": "grammar-absence",
+        "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): exports 0 edges. A .proto declares messages for importers; there is no export declaration to key on."
+      },
+      {
+        "label": "overrides",
+        "evidence": "grammar-absence",
+        "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): overrides 0 edges. Proto has no member-override construct."
+      },
+      {
+        "label": "instantiates",
+        "evidence": "grammar-absence",
+        "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): instantiates 0 edges. A .proto declares types; it does not construct values."
+      }
+    ],
+    "corpusUnexercised": [],
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE 128-file protobuf population (pb-googleapis, no stride, 128/128 parsed, 0 degraded). Instrument: BB_PICK_CAP=500 NFILES=400 bun script/m14/firing-check.mjs PROTOBUF.",
+      "contains": {
+        "edges": 3470
+      },
+      "imports": {
+        "edges": 368
+      },
+      "uses": {
+        "edges": 1159
+      }
+    },
+    "_from": "MEASURED whole-corpus, not sampled. This lane's instrument population IS its whole corpus (128 of 128 admitted), so the stride/sample caveat that muddied bash, css, r and json does NOT apply: `3 types fired` is a claim about the entire population this lane has. Three types fire and seven are zero on the same run, and every exclusion is grammar-absence rather than zero-sites because a .proto cannot express them at all."
   }
 }

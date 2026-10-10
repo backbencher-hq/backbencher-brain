@@ -180,5 +180,57 @@
         "resolution": "YES, and on the same measurement: 65 files, 0 error files, 0 error nodes, 43 symbols, 279 relationships, 96 imports. A .nims is NimScript \u2014 set_cmd, switch, buildFile, all procs and calls on a real stdlib \u2014 so it is Nim code by any reading that matters, and the analyzer extracts it like any other module. `src/ast/language-detection.ts` now routes .nims and .nimble to nim, and the differential and fixture lanes' ext lists were updated in the same change so the claim and the router cannot drift apart: a lane that swept an extension the router skips is the inert-pin class, and a lane that under-reports what the router now handles is the same defect wearing a hat."
       }
     ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "overrides",
+      "instantiates"
+    ],
+    "excluded": [
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "whole-corpus firing over ALL 3,917 admitted .nim files (`[corpus=nim WHOLE]`, 3,917/3,917 parsed, 0 degraded, instrument self-test PASS): implements 0 edges, while calls 66,531 \u00b7 contains 20,032 \u00b7 exports 285 \u00b7 extends 543 \u00b7 imports 7,190 \u00b7 instantiates 1,868 \u00b7 overrides 49 \u00b7 references 35,221 \u00b7 uses 27,637 fire on the same run. Nim's conformance-like idioms (concepts, C-interop interfaces) have no conformance-clause node; the zero is type-specific rather than a failed parse \u2014 it is the ONE silent type out of ten on a run that produced nine. NIMD3 now carries this measured 0 instead of an unclassified ruling."
+      }
+    ],
+    "corpusUnexercised": [],
+    "_implemented_measured": {
+      "_unit": "edges published through the production path over the WHOLE 3,917-file nim population (no stride, 3,917/3,917 parsed, 0 degraded). Instrument: BB_PICK_CAP=4200 NFILES=4000 bun script/m14/firing-check.mjs NIM.",
+      "calls": {
+        "edges": 66531
+      },
+      "uses": {
+        "edges": 27637
+      },
+      "contains": {
+        "edges": 20032
+      },
+      "imports": {
+        "edges": 7190
+      },
+      "references": {
+        "edges": 35221
+      },
+      "exports": {
+        "edges": 285
+      },
+      "extends": {
+        "edges": 543
+      },
+      "overrides": {
+        "edges": 49
+      },
+      "instantiates": {
+        "edges": 1868
+      }
+    },
+    "_from": "MEASURED whole-corpus over 3,917 files, no stride. The lane previously read `9/9 from=spec-declared \u222a firing-log` with `implements` classed UNCLASSIFIED (NIMD3) \u2014 a class the board's arithmetic SUBTRACTS while the stated rule does not allow it (HANDOFF \u00a75.9). NIMD3 is now bound to the measured 0 and classified grammar-absence, so the denominator is earned rather than taken."
   }
 }
