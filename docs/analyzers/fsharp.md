@@ -351,3 +351,45 @@ the bare leaf today, and a spelling taken from the analyzer's output would make 
 tautology). Landing the analyzer half alone would convert ~210 differential rows into
 MISSING-plus-UNEXPLAINED, which is strictly worse than leaving them unnamed — the same conclusion §3
 reached, now with the population measured and the class verified rather than assumed.
+
+### 6.3 The staged plan's step 1 CANNOT be inert — the differential's own matcher says so
+
+The approved order is: oracle first, as an *inert* step with MISSING and unexplained unchanged, as
+proof the oracle derives the right spelling before any analyzer edge is re-spelled. **That
+expectation is impossible**, and it is not an argument — `normTarget` is EXPORTED from
+`script/m14/differential.ts`, so the two match predicates can be run against the real functions
+(`measurements/binding-respell-matching.txt`, instrument
+`probe-binding-respell-matching.ts`):
+
+```
+MISSING      rels.some(r => r.label === te.label && normTarget(r.target) === normTarget(te.target))    // :24217
+unexplained  truth.some(te => te.label === r.label && (normTarget(te.target) === normTarget(r.target)
+                                                        || te.target.includes(normTarget(r.target)))) // :24230
+```
+
+`lastSegment` splits on `::` and `.` only — **not** `#` — so `normTarget("dataLoader#asIndex")` is
+`"dataLoader#asIndex"` while `normTarget("asIndex")` is `"asIndex"`. The two predicates then behave
+oppositely:
+
+| step | truth | analyzer | MISSING | unexplained |
+|---|---|---|---|---|
+| 1 — oracle re-spells, analyzer unchanged | `dataLoader#asIndex` | `asIndex` | **YES** | **no** |
+| 2 — analyzer flips | `dataLoader#asIndex` | `dataLoader#asIndex` | no | no |
+
+Step 1's `unexplained` cannot move because of the *asymmetry in the second predicate*: the analyzer
+side also matches when the TRUTH target merely CONTAINS the analyzer's normalized target, and
+`"dataLoader#asIndex".includes("asIndex")` is true. Step 1's `MISSING` cannot stay put because the
+first predicate is an exact equality on the normalized target.
+
+**So the corrected, falsifiable signature is:**
+
+- **Step 1 (oracle only):** `MISSING = 10 + N`, `unexplained = 69` **unchanged**, where `N` is the
+  number of truth rows the oracle re-spells in the 60-file sample. That `N` is itself the
+  measurement — it is how much of the class the oracle independently finds.
+- **Step 2 (analyzer flips):** `MISSING` returns to **10**, `unexplained` stays **69**.
+- **A step-1 run reading MISSING UNCHANGED would mean the oracle's derivation is not firing at
+  all** — a bug, not a pass. The original criterion would have read the correct behaviour as
+  failure.
+
+The CONTROL in the probe keeps that from being a constant: identical bare spellings on both sides
+report "covered and explained", so the predicates can answer both ways.
