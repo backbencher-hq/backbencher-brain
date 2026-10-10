@@ -117,14 +117,14 @@ import { BINDING_SEP } from "../../src/ast/types"
 import {
   EXTERNAL_KEYS, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
   FILE_CLAIM_KEY, REMOTE_REF_CLAIM_KEY,
-  emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY,
+  emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY, isContainsEdge,
   type ExternalClaim, type ProjectFacts,
   type Outcome, type Classified, type Outcomes,
 } from "./incoming-rule"
 export {
   EXTERNAL_KEYS, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
   FILE_CLAIM_KEY, REMOTE_REF_CLAIM_KEY,
-  emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY,
+  emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY, isContainsEdge,
 }
 export type { ExternalClaim, ProjectFacts, Outcome, Classified, Outcomes }
 
@@ -817,7 +817,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     // binds it with `resolveContainsTargetStmt`, which prefers the edge's own file and returns
     // LIMIT 1, so a name collision is not an ambiguity for this type. Measured by xml-lane: 94.1%
     // ambiguous under the count model against 98.4% bound in the real store.
-    const isContains = e.label === "contains" || e.type === "contains"
+    const isContains = isContainsEdge(e.label)
     const pc = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains)
     tally(row.project, pc, e.tgt, e.label)
     row.intent[classifyIntent(e.tgt, e.srcFile, e.line, e.label, declPos)]++
@@ -1147,6 +1147,54 @@ function selfTest(): { ok: boolean; failures: string[] } {
       const gotIntent = classifyIntent(tgt, src, line, label, planted)
       if (gotIntent !== want) failures.push(`control (intent): ${name} classified ${gotIntent}, expected ${want}`)
     }
+  }
+
+  // ------------------------------------------------------------------------------------------
+  // THE CONTAINS RULE — FOUR PLANTS, because this rule had NONE until this round and the cost is
+  // written in `isContainsEdge`'s comment. `gamma` is the right target for it: 2 declarations over
+  // 2 kinds, so the count model reads `ambBoth` and ONLY the contains rule may say `resolved`.
+  //
+  // (1) the predicate the GATE calls, asserted rather than re-spelled, so a caller that stops
+  //     recognising `contains` fails here instead of silently reverting 97,797 edges to ambiguous;
+  // (2) the rule's effect: the collision still RESOLVES, and the flag that says a collision
+  //     existed survives it — lose the flag and a reader takes a tie-broken binding for a certain
+  //     one, which is the whole subject of `boundAmongCollision`;
+  // (3) the MIRROR: the same target under a non-contains label must still read `ambBoth`, so a
+  //     mutant that applies the rule to every type cannot pass;
+  // (4) the bound: an UNPUBLISHED contains target may not read resolved, so a mutant that makes
+  //     the rule unconditional (the laundering shape) cannot pass either.
+  if (!isContainsEdge("contains") || isContainsEdge("calls")) {
+    failures.push(
+      "control: the caller's own `contains` predicate no longer separates `contains` from `calls` " +
+      "— the rule is being applied to the wrong edges, or to none",
+    )
+  }
+  const containsHit = classifyEdge(declCount, kinds, "gamma", null, undefined, isContainsEdge("contains"))
+  if (containsHit.outcome !== "resolved") {
+    failures.push(`control: a colliding \`contains\` target classified ${containsHit.outcome}, expected resolved — production binds it with its own statement`)
+  }
+  if (containsHit.boundAmongCollision !== true) {
+    failures.push("control: a colliding `contains` target resolved with NO collision flag — a tie-broken binding is being reported as a certain one")
+  }
+  const containsMiss = classifyEdge(declCount, kinds, "gamma", null, undefined, isContainsEdge("calls"))
+  if (containsMiss.outcome !== "ambBoth") {
+    failures.push(`control: the same colliding target under \`calls\` classified ${containsMiss.outcome}, expected ambBoth — the contains rule is leaking onto other types`)
+  }
+  const containsAbsent = classifyEdge(declCount, kinds, "delta", null, undefined, isContainsEdge("contains"))
+  if (containsAbsent.outcome !== "unresolved") {
+    failures.push(`control: an UNPUBLISHED \`contains\` target classified ${containsAbsent.outcome}, expected unresolved — the rule is laundering a gap into a resolution`)
+  }
+  // AND THE COLUMN IT FEEDS, because the rule's effect is only useful if it reaches the table: a
+  // `contains` resolution must land in `resolved` and be counted in `resolvedAmongCollision` —
+  // never in `ambiguousByDecl`, which is the number the verdict reads.
+  const collRow = emptyOutcomes()
+  tally(collRow, containsHit, "gamma", "contains")
+  if (collRow.resolved !== 1 || collRow.resolvedAmongCollision !== 1 || collRow.ambiguousByDecl !== 0) {
+    failures.push(
+      `control: the contains resolution tallied as resolved=${collRow.resolved} ` +
+      `collision=${collRow.resolvedAmongCollision} ambiguousByDecl=${collRow.ambiguousByDecl} — ` +
+      `the rule fires but its outcome is not reaching the table the verdict reads`,
+    )
   }
 
   if (got.resolved !== 1) failures.push(`control: expected 1 resolved, got ${got.resolved}`)

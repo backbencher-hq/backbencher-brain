@@ -656,6 +656,28 @@ export type Classified = {
 }
 
 /**
+ * WHICH LABEL GOES THROUGH THE `containsLike` RULE — the only type whose binding statement
+ * differs, so it is the one type `classifyEdge` must be told about.
+ *
+ * THIS FUNCTION EXISTS BECAUSE THE RULE HAD NO CONTROL, and it is worth writing down what that
+ * cost. `fa2dc27e8` added the caller's test as `e.label === "contains" || e.type === "contains"`,
+ * where the second operand reads a FIELD THE CALLER'S OWN STRUCT DOES NOT HAVE — a typecheck error
+ * (TS2339) that sat at HEAD while every lane's control stayed green, because `selfTest` planted
+ * cases for every claim kind and NOT ONE for `containsLike`. The label comparison happened to
+ * short-circuit first, so the behaviour was right by luck; nothing in the instrument could say so.
+ * A rule that carries ~97,800 whole-corpus edges (arm7's `contains` ambiguous column, the exact
+ * number this rule exists to reclassify) and is asserted by nothing is a rule that is one
+ * refactor away from being off.
+ *
+ * So the caller's test lives here, in the module that owns the classification, and `selfTest`
+ * asserts THIS function rather than re-spelling the comparison: the control now fails if the rule
+ * stops being applied to `contains`, and it cannot pass by testing a copy the gate does not call.
+ */
+export function isContainsEdge(label: string): boolean {
+  return label === "contains"
+}
+
+/**
  * THE ONE RULE. Measurement and control both call this, because two copies of a counting
  * rule are two rules, and the copy the control runs is the one that stays correct.
  */
