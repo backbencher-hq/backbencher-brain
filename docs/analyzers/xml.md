@@ -261,3 +261,44 @@ references, and the header's *"a wrong edge"* is only true of `contains`/`export
 sample is 236 twins from a 600-file stride; the whole-population split is the next measurement if a
 reader needs the absolute count, and the class is uniform enough in this draw that the conclusion is
 unlikely to move.
+
+### Whole-population confirmation, and the falsifier printed as a number
+
+The 236-twin result above was a 600-file stride, and a ruling whose falsifier is *"every twin is
+claimed"* should not rest on a sample. Run over the WHOLE admitted population — **11,552 files, even
+stride 1**, `measurements/twin-class-whole-population.txt`:
+
+| | whole population |
+|---|---:|
+| `references`+`extends` edges | 12,537 |
+| **TWINS** | **4,782** (references 4,137 · extends 645) |
+| REFERENCED — the own file names the declaring file | 993 (20.8%) |
+| CEILING — own file declares the same leaf | **0 (0.0%)** |
+| NEITHER — unexplained by this probe | 3,789 (79.2%) |
+
+**The probe reproduces the gate's own twin column EXACTLY — 4,137 and 645, to the edge** — which is
+the cross-check that it is measuring the same class the gate measures, not a neighbouring one.
+
+**FALSIFIER COUNT, printed as a number rather than left to the absence of a row:**
+
+```
+twins the analyzer calls in-document:      0
+twins already carrying isExternalTarget: 4,767 of 4,782   (99.7%)
+```
+
+By the analyzer's own class: `builtin | isExternalTarget` **3,856** · `external | isExternalTarget`
+**911** · `unresolved | ambiguousWithBuiltin` **9** · `unresolved | danglingEntityReference` **6**.
+
+**The 15 twins that are not externally claimed are the only residue, and they are named and already
+classified**: 9 `ambiguousWithBuiltin` and 6 `danglingEntityReference`, both the analyzer's own labels
+for targets it declines to claim. None is `in-document`, so the ruling stands at whole-population
+scale — and if a later reader wants a real cause on this type, **those 15 are where it would start**,
+not the 4,782.
+
+**ONE NUMBER FROM THE SAMPLE DID NOT SURVIVE SCALE, recorded because the class is what travels and the
+rate is not.** `REFERENCED` read **0.0%** on the 600-file stride and reads **993 (20.8%)** at whole
+population: a stride of 19 misses the sibling files that make a schema name the document it depends on
+(an `.xsd` beside the `.xsd` that extends it). The ruling did not depend on it — the falsifier was
+always the `in-document` count, which is 0 at both scales — but the rate was a draw artifact and is
+stated as such. **The ceiling being 0 at BOTH scales is the number that decides the fix question**: no
+spelling change reaches any twin, at 600 files or at 11,552.
