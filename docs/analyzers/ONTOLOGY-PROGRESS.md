@@ -168,6 +168,53 @@ in-flight files per kill, all reported as `ABANDONED-AFTER-KILL`).
 `script/m14/resumable-walk-selftest.ts` drives that path with a real child-process
 kill — 7/7 checks.
 
+## Java — the incoming declaration round, opened (2026-10-10)
+
+Java had the measurement and not the contract: `incoming-gate.ts java java 200 --json`
+exits 1 on the fleet's bar forever, and nothing per-type ratcheted, so the backlog
+could grow silently. `script/m14/java-incoming-gate.ts` now does the ratchet — and
+does **not** re-measure Java with a second instrument: it shells out to the same
+`incoming-gate.ts` and declares THAT measurement, per type, in
+`validation/m14/instruments/java/incoming-declaration.json` (200/200 parsed, 0
+degraded, 26,095 edges, `qualifiedNameAliases 3,040`).
+
+Five classes per type, a total partition whose identity the gate CHECKS:
+`edges = resolved + ambiguous + otherUnresolved + external + unclassed`.
+**resolved 5,153** and **external 3,283** are FLOORS; **ambiguous 5,024** and
+**otherUnresolved 12,635** are CEILINGS; **unclassed 0** is an exact bound. The
+first version of the gate derived `otherUnresolved = unresolved − external`,
+assuming the marker was counted inside `unresolved`; the instrument increments the
+two in mutually exclusive branches, and the assumption printed
+**`implements otherUnresolved −10`** on the first full run. `unclassed` exists so
+that impossible arithmetic cannot pass as a clean measurement — a `≤ 0` ceiling
+would have accepted −1, because the first version of the check treated it as a
+ceiling; the bound is equality, and 0 is the only admissible value.
+
+Two measured moves, deliberately separated: the external marker reclassifies
+3,283 edges as DECLARED EXCEPTIONS with zero edge churn; publishing each symbol's
+file-scoped `qualifiedName` adds the alias key the pool was missing and **resolves
+103 edges that were counted unresolved** (`imports +10`, `references +87`,
+`implements +1`, `overrides +1`, `instantiates +4`) with `ambiguous` unmoved at
+every type. The declaration is bound to the analyzer digest
+(`sha256:6e2e5693569c62ee`): a changed analyzer fails until re-declared on purpose.
+
+**The honest sentence:** Java's declaration gate reads **PASS** and the fleet
+gate still reads **FAIL** (5,024 ambiguous + 12,635 unresolved of 26,095). PASS
+means every class is declared, no floor lost, no ceiling raised — not that the
+ceilings are small. Six planted failures are the gate's own control, and the
+end-to-end control was run: `calls.ambiguous` 2,143 → 2,142 → **exit 1**,
+`calls: ambiguous ceiling 2142 violated — measured 2143 (1 REGRESSED)`.
+
+**Evidence and bookkeeping.** F3's artifact now records java at **52/63
+fixtures**. Both F3 and F7 were fresh before this lane's two commits and stale
+after them — this lane's to regenerate — and they were regenerated **in a clean
+worktree at `e462a3797`** because the shared tree was carrying another lane's
+uncommitted JavaScript work: a first attempt in the shared tree reported fixture
+regressions (vue 5→7, svelte 9→10, html 1→4) that the clean checkout does **not**
+reproduce (0 regressions there), which is the control showing those belong to the
+other lane's working tree. Still red and **pre-existing**: F1/F2/F4/F5/F8/F9,
+each already carrying 2/12/3/84/3/3 changed inputs before this lane's commits.
+
 ## Still to do at integration
 
 - Regenerate `website/src/data/brain-languages.ts` — its `emits` arrays are
@@ -177,3 +224,6 @@ kill — 7/7 checks.
   findings, and the fleet run still fails on other lanes' 91 NEW findings against
   a recorded debt of 104 (69 repaid) — that baseline is theirs to refresh.
 - Re-run the m14 grammar, mutation, differential and fixture gates per lane.
+- Refresh the honesty artifacts F1/F2/F4/F5/F8/F9 — stale since before the Java
+  lane's commits (2/12/3/84/3/3 changed inputs), so they are theirs to regenerate,
+  not this lane's.

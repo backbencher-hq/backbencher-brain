@@ -135,4 +135,11 @@ after both changes (`--lang java`, 52 pass / 11 fail, baseline gate *no regressi
   declared per type, no floor lost, no ceiling raised, `unclassed 0` and the class sum equals
   the edge count on all ten types; six-case self-test PASS; tightened-ceiling control **exit 1**
   with the violation named
+- Honesty ledger: F3 (fixtures) and F7 (analyzer hygiene, 25 analyzers clean) were fresh
+  before this lane's commits and stale after them, so they were regenerated — in a CLEAN
+  worktree at `e462a3797`, because the shared tree carried another lane's uncommitted
+  JavaScript work (a shared-tree attempt reported vue/svelte/html fixture regressions the
+  clean checkout does not reproduce: 0 regressions there). F3 now records java at 52/63.
+  F1/F2/F4/F5/F8/F9 remain red from pre-existing work (2/12/3/84/3/3 changed inputs before
+  this lane's commits)
 - Mutation hardening: 4 java-specific mutants ALL CAUGHT (incl. drop-declared-types)
