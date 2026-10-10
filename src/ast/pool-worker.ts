@@ -1089,6 +1089,71 @@ export async function parseFile(filePath: string, projectPath: string, context?:
     // and a nested one at ~1.93 per doubling. The `??=` keeps the split lazy so a file
     // with no such symbol never pays for it at all.
     let snippetLines: string[] | undefined
+
+    // ── THE INVARIANT: a symbol this function DROPS must not leave edges behind that name it ──
+    //
+    // MEASURED 2026-10-10 (fsharp lane). `keepSymbol` drops a symbol by NAME — its `UNIVERSAL`
+    // set takes `this` and `super` unconditionally (`:545-548`) — while the RELATIONSHIPS were
+    // never filtered at all, and could not be by that predicate: the filter is symbol-shaped and
+    // a relationship carries endpoint STRINGS. So the symbol vanished and its edges stayed,
+    // pointing at a symbol the consumer never received.
+    //
+    // The reproduction, on `fsharp/tests/service/data/SyntaxTree/Type/As 03.fs`:
+    //   analyze()  publishes `Module` and `this<Module>`
+    //   parseFile  returns  `Module` only
+    //   and BOTH `contains Module -> Module.this` and `exports Module -> Module.this` survived.
+    // The analyzer's own `contains` pass states the invariant that is violated: "the TARGET is
+    // always an identity this file minted" (`real-fsharp-analyzer.ts:2174-2180`).
+    //
+    // The rule is deliberately one-directional: an edge is dropped only when an endpoint STRING
+    // equals a name this call dropped AND no kept symbol still publishes that name. A name any
+    // kept symbol carries is never dropped, so nothing is lost for a symbol the consumer DID
+    // receive.
+    //
+    // SCOPE, because a measured fleet sweep is what sized it: this closes the DROPPED-SYMBOL
+    // seam only. It does NOT close every containment target that fails to resolve — julia and
+    // lua emit `exports` whose target was never a symbol identity at all (no symbol was dropped,
+    // so there is nothing to drop an edge for), 681 and 618 edges on the same sweep. Those are a
+    // different defect with a different owner, and this change is deliberately not widened to
+    // cover them.
+    // The drop-set must hold every IDENTITY the edges can name, not just the symbol's `name`:
+    // `keepSymbol` filters on the NAME (`this`), while a containment edge names the symbol's
+    // published identity (`Module.this` = its `metadata.fqn`). A first cut of this fix keyed the
+    // set on `name` alone and was measured INERT on the very files it was written for — the set
+    // held `this`, the edge said `Module.this`, nothing matched. The identities below are exactly
+    // the ones `ret.symbols` publishes at `qualifiedName`, derived the same way, so the two
+    // cannot drift.
+    const identityOf = (s: any): string[] => {
+      const out: string[] = []
+      if (s?.name) out.push(String(s.name))
+      if (s?.qualifiedName) out.push(String(s.qualifiedName))
+      if (typeof s?.metadata?.fqn === "string" && s.metadata.fqn) out.push(String(s.metadata.fqn))
+      if (s?.name) {
+        out.push(
+          s.qualifiedName || s.metadata?.fqn || (s.scope ? `${s.scope}.${s.name}` : String(s.name)),
+        )
+      }
+      return out
+    }
+    const keptSymbols: any[] = []
+    const keptNames = new Set<string>()
+    const notKept: any[] = []
+    for (const s of parsed.symbols ?? []) {
+      if (keepSymbol(s, parsed.language || language)) {
+        keptSymbols.push(s)
+        for (const id of identityOf(s)) keptNames.add(id)
+      } else {
+        notKept.push(s)
+      }
+    }
+    const droppedNames = new Set<string>()
+    for (const s of notKept) {
+      for (const id of identityOf(s)) {
+        // A symbol this call KEEPS may publish the same identity; then nothing is dropped.
+        if (!keptNames.has(id)) droppedNames.add(id)
+      }
+    }
+
     const ret = {
       success: true,
       language: parsed.language || language,
@@ -1096,9 +1161,7 @@ export async function parseFile(filePath: string, projectPath: string, context?:
       fileHash: hash,
       sizeBytes,
       lastModified,
-      symbols: parsed.symbols
-        .filter((s: any) => keepSymbol(s, parsed.language || language))
-        .map((s: any) => {
+      symbols: keptSymbols.map((s: any) => {
         let snippet = ""
         if (SNIPPET_KINDS.has(s.kind)) {
           const lines = snippetLines ?? (snippetLines = content.split("\n"))
@@ -1396,7 +1459,21 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             }
           })
       }),
-      relationships: filterNoiseRelationships(parsed.relationships, language, new Set((parsed.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean))),
+      // THE DROPPED-SYMBOL INVARIANT — see `droppedNames` above. An edge that names a symbol
+      // this call filtered out is not a weaker edge, it is an edge to nothing, so it goes with
+      // the symbol. Applied BEFORE the noise filter so the two are independent and either can
+      // be measured alone.
+      relationships: filterNoiseRelationships(
+        droppedNames.size
+          ? (parsed.relationships ?? []).filter(
+              (r: any) =>
+                !droppedNames.has(String(r?.source ?? r?.from ?? "")) &&
+                !droppedNames.has(String(r?.target ?? r?.to ?? "")),
+            )
+          : parsed.relationships,
+        language,
+        new Set((parsed.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean)),
+      ),
       // M60 LUA-14: the analyzer's `exports` were never forwarded here, so the
       // entire export surface of every language was invisible to the index. This
       // is the same defect the `metadata` line below already documents for

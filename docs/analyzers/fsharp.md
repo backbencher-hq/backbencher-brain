@@ -198,4 +198,96 @@ points at nothing. The defect belongs where the asymmetry is, in shared machiner
 - **Fix B (invariant):** if a symbol is filtered, filter the relationships that name it too, so the
   graph can never carry an edge to a symbol the consumer did not receive.
 
-**Reported to the lead rather than patched here**, with the reproduction above.
+**Fix B is now LANDED** (see §5). **Fix A (the `UNIVERSAL` set) is measured in §5.3 and left owed**
+with the enumeration its own criterion asked for.
+
+---
+
+## 5. Fix B LANDED — the dropped-symbol invariant, and what it does NOT cover
+
+`src/ast/pool-worker.ts` now drops, with a symbol, every relationship whose endpoint names an identity
+that symbol had. The rule is one-directional: an edge goes only when an endpoint string equals an
+identity this call dropped **and no kept symbol still publishes that identity**, so nothing is lost
+for a symbol the consumer did receive.
+
+**The first cut was INERT, and the reason is worth recording.** `keepSymbol` filters on the symbol's
+`name` (`this`), while a containment edge names its published identity (`Module.this`, the symbol's
+`metadata.fqn`). A drop-set keyed on `name` alone held `this`, the edge said `Module.this`, nothing
+matched — and the probe reported "no change" on the very files the fix was written for. The set is now
+built from every identity `ret.symbols` can publish (`name`, `qualifiedName`, `metadata.fqn`, and the
+same derived `qualifiedName` expression, so the two cannot drift).
+
+### 5.1 Controlled before/after, on the exact files
+
+Everything else identical, `pool-worker.ts` restored from `HEAD` and hash-verified back
+(`sha256 8a5c2e97…`); the count is `parseFile`'s own, because the invariant is about what the consumer
+receives:
+
+| file | edges naming a dropped identity, `HEAD` | with the fix |
+|---|---:|---:|
+| `fsharp/…/SyntaxTree/Type/As 03.fs` | **2** (`contains`, `exports` → `Module.this`) | **0** |
+| `fsharp/…/SyntaxTree/Member/Member 02.fs` | **1** (`contains` → `T.this`) | **0** |
+
+A first attempt at this measurement was WRONG and is recorded so the mistake is not repeated: it
+compared a `.fs`-only 2,000-file draw (before) against a `.fs/.fsi/.fsx` 2,000-file draw (after) and
+reported "4 → 0" as though the fix had done it. Re-running the SAME draw with the filter restored to
+`HEAD` also read 0 — that draw simply did not contain the affected files. A before/after over two
+different draws is not a before/after.
+
+### 5.2 Fleet-wide verification, back-to-back, same draws
+
+`probe-dangling-contains-targets.ts --langs fsharp,php,julia,lua,css --files 600`, run twice with only
+`pool-worker.ts` changed between them (one unrelated css commit landed during the pair; css is
+unchanged, so it confounds nothing):
+
+| language | containment edges before → after | DANGLING before → after | delta |
+|---|---|---:|---:|
+| fsharp | 14,118 → 14,118 | 0 → 0 | 0 |
+| php | 3,626 → 3,626 | 0 → 0 | 0 |
+| **julia** | 5,176 → 5,175 | **681 → 680** | **−1** |
+| **lua** | 10,937 → 10,934 | **618 → 615** | **−3** |
+| css | 137,028 → 137,028 | 0 → 0 | 0 |
+| TOTAL | | **1,299 → 1,295** | **−4** |
+
+So the fix is **not** inert outside F#: it removes 1 julia edge and 3 lua edges — those lanes do mint
+symbols the `UNIVERSAL` set drops, and their edges were dangling for the same reason. php and css are
+untouched.
+
+**AND THE REMAINING 1,295 ARE A DIFFERENT DEFECT, which is the larger finding.** Only 4 of the 1,299
+were the dropped-symbol seam; the other **1,295 (julia 680, lua 615) name something that was never a
+symbol identity at all** — `exports GLM -> coef`, `exports GLM -> coeftable`,
+`exports global -> /tags/:tags`, `filetypes:78`, `cmd:77`, `root_markers:72`. No symbol was dropped for
+those, because no such symbol ever existed to drop, so the invariant has nothing to remove. They are an
+`exports`-contract violation (an exported name no published symbol answers), 324× the size of the seam
+fixed here, and this pass deliberately did not widen the invariant to cover them — a mechanical drop
+rule cannot repair an edge that was wrong at the moment it was minted. Routed to julia and lua.
+
+### 5.3 Fix A is MEASURED and left owed — the criterion is satisfied, the coverage is not
+
+`probe-universal-dropped-symbols.ts` reads `engine.parseFile`, which does NOT filter (`engine.ts:2102`
+returns symbols verbatim), so the dropped set is observable without changing the code under test. Over
+an even-stride 400-file draw of EIGHT languages (fsharp, php, julia, lua, css, clean, python, ruby —
+3,200 files, ~184,000 symbols, 0 failed):
+
+| language | symbols | symbols named `this`/`super`/synthetic |
+|---|---:|---:|
+| fsharp | 8,983 | **1** — `this`, kind `variable`, owner `FSharpMemberOrFunctionOrValue` |
+| lua | 9,895 | **1** — `super`, kind `variable`, `luvit/tests/test-colors.lua` |
+| php · julia · css · clean · python · ruby | 2,799 · 6,958 · 136,210 · 8,285 · 6,798 · 5,190 | 0 each |
+
+**TWO hits in 3,200 files, and BOTH are legitimate declarations** — the F# `member this` of §4, and a
+Lua `local super`. So for these eight languages the criterion's answer is: nothing needs `this`/`super`
+kept in `UNIVERSAL`, and nothing needs them added to a per-language `RESERVED` either, because the only
+symbols they name are real.
+
+**Left owed, deliberately.** The fleet has ~23 lanes and this draw covers eight; the same enumeration
+must be run for the rest before the `UNIVERSAL` set is edited, because a name removed there is
+published in EVERY language at once. Recording the criterion and its partial answer is the whole point
+of the exercise: the next pass inherits a measurement, not a guess. The invariant in §5 is worth more
+than the handful of edges a name-set change would recover, and it is already landed.
+
+### 5.4 Regression checks on shared machinery
+
+- **Fixtures, five lanes, all green**: fsharp 15/0 · julia 5/0 · lua 13/0 · php 30/0 · css 22/0.
+- **`npx tsc --noEmit`: exit 0, no errors.** The `real-php-analyzer.ts(2432,7)` error recorded earlier
+  was fixed by the php lane in the meantime.
