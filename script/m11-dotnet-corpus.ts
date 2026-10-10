@@ -61,7 +61,17 @@ async function measure(repo: typeof repositories[0]) {
   const stats = await indexProjectParallel(projectId, repo.path, {
     files,
     skipDiscovery: true,
-    conflictMode: "replace",
+    // `conflictMode: "replace"` used to be passed here and was removed: the option
+    // exists NOWHERE in src/ (0 occurrences), so it was accepted by nobody and did
+    // nothing. TypeScript reported it as TS2353 only in files whose call was
+    // type-checked, which is why it survived so long.
+    //
+    // It was safe to delete only after MEASURING that re-indexing really does replace
+    // rather than accumulate. It does — and the mechanism is the `ON DELETE CASCADE`
+    // from brain_symbol.file_id, fired by `INSERT OR REPLACE INTO brain_file`, not the
+    // explicit DELETE that the code appears to use. See
+    // script/m62/verify-reindex-replaces.ts, which re-runs that measurement and is
+    // canary-proven to go red if stale rows ever survive.
     logger: { log: () => {}, write: () => {} },
   })
   const indexWallMs = performance.now() - indexStart

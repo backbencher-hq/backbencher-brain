@@ -60,7 +60,17 @@ check(
   `${declared.size} declared option/property names read from parallel-indexer.ts`,
 )
 
-const { walkSourceFiles } = await import("./path_encoding_scan.ts")
+// SCAN CODE, NOT PROSE. This gate originally ran its regex over the raw file text,
+// which meant a COMMENT mentioning an option counted as a call site passing it. When
+// the dead `conflictMode: "replace"` was removed from five M11 corpus gates, the
+// explanatory comment recording WHY it was safe to remove was immediately reported as
+// a fresh violation — 5 false positives out of 9 findings, all of them my own
+// explanation.
+//
+// Comments are not code. Strings can be the evidence (an option NAME is a string), so
+// this uses the shared scanner's `keepStrings` mode rather than blanking both, which is
+// the same distinction the path-encoding gate already draws.
+const { walkSourceFiles, blankCommentsAndStrings } = await import("./path_encoding_scan.ts")
 const callers = walkSourceFiles(path.join(ROOT, "script")).map((f) => path.relative(ROOT, f))
 
 // The specific option this gate was written for, plus the rule: any camelCase key
@@ -69,7 +79,10 @@ const SUSPECT_OPTIONS = ["conflictMode", "replaceOnConflict", "overwrite", "forc
 
 const offenders: Array<{ file: string; opt: string; line: number }> = []
 for (const f of callers) {
-  const text = readFileSync(path.join(ROOT, f), "utf8")
+  const raw = readFileSync(path.join(ROOT, f), "utf8")
+  // Blank comments, KEEP string literals — an option name in code is a string, and a
+  // string inside a comment is prose that must not count.
+  const text = blankCommentsAndStrings(raw, { keepStrings: true })
   for (const opt of SUSPECT_OPTIONS) {
     const re = new RegExp(`\\b${opt}\\s*:`, "g")
     for (const m of text.matchAll(re)) {

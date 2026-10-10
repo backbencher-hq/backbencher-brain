@@ -52,6 +52,11 @@ const GATES: Gate[] = [
   // that are NOT in the suite. A gate that reports holes in the suite and is itself
   // only reachable by hand is a hole in the suite.
   { name: "m62 suite-coverage", script: "script/m62/verify-suite-coverage.ts" },
+  // Both of these were red earlier in the session and are now green because the
+  // defects they named were actually fixed. They are added here only once they pass,
+  // and each carries its own canary.
+  { name: "m62 reindex-replaces", script: "script/m62/verify-reindex-replaces.ts" },
+  { name: "m62 indexer-option-contract", script: "script/m62/verify-indexer-option-contract.ts" },
   { name: "m23 p3 edge cases", script: "script/m23/verify-p3-edge-cases.ts" },
   { name: "m24 closure", script: "script/m24/verify-closure.ts" },
   { name: "m24 governance", script: "script/m24/verify-governance.ts" },
