@@ -87,9 +87,22 @@ function parseLog(text: string): Summary[] {
 }
 
 /** The full per-type table, for a live lane run. */
+/**
+ * THE GATE WHOSE OUTPUT THIS PARSES EXITS NON-ZERO ON PURPOSE — `incoming-gate.ts` exits 1 for
+ * every lane that has residual, which is every lane. `execFileSync` therefore THROWS, and the
+ * first version of this function lost the entire table to the exception: a measurement tool that
+ * cannot read its instrument's output on a FAIL is useless, because FAIL is the state it exists to
+ * analyse. The stdout is on the error object, so it is taken from there.
+ */
 function runLane(lang: string): { rows: Array<{ type: string; edges: number; resolved: number; amb: number; ambKind: number; unres: number; extOK: number; extQ: number; extFAIL: number; bindOK: number; bindQ: number; bindFAIL: number; causeOK: number; causeFAIL: number }>; total: any } {
-  const ext = { fsharp: "fs", zig: "zig", lua: "lua", julia: "jl", nim: "nim", php: "php", powershell: "ps1", r: "r", dart: "dart", sql: "sql", graphql: "graphql", protobuf: "proto", json: "json", yaml: "yaml,yml", css: "css", scss: "scss", hcl: "tf", make: "mk", toml: "toml", xml: "xml", markdown: "md", clean: "icl", bash: "sh" }[lang] ?? lang
-  const out = execFileSync("npx", ["tsx", "script/m14/incoming-gate.ts", lang, ext, "0"], { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] })
+  const ext = { fsharp: "fs", zig: "zig", lua: "lua", julia: "jl", nim: "nim", php: "php", powershell: "ps1", r: "r", dart: "dart", sql: "sql", graphql: "graphql", protobuf: "proto", json: "json", yaml: "yaml,yml", css: "css", scss: "scss", hcl: "tf", make: "mk", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md", clean: "icl", bash: "sh" }[lang] ?? lang
+  let out = ""
+  try {
+    out = execFileSync("npx", ["tsx", "script/m14/incoming-gate.ts", lang, ext, "0"], { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] })
+  } catch (e: any) {
+    out = typeof e?.stdout === "string" ? e.stdout : ""
+    if (out === "") throw e
+  }
   const rows: any[] = []
   let total: any = null
   for (const line of out.split("\n")) {

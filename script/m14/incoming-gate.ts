@@ -149,7 +149,14 @@ export const LANES_B: Record<string, string> = {
   css: "css", scss: "scss",
   // `make: "mk"` cannot admit a bare `Makefile`, because admitByExtension matches a trailing
   // dot-plus-ext and that file has no extension at all. Reported rather than silently redefined.
-  hcl: "tf", make: "mk", toml: "toml", xml: "xml", markdown: "md", clean: "icl",
+  // XML IS SEVEN SPELLINGS, and the router says so itself: `src/ast/language-detection.ts` maps
+  // `.xml .xsd .dtd .svg .xsl .xslt .rng` all to the `xml` language. This table admitted only the
+  // first, so every xml number from this instrument covered **2,081 of the lane's 11,552 files
+  // (18.0%)** — and only **3.0% of its `references`** edges and 29.1% of its `imports`. Measured by
+  // xml-lane, which also noted that this table already records the identical defect and fix for
+  // yaml one line above ("one language does not become a different population by being spelled
+  // .yml"). The same sentence applies with six more spellings.
+  hcl: "tf", make: "mk", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md", clean: "icl",
 }
 
 const ALL_TYPES = [

@@ -751,10 +751,26 @@ export function filterNoiseRelationships(rels: any[], language: string, declared
       return true
     }
 
-    // Block garbage targets: source code snippets, malformed names
-    if (target.length > 200 || target.includes("\n")) return false
+    // Block garbage targets: source code snippets, malformed names.
+    //
+    // THE LENGTH BUDGET APPLIES TO THE LEAF, NOT TO THE WHOLE TARGET — and that distinction was
+    // silently deleting real edges. Measured by the css lane (2026-10-09): once css published
+    // project-unique `qualifiedName`s (`<file-scope>::<name>`) every target grew, and **46 edges per
+    // 60 files crossed this 200-character line and were DELETED on the way to the index** — 318
+    // more were already long enough bare. The css analyzer now refuses to qualify a target that
+    // would cross the line, which is the right instinct (a visible residual of 183 beats a silent
+    // deletion) but the wrong place: this budget exists to reject a target that is a code SNIPPET,
+    // and a snippet is long in its LEAF. A qualified name is long in its SCOPE, and the checks
+    // below validate the leaf on its own terms — `leaf.length > 80`, the garbage-character set, the
+    // spacing rules. So the length test moves to the leaf, where the intent always was, and no
+    // language needs an exemption in order to spell its targets unambiguously.
+    //
+    // A genuine snippet is still refused: its leaf is long or carries `{`/`}`/backtick/angle
+    // brackets, and both of those checks stay unconditional.
+    if (target.includes("\n")) return false
 
     const leaf = extractLeaf(target)
+    if (leaf.length > 80) return false
     const lower = leaf.toLowerCase()
 
     // Block targets that are clearly not valid symbol names. `$` is a valid
