@@ -18,9 +18,19 @@
   - `imports` — a `{% include %}`, `{% include-markdown %}` or
     `{% include_relative %}` directive whose argument names a file (MD-G3), at
     confidence 1.0.
-  Measured on 2026-10-09 over the WHOLE redwood firing corpus (2,101 `.md` files,
-  production `parseFile`, 2,101/2,101 parsed, 0 degraded):
-  `contains` 58,914 · `uses` 23,081 · `references` 1,497 · `imports` **0**.
+  Measured on 2026-10-09 over the WHOLE redwood firing corpus (2,105 `.md` files,
+  production `parseFile`, 2,105/2,105 parsed, 0 degraded):
+  `contains` 58,921 · `uses` 23,081 · `references` 1,497 · `imports` **0**.
+  *(The first run of this census read 2,101 files / `contains` 58,914: it copied
+  `firing-check.mjs`'s walk admission verbatim, and that admission pruned every
+  directory whose name contains `.git` — `.github` included — so one wrong rule
+  produced two agreeing numbers. Corrected in `28d79cb99` across five instruments;
+  re-measured on the corrected admission, the 4 recovered `.github` READMEs add 7
+  `contains` edges and move no ruling. The draw in
+  `validation/m14/results/firing-laptop-b.current.log` was strided over the OLD
+  population, so its counts `contains:3479 references:89 uses:1349` are recorded
+  beside the corrected re-run's `contains:3731 references:73 uses:1312` in the spec's
+  `coverage._measured.firingLog` — the same three types fire on both.)*
   That last zero is a fact about the corpus, not about the draw: `imports` is emitted,
   and its 105 corpus edges over 74 files live in traefik (57), bulma (35), vega (12)
   and scala3 (1) — none in redwood, which is why the 120-file firing log reads it

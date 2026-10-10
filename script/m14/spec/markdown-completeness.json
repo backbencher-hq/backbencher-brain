@@ -1,7 +1,7 @@
 {
  "_comment": "M14.0.SPEC (#290) — markdown completeness classification. Every public NAMED node type of BOTH pinned wasms is in exactly one bucket: 51 distinct from wasm/tree-sitter-markdown.wasm (the block grammar, 207 nodeTypeForId slots) and 26 from wasm/tree-sitter-markdown_inline.wasm (the companion inline grammar, 153 slots), for a UNION of 70 distinct names after the 7 the two share. Silence is guilt: a type in no bucket fails section A, and a type neither grammar produces any more is a stale row and also fails. The handled set was derived MECHANICALLY, not by eye — every double-quoted literal in src/ast/real-markdown-analyzer.ts was intersected with the two grammars' named-type sets (see the MEASURED tally at the end of this comment), and the un-named types are each classified below with a measured site count over the lane's pinned corpus (scala3@18df09c0, 738 tracked .md files). MEASURED 2026-10-09 by validation/m14/fixtures/markdown/spec-surface-check.ts: 30 handled_verified + 42 internal_silent + 0 gap = 72 rows, of which 70 are the pinned union's named types (block 51 + inline 26 − 7 shared) and 2 — ERROR and MISSING — are tree-sitter's synthesised error types, which no grammar's symbol table produces. 0 of the 70 are unclassified and 0 names sit in two buckets, so the classification is complete. THE TALLY PREVIOUSLY READ 29 handled_verified + 39 internal_silent + 2 gap = 70, which did not match the arrays it described.",
  "coverage": {
-  "_from": "MEASURED per type on 2026-10-09 from four instruments, each named so it can be re-run. (1) script/m14/firing-check.mjs MARKDOWN_B, NFILES=120 even stride over redwood, instrument self-test PASS: 3 types fired — contains:3479 references:89 uses:1349, 120/120 parsed, 0 degraded. (2) validation/m14/fixtures/markdown/firing-corpus-census.ts: production parseFile over the WHOLE redwood markdown population, 2,101/2,101 parsed, 0 degraded — contains:58,914 uses:23,081 references:1,497 imports:0 calls:0 exports:0 extends:0 implements:0 overrides:0 instantiates:0. (3) the same script's instrument A over BOTH sha256-verified pinned grammars: 108 distinct node types across 17,456 parsed files, 0 of them in any A-row vocabulary, and each row's membership test fires on a planted member (6/6 controls), so the zeroes are a fact about the grammar and not about the filter. (4) validation/m60/markdown/whole-corpus-census.json (17,456 admitted files, production parseFile): imports 105 edges over 74 files — traefik 57, bulma 35, vega 12, scala3 1, redwood 0 — reproduced on current bytes at 105 edges by validation/m14/fixtures/markdown/imports-reverification.json (those four repos, 1,181/1,181 parsed, 0 degraded).",
+  "_from": "MEASURED per type on 2026-10-09 from four instruments, each named so it can be re-run. (1) script/m14/firing-check.mjs MARKDOWN_B, NFILES=120 even stride over redwood, instrument self-test PASS: 3 types fired — contains:3479 references:89 uses:1349, 120/120 parsed, 0 degraded. (2) validation/m14/fixtures/markdown/firing-corpus-census.ts: production parseFile over the WHOLE redwood markdown population, 2,105/2,105 parsed, 0 degraded — contains:58,921 uses:23,081 references:1,497 imports:0 calls:0 exports:0 extends:0 implements:0 overrides:0 instantiates:0. (SUPERSEDED NUMBERS, kept visible: the first run of this census read 2,101 files and contains:58,914 because it copied firing-check's walk admission verbatim and that admission pruned every directory whose name CONTAINS `.git` — `.github` included. 28d79cb99 corrected the rule in five instruments; re-run on the corrected admission the population is 2,105 and contains is 58,921, and NO RULING MOVED: the 4 recovered `.github/actions/*/README.md` files add 7 `contains` edges and nothing else.) (3) the same script's instrument A over BOTH sha256-verified pinned grammars: 108 distinct node types across 17,456 parsed files, 0 of them in any A-row vocabulary, and each row's membership test fires on a planted member (6/6 controls), so the zeroes are a fact about the grammar and not about the filter. (4) validation/m60/markdown/whole-corpus-census.json (17,456 admitted files, production parseFile): imports 105 edges over 74 files — traefik 57, bulma 35, vega 12, scala3 1, redwood 0 — reproduced on current bytes at 105 edges by validation/m14/fixtures/markdown/imports-reverification.json (those four repos, 1,181/1,181 parsed, 0 degraded).",
   "implemented": ["contains", "references", "uses", "imports"],
   "excluded": [
    {
@@ -49,14 +49,16 @@
     "fired": {"contains": 3479, "references": 89, "uses": 1349},
     "parsed": "120/120",
     "degraded": 0,
-    "instrumentSelfTest": "PASS — planted markdown link through parseFile: uses FIRED"
+    "instrumentSelfTest": "PASS — planted markdown link through parseFile: uses FIRED",
+    "_supersession": "The numbers above are the ones committed in validation/m14/results/firing-laptop-b.current.log, measured BEFORE 28d79cb99 fixed the walk admission (population 2,101). Re-run on the corrected instrument (population 2,105) the SAME TYPE SET fires — contains 3731 · references 73 · uses 1312, 120/120 parsed, 0 degraded, instrument self-test PASS — because a stride over 4 more files lands on different files. The draw moved; the verdict did not, and this is the only place the two draws are recorded together."
    },
    "firingCorpusWhole": {
     "artifact": "validation/m14/fixtures/markdown/firing-corpus-census.json",
-    "population": 2101,
-    "parsed": 2101,
+    "population": 2105,
+    "parsed": 2105,
     "degraded": 0,
-    "types": {"contains": 58914, "uses": 23081, "references": 1497, "imports": 0, "calls": 0, "exports": 0, "extends": 0, "implements": 0, "overrides": 0, "instantiates": 0}
+    "types": {"contains": 58921, "uses": 23081, "references": 1497, "imports": 0, "calls": 0, "exports": 0, "extends": 0, "implements": 0, "overrides": 0, "instantiates": 0},
+    "_supersession": "This read population 2,101 and contains 58,914 until 2026-10-09, when 28d79cb99 corrected the shared walk admission (`.github` is not `.git`). The 4 files it recovers add 7 contains edges; uses, references and every zero are unchanged."
    },
    "instrumentA": {
     "artifact": "validation/m14/fixtures/markdown/firing-corpus-census.json",
@@ -75,9 +77,17 @@
    "importsReverified": {
     "artifact": "validation/m14/fixtures/markdown/imports-reverification.json",
     "edges": 105,
-    "population": 1181,
-    "parsed": 1181,
-    "degraded": 0
+    "files": 74,
+    "perRepo": {"traefik": 57, "bulma": 35, "vega": 12, "scala3": 1},
+    "population": 1198,
+    "parsed": 1198,
+    "degraded": 0,
+    "_note": "The four repos the 2026-10-04 census attributes imports to, re-measured on current bytes: 105 edges over 74 DISTINCT files, and the per-repo split reproduces the census's own perRepo key for key. Population moved 1,181 -> 1,198 with the same 28d79cb99 admission correction; the edge count did not."
+   },
+   "fixtures": {
+    "instrument": "npx tsx script/m14/run-fixtures.ts --lang markdown",
+    "summary": "{\"markdown\":{\"pass\":11,\"fail\":0}}",
+    "detail": "11 fixtures, 0 fail, 'fixture baseline gate: no regressions' — including markdown/template-include-imports, the fixture for the construct MD-G3 emits and the one that would fail if `imports` stopped being produced"
    },
    "silentTypesNote": "The firing log's SILENT line names seven types. SIX are grammar-absence, each measured by instrument A with its own planted control and each already ruled in MD-D7..MD-D12. The SEVENTH, `imports`, is EMITTED and is therefore declared implemented: it has 105 corpus sites over 74 files, just none of them in redwood. `zero-sites` is not its class (the construct exists and occurs) and `corpusUnexercised` is not its class either (the lane implements it and the corpus exercises it), so the firing-corpus silence is recorded here rather than in the denominator arithmetic. This CORRECTS _sectionsBEH.relationship_kinds_produced, which read [contains, uses] and listed both `imports` and `references` as declared absent — stale text from before MD-G3 (imports, 2026-10-03) and MD-D6 (references, internal anchors); both are emitted and fire.",
    "board": "implemented 4 + corpusUnexercised 0 + gaps 0 = applicable 4 = 10 - 6 grammar-absence - 0 unclassified"
