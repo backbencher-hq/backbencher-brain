@@ -199,18 +199,24 @@ raw [`verify-chain.txt`](../../validation/m14/fixtures/xml/verify-chain.txt)):
 
 **Clause 2 met in full**: `extFAIL` = `bindFAIL` = `causeFAIL` = 0, per type and in TOTAL.
 **Clause 4**: `contains` determinate (189,305 intended / 0 twin / 0 noDecl); `exports` is
-**not applicable** (0 edges — excluded as grammar-absence); for the types where the line test is
-*not* applicable the gate can only say `sameFileUnproven`, which is **4,072 edges**
-(references 3,445 + extends 346 + calls 279 + overrides 2).
+**not applicable** (0 edges — excluded as grammar-absence); `calls` is answered by a different test
+below (279/279 own-file declarations); for `references` 3,445 + `extends` 346 + `overrides` 2 =
+**3,793 edges** the gate can only say `sameFileUnproven`.
 
-**The three shortfalls, by size:**
+**The shortfalls, after the `calls` ruling:**
 
-1. **Clause 1 — 279 edges (`calls`).** The cause is named and counted (pure name collision; `twin`
-   0, `noDecl` 0, so nothing wrong-file and nothing dangling) but there is no ruling with a
-   falsifier yet. It is enumerable edge by edge.
-2. **Clause 4 — 4,072 edges.** For references/extends/calls/overrides the line test is N/A by
-   construction (`twin` there is a *risk*, not proven wrongness — the corrected legend), so
-   determinacy is unproven and would need a store probe of the same shape as the `contains` one.
+1. **Clause 1 — MET for `calls`** (was 279). All 279 ambiguous edges are enumerated in
+   [`calls-ambiguity.json`](../../validation/m14/fixtures/xml/calls-ambiguity.json) (29 files,
+   139 distinct callees, project-wide counts up to 4,187): every one is the analyzer's class
+   `in-document`, and **every one has exactly one declaration of the callee in its own file** — so
+   the resolver's own-file rank settles it and the tie-break is never reached. The falsifier is a
+   count: **0 of 279** lack an own-file declaration. **Counter-evidence kept open:** on libxslt the
+   store bound `calls` 400/400 with **138 cross-file (34.5%)**, which own-file preference should
+   have prevented — the same store-side question as the order-dependence finding, and the reason the
+   ruling is stated as model-level ([`calls-ruling.json`](../../validation/m14/fixtures/xml/calls-ruling.json)).
+2. **Clause 4 — 3,793 edges.** For references/extends/overrides the line test is N/A by construction
+   (`twin` there is a *risk*, not proven wrongness — the corrected legend). The own-file enumeration
+   that answered `calls` can be pointed at these three types next.
 3. **Clause 3 — 12 edges.** The imports-265 refusal **is** evidence-backed: a blanket file claim
    would REFUTE **59** times (`fileClaimProbe`: 205 candidates admitted, 59 absent). The
    references-12 refusal is **not** at that standard: a claim would *verify* (they name nothing in
