@@ -97,6 +97,14 @@ const LANES = {
  * The walk now collects a bounded population, sorts it (deterministic), and strides evenly
  * across it, so the sample is representative by construction and the population size is
  * printed with every row — an instrument must declare its population.
+ *
+ * AND IT MUST NOT TRUNCATE IN SILENCE. `cap` (400 by default) silently clipped BOTH the
+ * "population fits" branch and the strided branch, so `NFILES=600` on a 556-file corpus
+ * reported `400/400 parsed (sample of the corpus, even stride)` — a full-population request
+ * answered with 72% of the files, described as a stride. Measured on bash, 2026-10-09: the
+ * difference was `exports` and `overrides` reading SILENT, and they are still silent over the
+ * other 156, but nothing in the output said the sample was smaller than asked for. The cap is
+ * kept (it bounds wasm memory) and is now DISCLOSED with both numbers.
  */
 function pickFiles(dir, exts, want, cap = 400) {
   const POP_CAP = Number(process.env.BB_SAMPLE_POP || 20000)
@@ -125,11 +133,17 @@ function pickFiles(dir, exts, want, cap = 400) {
   }
   walk(dir, 0)
   all.sort()
-  if (all.length <= want) return all.slice(0, cap)
+  // `requested` is what the caller asked for; `all.length` is the admitted population. Both are
+  // returned so the report can say when the cap, not the corpus, decided the sample size.
+  if (all.length <= want) {
+    const picked = all.slice(0, cap)
+    return { files: picked, admitted: all.length, requested: want, capped: all.length > picked.length }
+  }
   const stride = all.length / want
   const out = []
   for (let i = 0; i < want; i++) out.push(all[Math.floor(i * stride)])
-  return [...new Set(out)].slice(0, cap)
+  const picked = [...new Set(out)].slice(0, cap)
+  return { files: picked, admitted: all.length, requested: want, capped: picked.length < Math.min(want, all.length) }
 }
 
 // ── THE PRODUCTION PATH IS `parseFile`, NOT `parse` + `analyze` (corrected 2026-10-09)
@@ -214,7 +228,8 @@ for (const L of targets) {
     yaml: [".yml", ".yaml"], scss: [".scss"], hcl: [".hcl", ".tf"], make: ["Makefile", ".mk"],
     toml: [".toml"], xml: [".xml"], markdown: [".md"], clean: [".icl", ".dcl"],
     elixir: [".ex", ".exs"], cpp: [".cpp", ".cc", ".h"], ruby: [".rb"], erlang: [".erl", ".hrl"], c: [".c", ".h"] }[lang] || []
-  const files = pickFiles(dir, exts, Number(process.env.NFILES||120))
+  const picked = pickFiles(dir, exts, Number(process.env.NFILES||120))
+  const files = picked.files
   if (!files.length) { report.push([L, `NO CORPUS under ${corpusDir}`, 0, [], new Map(), 0, 0]); continue }
 
   const tally = new Map(), errs = []
@@ -240,8 +255,11 @@ for (const L of targets) {
     } catch (e) { errs.push(String(e).slice(0, 40)) }
   }
   const fired = [...tally.entries()].filter(([, n]) => n > 0).map(([t]) => t).sort()
-  const note = errs.length && !parsed ? `ALL ${files.length} FILES FAILED: ${errs[0]}`
+  const shape = picked.capped
+    ? `${parsed}/${files.length} parsed — CAPPED: asked for ${picked.requested} of ${picked.admitted} admitted, the 400-file cap decided the sample`
     : `${parsed}/${files.length} parsed (sample of the corpus, even stride)`
+  const note = errs.length && !parsed ? `ALL ${files.length} FILES FAILED: ${errs[0]}`
+    : shape
       + (degraded > 0 ? `  [${degraded} DEGRADED — regex fallback / basic-fallback, excluded, not analyzer evidence]` : "")
   report.push([L, note, tally.size, fired, tally, degraded, files.length])
 }
