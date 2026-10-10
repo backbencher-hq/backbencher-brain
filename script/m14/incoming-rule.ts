@@ -580,7 +580,23 @@ export function verifyExternalClaim(
   // unverifiable when it is not (a path or URI cannot be a published symbol's name, so a
   // lookup returning 0 would prove nothing about the claim).
   if (owner === null) {
-    if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(tgt)) return "externalUnverified"
+    // A PUBLISHED NAME MAY CARRY A SIGIL — this test was a JavaScript-identifier test, and it
+    // silently disabled the check for every sigiled language. Found by css-lane, which measured the
+    // consequence on css's whole population: of 5,641 dotless custom-property reads, ALL 5,641
+    // returned `externalUnverified`, including 4,665 naming a property declared nowhere in the
+    // population and 138 naming one declared in another corpus project. Its control is what makes it
+    // undeniable — `--pico-color` read `externalUnverified` WHETHER OR NOT the key space declared
+    // it, and a refusal that returns the same verdict for a true and a false claim is not a safety
+    // property, it is a refusal to look.
+    //
+    // The premise the old test rested on ("a path or URI cannot be a published symbol's name, so a
+    // lookup returning 0 would prove nothing") is CORRECT and is already enforced upstream:
+    // `pathLikeTarget` above refuses a path separator, a URI scheme, or a known file extension
+    // before this line is reached. What remained to refuse here is not a path but GARBAGE — a
+    // whitespace-bearing snippet, a brace or quote fragment — and that is now the whole test. A css
+    // custom property (`--pico-color`), a class (`.btn`) and an id (`#main`) are published names in
+    // their language and must be looked up like any other.
+    if (/[\s{}`<>"']/.test(tgt)) return "externalUnverified"
     return (declCount.get(tgt) ?? 0) > 0 ? "externalRefuted" : "externalVerified"
   }
   // `:`, `/` or whitespace means the owner is not an identifier — a URI scheme, a path, or
