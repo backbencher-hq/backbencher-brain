@@ -3490,15 +3490,66 @@ on a target whose declaring files are all byte-identical, with the mass at 10-12
 digests. And a CSS name is not an identity — `.nav` in two files is two real declarations that
 both apply, and the gate's question ("does this target name exactly ONE declaration")
 presupposes a 1:1 naming model that CSS does not have for selector or custom-property names.
+**That is true of the NAME, and it is exactly why an edge has to say WHICH file's declaration
+it means.** See CSS-D15 below.
 
-**What a fix would cost, measured.** The one file dimension the key space already contains is
-a symbol's `qualifiedName`; respelling targets to it resolves **4,058 of 456,587 edges (0.9%)**
-to exactly one declaration, leaves 410,217 ambiguous and 42,312 with no such spelling — and for
-the `references` half it would assert a scoping the cascade does not guarantee (the lane
-classifies `var(--x)` as `import_based` for exactly that reason). The other option — a
-file-scoped published name for CSS selectors — is a family-wide publication-contract change
-(store `qualified_name`, `parallel-indexer` strategy 1, every consumer's idea of a CSS rule's
-name), not a lane fix. **Ruling: irreducible by the language; no uniqueness is invented.**
+### SUPERSEDED: "irreducible by the language" (written 2026-10-09, corrected 2026-10-10)
+
+**What this section said, and why it was not simply wrong.** It priced *respelling targets to
+`qualifiedName`*: **4,058 of 456,587 edges (0.9%) resolved, 410,217 still ambiguous, 42,312
+with no such spelling**. That was a correct measurement of the lever it tested — and that lever
+**lacked the file dimension**. The `qualifiedName` a css symbol carried then was derived from
+its SCOPE (`<parent-selector>.<name>`) or was the bare name, so two files declaring `.btn`
+produced the SAME spelling. A project-unique name is not a FILE-unique name, and
+`CROSS-FILE-TWIN` — 456,403 of the 456,587 — is precisely the file dimension. So the old
+sentence, *"Ruling: irreducible by the language; no uniqueness is invented"*, was a true
+statement about CSS names being non-unique, applied to a graph whose edges never said which of
+the non-unique names they meant.
+
+**What was done instead — CSS-D15.** Every symbol publishes a project-unique
+`qualifiedName = <file-scope>::<name>`, where the scope is the file's path relative to its
+checkout root, extension removed and `.`/`:` sanitised; an edge of type
+`contains`/`references`/`uses`/`overrides` is respelled to that name **when the edge's own file
+publishes exactly one declaration of it**. The bare spelling is kept for a name this file does
+not declare (a genuine cross-file or external reference) and for `imports`, whose target is
+ANOTHER file's module — respelling that would point the import at the importing file. The
+symbol's `name`, which is what a reader searches for, is untouched.
+
+**Measured, same population, same command:**
+
+| scope | edges | resolved | ambiguous | unresolved | `ofWhich` (resolved by tie-break) |
+|---|---|---|---|---|---|
+| 1,174-file population, before | 485,882 | 24,412 | 456,587 | 4,883 | — |
+| 1,174-file population, after | 487,844 | **482,728 (99.0%)** | **233** | 4,883 | **0** |
+| 60-file stride, before | 32,432 | 19,291 | 12,453 | 688 | — |
+| 60-file stride, after | 32,630 | 31,942 | **0** | 688 | 0 |
+
+Residual **95.0% → 1.0%**; `extFAIL`, `bindFAIL` and `causeFAIL` all 0. **Losslessness is proved
+by an A/B rather than argued**: the pre-change analyzer taken from git (`773f966fa^`) and the
+current one, both run over the same 1,174 files, emit the SAME edge count with **delta 0 on
+every type** (487,744 for both arms on the revision that A/B ran on; the population has since
+measured 487,844, still delta 0 against its own before).
+
+**The guard instrument caught the last shared-rule change, and that sequence belongs here.**
+`pool-worker.ts filterNoiseRelationships` used to refuse any target over 200 characters TOTAL,
+so a file-scoped target could cross a budget the bare one fit — measured, 46 edges per 60 files,
+and 468 over the population were being DELETED on the way to the index. The analyzer therefore
+refused to qualify a target that would cross it (a visible residual beats a silent deletion),
+and `validation/m14/fixtures/css/qualified-target-compat.ts` pinned that budget with controls
+that fail. The budget then moved to the target's **LEAF** — where the intent always was, and
+`pool-worker.ts` credits this lane's measurement as the reason — and the guard instrument
+**FAILED, exactly as designed**. Retiring the now-pointless guard took the gate's `ofWhich`
+column from **1,883 to 0** with the residual unchanged: 1,883 edges moved from
+resolved-by-arbitrary-tie-break to resolved-to-exactly-one-declaration, and at 60 files the same
+step took ambiguity to **0**. A control that fires when someone else's fix invalidates its own
+assumption is worth more than the fix it guards.
+
+**The honest remainder, not folded into the win:** `references` 180 ambiguous + 4,803 unresolved
+(2.0%), `imports` 51 + 80 of 178 (73.6% — an `@import` target is another FILE, which a
+name-space fix cannot reach and which CSS-D15 deliberately leaves bare), `uses` 2 (0.1%),
+`contains` 0.0% and `overrides` 0.0%. Two in-file cases no spelling can settle: a name declared
+twice in the edge's own file (3 edges), where the edge does not say which site it means, and a
+name declared nowhere in it (181).
 
 ## The 4,883 unresolved — and why no marker can verify one
 
