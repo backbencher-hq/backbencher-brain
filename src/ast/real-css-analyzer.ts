@@ -1314,16 +1314,31 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (candidates === undefined || candidates.length === 0) continue
       let pick = candidates[0]
       if (candidates.length > 1) {
-        // Rule 2: only a line that lands inside exactly ONE of the same-named declarations
-        // identifies which one the edge means. Otherwise the bare name stands.
-        const line = typeof rel.line_number === "number" ? rel.line_number : null
-        if (line === null) continue
-        const covering = candidates.filter((c) => {
-          const r = c.sym.range
-          return r !== undefined && line >= r.startLine && line <= r.endLine
-        })
-        if (covering.length !== 1) continue
-        pick = covering[0]
+        // Rule 2a — AN ANIMATION NAME RESOLVES AGAINST `@keyframes` ONLY, and that is the
+        // language's own rule, not a preference: `animation: progress` matches keyframes at-rules
+        // by name, so an element rule that happens to be called `progress` is not a candidate the
+        // edge could mean. Two declarations of one name in one file therefore have a DECIDABLE
+        // answer here, and the gate's worklist measured exactly this pair (`progress`, two
+        // declarations, `[function|type]`) among the two ambiguous `uses` edges. Picked by the
+        // symbol's own `isKeyframes` flag rather than by kind, because kind is what this ontology
+        // calls it and `isKeyframes` is what the declaration IS.
+        const md = (rel.metadata ?? {}) as Record<string, unknown>
+        if (md.isAnimationRef === true) {
+          const keyframes = candidates.filter((c) => (c.sym.metadata as Record<string, unknown> | undefined)?.isKeyframes === true)
+          if (keyframes.length !== 1) continue
+          pick = keyframes[0]
+        } else {
+          // Rule 2b: only a line that lands inside exactly ONE of the same-named declarations
+          // identifies which one the edge means. Otherwise the bare name stands.
+          const line = typeof rel.line_number === "number" ? rel.line_number : null
+          if (line === null) continue
+          const covering = candidates.filter((c) => {
+            const r = c.sym.range
+            return r !== undefined && line >= r.startLine && line <= r.endLine
+          })
+          if (covering.length !== 1) continue
+          pick = covering[0]
+        }
       }
       rel.target = pick.qname
     }
