@@ -11,6 +11,13 @@ Two instruments decide everything below, and both are run over the WHOLE admitte
     npx tsx script/m14/residual-gate.ts --lane php          # the incoming verdict, per type
     BB_DATA_DIR=$PWD/.tmp-php/bb-data npx tsx validation/m14/fixtures/php/owner-resolution-gate.mts
 
+**Typecheck state.** `npx tsc --noEmit` (the repo's own command) is **GREEN as of `703d0272f`'s
+follow-up**. It was RED on this file for part of 2026-10-10 — `TS18048: 'md' is possibly 'undefined'`
+in `qualifyProvenMemberTargets`, where the owner was read through optional chaining and then written
+back through the same object. The fix narrows `md` itself (`if (!md) continue`) rather than asserting
+non-null: an edge with no metadata has no owner, so the branch was unreachable either way, but a `!`
+would have hidden the question instead of answering it.
+
 `BB_DATA_DIR` matters: the store gates open a real store, and a denied `mkdir` under `~/.bb`
 reads exactly like a missing database. Point it inside the workspace.
 
@@ -133,6 +140,12 @@ structurally 0 and the marker would stop carrying information — the laundering
 `script/m14/incoming-rule.ts` warns about, arrived at honestly.
 
 ### The include-path class — a per-file defect, not a boundary (147 edges closed)
+
+> **The figure this section replaces was misattributed to php.** A brief pursued "`imports` 80 unresolved
+> of 178" as php's row; that is **css's** row. php's own row is **208 include/require edges**, and the
+> first cross-tab read *verify 2, refute 185* — which is why the guard looked verified-and-not-worth-it,
+> and why the number is recorded here beside its correction rather than deleted: the next reader should
+> see the wrong figure, its lane, and what the right one turned out to be.
 
 `imports` also carries `include`/`require` paths (`metadata.relationshipType: "include_path"`): **208
 edges**. The first cross-tab (`tools/include-claim-crosstab.mts`) said a file claim would verify only

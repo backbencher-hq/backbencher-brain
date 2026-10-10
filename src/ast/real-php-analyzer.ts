@@ -2422,7 +2422,13 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const r of relationships) {
       if (r.type !== ASTEngine.RelationshipType.Uses && r.type !== ASTEngine.RelationshipType.Calls) continue
       const md = r.metadata as Record<string, unknown> | undefined
-      const owner = md?.owner
+      // NARROW `md` ITSELF, not just its `owner` field: reading the owner through optional chaining
+      // leaves `md` possibly-undefined at the write below, which is where the repo's strict typecheck
+      // caught this (`TS18048`). The behaviour is identical — an edge with no metadata has no owner,
+      // so it was skipped either way — and a non-null assertion here would have hidden the question
+      // rather than answered it.
+      if (!md) continue
+      const owner = md.owner
       if (typeof owner !== "string" || owner.length === 0) continue
       const tgt = String(r.target ?? "")
       if (tgt.length === 0 || tgt.startsWith(`${owner}.`)) continue
