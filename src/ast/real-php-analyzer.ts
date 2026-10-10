@@ -1352,6 +1352,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // --- OWNER-QUALIFIED MEMBER TARGETS: the provable half of the ambiguity ---
+    //
+    // AFTER every emission, deliberately: the member edges are pushed during the walk and the
+    // declaration they are checked against may be written LATER in the class, so a pass that ran
+    // at emission time would prove only the forward half.
+    const ownerQualified = this.qualifyProvenMemberTargets(symbols, relationships)
+    if (ownerQualified > 0) patterns.add(`owner-qualified x${ownerQualified}`)
+
     if (symbols.some((s) => s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface)) {
       patterns.add("Object-Oriented Programming")
     }
@@ -2353,6 +2361,68 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!s.ownerName || !this.isClassLikeOwnerKind(s.ownerKind)) continue
       s.qualifiedName = `${s.ownerName}.${s.name}`
     }
+  }
+
+  /**
+   * RE-SPELL a member-position target `Owner.member` — but ONLY where the FILE ITSELF proves it.
+   *
+   * ## Why this is a proof and not a preference
+   *
+   * The lane's own census priced the ambiguity levers and this is the one the tree can settle: an
+   * edge that already carries `metadata.owner` (the receiver was `$this->`, `self::`, `static::`,
+   * `parent::`, or a NAMED class — the analyzer derived the class, it did not guess it) AND a
+   * class-like member named exactly `<owner>.<target>` is published by THIS file means the
+   * qualified name resolves to that very symbol. The qualified name's declarations are a SUBSET of
+   * the bare name's, so ambiguity can only fall and resolution can only rise — measured, not
+   * asserted: the whole-population probe reports no case where the qualified target added a
+   * declaration.
+   *
+   * The lane's doc calls the alternative — preferring same-FILE or same-NAMESPACE candidates —
+   * "a rule nobody chose", and refuses it. This refuses it too: nothing here picks between rivals,
+   * because there is exactly one declaration the target could mean once it is spelled out.
+   *
+   * ## What it is worth, measured (whole admitted population, 5,094 files)
+   *
+   *   28,901 edges are provable this way. 12,849 of them name a target with MORE THAN ONE
+   *   declaration today — `schema` 25 ways, `config` 17 — and become exactly-one: those move from
+   *   `amb(decl)` to `resolved`, with `unresolved` untouched. The other 11,785 are already unique
+   *   by name; they stay resolved and stop being a name lookup that production answers with
+   *   `ORDER BY is_declaration, file_id, language, s.id LIMIT 1`, whose lexicographic id tie-break
+   *   the indexer's own control arm measures as the WRONG symbol in 37,318 of 49,729 cases. The
+   *   remaining 4,267 stay ambiguous even qualified, because two classes of the same leaf name in
+   *   one project declare the member — a real name collision, not a spelling defect.
+   *
+   * Tool: validation/m14/fixtures/php/tools/owner-qualification-probe.mts.
+   *
+   * NOT DONE, deliberately: the store-side stage that resolves a read through the class's
+   * ANCESTORS (census: 24,223). It needs another file's declaration, so proving it here is
+   * impossible; it belongs to `src/ast/member-owner-resolution.ts`, outside this lane's paths.
+   */
+  private qualifyProvenMemberTargets(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): number {
+    const members = new Set<string>()
+    for (const s of symbols) {
+      if (!s.ownerName || !this.isClassLikeOwnerKind(s.ownerKind)) continue
+      members.add(`${s.ownerName}.${s.name}`)
+    }
+    if (members.size === 0) return 0
+    let n = 0
+    for (const r of relationships) {
+      if (r.type !== ASTEngine.RelationshipType.Uses && r.type !== ASTEngine.RelationshipType.Calls) continue
+      const md = r.metadata as Record<string, unknown> | undefined
+      const owner = md?.owner
+      if (typeof owner !== "string" || owner.length === 0) continue
+      const tgt = String(r.target ?? "")
+      if (tgt.length === 0 || tgt.startsWith(`${owner}.`)) continue
+      const key = `${owner}.${tgt}`
+      if (!members.has(key)) continue
+      r.target = key
+      md.resolvedBy = "owner-member-identity"
+      n++
+    }
+    return n
   }
 
   private isClassLikeOwnerKind(kind: ASTEngine.SymbolKind | undefined): boolean {
