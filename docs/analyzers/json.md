@@ -319,6 +319,15 @@ The header fix is one line in a shared file the Lead owns; it is reported, not p
 Recorded because a lane that publishes a number from a shifted table is publishing the
 defect, which is the failure this programme keeps paying for.
 
+**AND THE TOTAL ROW'S `collRes` IS NOT THE SUM OF ITS PARTS.** The gate's `verdict()`
+accumulator (`add()` in `incoming-gate.ts`) copies fifteen outcome fields into the TOTAL and
+**omits `resolvedAmongCollision`** — so the TOTAL row prints `collRes 0` while the per-type
+rows carry the real numbers (measured: `contains` 51 for this lane's population, TOTAL 0 in
+the same run). Anyone reading the TOTAL — which is what a completion package reads — would
+conclude "no resolved edge depended on the tie-break", the one error direction that flatters.
+**The number to quote for tier-break exposure is the PER-TYPE sum: 51, all `contains`.** One
+line in the same shared file; reported, not patched.
+
 ## 7c. The two extFAIL edges, fixed
 
 `docker`'s vendored rekor schema has one `oneOf` with two `$ref`s: `v0.0.1/...` and
