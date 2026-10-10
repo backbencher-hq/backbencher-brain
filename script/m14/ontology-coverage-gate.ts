@@ -204,7 +204,12 @@ function walkPreorder(root: any, visit: (n: any) => void): void {
  * either arm stops behaving. A guard that cannot fail is not a guard.
  */
 export type ProbeSpace = "node-types" | "block-types" | "attribute-keys" | "corpus-count"
-type RulingStatus = "EMITTED" | "RULED-SOUND" | "FALSIFIED" | "RULED-UNJUSTIFIED"
+type RulingStatus = "EMITTED" | "RULED-SOUND" | "FALSIFIED" | "RULED-UNJUSTIFIED" | "RULED-UNKNOWN"
+/** What the EMITTED column is actually a claim about. `complete` is true only when EVERY offered file
+ *  was parsed by the analyzer in THIS run: a file the checkpoint settled from an earlier walk
+ *  contributes no edges (the checkpoint stores per-file OUTCOMES, not per-file relationship types),
+ *  and a degraded or abandoned file was never analyzed at all. */
+type EmittedPopulation = { measured: number; settled: number; degraded: number; abandoned: number; total: number; complete: boolean }
 type SpaceAttestation = {
   lane?: string
   instrument?: string
@@ -266,12 +271,13 @@ function readAttestation(lang: string): { att: SpaceAttestation | null; rel: str
 
 /** The verdict for ONE un-emitted type. Pure except for the filesystem reads inside
  *  `verifyAttestation`, which happen before this is called, so the self-test can drive it. */
-function verdictFor(args: {
+function verdictInner(args: {
   type: Type
   ruled: Ruled | undefined
   ruling: { reason: string; src: string } | null
   keyEvidence: KeyEvidence
   nodeTypeCount: number
+  population: EmittedPopulation
   att: SpaceAttestation | null
   attRel: string
   attProblems: string[]
@@ -335,6 +341,37 @@ function verdictFor(args: {
   return { status: "RULED-SOUND", detail: `NOT EMITTED; ${basis}. Written ruling: ${ruling.src}` }
 }
 
+/**
+ * THE POPULATION GATE — a PARTIAL walk can no longer produce RULED-SOUND.
+ *
+ * Measured 2026-10-09 on hcl, on the same walk that had just been fixed for the key-space blind
+ * spot: with a history-trusted checkpoint the gate re-measured 5 of 4,047 files and settled the
+ * other 4,042 from an earlier run, which contributes NO edges — the checkpoint records per-file
+ * OUTCOMES, not per-file relationship types. `calls` and `overrides` therefore printed
+ * `RULED-SOUND; the construct occurs 0x on the parse tree` while a fresh walk of the same corpus
+ * carried 4 and 68 edges. A false RULED-SOUND is the flattering direction, and this one arrives
+ * through the DEFAULT invocation, so a reader who does not pass `--fresh` gets a wrong verdict with
+ * no signal in the row.
+ *
+ * The fix is a REFUSAL, not a guess: when any offered file was settled by an earlier walk, degraded
+ * (regex fallback, not the analyzer) or abandoned, absence is not established and the row reads
+ * RULED-UNKNOWN. It is not a failure — it is a row that has not been measured yet — but it can never
+ * be read as a certification. FALSIFIED and RULED-UNJUSTIFIED pass through untouched: both are
+ * findings about the ruling itself and neither depends on the EMITTED column.
+ */
+function verdictFor(args: Parameters<typeof verdictInner>[0]): { status: RulingStatus; detail: string } {
+  const v = verdictInner(args)
+  if (v.status !== "RULED-SOUND" || args.population.complete) return v
+  const p = args.population
+  return {
+    status: "RULED-UNKNOWN",
+    detail: `NOT CERTIFIED: no edge of this type was observed, but the EMITTED column covers only ${p.measured.toLocaleString()} of ` +
+      `${p.total.toLocaleString()} offered files (${p.settled.toLocaleString()} settled by an earlier walk contribute NO edges, ` +
+      `${p.degraded} degraded by the regex fallback, ${p.abandoned} abandoned), so absence is NOT established. The written ruling is ` +
+      `unchanged (${args.ruling?.src ?? "none"}); re-run with --fresh to certify it.`,
+  }
+}
+
 // ---------------------------------------------------------------- the space check's own control
 /**
  * Rule-book §7: a guard with no live hits must be shown firing on a planted case. This control runs
@@ -360,10 +397,12 @@ function spaceCheckSelfTest(verbose: boolean): { passed: number; failures: strin
   const missingArtefactAtt: SpaceAttestation = { artefact: "validation/m14/fixtures/hcl/this-file-does-not-exist.json", spacesProbed: ["attribute-keys"], rulings: { extends: { spaces: ["attribute-keys"], constructSites: 0 } } }
   const contradictedAtt: SpaceAttestation = { ...goodAtt, rulings: { extends: { spaces: ["node-types", "attribute-keys"], constructSites: 99, pointer: ["sites", "extends"] } } }
   const countlessAtt: SpaceAttestation = { artefact: SPACE_CONTROL_ARTEFACT, spacesProbed: ["attribute-keys"], rulings: { extends: { spaces: ["attribute-keys"] } } }
-  const arm = (name: string, want: RulingStatus, ruled: Ruled | undefined, keyEvidence: KeyEvidence, att: SpaceAttestation | null) => {
-    const v = verdictFor({ type: "extends", ruled, ruling, keyEvidence, nodeTypeCount: 64, att, attRel: "self-test", attProblems: att ? verifyAttestation(att).problems : [], attVerified: att ? verifyAttestation(att).verified : [] })
+  const arm = (name: string, want: RulingStatus, ruled: Ruled | undefined, keyEvidence: KeyEvidence, att: SpaceAttestation | null, population?: EmittedPopulation) => {
+    const pop = population ?? { measured: 4047, settled: 0, degraded: 0, abandoned: 0, total: 4047, complete: true }
+    const v = verdictFor({ type: "extends", ruled, ruling, keyEvidence, nodeTypeCount: 64, population: pop, att, attRel: "self-test", attProblems: att ? verifyAttestation(att).problems : [], attVerified: att ? verifyAttestation(att).verified : [] })
     return { name, want, got: v.status, detail: v.detail }
   }
+  const partial: EmittedPopulation = { measured: 5, settled: 4042, degraded: 0, abandoned: 0, total: 4047, complete: false }
   const arms = [
     arm("A node-type-only ruling in a key-bearing language", "RULED-UNJUSTIFIED", ruledA, KEYED, null),
     arm("B the same ruling, spaces attested and verified, 0 sites", "RULED-SOUND", ruledA, KEYED, goodAtt),
@@ -373,6 +412,9 @@ function spaceCheckSelfTest(verbose: boolean): { passed: number; failures: strin
     arm("F an attestation whose declared count contradicts its artefact", "RULED-UNJUSTIFIED", ruledA, KEYED, contradictedAtt),
     arm("G an attestation that states no construct count", "RULED-UNJUSTIFIED", ruledA, KEYED, countlessAtt),
     arm("H an instrument-B tree count is not a vocabulary probe", "RULED-SOUND", ruledB, KEYED, null),
+    arm("I an attested ruling on a PARTIAL walk (5 of 4,047 files) refuses to certify", "RULED-UNKNOWN", ruledA, KEYED, goodAtt, partial),
+    arm("J the same ruling on a COMPLETE walk still certifies", "RULED-SOUND", ruledA, KEYED, goodAtt),
+    arm("K a partial walk does not soften a key-space UNJUSTIFIED", "RULED-UNJUSTIFIED", ruledA, KEYED, null, partial),
   ]
   const failures: string[] = []
   for (const a of arms) {
@@ -387,8 +429,8 @@ const SELF_TEST_VERBOSE = process.argv.includes("--self-test")
 {
   const control = spaceCheckSelfTest(SELF_TEST_VERBOSE)
   const ok = control.failures.length === 0
-  console.log(`space check self-test: ${ok ? "PASS" : "FAIL"} — ${control.passed}/${control.passed + control.failures.length} arms ` +
-    `(fires on a node-type-only ruling in a key-bearing language; passes an attested one; a ruling contradicted by its own artefact fails)`)
+  console.log(`ruling space+population self-test: ${ok ? "PASS" : "FAIL"} — ${control.passed}/${control.passed + control.failures.length} arms ` +
+    `(fires on a node-type-only ruling in a key-bearing language; passes an attested one; a ruling contradicted by its own artefact fails; a PARTIAL walk refuses to certify)`)
   if (!ok) {
     console.error("SPACE CONTROL FAILED — this gate refuses to print a RULED-SOUND its space check cannot certify.")
     for (const f of control.failures) console.error(`  - ${f}`)
@@ -740,7 +782,7 @@ function rulingFor(t: Type): { reason: string; src: string } | null {
 }
 
 // ---------------------------------------------------------------- verdict
-type Row = { type: Type; status: "EMITTED" | "RULED-SOUND" | "FALSIFIED" | "RULED-UNJUSTIFIED"; detail: string }
+type Row = { type: Type; status: RulingStatus; detail: string }
 
 // `--coverage` reports which lanes this gate can actually rule for, and does NOT
 // parse a corpus. The gate's own header records why this matters: it exists
@@ -839,10 +881,22 @@ if (walkStats.partial) {
 console.log()
 
 const rows: Row[] = []
+/** What the EMITTED column below is a claim about — computed once, printed, and attached to every
+ *  row that depends on it. `walked === total` is the only state in which ABSENCE is certifiable. */
+const emittedPopulation: EmittedPopulation = {
+  measured: walkStats.walked,
+  settled: walkStats.alreadyDone + walkStats.alreadyDegraded,
+  degraded: walkStats.degraded,
+  abandoned: walkStats.skippedBad,
+  total: walkStats.total,
+  complete: walkStats.walked === walkStats.total,
+}
+const populationTag = emittedPopulation.complete ? ""
+  : ` [edges over ${emittedPopulation.measured.toLocaleString()}/${emittedPopulation.total.toLocaleString()} files — a LOWER BOUND, ${emittedPopulation.settled.toLocaleString()} settled without contributing edges]`
 for (const t of ALL_TYPES) {
   const obs = observed.get(t)
   if (obs && obs.n > 0) {
-    rows.push({ type: t, status: "EMITTED", detail: `${obs.n.toLocaleString()} edges in ${obs.files.size}+ files, e.g. ${[...obs.files].slice(0, 2).join(", ")}` })
+    rows.push({ type: t, status: "EMITTED", detail: `${obs.n.toLocaleString()} edges in ${obs.files.size}+ files, e.g. ${[...obs.files].slice(0, 2).join(", ")}${populationTag}` })
     continue
   }
   const ruled = RULED.find((r) => r.type === t)
@@ -864,10 +918,12 @@ for (const t of ALL_TYPES) {
   }
   const ruling = rulingFor(t)
   const v = verdictFor({
-    type: t, ruled, ruling, keyEvidence, nodeTypeCount: grammarNodeTypes.size,
+    type: t, ruled, ruling, keyEvidence, nodeTypeCount: grammarNodeTypes.size, population: emittedPopulation,
     att: attestation.att, attRel: attestation.rel, attProblems: attestation.problems, attVerified: attestation.verified,
   })
-  rows.push({ type: t, status: v.status, detail: v.detail })
+  // Every row the ruling path produces is a statement about a population, so a PARTIAL walk's tag
+  // rides on the row itself rather than living only in the header lines above it.
+  rows.push({ type: t, status: v.status, detail: v.status === "RULED-UNKNOWN" || emittedPopulation.complete ? v.detail : `${v.detail}${populationTag}` })
 }
 
 // ---------------------------------------------------------------- the population that was ACTUALLY measured
@@ -892,6 +948,13 @@ for (const t of ALL_TYPES) {
   if (walkStats.partial) {
     console.log(`walk: >>> THIS TABLE IS PARTIAL. Its EMITTED column is evidence about ${walkStats.walked + walkStats.alreadyDone} of ${walkStats.total} files.`)
   }
+  // THE ROW-LEVEL POPULATION CLAIM. The lines above describe the walk; this one says what the
+  // ABSENCE verdicts below are allowed to assert, and every row that leans on it carries the tag.
+  console.log(`walk: emitted population ${emittedPopulation.measured.toLocaleString()}/${emittedPopulation.total.toLocaleString()} files measured by the analyzer THIS run ` +
+    `(${emittedPopulation.settled.toLocaleString()} settled by an earlier walk and contributing NO edges, ${emittedPopulation.degraded} degraded, ${emittedPopulation.abandoned} abandoned) — ` +
+    (emittedPopulation.complete
+      ? `COMPLETE, so absence is certifiable in this run`
+      : `PARTIAL, so absence is NOT certifiable: such rows read RULED-UNKNOWN rather than RULED-SOUND. Re-run with --fresh.`))
   console.log("")
 }
 
@@ -912,9 +975,16 @@ for (const r of rows) console.log(`${w(r.type, 14)}${w(r.status, 18)}${r.detail}
 
 const falsified = rows.filter((r) => r.status === "FALSIFIED")
 const unjustified = rows.filter((r) => r.status === "RULED-UNJUSTIFIED")
+const unknown = rows.filter((r) => r.status === "RULED-UNKNOWN")
 const emitted = rows.filter((r) => r.status === "EMITTED")
 console.log("-".repeat(120))
-console.log(`emitted ${emitted.length}/10   ruled-sound ${rows.filter((r) => r.status === "RULED-SOUND").length}   FALSIFIED ${falsified.length}   ruled-without-justification ${unjustified.length}`)
+console.log(`emitted ${emitted.length}/10   ruled-sound ${rows.filter((r) => r.status === "RULED-SOUND").length}   FALSIFIED ${falsified.length}   ruled-without-justification ${unjustified.length}   ruled-unknown ${unknown.length}`)
+if (unknown.length) {
+  // NOT a failure: an unmeasured row is work to do, not a defective ruling. It must never be read
+  // as a certification, which is exactly why it is not RULED-SOUND.
+  console.log(`\n>>> ${unknown.length} row(s) are RULED-UNKNOWN, not certified: ${unknown.map((r) => r.type).join(", ")}.`)
+  console.log(`>>> The EMITTED column covered ${emittedPopulation.measured.toLocaleString()}/${emittedPopulation.total.toLocaleString()} files in this run; re-run with --fresh to turn these into verdicts.`)
+}
 if (falsified.length) {
   console.log(`\n>>> THIS GATE FAILS. ${falsified.map((r) => r.type).join(", ")} ${falsified.length === 1 ? "is" : "are"} claimed absent but ${falsified.length === 1 ? "is" : "are"} demonstrably derivable from real code.`)
   console.log(`>>> A differential cannot find this class of defect, because the oracle omits the same type.`)
