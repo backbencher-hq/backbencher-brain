@@ -684,13 +684,31 @@ class Host
       const problems: string[] = []
       if (!inSvc) problems.push("in-file overrides edge missing")
       else if ((inSvc.confidence ?? 0) < 0.9) problems.push(`in-file confidence ${inSvc.confidence} < 0.9 (verified tier must hold; 0.95 php/ruby/python/js/perl family, 1.0 java/swift Pass-1)`)
-      if (!audit) problems.push("external-base guess edge missing")
-      else {
+      if (lang === "php") {
+        // M12.PHP-OVERRIDE-AUDIT (real-php-analyzer.ts:2195-2220): php DELETED the 0.5
+        // "first-parent-guess" edge this probe was written around, and the ruling is
+        // measured rather than stylistic — on phpunit@c8d6921f, 66.7% of the guesses the
+        // audit could decide against the real declaring file were FALSE, and a <0.7 edge
+        // was dropped by pool-worker anyway, so the guess bought no cross-file override
+        // while manufacturing 369 majority-false rows. "An `overrides` edge is now emitted
+        // ONLY when the base's declaration is actually visible." So for php the probe's
+        // expectation INVERTS: emitting an unverified cross-file override is the defect.
+        // The other six lanes keep the 0.5 contract — M37.10 measured THEIR behavior, and
+        // all six pass it. A probe that asserts the deleted php shape is not a control for
+        // php; it is a control for a revision of php that no longer exists.
+        if (audit) {
+          problems.push(`php published an unverified cross-file override ${audit.source} -> ${audit.target} (conf ${audit.confidence}) — the M12 audit deleted this class as 66.7% false and below the 0.7 publish threshold`)
+        }
+      } else if (!audit) {
+        problems.push("external-base guess edge missing")
+      } else {
         if (Math.abs((audit.confidence ?? 0) - 0.5) > 1e-9) problems.push(`external confidence ${audit.confidence} != 0.5`)
         if ((audit.metadata?.reasonCode ?? "") !== "first-parent-guess") problems.push(`reasonCode ${audit.metadata?.reasonCode} != first-parent-guess`)
         if (audit.metadata?.evidenceClass && audit.metadata.evidenceClass !== "inferred") problems.push(`tier ${audit.metadata.evidenceClass} != inferred`)
       }
-      const label = lang === "java" ? " (Pass-3 already in place; guards regressions)" : " (M37.10 fix)"
+      const label = lang === "java" ? " (Pass-3 already in place; guards regressions)"
+        : lang === "php" ? " (M12.PHP-OVERRIDE-AUDIT: the unverified cross-file guess is REFUSED — publishing one fails this probe)"
+        : " (M37.10 fix)"
       record(probeId, lang, "external-base override emits Pass-3 guess @0.5/inferred; in-file verified @0.95" + label,
         problems.length === 0, problems.join("; ") || "ok")
     } catch (e: any) {
@@ -1695,12 +1713,23 @@ class Host
       ["calls:++->tweak"],
     )
 
+    // M14 probe repair (2026-10-10): the probe used to expect `instantiates:wrap->Just` on a
+    // snippet that IMPORTS Just from StdEnv, and the clean lane's in-file-by-construction rule
+    // (real-clean-analyzer.ts:2567 table + the `declaredConstructors.has(name)` gate at
+    // 2917-2935) refuses to publish an `instantiates` whose target is not a data constructor
+    // THIS FILE declares — precisely so the edge can carry `structural`/`targetIsInFile:true`
+    // instead of an unresolved external target. The probe was therefore asserting the one
+    // shape the lane forbids, and failed with `missing: instantiates:wrap->Just`. The
+    // HEAD-vs-BODY half is the real contract, so the snippet now DECLARES its constructor and
+    // the discrimination is tested inside the lane's own rule: BODY emits, HEAD pattern does
+    // not. An imported constructor is refused on BOTH sides, which is why it is not in the
+    // expect set and would show up as `fabricated` if a future change started emitting it.
     await probeCleanEdges(
       "F9-PROBE-CLEAN-HEAD-PATTERN",
-      "a constructor in a function HEAD pattern is never an `instantiates` (pattern territory is everything before the body FIELD — the pre-fix gate tested for an `operator` child with text `=`, which this grammar cannot produce), while the same constructor in a BODY still is",
-      "module HeadPattern\nimport StdEnv\nunwrap :: Maybe Int -> Int\nunwrap (Just v) = v\nwrap :: Int -> Maybe Int\nwrap y = Just y\n",
-      ["instantiates:wrap->Just"],
-      ["instantiates:unwrap->Just"],
+      "a constructor in a function HEAD pattern is never an `instantiates` (pattern territory is everything before the body FIELD — the pre-fix gate tested for an `operator` child with text `=`, which this grammar cannot produce), while the same constructor in a BODY is — under the lane's in-file rule: the snippet declares `JustI`, so the pair discriminates HEAD from BODY without asserting an edge the lane refuses",
+      "module HeadPattern\n:: MaybeInt = JustI Int | NothingI\nunwrap :: MaybeInt -> Int\nunwrap (JustI v) = v\nwrap :: Int -> MaybeInt\nwrap y = JustI y\n",
+      ["instantiates:wrap->JustI"],
+      ["instantiates:unwrap->JustI"],
     )
 
     // 5. Dimension 8 / M59.O2: every edge names its SITE LINE, 1-based, on the
