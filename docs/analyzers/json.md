@@ -257,10 +257,80 @@ the **census** admits **13,951** files (size cap 524,288 B), the **gate** admits
 `fixture baseline gate: no regressions`. Run on the tree this record describes; the
 `Inherit.lsp` fixture is the one that pins `implements`.
 
+## 7b. The residual — what is NOT yet real (measured 2026-10-09)
+
+`incoming-gate.ts json json 0` OOMs (§6), so the whole-population residual was measured by
+running the gate over **every chunk of the admitted population, one chunk per invocation,
+and summing the TOTAL rows** (17 chunks, `--repo=<csv>`, `maxFiles 0`; scratch runner
+`.tmp-json/run-chunks.sh`, aggregate `.tmp-json/aggregate.py`). The gate's verdict is
+PER PROJECT and each column is exact and additive, so this is the same measurement on
+smaller key spaces — not a workaround for the memory limit but the scope the verdict was
+always defined over.
+
+**Population: 14,009 admitted files, 154 repos, 17/17 chunks measured, 0 unmeasured.**
+
+| | edges | resolved | amb | unresolved | extFAIL | bindFAIL | causeFAIL | residual |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| whole population, BEFORE this turn's fix | 5,588,463 | 5,588,134 | 41 | 3 | 2 | 0 | 0 | **46** |
+| docker alone, before → after the file-claim fix | 8,382 | 8,336 | 0 | 0 | 2 → **0** | 0 | 0 | 2 → 0 |
+
+The remaining 44 by type, each with its count and its named cause:
+
+- **`overrides` 22 amb of 22 edges** — every one of this lane's override edges. The
+  analyzer's own measurement (recorded at the emission site) classifies them: 22 of 22
+  targets match more than one symbol BY NAME and 14 of 22 BY PATH. Those 14 are the two
+  declarations of ONE key sharing a name AND a qualified path — i.e. the two rows are the
+  same key in the same object, which the document itself does not distinguish. Whether
+  production binds them (a `contains`-shaped resolver preferring the edge's own file and
+  line) or they are genuinely unresolvable in the store's key space is the NEXT question,
+  and it is a measurement against the store, not an argument. **Not yet ruled.**
+- **`contains` 19 amb of 5,546,243** — 19 of 5.5 million, and the same class as the
+  overrides shape (a repeated key inside one object). The `containsLike` reclassification
+  (`fa2dc27e8`) already moved this type from thousands to 19.
+- **`extends` 3 unresolved of 2,981** — target names nothing in the project; classified
+  next.
+
+**A discrepancy to record, because two measurements of this lane disagreed and the reason
+is an instrument change, not a graph change.** The Lead's chunked reader measured **70**
+residual (68 amb + 2 extFAIL) over the 40 repos with ≥50 `.json` files. My run measures
+**46** over all 154 repos, a strictly larger population (622,066 more edges). The
+difference is commit `fa2dc27e8` — "`contains` was being classified by DECLARATION COUNT;
+production binds it with a different statement" — which landed BETWEEN the two runs:
+duckdb's 30 ambiguous in the Lead's artifact is mostly `contains`, and the current rule
+reads it as 19 across the whole population. **Neither number is wrong; they are different
+rules over different populations, and every residual figure in this doc must name both.**
+
+## 7c. The two extFAIL edges, fixed
+
+`docker`'s vendored rekor schema has one `oneOf` with two `$ref`s: `v0.0.1/...` and
+`v0.0.2/...`. The vendored copy carries v0.0.2 only. The analyzer attached
+`importProjectFile` to both, from path arithmetic alone, and the arbiter — whose file claim
+is checked against the project's admitted list and refutes on a miss, by design — refuted
+the v0.0.1 pair. **The refutation was correct; the claim was false.**
+
+`real-json-analyzer.ts` now makes the file claim only where the project can confirm it
+(`projectCarriesFile`: one `statSync` on `projectRoot/candidate`), and a target the project
+does not carry says the true thing instead — `isExternal: true`, which
+`verifyExternalClaim`'s `pathLikeTarget` guard reads as unverifiable rather than refutable.
+Measured on docker, same population: **extFAIL 2 → 0, extQ 38 → 40, edges 8,382 and
+resolved 8,336 unchanged.** Nothing was dropped.
+
+The change can only ever REMOVE a claim (a file that does not exist cannot be claimed), so
+it cannot manufacture a refutation the blind claim would not already have earned. Fixtures
+17/0 and the zero-regex contract 28/28 both hold; the new check is a `stat`, not a read.
+Artifact: `validation/m14/fixtures/json/measurements/json-docker-extfail-before-after.jsonl`.
+
 ## 8. Open items
 
 - `JSON-G3` (duplicate identity for a top-level array's second element) and `JSON-G4`
-  (`projectFile` claims unverifiable arbiter-side) are unchanged and still open.
+  (`projectFile` claims unverifiable arbiter-side — **now narrowed to genuinely-outside
+  targets by §7c**) are unchanged and still open.
+- **The `overrides` 22 and the `extends` 3 are the next two causes**, with the counts above.
+- **A better file claim than a `stat`**: an exact project file list on the
+  `AnalyzeContext` would use the arbiter's own key space (git-tracked, size-capped) instead
+  of the on-disk tree. json has no `INDEX_SPECS` entry, so `--index` builds nothing for it,
+  and `parallel-indexer.ts:1273` passes only `{ projectRoot }` on the per-file path.
+  Reported to the Lead as a shared-file change.
 - `firing-check.mjs`'s per-lane corpus assignment and its unreachable tail are **shared
   instrument** defects, not lane-owned: reported to the Lead rather than patched here.
   The same shape is already visible in two other lanes' rows (markdown's `imports` lives

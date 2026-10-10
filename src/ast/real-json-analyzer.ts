@@ -11,6 +11,8 @@
 //     nodes, never from source-text scanning.
 
 import type { Node } from "web-tree-sitter"
+import { statSync } from "node:fs"
+import { join } from "node:path"
 import { ASTEngine } from "./engine"
 import { applyDocumentScope, documentDirScope, projectRelativePath } from "./project-scoped-identity"
 
@@ -785,6 +787,26 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // a vendored rekor schema) — so the claim is true 81 times and refuted once, and the one
       // refutation is a real finding about vendored code rather than a false claim about it.
       const fileCandidate = this.fileRefCandidate(ctx, refPath)
+      // THE FILE CLAIM IS MADE ONLY WHERE THE PROJECT CAN CONFIRM IT, and this is the fix for
+      // the lane's last two extFAIL edges. `importProjectFile` is a statement the arbiter CHECKS
+      // against the project's own admitted file list, and a miss is REFUTED — deliberately, and
+      // pinned by the gate's own control (`incoming-rule.ts` `verifyFileClaim`). The analyzer used
+      // to make that claim from path ARITHMETIC alone, so it asserted "this project has that file"
+      // for every sibling `$ref` in the corpus whether it did or not. Measured, docker: the
+      // vendored schema `vendor/github.com/sigstore/rekor/pkg/types/intoto/intoto_schema.json`
+      // points at `v0.0.1/intoto_v0_0_1_schema.json` and `v0.0.2/intoto_v0_0_2_schema.json` in one
+      // `oneOf`; the vendored copy carries v0.0.2 and not v0.0.1, and the two refs are
+      // STRUCTURALLY IDENTICAL — so no shape test can tell them apart and the only discriminator
+      // is existence. A claim the project refutes is a false statement the graph makes, so the
+      // claim is now conditional on the file being there, and a target that is not there says the
+      // true thing instead: it is outside this project's file set.
+      //
+      // The check is the filesystem the project lives on, and it can only ever REMOVE a claim
+      // (a file that does not exist cannot be claimed), so it cannot manufacture a refutation the
+      // blind claim would not have earned — an on-disk file that is untracked still claims, and
+      // still refutes, exactly as before.
+      const claimedFile =
+        fileCandidate !== null && this.projectCarriesFile(ctx, fileCandidate) ? fileCandidate : null
       // A file-naming `$ref` is BOTH a dependency and a reference. Emitting only
       // `references` was the omission; emitting only `imports` would lose the
       // pointer, so a `$ref` that names a file now carries both, which is what it is.
@@ -800,7 +822,13 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
             importForm: "json_schema_ref",
             resolvedPath: false,
             // the dependency this edge asserts, in the spelling the project's own file list uses
-            ...(fileCandidate ? { importProjectFile: fileCandidate } : {}),
+            // — or, where the project does not carry it, the external claim that says so. The
+            // fallback is not optional: an `imports` edge with no claim at all is UNRESOLVED and
+            // counts against the lane, and "the project does not carry this file" is a statement,
+            // not a gap. A path-shaped target carrying `isExternal` is UNVERIFIABLE by the
+            // arbiter's owner lookup by design (`verifyExternalClaim` refuses to read a stem as an
+            // owner — a rule the Lead fixed in `5a611de4b`), which is exactly right for it.
+            ...(claimedFile ? { importProjectFile: claimedFile } : { isExternal: true }),
             evidenceClass: "structural",
           },
         })
@@ -824,8 +852,10 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // A pointer that names a location this document does not publish is a BROKEN pointer,
           // not an external one; `reasonCode` says exactly that and the confidence carries it.
           // A `$ref` that names a FILE carries the file claim instead, on both labels, so the two
-          // rows for one dependency are adjudicated the same way.
-          ...(fileCandidate ? { importProjectFile: fileCandidate } : { isExternal: !this.isLocalPointer(refPath) }),
+          // rows for one dependency are adjudicated the same way — and where the project does not
+          // carry the file, BOTH labels carry the external claim, so one dependency is never
+          // adjudicated two ways.
+          ...(claimedFile ? { importProjectFile: claimedFile } : { isExternal: !this.isLocalPointer(refPath) }),
           // Honesty contract §4 point 1: anything below 1.0 carries a machine-readable code.
           // The 0.8 case is exactly one thing — the pointer names a location this document
           // does not declare — so the code says so, and the 1.0 case says the opposite.
@@ -1344,6 +1374,34 @@ const bracket = parent.lastIndexOf("[")
    * dependency. Decided structurally — an extension and a path separator or a leading
    * `./` — with no regex, so the lane's zero-regex contract holds.
    */
+  /**
+   * DOES THE PROJECT CARRY THE FILE THIS EDGE DEPENDS ON? The precondition of the file claim.
+   *
+   * `candidate` is already project-relative and cannot escape the root (`fileRefCandidate` pops
+   * `..` and returns null when one would leave the project), so the join cannot address anything
+   * outside the project.
+   *
+   * ENOENT / ENOTDIR mean the project does not have it, and the claim is then NOT MADE — the
+   * arbiter would refute it, correctly, because the claim says the project has the file. ANY
+   * OTHER error means this check did not run rather than that the file is absent, and a claim is
+   * not dropped on a check that did not happen: those cases keep the claim, which is exactly the
+   * behaviour every measurement before this one recorded.
+   *
+   * This is a STAT, not a read. The lane's contract is that every decision comes from the TREE
+   * and that the file body is never scanned as text (`BD-regex`, enforced by
+   * `script/m12/json-contract-probe.ts`); asking the filesystem whether a path exists asserts
+   * nothing about that file's contents and adds no regular expression.
+   */
+  private projectCarriesFile(ctx: JsonContext, candidate: string): boolean {
+    const root = ctx.projectRoot
+    if (typeof root !== "string" || root.length === 0) return false
+    try {
+      return statSync(join(root, candidate)).isFile()
+    } catch (e: any) {
+      return !(e?.code === "ENOENT" || e?.code === "ENOTDIR")
+    }
+  }
+
   private isFileNamingRef(refPath: string): boolean {
     if (refPath.length === 0) return false
     if (refPath.startsWith("#/")) return false
