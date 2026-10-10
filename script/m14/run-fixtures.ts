@@ -562,7 +562,6 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     }
   }
 
-  const exts = cfg.ext.split(",")
   // `.expectation.json` files are excluded because for a lane whose extension IS
   // `json` an expectation file ends in `.json` too, so it was picked up as a FIXTURE
   // and then reported as a missing expectation of its own. Every existing lane dodged
@@ -570,7 +569,38 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
   // extensions never collided. json is the first lane where they do, and the failure
   // mode is six phantom "missing expectation file" rows that look like a lane problem
   // and are a runner problem.
-  const sources = fs.readdirSync(dir).filter(f => exts.some(e => f.endsWith("." + e)) && !f.endsWith(".expectation.json"))
+  //
+  // MATCHED CASE-INSENSITIVELY, because a file extension is case-insensitive on every filesystem
+  // this runs on and one lane spells its sources in capitals. Measured by `r-lane`: `LANGS.r.ext`
+  // is `"r"` while all 22 of its fixtures are `*.R`, so this filter discovered ZERO sources and the
+  // lane reported `{"r":{"pass":0,"fail":0}}` + "all fixtures pass" — a VACUOUS PASS, which is
+  // worse than a failure because it reads as green. The lane's own runner
+  // (`validation/m14/fixtures/r/run-r-fixtures.ts`) was the only instrument that noticed: 22
+  // passed, 0 failed. Changing the table's `ext` to `"r,R"` would have fixed this one lane and left
+  // the next capitalised extension to rediscover the same silence.
+  const exts = cfg.ext.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)
+  const matchesExt = (f: string): boolean => {
+    const low = f.toLowerCase()
+    return exts.some((e) => low.endsWith("." + e))
+  }
+  const sources = fs.readdirSync(dir).filter(f => matchesExt(f) && !f.endsWith(".expectation.json"))
+
+  // A LANE WITH EXPECTATIONS BUT NO SOURCES IS AN ERROR, NOT A PASS. The paragraph above earned
+  // this guard: zero discovered sources used to flow through as a clean run, so a runner/lane
+  // mismatch was indistinguishable from a lane whose fixtures all pass. If the directory holds
+  // expectation files and the filter found no source, say so and fail.
+  if (sources.length === 0) {
+    let expectations = 0
+    try { expectations = fs.readdirSync(dir).filter((f) => f.endsWith(".expectation.json")).length } catch { /* unreadable */ }
+    if (expectations > 0) {
+      console.error(
+        `\nFIXTURE DISCOVERY IS EMPTY — ${expectations} expectation file(s) in fixtures/${runLangLang} ` +
+        `but 0 source(s) matched ext="${cfg.ext}". That is a RUNNER/lane mismatch, not a lane with no ` +
+        `fixtures: report it, and do not read the summary as a pass.`,
+      )
+      process.exitCode = 1
+    }
+  }
 
   // SUB-DIRECTORY FIXTURES are a MULTI-FILE PROJECT. A lane whose analyzer reads
   // `AnalyzeContext.projectIndex` cannot be tested by single-file fixtures at all: the
