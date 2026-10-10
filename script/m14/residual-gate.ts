@@ -212,7 +212,18 @@ if (LANE) {
   if (total) {
     const resid = total.amb + total.unres + total.extFAIL + total.bindFAIL + total.causeFAIL
     console.log("-".repeat(100))
-    console.log(`${w("TOTAL", 14)} ${w(total.edges, 9)} ${w(total.resolved, 9)} ${w(total.amb, 10)} ${w(total.unres, 11)} ${w(total.extFAIL, 8)} ${w(total.bindFAIL, 9)} ${w(total.causeFAIL, 10)} ${w(((resid / total.edges) * 100).toFixed(1) + "%", 10)}`)
+    // `ofWhich` WAS OMITTED HERE while the header and every PER-TYPE row carried it, so the TOTAL's
+    // values sat one column to the left from `amb(decl)` onward — for css that printed `ofWhich 180`
+    // and `amb 80` when the truth is `ofWhich 0` (every type) and `amb 180` (all `references`). Found
+    // while verifying css's completion package, whose `collRes 0 per type` claim the shifted TOTAL
+    // appeared to contradict. **Fourth instance of one family** in this programme — a summary that does
+    // not match its own columns: `ofWhich` before it was labelled an upper bound, `amb` before
+    // `contains` was classified by its real resolver, the intent legend before it was scoped to
+    // contains/exports, the incoming gate's TOTAL before `05bf9953d`, and now this one.
+    //
+    // The lesson is the same every time: **a summary is a claim and needs the same evidence as a
+    // number.** A per-type table that is right does not make its TOTAL right.
+    console.log(`${w("TOTAL", 14)} ${w(total.edges, 9)} ${w(total.resolved, 9)} ${w(total.ambColl ?? 0, 8)} ${w(total.amb, 10)} ${w(total.unres, 11)} ${w(total.extFAIL, 8)} ${w(total.bindFAIL, 9)} ${w(total.causeFAIL, 10)} ${w(((resid / total.edges) * 100).toFixed(1) + "%", 10)}`)
     console.log(`\nresolved ${((total.resolved / total.edges) * 100).toFixed(1)}%   residual ${resid} of ${total.edges}   ` +
       `extFAIL ${total.extFAIL}${total.extFAIL > 0 ? " (MUST BE 0)" : ""}  bindFAIL ${total.bindFAIL}${total.bindFAIL > 0 ? " (MUST BE 0)" : ""}  causeFAIL ${total.causeFAIL}${total.causeFAIL > 0 ? " (MUST BE 0)" : ""}`)
   }
