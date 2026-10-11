@@ -97,6 +97,16 @@ type Row = {
   sfile: string | null
   tname: string | null
   tfile: string | null
+  /**
+   * The rest of what a resolved row STORES about its target: the two honesty
+   * flags and the cross-language bridge. They are derived from the target, so a
+   * pass that re-decides targets (or one that stops deciding them) can leave
+   * them behind — which is why they are compared, not just the endpoints.
+   * `-1` / `""` are the NULL spellings, kept distinct from 0.
+   */
+  xfile: number
+  xlang: number
+  bridge: string
 }
 type Sym = {
   id: string
@@ -169,7 +179,9 @@ async function oneRound(out: string) {
   const rows: Row[] = (q(`
     SELECT r.id AS id, r.rowid AS rid, r.relationship_type AS t, r.target_external AS tgt, r.source_external AS src,
            r.source_symbol_id AS ssym, r.target_symbol_id AS tsym,
-           ss.name AS sname, sf.relative_path AS sfile, ts.name AS tname, tf.relative_path AS tfile
+           ss.name AS sname, sf.relative_path AS sfile, ts.name AS tname, tf.relative_path AS tfile,
+           COALESCE(r.is_cross_file, -1) AS xfile, COALESCE(r.is_cross_language, -1) AS xlang,
+           COALESCE(r.bridge_mechanism, '') AS bridge
       FROM brain_relationship r
       LEFT JOIN brain_symbol ss ON ss.id = r.source_symbol_id
       LEFT JOIN brain_file sf ON sf.id = ss.file_id
@@ -179,6 +191,7 @@ async function oneRound(out: string) {
     id: String(r.id), rid: Number(r.rid), t: String(r.t), tgt: r.tgt ?? null, src: r.src ?? null,
     ssym: r.ssym ?? null, tsym: r.tsym ?? null,
     sname: r.sname ?? null, sfile: r.sfile ?? null, tname: r.tname ?? null, tfile: r.tfile ?? null,
+    xfile: Number(r.xfile ?? -1), xlang: Number(r.xlang ?? -1), bridge: String(r.bridge ?? ""),
   }))
   const symbols: Sym[] = (q(`
     SELECT s.id AS id, s.rowid AS rowid, s.name AS name, s.file_id AS file,
@@ -388,10 +401,21 @@ async function main() {
   for (const r of B.rows) byIdB.set(norm(r.id, B.pid)!, r)
   const ids = [...new Set([...byIdA.keys(), ...byIdB.keys()])]
   const divergent: { id: string; a: Row | undefined; b: Row | undefined; attribution: string }[] = []
+  // The DERIVED half of the same property: a row's target decides its two honesty
+  // flags and its bridge, so a pass that writes one and not the others is as
+  // non-deterministic as one that writes a different target — and a pass that
+  // stops writing a target at insert time can leave the flags behind. Compared
+  // separately so a failure says WHICH of the two halves moved.
+  const payloadDivergent: { id: string; a: Row; b: Row }[] = []
   for (const id of ids) {
     const ra = byIdA.get(id)
     const rb = byIdB.get(id)
     if (!ra && !rb) continue
+    if (ra && rb) {
+      const pkey = (r: Row, pid: string) =>
+        JSON.stringify([norm(r.tsym, pid), r.xfile, r.xlang, r.bridge])
+      if (pkey(ra, A.pid) !== pkey(rb, B.pid)) payloadDivergent.push({ id, a: ra, b: rb })
+    }
     if (ra && rb &&
       norm(ra.ssym, A.pid) === norm(rb.ssym, B.pid) &&
       norm(ra.tsym, A.pid) === norm(rb.tsym, B.pid)) continue
@@ -446,6 +470,22 @@ async function main() {
   // store the index run just produced, in BOTH runs. Without this the property
   // above could hold for a store that is still a function of scheduling, just
   // one that happened to answer the same way twice.
+  // 4b. THE STORED PAYLOAD — target plus the flags derived from it.
+  check(
+    "every row stores the same target AND the same derived flags across runs",
+    payloadDivergent.length === 0,
+    payloadDivergent.length === 0
+      ? `0 of ${ids.length} rows differ on (target, is_cross_file, is_cross_language, bridge_mechanism)`
+      : `${payloadDivergent.length} of ${ids.length} rows differ on the derived payload; first: ${payloadDivergent[0].id} ` +
+        `[A: xfile=${payloadDivergent[0].a.xfile} xlang=${payloadDivergent[0].a.xlang} bridge=${payloadDivergent[0].a.bridge}] ` +
+        `[B: xfile=${payloadDivergent[0].b.xfile} xlang=${payloadDivergent[0].b.xlang} bridge=${payloadDivergent[0].b.bridge}]`,
+  )
+  for (const p of payloadDivergent.slice(0, 8)) {
+    console.log(`\npayload-divergent ${p.id}`)
+    console.log(`  A: tsym=${p.a.tsym ?? "NULL"} xfile=${p.a.xfile} xlang=${p.a.xlang} bridge=${p.a.bridge || "(null)"}`)
+    console.log(`  B: tsym=${p.b.tsym ?? "NULL"} xfile=${p.b.xfile} xlang=${p.b.xlang} bridge=${p.b.bridge || "(null)"}`)
+  }
+
   //
   // The non-vacuity predicate is `scanned > 0` and deliberately NOT `planned > 0`:
   // whether the module-aware planner proves anything is a property of the DRAW

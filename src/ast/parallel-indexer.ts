@@ -4965,8 +4965,8 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
     // second site calling it) reports `corrected: 0, settled: 0`.
     //
     // See `script/m14/verify-resolution-determinism.ts`, which indexes the same
-    // draw twice and compares every endpoint, and the JS lane doc §JSD49/JSD50
-    // for the before/after populations.
+    // draw twice and compares every endpoint AND every derived field, and the JS
+    // lane doc §JSD49/JSD50 for the before/after populations.
     {
       const settle = settleImportTargets(rawDb as any, projectId)
       if (settle.corrected > 0 || settle.settled > 0) {
@@ -4976,6 +4976,106 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
           unresolved: settle.unresolved, unchanged: settle.unchanged,
         })
       }
+    }
+
+    // ── `is_cross_file`, ONE WRITER (M14 JS lane, JSD51) ──
+    //
+    // The column had FIVE writers and they disagreed, which made it both
+    // under-claimed and run-dependent. Measured on the pinned 250-file JS draw,
+    // indexing the same source twice: with every target IDENTICAL in both runs,
+    // **66 rows stored a different `is_cross_file`** (55 `imports`, 7 `calls`, 3
+    // `uses`, 1 `exports`), and against the value derivable from the row itself,
+    // **533 of the 5,531 resolved rows (9.6%) stored 0 on a target in another
+    // file** — 427 of them `imports`. The cause is structural, not a slip: the
+    // insert path claims a cross only when the row's SOURCE SYMBOL resolved
+    // (`sourceId !== null`), the name strategies recompute from the same join,
+    // and the planner's UPDATE spells its comparison against the TARGET's own
+    // file, which is a constant 0 — so a row whose source is unattributed but
+    // whose `source_external` IS a project path (the file-level lanes' spelling)
+    // was never claimed by anyone, and which of the other writers touched a row
+    // first depended on batch order.
+    //
+    // The definition is the one the insert path's own comment states, applied to
+    // the row rather than to the batch: a row CROSSES FILES when the file its
+    // source belongs to and the file its target lives in are both known and
+    // differ. Three routes give that file, in this order:
+    //
+    //   1. the source SYMBOL's file — the precise owner, when the source resolved;
+    //   2. the `file:<relativePath>` ANCHOR IN THE ROW'S OWN ID. That is not a
+    //      heuristic: `storeResults` builds the id as
+    //      `${projectId}:rel:${sourceId ?? `file:${relativePath}`}:…`, so the
+    //      anchor IS the file that emitted the row, and it is present exactly
+    //      when the source did not resolve. Recovered as the longest path that
+    //      prefixes the id's tail, because a path may itself contain a colon;
+    //   3. `source_external` when it is a project path (the file-level lanes'
+    //      spelling, which the store rewrites for exactly those rows).
+    //
+    // MEASURED on the draw: 22 of the 5,531 resolved rows had NO file by routes 1
+    // and 3 (their `source_external` is a bare NAME — `touch`, `get_inclusive_count`),
+    // and route 2 answers ALL 22, so the "cannot claim" bucket is empty and every
+    // resolved row's flag is decided from its own data. Without route 2 those 22
+    // would store 0 on edges whose target IS in another file, i.e. the closure
+    // would understate where the older writers happened to overstate.
+    //
+    // When no route answers, the row cannot claim a cross and 0 is the column's
+    // documented "not claimed" value rather than a claim of same-file.
+    //
+    // It runs HERE, after every pass that can move a target and before the pass
+    // that derives the cross-LANGUAGE fields from one, so the flag is computed
+    // from what is finally stored. Set-based, like the other closures in this
+    // function, and total: every row of the project is covered, including the
+    // detached ones, so the flag is a FUNCTION of the stored row rather than a
+    // record of who wrote first. The `<>` filter makes the write a no-op for the
+    // rows already right, so the `changes` count is the population the closure
+    // repaired and it is logged.
+    //
+    // A caller that resolves relationships on a partial file set (the incremental
+    // path) leaves the flag to the insert path, exactly as it already does for the
+    // cross-language fields.
+    {
+      const xf = `CASE WHEN s.src_file IS NOT NULL AND t.file_id IS NOT NULL AND s.src_file <> t.file_id THEN 1 ELSE 0 END`
+      rawDb.run(`DROP TABLE IF EXISTS temp._xf_files`)
+      rawDb.run(`DROP TABLE IF EXISTS temp._xf_src`)
+      rawDb.run(`
+        CREATE TEMP TABLE _xf_files AS
+        SELECT id AS file_id, relative_path AS path FROM brain_file WHERE project_id = '${projectId}'
+      `)
+      rawDb.run(`CREATE INDEX temp._xf_files_path ON _xf_files(path)`)
+      rawDb.run(`
+        CREATE TEMP TABLE _xf_src AS
+        SELECT r.id AS rel_id,
+               COALESCE(
+                 src.file_id,
+                 pf.file_id,
+                 (SELECT a.file_id FROM _xf_files a
+                   WHERE instr(r.id, ':rel:file:') > 0
+                     AND substr(r.id, instr(r.id, ':rel:file:') + 10, length(a.path) + 1) = a.path || ':'
+                   ORDER BY length(a.path) DESC LIMIT 1)
+               ) AS src_file,
+               r.target_symbol_id AS tgt_id
+          FROM brain_relationship r
+          LEFT JOIN brain_symbol src ON src.id = r.source_symbol_id
+          LEFT JOIN _xf_files pf ON pf.path = r.source_external
+         WHERE r.project_id = '${projectId}'
+      `)
+      rawDb.run(`CREATE INDEX temp._xf_src_rel ON _xf_src(rel_id)`)
+      const xfStarted = Date.now()
+      const xfRes = rawDb.run(`
+        UPDATE brain_relationship
+           SET is_cross_file = ${xf}
+          FROM _xf_src s
+          LEFT JOIN brain_symbol t ON t.id = s.tgt_id
+         WHERE brain_relationship.id = s.rel_id
+           AND brain_relationship.is_cross_file <> ${xf}
+      `)
+      const xfChanged = typeof xfRes?.changes === "number" ? xfRes.changes : -1
+      // Timed because the cost is a claim too: on the pinned 250-file draw the
+      // relationship phase reads 2,963-3,471 ms across four runs with and without
+      // this pass, so its cost is below that phase's own spread — but "below the
+      // spread" is only worth saying if the number is taken.
+      log.debug("is_cross_file closure", { changed: xfChanged, ms: Date.now() - xfStarted })
+      rawDb.run(`DROP TABLE IF EXISTS temp._xf_files`)
+      rawDb.run(`DROP TABLE IF EXISTS temp._xf_src`)
     }
 
     // Cross-language normalization (polyglot fixture finding, M26 addendum):

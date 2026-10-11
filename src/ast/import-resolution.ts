@@ -828,10 +828,8 @@ export function settleImportTargets(db: MinimalDb, projectId: string): ImportSet
 
   const fileLang = new Map<string, string>()
   for (const f of files) fileLang.set(f.fileId, f.language)
-  const symbolFile = new Map<string, string>()
   const candidatesByName = new Map<string, LeafCandidate[]>()
   for (const s of symbols) {
-    symbolFile.set(s.symbolId, s.fileId)
     const arr = candidatesByName.get(s.name) ?? []
     arr.push({
       symbolId: s.symbolId,
@@ -842,29 +840,21 @@ export function settleImportTargets(db: MinimalDb, projectId: string): ImportSet
     candidatesByName.set(s.name, arr)
   }
 
-  // `is_cross_file` is recomputed the way the INSERT path computes it — the
-  // settled target's file against the row's own file — because this pass is
-  // allowed to move a row to a different file and leaving the flag behind would
-  // store a cross-file edge as same-file. Note that the planner's own UPDATE in
-  // `resolveImportTargets` spells its comparison against the TARGET symbol's
-  // file, which makes it a constant 0; that is left as it is (it fills NULLs on
-  // rows the insert path never resolved), and it is not what a row settled here
-  // carries.
-  const update = db.prepare(
-    `UPDATE brain_relationship
-        SET target_symbol_id = ?,
-            is_cross_file = CASE WHEN ? IS NOT NULL AND ? != (
-                  SELECT file_id FROM brain_symbol WHERE id = ?
-                ) THEN 1 ELSE 0 END
-      WHERE id = ?`,
-  )
+  // TARGET ONLY, deliberately. `is_cross_file` is DERIVED from the settled
+  // target, so it has exactly one writer and that writer is the store-wide
+  // closure in `resolveRelationships` (`_xf_src`), which runs after this pass and
+  // before the cross-language normalization. Writing it here as well was the
+  // shape that made the flag differ between runs with the TARGET held fixed: this
+  // pass only rewrites the rows whose target it MOVES, so a row whose target it
+  // confirms kept whatever the earlier writer (the planner's UPDATE, strategies
+  // 1-3, or the insert path) had stored — and which of those ran for a row is
+  // itself scheduling-dependent. See JSD51 in the lane doc for the measurement.
+  const update = db.prepare(`UPDATE brain_relationship SET target_symbol_id = ? WHERE id = ?`)
   // A settled answer of NULL means "still detached", and a row that carries a
   // target the ranking cannot reproduce is one the insert path attached out of a
   // prefix that the complete table does not support. Detaching it is the
   // deterministic answer, and it is the only branch here that REMOVES an edge.
-  const detach = db.prepare(
-    `UPDATE brain_relationship SET target_symbol_id = NULL, is_cross_file = 0 WHERE id = ?`,
-  )
+  const detach = db.prepare(`UPDATE brain_relationship SET target_symbol_id = NULL WHERE id = ?`)
 
   for (const row of rows) {
     const split = splitImportTarget(row.target_external ?? "")
@@ -894,9 +884,8 @@ export function settleImportTargets(db: MinimalDb, projectId: string): ImportSet
       continue
     }
     if (current === settled) { out.unchanged++; continue }
-    const targetFile = proven ? proven.fileId : symbolFile.get(settled) ?? null
     try {
-      const r = update.run(settled, rowFile, rowFile, settled, row.id)
+      const r = update.run(settled, row.id)
       if ((typeof r?.changes === "number" ? r.changes : 1) > 0) {
         if (proven) out.corrected++
         else out.settled++
