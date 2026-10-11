@@ -794,8 +794,28 @@ BOTH sides restricted to the same **discovery-admitted** population (105 files):
   **637 rows over 381 distinct pairs**, `consul/.github/workflows/go-tests.yml` **725 over 392**. The
   duplicated rows are the same `(source_symbol_id, target_symbol_id)` pair stored under TWO row ids
   with the same `time_created` millisecond, one naming the node by its LEAF and one by its qualified
-  path. This is a store-side property, not a yaml-analyzer one: the model emits 381 edges for those
-  381 pairs.
+  path. This is NOT a yaml-analyzer property: the model emits 381 edges with 381 DISTINCT targets for
+  those 381 pairs, no leaf-shaped target anywhere, and no two edges sharing a `(source, line)` — all
+  three measured on `config.yml`, `dependabot.yml` and `build.yml`.
+
+  **AND THE CAUSE IS NOW PROVEN, with the indexer's own regexes.** The indexer synthesizes a
+  containment edge for every symbol that has an owner (`parallel-indexer.ts`, the
+  `bufferedContains` block) and skips it when a pre-built `containsPairs` set says the analyzer
+  already emitted that pair. That set is keyed `${srcLeaf} ${tgtLeaf}` with
+  `leaf = s.replace(/^.*:([^:]+):?\d*$/, "$1")` — a COLON-based reduction, written for the
+  `:<line>`-suffixed names xml's lane measured. A yaml `contains` target is a DOTTED QUALIFIED PATH
+  with no colon (`.golangci.linters`), so the regex does not match and the child half of the key
+  stays the FULL PATH, while the lookup half is `symbol.name` — the LEAF. Measured on a real pair
+  from the store this round produced: build-site key `".golangci .golangci.linters"` against lookup
+  key `".golangci linters"` — `keys agree? false`, so for this lane the guard can NEVER fire and every
+  candidate is written. Yield priced on the store: boundary holds **1,218 duplicated pairs and exactly
+  1,218 rows beyond the first** (3,271 rows / 2,053 distinct pairs), and the 105-file draw holds
+  **5,198 of 13,162 rows** — so fixing the key would put the store at the analyzer's own edge count
+  for this lane. NOT FIXED HERE: the guard is SHARED indexer code with a fleet-wide blast radius, the
+  prior repair in the same three lines was landed by another lane with its own 300-file probe, and a
+  change to it needs a store-scale re-measure this round cannot run. It is reported with the two
+  keys, the reproduction and the yield so the owner can land it the way xml's repair was landed
+  (child-only, owner reduction untouched).
 * **The store loses 67 distinct pairs** (7,964 against the model's 8,031 — 0.83 %), which is the
   pre-existing re-store loss this lane has reported since Round 9 and not a yaml finding.
 
@@ -832,11 +852,52 @@ files (0.29 %)**, but they carry **101,658 `contains` edges — 7.4 % of the lan
 | 13 × `buf.gen.yaml` and other `*.gen.*` / `generated/` files | remainder |
 
 So the lane's headline figures describe a population **0.29 % larger in files and ~7.4 % larger in
-`contains` edges than the graph the product can actually build**, and both directions of that
-difference are defensible — which is exactly why it is written down rather than silently resolved.
-The direction this lane prefers is to ALIGN the lane's population with production discovery and
-re-measure, because the lane's claims are about the product's graph; that is a corpus-scale re-run
-and it must not be made a side effect of this round.
+`contains` edges than the graph the product can actually build**. The direction this lane LEANED
+TOWARD was to align to production's admission and re-measure. **It ran the aligned measurement, and
+the measurement changed the recommendation — this is the round's most load-bearing result.**
+`lane-residual-census.ts` now takes `BB_CENSUS_PRODUCTION_ADMISSION=1`, and the aligned run of the
+same instrument reads:
+
+| | the gate's admission | PRODUCTION's admission |
+|---|---|---|
+| files · repos | 18,364 · 189 | **18,311 · 188** |
+| `TOTAL` edges | 1,414,582 | **1,312,693** (the refused 53 files carry 101,889) |
+| `resolved` | 1,403,548 | **1,301,689** |
+| `amb(decl)` · `unresolved` | 137 · 47 | **137 · 47** (unchanged) |
+| `extOK` | 10,624 | **10,592** (−32 = exactly the 28 `imports` + 4 `overrides` in refused files) |
+| `ext?` | 226 | **225** |
+| `extFAIL` | **0** | **3** |
+
+**ALIGNING WOULD FABRICATE THREE REFUTATIONS, and the three are TRUE CLAIMS.** The refuted inventory
+is one target in one repository:
+
+```
+   3  imports  "./.github/actions/build/ci"  claim=projectFile  files=3
+      candidates: .github/actions/build/ci/action.yml
+      e.g. .github/workflows/linux-ci.yml , .github/workflows/macos-ci.yml
+```
+
+`powershell/.github/actions/build/ci/action.yml` EXISTS, is TRACKED, and is a hand-written composite
+action (`name: CI Build` / `description: 'Builds PowerShell'`, 3 workflows call it by
+`uses: ./.github/actions/build/ci`). Production refuses it because its built-in skip list contains
+`/\/build\//`, and the directory is literally named `build` — a false positive of the same class as
+`redis/deps/jemalloc/.travis.yml` (refused by `/\/deps\//`, also a real tracked file) and
+`.codecov.yml` under `/\/coverage\//`. So production's admitted list does NOT contain a file the
+project demonstrably carries, and the arbiter's rule for a FILE claim is **a miss REFUTES** — which
+makes `extFAIL` a function of the ignore list rather than of the analyzer.
+
+**THEREFORE THE RECOMMENDATION IS REVERSED, and the prerequisite is named:** do NOT align this lane's
+population until production's ignore rule stops refusing tracked hand-written files inside
+`.github/actions/` (the `build`/`deps`/`coverage`-named-segment class), because alignment would move
+three claims this analyzer can PROVE from `extOK` to `extFAIL` and a lane cannot buy a cleaner
+denominator by manufacturing a refutation. Both columns are recorded here so the decision can be made
+with both in hand, and neither is presented as the lane's verdict.
+
+**A THIRD finding fell out of the same run, and it is the one that matters for the product:** whatever
+admission is chosen, `powershell/.github/actions/build/ci/action.yml` is a real action the product
+never indexes, so the graph is missing a node that three workflows depend on. That is an IGNORE-RULE
+defect (fleet-wide, one line), not a yaml one, and it is reported here because this lane is what
+measured it.
 
 ### D. The remaining `ext?` rows, adjudicated with their evidence and left priced
 
