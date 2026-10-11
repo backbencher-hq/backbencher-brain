@@ -184,6 +184,43 @@ function functionName(name: string): string {
   return `@function ${name}`
 }
 
+/** One symbol as `ownerForNode` needs it: its span and where it sat in `ctx.symbols`. */
+interface OwnerEntry {
+  sym: ASTEngine.UniversalSymbol
+  orig: number
+  start: number
+  end: number
+}
+
+/**
+ * THE INDEX THAT REPLACED A LINEAR SCAN.
+ *
+ * `ownerForNode` used to answer "which published symbol owns this node" by scanning EVERY symbol in
+ * `ctx.symbols` and keeping the smallest span that contains the node. That is correct and it is
+ * O(symbols) per call — and it is called once per statement, rule, mixin, declaration and
+ * control-flow child. `.scss` is a language of many tiny declarations, so the product is the whole
+ * cost of the analyzer: measured on `bulma/.../fontawesome-free-6.5.2-web/scss/_variables.scss`
+ * (5,011 lines, 2,508 `$`-variables) analysis was 1.3 s at 250 lines, 4.7 s at 1,000, 10.9 s at
+ * 2,000 and **159.6 s at 5,011 — superlinear (cubic in the measured range) while the OUTPUT stayed
+ * constant at 30 symbols** — and the engine's 192 s analyzer budget then aborted the file, so it
+ * contributed NOTHING and put a HOLE in the lane's population.
+ *
+ * The index keeps the same answer: entries sorted by span start, with the prefix maximum of the
+ * span end. A query binary-searches the last entry that can start at or before the node, then walks
+ * BACKWARDS and stops at the first prefix-max that cannot reach the node — so the walk visits only
+ * the entries that can contain it. `tail` holds symbols published since the last rebuild, because
+ * `walk` publishes control-flow scopes as it goes; `lastSeen` is the identity guard that catches a
+ * REORDER (the module symbol is `unshift`-ed in, so position is not a stable key — a shift is
+ * detected and the index rebuilt rather than trusted).
+ */
+interface OwnerIndex {
+  len: number
+  lastSeen: ASTEngine.UniversalSymbol | undefined
+  sorted: OwnerEntry[]
+  maxEnd: number[]
+  tail: OwnerEntry[]
+}
+
 interface ScssContext {
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
@@ -207,6 +244,8 @@ interface ScssContext {
   topLevelVarLines: Record<string, number>
   /** the file debugs / warns / forwards content / escapes scope at least once */
   sawDiagnostic: boolean
+  /** `ownerForNode`'s interval index over `symbols`, built once and grown (see `ownerIndexOf`) */
+  ownerIndex?: OwnerIndex
   sawContent: boolean
   sawAtRoot: boolean
 }
@@ -528,6 +567,85 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * rule, and a statement directly in a mixin body is owned by the mixin.
    */
   private ownerForNode(node: Node, ctx: ScssContext): string {
+    const start = node.startIndex
+    const idx = this.ownerIndexOf(ctx)
+    // THE CHOICE IS HELD IN AN OBJECT, deliberately: `consider` runs inside a closure, and a
+    // closure assignment to a `let` does not invalidate its narrowing — TypeScript keeps the `null`
+    // from the initializer and the truthy branch collapses to `never` (`TS2339: Property 'name'
+    // does not exist on type 'never'`). Mutating a PROPERTY has no such narrowing, so the state
+    // lives in `pick` and the variable the compiler tracks is never reassigned in a closure.
+    const pick: { entry: OwnerEntry | null; span: number; orig: number } = {
+      entry: null,
+      span: Number.POSITIVE_INFINITY,
+      orig: Number.POSITIVE_INFINITY,
+    }
+    // IDENTICAL CHOICE RULE, one pass over the entries that can contain the node instead of over
+    // every symbol: smallest span wins, and a tie goes to the symbol published FIRST (the original
+    // scan used a strict `<`, so an equal span never displaced an earlier symbol — reproduced here
+    // with `orig`, not left to the sort order).
+    const consider = (e: OwnerEntry): void => {
+      if (start < e.start || start >= e.end) return
+      const span = e.end - e.start
+      if (span < pick.span || (span === pick.span && e.orig < pick.orig)) {
+        pick.span = span
+        pick.entry = e
+        pick.orig = e.orig
+      }
+    }
+    // the last entry that can start at or before the node
+    let lo = 0
+    let hi = idx.sorted.length - 1
+    let j = -1
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1
+      if (idx.sorted[mid].start <= start) { j = mid; lo = mid + 1 } else hi = mid - 1
+    }
+    for (let i = j; i >= 0; i--) {
+      // no entry at or before i can end after the node, so none of them contains it
+      if (idx.maxEnd[i] <= start) break
+      consider(idx.sorted[i])
+    }
+    for (const e of idx.tail) consider(e)
+    return pick.entry ? pick.entry.sym.name : ""
+  }
+
+  /**
+   * Build (or grow) the interval index `ownerForNode` reads. Rebuilds happen when the un-indexed
+   * tail grows past 32 entries, and whenever the identity guard sees the array reordered — so the
+   * index can only ever be a faster spelling of the scan it replaced.
+   */
+  private ownerIndexOf(ctx: ScssContext): OwnerIndex {
+    const symbols = ctx.symbols
+    let idx = ctx.ownerIndex
+    if (!idx || (idx.len > 0 && (idx.len > symbols.length || symbols[idx.len - 1] !== idx.lastSeen))) {
+      idx = ctx.ownerIndex = { len: 0, lastSeen: undefined, sorted: [], maxEnd: [], tail: [] }
+    }
+    if (symbols.length === idx.len) return idx
+    for (let i = idx.len; i < symbols.length; i++) {
+      const sym = symbols[i]
+      if (sym.metadata?.isScssModule) continue
+      const r = sym.range
+      if (!r || typeof r.startIndex !== "number" || typeof r.endIndex !== "number") continue
+      idx.tail.push({ sym, orig: i, start: r.startIndex, end: r.endIndex })
+    }
+    idx.len = symbols.length
+    idx.lastSeen = symbols[symbols.length - 1]
+    if (idx.tail.length > 32) {
+      idx.sorted = idx.sorted.concat(idx.tail).sort((a, b) => a.start - b.start || a.orig - b.orig)
+      idx.tail = []
+      idx.maxEnd = new Array(idx.sorted.length)
+      let m = Number.NEGATIVE_INFINITY
+      for (let i = 0; i < idx.sorted.length; i++) {
+        if (idx.sorted[i].end > m) m = idx.sorted[i].end
+        idx.maxEnd[i] = m
+      }
+    }
+    return idx
+  }
+
+  /** The old linear scan, kept so the equivalence harness can compare against it (never used in the
+   *  analysis path). Any difference between this and `ownerForNode` is a regression. */
+  private ownerForNodeLinear(node: Node, ctx: ScssContext): string {
     const start = node.startIndex
     let best: ASTEngine.UniversalSymbol | null = null
     let bestSpan = Number.POSITIVE_INFINITY
