@@ -703,6 +703,181 @@ unverifiable. `ext?` is **244**, not 0, and the completion package below is stil
 the WHOLE shared log, so a board row is merged deliberately rather than as a side effect of this
 round — which means the board still shows yaml at the ROUND-13 figures until that merge is made.
 
+## ROUND 15 — `$` read as a GitHub OWNER (18 edges re-claimed to files the project carries), and the completion package's LAST open item: the STORE-side split (2026-10-11)
+
+### A. `$/.github/actions/…` is a ROOT-ANCHORED path, not an external action
+
+**THE DEFECT.** A step-level `uses:` value that is not `docker://` and does not begin `./` or `../`
+falls to `actionUseClaim`'s last line, `return { remoteRef: true }` — a claim that `$/…` names a
+GitHub OWNER `$` and a repository `.github`. `$` is not an owner, and the target is not an action
+reference at all: it is a path in the checked-out tree. So the edge asserted an external remote
+action that does not exist, was read as `externalUnverified`, and sat in `ext?` as the largest
+single coherent group left (**18 edges**).
+
+**WHY IT IS A FIX AND NOT A RULING, on the corpus rather than in prose.** Over the whole admitted
+population a `$/` spelling occurs in exactly **18** `uses:` sites and nowhere else (15 ×
+`$/.github/actions/go-cache-restore`, 3 × `…/go-cache-save`, all terragrunt), and
+`terragrunt/.github/actions/go-cache-restore/action.yml` and `…/go-cache-save/action.yml` are FILES
+THE PROJECT CARRIES — composite actions whose names are exactly the last segment of the `uses:`
+value. No `$/.github` directory exists anywhere in that tree. `$/` is how that one repository writes
+what every other repository writes as `./`.
+
+**THE RULE, and it is deliberately unconditional.** A leading `$/` is rewritten to `./` at the point
+the `uses:` site is captured, so EVERY downstream consumer agrees on one spelling: the emitted
+target, the claim, the `addImport` external flag, and the materialization check. The written text
+travels in `metadata.actionSpelling`, so the substitution is auditable from the edge alone (the rule
+the Round-14 materialized re-route follows). Because the rewrite is unconditional it can only ever
+CONVERT an unsupportable remote claim into a local one: a `$/…` action with no manifest in the
+project lands in the same local branch and falls back to the pre-existing `isExternal: true`, which
+is the weaker marker `./…` already had. It does not read `$` as a GitHub expression, does not touch a
+target that merely CONTAINS `$/`, and applies to no other key.
+
+**MEASURED, whole admitted population, same working tree before and after:** the 18 edges move from
+`ext?` to `extOK` — `extOK 10,606 → 10,624`, `ext? 244 → 226`, with `amb(decl) 137`, `unresolved 47`,
+`extFAIL 0` and the clause-1 residual **unchanged at 184**. The instrument of record is the
+enumerator, which imports the SHARED arbiter (`incoming-rule.ts`) rather than re-implementing it, run
+whole-population at this revision:
+[census-yaml-whole-corpus-round15.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-round15.txt)
+— `imports` `extOK` **8,157 → 8,175**, `imports` `ext?` **201 → 183**, every other row byte-identical,
+`TOTAL 1,414,582 / resolved 1,403,548 / amb 137 / unresolved 47 / extOK 10,624 / ext? 226 / extFAIL 0`.
+The `incoming-gate` verdict is the same population read through the verdict machinery; that run is
+recorded to `incoming-gate-yaml-whole-corpus-round15.txt` when it lands, and until it does the two
+reads above are the ones this round cites. The repo-scoped draw over the affected repository is an
+independent third read and it PASSES (`--repo=terragrunt`: 3,119 edges, `160 verified + 0 unverifiable
+external`, `ext?` 0) — the same repository whose whole `ext?` population this round removed.
+
+**FALSIFIABLE BOTH WAYS.** A 25-assertion control (`root-anchored-action-control.ts`, exit 0) pins
+nine arms: the rewrite with `action.yml` on disk **and** the other admitted manifest spelling
+(`action.yaml`); the refusal when no manifest exists (still `isExternal`, no fabricated claim and no
+invented remote ref); a non-workflow file keeping `yaml_action_use_unverified`; a job-level `$/`
+staying a `calls` edge with the same-repository reason; and — the boundary — an ordinary external
+action (`actions/checkout@v4`) keeping `remoteRef` with NO spelling recorded, a target that only
+CONTAINS `$/` left untouched, and a `../` action untouched. The falsifier direction is arm 9: the
+re-routed edge and a real remote action disagree on BOTH keys (`remoteRef` absent + `actionSpelling`
+present vs the reverse). Fixture `yaml/root-anchored-action` asserts the rewritten target and
+`meta.isExternal: false`, and FORBIDS both raw `$/.github/…` targets. Mutant
+`yaml/root-anchored-action-reverted` — which restores the raw spelling and the `remoteRef` claim — is
+**CAUGHT** by it.
+
+### B. The completion package's clause-4 open item: the STORE-side split, measured
+
+The package has said since Round 13 that clause 4 is met at the **model** level and that the
+**store-side** split was NOT done for yaml. It is done now, by `store-intent-split.mts`, which builds
+a real store per repository through the production indexer (`indexProjectParallel`), reads the
+binding off `brain_relationship.target_symbol_id`, and cross-checks the same drawn files through
+`pool-worker`:
+
+| store-side intent, boundary + consul, ONE run each | |
+|---|---|
+| `contains` store rows | **13,162** |
+| bound · intended (own file, edge's own line) | **13,160** |
+| `sameFileOffLine` · `arbitraryTwin` · `unbound` | **0 · 0 · 2** |
+| collision rows (≥ 2 declarations answer) | **0** |
+| `imports` / `references` / `calls` rows | **395 / 247 / 40** |
+
+The determinism clause therefore holds store-side too: **no** bound `contains` row reaches another
+file, and no row had more than one declaration to choose between. The two `unbound` rows and the 395
+unbound `imports` rows are the cross-file shapes (an external import has no target symbol by
+construction), not mis-bindings.
+
+**AND THE STORE ITSELF IS NOT FAITHFUL — two findings, both counted, both reported-not-fixed.** With
+BOTH sides restricted to the same **discovery-admitted** population (105 files):
+
+| | model | store |
+|---|---|---|
+| `contains` — rows | 8,188 | **13,162** |
+| `contains` — DISTINCT (source, target) pairs | 8,031 | **7,964** |
+| duplicates (rows − distinct pairs) | **157** | **5,198** |
+
+* **The store writes each logical edge about 1.65×** — 5,198 duplicate rows on 7,964 distinct pairs.
+  Measured per file as well, on 2 of 2 repositories: boundary's `.github/workflows/build.yml` holds
+  **637 rows over 381 distinct pairs**, `consul/.github/workflows/go-tests.yml` **725 over 392**. The
+  duplicated rows are the same `(source_symbol_id, target_symbol_id)` pair stored under TWO row ids
+  with the same `time_created` millisecond, one naming the node by its LEAF and one by its qualified
+  path. This is a store-side property, not a yaml-analyzer one: the model emits 381 edges for those
+  381 pairs.
+* **The store loses 67 distinct pairs** (7,964 against the model's 8,031 — 0.83 %), which is the
+  pre-existing re-store loss this lane has reported since Round 9 and not a yaml finding.
+
+The arithmetic closes exactly: model 8,188 − model duplicates 157 = 8,031 pairs; 8,031 − store 7,964
+= **67 lost**; store 13,162 + nothing = 7,964 + **5,198 duplicated**.
+
+**A PHANTOM THIS ROUND'S OWN FIRST RUN PRODUCED, kept because the correction is the finding.** The
+first run drew every tracked `.yaml`/`.yml` under the cap and reported **store 13,162 against model
+24,126** — a `-10,964 STORE LOSS`. It was entirely the instrument's population: production's own
+discovery refuses its built-in `skipPatterns` (lockfiles, `.generated.`, `generated/`, `deps/`,
+`build/`, …), so `ui/pnpm-lock.yaml` read **model 15,785 · store 0** because the indexer never wrote a
+`brain_file` row for it at all. The instrument now applies the SAME admission, REPORTS the files it
+refuses instead of dropping them silently, and prints model and store distinct pairs side by side so
+a loss and a duplicate cannot be confused again.
+
+### C. The lane's population is a SUPERSET of the product's — 53 files, 101,658 `contains` edges
+
+B fell out of a larger fact, and it is stated as an OPEN ITEM rather than folded in. Production's
+discovery refuses its built-in `skipPatterns`; the gate's and this lane's admission (`git ls-files` +
+extension + 1 MiB cap) does not. Over the whole corpus the difference is **53 of 18,364 admitted
+files (0.29 %)**, but they carry **101,658 `contains` edges — 7.4 % of the lane's 1,380,046** — plus
+199 `references`, 28 `imports` and 4 `overrides`. Essentially all of it is lockfiles:
+
+| file | edges |
+|---|---|
+| `vault/ui/pnpm-lock.yaml` | 17,151 |
+| `consul/ui/pnpm-lock.yaml` | 15,785 |
+| `nomad/pnpm-lock.yaml` | 15,292 |
+| `gql-graphql-eslint/pnpm-lock.yaml` | 14,974 |
+| `element-plus/pnpm-lock.yaml` | 13,470 |
+| `shadcn-svelte/pnpm-lock.yaml` | 9,993 |
+| `vue-core/pnpm-lock.yaml` · `svelte/pnpm-lock.yaml` | 5,610 · 4,424 |
+| `hasura-engine/…/generated/HasuraMetadataV{3,2}.yaml` | 1,945 · 1,364 |
+| 13 × `buf.gen.yaml` and other `*.gen.*` / `generated/` files | remainder |
+
+So the lane's headline figures describe a population **0.29 % larger in files and ~7.4 % larger in
+`contains` edges than the graph the product can actually build**, and both directions of that
+difference are defensible — which is exactly why it is written down rather than silently resolved.
+The direction this lane prefers is to ALIGN the lane's population with production discovery and
+re-measure, because the lane's claims are about the product's graph; that is a corpus-scale re-run
+and it must not be made a side effect of this round.
+
+### D. The remaining `ext?` rows, adjudicated with their evidence and left priced
+
+A and the earlier rounds took the classes that were FIXES. What is left is the RULED class, and each
+row below was walked to its emitting site rather than counted:
+
+| row | edges | adjudication |
+|---|---|---|
+| `imports yaml_keyword_include` `package:`/`dart:` includes | 88 | a Dart PUBC spec resolved by pub, never a path here. PRICED: `pubspec-package-price.ts` measures 83 that WOULD verify against the corpus's own pubspecs and 3 that would REFUTE (`package:flutter_lints/flutter.yaml` in the repo that DECLARES `flutter_lints`). NOT wired: the refutations are TRUE, and a per-file analyzer has no pub-resolution channel to turn an include into an in-repo file claim. The old deferral reason ("`package:lints` IS declared") was measured FALSE — 0 pubspecs declare `lints`. |
+| `imports yaml_keyword_include` `{{ … }}` templates · `references yaml_depends_on` / `yaml_resource_ref` templates | 71 + 17 + 13 | a Jinja/Ansible variable: the value is not a literal path until run time, so no single parse can name it. Retained as an honest unknown; refuting them would falsify a claim that is not false. |
+| `references yaml_depends_on` `k8s:optional` | 3 | the KEY is literally `dependsOn`, so the position rule does not fire — but the VALUES are `kube-api-linter` MARKER NAMES (`dependenttags.rules[].dependsOn`, beside `identifier: "k8s:unionMember"`), not members of any document. A candidate guard ("an ancestor segment names a marker-rule container") is named and NOT implemented: 3 edges does not buy an unmeasured vocabulary rule, and the class is stated so the next round can price it the way Round 7 priced the `include:` selector positions (12 false edges in one Azure file before that rule existed). |
+| `imports yaml_action_use` `pypa/gh-action-pypi-publish@release/v1` | 3 | a REAL branch ref REFUSED by the SHARED rule: `verifyRemoteRefClaim` rejects a ref containing `/`. A LEAD for the fleet rule, not this lane's file — a per-file analyzer cannot widen the arbiter's grammar. |
+| `references declared_type` `python/name:…` (mkdocs config) | 3 | a MkDocs extension entry point: a foreign-language import path declared in yaml. The value IS a path-like spelling and its referent is a Python module, not a yaml document. |
+| `references yaml_resource_ref` `urn:k8s:…` · `imports`/`references` path-like singles | 9 | URI-scheme owners and the two CodeQL rows (`./.github/codeql/queries`, the suite name `security-and-quality`), each read at its emitting site. |
+
+**THE 14 `parse-error-in-document` EDGES, measured end to end (and the package's stated reason is NOT
+refuted by it).** They are docker's `api/docs/v1.2{5..9}`/`v1.30.yaml` and their
+`#/definitions/EndpointSpec`. What a parse of `v1.25.yaml` shows, in the analyzer's own output rather
+than by inspection: the file yields 1,991 symbols and 3 error nodes; the recovery fallback DOES
+rescue the sibling case in the SAME file — `#/definitions/MountType` resolves, because the flattened
+`definitions:` hoisted it to `api.docs.v1.25.MountType` — while the `EndpointSpec` DEFINITION at line
+2288 is absent from the symbol table: the only published paths mentioning the name are the deeper
+property `api.docs.v1.25.ServiceSpec.properties.EndpointSpec` and its `.$ref`, and the recovery rule
+matches a declared path only when the decoded pointer (`definitions.EndpointSpec`) ENDS WITH that
+path, which a `ServiceSpec.properties.…` key does not — so the fallback correctly refuses. The
+package's own reason for the miss ("a bare `flow_node` at line 2288, so no pair has `EndpointSpec` as
+its key") predicts exactly this surface, and this probe cannot separate it from a walk that drops that
+one pair: both would leave the definition unindexed while the earlier `MountType` survives. **So the
+class stays RULED, and the new information is the shape of the miss — the definition's symbol is
+absent while an earlier depth-2 sibling of the same flattened container IS published and resolves —
+not a claim that the stated cause is wrong.** Reaching it would mean synthesising a declaration from
+a stray scalar, which is fabrication; 14 edges of 1,414,582 do not buy a change to error recovery in a
+round that cannot re-test the other docker spec files.
+
+**WHAT THIS ROUND DOES NOT CLAIM.** Not that `ext?` is 0 (**226** after A). Not that the store's
+5,198 duplicate rows or 67 lost pairs are fixed (they are reported; the fix is in shared indexing,
+not in this analyzer). Not that the 101,658 edges of C should be dropped from the lane — C states a
+scope difference with its measurement and leaves the decision open. And not that the fleet board is
+up to date: `--board-log` overwrites the WHOLE shared log, so a board row is merged deliberately,
+never as a side effect of a round. **Nothing here is a PASS.**
+
 ## COMPLETION PACKAGE — current revision
 
 Whole admitted population: **1,414,582 edges · 18,364 files · 189 repos · 0 failed · 0 degraded.**
@@ -745,10 +920,11 @@ silently reconciled.
 **THE ANSWER, up front.** Clause 1 **fails by 184** — 137 ambiguous + 47 unresolved, every one
 attributed to a NAMED cause below, 0 refuted. Clauses 2, 3 and 4 are **met**. Two things stand
 between this lane and a formal `incoming-gate` PASS: **`bad` = 184** (that residual) and **`extQ` =
-244**, both read off the whole-population walk re-run at this revision (`FAIL — 137 ambiguous + 47
-unresolved of 1414582 edges …; 244 external claim(s) unverifiable (10606 verified + 244)`; ROUND 14
-moved `extQ` 253 → 244 by FIXING nine false external claims, so where a paragraph below still says 253
-it is quoting the ROUND-13 reading of this class), and BOTH
+226**, both read off the whole-population walk re-run at this revision (`FAIL — 137 ambiguous + 47
+unresolved of 1414582 edges …; 226 external claim(s) unverifiable (10624 verified + 226)`; ROUND 15
+moved `extQ` 244 → 226 by FIXING 18 false external claims — the `$` owner class — and ROUND 14 moved
+it 253 → 244 by FIXING nine more, so where a paragraph below still says 253 or 244 it is quoting the
+ROUND-13 / ROUND-14 reading of this class), and BOTH
 are ruled, each row with a mechanism and a falsifier, and the falsifier for the
 largest class **fired** (ROUND 7: it failed for exactly 1 of the 142 ambiguous edges, and ROUND 11
 then FIXED that edge with the cross-file resource rule — the falsifier now reads `RULING HOLDS`). On
@@ -839,15 +1015,19 @@ claims, not by marking differently** (the section above: 1,560 of the 1,903 were
 about a file the project HAS — 1,356 cross-file `$ref`s and 208 local reusable-workflow calls —
 and 67 more were false dependency edges sitting in the VERIFIED column). **Round 7 moved it again,
 343 → 335 (the role-entry fix) → 255 (Rounds 7–9) → 254 (Round 10) → **253** (ROUND 11) → **244**
-(ROUND 14)**, by removing 80 edges that were being counted
+(ROUND 14) → **226** (ROUND 15)**, by removing 80 edges that were being counted
 as unverifiable imports and are not imports at all (Azure Pipeline branch filters, semgrep/flutter/
 ffigen/Dart-builder selector lists, a Spring Boot endpoint list, a GitHub Actions job output) and by
 re-claiming the quoted hasura includes as VERIFIED files — again by fixing claims, not by marking.
 **ROUND 14 moved it 253 → 244 the same way:** nine `./…` targets a prior same-job step materializes
 are re-named as the repository at its ref (or as the project's own file) they actually are, and the
 single site the rule declined to convert is waypoint's, whose checkout pins no `ref:`.
+**ROUND 15 moved it 244 → 226 the same way**, and it is the same defect class one spelling further
+out: 18 `uses: $/.github/actions/…` sites claimed a GitHub OWNER `$`, when the target is a path in
+the checked-out tree and the manifest is a file the project carries. Both rounds' arithmetic is in
+their sections above; the column's movement is `imports` `extOK` 8,157 → 8,175 and `ext?` 201 → 183.
 
-The remaining **244 are ruled as a CLASS, with the four things the fleet ruling requires**: the
+The remaining **226 are ruled as a CLASS, with the four things the fleet ruling requires**: the
 SHAPE split (the enumerator's 17 rows, grouped to 6 below), the MECHANISM (each row's "why nothing
 can check it"), the COUNT split by shape, and a FALSIFIER per row ("what WOULD verify one"). The
 largest single piece of
@@ -1009,23 +1189,37 @@ grade it, not as the lane would prefer it:
 | clause | what it asks | yaml | verdict |
 |---|---|---|---|
 | 1 | residual 0 for every applicable type | 184 of 1,414,582 (137 amb + 47 unresolved) | **FAILS by 184** — every edge attributed below |
-| 2 | `extFAIL` = `bindFAIL` = `causeFAIL` = 0 | 0 · 0 · 0 on the whole population | **MET** — with `extQ` 254 *ruled*, not zero |
+| 2 | `extFAIL` = `bindFAIL` = `causeFAIL` = 0 | 0 · 0 · 0 on the whole population | **MET** — with `extQ` 226 *ruled*, not zero |
 | 3 | every remaining edge attributed to a named cause with a measured count, fixed with a before/after or ruled with evidence | the 137 ambiguous are 117 same-kind-name-elsewhere + 10 kind-asked-no-object + 6 ansible role names + 4 no-kind-axis (named causes, each with a falsifier), and the 47 unresolved are 33 + 14 (two named causes); TEN causes fixed with before/after, including ROUND 11's cross-file resource rule that fixed the one SAME-DIRECTORY MISS the falsifier had proved (the two tables above) | **MET** |
-| 4 | the tie-break: `ofWhich` 0, or an `intended` vs `arbitraryTwin` split from the store | `ofWhich` 4, all `contains`; `intended` 1,380,046/1,380,046 at the model level | **MET at the model level; the store-side split is NOT done** |
+| 4 | the tie-break: `ofWhich` 0, or an `intended` vs `arbitraryTwin` split from the store | `ofWhich` 4, all `contains`; `intended` 1,380,046/1,380,046 at the model level, AND a real store built per repository reads `contains 13,162 rows · 13,160 intended (own file, own line) · 0 sameFileOffLine · 0 arbitraryTwin · 2 unbound · 0 collision rows` | **MET, at BOTH levels** |
 
-**If the owner rules that no external claim may be unverifiable, yaml fails clause 2 by 244 edges** —
-the same structural failure json carries by 120. Those 244 are not un-fixed claims: they are targets
+**If the owner rules that no external claim may be unverifiable, yaml fails clause 2 by 226 edges** —
+the same structural failure json carries by 120. Those 226 are not un-fixed claims: they are targets
 (templates, URIs, globs, runtime-materialised paths) that no single-file parse can name, and the only
 alternative to ruling them is to refute them, which would falsify a claim that is not false.
 
-**The one clause-4 gap, named.** json split `collRes` by putting every declaration of both colliding
-targets into a store and reading `intended` vs `arbitraryTwin` off `brain_relationship.target_symbol_id`.
-For yaml that store-side split is **not yet done**: the four `ofWhich` edges are `contains` whose
-`intended` reading (1,380,046/1,380,046) is the GATE's model of the own-file/own-line rule, and the
-lane's own sample pass reads `intended 1510 · arbitraryTwin 0 · noDeclaration 0` (the gate's BINDING
-INTENT table, whose own-file/own-line column is `store-binding-truth.mts`'s class — validated on hcl,
-not on yaml). That is a "not yet measured on this lane" statement, not a "measured wrong" one, and it
-is the single place this package falls short of json's.
+**The clause-4 gap is CLOSED (ROUND 15).** json split `collRes` by putting every declaration of both
+colliding targets into a store and reading `intended` vs `arbitraryTwin` off
+`brain_relationship.target_symbol_id`; yaml's version of that split is now MEASURED by
+`store-intent-split.mts`, which builds a real store per repository through the PRODUCTION indexer and
+reads the binding off the row. It reads, on boundary + consul, ONE run each:
+
+| store-side, per type | rows | bound | intended | sameFileOffLine | arbitraryTwin | unbound | collisions |
+|---|---|---|---|---|---|---|---|
+| `contains` | **13,162** | **13,160** | **13,160** | **0** | **0** | 2 | **0** |
+| `imports` | 395 | 0 | 0 | 0 | 0 | 395 | 0 |
+| `references` | 247 | **247** | 0 | 0 | 0 | 0 | 0 |
+| `calls` | 40 | 0 | 0 | 0 | 0 | 40 | 0 |
+
+So the determinism the clause asks about holds at the store and not only in the gate's model: no bound
+`contains` row reaches another file, and no row had two declarations to choose between. The 2 unbound
+`contains` rows and the 395 unbound `imports` rows are the cross-file shapes (an external import has no
+target symbol by construction), which is a property of the type, not a mis-binding. **Two store-side
+findings are REPORTED and not fixed, because the fix is in shared indexing and not in this analyzer:**
+the store writes each logical `contains` edge about 1.65× (5,198 duplicate rows over 7,964 distinct
+pairs; boundary's `.github/workflows/build.yml` alone is 637 rows over 381 pairs) and it loses 67
+distinct pairs against the model's 8,031. The full table, the arithmetic that closes it, and the
+phantom first run that produced it are in ROUND 15 §B.
 
 **The tie-break is not where a lane hides.** A lane at residual 0 whose resolved edges were chosen by
 `s.id` is NOT done (§5g clause 4). yaml is not at residual 0, so the clause cannot be waved: the four

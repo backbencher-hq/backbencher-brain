@@ -125,8 +125,13 @@ interface YamlContext {
   tagHandles: Map<string, string>
   /** Duplicate-key disambiguation counters, keyed by document + base path. */
   duplicateCounters: Map<string, number>
-  /** `uses:` sites, held until the file's shape decides whether it is a workflow. */
-  pendingActionUses: { source: string; action: string; line: number; role: UsesRole }[]
+  /**
+   * `uses:` sites, held until the file's shape decides whether it is a workflow. `action` is the
+   * RESOLVABLE spelling (a root-anchored `$/…` has already been rewritten to `./…`) and `written`
+   * is the spelling the document actually carries, kept so the substitution is auditable from the
+   * edge alone. See `rootAnchoredActionPath`.
+   */
+  pendingActionUses: { source: string; action: string; written: string; line: number; role: UsesRole }[]
   /**
    * The `uses:`/`with:` facts of every STEP, keyed by the step container's qualified path and the
    * step's index. Collected during the walk and joined in `resolveActionUses`, because the join is
@@ -1320,7 +1325,14 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // because a job-level `uses:` is a call and must not be labelled an import.
     if (key === "uses" && valueType === "string" && valueNode) {
       const role: UsesRole = isJobLevelPath(current.parentPath, current.document) ? "workflow-call" : "other"
-      ctx.pendingActionUses.push({ source: path, action: this.scalarText(valueNode), line, role })
+      const written = this.scalarText(valueNode)
+      ctx.pendingActionUses.push({
+        source: path,
+        action: RealYamlAnalyzer.rootAnchoredActionPath(written) ?? written,
+        written,
+        line,
+        role,
+      })
     }
 
     // A named schema definition under a PUBLICATION container. This is the one place YAML
@@ -1708,6 +1720,10 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // reference rather than promoted to a call, because `jobs.<id>.uses` is only
     // defined by GitHub Actions and nothing else in YAML gives `jobs` that meaning.
     for (const use of ctx.pendingActionUses) {
+      // A DIFFERENT SPELLING MUST NOT BUY A DIFFERENT CLAIM. When `$/…` was rewritten to `./…` the
+      // written text travels in the edge's metadata, so the re-route is auditable without the
+      // document — the same rule the materialized-action re-route follows.
+      const spelling = use.written !== use.action ? { actionSpelling: use.written } : {}
       if (use.role === "workflow-call") {
         if (!isWorkflow) {
           this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.References, {
@@ -1727,6 +1743,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.Calls, {
           relationshipType: "yaml_workflow_call",
           evidenceClass: "structural",
+          ...spelling,
           // A REUSABLE-WORKFLOW CALL NAMES A FILE, not an action directory — see
           // `workflowCallClaim`. Routed through `actionUseClaim` it looked for
           // `<file>/action.yml`, found nothing, and claimed `isExternal` about a workflow
@@ -1758,6 +1775,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.addRelationship(ctx, use.source, target, ASTEngine.RelationshipType.References, {
           relationshipType: "yaml_action_use_unverified",
           ...claim,
+          ...spelling,
           resolved: false,
           unresolvedReason: "file-shape-is-not-a-github-workflow",
         }, use.line, 0.7, "shape-not-workflow")
@@ -1771,6 +1789,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.addRelationship(ctx, use.source, target, ASTEngine.RelationshipType.Imports, {
         relationshipType: "yaml_action_use",
         ...claim,
+        ...spelling,
       }, use.line)
     }
   }
@@ -3483,6 +3502,35 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * that manifest is absent the edge states `isExternal: true` — on a path-shaped target that is
    * `externalUnverified`, not a refutation.
    */
+  /**
+   * `$/…` IS A ROOT-ANCHORED PATH, the spelling one repository in the corpus uses where every
+   * other repository writes `./…`.
+   *
+   * WHAT WAS WRONG. A `uses:` value that is not `docker://` and does not begin `./`/`../` fell
+   * through to `actionUseClaim`'s last line, `return { remoteRef: true }` — a claim that `$/` is a
+   * GitHub OWNER and `.github` the repository under it. `$` is not an owner, and the target is not
+   * an action reference at all: it is a path in the checked-out tree. So the edge asserted an
+   * external remote action that does not exist, was read as `externalUnverified`, and the lane's
+   * `ext?` population carried it as unnamed. MEASURED over the whole corpus, this was **18 edges**, all
+   * of them terragrunt's (`uses: $/.github/actions/go-cache-restore` 15, `…/go-cache-save` 3).
+   *
+   * WHY THE REFERENT IS SUPPORTABLE, and the two places it could have been a ruling instead:
+   * `terragrunt/.github/actions/go-cache-restore/action.yml` and `…/go-cache-save/action.yml` are
+   * FILES THE PROJECT CARRIES, each a composite action whose name is exactly the last segment of
+   * the `uses:` value, and no `$/.github` directory exists anywhere in the tree. The rewrite is
+   * unconditional, so it manufactures nothing: a `$/…` action with no manifest in the project
+   * still lands in `actionUseClaim`'s local branch and falls back to `isExternal: true`, which is
+   * the weaker claim it carried before — the same refusal the `./…` spelling already has.
+   *
+   * WHAT IT DOES NOT DO. It does not read `$` as a GitHub expression, does not touch a target that
+   * merely CONTAINS `$/`, and does not apply to any other key: over the whole admitted population a
+   * `$/` spelling occurs only in a step-level `uses:`. Null means "not a root-anchored spelling", so
+   * a caller keeps the written text.
+   */
+  private static rootAnchoredActionPath(action: string): string | null {
+    return action.startsWith("$/") ? `./${action.slice(2)}` : null
+  }
+
   private actionUseClaim(action: string, ctx: YamlContext, extraProjectPaths: string[] = []): Record<string, unknown> {
     if (action.startsWith("docker://")) return { remoteRef: true }
     if (action.startsWith("./") || action.startsWith("../")) {

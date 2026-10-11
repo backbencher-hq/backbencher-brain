@@ -667,6 +667,24 @@ analyzer, and 0/0 in both directions is what a fitted referee looks like.
 
 ## M60 INCOMING GATE, PASS 1 — the document identity scoped to its file (2026-10-09)
 
+> **SUPERSEDED 2026-10-10 (M14 Round 5).** This section's STATE is one round old and its headline
+> conclusion — *"a lane that emits file-path imports cannot PASS, whatever it does"* — is CLOSED.
+> The gate now supplies its project file facts to a `projectFile` claim exactly as it does to a
+> `projectFacts` claim (`script/m14/incoming-gate.ts:807-814`, dated 2026-10-10: *"until 2026-10-10
+> it did not get it: the lookup was gated on `projectFacts` alone"*), so the two `!include <path>`
+> edges this section called unverifiable now **VERIFY**. Measured: `incoming-gate.ts yaml yaml 60`
+> is a clean **PASS** — 1,512 edges, `2 verified + 0 unverifiable external`, separator tripwire 0.
+> The whole-population question this lane actually had to answer was `externalUnverified`, a
+> different column, and Round 5 moved it **1,903 → 343** after measuring **82 % of it as a FALSE
+> claim about a file the project HAS**; Rounds 6–10 moved it to **254**, and the last of those was
+> the same defect again in one more spelling — a **step-level** `uses: ./.github/workflows/x.yml`
+> (GitHub's step-level reusable-workflow call) asked for an `action.yml` inside a file, so a file the
+> project HAS was called external; see `yaml.md` ROUND 10. After that fix the lane's own enumerator
+> reports **zero** `extQ` edges that any file claim could verify (see `yaml.md`). The numbers in this section (78 → 0
+> ambiguous, +78, 1,432 → 1,510 resolved) remain correct for their population; only the conclusion
+> that the lane is walled off from a PASS is superseded. Current verdict, four-clause package and §7
+> check: [yaml.md](yaml.md).
+
 The incoming gate read this lane as **78 ambiguous + 0 unresolved of 1,512 edges** on a 60-file
 stride, and the cause was one function. A document's identity was its filesystem BASENAME, and a
 basename is not unique in a project: `hostports0.yaml` occurs **156 times** in one repository
@@ -751,6 +769,47 @@ and for this lane that is measurably false (0 unresolved after scoping). The con
 proposed here as a fleet decision rather than assumed: if it is adopted, css/bash/html/javascript
 publish the same shape and their counted `relative-ambiguous-basename` classes become 0 for the same
 measured price; if it is rejected, this lane's change stands alone and the conflict is on the record.
+
+## ROUNDS 7–9 — four FALSE-EDGE classes this lane was emitting (2026-10-10)
+
+Found by asking the residual and the whole edge population, with the arbiter's own rule and a text
+oracle, how much of it was the lane's own over-emission. Each fix is one guard, each has a control that
+can fail, and the largest class was found by an instrument written to COUNT the question rather than by
+reading one file.
+
+| class | what was wrong | guard |
+|---|---|---|
+| an include-family tag read as naming a TYPE | `functions: !include "…/functions.yaml"` emitted a `references` edge to the literal string `include` (10 edges, all AMBIGUOUS). An include tag names a FILE and can never name a type | `tagTypeName()` is the single definition every `declared_type` site reads; the test is the tag's membership in the closed include set, NOT the presence of a readable path |
+| a QUOTED include path refused for a space | `tables: !include "s 3/tables/tables.yaml"` names a file the repository HAS; the whitespace refusal exists for ansible's UNQUOTED free-form convention (`file=x.yml`) and was applied to quoted literals too | `QUOTED_SCALAR_TYPES` relaxes the space refusal for `single_quote_scalar`/`double_quote_scalar` only — `key=`, templates, globs, URI schemes and `://` are still refused, and `projectCarriesFile` still gates the claim |
+| `include:` read as a file import at six SELECTOR positions | `include` is a generic config key: Azure `trigger.branches.include` (branch filter), semgrep `paths.include` (source globs), Dart `build_runner` `sources.include`/`generate_for.include`, ffigen `objc-interfaces`/`objc-protocols`/`enums` (Objective-C names), GitHub Actions `outputs.include`, Spring Boot `exposure.include`. MEASURED: 12 false edges in ONE Azure file, 26 globs, 34 ffigen names (all in `extOK` as VERIFIED claims), and 2 `resolved` | `isIncludeSelectorKey`: any ANCESTOR segment of the key's own path is a selector container, MINUS the document segment (a file named `paths.yaml` must keep its own top-level `include:`). `branches` additionally requires the document's `trigger:`/`pr:` claim. Position, never the value's shape — a filter glob and a real import glob have the same shape. Found by `include-key-position-census.ts`, which groups all 928 include edges by the key that emitted them |
+
+Whole-population effect: **edges 1,414,804 → 1,414,582 (−222 net) · residual 198 → 185 · `extQ` 335 →
+255 · `extOK` 10,743 → 10,616 · `extFAIL` 0**. 28 of the removed edges had been reading as VERIFIED (26)
+or RESOLVED (2) — the directions no residual column shows. The biggest remaining ambiguous class was then tested by
+a falsifier written before the ruling (`name-collision-falsifier.ts`), which reads the KIND off the
+REFERRING KEY and looks for that kind and name in the project's own text: **141 of 142 ruled, 1
+REFUTED** — `serviceAccountName: apiserver` in
+`staging/src/k8s.io/sample-apiserver/artifacts/example/deployment.yaml`, with `…/example/sa.yaml`
+declaring `kind: ServiceAccount` + `name: apiserver`. Resolving it needs a project-wide or
+same-directory resource index, which a per-file analyzer has no channel for; it is reported, not
+smoothed. Full record: [yaml.md](yaml.md)'s ROUND 7 section.
+
+## ROUNDS 14–15 — two more FALSE-EDGE classes at the `uses:` site (2026-10-11)
+
+Both were found by asking the same question the whole lane keeps asking — which emitted target names
+something the corpus can be asked about — and both were FIXES rather than rulings, because the referent
+was supportable in each case.
+
+| class | what was wrong | guard |
+|---|---|---|
+| a local `uses: ./D` naming a path the runner MATERIALIZES | the target was read as a path the repository does not contain, so it was marked external. It is not an external reference: a PRIOR STEP OF THE SAME JOB creates it — `actions/checkout@<sha>` with `with: {repository: R, path: D, ref: F}` — and `R@F` is a `remoteRef` the shared arbiter VERIFIES. MEASURED whole-corpus: 523 local `uses: ./…` sites, **10** matched to a prior same-job checkout, **9 convertible**, 1 refused honestly (waypoint's checkout pins no `ref:`) | `materializedActionSource`: earlier steps only (runner order), same job only (another job is another machine), only `actions/checkout@…`, only `./…`, and a materialized repository WINS over an in-repo `action.yml` because the checkout REPLACES that directory; a checkout with no `repository:` materializes the CALLING repo, and its subpath is claimed as the project's own file. `ext?` 253 → **244** |
+| `$/.github/actions/x` read as an EXTERNAL ACTION | the value is not `docker://` and does not begin `./`/`../`, so it fell to the last line of `actionUseClaim`, `return { remoteRef: true }` — a claim that `$` is a GitHub OWNER and `.github` the repository under it. `$` is not an owner, and the target is a path in the checked-out tree: `terragrunt/.github/actions/go-cache-{restore,save}/action.yml` are files that project carries. MEASURED whole-corpus: the `$/` spelling occurs in **18** `uses:` sites and nowhere else (all terragrunt: 15 `go-cache-restore`, 3 `go-cache-save`) | `rootAnchoredActionPath`: a leading `$/` is rewritten to `./` where the site is CAPTURED, so the target, the claim, the `addImport` external flag and the materialization check all agree, and the written text travels in `metadata.actionSpelling` for audit. Unconditional, so it can only ever convert an unsupportable remote claim into a local one — a `$/…` action with no manifest still falls back to the pre-existing `isExternal: true`. `ext?` 244 → **226** |
+
+Both are pinned by a control that can fail in both directions
+(`materialized-action-control.ts` 10 arms; `root-anchored-action-control.ts` 25 assertions, including
+the BOUNDARY — an ordinary external action keeps `remoteRef` with no spelling recorded, a target that
+only CONTAINS `$/` is untouched, `../` is untouched) and by one fixture each with its FORBID rows on
+the pre-fix target. The mutants that revert each rule are CAUGHT.
 
 ## Issue
 

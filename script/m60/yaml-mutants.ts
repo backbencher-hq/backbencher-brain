@@ -418,6 +418,22 @@ const materializedActionReverted = (r: any) => ({
   }),
 })
 
+/**
+ * The root-anchored rewrite REVERTED: a `$/…` step `uses:` goes back to being claimed as a remote
+ * ref, which is where it lands when the value falls through `actionUseClaim` with the raw spelling.
+ * The reverted edge keeps the target it was emitted with and re-states the claim the pre-fix site
+ * stated, so the mutant is exactly the defect the fix removed rather than a nearby one.
+ */
+const rootAnchoredActionReverted = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    const md = x.metadata ?? {}
+    if (md.actionSpelling === undefined) return x
+    const { actionSpelling, ...rest } = md
+    return { ...x, target: actionSpelling, metadata: { ...rest, remoteRef: true } }
+  }),
+})
+
 /** The override direction reversed: the replaced entry claims to override its replacement. */
 const overridesDirectionReversed = (r: any) => ({
   ...r,
@@ -640,6 +656,14 @@ export const YAML_MUTANTS = [
     description:
       "The materialized-action re-route REVERTED: `imports yaml_action_use` edges whose target is a `./D` path a PRIOR SAME-JOB checkout materializes go back to the literal path with `isExternal: true`, i.e. the unsupportable claim the fix replaced. This is the class the corpus found 10 sites of (`./security-scanner` ×7, `./ci-actions/.github/actions/setup` ×2, `./integration-release-action` ×1) and the reason it is a fix rather than a ruling: the referent is a named repository the arbiter can VERIFY, and a path the runner creates can only ever be `externalUnverified`. Caught by yaml/materialized-action, whose expect row pins the re-routed target `hashicorp/security-scanner@main` with `meta.remoteRef` and whose forbid row names the literal `./security-scanner` at the very site that must not carry it.",
     transform: materializedActionReverted,
+  },
+  {
+    id: "yaml/root-anchored-action-reverted",
+    language: "yaml",
+    defectClass: "wrong-target",
+    description:
+      "The root-anchored rewrite reverted: `uses: $/.github/actions/cache-restore` is emitted on its RAW spelling and re-stated as `remoteRef`, i.e. `$` claimed as a GitHub owner and `.github` as the repository under it. That claim is not merely weaker, it is false — the target is a path in the checked-out tree, and `terragrunt/.github/actions/cache-restore/action.yml` is a file the project carries — so the edge is read as `externalUnverified` and blocks an incoming PASS. Caught by yaml/root-anchored-action, whose forbid rows name the raw `$/.github/…` targets and whose expect rows pin `meta.isExternal: false` plus `meta.actionSpelling`.",
+    transform: rootAnchoredActionReverted,
   },
   {
     id: "yaml/overrides-direction-reversed",
