@@ -9,12 +9,12 @@
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "negativeCases": 5,
-  "currentCommit": "26e7eb04f2ab17849b6e16fc130ae5d4fe4b9497",
+  "currentCommit": "b7aa9b221b01eb6295420f834d9dec8a43346163",
   "verifierCommand": "npx tsx script/m25/verify-packaging.ts",
   "evidenceFile": "E4.json",
   "publishRecord": "validation/m25/results/E4-openvsx.json",
   "vsix": "ide/vscode/bb-lsp-vscode-0.1.0.vsix",
-  "generatedAt": "2026-10-10T23:18:12.197Z",
+  "generatedAt": "2026-10-11T18:34:38.096Z",
   "os": "darwin",
   "verdict": {
     "realComponentFailures": 0
@@ -26,7 +26,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-10T23:18:12.197Z",
-    "contentSha256": "8c38f4beb1f71d427ba00a0e2ee7f376ccaf97e526edaedf2ebaa6527efaea3b"
+    "sealedAt": "2026-10-11T18:34:38.096Z",
+    "contentSha256": "274f92c6f37c81ace69f87fe7970e5600081d9b1babf8a7a76db5c7047539638"
   }
 }

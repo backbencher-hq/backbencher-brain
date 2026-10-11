@@ -158,7 +158,13 @@ const SAMPLE: Array<[string, string, string]> = [
   ["rake", "lib/rake", "Ruby"],
   ["graphql-js", "src", "TypeScript"],
   ["rebar3", "apps", "Erlang"],
-  ["go-tools", "go/analysis/passes", "Go"],
+  // The corpus directory is go_tools (underscore), not go-tools. Every gate that
+  //  asked for the hyphen form was reading a directory that has never existed on any
+  //  machine, so the corpus leg passed VACUOUSLY — no error, no finding, nothing
+  //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
+  //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
+  //  Verified against the corpus on disk, which lists go_tools.
+  ["go_tools", "go/analysis/passes", "Go"],
   ["cabal", "Cabal/src", "Haskell"],
 ]
 
