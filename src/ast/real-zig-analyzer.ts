@@ -1,4 +1,6 @@
 import type { Node } from "web-tree-sitter"
+import { statSync } from "node:fs"
+import * as path from "node:path"
 import { ASTEngine } from "./engine"
 import { fileClaimForTarget } from "./file-claim"
 
@@ -9,6 +11,35 @@ import { fileClaimForTarget } from "./file-claim"
  * source) could never verify while a miss still REFUTES.
  */
 const ZIG_ADMITTED_EXTENSIONS: readonly string[] = ["zig"]
+
+/**
+ * THE ARBITER'S SIZE ADMISSION — and this one is MEASURED, not defensive.
+ *
+ * The shared guard tests extension + existence; the admitted set is STRICTER than that. A file over
+ * the indexer's own limit is never admitted, so a claim naming it cannot verify — and a miss
+ * REFUTES. Measured after adopting the claim in this lane: whole-population `extFAIL` went
+ * 0 -> 17 (imports 15, references 2), and every one of them is a file that EXISTS and carries
+ * `.zig` but exceeds the cap: `src/Sema.zig`, `src/codegen/x86_64/CodeGen.zig`,
+ * `lib/compiler_rt/udivmoddi4_test.zig`. A text scan of the corpus found exactly 15 such
+ * `@import("…zig")` sites and 0 untracked/missing ones, so the cap IS the whole refutation class.
+ *
+ * The limit is the indexer's own (`src/ast/parallel-indexer.ts`: `maxFileSizeBytes: 1 MB`), and the
+ * gate applies the same 1 MB (`script/m14/incoming-gate.ts`: `SIZE_CAP`). It belongs INSIDE the
+ * shared guard as a parameter; until then this lane refuses to claim what the admitted set cannot
+ * hold, because `extFAIL` must be 0 and a claim that refutes is worse than no claim: THE GATE
+ * CHECKS A CLAIM BEFORE THE COUNT.
+ */
+const ADMISSION_MAX_BYTES = 1 * 1024 * 1024
+
+/** Keep a claim only if the file it names can actually be admitted; otherwise make none. */
+function claimWithinAdmission(projectRoot: string, claimed: string | null): string | null {
+  if (claimed === null) return null
+  try {
+    return statSync(path.join(projectRoot, claimed)).size <= ADMISSION_MAX_BYTES ? claimed : null
+  } catch {
+    return null
+  }
+}
 
 
 /**
@@ -1818,12 +1849,12 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
                */
               const fileClaim = projectRoot === undefined
                 ? null
-                : fileClaimForTarget({
+                : claimWithinAdmission(projectRoot, fileClaimForTarget({
                     projectRoot,
                     filePath,
                     written: target,
                     admittedExtensions: ZIG_ADMITTED_EXTENSIONS,
-                  })
+                  }))
               if (!seenFacts.has(k)) {
                 seenFacts.add(k)
                 imports.push({
