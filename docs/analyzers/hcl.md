@@ -555,6 +555,36 @@ only in the sense that it is now answered), the namespace claim kind and `import
 work, and the ~11,000 cross-file bindings with no own-file declaration are a THIRD defect that neither
 the lever nor a claim addresses — recorded as an open cause with its count.
 
+### Cause 7 — the ~11,000 cross-file bindings ARE partly a STORE-ORDER artifact (measured)
+
+The ~11,000 rows that bind to another file while NO declaration in their own file answers were priced
+out of the name-space lever and left as the lane's biggest open cause. The question the Lead set is
+whether they are an hcl defect at all, and xml-lane's determinism A/B answers it: the SAME file set,
+indexed in a different ORDER, writes different bindings.
+
+Adapted instrument (`validation/m14/fixtures/hcl/tools/store-determinism.mts`, from xml-lane's; same
+three arms and comparison, only the extension list differs). HCL, terragrunt, 800 files, 10,124
+relationship rows, three arms:
+
+| comparison | rows compared | differing | by type | only-in-X / only-in-Y |
+|---|---|---|---|---|
+| A sorted vs B **reversed** | 10,124 | **113 (1.1%)** | `contains` 113 | 0 / 0 |
+| A sorted vs C **eager** (`BB_TEST_FORCE_EDGE_RESOLVE=1`) | 10,124 | **200 (2.0%)** | `references` 96 · `exports` 99 · `contains` 5 | 0 / 0 |
+| B reversed vs C eager | 10,124 | **312 (3.1%)** | `exports` 99 · `contains` 117 · `references` 96 | 0 / 0 |
+
+The row set is identical in every arm (`onlyInX`/`onlyInY` both 0); what moves is WHICH declaration a
+row binds to. The examples are the exact shape in question — a `contains` row for `s3` under
+`…/step-2-refactoring/live/backend.tf` binds to `…/step-1-starting-the-terralith/live/s3.tf`'s `s3` in
+one order and to `…/step-2-refactoring/live/main.tf`'s `s3` in the other: terragrunt's walkthrough
+fixtures repeat module names across sibling directories, no own-file declaration answers, and the store
+picks a twin — a different twin per order.
+
+**So a measurable share of the ~11,000 is a STORE writing-order artifact, not a lane defect, and the
+churn lands on exactly the three types that carry this lane's residual.** Two limits are stated rather
+than rounded off: the churn rate is 1.1-3.1% of rows while the class is 8.5% of store rows, so order
+explains PART of it and the remainder still needs its own named classes; and only one repository was
+measured, so the rate is a rate and not a fleet total.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
