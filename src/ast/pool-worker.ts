@@ -106,6 +106,22 @@ function safeSend(message: Record<string, unknown>): boolean {
   }
 }
 
+/**
+ * THE REGEX-FALLBACK SYMBOL — what this file can recover when a parse fails.
+ *
+ * IT IS A UNION WITH THE AST-PATH SYMBOL, AND THE UNION IS THE POINT: a caller reading `parseFile`'s
+ * `symbols` may be holding either, and the fields below are the ones ONLY the AST path can fill.
+ *
+ * THEY ARE DECLARED HERE AS OPTIONAL, WHICH IS A CORRECTION AND NOT A WIDENING. `parseFile` returns the
+ * union of this shape and the full symbol, so `s.kind`, `s.range`, `s.ownerName`, `s.scope` and
+ * `s.metadata` exist on one arm and not the other — and TypeScript therefore refused every read of them
+ * on the union, which is why **39 type errors across 8 files** in `script/m12` and `script/m14` had
+ * accumulated since the ratchet's baseline reached ZERO on 2026-10-08.
+ *
+ * The alternative — casting at each of the ~39 call sites — would have hidden the real fact the compiler
+ * was pointing at: **a fallback symbol genuinely does not have these**, so a reader must handle their
+ * absence. Declaring them optional states that once, in the type, where every reader sees it.
+ */
 interface BasicSymbol {
   name: string
   type: string
@@ -115,6 +131,20 @@ interface BasicSymbol {
   parameters?: any[]
   returnType?: string
   qualifiedCalls?: string[]
+  // ── FIELDS ONLY THE AST PATH FILLS. Optional because a fallback symbol cannot supply them.
+  //
+  // NO `range` HERE, AND THAT IS DELIBERATE — IT WAS TRIED AND REVERTED. `parseFile` FLATTENS
+  // `UniversalSymbol.range` into `startLine`/`endLine`/`startIndex`/`endIndex`, so **neither arm of this
+  // union carries a `range`**. Declaring it optional here silenced the compiler on nine probe sites
+  // without making the field exist: `s.range?.startLine` would still have been `undefined` at runtime,
+  // and one of those probes (`perl-probe.ts`) printed `Lundefined` on EVERY row because of it. **A type
+  // declaration that makes a dead read compile is the defect, not the fix** — it is the same shape as
+  // php's unreachable `owner_provable` (§6.11) and the same reason the `range` fallbacks were removed
+  // from the probes instead.
+  kind?: string
+  ownerName?: string
+  scope?: string
+  metadata?: Record<string, any>
 }
 
 interface BasicImport {

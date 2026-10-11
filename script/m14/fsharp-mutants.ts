@@ -154,7 +154,7 @@ export const FSHARP_MUTANTS: Mutant[] = [
     description:
       "PRE-FIX (FS-D7): an `object_expression` published a Class symbol and never opened a scope for it, so in an F# SCRIPT — no namespace, no module, an empty enclosing scope — every member of every object expression came out with NO owner. Measured on the second corpora: elmish docs/docs/subscription.fsx lines 71/144/803/833, suave examples/WebSocket/Program.fs:181, fsharp-data HtmlNode.fs:123 and 206. Reverted by removing the owner AND its containment edge from every member of an object expression — the edge is derived from ownerName, so a revert that cleared only the owner is not a state the pre-fix analyzer could produce; the first draft did exactly that and SURVIVED, because the fixture pins the edge. Caught by fsharp/name-surface, which expects `contains new System.IDisposable -> Dispose` and forbids the scope from outliving the object expression (`contains Fixture.Names -> after` is the live risk: a scope that does not pop captures the next binding).",
     transform: (r: any) => {
-      const anon = new Set(
+      const anon = new Set<string>(
         (r.symbols ?? []).filter((s: any) => s.metadata?.nodeType === "object_expression").map((s: any) => String(s.name)),
       )
       if (anon.size === 0) return r
@@ -210,7 +210,7 @@ export const FSHARP_MUTANTS: Mutant[] = [
     description:
       "PRE-FIX (FS-D13): the 'a computed property getter emits no calls' contract was applied to the WHOLE member. It is inherited from the C# family and is about an EXPRESSION-bodied property, which in C# has no second body for code to live in. F#'s `with get, set` does: the accessor is a `property_accessor` node carrying its own `set` token, and the setter body executes. Reverted by dropping every `calls` edge whose source publishes a `declared_type` on its own PARAMETER — which is the shape a setter's parameter produces, read off the result rather than from a name list, so the mutant cannot silently stop matching if the fixture changes. Caught by fsharp/call-ownership, which expects `calls Probe -> reset` AND forbids `calls Computed -> Length`; the forbid is what stops the fix being read as 'properties emit calls'.",
     transform: (r: any) => {
-      const setters = new Set(
+      const setters = new Set<string>(
         (r.relationships ?? [])
           .filter((x: any) => x.metadata?.relationshipType === "declared_type" && x.metadata?.declaredOn === "parameter")
           .map((x: any) => String(x.source)),
@@ -231,7 +231,7 @@ export const FSHARP_MUTANTS: Mutant[] = [
     description:
       "PRE-FIX (FS-D12): a `default` implementation of an abstract member publishes no SYMBOL — that dedup is correct and is exactly why the abstract signature is the canonical one — but its BODY belongs to that member, and the arm passed the enclosing owner through unchanged. Inside a class the enclosing owner is undefined, so every call in every `default` implementation was dropped: 731 of 817 MISSING `calls` rows per 120 real files, found by the lane's own truth oracle. Reverted by re-attributing every call whose source also has a `member_signature` of the same name in the file — the exact set of `default` implementations, derived from the result rather than from a name list. Caught by fsharp/call-ownership, which expects `calls Describe -> describeWith` and `calls Area -> computeArea`.",
     transform: (r: any) => {
-      const sigNames = new Set(
+      const sigNames = new Set<string>(
         (r.symbols ?? []).filter((s: any) => s.metadata?.nodeType === "member_signature").map((s: any) => String(s.name)),
       )
       if (sigNames.size === 0) return r
