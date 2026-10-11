@@ -23,8 +23,19 @@
 
 import * as fs from "fs"
 import * as path from "path"
+import { fileURLToPath } from "node:url"
+import { emitEvidence } from "./evidence-harness.ts"
 
-const ROOT = path.resolve(__dirname, "..", "..")
+// `__dirname` / `__filename` do not exist in an ES module, and package.json
+//  declares "type": "module". Reaching for one here means this file dies at LOAD
+//  with a ReferenceError, prints a stack trace, and runs no check at all — while
+//  `tsc` stays silent, because @types/node declares both.
+//  The repo already has the idiom (script/m14/html-ontology-census.ts):
+//    const SELF = fileURLToPath(import.meta.url)
+//  which is correct under tsx, bun and plain node alike.
+const SELF_PATH = fileURLToPath(import.meta.url)
+const HERE = path.dirname(SELF_PATH)
+const ROOT = path.resolve(HERE, "..", "..")
 const ANALYZER_DIR = path.join(ROOT, "src", "ast")
 
 const GATED_ANALYZERS: Record<string, string> = {
@@ -307,7 +318,17 @@ export function main() {
     console.error(`HYGIENE FAIL [${f.lang}] ${f.kind} @ line ${f.line}: ${f.note}\n  ${f.snippet}`)
   }
 
-  const { emitEvidence } = require("./evidence-harness")
+  // WAS: `const { emitEvidence } = require("./evidence-harness")`
+  //
+  // `require` does not exist in an ES module, and package.json declares
+  // "type": "module". That one line made this gate die at run time inside main() with
+  //   ReferenceError: require is not defined in ES module scope, you can use import instead
+  // after 300+ lines of work, so every finding it had gathered was thrown away. It is in
+  // `npm run verify`.
+  //
+  // Same class as the __dirname/__filename misuse found in nine other chain gates, and
+  // found by running them rather than by reading them: `tsc` accepts both.
+  // The static import goes at module scope, where ESM requires it.
   const perLang = new Map<string, number>()
   for (const f of allFindings) perLang.set(f.lang, (perLang.get(f.lang) || 0) + 1)
   const checks = langs.map((lang) => ({

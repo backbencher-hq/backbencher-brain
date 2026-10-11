@@ -127,8 +127,18 @@
 import * as fs from "fs"
 import * as os from "os"
 import * as path from "path"
+import { fileURLToPath } from "node:url"
 
-const REPO_ROOT = path.resolve(__dirname, "..", "..")
+// `__dirname` / `__filename` do not exist in an ES module, and package.json
+//  declares "type": "module". Reaching for one here means this file dies at LOAD
+//  with a ReferenceError, prints a stack trace, and runs no check at all — while
+//  `tsc` stays silent, because @types/node declares both.
+//  The repo already has the idiom (script/m14/html-ontology-census.ts):
+//    const SELF = fileURLToPath(import.meta.url)
+//  which is correct under tsx, bun and plain node alike.
+const SELF_PATH = fileURLToPath(import.meta.url)
+const HERE = path.dirname(SELF_PATH)
+const REPO_ROOT = path.resolve(HERE, "..", "..")
 const REGISTER_REL = path.join("docs", "DOC-TRUTH-EMISSIONS.md")
 const REGISTER_CMD = "bun run script/m14/verify-doc-truth-emissions.ts"
 

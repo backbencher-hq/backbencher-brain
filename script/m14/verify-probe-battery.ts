@@ -21,7 +21,16 @@ import * as fs from "fs"
 import * as path from "path"
 import * as WTS from "web-tree-sitter"
 
-const ROOT = path.resolve(__dirname, "..", "..")
+// `__dirname` / `__filename` do not exist in an ES module, and package.json
+//  declares "type": "module". Reaching for one here means this file dies at LOAD
+//  with a ReferenceError, prints a stack trace, and runs no check at all — while
+//  `tsc` stays silent, because @types/node declares both.
+//  The repo already has the idiom (script/m14/html-ontology-census.ts):
+//    const SELF = fileURLToPath(import.meta.url)
+//  which is correct under tsx, bun and plain node alike.
+const SELF_PATH = fileURLToPath(import.meta.url)
+const HERE = path.dirname(SELF_PATH)
+const ROOT = path.resolve(HERE, "..", "..")
 const WASM_DIR = path.join(ROOT, "wasm")
 
 interface ProbeResult {
@@ -542,6 +551,7 @@ pickOne = C.Registry 1
 module M where
 
 import qualified Data.Csv as C
+import { fileURLToPath } from "node:url"
 
 registry :: C.Registry
 registry = C.Registry

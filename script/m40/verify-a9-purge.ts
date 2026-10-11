@@ -21,6 +21,7 @@
 import { readFileSync, readdirSync } from "node:fs"
 import { execFileSync, spawnSync } from "node:child_process"
 import path from "node:path"
+import { writeFileSync } from "node:fs"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT, "validation/m40/results")
@@ -157,7 +158,13 @@ const CLI_FLAGS = ["--force", "--no-setup", "--skip-post-processing", "--post", 
 }
 
 function writeRunner(p: string) {
-  const { writeFileSync } = require("node:fs") as typeof import("node:fs")
+  // // `require` does not exist in an ES module, and package.json declares
+  // //  "type": "module". This call threw at RUN time with
+  // //    ReferenceError: require is not defined in ES module scope, you can use import instead
+  // // after the gate had done its work, so the result was thrown away. It is in `npm run verify`.
+  // //  `tsc` accepts it under @types/node, so only running the file catches this.
+  // //  Static ESM import at module scope, which is what ESM requires.
+  // (replaced above: a bare require() call)
   writeFileSync(p, `import { runCli } from ${JSON.stringify(path.join(ROOT, "src/cli/index.ts"))}\nawait runCli(process.argv.slice(2)).catch((e)=>{console.error("RUNNER_ERR:", e?.message ?? e); process.exit(1)})\n`)
 }
 
