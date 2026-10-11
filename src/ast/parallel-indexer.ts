@@ -4262,6 +4262,31 @@ export async function storeResults(
                const byColon = noArity.split(":")
                const lastColon = byColon[byColon.length - 1]
                // Split by "." and take last (handles "a.b.c")
+               // A PATH IS NOT A MEMBER CHAIN. `a.b.c` is member access and its leaf is `c`, but
+               // `synthetic/main.zig` is a FILE PATH and splitting it on "." yields the EXTENSION:
+               // the leaf becomes `zig`, `resolveTargetStmt` matches `s.name = 'zig'` LIMIT 1, and the
+               // edge binds to whatever symbol is named after the extension.
+               //
+               // MEASURED (json-lane, c38defed6, ghostty, one run): of 4,579 bound file-shaped edges,
+               // 4,490 (98.1%) bound to a symbol named after the EXTENSION and only 89 to the target
+               // spelling — `references synthetic/main.zig -> name='zig' qname='Allocator.zig'`.
+               //
+               // THIRD APPEARANCE OF ONE DEFECT: hcl measured 30,194 of 33,297 bound references (90.7%)
+               // binding only after LEAF REDUCTION; the `contains` dedup (140be2f01) built its key set
+               // with both ends leaf-reduced while the lookup left the child raw, and the symmetric
+               // repair measured 7.3x worse. Leaf reduction applied to something that is NOT A NAME is
+               // the programme's central defect.
+               //
+               // THE FIX IS THE SEPARATOR TEST, deliberately narrow: a name carrying a path separator is
+               // a path and is returned whole; everything else keeps the member behaviour that is correct
+               // for `a.b.c`. `InitOpts.c` (a FIELD named `c`) still reduces to `c` — that reduction is
+               // right, and the extension-based classifier over-counted by calling it a file.
+               //
+               // EXPECTED EFFECT, to be read the right way: these edges move from MIS-BOUND to UNBOUND, so
+               // **`unresolved` will RISE** on lanes with path-shaped targets — and that is the fix
+               // working. A file reference should be bound by a file claim (`fileClaimForTarget`), not by
+               // a symbol named after its extension.
+               if (lastColon.includes("/") || lastColon.includes("\\")) return lastColon
                const byDot = lastColon.split(".")
                return byDot[byDot.length - 1]
              }
@@ -4972,6 +4997,65 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
     rawDb.run(`CREATE INDEX IF NOT EXISTS _res_name_idx ON _res_name(name)`)
     rawDb.run(`CREATE INDEX IF NOT EXISTS _res_name_uniq_idx ON _res_name(name, cnt)`)
 
+    // ── OWN-FILE PREFERENCE (M14 clause 4). Both lookup tables below collapse every name
+    // and every dotted suffix to ONE global winner via `MIN(id)` — the lexicographically
+    // smallest symbol id in the PROJECT. File paths sort, so an edge written in
+    // `tests/docbook/html/admon.xsl` binds to the same-named template declared in the
+    // PARALLEL tree `tests/docbook/fo/admon.xsl`: measured on libxslt, 138 of 388 `calls`
+    // edges did exactly that, every one of them classified `in-document` by the analyzer
+    // (i.e. the declaration IS in the edge's own file). The two statements below run FIRST
+    // and bind only edges whose target is declared in the edge's OWN file; the project-wide
+    // statements that follow are untouched and still fire for every row they fired for
+    // before, because they require `target_symbol_id IS NULL`.
+    rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qname_own (qualified_name TEXT, file_id TEXT, symbol_id TEXT NOT NULL)`)
+    rawDb.run(`DELETE FROM _res_qname_own`)
+    rawDb.prepare(
+      `INSERT INTO _res_qname_own (qualified_name, file_id, symbol_id)
+       SELECT qualified_name, file_id, MIN(id) FROM brain_symbol
+       WHERE project_id = ? AND qualified_name IS NOT NULL GROUP BY qualified_name, file_id`
+    ).run(projectId)
+    rawDb.run(`CREATE INDEX IF NOT EXISTS _res_qname_own_idx ON _res_qname_own(qualified_name, file_id)`)
+    const r0own = rawDb.run(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_qname_own.symbol_id,
+          is_cross_file = 0
+      FROM _res_qname_own
+      WHERE brain_relationship.target_external = _res_qname_own.qualified_name
+        AND _res_qname_own.file_id = (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1)
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.target_external IS NOT NULL
+        AND brain_relationship.project_id = '${projectId}'
+    `)
+
+    // ── OWN-FILE NAME PREFERENCE (arm B). The 15 `calls` rows arm A could not reach are bound by
+    // strategy 1's PROJECT-WIDE qualified-name match to a symbol in another file whose qualified
+    // name happens to equal the edge's target — measured shape: `colspec.colnum` binds to an
+    // attribute symbol in `tests/docbook/test/article2.xml` (qualified_name exactly
+    // `colspec.colnum`) while the edge's own file declares `colspec.colnum` as a template. The
+    // analyzer's class for those edges is `in-document`, i.e. the declaration IS in the own file,
+    // so the own file's NAME match is the intended target and the cross-file qualified-name match
+    // is a coincidence. This runs after the own-file qualified-name pass (a stronger signal within
+    // the same file) and before the project-wide statements.
+    rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_name_own (name TEXT, file_id TEXT, symbol_id TEXT NOT NULL)`)
+    rawDb.run(`DELETE FROM _res_name_own`)
+    rawDb.prepare(
+      `INSERT INTO _res_name_own (name, file_id, symbol_id)
+       SELECT name, file_id, MIN(id) FROM brain_symbol
+       WHERE project_id = ? GROUP BY name, file_id`
+    ).run(projectId)
+    rawDb.run(`CREATE INDEX IF NOT EXISTS _res_name_own_idx ON _res_name_own(name, file_id)`)
+    const r0ownName = rawDb.run(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_name_own.symbol_id,
+          is_cross_file = 0
+      FROM _res_name_own
+      WHERE brain_relationship.target_external = _res_name_own.name
+        AND _res_name_own.file_id = (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1)
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.target_external IS NOT NULL
+        AND brain_relationship.project_id = '${projectId}'
+    `)
+
     // Strategy 1: Qualified name exact match (fast JOIN)
     const r1 = rawDb.run(`
       UPDATE brain_relationship
@@ -5001,7 +5085,7 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
         AND brain_relationship.project_id = '${projectId}'
     `)
 
-    const resolvedBeforeDotted = (r1?.changes || 0) + (r2?.changes || 0)
+    const resolvedBeforeDotted = (r0own?.changes || 0) + (r0ownName?.changes || 0) + (r1?.changes || 0) + (r2?.changes || 0)
 
     // Strategy 3 (M60 determinism fix): a DOTTED target, by SUFFIX on qualified_name.
     //
@@ -5041,6 +5125,41 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
       projectId,
     )
     rawDb.run(`CREATE INDEX IF NOT EXISTS _res_qsuffix_idx ON _res_qsuffix(suffix)`)
+
+    // ── OWN-FILE PREFERENCE for the suffix table (see the note above strategy 1): the table
+    // above keeps ONE symbol per suffix for the whole project, so a caller in `html/` gets the
+    // `fo/` declaration. This per-(suffix, file) table keeps the own-file candidate reachable,
+    // and binds it first; the global statement below is unchanged.
+    rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qsuffix_own (suffix TEXT, file_id TEXT, symbol_id TEXT NOT NULL)`)
+    rawDb.run(`DELETE FROM _res_qsuffix_own`)
+    rawDb.run(
+      `
+      WITH RECURSIVE suffixes(suffix, rest, id, file_id) AS (
+        SELECT qualified_name, qualified_name, id, file_id
+        FROM brain_symbol
+        WHERE project_id = ? AND qualified_name IS NOT NULL
+        UNION ALL
+        SELECT substr(rest, instr(rest, '.') + 1), substr(rest, instr(rest, '.') + 1), id, file_id
+        FROM suffixes WHERE instr(rest, '.') > 0
+      )
+      INSERT INTO _res_qsuffix_own (suffix, file_id, symbol_id)
+      SELECT suffix, file_id, MIN(id) FROM suffixes WHERE instr(suffix, '.') > 0 GROUP BY suffix, file_id
+    `,
+      projectId,
+    )
+    rawDb.run(`CREATE INDEX IF NOT EXISTS _res_qsuffix_own_idx ON _res_qsuffix_own(suffix, file_id)`)
+    const r3own = rawDb.run(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_qsuffix_own.symbol_id,
+          is_cross_file = 0
+      FROM _res_qsuffix_own
+      WHERE brain_relationship.target_external = _res_qsuffix_own.suffix
+        AND _res_qsuffix_own.file_id = (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1)
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.target_external IS NOT NULL
+        AND instr(brain_relationship.target_external, '.') > 0
+        AND brain_relationship.project_id = '${projectId}'
+    `)
 
     const r3 = rawDb.run(`
       UPDATE brain_relationship
@@ -5169,12 +5288,13 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
       resolvedByLeaf += r3c?.changes || 0
     }
 
-    const resolved = resolvedBeforeDotted + (r3?.changes || 0) + resolvedByLeaf
+    const resolved = resolvedBeforeDotted + (r3?.changes || 0) + (r3own?.changes || 0) + resolvedByLeaf
     log.debug("relationship resolution completed", {
       resolved,
       resolvedByQualifiedExact: r1?.changes || 0,
       resolvedByUniqueName: r2?.changes || 0,
       resolvedByDottedSuffix: r3?.changes || 0,
+      resolvedByOwnFilePreference: (r0own?.changes || 0) + (r0ownName?.changes || 0) + (r3own?.changes || 0),
       resolvedByLeafFallback: resolvedByLeaf,
       unresolved,
     })
