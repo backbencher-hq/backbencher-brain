@@ -66,6 +66,15 @@ export type FileClaimInput = {
    * Magic constants the analyzer knows without the filesystem — php's `__DIR__`/`__FILE__`,
    * python's `__file__`. Values are substituted into the written target in pure String, longest key
    * first so `dirname(__FILE__)` is not left mangled.
+   *
+   * **THE VALUES MUST BE PROJECT-RELATIVE, AND THIS IS THE ONE CLAUSE WHOSE MISUSE PRODUCES NO
+   * SIGNAL.** The substitution happens HERE, BEFORE the shape check below, so an ABSOLUTE value (the
+   * obvious thing to pass — `path.dirname(filePath)`) makes the whole target begin with `/` and the
+   * guard refuses it as an absolute path. MEASURED: php's include claim lost **145 of its 147 claims**
+   * (`extOK 6,443 -> 6,298`) the first time it was put on this guard, with **no refutation, no error
+   * and no counter** to say why — just a smaller number. Pass a project-relative directory, and `.`
+   * for a file at the project root: an empty string would leave a leading slash and reintroduce the
+   * same silent loss. (`__FILE__` takes the project-relative path of the file itself.)
    */
   magicConstants?: Readonly<Record<string, string>>
   /**
