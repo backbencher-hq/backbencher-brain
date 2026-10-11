@@ -716,6 +716,38 @@ two must move together; (2) the store pair over the same population, one labelle
 monotonicity assertion, stated as a SAFETY property rather than the mechanism, because the arms show
 `exports` never rode the tie-break; (4) the falsifier above, fixed before the run.
 
+### Cause 12 — the deciding test answered BY CONSTRUCTION: YES for 100% of the 4,725, and the inference from it needs one correction
+
+The Lead's cheap deciding test: for the 4,725 rows, is the own-file declaration's name IDENTICAL to the
+target as currently spelled? The instrument answers it without a new pass, because the column that
+selects those rows IS that test:
+
+```
+own_file_answers = SELECT COUNT(*) FROM brain_symbol x
+  WHERE x.file_id = <the edge's own file> AND (x.name = target OR x.qualified_name = target)
+```
+
+`scopedWouldMove` counts rows where `own_file_answers > 0` and the store bound elsewhere or nowhere —
+so **for all 4,725 the answer is YES by definition, not by measurement**: an own-file declaration whose
+spelling equals the target EXACTLY already exists. The Lead's branch-1 condition is met at 100%.
+
+**THE INFERENCE FROM IT, corrected.** The Lead read YES as "an exact match was already available and the
+resolver chose elsewhere anyway, so a scoped qname does not remove it". The first half is right; the
+conclusion does not follow. Why the resolver chose elsewhere with an exact own-file match in hand is a
+question about DUPLICATES: store pass 1 binds `target_external = qualified_name` **project-wide with
+LIMIT 1**, ordered by `is_declaration, file_id, language, s.id` — so when several files declare the same
+spelling, the pick is decided by that ordering, not by locality. **Scoping the qname does not remove the
+match that already existed; it removes the DUPLICATE that made the match ambiguous**, which is exactly
+the mechanism that produced the foreign pick. On that reading the rename would help the 4,725 — so the
+test that decides is neither availability nor spelling but the **duplicate count** for those targets.
+
+**AND THE TEST THAT DECIDES IS ONE COLUMN AWAY**: for the 4,725 rows, the distribution of
+`any_file_answers` (the project-wide count of declarations answering to the target) — 1 means the
+own-file declaration was already UNIQUE and pass 1 should have bound it, so those rows come from another
+mechanism (unbound rows, or a later pass); >1 means duplicates exist and the ordering is what picks the
+foreign one, which scoping fixes. The instrument has the column (`any_file_answers`) and the pass is
+cheap; it is the next measurement, not this one.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
