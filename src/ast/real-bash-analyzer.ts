@@ -1,5 +1,48 @@
 import type { Node } from "web-tree-sitter"
+import { existsSync } from "node:fs"
+import * as path from "node:path"
 import { ASTEngine } from "./engine"
+
+/**
+ * THE PROJECT-UNIQUE FILE SCOPE — what makes a same-file target nameable.
+ *
+ * The lane publishes the script as its module symbol (BD2), but only by BASENAME: two `util.sh`
+ * in one repository are one key, so a target spelled `<basename>::<name>` would still collide.
+ * The scope is therefore the repo-relative path, which is unique inside a project by
+ * construction — the same rule css-D15 uses.
+ *
+ * WHY THIS MATTERS FOR THE RESIDUAL: the lane's dominant column is AMBIGUITY (42,392 edges on the
+ * declared population), and 59.5% of it is the SAME-FILE-ONE class — an edge whose OWN file
+ * declares the name exactly once while other files declare it too. That declaration is not a
+ * guess: the file is holding it. What was missing was a spelling the store could bind, because a
+ * bare name answers to every declaration in the project.
+ */
+const BASH_REPO_ROOT = new Map<string, string>()
+function bashRepoRootOf(filePath: string): string {
+  const abs = path.resolve(filePath)
+  const dir = path.dirname(abs)
+  const cached = BASH_REPO_ROOT.get(dir)
+  if (cached !== undefined) return cached
+  let probe = dir
+  for (let i = 0; i < 64; i++) {
+    if (existsSync(path.join(probe, ".git"))) { BASH_REPO_ROOT.set(dir, probe); return probe }
+    const parent = path.dirname(probe)
+    if (parent === probe) break
+    probe = parent
+  }
+  BASH_REPO_ROOT.set(dir, "")
+  return ""
+}
+
+function bashFileScopeOf(filePath: string): string {
+  const root = bashRepoRootOf(filePath)
+  if (root === "") return ""
+  const rel = path.relative(root, path.resolve(filePath))
+  if (rel.startsWith("..") || rel === "") return ""
+  // `::` separates the scope from the name and `.` is what the differential splits on, so both
+  // are unspeakable in a scope: sanitised the way css-D15 sanitises its own file scopes.
+  return rel.split(path.sep).join("/").split(".").join("_").split(":").join("_")
+}
 
 /**
  * Bash analyzer.
@@ -1000,6 +1043,63 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (resolved) Object.assign(meta, resolved)
     }
 
+    // ---------------------------------------------- THE FILE-SCOPED IDENTITY (2026-10-11)
+    //
+    // THE DOMINANT COLUMN, AND WHY THIS IS A FIX RATHER THAN A CEILING. The lane's incoming gate
+    // reads 42,392 ambiguous of 148,816 edges on the declared population (53.4% residual), and the
+    // split by WHERE the name is declared says 59.5% of that ambiguity is SAME-FILE-ONE: the edge's
+    // own file declares the name exactly once while other files declare it too. `incoming-gate`
+    // counts declarations per BARE NAME across the project, so such an edge answers to every other
+    // file's declaration as well — but the declaration the file is holding is not a guess and not a
+    // heuristic: `bindingInEffect` above is the same scope-chain rule the lane already uses to
+    // publish `targetLine`, and it answers with the ONE declaration in effect at the edge.
+    //
+    // So the rule cannot be wrong where it fires: it respells a target ONLY when the file declares
+    // the name, ONLY when exactly one declaration is in effect at the edge's own line, and ONLY
+    // when that declaration's KIND is the kind the edge can denote (a command resolves to a
+    // function or to PATH, never to a variable — the lane's own ruling that produced
+    // `commandNameIsExternal`). Where any of the three fails, the target is left EXACTLY as it was;
+    // nothing is invented and no edge gains a spelling that could be wrong.
+    //
+    // The spelling is `<repo-relative path, sanitised>::<name>`. The name keeps its place as the
+    // last segment so the differential's identity (which splits on `::` and `.`) is unchanged: a
+    // shell identifier never contains a dot, so the leaf is the name either way.
+    const fileScope = bashFileScopeOf(filePath)
+    if (fileScope !== "") {
+      const occurrences = new Map<string, number>()
+      for (const sym of symbols) {
+        const n = String(sym.name ?? "")
+        if (n.length > 0) occurrences.set(n, (occurrences.get(n) ?? 0) + 1)
+      }
+      for (const sym of symbols) {
+        const n = String(sym.name ?? "")
+        // ONE occurrence only: a name declared twice in a file has no unique spelling, and giving
+        // both the same qualifiedName would publish one key for two declarations — a collision
+        // manufactured by the fix that exists to remove collisions.
+        if (n.length === 0 || (occurrences.get(n) ?? 0) !== 1) continue
+        if (typeof sym.qualifiedName === "string" && sym.qualifiedName.length > 0) continue
+        sym.qualifiedName = `${fileScope}::${n}`
+      }
+      const resplellable: Record<string, (kind: string) => boolean> = {
+        // command position: a function declared in this file answers it (bash resolves functions
+        // before PATH); a variable does NOT, which is what `commandNameIsExternal` records.
+        calls: (k) => k === "function",
+        uses: (k) => k === "variable" || k === "constant",
+        exports: (k) => k === "variable" || k === "constant" || k === "function",
+        overrides: (k) => k === "function",
+      }
+      for (const rel of relationships) {
+        const kindRule = resplellable[String(rel.type ?? "")]
+        if (kindRule === undefined) continue
+        const target = String(rel.target ?? "")
+        if (target.length === 0) continue
+        const r = this.bindingInEffect(declSites, target, String(rel.source ?? ""), rel.line_number, scriptName)
+        if (r === null || r === "ambiguous") continue
+        if (!kindRule(r.kind)) continue
+        rel.target = `${fileScope}::${target}`
+      }
+    }
+
     // --------------------------------------------------------------- metrics
     let security = 50
     let maintainability = 50
@@ -1156,6 +1256,38 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): Record<string, unknown> | undefined {
     const cands = declSites.get(name)
     if (!cands || cands.length < 2) return undefined // not ambiguous: nothing to add
+    const r = this.bindingInEffect(declSites, name, useOwner, useLine, fileOwner)
+    if (r === null || r === "ambiguous") return { targetResolution: "ambiguousInFile" }
+    return {
+      targetLine: r.line,
+      targetKind: r.kind,
+      targetResolution: r.innermost ? "innermostScope" : "outerScope",
+    }
+  }
+
+  /**
+   * WHICH DECLARATION IS IN EFFECT WHERE THE EDGE POINTS — the lane's scope-chain rule, in ONE
+   * place, because two consumers now need it and two copies of a resolution rule are two rules.
+   *
+   *   `null`        the file declares this name NOWHERE — there is nothing to name
+   *   `"ambiguous"` the name is declared, but not exactly one of them is in effect here
+   *   the binding   the nearest declaration at-or-before the use, in the innermost scope that
+   *                 has one, with `innermost` saying which scope answered
+   *
+   * Bash's own rule drives the walk: a function or variable defined LATER in the file does not
+   * answer a use that precedes it, and a use inside a function is answered by that function's own
+   * scope before the script's. That is why the respell pass below can reach a declaration WITHOUT
+   * guessing — and why it must not respell an edge whose binding is `"ambiguous"` or `null`.
+   */
+  private bindingInEffect(
+    declSites: Map<string, { owner: string; line: number; kind: string }[]>,
+    name: string,
+    useOwner: string,
+    useLine: number,
+    fileOwner: string,
+  ): { line: number; kind: string; owner: string; innermost: boolean } | "ambiguous" | null {
+    const cands = declSites.get(name)
+    if (!cands || cands.length === 0) return null
     // Outward walk. `useOwner` is "" at file scope, and so is `fileOwner` for a
     // script, so the first iteration already covers the file-scope case and a
     // use inside a function gets its own scope before the file's.
@@ -1165,16 +1297,11 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (atOrBefore.length === 0) continue // this scope has nothing yet; look outward
       const nearest = Math.max(...atOrBefore.map((c) => c.line))
       const winners = atOrBefore.filter((c) => c.line === nearest)
-      if (winners.length !== 1) return { targetResolution: "ambiguousInFile" }
-      return {
-        targetLine: winners[0]!.line,
-        targetKind: winners[0]!.kind,
-        targetResolution: scope === useOwner ? "innermostScope" : "outerScope",
-      }
+      if (winners.length !== 1) return "ambiguous"
+      return { line: winners[0]!.line, kind: winners[0]!.kind, owner: scope, innermost: scope === useOwner }
     }
-    // The name IS declared several times in this file and none of it is in
-    // effect where this edge points. Say so; publish no line.
-    return { targetResolution: "ambiguousInFile" }
+    // The name IS declared in this file and none of it is in effect where this edge points.
+    return "ambiguous"
   }
 
   /**
