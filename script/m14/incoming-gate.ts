@@ -568,6 +568,26 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   const projectDecl = new Map<string, Map<string, number>>()
   const projectKinds = new Map<string, Map<string, Set<string>>>()
   const rows = new Map<Type, Row>()
+  // FALLBACK ROWS, counted separately and NEVER folded into the columns above.
+  //
+  // `pool-worker.ts` emits relationships from `extractFallback()` — regex extraction used when a
+  // file's parse fails — carrying `metadata: { line, method: "regex" }` (`:372`, `:388`, `:414`).
+  // Those rows are NOT the analyzer's edges: they come from a different instrument, they are a
+  // property of the RUN (how many files aborted under load) rather than of the language, and a
+  // fallback row rarely resolves — so counting them INFLATES the residual and DEFLATES every rate.
+  //
+  // Found by markdown-lane, which followed ontology-coverage-gate.ts:945-956's `DEGRADED (regex
+  // fallback, not the analyzer)` and measured 5,452 of its 15,525 residual as fallback rows
+  // (`calls` 5,528 + `instantiates` 399) on a lane whose analyzer emits NEITHER type and whose
+  // sequential census read `calls 0 · instantiates 0 · 0 degraded` — while this gate's own run
+  // logged 9,057 `Aborted()` wasm parse errors and silently retried.
+  //
+  // THIS IS A SEPARATE MAP ON PURPOSE. `residual-gate.ts` parses TABLE 1 POSITIONALLY, so inserting
+  // a column would shift every field after it — the exact defect fixed in `05bf9953d` and
+  // `085317cea`. The count is therefore reported in its own block, and the columns above keep both
+  // their order and their meaning: they are the ALL-IN figure, and the block states how much of it
+  // is a different instrument's.
+  const fallbackRows = new Map<Type, number>()
   for (const t of ALL_TYPES) {
     rows.set(t, { type: t, edges: 0, project: emptyOutcomes(), pooled: emptyOutcomes(), marks: new Map(), intent: emptyIntent() })
   }
@@ -776,6 +796,12 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // mechanism reads — `externalClaimOf` decides from the KEY that marked an edge, not from
       // the shape of its target — so the table it feeds is a worklist of markers a rule could
       // act on, not a second opinion about the counts above.
+      // The row is still COUNTED above — this only records how much of that count is not the
+      // analyzer's. Excluding it silently would be worse than counting it: a reader could no longer
+      // reproduce the published figure.
+      if (String((rel as any)?.metadata?.method ?? "") === "regex") {
+        fallbackRows.set(label, (fallbackRows.get(label) ?? 0) + 1)
+      }
       const md = (rel as any)?.metadata ?? {}
       const markKeys = Object.keys(md).filter(
         (k) => k !== "evidenceClass" && k !== "analysisVersion" && md[k] !== false && md[k] != null,
@@ -862,7 +888,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   for (const m of projectDecl.values()) scanSeparator(m.keys())
 
   return {
-    lang, ext: exts.join(","), admittedExts: exts, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, rows,
+    lang, ext: exts.join(","), admittedExts: exts, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, rows, fallbackRows,
     bindingSpelling: { separator: BINDING_SEP, keys: separatorKeys, examples: separatorExamples },
     // THE EXCLUSIONS TRAVEL WITH THE POPULATION. A reader comparing two runs has to be able
     // to see whether the population moved under them, and a lane returning to a number it
@@ -1501,6 +1527,33 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     `resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + ` +
     `causeOK + causeFAIL = the edge count, exactly.`,
   )
+  // FALLBACK ROWS — reported because they are IN the columns above and are NOT the analyzer's.
+  {
+    const fb = (rep as any).fallbackRows as Map<string, number> | undefined
+    const totalFb = fb ? [...fb.values()].reduce((a, b) => a + b, 0) : 0
+    if (totalFb > 0) {
+      console.log()
+      console.log(
+        `FALLBACK ROWS — ${totalFb} of the ${v.edges} edges above came from pool-worker.ts's ` +
+        `extractFallback() (metadata { method: "regex" }), NOT from the analyzer:`,
+      )
+      for (const [t, n] of [...(fb ?? new Map()).entries()].sort((a, b) => b[1] - a[1])) {
+        console.log(`  ${String(t).padEnd(14)} ${String(n).padStart(9)} fallback row(s)`)
+      }
+      console.log(
+        `  They are COUNTED above rather than removed, so the published figure stays reproducible — ` +
+        `but a fallback row comes from a different instrument than the analyzer, it is a property of ` +
+        `THE RUN (how many files aborted under load) rather than of the language, and it rarely ` +
+        `resolves, so it INFLATES the residual and DEFLATES every rate.`,
+      )
+      console.log(
+        `  >>> DEDUCT ${totalFb} FROM THE RESIDUAL, AND FROM THE EDGE COUNT, BEFORE COMPARING THIS ` +
+        `TABLE WITH ANOTHER RUN. A lane whose analyzer does not emit a type at all can still show ` +
+        `one here: markdown measured 5,452 of its 15,525 residual as fallback rows (calls 5,528 + ` +
+        `instantiates 399), with a sequential census reading calls 0 · instantiates 0 · 0 degraded.`,
+      )
+    }
+  }
   // THE POPULATION HALF OF THE BINDING CLAIM. A per-edge verification of the spelling is
   // only honest while the separator really is unspeakable as a name here, and that is a fact
   // about the key space — asserted once, over the finished space, because the walk classifies
