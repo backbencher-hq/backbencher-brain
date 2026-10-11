@@ -585,6 +585,40 @@ than rounded off: the churn rate is 1.1-3.1% of rows while the class is 8.5% of 
 explains PART of it and the remainder still needs its own named classes; and only one repository was
 measured, so the rate is a rate and not a fleet total.
 
+### Cause 8 — the TWIN SPLIT: the ~11,000 are NOT mostly order artifacts
+
+The churn measurement said bindings move with index order; the twin split says HOW MUCH of the class
+that can touch. For every row whose own file does not answer, two questions are asked of the store: does
+a declaration exist SOMEWHERE in the project (a twin — order can move this binding), or NOWHERE (not an
+order artifact at all: an external name, or a target no declaration can answer).
+
+Thirteen of sixteen repositories banked when this was written (the resumable per-repo loop was still
+running; one JSON per repo, labelled — see the artifact), 1,575 indexer-eligible files, artefact
+`validation/m14/fixtures/hcl/store-binding-truth.twin-split.json`:
+
+| type | rows | other-file | unbound | **twin exists** | **no candidate anywhere** |
+|---|---|---|---|---|---|
+| contains | 74,517 | 1,091 | 27 | 0 | 0 |
+| references | 15,527 | 7,670 | 1,231 | **1,375** | **11,560** |
+| exports | 7,009 | 589 | 3 | 0 | 0 |
+| uses | 688 | 484 | 169 | 32 | 487 |
+| imports | 288 | 0 | 281 | 0 | 7 |
+| **total** | — | — | — | **1,407** | **12,054** |
+
+**The ~11,000 are therefore NOT predominantly order artifacts.** Only about 1,400 rows have a twin for
+the store's ordering to pick between — the population the measured 113/200/312 churn lives in — while
+~12,000 name a target that NO declaration anywhere answers. Those are two different ruled classes with
+different mechanisms, exactly as the Lead framed the split:
+
+* **twin exists (≈1,400)** — the store's write order decides which foreign declaration wins. A scoped
+  target removes the choice, and this is the class the determinism A/B can move.
+* **no candidate anywhere (≈12,000)** — no rename and no ordering change touches these: they are
+  external names (provider/data/module/variable roots) or attribute chains no analyzer in this
+  population declares. They need a CLAIM or an explicit rule, per class.
+
+LIMITS: thirteen of sixteen repositories (the remaining three were still indexing), and the split is a
+count over that population, not a fleet total.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
