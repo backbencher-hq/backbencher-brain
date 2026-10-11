@@ -1805,6 +1805,55 @@ matches. The itemized rows travel in `--json` as `nameSpelledDeclaredRows` (clas
 file, and whether that file declares the name in the store and in the analyzer's
 output), so the two zeros can be re-taken rather than re-argued.
 
+**The two zeros are ASSERTED, not only reported.** A draw can measure a class; it cannot
+assert one, and on a draw a `0` and a rule that stopped being evaluated are the same number —
+which is why `script/m14/verify-js-source-attribution.ts` builds a project whose answer is
+known BEFORE the run and reads the classification back through the real indexer: a file that
+declares `caller` and calls `helper` from it (the positive control — the store's insert-time
+same-file lookup must resolve a row inside that file), a local `const write = (text) => {…}` in
+a file that declares no `write`, and `lib/stranger.js`, which does. **12 checks, 12 pass, exit
+0**: A1–A3 the premises (the collision rows exist, a candidate exists, the row's own file
+publishes nothing of that name in either view), B1–B3 the refusal (NULL source, classified
+`other-files`, own file recovered from the id), B4/B5 the two zeros, B6 the closure over the
+fixture's NULL-source rows, B7/B8 the file-level half (the source IS the row's own path, and
+no raw `(file)` sentinel survived), B9 the control.
+
+**The rule lives in ONE module** — `script/m14/js-ontology/js-source-classification.ts` —
+because the instrument and the gate ask the same question of two different evidence bases
+(a 250-file draw's stored names, a fixture's known answer), and this lane has already paid
+for two copies of one rule: JSD44 measured a name register written out in four places, where
+correcting one left the other three refusing the names it had just admitted. The module also
+carries the engine-enumerated standard-library surface, which was pasted into two instruments
+before this round; `js-detached-triage.mts` and the store instrument now import it.
+
+**AND THE CLASS'S OWN LABEL WAS TOO STRONG, corrected in the same edit.** It printed `the
+resolver had same-file evidence and did not use it`, which explains a non-zero reading as an
+act of omission. The store DOES look — `nameToSymbol.get(sourceName) ??
+nameToSymbol.get(sourceLeaf)` at insert time — while the class is computed from `brain_symbol`
+READ BACK after the run. So a non-zero reading does not mean the lookup was skipped: it means
+the insert-time symbol set and the read-back symbol set DISAGREE about the row's own file,
+which is the shape a dropped or late-admitted symbol produces. That is what the printed label
+now says, and it is what the gate's B4 asserts.
+
+**FALSIFIED IN TWO INDEPENDENT ARMS, each restored byte-identically by sha256.** With the
+store's insert-time same-file source lookup neutralised (`parallel-indexer.ts`, the
+`sourceName` guard short-circuited; sha256
+`d60d633f1f14305afa38bd5925246297c4fc009cf96a29d448de718e52b1ab84` before and after) the gate
+reads **10 of 12**, failing exactly **B4** (`own-store`) and **B9** (the control) — the two
+checks that exist for that behaviour — with the collision checks A1/B1–B3 correctly
+unaffected, which is what makes the arms distinguishable rather than one blanket failure.
+With the row-id anchor recovery broken (`":rel:file:"` renamed inside the module; sha256
+`52fdd17007094d83b096a5c1e3540397bb129c0f58a21a026d6a7939b9911d2d`) it reads **8 of 12**,
+failing A1, B2, B3 and B7 — the anchor rule the entire classification rests on.
+
+**One defect found by writing the gate, recorded because it is this lane's second time**: the
+gate's summary line was TYPED (`10 of 10 checks`) while twelve checks executed — the same
+shape the binding gate shipped earlier in this milestone (a hardcoded `32 of 32` against 33
+running). The count is now taken from the checks that run, which is the only part of a gate
+nothing else can verify. A second defect was in the module: the file-level verdict did not
+carry the row's own file (the instrument never needed it; the gate's B7 does), found by B7
+failing on the gate's first run.
+
 **A gap this round's own verification found, recorded because a check has to be
 stated for what it covers.** `typecheck:scripts` compiles
 `script/m14/**/*.ts` — a glob that does **not** match `.mts`, so every `.mts`
@@ -1918,6 +1967,20 @@ Eight items, each measured at both ends:
    fixtures passed with the defect live) or a mutant that reverted it (the five
    older lane ids name other defect classes) — so the class survived a lane that had
    already closed the neighbouring one.
+
+9. **`js-ontology/js-source-classification.ts` + `verify-js-source-attribution.ts`, the
+   JSD48 round** — the outgoing classification moved into ONE module (the rule, the row-id
+   anchor recovery, and the engine-enumerated standard-library surface the two other
+   instruments had each pasted), and the two classes that must be empty are now ASSERTED on
+   a fixture whose answer is known before the run instead of only counted on a draw. The
+   gate is 12 checks, exit 0; both zeros fail when the behaviour behind them is removed
+   (10 of 12 with the insert-time lookup neutralised, 8 of 12 with the anchor recovery
+   broken — the failing checks are named in the reason-code subsection), and each arm was
+   restored byte-identically by sha256. Writing it found two defects of its own: a typed
+   summary count (twelve checks under a `10 of 10` line) and a module verdict that dropped
+   the row's own file on the file-level class. The same round retracted a claim from JSD47 —
+   the 11 rows it carried as "a source-side attachment the name pass did not make" are name
+   COLLISIONS with local bindings — see §"Incoming"'s reason-code subsection.
 
 `script/m14/verify-override-retarget.ts` gains the arm that pins the third seam: a
 row with `source_external` NULL and `source_symbol_id` pointing at

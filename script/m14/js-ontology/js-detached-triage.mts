@@ -46,6 +46,10 @@ import * as fs from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
 import { fileURLToPath } from "node:url"
+// The engine-enumerated standard-library surface is shared with the store instrument and the
+// source-attribution gate rather than re-pasted here: a pasted copy drifts and both copies
+// still look right on their own page (the JSD44 lesson, applied to this file's own list).
+import { ecmaStdlibNames } from "./js-source-classification"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const arg = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3)
@@ -82,40 +86,6 @@ function corpusFiles(): string[] {
   return out
 }
 
-/**
- * The ECMAScript standard library surface, enumerated from the RUNNING ENGINE: every own
- * property of every built-in prototype and constructor, plus every global. Same technique
- * as the store instrument, and for the same reason — the set is executed, not typed.
- */
-function ecmaStdlibNames(): Set<string> {
-  const names = new Set<string>()
-  const addAll = (o: any) => { if (o) for (const n of Object.getOwnPropertyNames(o)) names.add(n) }
-  for (const p of [
-    Object.prototype, Function.prototype, Array.prototype, String.prototype,
-    Number.prototype, Boolean.prototype, Symbol.prototype, BigInt.prototype,
-    Date.prototype, RegExp.prototype, Error.prototype, Promise.prototype,
-    Map.prototype, Set.prototype, WeakMap.prototype, WeakSet.prototype,
-    ArrayBuffer.prototype, DataView.prototype,
-  ]) addAll(p)
-  const ctorNames = [
-    "Object", "Function", "Array", "String", "Number", "Boolean", "Symbol", "BigInt",
-    "Date", "RegExp", "Error", "TypeError", "RangeError", "SyntaxError", "EvalError",
-    "ReferenceError", "URIError", "AggregateError", "Promise", "Map", "Set", "WeakMap",
-    "WeakSet", "WeakRef", "FinalizationRegistry", "JSON", "Math", "Reflect", "Proxy",
-    "ArrayBuffer", "SharedArrayBuffer", "DataView", "Int8Array", "Uint8Array",
-    "Uint8ClampedArray", "Int16Array", "Uint16Array", "Int32Array", "Uint32Array",
-    "Float32Array", "Float64Array", "BigInt64Array", "BigUint64Array", "Iterator",
-    "AsyncIterator", "Atomics", "Intl", "WebAssembly",
-  ]
-  for (const key of ctorNames) {
-    const v = (globalThis as any)[key]
-    if (!v) continue
-    addAll(v)
-    if (v.prototype) addAll(v.prototype)
-  }
-  addAll(globalThis)
-  return names
-}
 
 type CorpusIndex = {
   corpusRoot: string

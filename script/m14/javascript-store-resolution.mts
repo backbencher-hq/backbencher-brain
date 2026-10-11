@@ -73,6 +73,18 @@ import * as os from "node:os"
 import * as path from "node:path"
 import { execFileSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
+// The outgoing classification and the two enumerations it needs live in ONE module, because
+// the same rule is asserted by a gate (see the module's header): a rule written twice is a
+// rule that drifts (JSD44).
+import {
+  NAME_SPELLED_REASONS,
+  REASON_DECLARED_OTHER,
+  REASON_DECLARED_OWN_ANALYZER,
+  REASON_DECLARED_OWN_STORE,
+  classifyNullSourceRow,
+  ecmaStdlibNames,
+  ownFileOf,
+} from "./js-ontology/js-source-classification"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const arg = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3)
@@ -86,52 +98,6 @@ const TYPES = [
 ] as const
 
 const JS_EXTS = /\.(js|mjs|cjs)$/
-
-/**
- * The ECMAScript standard library surface, ENUMERATED FROM THE RUNNING ENGINE rather than
- * typed from memory: every own property of every built-in prototype, every static member
- * of every built-in constructor, and every global. The list is a by-product of executing
- * this program, so it cannot rot into a stale hand-copy, and "is this name part of the
- * language's standard library" becomes a question the runtime answers.
- *
- * It is deliberately the ENGINE's surface and not a specification scrape. A name this set
- * does not contain is not thereby "not standard" — it is simply not adjudicated here, and
- * the report keeps the two apart rather than implying the second from the first.
- */
-function ecmaStdlibNames(): Set<string> {
-  const names = new Set<string>()
-  const addAll = (o: any) => { if (o) for (const n of Object.getOwnPropertyNames(o)) names.add(n) }
-  const protos = [
-    Object.prototype, Function.prototype, Array.prototype, String.prototype,
-    Number.prototype, Boolean.prototype, Symbol.prototype, BigInt.prototype,
-    Date.prototype, RegExp.prototype, Error.prototype, Promise.prototype,
-    Map.prototype, Set.prototype, WeakMap.prototype, WeakSet.prototype,
-    ArrayBuffer.prototype, DataView.prototype,
-  ]
-  for (const p of protos) addAll(p)
-  // Read the constructors by NAME off the global object rather than by bare reference:
-  // `AsyncIterator` is not a global in every engine, and a bare reference to a missing
-  // one throws here rather than measuring anything. A name the engine does not define is
-  // simply absent from the set.
-  const ctorNames = [
-    "Object", "Function", "Array", "String", "Number", "Boolean", "Symbol", "BigInt",
-    "Date", "RegExp", "Error", "TypeError", "RangeError", "SyntaxError", "EvalError",
-    "ReferenceError", "URIError", "AggregateError", "Promise", "Map", "Set", "WeakMap",
-    "WeakSet", "WeakRef", "FinalizationRegistry", "JSON", "Math", "Reflect", "Proxy",
-    "ArrayBuffer", "SharedArrayBuffer", "DataView", "Int8Array", "Uint8Array",
-    "Uint8ClampedArray", "Int16Array", "Uint16Array", "Int32Array", "Uint32Array",
-    "Float32Array", "Float64Array", "BigInt64Array", "BigUint64Array", "Iterator",
-    "AsyncIterator", "Atomics", "Intl", "WebAssembly",
-  ]
-  for (const key of ctorNames) {
-    const v = (globalThis as any)[key]
-    if (!v) continue
-    addAll(v)
-    if (v.prototype) addAll(v.prototype)
-  }
-  addAll(globalThis)
-  return names
-}
 
 /** git-tracked js-family files under one corpus, size-capped, sorted (deterministic). */
 function admitted(): string[] {
@@ -530,26 +496,6 @@ async function main() {
   // membership test is against the sample's own path set, so it cannot be satisfied by a
   // name, and a path-spelled source is not something a name-spelling analyzer produces.
   const samplePaths = new Set(declAtLine.keys())
-  /**
-   * The ROW's own file, recovered from its id.
-   *
-   * `storeResults` builds a row id as `<projectId>:rel:<anchor>:<target>:<type>:<line>`, and
-   * `<anchor>` is `file:<relativePath>` exactly when the source did NOT resolve to a symbol
-   * (the M14/JS file-level wave). So a NULL-source row still names its file — which is the
-   * one fact the outgoing classification below needs and cannot otherwise get, because a
-   * row with no source symbol has no `brain_file` join either. The path is recovered by
-   * LONGEST-PREFIX match against the sample's own path set rather than by splitting on `:`,
-   * because the target that follows the path is itself allowed to contain colons.
-   */
-  const ownFileOf = (id: string): string => {
-    const marker = ":rel:file:"
-    const at = id.indexOf(marker)
-    if (at < 0) return ""
-    const after = id.slice(at + marker.length)
-    let best = ""
-    for (const p of samplePaths) if (after.startsWith(p + ":") && p.length > best.length) best = p
-    return best
-  }
   const danglingTop = new Map<string, number>()
   const nameSpelledTop = new Map<string, number>()
   const fileLevelByType = new Map<string, number>()
@@ -571,39 +517,33 @@ async function main() {
   // construction, so every row of them is kept and printed with the evidence the decision
   // needs rather than summarized away.
   const declaredRows: any[] = []
-  const REASON_KEYWORD = "a keyword actor (this/super) — refused by the name register, so it can never be a symbol row"
-  const REASON_DECLARED_OWN_STORE = "the row's OWN file declares it IN THE STORE — the resolver had same-file evidence and did not use it (this is the miss; must be 0)"
-  const REASON_DECLARED_OWN_ANALYZER = "the row's OWN file declares it in the ANALYZER's output but publishes no such symbol — a store-path drop, not a resolver miss"
-  const REASON_DECLARED_OTHER = "declared only in OTHER files of the sample — a name COLLISION with an unrelated symbol; attaching would be a wrong-file lie"
-  const REASON_STDLIB = "an ECMAScript standard-library member name — no project file declares it by construction"
-  const REASON_NEITHER = "neither — an external surface (DOM/node/browser) or a local binding the language does not publish"
   for (const r of relRows) {
     if (r.sid != null) continue
     const src = String(r.src ?? "(null)")
     const key = `${String(r.t).padEnd(12)} ${src}`
-    danglingTop.set(key, (danglingTop.get(key) ?? 0) + 1)
-    if (src === "(file)") sentinelRows++
-    if (samplePaths.has(src)) {
+    danglingTop.set(key, (danglingTop.get(key) ?? 0) + 1)      // ONE RULE, ONE PLACE: the classification below is the shared module's, so the gate that
+    // asserts this class on a known fixture and this instrument that counts it on a draw
+    // cannot drift apart. `analyzerNamesByFile` is `declAtLine` — the names the ANALYZER
+    // published per file, which is the neighbouring view of the store's own symbol set.
+    const verdict = classifyNullSourceRow({
+      source: src,
+      id: String(r.id ?? ""),
+      samplePaths,
+      storedNamesByFile,
+      analyzerNamesByFile: declAtLine,
+      storedNamesAnywhere,
+      stdlib: std,
+    })
+    if (verdict.cls === "sentinel") sentinelRows++
+    if (verdict.cls === "file-level") {
       fileLevelRows++
       fileLevelByType.set(String(r.t), (fileLevelByType.get(String(r.t)) ?? 0) + 1)
       continue
     }
     nameSpelledRows++
     nameSpelledTop.set(key, (nameSpelledTop.get(key) ?? 0) + 1)
-    // The three declared readings, decided by the row's own file: STORE-declared there (the
-    // resolver's own miss), ANALYZER-only there (the store dropped it), or declared only
-    // elsewhere (a collision). A row whose id carries no file cannot be read either way, and
-    // it falls to OTHER with `ownFile === ""` — which the itemization prints.
-    const ownFile = ownFileOf(String(r.id ?? ""))
-    const reason = src === "this" || src === "super"
-      ? REASON_KEYWORD
-      : !storedNamesAnywhere.has(src)
-        ? (std.has(src) ? REASON_STDLIB : REASON_NEITHER)
-        : (storedNamesByFile.get(ownFile)?.has(src)
-          ? REASON_DECLARED_OWN_STORE
-          : (declAtLine.get(ownFile)?.has(src) ? REASON_DECLARED_OWN_ANALYZER : REASON_DECLARED_OTHER))
-    if (reason === REASON_DECLARED_OWN_STORE || reason === REASON_DECLARED_OWN_ANALYZER || reason === REASON_DECLARED_OTHER) declaredRows.push(r)
-    nameSpelledReason.set(reason, (nameSpelledReason.get(reason) ?? 0) + 1)
+    if (verdict.reason === REASON_DECLARED_OWN_STORE || verdict.reason === REASON_DECLARED_OWN_ANALYZER || verdict.reason === REASON_DECLARED_OTHER) declaredRows.push(r)
+    nameSpelledReason.set(verdict.reason, (nameSpelledReason.get(verdict.reason) ?? 0) + 1)
   }
   console.log(`\nOUTGOING SPLIT — source_symbol_id NULL, ${T.nullSource} row(s), two populations that mean opposite things:`)
   console.log(`  FILE-LEVEL  source_external IS this row's project-relative path (attributed) : ${fileLevelRows}`)
@@ -625,7 +565,7 @@ async function main() {
   // from the table reads as "no rows" whether it means "none found" or "no longer computed".
   // The rows are the evidence; the zeros are the evidence that the check ran.
   let nsClassified = 0
-  for (const reason of [REASON_KEYWORD, REASON_DECLARED_OWN_STORE, REASON_DECLARED_OWN_ANALYZER, REASON_DECLARED_OTHER, REASON_STDLIB, REASON_NEITHER]) {
+  for (const reason of NAME_SPELLED_REASONS) {
     const c = nameSpelledReason.get(reason) ?? 0
     nsClassified += c
     console.log(`    ${String(c).padStart(6)}  ${reason}`)
@@ -645,7 +585,7 @@ async function main() {
       // test against the sample's own path set, not a split on ":": the TARGET that
       // follows the path may itself contain colons (`./errors.js:CompileError`), so the
       // last-segment arithmetic a split would use truncates the path.
-      const ownFile = ownFileOf(String(r.id ?? ""))
+      const ownFile = ownFileOf(String(r.id ?? ""), samplePaths)
       const inStore = storedNamesByFile.get(ownFile)?.has(String(r.src)) ?? false
       const inAnalyzer = declAtLine.get(ownFile)?.has(String(r.src)) ?? false
       console.log(`      ROW FILE     ${ownFile || "(the id names no file — a row from before the file-level wave)"}`)
@@ -972,14 +912,13 @@ async function main() {
         // stopped emitting it are the same JSON, and a consumer would read the second as
         // the first. Zero stays zero, explicitly.
         nameSpelledByReason: Object.fromEntries(
-          [REASON_KEYWORD, REASON_DECLARED_OWN_STORE, REASON_DECLARED_OWN_ANALYZER, REASON_DECLARED_OTHER, REASON_STDLIB, REASON_NEITHER]
-            .map((k) => [k, nameSpelledReason.get(k) ?? 0]),
+          NAME_SPELLED_REASONS.map((k) => [k, nameSpelledReason.get(k) ?? 0]),
         ),
         // The DECLARED class is the one that needs a reader's judgement rather than a
         // count, so its rows travel with the artifact: label, source, target, the file and
         // line the row sits at, how many sample files declare the name, and the metadata.
         nameSpelledDeclaredRows: declaredRows.map((r) => {
-          const ownFile = ownFileOf(String(r.id ?? ""))
+          const ownFile = ownFileOf(String(r.id ?? ""), samplePaths)
           const inStore = storedNamesByFile.get(ownFile)?.has(String(r.src)) ?? false
           const inAnalyzer = declAtLine.get(ownFile)?.has(String(r.src)) ?? false
           return {
