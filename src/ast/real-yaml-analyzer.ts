@@ -1864,8 +1864,12 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** The two spellings a sibling manifest declares: `kind:` at column 0, and `name:` inside a
    *  top-level `metadata:` block. Anchored, so a nested pod-template `metadata.name` is not read as
-   *  the document's own. */
-  private static declaresResource(text: string, kind: string, name: string): boolean {
+   *  the document's own.
+   *
+   *  NOT PRIVATE, and the reason is a measurement rather than convenience: the question "does this
+   *  text filter produce the same CANDIDATE SET a parse would?" can only be answered against the
+   *  filter that actually runs, and a probe carrying its own copy would be testing the copy. */
+  static declaresResource(text: string, kind: string, name: string): boolean {
     const kindMatch = text.match(/^kind:[ \t]*["']?([A-Za-z][\w.-]*)["']?[ \t]*$/m)
     if (kindMatch === null || kindMatch[1] !== kind) return false
     const meta = text.search(/^metadata:[ \t]*$/m)
