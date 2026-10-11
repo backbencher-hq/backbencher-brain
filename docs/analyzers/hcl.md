@@ -1204,6 +1204,43 @@ the thresholds above into the artefact's first lines BEFORE the run, as was done
 possible-evidence, not proof, and a nim import written through a computed path matches nothing — those
 rows land in UNREACHABLE, which is why the negative control is the bucket to read beside the share.
 
+### Cause 25 — the PER-ROW predicate LANDED: 0 of 2,132, so the direction is earned on TWO languages
+
+The Lead ran the per-row name-text predicate under his own lease (400-file nim draw), with the instrument's
+`sha256` verified against the declared `a6688e4f5f12189724b1545a9231f2b0fff53e83898a51dab37f8e021bb093e6`
+BEFORE the run and the thresholds quoted into the artefact's first lines, so the run measured the
+committed instrument and nothing else:
+
+```
+TWIN BUCKETS (pre-registered): REACHABLE 0 · UNREACHABLE 2,132 · UNDECIDABLE 0
+share = 0 / 2,132 = 0.0%      (NOT 0/0 — both sides of the ratio are real numbers)
+```
+
+**0.0% ≤ 40% → "TWINS ARE WRONG" STANDS, and the pre-registered consequence follows: the direction is
+earned on TWO languages — nim 0.0% and clean 32.1%, both under the floor — not one.** The third predicate
+succeeded where the pre-registration said there would be no fourth; it did not need one, and the stop was
+written before it was known whether it would be needed.
+
+**TWO TRUE STATEMENTS, AND THEY ARE NOT THE SAME STATEMENT** (the distinction fixed before the run):
+* **"0 of 2,132 twins bind to a file that a BOUND import reaches"** — REACHABLE required a bound import row
+  whose target file IS the twin's bound file, the only case that is evidence rather than possibility, and
+  it held **0 times**. That is a strong, decidable fact.
+* **"all 2,132 are unreachable"** — bounded by the name-text test, **in the direction that inflates
+  UNREACHABLE**, because a nim import written through a computed path matches nothing.
+
+Also read from the same artefact: `no candidate ANYWHERE 0` · **`NAME-SPACE LEVER PRICE 0`** (no row whose
+own file answers to the target while the store bound elsewhere or nowhere) · `scopedWouldMove 0` from the
+earlier run — **so nim has NO ignored-own-declaration defect at all: its twins are entirely OTHER-FILE
+bindings whose source cannot reach them.** And `boundNeedsLeafReduction 5` against hcl's 12,014 confirms
+why nim was the strongest population for this test — and why its earlier 100% undecidable reading was a
+property of that predicate rather than of the corpus.
+
+**THIS PAGE'S OWN LEDGER, corrected twice by measurement rather than by argument**: the headline claim
+"two languages and four repositories" was retracted when the second predicate returned 0/0 (Cause 23) and
+is now **restored by a better measurement** — nim 0.0% (0 of 2,132) and clean 32.1% (625 of 1,950) — with
+the margin still NOT earned as a fleet statement, `UNDECIDABLE` still not portable, and a bare `twin`
+column still not readable as a defect count anywhere.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
