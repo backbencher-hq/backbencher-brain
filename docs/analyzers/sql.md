@@ -69,6 +69,44 @@ three the block had placed outside `implemented`** — `imports`, `overrides`, a
 Artifacts: `validation/m14/fixtures/sql/whole-corpus-typing.txt` (raw instrument output) and
 `whole-corpus-typing.json` (machine-readable per-type table, populations, sha256s).
 
+### 2.1 THE CROSS-TAB — a second instrument, and a defect it found in itself
+
+`validation/m14/fixtures/sql/lane-census.ts` measures firing a different way: it walks the tree
+**itself** and counts **construct sites** per type, so agreement with the gate is two methods, one
+answer rather than one method twice. Run over the pooled corpus root, it reproduced the decisive
+fact — **`imports`, `overrides` and `instantiates` all fire** — and then disagreed with the gate on
+the TOTAL by **1.9×**, which is the part worth recording:
+
+| | files | TOTAL edges | calls | uses | contains | references | imports | overrides | instantiates |
+|---|---|---|---|---|---|---|---|---|---|
+| census **before** the fix | 1,526 | 16,273 | 1,975 | 6,740 | 5,400 | 2,092 | 38 | 7 | 21 |
+| census **after** the fix | 1,965 | 31,051 | 3,873 | 9,106 | 12,024 | 5,966 | **53** | **8** | **21** |
+| incoming gate (TABLE 1) | 1,964 | 31,297 | 3,908 | 9,160 | 12,132 | 6,015 | **53** | **8** | **21** |
+
+**CAUSE, MEASURED: `repositories/proxicall` is a SYMLINK** (`proxicall -> $HOME/ProxiCall`)
+and the census's `walk` tested `readdirSync(…, { withFileTypes: true }).isDirectory()`, which is
+**false for a symlink**, so it dropped **439 `.sql` files — 22.3% of the 1,965-file population and
+~48% of its edges — in silence**. Every "pooled, whole corpus" figure this instrument had produced
+(`lane-census-pooled.json`, 1,526 files — quoted by this spec's own `gap` prose and by SQL-D11/D12/
+D13/D24) was short by **one entire repository**. The corpus root holds exactly one such symlink;
+180 symlinked directories in total are now followed, counted and printed.
+
+**Fix, and the before/after is over the SAME population**: the walk follows a symlinked directory
+and counts it (`CAP` also aligned to the engine's own `FULL_AST_LIMIT` 1,048,576 — on this corpus no
+file moves, measured). Nothing else changed: **1,526 → 1,965 files, 16,273 → 31,051 edges.** The
+1,526-file artifact is preserved, stamped `_WITHDRAWN` inline, as
+`lane-census-pooled.SUPERSEDED-1526-files.json`.
+
+**The cross-tab now reads: `imports` 53 = 53, `overrides` 8 = 8, `instantiates` 21 = 21 — EXACT**,
+and every other type is within 0.9% (TOTAL within 0.8%), the residual being the two paths (this
+census calls `parser.parse` + `analyze()`; the gate and firing instruments call `engine.parseFile`)
+plus a 1-file admission difference. One site-to-edge check is exact where it can be:
+`importsPsql` 22 + `importsExtension` 31 = **53 sites → 53 edges**.
+
+**This is the programme's own defect class aimed at this lane's instrument** — an instrument that
+MISREPORTED rather than refused — and it is the reason every number in §2 is quoted from the gate
+and cross-checked, not from the census alone.
+
 ---
 
 ## 3. THE DECLARATION, AND ITS ARITHMETIC
@@ -189,6 +227,9 @@ column is **424 higher, which is exactly this run's `collRes`**: the log was wri
     fixtures                npx tsx script/m14/run-fixtures.ts --lang sql
     grammar inventory       npx tsx validation/m14/fixtures/sql/grammar-node-inventory.mts
     zero-claim keywords     git -C <repo> grep -liE '<pattern>' -- '*.sql'   (all 20 repos, with a control)
+    second instrument       CENSUS_OUT=<path> bun validation/m14/fixtures/sql/lane-census.ts \
+                              $HOME/fixtures/repositories 0 --pools
+                            (its printed `walk:` line names how many SYMLINKED directories it followed)
 
 **Fixtures, verbatim:** `summary: {"sql":{"pass":17,"fail":0}}` ·
 `fixture baseline gate: no regressions` · `all fixtures pass`.
@@ -210,9 +251,11 @@ distinguished from "running" rather than assumed).
    whole-population run (6,015 edges over 1,964 files, 1 over duckdb). It must not be quoted again
    without its own population.
 3. **`instantiates` sizing instruments** (`instantiates-sizing.ts`, `instantiates-sizing-pooled.txt`)
-   predate this run and were not re-run here; their 36-sites → 21-edges funnel is consistent with
-   the 21 edges measured above but is a **different instrument** and is cited as SQL-D24's, not
-   as this page's.
+   predate this run and were **not** re-run here; their 36-constructions → 21-edges funnel is
+   consistent with the 21 edges both instruments above measure, and it is cited as SQL-D24's, not
+   as this page's. The census's own precise counter reads `instantiatesCtor 184 site(s) in 35
+   file(s)` — a different predicate (every `cast` carrying a `custom_type` FIELD) and therefore a
+   different denominator, which is why the two are quoted separately.
 4. **`docs/analyzers/real-sql-analyzer.md`** is the M60-wave doc and is **not** this lane's record;
    it is outside this lane's write scope. Lane records live at `docs/analyzers/<lane>.md`
    (`hcl.md`, `r.md`, `markdown.md`), which is why this file exists.
