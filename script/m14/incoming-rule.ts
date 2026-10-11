@@ -865,7 +865,30 @@ export type Outcomes = {
    * `externalRefuted`, so no other bucket can crowd it out.
    */
   refutedNames: { name: string; type: string }[]
+  /**
+   * HOW MANY NAMES THE CAP DISCARDED, per bucket — because a capped list that does not say how much it
+   * dropped cannot be read as a worklist.
+   *
+   * scss-lane measured the consequence directly: `imports` 297 → 25, `references` **1,501 → 25**,
+   * `exports` 983 → **25** — every type over 25 listed exactly 25 names — while the worklist header
+   * said only "counts sampled per type", which tells a reader that a type's ABSENCE is not a zero but
+   * **never says how many names are hidden.** A lane sizing its work from that list reads 25 against
+   * 1,501 and cannot tell the difference.
+   *
+   * The cap stays: it is what stops one pathological name (a stdlib function used 40,000 times) from
+   * producing a 40,000-line report, and that is a real protection. What changes is that the omission is
+   * COUNTED and printed beside the list, so the list stops being silently partial. This is the same
+   * remedy as the marker table's `⋯ OMITTED` row, applied to the other table that has a cap.
+   */
+  namesOmitted: { ambiguous: number; unresolved: number; refuted: number; cause: number }
 }
+
+/**
+ * THE NAME CAP, NAMED ONCE. It was a bare `25` written in EIGHT places across `tally`, which is the
+ * "one rule, two spellings" hazard this programme keeps paying for — and worse here, because a bare
+ * literal in eight places cannot be grepped as a rule and cannot be reported as one.
+ */
+export const NAME_CAP = 25
 
 export const emptyOutcomes = (): Outcomes => ({
   resolved: 0, resolvedAmongCollision: 0, ambiguousByDecl: 0, ambiguousByKind: 0, unresolved: 0,
@@ -874,7 +897,30 @@ export const emptyOutcomes = (): Outcomes => ({
   bindingVerified: 0, bindingRefuted: 0, bindingUnverified: 0,
   causeDeclared: 0, causeRefuted: 0,
   ambiguousNames: [], unresolvedNames: [], refutedNames: [], causeNames: [],
+  namesOmitted: { ambiguous: 0, unresolved: 0, refuted: 0, cause: 0 },
 })
+
+/**
+ * PUSH, OR COUNT WHAT WAS DROPPED. Every call site goes through this so a capped list can never again
+ * be silently partial: either the entry is kept, or the bucket's omission counter is incremented and
+ * the caller can print the difference.
+ *
+ * AND A DUPLICATE IS NOT A NAME. `tally` is called once per SCOPE, so the same target legitimately
+ * arrives again for every project that contains it — measured on the CLEAN lane, the smallest corpus in
+ * the programme: `force` printed three times in a row, `offside` three times, `SP.callProcess` and
+ * `World` and `StdEnv:*` twice each. The cap was therefore spending itself on repeats, and "25
+ * collected" was not 25 names. A worklist exists to name the things to work on; the same name twice is
+ * not a second thing. De-duplication does NOT count as an omission — the name is already represented —
+ * so `namesOmitted` continues to mean "distinct names that did not fit", which is the number a reader
+ * needs.
+ */
+function keep<T extends { name: string }>(
+  out: Outcomes, bucket: keyof Outcomes["namesOmitted"], list: T[], entry: T,
+): void {
+  if (list.some((e) => e.name === entry.name)) return
+  if (list.length < NAME_CAP) list.push(entry)
+  else out.namesOmitted[bucket]++
+}
 
 /**
  * COUNT IT WHERE IT BELONGS — one rule, called once per scope, so the two columns can never
@@ -893,9 +939,7 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
     case "ambBoth":
       out.ambiguousByDecl++
       if (c.outcome === "ambBoth") out.ambiguousByKind++
-      if (out.ambiguousNames.length < 25) {
-        out.ambiguousNames.push({ name: tgt, declarations: c.decls, kinds: c.kinds })
-      }
+      keep(out, "ambiguous", out.ambiguousNames, { name: tgt, declarations: c.decls, kinds: c.kinds })
       break
     case "externalVerified":
       out.markedExternal++
@@ -917,12 +961,10 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
       // NOT `unresolved` (that column means "carries no claim at all") and NOT clean. It is
       // the one outcome that says the SPELLING is wrong, and the verdict counts it as bad.
       out.bindingRefuted++
-      if (out.unresolvedNames.length < 25) {
-        out.unresolvedNames.push({
-          name: `${tgt}   [binding claim REFUTED — the target can name a declaration]`,
-          type: label,
-        })
-      }
+      keep(out, "unresolved", out.unresolvedNames, {
+        name: `${tgt}   [binding claim REFUTED — the target can name a declaration]`,
+        type: label,
+      })
       break
     case "externalRefuted":
       // NOT `unresolved` (that column means "carries no external claim") and NOT clean
@@ -933,20 +975,18 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
       // INTO ITS OWN LIST FIRST, so the cap below can never be the reason a refuted claim is
       // invisible. Both lists are kept: `unresolvedNames` goes to the worklist that orders by
       // type, and this one is printed whole by the report.
-      if (out.refutedNames.length < 25) out.refutedNames.push({ name: tgt, type: label })
-      if (out.unresolvedNames.length < 25) {
-        out.unresolvedNames.push({
-          name: `${tgt}   [external claim REFUTED — the population publishes ${targetOwner(tgt)}]`,
-          type: label,
-        })
-      }
+      keep(out, "refuted", out.refutedNames, { name: tgt, type: label })
+      keep(out, "unresolved", out.unresolvedNames, {
+        name: `${tgt}   [external claim REFUTED — the population publishes ${targetOwner(tgt)}]`,
+        type: label,
+      })
       break
     case "causeDeclared":
       // ITS OWN COLUMN, and never `resolved` — nothing was resolved. The lane reports it
       // beside `bindingVerified` so a reader sees how much of the graph rests on a stated
       // cause, which is the opposite of what folding it into a resolution number would do.
       out.causeDeclared++
-      if (out.causeNames.length < 25) out.causeNames.push({ name: tgt, type: label })
+      keep(out, "cause", out.causeNames, { name: tgt, type: label })
       break
     case "causeRefuted":
       // A CLAIM-INTEGRITY DEFECT, counted against the lane like every other refuted claim: the
@@ -954,15 +994,11 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
       // outside the population. It is NOT `unresolved` — that column means "carries no claim" —
       // and it is never clean.
       out.causeRefuted++
-      if (out.refutedNames.length < 25) {
-        out.refutedNames.push({ name: `${tgt}   [declared cause REFUTED]`, type: label })
-      }
-      if (out.unresolvedNames.length < 25) {
-        out.unresolvedNames.push({
-          name: `${tgt}   [declared cause REFUTED — the stated base is not this edge's own owner]`,
-          type: label,
-        })
-      }
+      keep(out, "refuted", out.refutedNames, { name: `${tgt}   [declared cause REFUTED]`, type: label })
+      keep(out, "unresolved", out.unresolvedNames, {
+        name: `${tgt}   [declared cause REFUTED — the stated base is not this edge's own owner]`,
+        type: label,
+      })
       break
     case "unresolved":
       out.unresolved++
@@ -971,7 +1007,7 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
       // it is not guaranteed to reproduce. This is the population rule applied to the
       // verdict itself, and it is capped per type so one pathological name (a
       // stdlib function used 40,000 times) cannot produce a 40,000-line report.
-      if (out.unresolvedNames.length < 25) out.unresolvedNames.push({ name: tgt, type: label })
+      keep(out, "unresolved", out.unresolvedNames, { name: tgt, type: label })
       break
   }
 }

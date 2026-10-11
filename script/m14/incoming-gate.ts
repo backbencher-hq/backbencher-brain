@@ -120,6 +120,7 @@ import { classifyEmptyResults } from "./empty-result-kind"
 // consumes it. Re-exported below so a caller of this module keeps working unchanged.
 import {
   EXTERNAL_KEYS, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
+  NAME_CAP,
   FILE_CLAIM_KEY, REMOTE_REF_CLAIM_KEY,
   emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY, isContainsEdge,
   type ExternalClaim, type ProjectFacts,
@@ -1939,6 +1940,30 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
         console.log(`    amb  ${w(a.name, 42)} ${a.declarations} declarations  [${a.kinds}]`)
       }
       for (const u of us.slice(0, 4)) console.log(`    unres  ${u.name}`)
+      // SHOW HOW MUCH OF THIS WORKLIST IS NOT BEING SHOWN. TWO caps stack here and NEITHER used to be
+      // disclosed: `tally` keeps at most NAME_CAP (25) names per bucket, and THIS loop prints at most
+      // 4 of them. scss-lane measured the visible end of it and could not see the rest — `imports`
+      // 297 → 25, `references` **1,501 → 25**, `exports` 983 → **25**, every type over 25 listing
+      // exactly 25 — and the header said only "counts sampled per type", which tells a reader that a
+      // type's ABSENCE is not a zero but **never says how many are hidden**. A lane sizing its work
+      // from that list reads 25 against 1,501 and cannot tell the difference.
+      //
+      // The caps STAY — they are what stops one pathological name from producing a 40,000-line report.
+      // What changes is that both omissions are now counted and printed, so the list stops being
+      // silently partial. Same remedy as the marker table's `⋯ OMITTED` row: a table that does not show
+      // its own closure is the defect, not the cap.
+      {
+        const om = rep.rows.get(type)?.project.namesOmitted
+        const ambCap = om?.ambiguous ?? 0
+        const unresCap = om?.unresolved ?? 0
+        console.log(
+          `    ^ amb: showing ${Math.min(as.length, 4)} of ${as.length} collected` +
+          (ambCap > 0 ? ` + **${ambCap} omitted by the ${NAME_CAP}-name cap and never collected**` : "") +
+          ` · unres: showing ${Math.min(us.length, 4)} of ${us.length} collected` +
+          (unresCap > 0 ? ` + **${unresCap} omitted by the cap**` : "") +
+          `. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.`,
+        )
+      }
     }
     console.log()
   }
