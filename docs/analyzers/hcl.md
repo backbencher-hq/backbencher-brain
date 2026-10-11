@@ -781,6 +781,44 @@ identifier's spelling. Two fixes, not one, and the boundary between them is now 
 LIMITS: thirteen of sixteen repositories (three still indexing; resumable), and the counts are over that
 population rather than a fleet total.
 
+### Cause 14 — the rename is AUTHORIZED for the 2,079 (not landed here), the 229 are handed over, and a FIFTH expectation joins the falsifier
+
+The decision: pay the rename for the rows whose mechanism it addresses — `exports` 589/589,
+`references` 606/606, `contains` 860 of 1,089 — and NOT for the 229, which are the resolver's population
+rather than the identifier's.
+
+**FIFTH EXPECTATION, added to the four-condition falsifier BEFORE the run** (so the run can fail): **the
+229 must NOT move.** They are the rows whose target spelling is already project-unique, where pass 1
+should have bound the own file and did not; a rename must leave them exactly where they are. If they
+move, the rename is doing something other than removing a duplicate and the mechanism measured above is
+refuted — that is a failure of the fix's justification, not a bonus.
+
+**THE 229 ARE HANDED OVER AS THE SHARED FIX'S TEST POPULATION**, isolated by this lane's own probe and
+identified by a predicate anyone can re-run (the instrument already computes both columns):
+
+```
+own-file:   EXISTS symbol x WHERE x.file_id = <edge's own file> AND (x.name = target OR x.qualified_name = target)
+project:    COUNT  symbol x WHERE x.project_id = <project>   AND (x.name = target OR x.qualified_name = target)
+the 229:    own-file EXISTS  AND  project COUNT = 1  AND  (target_symbol_id IS NULL OR target_symbol_id's file <> the edge's file)
+```
+
+That is a clean population for the shared fix because it removes every alternative explanation: the
+declaration exists, it is spelled exactly as the target, it is the ONLY declaration answering to that
+spelling in the project, and the row still bound elsewhere or nowhere. Four sightings of the same
+mechanism now point at it — xml's `calls` 138, this lane's ~12,054 no-candidate-anywhere rows, the
+order/eager churn (113/0/117 and 99), and these 229 — so the Lead takes the fix and this lane's
+contribution is the isolated population and its count.
+
+**STATUS, PLAINLY**: the rename is authorized and NOT landed by this lane in this budget. The acceptance
+items stand unchanged — one coherent edit (qname plus every self-path target together, since a scoped
+target against an unscoped qname binds nothing), the store pair over the same population with one
+labelled run each, monotonicity as a SAFETY property (`exports` never rode the tie-break: 0 under
+file-order reversal, 99 under eager-vs-deferred), the four-condition falsifier plus the fifth above, and
+the 269-pin fixture cost (12 files, 162 target + 107 source pins) paid in the same change. The
+consumer-visible cost is named and accepted: the public qualified name of every exported symbol changes,
+so a consumer holding an old spelling will not match it — a deliberate trade for determinacy, for the
+release note.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
