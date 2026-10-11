@@ -645,6 +645,44 @@ lane-wide rename, but not free). Alternatively the target may be scoped only whe
 already unique in the project. Recorded rather than landed: the choice between those two is a
 consumer-visible decision and belongs with the lane owner before the rename is paid at all.
 
+### Cause 10 — the LANE-WIDE qname scoping, PRICED from the store before it is paid (a projection, labelled)
+
+The Lead's decision: scope the SYMBOL qualified name (option A), because an identity that cannot
+distinguish two `s3`s cannot make a target determinate — but price it LANE-WIDE first, since a symbol's
+qname is what EVERY type's target must match. This is that price, computed from the store probe's own
+columns (`store-binding-truth.lever-price.json`, 15 of 16 repositories, labelled — one was KILLED):
+
+| type | store rows | already bound inside the own file | **would move to the own-file declaration** | other-file now | unbound now |
+|---|---|---|---|---|---|
+| contains | 98,899 | 96,273 | **2,462** | 2,462 | 164 |
+| references | 17,670 | 787 | **678** | 8,557 | 1,478 |
+| exports | 12,161 | 10,590 | **1,561** | 1,561 | 10 |
+| uses | 812 | 0 | **0** | 608 | 169 |
+| imports | 342 | 0 | **0** | 0 | 334 |
+| **total** | 129,941 | 107,683 | **4,725** | — | — |
+
+READING IT PER TYPE, which is the point of the price: **no type regresses in this projection** —
+`exports` gains exactly its 1,561, `contains` gains 2,462, `references` gains 678, `uses` and `imports`
+gain nothing (their targets are namespaces and module paths that no symbol qname can match, so scoping
+cannot change them either way).
+
+**WHY IT IS A PROJECTION AND NOT AN AFTER-MEASUREMENT, stated so it is not read as one:** it is derived
+from the store's OWN columns — "does a declaration in the edge's own file answer to the target" against
+"where the row actually bound" — not from a store run made after the rename. The after-run needs the
+analyzer change (scoped qname + targets scoped to match), which is the next item, and until it exists
+the 4,725 is the size of the population the change acts on, not a measured post-change binding count.
+A projection can also be wrong in the direction the Lead named: scoping qnames can change which rows
+pass 2 (unique-name) accepts, and only the after-run can show that.
+
+THE CONSUMER-VISIBLE CONSEQUENCE, named rather than left as a side effect: a scoped qname changes the
+PUBLIC qualified name of every exported symbol, so a consumer holding an old spelling will not match it.
+That is a deliberate trade for determinacy and it should appear in the lane's release note.
+
+AND WHAT THE FIX IS FOR, corrected by the arm data: a scoped target's value here is **exact-match
+determinacy**, NOT tie removal — `exports` churns on table COMPLETENESS (99 under eager-vs-deferred,
+0 under file-order reversal), so it was never riding the tie-break that scoping removes. The monotonicity
+assertion still holds (scoping cannot create a tie), but it is not the mechanism that fixes exports.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
