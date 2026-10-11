@@ -227,6 +227,18 @@
         "measuredBy": "npx tsx validation/m14/fixtures/php/tools/magic-constant-include-probe.mts and include-claim-crosstab.mts (production path; json's candidate arithmetic, the gate's admitted-file facts, and the filesystem test the analyzer gates on, cross-tabulated)",
         "artifact": ".tmp-php-magic2.log, .tmp-php-include-crosstab.log, .tmp-php-include-after.log",
         "control": "the cross-tab is EXACT in both directions. BEFORE the fix: 188 of the 208 paths carried a magic constant and **0 of them verified** — `__DIR__` kept as literal text is a string that can never match anything. AFTER resolving the constants in pure String and restricting candidates to `.php` — required rather than convenient, because the arbiter's facts hold admitted `.php` paths only — the cross-tab reads **verify 145, REFUTE 0**; the single disagreement the UNRESTRICTED set had was a `.inc` file that exists on disk and is not admitted, which is exactly what the extension rule removes. Whole-population verdict: imports unresolved 3,691 -> 3,544, extFAIL 0, resolved and ambiguous unchanged"
+      },
+      {
+        "id": "PHP-UNRESOLVED-EXTERNAL-NAMES",
+        "type": "incoming residual — the remainder beyond the four named boundaries, now partitioned and ruled by CLASS with its evidence grade stated",
+        "status": "RULED 2026-10-10, with a declared evidence grade rather than a clean bill",
+        "size": "**5,677** edges = 79,934 unresolved minus the four named boundaries (uses 52,917 + calls 21,279 + include-paths 61). Partition: **5,311 name nothing in the project** (imports 3,121, references 1,305, instantiates 528, implements 182, extends 179) and **366 name an FQN whose LEAF the project declares but whose namespace it does not** (all `imports`)",
+        "whyItIsOpen": "a per-file analyzer cannot know whether a name is outside the PROJECT (a vendor library) or a declaration it failed to publish. That is the same mechanism as PHP-UNRESOLVED-CALLS, applied to the types whose targets are class and interface names",
+        "whatWouldCloseIt": "an instrument that can name the project a declaration lives in (index-assisted), or the population admitting the vendored libraries. FALSIFIER: if such an instrument lands and this class does not fall, this ruling is refuted",
+        "measuredBy": "npx tsx validation/m14/fixtures/php/tools/residual-composition-probe.mts (production path; classify every unresolved edge into exactly one bucket, plus the two evidence splits below)",
+        "artifact": ".tmp-php-composition7.log",
+        "control": "**THE TWO DEFECT CLASSES ARE EMPTY**, which is what makes this a boundary rather than an omission: `builtin_unclaimed` **0** (every edge naming a PHP-internal symbol already carries its claim — a non-zero count here would be a missing claim) and `owner_provable` **0** (no unresolved edge is reachable by the owner-qualification rule — see the measurement note below). The 366 leaf matches are NOT the same class: **0 share the target's namespace, 366 are declarations of the same leaf in a DIFFERENT namespace**, i.e. a leaf coincidence and not a spelling defect",
+        "evidenceGrade": "STATED BECAUSE IT IS THE HONEST LIMIT, not a footnote: of the whole 79,934 unresolved, **32,482 (40.6%) are targeted from >= 2 independent repos that NEITHER declares** — external evidence — and **47,452 (59.4%) are targeted from exactly ONE repo**, which the lane doc already records as indistinguishable from a publication miss. Per class: uses 17,546 multi / 35,371 single · calls 13,422 / 7,857 · imports 699 / 2,422 · references 614 / 691 · instantiates 9 / 519 · extends 132 / 47 · implements 60 / 122"
       }
     ],
     "adjudicatedFromGaps": {

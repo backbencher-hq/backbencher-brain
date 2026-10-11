@@ -205,6 +205,94 @@ The lesson is a layer rule, and this lane paid for it twice: **measure on the pr
 same mistake produced the earlier 57,729-vs-52,917 discrepancy in the unresolved counts, which is
 explained entirely by `parseFile`'s normalization.
 
+## 5b. THE COMPLETION PACKAGE — the four clauses
+
+Every figure below states its LAYER: **GATE** = the incoming gate's key-space model
+(`script/m14/incoming-gate.ts`, whole admitted population, one run); **STORE** = a real store run
+(`ONE RUN` — the store's binding is order- and run-dependent, §5p); **PROBE** = the production path
+(`parseFile` from pool-worker) with the probe's own classifier.
+
+### Clause 1 — per-type residual, named cause, count, and the before/after or the falsifier
+
+| type | amb(decl) | unresolved | named cause | disposition |
+|---|---|---|---|---|
+| uses | 63,466 | 52,917 | bare member reads on receivers the tree does not type | **before/after**: owner-qualification moved **9,673** amb → resolved (`cd0c77546`); remainder RULED — `PHP-UNRESOLVED-USES`, falsifier: type resolution |
+| calls | 48,015 | 21,279 | same, plus the vendor API (PHPUnit) | **before/after**: **3,176** amb → resolved; remainder RULED — `PHP-UNRESOLVED-CALLS`, falsifier: a per-project instrument |
+| imports | 2,275 | 3,544 | include paths (`__DIR__`) + external FQNs | **before/after**: include class **3,691 → 3,544**, 147 claims, verify 145 / refute 0 (`703d0272f`); its 61 ruled — `PHP-INCLUDE-PATHS`; the other 3,483 are in the external-names ruling |
+| instantiates | 3,084 | 528 | class names; external classes | RULED — `PHP-UNRESOLVED-EXTERNAL-NAMES` |
+| references | 1,729 | 1,305 | interface/class names; external | RULED — same |
+| extends | 1,708 | 179 | base-class names; external bases | RULED — same |
+| implements | 228 | 182 | interface names; external | RULED — same |
+| exports | 14 | 0 | 58 edges total, all `intended` | not a defect |
+| overrides | 1 | 0 | 2 edges total | `PHP-CROSS-FILE-OVERRIDES` (PHPD39 boundary) |
+| contains | 0 | 0 | — | CLEAN |
+
+TOTAL residual 200,454 of 350,368 = **57.2%** (GATE).
+
+### Clause 2 — the three refutation columns
+
+`extFAIL` **0** · `bindFAIL` **0** · `causeFAIL` **0** (GATE, whole population). No edge in this lane
+makes a false statement about another repository.
+
+### Clause 3 — is the residual composed ENTIRELY of ruled classes?
+
+**NO as of the four boundaries, and the remainder is 5,677 edges** — 79,934 − (52,917 + 21,279 + 61).
+It is now partitioned and ruled (`PHP-UNRESOLVED-EXTERNAL-NAMES`, PROBE):
+
+| remainder | edges | evidence |
+|---|---|---|
+| name nothing in the project (imports 3,121, references 1,305, instantiates 528, implements 182, extends 179) | 5,311 | same mechanism as the calls boundary; 1,514 targeted from ≥ 2 repos, 3,797 from one |
+| FQN whose LEAF exists only in a DIFFERENT namespace | 366 | **0 same-namespace / 366 other** — a leaf coincidence, NOT a spelling defect |
+
+**And the honest limit, as a number rather than a caveat:** of all 79,934 unresolved, **32,482 (40.6%)
+are targeted from ≥ 2 independent repos that neither declares** — external evidence — and **47,452
+(59.4%) are targeted from exactly ONE repo**, which cannot be told apart from a declaration this
+analyzer failed to publish. That is the lane doc's own limit, carried forward rather than dropped.
+
+**The two classes that would indicate a DEFECT are empty** (PROBE): `builtin_unclaimed` **0** — every
+edge naming a PHP-internal symbol already carries its claim — and `owner_provable` **0**, below.
+
+### Clause 4 — the tie-break
+
+`ofWhich` (GATE, current revision): **`contains` 17,453**; every other type **0**. The gate's own
+legend calls `ofWhich` an UPPER BOUND on arbitrary bindings, not a count of them.
+
+For `contains` — the only type in `LINE_IS_TARGET_LINE` with a non-zero `ofWhich` — the **`intended`
+column reads 35,112 of 35,112 resolved and `twin` reads 0**: every containment resolution is own file
+AND own line, i.e. the #612 line pin decides it, and **none is an id tie-break pick**. `exports` reads
+58 of 58 intended. For the other types `intended` is 0 by construction (their edges are written at the
+call site, not at the target's declaration line) and `twin` counts a foreign declaration — which for
+those types is what a cross-document reference IS: a RISK, not proven wrongness, per the legend.
+Containment was not touched by this lane.
+
+### Clause 5 — is any of `PHP-UNRESOLVED-USES` 52,917 reachable by the owner-qualification rule?
+
+**Zero, and it is measured rather than characterised** (PROBE): `owner_provable` is **0** for every
+type, `uses` included. It is also zero BY CONSTRUCTION — the rule fires only where the file's own
+symbol table publishes `<owner>.<target>`, and that puts the bare name in the project key space, so an
+edge the rule could re-spell can never be unresolved. A non-zero count would have REFUTED the rule's
+completeness; the probe prints examples when it finds any and found none. The boundary therefore stands
+with `owner_provable 0` behind it rather than with the phrase "type-inference wall".
+
+### The store layer, and one correction to the fleet note
+
+`BB_DATA_DIR=$PWD/.tmp-php/bb-data npx tsx validation/m14/fixtures/php/owner-resolution-gate.mts` —
+**ALL GREEN on the current revision**, `ac2873f4a`'s five pins read against a store whose names carry
+the scope. **STORE, ONE RUN.**
+
+**php's member qualification is NOT `projectRoot`-dependent, and this gate is the measurement:**
+`owner-resolution-gate.mts` hands the analyzer **no context at all** (`ASTEngine.parseFile(f, content)`
+with no third argument), and the qualified spelling still lands — `goDirect -> GammaStore.persist`
+resolves to `GammaStore@alpha.php`. `publishMemberIdentity` derives `Owner.member` from the symbol's own
+`ownerName`. So `a82e4134d` did **not** make php's identity fix real for production — it already was.
+What IS root-gated here is the include-path claim (`claimResolvableIncludes` returns null without a
+root): before `a82e4134d` a worker would not have emitted those 147 claims; after it, it does.
+
+**Is there a store-side probe for the identity question?** For the owner channel and for the store's
+treatment of the qualified spelling, yes — the gate above. For the FULL-POPULATION identity claim,
+**no**: the whole-population figures in this package are the GATE's model and the PROBE's, and neither
+is a store run. Saying which layer a number came from is the point.
+
 ## 6. Instruments
 
 | instrument | what it answers |
