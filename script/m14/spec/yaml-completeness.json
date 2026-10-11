@@ -338,6 +338,7 @@
         "status": "RULED",
         "subject": "implements",
         "decision": "RULED — YAML has no construct that expresses interface satisfaction.",
+        "resolution": "NOT EMITTED, and the ruling is a GRAMMAR INVENTORY plus a KEY-SPACE probe rather than prose (this `resolution` key is what script/m14/ontology-coverage-gate.ts's `rulingFor` reads; until 2026-10-10 this decision carried only `decision`/`why`, so the arbiter found NO ruling source for implements and REFUSED to report the lane at all). YAML has no construct that expresses interface satisfaction: the wired grammar declares 36 named types (301 node-type ids) and NONE is a declaration of any kind — 0 of `class_declaration` / `interface_declaration` / `declaration` / `type_declaration` / `extends_clause` / `implements_clause` / `base_class_clause` is produced. The key space, which a node-type inventory cannot see, was probed at 18,368 distinct attribute keys over 296,009 sites; the 329 conformance-keyword sites (`implements`/`interface`/`protocol`/`trait`/`impl`/`conforms`/`satisfies`) are counted and excluded as DATA — a keyword key is a site only when the document also declares a type the relation names, and yaml has no type-declaration construct. Attested over node-types + block-types + attribute-keys by validation/m14/fixtures/yaml/ruling-attestation.json against artefact validation/m14/fixtures/yaml/ontology-census.json (0 construct sites).",
         "instrument": "A:grammar-inventory",
         "nodeTypesThatWouldMeanIt": [
           "class_declaration",
@@ -358,6 +359,7 @@
         "status": "RULED",
         "subject": "instantiates",
         "decision": "RULED — YAML has no construct that expresses construction of a value.",
+        "resolution": "NOT EMITTED (`instantiates`), and the ruling is a GRAMMAR INVENTORY plus a KEY-SPACE probe rather than prose (this `resolution` key is what script/m14/ontology-coverage-gate.ts's `rulingFor` reads, and it must spell the type name literally; see the note on YAML-D10). YAML has no construct that expresses construction of a value: 0 of `new_expression` / `object_creation` / `constructor_call` / `class_instance` / `instance` is among the wired grammar's 36 named types, and the inventory contains no construction form of any kind. The key space was probed at 18,368 distinct attribute keys over 296,009 sites; the 14 construction-keyword sites (`new`/`instantiate`/`newinstance`/`create`/`construct`/`clone`) are config DATA (`create: true` in a manifest, `create: x.yml` in a task), not construction. Attested over node-types + block-types + attribute-keys by validation/m14/fixtures/yaml/ruling-attestation.json against artefact validation/m14/fixtures/yaml/ontology-census.json (0 construct sites).",
         "instrument": "A:grammar-inventory",
         "nodeTypesThatWouldMeanIt": [
           "new_expression",
@@ -426,7 +428,9 @@
       "references",
       "imports",
       "extends",
-      "overrides"
+      "overrides",
+      "calls",
+      "exports"
     ],
     "excluded": [
       {
@@ -440,16 +444,18 @@
         "from": "YAML-D11: 'RULED — YAML has no construct that expresses construction of a value'; instrument A: 0 construction nodes, 0 tags with construction semantics"
       }
     ],
-    "corpusUnexercised": [
-      {
-        "label": "calls",
-        "proof": "YAML-D9 declares it EMITTED ('196 occurrences in 92 of the 16371 admitted yaml files'), but YAML-D14 measures the FIRING corpus: '`bun validation/m14/fixtures/yaml/lane-census.ts … 0` -> `calls 0 edges, 0 sites in 2,076 files`' — implemented, exercised only by validation/m14/fixtures/yaml/workflow-call-role"
+    "corpusUnexercised": [],
+    "_from": "8 implemented + 0 unexercised + 0 gaps = 8 applicable = 10 - 2 grammar-absence exclusions. UPDATED 2026-10-10: `calls` and `exports` moved from `corpusUnexercised` to `implemented` on a whole-population measurement -- see `_corpusUnexercised_retraction`, which keeps the two struck readings. The `6/8` the board read until this revision was an ansible-only sample counted as a corpus statement.",
+    "_corpusUnexercised_retraction": {
+      "_why": "This block listed `calls` and `exports` as `corpusUnexercised` until 2026-10-10, on the strength of ONE repository's census (`lane-census.ts` over ansible's 2,076 files: 'calls 0 edges, 0 sites in 2,076 files', 'exports 0 sites'). That is the exact defect `measured._description` warns about in this lane's own words -- 'a sample cannot certify absence and this lane has now been burned twice by assuming it could' -- and the WHOLE ADMITTED POPULATION contradicts it: `calls` 327 edges and `exports` 4,080 edges, both with 0 ambiguous(decl) and 0 unresolved (validation/m14/fixtures/yaml/census-yaml-whole-corpus-after.txt, 18,364 .yaml/.yml files, 189 repos). The two entries are kept below, RETRACTED, rather than deleted: a declaration that loses a row silently cannot be trusted to have lost only the false ones.",
+      "calls": {
+        "retracted": "lane-census.ts over ansible (2,076 files) -> 0 edges, 0 sites; the entry also cited YAML-D14 for the same reading",
+        "falsifiedBy": "whole admitted population: 327 edges, amb 0, unresolved 0, extOK 327 -- the job-level `uses:` reusable-workflow call (`jobs.<id>.uses: ./.github/workflows/x.yml`), measured on 189 repos"
       },
-      {
-        "label": "exports",
-        "proof": "YAML-D5: '`imports`/`exports` are emitted from tag and key SHAPES' — the tag half is `!include`, and the same entry records 'ZERO `!include` in any of the eight corpora, so the tag half rests on fixtures'"
+      "exports": {
+        "retracted": "YAML-D5's prose: 'the tag half is `!include`, and the same entry records ZERO `!include` in any of the eight corpora, so the tag half rests on fixtures'",
+        "falsifiedBy": "whole admitted population: 4,080 edges, 4,080 resolved with BOTH ends in the edge's own file, emitted from the `openapi:`/`swagger:` shape gate (`yaml_schema_publication`); the largest single source is one repository's OpenAPI set"
       }
-    ],
-    "_from": "YAML-D12 gives `overrides` EMITTED with a whole-corpus measurement ('20 duplicate-key pairs in 17 of the 16371 admitted yaml files'), so it is implemented; YAML-D10/D11 are the two grammar-absence exclusions. NOTE the arithmetic: 6 implemented + 2 unexercised = 8 applicable, and the hand table's 7/8 is NOT reproduced — see the coverage report."
+    }
   }
 }
