@@ -450,7 +450,7 @@ BB_DART_CONC=1 npx tsx validation/m14/fixtures/dart/census.ts    # the table abo
 npx tsx validation/m14/fixtures/dart/type-position-probe.ts      # the position inventory
 npx tsx script/m14/verify-dart-references.ts                     # 38 shapes, both sides
 BB_DART_PER_REPO=150 npx tsx script/m14/verify-dart-references.ts --corpus
-bun run script/m14/run-fixtures.ts --lang dart                  # 16 fixtures
+bun run script/m14/run-fixtures.ts --lang dart                  # 30 fixtures (28 flat + 2 in local-read/)
 BB_MUTANT_ONLY="dart/" bun run script/m14/mutate-analyzer.ts      # 42/42 caught
 
 npx tsx validation/m14/fixtures/dart/export-population-probe.ts # the 2.012% base rate
@@ -777,6 +777,89 @@ receiver type is a type-inference problem this analyzer does not attempt, and
 inventing a target from a name shape is exactly the fabrication the workstream's
 rule forbids. `uses` has a measured 128 rows where it happens to work anyway, and
 they are counted rather than rounded up to the type.
+
+### `imports` IS NOT A RESOLUTION DEFECT — the stride is the variable, and both counts are below
+
+**A refutation of the number this lane's own history carries, measured 2026-10-11, and the
+second of the two figures is the one the label was always about.**
+
+`docs/analyzers/LAPTOP-B-STATUS.md` §Round 3 (2026-10-07, `dart dart 33692`) records
+
+```
+imports       105,109         0          0           0     105,109
+```
+
+and explains the 100% as *"the shared enum blocker: `src/ast/types.ts` declares
+`Imports = "brain_import"` while the analyzers emit the literal `"imports"`, so these edges are
+invisible to every consumer."* **That explanation is good and its number is not.** The label
+mapping was fixed — `incoming-gate.ts`'s `LABEL_ALIASES` now maps `imports` and `brain_import`
+to one type, with the comment recording exactly this defect — so the 105,109 is a reading of the
+instrument before that fix, not of the language.
+
+**Measured on the CURRENT instrument, and the population is the whole point.**
+
+```
+npx tsx script/m14/incoming-gate.ts dart dart 600                      (600-file stride, 6 repos)
+  imports       1,830     11    0    0    0    1,468    351    0    0   ...
+
+npx tsx script/m14/incoming-gate.ts dart dart 0 --repo=dart-http       (333 files, ONE whole repo)
+  imports       1,303    612    0    0    0        4    687    0    0   ...
+```
+
+The same analyzer, the same file family, the same instrument: **1,468 unresolved of 1,830
+(80.2%) on a 600-file stride, and 4 of 1,303 (0.31%) over one whole repository.** A rate that
+moves by a factor of 260 between two draws is a fact about the draw.
+
+**WHY, exactly, and it is not the analyzer.** `imports` publishes the path of the file the
+specifier names (`dartImportTargetPath`), and that path is the module node's own
+`qualifiedName`. The gate indexes the qualified names of **the files it parsed** — the stride.
+So an import whose target file did not happen to be drawn cannot resolve, by construction, and
+the effect is proportional to how much of the corpus the stride leaves out. The whole-repo run
+leaves out nothing inside the repository, and there the column reads 0.31%.
+
+**The full split, so no reader has to take the conclusion on trust** (probe
+`.tmp-dart/probe-imports.mts`, 600 files, `parseFile` per file, the gate's own discovery,
+stride, key space in two passes and `classifyEdge`/`verifyImportClaim` **imported from
+`incoming-rule.ts` rather than copied**; it reproduces the gate's TABLE 1 row **to the unit** —
+`1,830 / 11 / 0 / 1,468 / 351 / 0 / 0`):
+
+| specifier shape | edges | resolved | unresolved | carrying `importOutsideProject` | verified |
+| --- | --- | --- | --- | --- | --- |
+| path (path arm or raw relative) | **1,430** | 11 | **1,419** | 0 | — |
+| `package:` | 332 | 0 | 26 | 306 | 306 |
+| `dart:` | 68 | 0 | 23 | 45 | 45 |
+| **total** | **1,830** | **11** | **1,468** | **351** | **351** |
+
+**So the 1,419 are not "raw specifiers the analyzer could not turn into a path" — that was the
+first hypothesis here and it is refuted.** Every one of them is a project-relative path
+(`pkg/_fe_analyzer_shared/lib/src/scanner/token.dart`, `benchmarks/ListCopy/dart/ListCopy.dart`,
+`sdk/lib/collection/collection.dart`), the path arm answered, and the file simply is not in this
+600-file draw. The proof is the same population measured whole: 4 unresolved of 1,303.
+
+**AND THE FALSIFIER FOR THE FIRST HYPOTHESIS WAS ITS OWN TEST.** The probe's first split asked
+whether the target begins with the **importing file's own directory** — the analyzer's arithmetic
+for a RELATIVE specifier — and reported `path-arm 0 / raw-other 1,430`, i.e. it classified every
+edge as "the analyzer could not compute a path". The analyzer DOES compute one for all but a
+handful; the label was a stricter predicate than the rule it named (HANDOFF §5tt's shape, in a
+probe rather than a price). **A label that decides which arm an edge lands in must be the rule's
+own predicate**, and `dartImportTargetPath` resolves against the **PACKAGE root** for
+`package:` and against the importing file's directory only for a bare relative specifier.
+
+**WHAT IS LEFT AT WHOLE POPULATION IS NAMED, not waved at.** The 4 unresolved in dart-http are
+targets whose file the population does not carry, and the population is `git ls-files`-tracked
+only. `package:`/`dart:` specifiers a repository does not declare are already claimed
+(`importOutsideProject`) and verified against the project's own `pubspec.yaml` files + admitted
+file list — **351 claimed, 351 verified, 0 refuted** on the 600-file draw, and 687 verified /
+0 refuted on dart-http whole. **A corpus-scale `imports` number must therefore carry its file
+count**, because this column is a function of the draw before it is a function of the analyzer.
+
+**A wrong claim was avoided here and the count is why.** Of the 26 `package:` edges with no
+claim, the arbiter would REFUTE all 26 if the marker were attached, because the package IS
+declared in this checkout (`_fe_analyzer_shared` has its own `pubspec.yaml`) and its file is
+merely outside the draw. Attaching a claim to "the target did not resolve" would have pushed
+`extFAIL` off zero and asserted externality about a package the project carries. **The
+analyzer's existing rule refuses exactly this, and that is the correct behaviour — no change
+was made.**
 
 ### Targets that bind to nothing: 144,032 rows, split by cause
 
@@ -5484,7 +5567,14 @@ Verification, four instruments: `npx tsx script/m12/verify-regex-census.ts` repo
 absent from the worktree; `bash script/m14/no-regex-gate.sh` lists only `real-yaml-analyzer.ts`'s 4
 once its census artifact is regenerated (the artifact describes HEAD blobs, so it reads STALE for this
 lane's 8 between the fix and the regeneration — that is the verifier working, not a dart regex);
-`run-fixtures.ts --lang dart` stays 28/0; and
+`run-fixtures.ts --lang dart` stays **30/0, MEASURED 2026-10-11** and that is the lane's current regression bar:
+**neither 22 nor 28 is the live count.** 22 was true when this paragraph was written (`bun run
+script/m14/run-fixtures.ts --lang dart  ->  summary: {"dart":{"pass":22,"fail":0}}`, the figure the
+handoff carries); 28 was true between the const-pattern fixture landing and this pass; the harness
+now runs **30** — 28 flat `.expectation.json` cases plus 2 in `local-read/` (a subdirectory is a
+multi-file project, not a case), prints `PASS` 30 times and `summary: {"dart":{"pass":30,"fail":0}}`.
+**A pinned count in a document is a claim about a moment**, and every number in this file that says
+"NN fixtures" is a reading of that moment; and
 `BB_DART_DIFF_REV=ab6dab8e9 BB_DART_DIFF_N=300 npx tsx validation/m14/fixtures/dart/regex-fix-differential.ts`
 reports **IDENTICAL 300, DIFFERENT 0, FAILED 0** comparing the FULL output of both revisions (every
 symbol and every relationship, metadata included). Counts would not have been enough: "nearly the
