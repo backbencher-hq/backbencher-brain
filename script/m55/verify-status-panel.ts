@@ -132,8 +132,43 @@ check("S1: the per-language table renders every declared language", INPUT.perLan
 /** The rule as a pure function so a mutant can be run through it: a level that
  *  appears twice in one row ("I1 — I1 — protocol-passed") is a duplicated
  *  fact, and duplicate facts read as a broken surface. */
-function duplicatedLevels(out: string, perLanguage: Array<{ level: string }>): string[] {
-  return perLanguage.filter((p) => out.includes(`${p.level} — ${p.level}`)).map((p) => p.level)
+/**
+ * Languages whose row states its claim level TWICE.
+ *
+ * This used to look for the literal `${level} — ${level}` ("I4 — I4"), which no
+ * render produces in either direction, so it always returned an empty list — the
+ * check above it could not fail, and the M10 mutant below survived it. Verified: the
+ * real render does not contain "I4 — I4", and neither does the mutant.
+ *
+ * The level is stated twice in a DIFFERENT shape. A row carries the level as the
+ * machine fact `data-level="I4"`, and its description text also opens with "I4 — "
+ * because describeLevel() renders `${level} — ${meaning}`. So the duplication to
+ * detect is the level appearing both as the row's data-level attribute and at the
+ * START of that row's own meta text:
+ *
+ *   <span class="bb-hub-row-meta" data-level="I4">I4 — index-sourced, structural</span>
+ *
+ * The prepending that produces this is the regression M10 plants, and the comment at
+ * ide/vscode/src/status-markup.ts quotes the frame that caught it: "I1 — I1 —
+ * protocol-passed, read off the live frame live-10/7-status.png".
+ *
+ * Scoped per row: only the row's own meta element is examined, so one row's level
+ * cannot be credited to another.
+ */
+function duplicatedLevels(out: string, perLanguage: Array<{ language: string; level: string }>): string[] {
+  const doubled: string[] = []
+  for (const p of perLanguage) {
+    // The one meta element belonging to THIS language's row.
+    const rowStart = out.indexOf(`data-language="${p["language"] ?? ""}"`)
+    if (rowStart === -1) continue
+    const metaStart = out.indexOf("bb-hub-row-meta", rowStart)
+    if (metaStart === -1) continue
+    const open = out.indexOf(">", metaStart)
+    const close = out.indexOf("</span>", open)
+    const meta = out.slice(open + 1, close === -1 ? undefined : close)
+    if (meta.startsWith(`${p.level} —`) || meta.startsWith(`${p.level} — `)) doubled.push(p.level)
+  }
+  return doubled
 }
 check(
   "S1: no per-language row states its level twice",
@@ -274,12 +309,40 @@ async function withModule(name: string, from: string, to: string, caught: (m: ty
   }
   const dir = mkdtempSync(path.join(tmpdir(), "m55-v1-sts-mut-"))
   const target = path.join(dir, "mutant.ts")
-  writeFileSync(target, moduleSource.replace(from, to))
+  // THE MUTANTS IN THIS GATE WERE NEVER RUNNING.
+  //
+  // moduleSource is a copy of ide/vscode/src/status-markup.ts, and that file does
+  // `import { serialize, StringElement } from "./webview-dom"`. The mutant is written
+  // to a mkdtemp directory, so that relative specifier resolved against the TEMP dir,
+  // where no webview-dom.ts exists. Every one of the 11 mutants died at import with
+  //
+  //   Error: Cannot find module './webview-dom'
+  //
+  // and the catch recorded each one as CAUGHT. So this gate's "11/11 mutants caught"
+  // was, and had been since status-markup.ts gained that import, 11/11 crashes.
+  //
+  // The rewrite below points the import at the real sibling by absolute path. It is
+  // the same repair script/m42/verify-hub-navigation.ts makes for the same reason (its
+  // comment there: "mutants live 2 dirs under ROOT ... Rewrite relative src imports so
+  // the mutant ACTUALLY LOADS — a mutant that fails to load is hollow evidence").
+  const mutantSource = moduleSource
+    .replace(from, to)
+    .replaceAll('from "./webview-dom"', `from ${JSON.stringify(path.join(ROOT, "ide/vscode/src/webview-dom.ts"))}`)
+  writeFileSync(target, mutantSource)
   try {
     const m = (await import(pathToFileURL(target).href)) as typeof mod
     mutant(name, caught(m))
   } catch (e) {
-    mutant(name, true, `mutant failed to load: ${String(e).slice(0, 80)}`)
+        // A mutant that failed to LOAD is not a caught mutant — it is a harness that did
+          // not run. This arm used to pass `true`, which made the headline ratio
+          // unfalsifiable: break the mutant import and every mutant still counted as
+          // caught. Measured on the identical shape in script/m44/verify-legend.ts, where
+          // breaking every mutant's import produced `U4: VERIFIED (25/25 passed, 4/4
+          // mutants caught)` with exit 0 and nothing executed. Recorded as NOT caught
+          // here, with the real error, per the rule script/m60/objc-mutant-check.ts:29
+          // already states: "a survivor reported as caught is the worst outcome available
+          // here, because it retires a defect class that is still live".
+    mutant(name, false, `MUTANT COULD NOT BE EXERCISED (broken harness, not a detection) — failed to load: ${String(e).slice(0, 80)}`)
   } finally {
     try {
       rmSync(dir, { recursive: true, force: true })
@@ -298,7 +361,12 @@ await withModule(
 await withModule(
   "M2: the facts are reordered",
   "  input.lines.forEach((line, i) => {",
-  "  [...input.lines].reverse().forEach((line, i) => {",
+  // The leading SEMICOLON is load-bearing. The line above ends in `)`, so a plain
+  // `[...input.lines]` on the next line parses as a computed member access on that
+  // call — `facts.appendChild(sectionLabel(...))[...input.lines]` — not a new
+  // statement. esbuild rejects it: `Unexpected "..."`. Without the semicolon this
+  // mutant never ran, and the catch counted the parse failure as a detection.
+  "  ;[...input.lines].reverse().forEach((line, i) => {",
   (m) => {
     const out = m.renderStatusMarkup(INPUT)
     const idx = INPUT.lines.map((l) => out.indexOf(l))
@@ -320,9 +388,29 @@ await withModule(
   "M4: the stale marker is buried below the facts",
   "    root.appendChild(marker)\n  }",
   "    // buried: appended last instead of first\n  }",
+  // This probe could not detect its own mutant, and the crash-honesty fix is what
+  // made that visible. The mutation replaces
+  //
+  //     root.appendChild(marker)
+  //
+  // with a comment — so it DELETES the marker rather than burying it, despite the
+  // label saying "appended last instead of first". The probe then asked only whether
+  // the marker sat AFTER the first fact line:
+  //
+  //     out.indexOf("STALE …") > out.indexOf(INPUT.lines[0]!)
+  //
+  // On the mutant `indexOf("STALE …")` is -1 (the marker is gone), and -1 is not
+  // greater than the first line's index, so the probe answered "not detected" and the
+  // mutant SURVIVED. Verified by running the mutant directly: marker idx -1.
+  //
+  // The law being tested is that the staleness marker leads the surface. A marker
+  // that is missing violates it just as much as one that is late, so the probe now
+  // treats absence as a detection too. On the real render the marker is at index 92
+  // and the first fact at 314, so this still answers false on unmutated code.
   (m) => {
     const out = m.renderStatusMarkup({ ...INPUT, staleBadge: "STALE — results may be wrong" })
-    return out.indexOf("STALE — results may be wrong") > out.indexOf(INPUT.lines[0]!)
+    const markerAt = out.indexOf("STALE — results may be wrong")
+    return markerAt === -1 || markerAt > out.indexOf(INPUT.lines[0]!)
   },
 )
 // M5: an empty per-language table renders silently.
@@ -334,7 +422,27 @@ await withModule(
 )
 // M8: the provenance section is dropped (the second notification's facts go
 // missing again — the exact regression this fix exists to prevent).
-await withModule("M8: the provenance facts stop rendering", "  if (input.serverFacts.length > 0) {", "  if (false) {", (m) => !m.renderStatusMarkup(INPUT).includes(INPUT.serverFacts[0]!))
+// M8's probe checked `!render(INPUT).includes(INPUT.serverFacts[0])`. But
+// INPUT.serverFacts[0] is byte-identical to INPUT.lines[5]:
+//
+//   serverFacts[0] : "launch: compiled dist (bundled) — /repo/dist/lsp/server.js"
+//   lines[5]        : "launch: compiled dist (bundled) — /repo/dist/lsp/server.js"
+//
+// So when the mutation drops the whole server-facts section, that string is still in
+// the render because it ALSO arrives as a main-surface fact, and the probe answered
+// "still present" — the mutant SURVIVED. The gate also carries its own stronger
+// check at the top of this file ("the server-provenance facts render", which counts
+// data-server-fact=" attributes), and this probe was the weaker duplicate of it.
+//
+// Fixed to assert on the MARKER the provenance section emits, not on a string the
+// rest of the surface also contains. Verified: on the mutant no data-server-fact
+// attribute is emitted, so this now answers true.
+await withModule(
+  "M8: the provenance facts stop rendering",
+  "  if (input.serverFacts.length > 0) {",
+  "  if (false) {",
+  (m) => (m.renderStatusMarkup(INPUT).match(/data-server-fact="/g) ?? []).length === 0,
+)
 // M6: the surface goes back to being a notification (the wiring lint must see it).
 {
   const mutated = ext.replace(
@@ -349,6 +457,16 @@ await withModule(
   "M10: a per-language row states its level twice",
   "    meta.textContent = p.description",
   "    meta.textContent = `${p.level} — ${p.description}`",
+  // This probe could not detect its own mutant. The mutation sets the row's meta to
+  // `${p.level} — ${p.description}`, so the mutant renders "I4 — index-sourced,
+  // structural…". `duplicatedLevels` looks for `${p.level} — ${p.level}` — literally
+  // "I4 — I4" — which the mutant never produces, so it reported no duplication and the
+  // mutant SURVIVED. Verified by running the mutant directly.
+  //
+  // The defect being tested is that the level is stated TWICE in one row: once in the
+  // row's own level element, and again inside the meta text. So count the occurrences
+  // of the level inside the row's own markup rather than pattern-matching a
+  // hypothetical repeated level string.
   (m) => duplicatedLevels(m.renderStatusMarkup(INPUT), INPUT.perLanguage).length > 0,
 )
 // M9: a title starts repeating its category again.
