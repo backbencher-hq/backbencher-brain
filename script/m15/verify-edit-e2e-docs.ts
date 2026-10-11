@@ -9,10 +9,23 @@ let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(l: string, c: boolean, d?: string) { checks++; if (c) passed++; else { failed++; console.log("  FAIL: " + l + (d ? " — " + d : "")) } }
 function nk(l: string, c: boolean, d?: string) { negatives++; if (c) negativePassed++; else { failed++; console.log("  FAIL: " + l + " (negative)" + (d ? " — " + d : "")) } }
 
+// THIS FILE PRINTED A VERDICT PER LEG AND NEVER EXITED NON-ZERO.
+//
+// emitFile writes `verified: failed === 0` into validation/m15/results/*.json and
+// prints VERIFIED or KNOWN-GAP, but nothing turned that into an exit code — the
+// process exited 0 whatever the verdicts said. This gate is in the `npm run verify`
+// chain, so a green chain carried no information for this leg. Found by
+// script/m62/verify-gates-can-fail.ts.
+//
+// Run-wide rather than per-leg, because each leg reuses the same `failed` counter:
+// without this, a KNOWN-GAP in an early leg followed by a clean one would exit 0.
+let anyFailed = false
+
 async function emitFile(code: string, issue: string, tool: string, title: string, file: string) {
   const total = passed + negativePassed
   const e = { issue, code, tool, title, verified: failed === 0, checks, passed: total, failed, negatives, generatedAt: new Date().toISOString() }
   writeFileSync(path.resolve("validation/m15/results/" + file), JSON.stringify(e, null, 2) + "\n")
+  if (failed > 0) anyFailed = true
   console.log(code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
 }
 
@@ -21,7 +34,34 @@ async function emitFile(code: string, issue: string, tool: string, title: string
   // E6: Real-repo e2e — dry-run classification on actual repo files
   // ═══════════════════════════════════════════════════════════════════════
 
-  const REPOS_DIR = path.resolve("$HOME/fixtures/repositories")
+  // WAS: path.resolve("$HOME/fixtures/repositories")
+  //
+  // A hardcoded absolute path to the OTHER laptop's home directory. On this machine the
+  // gate died before running a single check:
+  //
+  //   Error: ENOENT: no such file or directory, scandir '$HOME/fixtures/repositories/graphql-js'
+  //
+  // and it was in `npm run verify`, so that leg contributed nothing while appearing to
+  // be part of the chain. Found by script/m62/verify-gates-can-fail.ts and then named by
+  // script/m62/verify-no-foreign-paths.ts.
+  //
+  // Now searched in DECLARED order, with every path reported when none exists — the
+  // convention script/m15/verify-security-deep.ts already uses ("no corpus found. Set
+  // BB_SECURITY_CORPUS_ROOT … Searched: …"). A gate that cannot see its subject must say
+  // so and where it looked, never crash and never pass vacuously.
+  const REPOS_DIR_CANDIDATES = [
+    process.env.BB_CORPUS_ROOT,
+    process.env.BB_SECURITY_CORPUS_ROOT,
+    path.resolve(process.cwd(), "fixtures/repositories"),
+    path.resolve(process.cwd(), "../fixtures/repositories"),
+  ].filter((p): p is string => typeof p === "string" && p.length > 0)
+  const REPOS_DIR = REPOS_DIR_CANDIDATES.find((p) => existsSync(p))
+  if (REPOS_DIR === undefined) {
+    console.log(
+      "  SKIP E6 (recorded, not failed): no corpus found. Set BB_CORPUS_ROOT to a fixtures/repositories directory.\n" +
+        `    Searched: ${REPOS_DIR_CANDIDATES.join(", ")}`,
+    )
+  } else {
 
   // Sample one file from each of 5 language families.
   // graphql-js: pick a real existing .ts (repo layout drifted between clones);
@@ -71,6 +111,7 @@ async function emitFile(code: string, issue: string, tool: string, title: string
   }
 
   await emitFile("E6", "M15.E6", "bb_edit", "real-repo e2e", "e6.json")
+  } // end E6 (skipped when no corpus was found)
   checks = passed = failed = negatives = negativePassed = 0
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -111,4 +152,19 @@ async function emitFile(code: string, issue: string, tool: string, title: string
      "found: " + modesInImpl.join(", "))
 
   await emitFile("E7", "M15.E7", "bb_edit", "docs honesty", "e7.json")
-})()
+})().then(
+  // THE EXIT MUST WAIT FOR THE ASYNC IIFE.
+  //
+  // A first version put `process.exit(anyFailed ? 1 : 0)` on the line after `})()`.
+  // The IIFE is async and not awaited, so that line ran IMMEDIATELY — before a single
+  // check executed. The gate produced NO output at all and exited 0, which is strictly
+  // worse than the state it replaced: it was not merely unable to fail, it no longer
+  // ran. Caught by running it: zero lines of output where there had been a full
+  // transcript.
+  () => process.exit(anyFailed ? 1 : 0),
+  (err) => {
+    // A leg that throws is a leg that did not verify.
+    console.error(err)
+    process.exit(1)
+  },
+)
