@@ -1072,23 +1072,6 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         const n = String(sym.name ?? "")
         if (n.length > 0) occurrences.set(n, (occurrences.get(n) ?? 0) + 1)
       }
-      for (const sym of symbols) {
-        const n = String(sym.name ?? "")
-        // ONE occurrence only: a name declared twice in a file has no unique spelling, and giving
-        // both the same qualifiedName would publish one key for two declarations — a collision
-        // manufactured by the fix that exists to remove collisions.
-        if (n.length === 0 || (occurrences.get(n) ?? 0) !== 1) continue
-        if (typeof sym.qualifiedName === "string" && sym.qualifiedName.length > 0) continue
-        // THE WORKER'S OWN SHAPE, and this is the correction the first two after-runs forced:
-        // `pool-worker.ts:1175` derives `qualifiedName` as `${scope}.${name}`, so a key space built
-        // through `parseFile` carries THAT spelling. My first spelling used `::` between the scope
-        // and the name, matched nothing the key space held, and turned ambiguity into unresolved —
-        // 7,922 -> 17,895 unresolved (`noDecl` rose by exactly the same 9,973) for a residual that
-        // still fell, which is how a fix can look like a win while trading one bad column for
-        // another. Dot-separated also keeps the differential's identity: `normTarget` splits on `.`,
-        // so the leaf is still the name, because a shell identifier never contains a dot.
-        sym.qualifiedName = `${fileScope}.${n}`
-      }
       const resplellable: Record<string, (kind: string) => boolean> = {
         // command position: a function declared in this file answers it (bash resolves functions
         // before PATH); a variable does NOT, which is what `commandNameIsExternal` records.
@@ -1120,7 +1103,17 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!kindRule(r.kind)) continue
         const symbolKind = r.kind === "function" ? ASTEngine.SymbolKind.Function : r.kind === "constant" ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable
         if (!published.has(`${target}|${r.line}|${symbolKind}`)) continue
-        rel.target = `${fileScope}.${target}`
+        // THE WORKER'S OWN DERIVED ALIAS, and nothing invented. `pool-worker.ts:1175` publishes
+        // `qualifiedName` as `s.qualifiedName || s.metadata?.fqn || (s.scope ? `${s.scope}.${s.name}`
+        // : s.name)` — so the key a target can actually answer to is `<OWNER>.<name>`, where the owner
+        // is the symbol's `scope`. My first two attempts spelled it `<file scope>.<name>`, which the
+        // key space does not hold: measured on `kubernetes/hack/lib/util.sh`, 168 respelled targets,
+        // 102 answered and 66 NOT — every one of the 66 a declaration inside a function, where the
+        // worker's alias carries the FUNCTION as the owner (`kube::util::wait_for_url.times`) and my
+        // file scope does not. The alias exists for every published symbol, so this reaches what the
+        // store can bind, and a name the worker keeps no alias for cannot be reached at all.
+        const owner = r.owner.length > 0 ? r.owner : scriptName
+        rel.target = `${owner}.${target}`
       }
     }
 
