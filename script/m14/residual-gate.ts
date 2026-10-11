@@ -175,7 +175,7 @@ if (LANE) {
   if (JSON_MODE) { console.log(JSON.stringify({ gate: "residual-gate", lane: LANE, rows, total }, null, 2)); process.exit(0) }
   const w = (s: any, n: number) => (String(s) + " ".repeat(n)).slice(0, n)
   console.log(`residual gate — ${LANE}, WHOLE admitted population, production scope\n`)
-  console.log(`${w("type", 14)} ${w("edges", 9)} ${w("resolved", 9)} ${w("ofWhich", 8)} ${w("amb(decl)", 10)} ${w("unresolved", 11)} ${w("extFAIL", 8)} ${w("bindFAIL", 9)} ${w("causeFAIL", 10)} ${w("residual%", 10)}${intentBlockSeen ? "  " + w("intended", 9) + w("twin", 6) + w("noDecl", 7) : ""}`)
+  console.log(`${w("type", 14)} ${w("edges", 9)} ${w("resolved", 9)} ${w("ofWhich", 8)} ${w("amb(decl)", 10)} ${w("unresolved", 11)} ${w("extOK", 8)} ${w("ext?", 6)} ${w("extFAIL", 8)} ${w("bindFAIL", 9)} ${w("causeFAIL", 10)} ${w("residual%", 10)}${intentBlockSeen ? "  " + w("intended", 9) + w("twin", 6) + w("noDecl", 7) : ""}`)
   // THE LABEL MUST NOT ASSERT MORE THAN THE CLASSIFIER ESTABLISHES. This legend said
   // `"twin" = ONLY another file answers (a wrong edge)` — which is true only for the types the
   // analyzer writes on the target symbol's own line. `classifyIntent` (incoming-gate.ts:433-445) is a
@@ -197,6 +197,30 @@ if (LANE) {
   // whole handoff warns about, made visible instead of hidden behind an import.
   if (intentBlockSeen) console.log(`  "twin" is a WRONG EDGE only for contains/exports (the types whose edges the analyzer writes on the target symbol's own line); for other types a foreign declaration is what a cross-document reference IS — a RISK, not proven wrongness.`)
   if (intentBlockSeen && intentWidthBad > 0) console.log(`  (${intentWidthBad} intent ROW(s) did not have 6 columns and were SKIPPED, not reinterpreted.)`)
+  // THE CLOSURE CHECK, and it exists because a reader could not close this table. r-lane measured
+  // powershell at `edges 180,915` against `resolved 57,471 + amb 43,879 + unresolved 52,649 =
+  // 153,999` — a gap of 26,916 that NO PRINTED COLUMN ACCOUNTED FOR, and the same gap appears on xml
+  // (3,077). The missing term is the external and binding disposition (`extOK`, `ext?`) that the
+  // parser already READ and the table never PRINTED, so the identity the programme relies on —
+  // "every edge lands in exactly one bucket" — was unverifiable from the output.
+  //
+  // Fifth instance of one family: a table that does not show its own closure. The lesson is the same
+  // every time, and the goal statement puts it plainly — *no unknown, unexplained, ambiguous or wrong
+  // edges may remain*. An edge in no printed bucket is an unknown edge.
+  {
+    const disp = (r: any) => (r.resolved + r.amb + r.unres + r.extOK + r.extQ + r.extFAIL + r.bindOK + r.bindQ + r.bindFAIL + r.causeOK + r.causeFAIL)
+    const gapRow = (label: string, r: any, edges: number) => {
+      const d = disp(r)
+      const gap = edges - d
+      if (gap === 0) return `${w(label, 14)} CLOSED — every edge in one printed bucket (${edges})`
+      return `${w(label, 14)} ** ${gap} edge(s) UNACCOUNTED ** — ${edges} edges vs ${d} dispositioned` +
+        ` (resolved ${r.resolved} · amb ${r.amb} · unres ${r.unres} · extOK ${r.extOK} · ext? ${r.extQ} · extFAIL ${r.extFAIL} · bindFAIL ${r.bindFAIL} · causeFAIL ${r.causeFAIL})`
+    }
+    console.log()
+    console.log("CLOSURE — every edge must land in exactly one printed bucket (the goal: NO unknown edges):")
+    for (const r of rows) { if (r.edges > 0) console.log("  " + gapRow(r.type, r, r.edges)) }
+    if (total) console.log("  " + gapRow("TOTAL", total, total.edges))
+  }
   console.log(`  "ofWhich" = resolved edges on a name with MORE THAN ONE declaration in the project — an`)
   console.log(`  UPPER BOUND on arbitrary bindings, not a count of them: both resolvers prefer the edge's own`)
   console.log(`  FILE second, so a collision the own file settles uniquely is determinate. Only the store can`)
@@ -207,7 +231,7 @@ if (LANE) {
     const resid = r.amb + r.unres + r.extFAIL + r.bindFAIL + r.causeFAIL
     const it = intent.get(r.type)
     const tail = intentBlockSeen ? "  " + w(it ? it.intended : "-", 9) + w(it ? it.arbitraryTwin : "-", 6) + w(it ? it.noDeclaration : "-", 7) : ""
-    console.log(`${w(r.type, 14)} ${w(r.edges, 9)} ${w(r.resolved, 9)} ${w(r.ambColl ?? "-", 8)} ${w(r.amb, 10)} ${w(r.unres, 11)} ${w(r.extFAIL, 8)} ${w(r.bindFAIL, 9)} ${w(r.causeFAIL, 10)} ${w(((resid / r.edges) * 100).toFixed(1) + "%", 10)}${tail}`)
+    console.log(`${w(r.type, 14)} ${w(r.edges, 9)} ${w(r.resolved, 9)} ${w(r.ambColl ?? "-", 8)} ${w(r.amb, 10)} ${w(r.unres, 11)} ${w(r.extOK, 8)} ${w(r.extQ, 6)} ${w(r.extFAIL, 8)} ${w(r.bindFAIL, 9)} ${w(r.causeFAIL, 10)} ${w(((resid / r.edges) * 100).toFixed(1) + "%", 10)}${tail}`)
   }
   if (total) {
     const resid = total.amb + total.unres + total.extFAIL + total.bindFAIL + total.causeFAIL
@@ -223,7 +247,7 @@ if (LANE) {
     //
     // The lesson is the same every time: **a summary is a claim and needs the same evidence as a
     // number.** A per-type table that is right does not make its TOTAL right.
-    console.log(`${w("TOTAL", 14)} ${w(total.edges, 9)} ${w(total.resolved, 9)} ${w(total.ambColl ?? 0, 8)} ${w(total.amb, 10)} ${w(total.unres, 11)} ${w(total.extFAIL, 8)} ${w(total.bindFAIL, 9)} ${w(total.causeFAIL, 10)} ${w(((resid / total.edges) * 100).toFixed(1) + "%", 10)}`)
+    console.log(`${w("TOTAL", 14)} ${w(total.edges, 9)} ${w(total.resolved, 9)} ${w(total.ambColl ?? 0, 8)} ${w(total.amb, 10)} ${w(total.unres, 11)} ${w(total.extOK ?? 0, 8)} ${w(total.extQ ?? 0, 6)} ${w(total.extFAIL, 8)} ${w(total.bindFAIL, 9)} ${w(total.causeFAIL, 10)} ${w(((resid / total.edges) * 100).toFixed(1) + "%", 10)}`)
     console.log(`\nresolved ${((total.resolved / total.edges) * 100).toFixed(1)}%   residual ${resid} of ${total.edges}   ` +
       `extFAIL ${total.extFAIL}${total.extFAIL > 0 ? " (MUST BE 0)" : ""}  bindFAIL ${total.bindFAIL}${total.bindFAIL > 0 ? " (MUST BE 0)" : ""}  causeFAIL ${total.causeFAIL}${total.causeFAIL > 0 ? " (MUST BE 0)" : ""}`)
   }
