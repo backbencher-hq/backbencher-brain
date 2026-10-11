@@ -780,6 +780,24 @@ they are counted rather than rounded up to the type.
 
 ### `imports` IS NOT A RESOLUTION DEFECT — the stride is the variable, and both counts are below
 
+> **MEASURED ON A MOVING INSTRUMENT, AND THE REVISION IS PART OF THE NUMBER.**
+> `script/m14/incoming-gate.ts` is a SHARED file that other lanes were editing while this was
+> measured: it moved three times inside the hour (`63063d378` 11:40, `d13b999c0` 11:50 —
+> *"the fact walk skipped every symlinked directory"* — and `06a33afdb` 11:58). A re-run of the
+> **same** `dart dart 600` stride on the 12:09 revision reads **58,334 edges where the 11:09
+> revision read 70,745** on the same six repositories, and neither figure is wrong — they are two
+> revisions. **The three numbers below are quoted from the run that produced them, and the
+> 600-file figures are labelled as one revision's reading.** The dart-http whole-repo run and the
+> dart-http file count are the stable pair.
+> **AND A GUARD COLUMN IS NO LONGER ZERO ON THE LATER REVISION**: `imports extFAIL` reads **3** at
+> 12:09 (`package:firebase_auth/firebase_auth.dart:*` ×2, `package:firebase_core/…` ×1) where every
+> earlier run read 0, and **no tracked `pubspec.yaml` in any of the six repositories declares
+> either package** (measured: `git grep '^name: firebase_auth$'` over all 416 tracked pubspecs
+> returns nothing). So the gate's fact walk and the analyzer disagree about what this project
+> declares — a fact-walk question in a shared file, **routed, not fixed here**, and recorded
+> because `extFAIL` is a MUST-BE-ZERO column.
+
+
 **A refutation of the number this lane's own history carries, measured 2026-10-11, and the
 second of the two figures is the one the label was always about.**
 
@@ -5776,6 +5794,7 @@ bind?         12            12            0             —
 bindFAIL      0             0             0             —
 causeOK       27479         128636        +101157       calls +50603 · uses +50554
 causeFAIL     0             3             +3            uses +3 — the three rows named below
+                                                            (fixed in `335997f6c`; arm10 reads 0)
 ```
 
 **EIGHT OF THE TEN ROWS DID NOT MOVE**, and not approximately: `contains`, `imports`, `references`,
@@ -5838,8 +5857,94 @@ spells the head as the source wrote it. The claim is also false in the way the o
 catch: all three files declare `class GenericClass<T>` themselves, so the type was in the run's
 hand. The repair is to strip the arguments (a balanced `<…>`) before the visibility test and the
 claim, which turns the three rows into spelled-but-unclaimed `GenericClass.new` reads — and, the
-name being visible in these files, into three resolutions. That is a new work item with its own
-fixtures and its own arm; this table records the three rows arm9 caught, not a fix applied after it.
+name being visible in these files, into three resolutions. Half of that prediction survives
+measurement and half does not, and the half that does is why the fix has two parts; the next
+section is the repair, with the shapes measured pre-fix and post-fix.
+
+### The three REFUTED rows are FIXED — the head normalized, and `.new` sent to the constructor arm
+
+(`335997f6c`, analyzer + fixture `dart/const-pattern-constructor-head`; five mutants fired in a
+frozen worktree at `ab900b82c` with the change copied in, which is also arm10's baseline, so the
+whole-corpus delta is this change and nothing else.)
+
+**The predicted repair is not sufficient on its own.** With `typeNameWithoutArguments` in place and
+nothing else, the row reads:
+
+```
+uses test -> new   { isMemberRead, isConstantPattern, receiverCause: "receiverMemberOutsideRun" }
+```
+
+The refuted claim is gone (the gate's `causeFAIL` reads 0), and the target is a bare leaf `new` — a
+name no project declares and no source wrote. That is the branch's fallback for "a type I can see
+that does not declare the member", and it exists because the member table spells an unnamed
+constructor `constructor`: `new` is never a declared member name, so the fallback cannot find it.
+The result trades a REFUTED CLAIM for a FALSE EDGE, which is the worse of the two, and it is the
+only reason the fix is two parts instead of one.
+
+**So `.new` takes the arm a named constructor already takes.** `case Foo.named:` publishes
+`instantiates -> Foo` (DT-A) because a named constructor is still a construction; `.new` is the
+unnamed constructor's own spelling, which this lane already states in `isRealConstructor`
+(`lead === "new" || lead === owner`, because a member may not be named after its class). The new
+rows carry `isConstructorReference`, deliberately NOT `isNamedConstructor` — `.new` is the UNNAMED
+constructor and m60's flag census counts named ones.
+
+The consistency argument is inside the three files. `case const GenericClass<int>.new():` — the
+INVOCATION form, one bracket away — already published `instantiates -> GenericClass` through the
+calls pass, so pre-fix the SAME constructor published its class when invoked and a bogus member leaf
+when torn off. Post-fix the spellings agree, and the corpus collapses them: the dedup key is
+`(type, source, target, confidence)`, so the tear-off's `instantiates test -> GenericClass` IS the
+invocation's row. That is why this fix is a SUBTRACTION on the whole-corpus table — `uses` −3 and
+`causeFAIL` −3, nothing added — rather than the three resolutions predicted above: the resolution
+already existed, and the tear-off's contribution was the row the dedup was already discarding.
+
+**The shapes, measured pre-fix → post-fix** (each `.new` pattern in the fixture sits in a function
+with no other construction of that type, so no dedup can hide its row):
+
+```
+case Holder<int>.new:                    uses -> Holder<int>.new                claim Holder<int>
+                                         -> instantiates -> Holder   isConstructorReference
+case Holder<Map<String, int>>.new:       uses -> Holder<Map<String, int>>.new   claim ...
+                                         -> instantiates -> Holder
+case Holder<List<Map<String, int>>>.new: uses -> Holder<List<Map<String, int>>>.new
+                                         -> instantiates -> Holder
+case Plain.new:                          uses -> new   receiverMemberOutsideRun
+                                         -> instantiates -> Plain
+case prefix.Holder<int>.new:             uses -> Holder<int>.new
+                                         -> instantiates -> Holder
+case ExternalGeneric<int>.new:           uses -> ExternalGeneric<int>.new       claim ...
+                                         -> instantiates -> ExternalGeneric   NO claim
+case Foo.named:                          instantiates -> Foo   isNamedConstructor      (unchanged)
+case box.value:                          uses -> value  receiverTypeUnknown, no claim (unchanged)
+```
+
+**The normalization's reach is smaller than the defect report implied, and that is measured too.**
+`typeNameWithoutArguments` sits before the visibility test, the `namedCtors` lookup, `qualifiedTarget`
+and the claim, exactly as the work item asked — but `Holder<int>.value` and `Holder<int>.named` never
+reach the branch at all: those spellings parse to shapes with no `qualified` node under a
+`constant_pattern`, in BOTH the pre- and post-fix analyzer (probed in both worktrees, silence either
+way). `.new` is the only spelling in the population that arrives with arguments attached — a text
+scan finds 12 such lines in 3 dart-sdk files and none elsewhere. The helper is load-bearing there
+regardless: without it the `.new` arm targets the raw head (`Holder<Map<String, int>>`), and a
+stripper that cut at the first `>` or the last `<` would publish `Holder<Map<String, int`. Both are
+forbidden in the fixture.
+
+**The fixture, and five mutants that each die on a different pin.** `dart/const-pattern-constructor-head`
+(30/30 dart fixtures, was 29/29) pins the six shapes above plus the two unchanged controls, forbids
+the refuted targets and claims, the fabricated `new`, and the two garbage heads a broken stripper
+produces. The mutants, all fired in the frozen worktree with the other 29 fixtures green every time:
+revert the fix (the six `instantiates` pins and five forbids); normalize the head but leave `.new` on
+the member-read arm (the forbid on `uses -> new`); arm `.new` without normalizing (the three forbids
+on `instantiates -> Holder<int>`, `Holder<Map<String, int>>`, `Holder<List<Map<String, int>>>`); cut
+the stripper at the LAST `<` (the two nested pins and their forbids); flag the `.new` rows
+`isNamedConstructor` (the `meta.isConstructorReference` pins). `tsc --noEmit` clean.
+
+**The whole-corpus arm10 run is in flight** (`/tmp/dartgate/incoming-dart-arm10.log`; the arm10
+worktree is `ab900b82c` + this change, `incoming-gate.ts dart dart 0`, the whole 33,738-file
+population, started 11:16). Its expectation is exact and small — `uses` −3, `causeFAIL` 3 → 0,
+`resolved`/`ambiguous`/every other row byte-identical to arm9's after-table — and the file-level
+check is already in: the probe over the three files now reads no row naming `GenericClass<int>` at
+all, and the `instantiates test -> GenericClass` row each file already carried is the only row that
+remains. The table lands here when the run completes.
 
 ### Bucket 3 gets its fourth property — an independent oracle, and what it says
 
@@ -5991,6 +6096,16 @@ under (d). The gate refuses what the oracle cannot see — a base that is not id
 the oracle refuses what the gate cannot see — a base the emitting file declares. Every false claim
 THE TWO NETS CATCH is in exactly one of them: **126 = 123 + 3**, and both nets have to be empty
 before this chapter can call the bucket-3 population clean.
+
+**THE GATE'S THREE ARE NOW GONE, so the union is the oracle's 123 and nothing else** — the fix above
+(`335997f6c`) deletes the rows rather than re-spelling them, which is what makes both books settle:
+the gate's `causeFAIL` reads 0 on arm10, and the oracle's `dart-sdk` claim population loses the same
+three rows (581,957 → 581,954 by arithmetic) without its `REFUTED` count moving at all, because
+those three were never IN it — they were filed under (d), the class of claims no name can check. The
+123 that remain are one defect with one cause (the primary-constructor grammar hole below), and they
+are the oracle's book alone: no `causeFAIL` in the gate, no identifier-shape refusal anywhere, just
+120 false claims the hole's unparsed declarations manufacture plus the three overrides rows the
+pre-run already carried.
 
 ### What the three refutations actually are: a GRAMMAR hole, measured
 
