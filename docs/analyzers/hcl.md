@@ -916,6 +916,52 @@ at all. The marker keys on this lane are `hclSite`, `hclBuiltin+hclSite`, `hclOv
 `contains` edges carry `hclSite`; a per-marker `collRes` column is what the table would need to answer the
 question as asked.
 
+### Cause 18 — the TWIN TEST ON NIM (cross-lane): the population exists, and the store BINDS almost all of it
+
+This lane's `arbitraryTwin` is 0, so hcl cannot test whether a twin is really WRONG — the question the
+whole `collRes`/`ofWhich`/`twin` machinery rests on, which the indexer's control arm answers statistically
+(37,318 of 49,729 collision-bound picks to the WRONG symbol) and nobody has tested per row on a
+population that has twins. **Nim was chosen because it carries the programme's largest twin population
+(`calls arbitraryTwin 70,223`); nim's files were NOT edited — the measurement is a copy of this lane's
+instrument with the extension list and env names changed (`store-binding-truth.nim.mts`), run once,
+labelled, `nice -n 10`, no lock.**
+
+ONE RUN: nim, **1,499 indexer-eligible of 1,500** files copied (top exclusion `tests` 1), **75,094 store
+rows**. Artefact `validation/m14/fixtures/hcl/store-binding-truth.nim-twin-1500.json`.
+
+| type | rows | bound | unbound | other-file | **twin (own file silent, declaration elsewhere)** | no-candidate | leaf-reduced |
+|---|---|---|---|---|---|---|---|
+| calls | 25,335 | 19,322 | 6,013 | 9,846 | **9,782** | 0 | **0** |
+| references | 14,234 | 9,724 | 4,510 | 3,471 | **3,471** | 0 | 0 |
+| uses | 10,995 | 10,966 | 29 | 1,614 | **1,614** | 0 | 0 |
+| imports | 2,021 | 973 | 1,048 | 973 | **973** | 0 | 0 |
+| contains | 21,486 | 21,477 | 9 | **1** | 1 | 0 | 0 |
+| **total** | **75,094** | 63,425 | 11,669 | 16,306 | **16,242** | **0** | **0** |
+
+THREE THINGS THIS ESTABLISHES BEFORE THE INTENT TEST:
+
+1. **The population exists and is large: 16,242 twin rows, and `noCandidateAnywhere` is 0** — on nim,
+   every own-file-silent row has a declaration somewhere, so the twin class is the whole class there.
+2. **The store BINDS almost all of them** — `calls` 9,782 twins against 9,846 other-file bindings,
+   `references` 3,471/3,471, `imports` 973/973. So "the store refused it" is not what happens; what
+   happens is a foreign declaration is chosen. Whether that foreign declaration is the one the edge MEANT
+   is precisely the untested question, and it is now isolated to 16,242 rows rather than assumed.
+3. **`leafReduced` is 0 on nim, in every type** — unlike hcl, where 96.8% of bound references needed leaf
+   reduction. So nim's bindings are exact-name bindings, which makes it a CLEANER test population than
+   hcl: a wrong twin here cannot be excused as a leaf coincidence, and `contains` shows **1** other-file
+   binding out of 21,486, so the deferral fix holds on this lane too.
+
+THE FALSIFIER FOR "TWINS ARE WRONG", named before the intent run: a twin row whose bound declaration
+lives in a file the SOURCE file can actually reach (nim: the module is imported, or the declaration is in
+the same package path) and whose name matches is a binding that is plausibly the one the edge meant. **If
+most of the 16,242 look like that, "twins are wrong" fails to fire** and the intent legend's scoping — a
+foreign declaration is what a cross-document reference IS, a RISK not proven wrongness — is the stronger
+reading, which would make a large share of the fleet's `twin` columns risk-shaped numbers read as defects.
+The negative control is the other side: twin rows bound to a file the source cannot reach at all, which
+are arbitrary picks whatever else is true. **The intent column this needs (source-file reachability of
+the bound declaration) is the next edit; it is not in the instrument yet, and no number above depends on
+it.**
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
