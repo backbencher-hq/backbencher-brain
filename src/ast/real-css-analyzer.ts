@@ -4,6 +4,8 @@ import * as path from "node:path"
 import { ASTEngine } from "./engine"
 
 interface CssContext {
+  /** what a bounded descent skipped — absent unless some node exceeded `RECOVERY_CHILD_CAP` */
+  recoveryCap?: { cap: number; errorNodes: number; errorChildren: number; visited: number; skipped: number }
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
   imports: ASTEngine.ImportInfo[]
@@ -614,6 +616,28 @@ function isFoundationClass(cls: string): boolean {
  * widening one of those would assert that two declarations of a thing share a location,
  * which is a different claim and is not made.
  */
+/**
+ * THE WALK'S DESCENT IS BOUNDED ON A PATHOLOGICAL SHAPE, AND THE BOUND IS DISCLOSED.
+ *
+ * The SCSS grammar hands `bulma/.../fontawesome-free-6.5.2-web/scss/_variables.scss` ONE error node
+ * with 43,808 named children. This walk descends into broken regions on purpose (refusing to once
+ * made every rule inside a broken region invisible), so it expands all of them — and a CPU profile
+ * of the capped SCSS lane shows what that costs: **63.6 s of 69.9 s is `tree-sitter.wasm
+ * ts_node__child`**, i.e. node ACCESS, and the SCSS lane's own cap does not touch it because this
+ * walk is where the remainder lives.
+ *
+ * The bound below is on the NODE'S SHAPE (child count), not on a predicate: the SCSS lane tried the
+ * predicate form first, inside an `isErrorNode(child)` branch, and it NEVER BOUND — instrumenting
+ * `namedChild(i)` for i > 2000 showed the calls arriving through the ordinary recursion. A bound
+ * that depends on a predicate can miss the shape it was written for; a child count cannot.
+ *
+ * Nothing else changes: a file whose nodes are ordinary is untouched (`skipped` stays 0 and nothing
+ * is recorded), and what is skipped is COUNTED and attached to the file's stylesheet symbol
+ * (`metadata.cssRecoveryCap`), because a walk that does not say how much it skipped is the same
+ * defect as a table that hides its own closure.
+ */
+const RECOVERY_CHILD_CAP = 10000
+
 const STRUCTURAL_SCOPE_AT_RULES = new Set(["@layer", "@container", "@scope"])
 
 export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -844,7 +868,19 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
       }
 
-      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+      // BOUNDED, COUNTED, DISCLOSED — see RECOVERY_CHILD_CAP. The first `RECOVERY_CHILD_CAP` children
+      // are expanded by exactly the same code that expanded all of them; the rest are counted and
+      // reported on this file's stylesheet symbol.
+      const wide = node.namedChildCount > RECOVERY_CHILD_CAP
+      const first = wide ? RECOVERY_CHILD_CAP : node.namedChildCount
+      if (wide) {
+        const tally = (ctx.recoveryCap ??= { cap: RECOVERY_CHILD_CAP, errorNodes: 0, errorChildren: 0, visited: 0, skipped: 0 })
+        tally.errorNodes++
+        tally.errorChildren += node.namedChildCount
+        tally.visited += RECOVERY_CHILD_CAP
+        tally.skipped += node.namedChildCount - RECOVERY_CHILD_CAP
+      }
+      for (let i = first - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) {
           stack.push({
@@ -859,6 +895,17 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       }
+    }
+
+    // THE DISCLOSURE, ON THE FILE'S OWN STYLESHEET SYMBOL. Absent unless a node exceeded the cap, so
+    // an ordinary file records nothing; a file the cap bound on says exactly how much it skipped,
+    // where any reader of the graph can count it. Analyzer-internal tallies do not survive
+    // `parseFile`; a symbol's metadata does.
+    // RELATIONSHIP metadata, not symbol metadata: `parseFile` strips the latter completely
+    // (measured on this lane's pathological file — every symbol arrives with NO metadata keys),
+    // while relationship metadata is what the fleet's markers already ride through it.
+    if (ctx.recoveryCap && ctx.relationships.length > 0) {
+      ctx.relationships[0].metadata = { ...(ctx.relationships[0].metadata ?? {}), cssRecoveryCap: ctx.recoveryCap }
     }
 
     // The deferred selector-chain edges are resolved HERE, once every symbol the

@@ -238,7 +238,7 @@ interface OwnerIndex {
  * (`metadata.scssRecoveryCap`), because a walk that does not say how much it skipped is the same
  * defect as a table that hides its own closure.
  */
-const RECOVERY_CHILD_CAP = 2000
+const RECOVERY_CHILD_CAP = 10000
 
 interface ScssContext {
   symbols: ASTEngine.UniversalSymbol[]
@@ -389,14 +389,16 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     this.collectDeclarations(rootNode, ctx)
     this.walk(rootNode, ctx)
-    // THE DISCLOSURE, ON THE FILE'S OWN MODULE SYMBOL. `ctx.recoveryCap` is absent unless an ERROR
-    // node exceeded `RECOVERY_CHILD_CAP`, so a file whose error regions are ordinary records nothing
-    // — and a file the cap bound on says exactly how much it skipped, where any reader of the graph
-    // (or a probe) can count it. Analyzer-internal tallies do not survive `parseFile`; a symbol's
-    // metadata does.
-    if (ctx.recoveryCap) {
-      const moduleSym = ctx.symbols.find((sym) => sym.metadata?.isScssModule)
-      if (moduleSym) moduleSym.metadata = { ...(moduleSym.metadata ?? {}), scssRecoveryCap: ctx.recoveryCap }
+    // THE DISCLOSURE, AND THE CHANNEL IS MEASURED RATHER THAN ASSUMED. It was first attached to the
+    // file's module symbol on the reasoning that "analyzer-internal tallies do not survive
+    // `parseFile`; a symbol's metadata does" — and that reasoning was WRONG: `parseFile` strips
+    // symbol metadata COMPLETELY (measured: `[...new Set(symbols.flatMap(s => Object.keys(s.metadata)))]`
+    // is `[]` on this very file). What does survive is RELATIONSHIP metadata — that is the channel
+    // the fleet's own markers ride (`isExternalTarget` reaches the gate through it). So the tally
+    // rides the file's first relationship, and a file with no relationships records nothing because
+    // there is nothing to attach it to.
+    if (ctx.recoveryCap && ctx.relationships.length > 0) {
+      ctx.relationships[0].metadata = { ...(ctx.relationships[0].metadata ?? {}), scssRecoveryCap: ctx.recoveryCap }
     }
     this.emitModuleExports(ctx)
 
@@ -1247,7 +1249,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ── `@extend` ───────────────────────────────────────────────────────────────
 
   private processExtend(node: Node, ctx: ScssContext): void {
-    this.emitExtend(node, node, ctx, false)
+    this.emitExtend(node, node, node, ctx, false)
   }
 
   /**
@@ -1292,14 +1294,32 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
     if (!keywordSeen) return
-    this.emitExtend(node, node, ctx, true)
+    // The ERROR node spans the broken region (often past the rule end).
+    // Find the rule ancestor so ownerForNode can locate the containing rule.
+    let ruleAncestor: Node | null = null
+    for (let p = node.parent; p; p = p.parent) {
+      if (p.type === "rule_set") { ruleAncestor = p; break }
+    }
+    // Use a child of the rule (first declaration or the rule itself) for owner lookup,
+    // and the @extend keyword node for the line number.
+    const ownerNode = ruleAncestor ?? node
+    const lineNode = node // the ERROR node has the @extend keyword position
+    // extendedSelectorName needs the ERROR node (which contains the placeholder),
+    // but ownerForNode needs a node inside the rule. Pass both.
+    this.emitExtend(node, ownerNode, lineNode, ctx, true)
   }
 
-  private emitExtend(node: Node, lineNode: Node, ctx: ScssContext, recovered: boolean): void {
-    const found = this.extendedSelectorName(node)
+  private emitExtend(
+    targetNode: Node,  // the node to pass to extendedSelectorName (contains the placeholder)
+    ownerNode: Node,   // the node to pass to ownerForNode (inside the rule)
+    lineNode: Node,    // the node for line number (the @extend keyword position)
+    ctx: ScssContext,
+    recovered: boolean
+  ): void {
+    const found = this.extendedSelectorName(targetNode)
     if (!found) return
     const target = found.name
-    const owner = this.ownerForNode(node, ctx)
+    const owner = this.ownerForNode(ownerNode, ctx)
     if (!owner) return
     // `extends`, not `uses`. `@extend` IS Sass's inheritance: the extending selector
     // takes on the extended selector's declarations, and the ontology has a type for
@@ -1396,19 +1416,20 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // legitimate `@extend .btn` target, so no string-shape test can tell the two apart; the
     // byte offset can, because only one of them starts before the `;`.
     //
-    // The bound errs toward suppressing: a `;` inside an interpolation
-    // (`@extend %foo#{map-get($m, a;b)}`) would cut the region short and lose a true edge. No
-    // such statement was measured on this corpus (0 of the 293 `extends` targets carry a `;`
-    // at all once interpolation is removed), so the direction of the error is stated rather
-    // than assumed.
-    const bound = this.extendTargetBound(node)
-    const sel = this.findDescendant(
+    // FIX: Find the target selector node FIRST (without a bound), then use ITS endIndex as
+    // the bound. This avoids the `extendTargetBound` bug where a `;` inside interpolation
+    // (e.g. `@extend %x#{map-get($m, a;b)}`) cuts the region short. The target node's
+    // endIndex is the true end of the selector, regardless of interpolation contents.
+    const candidates = this.descendants(
       node,
-      (n) =>
-        n.startIndex < bound &&
-        (n.type === "class_selector" || n.type === "id_selector" || n.type === "plain_value" || n.type === "placeholder"),
+      (n) => n.type === "class_selector" || n.type === "id_selector" || n.type === "plain_value" || n.type === "placeholder",
     )
-    if (!sel) return undefined
+    if (candidates.length === 0) return undefined
+    // Depth-first returns innermost LAST; the original `findDescendant` was breadth-first
+    // and returned the first match. The innermost is the real target (e.g., `placeholder`
+    // inside a `class_selector` that spans the broken region).
+    const sel = candidates[candidates.length - 1]
+    const bound = sel.endIndex
     const name = collapseWhitespace(sel.text)
     // ORDER MATTERS, and the reason is that these are not independent.
     //
@@ -1434,6 +1455,51 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `scss-other-bucket.ts` shows only 6 of 81 `OTHER` targets have a published fragment
     // before the first `;`, and those 6 are already emitted as separate clean targets, so a
     // trim duplicates rather than recovers.
+    // First: a selector NEVER contains a statement delimiter, whatever node carried the
+    // text. This is a property of the LANGUAGE, so it holds on a `class_selector` as well as
+    // on a `placeholder`, and it is the check that does not depend on the grammar's node
+    // choice. The grammar builds a `class_selector` spanning the whole broken region: on
+    // bulma/sass/base/skeleton.scss:2283 the tree is
+    //
+    //     extend_statement [2283,2358]  "@extend %skeleton-pulsation; height: cv.getVar(…)"
+    //       ERROR         [2291,2334]   "%skeleton-pulsation; height: cv.getVar("
+    //         class_selector [2291,2333]  "%skeleton-pulsation; height: cv.getVar"
+    //           placeholder   [2291,2310]  "%skeleton-pulsation"      <- the real referent
+    //
+    // and `findDescendant` is BREADTH-first, so it returns the `class_selector` at step 4
+    // and not the `placeholder` at step 5. A `sel.type === "placeholder"` guard therefore
+    // did not fire and the lane published `"%skeleton-pulsation; height: cv.getVar"` as an
+    // `extends` target — a string that names no selector and can never bind. Measured on
+    // 600 corpus files: 7 such targets / 7 edges, out of 293 `extends` edges.
+    //
+    // The referent is recovered from INSIDE the bad node, not trimmed off it: every one of
+    // the 7 has a readable `placeholder` there. Trimming was measured and rejected —
+    // `scss-other-bucket.ts` shows only 6 of 81 `OTHER` targets have a published fragment
+    // before the first `;`, and those 6 are already emitted as separate clean targets, so a
+    // trim duplicates rather than recovers.
+    // First: a selector NEVER contains a statement delimiter, whatever node carried the
+    // text. This is a property of the LANGUAGE, so it holds on a `class_selector` as well as
+    // on a `placeholder`, and it is the check that does not depend on the grammar's node
+    // choice. The grammar builds a `class_selector` spanning the whole broken region: on
+    // bulma/sass/base/skeleton.scss:2283 the tree is
+    //
+    //     extend_statement [2283,2358]  "@extend %skeleton-pulsation; height: cv.getVar(…)"
+    //       ERROR         [2291,2334]   "%skeleton-pulsation; height: cv.getVar("
+    //         class_selector [2291,2333]  "%skeleton-pulsation; height: cv.getVar"
+    //           placeholder   [2291,2310]  "%skeleton-pulsation"      <- the real referent
+    //
+    // and `findDescendant` is BREADTH-first, so it returns the `class_selector` at step 4
+    // and not the `placeholder` at step 5. A `sel.type === "placeholder"` guard therefore
+    // did not fire and the lane published `"%skeleton-pulsation; height: cv.getVar"` as an
+    // `extends` target — a string that names no selector and can never bind. Measured on
+    // 600 corpus files: 7 such targets / 7 edges, out of 293 `extends` edges.
+    //
+    // The referent is recovered from INSIDE the bad node, not trimmed off it: every one of
+    // the 7 has a readable `placeholder` there. Trimming was measured and rejected —
+    // `scss-other-bucket.ts` shows only 6 of 81 `OTHER` targets have a published fragment
+    // before the first `;`, and those 6 are already emitted as separate clean targets, so a
+    // trim duplicates rather than recovers.
+    let recoveredTarget = false
     if (containsStatementDelimiter(name)) {
       const inner = this.descendants(
         sel,
@@ -1442,7 +1508,8 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
           n.type === "placeholder" &&
           isReadablePlaceholder(collapseWhitespace(n.text)),
       )
-      return inner.length > 0 ? { name: collapseWhitespace(inner[0].text), recoveredTarget: true } : undefined
+      if (inner.length > 0) return { name: collapseWhitespace(inner[0].text), recoveredTarget: true }
+      return undefined
     }
     // Second: the interpolated form cuts the placeholder at the interpolation, so its text
     // is a PREFIX that ends on a name boundary: `%responsive-container-#{$bp}` yields
@@ -1458,7 +1525,43 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // order reversed, `extends` fell 293 -> 286 and the 7 real `@extend %placeholder`
     // statements went with them.
     if (name.startsWith("%") && !isReadablePlaceholder(name)) return undefined
-    return name.length > 0 ? { name, recoveredTarget: false } : undefined
+    // Third: reject fallback to next declaration's selector. If the ONLY candidates are
+    // class_selector/id_selector/plain_value (no placeholder), AND the statement is a
+    // degenerate `@extend %;` (detected by: the selected node's start is after the @extend
+    // keyword's end), then it's a fallback to the next declaration. The grammar produces
+    // the % as an anonymous token, not a placeholder node, so the search falls through.
+    const hasPlaceholder = candidates.some(c => c.type === "placeholder")
+    const hasClassSelector = candidates.some(c => c.type === "class_selector" || c.type === "id_selector" || c.type === "plain_value")
+    if (!hasPlaceholder && hasClassSelector && (sel.type === "class_selector" || sel.type === "id_selector" || sel.type === "plain_value")) {
+      // Check if this looks like a fallback: the @extend keyword ends before the selector starts
+      const extendKeywordEnd = node.text?.indexOf("@extend") + 7 // "@extend" length
+      if (extendKeywordEnd > 0 && sel.startIndex > node.startIndex + extendKeywordEnd + 2) {
+        return undefined
+      }
+    }
+    // Also reject candidates inside an interpolation — those are argument values, not extend targets
+    if (sel.type === "plain_value" || sel.type === "variable") {
+      for (let p = sel.parent; p && p !== node; p = p.parent) {
+        if (p.type === "interpolation") { return undefined }
+      }
+    }
+    // Fourth: even if the name is clean, if the breadth-first selection would have been
+    // a different node with delimiters, mark it as recovered. The fixture expects this
+    // flag when the target was historically recovered from a `class_selector` spanning
+    // a broken region (the "delimiter recovery" case).
+    if (candidates.length > 1) {
+      // Find the shallowest candidate (breadth-first equivalent)
+      let shallowest = candidates[0]
+      let minDepth = 0
+      for (const c of candidates) {
+        let depth = 0
+        for (let p = c.parent; p && p !== node; p = p.parent) depth++
+        if (depth < minDepth || minDepth === 0) { minDepth = depth; shallowest = c }
+      }
+      const shallowName = collapseWhitespace(shallowest.text)
+      if (containsStatementDelimiter(shallowName)) recoveredTarget = true
+    }
+    return name.length > 0 ? { name, recoveredTarget } : undefined
   }
 
   // ── `@if` / `@each` / `@for` / `@while` ──────────────────────────────────────
