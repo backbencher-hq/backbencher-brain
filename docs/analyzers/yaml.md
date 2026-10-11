@@ -132,7 +132,8 @@ That sentence is the strongest form of the clause-2 ruling this lane can reach o
 longer "the 254 are ruled", it is "no claim the project could have checked is left unclaimed."
 
 **Both whole-population instruments were then re-run on the frozen tree, because a fix measured by one
-instrument is a fix measured by one instrument:**
+instrument is a fix measured by one instrument — these are the ROUND 10 numbers, and ROUND 11 rotated
+them to 184 / 137 / 253 below:**
 
 | instrument, whole admitted population | result |
 |---|---|
@@ -199,8 +200,9 @@ Lead, not a spelling fix, and it is stated here with the exact file pair so it c
 
 **ROUND 10 appended the last FIXABLE edge** (Defect 4 above) and changed no edge count: `extQ` 255 →
 **254**, `extOK` 10,616 → **10,617**, residual and edges unchanged, and the enumerator's `CLAIMABLE
-EDGES` section now reads **NONE**. The committed artifact was rotated to that run, so every "current"
-number in this document is the Round 10 measurement.
+EDGES` section now reads **NONE**. ROUND 11 then moved the residual once more (185 → **184**, `extQ`
+254 → **253**, `extOK` 10,617 → **10,597**) and the committed artifacts were rotated to that run, so
+every "current" number in this document is the ROUND 11/12 measurement the ROUND 11 section states.
 
 **The draw is re-run at this revision, with the arguments this document states, so the row is
 reproducible rather than quoted:** `npx tsx script/m14/incoming-gate.ts yaml yaml 200` →
@@ -246,6 +248,12 @@ those four duplicate-key `contains` edges, which the gate's `selfTest` pins
 (`resolvedAmongCollision === 1` **and** `ambiguousByDecl === 0`). This document quotes the four-clause
 instrument's 185 in the completion package and the enumerator's 142 where the falsifier ran, and says
 which is which each time.
+
+> **SUPERSEDED by ROUND 11.** The enumerator now IMPORTS the gate's `isContainsEdge` predicate instead
+> of mirroring the model, so it reads **137** and the four-edge gap is GONE — both instruments read
+> 137 ambiguous / 184 residual, and the number a reader can pick correctly is now one. This paragraph
+> is kept as the record of the gap and of why documenting it was the wrong fix; its per-type arithmetic
+> (131 references) is the pre-Round-11 reading (130 now).
 
 Fixture battery 33 pass / 0 fail; FOUR controls (`document-claim-control`, `workflow-needs-control`,
 `include-claim-control`, `include-selector-control`) each exit 0, with falsifier runs recorded for the
@@ -380,7 +388,7 @@ These are NOT removable by marking differently, and the reason is structural in 
 | shape (the enumerator's rows, grouped) | edges | why nothing can check it | what WOULD verify one (falsifier) |
 |---|---|---|---|
 | templated targets — `imports yaml_keyword_include` 73, `references yaml_resource_ref` 14, `references yaml_depends_on` 17, `imports yaml_action_use` 18 | **122** | `'{{ service_type }}_cleanup.yml'`, `{{ item }}`, `${{ parameters.dependsOn }}`, `$/.github/actions/go-cache-restore`: the target is materialised at RUN time, so the thing that lands is a function of variables no single-file parse can see | a value the tree contains literally instead of a template |
-| URI schemes — `imports yaml_keyword_include` 88 (`package:`/`dart:`), `references yaml_resource_ref` 5, `references yaml_depends_on` 3 | **96** | a pub URI is not a path, and `urn:k8s:secret:name:key` / `k8s:optional` are not names. `verifyImportClaim` DOES answer `package:` — from the project's DECLARED pubspec packages, which the gate builds for `dart` alone | the pubspec fact set wired for this lane, MEASURED first: `package:lints` IS declared in that checkout, so wiring it blind could turn verified claims into REFUTATIONS |
+| URI schemes — `imports yaml_keyword_include` 88 (`package:`/`dart:`), `references yaml_resource_ref` 5, `references yaml_depends_on` 3 | **96** | a pub URI is not a path, and `urn:k8s:secret:name:key` / `k8s:optional` are not names. `verifyImportClaim` DOES answer `package:` — from the project's DECLARED pubspec packages, which the gate builds for `dart` alone | the pubspec fact set wired for this lane — MEASURED, not assumed (`pubspec-package-price.ts`): of 86 sites, **83 would VERIFY** and **3 would REFUTE**. The old ground for deferring ("`package:lints` IS declared") was WRONG — **0** pubspecs declare `lints`; the refuter is `flutter_lints` (declared in `flutter-packages`) |
 | globs — `imports yaml_keyword_include` | **63** | `*_test.go`, `releases/*`, `feature/*`: a glob names a SET, and no single candidate can be the thing it names | a spelling that names one file |
 | path-like but NOT admitted — `imports yaml_keyword_include` 19, `dotted` 14, `imports yaml_action_use` 11, `references declared_type` 3, `references yaml_action_use_unverified` 1, `imports yaml_action_use` remoteRef 2 | **50** | `./security-scanner` and `./ci-actions/.github/actions/setup` are checked out by an earlier step; `build.psm1`, `global.json`, `tools/ci.psm1` and mkdocs' `python/name:material…` are real dependencies of a NON-yaml file; `pypa/gh-action-pypi-publish@release/v1` is a real reference the RULE refuses (below) | the file being in the checkout at run time, or in an admitted population that is not `.yaml`/`.yml` by construction |
 | free-form / whitespace — `imports yaml_keyword_include` | **11** | `name=a public=no`, `file=x.yml`, ansible's free-form parameter lists: not a path, not a name | a spelling that is one of the two |
@@ -402,6 +410,12 @@ The falsifier column is the point of the table: each row names the observation t
 so the ruling can be shown wrong instead of being trusted.
 
 ## ROUND 11 — the falsifier's one edge FIXED, after pricing the rule (2026-10-10)
+
+**HEADLINE, and it is the number this round was asked for: the cross-file resource index converts
+1 ambiguous edge (`amb(decl)` 138 → 137, residual 185 → 184). Its FULL reach is 22 edges, not 1** — it
+also re-claims 20 references that were passing as VERIFIED EXTERNAL CLAIMS and 1 as unverifiable,
+every one a reference to an object the same directory declares. Both numbers are measured on the whole
+admitted population below.
 
 The collision falsifier did not just fail — it named a defect, and a defect is not a ruling. So the
 rule it implied was PRICED before it was applied, and the price is the falsifier's own output rather
@@ -479,17 +493,46 @@ REFUSE rather than pick; and an in-file declaration still resolves as it always 
 Round 11 artifact** (`44988fcd4`, 23:14 on 10-10; the landings run 23:40 → 10:41 next morning).
 `extractLeaf` and key selection CHANGE BINDINGS, so a figure taken before them is not a baseline.
 
-**RE-MEASURED at the current revision, and UNCHANGED.** Two whole-population runs, both labelled:
+**RE-MEASURED at the current revision, and UNCHANGED.** Three whole-population runs, each labelled:
 
 ```
-round 11 artifact (pre-landings, 44988fcd4):  TOTAL 1,414,582 · resolved 1,403,548 · ofWhich 4 · amb 137 · unresolved 47 · extOK 10,597 · ext? 253 · extFAIL 0 · bindFAIL 0 · causeFAIL 0
-this turn (post-landings, HEAD 2d8d59274):    TOTAL 1,414,582 · resolved 1,403,548 · ofWhich 4 · amb 137 · unresolved 47 · extOK 10,597 · ext? 253 · extFAIL 0 · bindFAIL 0 · causeFAIL 0
+round 11 artifact (pre-landings, 44988fcd4):        TOTAL 1,414,582 · resolved 1,403,548 · ofWhich 4 · amb 137 · unresolved 47 · extOK 10,597 · ext? 253 · extFAIL 0 · bindFAIL 0 · causeFAIL 0
+round 12 re-take (post-landings, 2d8d59274):         TOTAL 1,414,582 · resolved 1,403,548 · ofWhich 4 · amb 137 · unresolved 47 · extOK 10,597 · ext? 253 · extFAIL 0 · bindFAIL 0 · causeFAIL 0
+round 13 re-take (HEAD bd2335f52, WORKLIST fix):     TOTAL 1,414,582 · resolved 1,403,548 · ofWhich 4 · amb 137 · unresolved 47 · extOK 10,597 · ext? 253 · extFAIL 0 · bindFAIL 0 · causeFAIL 0
 ```
 
 **The landings did not move this lane** — its targets do not go through the leaf-reduction path the
 landings repaired — and the re-take is now a valid baseline rather than a quoted one. The census
 (independent instrument) and the falsifier read the same three numbers, so **137 / 47 / 184 is three
 instruments agreeing**, not one instrument repeated.
+
+**AND RE-MEASURED A THIRD TIME AT HEAD `bd2335f52`, because a shared instrument changed AFTER the
+round-12 run.** `bd2335f52` (13:53) rewrote the gate's NAME WORKLISTS — `incoming-rule.ts` gained a
+named `NAME_CAP`, a `keep()` that de-duplicates and counts omissions, and a printed
+`amb: showing N of M collected + K omitted` — and the `incoming-gate.ts` that prints them. **It is
+printer and list-building only: no count increment was touched** (`keep()` is called AFTER
+`ambiguousByDecl++` / `bindingRefuted++`), and it landed after the 12:42 run, so the whole-population
+gate was re-run at HEAD. It reads **unchanged to the edge**:
+`TOTAL 1,414,582 · resolved 1,403,548 · ofWhich 4 · amb 137 · unresolved 47 · extOK 10,597 · ext? 253 ·
+extFAIL 0 · bindFAIL 0 · causeFAIL 0` → `residual 184 of 1,414,582`, every type `CLOSED`
+([residual-yaml-whole-corpus-round13.txt](../../validation/m14/fixtures/yaml/residual-yaml-whole-corpus-round13.txt),
+also rotated to the canonical `…-after.txt`). **The independent enumerator was re-run at HEAD too and
+reads the same to the edge** — `TOTAL 1,414,582 · 1403548 · amb 137 · unresolved 47 · extOK 10,597 ·
+ext? 253 · extFAIL 0` with `EXT-Q INVENTORY` **253** and `CLAIMABLE EDGES` **NONE**
+([census-yaml-whole-corpus-round13.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-round13.txt)) —
+and the falsifier reads `137 ambiguous`. So at HEAD the gate, the enumerator and the falsifier are
+three instruments on one number. The scss lane's finding was real — a capped worklist that did not say
+how much it hid — and it simply carries no count.
+
+**THE HEADER THE ROUND-13 RUN ADDS, AND IT MUST TRAVEL WITH THE NUMBER.** The same gate now prints a
+POPULATION block: `18364 parsed of 18364 · 0 failed · 0 degraded · files returning NO symbols AND NO
+relationships: 201` — of which **60 are 0 bytes** and **141 hold CONTENT and returned nothing**. The
+instrument says plainly that it **cannot tell a timed-out parse (`engine.ts:1991`) from content that
+cannot declare anything**, and therefore that every count in the table *describes evidence that is
+MISSING, not evidence that is wrong*. For yaml the named examples are benign by inspection (ansible
+`roles/*/meta/main.yml`, dart `analysis_options.yaml`) but the lane does **not** claim all 141 are: the
+residual of 184 is a residual of the population AS PARSED, and the 141 are stated as an open population
+item, not folded into the 184.
 
 **THE 184 NAMED BY THE GATE'S OWN MARKER-SET TABLE** (not by an assumption about what they are — this
 is `incoming-gate`'s `EDGES A MARKER SET EXPLAINS`, PER PROJECT scope, quoted from this turn's run):
@@ -556,6 +599,110 @@ declaration or carries a claim the project VERIFIES — **the lane is 184 edges 
 137 ambiguous and 47 unresolved, and a ruled class is not a resolution. The qualifier is the whole
 honest answer, and it is the same qualifier every lane that cleared this bar carries.
 
+## ROUND 14 — a local `uses:` re-routed to what the RUNNER materializes: `ext?` 253 → 244, priced before a line changed (2026-10-11)
+
+**THE CLASS THIS ROUND TOOK WAS NOT A RULING BUT A DEFECT.** The RULED CLASS carried 10
+`imports yaml_action_use` edges whose target is a `./…` path the repository does not contain — the
+largest coherent group left in `ext?`. The lane's own `actionUseClaim` comment had already recorded
+WHY the file is not on disk ("two of them checked out at run time by an earlier step (`path:
+security-scanner`, `path: ci-actions`)"), and that sentence is the finding: the target is not an
+external reference at all, it is a path a PRIOR STEP OF THE SAME JOB creates. §5v — a site making an
+unsupportable claim is a FIX, and a fix beats a ruling. And the fix is not a re-marking: the referent
+is a NAMED REPOSITORY at a NAMED REF, which `verifyRemoteRefClaim` VERIFIES, so 9 of the 10 move from
+a claim no check can reach to a claim the project confirms.
+
+**PRICED FIRST, FROM THE TEXT, WITHOUT THE ANALYZER.** `materialized-action-price.ts` walks the whole
+admitted corpus with a line oracle over a `git ls-files` population (1 MiB cap, the gate's own
+admission rules) and runs each emitted target through the SHARED arbiter, imported so pricing and
+gating cannot drift:
+
+| whole admitted corpus | |
+|---|---|
+| local `uses: ./…` sites (all shapes) | **523** |
+| no prior same-job checkout for the path | 513 |
+| MATCHED to a prior same-job checkout | **10** |
+| — exact `./D`, checkout NAMES a repository | **8** → 7 verify, 1 refused (waypoint's checkout pins **no `ref:`**, and the shared rule refuses a ref-less remoteRef) |
+| — `./D/<rest>` of a checkout of the CALLING repo | **2** (nimony: `./ci-actions/.github/actions/setup` IS the project's `.github/actions/setup`) |
+| — subpath of a NAMED repo · `../` target · exact match on the calling repo | **0 each** — stated as refusals, NOT implemented unmeasured |
+| PRICE: `ext?` → `extOK` | **9** |
+| left unverifiable, honestly | **1** |
+
+**THE RULE.** A checkout WITH `repository: R` puts R's tree at `with.path`; a checkout WITHOUT
+`repository:` puts the CALLING repository's tree there. So a local `uses:` target that a prior
+same-job checkout materializes is re-claimed — to `R@ref` as a `remoteRef` when the checkout names a
+repository, and to the STRIPPED project path as a FILE claim when it is the calling repo's own tree.
+The join happens AFTER the walk, from per-step facts (`recordStepWithFacts`), because a step's own keys
+do not come in a fixed order: `with:` follows `uses:` in the HashiCorp-style files and PRECEDES it in
+others, and key order is not evidence. The refusals are the rule's other half: ONLY EARLIER STEPS (the
+runner materializes in step order), ONLY THE SAME JOB (another job is another machine), ONLY
+`actions/checkout@…` (an unrelated action carrying the same `with: path:` materializes nothing), ONLY
+`./…`, and a MATERIALIZED repository WINS over an in-repo `action.yml` of the same name, because the
+checkout REPLACES that directory at run time. `materializedPath` and `materializedAtLine` travel on
+the edge, so the re-route is auditable from the edge alone.
+
+**MEASURED, WHOLE POPULATION, BOTH RUNS AT THE SAME WORKING TREE** (HEAD `27062400f`, whose two
+commits since the baseline are dart-doc commits that touch nothing here; 18,364 files, 189 repos,
+0 failed, 0 degraded; separator tripwire 0; `instrument self-test: PASS`; exit 1 both times — this
+lane has never claimed a PASS):
+
+```
+before the fix (this revision): TOTAL 1,414,582 · resolved 1,403,548 · ofWhich 4 · amb 137 · unresolved 47 · extOK 10,597 · ext? 253 · extFAIL 0 · bindFAIL 0 · causeFAIL 0
+
+after  the fix:                 TOTAL 1,414,582 · resolved 1,403,548 · ofWhich 4 · amb 137 · unresolved 47 · extOK 10,606 · ext? 244 · extFAIL 0 · bindFAIL 0 · causeFAIL 0
+```
+
+**THE Δ IS THE PRICE, EDGE FOR EDGE.** `imports` `extOK` 8,148 → **8,157** and `imports` `ext?`
+210 → **201**; `amb` 137, `unresolved` 47 and `extFAIL 0` unchanged; nothing else moves. The
+enumerator agrees to the edge — `EXT-Q INVENTORY` **244**, `CLAIMABLE EDGES` NONE
+([census-yaml-whole-corpus-round14.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-round14.txt)) —
+and its path-like `yaml_action_use` group shrinks **10 → 3**: the 2
+`pypa/gh-action-pypi-publish@release/v1` edges (a shared-rule question, unchanged) plus waypoint's
+ref-less repository, which is now NAMED in the edge instead of implied. A repo-scoped draw over the
+six affected repositories reads `extOK 919 · ext? 1 · extFAIL 0`, so the one that remains is the one
+the rule refused.
+
+**AND THE SHARED INSTRUMENTS WERE RE-MEASURED FIRST.** Four commits landed on
+`incoming-gate.ts`/`incoming-rule.ts` since Round 13 (+312 lines: a CONTRADICTED-column scope fix, a
+BINDING-INTENT vocabulary fix, the `amb(decl)` claim-carrying share, and an `--index` header
+correction). The whole-population walk was re-run BEFORE the analyzer was touched and reads
+**identical to the edge** — `amb 137 · unresolved 47 · extOK 10,597 · ext? 253 · extFAIL 0` — so the Δ
+above belongs to this lane, not to the shared wave. The population caveat travels unchanged: 60 files
+hold no content and **141 hold content and returned nothing**, which this instrument cannot distinguish
+from a timed-out parse; the 244 is a figure of the population AS PARSED, with the 141 stated as an open
+item, not folded in.
+
+**EVIDENCE THE FIX CAN FAIL.** Bilateral, on the production path (`pool-worker.parseFile`, project
+root passed):
+
+| instrument | result |
+|---|---|
+| `materialized-action-control.ts` — 10 crafted arms × 3 assertions | **CONTROL PASS, 0 failures** |
+| — the re-route: earlier same-job checkout NAMING a repo | re-routes to `hashicorp/security-scanner@main`, `remoteRef` + `materializedPath` + `materializedAtLine`; the literal target is GONE |
+| — refusals: no checkout · ANOTHER job · a LATER checkout · a DIFFERENT path · a NON-checkout action | the literal target STAYS and no repo target is invented (5 arms × 3) |
+| — key order: `with:` before `uses:` | STILL re-routes |
+| — the calling-repo family: manifest on disk / absent | file claim `.github/actions/setup/action.yml` / STAYS external, no fabricated claim |
+| — precedence and its falsifier | materialized `acme/ci-actions@v2` wins; WITHOUT the checkout the same file claims the in-repo `ci-actions/action.yml` again |
+| `yaml/materialized-action` fixture (authored before the run) | **PASS** — 3 expect rows, 3 forbid rows incl. the cross-job and later-checkout refusals |
+| `script/m60/yaml-mutants.ts` → `yaml/materialized-action-reverted` | **CAUGHT** (0 → 1 failure, by the new fixture) |
+| fixture battery | **34 pass / 0 fail** |
+| yaml mutant set | **25/25 caught, 0 survived** |
+| `tsc --noEmit` | clean |
+
+**THREE INSTRUMENTS, ONE NEW NUMBER.** The four-clause gate (`residual-gate.ts --lane yaml`) re-run at
+this revision reads `TOTAL 1,414,582 · resolved 1,403,548 (99.2 %) · ofWhich 4 · amb(decl) 137 ·
+unresolved 47 · extOK 10,606 · ext? 244 · residual 184 · extFAIL 0 · bindFAIL 0 · causeFAIL 0` · every
+type `CLOSED` · `RESIDUAL_EXIT=0`, so the clause-1 residual is **unchanged at 184** while clause 2's
+ext? figure moves with the gate — the same 244 / 10,606 the `incoming-gate` verdict reads, from an
+independently written classifier, with the enumerator agreeing to the edge.
+
+**WHAT THIS DOES NOT CLAIM.** That the re-routed ref resolves, that the repository is public, or that
+the two shapes the rule REFUSES (a subpath of a named repository, and an exact match against a
+checkout of the calling repository — 0 corpus sites each) would be re-claimed rather than left
+unverifiable. `ext?` is **244**, not 0, and the completion package below is still clause-1-short by
+184. **And the fleet board's incoming columns are NOT regenerated here** — `--board-log` overwrites
+the WHOLE shared log, so a board row is merged deliberately rather than as a side effect of this
+round — which means the board still shows yaml at the ROUND-13 figures until that merge is made.
+
 ## COMPLETION PACKAGE — current revision
 
 Whole admitted population: **1,414,582 edges · 18,364 files · 189 repos · 0 failed · 0 degraded.**
@@ -569,11 +716,14 @@ reading as `extQ`.)
 
 **WHICH ARTIFACT HOLDS WHICH REVISION — stated because this package got it wrong once (see ROUND 10):**
 [residual-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/residual-yaml-whole-corpus-after.txt)
-is the four-clause gate's own **Round 10** run at this revision —
+is the four-clause gate's own run at this revision, re-confirmed **UNCHANGED at HEAD
+`bd2335f52` (ROUND 13)** and **RE-RUN at ROUND 14** (which is the content now in it and in
+[residual-yaml-whole-corpus-round14.txt](../../validation/m14/fixtures/yaml/residual-yaml-whole-corpus-round14.txt)) —
 `TOTAL 1,414,582 · resolved 1,403,548 (99.2 %) · ofWhich 4 · amb(decl) 137 · unresolved 47 ·
-residual 184 · extFAIL 0 · bindFAIL 0 · causeFAIL 0` · every type `CLOSED` (one printed bucket per edge) — so the clause-1 number below and the
+extOK 10,606 · ext? 244 · residual 184 · extFAIL 0 · bindFAIL 0 · causeFAIL 0` · every type `CLOSED`
+(one printed bucket per edge), `RESIDUAL_EXIT=0` — so the clause-1 number below and the
 tie-break in clause 4 now come from the four-clause instrument ITSELF at the frozen tree rather than
-from a round-old copy; the enumerator's **Round 10** run (1,414,582 · amb 142 · `extQ` 254 ·
+from a round-old copy; the enumerator's **ROUND 12** run (1,414,582 · amb 137 · `extQ` 253 ·
 `CLAIMABLE EDGES` NONE) is
 [census-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-after.txt);
 the `extQ` census that carries the ruling is
@@ -583,7 +733,7 @@ RULING's falsifier is
 [census-yaml-whole-corpus-round7.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-round7.txt)
 (1,414,637 · `extQ` 282) as the round-by-round copy.)
 
-**THE ENUMERATOR NO LONGER DISAGREES WITH THE GATE — see the note in clause 1.** It used to say `amb 142` against the gate's 138; it now imports the gate's own `contains` predicate and reads **137**, the same as the gate. The paragraph below is kept as the record of what the gap was and why documenting it was the wrong fix: 142 − 138 = **4, and all four are `contains`.** The enumerator calls
+**THE ENUMERATOR NO LONGER DISAGREES WITH THE GATE — see the note in clause 1.** It used to say `amb 142` against the gate's 138 (now 137); it now imports the gate's own `contains` predicate and reads **137**, the same as the gate. The paragraph below is kept as the record of what the gap was and why documenting it was the wrong fix: 142 − 138 = **4, and all four are `contains`.** The enumerator calls
 `incoming-rule.ts`'s `classifyEdge` DIRECTLY, so it is still counting `contains` by DECLARATION COUNT
 (a name declared twice anywhere in the project reads ambiguous) — the model `fa2dc27e8` retired,
 because production resolves `contains` with its own `WHERE s.project_id = ? AND s.name = ?` +
@@ -595,11 +745,14 @@ silently reconciled.
 **THE ANSWER, up front.** Clause 1 **fails by 184** — 137 ambiguous + 47 unresolved, every one
 attributed to a NAMED cause below, 0 refuted. Clauses 2, 3 and 4 are **met**. Two things stand
 between this lane and a formal `incoming-gate` PASS: **`bad` = 184** (that residual) and **`extQ` =
-254**, both read off the whole-population walk re-run at this revision (`FAIL — 138 ambiguous + 47
-unresolved of 1414582 edges …; 254 external claim(s) unverifiable (10617 verified + 254)`), and BOTH
+244**, both read off the whole-population walk re-run at this revision (`FAIL — 137 ambiguous + 47
+unresolved of 1414582 edges …; 244 external claim(s) unverifiable (10606 verified + 244)`; ROUND 14
+moved `extQ` 253 → 244 by FIXING nine false external claims, so where a paragraph below still says 253
+it is quoting the ROUND-13 reading of this class), and BOTH
 are ruled, each row with a mechanism and a falsifier, and the falsifier for the
-largest class **fired** (ROUND 7: it fails for exactly 1 of the 142 ambiguous edges, and that edge is
-named with the file pair that proves it). On the SAMPLE draws `bad === 0`,
+largest class **fired** (ROUND 7: it failed for exactly 1 of the 142 ambiguous edges, and ROUND 11
+then FIXED that edge with the cross-file resource rule — the falsifier now reads `RULING HOLDS`). On
+the SAMPLE draws `bad === 0`,
 so there only `extQ` stands in the way. §7's five "done" criteria are each checked at the end of this
 package. Read together: **this is a done lane by §7 and a clause-1-short lane by the four-clause
 completion test** — two measurements, neither of them a PASS.
@@ -617,8 +770,11 @@ npx tsx validation/m14/fixtures/yaml/workflow-needs-control.ts
 npx tsx validation/m14/fixtures/yaml/pointer-cause-control.ts
 BB_ONLY_REPOS=kubernetes,ansible,docker,hasura-engine,gql-graphql-mesh,gql-sangria,mojo,yq,hledger \
   npx tsx validation/m14/fixtures/yaml/name-collision-falsifier.ts   # the RULED CLASS's falsifier
+npx tsx validation/m14/fixtures/yaml/pubspec-package-price.ts   # the ext-Q URI row's price: 86 -> 83 verify / 3 refute
+npx tsx validation/m14/fixtures/yaml/materialized-action-price.ts    # ROUND 14's price: 523 local uses -> 10 matched -> 9 convert / 1 refused
+npx tsx validation/m14/fixtures/yaml/materialized-action-control.ts  # ROUND 14's control: 10 arms, 30 assertions, exit 0
 npx tsx validation/m14/fixtures/yaml/store-scope-probe.ts     # the store layer, no context of its own
-npx tsx script/m14/run-fixtures.ts --lang yaml                # 33 pass / 0 fail
+npx tsx script/m14/run-fixtures.ts --lang yaml                # 34 pass / 0 fail
 ```
 
 ### Clause 1 — per-type residual, each non-zero type with its named cause
@@ -682,26 +838,42 @@ requires `externalUnverified = 0` for a PASS. **Round 5 moved that number 1,903 
 claims, not by marking differently** (the section above: 1,560 of the 1,903 were `isExternal` said
 about a file the project HAS — 1,356 cross-file `$ref`s and 208 local reusable-workflow calls —
 and 67 more were false dependency edges sitting in the VERIFIED column). **Round 7 moved it again,
-343 → 335 (the role-entry fix) → 255 (Rounds 7–9) → **254** (Round 10)**, by removing 80 edges that were being counted
+343 → 335 (the role-entry fix) → 255 (Rounds 7–9) → 254 (Round 10) → **253** (ROUND 11) → **244**
+(ROUND 14)**, by removing 80 edges that were being counted
 as unverifiable imports and are not imports at all (Azure Pipeline branch filters, semgrep/flutter/
 ffigen/Dart-builder selector lists, a Spring Boot endpoint list, a GitHub Actions job output) and by
 re-claiming the quoted hasura includes as VERIFIED files — again by fixing claims, not by marking.
+**ROUND 14 moved it 253 → 244 the same way:** nine `./…` targets a prior same-job step materializes
+are re-named as the repository at its ref (or as the project's own file) they actually are, and the
+single site the rule declined to convert is waypoint's, whose checkout pins no `ref:`.
 
-The remaining **254 are ruled as a CLASS, with the four things the fleet ruling requires**: the
+The remaining **244 are ruled as a CLASS, with the four things the fleet ruling requires**: the
 SHAPE split (the enumerator's 17 rows, grouped to 6 below), the MECHANISM (each row's "why nothing
 can check it"), the COUNT split by shape, and a FALSIFIER per row ("what WOULD verify one"). The
 largest single piece of
-the ruling — **88 `package:`/`dart:` includes** — is dispositioned as a FACT-BUILDING question rather
-than a lane defect, because `verifyImportClaim` already answers exactly that shape and the gate
-builds the pubspec facts it needs for `dart` alone; wiring them for this lane without measuring would
-risk turning verified claims into refutations (`package:lints` IS declared in that checkout). Three
+the ruling — **86 `package:`/`dart:` includes** — is dispositioned as a FACT-BUILDING question rather
+than a lane defect, and **its price is now MEASURED instead of guessed**
+([pubspec-package-price.txt](../../validation/m14/fixtures/yaml/pubspec-package-price.txt)): if the
+gate built pubspec facts for this lane, the shared arbiter would move **83 of the 86 from `ext?` to
+`extOK`** and **expose 3 as `extFAIL`**. **THE EARLIER GROUND FOR THIS DEFERRAL WAS WRONG AND IS
+STRUCK:** the doc said "`package:lints` IS declared in that checkout" — the corpus declares `lints` in
+**0** pubspecs and ships no `lints` directory, so the 62 `package:lints` sites VERIFY; the real refuter
+is `flutter_lints`, declared at `flutter-packages/packages/flutter_lints/pubspec.yaml`, and all three
+refutations are `package:flutter_lints/flutter.yaml` in that repo's `…/example/analysis_options.yaml`
+(one of them INSIDE the `flutter_lints` package itself). **The decision is unchanged and now earned:
+do NOT wire yet** — the 3 refutations are TRUE statements about the corpus (`isExternal: true` is false
+when the project declares the package), and a per-file yaml analyzer has **no pub-resolution channel**
+to turn the include into the in-repo file claim `packages/flutter_lints/lib/flutter.yaml`, which needs
+a project-wide package→directory fact. That is §5v's RULED CLASS for this row: SHAPE (URI scheme),
+MECHANISM (no pub resolution per file), COUNT (86 = 83 verify + 3 refute), FALSIFIER
+(`pubspec-package-price.ts`, re-runnable, importing the arbiter's own `verifyImportClaim`). Three
 further rows are the LEAD's, and are flagged rather than changed: one (`verifyRemoteRefClaim`
 refusing `@release/v1`, 2 edges) is a rule-shape question in a shared gate, and two are POPULATION
 decisions (admitting `.psm1`/`.json`/`.sh` to an evidence base that is `.yaml`/`.yml` by construction).
 
 So this lane is at **residual 184 with zero refutations and 253 ruled unverifiable claims**, not at
 PASS, and the difference between the two statements is a measurement: the extQ class was cut by 87%
-(1,903 → 254) by correcting false claims, and every claim in it now carries its reason, its count and its falsifier.
+(1,903 → 253) by correcting false claims, and every claim in it now carries its reason, its count and its falsifier.
 
 ### Clause 3 — every remaining edge attributed
 
@@ -740,12 +912,12 @@ row below from an argument into a verdict:
 
 **1 of 142 is a defect and 141 are ruled** — and the 1 is named with the file pair that proves it.
 That is the whole value of writing the falsifier first: the lane proposed a ruling for 142 edges and its
-own instrument cut it to 141.
+own instrument cut it to 141. (**ROUND 11 then FIXED the 1** — see that section.)
 
 The enumerator is refreshed at THIS revision as
 [census-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-after.txt)
-(1,414,582 edges · amb 131 + 7 · unresolved 33 + 14 · extFAIL 0 · `EXT-Q INVENTORY` **254**, whose
-`CLAIMABLE EDGES` section reads NONE), which is ROUND 10's run and is the artifact every "current"
+(1,414,582 edges · amb 130 + 7 · unresolved 33 + 14 · extFAIL 0 · `EXT-Q INVENTORY` **244**, whose
+`CLAIMABLE EDGES` section reads NONE), which is the ROUND 14 run and is the artifact every "current"
 number in this document comes from, with the emitting-key instrument beside it as
 [include-key-position-yaml-whole-corpus.txt](../../validation/m14/fixtures/yaml/include-key-position-yaml-whole-corpus.txt).
 The per-round copies carry their OWN totals and are kept so a reader can see each step rather than a
@@ -783,32 +955,38 @@ type          edges    resolved  amb(decl)  unresolved  extFAIL
 calls         327      0         0          0           0
 uses          165      165       0          0           0
 contains      1380046  1380046   0          0           0
-imports       8366     1         8          0           0
-references    21417    18701     585        47          0
+imports       8366     1         7          0           0
+references    21417    19075     130        47          0
 exports       4080     4080      0          0           0
 extends       155      155       0          0           0
 overrides     26       26        0          0           0
-TOTAL         1414582  1403174   593        47          0
+TOTAL         1414582  1403548   137        47          0
 
-VERDICT: FAIL — 138 ambiguous + 47 unresolved of 1414582 edges, resolved against the file's OWN
-PROJECT (production's scope); 254 external claim(s) unverifiable (10617 verified + 254 unverifiable)
-  (the same edges under the pooled corpus key space: 593 ambiguous + 47 unresolved — that number is
+VERDICT: FAIL — 137 ambiguous + 47 unresolved of 1414582 edges, resolved against the file's OWN
+PROJECT (production's scope); 253 external claim(s) unverifiable (10597 verified + 253 unverifiable)
+  (the same edges under the pooled corpus key space: 591 ambiguous + 47 unresolved — that number is
    about the CORPUS's name collisions, not about resolution as production performs it)
 instrument self-test: PASS (control fired)
 ```
 
-Raw: [incoming-gate-yaml-whole-corpus-round10.txt](../../validation/m14/fixtures/yaml/incoming-gate-yaml-whole-corpus-round10.txt)
-(the ROUND 5 run it replaces, kept as the historical record of `1,414,804 · amb 184 · extQ 343`, is
+Raw: [incoming-gate-yaml-whole-corpus-round12.txt](../../validation/m14/fixtures/yaml/incoming-gate-yaml-whole-corpus-round12.txt)
+(re-run unchanged at HEAD `bd2335f52` as
+[residual-yaml-whole-corpus-round13.txt](../../validation/m14/fixtures/yaml/residual-yaml-whole-corpus-round13.txt);
+the ROUND 10 run it supersedes is
+[incoming-gate-yaml-whole-corpus-round10.txt](../../validation/m14/fixtures/yaml/incoming-gate-yaml-whole-corpus-round10.txt);
+the ROUND 5 run it replaces, kept as the historical record of `1,414,804 · amb 184 · extQ 343`, is
 [incoming-gate-yaml-whole-corpus-round5.txt](../../validation/m14/fixtures/yaml/incoming-gate-yaml-whole-corpus-round5.txt)).
 
 **The three things this walk settles, none of which the enumerator alone could:**
 
-1. **`extOK 10,617` / `extQ 254` — the gate's own columns, and they match the enumerator's to the
-   edge.** Two independently-written instruments, one shared number: the Round 10 fix moved `extQ`
-   255 → 254 in BOTH.
-2. **`extFAIL 0` over 1,414,582 edges**, which is the test the Round 10 fix had to pass: it turns an
-   `isExternal` claim into a FILE claim, and a file claim that MISSES is refuted. Nothing was refuted.
-3. **`bad` = 138 + 47 = 185** in the verdict's own words, and `254` `extQ` beside it. The verdict names
+1. **`extOK 10,597` / `extQ 253` — the gate's own columns, and they match the enumerator's to the
+   edge.** Two independently-written instruments, one shared number: ROUND 11 moved `extQ` 254 → 253
+   in BOTH (the cross-file resource rule re-claimed 20 verified-external and 1 unverifiable reference
+   edge as a resolved file reference).
+2. **`extFAIL 0` over 1,414,582 edges**, which is the test the cross-file rule had to pass: it turns
+   an `isExternal` claim into a FILE claim, and a file claim that MISSES is refuted. Nothing was
+   refuted.
+3. **`bad` = 137 + 47 = 184** in the verdict's own words, and `253` `extQ` beside it. The verdict names
    **TWO** reasons and both are ruled: the attributed residual of Clause 3 and the RULED CLASS above.
    **`bad === 0` AND `extQ === 0` would make this run a PASS**; the sample draws achieve the first and
    are stopped by the second, and the whole-population run is stopped by both. The gap is therefore the
@@ -832,11 +1010,11 @@ grade it, not as the lane would prefer it:
 |---|---|---|---|
 | 1 | residual 0 for every applicable type | 184 of 1,414,582 (137 amb + 47 unresolved) | **FAILS by 184** — every edge attributed below |
 | 2 | `extFAIL` = `bindFAIL` = `causeFAIL` = 0 | 0 · 0 · 0 on the whole population | **MET** — with `extQ` 254 *ruled*, not zero |
-| 3 | every remaining edge attributed to a named cause with a measured count, fixed with a before/after or ruled with evidence | the 138 ambiguous are 117 same-kind-name-elsewhere + 7 ansible role names + 6 no-kind-axis + 4 duplicate-key `contains` + 1 SAME-DIRECTORY MISS + 3 `$ref`-to-nothing (named causes, each with a falsifier), and the 47 unresolved are 33 + 14 (two named causes); NINE causes fixed with before/after (the two tables above) | **MET** |
+| 3 | every remaining edge attributed to a named cause with a measured count, fixed with a before/after or ruled with evidence | the 137 ambiguous are 117 same-kind-name-elsewhere + 10 kind-asked-no-object + 6 ansible role names + 4 no-kind-axis (named causes, each with a falsifier), and the 47 unresolved are 33 + 14 (two named causes); TEN causes fixed with before/after, including ROUND 11's cross-file resource rule that fixed the one SAME-DIRECTORY MISS the falsifier had proved (the two tables above) | **MET** |
 | 4 | the tie-break: `ofWhich` 0, or an `intended` vs `arbitraryTwin` split from the store | `ofWhich` 4, all `contains`; `intended` 1,380,046/1,380,046 at the model level | **MET at the model level; the store-side split is NOT done** |
 
-**If the owner rules that no external claim may be unverifiable, yaml fails clause 2 by 254 edges** —
-the same structural failure json carries by 120. Those 254 are not un-fixed claims: they are targets
+**If the owner rules that no external claim may be unverifiable, yaml fails clause 2 by 244 edges** —
+the same structural failure json carries by 120. Those 244 are not un-fixed claims: they are targets
 (templates, URIs, globs, runtime-materialised paths) that no single-file parse can name, and the only
 alternative to ruling them is to refute them, which would falsify a claim that is not false.
 
@@ -885,15 +1063,21 @@ symbol's own line, where the store resolver's own first two keys (`file_id = edg
    claims). The **whole-population** scope — 18,364 of
    18,364 `.yaml`/`.yml`, both spellings, 189 repos, **100 %** — is the `incoming-gate yaml yaml,yml 0`
    walk **re-run at this revision**, quoted verbatim in the section above and reading
-   **`FAIL — 138 ambiguous + 47 unresolved of 1414582 edges …; 254 external claim(s) unverifiable
-   (10617 verified + 254 unverifiable external)`**, with the separator tripwire at 0 and the instrument's
+   **`FAIL — 137 ambiguous + 47 unresolved of 1414582 edges …; 244 external claim(s) unverifiable
+   (10606 verified + 244 unverifiable external)`** (ROUND 14's re-run; ROUND 12's read 253 / 10,597 on
+   the same 1,414,582 edges), with the separator tripwire at 0 and the instrument's
    own control firing (`instrument self-test: PASS`). The four-clause gate spawned the same walk and
-   reads `residual 185 of 1,414,582 · extFAIL 0` — **two instruments, one number, at the frozen tree**.
-   Artifact: [incoming-gate-yaml-whole-corpus-round10.txt](../../validation/m14/fixtures/yaml/incoming-gate-yaml-whole-corpus-round10.txt).
+   reads `residual 184 of 1,414,582 · extFAIL 0` — **two instruments, one number, at the frozen tree**.
+   Artifacts: [incoming-gate-yaml-whole-corpus-round14.txt](../../validation/m14/fixtures/yaml/incoming-gate-yaml-whole-corpus-round14.txt)
+   (round 14's post-fix walk) with its [pre-fix baseline](../../validation/m14/fixtures/yaml/incoming-gate-yaml-whole-corpus-round14-baseline.txt)
+   (the same revision, before the analyzer edit), and round 12's copy as
+   [incoming-gate-yaml-whole-corpus-round12.txt](../../validation/m14/fixtures/yaml/incoming-gate-yaml-whole-corpus-round12.txt).
    **MET.**
 4. **`externalRefuted = 0`, verified on the lane's own marks.** The whole-population enumerator reads
    **`extFAIL 0` over 1,414,582 edges at THIS revision
    ([census-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-after.txt),
+   rotated to the ROUND 14 run; its named copy is
+   [census-yaml-whole-corpus-round14.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-round14.txt),
    whose `REFUTED INVENTORY` reads `0 edges, 0 distinct target(s)`)** — that is the Round 10 run, and
    it is the artifact this criterion's number comes from (`extFAIL 0` also held at the Round 5 and
    Round 7 revisions, 1,414,804 / 1,414,637, so the 0 is not an artefact of one revision);
@@ -914,14 +1098,19 @@ symbol's own line, where the store resolver's own first two keys (`file_id = edg
    reusable-workflow call — `./.github/workflows/test-failure-notification.yml` @ nomad:45 — and the
    flag's GROUP prints `./security-scanner`), and it had cited the round-7 census for the round-9
    totals (that artifact reads 1,414,637 / `extQ` 282, not 1,414,582 / 255). Both are corrected above
-   with the file that refutes the old reading, which is what this criterion asks for. **MET.**
+   with the file that refutes the old reading, which is what this criterion asks for. **ROUND 14 added
+   one more, and it is the same shape:** the RULED CLASS's `10 × ./security-scanner`-style group was
+   not a ruling after all — the targets are materialized at run time by a prior same-job checkout — so
+   the lane priced the rule, FIXED the nine it could support, and shrank the class to 244 instead of
+   keeping a count it had already written down as explainable. **MET.**
 
 **So the lane is DONE by §7 — all five, each against an artifact — while the stronger four-clause
-completion test is clause-1-short by 185, and clause-2-short by 254 if unverifiability is forbidden.**
+completion test is clause-1-short by 184, and clause-2-short by 244 if unverifiability is forbidden.**
 The difference between those two sentences is the point: §7 asks whether the lane has done the work it
 owes; the four clauses ask whether every edge is PROVEN. yaml has done the work, and states plainly
-which edges are proven, which are ruled, and where the remaining 185 live — including the ONE that its
-own falsifier proved is a real missed resolution rather than a ruling (ROUND 7).
+which edges are proven, which are ruled, and where the remaining 184 live — and the ONE that its
+own falsifier proved was a real missed resolution has since been FIXED by the cross-file resource
+rule (ROUND 11).
 
 ### The §7 criterion-2 arbiter can now ADJUDICATE this lane — it previously REFUSED (2026-10-10)
 
@@ -1104,7 +1293,7 @@ ones, and the board went `6/8` → `8/8`.
 
 ## 2. The residual — "n/n is not done"
 
-> **HISTORICAL (Round 2, 2026-10-09).** The CURRENT residual is **185** (138 ambiguous + 47
+> **HISTORICAL (Round 2, 2026-10-09).** The CURRENT residual is **184** (137 ambiguous + 47
 > unresolved, whole admitted population) — see the ROUND 7 section and the COMPLETION PACKAGE above.
 > This section is kept as the record of the numbers it was written from; sections 3 and 4 below carry
 > the named-cause work that took them down.

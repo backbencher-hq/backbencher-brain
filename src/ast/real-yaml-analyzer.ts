@@ -128,6 +128,13 @@ interface YamlContext {
   /** `uses:` sites, held until the file's shape decides whether it is a workflow. */
   pendingActionUses: { source: string; action: string; line: number; role: UsesRole }[]
   /**
+   * The `uses:`/`with:` facts of every STEP, keyed by the step container's qualified path and the
+   * step's index. Collected during the walk and joined in `resolveActionUses`, because the join is
+   * a question about EARLIER steps IN THE SAME JOB and must not depend on which key inside a step
+   * comes first (`with:` follows `uses:` in some corpus files and precedes it in others).
+   */
+  stepWithFacts: Map<string, Map<number, StepWithFacts>>
+  /**
    * Named schema definitions a document PUBLISHES for other documents to reference by
    * `$ref`. Held for the same reason `pendingActionUses` is: the container only means a
    * publication in a file that declares itself an API description.
@@ -161,6 +168,16 @@ interface VisitContext {
    * renamed to advertise it.
    */
   recoveredThrough?: { line: number; width: number }
+}
+
+/** One step's `uses:` and the `with:` keys that decide what a LATER local `uses:` names. */
+interface StepWithFacts {
+  /** The step's `uses:` line — the line the materialized claim cites as its authorisation. */
+  usesLine: number
+  uses?: string
+  path?: string
+  repository?: string
+  ref?: string
 }
 
 const MAPPING_TYPES = new Set(["block_mapping", "flow_mapping"])
@@ -678,6 +695,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       tagHandles: new Map(),
       duplicateCounters: new Map(),
       pendingActionUses: [],
+      stepWithFacts: new Map(),
       pendingSchemaPublications: [],
       pendingReferences: [],
       frameworks: [],
@@ -1185,6 +1203,10 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): void {
     const path = symbol.qualifiedName || symbol.id
 
+    // THE RUNNER'S ORDER AND SCOPE ARE DOCUMENT FACTS, collected per step as the walk passes them
+    // and joined after it — see `materializedActionSource` for the question they answer.
+    this.recordStepWithFacts(key, valueNode, current, ctx, line)
+
     // `$ref` and JSON pointers: resolved against the pointer index in a post-pass,
     // because the target may be declared later in the file.
     if (valueType === "string" && valueNode) {
@@ -1566,6 +1588,117 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /**
+   * ONE STEP'S SHAPE, READ ONCE — `uses:`, and the `with:` keys that decide what a LATER local
+   * `uses:` names.
+   *
+   * WHY IT IS COLLECTED AND NOT LOOKED UP LATER. The question `materializedActionSource` answers is
+   * about the steps BEFORE this one IN THE SAME JOB, and a step's own keys do not come in a fixed
+   * order: measured over the whole admitted corpus, `with:` follows `uses:` in the HashiCorp-style
+   * files and PRECEDES it in others (control arm 7). So both are recorded into one record per step
+   * as the walk passes them, and the join happens after the walk, where no key order can matter.
+   * Only four key names are read, and only when they sit at a position that makes them a step's:
+   * `uses:` at `…steps[i]`, and `path:`/`repository:`/`ref:` at `…steps[i].with`.
+   */
+  private recordStepWithFacts(key: string, valueNode: Node | null, current: VisitContext, ctx: YamlContext, line: number): void {
+    let re: RegExp
+    if (key === "uses") re = /^(.*)\.steps\[(\d+)\]$/
+    else if (key === "path" || key === "repository" || key === "ref") re = /^(.*)\.steps\[(\d+)\]\.with$/
+    else return
+    if (valueNode === null) return
+    const node = this.scalarNode(valueNode)
+    if (!SCALAR_TYPES.has(node.type)) return
+    const value = this.scalarText(node)
+    if (value.length === 0) return
+    const m = re.exec(current.parentPath)
+    if (m === null) return
+    const container = m[1], index = Number(m[2])
+    const byIndex = ctx.stepWithFacts.get(container) ?? new Map<number, StepWithFacts>()
+    const entry = byIndex.get(index) ?? { usesLine: line }
+    if (key === "uses") {
+      entry.uses = value
+      entry.usesLine = line
+    } else entry[key] = value
+    byIndex.set(index, entry)
+    ctx.stepWithFacts.set(container, byIndex)
+  }
+
+  /**
+   * WHAT A LOCAL `uses:` TARGET NAMES, once the RUNNER'S OWN ORDER AND SCOPE are read.
+   *
+   * ## The defect this fixes
+   *
+   * `uses: ./security-scanner` in a job whose earlier step ran `actions/checkout@<sha>` with
+   * `with: {repository: hashicorp/security-scanner, path: security-scanner, ref: main}` names a
+   * directory that does not exist in the repository — because it is not supposed to: the checkout
+   * PUTS that repository's content there before the step runs. The lane emitted `isExternal: true`
+   * on the path, which the arbiter can only answer `externalUnverified` about, so 10 edges of the
+   * EXT-Q class were claims no check could ever reach. A site making an unsupportable claim is a
+   * FIX, not a ruling — and the claim IS supportable: the referent is a NAMED REPOSITORY at a NAMED
+   * REF, which `verifyRemoteRefClaim` verifies.
+   *
+   * MEASURED over the whole admitted population before this was written, from the text and
+   * independently of this analyzer (`validation/m14/fixtures/yaml/materialized-action-price.ts`):
+   * 523 local `uses: ./…` sites, 10 matched to a prior same-job checkout, 9 convertible and 1
+   * honestly left unverifiable:
+   *
+   *     ./security-scanner                    ×7  boundary, consul ×4, nomad, vault -> repo@main
+   *     ./ci-actions/.github/actions/setup      ×2  nimony        -> the project's own file
+   *     ./integration-release-action            ×1  waypoint      -> REFUSED: no `ref:` in the
+   *                                              checkout, and the shared rule refuses a ref-less
+   *                                              remoteRef, so the edge stays `isExternal`
+   *
+   * ## The two families, and why both are the same question
+   *
+   * A checkout WITH `repository: R` puts R's tree at `path:`; a checkout WITHOUT `repository:` puts
+   * THE CALLING REPOSITORY's tree there (nimony's own comment says the checkout exists so the local
+   * `uses:` has its file on disk). So the second family's `./ci-actions/.github/actions/setup` IS
+   * the project's `.github/actions/setup`, and the claim is the file claim the project's admitted
+   * list answers — the stripped path is handed to `actionUseClaim` as an extra candidate.
+   *
+   * ## What it refuses, because these are the shapes a wrong answer wears
+   *
+   * ONLY EARLIER STEPS COUNT: the runner materializes in step order, so a checkout AFTER the use
+   * cannot be its referent (control arm 4). ONLY THE SAME JOB: another job runs on another machine
+   * and materializes nothing for this one (arm 3). ONLY `./…`: a `../` target leaves the workspace,
+   * which a `path:` never does. ONLY AN `actions/checkout@…` STEP — an unrelated action carrying the
+   * same `with: path:` materializes nothing (arm 6). Key order inside the step is NOT evidence
+   * (arm 7). Where an in-repo `action.yml` also exists the MATERIALIZED repository wins, because a
+   * checkout REPLACES that directory at run time (arm 10, whose falsifier is arm 10b).
+   *
+   * NOT CLAIMED, and stated as refusals rather than implemented unmeasured (0 corpus sites each): a
+   * `../` target, a SUBPATH of a named repository, and an exact match against a checkout of the
+   * calling repository (which would name the project root as an action).
+   */
+  private materializedActionSource(use: { source: string; action: string }, ctx: YamlContext): { repository: string | null; ref: string | null; stripped: string | null; line: number } | null {
+    if (!use.action.startsWith("./")) return null
+    const m = /^(.*)\.steps\[(\d+)\]\.uses$/.exec(use.source)
+    if (m === null) return null
+    const byIndex = ctx.stepWithFacts.get(m[1])
+    if (byIndex === undefined) return null
+    const useIndex = Number(m[2])
+    const dir = use.action.slice(2).replace(/\/+$/, "")
+    if (dir.length === 0) return null
+    // THE NEAREST EARLIER CHECKOUT WINS, the same way the runner's own order resolves it.
+    let best: { index: number; facts: StepWithFacts; rest: string } | null = null
+    for (const [index, facts] of byIndex) {
+      if (index >= useIndex) continue
+      if (facts.uses === undefined || !/^actions\/checkout(@|$)/.test(facts.uses)) continue
+      if (facts.path === undefined) continue
+      const checkoutPath = facts.path.replace(/^\.\//, "").replace(/\/+$/, "")
+      if (checkoutPath.length === 0) continue
+      const rest = dir === checkoutPath ? "" : dir.startsWith(checkoutPath + "/") ? dir.slice(checkoutPath.length + 1) : null
+      if (rest === null) continue
+      if (best === null || index > best.index) best = { index, facts, rest }
+    }
+    if (best === null) return null
+    const repository = best.facts.repository !== undefined && best.facts.repository.length > 0 ? best.facts.repository : null
+    const ref = best.facts.ref !== undefined && best.facts.ref.length > 0 ? best.facts.ref : null
+    if (repository !== null && best.rest.length > 0) return null
+    if (repository === null && best.rest.length === 0) return null
+    return { repository, ref: repository === null ? null : ref, stripped: repository === null ? best.rest : null, line: best.facts.usesLine }
+  }
+
   /** A job-level `uses:` is a CALL of a reusable workflow, and never an import. */
   private resolveActionUses(ctx: YamlContext): void {
     if (ctx.pendingActionUses.length === 0) return
@@ -1604,10 +1737,27 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         }, use.line)
         continue
       }
+      // WHAT THIS LOCAL PATH NAMES IS DECIDED BY THE RUNNER'S OWN ORDER AND SCOPE. See
+      // `materializedActionSource` for the measurement behind the rule and every refusal.
+      const materialized = this.materializedActionSource(use, ctx)
+      const claim = materialized === null
+        ? this.actionUseClaim(use.action, ctx)
+        : {
+            // The claim IS the checked-out repository at its ref, and the `./D` spelling it
+            // replaced travels in metadata so a reader can audit the re-route from the edge alone.
+            ...(materialized.repository !== null
+              ? { remoteRef: true }
+              : this.actionUseClaim(use.action, ctx, materialized.stripped !== null ? [materialized.stripped] : [])),
+            materializedPath: use.action,
+            materializedAtLine: materialized.line,
+          }
+      const target = materialized !== null && materialized.repository !== null
+        ? (materialized.ref !== null ? `${materialized.repository}@${materialized.ref}` : materialized.repository)
+        : use.action
       if (!isWorkflow) {
-        this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.References, {
+        this.addRelationship(ctx, use.source, target, ASTEngine.RelationshipType.References, {
           relationshipType: "yaml_action_use_unverified",
-          ...this.actionUseClaim(use.action, ctx),
+          ...claim,
           resolved: false,
           unresolvedReason: "file-shape-is-not-a-github-workflow",
         }, use.line, 0.7, "shape-not-workflow")
@@ -1617,10 +1767,10 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // that name, and an import row that disagrees with its own relationship is a second
       // vocabulary for one fact. The corpus census asserts row-type == relationshipType
       // and caught the mismatch on its first run.
-      this.addImport(ctx, use.action, "yaml_action_use", undefined, !use.action.startsWith("./") && !use.action.startsWith("docker://"), use.line)
-      this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.Imports, {
+      this.addImport(ctx, target, "yaml_action_use", undefined, materialized !== null || (!use.action.startsWith("./") && !use.action.startsWith("docker://")), use.line)
+      this.addRelationship(ctx, use.source, target, ASTEngine.RelationshipType.Imports, {
         relationshipType: "yaml_action_use",
-        ...this.actionUseClaim(use.action, ctx),
+        ...claim,
       }, use.line)
     }
   }
@@ -3333,12 +3483,18 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * that manifest is absent the edge states `isExternal: true` — on a path-shaped target that is
    * `externalUnverified`, not a refutation.
    */
-  private actionUseClaim(action: string, ctx: YamlContext): Record<string, unknown> {
+  private actionUseClaim(action: string, ctx: YamlContext, extraProjectPaths: string[] = []): Record<string, unknown> {
     if (action.startsWith("docker://")) return { remoteRef: true }
     if (action.startsWith("./") || action.startsWith("../")) {
       const candidates = this.relativePathCandidates(action, ctx)
       if (candidates === null) return { isExternal: false }
-      const manifest = this.localActionManifest(ctx, candidates)
+      // A CHECKOUT OF THE CALLING REPOSITORY PUTS THE PROJECT'S OWN TREE AT `path:`, so a
+      // `./D/<rest>` target IS the project path `<rest>` — a candidate the literal spelling cannot
+      // produce. It is checked with the same manifest rule as every other candidate, and only where
+      // a rooted candidate set already exists, so the fixture harness sees the pre-existing marker
+      // and the gate sees the file claim. See `materializedActionSource`.
+      const all = extraProjectPaths.length > 0 ? [...extraProjectPaths, ...candidates] : candidates
+      const manifest = this.localActionManifest(ctx, all)
       if (manifest !== null) return { importProjectFile: manifest }
       // A STEP MAY CALL A WORKFLOW **FILE**, not only an action DIRECTORY.
       //
@@ -3359,8 +3515,8 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // ever confirm it — `keywordIncludeClaim`'s rule) and `statSync` has to find the candidate.
       // A step-level `uses:` of a workflow file this project does NOT carry keeps `isExternal`,
       // which is the honest outcome and keeps this change from manufacturing a refutation.
-      if (/\.ya?ml$/i.test(action) && this.projectCarriesFile(ctx, candidates)) {
-        return { importProjectFile: candidates }
+      if (/\.ya?ml$/i.test(action) && this.projectCarriesFile(ctx, all)) {
+        return { importProjectFile: all }
       }
       return { isExternal: true }
     }

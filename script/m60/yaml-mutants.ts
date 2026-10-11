@@ -401,6 +401,23 @@ const callsShapeGateRemoved = (r: any) => ({
   }),
 })
 
+/**
+ * The materialized-action re-route REVERTED. A `./D` target whose directory a prior same-job
+ * checkout materializes goes back to the literal path with `isExternal: true` — the claim the
+ * fix replaced, where a path the RUNNER creates is stated as an external name the arbiter can
+ * only answer `externalUnverified` about. The revert keeps `materializedPath` readable in the
+ * mutation, so a reader can see which spelling the false target came from.
+ */
+const materializedActionReverted = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    const md = x.metadata ?? {}
+    if (md.materializedPath === undefined) return x
+    const { materializedPath, materializedAtLine: _line, remoteRef: _rr, ...rest } = md
+    return { ...x, target: materializedPath, metadata: { ...rest, isExternal: true } }
+  }),
+})
+
 /** The override direction reversed: the replaced entry claims to override its replacement. */
 const overridesDirectionReversed = (r: any) => ({
   ...r,
@@ -615,6 +632,14 @@ export const YAML_MUTANTS = [
     description:
       "The file-shape gate removed, so a document carrying top-level `jobs` and a job-level `uses:` but declaring neither `on:` nor the `.github/workflows` path is treated as a workflow. `jobs.<id>.uses` is defined by GitHub Actions and by nothing else in YAML, so this promotes an unproven reference to a call naming a caller that may not exist — the fabricated-edge shape. Caught by yaml/workflow-call-role-negative, which forbids any `calls` edge in a file that does not claim to be a workflow.",
     transform: callsShapeGateRemoved,
+  },
+  {
+    id: "yaml/materialized-action-reverted",
+    language: "yaml",
+    defectClass: "wrong-target",
+    description:
+      "The materialized-action re-route REVERTED: `imports yaml_action_use` edges whose target is a `./D` path a PRIOR SAME-JOB checkout materializes go back to the literal path with `isExternal: true`, i.e. the unsupportable claim the fix replaced. This is the class the corpus found 10 sites of (`./security-scanner` ×7, `./ci-actions/.github/actions/setup` ×2, `./integration-release-action` ×1) and the reason it is a fix rather than a ruling: the referent is a named repository the arbiter can VERIFY, and a path the runner creates can only ever be `externalUnverified`. Caught by yaml/materialized-action, whose expect row pins the re-routed target `hashicorp/security-scanner@main` with `meta.remoteRef` and whose forbid row names the literal `./security-scanner` at the very site that must not carry it.",
+    transform: materializedActionReverted,
   },
   {
     id: "yaml/overrides-direction-reversed",
