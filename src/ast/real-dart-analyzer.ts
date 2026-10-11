@@ -1811,6 +1811,25 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!list.includes(r.target)) list.push(r.target)
       basesOf.set(r.source, list)
     }
+    // THE REAL BASES, IN THE FILE'S OWN ORDER — for the fallback's base CHOICE and nothing else.
+    //
+    // `extends`, `implements`, and a `with` mixin (which this pass publishes as a `uses` edge
+    // carrying `isMixin: true`). A bare `uses` is ANY type the file mentions, so it must never
+    // become a fallback base: `class X extends Object { void f(List<int> x) {} }` mentions
+    // `List` in a parameter and does not inherit from it, and naming `List` would be the same
+    // fabricated-edge shape this map exists to remove. `basesOf` above is narrower still on
+    // purpose — a mixin affects what a base EXPOSES, and folding mixins into that closure is a
+    // separate question from which name a fallback may print.
+    const baseOrder = new Map<string, string[]>()
+    for (const r of relationships) {
+      const type = r.type ?? r.relationshipType ?? ""
+      const isBase = type === "extends" || type === "implements" ||
+        (type === "uses" && (r.metadata as any)?.isMixin === true)
+      if (!isBase || !r.source || !r.target) continue
+      const list = baseOrder.get(r.source) ?? []
+      if (!list.includes(r.target)) list.push(r.target)
+      baseOrder.set(r.source, list)
+    }
 
     // Does this base EXPOSE the member — its own, or one it inherits?
     //
@@ -1952,7 +1971,37 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           // (`Poly.sides -> Shape.sides`).
           const hasOverrideAnn = (s.decorators ?? []).some((d) => d.includes("@override"))
           if (hasOverrideAnn) {
-            const first = firstHeritage.get(s.ownerName) ?? null
+            const rawFirst = firstHeritage.get(s.ownerName) ?? null
+            // `Object` IS NOT A NAMEABLE FALLBACK BASE FOR A MEMBER `Object` DOES NOT DECLARE.
+            //
+            // `extends Object` is how a Dart file writes "no superclass": Dart's root class is
+            // implicit on every class, so naming it explicitly adds nothing — `Object` is `X` on
+            // the next line's class, and it declares exactly five members
+            // (`DART_OBJECT_INTERFACE_MEMBERS`). Naming `Object.<member>` for anything outside
+            // those five asserts a declaration where none exists, which is the same class of
+            // fabrication the Object-interface retarget below removes in the other direction.
+            //
+            // MEASURED, and this is the exact shape: `class LineStarts extends Object with
+            // ListMixin<int> { @override int get length => ...; }`. The member is the MIXIN's,
+            // `Object` has never had a `length`, and the first-heritage-parent fallback named
+            // `Object.length` anyway — 128 rows over dart-sdk, every one of them
+            // `isExternalBase`, which is the claim the gate refutes on the one project whose
+            // checkout publishes `sdk/lib/core/object.dart` (verdict clause: `128 external
+            // claim(s) REFUTED`). All 128 have a real base besides Object (46 name
+            // `AnalysisDriverUnitIndex` through `implements idl.AnalysisDriverUnitIndex`, 9
+            // `ListMixin`, 7 `SetMixin`, …), so the honest fallback is the next REAL base.
+            //
+            // So `Object` is skipped for such a member and the walk continues to the first
+            // `extends`/`implements`/`with` base. Two boundaries, both pinned:
+            //   * when the member IS one of Object's own, `Object` stays the base (its interface
+            //     is the one thing a per-file run can name with no evidence about the base —
+            //     `class Direct extends Object { @override String toString() }`);
+            //   * when Object is the ONLY base, there is nothing left to name and no edge is
+            //     published — an out-of-file base may be guessed, but a KNOWN-empty one may not
+            //     (the same reason a refuted fallback publishes nothing).
+            const first = rawFirst === DART_OBJECT_TYPE && !DART_OBJECT_INTERFACE_MEMBERS.has(s.name)
+              ? ((baseOrder.get(s.ownerName) ?? []).find((b) => b !== DART_OBJECT_TYPE) ?? null)
+              : rawFirst
             // A fallback may only fire where there is NO EVIDENCE AGAINST it. The
             // first heritage parent is the right guess when it lives in another
             // repository, because then nothing in this file can refute it. But if
