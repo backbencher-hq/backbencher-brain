@@ -224,7 +224,8 @@ async function main() {
   }
 
   const relRows = q(`
-    SELECT r.relationship_type AS t,
+    SELECT r.id               AS id,
+           r.relationship_type AS t,
            r.target_external  AS tgt,
            r.source_external  AS src,
            r.line_number      AS line,
@@ -529,6 +530,26 @@ async function main() {
   // membership test is against the sample's own path set, so it cannot be satisfied by a
   // name, and a path-spelled source is not something a name-spelling analyzer produces.
   const samplePaths = new Set(declAtLine.keys())
+  /**
+   * The ROW's own file, recovered from its id.
+   *
+   * `storeResults` builds a row id as `<projectId>:rel:<anchor>:<target>:<type>:<line>`, and
+   * `<anchor>` is `file:<relativePath>` exactly when the source did NOT resolve to a symbol
+   * (the M14/JS file-level wave). So a NULL-source row still names its file — which is the
+   * one fact the outgoing classification below needs and cannot otherwise get, because a
+   * row with no source symbol has no `brain_file` join either. The path is recovered by
+   * LONGEST-PREFIX match against the sample's own path set rather than by splitting on `:`,
+   * because the target that follows the path is itself allowed to contain colons.
+   */
+  const ownFileOf = (id: string): string => {
+    const marker = ":rel:file:"
+    const at = id.indexOf(marker)
+    if (at < 0) return ""
+    const after = id.slice(at + marker.length)
+    let best = ""
+    for (const p of samplePaths) if (after.startsWith(p + ":") && p.length > best.length) best = p
+    return best
+  }
   const danglingTop = new Map<string, number>()
   const nameSpelledTop = new Map<string, number>()
   const fileLevelByType = new Map<string, number>()
@@ -541,8 +562,19 @@ async function main() {
   // construction — which is what lets the sum check below print `unclassified: 0`
   // instead of an "other" bucket.
   const nameSpelledReason = new Map<string, number>()
+  // THE DECLARED CLASSES, KEPT AS ROWS. "The sample declares this name" is not one class, and
+  // three of its readings mean three different things — so a count cannot answer the question
+  // it raises (`the name IS declared, so why is the row still NULL?`). The THREE sub-classes
+  // are separated by the one fact that decides them: WHOSE file declares the name — the ROW's
+  // own (recoverable from the id, see `ownFileOf`) and, for the row's own file, whether the
+  // declaration reached the STORE or only the ANALYZER's output. They are small by
+  // construction, so every row of them is kept and printed with the evidence the decision
+  // needs rather than summarized away.
+  const declaredRows: any[] = []
   const REASON_KEYWORD = "a keyword actor (this/super) — refused by the name register, so it can never be a symbol row"
-  const REASON_DECLARED = "a name the sample DOES declare — a source-side attachment the name pass did not make"
+  const REASON_DECLARED_OWN_STORE = "the row's OWN file declares it IN THE STORE — the resolver had same-file evidence and did not use it (this is the miss; must be 0)"
+  const REASON_DECLARED_OWN_ANALYZER = "the row's OWN file declares it in the ANALYZER's output but publishes no such symbol — a store-path drop, not a resolver miss"
+  const REASON_DECLARED_OTHER = "declared only in OTHER files of the sample — a name COLLISION with an unrelated symbol; attaching would be a wrong-file lie"
   const REASON_STDLIB = "an ECMAScript standard-library member name — no project file declares it by construction"
   const REASON_NEITHER = "neither — an external surface (DOM/node/browser) or a local binding the language does not publish"
   for (const r of relRows) {
@@ -558,11 +590,19 @@ async function main() {
     }
     nameSpelledRows++
     nameSpelledTop.set(key, (nameSpelledTop.get(key) ?? 0) + 1)
+    // The three declared readings, decided by the row's own file: STORE-declared there (the
+    // resolver's own miss), ANALYZER-only there (the store dropped it), or declared only
+    // elsewhere (a collision). A row whose id carries no file cannot be read either way, and
+    // it falls to OTHER with `ownFile === ""` — which the itemization prints.
+    const ownFile = ownFileOf(String(r.id ?? ""))
     const reason = src === "this" || src === "super"
       ? REASON_KEYWORD
-      : storedNamesAnywhere.has(src)
-        ? REASON_DECLARED
-        : std.has(src) ? REASON_STDLIB : REASON_NEITHER
+      : !storedNamesAnywhere.has(src)
+        ? (std.has(src) ? REASON_STDLIB : REASON_NEITHER)
+        : (storedNamesByFile.get(ownFile)?.has(src)
+          ? REASON_DECLARED_OWN_STORE
+          : (declAtLine.get(ownFile)?.has(src) ? REASON_DECLARED_OWN_ANALYZER : REASON_DECLARED_OTHER))
+    if (reason === REASON_DECLARED_OWN_STORE || reason === REASON_DECLARED_OWN_ANALYZER || reason === REASON_DECLARED_OTHER) declaredRows.push(r)
     nameSpelledReason.set(reason, (nameSpelledReason.get(reason) ?? 0) + 1)
   }
   console.log(`\nOUTGOING SPLIT — source_symbol_id NULL, ${T.nullSource} row(s), two populations that mean opposite things:`)
@@ -580,12 +620,41 @@ async function main() {
   console.log(`\nNAME-SPELLED SOURCES (a lost actor, not a file) — top 25 of ${nameSpelledRows}:`)
   for (const [name, c] of top(nameSpelledTop, 25)) console.log(`  ${String(c).padStart(6)}  ${name}`)
   console.log(`\n  NAME-SPELLED BY REASON — every row of the ${nameSpelledRows} above, classified:`)
+  // EVERY class is printed, including the ones this draw has none of, and in a FIXED order:
+  // the two same-file classes are the miss candidates, and a class that is silently absent
+  // from the table reads as "no rows" whether it means "none found" or "no longer computed".
+  // The rows are the evidence; the zeros are the evidence that the check ran.
   let nsClassified = 0
-  for (const [reason, c] of [...nameSpelledReason.entries()].sort((a, b) => b[1] - a[1])) {
+  for (const reason of [REASON_KEYWORD, REASON_DECLARED_OWN_STORE, REASON_DECLARED_OWN_ANALYZER, REASON_DECLARED_OTHER, REASON_STDLIB, REASON_NEITHER]) {
+    const c = nameSpelledReason.get(reason) ?? 0
     nsClassified += c
     console.log(`    ${String(c).padStart(6)}  ${reason}`)
   }
   console.log(`    ${String(nsClassified).padStart(6)}  = total; unclassified: ${nameSpelledRows - nsClassified}`)
+  if (declaredRows.length) {
+    console.log(`\n  THE DECLARED CLASSES, ITEMIZED — ${declaredRows.length} row(s): the source names a name THIS\n  SAMPLE declares and the row's source_symbol_id is NULL. "Declared" is three different facts,\n  so each row is printed with the one that decides it: the file the row's id names, whether\n  THAT file declares the name in the store, and whether it declares it in the analyzer's output.`)
+    for (const r of declaredRows) {
+      const declFiles = [...(declByName.get(String(r.src)) ?? [])].sort()
+      console.log(`    ${String(r.t).padEnd(12)} ${String(r.src)} -> ${String(r.tgt)}  @ line ${String(r.line ?? "?")}`)
+      // The ROW's own file, read off the id: the M14/JS file-level wave made the row id
+      // carry `file:<relativePath>` for exactly the rows whose source did not resolve, so
+      // the file is knowable HERE even though the source symbol is not. It is the fact the
+      // classification needs — "does the row's OWN file declare this name?" — and without
+      // it "the sample declares the name" and "the row's file declares the name" are the
+      // same sentence, which is how a collision reads as a miss. The boundary is a prefix
+      // test against the sample's own path set, not a split on ":": the TARGET that
+      // follows the path may itself contain colons (`./errors.js:CompileError`), so the
+      // last-segment arithmetic a split would use truncates the path.
+      const ownFile = ownFileOf(String(r.id ?? ""))
+      const inStore = storedNamesByFile.get(ownFile)?.has(String(r.src)) ?? false
+      const inAnalyzer = declAtLine.get(ownFile)?.has(String(r.src)) ?? false
+      console.log(`      ROW FILE     ${ownFile || "(the id names no file — a row from before the file-level wave)"}`)
+      console.log(`      OWN FILE     declares the name in the STORE: ${inStore}   in the ANALYZER's output: ${inAnalyzer}`)
+      console.log(`      CLASS        ${inStore ? "OWN/STORE — same-file evidence the resolver did not use (a MISS)" : inAnalyzer ? "OWN/ANALYZER — the store dropped a name the row's own file declares" : "OTHER — declared elsewhere only; a collision with an unrelated symbol"}`)
+      console.log(`      the sample declares \`${String(r.src)}\` in ${declFiles.length} file(s): ${declFiles.slice(0, 3).join(", ")}${declFiles.length > 3 ? `, +${declFiles.length - 3} more` : ""}`)
+      console.log(`      row metadata: ${String(r.md ?? "{}")}`)
+    }
+  }
 
   // ── INCOMING: WHAT THE DETACHED TARGETS NAME, AND WHAT COULD EVER BIND THEM ──
   //
@@ -903,9 +972,32 @@ async function main() {
         // stopped emitting it are the same JSON, and a consumer would read the second as
         // the first. Zero stays zero, explicitly.
         nameSpelledByReason: Object.fromEntries(
-          [REASON_KEYWORD, REASON_DECLARED, REASON_STDLIB, REASON_NEITHER]
+          [REASON_KEYWORD, REASON_DECLARED_OWN_STORE, REASON_DECLARED_OWN_ANALYZER, REASON_DECLARED_OTHER, REASON_STDLIB, REASON_NEITHER]
             .map((k) => [k, nameSpelledReason.get(k) ?? 0]),
         ),
+        // The DECLARED class is the one that needs a reader's judgement rather than a
+        // count, so its rows travel with the artifact: label, source, target, the file and
+        // line the row sits at, how many sample files declare the name, and the metadata.
+        nameSpelledDeclaredRows: declaredRows.map((r) => {
+          const ownFile = ownFileOf(String(r.id ?? ""))
+          const inStore = storedNamesByFile.get(ownFile)?.has(String(r.src)) ?? false
+          const inAnalyzer = declAtLine.get(ownFile)?.has(String(r.src)) ?? false
+          return {
+            id: String(r.id ?? ""),
+            type: String(r.t),
+            source: String(r.src),
+            target: r.tgt == null ? null : String(r.tgt),
+            // The row's own file, not the source symbol's: a NULL-source row has no source
+            // symbol, so the id is the only place the file is written.
+            ownFile: ownFile || null,
+            ownFileDeclaresInStore: inStore,
+            ownFileDeclaresInAnalyzer: inAnalyzer,
+            class: inStore ? "own-store" : inAnalyzer ? "own-analyzer" : "other-files",
+            line: r.line == null ? null : Number(r.line),
+            declaredInFiles: [...(declByName.get(String(r.src)) ?? [])].sort(),
+            metadata: r.md == null ? null : String(r.md),
+          }
+        }),
         detachedByReason: Object.fromEntries(
           [R_SOURCE, R_LABEL, R_PARAM, R_NOBIND, R_EXTERNAL, R_OUTSIDE, R_ELIGIBLE, R_MODULEBIND]
             .map((k) => [k, detachedReason.get(k) ?? 0]),
