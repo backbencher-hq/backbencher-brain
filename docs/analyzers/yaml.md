@@ -428,6 +428,24 @@ sibling makes the edge unresolved again, not wrong. The current file's own struc
 from the tree. If a synchronous parser accessor ever lands in `engine.ts` (a shared file, so not this
 lane's to change), the read becomes a parse and nothing else moves.
 
+**AND THE DEPARTURE WAS THEN MEASURED RATHER THAN DEFENDED.** The question a text read raises is
+whether it produces the same CANDIDATE SET a parse would, and it is answerable with numbers over the
+whole population ([same-directory-candidate-set-probe.ts](../../validation/m14/fixtures/yaml/same-directory-candidate-set-probe.ts)
+— the analyzer's OWN filter on one side, a tree walk on the other):
+
+| whole admitted corpus (18,364 files, 189 repos) | |
+|---|---|
+| kind-mapped resource-reference edges | **3,124** |
+| candidate set identical (text == parse) | **3,124** (100 %) |
+| TEXT MISSES a parse candidate (the safe direction) | **0** |
+| TEXT FINDS an extra candidate (the unsafe direction) | **0** |
+| unresolved same-directory-class edges for which a PARSE finds a candidate | **0** |
+
+**VERDICT: the text read is INVISIBLE — a parse would find the same set, so a synchronous parser
+accessor in `engine.ts` would buy nothing**, and the departure costs nothing. Both directions are
+counted because only one of them is safe: a miss leaves an edge unresolved in a named class, while an
+extra could bind an edge to a document no parse would produce.
+
 ARTEFACTS, so the before and the after cannot be confused: the run that FAILED (1 falsified, CEILING 1)
 is [name-collision-falsifier-priced-before.txt](../../validation/m14/fixtures/yaml/name-collision-falsifier-priced-before.txt);
 the run at this revision is [name-collision-falsifier.txt](../../validation/m14/fixtures/yaml/name-collision-falsifier.txt)
