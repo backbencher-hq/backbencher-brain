@@ -1117,6 +1117,54 @@ for a larger population, this lane's 88 are its first beneficiaries.
 file-claim lanes was counting directory targets as file targets. The fleet `imports` cause is now four
 file-claim lanes, one shared-rule question, and three named non-file causes, and hcl is one of the three.
 
+### Cause 23 — CORRECTION: the nim bucket is INCONCLUSIVE-ON-INSTRUMENT, and the fleet direction is earned on ONE language
+
+The file-anchored nim run landed (Lead's lease, 400-file draw, `EXIT=0`; the instrument fix is
+`85bf30299`, committed by the Lead so it could not be lost, with the thresholds quoted into the artefact
+before the run):
+
+```
+edges 18,549 · bound 14,589 · sameFile 12,457 · otherFile 2,132
+scopedWouldMove 0 · scopedAlreadyRight 12,457 · noCandidateAnywhere 0
+boundNeedsLeafReduction 5 · sourceUnbound 2,018
+type: calls 1,172 · references 361 · uses 418 · imports 93 · instantiates 80 · extends 4 · exports 4
+TOTAL twins 2,132 · REACHABLE 0 · UNREACHABLE 0 · UNDECIDABLE 2,132
+```
+
+**The share is 0/0 — UNDEFINED — so the reading is INCONCLUSIVE-ON-INSTRUMENT**, which is the branch
+this lane fixed before the number existed.
+
+**THE DIAGNOSIS, which is a finding about the predicate and not about nim: a bucket that reads 0% and then
+100% on the same question has not measured the twins — it has measured its own predicate.**
+* un-anchored predicate → **0%**: an unbound import row with no source symbol was dropped by an INNER JOIN
+  before it could be counted, so the bucket could not fire on a corpus whose evidence for it is
+  half-missing;
+* file-anchored predicate → **100%**: it asks whether the source FILE has ANY unbound `imports` row, and
+  `sourceUnbound` is **2,018**, so it fires for essentially every row.
+Two values, opposite directions, one question — neither is a measurement of reachability.
+
+**CORRECTION TO THIS PAGE'S OWN CLAIM**: the earlier EARNED block said the direction was measured on "two
+languages and four repositories". **That does not survive this run.** The direction is now earned on
+**ONE language (clean, 32.1% ≤ 40% → STANDS)**; **nim is INCONCLUSIVE-ON-INSTRUMENT**, not 0.0% and not
+anything else. The correction came from this lane's own pre-registration rather than from a critic.
+
+**WHAT THE RUN DOES ESTABLISH**: `noCandidateAnywhere 0` and `scopedWouldMove 0` on nim — every
+own-file-silent row has a candidate somewhere, and **no row had an own-file declaration that the store
+passed over for the full spelling**; and **`boundNeedsLeafReduction 5`**, i.e. nim binds twins by FULL
+SPELLING, against hcl's 12,014 — which is exactly why nim was the cleanest population AND exactly why its
+undecidable rate reads 100%.
+
+**THE NEXT MEASUREMENT IS NAMED, and re-running this predicate on a bigger draw is NOT it** (it will read
+100% again): the predicate must ask whether **the file the twin actually BOUND TO** could be reached — a
+**PER-ROW** reachability question, not a per-file one. Until that exists, the reachable/undecidable split
+must not be quoted for nim at all.
+
+**OPERATIONAL FACT, for the handoff**: a teammate's background job dies when the teammate's turn ends —
+two nim runs of this lane died at that boundary (verified: no artefact, log ending mid-store, no surviving
+process), while the same run under the Lead's lease completed. The division is **the Lead holds long jobs,
+lanes hold bounded ones**; a lane with something long should poll in-turn or hand it over with its label
+lines and thresholds. Both deaths were reported KILLED, never as results.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
