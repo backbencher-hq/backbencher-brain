@@ -42,10 +42,11 @@ import * as path from "node:path"
 import { parseFile, ASTEngine } from "../../src/ast/engine"
 import { getParser } from "./run-fixtures"
 import { emitEvidence } from "./evidence-harness"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const ROOT = path.resolve(__dirname, "..", "..")
-const REPOS = "$HOME/fixtures/repositories"
-
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+const REPOS = resolveCorpusRoot(process.cwd()) ?? "REPOS_UNRESOLVED"
 const LANES: Array<{ lang: "c" | "cpp" | "rust" | "go" | "clean"; dirs: string[]; exts: string[]; limit?: number; why?: string }> = [
   { lang: "c", dirs: ["jq", "sqlite"], exts: [".c"] },
   { lang: "cpp", dirs: ["fmt", "nlohmann-json"], exts: [".cpp", ".cc", ".cxx", ".hpp", ".hh", ".hxx", ".h"] },

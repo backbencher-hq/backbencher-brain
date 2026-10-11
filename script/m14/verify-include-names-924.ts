@@ -44,10 +44,11 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/engine"
 import { emitEvidence } from "./evidence-harness"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const ROOT = path.resolve(__dirname, "..", "..")
-const REPOS = "$HOME/fixtures/repositories"
-
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+const REPOS = resolveCorpusRoot(process.cwd()) ?? "REPOS_UNRESOLVED"
 /** The pinned corpora, and the extensions the production loader maps per lane. */
 const LANES: Array<{ lang: "c" | "cpp"; dirs: string[]; exts: string[] }> = [
   { lang: "c", dirs: ["jq", "sqlite"], exts: [".c"] },

@@ -44,9 +44,11 @@ import * as path from "node:path"
 import { execSync } from "node:child_process"
 import * as WTS from "web-tree-sitter"
 import { emitEvidence } from "./evidence-harness"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const ROOT = path.resolve(__dirname, "..", "..")
-const REPOS = "$HOME/fixtures/repositories"
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+const REPOS = resolveCorpusRoot(process.cwd()) ?? "REPOS_UNRESOLVED"
 const FIXTURE = path.join(ROOT, "validation", "m14", "fixtures", "cpp", "multiline-attribute-line-base-920.cpp")
 
 /** The two multi-line patterns the engine blanks, and the explicit blankers. */

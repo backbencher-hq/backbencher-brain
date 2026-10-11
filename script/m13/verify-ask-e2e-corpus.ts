@@ -7,6 +7,7 @@
 // Failures are recorded in evidence, never excluded.
 
 import { execFileSync } from "node:child_process"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -77,7 +78,14 @@ const bb = path.resolve("bin/bb")
 rmSync(root, { recursive: true, force: true })
 
 // ── 2. Corpus sampling ─────────────────────────────────────────────────────
-const REPO_ROOT = "$HOME/fixtures/repositories"
+// The corpus root was hardcoded to "$HOME/fixtures/repositories" — the
+// OTHER laptop's home directory. On this machine that gate reported
+//   A5: KNOWN-GAP (4/8 passed, 2 negatives)
+// which is not a statement about bb_ask at all; it is a statement that a directory
+// does not exist here. With the real root it reports
+//   A5: KNOWN-GAP (19/20 passed, 5 negatives)
+// See script/lib/corpus-root.ts and script/m62/verify-no-foreign-paths.ts.
+const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "/nonexistent/corpus-root"
 const SAMPLE: Array<[string, string, string]> = [
   ["rake", "lib/rake", "Ruby"],
   ["graphql-js", "src", "TypeScript"],

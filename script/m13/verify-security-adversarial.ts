@@ -18,6 +18,7 @@ import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { Harness } from "./harness"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const harness = new Harness({
   issue: "M13.42",
@@ -295,7 +296,8 @@ const cmdFindings = [...result.findings, ...result.suspiciousSources].filter((f)
 }
 
 // ── 10. Corpus sampling ────────────────────────────────────────────────────
-const REPO_ROOT = "$HOME/fixtures/repositories"
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 // graphql-js 17.x checkout has no top-level src/: the only real TypeScript on
 // this revision lives under website/pages (docs tooling). Point the corpus at
 // actual TS so the scan exercises a genuine TypeScript corpus.
