@@ -428,6 +428,16 @@ RULING's falsifier is
 [census-yaml-whole-corpus-round7.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-round7.txt)
 (1,414,637 · `extQ` 282) as the round-by-round copy.)
 
+**WHY THE ENUMERATOR SAYS `amb 142` WHERE THE GATE SAYS 138, stated so it is not read as a
+discrepancy.** 142 − 138 = **4, and all four are `contains`.** The enumerator calls
+`incoming-rule.ts`'s `classifyEdge` DIRECTLY, so it is still counting `contains` by DECLARATION COUNT
+(a name declared twice anywhere in the project reads ambiguous) — the model `fa2dc27e8` retired,
+because production resolves `contains` with its own `WHERE s.project_id = ? AND s.name = ?` +
+`ORDER BY (s.file_id = ?) DESC LIMIT 1` statement, which has no "N candidates" state at all and
+binds 1,380,046 of 1,380,046 in this lane. The gate's 138 is the production model and is the number
+the clauses use; the enumerator's extra 4 are its instrument's own lag, recorded here rather than
+silently reconciled.
+
 **THE ANSWER, up front.** Clause 1 **fails by 185** — 138 ambiguous + 47 unresolved, every one
 attributed to a NAMED cause below, 0 refuted. Clauses 2, 3 and 4 are **met**. Two things stand
 between this lane and a formal `incoming-gate` PASS: **`bad` = 185** (that residual) and **`extQ` =
