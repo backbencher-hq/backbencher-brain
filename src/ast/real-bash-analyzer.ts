@@ -1061,9 +1061,10 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `commandNameIsExternal`). Where any of the three fails, the target is left EXACTLY as it was;
     // nothing is invented and no edge gains a spelling that could be wrong.
     //
-    // The spelling is `<repo-relative path, sanitised>::<name>`. The name keeps its place as the
-    // last segment so the differential's identity (which splits on `::` and `.`) is unchanged: a
-    // shell identifier never contains a dot, so the leaf is the name either way.
+    // The spelling is `<repo-relative path, sanitised>.<name>` — DOT, because that is the shape
+    // `pool-worker.ts:1175` publishes as `qualifiedName` and therefore the only shape a key space
+    // built through `parseFile` can answer. The name stays the LAST segment, so the differential's
+    // identity is unchanged: a shell identifier never contains a dot.
     const fileScope = bashFileScopeOf(filePath)
     if (fileScope !== "") {
       const occurrences = new Map<string, number>()
@@ -1078,7 +1079,15 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         // manufactured by the fix that exists to remove collisions.
         if (n.length === 0 || (occurrences.get(n) ?? 0) !== 1) continue
         if (typeof sym.qualifiedName === "string" && sym.qualifiedName.length > 0) continue
-        sym.qualifiedName = `${fileScope}::${n}`
+        // THE WORKER'S OWN SHAPE, and this is the correction the first two after-runs forced:
+        // `pool-worker.ts:1175` derives `qualifiedName` as `${scope}.${name}`, so a key space built
+        // through `parseFile` carries THAT spelling. My first spelling used `::` between the scope
+        // and the name, matched nothing the key space held, and turned ambiguity into unresolved —
+        // 7,922 -> 17,895 unresolved (`noDecl` rose by exactly the same 9,973) for a residual that
+        // still fell, which is how a fix can look like a win while trading one bad column for
+        // another. Dot-separated also keeps the differential's identity: `normTarget` splits on `.`,
+        // so the leaf is still the name, because a shell identifier never contains a dot.
+        sym.qualifiedName = `${fileScope}.${n}`
       }
       const resplellable: Record<string, (kind: string) => boolean> = {
         // command position: a function declared in this file answers it (bash resolves functions
@@ -1088,6 +1097,19 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         exports: (k) => k === "variable" || k === "constant" || k === "function",
         overrides: (k) => k === "function",
       }
+      // AND THE DECLARATION MUST BE A PUBLISHED SYMBOL, which is the correction the first after-run
+      // forced. `declSites` is the walk's working index; it is NOT the published symbol table, and
+      // the two differ. Respelling to a key nothing publishes turns an AMBIGUOUS edge into an
+      // UNRESOLVED one — measured before this gate existed: residual fell 78,444 -> 58,302 while
+      // `uses` unresolved ROSE 7,922 -> 17,895, a trade of one bad column for another. A respell may
+      // only name a qualification the store can answer, so the binding must also appear in the
+      // published symbols at the same LINE and KIND.
+      const published = new Set<string>()
+      for (const sym of symbols) {
+        const n = String(sym.name ?? "")
+        if (n.length === 0) continue
+        published.add(`${n}|${Number(sym.range?.startLine ?? 0)}|${String(sym.kind ?? "")}`)
+      }
       for (const rel of relationships) {
         const kindRule = resplellable[String(rel.type ?? "")]
         if (kindRule === undefined) continue
@@ -1096,7 +1118,9 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         const r = this.bindingInEffect(declSites, target, String(rel.source ?? ""), rel.line_number, scriptName)
         if (r === null || r === "ambiguous") continue
         if (!kindRule(r.kind)) continue
-        rel.target = `${fileScope}::${target}`
+        const symbolKind = r.kind === "function" ? ASTEngine.SymbolKind.Function : r.kind === "constant" ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable
+        if (!published.has(`${target}|${r.line}|${symbolKind}`)) continue
+        rel.target = `${fileScope}.${target}`
       }
     }
 
