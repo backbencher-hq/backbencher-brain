@@ -1,5 +1,6 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { BINDING_SEP } from "./types"
 
 /**
  * Julia — analyzer.
@@ -435,6 +436,108 @@ export class RealJuliaAnalyzer {
         for (const c of this.namedChildren(n)) collect(c)
       }
       collect(rootNode)
+    }
+
+    // The LOCAL BINDINGS of this file — parameters, loop, let and catch variables — collected in a
+    // pre-pass for the same reason `declaredTypes` is: the decision is made about edges emitted
+    // earlier in the walk, and a binding introduced later in the file still binds.
+    //
+    // WHY THIS EXISTS. A call or reference whose target is a binding names a VALUE, not a
+    // declaration: `f(x) = f(x)` where `f` is a parameter is a call through the argument, and no
+    // name-keyed graph can resolve it — measured on this corpus, 8,779 of the lane's unresolved
+    // edges are exactly this shape. The family already has the fix and this lane adopts it rather
+    // than inventing one: `BINDING_SEP` (`src/ast/types.ts:190`) with `metadata.localBinding`, which
+    // `real-php-analyzer.ts:3131` and `real-dart-analyzer.ts:2781` both landed. The separator makes
+    // the target UNSPEAKABLE as a declaration, which is what turns "I could not resolve this" into
+    // a statement a consumer can act on — and the gate arms the falsifier on the spelling: a marked
+    // edge whose target carries NO separator is `bindingRefuted`, counted in `bindFAIL`.
+    //
+    // THE SLICE IS DELIBERATELY NARROW, and the first version was NOT narrow enough: a FILE-WIDE
+    // binding set marked 5,959 edges, of which 1,660 had been RESOLVED — because a parameter of one
+    // function shadowed the same spelling in another. Parameters are therefore keyed BY THEIR
+    // FUNCTION, which is julia's own scoping rule, and only `calls` and `references` with a BARE
+    // target are touched. `uses` is excluded because its target is a MEMBER name, and a dotted
+    // target because a qualified path is not a local binding.
+    const bindingsByScope = new Map<string, Set<string>>()
+    {
+      const bindName = (b: Node | null | undefined): string => {
+        if (!b) return ""
+        if (b.type === "identifier") return b.text.trim()
+        if (b.type === "typed_expression" || b.type === "unary_typed_expression" || b.type === "splat_expression" || b.type === "parameters") {
+          const inner = this.pos(b, 0)
+          return inner ? bindName(inner) : ""
+        }
+        if (b.type === "juxtaposition_expression" || b.type === "parenthesized_expression") {
+          const inner = this.pos(b, 0)
+          return inner ? bindName(inner) : ""
+        }
+        return ""
+      }
+      const add = (scope: string, n: string): void => {
+        if (!scope || !n) return
+        const set = bindingsByScope.get(scope) ?? new Set<string>()
+        set.add(n)
+        bindingsByScope.set(scope, set)
+      }
+      const addParams = (call: Node | null, scope: string): void => {
+        if (!call || !scope) return
+        const args = this.namedChildren(call).find((c) => c.type === "argument_list")
+        if (!args) return
+        for (const a of this.namedChildren(args)) add(scope, bindName(a))
+      }
+      /**
+       * THE SCOPE A DECLARATION OPENS, mirrored from the walk's own `activeScope` rules: a module,
+       * a type, a function/macro, or the short-form `f(x) = …` assignment. The parameter set is
+       * keyed by that name, because julia scoping is what makes the claim true: a parameter binds
+       * inside ITS function, and a call elsewhere in the file to the same spelling is a different
+       * question.
+       */
+      const scopeOf = (n: Node): string => {
+        if (n.type === "module_definition") {
+          const nn = n.childForFieldName("name")
+          return nn ? nn.text.trim() : ""
+        }
+        if (n.type === "struct_definition" || n.type === "abstract_definition" || n.type === "primitive_definition") {
+          const head = this.firstNamedChildOfType(n, "type_head")
+          return head ? this.typeHeadName(head) : ""
+        }
+        if (n.type === "function_definition" || n.type === "macro_definition") {
+          const sig = this.firstNamedChildOfType(n, "signature")
+          return sig ? this.signatureName(sig) : ""
+        }
+        if (n.type === "assignment") {
+          const lhs = this.pos(n, 0)
+          if (!lhs) return ""
+          const u = this.unwrapWhere(lhs)
+          return u.type === "call_expression" ? (this.calleeName(u) ?? "") : ""
+        }
+        return ""
+      }
+      const collect = (n: Node, scope: string): void => {
+        const inner = scopeOf(n) || scope
+        if (n.type === "signature") {
+          // A `signature` does not always hold the callable directly: `function f(x)` gives
+          // `signature > call_expression`, while `Object{K,V}() where {K,V}` gives
+          // `signature > where_expression > call_expression` — the census measured that trap and
+          // reading the shape positionally found 14 signatures in one file and 0 parameters in it.
+          let cur: Node | null = n
+          for (let i = 0; i < 4 && cur && cur.type !== "call_expression"; i++) {
+            cur = this.namedChildren(cur).find(
+              (c) => c.type === "call_expression" || c.type === "where_expression" || c.type === "parenthesized_expression",
+            ) ?? null
+          }
+          addParams(cur && cur.type === "call_expression" ? cur : null, inner)
+        }
+        if (n.type === "assignment") {
+          const lhs = this.pos(n, 0)
+          if (lhs) {
+            const u = this.unwrapWhere(lhs)
+            addParams(u.type === "call_expression" ? u : null, inner)
+          }
+        }
+        for (const c of this.namedChildren(n)) collect(c, inner)
+      }
+      collect(rootNode, "")
     }
 
     // The `overrides` pre-pass: which declaration replaces an earlier one. See `redefinedAt` for
@@ -1250,6 +1353,29 @@ export class RealJuliaAnalyzer {
       if (!decls || decls.length !== 1) continue
       const q = decls[0]!.qualifiedName
       if (typeof q === "string" && q) r.target = q
+    }
+
+    /**
+     * THE BINDING SPELLING, applied after the reference retarget and BEFORE the dedup (so two edges
+     * that become the same fact collapse into one row).
+     *
+     * Only `calls` and `references`, only a BARE target, and only a binding THIS FILE introduces:
+     * `localBindings` above holds this file's parameters, loop, let and catch variables and nothing
+     * else, so "this target is a value, not a declaration" is a claim the analyzer can prove from
+     * the file it was handed. A dotted target is left alone (a qualified path is not a local
+     * binding — and the census's same-file examples are full of dotted paths whose LEAF merely
+     * coincides with a parameter name, which is exactly the shape this restriction excludes), and
+     * `uses` is left alone because its target is a MEMBER name.
+     */
+    if (bindingsByScope.size > 0) {
+      for (const r of relationships) {
+        if (r.type !== ASTEngine.RelationshipType.Calls && r.type !== ASTEngine.RelationshipType.References) continue
+        const tgt = String(r.target ?? "")
+        if (!tgt || tgt.includes(".") || tgt.includes(BINDING_SEP)) continue
+        if (!bindingsByScope.get(String(r.source ?? ""))?.has(tgt)) continue
+        r.target = `${r.source}${BINDING_SEP}${tgt}`
+        r.metadata = { ...(r.metadata ?? {}), localBinding: true }
+      }
     }
 
     const relMap = new Map<string, ASTEngine.UniversalRelationship>()
