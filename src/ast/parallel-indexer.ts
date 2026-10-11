@@ -5274,6 +5274,11 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
       rawDb.run(`DELETE FROM _res_leafmap`)
       const insertLeaf = rawDb.prepare(`INSERT OR IGNORE INTO _res_leafmap (full, leaf) VALUES (?, ?)`)
       for (const { t } of dottedStillNull) {
+        // A PATH IS NOT A MEMBER CHAIN — the THIRD site of this defect, and the one that
+        // actually bound ghostty's edges. A path-shaped target gets NO leaf entry, so no
+        // global name can claim it through the join below. Deliberately narrow: `InitOpts.c`
+        // (a field) and `a.b.c` (a member chain) keep the reduction that is CORRECT for them.
+        if (t.includes("/") || t.includes("\\")) continue
         const leaf = t.split(/[.:]/).pop()
         if (leaf) insertLeaf.run(t, leaf)
       }
@@ -5288,7 +5293,8 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
                  s.file_id AS symbol_file,
                  ROW_NUMBER() OVER (
                    PARTITION BY r.target_external, r.source_symbol_id
-                   ORDER BY COALESCE(s.is_declaration, 0) ASC,
+                   ORDER BY (s.name = m.full) DESC,
+                            COALESCE(s.is_declaration, 0) ASC,
                             (s.file_id = (SELECT b.file_id FROM brain_symbol b WHERE b.id = r.source_symbol_id)) DESC,
                             (f.language = (SELECT f2.language FROM brain_file f2
                                             WHERE f2.id = (SELECT b2.file_id FROM brain_symbol b2 WHERE b2.id = r.source_symbol_id))) DESC,
@@ -5296,7 +5302,7 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
                  ) AS rn
           FROM brain_relationship r
           JOIN _res_leafmap m ON m.full = r.target_external
-          JOIN brain_symbol s ON s.project_id = ? AND s.name = m.leaf
+          JOIN brain_symbol s ON s.project_id = ? AND (s.name = m.full OR s.name = m.leaf)
           LEFT JOIN brain_file f ON f.id = s.file_id
           WHERE r.project_id = ? AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL
         ) WHERE rn = 1
