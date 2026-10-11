@@ -1257,6 +1257,25 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           isGraphqlImport: true,
           importSource: importer,
           importForm: hi.form,
+          // `fileLevel` IS THE FLAG THAT MAKES THE SOURCE ABOVE JOINABLE, and this edge was missing
+          // it while this analyzer's own `exports` edges already carried it. The M60/#910 contract
+          // (`parallel-indexer.ts:4391`) reads it as:
+          //
+          //     if (!sourceSymbol && rel.metadata?.fileLevel === true) { … sourceExternal = relativePath }
+          //
+          // — a module-level edge whose source did not resolve to a symbol is rewritten to the
+          // IMPORTING FILE's project-relative path. Without the flag `source_external` keeps this
+          // analyzer's own spelling, a bare basename (`schema.graphql`), which no declaration can
+          // ever answer: the row existed, the dependency existed, and the only thing missing was who
+          // declared it — verbatim the defect that clause exists to fix, and the reason no surface
+          // could answer "what does this file include".
+          //
+          // NOTHING ABOVE IS DISCARDED: the store keeps this spelling in `metadata.scopeName`, and
+          // the fixture's assertion that the source IS the importing file's own name
+          // (`ontology-file-imports.expectation.json`) is about the analyzer's OUTPUT, which is
+          // unchanged. Metadata-only, so no target-side count can move — the residual probe's
+          // reproduction of the gate's TABLE 1, in the same run, is the independent check of that.
+          fileLevel: true,
           // The bound names are real GraphQL identifiers in this document's scope; `[]`
           // on a bare directive means "the document as a whole", which is not the same
           // as "no names" and is distinguished by `importForm` rather than by omission.

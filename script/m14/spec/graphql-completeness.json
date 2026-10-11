@@ -281,6 +281,15 @@
         "store_probe": "NOT RUN this turn. The determinacy ruling rests on resolveTargetStmt's own ORDER BY and the gate's exact intent test, not on brain_relationship.target_symbol_id. hcl-lane's store-binding-truth.mts is the falsifier.",
         "population_holes": "45 of 1,911 files hold CONTENT and returned NO symbols AND NO relationships (engine.ts:1991 timeout) — they contribute nothing, so every count describes evidence that is MISSING rather than evidence that is wrong.",
         "extFAIL_bindFAIL_causeFAIL": 0
+      },
+      "source_side_fix": {
+        "_why": "incoming-gate.ts classifies TARGETS, so a relationship whose SOURCE names nothing is invisible to every residual column. parallel-indexer.ts:4391 rewrites source_external to the IMPORTING FILE's project-relative path when `!sourceSymbol && metadata.fileLevel === true`.",
+        "defect": "the `imports` edges (170) did not set that flag while their source is `lastPathSegment(filePath)` — a bare basename no declaration can answer, because a GraphQL name cannot contain a dot. The analyzer's own `exports` edges (13,991) already set it.",
+        "before": { "imports_edges": 170, "sources_answering_no_declaration": 170, "sources_the_store_can_name_an_importer_for": 0 },
+        "after": { "imports_edges": 170, "sources_answering_no_declaration": 170, "sources_the_store_can_name_an_importer_for": 170 },
+        "invariance": "fileLevel is not one of externalClaimOf's keys, so it cannot move a resolution. PROVEN in the same run: the AFTER probe reproduced incoming-gate.ts's TABLE 1 on all 14 columns x 10 types against the BEFORE reference (140 cells), and run-fixtures.ts reads {\"graphql\":{\"pass\":5,\"fail\":0}} with no regressions, npm run typecheck clean.",
+        "source_side_now": "src-unres 0 for all six non-file sources (uses 50,759, contains 60,112, references 67,328, overrides 9,790, implements 3,177). The source side's bare-name AMBIGUITY (uses 15,606, contains 12,588) is the same collision class measured on the target side and is NOT claimed as 0: what is measured is that no source names nothing, not that every source names one thing.",
+        "supersedes": "the lane document's 'Sources are checked too ... 0 unresolved sources across all 19,054 relationships' is a 47-FILE run whose committed artifact records 22,022 relationships — the sentence and its own artifact already disagreed on the population."
       }
     },
     "split_at_sample_scope": {

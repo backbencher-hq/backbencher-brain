@@ -1098,6 +1098,52 @@ the population is not complete: **45 files hold content and returned NO symbols 
 (45 of 1,911), which is `engine.ts:1991`'s timeout path — those files contribute nothing, and every count
 above describes evidence that is missing rather than evidence that is wrong.
 
+### THE FIX THAT WAS AVAILABLE: 170 `imports` edges whose stored row named no importer
+
+Everything above is a ruling, and the reason no analyzer change is offered for the residual is that the
+only fix with a ceiling above noise measures 0.52%. **The source direction is a different answer**, and
+it is the half no residual column measures: `incoming-gate.ts` classifies TARGETS, so a relationship
+whose SOURCE names nothing is invisible to it. The store has a contract for exactly that shape
+(`parallel-indexer.ts:4391`):
+
+    if (!sourceSymbol && rel.metadata?.fileLevel === true) { … sourceExternal = relativePath }
+
+— a module-level edge whose source did not resolve to a symbol is rewritten to the **importing file's
+project-relative path**. This analyzer's `exports` edges already carry the flag; its `imports` edges did
+not, while their source is `lastPathSegment(filePath)` — a bare basename (`schema.graphql`) that **no
+declaration can ever answer**, because a GraphQL name cannot contain a dot. The row existed, the
+dependency existed, and the only thing missing was who declared it: verbatim the defect that clause was
+added to fix, and the reason no surface could answer *"what does this file include"*.
+
+**BEFORE/AFTER over the same population, one metadata line, everything else held:**
+
+| | before | after |
+|---|---|---|
+| `imports` edges | 170 | 170 (unchanged) |
+| `imports` sources answering no declaration | 170 | 170 (unchanged — the flag does not resolve anything) |
+| `imports` sources the store can name an importer for | **0** | **170** |
+| `exports`, same contract, for comparison | 13,991 of 13,991 | 13,991 of 13,991 |
+
+**AND THE FIX IS PROVEN METADATA-ONLY BY THE INSTRUMENT THAT WOULD CATCH IT OTHERWISE.** `fileLevel` is
+not one of `externalClaimOf`'s keys, so it cannot move a resolution; the AFTER run re-classified all
+205,327 edges and the probe **reproduced `incoming-gate.ts`'s TABLE 1 on all 14 columns × 10 types**
+against the BEFORE reference — same `edges / resolved / amb / unres / extOK / ext? / extFAIL /
+bindOK / bind? / bindFAIL / causeOK / causeFAIL` on every type. That is the three-way check that
+separates a fix from a bucket move, and it is stronger here than a before/after on one column: a change
+that had touched the target side anywhere would have shown up in one of the 140 cells. Fixtures:
+`{"graphql":{"pass":5,"fail":0}}`, *no regressions*; `npm run typecheck` clean.
+
+**AND THE LANE'S OWN SOURCE-SIDE CLAIM IS SUPERSEDED, not repeated.** The section above "Sources are
+checked too" reports **0 unresolved sources across all 19,054 relationships** — that is a **47-file**
+run whose committed artifact (`script/m14/tmp/graphql/out/project-resolution.json`, 2026-10-05) records
+22,022 relationships, so the sentence and its own artifact already disagreed on the population. The
+current whole-population measurement is TABLE 5 of the probe: **`src-unres` 0 for all six non-file
+sources** (`uses` 50,759 · `contains` 60,112 · `references` 67,328 · `overrides` 9,790 · `implements`
+3,177), and the two file-spelled sources now both carry the flag. The source side's bare-name
+*ambiguity* (`uses` 15,606 · `contains` 12,588) is the same collision class measured on the target side
+in §"The ambiguous half", with the same own-file determinate subset — **and it is NOT claimed as 0**:
+what is measured is that no source names nothing, not that every source names one thing.
+
 ### The lane's own earlier numbers, re-scoped rather than contradicted
 
 `_incoming_side` in `script/m14/spec/graphql-completeness.json` records *"94.4% of the 2,317 unresolved
