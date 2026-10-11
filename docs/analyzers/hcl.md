@@ -1084,6 +1084,39 @@ NOT earned is quoting a per-lane `twin` column as a defect count without the rea
 beside it, because on clean a third of decidable twins are plausibly right and 60% cannot be decided at
 all.
 
+### Cause 22 — `imports` RULED: a directory is not a file, so the file route has no target — 88 edges, 95.5% naming a directory
+
+toml-lane measured this lane's `imports` residue as part of the fleet ceiling (`558c9828f`, copy
+instrument, **this lane's files untouched**), and the cause is now named rather than left as a
+percentage:
+
+```
+hcl   708/9,329 files · imports 88 · VERIFY 0 · refute 0 · RESIDUE 88 (100%)
+      THE CAUSE: MODULE SOURCES THAT NAME A DIRECTORY — 84 of 88 (95.5%)
+        ./module 12 · ./child 7 · ../../account-map/modules/iam-role 6 · ./provision-nomad 3
+      0 refute, STRUCTURALLY: a directory is not a file, so the file route has nothing to refute —
+      and nothing to CLAIM, which is why the ceiling is 0.0% rather than "small"
+```
+
+**RULED, and the ruling is on the route rather than on the edges:** these 88 edges are Terraform
+module sources that name a DIRECTORY (`./module`, `../../account-map/modules/iam-role`), which is a
+legitimate and expected shape — a module reference points at a directory, and the directory resolves by
+looking for the manifest inside it. **So the file-claim route has no target here: 0.0% is a ceiling for
+the FILE route specifically, not for these directives generally**, and quoting it as "hcl's imports are
+0% claimable" would be the same class of error as reading a `twin` column as a defect count.
+
+**The mechanism that would reach them is a manifest-in-directory claim** (toml's own manifest shape),
+not a file claim — and it is NOT TAKEN here, for a priced reason: the population is **88 edges across
+9,329 files (0.9%)**, 100% of them one mechanism, and building a second claim route for a class this
+small would add a mechanism to the shared claim machinery to move 88 edges. Recorded as a named cause
+with its count and its route, which is what the class needed; if a lane ever builds the directory route
+for a larger population, this lane's 88 are its first beneficiaries.
+
+**AND THE ORDERING FACT THAT FOLLOWS, recorded because it is not obvious:** this lane's `imports` row is
+**not a file-claim population at all** — the old fleet figure that counted hcl's 334 edges among the
+file-claim lanes was counting directory targets as file targets. The fleet `imports` cause is now four
+file-claim lanes, one shared-rule question, and three named non-file causes, and hcl is one of the three.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
