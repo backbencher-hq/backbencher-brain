@@ -79,7 +79,16 @@ for (const rel of files) {
   lines.forEach((line, i) => {
     const t = line.trim()
     // A catch arm (or a plain else-branch after a load failure) that records a pass.
-    const isCatchArm = /^\}\s*catch\b/.test(t) || /^(else\s+)?if\s*\([^)]*err(or)?\b[^)]*\)/.test(t)
+    // A catch arm opens in three shapes seen in this codebase, and the first version of
+    // this gate only matched the first:
+    //   } catch (e) {                       — brace on its own line
+    //   try { ... } catch (e) {             — catch on the SAME line as the try
+    //   if (err) { else ... }               — a non-throwing error branch
+    //
+    // Canary for the second: a one-line `try { return 1 } catch (e) { return
+    // mutant(..., true, ...) }` was NOT flagged, because the anchor required a leading
+    // `}`. A gate that misses a whole brace style is the silent kind.
+    const isCatchArm = /\bcatch\s*\(/.test(t) || /^\}\s*catch\b/.test(t) || /^(else\s+)?if\s*\([^)]*err(or)?\b[^)]*\)/.test(t)
     if (!isCatchArm) return
     // Scan the arm's body.
     const arm = lines.slice(i, i + 5).join("\n")
@@ -90,10 +99,50 @@ for (const rel of files) {
     if (!asPass) return
     // Skip comment lines — a comment quoting the old code is documentation.
     const codeArm = lines
-      .slice(i, i + 5)
+      .slice(i, i + 6)
       .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*"))
       .join("\n")
     if (!VERDICT_FN.test(codeArm) || !ADMITS_NOT_RUN.test(codeArm)) return
+
+    // A gate that already distinguishes "could not LOAD" from "violated at runtime"
+    // is CORRECT, and flagging it would be crying wolf over a healthy gate — which
+    // gets this gate's findings ignored. Those gates branch on the error code
+    // (ERR_MODULE / ERR_UNKNOWN_FILE_EXTENSION / SyntaxError) and record the
+    // load-failure arm as a FAILURE. Verified by canary on
+    // script/m61/verify-claims.ts: appending ".nope" to the mutant import produced
+    // nine "the mutant could not load … the can-fail proof is disarmed" lines and
+    // exit 1, with zero false passes.
+    //
+    // So the question is not "does this arm mention a load failure" but "does this arm
+    // report it as a pass". If the arm's body contains a conditional that records
+    // `false` for a load failure, the gate handles the class correctly.
+    // The load-failure arm must be recorded as a FAILURE: a verdict call whose second
+    // argument is literally `false`, inside the `if (cannotLoad)` branch.
+    // Two correct shapes, and both were seen in this codebase:
+    //   (i)  unconditional — the whole catch records `false`
+    //        (m55/verify-signatures.ts:146, m55/verify-tiers.ts:477)
+    //   (ii) branched — `if (cannotLoad) … false … else … true`
+    //        (m61/verify-claims.ts, verify-lint.ts, verify-extinction.ts)
+    // A first version only accepted (ii), and so reported the (i) gates as defects —
+    // crying wolf over correct gates, which is how a gate's findings get ignored.
+    const recordsFalse = /\b(?:check|mutant)\s*\([^;]*?,\s*false\s*,/.test(codeArm)
+    const branchedOnLoad = /\bif\s*\((?:cannotLoad|couldNotLoad)/.test(codeArm)
+    const isOnlyArm = !/\belse\b/.test(codeArm)
+    if (recordsFalse && (branchedOnLoad || isOnlyArm)) return
+
+    // A `.catch(() => false)` PROMISE handler is honest — it reports the failure as a
+    // failure. Only a verdict call that records the failure as a PASS is the defect,
+    // so require the pass verdict to be inside this arm rather than merely nearby.
+    // Without this, script/m21/verify-x1-cold-benchmark.ts:159
+    // (`ASTEngine.getParser("typescript").then(() => true).catch(() => false)`) was
+    // reported, which is the correct shape and should never be flagged.
+    // A promise chain is not a verdict arm. In
+    // `promise.then(() => true).catch(() => false)` the `true` belongs to the THEN and
+    // the CATCH reports false, so the failure is recorded honestly. Both tokens sit on
+    // one line, which is why the arm window picks them up.
+    if (/\.catch\s*\(\s*\(\s*\)\s*=>/.test(codeArm)) return
+    if (!/[,(\s]true\s*[,)]/.test(codeArm)) return
+
     sites.push({ file: rel, line: i + 1, text: t.slice(0, 90), kind: "crash recorded as pass" })
   })
 }
