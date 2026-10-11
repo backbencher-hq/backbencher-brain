@@ -1002,6 +1002,41 @@ above needs an `imports`-to-symbol join plus the three-bucket counters) and the 
 re-taken, so no number exists for any bucket. Nothing in Causes 17-18 depends on this, and the artefact
 will carry the run's label when it exists.
 
+### Cause 20 — the nim TWIN BUCKETS, run against the pre-registration: 0% REACHABLE, and an UNDECIDABLE bucket that did not fire
+
+One labelled run (`nice -n 10`, no lock, nim's files untouched), 1,499 indexer-eligible of 1,500,
+`store-binding-truth.nim-twin-buckets.json`:
+
+| bucket | count |
+|---|---|
+| **REACHABLE** | **0** |
+| **UNREACHABLE** | **16,242** |
+| **UNDECIDABLE** | **0** |
+
+By the pre-registered rule (share = REACHABLE / (REACHABLE + UNREACHABLE), UNDECIDABLE excluded and
+reported beside it): **0.0% ≤ 40% → "twins are wrong" STANDS** — on nim's population, every twin binds to
+a file the source's own imports do not reach, so the twins are arbitrary picks, the indexer's
+37,318-of-49,729 control arm generalises to binding choice, and `twin` is a defect class wherever it
+appears. Per type, and uniform: `calls` 9,782 unreachable / 0 reachable, `references` 3,471/0,
+`uses` 1,614/0, `imports` 973/0.
+
+**BUT THE UNDECIDABLE BUCKET DID NOT FIRE WHERE THE EVIDENCE SAYS IT MUST, and that is reported rather
+than smoothed:** nim's `imports` are **1,048 unbound of 2,021**, so source files demonstrably carry
+import rows whose reachability cannot be established — yet the bucket counted **0**. The cause is in my
+own predicate: the undecidable subquery JOINs `brain_symbol` on the import row's source symbol, so an
+unbound import row with no source symbol is DROPPED before it can be counted. **So `UNDECIDABLE 0` is an
+instrument artifact, not a measurement**, and the pre-registration says exactly what to do with that: if
+UNDECIDABLE is large — or here, if it fails to appear on a population that requires it — that is a finding
+about the instrument.
+
+**WHAT THAT DOES AND DOES NOT DO TO THE VERDICT:** the REACHABLE count of 0 is measured; the share is
+therefore 0% *on the rows the buckets could classify*, and a correct UNDECIDABLE bucket could only move
+rows OUT of UNREACHABLE and INTO undecidable — it cannot create reachable rows, because REACHABLE requires
+a bound reaching import that was not found in any of the 16,242. So the verdict **STANDS on a weaker
+basis than the pre-registration intended**: the direction is measured, the denominator is not yet
+trustworthy, and the next measurement is the fixed bucket (LEFT JOIN, or count import rows by the source
+FILE rather than by a source symbol) before this is quoted fleet-wide.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
