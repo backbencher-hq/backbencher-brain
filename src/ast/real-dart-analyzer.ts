@@ -106,6 +106,43 @@ function stripNullableSuffix(text: string): string {
   return end === text.length ? text : text.slice(0, end)
 }
 
+/**
+ * THE TYPE NAME A SPELLED HEAD NAMES, with its type arguments removed.
+ *
+ * `GenericClass<int>` -> `GenericClass`, `Map<String, List<int>>` -> `Map`. The arguments are
+ * part of the TYPE, not of its NAME: `GenericClass<int>.new` and `GenericClass<String>.new` name
+ * the same constructor of the same declaration, and every lookup this pass makes — the visibility
+ * of the type, the named-constructor set, `qualifiedTarget` and the `baseBeyondRunScope` claim —
+ * is a question about the NAME. Passing the arguments through made each of them a different
+ * question: `visibleTypes.has("GenericClass<int>")` is false, `namedCtors.has("GenericClass<int>.new")`
+ * is false, and the claim `GenericClass<int>` is not identifier-shaped — which is how three
+ * const-pattern rows in dart-sdk came to be REFUTED by the gate (`causeFAIL` 3).
+ *
+ * CONSERVATIVE ON PURPOSE, because the head arrives as raw source text: the `<` must open a run
+ * that balances and CLOSES AT THE END of the segment (`Map<String, List<int>>` yes, `a < b` no),
+ * and what precedes it must be a plain identifier. Anything else is returned unchanged, so a head
+ * this rule does not understand is passed through rather than truncated — a wrong name is worse
+ * than an unnormalized one.
+ */
+function typeNameWithoutArguments(text: string): string {
+  const lt = text.indexOf("<")
+  if (lt <= 0) return text
+  if (text.charCodeAt(text.length - 1) !== 62 /* > */) return text
+  let depth = 0
+  for (let i = lt; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    if (c === 60 /* < */) depth++
+    else if (c === 62 /* > */) {
+      depth--
+      // a run that closes before the end means the tail is not all arguments
+      if (depth === 0 && i !== text.length - 1) return text
+    }
+  }
+  if (depth !== 0) return text
+  const head = text.slice(0, lt)
+  return isPlainIdentifier(head) ? head : text
+}
+
 function unquote(text: string): string {
   if (text.length >= 2) {
     const first = text[0]
@@ -2857,19 +2894,45 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "qualified" && n.parent?.type === "constant_pattern") {
         const segs = n.text.split(".")
         const member = segs[segs.length - 1]
-        const head = segs.length > 1 ? segs[segs.length - 2] : null
+        // THE HEAD IS SPELLED THE WAY THE SOURCE WROTE IT, ARGUMENTS AND ALL. This site reads
+        // the head off the NODE TEXT rather than through `headNameText`, so `GenericClass<int>.new`
+        // arrives as `GenericClass<int>` — and every test below is a question about the type's
+        // NAME, not its arguments: `isCapitalized`, the `namedCtors` lookup, `qualifiedTarget`
+        // and the `baseBeyondRunScope` claim the last of those writes. Left unnormalized, the
+        // claim went out as the non-identifier `GenericClass<int>` and the gate REFUTED three
+        // rows for it (`causeFAIL` 3, dart-sdk, arm9) — the type was declared in each of the
+        // three files, so the run held the very owner the claim said it could not reach.
+        // Normalizing here means the tests and the claim all see `GenericClass`, which is the
+        // name the declaration, the visibility set and the claim contract all speak.
+        const head = segs.length > 1 ? typeNameWithoutArguments(segs[segs.length - 2]) : null
         if (member && !this.isDartGlobalBuiltin(member) && member !== head) {
           // A named constructor is still a construction: `case Foo.named:` tests
           // the constructor `Foo.named`, so it instantiates Foo (DT-A), the same
           // way the selector branch above treats a `Foo.named` tear-off.
-          if (head !== null && isCapitalized(head) && namedCtors.has(`${head}.${member}`)) {
+          //
+          // `.new` IS THE UNNAMED CONSTRUCTOR'S OWN SPELLING, and it takes the same arm. This
+          // lane already states the rule: `isRealConstructor` decides "is this signature a
+          // constructor" with `lead === "new" || lead === owner`, because the unnamed
+          // constructor's name is `new` and a member may not be spelled that way. The parser
+          // shows the same text as a construction one shape over — `case const
+          // GenericClass<int>.new():`, the INVOCATION form — and that already publishes
+          // `instantiates -> GenericClass` through the calls pass. Left on the member-read arm,
+          // the tear-off spelling published `uses -> new`: a bare leaf no project declares and
+          // no source wrote, while the identical constructor one bracket away published its
+          // class. No visibility test is needed to read `X.new` as X's unnamed constructor:
+          // `new` is a keyword reserved from member names, so that spelling has no other
+          // reading. It carries its own flag rather than `isNamedConstructor` — that one would
+          // be false here, and a consumer counting named constructions should not count this.
+          if (head !== null && isCapitalized(head) && (namedCtors.has(`${head}.${member}`) || member === "new")) {
             relationships.push({
               source: callSource,
               target: head,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.95,
               line_number: this.nodeLine(n),
-              metadata: { isNamedConstructor: true, isConstantPattern: true },
+              metadata: member === "new"
+                ? { isConstructorReference: true, isConstantPattern: true }
+                : { isNamedConstructor: true, isConstantPattern: true },
             })
           } else {
             const q = qualifiedTarget(head, member)
