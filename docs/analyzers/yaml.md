@@ -472,6 +472,90 @@ control that makes the rule falsifiable in BOTH directions is
 NOT bind (the 117's shape); a WRONG kind in the same directory does NOT bind; TWO matching siblings
 REFUSE rather than pick; and an in-file declaration still resolves as it always did.
 
+## ROUND 12 — the re-take after the shared-indexer landings, and the 184 named by the GATE'S OWN table
+
+**WHY A RE-TAKE WAS REQUIRED.** The fleet took six indexer commits — `140be2f01`, `63a888b03`,
+`ac2445a27`, `47a45a72c`, `3a701937c`, `71286549c` — and **five of them landed AFTER this lane's
+Round 11 artifact** (`44988fcd4`, 23:14 on 10-10; the landings run 23:40 → 10:41 next morning).
+`extractLeaf` and key selection CHANGE BINDINGS, so a figure taken before them is not a baseline.
+
+**RE-MEASURED at the current revision, and UNCHANGED.** Two whole-population runs, both labelled:
+
+```
+round 11 artifact (pre-landings, 44988fcd4):  TOTAL 1,414,582 · resolved 1,403,548 · ofWhich 4 · amb 137 · unresolved 47 · extOK 10,597 · ext? 253 · extFAIL 0 · bindFAIL 0 · causeFAIL 0
+this turn (post-landings, HEAD 2d8d59274):    TOTAL 1,414,582 · resolved 1,403,548 · ofWhich 4 · amb 137 · unresolved 47 · extOK 10,597 · ext? 253 · extFAIL 0 · bindFAIL 0 · causeFAIL 0
+```
+
+**The landings did not move this lane** — its targets do not go through the leaf-reduction path the
+landings repaired — and the re-take is now a valid baseline rather than a quoted one. The census
+(independent instrument) and the falsifier read the same three numbers, so **137 / 47 / 184 is three
+instruments agreeing**, not one instrument repeated.
+
+**THE 184 NAMED BY THE GATE'S OWN MARKER-SET TABLE** (not by an assumption about what they are — this
+is `incoming-gate`'s `EDGES A MARKER SET EXPLAINS`, PER PROJECT scope, quoted from this turn's run):
+
+| metadata KEYS on the edge | amb | unres | the cause it names |
+|---|---|---|---|
+| `isExternal+relationshipType` | **7** | 0 | `imports` role NAMES (`yaml_keyword_include`) |
+| `confidenceReason+isExternal+referencedName+relationshipType+unresolvedReason` | **127** | 0 | k8s object references (`yaml_resource_ref`) |
+| `isExternal+pointer+referencedName+relationshipType+unresolvedReason` | **3** | 0 | an external-FILE `$ref` whose name collides |
+| `confidenceReason+pointer+referencedName+relationshipType+unresolvedReason` | 0 | **47** | json pointers (`yaml_json_pointer`) |
+| | **137** | **47** | = **184** |
+
+**EACH CAUSE, WITH ITS COUNT AND ITS FALSIFIER** (the falsifier re-run at this revision reads
+`137 ambiguous` — the same number as the gate, see below):
+
+| count | cause | disposition, with the falsifier that justifies it |
+|---|---|---|
+| **117** | references: `secretName`/`claimName`/`configMap.name: test` in pod-security testdata. The object is declared NOWHERE in the project; the 8 declarations named `test` are unrelated (two CRD fields, two CRD schema properties, an annotation key, a CircleCI job, two Taskfile tasks) | **RULED.** The falsifier: 117 carry `same-kind name only ELSEWHERE`, and the same-directory rule — APPLIED in Round 11 — finds CEILING 0. Binding one would pick an unrelated declaration. |
+| **10** | references: `serviceAccountName: default` (7, the cluster's built-in), `secretName: kubeconfig` (2), `secretName: secret` (1) | **RULED.** Falsifier: a kind was asked for and the project declares no object of that kind with that name (0 hits anywhere). |
+| **7** | imports: role NAMES — `dnf` (2), `foobar`, `import_role`, `role`, `no_log`, `include_vars` | **RULED as inherent.** Falsifier: no `roles/<name>/` directory exists in the project; a role import names a role, and NOT naming it would drop a true edge. |
+| **3** | references: `data` — an external-FILE `$ref` whose name collides with 30 declarations | **RULED.** The claim is about a file outside the corpus; the collision is with unrelated keys. |
+| **33** | references unresolved: `pointer-not-declared-in-file` | **RULED.** These files parse CLEANLY and the pointer is genuinely not declared — mostly openapi loader fixtures. |
+| **14** | references unresolved: `parse-error-in-document` | **RULED, not reachable.** The grammar emits a bare `flow_node` at line 2288 of docker's specs — no key node exists, so no walk can find a declaration. Reaching it would mean synthesising one from a stray scalar. |
+
+**NO ANALYZER CHANGE THIS TURN, and the reason is not that the classes are small.** Each of the four
+is a name that is NOT an identity: the object it means is not declared anywhere the arbiter can see.
+There are exactly two ways to move such an edge and both are worse than the ruling: invent a spelling
+the arbiter cannot check (which converts a COUNTED defect into an uncounted one — the laundering shape
+the binding-separator tripwire exists for), or make the arbiter consult a name claim while declarations
+of that name exist (`isExternal` on a bare colliding name), which empties the ambiguity column for
+EVERY lane and is a rule-shape decision that is not this lane's. `extQ` — **253, explicitly NOT part
+of these 184** — is already a ruled class by fleet ruling, with its own four parts and its own
+falsifier (`claimable` 0 of 254 then, 0 of 253 now).
+
+**CLOSURE, quoted from this turn's run** (unchanged by it, because nothing in the analyzer moved):
+
+```
+  calls      CLOSED — every edge in one printed bucket (327)
+  uses       CLOSED — every edge in one printed bucket (165)
+  contains   CLOSED — every edge in one printed bucket (1380046)
+  imports    CLOSED — every edge in one printed bucket (8366)
+  references CLOSED — every edge in one printed bucket (21417)
+  exports    CLOSED — every edge in one printed bucket (4080)
+  extends    CLOSED — every edge in one printed bucket (155)
+  overrides  CLOSED — every edge in one printed bucket (26)
+  TOTAL      CLOSED — every edge in one printed bucket (1414582)
+```
+
+**THE THIRD INSTRUMENT WAS STILL CARRYING THE RETIRED `contains` MODEL, and it is fixed here.**
+`name-collision-falsifier.ts` called `classifyEdge` WITHOUT the caller's `contains` predicate, so it
+read `141 ambiguous` against the gate's 137 — the same four-edge lag the ENUMERATOR had, in the second
+instrument. Both now import `isContainsEdge` and pass it, so **all three read 137**. Retiring a caveat
+by construction means fixing the PAIR, not the one that happened to be noticed.
+
+### The verdict under the four-clause bar, both readings stated
+
+**Under the bar as restated** — (1) zero UNEXPLAINED edges, (2) ambiguity and unresolved classified by
+named cause with measured counts, (3) each cause fixed with a before/after or ruled with evidence, (4)
+`extFAIL`/`bindFAIL`/`causeFAIL` zero — **yaml is COMPLETE**: every one of the 184 is in a named class
+with a count and a run falsifier, and the three must-be-zero columns are 0 on the whole population.
+
+**Under the stricter reading of clause 1** — every emitted edge resolves to exactly one real
+declaration or carries a claim the project VERIFIES — **the lane is 184 edges short (0.013 %)**:
+137 ambiguous and 47 unresolved, and a ruled class is not a resolution. The qualifier is the whole
+honest answer, and it is the same qualifier every lane that cleared this bar carries.
+
 ## COMPLETION PACKAGE — current revision
 
 Whole admitted population: **1,414,582 edges · 18,364 files · 189 repos · 0 failed · 0 degraded.**
