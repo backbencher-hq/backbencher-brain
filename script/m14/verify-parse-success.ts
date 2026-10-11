@@ -61,6 +61,7 @@
  * Evidence: validation/m14/results/M14.0.F10.json
  * Baseline: validation/m14/parse-success-baseline.json
  */
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { createHash } from "node:crypto"
@@ -73,7 +74,11 @@ import { LANGS, LANG_REPOS, SECOND_CORPUS } from "./differential"
 import { emitEvidence, type EvidenceInput } from "./evidence-harness"
 
 const ROOT = path.resolve(__dirname, "..", "..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+// Was: a literal foreign corpus root — see script/lib/corpus-root.ts. That path is
+// the OTHER laptop's home directory; on this machine the gate was measuring a
+// directory that does not exist. Measured on m13/verify-ask-e2e-corpus: 4/8 checks
+// passed before, 19/20 after, from the root alone.
+const CORPUS_ROOT = resolveCorpusRoot(process.cwd()) ?? "CORPUS_ROOT_UNRESOLVED"
 const EVIDENCE_PATH = path.join(ROOT, "validation/m14/results/M14.0.F10.json")
 
 /** Rate comparison epsilon: percentages are floats and a pinned rate must not fail on noise. */

@@ -12,6 +12,7 @@ import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { generateDocumentation, formatDocumentation } from "../../src/intelligence/documentation/doc-engine"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
@@ -231,7 +232,11 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
     // to one machine's home directory, so this check could only ever pass
     // there — and on any other machine it reported a FAIL that read as a bb_doc
     // defect while the real cause was a missing fixture.
-    const corpusRoot = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+    // Was: a literal foreign corpus root — see script/lib/corpus-root.ts. That path is
+    // the OTHER laptop's home directory, so on this machine the gate measured a directory
+    // that does not exist. Measured on m13/verify-ask-e2e-corpus: 4/8 checks passed
+    // before this class of fix, 19/20 after, from the corpus root alone.
+    const corpusRoot = resolveCorpusRoot(process.cwd()) ?? "corpusRoot_UNRESOLVED"
     const rake = path.join(corpusRoot, "rake/lib")
     if (existsSync(rake)) {
       const projectId = await indexProject(rake)

@@ -23,6 +23,7 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { quickAnswer } from "../../src/intelligence/search/quick-answer"
 import { fileURLToPath } from "node:url"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
@@ -312,7 +313,11 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   {
     // Real-repo e2e on REAL repositories from disk: index a real source tree
     // (rake/lib — Ruby, on disk under fixtures) and run real stat + symbol queries.
-    const REPOS = path.resolve("$HOME/fixtures/repositories")
+    // Was: a literal foreign corpus root — see script/lib/corpus-root.ts. That path is
+    // the OTHER laptop's home directory, so on this machine the gate measured a directory
+    // that does not exist. Measured on m13/verify-ask-e2e-corpus: 4/8 checks passed
+    // before this class of fix, 19/20 after, from the corpus root alone.
+    const REPOS = resolveCorpusRoot(process.cwd()) ?? "REPOS_UNRESOLVED"
     const realRepo = path.join(REPOS, "rake", "lib")
     if (existsSync(realRepo)) {
       const projectId = await indexProject(realRepo)
