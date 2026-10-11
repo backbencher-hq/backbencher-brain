@@ -338,10 +338,36 @@ async function main(): Promise<void> {
     const componentSource = readFileSync(IMPACT, "utf8")
     const identitySource = readFileSync(IDENTITY, "utf8")
     const coreSource = readFileSync(CORE, "utf8")
-    const importComponent = (src: string): string =>
-      src
-        .replace(/from "\.\.\/intelligence\/graph\/graph-engine"/g, `from "file://${path.join(ROOT, "src", "intelligence", "graph", "graph-engine.ts").replace(/\\/g, "/")}"`)
-        .replace(/from "\.\.\/intelligence\/contracts"/g, `from "file://${path.join(ROOT, "src", "intelligence", "contracts.ts").replace(/\\/g, "/")}"`)
+    // THIS REWRITE WAS INCOMPLETE, AND EVERY MUTANT HAD BEEN DYING AT IMPORT.
+    //
+    // src/lsp/impact.ts — the file these mutants are copies of — has SIX relative
+    // imports:
+    //
+    //   from "../ast/analysis-exclusions"           from "../intelligence/contracts"
+    //   from "../intelligence/graph/graph-engine"   from "../intelligence/graph/line-address"
+    //   from "./evidence_tier"                      from "./identity"
+    //
+    // Only two of the six were rewritten. The rest resolved against the TEMP dir the
+    // mutant is written into, so every mutant with an anchor in impact.ts died with
+    //
+    //   Error: Cannot find module '../intelligence/graph/line-address'
+    //
+    // and the catch recorded it as CAUGHT. The gate reported "planted defect caught"
+    // for mutants that never executed — the same hollow-evidence failure as
+    // script/m55/verify-status-panel.ts, found here by the crash-honesty fix.
+    //
+    // Now DERIVED rather than enumerated: every relative specifier is resolved against
+    // the original file's directory and rewritten to an absolute file:// URL. A new
+    // import added to impact.ts is then handled automatically, instead of silently
+    // breaking every mutant again — which is exactly how this one rotted.
+    const importComponent = (src: string): string => {
+      const baseDir = path.dirname(IMPACT)
+      return src.replace(/from "(\.{1,2}\/[^"]+)"/g, (_whole, spec: string) => {
+        const abs = path.resolve(baseDir, spec)
+        const withExt = abs.endsWith(".ts") ? abs : `${abs}.ts`
+        return `from "file://${withExt.replace(/\\/g, "/")}"`
+      })
+    }
     // M55.T1: an anchor may live in the impact door OR in the identity
     // resolver it now reads. Both copies are written into one temp dir (the
     // mutated one where the anchor is, the other verbatim) so `import
@@ -363,7 +389,19 @@ async function main(): Promise<void> {
         const m = await import(mutantImpact)
         mutant(name, await probe(m))
       } catch (e) {
-        mutant(name, true, `mutant failed to load: ${String(e).slice(0, 80)}`)
+            // A mutant that failed to LOAD is not a caught mutant — the law was never
+            // exercised, so nothing was proven. This arm recorded `true`, which made the
+            // headline ratio unfalsifiable: break the mutant import and every mutant still
+            // counted as caught. Measured on the identical shape in
+            // script/m44/verify-legend.ts, where breaking every mutant's import produced
+            // `U4: VERIFIED (25/25 passed, 4/4 mutants caught)` with exit 0 and nothing
+            // executed.
+            //
+            // Recorded as NOT caught, with the real error, per the rule
+            // script/m60/objc-mutant-check.ts:29 already states: "a survivor reported as
+            // caught is the worst outcome available here, because it retires a defect
+            // class that is still live".
+        mutant(name, false, `MUTANT COULD NOT BE EXERCISED (broken harness, not a detection) — failed to load: ${String(e).slice(0, 80)}`)
       } finally {
         try { rmSync(dir, { recursive: true, force: true }) } catch {}
       }
@@ -379,7 +417,19 @@ async function main(): Promise<void> {
         const m = await import(mutantPath)
         mutant(name, await probe(m))
       } catch (e) {
-        mutant(name, true, `mutant failed to load: ${String(e).slice(0, 80)}`)
+            // A mutant that failed to LOAD is not a caught mutant — the law was never
+            // exercised, so nothing was proven. This arm recorded `true`, which made the
+            // headline ratio unfalsifiable: break the mutant import and every mutant still
+            // counted as caught. Measured on the identical shape in
+            // script/m44/verify-legend.ts, where breaking every mutant's import produced
+            // `U4: VERIFIED (25/25 passed, 4/4 mutants caught)` with exit 0 and nothing
+            // executed.
+            //
+            // Recorded as NOT caught, with the real error, per the rule
+            // script/m60/objc-mutant-check.ts:29 already states: "a survivor reported as
+            // caught is the worst outcome available here, because it retires a defect
+            // class that is still live".
+        mutant(name, false, `MUTANT COULD NOT BE EXERCISED (broken harness, not a detection) — failed to load: ${String(e).slice(0, 80)}`)
       } finally {
         try { rmSync(mutantPath, { force: true }) } catch {}
       }
