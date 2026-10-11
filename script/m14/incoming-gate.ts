@@ -563,8 +563,23 @@ type Row = {
  * rather than assumed: the two populations are different, and a number is only comparable
  * to another number measured the same way. The header says which one it is.
  */
-const INDEX_SPECS: Record<string, { spec: any; wasm: string }> = {
-  dart: { spec: null, wasm: "tree-sitter-dart/tree-sitter-dart.wasm" },
+/**
+ * THE PER-LANGUAGE INDEX SPEC, AS A LOOKUP RATHER THAN A CHAIN OF TERNARIES.
+ *
+ * It used to be `lang === "dart" ? mod.DART_DECLARATION_SPEC : mod.SOLIDITY_DECLARATION_SPEC` at the
+ * point of use, which is how the next language gets added wrongly: a chain has no place to say "this
+ * language has no spec yet", so a new entry silently inherits Solidity's — and a spec that does not
+ * match the grammar indexes the right SHAPE and holds NOTHING. MEASURED, protobuf, whole corpus (847
+ * `.proto` files): the Solidity default yields **0 names and 0 types**, while the lane's own spec
+ * yields 8,048. `spec` is a LAZY loader because the protobuf spec lives in that language's analyzer,
+ * and a static import would pull the whole engine into this gate for a value used once.
+ *
+ * A language with an entry but NO `spec` falls back to Solidity exactly as before, which is what every
+ * pre-existing entry did.
+ */
+const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> = {
+  dart: { spec: async () => (await import("../../src/ast/project-index")).DART_DECLARATION_SPEC, wasm: "tree-sitter-dart/tree-sitter-dart.wasm" },
+  protobuf: { spec: async () => (await import("../../src/ast/real-protobuf-analyzer")).PROTOBUF_DECLARATION_SPEC, wasm: "tree-sitter-protobuf.wasm" },
 }
 const INDEX_CACHE = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
 
@@ -576,7 +591,8 @@ async function projectIndexesFor(
   const entry = INDEX_SPECS[lang]
   if (!entry) return { byRepo, built: 0, cached: 0, damaged: 0, indexed: 0 }
   const mod: any = await import("../../src/ast/project-index")
-  const spec = lang === "dart" ? mod.DART_DECLARATION_SPEC : mod.SOLIDITY_DECLARATION_SPEC
+  // ONE LOOKUP, and an entry with no loader keeps Solidity's spec exactly as before.
+  const spec = entry.spec === undefined ? mod.SOLIDITY_DECLARATION_SPEC : await entry.spec()
   const { resolveWasmAsset } = await import("../../src/util/wasm")
   const wasm = resolveWasmAsset(entry.wasm)
   const perRepo = new Map<string, string[]>()
@@ -1570,18 +1586,28 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
       // printing it. The content is read and the two are reported separately.
       const classified = classifyEmptyResults(empty)
       const contentless = classified.filter((c) => c.kind === "contentless")
-      const holes = classified.filter((c) => c.kind === "hole")
+      const unknown = classified.filter((c) => c.kind === "unknown")
       if (contentless.length) console.log(
         `empty results: ${contentless.length} file(s) hold NO CONTENT AT ALL (0 bytes or whitespace). ` +
         `The run missed nothing, the population is COMPLETE, and these are NOT a defect.`)
-      if (holes.length) console.log(
-        `empty results: ${holes.length} file(s) hold CONTENT AND RETURNED NOTHING — a timed-out file ` +
-        `(engine.ts:1991) contributes NOTHING, so the population is INCOMPLETE and every count above ` +
-        `describes evidence that is MISSING, not evidence that is wrong.`)
-      // HOLES FIRST: if the budget of five names cuts the list, the reader must still see the kind
-      // that changes what the numbers mean.
-      for (const c of [...holes, ...contentless].slice(0, 5)) console.log(
-        `    ${c.kind === "hole" ? "HOLE  " : "empty "}${c.path}`)
+      // THE THIRD CATEGORY, AND IT IS NOT ASSERTED AS A HOLE. This counter cannot separate a parse
+      // failure from content that simply cannot declare anything. See `script/m14/empty-result-kind.ts`
+      // for julia-lane's measurement: its three flagged files were two 8-BYTE files containing
+      // `# empty` and a comments-only `julia/etc/startup.jl`, all parsing to 2-3 nodes with NO declaring
+      // node, so for THOSE the population IS complete and nothing was missing.
+      //
+      // AND BOTH READINGS OCCUR IN THIS FLEET: graphql-lane reports 45 of 1,911 files holding content
+      // and returning nothing, with `engine.ts:1991` timeouts as the standing explanation. So this is
+      // not "usually benign" either — it is genuinely undecidable from the counter, and asserting
+      // either direction is the defect. Read the files before you call them.
+      if (unknown.length) console.log(
+        `empty results: ${unknown.length} file(s) hold CONTENT AND RETURNED NOTHING. **THIS COUNTER ` +
+        `CANNOT TELL WHICH OF THREE THINGS THEY ARE**: content that cannot declare anything (comments, ` +
+        `blank bodies — population COMPLETE), a genuine parse failure or timeout (a HOLE in it), or a ` +
+        `file the analyzer declined. Do NOT report them as a hole without reading them.`)
+      // UNKNOWNS FIRST: they are the ones a reader must not silently resolve in either direction.
+      for (const c of [...unknown, ...contentless].slice(0, 5)) console.log(
+        `    ${c.kind === "contentless" ? "empty " : "????? "}${c.path}`)
     }
   }
   console.log(

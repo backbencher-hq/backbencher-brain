@@ -1617,7 +1617,10 @@ export async function processWithWorkerPool(
     // missing index is a SUPPORTED state. The store-side check that catches it is written down in
     // `docs/analyzers/real-fsharp-analyzer.md` pass 16: index a small F# project and count
     // `in-project-*` in `brain_relationship.metadata`; 0 means the registration is gone.
-    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp" }
+    // `.proto` ADDED 2026-10-11 (protobuf lane). The entry is INERT WITHOUT A SPEC: measured over the
+    // whole corpus (847 .proto files), the Solidity default yields 0 names and 0 types — an entry that
+    // indexes the right SHAPE and holds nothing, which is the dart situation one layer down.
+    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf" }
     let projectIndexes: Record<string, unknown> | undefined
     try {
       const wanted = new Set<string>()
@@ -1637,6 +1640,7 @@ export async function processWithWorkerPool(
         const wasmByLang: Record<string, string> = {
           solidity: path.join(repoRoot, "wasm", "tree-sitter-solidity.wasm"),
           fsharp: path.join(repoRoot, "wasm", "tree-sitter-fsharp.wasm"),
+          protobuf: path.join(repoRoot, "wasm", "tree-sitter-protobuf.wasm"),
         }
         // The SPEC is per language for the reason project-index.ts gives: the generic extractor
         // reads `childForFieldName("name")`, which is true of Solidity and false of F# three ways
@@ -1647,6 +1651,11 @@ export async function processWithWorkerPool(
         const specByLang: Record<string, unknown> = {
           solidity: mod.SOLIDITY_DECLARATION_SPEC,
           fsharp: mod.FSHARP_DECLARATION_SPEC,
+          // DYNAMIC, like `mod` above: the indexer does not otherwise import an analyzer, and a static
+          // import would pull the whole engine into its startup for a spec used once. The spec lives in
+          // the language's own analyzer because the grammar's declarations are named by a CHILD node
+          // (`message_name`, not a `name` field) and the `package` is a SIBLING of the declaration.
+          protobuf: (await import("./real-protobuf-analyzer")).PROTOBUF_DECLARATION_SPEC,
         }
         const { existsSync: wasmExists } = await import("fs")
         const byExt: Record<string, unknown> = {}
