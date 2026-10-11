@@ -879,6 +879,43 @@ NOTED WITH IT: the block's denominator is the run's ambiguous count, so the zero
 **ambiguous edges carrying claims**, not a claim that the lane has no ambiguity — the same run's TABLE 1
 is where the lane's `amb(decl)` lives, and the two must be quoted together.
 
+### Cause 17 — `collRes` 1,742 NAMED: it is 100% `contains`, and the tie-break is own-file DETERMINATE
+
+`collRes` (`resolvedAmongCollision`) is the class where a row RESOLVED but the target had more than one
+declaration, so production's tie-break chose it — and the indexer's own measurement is that **37,318 of
+49,729 such picks (75%) go to the WRONG symbol.** On this lane it is the largest figure in the table
+(1,742 of 6,100 edges, 28.6%) and had no cause named. Named now, from the same 600-file sample and
+crossed against that run's own BINDING INTENT columns:
+
+| type | edges | resolved | **collRes** | share of the type | intended | sameFileUnproven | arbitraryTwin | nothingAnywhere |
+|---|---|---|---|---|---|---|---|---|
+| contains | 4,338 | 4,338 | **1,742** | **40.2%** | **4,338** | 0 | 0 | 0 |
+| (all other types) | 1,762 | 367 | **0** | 0% | 983 | 79 | 1 | 699 |
+| **run total** | **6,100** | 4,705 | **1,742** | 28.6% | 5,321 | 79 | 1 | 699 |
+
+**(a) WHICH TYPES CARRY IT: one type.** The entire `collRes` on this lane is `contains` — 1,742 of
+`contains`' 4,338 edges (40.2%), and every other type is zero. So `collRes 1,742` is not a lane-wide
+collision risk; it is one type's characteristic, which is what `resolveContainsTargetStmt` predicts: a
+`contains` target is a path like `target._common` that repeats across files by construction (docker-bake
+targets, Terraform nested blocks), so collisions are the NORM for the type rather than an accident.
+
+**(b) IS THE TIE-BREAK DETERMINATE HERE: yes, for the whole class.** The same run's intent table reads
+`contains 4,338 edges → intended 4,338`, i.e. for EVERY `contains` edge a declaration in the edge's own
+file answers ON the edge's own line. A collision is determinate whenever the edge's own file declares
+that name exactly once, because both resolvers put the file preference second in their `ORDER BY` — and
+`resolveContainsTargetStmt` puts it first. So the 75% wrong-pick risk does not apply to this class:
+**the 1,742 are own-file-settled, and the genuinely arbitrary subset is 0 (`arbitraryTwin 0`).**
+`collRes 28.6%` therefore reads much smaller as a risk than as a number, and the honest reading is that
+`contains`' collisions are the type working as designed — which is consistent with the store measurement
+that `contains` other-file bindings are 0 post-landing.
+
+**GAP IN THE INSTRUMENT, stated rather than worked around**: the marker-set breakdown cannot answer
+"per marker set" for `collRes`. That table covers NOT-RESOLVED edges plus bindings — its columns are
+`resolved / amb / unres / extClaim / binding / cause` — so a collision-RESOLVED row has no marker-set row
+at all. The marker keys on this lane are `hclSite`, `hclBuiltin+hclSite`, `hclOverrideKind+hclSite`, and
+`contains` edges carry `hclSite`; a per-marker `collRes` column is what the table would need to answer the
+question as asked.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
