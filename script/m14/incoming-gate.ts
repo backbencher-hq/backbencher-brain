@@ -596,6 +596,9 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   let failed = 0
   let degraded = 0
   const degradedFiles: string[] = []
+  // Files whose result carried NOTHING — possibly a timeout (see the note at `parsed++`), possibly
+  // genuinely empty. Reported, never silently counted as evidence.
+  const emptyResults: string[] = []
   /** how many qualified-name aliases were indexed — printed, so the reader knows the
    *  endpoint population is name + qualifiedName and not name alone. */
   let aliasedKeys = 0
@@ -713,6 +716,24 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       continue
     }
     parsed++
+    // THE POPULATION HOLE, counted because it is otherwise INVISIBLE.
+    //
+    // `engine.ts:1991` is the analyzer-timeout path and it returns
+    // `{ language, symbols: [], relationships: [], … }` — an EMPTY result, not an error. So a
+    // timed-out file neither fails nor degrades: it reaches `parsed++` above and contributes
+    // **NO EDGES AT ALL**. Every count stays internally consistent and describes an INCOMPLETE
+    // population, which is the opposite failure from the regex fallback —
+    //   * regex fallback (`pool-worker.ts` `extractFallback`) EMITS ROWS -> INFLATES the residual;
+    //   * basic parse result (`engine.ts:1991`, on timeout) EMITS NOTHING -> DEFLATES the population.
+    // — and the second is the more dangerous because there is nothing in the columns to catch.
+    //
+    // Found when toml-lane reported 2 analyzer timeouts in 4,386 files that returned a basic parse
+    // result: "the coverage gate draws that line; the residual gate does not." It still does not
+    // REFUSE on this (a genuinely empty file is legitimate), so it is REPORTED with the count and
+    // the file names, and the reader decides.
+    if (r.symbols.length === 0 && r.relationships.length === 0 && f !== undefined) {
+      emptyResults.push(String(f))
+    }
     // A degraded parse substitutes a regex extractor whose symbols carry no `kind` and
     // whose edges sit below 0.7 confidence. Counting it publishes a number about the
     // fallback, not about the analyzer — so it is named and the run is REFUSED (exit 1).
@@ -888,7 +909,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   for (const m of projectDecl.values()) scanSeparator(m.keys())
 
   return {
-    lang, ext: exts.join(","), admittedExts: exts, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, rows, fallbackRows,
+    lang, ext: exts.join(","), admittedExts: exts, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, rows, fallbackRows, emptyResults,
     bindingSpelling: { separator: BINDING_SEP, keys: separatorKeys, examples: separatorExamples },
     // THE EXCLUSIONS TRAVEL WITH THE POPULATION. A reader comparing two runs has to be able
     // to see whether the population moved under them, and a lane returning to a number it
@@ -1450,6 +1471,17 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     `publishes a file-scoped qualified name and targets that path is measured, not missed.`,
   )
   if (rep.degradedFiles.length) for (const f of rep.degradedFiles.slice(0, 5)) console.log(`    ${f}`)
+  {
+    const empty = ((rep as any).emptyResults as string[] | undefined) ?? []
+    if (empty.length) {
+      console.log(
+        `empty results: ${empty.length} file(s) returned NO symbols AND NO relationships — a ` +
+        `timed-out file (engine.ts:1991) contributes NOTHING, so the population is INCOMPLETE and ` +
+        `every count above describes evidence that is missing, not evidence that is wrong.`,
+      )
+      for (const f of empty.slice(0, 5)) console.log(`    ${f}`)
+    }
+  }
   console.log(
     `ambiguous is counted by DECLARATION here. The kind-count is shown beside it because ` +
     `the fleet's earlier number used it, and the two differ by two orders of magnitude.`,
