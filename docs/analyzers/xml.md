@@ -217,11 +217,21 @@ below (279/279 own-file declarations); for `references` 3,445 + `extends` 346 + 
 2. **Clause 4 — 3,793 edges.** For references/extends/overrides the line test is N/A by construction
    (`twin` there is a *risk*, not proven wrongness — the corrected legend). The own-file enumeration
    that answered `calls` can be pointed at these three types next.
-3. **Clause 3 — 12 edges.** The imports-265 refusal **is** evidence-backed: a blanket file claim
-   would REFUTE **59** times (`fileClaimProbe`: 205 candidates admitted, 59 absent). The
-   references-12 refusal is **not** at that standard: a claim would *verify* (they name nothing in
-   the project), so the refusal rests on the analyzer's X13 label — the value may not be a reference
-   at all — and its falsifier (a probe showing all 12 are real external references) is **not run**.
+3. **Clause 3 — MET (was 12).** The imports-265 refusal **is** evidence-backed: a blanket file claim
+   would REFUTE **59** times (`fileClaimProbe`: 205 candidates admitted, 59 absent). And the
+   references-12 refusal is now measured rather than labelled: over the whole population, 12 of 12
+   targets are held in **no** repository as published symbols, but **11 of 12 ARE declared in corpus
+   source** (`libxslt/tests/docbook/dtd/**/ent/*.ent`, `dict.dtd`, and otp's
+   `xmerl_sax_SUITE_data/entity_test.dtd`); only `woohoo` is declared nowhere. So an
+   `isExternalTarget` claim would be **false** for those 11 — and the gate would **verify** it
+   anyway, because `verifyExternalClaim` resolves against the *published symbol* key space and a DTD
+   entity declaration is not a published symbol. Refusing is correct, and it is the opposite of
+   laundering ([`clause3-entity-refusal.json`](../../validation/m14/fixtures/xml/clause3-entity-refusal.json)).
+   **A grammar limitation surfaced with it:** `qandasetbody` (1 edge, 4 sites, `docbook/test/qa.xml`)
+   is labelled `danglingEntityReference` although the file declares it in its own internal subset —
+   the pinned grammar parses this file's `doctypedecl` as `<! DOCTYPE Name ExternalID ERROR >`, so
+   the subset is an ERROR node. Simple internal subsets parse at 0 ERROR with a `GEDecl` child
+   (controls run); the trigger involves the entity value's markup. Recorded, not fixed: 1 edge.
 
 **The 1.83× `contains` factor — RESOLVED, and it is a shared-indexer defect, not an instrument
 artifact** ([`insert-hook-finding.json`](../../validation/m14/fixtures/xml/insert-hook-finding.json),
