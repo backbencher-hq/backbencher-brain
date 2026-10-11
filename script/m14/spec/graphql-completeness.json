@@ -223,7 +223,66 @@
     }
   },
   "_incoming_side": {
-    "_description": "The second acceptance criterion, MEASURED this time rather than quoted. `npx tsx script/m14/incoming-gate.ts graphql graphql 60` reproduces the programme run exactly: `FAIL - 455 ambiguous + 2,317 unresolved of 11,158 edges` (capture: validation/m14/fixtures/graphql/incoming-graphql-60.json), and the lane's census (`validation/m14/fixtures/graphql/probe-graphql-incoming-split.mts`, which imports the gate's own rule) AGREES with it edge for edge: 8386 resolved / 455 ambiguous / 2,317 unresolved. No edge carries an external marker today.",
+    "_description": "The second acceptance criterion, MEASURED this time rather than quoted. `npx tsx script/m14/incoming-gate.ts graphql graphql 60` reproduces the programme run exactly: `FAIL - 455 ambiguous + 2,317 unresolved of 11,158 edges` (capture: validation/m14/fixtures/graphql/incoming-graphql-60.json), and the lane's census (`validation/m14/fixtures/graphql/probe-graphql-incoming-split.mts`, which imports the gate's own rule) AGREES with it edge for edge: 8386 resolved / 455 ambiguous / 2,317 unresolved. No edge carries an external marker today. THIS BLOCK IS SAMPLE-SCOPE AND ITS SHARE IS A LOWER BOUND: the whole-population measurement is in `whole_population_2026_10_11` below, where the specification's share of the residual is 44.7% rather than 94.4%, because a 60-file stride key space holds almost none of the project and every unanswerable name then looks external.",
+    "whole_population_2026_10_11": {
+      "_how": "The residual, attributed over the WHOLE admitted population (1,911 .graphql/.gql files, 22 repos) with the gate's own rule imported. Instruments: validation/m14/fixtures/graphql/probe-graphql-residual-causes.mts (cause by type x relationshipRole x marker set, evidence per target, own-file determinacy, §5e ceiling) and aggregate-residual-causes.mts (the same rows aggregated, with its own closure check). The probe REPRODUCES incoming-gate.ts's TABLE 1 on all 14 columns x 10 types; its first attempt did not, and the two cells that disagreed (imports.unresolved 170 vs 14, imports.extOK 0 vs 156) were the probe passing the repo NAME as context.projectRoot where the gate passes the ABSOLUTE repo root.",
+      "runs": [
+        "A  incoming-gate.ts graphql graphql,gql 0   revision 1f5951a0a   analyzer sha256 3d3933fc7622cc8c",
+        "B2 probe-graphql-residual-causes.mts --compare <A>   revision 9677e0c5f   same analyzer digest",
+        "Both are labelled UNGUARDED nice -n 10 draws: the shared .bb-heavy-v3.lock was held by another lane for the whole window."
+      ],
+      "verdict": "FAIL — 31,012 ambiguous + 53,063 unresolved of 205,327 edges (residual 84,075 = 40.95%)",
+      "cause_by_evidence": {
+        "_closure": "first-match classes; they sum to the residual exactly (84,075) at both type and lane level",
+        "BARE-NAME-COLLIDING (>=2 declarations answer in the project)": 28266,
+        "spec:built-in scalar (String ID Boolean Int Float)": 25255,
+        "spec:__-reserved (introspection namespace, 23 names)": 11112,
+        "BARE-NAME-ABSENT (nothing in the project declares it)": 10396,
+        "DOTTED-OWNER-ABSENT (the owner type is declared nowhere)": 6149,
+        "DOTTED-MEMBER-COLLIDING (the owner IS declared)": 1031,
+        "spec:__-reserved meta-field (Type.__typename)": 755,
+        "DOTTED-OWNER-DECLARED-MEMBER-ABSENT": 654,
+        "spec:built-in directive / draft directive": 446,
+        "PATH-SHAPED": 11
+      },
+      "specification_vocabulary_total": {
+        "edges": 37568,
+        "share_of_lane_residual": "44.7%",
+        "distinct_names": 35,
+        "largest_single_name": "String — 13,644 edges, all of them `references`"
+      },
+      "ambiguous_half_by_own_file_determinacy": {
+        "_why": "classifyEdge is given a name-keyed count and no file; production's resolveTargetStmt orders by COALESCE(s.is_declaration,0), (s.file_id = ?) DESC, ... LIMIT 1.",
+        "own_file_declares_the_name_exactly_once": 20121,
+        "own_file_declares_it_more_than_once": 705,
+        "own_file_declares_it_not_at_all": 10186,
+        "_reading": "The first row is determinate in production and its amb(decl) is a MODEL artifact. The third is the genuine class (§5x 'twin exists'): only foreign declarations answer and the store's s.id tie-break decides which."
+      },
+      "respell_ceiling_5e": {
+        "_why": "§5w: a lane must MEASURE the fleet's favourite fix on its own population before writing it (php 100%, bash 59.5%, julia 0.6%).",
+        "would_become_exactly_one": 160,
+        "of_ambiguous_edges": 31012,
+        "share": "0.52%",
+        "would_still_collide": 563,
+        "no_better_spelling_exists": 18521,
+        "monotonicity_violations": 0,
+        "ruling": "NOT PAID. 18,521 have no better spelling at all, because the lane publishes no file-scoped qualifiedName and pool-worker derives `scope ? scope.name : name`, so a top-level type — what references, exports and implements name — is spelled by its bare name and nothing else. The monotonicity result (0 violations) says the respell would be SAFE; it does not say it is worth buying."
+      },
+      "no_legal_claim_kind": {
+        "_how": "probe-graphql-spec-vocabulary-disposition.mts attaches every claim kind the arbiter knows, in turn, to the largest classes and reads the outcome from classifyEdge (imported). A disposition is legal only if the project can REFUTE it when false.",
+        "arms_claim_never_read_the_edge_just_resolves": 28,
+        "arms_illegal_refutes_on_a_target_that_names_nothing": 25,
+        "arms_falsifiable_dotted_owner_claims_only": 11,
+        "arms_unverifiable_extQ_blocks_a_pass": 8,
+        "mechanism": "For a BARE target the owner claim is read only where decls === 0, so a project that DOES declare the name turns the edge into a `resolved` and the claim is never consulted — it cannot be refuted. That is §5l's laundering vector, which julia-lane refused 10.7 free points to. Dotted classes are worse, not better: an owner claim on `JiraIssueField.__typename` IS falsifiable, and that is why it is unusable — 654 of the dotted `uses` residual has an owner the project DOES declare, and a per-file analyzer cannot tell an owner in a sibling file from one that lives nowhere, so attaching it takes extFAIL off the zero it must stay at.",
+        "falsifier": "a `claimBasis` claim kind whose closed list lives in the ARBITER rather than the analyzer (§5k's rule: checkable by a mechanism the claimant does not control). It would make the 37,568 specification-vocabulary edges falsifiable and close them in one change."
+      },
+      "unsettled": {
+        "store_probe": "NOT RUN this turn. The determinacy ruling rests on resolveTargetStmt's own ORDER BY and the gate's exact intent test, not on brain_relationship.target_symbol_id. hcl-lane's store-binding-truth.mts is the falsifier.",
+        "population_holes": "45 of 1,911 files hold CONTENT and returned NO symbols AND NO relationships (engine.ts:1991 timeout) — they contribute nothing, so every count describes evidence that is MISSING rather than evidence that is wrong.",
+        "extFAIL_bindFAIL_causeFAIL": 0
+      }
+    },
     "split_at_sample_scope": {
       "_how": "The 2,317 unresolved, classified by EVIDENCE rather than by convenience. `--repo-wide` (the whole-project key space) is NOT yet in this measurement: load on the shared laptop was 15-19 during the run and the project key space parses every file of every sampled repository. The split below is therefore the SAMPLE-scope split, and the IN-CORPUS column is UNMEASURED rather than empty, because a declaration outside the 60 parsed files is invisible to this scope by construction.",
       "external_licensed_by_the_specification": {

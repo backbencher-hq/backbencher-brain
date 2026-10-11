@@ -971,6 +971,146 @@ probe read `rel.line ?? rel.startLine`, both absent on the relationship shape
 unlined. Re-run against `line_number`: **0 edges at line 0**, across all 7 emitted
 types and 19 roles.
 
+## The residual, attributed (2026-10-11) — 84,075 edges, every one in a class, and no claim kind is legal
+
+The programme's completion test changed on 2026-10-09: *"a lane reading n/n on the coverage ratio is
+not done."* `npx tsx script/m14/residual-gate.ts --lane graphql` is the instrument, and it prints a
+per-type table plus a marker-set table. Neither names a cause, so this lane built the instrument that
+does — and the two instruments that follow, all three committed beside this document.
+
+    instrument                                          what it answers
+    fixtures/graphql/probe-graphql-residual-causes.mts  cause per (type × role × marker set) + evidence
+                                                        per target + own-file determinacy + §5e ceiling
+    fixtures/graphql/aggregate-residual-causes.mts      the same rows aggregated, with its own closure check
+    fixtures/graphql/probe-graphql-spec-vocabulary-    is ANY claim kind a legal disposition for these classes
+      disposition.mts
+
+**TWO RUNS, LABELLED, AND BOTH ARE ONE RUN EACH.** The whole admitted population is 1,911 `.graphql`/`.gql`
+files in 22 repos (1,915 tracked, 4 over the 1 MB cap). The shared laptop's `.bb-heavy-v3.lock` was held
+by another lane for the whole window, so both are the labelled unguarded `nice -n 10` draw the programme's
+operational note allows, with the label written into the artifact:
+
+    A  script/m14/incoming-gate.ts graphql graphql,gql 0   revision 1f5951a0a  analyzer sha256 3d3933fc76
+    B2 probe-graphql-residual-causes.mts --compare <A>     revision 9677e0c5f  same analyzer digest
+
+**AND B2 REPRODUCES A EXACTLY — all 14 columns × 10 types, not the edge count alone** (`AGREE`). That
+check earned its place: the FIRST attempt (`B`, kept as a labelled non-result) disagreed in exactly two
+cells — `imports.unresolved 170 vs 14`, `imports.extOK 0 vs 156` — because the probe passed the
+repository **NAME** as `context.projectRoot` where the gate passes the **ABSOLUTE repository root**, so
+the analyzer's `importProjectFile` claim silently never attached. Every other cell agreed, including
+`parsed=1911 failed=0`; nothing but a reproduction check could have said so (§5w). A second defect was
+caught by re-reading before the rerun: the spec-reserved `__` test was applied to the target's **head**
+segment only, which would have filed `JiraIssueField.__typename` — a meta-field §3.6.3 defines for every
+type — under an ordinary "member absent" gap. Both are the same lesson the programme keeps paying for:
+**a probe is an instrument and needs its own evidence.**
+
+### The residual, by evidence (production scope = per project; classes are first-match and they CLOSE)
+
+    lane residual 84,075 of 205,327 edges (40.95%) — 6 types carry it, `contains` is 0
+    BARE-NAME-COLLIDING (≥2 declarations answer in the project)      28,266   33.6%
+    spec:built-in scalar  (`String` `ID` `Boolean` `Int` `Float`)    25,255   30.0%   over FIVE names
+    spec:__-reserved (introspection namespace, 23 names)              11,112   13.2%   `__type` 6,258
+    BARE-NAME-ABSENT (nothing in the project declares it)             10,396   12.4%
+    DOTTED-OWNER-ABSENT (the owner type is declared nowhere)           6,149    7.3%
+    DOTTED-MEMBER-COLLIDING (owner IS declared)                        1,031    1.2%
+    spec:__-reserved meta-field (`Type.__typename`)                      755    0.9%
+    DOTTED-OWNER-DECLARED-MEMBER-ABSENT                                  654    0.8%
+    spec:built-in directive / draft directive (`@deprecated`, `@defer`)  446    0.5%
+    PATH-SHAPED (a URI/path cannot be a published name)                   11    0.0%
+
+**The specification's own predeclared vocabulary is 37,568 edges — 44.7% of the whole residual — carried
+by 35 distinct names**, and the largest single site is nine edges short of a third of the lane:
+`uses field_selection` on a BARE target, 24,364 residual. The largest *evidence* class by edges is
+`references` → `String`, whose whole cost is **13,644 edges for one name**.
+
+### The ambiguous half decomposes by OWN-FILE DETERMINACY, and 64.9% of it is a MODEL artifact
+
+`classifyEdge` is handed a name-keyed count and no file — its own docstring says so — while production's
+`resolveTargetStmt` orders by `COALESCE(s.is_declaration,0), (s.file_id = ?) DESC, … LIMIT 1`. So the
+probe asks the question the model cannot, and the 31,012 ambiguous edges split:
+
+    own file declares the name EXACTLY ONCE   20,121   64.9%   production binds it determinately
+    own file declares the name MORE THAN once    705    2.3%   `s.id` TEXT comparison decides the row
+    own file declares it NOT AT ALL           10,186   32.8%   only foreign declarations answer; s.id decides
+
+The first row is the ruling this lane can now make with a number instead of an argument: `amb(decl)` is
+a statement about the **name-keyed model**, not about the graph, for 20,121 of these edges. The third
+row is the genuine one — and it is the class `5x` calls *"twin exists"*, where the store's write order
+decides which foreign declaration wins.
+
+### THE §5e CEILING IS MEASURED AT 0.52%: the fleet's favourite fix is NOT paid here
+
+§5w: *"No lane may borrow a ceiling — it must measure its own before writing the rule"* (php 100% ·
+bash 59.5% · julia 0.6%). Measured on this lane's whole ambiguous population, with §5e's monotonicity
+clause **computed rather than assumed** (every declaration reachable through the respelled alias must
+also be a declaration of the bare name):
+
+    of 31,012 ambiguous edges, a §5e respell would make EXACTLY ONE declaration answer for   160   0.52%
+    the respell would leave it colliding under the new key                                  563
+    no better spelling exists (the derived qualifiedName IS the bare name)                 18,521
+    monotonicity violations                                                                    0
+
+**18,521 of them have no better spelling at all**, and the reason is structural rather than accidental:
+the lane publishes no file-scoped `qualifiedName`, and `pool-worker.ts` derives
+`scope ? scope.name : name`, so a TOP-LEVEL type — which is what `references`, `exports` and `implements`
+name, and what `exports` emits for (`s.metadata.topLevel` is the emit-time flag) — is spelled by its bare
+name and nothing else. **A fix whose whole reach is 160 edges, on a fleet fix already measured as low as
+0.6% elsewhere, is RULED and not paid.** The monotonicity result is the other half of the ruling: the
+respell would be SAFE here (0 violations), and that is not a reason to buy it.
+
+### NO AVAILABLE CLAIM KIND IS A LEGAL DISPOSITION — measured, not argued
+
+§5x says a class of edges naming nothing *"needs a claim or an explicit rule per class."* Attempting the
+claim is the cheap move, so the disposition probe attaches **every claim kind the arbiter knows** to the
+largest classes, in turn, and reads the outcome from `classifyEdge` — imported, never copied. A
+disposition is legal only if the project can REFUTE it when it is false:
+
+    arms across 9 representative targets × 8 dispositions
+      the claim is NEVER READ — the edge just resolves when the name is declared   28
+      ILLEGAL — refutes on a target that names nothing                              25
+      falsifiable (dotted owner claims only)                                        11
+      unverifiable — `ext?`, which blocks a PASS by construction                     8
+
+For a **bare** target (`String`, `ID`, `__type`, `__typename`, `@deprecated` — 95%+ of the spec-vocabulary
+class) every arm fails: the owner claim is read only where `decls === 0`, so a project that DOES declare
+the name turns the edge into a `resolved` and **the claim is never consulted** — it cannot be refuted, and
+`unresolved` would fall while nothing got truer. That is §5l's laundering vector, and julia-lane refused a
+free 10.7 points to it. The dotted classes are worse, not better: an owner claim on
+`JiraIssueField.__typename` IS falsifiable, **and that is exactly why it is unusable** — 654 of the dotted
+`uses` residual has an owner the project DOES declare, and this analyzer is per-file, so it cannot tell
+an owner that lives in a sibling file from one that lives nowhere (§5k's php vendor-API boundary, §5l
+rule 3's julia counter-example). Attaching it would take `extFAIL` off the zero it must stay at.
+
+**SO THE CLASSES ARE RULED, each with its mechanism and a RUNNABLE falsifier:**
+
+| class | edges | mechanism | falsifier |
+|---|---|---|---|
+| spec scalars + `__`-reserved + spec directives | 37,568 | the specification predeclares them; §3.9 forbids a schema to define a `__` name, and §3.5 forbids redefining the built-in scalars, so **no declaration can exist in any project** | a `claimBasis` claim kind whose closed list lives in the ARBITER, not the analyzer (§5k's rule: checkable by a mechanism the claimant does not control). It would make these falsifiable and close all 37,568 in one change |
+| bare name colliding, own file declares it once | 20,121 | production's own-file preference binds it determinately; the classifier is file-blind | `hcl-lane`'s `store-binding-truth.mts` pattern against `brain_relationship.target_symbol_id` |
+| bare name colliding, foreign declarations only | 10,186 | no per-file evidence names which declaration the document meant; the store's `s.id` tie-break decides | the same store probe; a project-index pass that resolves a fragment/operation to its schema |
+| bare name absent everywhere | 10,396 | the schema the document selects against is outside the admitted `.graphql` population (executable fixtures: a query names fields of an API schema that no file in the corpus declares) | admit those schema files, or index-assisted resolution |
+| dotted owner absent | 6,149 | the member's owner type is declared nowhere in the population | as above |
+
+**WHAT IS NOT SETTLED, and it is stated rather than rounded:** the determinacy ruling is a **MODEL**
+ruling — no store probe was run this turn, so "production binds it determinately" rests on
+`resolveTargetStmt`'s own ORDER BY and on the gate's exact intent test, not on `target_symbol_id`. And
+the population is not complete: **45 files hold content and returned NO symbols AND NO relationships**
+(45 of 1,911), which is `engine.ts:1991`'s timeout path — those files contribute nothing, and every count
+above describes evidence that is missing rather than evidence that is wrong.
+
+### The lane's own earlier numbers, re-scoped rather than contradicted
+
+`_incoming_side` in `script/m14/spec/graphql-completeness.json` records *"94.4% of the 2,317 unresolved
+are licensed by the specification"*, measured on a **60-file stride**. At whole-population scope the
+spec-vocabulary share is **44.7%**, and the difference is the sample's own bias rather than a change in
+the graph: at 60 files the key space holds almost none of the project, so in-corpus declarations are
+invisible and every unanswerable name looks external. Both numbers are true **of their populations** and
+the sample is the lower bound (§6.01: *a stride sample is a valid lower bound and never a lane's gain*).
+The `amb 3,710 / unres 4,427` pair quoted above is likewise NOT comparable: it was produced by
+`incoming-check.ts`, which counts a name ambiguous when it carries ≥2 **kinds**, while this document's
+numbers are **declarations** per project — the two rules disagree by two orders of magnitude on this
+corpus, which is the point §"Incoming ambiguity" already makes.
+
 ## Robustness: degenerate input and pathological depth
 
 Every other gate in this lane feeds the analyzer well-formed, shallow, ASCII
