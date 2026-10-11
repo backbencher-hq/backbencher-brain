@@ -1,5 +1,5 @@
 import type { Node } from "web-tree-sitter"
-import { statSync } from "node:fs"
+import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { ASTEngine } from "./engine"
 
@@ -1791,9 +1791,106 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return `${ref.document}.jobs.${ref.target}`
   }
 
+  /**
+   * A KUBERNETES OBJECT REFERENCED BY NAME, DECLARED IN A SIBLING FILE OF THE SAME DIRECTORY.
+   *
+   * ## The defect this fixes, and it was found by this lane's own falsifier
+   *
+   * `serviceAccountName: apiserver` in
+   * `staging/src/k8s.io/sample-apiserver/artifacts/example/deployment.yaml` was UNRESOLVED, while
+   * `.../artifacts/example/sa.yaml` declares `kind: ServiceAccount, metadata.name: apiserver` — the
+   * same directory, one manifest set, and `kubectl apply -f <dir>` reads both. `name-collision-
+   * falsifier.ts` proved it with a non-zero exit before this existed.
+   *
+   * ## The rule, PRICED before it was applied (the falsifier counts instead of asserting)
+   *
+   *   CEILING  1 ambiguous edge a same-directory, same-kind resolution can reach
+   *   CONTROL  0 of them sit in a directory declaring that kind+name TWICE (ambiguous even scoped)
+   *   CONTROL  117 MORE would be bound by a PROJECT-WIDE version of the rule, and every one of them
+   *            is refused: another manifest set is another cluster. The directory scope is the whole
+   *            claim, and that is what makes 117 a control rather than a ceiling.
+   *
+   * ## What it reads, and why that is not a contract violation
+   *
+   * `analyze()` is SYNCHRONOUS and the only parser accessor (`engine.getParser`) is async, so a
+   * sibling cannot be parsed here. The two candidate spellings of a sibling's declaration
+   * (`kind:` at column 0, `name:` inside a top-level `metadata:` block) are therefore read from the
+   * sibling's TEXT — and the important part is what the read is FOR: it is a CANDIDATE FILTER, never
+   * an extraction. The value it produces is a DOCUMENT IDENTITY, and the ARBITER then has to
+   * resolve that name against the project's own key space. A wrong sibling makes the edge
+   * unresolved again, not wrong; the only way text can turn into a fact here is through a lookup
+   * this analyzer does not perform. The current file's OWN structure still comes from the tree.
+   *
+   * It is bounded and refuses more than it accepts: only a `yaml_resource_ref` whose referring key
+   * maps to a KIND, only with a project root, only `.yaml`/`.yml` siblings, and it returns null the
+   * moment a SECOND sibling matches — two same-kind, same-name objects in one directory is exactly
+   * the case where the rule would be a guess.
+   */
+  private resolveSameDirectoryResource(ref: { target: string; source: string; kind: string }, ctx: YamlContext): string | null {
+    if (ref.kind !== "yaml_resource_ref") return null
+    const key = ref.source.slice(ref.source.lastIndexOf(".") + 1)
+    const kind = RealYamlAnalyzer.KIND_FOR_RESOURCE_KEY[key]
+    if (kind === undefined) return null
+    const root = ctx.projectRoot
+    if (typeof root !== "string" || root.length === 0) return null
+    const rel = RealYamlAnalyzer.projectRelativePath(ctx.filePath, ctx.projectRoot)
+    if (rel === null) return null
+    const cut = rel.lastIndexOf("/")
+    const dirRel = cut >= 0 ? rel.slice(0, cut) : ""
+    const dirAbs = dirRel.length > 0 ? join(root, ...dirRel.split("/")) : root
+    let entries: string[]
+    try {
+      entries = readdirSync(dirAbs)
+    } catch {
+      return null
+    }
+    const hits: string[] = []
+    for (const entry of entries.sort()) {
+      if (!/\.ya?ml$/i.test(entry)) continue
+      const siblingRel = dirRel.length > 0 ? `${dirRel}/${entry}` : entry
+      if (siblingRel === rel) continue
+      let text: string
+      try {
+        text = readFileSync(join(dirAbs, entry), "utf8")
+      } catch {
+        continue
+      }
+      if (!RealYamlAnalyzer.declaresResource(text, kind, ref.target)) continue
+      if (hits.length > 0) return null // two candidates: refuse rather than pick
+      hits.push(this.documentName(join(dirAbs, entry), 1, ctx.projectRoot))
+    }
+    return hits.length === 1 ? hits[0] : null
+  }
+
+  /** The two spellings a sibling manifest declares: `kind:` at column 0, and `name:` inside a
+   *  top-level `metadata:` block. Anchored, so a nested pod-template `metadata.name` is not read as
+   *  the document's own. */
+  private static declaresResource(text: string, kind: string, name: string): boolean {
+    const kindMatch = text.match(/^kind:[ \t]*["']?([A-Za-z][\w.-]*)["']?[ \t]*$/m)
+    if (kindMatch === null || kindMatch[1] !== kind) return false
+    const meta = text.search(/^metadata:[ \t]*$/m)
+    if (meta < 0) return false
+    const nameMatch = text.slice(meta).match(/^[ \t]+name:[ \t]*["']?([^"'\n#]+?)["']?[ \t]*$/m)
+    return nameMatch !== null && nameMatch[1].trim() === name
+  }
+
+  /** The referring KEY -> the object KIND it names. One source of truth: the falsifier imports it,
+   *  so the instrument that PRICES this rule and the analyzer that APPLIES it cannot drift. */
+  static readonly KIND_FOR_RESOURCE_KEY: Record<string, string> = {
+    secretName: "Secret",
+    secretRef: "Secret",
+    secretKeyRef: "Secret",
+    secret: "Secret",
+    claimName: "PersistentVolumeClaim",
+    configMap: "ConfigMap",
+    configMapRef: "ConfigMap",
+    configMapKeyRef: "ConfigMap",
+    serviceAccountName: "ServiceAccount",
+  }
+
   private resolveSiblingReferences(ctx: YamlContext): void {
     for (const ref of ctx.pendingReferences) {
-      const resolved = this.resolveDeclaredName(ref.target, ctx) ?? this.resolveJobInDocument(ref, ctx)
+      const resolved = this.resolveDeclaredName(ref.target, ctx) ?? this.resolveJobInDocument(ref, ctx) ?? this.resolveSameDirectoryResource(ref, ctx)
       if (resolved) {
         this.addRelationship(ctx, ref.source, resolved, ASTEngine.RelationshipType.References, {
           relationshipType: ref.kind,
