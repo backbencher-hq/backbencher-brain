@@ -104,7 +104,7 @@
  *       3 THE INSTRUMENT'S OWN CONTROL DID NOT FIRE.
  */
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 // The separator a binding's target carries. Imported from the FAMILY constant rather than
@@ -151,8 +151,12 @@ export const LANES_B: Record<string, string> = {
   // free of `key: "value"` shapes and of backticks.
   yaml: "yaml,yml",
   css: "css,less", scss: "scss",
-  // `make: "mk,mak,makefile"` cannot admit a bare `Makefile`, because admitByExtension matches a trailing
-  // dot-plus-ext and that file has no extension at all. Reported rather than silently redefined.
+  // `make: "mk,mak,makefile"` NOW ADMITS A BARE `Makefile`. It did not, because `admitByExtension`
+  // matched a trailing dot-plus-ext and that file has no extension to match — and the note that stood
+  // here REPORTED the gap for months instead of fixing it, which made the gate's population 129 files
+  // where the production router admits 697 (18.5%). Found by make-lane, which measured the router's
+  // own predicate and found it disagreed with this table. The predicate now also matches a bare
+  // basename equal to an admitted ext; see its docstring.
   // XML IS SEVEN SPELLINGS, and the router says so itself: `src/ast/language-detection.ts` maps
   // `.xml .xsd .dtd .svg .xsl .xslt .rng` all to the `xml` language. This table admitted only the
   // first, so every xml number from this instrument covered **2,081 of the lane's 11,552 files
@@ -218,9 +222,31 @@ const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
  * invocation changes meaning; and the admitted set is PRINTED with the population, so the two
  * numbers can no longer disagree without the disagreement being visible in the output.
  */
+/**
+ * IS THIS FILE IN THE LANE'S POPULATION?
+ *
+ * A trailing `.ext` OR a BARE BASENAME equal to an ext. The second clause exists because some
+ * languages name their files with no extension at all, and the extension-only test could not admit
+ * them however the extension list was written: `make: "mk,mak,makefile"` matches `foo.mk` and
+ * `GNUmakefile` but **never a bare `Makefile`** — there is no dot to match.
+ *
+ * MEASURED CONSEQUENCE, found by make-lane: over the same tree the gate admitted **129** files where
+ * the production router admits **697 — 18.5%**. Every incoming make figure in this programme was
+ * therefore a statement about 129 files presented under the lane's name. The gate printed its own
+ * population and agreed with itself ("129 parsed of 129 sampled"), which is exactly why a population
+ * defect is invisible from inside: the number is consistent with the rule that produced it.
+ *
+ * Same class as xml's `.xml`-only admission, which was `68138a1c8` — a lane measured over 18% of its
+ * own corpus. **A population that depends on a spelling is measuring the spelling.**
+ *
+ * The basename clause cannot admit anything the extension test would not, EXCEPT a file whose whole
+ * name equals an admitted ext — which is precisely the case it is for. It is not a widening of the
+ * lane's population; it is the population the lane already claimed to have.
+ */
 function admitByExtension(rel: string, exts: string[]): boolean {
   const low = rel.toLowerCase()
-  return exts.some((e) => low.endsWith(`.${e}`))
+  const base = low.slice(low.lastIndexOf("/") + 1)
+  return exts.some((e) => low.endsWith(`.${e}`) || base === e)
 }
 
 function discoverFiles(lang: string, ext: string, exts: string[], maxFiles: number, onlyRepos?: Set<string>): {
@@ -350,7 +376,17 @@ function projectFactsForFiles(repoRoot: string, admitted: string[]): ProjectFact
   return { packages: new Set<string>(), files, sdkLib: false }
 }
 
+/**
+ * SYMLINKED DIRECTORIES FOLLOWED by the dart fact walk, printed with the population.
+ *
+ * Module-level because `ProjectFacts` is a shared shape and widening it for a diagnostic would put a
+ * walk statistic in the type of a project fact. Reset at the top of the walk so a second repo cannot
+ * inherit the first one's count.
+ */
+let symlinkedDirsFollowed = 0
+
 function projectFactsForDart(repoRoot: string, admitted: string[]): ProjectFacts {
+  symlinkedDirsFollowed = 0
   const files = new Set<string>()
   for (const abs of admitted) {
     const rel = path.relative(repoRoot, abs)
@@ -358,13 +394,42 @@ function projectFactsForDart(repoRoot: string, admitted: string[]): ProjectFacts
   }
   const packages = new Set<string>()
   const stack: string[] = [repoRoot]
+  // A SYMLINKED DIRECTORY IS A DIRECTORY. `Dirent.isDirectory()` is FALSE for a symlink, so this walk
+  // silently skipped every symlinked subtree. Found by sql-lane, whose LANE CENSUS dropped an ENTIRE
+  // REPOSITORY the same way — `repositories/proxicall -> $HOME/ProxiCall` — and measured the
+  // loss on one unchanged population with only the walk fixed: **1,526 -> 1,965 files, 16,273 ->
+  // 31,051 edges**, imports 38->53, references 2,092->5,966, contains 5,400->12,024. Every figure its
+  // spec's gap prose carried was short by one whole repository.
+  //
+  // HERE the loss is quieter and lands on the EXTERNAL-CLAIM columns: this walk exists to establish
+  // which packages the project itself declares, so a package declared UNDER a symlinked subtree is not
+  // seen — and a claim the project genuinely carries reads as one no check can reach. That is a
+  // `ext?` in the place of an `extOK`, i.e. it makes a lane look LESS verifiable than it is.
+  //
+  // FOLLOWING LINKS REQUIRES BOUNDING THEM. A walk that follows links with no cycle guard can spin
+  // forever, so every real path is visited at most once via `seen`. The count is kept and PRINTED:
+  // a walk that silently follows links is as unauditable as one that silently skips them.
+  const seen = new Set<string>()
+  try { seen.add(realpathSync(repoRoot)) } catch { /* an unresolvable root is reported by the caller */ }
   while (stack.length > 0) {
     const dir = stack.pop()!
     let entries: import("node:fs").Dirent[]
     try { entries = readdirSync(dir, { withFileTypes: true }) } catch { continue }
     for (const entry of entries) {
-      if (entry.isDirectory()) {
-        if (!DART_FACT_WALK_SKIP.has(entry.name)) stack.push(path.join(dir, entry.name))
+      const child = path.join(dir, entry.name)
+      let isDir = entry.isDirectory()
+      if (!isDir && entry.isSymbolicLink()) {
+        // `statSync` FOLLOWS the link, which is the whole point; a broken link throws and is skipped.
+        try { isDir = statSync(child).isDirectory() } catch { isDir = false }
+      }
+      if (isDir) {
+        if (DART_FACT_WALK_SKIP.has(entry.name)) continue
+        let real = child
+        try { real = realpathSync(child) } catch { /* keep the path; the cycle guard is best-effort */ }
+        if (seen.has(real)) continue
+        seen.add(real)
+        if (entry.isSymbolicLink()) symlinkedDirsFollowed++
+        stack.push(child)
         continue
       }
       if (entry.name !== "pubspec.yaml") continue
@@ -1444,7 +1509,9 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   // ansible `.yaml` alone is 13 files and `.yaml,.yml` is 2,082, same language, same lane.
   console.log(
     `population: admitted extensions = ${rep.admittedExts.map((e) => `.${e}`).join(", ")} ` +
-    `(${rep.admittedExts.length === 1 ? "ONE spelling — check the lane does not carry another" : "both spellings admitted"})`,
+    `(${rep.admittedExts.length === 1 ? "ONE spelling — check the lane does not carry another" : "both spellings admitted"}) ` +
+    `— PLUS a bare BASENAME equal to any of them, because \`Makefile\` has no extension to match ` +
+    `and an extension-only rule measured 129 files where the production router admits 697.`,
   )
   console.log(
     rep.index === null
@@ -1470,6 +1537,16 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     ` — above the cap the engine extracts structurally, not as an analyzer`,
   )
   console.log(`parse failures: ${rep.failed}   degraded (regex fallback): ${rep.degraded}`)
+  // THE WALK'S OWN POPULATION, because this walk decides which packages the project is said to
+  // declare — and that set is what turns an external claim into `extOK` or `ext?`. A walk that skipped
+  // symlinked subtrees made the project look like it declared LESS than it does, i.e. it moved claims
+  // from `extOK` to `ext?` — the direction that makes a lane look less verifiable than it is.
+  if (symlinkedDirsFollowed > 0) console.log(
+    `project-facts walk: ${symlinkedDirsFollowed} SYMLINKED director(ies) FOLLOWED — ` +
+    `\`Dirent.isDirectory()\` is false for a symlink, so before this fix every such subtree was ` +
+    `skipped and a package declared under one read as a claim no check can reach. Cycles are bounded ` +
+    `by a realpath seen-set, so the count is a fact about the tree and not about a walk that spun.`,
+  )
   console.log(
     `endpoint keys indexed: name + ${rep.aliasedKeys} qualifiedName alias(es). A lane that ` +
     `publishes a file-scoped qualified name and targets that path is measured, not missed.`,
