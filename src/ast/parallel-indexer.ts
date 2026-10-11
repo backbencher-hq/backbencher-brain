@@ -4789,6 +4789,23 @@ export async function storeResults(
              AND brain_relationship.target_external IS NOT NULL
              AND brain_relationship.project_id = '${projectId}'
              AND INSTR(brain_relationship.target_external, '.') > 0
+             -- A PATH IS NOT A MEMBER CHAIN, and this is the SECOND SITE of the same defect.
+             -- extractLeaf (above) carried it in TypeScript: synthetic/main.zig split on '.'
+             -- yields the EXTENSION zig, so a file reference binds to whatever symbol is named
+             -- after its extension. json-lane measured 4,490 of 4,579 bound file-shaped edges
+             -- (98.1%) bound to an extension-named symbol. The TypeScript separator test closed
+             -- that rung AND THIS SQL RUNG RE-OPENED IT one step later: the SUBSTR below fires
+             -- exactly where the repaired path now leaves NULL. Measured on the new store:
+             -- 83,335 edges bound by this expression, 702 of them PATH-SHAPED.
+             --
+             -- The fix was CORRECT AND INSUFFICIENT, and the acceptance arms said so:
+             --   ARM 1 FAILS  extension-named bindings 4,490 -> 4,490 (no movement)
+             --   ARM 4 FAILS  bound/unbound            4,579/10 -> 4,579/10
+             --   ARM 2 PASSES member paths still bind (not too wide)
+             --   ARM 3 PASSES 2,259 member chains still reduce to their leaf (not too narrow)
+             -- The guards mirror the TypeScript test exactly: a target carrying a path separator
+             -- is left for a FILE CLAIM, never reduced to its extension.
+             AND INSTR(brain_relationship.target_external, '/') = 0
          `)
  
          // Strategy 4 (M60, review JD2): the `<module>:<item>` import form.
