@@ -2214,7 +2214,26 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // silently unaccused, and never a claim that accuses a correct edge.
     const asWritten = selectorsNode.text.trim()
     const composedName = collapseWhitespace(asWritten) !== selectorText
-    const nameLine = composedName ? {} : { line_number: selectorLine }
+    // ── THE COMPOSED-NAME REFUSAL IS LIFTED, AND IT WAS MEASURED, NOT ARGUED ────────────────────
+    //
+    // This used to be `composedName ? {} : { line_number: selectorLine }`: a name the selector text
+    // does not write got NO line, "never checkable rather than silently unaccused". The concern is
+    // real for a consumer that asks whether the NAME is written on that line — but it is not
+    // `contains`, whose edge line IS the target symbol's own start line (`LINE_IS_TARGET_LINE`, and
+    // the gate reads 162,087 of 236,991 css `contains` edges as `intended` = own file AND own
+    // line). And the resolver's own disambiguation rule (Rule 2b, below) picks among same-named
+    // candidates BY THE EDGE'S LINE and declines when there is none.
+    //
+    // MEASURED on the six files that exposed it (12 rules, every one of them composed):
+    // `selectorLine === the symbol's own start line` in **12 of 12** cases — `.callout div` at 430,
+    // `div` at 584, `img` at 136, `.logo a img` at 366, `ul` at 250, `footer .footer-social ul` at
+    // 398, `a` at 284, `.children a, .no-children a` at 804, `.no-children a` at 301, `a` at 689,
+    // `svg` at 71, `.workspace-switcher__error-state svg` at 79. The selectors node starts where the
+    // rule starts, so the refused line was never a wrong line — it was the RIGHT one, withheld.
+    // Withholding it cost 13 scss `contains` edges their identity: each target is declared exactly
+    // twice in one file and with no line Rule 2b cannot choose. `isSynthesizedName`/`asWrittenSelector`
+    // still ride the metadata, so the provenance the comment protected is untouched.
+    const nameLine = { line_number: selectorLine }
     const nameProvenance = composedName ? { isSynthesizedName: true, asWrittenSelector: asWritten } : {}
     if (media) {
       ctx.relationships.push({
