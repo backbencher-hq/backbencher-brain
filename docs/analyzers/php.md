@@ -54,7 +54,7 @@ analyzer's and not a property of how many files aborted under load.
 
 The gate's "EDGES A MARKER SET EXPLAINS" block prints **at most 5 marker sets per type**. `calls` closes
 exactly with its five; `uses` does not — its five printed sets sum to 139,864 of 155,016 edges, so
-**15,152 edges (9.8%) sat in sets the block never printed**, carrying `amb` 3,482 + `unres` 1,052. The
+**15,152 edges (9.8%) sat in sets the block never printed**, carrying `amb` 3,482 + `unres` 1,052 — **12,974** of the 15,152 in sets with `amb+unres > 0` and **2,178** in sets whose only non-zero columns are `resolved`/`extClaim`, which the same filter also hid. (The commit message that landed this finding said "9,652 with amb+unres"; that figure was wrong and this is the measured one, from the partition probe's own output: 12,974 + 2,178 = 15,152, and 155,016 − 139,864 = 15,152.) The
 instruction "split the residual by the gate's marker table" therefore could not reach closure, and this
 lane's largest cause was invisible in the instrument built to name it. That is now disclosed by the
 instrument itself (`63063d378`, landed from this lane's arithmetic) as a per-type
