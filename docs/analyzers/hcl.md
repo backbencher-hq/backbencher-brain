@@ -1165,6 +1165,45 @@ process), while the same run under the Lead's lease completed. The division is *
 lanes hold bounded ones**; a lane with something long should poll in-turn or hand it over with its label
 lines and thresholds. Both deaths were reported KILLED, never as results.
 
+### Cause 24 — the PER-ROW name-text predicate, BUILT and pre-registered (for the Lead's lease)
+
+Built because the per-file predicate measured itself: 0% then 100% on the same question (Cause 23). The
+question is whether the source file holds an import row that could reach **the file the twin actually
+BOUND TO**, and the split is on **the import ROWS and their NAME TEXT**, not on the file as a whole.
+
+| bucket | predicate | why decidable |
+|---|---|---|
+| **REACHABLE** | a BOUND import row whose target file **IS** the twin's bound declaration file (`i_src.file_id = ss.file_id AND i_tgt.file_id = <bound file>`) | the only case that is EVIDENCE of reachability rather than of possibility |
+| **UNDECIDABLE** | no such row, but an import row's **name text** could name that declaration — the leaf segments match | every `imports` edge carries a target name even when unbound, so nim's 1,048 unbound rows are informative rather than obstructive |
+| **UNREACHABLE** | no bound row reaches it and no row's name text can name it | the negative control, decidable from text the store already holds |
+
+**PRE-REGISTERED THRESHOLDS AGAIN, before the run, same 70/40 bands** on REACHABLE / (REACHABLE +
+UNREACHABLE), with UNDECIDABLE excluded from the denominator and reported beside it:
+* **≥ 70% → "twins are wrong" FAILS TO FIRE** for nim;
+* **≤ 40% → STANDS**, and then the direction is earned on TWO languages rather than one (clean 32.1%);
+* **40-70% → INCONCLUSIVE**, reported as a split and never rounded;
+* **and if the split is 0/0 AGAIN, the reading is INCONCLUSIVE-ON-INSTRUMENT and it STANDS THERE** — no
+  fourth predicate. A second instrument that also cannot fire is a result about the population, and this
+  lane already has one of those.
+
+INSTRUMENT, committed and hashed so the run's provenance is checkable:
+`validation/m14/fixtures/hcl/tools/store-binding-truth.nim.mts`
+`sha256 a6688e4f5f12189724b1545a9231f2b0fff53e83898a51dab37f8e021bb093e6`
+`npx tsc --noEmit -p tsconfig.json` **exit 0** · `npm run audit:script-typecheck` **exit 0**
+
+HANDOVER COMMAND (the Lead's lease; 400-file draw, which completed inside one turn for this corpus, and
+the drawn population is stated in the artefact because the rule works on shares):
+
+```
+nice -n 10 env BB_DATA_DIR=$PWD/.tmp-hcl/bb-data BB_NIM_TRUTH_REPOS=nim   BB_NIM_TRUTH_MAX=400 BB_NIM_TRUTH_OUT=.tmp-hcl/nim/nim-perrow.json   npx tsx validation/m14/fixtures/hcl/tools/store-binding-truth.nim.mts
+```
+
+Read `TWIN BUCKETS (pre-registered): REACHABLE … · UNREACHABLE … · UNDECIDABLE …` from the log and quote
+the thresholds above into the artefact's first lines BEFORE the run, as was done for the previous one.
+**What the predicate does NOT measure, stated so it is not read as more than it is**: a leaf-text match is
+possible-evidence, not proof, and a nim import written through a computed path matches nothing — those
+rows land in UNREACHABLE, which is why the negative control is the bucket to read beside the share.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
