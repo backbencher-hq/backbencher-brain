@@ -221,6 +221,25 @@ interface OwnerIndex {
   tail: OwnerEntry[]
 }
 
+/**
+ * THE RECOVERY DESCENT IS BOUNDED, AND THE BOUND IS DISCLOSED.
+ *
+ * `walk` descends INTO error nodes on purpose — refusing to once made every read inside a broken
+ * region invisible, and three fixtures pin that recovery. But the SCSS grammar hands
+ * `bulma/docs/vendor/fontawesome-free-6.5.2-web/scss/_variables.scss` a single ERROR node with
+ * **15,479 named children**; descending fully costs 159 s, blows the engine's 192 s analyzer budget,
+ * and the file then contributes **0 symbols and 0 relationships** — the population HOLE the gate's
+ * POPULATION block reported.
+ *
+ * The alternative to a bounded descent is therefore not full recovery, it is TOTAL LOSS. The cap
+ * below binds only on that pathological shape: it is a child-count bound on a single ERROR node, not
+ * a general cost cut, and every file whose ERROR regions are ordinary is untouched (`skipped` stays
+ * 0 and nothing is recorded). What it skips is COUNTED and attached to the file's module symbol
+ * (`metadata.scssRecoveryCap`), because a walk that does not say how much it skipped is the same
+ * defect as a table that hides its own closure.
+ */
+const RECOVERY_CHILD_CAP = 2000
+
 interface ScssContext {
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
@@ -246,6 +265,9 @@ interface ScssContext {
   sawDiagnostic: boolean
   /** `ownerForNode`'s interval index over `symbols`, built once and grown (see `ownerIndexOf`) */
   ownerIndex?: OwnerIndex
+  /** WHAT A BOUNDED RECOVERY DESCENT SKIPPED — per file, counted, disclosed on the module symbol.
+   *  Absent means no ERROR node ever exceeded the cap, which is every file but the pathological one. */
+  recoveryCap?: { cap: number; errorNodes: number; errorChildren: number; visited: number; skipped: number }
   sawContent: boolean
   sawAtRoot: boolean
 }
@@ -367,6 +389,15 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     this.collectDeclarations(rootNode, ctx)
     this.walk(rootNode, ctx)
+    // THE DISCLOSURE, ON THE FILE'S OWN MODULE SYMBOL. `ctx.recoveryCap` is absent unless an ERROR
+    // node exceeded `RECOVERY_CHILD_CAP`, so a file whose error regions are ordinary records nothing
+    // — and a file the cap bound on says exactly how much it skipped, where any reader of the graph
+    // (or a probe) can count it. Analyzer-internal tallies do not survive `parseFile`; a symbol's
+    // metadata does.
+    if (ctx.recoveryCap) {
+      const moduleSym = ctx.symbols.find((sym) => sym.metadata?.isScssModule)
+      if (moduleSym) moduleSym.metadata = { ...(moduleSym.metadata ?? {}), scssRecoveryCap: ctx.recoveryCap }
+    }
     this.emitModuleExports(ctx)
 
     // ------------------------------------------------------------- THE FILE CLAIM
@@ -910,8 +941,22 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
    *   OR'd, and that is what makes `scssRecoveredFromError` trustworthy rather than
    *   merely present.
    */
-  private walk(node: Node, ctx: ScssContext, recovered = false): void {
-    for (let i = 0; i < node.namedChildCount; i++) {
+  private walk(node: Node, ctx: ScssContext, recovered = false, limit = Number.POSITIVE_INFINITY): void {
+    // THE BOUND IS ON THE NODE'S SHAPE, NOT ON ITS LABEL. It was first written inside the
+    // `isErrorNode(child)` branch — and it never bound: instrumenting `namedChild(i)` for i > 2000
+    // showed 9,438 calls arriving through `walk` itself, because this node is reached by the ORDINARY
+    // recursion, not by the error branch. A bound that depends on a predicate is a bound that can
+    // miss the shape it was written for; a child count cannot. Only a node wider than
+    // `RECOVERY_CHILD_CAP` is affected, which is the pathological shape and nothing else.
+    if (limit === Number.POSITIVE_INFINITY && node.namedChildCount > RECOVERY_CHILD_CAP) {
+      const tally = (ctx.recoveryCap ??= { cap: RECOVERY_CHILD_CAP, errorNodes: 0, errorChildren: 0, visited: 0, skipped: 0 })
+      tally.errorNodes++
+      tally.errorChildren += node.namedChildCount
+      tally.visited += RECOVERY_CHILD_CAP
+      tally.skipped += node.namedChildCount - RECOVERY_CHILD_CAP
+      limit = RECOVERY_CHILD_CAP
+    }
+    for (let i = 0; i < node.namedChildCount && i < limit; i++) {
       const child = node.namedChild(i)
       if (!child) continue
       // DESCEND THROUGH ERROR — and this is the fix the whole investigation turned on.
