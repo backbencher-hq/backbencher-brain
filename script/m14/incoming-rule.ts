@@ -609,13 +609,34 @@ export function verifyExternalClaim(
 /**
  * WHAT AN AMBIGUOUS EDGE'S CLAIM AMOUNTS TO.
  *
- * `contradicted` is deliberately NOT `refuted`. It records the FACT that the edge claims to be external
- * while the population publishes declarations of its target — measured at **714 edges on scss alone** —
- * and it does NOT assert that the fact is a failure. Whether such a claim should count as `extFAIL` is
- * an OPEN fleet-wide ruling with two defensible readings; making it here would move a failure column
- * for every lane in the programme. See `claimDispositionOnAmbiguous`.
+ * `contradicted` and `ownFileSilent` are the two halves of what the first version called, wrongly,
+ * `refuted`. The distinction is SCOPE, and it was found by reading the PRODUCER rather than the count:
+ *
+ *   `real-css-analyzer.ts:115` — "CSS-D16: `var(--x)` reads marked `isExternalTarget` because
+ *   **THIS FILE** declares no `--x`", and `:1347` — "the external marker on a read **this file cannot
+ *   see**". So css's claim is a **PER-FILE** statement. The arbiter verifies it against the **PROJECT**
+ *   key space, and on css **all 180** of its ambiguous edges came back `contradicted` — the target
+ *   declared somewhere in the project, which is a DIFFERENT question from the one the analyzer asked.
+ *
+ * **A PER-FILE CLAIM CANNOT BE REFUTED BY ANOTHER FILE'S DECLARATION.** So the two cases must be
+ * counted apart:
+ *
+ *   `contradicted`  — the EDGE'S OWN FILE declares the target. A declaration answering to a claim of
+ *                     externality is a refutation under BOTH scope readings, so this one is solid.
+ *   `ownFileSilent` — only ANOTHER file declares it. The claim is TRUE at its own-file scope; whether
+ *                     it is true at PROJECT scope depends on what the individual MARKER means, and that
+ *                     is NOT settled (see below), so it is reported as NOT a refutation.
+ *
+ * AND THE REMAINING OPEN QUESTION IS NAMED RATHER THAN ASSUMED. The generic kind covers markers of
+ * different scope: `isExternalTarget` (css) says "my file cannot see this", while `isStdlib` /
+ * `stdlibModule` / `nimStdlibModule` say something about the NAME'S ORIGIN, which a project declaring a
+ * same-named symbol does not falsify either. **`verifyExternalClaim` asks "does the project declare the
+ * target?" — a question about this project's declarations — for claims that are not about this
+ * project's declarations.** Settling that needs a per-MARKER scope table, which does not exist yet.
+ * Until it does, `ownFileSilent` is reported as a class with its count and NOT as a failure.
  */
-export type AmbiguousClaimDisposition = "verified" | "unverified" | "refuted" | "contradicted" | "notApplicable"
+export type AmbiguousClaimDisposition =
+  | "verified" | "unverified" | "refuted" | "contradicted" | "ownFileSilent" | "notApplicable"
 
 export type Classified = {
   outcome: Outcome
@@ -722,6 +743,9 @@ export function isContainsEdge(label: string): boolean {
  */
 function claimDispositionOnAmbiguous(
   declCount: Map<string, number>, tgt: string, claim: ExternalClaim | null, facts?: ProjectFacts,
+  /** does the EDGE'S OWN FILE declare the target? `undefined` means the caller could not say, and the
+   *  disposition then stays `contradicted` only if the project does — never a claim of refutation. */
+  ownFileDeclares?: boolean,
 ): { kind: string; disposition: AmbiguousClaimDisposition } | undefined {
   // `declCount` is read to STATE THE BRANCH INVARIANT rather than to verify anything: every caller
   // reaches here from `decls > 1`, and if that ever stops being true the kind below is wrong.
@@ -744,37 +768,27 @@ function claimDispositionOnAmbiguous(
       disposition: facts ? map(verifyFileClaim(facts, claim.candidates)) : "unverified",
     }
   }
-  // ── THE GENERIC EXTERNAL CLAIM ON A TARGET THAT NAMES DECLARATIONS: "CONTRADICTED", NOT "REFUTED".
+  // ── THE GENERIC EXTERNAL MARKER ON A TARGET THAT NAMES DECLARATIONS ────────────────────────────
   //
-  // The previous version of this helper called `verifyExternalClaim(declCount, tgt)` and got **714
-  // REFUTED** on scss. That number is not something this code is entitled to assert, and the reason is
-  // a category error worth writing down: `verifyExternalClaim` asks whether the target's OWNER is
-  // absent from the key space. Here the FULL target names two or more declarations — which is exactly
-  // why we are on this path — so its owner being present is EXPECTED, not a refutation, and the call
-  // returns "refuted" almost by construction. **A check that can only answer one way on a branch is not
-  // a check**; that is php's unreachable `owner_provable` (§6.11) in a new place, and it is the fourth
-  // time today I have written a disclosure that asserted more than the computation behind it.
+  // THE PREVIOUS VERSION CALLED ALL OF THESE `contradicted` AND THAT WAS WRONG FOR A REASON THE PRODUCER
+  // STATES PLAINLY. `real-css-analyzer.ts:115` — "CSS-D16: `var(--x)` reads marked `isExternalTarget`
+  // because **THIS FILE** declares no `--x`". The claim is PER-FILE; the check below is PROJECT-scoped.
+  // On css **all 180** ambiguous edges came back contradicted against a claim that was, at its own scope,
+  // TRUE. **A per-file claim cannot be refuted by another file's declaration**, so the two cases are
+  // counted apart and only the own-file one is a refutation under both readings.
   //
-  // What IS established, by the branch we are standing in, is the FACT: the edge claims to be external
-  // while the population publishes declarations of its target. Whether that fact COUNTS AS `extFAIL` is
-  // a FLEET-WIDE RULING THAT IS STILL OPEN, and it is deliberately not made here:
-  //
-  //   reading (1) — the generic claim behaves like `remoteRef`, which `classifyEdge` DOES refute at
-  //     `decls > 0`. Then scss carries 714 real failures and **every lane's `extFAIL 0` is understated**,
-  //     because at `decls > 1` no generic claim is ever read.
-  //   reading (2) — the generic claim is only meaningful where the target names NOTHING (it is a
-  //     "this gap is external" statement), so at `decls > 1` it is simply NOT APPLICABLE and the
-  //     ambiguity stands on its own.
-  //
-  // Both are defensible, they differ on 714 edges in ONE lane, and choosing one silently would move a
-  // failure column for EVERY lane in the programme. So the fact is reported as CONTRADICTED and the
-  // ruling is named as open rather than made.
+  // And the residual question is NAMED, not assumed: some generic markers (`isStdlib`, `stdlibModule`,
+  // `nimStdlibModule`) are about a NAME'S ORIGIN, which this project declaring a same-named symbol does
+  // not falsify either. `verifyExternalClaim` asks a question about THIS PROJECT'S DECLARATIONS, for
+  // claims that are not about this project's declarations. A per-MARKER scope table would settle it and
+  // does not exist — so `ownFileSilent` is reported with its count and NOT as a failure.
   if (decls <= 1) {
-    // THE INVARIANT BROKE — this is not the branch it documents, so the honest answer is that the
-    // disposition is UNKNOWN rather than any of the three.
+    // THE INVARIANT BROKE — this is not the branch it documents, so the honest answer is UNKNOWN.
     return { kind: String((claim as { kind?: string }).kind ?? "external"), disposition: "unverified" }
   }
-  return { kind: String((claim as { kind?: string }).kind ?? "external"), disposition: "contradicted" }
+  const kind = String((claim as { kind?: string }).kind ?? "external")
+  if (ownFileDeclares === true) return { kind, disposition: "contradicted" }
+  return { kind, disposition: "ownFileSilent" }
 }
 
 /**
@@ -808,6 +822,10 @@ export function classifyEdge(
    * cannot fail to pick one, and "ambiguous" was never the alternative.
    */
   containsLike?: boolean,
+  /** DOES THE EDGE'S OWN FILE DECLARE THE TARGET? Needed because a per-file claim cannot be
+   *  refuted by another file's declaration — see `claimDispositionOnAmbiguous`. `undefined` means the
+   *  caller cannot say, and the disposition then never claims a refutation on that basis. */
+  ownFileDeclares?: boolean,
 ): Classified {
   const decls = declCount.get(tgt) ?? 0
   if (containsLike === true && decls >= 1) {
@@ -891,7 +909,7 @@ export function classifyEdge(
     return {
       outcome: (kindSet?.size ?? 0) > 1 ? "ambBoth" : "ambDeclOnly",
       decls, kinds: kindText,
-      claimOnAmbiguous: claimDispositionOnAmbiguous(declCount, tgt, claim, facts),
+      claimOnAmbiguous: claimDispositionOnAmbiguous(declCount, tgt, claim, facts, ownFileDeclares),
     }
   }
   return { outcome: "resolved", decls, kinds: kindText }
@@ -997,7 +1015,7 @@ export type Outcomes = {
    * covering both a `cause` (not an external claim at all) and a `projectFile` claim that did not
    * resolve. Two things under one word is a disclosure that misleads.
    */
-  ambiguousWithClaim: Record<string, { verified: number; unverified: number; refuted: number; contradicted: number; notApplicable: number }>
+  ambiguousWithClaim: Record<string, { verified: number; unverified: number; refuted: number; contradicted: number; ownFileSilent: number; notApplicable: number }>
 }
 
 /**
@@ -1064,7 +1082,7 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
       if (c.claimOnAmbiguous) {
         const { kind, disposition } = c.claimOnAmbiguous
         const bucket = out.ambiguousWithClaim[kind] ??
-          (out.ambiguousWithClaim[kind] = { verified: 0, unverified: 0, refuted: 0, contradicted: 0, notApplicable: 0 })
+          (out.ambiguousWithClaim[kind] = { verified: 0, unverified: 0, refuted: 0, contradicted: 0, ownFileSilent: 0, notApplicable: 0 })
         bucket[disposition]++
       }
       keep(out, "ambiguous", out.ambiguousNames, { name: tgt, declarations: c.decls, kinds: c.kinds })

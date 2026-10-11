@@ -951,7 +951,13 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     // LIMIT 1, so a name collision is not an ambiguity for this type. Measured by xml-lane: 94.1%
     // ambiguous under the count model against 98.4% bound in the real store.
     const isContains = isContainsEdge(e.label)
-    const pc = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains)
+    // DOES THE EDGE'S OWN FILE DECLARE THE TARGET? The claim disposition needs it, because a PER-FILE
+    // claim cannot be refuted by ANOTHER file's declaration — `real-css-analyzer.ts:115` says css's
+    // `isExternalTarget` means "THIS FILE declares no `--x`", while the arbiter checked the PROJECT key
+    // space and called all 180 of css's ambiguous edges contradicted. Same `d.file === srcFile` test
+    // `classifyIntent` uses, so the two agree by construction rather than by convention.
+    const ownFileDeclares = (declPos.get(e.tgt) ?? []).some((d) => d.file === e.srcFile)
+    const pc = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares)
     tally(row.project, pc, e.tgt, e.label)
     row.intent[classifyIntent(e.tgt, e.srcFile, e.line, e.label, declPos)]++
     tally(row.pooled, classifyEdge(pooledDecl, pooledKinds, e.tgt, e.claim, facts, isContains), e.tgt, e.label)
@@ -1980,8 +1986,8 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     // under one word is a disclosure that misleads, which is the defect this block exists to remove.
     // It then printed "714 REFUTED", which was worse: a check that can only answer one way on a branch
     // is not a check (see `claimDispositionOnAmbiguous`).
-    type Bucket = { verified: number; unverified: number; refuted: number; contradicted: number; notApplicable: number }
-    const zero = (): Bucket => ({ verified: 0, unverified: 0, refuted: 0, contradicted: 0, notApplicable: 0 })
+    type Bucket = { verified: number; unverified: number; refuted: number; contradicted: number; ownFileSilent: number; notApplicable: number }
+    const zero = (): Bucket => ({ verified: 0, unverified: 0, refuted: 0, contradicted: 0, ownFileSilent: 0, notApplicable: 0 })
     const byKind = new Map<string, Bucket>()
     let amb = 0
     for (const r of rep.rows.values()) {
@@ -1996,33 +2002,54 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
         b.unverified += s.unverified
         b.refuted += s.refuted
         b.contradicted += s.contradicted
+        b.ownFileSilent += s.ownFileSilent
         b.notApplicable += s.notApplicable
         byKind.set(k, b)
       }
     }
-    if (byKind.size > 0) {
+    // ALWAYS PRINTED, INCLUDING WHEN EVERY COUNT IS ZERO. The first version printed only when
+    // `byKind.size > 0`, so a lane with no claim-carrying ambiguity saw NOTHING — and "the block did
+    // not appear" is not the same reading as "the count is 0". A lane reported exactly that state and
+    // had to reason from the block's ABSENCE (protobuf: 0 CONTRADICTED, 0 VERIFIED, 0 not verified).
+    // The reasoning was sound; the instrument should not have required it. **Absence of output is the
+    // defect this whole programme keeps finding, and it is trivially avoidable here.**
+    {
       const tot = [...byKind.values()].reduce((a, b) => ({
         verified: a.verified + b.verified, unverified: a.unverified + b.unverified, refuted: a.refuted + b.refuted,
-        contradicted: a.contradicted + b.contradicted, notApplicable: a.notApplicable + b.notApplicable,
+        contradicted: a.contradicted + b.contradicted, ownFileSilent: a.ownFileSilent + b.ownFileSilent,
+        notApplicable: a.notApplicable + b.notApplicable,
       }), zero())
       console.log(
         `CLAIM-CARRYING AMBIGUOUS EDGES — the amb(decl) column is NOT claim-aware. Its claim-carrying\n` +
         `share, BY CLAIM KIND: of ${amb} ambiguous edge(s) — ${tot.verified} claim VERIFIED · ` +
         `${tot.unverified} NOT verified · ${tot.refuted} REFUTED · ${tot.contradicted} CONTRADICTED · ` +
-        `${tot.notApplicable} n/a.`,
+        `${tot.ownFileSilent} OWN-FILE-SILENT · ${tot.notApplicable} n/a.`,
       )
       for (const [k, b] of [...byKind.entries()].sort(
-        (x, y) => (y[1].verified + y[1].unverified + y[1].refuted + y[1].contradicted) -
-                  (x[1].verified + x[1].unverified + x[1].refuted + x[1].contradicted),
+        (x, y) => (y[1].verified + y[1].unverified + y[1].refuted + y[1].contradicted + y[1].ownFileSilent) -
+                  (x[1].verified + x[1].unverified + x[1].refuted + x[1].contradicted + x[1].ownFileSilent),
       )) {
-        console.log(`    ${w(k, 16)} VERIFIED ${b.verified} · not verified ${b.unverified} · REFUTED ${b.refuted} · CONTRADICTED ${b.contradicted} · n/a ${b.notApplicable}`)
+        console.log(
+          `    ${w(k, 16)} VERIFIED ${b.verified} · not verified ${b.unverified} · REFUTED ${b.refuted}` +
+          ` · CONTRADICTED ${b.contradicted} · OWN-FILE-SILENT ${b.ownFileSilent} · n/a ${b.notApplicable}`,
+        )
       }
+      if (byKind.size === 0) console.log(
+        `    (no ambiguous edge on this lane carries any claim — so there is nothing of this shape here,\n` +
+        `     and that is a MEASURED zero rather than a block that failed to print.)`,
+      )
       if (tot.contradicted > 0) console.log(
-        `  ^ ${tot.contradicted} CONTRADICTED claim(s): the edge claims to be EXTERNAL while the population\n` +
-        `    PUBLISHES declarations of its target. THIS IS A FACT, NOT A VERDICT — whether it counts as\n` +
-        `    extFAIL is an OPEN fleet-wide ruling with two defensible readings, and at decls > 1 no generic\n` +
-        `    claim is read at all today. Read these FIRST: they are 714 on scss alone, and if the ruling\n` +
-        `    goes with reading (1) then EVERY lane's extFAIL 0 is understated.`,
+        `  ^ ${tot.contradicted} CONTRADICTED: the EDGE'S OWN FILE declares the target while the edge claims\n` +
+        `    externality. That is a refutation under BOTH scope readings, so read these FIRST.`,
+      )
+      if (tot.ownFileSilent > 0) console.log(
+        `  ^ ${tot.ownFileSilent} OWN-FILE-SILENT: only ANOTHER file declares the target. **THIS IS NOT A\n` +
+        `    REFUTATION.** css's marker means "THIS FILE declares no --x" (real-css-analyzer.ts:115), and a\n` +
+        `    PER-FILE claim cannot be refuted by another file's declaration — yet the arbiter checked the\n` +
+        `    PROJECT key space and called all 180 of css's ambiguous edges contradicted. Some generic markers\n` +
+        `    are instead about a NAME'S ORIGIN (isStdlib, stdlibModule, nimStdlibModule), which this project\n` +
+        `    declaring a same-named symbol does not falsify either. A per-MARKER scope table would settle it\n` +
+        `    and does not exist, so this class is reported WITH ITS COUNT and NOT as a failure.`,
       )
       console.log(
         `  A CLAIM IS NOT A RESOLUTION: the outcome is deliberately untouched, because an edge can be BOTH\n` +
