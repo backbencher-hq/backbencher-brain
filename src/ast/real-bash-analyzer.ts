@@ -931,7 +931,20 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         // source runs, so telling a consumer they reach an external binary would be
         // a false claim about a false edge — the labels exist to make a real
         // ambiguity visible, not to dress wreckage up as a decision.
-        if (meta.commandInErrorRecovery === true) continue
+        //
+        // THE THREE FALSE EDGES STILL OWE A ROW, and this is the correction of 2026-10-10. The
+        // exclusion above is right about the LABEL and wrong about the SILENCE: the lane's own
+        // contract (see `resolveDeclaration`) is that an edge whose target its file declares more
+        // than once carries EITHER a binding field or the explicit decline, and a row carrying
+        // neither is the one shape a consumer cannot read — the whole-corpus closure probe
+        // (`probe-bash-ambiguity-closure-whole.mts`) is what surfaced it, as exactly 3 `STILL OPEN`
+        // edges out of 24,722 ambiguous ones. So the decline is published and the external label is
+        // still withheld: `ambiguousInFile` says "this edge could not be attributed", which is true
+        // of wreckage, while `commandNameIsExternal` would be a false claim about a false edge.
+        if (meta.commandInErrorRecovery === true) {
+          if ((declSites.get(String(rel.target ?? ""))?.length ?? 0) >= 2) meta.targetResolution = "ambiguousInFile"
+          continue
+        }
         const name = String(rel.target ?? "")
         if (!namesWithNonFunctionDecl.has(name)) continue // truly external: nothing local to confuse
         meta.targetResolution = "commandNameIsExternal"
