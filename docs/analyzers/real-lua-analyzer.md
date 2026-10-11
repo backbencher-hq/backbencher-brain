@@ -1163,10 +1163,31 @@ in the edge's own file, so it cannot be an `unresolved` edge):
     exports ≥ 830 (26.4%) · extends ≥ 63 (91.3%) · overrides ≥ 65 (100%) · instantiates ≥ 72 (100%)
 
 **What it does not say**: *the own file answers* is not *the own file answers UNIQUELY*, and the
-resolver's own-file preference needs uniqueness — which is exactly the lexical instrument's B1/B3
+resolver's own-file preference needs uniqueness — which is exactly the lexical instrument's B1/B2/B3
 split. The bound therefore SUPPORTS the ruling and does not replace it. The full table, the instrument
 finding it produced, and the falsifiers are in
 `validation/m14/fixtures/lua/measurements/imports-file-claim.md` §§8–10.
+
+### The next candidate fix that LOOKS priced and is not — read this before starting it
+
+`calls` is 12,519 unresolved (marker `luaSpecific`) and the 2026-10-09 split's mark simulation records
+**M2 — "a bare identifier target the project declares nowhere, restricted to `calls`" — as
+marked 12,517 · externalVerified 12,517 · externalUnverified 0 · REFUTED 0**. On those numbers an
+external claim on the class looks free, and it is the single largest remaining fixable-looking bucket on
+this lane.
+
+**It is not a price, and the reason is the one the handoff names as the gate's only real laundering
+vector (§5k/§5l).** M2's rule was evaluated against the PROJECT key space — that is what the simulation
+had — so its applicability condition IS the arbiter's refutation condition, and it verifies by
+construction. A per-FILE analyzer does not own that key space: the implementable rule is "a bare name
+this FILE does not declare", which the project can and does refute (another file declares it). The price
+of the implementable rule has never been taken, and the number above is not it.
+
+What a real price needs, in this order: the analyzer-side declared-name set per file, the project key
+space, the refutation count of the file-scoped rule, and the cross-tab between them. The lane's existing
+`stdlib-external` fixture and the `markStdlibExternal` rule are the wrong vehicle — that rule marks a
+member read whose RECEIVER is one of the eight documented Lua 5.4 tables, deliberately not a bare name —
+so this would be a new claim kind on `calls`, not an extension of that one.
 
 ## 8. Declared limitations
 
