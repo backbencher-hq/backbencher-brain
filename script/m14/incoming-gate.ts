@@ -111,6 +111,10 @@ import { parseFile } from "../../src/ast/pool-worker"
 // re-spelled here: the analyzer writes it (src/ast/types.ts) and this gate checks it, and two
 // copies of a spelling would be two rules.
 import { BINDING_SEP } from "../../src/ast/types"
+// The empty-result kind lives in ONE module because it was written twice and the two copies diverged
+// on their first run — see `script/m14/empty-result-kind.ts`. The classification is imported, never
+// re-implemented, so the instrument and its control cannot disagree about what "empty" means.
+import { classifyEmptyResults } from "./empty-result-kind"
 // THE RULE IS IMPORTED, NOT COPIED. A census that counts WHY about the same edges must
 // count them the same way, so the classification lives in incoming-rule.ts and this file
 // consumes it. Re-exported below so a caller of this module keeps working unchanged.
@@ -1474,12 +1478,33 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   {
     const empty = ((rep as any).emptyResults as string[] | undefined) ?? []
     if (empty.length) {
-      console.log(
-        `empty results: ${empty.length} file(s) returned NO symbols AND NO relationships — a ` +
-        `timed-out file (engine.ts:1991) contributes NOTHING, so the population is INCOMPLETE and ` +
-        `every count above describes evidence that is missing, not evidence that is wrong.`,
-      )
-      for (const f of empty.slice(0, 5)) console.log(`    ${f}`)
+      // AN EMPTY FILE IS NOT A TIMED-OUT FILE, AND THIS LINE USED TO SAY IT WAS.
+      //
+      // `emptyResults` is ONE counter over two populations that mean OPPOSITE things: a 0-byte (or
+      // whitespace-only) file has NO CONTENT TO EXTRACT — the run missed nothing and the population
+      // is COMPLETE — while a file WITH CONTENT that returned nothing is a HOLE in the population
+      // (`engine.ts:1991` returns `{symbols: [], relationships: []}` on a timeout, so the file
+      // contributes NO EDGES and is invisible by construction).
+      //
+      // This printed the timed-out warning over BOTH, so on clean-stdlib it announced "the population
+      // is INCOMPLETE" over `_library.dcl`, `_startup.dcl` and `_system.dcl` — three files that are
+      // **0 bytes**, where the truth is the opposite: nothing was missed. A disclosure that fires on
+      // the benign case trains its reader to ignore it on the real one, which is worse than not
+      // printing it. The content is read and the two are reported separately.
+      const classified = classifyEmptyResults(empty)
+      const contentless = classified.filter((c) => c.kind === "contentless")
+      const holes = classified.filter((c) => c.kind === "hole")
+      if (contentless.length) console.log(
+        `empty results: ${contentless.length} file(s) hold NO CONTENT AT ALL (0 bytes or whitespace). ` +
+        `The run missed nothing, the population is COMPLETE, and these are NOT a defect.`)
+      if (holes.length) console.log(
+        `empty results: ${holes.length} file(s) hold CONTENT AND RETURNED NOTHING — a timed-out file ` +
+        `(engine.ts:1991) contributes NOTHING, so the population is INCOMPLETE and every count above ` +
+        `describes evidence that is MISSING, not evidence that is wrong.`)
+      // HOLES FIRST: if the budget of five names cuts the list, the reader must still see the kind
+      // that changes what the numbers mean.
+      for (const c of [...holes, ...contentless].slice(0, 5)) console.log(
+        `    ${c.kind === "hole" ? "HOLE  " : "empty "}${c.path}`)
     }
   }
   console.log(

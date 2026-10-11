@@ -94,7 +94,42 @@ function parseLog(text: string): Summary[] {
  * cannot read its instrument's output on a FAIL is useless, because FAIL is the state it exists to
  * analyse. The stdout is on the error object, so it is taken from there.
  */
-function runLane(lang: string): { rows: Array<{ type: string; edges: number; resolved: number; ambColl?: number; amb: number; ambKind: number; unres: number; extOK: number; extQ: number; extFAIL: number; bindOK: number; bindQ: number; bindFAIL: number; causeOK: number; causeFAIL: number }>; total: any; intent: Map<string, { intended: number; sameFileUnproven: number; arbitraryTwin: number; noDeclaration: number }>; intentBlockSeen: boolean; intentWidthBad: number } {
+/**
+ * WHAT THE RUN ACTUALLY READ, as opposed to what this gate's header used to assert.
+ *
+ * The header said `WHOLE admitted population, production scope` UNCONDITIONALLY. But `incoming-gate.ts`
+ * already discloses three facts that can make that sentence false, and this gate parsed none of them:
+ *
+ *   * `SAMPLE, NOT POPULATION: n of N files` — a stride sample truncates each project's symbol table
+ *     too, so its project-scoped RESOLVED share is biased UP (a name whose collision lives in an
+ *     unsampled file of the same repository reads unique).
+ *   * `empty results: n file(s) returned NO symbols AND NO relationships` — a timed-out file
+ *     (`engine.ts:1991`) contributes NOTHING, so the population is INCOMPLETE and every count
+ *     describes evidence that is MISSING, not evidence that is wrong.
+ *   * `degraded (regex fallback): n` — those rows are a DIFFERENT instrument's, already reported by
+ *     the FALLBACK ROWS block, and they inflate the residual.
+ *
+ * A verdict is a claim about its population, and an unread file is not in it. This gate is the one
+ * lanes are told to run, so the disclosure has to travel WITH the table rather than sit one layer
+ * down in a log the lane may not read. Sixth instance of one family in this programme — a summary
+ * that does not match its own columns; the fix each time is to make the label read the computation.
+ */
+type Population = {
+  parsed: number | null; sampled: number | null; corpus: number | null; repos: number | null
+  admittedExts: string | null
+  failed: number | null; degraded: number | null
+  emptyCount: number | null
+  /** files that hold NO CONTENT AT ALL — the run missed nothing, the population is COMPLETE */
+  emptyContentless: number | null
+  /** files that hold CONTENT and returned nothing — a real HOLE in the population */
+  emptyHoles: number | null
+  /** the instrument printed the OLD unsplit line, so the kind of each file is UNKNOWN here */
+  emptyLegacyUnsplit: boolean
+  emptyFiles: Array<{ kind: "hole" | "contentless" | "unknown"; path: string }>
+  sampleOf: number | null; sampleTotal: number | null
+}
+
+function runLane(lang: string): { rows: Array<{ type: string; edges: number; resolved: number; ambColl?: number; amb: number; ambKind: number; unres: number; extOK: number; extQ: number; extFAIL: number; bindOK: number; bindQ: number; bindFAIL: number; causeOK: number; causeFAIL: number }>; total: any; intent: Map<string, { intended: number; sameFileUnproven: number; arbitraryTwin: number; noDeclaration: number }>; intentBlockSeen: boolean; intentWidthBad: number; population: Population } {
   const ext = { fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble", php: "php", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql", protobuf: "proto", json: "json,jsonc", yaml: "yaml,yml", css: "css,less", scss: "scss", hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl", bash: "sh,bash,zsh" }[lang] ?? lang
   let out = ""
   try {
@@ -163,7 +198,59 @@ function runLane(lang: string): { rows: Array<{ type: string; edges: number; res
     const r = { type: parts[0], edges: nums[0], resolved: nums[1], ambColl: nums[2], amb: nums[3], ambKind: nums[4], unres: nums[5], extOK: nums[6], extQ: nums[7], extFAIL: nums[8], bindOK: nums[9], bindQ: nums[10], bindFAIL: nums[11], causeOK: nums[12], causeFAIL: nums[13] }
     if (parts[0] === "TOTAL") total = r; else rows.push(r)
   }
-  return { rows, total, intent, intentBlockSeen, intentWidthBad }
+  // The disclosure lines are read from the SAME stdout the table came from, so the population and the
+  // table cannot describe two different runs. Every field is nullable: an absent disclosure stays
+  // `null` and is printed as UNSTATED rather than assumed to be zero — the failure this guards against
+  // is a clean-looking zero standing in for a line the instrument never printed.
+  const population: Population = (() => {
+    const pop: Population = {
+      parsed: null, sampled: null, corpus: null, repos: null, admittedExts: null,
+      failed: null, degraded: null, emptyCount: null,
+      emptyContentless: null, emptyHoles: null, emptyLegacyUnsplit: false, emptyFiles: [],
+      sampleOf: null, sampleTotal: null,
+    }
+    const num = (s: string) => Number(s.replace(/,/g, ""))
+    const lines = out.split("\n")
+    let lastEmptyLine = -1
+    for (let i = 0; i < lines.length; i++) {
+      const t = lines[i].trim()
+      let m = /^population: ([\d,]+) parsed of ([\d,]+) sampled \(corpus has ([\d,]+) \.([^\s]+) files across ([\d,]+) repos/.exec(t)
+      if (m) { pop.parsed = num(m[1]); pop.sampled = num(m[2]); pop.corpus = num(m[3]); pop.repos = num(m[5]); continue }
+      m = /^population: admitted extensions = (.+?) \((ONE spelling|both spellings)/.exec(t)
+      if (m) { pop.admittedExts = `${m[1]} (${m[2].toLowerCase()})`; continue }
+      m = /^parse failures: ([\d,]+)\s+degraded \(regex fallback\): ([\d,]+)/.exec(t)
+      if (m) { pop.failed = num(m[1]); pop.degraded = num(m[2]); continue }
+      // THE INSTRUMENT SPLITS THE COUNTER, SO THIS GATE READS ITS SPLIT RATHER THAN RE-DERIVING IT.
+      // A first version of this block re-classified the files ITSELF by reading each one — two copies
+      // of one classifier, which is the "one spelling, two places" hazard this programme keeps paying
+      // for. It diverged IMMEDIATELY: `incoming-gate` prefixes each name with `HOLE  ` or `empty `,
+      // so the copy here read `"empty /path"` as a PATH, failed to open it, and fell through to
+      // "hole" — reporting three 0-byte files in clean-stdlib as a population hole while the
+      // instrument one line above called them contentless. **The instrument that owns the data owns
+      // the classification; this gate reads both counts and neither re-decides.** The old unsplit
+      // line is still recognised, and recognised as UNKNOWN rather than guessed at.
+      m = /^empty results: ([\d,]+) file\(s\) hold NO CONTENT AT ALL/.exec(t)
+      if (m) { pop.emptyContentless = num(m[1]); lastEmptyLine = i; continue }
+      m = /^empty results: ([\d,]+) file\(s\) hold CONTENT AND RETURNED NOTHING/.exec(t)
+      if (m) { pop.emptyHoles = num(m[1]); lastEmptyLine = i; continue }
+      m = /^empty results: ([\d,]+) file\(s\) returned NO symbols AND NO relationships/.exec(t)
+      if (m) { pop.emptyCount = num(m[1]); pop.emptyLegacyUnsplit = true; lastEmptyLine = i; continue }
+      m = /^SAMPLE, NOT POPULATION: ([\d,]+) of ([\d,]+) files/.exec(t)
+      if (m) { pop.sampleOf = num(m[1]); pop.sampleTotal = num(m[2]); continue }
+    }
+    if (pop.emptyContentless !== null || pop.emptyHoles !== null) {
+      pop.emptyCount = (pop.emptyContentless ?? 0) + (pop.emptyHoles ?? 0)
+      if (lastEmptyLine >= 0) {
+        for (let j = lastEmptyLine + 1; j < lines.length && j <= lastEmptyLine + 5; j++) {
+          const fm = /^\s{4}(HOLE {2}|empty )(.+)$/.exec(lines[j])
+          if (!fm) break
+          pop.emptyFiles.push({ kind: fm[1].startsWith("HOLE") ? "hole" : "contentless", path: fm[2].trim() })
+        }
+      }
+    }
+    return pop
+  })()
+  return { rows, total, intent, intentBlockSeen, intentWidthBad, population }
 }
 
 const argv = process.argv.slice(2)
@@ -171,10 +258,71 @@ const JSON_MODE = argv.includes("--json")
 const LANE = argv.includes("--lane") ? argv[argv.indexOf("--lane") + 1] : null
 
 if (LANE) {
-  const { rows, total, intent, intentBlockSeen, intentWidthBad } = runLane(LANE)
-  if (JSON_MODE) { console.log(JSON.stringify({ gate: "residual-gate", lane: LANE, rows, total }, null, 2)); process.exit(0) }
+  const { rows, total, intent, intentBlockSeen, intentWidthBad, population } = runLane(LANE)
+  if (JSON_MODE) { console.log(JSON.stringify({ gate: "residual-gate", lane: LANE, rows, total, population }, null, 2)); process.exit(0) }
   const w = (s: any, n: number) => (String(s) + " ".repeat(n)).slice(0, n)
-  console.log(`residual gate — ${LANE}, WHOLE admitted population, production scope\n`)
+  // THE HEADER READS THE RUN, IT DOES NOT ASSERT OVER IT. It used to say `WHOLE admitted population,
+  // production scope` no matter what came back — so a stride sample, a degraded fallback or a file
+  // that contributed nothing all printed the same confident sentence. Each condition below is one of
+  // those three, and the sentence changes with it.
+  //
+  // AND A FILE THAT IS EMPTY IS NOT A FILE THAT TIMED OUT. `emptyResults` is ONE counter over two
+  // populations that mean OPPOSITE things: a 0-byte (or whitespace-only) file has NO CONTENT TO
+  // EXTRACT — the run missed nothing and the population is COMPLETE — while a file WITH CONTENT that
+  // returned nothing is a HOLE in it (`engine.ts:1991` returns `{symbols: [], relationships: []}` on a
+  // timeout, so the file contributes NO EDGES and is invisible by construction).
+  //
+  // THE CLASSIFICATION IS THE INSTRUMENT'S, NOT THIS GATE'S. A first version of this block re-read
+  // each file here and decided the kind itself — **two copies of one classifier, and they diverged
+  // immediately**: `incoming-gate` prefixes each name with `HOLE  ` or `empty `, so the copy here read
+  // `"empty /path"` as a PATH, failed to open it, fell through to "hole", and reported three 0-byte
+  // files in clean-stdlib as a population hole while the instrument one line above called them
+  // contentless. `incoming-gate` owns the data, so it owns the classification; this gate reads its two
+  // counts and re-decides NOTHING. The old unsplit line is still recognised, and recognised as UNKNOWN
+  // rather than guessed at — a count that classifies more than it read is how a disclosure becomes a
+  // claim.
+  const isSample = population.sampleOf !== null && population.sampleTotal !== null && population.sampleOf < population.sampleTotal
+  const empty = population.emptyCount ?? 0
+  const deg = population.degraded ?? 0
+  const holes = population.emptyHoles ?? 0
+  const contentless = population.emptyContentless ?? 0
+  const namedShown = population.emptyFiles.length
+  const scope = isSample
+    ? `SAMPLE — ${population.sampleOf} of ${population.sampleTotal} admitted files. NOT the whole population, and a stride sample truncates each project's symbol table too, so its project-scoped RESOLVED share is biased UP.`
+    : (holes > 0 || deg > 0)
+      ? `WHOLE admitted population, BUT INCOMPLETE — ${holes} file(s) hold CONTENT and returned nothing (a timed-out file contributes NOTHING) and ${deg} were degraded. The counts below describe MISSING evidence, not wrong evidence.`
+      : population.emptyLegacyUnsplit
+        ? `WHOLE admitted population; ${empty} file(s) returned nothing and the instrument did NOT split them by content, so their kind is UNKNOWN — a 0-byte file leaves the population COMPLETE, a timed-out one puts a HOLE in it, and this run cannot tell you which.`
+        : population.parsed === null
+          ? `WHOLE admitted population (the population line was NOT PRINTED by the instrument — scope UNSTATED, not assumed clean)`
+          : `WHOLE admitted population, production scope`
+  console.log(`residual gate — ${LANE}\nscope: ${scope}\n`)
+  {
+    const bits: string[] = []
+    if (population.parsed !== null && population.sampled !== null) bits.push(`${population.parsed} parsed of ${population.sampled} sampled`)
+    if (population.corpus !== null) bits.push(`corpus ${population.corpus} files across ${population.repos} repos`)
+    if (population.admittedExts) bits.push(`admitted ${population.admittedExts}`)
+    if (population.failed !== null) bits.push(`parse failures ${population.failed}`)
+    if (population.degraded !== null) bits.push(`degraded (regex fallback) ${population.degraded}`)
+    bits.push(`files returning NO symbols AND NO relationships: ${population.emptyCount === null ? "UNSTATED" : empty}`)
+    console.log(`POPULATION — ${bits.join(" · ")}`)
+    if (contentless > 0) console.log(
+      `  ${contentless} of them hold NO CONTENT AT ALL (0 bytes or whitespace): the run missed nothing,\n` +
+      `  the population is COMPLETE, and these are NOT a defect.`)
+    if (holes > 0) console.log(
+      `  ${holes} hold CONTENT AND RETURNED NOTHING — a real HOLE in the population.`)
+    for (const f of population.emptyFiles) console.log(
+      `    ${f.kind === "hole" ? "HOLE  " : f.kind === "contentless" ? "empty " : "????? "}${f.path}`)
+    if (!population.emptyLegacyUnsplit && population.emptyCount !== null && namedShown < population.emptyCount) console.log(
+      `  (${population.emptyCount - namedShown} further file(s) are COUNTED BUT NOT NAMED — the instrument names\n` +
+      `   only its first five, so their kind is unclassified and must NOT be reported as either.)`)
+    if (holes > 0) console.log(
+      `  ^ a file with content that contributed NOTHING is a timed-out/failed parse (engine.ts:1991), so\n` +
+      `    the population above is INCOMPLETE: every count in this table describes evidence that is\n` +
+      `    MISSING, not evidence that is wrong, and NO lane's residual may be quoted from this run\n` +
+      `    without that sentence.`)
+    console.log()
+  }
   console.log(`${w("type", 14)} ${w("edges", 9)} ${w("resolved", 9)} ${w("ofWhich", 8)} ${w("amb(decl)", 10)} ${w("unresolved", 11)} ${w("extOK", 8)} ${w("ext?", 6)} ${w("extFAIL", 8)} ${w("bindFAIL", 9)} ${w("causeFAIL", 10)} ${w("residual%", 10)}${intentBlockSeen ? "  " + w("intended", 9) + w("twin", 6) + w("noDecl", 7) : ""}`)
   // THE LABEL MUST NOT ASSERT MORE THAN THE CLASSIFIER ESTABLISHES. This legend said
   // `"twin" = ONLY another file answers (a wrong edge)` — which is true only for the types the
