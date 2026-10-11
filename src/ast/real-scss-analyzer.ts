@@ -51,8 +51,10 @@
  */
 
 import type { Node } from "web-tree-sitter"
+import * as path from "node:path"
 import { ASTEngine } from "./engine"
 import { RealCssAnalyzer } from "./real-css-analyzer"
+import { dirOf, fileClaimForTarget, foldProjectPath } from "./file-claim"
 
 function stripAllQuotes(text: string): string {
   let out = ""
@@ -257,7 +259,7 @@ function isPrivateSassName(published: string): boolean {
 }
 
 export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     // The CSS subset. Its `errors` are KEPT: they were verified to be honest — the
     // analyzer reported 6 errors on a synthetic `@each $k, $v in (a: 1)` and the
     // grammar really does put 4 ERROR nodes there (a map literal in the list, a form
@@ -308,6 +310,61 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.collectDeclarations(rootNode, ctx)
     this.walk(rootNode, ctx)
     this.emitModuleExports(ctx)
+
+    // ------------------------------------------------------------- THE FILE CLAIM
+    //
+    // A SASS SPECIFIER NAMES A FILE, AND ITS SPELLING IS NOT THE FILE'S NAME. `@use "partials/base"`
+    // resolves to `partials/_base.scss` — the extension is usually absent and a partial's file is
+    // underscore-prefixed — so this is the one lane whose candidate arithmetic CANNOT be the shared
+    // path fold, and it is supplied here rather than pushed into the guard.
+    //
+    // MEASURED BEFORE EMITTING (`imports-claim-pricing.mts`, stride sample of 200 files per repo,
+    // 1,591 of 4,433 files): of 891 unresolved import edges, **754 name a file the population
+    // carries** (84.6%) and the cross-tab is EXACT in both directions — **0 would be refuted**.
+    //
+    // `.SASS` IS NOT AN ADMITTED EXTENSION HERE, AND THAT IS THE ROUTER'S FACT, NOT A PREFERENCE:
+    // `src/ast/language-detection.ts` maps `sass` to the language `sass`, so a `.sass` file is
+    // outside this lane's population. Pricing candidates by shape alone refuted **24** scss edges
+    // exactly here (`_all.sass`), and the admitted-extension clause inside the guard is what takes
+    // that to zero. Candidates of that spelling are not even generated below, so the guard's clause
+    // has nothing to refuse.
+    const claimRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
+    if (claimRoot !== null) {
+      const fileRel = path.relative(path.resolve(claimRoot), filePath).split(path.sep).join("/")
+      const baseDir = dirOf(fileRel)
+      for (const r of ctx.relationships) {
+        if (r.type !== ASTEngine.RelationshipType.Imports) continue
+        const md = r.metadata as Record<string, unknown> | undefined
+        if (!md || typeof md.importProjectFile === "string") continue
+        const written = String(r.target ?? "").trim()
+        if (written.length === 0) continue
+        // THE SASS SPELLINGS, as PROJECT-RELATIVE candidates: the guard folds the specifier itself
+        // and takes these as already folded, so both bases are computed here.
+        const cut = written.lastIndexOf("/")
+        const dirPart = cut < 0 ? "" : written.slice(0, cut + 1)
+        const leaf = cut < 0 ? written : written.slice(cut + 1)
+        const spellings = new Set<string>([`${written}.scss`, `${written}/_index.scss`, `${written}/index.scss`])
+        if (leaf.length > 0 && !leaf.startsWith("_")) {
+          spellings.add(`${dirPart}_${leaf}.scss`)
+          spellings.add(`${dirPart}_${leaf}/_index.scss`)
+        }
+        const extra: string[] = []
+        for (const sp of spellings) {
+          for (const cand of [foldProjectPath(baseDir, sp), foldProjectPath("", sp)]) {
+            if (cand !== null && !extra.includes(cand)) extra.push(cand)
+          }
+        }
+        const claim = fileClaimForTarget({
+          projectRoot: claimRoot,
+          filePath,
+          written,
+          admittedExtensions: ["scss"],
+          extraCandidates: extra,
+        })
+        if (claim === null) continue
+        md.importProjectFile = claim
+      }
+    }
 
     return {
       ...base,
