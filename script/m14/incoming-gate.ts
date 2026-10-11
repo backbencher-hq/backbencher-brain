@@ -1562,7 +1562,15 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
         .sort((x, y) => y.b.bind + y.b.cause - (x.b.bind + x.b.cause))
       const show = (m: { type: Type; sig: string; b: MarkBucket }) =>
         console.log(
-          w(m.type, 14) + w(m.sig.length > 50 ? `${m.sig.slice(0, 47)}...` : m.sig, 52) +
+          // THE SIGNATURE IS NO LONGER TRUNCATED. It was cut at 47 chars with a `...`, which made a
+          // marker-set key like `methodCall+noDeclarationInFile+on+powershellSpe...` unreadable — so
+          // the worklist this block exists to be could not be USED as one, which is a defect in the
+          // instrument rather than a limitation of the data. Found by r-lane on powershell, which
+          // noted the largest row happened to fit untruncated and the smaller rows did not.
+          //
+          // A worklist whose identifying key is elided is not a worklist. The column is widened to
+          // the full signature; the layout is wide either way and a readable key is worth the width.
+          w(m.sig, Math.max(52, m.sig.length + 2)) +
           w(m.b.resolved, 10) + w(m.b.amb, 9) + w(m.b.unres, 9) + w(m.b.ext, 10) +
           w(m.b.bind, 9) + String(m.b.cause),
         )
