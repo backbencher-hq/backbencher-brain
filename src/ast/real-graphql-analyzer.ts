@@ -1,5 +1,6 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { fileClaimForTarget } from "./file-claim"
 
 /**
  * REAL GRAPHQL ANALYZER — pure tree-sitter AST extraction against the vendored
@@ -355,7 +356,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return t
   }
 
-  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  public analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     // A fresh memo per call: a `Node` id is unique only within one tree, and the
     // binding reuses ids for nodes carried over from an older tree, so a cache
     // that outlived the call could return the PREVIOUS tree's type for this one.
@@ -1296,6 +1297,36 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(s.metadata?.graphqlType ? { graphqlType: s.metadata.graphqlType } : {}),
         ...(s.metadata?.graphqlCategory ? { graphqlCategory: s.metadata.graphqlCategory } : {}),
       })
+    }
+
+    // ------------------------------------------------------------- THE FILE CLAIM
+    //
+    // A `#import "./other.graphql"` TARGET IS A PATH. The key space answers it only when the path
+    // happens to name a declared type or field, so the column reads unresolved — and the claim says
+    // the one thing about it the PROJECT can check: the path names a file the admitted population
+    // carries.
+    //
+    // MEASURED BEFORE EMITTING (`imports-claim-pricing.mts`, graphql's own stride sample of 200 per
+    // repo, 1,145 of 1,911 files): of 144 import edges, **134 name a file the population carries**
+    // (93.1%) and the cross-tab is EXACT in both directions — **0 would be refuted**. The admitted
+    // extensions are BOTH spellings the router maps to this language (`graphql` and `gql`), not the
+    // lane's older single-spelling habit: a claim about the other spelling can never verify while a
+    // miss still REFUTES.
+    const claimRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
+    if (claimRoot !== null) {
+      for (const r of relationships) {
+        if (r.type !== ASTEngine.RelationshipType.Imports) continue
+        const md = r.metadata as Record<string, unknown> | undefined
+        if (!md || typeof md.importProjectFile === "string") continue
+        const claim = fileClaimForTarget({
+          projectRoot: claimRoot,
+          filePath,
+          written: String(r.target ?? ""),
+          admittedExtensions: ["graphql", "gql"],
+        })
+        if (claim === null) continue
+        md.importProjectFile = claim
+      }
     }
 
     return {
