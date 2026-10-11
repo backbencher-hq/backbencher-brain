@@ -361,11 +361,19 @@ if (LANE) {
     if (!population.emptyLegacyUnsplit && population.emptyCount !== null && namedShown < population.emptyCount) console.log(
       `  (${population.emptyCount - namedShown} further file(s) are COUNTED BUT NOT NAMED — the instrument names\n` +
       `   only its first five, so their kind is unclassified and must NOT be reported as either.)`)
-    if (holes > 0) console.log(
-      `  ^ a file with content that contributed NOTHING is a timed-out/failed parse (engine.ts:1991), so\n` +
-      `    the population above is INCOMPLETE: every count in this table describes evidence that is\n` +
-      `    MISSING, not evidence that is wrong, and NO lane's residual may be quoted from this run\n` +
-      `    without that sentence.`)
+    // THE OLD SENTENCE USED TO SIT HERE AND IT CONTRADICTED THE ONE ABOVE IT. It read:
+    //   "a file with content that contributed NOTHING is a timed-out/failed parse (engine.ts:1991), so
+    //    the population above is INCOMPLETE ... NO lane's residual may be quoted from this run."
+    // **That is an ASSERTION of the reading the block above explicitly refuses to make**, and the gate
+    // printed BOTH — "THIS COUNTER CANNOT TELL a parse failure from content that cannot declare
+    // anything" immediately followed by "it IS a timed-out/failed parse". A reader got two opposite
+    // verdicts from one run, and the wrong one was stated more confidently.
+    //
+    // **FOUND BY VERIFYING bash-lane's COMPLETION PACKAGE**: its committed after-run artifact contains
+    // BOTH sentences, which is how a self-contradiction in my own instrument became visible — not by
+    // re-reading the source, but by reading an artifact it had produced. **The disclosure obligation
+    // survives, correctly scoped, in the sentence above: read the files before either verdict travels
+    // with these numbers.**
     console.log()
   }
   console.log(`${w("type", 14)} ${w("edges", 9)} ${w("resolved", 9)} ${w("ofWhich", 8)} ${w("amb(decl)", 10)} ${w("unresolved", 11)} ${w("extOK", 8)} ${w("ext?", 6)} ${w("extFAIL", 8)} ${w("bindFAIL", 9)} ${w("causeFAIL", 10)} ${w("residual%", 10)}${intentBlockSeen ? "  " + w("intended", 9) + w("twin", 6) + w("noDecl", 7) : ""}`)
