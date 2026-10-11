@@ -36,7 +36,13 @@ const REPO_EXPECTATIONS: Record<string, { dir: string; expected: string[]; pick:
   gh_workflow: { dir: "rake", expected: ["GitHub Actions"], pick: (p) => /\.ya?ml$/.test(p) && /\.github\/workflows/.test(p) && /(on:|jobs:)/.test(readFileSync(join(REPO_ROOT, "rake", p), "utf8")) },
   gh_workflow_fallback: { dir: "rake", expected: ["GitHub Actions"], pick: (p) => false, fallbackOnly: true },
   graphql_js: { dir: "graphql-js", expected: ["GraphQL"], pick: (p) => /\.js$/.test(p) && /(new GraphQLSchema|GraphQLObjectType|graphql)/.test(readFileSync(join(REPO_ROOT, "graphql-js", p), "utf8")) },
-  go_tools: { dir: "go-tools", expected: ["go"], pick: (p) => /\.go$/.test(p) && /(package main|func main)/.test(readFileSync(join(REPO_ROOT, "go-tools", p), "utf8")) },
+  // The corpus directory is go_tools (underscore), not go-tools. Every gate that
+  //  asked for the hyphen form was reading a directory that has never existed on any
+  //  machine, so the corpus leg passed VACUOUSLY — no error, no finding, nothing
+  //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
+  //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
+  //  Verified against the corpus on disk, which lists go_tools.
+  go_tools: { dir: "go_tools", expected: ["go"], pick: (p) => /\.go$/.test(p) && /(package main|func main)/.test(readFileSync(join(REPO_ROOT, "go_tools", p), "utf8")) },
 }
 
 // Language-default primaries that are acceptable when a repo expectation does

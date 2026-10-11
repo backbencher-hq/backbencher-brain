@@ -78,7 +78,13 @@ const LANES: Array<{ lang: "c" | "cpp" | "rust" | "go" | "clean"; dirs: string[]
   // are then comparable to the census's own full-draw reading
   // (`--lane go --sample 2200`: syms=25962 rels=270842 sep=11933).
   {
-    lang: "go", dirs: ["go-tools", "terraform"], exts: [".go"], limit: Number.MAX_SAFE_INTEGER,
+    // The corpus directory is go_tools (underscore), not go-tools. Every gate that
+    //  asked for the hyphen form was reading a directory that has never existed on any
+    //  machine, so the corpus leg passed VACUOUSLY — no error, no finding, nothing
+    //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
+    //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
+    //  Verified against the corpus on disk, which lists go_tools.
+    lang: "go", dirs: ["go_tools", "terraform"], exts: [".go"], limit: Number.MAX_SAFE_INTEGER,
     why: "full extent of both corpora — the R10 census's canonical draw is 40 go-tools + 24 terraform files, and the class this round changed is sparse (a qualified type use, an import path); reading the draw would let the gate read clean on files it never opened.",
   },
   {

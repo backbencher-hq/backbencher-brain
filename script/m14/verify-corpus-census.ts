@@ -87,7 +87,13 @@ const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
   c: { wasm: "tree-sitter-c.wasm", ext: [".c", ".h"], repo: "sqlite" },
   cpp: { wasm: "tree-sitter-cpp.wasm", ext: [".cc", ".cpp", ".h", ".hpp"], repo: "fmt" },
   rust: { wasm: "tree-sitter-rust.wasm", ext: [".rs"], repo: "ripgrep" },
-  go: { wasm: "tree-sitter-go.wasm", ext: [".go"], repo: "go-tools" },
+  // The corpus directory is go_tools (underscore), not go-tools. Every gate that
+  //  asked for the hyphen form was reading a directory that has never existed on any
+  //  machine, so the corpus leg passed VACUOUSLY — no error, no finding, nothing
+  //  measured. script/m13/verify-analyze-e2e-corpus.ts reported exactly this once the
+  //  corpus root was fixed: "corpus go-tools/go/analysis/passes (Go): present … missing".
+  //  Verified against the corpus on disk, which lists go_tools.
+  go: { wasm: "tree-sitter-go.wasm", ext: [".go"], repo: "go_tools" },
   zig: { wasm: "tree-sitter-zig.wasm", ext: [".zig"], repo: "zig" },
   csharp: { wasm: "tree-sitter-c_sharp.wasm", ext: [".cs"], repo: "powershell" },
   dart: { wasm: "tree-sitter-dart.wasm", ext: [".dart"], repo: "proxicall" },

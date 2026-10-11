@@ -1,9 +1,9 @@
 {
   "checks": [
     {
-      "description": "every reference-shaped (tag@attr) pair in 300 corpus files carries a ruling (21 pairs, 42496 occurrences)",
+      "description": "every reference-shaped (tag@attr) pair in 835 corpus files carries a ruling (40 pairs, 1506 occurrences)",
       "id": "census-pairs-ruled",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "all 38 claimed carriers emit an edge whose target carries the probe's marker",
@@ -17,20 +17,46 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "16778cb2db9b8874f85e4e1015cc7f5c3711d341",
-  "committedAt": "2026-09-27T02:10:40-04:00",
+  "commit": "480cc9bf7ba6dc3bd155fb99c616c32948440db8",
+  "committedAt": "2026-10-11T18:24:06+02:00",
   "data": {
     "claimedCarriersBroken": [],
     "claimedCarriersProbed": 38,
     "conditionalCarriers": 2,
     "conditionalCarriersBroken": [],
-    "distinctPairs": 21,
-    "files": 300,
-    "occurrencesRuled": 42496,
-    "pairsRuled": 21,
-    "referenceShapedOccurrences": 42496,
-    "repos": 65,
-    "unreviewedPairs": []
+    "distinctPairs": 40,
+    "files": 835,
+    "occurrencesRuled": 1494,
+    "pairsRuled": 35,
+    "referenceShapedOccurrences": 1506,
+    "repos": 48,
+    "unreviewedPairs": [
+      {
+        "count": 6,
+        "pair": "base@href",
+        "sample": "\"/abc/\""
+      },
+      {
+        "count": 2,
+        "pair": "include@import",
+        "sample": "\"package:analyzer_plugin/protocol/protocol_common.dart\""
+      },
+      {
+        "count": 2,
+        "pair": "app-route@path",
+        "sample": "\"/module\""
+      },
+      {
+        "count": 1,
+        "pair": "include@path",
+        "sample": "\"../../../analyzer_plugin/tool/spec/common_types_spec.html\""
+      },
+      {
+        "count": 1,
+        "pair": "svg@xmlns:xlink",
+        "sample": "\"http://www.w3.org/1999/xlink\""
+      }
+    ]
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.CENSUS",
@@ -48,9 +74,9 @@
       "description": "the corpus is the pinned fixtures repositories and rotates as a pool; the census reports what those files contain, not what the HTML specification permits, so a carrier that no corpus exercises is outside its reach and is covered only by CARRIER_PROBES"
     }
   ],
-  "regeneratedAt": "2026-09-27T06:14:44.668Z",
-  "regeneratedAtCommit": "16778cb2db9b8874f85e4e1015cc7f5c3711d341",
-  "runtime": "node v24.3.0",
+  "regeneratedAt": "2026-10-11T16:46:10.636Z",
+  "regeneratedAtCommit": "480cc9bf7ba6dc3bd155fb99c616c32948440db8",
+  "runtime": "node v22.14.0",
   "schemaVersion": 2,
   "title": "html carrier census"
 }
