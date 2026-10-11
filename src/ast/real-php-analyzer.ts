@@ -2,6 +2,7 @@ import type { Node } from "web-tree-sitter"
 import { statSync } from "node:fs"
 import * as path from "node:path"
 import { ASTEngine } from "./engine"
+import { fileClaimForTarget } from "./file-claim"
 import {
   PHP_INTERNAL_FUNCTIONS,
   PHP_INTERNAL_CLASSES,
@@ -2478,33 +2479,38 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     projectRoot: string | null,
   ): number {
     if (projectRoot === null || projectRoot.length === 0) return 0
+    // THE REPLACEMENT VALUES MUST STAY PROJECT-RELATIVE, and that is a fact about the guard worth
+    // stating where it bites: the substitution happens INSIDE `fileClaimForTarget` and BEFORE its
+    // shape check, so an ABSOLUTE `__DIR__` makes the whole target absolute and the guard refuses it
+    // as a path — which is exactly what happened the first time this pass was put on the guard, and
+    // it cost 145 claims (extOK 6,443 -> 6,298) before the values below were made relative. A file at
+    // the project root has an empty directory, and `.` is the spelling that keeps the target relative.
     const root = path.resolve(projectRoot)
-    const dir = path.dirname(filePath)
+    const fileRel = path.relative(root, filePath).split(path.sep).join("/")
+    const slash = fileRel.lastIndexOf("/")
+    const dirRel = slash < 0 ? "." : fileRel.slice(0, slash)
     let n = 0
     for (const r of relationships) {
       if (r.type !== ASTEngine.RelationshipType.Imports) continue
       const md = r.metadata as Record<string, unknown> | undefined
       if (md?.relationshipType !== "include_path") continue
-      const written = String(r.target ?? "").trim()
-      if (written.length === 0 || written.length > 300) continue
-      if (written.includes("://") || written.startsWith("/") || written.startsWith("~")) continue
-      let plain = true
-      for (const ch of [" ", "\t", "*", "?", "<", ">", "|", "{", "}", "$"]) if (written.includes(ch)) plain = false
-      if (!plain) continue
-      // MAGIC CONSTANTS FIRST, in pure String: `dirname(__FILE__)` before the bare constants, or the
-      // inner `__FILE__` would be replaced and leave `dirname(<path>)` as a literal.
-      const resolved = written
-        .split("dirname(__FILE__)").join(dir)
-        .split("dirname( __FILE__ )").join(dir)
-        .split("__DIR__").join(dir)
-        .split("__FILE__").join(filePath)
-      const abs = path.resolve(dir, resolved)
-      const rel = path.relative(root, abs).split(path.sep).join("/")
-      if (rel.length === 0 || rel === ".." || rel.startsWith("../")) continue
-      // THE ARBITER'S KEY SPACE HOLDS ADMITTED `.php` PATHS ONLY.
-      if (!rel.toLowerCase().endsWith(".php")) continue
-      try { if (!statSync(abs).isFile()) continue } catch { continue }
-      md!.importProjectFile = rel
+      const written = String(r.target ?? "")
+      if (written.length === 0) continue
+      // ON THE SHARED GUARD since 2026-10-11. The admitting is the guard's — shape, project
+      // boundary, admitted extension (`.php`, which is exactly the lane's admitted list), and
+      // `statSync` — while the MAGIC CONSTANTS stay this lane's, because they are the one thing only
+      // the analyzer knows: `__DIR__` is this file's directory and `__FILE__` is this file, both in
+      // pure String. `dirname(__FILE__)` is passed as its own key so the substitution happens before
+      // the bare `__FILE__` (the guard substitutes longest-key-first for exactly this reason).
+      const claim = fileClaimForTarget({
+        projectRoot,
+        filePath,
+        written,
+        admittedExtensions: ["php"],
+        magicConstants: { "dirname(__FILE__)": dirRel, "__DIR__": dirRel, "__FILE__": fileRel },
+      })
+      if (claim === null) continue
+      md!.importProjectFile = claim
       n++
     }
     return n
