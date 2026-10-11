@@ -290,7 +290,21 @@ if (LANE) {
   const scope = isSample
     ? `SAMPLE — ${population.sampleOf} of ${population.sampleTotal} admitted files. NOT the whole population, and a stride sample truncates each project's symbol table too, so its project-scoped RESOLVED share is biased UP.`
     : (holes > 0 || deg > 0)
-      ? `WHOLE admitted population — ${holes} file(s) hold CONTENT and returned nothing and ${deg} were degraded. WHETHER THAT IS A HOLE IS NOT DECIDED HERE: this counter cannot separate a parse failure from content that cannot declare anything. julia-lane's three were all BENIGN (`# empty` stubs and a comments-only file, no declaring node); graphql-lane's 45 are attributed to `engine.ts:1991` timeouts. Read the files.`
+      // NO BACKTICKS INSIDE THIS TEMPLATE LITERAL. The first version of this line had two — around
+      // `# empty` and around `engine.ts:1991` — which CLOSED the template, re-opened it, and left
+      // `tsx` unable to load the module at all (TransformError at 293:286). **Every lane's residual
+      // measurement was blocked by it**, and `npx tsc --noEmit` reported NOTHING, so it passed
+      // typecheck and failed only at runtime.
+      //
+      // THIS IS THE SECOND TIME I HAVE MADE THIS EXACT MISTAKE IN THIS PROGRAMME: the first was
+      // backticks inside a SQL comment in a template literal in `parallel-indexer.ts`. Quoting inside
+      // a quoted string is a hazard this file cannot afford, because this file is the instrument
+      // every lane runs.
+      //
+      // AND THE REASON IT REACHED THE FLEET IS WORTH MORE THAN THE TYPO: **`tsc --noEmit` does not
+      // cover `script/`**, so nothing in this repository's type gate can see a syntax error in the
+      // instruments. A lane importing it is the first thing that finds out.
+      ? `WHOLE admitted population — ${holes} file(s) hold CONTENT and returned nothing and ${deg} were degraded. WHETHER THAT IS A HOLE IS NOT DECIDED HERE: this counter cannot separate a parse failure from content that cannot declare anything. julia-lane's three were all BENIGN ('# empty' stubs and a comments-only file, no declaring node); graphql-lane's 45 are attributed to 'engine.ts:1991' timeouts. Read the files.`
       : population.emptyLegacyUnsplit
         ? `WHOLE admitted population; ${empty} file(s) returned nothing and the instrument did NOT split them by content, so their kind is UNKNOWN — a 0-byte file leaves the population COMPLETE, a timed-out one puts a HOLE in it, and this run cannot tell you which.`
         : population.parsed === null
