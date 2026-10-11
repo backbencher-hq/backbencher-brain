@@ -1989,12 +1989,27 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     type Bucket = { verified: number; unverified: number; refuted: number; contradicted: number; ownFileSilent: number; notApplicable: number }
     const zero = (): Bucket => ({ verified: 0, unverified: 0, refuted: 0, contradicted: 0, ownFileSilent: 0, notApplicable: 0 })
     const byKind = new Map<string, Bucket>()
+    // THE DENOMINATOR MUST BE THE LANE'S AMBIGUITY, NOT THE CLAIM-CARRYING SUBSET OF IT.
+    //
+    // The first version of this loop `continue`d when a row had no claim-carrying kinds, so `amb`
+    // accumulated only over types where SOME edge carried a claim — and on hcl, whose TABLE 1 reads
+    // `amb(decl) 696`, the block printed **"of 0 ambiguous edge(s)"**. A reader taking that as the
+    // lane's ambiguity reads a zero the other table contradicts, which is exactly the misreading this
+    // block was written to prevent. **hcl-lane found it and wrote it up as a DISCREPANCY rather than a
+    // definition, because the fix belongs in this block and not in its lane's data** — correct on both
+    // counts, and that division is why it got fixed instead of explained away.
     let amb = 0
+    let ambWithClaim = 0
     for (const r of rep.rows.values()) {
       const src = r.project.ambiguousWithClaim
       const keys = Object.keys(src)
-      if (keys.length === 0) continue
+      // COUNTED FOR EVERY ROW, claim or no claim.
       amb += r.project.ambiguousByDecl
+      for (const k of keys) {
+        const b = src[k]
+        ambWithClaim += b.verified + b.unverified + b.refuted + b.contradicted + b.ownFileSilent + b.notApplicable
+      }
+      if (keys.length === 0) continue
       for (const k of keys) {
         const b = byKind.get(k) ?? zero()
         const s = src[k]
@@ -2021,7 +2036,8 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
       }), zero())
       console.log(
         `CLAIM-CARRYING AMBIGUOUS EDGES — the amb(decl) column is NOT claim-aware. Its claim-carrying\n` +
-        `share, BY CLAIM KIND: of ${amb} ambiguous edge(s) — ${tot.verified} claim VERIFIED · ` +
+        `share, BY CLAIM KIND: ${ambWithClaim} of this lane's ${amb} ambiguous edge(s) carry a claim — ` +
+        `${tot.verified} VERIFIED · ` +
         `${tot.unverified} NOT verified · ${tot.refuted} REFUTED · ${tot.contradicted} CONTRADICTED · ` +
         `${tot.ownFileSilent} OWN-FILE-SILENT · ${tot.notApplicable} n/a.`,
       )
@@ -2034,9 +2050,14 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
           ` · CONTRADICTED ${b.contradicted} · OWN-FILE-SILENT ${b.ownFileSilent} · n/a ${b.notApplicable}`,
         )
       }
+      // AND THE ZERO MUST SAY WHICH ZERO IT IS. "No ambiguous edge carries a claim" and "this lane has
+      // no ambiguous edges" are different statements, and the first version printed the second's shape
+      // for the first's meaning.
       if (byKind.size === 0) console.log(
-        `    (no ambiguous edge on this lane carries any claim — so there is nothing of this shape here,\n` +
-        `     and that is a MEASURED zero rather than a block that failed to print.)`,
+        amb === 0
+          ? `    (this lane has NO ambiguous edges at all — a MEASURED zero, not a block that failed to print.)`
+          : `    (none of this lane's ${amb} ambiguous edge(s) carries a claim — NONE OF ${amb}, not zero of\n` +
+            `     a zero. A MEASURED zero of the claim-carrying class, not an absent lane.)`,
       )
       if (tot.contradicted > 0) console.log(
         `  ^ ${tot.contradicted} CONTRADICTED: the EDGE'S OWN FILE declares the target while the edge claims\n` +

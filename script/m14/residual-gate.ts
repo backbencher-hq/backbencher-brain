@@ -129,7 +129,7 @@ type Population = {
   sampleOf: number | null; sampleTotal: number | null
 }
 
-function runLane(lang: string): { rows: Array<{ type: string; edges: number; resolved: number; ambColl?: number; amb: number; ambKind: number; unres: number; extOK: number; extQ: number; extFAIL: number; bindOK: number; bindQ: number; bindFAIL: number; causeOK: number; causeFAIL: number }>; total: any; intent: Map<string, { intended: number; sameFileUnproven: number; arbitraryTwin: number; noDeclaration: number }>; intentBlockSeen: boolean; intentWidthBad: number; population: Population } {
+function runLane(lang: string): { rows: Array<{ type: string; edges: number; resolved: number; ambColl?: number; amb: number; ambKind: number; unres: number; extOK: number; extQ: number; extFAIL: number; bindOK: number; bindQ: number; bindFAIL: number; causeOK: number; causeFAIL: number }>; total: any; intent: Map<string, { intended: number; sameFileUnproven: number; arbitraryTwin: number; noDeclaration: number }>; intentBlockSeen: boolean; intentWidthBad: number; population: Population; intentClosure: string | null; claimBlock: string[] } {
   const ext = { fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble", php: "php", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql", protobuf: "proto", json: "json,jsonc", yaml: "yaml,yml", css: "css,less", scss: "scss", hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl", bash: "sh,bash,zsh" }[lang] ?? lang
   let out = ""
   try {
@@ -250,7 +250,33 @@ function runLane(lang: string): { rows: Array<{ type: string; edges: number; res
     }
     return pop
   })()
-  return { rows, total, intent, intentBlockSeen, intentWidthBad, population }
+  // ── THE TWO BLOCKS THIS GATE USED TO DROP ON THE FLOOR.
+  //
+  // `residual-gate.ts --lane X` is the command lanes are TOLD to run, and it parsed TABLE 1 and the
+  // BINDING INTENT table and NOTHING ELSE. `incoming-gate.ts` also prints an **INTENT CLOSURE** line
+  // and a **CLAIM-CARRYING AMBIGUOUS EDGES** block, and BOTH change what a number above means — the
+  // first says whether the intent columns close, the second says how much of `amb(decl)` carries a
+  // claim. julia-lane found this by having to run `incoming-gate.ts` DIRECTLY to read them:
+  //
+  //     "the residual gate parses only incoming-gate's table and drops its other sections, so the
+  //      INTENT CLOSURE line and CLAIM-CARRYING block needed a direct run."
+  //
+  // A lane that is handed a summary has to be able to see the disclosures that qualify it. These are
+  // passed through VERBATIM rather than re-derived, so the two instruments cannot disagree: one
+  // spelling, one place — the rule this programme keeps paying to relearn.
+  const outLines = out.split("\n")
+  const intentClosure = outLines.find((l) => l.trim().startsWith("INTENT CLOSURE:"))?.trim() ?? null
+  const claimBlock: string[] = []
+  {
+    const start = outLines.findIndex((l) => l.startsWith("CLAIM-CARRYING AMBIGUOUS EDGES"))
+    if (start >= 0) {
+      for (let i = start; i < outLines.length; i++) {
+        if (i > start && outLines[i].trim() === "") break
+        claimBlock.push(outLines[i].trimEnd())
+      }
+    }
+  }
+  return { rows, total, intent, intentBlockSeen, intentWidthBad, population, intentClosure, claimBlock }
 }
 
 const argv = process.argv.slice(2)
@@ -258,7 +284,7 @@ const JSON_MODE = argv.includes("--json")
 const LANE = argv.includes("--lane") ? argv[argv.indexOf("--lane") + 1] : null
 
 if (LANE) {
-  const { rows, total, intent, intentBlockSeen, intentWidthBad, population } = runLane(LANE)
+  const { rows, total, intent, intentBlockSeen, intentWidthBad, population, intentClosure, claimBlock } = runLane(LANE)
   if (JSON_MODE) { console.log(JSON.stringify({ gate: "residual-gate", lane: LANE, rows, total, population }, null, 2)); process.exit(0) }
   const w = (s: any, n: number) => (String(s) + " ".repeat(n)).slice(0, n)
   // THE HEADER READS THE RUN, IT DOES NOT ASSERT OVER IT. It used to say `WHOLE admitted population,
@@ -364,6 +390,25 @@ if (LANE) {
   // whole handoff warns about, made visible instead of hidden behind an import.
   if (intentBlockSeen) console.log(`  "twin" is a WRONG EDGE only for contains/exports (the types whose edges the analyzer writes on the target symbol's own line); for other types a foreign declaration is what a cross-document reference IS — a RISK, not proven wrongness.`)
   if (intentBlockSeen && intentWidthBad > 0) console.log(`  (${intentWidthBad} intent ROW(s) did not have 6 columns and were SKIPPED, not reinterpreted.)`)
+
+  // ── THE TWO BLOCKS THIS GATE USED TO DROP, passed through VERBATIM from `incoming-gate.ts`.
+  //
+  // julia-lane's discovery: `residual-gate.ts --lane X` is the command lanes are TOLD to run, and it
+  // read TABLE 1 and the BINDING INTENT table and nothing else — so the INTENT CLOSURE line and the
+  // CLAIM-CARRYING block were invisible unless a lane ran `incoming-gate.ts` DIRECTLY. **A summary a
+  // lane is handed must carry the disclosures that qualify it.** They are printed verbatim rather than
+  // re-derived so the two instruments cannot disagree — one spelling, one place.
+  if (intentClosure) console.log(`  ${intentClosure}`)
+  if (claimBlock.length) {
+    console.log()
+    for (const l of claimBlock) console.log(l.startsWith("    ") || l.startsWith("  ") ? l : `  ${l}`)
+  } else {
+    // AN ABSENCE MUST BE A STATEMENT. The block is emitted by `incoming-gate.ts` unconditionally now,
+    // so reaching this branch means it was not found — which is itself worth saying rather than
+    // leaving a reader to guess whether it was empty or missing.
+    console.log(`  CLAIM-CARRYING AMBIGUOUS EDGES: block NOT FOUND in the instrument's output — this is`)
+    console.log(`  UNSTATED, not a zero. Re-run the lane directly if it matters.`)
+  }
   // THE CLOSURE CHECK, and it exists because a reader could not close this table. r-lane measured
   // powershell at `edges 180,915` against `resolved 57,471 + amb 43,879 + unresolved 52,649 =
   // 153,999` — a gap of 26,916 that NO PRINTED COLUMN ACCOUNTED FOR, and the same gap appears on xml
