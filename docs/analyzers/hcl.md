@@ -1037,6 +1037,53 @@ basis than the pre-registration intended**: the direction is measured, the denom
 trustworthy, and the next measurement is the fixed bucket (LEFT JOIN, or count import rows by the source
 FILE rather than by a source symbol) before this is quoted fleet-wide.
 
+### Cause 21 — the SECOND population (clean): the verdict holds, the MARGIN does not, and UNDECIDABLE fires
+
+Nim is the CLEANEST population (`leafReduced` 0 in every type) and a verdict there is not yet evidence for
+lanes where leaf reduction does the binding, so the same three pre-registered buckets were run on **clean**
+(the lane carrying `references twin 6,650`), one labelled run per repository, `nice -n 10`, no lock
+(phantom-held), the language's files untouched. Artefact
+`validation/m14/fixtures/hcl/store-binding-truth.clean-twin-buckets.json`.
+
+| repository | eligible | twins | REACHABLE | UNREACHABLE | UNDECIDABLE |
+|---|---|---|---|---|---|
+| Clyde | 109 | 3,033 | **360** | 38 | **2,635** |
+| clean-stdlib | 74 | 1,428 | **160** | 1,268 | 0 |
+| eastwood | 73 | 399 | **105** | 19 | **275** |
+| **total** | **256** | **4,860** | **625** | **1,325** | **2,910** |
+
+**By the pre-registered rule: 625 / (625 + 1,325) = 32.1% ≤ 40% → "twins are wrong" STANDS on clean too.**
+So the DIRECTION survives a second population and a different language — which is what the fleet-wide
+claim needed. **Two things do not survive, and both are reported rather than averaged away:**
+
+1. **THE MARGIN IS NOT 0%, IT IS 32%.** Nim read 0.0% reachable; clean reads 32.1% — the same direction
+   with a materially different size, and `clean-stdlib` alone reads 160 of 1,428 with only 0 undecidable.
+   So "twins are wrong" is not uniformly near-total: on clean, roughly a third of decidable twins bind to
+   a declaration the source could plausibly reach. The claim stands, and the number a fleet reads off its
+   `twin` column should not be treated as 100% defect.
+2. **UNDECIDABLE IS NOW 60% OF THE CLASS (2,910 of 4,860) AND IS WILDLY UNEVEN PER REPOSITORY** — Clyde
+   2,635 undecidable against clean-stdlib **0**. That is the instrument finding the pre-registration
+   anticipated, now with a second population behind it: the bucket depends on whether a project's unbound
+   `imports` rows are anchored to a source symbol at all, which is a property of the LANGUAGE's emission
+   and not of the twins. On nim the bucket could not fire (its unbound imports are not file-anchored,
+   hence `UNDECIDABLE 0` where 1,048 unbound imports exist); on clean it fires massively on two of three
+   repositories. **One bucket, two behaviours — so the bucket must be stated with its anchoring rule
+   wherever it is quoted.**
+
+**FIX NOT YET LANDED, and the choice is recorded rather than implied**: count import rows by the source
+FILE rather than by the source symbol, because the question is "can this source FILE reach that
+declaration's file" and the unit should match the question; a LEFT JOIN would keep the row and mark it
+undecidable but would still need a file anchor the row may not carry, which is exactly the case that
+produced nim's `UNDECIDABLE 0`. Until that lands, every `UNDECIDABLE` figure above is quoted with its
+repository and its anchoring caveat.
+
+**WHAT THIS DOES TO THE FLEET CLAIM**: the direction is now measured on two languages and four
+repositories — twins are predominantly bound to files the source cannot reach — so `twin` is a defect
+class, and the indexer's 37,318/49,729 control arm generalises to binding choice. That is earned. What is
+NOT earned is quoting a per-lane `twin` column as a defect count without the reachable/undecidable split
+beside it, because on clean a third of decidable twins are plausibly right and 60% cannot be decided at
+all.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
