@@ -214,9 +214,18 @@ below (279/279 own-file declarations); for `references` 3,445 + `extends` 346 + 
    store bound `calls` 400/400 with **138 cross-file (34.5%)**, which own-file preference should
    have prevented — the same store-side question as the order-dependence finding, and the reason the
    ruling is stated as model-level ([`calls-ruling.json`](../../validation/m14/fixtures/xml/calls-ruling.json)).
-2. **Clause 4 — 3,793 edges.** For references/extends/overrides the line test is N/A by construction
-   (`twin` there is a *risk*, not proven wrongness — the corrected legend). The own-file enumeration
-   that answered `calls` can be pointed at these three types next.
+2. **Clause 4 — MEASURABLE, and the shortfall is 147 violations, not 3,793 unmeasurable edges.**
+   The line test is N/A for references/calls/imports/overrides/extends, so the store-side instrument
+   ([`store-intent-split.mts`](../../validation/m14/fixtures/xml/store-intent-split.mts)) declares it
+   N/A and applies the analyzer-class predicate instead: **`in-document` means the declaration is in
+   the edge's own file, so bound-elsewhere or unbound is a violation**. On a labelled bounded draw
+   (2,000 files, 1,995 indexed, 4 repos, **one run**):
+   **calls 138** (all 388 edges are `in-document`; 35.6% bind to another file — reproducing the
+   libxslt 138/400 exactly), references 5, imports 3, overrides 1; while references 1,692 of 1,697
+   and extends 387 of 387 in-document edges ARE determinate, and builtin/external binding elsewhere
+   is the correct shape. The full-population attempt was **KILLED** after ~65 min of event-loop
+   stalls (watchdog `stalledTotalMs 3,906,664`), preserved in
+   [`store-intent-split-full-attempt-KILLED.txt`](../../validation/m14/fixtures/xml/store-intent-split-full-attempt-KILLED.txt).
 3. **Clause 3 — MET (was 12).** The imports-265 refusal **is** evidence-backed: a blanket file claim
    would REFUTE **59** times (`fileClaimProbe`: 205 candidates admitted, 59 absent). And the
    references-12 refusal is now measured rather than labelled: over the whole population, 12 of 12
