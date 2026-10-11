@@ -5982,10 +5982,27 @@ names, and the ambiguity/unresolved halves are the lane's roadmap. What the fix 
 `causeFAIL` column — the one column whose contract says it MUST be 0 — reads 0, and the bucket-3
 population is now stated causes only: **128,636 `causeOK`, 0 refuted**.
 
-The oracle re-run is chained behind this gate (`cause-claim-oracle-arm10.log`, same worktree), and
-its expectation is arithmetic rather than a hope: its claim population drops by the same three rows
-(581,957 → 581,954) and its `REFUTED` count does not move at all, because those rows were filed
-under class (d) — a base no name can check — and never were part of the 123.
+**And the second net was re-run chained behind this gate, where it confirms the subtraction from its
+own side** (`cause-claim-oracle-arm10.log`, 12:43–13:13, same worktree, `ORACLE_EXIT=0`):
+
+```
+repo               files admitted   claims   REFUTED     (b) import   (c) index   (d) nowhere
+pb-reference                    0        0          –            –           –             –
+nvim-treesitter                 5        0          –            –           –             –
+dart-http                     333      2587          0          190         779          1618
+riverpod                     1295     10288          0          252        7147          2889
+proxicall                    2350    280551          0       233908       20101         26542
+flutter-packages             4028     98422          0        22651       37002         38769
+dart-sdk                    25727    190106        123        32900      151671          5412
+TOTAL                             581954        123       289901      216700         75230
+```
+
+Against the arm9 run of the same instrument: TOTAL 581,957 → **581,954** (−3), dart-sdk claims
+190,109 → **190,106** (−3), dart-sdk (d) 5,415 → **5,412** (−3) — and `REFUTED` 123 → **123**,
+unmoved, in dart-sdk and everywhere else. Every other cell in the table is byte-identical. That is
+the arithmetic the section above predicted, measured: the three rows leave the oracle's population
+by class (d) — the class of bases no name can check — and never touch its refuted book, which is
+exactly why they could only ever be caught by the gate's identifier-shape check.
 
 ### Bucket 3 gets its fourth property — an independent oracle, and what it says
 
@@ -6141,8 +6158,9 @@ before this chapter can call the bucket-3 population clean.
 **THE GATE'S THREE ARE NOW GONE, so the union is the oracle's 123 and nothing else** — the fix above
 (`335997f6c`) deletes the rows rather than re-spelling them, which is what makes both books settle:
 the gate's `causeFAIL` reads 0 on arm10, and the oracle's `dart-sdk` claim population loses the same
-three rows (581,957 → 581,954 by arithmetic) without its `REFUTED` count moving at all, because
-those three were never IN it — they were filed under (d), the class of claims no name can check. The
+three rows (581,957 → **581,954** measured, its (d) class 5,415 → 5,412) without its `REFUTED` count
+moving at all, because those three were never IN it — they were filed under (d), the class of claims
+no name can check. The
 123 that remain are one defect with one cause (the primary-constructor grammar hole below), and they
 are the oracle's book alone: no `causeFAIL` in the gate, no identifier-shape refusal anywhere, just
 120 false claims the hole's unparsed declarations manufacture plus the three overrides rows the
