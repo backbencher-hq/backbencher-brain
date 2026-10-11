@@ -296,15 +296,34 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (a class selector is `.btn`, a variable is `$x`, a mixin is `@mixin btn`, and no
     // Sass selector can be `name.scss` because a bare type selector has no dot), and it
     // is not something `isIndexArtifactName` rejects.
-    ctx.symbols.unshift({
-      name: ctx.moduleName,
-      kind: ASTEngine.SymbolKind.Module,
-      range: this.nodeToRange(rootNode),
-      scope: "",
-      visibility: "public",
-      complexity: 1,
-      metadata: { cssSpecific: true, isScssModule: true, scssModuleName: ctx.moduleName, scssModulePath: filePath },
-    })
+    // THE BASE NOW PUBLISHES THIS FILE'S STYLESHEET AS A MODULE — the css lane's file-scoped
+    // identity, which is what qualifies every target in this lane as `<file>::<name>` — and this
+    // analyzer used to unshift a SECOND one beside it. TWO MODULE SYMBOLS WITH THE SAME NAME IS A
+    // DEFECT, NOT A SPELLING CHOICE: it doubled every module row, and the scss fixtures caught it
+    // (`expected 1 symbol(s) named … kind=module; got 2`). The base's symbol is ADOPTED and enriched
+    // with the Sass vocabulary `emitModuleExports` reads, so there is exactly one module row per
+    // stylesheet with the fields this lane's consumers need.
+    const baseModule = ctx.symbols.find(
+      (s) => s.kind === ASTEngine.SymbolKind.Module && s.name === ctx.moduleName,
+    )
+    if (baseModule) {
+      baseModule.metadata = {
+        ...(baseModule.metadata ?? {}),
+        isScssModule: true,
+        scssModuleName: ctx.moduleName,
+        scssModulePath: filePath,
+      }
+    } else {
+      ctx.symbols.unshift({
+        name: ctx.moduleName,
+        kind: ASTEngine.SymbolKind.Module,
+        range: this.nodeToRange(rootNode),
+        scope: "",
+        visibility: "public",
+        complexity: 1,
+        metadata: { cssSpecific: true, isScssModule: true, scssModuleName: ctx.moduleName, scssModulePath: filePath },
+      })
+    }
     for (const s of ctx.symbols) ctx.published[s.name] = true
 
     this.collectDeclarations(rootNode, ctx)
