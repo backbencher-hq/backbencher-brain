@@ -144,25 +144,41 @@ resolver being only as good as the table's state when its batch runs**, and that
 index the same files twice in different orders and compare the bindings row by row
 (`store-determinism.mts`, two preserved runs in `store-determinism-run2/3.json`).
 
-**It is confirmed.** 300 libxslt files, three arms (sorted, reversed, sorted + eager-forced):
+**It is confirmed — and this section carries a REVISION.** 300 libxslt files, three arms (sorted,
+reversed, sorted + eager-forced). The figures first published here — **96 of 7,825 = 1.23%** — are
+**WITHDRAWN, not caveated**: they were measured on a store that still contained the **duplicated
+`contains` rows** this lane later had fixed (`140be2f01`). That draw held 7,649 `contains` rows for
+300 files; the same draw on current code holds **4,369** — so **3,280 of the denominator were
+duplicate synthesized containment rows**, and duplicates are stable across file order (they are
+synthesized per symbol, not bound by the eager resolver), which diluted the rate by roughly 4.4×.
+Anyone quoting 1.23% is quoting a denominator the code no longer produces. Full record:
+[`determinism-revision.json`](../../validation/m14/fixtures/xml/determinism-revision.json).
 
-| comparison | run 2 | run 3 | by type |
-| --- | ---: | ---: | --- |
-| sorted vs reversed order | **96 differing** of 7,825 | **96** | all `contains` |
-| eager vs deferred | 26 | 29 | `contains` + **`calls`** |
-| reversed vs eager | 111 | 112 | `contains` + `calls` |
+| libxslt, 300 files, same instrument, three arms | rows | order churn (A vs B) | eager churn (A vs C) |
+| --- | ---: | ---: | ---: |
+| pre-fix store (as first published) | 7,825 | 96 — **1.23% WITHDRAWN** | 29 — 0.37% |
+| **current code** | **4,545** | **248 — 5.46%** | 34 — 0.75% |
 
-- **Order-dependent.** Reversing the file order changes 96 bindings (1.23%) — same edge key, a
-  different target file. Example: `tests/REC/test-10-1.xsl | li | contains | xsl:text | 15` binds to
+Re-measured on two further draws, current code: **350 files 215 / 4,596 = 4.68%** and **800 files
+1,189 / 18,122 = 6.56%** — stable at ~5–6.6% across a 2.7× range of draw sizes. **r-lane measured the
+same rate independently on its own instrument: 5.18 / 5.59 / 5.59 / 5.62%** (four runs, 350 and 800
+files) — two lanes, two instruments, same magnitude.
+
+- **Quote the ORDER rate: ~5–6.6%.** The eager rate is **0.69–0.75%** at every draw, several times
+  smaller; file order moves bindings far more than the eager arm does, so the two must not be
+  averaged or quoted as one number.
+- **Order-dependent.** Reversing the file order changes 248 of 4,545 bindings (5.46%) — same edge key,
+  a different target file. Example: `tests/REC/test-10-1.xsl | li | contains | xsl:text | 15` binds to
   `doc/EXSLT/devhelp/devhelp2.xsl` sorted, `tests/REC2/svg.xsl` reversed.
-- **Also run-dependent.** Eager-vs-deferred printed 26 differing in run 2 and 29 in run 3 — same
-  probe, same arms. Worker scheduling contributes; the outcome is not a function of (file set,
-  order) alone.
+- **Also run-dependent.** Eager-vs-deferred printed 26 differing in run 2 and 29 in run 3 on the old
+  code (34 on current code) — same probe, same arms. Any single comparison also differs when
+  repeated (r-lane: 238→257, 1,013→1,018) while the RATE is stable. Worker scheduling contributes;
+  the outcome is not a function of (file set, order) alone.
 - **Eager vs deferred changes the graph**, falsifying the in-code claim on
   `BB_TEST_FORCE_EDGE_RESOLVE` that it "changes nothing about the final graph". `calls` is 17 of
-  those rows in both runs.
-- **Invisible to rate metrics.** `bound 7,109 / unbound 716 / storedRows 7,825` are identical in
-  every arm of every run. Only a per-row comparison sees any of it.
+  those rows.
+- **Invisible to rate metrics.** On current code `bound 4,480 / unbound 65 / rows 4,545` are identical
+  in every arm. Only a per-row comparison sees any of it.
 - **Row duplication is ruled out**: `duplicateIds 0`, `storedRows == joined rows` — candidate (c)
   of the earlier disclosure does not hold for this draw.
 
