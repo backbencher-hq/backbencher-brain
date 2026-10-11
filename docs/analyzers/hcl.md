@@ -683,6 +683,39 @@ determinacy**, NOT tie removal — `exports` churns on table COMPLETENESS (99 un
 0 under file-order reversal), so it was never riding the tie-break that scoping removes. The monotonicity
 assertion still holds (scoping cannot create a tie), but it is not the mechanism that fixes exports.
 
+### Cause 11 — the rename is AUTHORIZED but NOT LANDED: the falsifier, named before the run, and a cost the price did not include
+
+The lane-wide qname change is authorized and this lane did NOT land it, because the acceptance items
+include a coherent analyzer edit plus a store pair over the same population, and a half-landed rename is
+worse than neither (a scoped target against an unscoped qname binds nothing). What is fixed here, before
+any run, is the falsifier and one cost the store price did not include.
+
+**THE FALSIFIER, named so the run can fail** — the projection says `exports` +1,561, `contains` +2,462,
+`references` +678 and `uses`/`imports` +0 with NO type regressing. It is refuted by any of:
+
+1. a type that was predicted to hold LOSES rows it had — `references` below its 17,670 bound, or
+   `contains` below 207,993;
+2. `contains` moving OFF the own file — its 96,273 own-file bindings are the baseline the change must
+   not disturb, and a drop there is a regression in the type the projection says gains most;
+3. `uses`/`imports` gaining nothing was a prediction too: if either gains, the projection's mechanism is
+   wrong even though the direction is favourable, and the artifact needs correcting;
+4. and the sharpest one: **the after-run showing the 4,725 rows NOT moving**, because their own-file
+   declaration was already reachable and the binding they have now came from a tie-break that a scoped
+   qname does not remove — which the arm data already suggests is possible for `contains` (it churns on
+   insert order, 113/0/117) and not for `exports` (completeness, 99 eager-vs-deferred, 0 on order).
+
+**AND THE COST THE STORE PRICE DID NOT INCLUDE**: the rename moves the lane's own fixtures. Measured:
+**12 expectation files carrying 162 target pins and 107 source pins, every one of them an UNSCOPED path**
+(`aws_instance.web`, `function.double`, `target._common`), so all 269 pins must be re-spelled in the same
+change. The store price answered "how many store rows does this act on" (4,725); it did not answer "how
+much fixture churn does it cost", and that number belongs in the decision too.
+
+RECORDED AS THE HANDOVER SHAPE for whoever lands it: (1) one analyzer edit that scopes the symbol
+qualified name AND the targets that name a symbol's own path (`contains`, `exports`, `extends`) — the
+two must move together; (2) the store pair over the same population, one labelled run each; (3) the
+monotonicity assertion, stated as a SAFETY property rather than the mechanism, because the arms show
+`exports` never rode the tie-break; (4) the falsifier above, fixed before the run.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
