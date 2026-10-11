@@ -4441,9 +4441,39 @@ export async function storeResults(
                // so the store phase can be measured both ways in one session, on one machine,
                // interleaved. It changes nothing about the final graph (the pass resolves these
                // rows either way) — it only decides WHERE they are resolved.
+               // `contains` IS NO LONGER EXCLUDED. It was the ONE TYPE THAT RESOLVED AT INSERT
+               // TIME IN ALL THREE ARMS, so `resolveTargetStmt ... LIMIT 1` saw whatever the table
+               // held when the edge was inserted: arm A inserts sorted, arm B reversed, and the
+               // same edge met a DIFFERENT PARTIAL TABLE and took a different row. MEASURED
+               // (r-lane, `e17595f9b`): `contains` A_vs_B 117 bound->bound in DIFFERENT FILES,
+               // against A_vs_C 5 — ORDER, not eagerness, and 5 is the evidence because forcing the
+               // eager arm changes nothing for a type that is already always eager.
+               //
+               // THE `:4438` COMMENT THAT JUSTIFIED THE EXCLUSION OVERSTATES IT. Strategy 1
+               // (`:4741-4759`) is `WHERE target_external = _res_qname.qualified_name AND
+               // target_symbol_id IS NULL AND project_id = ?` — THERE IS NO TYPE FILTER. The pass
+               // skipped a contains row for exactly one reason: the eager select had already given
+               // it a `target_symbol_id`. Stop resolving eagerly and Strategy 1 binds it against the
+               // COMPLETE table, deterministically — `_res_qname` is built with `MIN(id)` and its
+               // own header says why: "Deterministic winner for duplicate qualified names so
+               // parallel indexing order can't change resolution results."
+               //
+               // The only contains exclusions in the pass are `:5590`/`:5632`, both inside
+               // `_i13_pick` — the BARE-NAME strategy, which requires `instr(target_external,'.') = 0
+               // AND instr(target_external,':') = 0`. A dotted target like `terraform.backend.s3`
+               // NEVER REACHES IT, so the exclusion the comment described was never load-bearing.
+               //
+               // WHY THE `exports` FIX DOES NOT TRANSFER: that symbol is published as
+               // `name="backend.s3"` / `qualifiedName="terraform.backend.s3"`, and `resolveTargetStmt`
+               // matches `s.name` — so the full target matches no row and the leaf `s3` matches
+               // OTHER FILES' `s3`. Strategy 1 matches `qualified_name`, WHICH IS THE FULL TARGET.
+               //
+               // RISK, STATED: `contains` now depends on the pass, and a miss UNBINDS rather than
+               // mis-binds. The falsifier's completeness clause (`bound A/B/C >= 9,790`) is what
+               // catches that — every other clause is a between-arms count, which a fix that merely
+               // unbound the rows would satisfy.
                (process.env.BB_TEST_FORCE_EDGE_RESOLVE !== "1" &&
-                 options.skipResolution === true &&
-                 relType !== "contains")
+                 options.skipResolution === true)
              const resolvedRow = skipEdgeResolve
                ? null
                : relType === "contains" && relLine !== null
