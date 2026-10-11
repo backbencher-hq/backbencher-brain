@@ -214,10 +214,22 @@ raw [`verify-chain.txt`](../../validation/m14/fixtures/xml/verify-chain.txt)):
 | overrides | 3 | 1 | 2 | 0 | 66.7% | collisions on a 3-edge type |
 
 **Clause 2 met in full**: `extFAIL` = `bindFAIL` = `causeFAIL` = 0, per type and in TOTAL.
-**Clause 4**: `contains` determinate (189,305 intended / 0 twin / 0 noDecl); `exports` is
-**not applicable** (0 edges — excluded as grammar-absence); `calls` is answered by a different test
-below (279/279 own-file declarations); for `references` 3,445 + `extends` 346 + `overrides` 2 =
-**3,793 edges** the gate can only say `sameFileUnproven`.
+**Clause 4 — MEASURED, 0 violations on the current revision.** The line test is N/A for
+`references`/`calls`/`imports`/`overrides`/`extends`, so the store-side instrument declares it N/A and
+applies the analyzer-class predicate instead (`in-document` ⟹ bound elsewhere or unbound is a
+violation). `contains` keeps its genuine line split (whole population: **189,305 intended / 0 twin /
+0 noDecl**); `exports` is **not applicable** (0 edges — grammar-absence). Toggle control on the
+current revision (`385c734dd`, which includes the second-site leaf-reduction fix): own-file passes
+**enabled → 4 violations, `calls` 0 (400/400 same-file)**; **disabled → 147, `calls` 138 (262/138)**.
+The remaining four are **boundary cases the predicate cannot judge, each ruled with document-level
+evidence** ([`clause4-boundary.json`](../../validation/m14/fixtures/xml/clause4-boundary.json)): three
+are **fragment IDREFs** (`#style1`, `#transform`) whose documents *do* declare the IDs — a fragment
+names a **node**, not a declaration of that name, so `unbound` is correct; one is
+`bug-110.xml:7 &target;`, where the analyzer is right (the entity is declared in the internal subset
+and published as a symbol in that file) but the stored row is `rel:null:target:references:7` with
+**`source_symbol_id` NULL**, so the target binds to a same-named `with-param` symbol in another file.
+Measured scope of that shared-indexer gap: **2 of 22,426 rows** in the draw have an unbound source and
+a literal `null` in the row id (enrichment itself warns `danglingSources 2, totalRelationships 4`).
 
 **The shortfalls, after the `calls` ruling:**
 
