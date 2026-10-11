@@ -542,40 +542,53 @@
       "calls",
       "uses",
       "contains",
-      "references"
+      "references",
+      "imports",
+      "overrides",
+      "instantiates"
     ],
     "excluded": [
       {
         "label": "implements",
         "evidence": "grammar-absence",
-        "from": "SQL-D13/SQL-D18 (grammar inventory): the pinned tree-sitter-sql wasm declares no supertype or conformance clause node type, so nothing can satisfy one; 0 of the probed interface/implements node types are produced. Corpus half: 0 edges over all 594 admitted .sql files."
-      },
-      {
-        "label": "instantiates",
-        "evidence": "grammar-absence",
-        "from": "SQL-D13 (grammar inventory): SQL has no type-declaration or constructor node, so there is no declared type to instantiate; 0 construction node types. Corpus half: 0 edges over all 594 admitted .sql files."
+        "from": "SQL-D16 (grammar inventory + corpus keyword census), re-measured 2026-10-11: SQL has no interface type and no clause in which a declaration names a supertype it satisfies. Instrument A: the pinned tree-sitter-sql wasm enumerates 820 node types and 0 of them contain `implement`, `interface` or `super` (control: `create` 31, `table` 26 \u2014 the enumeration is readable). Instrument B: 0 of 1,970 tracked .sql files carry an `implements` token (control: `create` matches 132 files in duckdb alone). Edges: 0 over the whole admitted population of 1,964 files. Artifacts: validation/m14/fixtures/sql/whole-corpus-typing.json, validation/m14/fixtures/sql/whole-corpus-typing.txt"
       }
     ],
     "corpusUnexercised": [
-      "imports",
-      "exports",
-      "overrides",
-      "extends"
-    ],
-    "_from": "MEASURED against the WHOLE admitted population, 594/594 .sql files in duckdb, production parseFile, 0 degraded (`BB_PICK_CAP=2000 NFILES=600 bun script/m14/firing-check.mjs SQL`, instrument self-test PASS): calls 189 edges \u00b7 contains 1,076 \u00b7 uses 2,296 \u00b7 references 1 \u2014 and ZERO edges for extends, implements, imports, exports, overrides and instantiates. SELF-REFUTATION, recorded: this block previously declared `imports` and `overrides` IMPLEMENTED on the strength of the spec's own SQL-D11 ('the EARLIER RULING IS FALSIFIED and `imports` is now EMITTED') and SQL-D12/SQL-D21 (`overrides` EMITTED). Over the whole corpus BOTH EMIT NOTHING, so a code path that exists is not a type that fires \u2014 PROMPT-LAPTOP-B \u00a71, on this lane's own ruling. They are now `corpusUnexercised` (a real but sub-100%-density, single-repo sample), and whatever emits them remains an OPEN item: if those paths are reachable, some other SQL corpus exercises them and this lane must say which; if they are not, the analyzer carries dead branches. Both are findings, neither is 'implemented'. `references` is declared implemented on 1 edge in 594 files, which is honest but thin \u2014 the spec's SQL-D5 cites '441 files / 6,917 edges', a figure this whole-population run does NOT reproduce and which therefore needs its own population stated before it is quoted again.",
-    "_implemented_measured": {
-      "_unit": "edges published through the production path over the WHOLE 594-file duckdb population, no stride (BB_PICK_CAP=2000 NFILES=600 bun script/m14/firing-check.mjs SQL \u2192 `[corpus=duckdb WHOLE]`, 594/594 parsed, instrument self-test PASS). Read the range for `references` before quoting it: the instrument counts 1 edge in the whole corpus, while the spec's SQL-D5 cites '441 files / 6,917 edges' for the same type \u2014 a figure this whole-population run does NOT reproduce. 1 is what the production instrument measures on this population and it is what is recorded here; the 6,917 needs its own population named before it is used again.",
-      "calls": {
-        "edges": 189
+      {
+        "label": "extends",
+        "evidence": "zero-sites",
+        "from": "SQL-D14: table inheritance EXISTS in SQL (CREATE TABLE c (...) INHERITS (p), ALTER TABLE c INHERIT p) and occurs 0 times in our corpus \u2014 0 edges and 0 sites over the whole admitted population of 1,964 files; `git grep -liE '\\binherits?[[:space:]]*\\(' -- '*.sql'` matches 0 of 1,970 tracked files (control: `create` matches 132 files in duckdb alone). It is NOT grammar-absence, because the LANGUAGE can express it: the ruling is about the wired grammar, which parses `ALTER TABLE c INHERIT p` as a column named INHERIT (real-sql-analyzer.ts:506). The construct exists and our corpus lacks it, so it STAYS IN the denominator. Artifact: validation/m14/fixtures/sql/whole-corpus-typing.json"
       },
-      "contains": {
-        "edges": 1076
+      {
+        "label": "exports",
+        "evidence": "zero-sites",
+        "from": "SQL-D16 rules `exports` not derivable: SQL's visibility scope is the DATABASE and nothing in a SQL file enumerates what it publishes; the analyzer has NO emission site for it (the single `RelationshipType.Exports` occurrence in real-sql-analyzer.ts is the evidenceClassFor switch). 0 edges over the whole admitted population of 1,964 files. CORRECTION to SQL-D16's Instrument B, which cites '0 occurrences of an EXPORT ... token': the token is NOT absent \u2014 14 of 1,970 tracked files carry it (duckdb 4 are the real statement `EXPORT DATABASE 'x' (FORMAT PARQUET);`; the other ten are comments and column names such as `export_ready_at`), and none of them names a symbol the file publishes to another unit, which is what an `exports` edge asserts. The count is corrected and the class is left in the DENOMINATOR rather than promoted. Artifact: validation/m14/fixtures/sql/whole-corpus-typing.json"
+      }
+    ],
+    "_from": "MEASURED 2026-10-11 against the WHOLE admitted .sql population \u2014 the lane's population is the EXTENSION `sql` (LANES_B), not one repository: 1,970 git-tracked .sql files across 20 repositories, 1,964 admitted (6 over the 1 MB engine cap, largest 3.9 MB), 0 parse failures, 0 degraded. WHOLE POPULATION (`npx tsx script/m14/incoming-gate.ts sql sql 0`) fires SEVEN types: calls 3,908 \u00b7 uses 9,160 \u00b7 contains 12,132 \u00b7 references 6,015 \u00b7 imports 53 \u00b7 overrides 8 \u00b7 instantiates 21 \u00b7 and ZERO for extends, implements, exports. PINNED corpus (`BB_PICK_CAP=2000 NFILES=1000 bun script/m14/firing-check.mjs SQL` -> `[corpus=duckdb WHOLE]`, 594/594 parsed) fires FOUR: calls 189 \u00b7 contains 1,076 \u00b7 uses 2,296 \u00b7 references 1, and zero for the other six. Evidence: validation/m14/fixtures/sql/whole-corpus-typing.json and whole-corpus-typing.txt. SELF-REFUTATION, recorded in the block rather than in a commit message. (1) The block FIRST declared `imports` and `overrides` implemented on the strength of SQL-D11/SQL-D12 alone, with no measurement; the board read 6/8 while the firing instrument read 3 types fired, and that 6/8 was a declaration about RULINGS, not a measurement. (2) It was then corrected to 4/8 on a 594-file DUCKDB measurement \u2014 and THAT correction overshot in the other direction: it certified absence from a single pinned repository, which HANDOFF 5.17 rules inadmissible, while the lane's own 1,964-file population fires imports, overrides AND instantiates. (3) `instantiates` was declared GRAMMAR-ABSENCE while the lane's own SQL-D13/SQL-D24 rule it EMITTED and 'not under-delivering' and the analyzer carries a real emission site (`real-sql-analyzer.ts:3435`); grammar-absence LEAVES the denominator, so that was the one exclusion buying ratio without a measurement. The types that fire over the whole population are now IMPLEMENTED with their counts; the two that never fire anywhere stay in the DENOMINATOR, and the one the language cannot express is the only grammar-absence. `references` is 6,015 over the whole population and 1 over duckdb \u2014 the spec's SQL-D5 cites '441 files / 6,917 edges', a figure this whole-population run does NOT reproduce and which must not be quoted without its own population.",
+    "_implemented_measured": {
+      "_unit": "edges published through the production parseFile path and classified by script/m14/incoming-rule.ts at the PER-PROJECT scope production resolves in. POPULATION = every admitted .sql file in $HOME/fixtures/repositories, 1,964 of 1,970 tracked (6 over the 1 MB cap), 20 repositories, 0 degraded (npx tsx script/m14/incoming-gate.ts sql sql 0, ONE RUN 2026-10-11). Per-type counts, the pinned-corpus comparison, the zero-claim site counts and the grammar inventory are in validation/m14/fixtures/sql/whole-corpus-typing.json and validation/m14/fixtures/sql/whole-corpus-typing.txt.",
+      "calls": {
+        "edges": 3908
       },
       "uses": {
-        "edges": 2296
+        "edges": 9160
+      },
+      "contains": {
+        "edges": 12132
       },
       "references": {
-        "edges": 1
+        "edges": 6015
+      },
+      "imports": {
+        "edges": 53
+      },
+      "overrides": {
+        "edges": 8
+      },
+      "instantiates": {
+        "edges": 21
       }
     }
   }
