@@ -4448,7 +4448,23 @@ export async function storeResults(
                ? null
                : relType === "contains" && relLine !== null
                  ? (resolveContainsTargetStmt.get(projectId, targetLeaf, fileId, relLine, fileLang) as any)
-                 : (resolveTargetStmt.get(projectId, targetLeaf, fileId, fileLang) as any)
+                 // KEY SELECTION, not key REDUCTION. `:4294` derives `targetLeaf` and this line
+                 // USED it, so the eager select asked for `main` while the deferred pass asked for
+                 // `aws_lambda_function.main`: `resolveTargetStmt` orders `(s.file_id = ?) DESC`
+                 // over `WHERE s.name = ?`, so THE KEY IS THE QUESTION ASKED OF `s.name`.
+                 // MEASURED (r-lane, 1c2aea5a4): `exports` differing rows are ZERO under file-order
+                 // reversal and 100 under eager-vs-deferred, bound->bound — A binds the declaration
+                 // in the edge's OWN file, C binds a bare `main` in ANOTHER file.
+                 // The same-file preference cannot save a leaf-keyed lookup unless that file
+                 // declares a symbol named exactly the key asked for; here it declares
+                 // `aws_lambda_function.main`, so ASKING THE FULL NAME MAKES THE PREFERENCE DO ITS JOB.
+                 // FULL NAME FIRST, LEAF ONLY AS A FALLBACK — never a replacement. Reversing the
+                 // order reinstates the defect for every colliding leaf. `get()` returns undefined
+                 // on no row, so `??` is the right operator. DO NOT FOLD `contains` IN: it is
+                 // excluded from the skip, always eager, and its 113-116 order rows are a different
+                 // mechanism with a different fix.
+                 : ((resolveTargetStmt.get(projectId, targetName, fileId, fileLang) ??
+                     resolveTargetStmt.get(projectId, targetLeaf, fileId, fileLang)) as any)
              const targetId = resolvedRow?.id || null
  
              // is_cross_file must be honest: 1 only when the resolved target
