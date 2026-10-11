@@ -606,6 +606,17 @@ export function verifyExternalClaim(
   return (declCount.get(owner) ?? 0) > 0 ? "externalRefuted" : "externalVerified"
 }
 
+/**
+ * WHAT AN AMBIGUOUS EDGE'S CLAIM AMOUNTS TO.
+ *
+ * `contradicted` is deliberately NOT `refuted`. It records the FACT that the edge claims to be external
+ * while the population publishes declarations of its target — measured at **714 edges on scss alone** —
+ * and it does NOT assert that the fact is a failure. Whether such a claim should count as `extFAIL` is
+ * an OPEN fleet-wide ruling with two defensible readings; making it here would move a failure column
+ * for every lane in the programme. See `claimDispositionOnAmbiguous`.
+ */
+export type AmbiguousClaimDisposition = "verified" | "unverified" | "refuted" | "contradicted" | "notApplicable"
+
 export type Classified = {
   outcome: Outcome
   /** how many declarations answer to the target IN THIS KEY SPACE */
@@ -653,6 +664,17 @@ export type Classified = {
   /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
    *  mechanism that produced the number, not only the number. */
   verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling"
+  /**
+   * WHAT A CLAIM SAYS ABOUT A TARGET THAT NAMES TWO OR MORE DECLARATIONS — recorded WITH ITS KIND,
+   * and deliberately NOT allowed to move the outcome. See `claimDispositionOnAmbiguous`.
+   *
+   * THE KIND IS PART OF THE FACT, not decoration: the first version of this field reported a bare
+   * disposition, and on scss it printed "714 unverifiable" — a label that mixes a `cause` (which is
+   * not a claim to be external at all, so "unverifiable" is a category error) with a `projectFile`
+   * claim whose candidate did not resolve. **Two different things under one word is how a disclosure
+   * becomes a misleading claim**, so the kind travels with the disposition and the report groups by it.
+   */
+  claimOnAmbiguous?: { kind: string; disposition: AmbiguousClaimDisposition }
 }
 
 /**
@@ -675,6 +697,84 @@ export type Classified = {
  */
 export function isContainsEdge(label: string): boolean {
   return label === "contains"
+}
+
+/**
+ * WHAT A CLAIM WOULD SAY ABOUT AN AMBIGUOUS TARGET — computed WITHOUT letting it change the outcome.
+ *
+ * `classifyEdge` reads a claim only where the target names NOTHING, apart from `binding`, `remoteRef`
+ * and a conflicting `cause` — those three are checked BEFORE the count, because a declaration that
+ * answers them REFUTES them. So a `projectFile`, `projectFacts` or non-conflicting `cause` claim riding
+ * on a target that names TWO OR MORE declarations was **never read at all**: not refuted, not verified,
+ * not counted.
+ *
+ * scss-lane measured what that costs a reader: **693 of its ambiguous edges carry a claim**, its
+ * printed `references` row read **1,499** where the claim-aware count is **787**, and the lane sized its
+ * repairable work roughly **30% high** — with nothing in the output saying so.
+ *
+ * THE CLAIM IS NOT ALLOWED TO CHANGE THE OUTCOME HERE, and that is the decision rather than an
+ * omission. An edge can genuinely be BOTH ambiguous and file-shaped: the target names two declarations
+ * AND names a file that exists. Subtracting the claim from the ambiguity column would HIDE a real
+ * collision rather than resolve it, which is the laundering shape this programme refuses everywhere
+ * else. So the outcome is untouched and the FACT is recorded, so the column can finally be read for
+ * what it is. The disposition is computed through the SAME verifiers the `decls === 0` branch uses, so
+ * there is one rule and not two.
+ */
+function claimDispositionOnAmbiguous(
+  declCount: Map<string, number>, tgt: string, claim: ExternalClaim | null, facts?: ProjectFacts,
+): { kind: string; disposition: AmbiguousClaimDisposition } | undefined {
+  // `declCount` is read to STATE THE BRANCH INVARIANT rather than to verify anything: every caller
+  // reaches here from `decls > 1`, and if that ever stops being true the kind below is wrong.
+  const decls = declCount.get(tgt) ?? 0
+  if (claim === null) return undefined
+  const map = (o: Outcome): AmbiguousClaimDisposition =>
+    o === "externalVerified" ? "verified" : o === "externalRefuted" ? "refuted" : "unverified"
+  // A `cause` IS NOT A CLAIM TO BE EXTERNAL. It says why an edge could not reach its base, it can only
+  // re-label a gap, and it has nothing to verify against an ambiguous target. (The conflicting form was
+  // already settled before the count and never reaches here.)
+  if (claim.kind === "cause") return { kind: "cause", disposition: "notApplicable" }
+  if (claim.kind === "projectFacts") {
+    return { kind: "projectFacts", disposition: facts ? map(verifyImportClaim(facts, tgt)) : "unverified" }
+  }
+  if (claim.kind === "projectFile") {
+    // A FILE CLAIM CAN GENUINELY VERIFY ON AN AMBIGUOUS TARGET: the target may name files AND collide
+    // with declarations, and the claim is about a FILE. So this one is really run.
+    return {
+      kind: "projectFile",
+      disposition: facts ? map(verifyFileClaim(facts, claim.candidates)) : "unverified",
+    }
+  }
+  // ── THE GENERIC EXTERNAL CLAIM ON A TARGET THAT NAMES DECLARATIONS: "CONTRADICTED", NOT "REFUTED".
+  //
+  // The previous version of this helper called `verifyExternalClaim(declCount, tgt)` and got **714
+  // REFUTED** on scss. That number is not something this code is entitled to assert, and the reason is
+  // a category error worth writing down: `verifyExternalClaim` asks whether the target's OWNER is
+  // absent from the key space. Here the FULL target names two or more declarations — which is exactly
+  // why we are on this path — so its owner being present is EXPECTED, not a refutation, and the call
+  // returns "refuted" almost by construction. **A check that can only answer one way on a branch is not
+  // a check**; that is php's unreachable `owner_provable` (§6.11) in a new place, and it is the fourth
+  // time today I have written a disclosure that asserted more than the computation behind it.
+  //
+  // What IS established, by the branch we are standing in, is the FACT: the edge claims to be external
+  // while the population publishes declarations of its target. Whether that fact COUNTS AS `extFAIL` is
+  // a FLEET-WIDE RULING THAT IS STILL OPEN, and it is deliberately not made here:
+  //
+  //   reading (1) — the generic claim behaves like `remoteRef`, which `classifyEdge` DOES refute at
+  //     `decls > 0`. Then scss carries 714 real failures and **every lane's `extFAIL 0` is understated**,
+  //     because at `decls > 1` no generic claim is ever read.
+  //   reading (2) — the generic claim is only meaningful where the target names NOTHING (it is a
+  //     "this gap is external" statement), so at `decls > 1` it is simply NOT APPLICABLE and the
+  //     ambiguity stands on its own.
+  //
+  // Both are defensible, they differ on 714 edges in ONE lane, and choosing one silently would move a
+  // failure column for EVERY lane in the programme. So the fact is reported as CONTRADICTED and the
+  // ruling is named as open rather than made.
+  if (decls <= 1) {
+    // THE INVARIANT BROKE — this is not the branch it documents, so the honest answer is that the
+    // disposition is UNKNOWN rather than any of the three.
+    return { kind: String((claim as { kind?: string }).kind ?? "external"), disposition: "unverified" }
+  }
+  return { kind: String((claim as { kind?: string }).kind ?? "external"), disposition: "contradicted" }
 }
 
 /**
@@ -787,7 +887,12 @@ export function classifyEdge(
     }
   }
   if (decls > 1) {
-    return { outcome: (kindSet?.size ?? 0) > 1 ? "ambBoth" : "ambDeclOnly", decls, kinds: kindText }
+    // THE CLAIM IS READ ON THIS PATH FOR THE FIRST TIME — to RECORD it, never to move the outcome.
+    return {
+      outcome: (kindSet?.size ?? 0) > 1 ? "ambBoth" : "ambDeclOnly",
+      decls, kinds: kindText,
+      claimOnAmbiguous: claimDispositionOnAmbiguous(declCount, tgt, claim, facts),
+    }
   }
   return { outcome: "resolved", decls, kinds: kindText }
 }
@@ -881,6 +986,18 @@ export type Outcomes = {
    * remedy as the marker table's `⋯ OMITTED` row, applied to the other table that has a cap.
    */
   namesOmitted: { ambiguous: number; unresolved: number; refuted: number; cause: number }
+  /**
+   * OF `ambiguousByDecl`: how many ALSO carry a claim, **grouped by claim KIND and disposition** — the
+   * disclosure scss-lane's measurement made necessary. `amb(decl)` and "carries a verified file claim"
+   * are not exclusive, so the column is not wrong; it is simply unreadable on its own, and a lane
+   * sizing its repairable work from it reads roughly 30% high. A separate block rather than a column,
+   * because TABLE 1 is parsed positionally by `residual-gate.ts`.
+   *
+   * GROUPED BY KIND, because the first version was not and printed "714 unverifiable" on scss — a word
+   * covering both a `cause` (not an external claim at all) and a `projectFile` claim that did not
+   * resolve. Two things under one word is a disclosure that misleads.
+   */
+  ambiguousWithClaim: Record<string, { verified: number; unverified: number; refuted: number; contradicted: number; notApplicable: number }>
 }
 
 /**
@@ -898,6 +1015,7 @@ export const emptyOutcomes = (): Outcomes => ({
   causeDeclared: 0, causeRefuted: 0,
   ambiguousNames: [], unresolvedNames: [], refutedNames: [], causeNames: [],
   namesOmitted: { ambiguous: 0, unresolved: 0, refuted: 0, cause: 0 },
+  ambiguousWithClaim: {},
 })
 
 /**
@@ -939,6 +1057,16 @@ export function tally(out: Outcomes, c: Classified, tgt: string, label: string):
     case "ambBoth":
       out.ambiguousByDecl++
       if (c.outcome === "ambBoth") out.ambiguousByKind++
+      // THE CLAIM-CARRYING SHARE OF THIS COLUMN, counted where the outcome is counted and GROUPED BY
+      // CLAIM KIND. A REFUTED claim here is the one a lane must look at first: the target names two or
+      // more declarations AND the edge claimed to be external — the refutation shape `extFAIL` exists
+      // for, which until now was read by nothing and reported as ordinary ambiguity.
+      if (c.claimOnAmbiguous) {
+        const { kind, disposition } = c.claimOnAmbiguous
+        const bucket = out.ambiguousWithClaim[kind] ??
+          (out.ambiguousWithClaim[kind] = { verified: 0, unverified: 0, refuted: 0, contradicted: 0, notApplicable: 0 })
+        bucket[disposition]++
+      }
       keep(out, "ambiguous", out.ambiguousNames, { name: tgt, declarations: c.decls, kinds: c.kinds })
       break
     case "externalVerified":

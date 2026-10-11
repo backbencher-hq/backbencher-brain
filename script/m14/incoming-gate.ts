@@ -1905,6 +1905,72 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     }
   }
 
+  // THE CLAIM-CARRYING SHARE OF THE AMBIGUITY COLUMN. A SEPARATE BLOCK, NEVER A COLUMN — TABLE 1 is
+  // parsed POSITIONALLY by `residual-gate.ts`, so a new column would shift every row of every lane
+  // (that is the same reason the FALLBACK ROWS block is a block). scss-lane found this by building a
+  // claim-aware classifier over its whole population: **693 of its ambiguous edges carry a claim**, its
+  // printed `references` row read **1,499** where the claim-aware count is **787**, and it sized its
+  // repairable work about **30% high** — with nothing in the output saying so.
+  {
+    // GROUPED BY CLAIM KIND, because the first version of this block was not: it printed
+    // "714 unverifiable" on scss — a single word covering a `cause` (which is NOT a claim to be
+    // external at all) and a `projectFile` claim whose candidate did not resolve. Two different things
+    // under one word is a disclosure that misleads, which is the defect this block exists to remove.
+    // It then printed "714 REFUTED", which was worse: a check that can only answer one way on a branch
+    // is not a check (see `claimDispositionOnAmbiguous`).
+    type Bucket = { verified: number; unverified: number; refuted: number; contradicted: number; notApplicable: number }
+    const zero = (): Bucket => ({ verified: 0, unverified: 0, refuted: 0, contradicted: 0, notApplicable: 0 })
+    const byKind = new Map<string, Bucket>()
+    let amb = 0
+    for (const r of rep.rows.values()) {
+      const src = r.project.ambiguousWithClaim
+      const keys = Object.keys(src)
+      if (keys.length === 0) continue
+      amb += r.project.ambiguousByDecl
+      for (const k of keys) {
+        const b = byKind.get(k) ?? zero()
+        const s = src[k]
+        b.verified += s.verified
+        b.unverified += s.unverified
+        b.refuted += s.refuted
+        b.contradicted += s.contradicted
+        b.notApplicable += s.notApplicable
+        byKind.set(k, b)
+      }
+    }
+    if (byKind.size > 0) {
+      const tot = [...byKind.values()].reduce((a, b) => ({
+        verified: a.verified + b.verified, unverified: a.unverified + b.unverified, refuted: a.refuted + b.refuted,
+        contradicted: a.contradicted + b.contradicted, notApplicable: a.notApplicable + b.notApplicable,
+      }), zero())
+      console.log(
+        `CLAIM-CARRYING AMBIGUOUS EDGES — the amb(decl) column is NOT claim-aware. Its claim-carrying\n` +
+        `share, BY CLAIM KIND: of ${amb} ambiguous edge(s) — ${tot.verified} claim VERIFIED · ` +
+        `${tot.unverified} NOT verified · ${tot.refuted} REFUTED · ${tot.contradicted} CONTRADICTED · ` +
+        `${tot.notApplicable} n/a.`,
+      )
+      for (const [k, b] of [...byKind.entries()].sort(
+        (x, y) => (y[1].verified + y[1].unverified + y[1].refuted + y[1].contradicted) -
+                  (x[1].verified + x[1].unverified + x[1].refuted + x[1].contradicted),
+      )) {
+        console.log(`    ${w(k, 16)} VERIFIED ${b.verified} · not verified ${b.unverified} · REFUTED ${b.refuted} · CONTRADICTED ${b.contradicted} · n/a ${b.notApplicable}`)
+      }
+      if (tot.contradicted > 0) console.log(
+        `  ^ ${tot.contradicted} CONTRADICTED claim(s): the edge claims to be EXTERNAL while the population\n` +
+        `    PUBLISHES declarations of its target. THIS IS A FACT, NOT A VERDICT — whether it counts as\n` +
+        `    extFAIL is an OPEN fleet-wide ruling with two defensible readings, and at decls > 1 no generic\n` +
+        `    claim is read at all today. Read these FIRST: they are 714 on scss alone, and if the ruling\n` +
+        `    goes with reading (1) then EVERY lane's extFAIL 0 is understated.`,
+      )
+      console.log(
+        `  A CLAIM IS NOT A RESOLUTION: the outcome is deliberately untouched, because an edge can be BOTH\n` +
+        `  ambiguous and file-shaped, and subtracting the claim would HIDE a real collision rather than\n` +
+        `  resolve it. Size the repairable work from the VERIFIED count, not the raw amb(decl) column.`,
+      )
+      console.log()
+    }
+  }
+
   if (ambList.length || unresList.length) {
     // PER TYPE, not the first 20 names. The lists are filled per type (up to 25 each), and a
     // flat slice of the pooled list prints whatever type happens to come first — measured
