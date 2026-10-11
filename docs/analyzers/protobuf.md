@@ -155,10 +155,27 @@ no business holding it.
 reported): give `ProjectIndex` the repo-relative file paths it already reads (`stats.files`), and the arm
 becomes "an indexed path ending with `/<import>`". Across all 1,574 imports, **772 have exactly ONE
 admitted suffix match and 3 have more than one** (`movie.proto` matches three vendored copies), so such a
-rule would reach the gap and would have to CHOOSE in 0.4% of cases — a policy the programme must state
-before a lane picks a copy. Cost: a path set per indexed lane riding the serialized index into every
-worker; cheap at build time, but a shared interface and a payload change affecting every indexed
-language. **Not built for 68 edges without that ruling.**
+rule would reach the gap and would have to CHOOSE in 0.4% of cases. **IF IT IS EVER BUILT, THOSE CASES ARE
+REFUSED, NOT TIE-BROKEN** — a rule that picks one of three `movie.proto` copies re-introduces the
+arbitrary pick this programme measured at **37,318 of 49,729** collision-bound selections going to the
+WRONG symbol, and a refusal in 0.4% of cases is cheap where a guess is not.
+
+**RULED 2026-10-11: NOT BUILT**, and the ruling has a reachable falsifier rather than a preference —
+`tools/sibling-root-census.mts` counts, per lane, how many imports resolve under NO ancestor but DO
+resolve under the project's file list:
+
+| lane | files (sample/pop) | path-shaped edges | SIBLING (this shape) |
+|---|---|---|---|
+| protobuf | 847/847 full | 1,574 | **68 (4.3%)** |
+| graphql | 1,145/1,911 | 141 | **0** |
+| zig | 491/3,844 | 3,003 | **0** |
+
+**One lane, 68 times; two other lanes zero** — the opposite of the "two or more lanes in the thousands"
+that would flip the trade. The census is valid only for lanes using the path-fold arithmetic: **toml and
+php read 0 reached and those zeros are ARTEFACTS** (their claims are a manifest-in-directory and a
+`__DIR__` substitution, neither implemented there), so their rows are excluded rather than counted as
+absence. Cost of the build: a path set per indexed lane riding the serialized index into every worker;
+cheap at build time, but a shared interface and payload change affecting every indexed language.
 
 ## 3. Instruments
 
