@@ -858,6 +858,27 @@ reference IS for a type whose target is not the edge's own file. The intent lege
 `"twin"` marks a WRONG EDGE only for `contains`/`exports`; for `references` a foreign declaration is a
 RISK. **So sample before pricing, which is the assignment this run starts.**
 
+### Cause 16 — the claim-kind block for hcl: CONTRADICTED 0, and a MEASURED zero rather than a silent block
+
+Read on a 600-file sample (`incoming-gate.ts hcl hcl 600`, exit 1 — the gate's own FAIL verdict for a lane
+with residual, not an instrument error):
+
+```
+BY CLAIM KIND: of 0 ambiguous edge(s) — 0 claim VERIFIED · 0 NOT verified · 0 REFUTED ·
+               0 CONTRADICTED · 0 OWN-FILE-SILENT · 0 n/a
+(no ambiguous edge on this lane carries any claim — so there is nothing of this shape here,
+ and that is a MEASURED zero rather than a block that failed to print.)
+```
+
+**So hcl has no `CONTRADICTED` edges and no `OWN-FILE-SILENT` edges** — the scss 714 does not reproduce
+here, and nothing on this lane needs the open fleet-wide ruling about whether a contradicted claim counts
+as `extFAIL`. Both counts are reported, neither is resolved, and the block's own sentence is the reason
+this is a fact rather than an absence: it always prints, so "0" here cannot be a gate that skipped it.
+
+NOTED WITH IT: the block's denominator is the run's ambiguous count, so the zero is a statement about
+**ambiguous edges carrying claims**, not a claim that the lane has no ambiguity — the same run's TABLE 1
+is where the lane's `amb(decl)` lives, and the two must be quoted together.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
