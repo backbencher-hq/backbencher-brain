@@ -5938,13 +5938,54 @@ on `instantiates -> Holder<int>`, `Holder<Map<String, int>>`, `Holder<List<Map<S
 the stripper at the LAST `<` (the two nested pins and their forbids); flag the `.new` rows
 `isNamedConstructor` (the `meta.isConstructorReference` pins). `tsc --noEmit` clean.
 
-**The whole-corpus arm10 run is in flight** (`/tmp/dartgate/incoming-dart-arm10.log`; the arm10
-worktree is `ab900b82c` + this change, `incoming-gate.ts dart dart 0`, the whole 33,738-file
-population, started 11:16). Its expectation is exact and small — `uses` −3, `causeFAIL` 3 → 0,
-`resolved`/`ambiguous`/every other row byte-identical to arm9's after-table — and the file-level
-check is already in: the probe over the three files now reads no row naming `GenericClass<int>` at
-all, and the `instantiates test -> GenericClass` row each file already carried is the only row that
-remains. The table lands here when the run completes.
+**The whole-corpus arm10 run, and it is a pure SUBTRACTION to the row** (`/tmp/dartgate/incoming-dart-arm10.log`,
+2026-10-11 11:16–12:43, the arm10 worktree at `ab900b82c` + this change, `incoming-gate.ts dart dart
+0` over the whole 33,738-file population, `EXIT=1`):
+
+```
+type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL
+calls         673025   311841    0        259567     118062     45042       0       0       0        5972     0       0         50603    0
+uses          1358343  314453    0        395227     203938     41531       0       0       0        556564   12      0         50554    0
+contains      700388   700388    97797    0          0          0           0       0       0        0        0       0         0        0
+imports       105308   81965     0        0          0          2854        20474   15      0        0        0       0         0        0
+references    73561    29380     0        44181      18002      0           0       0       0        0        0       0         0        0
+exports       2030     1887      0        0          0          89          50      4       0        0        0       0         0        0
+extends       38185    15395     0        13957      7982       8832        0       0       0        0        0       0         0        0
+implements    12404    4682      0        6980       3467       736         0       0       0        0        0       0         0        0
+overrides     316123   275068    0        9291       672        2771        1386    0       128      0        0       0         27479    0
+instantiates  155428   61018     0        52717      24425      41693       0       0       0        0        0       0         0        0
+---------------------------------------------------------------------------------------------
+TOTAL         3434795  1796077   97797    781920     376548     143548      21910   19      128      562536   12      0         128636   0
+```
+
+Against arm9's after-table, four cells move and they are all the same three rows: `uses` edges
+1,358,346 → 1,358,343, `uses` causeFAIL 3 → 0, TOTAL edges 3,434,798 → 3,434,795, TOTAL causeFAIL
+3 → 0. `resolved`, `collRes`, `amb(decl)`, `amb(kind)`, `unresolved`, `extOK`, `ext?`, `extFAIL`,
+`bindOK`, `bind?`, `bindFAIL` and `causeOK` are unchanged to the row in every one of the ten type
+rows — `causeOK` included, and that is the correction the subtraction makes to the prediction:
+the three rows were REFUTED, not stated, so the fix does not move a single stated cause. The
+gate's own list of refuted claims no longer contains the string `GenericClass` anywhere in a 3.4M
+edge log, and the verdict's cause clause is gone with it:
+
+```
+arm9  VERDICT: FAIL — … 128 external claim(s) REFUTED by the project, and 3 declared cause(s)
+      REFUTED — the stated base is not the edge's own owner, or the edge also claims to be outside
+      the population; 19 external claim(s) unverifiable
+
+arm10 VERDICT: FAIL — 781920 ambiguous + 143548 unresolved of 3434795 edges … and 128 external
+      claim(s) REFUTED by the project; 19 external claim(s) unverifiable
+```
+
+The verdict is still FAIL, and the remaining clause is NOT this fix's: the 128 `overrides` rows
+(`Object.length`, `Object.operator []`, …) are the standing population the after-table above already
+names, and the ambiguity/unresolved halves are the lane's roadmap. What the fix bought is that the
+`causeFAIL` column — the one column whose contract says it MUST be 0 — reads 0, and the bucket-3
+population is now stated causes only: **128,636 `causeOK`, 0 refuted**.
+
+The oracle re-run is chained behind this gate (`cause-claim-oracle-arm10.log`, same worktree), and
+its expectation is arithmetic rather than a hope: its claim population drops by the same three rows
+(581,957 → 581,954) and its `REFUTED` count does not move at all, because those rows were filed
+under class (d) — a base no name can check — and never were part of the 123.
 
 ### Bucket 3 gets its fourth property — an independent oracle, and what it says
 
