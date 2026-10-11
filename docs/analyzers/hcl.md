@@ -748,6 +748,39 @@ mechanism (unbound rows, or a later pass); >1 means duplicates exist and the ord
 foreign one, which scoping fixes. The instrument has the column (`any_file_answers`) and the pass is
 cheap; it is the next measurement, not this one.
 
+### Cause 13 — the DUPLICATE SPLIT: 2,079 of the 2,308 movable rows are the rename's case, and per type it is not one fix
+
+The deciding measurement, per row: for the rows a scoped qname would move, does the target spelling have
+EXACTLY ONE declaration in the project (the own-file one — pass 1 should have bound it, scoping changes
+nothing) or SEVERAL (pass 1's ordering `is_declaration, file_id, language, s.id` chose the foreign one —
+scoping removes the duplicate and the ambiguity with it)?
+
+Thirteen of sixteen repositories banked when written (the resumable pass was still running; artefact
+`validation/m14/fixtures/hcl/store-binding-truth.duplicate-split.json`), 1,575 indexer-eligible files:
+
+| type | movable rows | spelling **project-unique** | **DUPLICATES exist** |
+|---|---|---|---|
+| contains | 1,089 | **229** | **860** |
+| references | 606 | **0** | **606** |
+| exports | 589 | **0** | **589** |
+| uses / imports | 0 | 0 | 0 |
+| **total** | **2,308** | **229 (10%)** | **2,079 (90%)** |
+
+**ANSWER: 90% of the movable rows are the rename's case, and the split is not uniform per type** —
+which is exactly why it was asked for per type:
+* **`exports` 589/589 and `references` 606/606 are 100% duplicates**: every one of those rows is an
+  ambiguous match that scoping makes unique. For those two types the rename buys what it was priced at.
+* **`contains` is mixed — 229 unique / 860 duplicate (21/79)**: the 229 rows are the subset where an
+  exact own-file match was already project-unique, pass 1 should have bound it, and a rename changes
+  nothing; those rows come from the other mechanism (unbound rows, or a later pass). This is the subset
+  the Lead's branch-1 conclusion holds for, and it is 10% of the movable class rather than the class.
+So the rename is worth its pins for `exports` and `references` in full and for 79% of `contains`, while
+the fix for the remaining 229 `contains` rows is a different one — the resolver's own behaviour, not the
+identifier's spelling. Two fixes, not one, and the boundary between them is now a number.
+
+LIMITS: thirteen of sixteen repositories (three still indexing; resumable), and the counts are over that
+population rather than a fleet total.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
