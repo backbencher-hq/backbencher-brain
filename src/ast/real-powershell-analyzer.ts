@@ -2892,9 +2892,87 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of symbols) declaredFolded.add(s.name.toLowerCase())
     const declaredInFile = (name: string): boolean => declaredFolded.has(name.toLowerCase())
 
+    // ---------------------------------------------------- variable reads, cause D
+    //
+    // A VARIABLE READ TARGETS THE VARIABLE, NOT A BARE NAME THAT COLLIDES PROJECT-WIDE.
+    //
+    // `uses` is this lane's largest type and its largest ambiguous marker sets are ALL variable
+    // reads — the gate's own table (1,181-file population): `isArgumentReference+isVariableReference`
+    // amb 13,682, `isAssignmentRead+isVariableReference` amb 5,696,
+    // `isReceiverReference+isVariableReference` amb 1,977. They were emitted as
+    // `addRel(scope, name, Uses, …)` — the target is the BARE name (`index` for `$index`) — and
+    // production binds a bare name only when it has exactly ONE declaration in the whole project,
+    // which a name like `index`, `before` or `path` never has.
+    //
+    // THE RULE, and it is the shape this programme's yaml lane used for `needs:`: where this file
+    // declares the name as a VARIABLE that is VISIBLE AT THE READ, target that declaration's
+    // qualified name (`Get-Targets.index`), which the arbiter resolves by exact key. It reaches an
+    // EXISTING declaration or it does not fire:
+    //
+    //   PRICED BEFORE IT WAS APPLIED, whole population, both directions:
+    //     CEILING  17,483 of the 39,100 ambiguous `uses` edges — 45 % of the type's ambiguity —
+    //              retargetable to a declaration that exists in their own file, is VISIBLE at the
+    //              read, and is unique project-wide
+    //     CONTROL  324 have MORE THAN ONE visible declaration of that name → REFUSED (never pick)
+    //     CONTROL  4,991 whose qualified name is not unique project-wide → the rule still fires and
+    //              the edge stays AMBIGUOUS: the arbiter sees two declarations and binds neither, so
+    //              the failure direction is "no gain", never "wrong declaration"
+    //     and 1,422 have no own-file variable declaration at all → the rule cannot fire
+    //   (validation/m14/fixtures/powershell/variable-reference-pricing.ts, both arms)
+    //
+    // VISIBILITY IS THE WHOLE SAFETY CLAUSE. The first version of the price matched ANY declaration
+    // of the name in the file and would have retargeted a file-scope read of `$before` to a
+    // function-local `before` — a mis-bind. A declaration is visible to a read when its declaring
+    // scope ENCLOSES the read's own scope path (`scope === source` or `source` starts with
+    // `scope.`), which is the same prefix rule the rest of this file uses.
+    //
+    // PowerShell identifiers are CASE-INSENSITIVE (`$Foo` and `$foo` are one binding), so the match
+    // folds case; the target keeps the DECLARATION's own spelling. The source's spelling is not
+    // lost — it moves to `referencedName`, where the rest of this lane keeps it.
+    {
+      const variablesByName = new Map<string, { qn: string; scope: string; name: string }[]>()
+      const qnOccurrences = new Map<string, number>()
+      for (const s of symbols) {
+        const scope = String((s as any).scope ?? "")
+        const qn = scope.length > 0 ? `${scope}.${s.name}` : String(s.name)
+        qnOccurrences.set(qn, (qnOccurrences.get(qn) ?? 0) + 1)
+        if (s.kind !== ASTEngine.SymbolKind.Variable) continue
+        const key = String(s.name).toLowerCase()
+        const list = variablesByName.get(key) ?? []
+        list.push({ qn, scope, name: String(s.name) })
+        variablesByName.set(key, list)
+      }
+      for (const rel of relationships) {
+        if (rel.type !== ASTEngine.RelationshipType.Uses) continue
+        if ((rel.metadata as any)?.isVariableReference !== true) continue
+        const target = String(rel.target ?? "")
+        // A bare identifier only: a dotted or scoped target is already an identity, and `$env:PATH`
+        // is not a variable this file declares.
+        if (target.length === 0 || /[.:$[\]()]/.test(target)) continue
+        const source = String(rel.source ?? "")
+        const visible = (variablesByName.get(target.toLowerCase()) ?? []).filter(
+          (c) => c.scope.length === 0 || source === c.scope || source.startsWith(`${c.scope}.`),
+        )
+        if (visible.length !== 1) continue // zero: nothing to bind. two or more: REFUSE.
+        const hit = visible[0]
+        if ((qnOccurrences.get(hit.qn) ?? 0) !== 1) continue
+        rel.target = hit.qn
+        const md = (rel.metadata ?? (rel.metadata = {})) as Record<string, unknown>
+        md.referencedName = target
+        md.boundToVariable = true
+      }
+    }
+
     for (const rel of relationships) {
       const target = rel.target
       if (target == null || target.length === 0) continue
+      // A BOUND VARIABLE IS DECLARED HERE BY CONSTRUCTION — the retarget pass above fires only on a
+      // declaration THIS FILE carries, visible at the read, and unique. Stated because the pass below
+      // is keyed on BARE NAMES (`declaredInFile` folds `symbol.name`), so a qualified target would
+      // read as undeclared and collect `noDeclarationInFile` on an edge whose whole point is that the
+      // declaration exists. Found by `externality-psb16`'s bare-word NEGATIVE row, which pins the
+      // ABSENCE of that key and is exactly the row a blanket rule fails.
+      if ((rel.metadata as any)?.boundToVariable === true) continue
       const type = rel.type
       if (declaredInFile(target)) continue
       // The two keys PARTITION the "no declaration here" population rather than overlapping:
