@@ -8,7 +8,15 @@ Two causes have been closed or priced on this lane, and they are **different kin
 claim about a FILE, the other is a rule about a DECLARATION. Both were measured before anything was
 emitted, and the second is **not yet live**.
 
-## 1. The `imports` file claim — CLOSED (`f26b53674`)
+## 0. STATE OF THIS PAGE, 2026-10-11 after the landing
+
+**The INDEX_SPEC route is LIVE** (`06a33afdb`): `parallel-indexer.ts` builds a per-project `.proto`
+index and the gate can measure it (`--index`). **The file claim is no longer 304** — the widening
+(`4930d6afa`) took it to **993 of r-lane's measured 1,061 ceiling**. Both changes are recorded below in
+the order they happened, including the two attempts that failed and the measurement that refuted this
+lane's own earlier ceiling, because the sequence is the evidence.
+
+## 1. The `imports` file claim — CLOSED, THEN WIDENED (`f26b53674`, `4930d6afa`)
 
 An `import "path/to/other.proto"` target is a PATH, and the key space answers a path only when it
 happens to name a declared module, so the whole column read unresolved. The shared guard
@@ -19,15 +27,26 @@ happens to name a declared module, so the whole column read unresolved. The shar
 | before | 0 | 1,574 | 0 | 0 |
 | after | 0 | **1,270** | **304** | **0** |
 
-Whole population (847/847), `incoming-gate.ts protobuf proto 0`. Priced first on the same population —
-304 of 1,574 name a file the admitted list carries, cross-tab exact in both directions (0 would be
-refuted) — and the residue is a ruled class: the well-known imports (`google/protobuf/timestamp.proto`
-130, k8s.io `generated.proto` 74/73/73, `google/protobuf/any.proto` 67) that this corpus does not carry.
+Whole population (847/847), `incoming-gate.ts protobuf proto 0`. **THE FOLLOW-UP IS THE IMPORTANT PART:
+that 304 was NOT the ceiling.** r-lane's `probe-imports-split`, adopted and re-run (`3de81697e`), prices
+the claimable subset at **1,061 (67.4%)** with three arms — ROOT-RELATIVE, FILE-RELATIVE and **SUFFIX** —
+because a protobuf import path is written relative to an IMPORT ROOT that may be any directory above the
+file. The widening (`4930d6afa`) walks the file's ancestor directories as import roots:
+
+| | imports unresolved | extOK | extFAIL |
+|---|---|---|---|
+| after the first pass (`f26b53674`) | 1,270 | 304 | 0 |
+| **after the widening (`4930d6afa`)** | **581** | **993** | **0** |
+
+**993 of 1,061**; the 68 shortfall is the part of SUFFIX that matches an admitted file not under any
+ancestor of the importing file, which a per-file analyzer cannot reach without a project file list. The
+residue is a ruled class: the well-known imports (`google/protobuf/timestamp.proto` 130, k8s.io
+`generated.proto` 74/73/73, `google/protobuf/any.proto` 67) that this corpus does not carry.
 
 `exports` is deliberately NOT claimed: public re-exports carry the same path spelling, but that column
 was never priced, and an unmeasured claim is what this lane refuses to write.
 
-## 2. The `INDEX_SPEC` route — PRICED AND REACHING, **NOT YET LIVE** (`a4ccd91b0`)
+## 2. The `INDEX_SPEC` route — PRICED, REACHING, and **LIVE since `06a33afdb`**
 
 ### The defect, and why the rule must not be softened
 
@@ -86,19 +105,23 @@ Re-read rather than assumed: the existence check lives inside the same guard tha
 mismatch (`if (!importDirs.has(dir)) { … if (projectNames?.has(candidate)) return candidate; continue }`),
 not in a wrapper around it, and it returns the candidate only when the project publishes it.
 
-### WHAT IS STILL MISSING — stated because the change is INERT without it
+### THE LANDING (`06a33afdb`) — and the gate row that proves it
 
-1. **`src/ast/parallel-indexer.ts`** (shared file, awaiting the Lead's slot): three additions at
-   `PROJECT_INDEX_EXTENSIONS` — the `.proto` entry, `wasmByLang.protobuf` (the wasm already ships), and
-   `specByLang.protobuf = PROTOBUF_DECLARATION_SPEC` imported from this analyzer.
-2. **`script/m14/incoming-gate.ts`** needs two lines to be able to measure this lane's row with an
-   index: `INDEX_SPECS` carries `dart` alone and `projectIndexesFor` selects
-   `lang === "dart" ? DART : SOLIDITY`. **Without it the lane's own gate row cannot show the change at
-   all** — the falsifier above is a probe, not the gate, and that distinction is the point.
+The three additions to `parallel-indexer.ts` and the two lines in `incoming-gate.ts` are in. The gate now
+builds **21 repo indexes over 847 files** and passes them as `{ projectIndex }` exactly as production
+does, and its row over the whole admitted population moves exactly as the probe predicted:
 
-Until both land, `PROTOBUF_DECLARATION_SPEC` is **exported, priced and reaching in a probe, and cited by
-nothing in production**. If the existence check turns out not to reach the 38 once the index is wired
-end to end, say so and leave it open: a gap that stays visible beats a type emitted to close a row.
+```
+                      uses resolved   uses unresolved   unresolved total
+  without --index          11,446            971              2,245
+  WITH    --index          11,484            933              2,207     <- +38 / -38
+```
+Cost: **≈15–25 s per corpus, once per project run before workers dispatch** — never per file or per edge.
+A non-protobuf lane's row is unchanged by the gate edit (`toml` 13 / 318 / 0, identical TOTAL).
+
+**Still open, and not hidden:** the 68-edge shortfall to r-lane's SUFFIX ceiling, the six `uses` classes
+of `probe-uses-split` (9,761 same-file-one · 92 same-file-multi · 2,658 cross-file-only · 971
+no-candidate), and every number in this page that a store run has not confirmed.
 
 ## 3. Instruments
 
