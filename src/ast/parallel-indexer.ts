@@ -17,6 +17,10 @@ import {
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
 import { isIndexArtifactName, isIndexArtifactNameStrict } from "./analysis-exclusions"
+// JSD44: the universal symbol-name denylist, shared with pool-worker's `keepSymbol`
+// rather than copied. The copy that used to live at SYMBOL_NAME_DENYLIST kept seven
+// names keepSymbol had already measured as legitimate declarations.
+import { isDenylistedSymbolName } from "./symbol-name-rules"
 import { isTestFileCandidate } from "./test-classification"
 import { createStoreDiagnostics } from "./store-diagnostics"
 // M50.A2 (#764): dense-vector read accelerator (JSON stays the source of truth).
@@ -30,6 +34,7 @@ import { detectLanguageFromPath } from "./language-detection"
 import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
 import { resolveImportTargets } from "./import-resolution"
+import { resolveImportBoundTargets } from "./binding-resolution"
 import { retargetCrossFileOverrides } from "./override-retarget"
 import { ASTEngine } from "./engine"
 
@@ -3069,11 +3074,40 @@ export async function storeResults(
          // members named `None`) and only the regex fallback path can pick
          // them up as noise (const None = ...), so they are gated on fallback.
          const JS_FAMILY = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
-         const SYMBOL_NAME_DENYLIST = new Set([
-           "this", "super", "self", "Self", "me", "My",
-           "root", "program", "source_file", "module_declaration",
-           "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
-         ])
+         // JSD44: the SEVEN names that used to be spelled out here — self, Self,
+         // me, My, root, program, source_file — are gone, and they were a defect
+         // with six lanes' measurements behind the removal.
+         //
+         // This set is a SECOND admission decision on the store path: pool-worker's
+         // `keepSymbol` filters the analyzer's symbols FIRST, and this replica
+         // filtered them again. The two were the same list once; then keepSymbol was
+         // measured and corrected — R 12 symbols deleted across 9 files, graphql 1
+         // of 8,796 (Query.me), sql 3 of 18,325, lua 236 declarations (677 edges
+         // left pointing at nothing), hcl H10, solidity's store-vs-analyzer
+         // divergence — and every one of those names was REMOVED there and kept
+         // here. `export function self(fn)` at packages/svelte/src/internal/client/
+         // dom/legacy/event-modifiers.js:27 is published by the analyzer, passes
+         // keepSymbol, and appeared in NO symbol row project-wide: re-admitted one
+         // layer up and dropped here, on the production path, where nothing
+         // reported it. A consumer importing `self` could therefore never resolve.
+         //
+         // Fixing it by editing the copy again would re-create the trap, so the
+         // shared half is now READ from pool-worker's
+         // SYMBOL_NAME_UNIVERSAL_DENYLIST and a name can only leave it with a
+         // measurement attached. The extras below stay local because they are
+         // genuinely LOCAL to this path: the fallback regex extractor (not an
+         // analyzer) is what mints the literal words below, and the JS-family branch
+         // carries `Global`/`Window` on top of keepSymbol's own JS globals because
+         // the FALLBACK path never had keepSymbol applied to it. Neither group has a
+         // measured counterexample exported the way the seven did.
+         // Only the EXTRAS live here now; the universal and per-language halves are
+         // read from the shared module (see `isDenylistedSymbolName`). The language
+         // is captured HERE, beside the set, because this is the scope BOTH use
+         // sites (the storeable replica and the symbol loop) resolve the set in —
+         // the narrower `fileLang` above does not reach the symbol loop, which has
+         // its own later declaration of that name.
+         const SYMBOL_NAME_DENYLIST = new Set<string>()
+         const denylistLang = (result.language || "").toLowerCase()
          const isFallbackResult = !!result.fallback
          if (isFallbackResult) {
            SYMBOL_NAME_DENYLIST.add("true")
@@ -3193,7 +3227,8 @@ export async function storeResults(
          // owner_symbol_id, so a phantom value was already invisible — omitting
          // it removes the lie without changing any read path.
          const storeableName = (nm: string | undefined, startLine: number): boolean => {
-           if (!nm || SYMBOL_NAME_DENYLIST.has(nm) || nm.length > 500) return false
+           if (!nm || nm.length > 500) return false
+           if (isDenylistedSymbolName(nm, denylistLang) || SYMBOL_NAME_DENYLIST.has(nm)) return false
            if (startLine < 1) return false
            return !(isFallbackResult
              ? isIndexArtifactNameStrict(nm)
@@ -3309,7 +3344,7 @@ export async function storeResults(
              const symbolKind = symbol.type || symbol.kind || "unknown"
              const symbolName = symbol.name || ""
              // Denylist: filter language keywords and scope artifacts regardless of kind
-             if (SYMBOL_NAME_DENYLIST.has(symbolName)) continue
+             if (isDenylistedSymbolName(symbolName, denylistLang) || SYMBOL_NAME_DENYLIST.has(symbolName)) continue
              // Skip symbols with empty or extremely long names
              if (!symbolName || symbolName.length > 500) continue
              // Skip symbols with invalid start lines
@@ -3815,7 +3850,30 @@ export async function storeResults(
                (typeof imp.range?.startLine === "number" && imp.range.startLine > 0 ? imp.range.startLine : 0) ||
                (typeof (imp.range as any)?.start?.line === "number" && (imp.range as any).start.line > 0 ? (imp.range as any).start.line : 0) ||
                (typeof imp.line === "number" && imp.line > 0 ? imp.line : 0)
-             const importId = `${fileId}:import:${moduleName}:${impLine}`
+             // M14 JS lane (2026-10-10) — THE ROW ID MUST NAME THE IMPORTED NAME, not just
+             // the module and the line.
+             //
+             // `import { get, tick, untrack } from './runtime.js'` produces ONE record per
+             // member (the worker maps `items` and carries a per-item `localName`), but the
+             // id was `${fileId}:import:${module}:${line}` — IDENTICAL for all three, so
+             // `INSERT OR REPLACE` kept only the LAST and the other two bindings were
+             // silently dropped. Measured on the closed `packages/svelte/src` population
+             // (368 files), read back from `brain_import`: `reactivity/create-subscriber.js`
+             // imports `{ get, tick, untrack }`, `{ effect_tracking, render_effect }` and
+             // `{ source, increment }` and stored exactly `untrack`, `render_effect`,
+             // `increment` — the last member of every clause, and nothing else.
+             //
+             // The cost is downstream and large: a binding the store never recorded is a
+             // binding no resolver can use, so `get`, `source` and `tick` rows kept the name
+             // pass's answer (measured: `source` landed on `compiler/preprocess/index.js`,
+             // `get` on `compiler/phases/scope.js`) with no evidence left to correct them
+             // against. The identifier is not a documented contract — nothing in `src/`
+             // parses it — and `deleteFileImports` clears the file's rows before a reindex,
+             // so only uniqueness WITHIN a file is required. The binding is the right
+             // discriminator; a lane that publishes neither `alias`, `localName` nor `name`
+             // keeps its historical id exactly.
+             const importKey = imp.alias ?? imp.localName ?? imp.name ?? ""
+             const importId = `${fileId}:import:${moduleName}:${impLine}${importKey ? `:${importKey}` : ""}`
              stmt.insertImport.run(
                importId,
                projectId,
@@ -4144,7 +4202,32 @@ export async function storeResults(
               // Line-less edges keep the previous identity exactly, so languages
               // whose analyzer emits no line are unchanged (their per-site rows
               // are unprovable until #825 lands — never fabricated here).
-              const relId = `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? "?"}`
+              // M14/JS file-level wave — the FILE is part of a row's identity.
+              //
+              // The id carried `sourceId`, which is NULL for every relationship whose
+              // source did not resolve to a symbol. NULL names no file, so two
+              // DIFFERENT files emitting the same (target, type, line) built the SAME
+              // id and `INSERT OR IGNORE` silently dropped the second file's row —
+              // measured on the pinned JS draw: 12 `*.bench.js` files importing
+              // `node:assert:assert` at line 1 collapsed to ONE stored row, and the
+              // same collapse cost 37 `#compiler/builders:*` @4 rows, 18 @3, 16
+              // `../../../errors.js:*` @3. Both sides of this are the same defect:
+              // at 1,128 stored `imports` rows the groups above still showed c>1, at
+              // 905 (after the JS lane's file-level source change moved more rows
+              // into the unresolved bucket) NO group did — the duplicates had turned
+              // into losses.
+              //
+              // `relativePath` is the missing component and it is the right one: it is
+              // stable across reindexes, it is already the spelling a file-level row
+              // carries in `source_external` (M60/#910), and it is scoped to exactly
+              // the rows whose identity had no file in it. Rows whose source DID
+              // resolve keep their id byte for byte, so this cannot re-key a resolvable
+              // edge — it can only stop discarding rows that name a real, distinct file.
+              //
+              // Within a single file the previous semantics are preserved exactly: two
+              // edges of the same type to the same target on the same line still share
+              // an id, because they are still one row identity.
+              const relId = `${projectId}:rel:${sourceId ?? `file:${relativePath}`}:${targetName}:${relType}:${relLine ?? "?"}`
 
  
              stmt.insertRelationship.run(
@@ -4835,6 +4918,31 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
     `)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_src`)
     rawDb.run(`DROP TABLE IF EXISTS temp._i13_pick`)
+
+    // ── RESOLUTION BY THE IMPORT GRAPH (M14 JS lane, 2026-10-10) ──
+    //
+    // The passes above match a bare name against the symbol table; none of them reads the
+    // row's OWN IMPORT STATEMENT, which is the one piece of evidence that makes a bare
+    // leaf exact. The name pass in particular always produces an answer (ranked
+    // same-file, then same-language, then lowest id), so a same-named symbol in the WRONG
+    // file is indistinguishable from the right one by looking at the result.
+    //
+    // This is also the first point at which the correction can be correct: it needs the
+    // complete symbol table (which only exists here) AND the name passes' answers (which
+    // exist only after they ran). It sits BEFORE the cross-language normalization below on
+    // purpose — that pass is upgrade-only and reads the final target to fill its bridge,
+    // so a correction made after it would store cross_lang=0 and no bridge, the exact
+    // invisibility it exists to prevent. See `src/ast/binding-resolution.ts` for the gates
+    // and the populations it refuses.
+    {
+      const bound = resolveImportBoundTargets(rawDb as any, projectId)
+      if (bound.attached > 0 || bound.corrected > 0 || bound.detached > 0) {
+        log.debug("import-bound target resolution", {
+          scanned: bound.scanned, attached: bound.attached,
+          corrected: bound.corrected, detached: bound.detached,
+        })
+      }
+    }
 
     // Cross-language normalization (polyglot fixture finding, M26 addendum):
     // this pass is the one that resolves forward references in the default

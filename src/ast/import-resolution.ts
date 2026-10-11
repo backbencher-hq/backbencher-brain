@@ -41,7 +41,19 @@ export interface ImportTargetRow {
   id: string
   /** `<module>:<item>` as the analyzer wrote it. */
   target_external: string
-  /** The analyzer's source name (a module basename for import edges). */
+  /**
+   * The importing file, when the lane spells it as a PATH.
+   *
+   * The doc here used to read "a module basename for import edges", and the
+   * planner's ambiguity refusal was built on it — see the measurement in
+   * `planImportResolutions`. Every lane that stamps `metadata.fileLevel`
+   * (c, cpp, graphql, kotlin, nim, objc, php, scala, swift, zig, and
+   * javascript since the file-level wave) has the store rewrite
+   * `source_external` to the project-relative path, so for those lanes the
+   * importing file IS in the row and a specifier can be resolved from its
+   * directory. Lanes that still spell a basename are unchanged: the planner
+   * falls through to the basename-keyed strategies exactly as before.
+   */
   source_external: string | null
   /**
    * The name the MODULE DECLARES, when the analyzer recorded it (M60 / JD2b:
@@ -57,6 +69,15 @@ export interface ImportResolutionIndex {
   pathTargets: Map<string, Set<string>>
   /** file id -> relative_path */
   filePath: Map<string, string>
+  /**
+   * relative_path -> file id, the inverse of `filePath`.
+   *
+   * Exists for the importer-relative half of the planner: a row whose
+   * `source_external` is a path can be resolved from THAT file's directory —
+   * an exact answer — instead of the project-wide tail match, whose own
+   * comment records it as the approximation it is.
+   */
+  fileIdByPath: Map<string, string>
   /**
    * file id -> the names the file EXPORTS.
    *
@@ -94,7 +115,7 @@ export interface ImportResolution {
   symbolId: string
   fileId: string
   /** Why it resolved — recorded so a reader can audit the decision, not just trust it. */
-  via: "unique-file+unique-symbol" | "unique-file+qualified-leaf" | "default-export-of-target"
+  via: "unique-file+unique-symbol" | "unique-file+qualified-leaf" | "default-export-of-target" | "importer-relative-unique-file"
 }
 
 const PROBE_SUFFIXES = [
@@ -182,6 +203,9 @@ export function buildImportResolutionIndex(
   const pathTargets = new Map<string, Set<string>>()
   const byRel = new Map<string, string>()
   for (const [id, p] of filePath) byRel.set(p, id)
+  // The inverse map, published on the index so the planner can resolve a
+  // specifier against the importing file's own directory (see its note).
+  const fileIdByPath = new Map(byRel)
 
   for (const imp of imports) {
     const importer = filePath.get(imp.fileId)
@@ -206,7 +230,7 @@ export function buildImportResolutionIndex(
     if (e.isDefault && e.symbolId) defaultExportByFile.set(e.fileId, e.symbolId)
   }
 
-  return { pathTargets, filePath, symbolsByFile, fileByTail, exportsByFile, defaultExportByFile }
+  return { pathTargets, filePath, fileIdByPath, symbolsByFile, fileByTail, exportsByFile, defaultExportByFile }
 }
 
 /**
@@ -248,6 +272,34 @@ function candidatePaths(base: string): string[] {
 }
 
 /** Split `path:item` on the LAST colon — a specifier may itself contain one. */
+/**
+ * The file ids a specifier names when read from the importing file's own
+ * directory, or `null` when that question cannot be asked of this row.
+ *
+ * `null` means "fall through to the basename-keyed strategies": the row carries
+ * no importer, or its `source_external` is not a path this project contains (a
+ * basename-spelling lane), or the specifier is not path-shaped (a package). An
+ * EMPTY set means the specifier is path-shaped and names nothing here, which is
+ * also a fall-through — `brain_import` may hold a spelling this probe cannot
+ * reconstruct (an extensionless directory import, an alias), and the caller's
+ * other strategies know about those.
+ */
+function importerRelativeFileIds(
+  index: ImportResolutionIndex,
+  importerPath: string | null,
+  specifier: string,
+): Set<string> | null {
+  if (!importerPath || !index.fileIdByPath.has(importerPath)) return null
+  const base = resolveSpecifierPath(importerPath, specifier)
+  if (base === null) return null
+  const hits = new Set<string>()
+  for (const cand of candidatePaths(base)) {
+    const hit = index.fileIdByPath.get(cand)
+    if (hit) hits.add(hit)
+  }
+  return hits
+}
+
 export function splitImportTarget(targetExternal: string): { path: string; item: string } | null {
   const i = targetExternal.lastIndexOf(":")
   if (i <= 0 || i === targetExternal.length - 1) return null
@@ -275,8 +327,32 @@ export function planImportResolutions(
     // honest answer; resolving it would invent a node.
     if (item === "*" || declaredKind === "namespace") continue
 
-    let fileIds = index.pathTargets.get(path)
+    // ── IMPORTER-RELATIVE, FIRST ────────────────────────────────────────
+    //
+    // When the row names the importing file as a PATH, the specifier can be
+    // resolved from that file's own directory. MEASURED on the pinned JS draw
+    // (250 files, post file-level wave) before this branch existed: 926 of
+    // 1,202 `imports` rows were detached, and of the 693 that named a RELATIVE
+    // internal module, 234 named a module that is in the sample and declares
+    // the item — a should-bind population declined by two gates below, the
+    // ambiguity refusal being one of them (`ambiguity-multiple-files`, whose
+    // own comment says the tie cannot be broken "because the row carries no
+    // importing file"). That premise is what the path spelling removed.
+    //
+    // It is also strictly better than the alternatives it precedes: the
+    // brain_import-derived `pathTargets` map is keyed by the specifier STRING, so
+    // one `./utils.js` spelled by three importers yields a 3-element set and the
+    // row is refused, even though each importer's meaning is unambiguous.
+    const importerRelative = importerRelativeFileIds(index, row.source_external, path)
     let via: ImportResolution["via"] = "unique-file+unique-symbol"
+    let fileIds: Set<string> | undefined
+    if (importerRelative && importerRelative.size > 1) continue
+    if (importerRelative && importerRelative.size === 1) {
+      fileIds = importerRelative
+      via = "importer-relative-unique-file"
+    } else {
+      fileIds = index.pathTargets.get(path)
+    }
 
     if (!fileIds || fileIds.size === 0) {
       // No brain_import row for this specifier (a lane that does not persist
@@ -290,13 +366,15 @@ export function planImportResolutions(
     }
 
     if (fileIds.size > 1) {
-      // AMBIGUOUS, and unresolvable from this row. The relationship carries no
-      // importing file — `relId` is `${projectId}:rel:${sourceId}:...` and an
-      // import edge's source symbol does not exist, so the file is simply not
-      // in the row. `source_external` is the importing file's module BASENAME,
-      // which says nothing about which of the candidate TARGET files the
-      // specifier meant, so it cannot break the tie. (A first cut of this
-      // function tried to, and compared the importer's name against the
+      // AMBIGUOUS FOR THIS STRATEGY, and still refused here. The importer-first
+      // branch above already broke every tie it can (and this branch is reached
+      // exactly when it could not, i.e. when the row carries no importer path
+      // or the specifier resolves to several files from that directory). What
+      // remains true — and the reason a fallback cannot fix it — is that a
+      // strategy matching the specifier string PROJECT-WIDE has no importer to
+      // break the tie with; `source_external` for a basename-spelling lane says
+      // nothing about which of the candidate TARGET files was meant. (A first
+      // cut of this function compared the importer's name against the
       // candidates' names — incoherent, and the unit test caught it: it can
       // never narrow to exactly one. Removed rather than kept as plausible-
       // looking code.)
@@ -411,11 +489,27 @@ export function resolveImportTargets(db: MinimalDb, projectId: string): ImportRe
     }
 
     // The export surface, keyed by FILE. An `exports` edge carries no file on
-    // its source side either (its source symbol is the module, which is not a
-    // symbol), so the file is recovered from `source_external` — the module
-    // basename — and only when that basename is UNIQUE in the project. An
-    // ambiguous basename contributes no export surface, so its files resolve
-    // nothing: the same refuse-don't-guess rule the item gate applies.
+    // its source side (its source symbol is the module, which is not a symbol),
+    // so the file is recovered from `source_external` and the row's own target
+    // symbol. TWO spellings occur, and this is the whole of the recovery:
+    //
+    //   PATH       the file-level lanes write the project-relative path (the
+    //              store rewrites it from metadata.fileLevel), so the check is
+    //              exact: the spelling must equal the exported symbol's own
+    //              file's path. NOTHING ELSE CAN MATCH IT, which is why this is
+    //              tried first.
+    //   BASENAME   the older spelling, kept for every lane that still writes
+    //              one: the basename is accepted only when it is UNIQUE in the
+    //              project AND names the same file the symbol lives in.
+    //
+    // The path branch is not a nicety. Before it, a path-spelling lane's export
+    // rows matched no basename key, so EVERY file in the lane had an EMPTY
+    // export surface, and the gate below — "a target must be in the importing
+    // module's export surface before it may be joined" — then declined every
+    // import into the lane, correctly by its own rule and for a reason that had
+    // nothing to do with the edges. MEASURED on the pinned JS draw: 234 detached
+    // `imports` rows name an internal module whose declaration is in the sample,
+    // and this was the gate that declined them.
     const exportRows = db.prepare(
       `SELECT source_external AS src, target_external AS tgt, target_symbol_id AS sym, metadata
          FROM brain_relationship
@@ -431,14 +525,20 @@ export function resolveImportTargets(db: MinimalDb, projectId: string): ImportRe
     }
     const symFile = new Map<string, string>()
     for (const sy of symbols) symFile.set(sy.symbolId, sy.fileId)
+    const relPathOfFile = new Map<string, string>()
+    for (const f of files) relPathOfFile.set(String(f.fileId), String(f.relativePath))
     exports = []
     for (const er of exportRows) {
       if (!er.sym) continue
       const fileId = symFile.get(er.sym)
       if (!fileId) continue
-      const stem = er.src ?? ""
-      const cands = byBase.get(stem) ?? []
-      if (cands.length === 1 && cands[0] === fileId) {
+      const spelling = er.src ?? ""
+      // Exact for a path spelling; basename-uniqueness for the older one.
+      if (relPathOfFile.get(fileId) !== spelling) {
+        const cands = byBase.get(spelling) ?? []
+        if (cands.length !== 1 || cands[0] !== fileId) continue
+      }
+      {
         let isDefault = false
         if (er.metadata) {
           try { isDefault = JSON.parse(er.metadata)?.isDefault === true } catch { /* unparsed: not a default */ }
@@ -486,6 +586,20 @@ export function resolveImportTargets(db: MinimalDb, projectId: string): ImportRe
     const item = t.slice(i + 1)
     if (item === "*") { bump("namespace-star-no-single-target"); continue }
     const spec = t.slice(0, i)
+    // The classification must know about the importer-relative branch, or it
+    // reports the WRONG reason for every row that branch could have resolved:
+    // `pathTargets` is keyed by the specifier STRING, so it says "ambiguous"
+    // about rows whose file WAS identified from their own importer and whose
+    // refusal was really about the item or the export surface. A diagnostic that
+    // names the wrong gate sends the next reader to the wrong code.
+    const relHits = importerRelativeFileIds(index, r.source_external, spec)
+    if (relHits && relHits.size > 1) { bump("importer-relative-multiple-files"); continue }
+    if (relHits && relHits.size === 0) { bump("specifier-not-internal"); continue }
+    if (relHits && relHits.size === 1) {
+      const ex = index.exportsByFile.get([...relHits][0])
+      bump(!ex ? "no-export-surface-recorded" : (ex.has(item) ? "no-such-symbol-in-target-file" : "item-not-exported-by-target"))
+      continue
+    }
     const tg = index.pathTargets.get(spec)
     if (!tg || tg.size === 0) { bump("specifier-not-internal"); continue }
     if (tg.size > 1) { bump("ambiguous-multiple-files"); continue }

@@ -4705,12 +4705,40 @@ export function deriveJavaScriptImportEdges(root: any): { label: string; from: s
         }
       }
     } else if (t === "export_statement") {
-      // A re-export declares a module EDGE, not a local name, so the whole
-      // module is the target whatever the clause says — `export { e } from`,
-      // `export * from` and `export * as ns from` all reduce to `path:*`.
       const src = n.childForFieldName("source")
       const modPath = modulePath(src)
-      if (modPath) push(`${modPath}:*`)
+      if (modPath) {
+        // M60/JSD40 (re-export half; co-moved with the analyzer): a NAMED clause
+        // writes the members it re-exports, so the target is `path:<member>` —
+        // the spelling the analyzer already gives `import { a } from`. The two
+        // forms that write NO member name keep `path:*`: `export * from "m"`
+        // (no clause at all) and `export * as ns from "m"` (a namespace
+        // binding). `name` is the member in the SOURCE module; `alias` is the
+        // name this module exports it under, which is a fact about the `exports`
+        // side, not the import edge. An empty clause (`export {} from "m"`) also
+        // falls back to `path:*`, matching the analyzer's branch.
+        const clause = (() => {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "export_clause") return c
+          }
+          return null
+        })()
+        const members: string[] = []
+        if (clause) {
+          for (let i = 0; i < clause.namedChildCount; i++) {
+            const spec = clause.namedChild(i)
+            if (!spec || spec.type !== "export_specifier") continue
+            const nm = spec.childForFieldName("name") ?? spec.namedChild(0)
+            if (!nm) continue
+            // `export { "a-b" as c } from "m"` (ES2022): the name is a STRING.
+            const text = nm.type === "string" ? modulePath(nm) : String(nm.text ?? "")
+            if (text) members.push(text)
+          }
+        }
+        if (members.length) for (const m of members) push(`${modPath}:${m}`)
+        else push(`${modPath}:*`)
+      }
     } else if (t === "call_expression") {
       const fn = n.childForFieldName("function")
       const args = n.childForFieldName("arguments")
@@ -4975,12 +5003,41 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
     "toString", "valueOf", "hasOwnProperty", "isPrototypeOf",
     "propertyIsEnumerable", "toLocaleString", "__defineGetter__", "__defineSetter__",
   ])
-  const hasBraceEquals = (text: string): boolean => {
-    for (let i = 0; i < text.length; i++) {
-      const ch = text[i]
-      if (ch === "{" || ch === "}" || ch === ";" || ch === "=") return true
+  // MIRROR of `isNameShapedCallTarget` in real-javascript-analyzer.ts. The JS family
+  // contract is that this truth is the analyzer's rule restated, not a second opinion
+  // about it, so the two must be edited together: tightening one side alone turns
+  // every affected row into a MISSING row against a recorded baseline of 0.
+  //
+  // The guard this replaces tested TOKEN MEMBERSHIP (length, newline, backtick, `${`,
+  // hasBraceEquals) and every name-adjacent callee slipped past it, so the truth
+  // derived the analyzer's SOURCE-TEXT targets (`(0, ral_1.default)`, `(fn)`,
+  // `"use strict"`, `[]`) and agreed with it about garbage. Measured before the fix
+  // by `script/m14/js-ontology/js-callee-shape-census.ts`: 31 svelte rows and 550 ts
+  // rows were source text in the `target` field. `#x` is ADMITTED — it names a
+  // private method, which this lane publishes as a symbol.
+  const isIdentifierStartCode = (c: number): boolean => {
+    if (c === 0x24 || c === 0x5f) return true
+    if (c >= 0x41 && c <= 0x5a) return true
+    if (c >= 0x61 && c <= 0x7a) return true
+    return c > 0x7f
+  }
+  const isIdentifierContinueCode = (c: number): boolean => {
+    if (isIdentifierStartCode(c)) return true
+    if (c >= 0x30 && c <= 0x39) return true
+    return c === 0x200c || c === 0x200d
+  }
+  const isNameShapedCallTarget = (target: string): boolean => {
+    if (!target) return false
+    let i = 0
+    if (target.charCodeAt(0) === 0x23) {
+      i = 1
+      if (i >= target.length) return false
     }
-    return false
+    if (!isIdentifierStartCode(target.charCodeAt(i))) return false
+    for (i = i + 1; i < target.length; i++) {
+      if (!isIdentifierContinueCode(target.charCodeAt(i))) return false
+    }
+    return true
   }
   const stripWhitespace = (s: string): string => {
     let out = ""
@@ -5421,11 +5478,7 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
         }
         if (
           fn.type !== "subscript_expression" &&
-          targetName.length <= 100 &&
-          !targetName.includes("\n") &&
-          !targetName.includes("`") &&
-          !targetName.includes("${") &&
-          !hasBraceEquals(targetName) &&
+          isNameShapedCallTarget(targetName) &&
           !isBuiltinCall(targetName, fullCallee)
         ) push("calls", targetName)
       }
@@ -23252,7 +23305,7 @@ async function main() {
           // references, imports, instantiates, exports, contains); the local side adds
           // typescript to the references and uses sets and dart to imports/exports.
           // Neither list is a subset of the other, so both contributions are kept.
-          ...(lang === "zig" ? ["calls", "uses", "references", "imports", "instantiates", "exports", "contains"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "typescript" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" || lang === "typescript" ? ["uses"] : []), ...(lang === "dart" ? ["imports", "exports"] : []),
+          ...(lang === "zig" ? ["calls", "uses", "references", "imports", "instantiates", "exports", "contains"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "typescript" ? ["references"] : []),          ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" || lang === "typescript" ? ["uses"] : []), ...(lang === "dart" ? ["imports", "exports"] : []),
           // M60 label-coverage sweep, DERIVATION question 3 (typescript): the two
           // labels this lane emitted and never compared. Admitting the labels and
           // registering the oracle are two halves of one change — truth with no

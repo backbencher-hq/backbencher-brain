@@ -11,6 +11,7 @@ import type { ASTEngine } from "./engine"
 // silently becoming `any` here and `ProjectIndex` at the use site.
 import type { ProjectIndex } from "./project-index"
 import { detectLanguageFromPath } from "./language-detection"
+import { isDenylistedSymbolName } from "./symbol-name-rules"
 
 const require = createRequire(import.meta.url)
 
@@ -542,44 +543,16 @@ export function keepSymbol(s: any, lang: string): boolean {
   // for, and each is a word that is a keyword or a tree-sitter internal in the
   // languages that would parse it: they are not claims, they are the residue after
   // the measured removals.
-  const UNIVERSAL = new Set([
-    // Reserved in essentially every language parsed here. Kept unconditionally
-    // because no lane produced a legitimate declaration of any of them.
-    "this",
-    "super",
-    // Synthetic artifact names the analyzers themselves mint. These are OURS, not
-    // the language's, so no user program can declare them.
-    "SCSS_FILE_SCOPE",
-    "GlobalScope",
-    "module_declaration",
-    "package_manifest",
-    // REMOVED, each with a lane and a count — see the comment above:
-    //   self, Self   deleted R/Python/Zig `self`; lua declares `local this`
-    //   me, My       legitimate in every language (graphql `me`, lua `me`)
-    //   destructor    a real method name in C++/Rust/Go
-    //   root          lua `local root` at lazy.nvim/lua/lazy/core/loader.lua:497
-    //   program       a legal SQL column name
-    //   source_file   an ordinary R function
-    //   unknown       hcl files declare a variable literally named `unknown`
-    //
-    // `unknown` is the one that cannot simply be deleted: R7 counts it as a
-    // PLACEHOLDER, and 46 registered placeholder sites depend on that. It now moves
-    // to RESERVED below rather than being dropped, so a placeholder is still refused
-    // while a declared `unknown` survives.
-  ])
-  if (UNIVERSAL.has(name)) return false
-
-  // Reserved words, consulted ONLY for a language that reserves them. Measured
-  // evidence that a universal application of this set is wrong: `root` is declared
-  // as a local in lua, `unknown` as a variable in hcl, `self` in python/zig/rust.
-  const RESERVED: Record<string, ReadonlySet<string>> = {
-    // `self` is reserved in PHP and Python 2-style declarations but a LEGAL variable
-    // in Lua, Python 3, Rust and Zig, all of which are parsed here.
-    php: new Set(["self", "parent"]),
-    // `program` is reserved in Haskell/Elm-ish contexts; it is a SQL column name.
-    sql: new Set(["program"]),
-  }
-  if (RESERVED[lang]?.has(name)) return false
+  //
+  // IMPORTED, not declared here: the store path (parallel-indexer.ts) filters the
+  // same names a second time and used to keep its own copy, which is how the seven
+  // names listed as removed in the comment above stayed dead for the store long
+  // after this filter stopped dropping them. See src/ast/symbol-name-rules.ts for
+  // that register, the measurements on it, and the per-language reserved set that
+  // this call used to spell out locally — measured evidence for scoping it: `root`
+  // is declared as a local in lua, `unknown` as a variable in hcl, `self` in
+  // python/zig/rust.
+  if (isDenylistedSymbolName(name, lang)) return false
   return true
 }
 
@@ -636,6 +609,79 @@ export function nameTheSymbolRule(s: any, lang: string): string {
  */
 const JS_FAMILY_LANGUAGES = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
 const CSS_FAMILY_LANGUAGES = new Set(["css", "scss", "less"])
+
+/**
+ * THE COLLISION RULE: a `NOISE_TARGETS` name the ANALYZER recorded as a read it derived
+ * from source structure is a READ the source wrote, not a leak — so it survives. The
+ * name list could not make this distinction, and the measurement says the class is not a
+ * leak population at all.
+ *
+ * MEASURED (JS lane §1, `script/m14/tmp/js-jsd1-collision-class.ts`, analyzer output
+ * over the first 600 svelte `.js` files, rows whose leaf is a scoped accessor name and
+ * is neither declared nor bound in its own file): **465 rows, 451 of them (97.0%) carry
+ * `metadata.isFieldAccess === true`** — the analyzer's record that the row came from a
+ * member position. Every `lastChild` (6), `firstChild` (4) and `nextSibling` (2) row is
+ * a member read: those are DOM properties (`el.firstChild`) as well as tree-sitter
+ * accessors, which is why the rule reads the analyzer's marker rather than blessing a
+ * list of names.
+ *
+ * THE THREE MARKERS, EACH ADDED AGAINST A MEASUREMENT (`isRecordedSourceRead` below
+ * carries the detail). The rule went in three steps, and the ladder below is the two-path
+ * instrument's `lost` column asked the way production asks the filter — per file, with
+ * that file's declared and bound names:
+ *
+ *                                  svelte, first 600 `.js`   lodash, all 51 `.js`
+ *   binding hatch only (no rule)        354 of 36,881              21 of 20,898
+ *   + member reads (isFieldAccess)       10                            4
+ *   + member calls (dotted callee)       10                            0
+ *   + interpolations                     0                            0
+ *
+ * The first row is "the binding hatch is in place and the collision rule is not" — the
+ * ladder measures the collision rule's three steps, not the binding hatch, whose own
+ * recovery is measured on the production entry in §1 of the lane doc (a probe file
+ * importing three noise-listed names: 4 rows kept that were dropped before).
+ *
+ * (`gained 0` at every step — the filter only ever deletes.) Both samples end at
+ * `lost 0`, so every row the analyzer emitted for these files reaches the graph, which
+ * is the whole point of the finding.
+ *
+ * THE LADDER IS DERIVED, NOT ASSERTED: the per-step counts come from classifying each
+ * row of the no-rule baseline by the marker it carries (and the endpoints are real runs
+ * of the rule at 0). The residual after all three steps is 0 on both samples, i.e. the
+ * rule never had to admit an UNMARKED row — the leak shape stays refused, which is what
+ * gate case 4d asserts.
+ *
+ * CORRECTION TO THE FIRST RECORDING OF THIS LADDER: it was first written as
+ * `378 -> 16 -> 0` on svelte and `4 -> 0` on lodash, measured while the instrument asked
+ * the filter with only the language argument. Production passes the per-file declared
+ * and bound names too, so that configuration counted rows production KEEPS as lost
+ * (the svelte artifact showed `imports 2 lost` while production had lost none). Every
+ * figure above is from the corrected instrument; the earlier ones are superseded, not
+ * adjusted.
+ *
+ * WHY ADMITTING THEM IS CONSISTENT WITH THE REST OF THE GRAPH: the store already keeps
+ * externally-unbindable names on every other label — `push`/`map`/`slice` are stored as
+ * unresolved `calls` targets, and the incoming census counts 5,311 such rows. A
+ * `.type` read is the same kind of fact.
+ *
+ * WHAT STILL GETS DELETED: a collision target with NO structural marker — exactly the
+ * leak shape the list was written for, an analyzer passing `node.type` where a symbol
+ * name belongs — and the universal test-lifecycle group, deliberately NOT covered by
+ * this rule (a `setUp` is framework noise in every language, and `this.setUp()` being a
+ * member position does not make it a symbol).
+ *
+ * SCOPE, narrow by construction: the rule needs `NOISE_TARGET_FAMILIES[leaf]` — only the
+ * SCOPED groups (tree-sitter accessors in the JS family, CSS properties in the CSS
+ * family). A language outside the group skips the list entirely (the M60 LUA-16 fix,
+ * which recovered 345 real Lua `type()` stdlib calls). `metadata.isFieldAccess` is set by
+ * six analyzers (javascript, typescript, clojure, groovy, swift, java); CSS-family lanes
+ * do not set it, so their rows are unchanged.
+ *
+ * PINNED BY `script/m14/js-ontology/js-filter-hatch-probe.ts` (15 cases, exit code): the
+ * marker rule in both directions, the unmarked leak shape still refused, the language
+ * exemption, and the universal group's full force. No fixture in the tree can reach this
+ * function, which is why the pin is a gate.
+ */
 const NOISE_TARGET_FAMILIES: Record<string, Set<string>> = {}
 for (const n of [
   "namedChild", "childForFieldName", "namedChildren", "childCount", "namedChildCount",
@@ -651,7 +697,115 @@ for (const n of [
   NOISE_TARGET_FAMILIES[n] = CSS_FAMILY_LANGUAGES
 }
 
-export function filterNoiseRelationships(rels: any[], language: string, declaredNames?: Set<string>): any[] {
+/**
+ * Whether the ANALYZER recorded this row as a read it derived from source structure —
+ * the discriminator the collision rule needs, and one taken from metadata the analyzer
+ * sets rather than this filter guessing from the target string.
+ *
+ * Three shapes, all analyzer-recorded:
+ *
+ *   `metadata.isFieldAccess === true`        a member read (`node.type`, `el.firstChild`)
+ *   `metadata.calleeExpression` is dotted    a member call (`$el.text("x")`, `.parent()`)
+ *   `metadata.isTemplateInterpolation`       `` `${type}` `` — a read inside a template
+ *
+ * Each half was added against a measurement, not a hunch, and each closed the residue the
+ * previous one left on a real corpus:
+ *
+ *   - the member READ half took the svelte 600-file sample from 378 lost rows to 16;
+ *   - the member CALL half then took lodash's 51 files from 4 lost to 0 — those four were
+ *     `$element.text(...)` / `.parent()` in `vendor/underscore/test/*.js`, calls the lane
+ *     doc already listed as real jQuery calls;
+ *   - the INTERPOLATION half closed svelte's last 10: every one was a `${type}` / `${parent}`
+ *     read of a function PARAMETER (`packages/svelte/src/compiler/errors.js:1041`,
+ *     `warnings.js:157`, `html-tree-validation.js:196`, …). A parameter is a real local
+ *     binding, but it is not a published SYMBOL, so the declaration hatch cannot see it —
+ *     and these files are exact-grammar evidence of why the name is noise at all.
+ *
+ * What is NOT admitted, and is what keeps the rule aimed at the bug the list was written
+ * for: a bare `fn()` (undotted callee expression), and any row the analyzer left with no
+ * structural marker at all — the shape an analyzer produces when it passes `node.type`
+ * where a symbol name belongs.
+ */
+function isRecordedSourceRead(r: any): boolean {
+  const md = r?.metadata ?? {}
+  if (md.isFieldAccess === true) return true
+  if (md.isTemplateInterpolation === true) return true
+  const callee = md.calleeExpression
+  if (typeof callee !== "string") return false
+  return callee.indexOf(".") >= 0
+}
+
+/**
+ * The names a file BINDS without DECLARING — import bindings.
+ *
+ * WHY THIS EXISTS (JS lane finding §1). The NOISE_TARGETS escape hatch admits a
+ * row when the file DECLARES the name, on the reasoning recorded at the check:
+ * "an analyzer that accidentally emits `node.type` emits a name the file never
+ * declares". An import binding is exactly that second case and the hatch cannot
+ * see it: `import text from "./text.js"` binds `text`, publishes no symbol named
+ * `text`, and so EVERY row naming `text` is deleted on the way to the index — the
+ * `uses` reads AND the `imports` row itself, because the filter tests the target's
+ * last segment and that segment is the bound name. Measured on a 600-file svelte
+ * sample by `script/m14/javascript-two-path-loss.ts`: 378 rows lost, 0 gained, and
+ * the instrument attributes each deletion as "the escape hatch being unreachable for
+ * a name the file only READS or BINDS".
+ *
+ * This does NOT widen the hatch to property reads (see the OPEN half recorded in
+ * `docs/analyzers/real-javascript-analyzer.md` §1): a name the file neither
+ * declares nor binds is still treated as noise, and `type`/`parent` read off an
+ * external object keep being deleted until a policy decision is taken for them.
+ *
+ * Shape-agnostic on purpose: analyzers spell their import records differently
+ * (`items`, `localName`, `defaultName`, `alias`, `namespaceName`, and
+ * `"./m:item"` / `"X as Y"` / path-ish tails), and a language whose record this
+ * does not understand contributes nothing rather than contributing the wrong name.
+ */
+export function importBindingNames(imports: any[] | undefined): Set<string> {
+  const names = new Set<string>()
+  const add = (raw: unknown): void => {
+    if (typeof raw !== "string") return
+    let s = raw.trim()
+    if (!s) return
+    // `./m:text` — the last `:`-segment is the item; a `:12` line suffix was
+    // already consumed by the same split.
+    const colon = s.lastIndexOf(":")
+    if (colon >= 0) s = s.slice(colon + 1).trim()
+    // A path-ish tail names a module, not a binding.
+    const slash = s.lastIndexOf("/")
+    if (slash >= 0) s = s.slice(slash + 1).trim()
+    if (!s) return
+    // `X as Y` binds BOTH spellings in the file's text; the local one is Y.
+    const asAt = s.indexOf(" as ")
+    if (asAt > 0) {
+      const imported = s.slice(0, asAt).trim()
+      const local = s.slice(asAt + 4).trim()
+      if (imported) names.add(imported)
+      if (local) names.add(local)
+      return
+    }
+    names.add(s)
+  }
+  for (const i of imports ?? []) {
+    if (!i || typeof i !== "object") continue
+    if (Array.isArray(i.items)) for (const it of i.items) add(it)
+    add(i.localName)
+    add(i.defaultName)
+    add(i.alias)
+    add(i.namespaceName)
+  }
+  return names
+}
+
+export function filterNoiseRelationships(
+  rels: any[],
+  language: string,
+  declaredNames?: Set<string>,
+  /**
+   * Names the file BINDS without declaring them (`importBindingNames`). The escape
+   * hatch below admits either — see that function for the measurement.
+   */
+  boundNames?: Set<string>,
+): any[] {
   if (!rels || rels.length === 0) return rels
 
   // M60 (objc lane, 2026-09-25): the leaf must be the last NON-EMPTY segment.
@@ -771,7 +925,18 @@ export function filterNoiseRelationships(rels: any[], language: string, declared
     // accidentally emits `node.type` emits a name the file never declares, while
     // a variable the file declares is a real node in the graph. So the list keeps
     // its power against the bug it was written for and stops eating the graph.
-    if (NOISE_TARGETS.has(leaf) && !(declaredNames && declaredNames.has(String(r.target ?? r.to ?? "")))) {
+    // THE HATCH IS TESTED ON THE LEAF, not on the whole target, and that is part of
+    // the fix rather than a detail: `declaredNames` holds SYMBOL names, while the
+    // thing NOISE_TARGETS matched is the leaf of a possibly-path-spelled target
+    // (`./text.js:text` for an import, `obj.type` for a read). Comparing the whole
+    // target to a set of symbol names could only ever fire for a bare-name target,
+    // so the import case — the one the lane measured — could not be admitted even
+    // had the name been declared.
+    if (
+      NOISE_TARGETS.has(leaf) &&
+      !(declaredNames && declaredNames.has(leaf)) &&
+      !(boundNames && boundNames.has(leaf))
+    ) {
       // M60 LUA-16: `NOISE_TARGETS` bundles three groups whose names are noise
       // ONLY in the languages that own the convention, and all three were applied
       // to every language. Measured over every Lua file of two pinned corpora, the
@@ -792,6 +957,11 @@ export function filterNoiseRelationships(rels: any[], language: string, declared
       // such frameworks, which is not a question this function can answer.
       const family = NOISE_TARGET_FAMILIES[leaf]
       if (family && !family.has(language)) return true
+      // COLLISION RULE — see the note above. A scoped noise name in a MEMBER position
+      // is a read (or a call) the source wrote: 97.0% of the class by measurement. Not
+      // applied to the universal group (`family` is undefined for it), which keeps its
+      // full force.
+      if (family && isRecordedSourceRead(r)) return true
       return false
     }
 
@@ -1174,6 +1344,34 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             if (m.isImplicitBinding === true) out.isImplicitBinding = m.isImplicitBinding
             if (typeof m.bindingSite === "string") out.bindingSite = m.bindingSite
             if (typeof m.isArray === "boolean") out.isArray = m.isArray
+
+            // ── the type hierarchy, M60/SDJ-8 ────────────────────────────────
+            //
+            // `brain_symbol.super_types` is bound by the store FROM THIS KEY
+            // (`symbol.metadata?.superTypes`), and the post-index
+            // `retargetCrossFileOverrides` pass reads that column to find the
+            // ancestor that verifiably declares an overridden method. The key was
+            // not on this allowlist, so the whole channel was severed HERE — the
+            // analyzers published the hierarchy, the store could write it, and no
+            // symbol in any language ever carried it on the worker path.
+            //
+            // Measured end to end on the pinned JavaScript corpus (svelte, 1,200-file
+            // draw, real `indexProjectParallel`): `SELECT count(*) FROM brain_symbol
+            // WHERE super_types IS NOT NULL` = 0 across 3,757 symbols, and 52 of 52
+            // `overrides` rows therefore came from the analyzer's own one-file guess
+            // with the retarget pass deriving an owner for none of them. Reached from
+            // a fixture instead of the worker, the same analyzer showed the hierarchy:
+            // this seam is invisible to `engine.parseFile`, which is why the fixture
+            // path measured a working retarget while production had none.
+            //
+            // Carried under the name the indexer already reads, so the existing
+            // binding needs no store-side change. Only the array shape is copied
+            // (a non-array is not a hierarchy), and an empty array is dropped: NULL
+            // is the honest reading of "declares no supertype".
+            if (Array.isArray(m.superTypes)) {
+              const supers = m.superTypes.filter((x: unknown): x is string => typeof x === "string" && x.length > 0)
+              if (supers.length > 0) out.superTypes = supers
+            }
             return Object.keys(out).length > 0 ? out : undefined
           })(),
           snippet,
@@ -1224,14 +1422,40 @@ export async function parseFile(filePath: string, projectPath: string, context?:
         // the order is widest-known first and every step is a fallback, so nothing that
         // already resolved changes.
         const line = i.range?.startLine ?? i.line ?? i.line_number ?? i.lineNumber ?? 0
+        // PER-ITEM binding and kind, when the analyzer published them (M14 JS lane,
+        // 2026-10-10). These two arrays are the fix for a measured store defect: the
+        // indexer writes `brain_import.imported_as = imp.alias ?? imp.localName` and
+        // `import_type = imp.importType ?? (isDefault ? "default" : … ? "namespace" :
+        // "named")`, and this mapping emitted NEITHER — so read back out of a real index,
+        // every javascript import was `imported_as = NULL` and `import_type = 'named'`,
+        // including `import x from './m'` and `import * as ns from './m'`.
+        //
+        // The consequence was user-visible, not cosmetic: `src/ast/patterns.ts` computes
+        // unused imports as `usedName = imported_as || imported_name` and then looks that
+        // name up IN THE FILE, so for this lane it searched for the module specifier — a
+        // string the source never writes. Measured on the closed `packages/svelte/src`
+        // population: `('./wrapper/wrapper_bench.js', NULL, './wrapper/wrapper_bench.js',
+        // 'named')`.
+        //
+        // Both reads are additive and per-index: an analyzer that publishes neither keeps
+        // the historical record exactly (`type: baseType`), and a statement that mixes
+        // forms (`import a, { b } from './m'`) no longer labels every item with the
+        // statement's single `isDefault` flag.
+        const itemKinds: string[] = Array.isArray(i.kinds) ? i.kinds : []
+        const itemBindings: string[] = Array.isArray(i.bindings) ? i.bindings : []
         return items
-          .filter((name: string) => typeof name === "string" && name.length > 0)
-          .map((name: string) => {
+          .map((name: string, itemIndex: number) => ({ name, itemIndex }))
+          .filter((x: { name: string }) => typeof x.name === "string" && x.name.length > 0)
+          .map(({ name, itemIndex }: { name: string; itemIndex: number }) => {
             // "X as Y" → keep the alias form: name imported-as local alias
             const asMatch = name.match(/^(\S+)\s+as\s+(\S+)$/)
             const importedName = asMatch ? asMatch[2] : name
             // Strip `type` qualifier: "type Repository" → "Repository"
             const cleanName = importedName.replace(/^type\s+/, "").trim()
+            const declaredKind = typeof itemKinds[itemIndex] === "string" ? itemKinds[itemIndex] : ""
+            const binding = typeof itemBindings[itemIndex] === "string" && itemBindings[itemIndex]
+              ? itemBindings[itemIndex]
+              : ""
             return {
               name: cleanName,
               path: i.module || i.path || "",
@@ -1251,13 +1475,35 @@ export async function parseFile(filePath: string, projectPath: string, context?:
               // `type` (import-pruner.ts) reads JS/TS AST SPECIFIERS — a different
               // structure entirely, not these rows. A lane that sets no `importType`
               // keeps the historical value unchanged.
-              type: i.importType ?? (asMatch ? "alias" : baseType),
+              type: i.importType ?? (asMatch ? "alias" : (declaredKind || baseType)),
+              // `importType` is the key the STORE reads for `brain_import.import_type`
+              // (`parallel-indexer` insert: `imp.importType ?? (imp.isDefault ? "default"
+              // : imp.isNamespace ? "namespace" : "named")`). It reads neither `type`
+              // nor a per-item kind, so without this the column stayed 'named' for every
+              // javascript row — measured on two files holding all four forms, where
+              // `import thing from './m.js'` and `import * as ns from './m.js'` both
+              // stored `named`. `type` is kept as it was for whatever else reads it; this
+              // is the additive key that reaches the column.
+              ...(declaredKind || i.importType ? { importType: i.importType ?? declaredKind } : {}),
               isExternal: external,
               line,
+              // The LOCAL binding, which is the name the importing file actually writes
+              // and the value `brain_import.imported_as` is defined to hold. An alias is
+              // spelled the same way by the indexer (`alias ?? localName`), so it is set
+              // only when the local name differs from the imported one — the distinction
+              // a reader of the row needs.
+              ...(binding ? { localName: binding } : {}),
             }
           })
       }),
-      relationships: filterNoiseRelationships(parsed.relationships, language, new Set((parsed.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean))),
+      relationships: filterNoiseRelationships(
+        parsed.relationships,
+        language,
+        new Set((parsed.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean)),
+        // JS lane §1: the escape hatch could not fire for an IMPORT BINDING, so a
+        // file that imports a name in NOISE_TARGETS lost every row naming it.
+        importBindingNames(parsed.imports),
+      ),
       // M60 LUA-14: the analyzer's `exports` were never forwarded here, so the
       // entire export surface of every language was invisible to the index. This
       // is the same defect the `metadata` line below already documents for

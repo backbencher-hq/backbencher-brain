@@ -40,8 +40,9 @@ bearing rather than cosmetic: `script/m14/verify-doc-truth-emissions.ts`'s
 to that gate**, which then reported `NO_CLAIM_TABLE` — "doc holds no
 ontology-shaped claim table, so no emission claim is checkable". That is a check
 which was off rather than passing, on the one doc whose table is the lane's whole
-ontology claim. With the header as it now stands, nine of the ten types are parsed
-and graded; the tenth is blocked on the gate's first-row skip (Open findings §10).
+ontology claim. With the header as it now stands **all ten types are parsed
+and graded, and the gate reports zero findings for this lane** — the last blocker
+was the gate's own first-row skip, fixed this round (Open findings §10).
 
 | Relationship type | Emitted? | Count / files | How resolved | Confidence model |
 | --- | --- | --- | --- | --- |
@@ -49,7 +50,7 @@ and graded; the tenth is blocked on the gate's first-row skip (Open findings §1
 | extends | **EMITTED** | svelte 15 / 14; ts corpus 3,575 / 1,031; **lodash 0** (ES5 has no `class`) | `class_heritage` → base class leaf name | 1.0 |
 | implements | **RULED** — the language has no `implements` clause. **Six instruments, two of them new this round and decisive** — see "What was RULED" | 0 emitted on every corpus | — | — |
 | instantiates | **EMITTED** | svelte 140 / 72; lodash 586 / 21; ts corpus 6,415 / 1,264 | `new_expression` → constructor leaf name; 55 global runtime constructors filtered (`JS_GLOBAL_CONSTRUCTORS`) | 0.95 |
-| imports | **EMITTED** | svelte 7,120 / 3,317; lodash 78 / 27; ts corpus 12,842 / 2,030 | ESM `import_statement` → module leaf → `${modulePath}:${item}` per item (named/default/namespace); CJS `require()` and dynamic `import()` → `${modulePath}:*`; re-export → `${modulePath}:*` — **and the re-export spelling discards a named clause's members; 713 statements / 790 specifiers across the corpora, measured. Open finding §5** | 1.0 named/default, 0.6 for a `*` leaf (JD-J12: `*` names no symbol) |
+| imports | **EMITTED** | svelte 7,120 / 3,317; lodash 78 / 27; ts corpus 12,842 / 2,030 | ESM `import_statement` → module leaf → `${modulePath}:${item}` per item (named/default/namespace); CJS `require()` and dynamic `import()` → `${modulePath}:*`; re-export → **one row per written specifier at the name the SOURCE module declares, with `metadata.declaredName`/`declaredKind` and the specifier's own line** (shipped in the JSD40 round, analyzer and oracle in one change — the 713 statements / 790 member names this used to collapse to `${modulePath}:*` are §5); `export *` and `export * as ns` keep `${modulePath}:*` at 0.6 marked unresolved | 1.0 named/default, 0.6 for a `*` leaf (JD-J12: `*` names no symbol) |
 | exports | **EMITTED** | svelte 4,856 / 3,404; lodash 60 / 12; ts corpus 26,043 / 3,148 | ESM `export` statements (declaration, export_clause, default); CJS `module.exports = { … }` (object keys), `exports.x = …` → module leaf → exported name | 1.0 |
 | overrides | **EMITTED** | svelte 52 / 7 files (all at 0.5); ts corpus **630 / 148** `[re-measured, was 644 / 158]`; **lodash 0** | derived member matching base-class member name, over METHODS, CONSTRUCTORS and ACCESSOR PAIRS; an accessor pair is a prototype member, so `get x()`/`set x(v)` shadow a base accessor too, and the pair collapses to ONE edge (J10). Symbol kinds are unchanged by that widening — accessors are still kinded `property`. A `#private` name can neither be declared by a base nor shadowed by a subclass, so it is always silent (J9). Base resolved via extends + cross-file harness companion (`User.format → BaseService.format`) | 0.95 in-file verified, 0.5 first-parent guess |
 | contains | **EMITTED** | svelte 654 / 63; lodash 16 / 8; ts corpus **23,121 / 3,483** `[re-measured, was 23,209]` | computed from `ownerName` on symbols (single pass) — class members, object-literal members, prototype methods | 1.0 |
@@ -67,7 +68,7 @@ The workstream's Part 1 asks six questions of every type a lane already emits.
 Source derivation answers only the first. Each answer below carries the
 measurement it rests on, and each says what the instrument cannot see.
 
-**Instruments.** Four, all lane-owned, all reading the production entry:
+**Instruments.** Five, all lane-owned, all reading the production entry:
 
 | Instrument | What it answers | Artifact |
 | --- | --- | --- |
@@ -75,6 +76,30 @@ measurement it rests on, and each says what the instrument cannot see.
 | `script/m14/javascript-label-oracle-agreement.ts` | correct / labelled, per label, by importing the SHARED oracle functions and applying `differential.ts`'s own comparison rule verbatim — **and, new this round, attributing every MISSING row to the production noise filter or to a real gap** | `validation/m14/tmp/javascript-label-agreement-*.json` |
 | `script/m14/javascript-two-path-loss.ts` | **new this round** — what the production indexer drops that the differential measures, per label, by running BOTH entries on the same files and asking `filterNoiseRelationships` itself which rows it deletes | `validation/m14/tmp/javascript-two-path-*.json` |
 | `script/m14/javascript-implements-ruling.ts` | **new this round** — the six instruments behind the `implements` ruling, including a counterfactual parse and a probe that is shown to fire on the sibling grammar | `validation/m14/tmp/javascript-implements-ruling.json` |
+| `script/m14/js-ontology/js-callee-shape-census.ts` | **new this round** — how many published `calls` targets are NAMES: every row tested by the name-shape rule, each failure bucketed by the syntactic form that produced it, and the alphanumeric test §2's original table used reported beside it, so the two RECONCILE (the difference between the tests IS the `#` clause) instead of the new number replacing the old one | reads only — prints; no artifact |
+
+**The firing check (shared harness; question 2).** `script/m14/firing-check.mjs`
+is the check the workstream reports against, and this lane's row now samples
+`svelte/packages/svelte/src` instead of lodash. lodash is ES5 — 51 files, zero
+`class` declarations — so `extends` and `overrides` can never fire there, and the
+7/10 it reported read as two SILENT types when the analyzer emits both. The svelte
+ROOT starves them too: the harness caps the walk at 400 files and `benchmarking/`
+reaches that cap before `packages/` does (measured 1 extends / 0 overrides at 400
+files). The package source fires every emittable type at the default 120-file
+sample, and `implements` alone stays silent — which is the ruling below holding on
+a sample rather than a gap being hidden by one:
+
+    JAVASCRIPT     9 types fired   120/120 parsed
+       calls:3011  contains:243  exports:819  extends:3  imports:1320
+       instantiates:26  overrides:2  references:19  uses:5577
+       SILENT (constructible but produced nothing): implements
+
+The block above is re-measured this round and two of its numbers moved for
+attributable reasons: `imports` 1,175 → 1,320 (the JSD40 re-export round, which
+publishes the members a named clause writes) and `calls` 3,022 → 3,011 (this
+round's §2 fix, which stops publishing source text as a target). The type count and
+the parsed count are unchanged, which is the point: the fix removed rows that named
+nothing and cost the lane no emitted type.
 
 ### THE MISSING-ROW ATTRIBUTION, because it changes what every oracle number means
 
@@ -172,7 +197,7 @@ Full table and reasoning in "What was RULED" below. The two decisive additions t
 
 ### 9. uses — EMITTED
 - **Fires**: svelte 30,758 / 2,544; lodash 7,691 / 48; ts corpus 215,640 / 11,901. The largest type by volume in the lane.
-- **Oracle agrees**: svelte-600 truth 10,602 / analyzer 10,388 / covered 10,388 / fabrication 0 / **MISSING 214 — all 214 attributed this round to `pool-worker`'s noise filter, 0 to a real gap**. lodash-51 truth 3,470 / analyzer 3,451 / MISSING 19, **19 of 19 filter deletions, 0 real gaps**. The named leaves are `type`, `parent`, `text`, `firstChild`, `lastChild`, `nextSibling` — real reads of real code that the product discards. See Open finding §1.
+- **Oracle agrees**: svelte-600 truth 10,602 / analyzer 10,602 / covered 10,602 / fabrication 0 / **MISSING 0**, and lodash-51 truth 3,470 / analyzer 3,470 / covered 3,470 / **MISSING 0**. These rows were 214 and 19 until this round: every one was attributed to `pool-worker`'s noise filter (0 to a real gap), the named leaves being `type`, `parent`, `text`, `firstChild`, `lastChild`, `nextSibling` — real reads of real code the product discarded. §1 closes it, and the re-measure is through the production entry with the filter's own attribution column reading `filter 0 / real 0` on both samples.
 - **Labelled**: correct, and the four sites are disjoint by construction (bare read / chain segment / chain root / template substitution), each with its own `metadata` marker so a consumer can tell them apart.
 - **Resolved**: svelte 12,708 of 30,758 (41.3%); lodash 3,299 of 7,691 (42.9%); ts corpus 140,986 of 215,640 (65.4%). This is the lane's weakest resolution and it is intrinsic: a `uses` target is a name the file READS, and most reads are of things the file does not declare (a local, a parameter, a DOM property, an imported binding).
 - **Confident**: three tiers, and the split is the honest shape of the evidence — 0.6 (30,032 of 30,758 on svelte), 0.85 (223), 0.9 (the remainder). **97.6% of the type is below the 0.7 fabrication threshold**, i.e. declared heuristic. That is the correct reading: a bare read of a name is a real syntactic fact, but whether the name denotes anything in the graph is not, and 0.6 says so.
@@ -209,13 +234,28 @@ would be a graph of targets nothing binds — 46 edges whose every endpoint is
 unresolvable — which is a decoration, not a relationship. The ruling stands, and
 (F) is what makes it falsifiable rather than a matter of taste.
 
-The gate that arbitrates this is `script/m14/ontology-coverage-gate.ts`, which
-refuses to report for a language with no ruling table. **It needs a
-`JAVASCRIPT_RULED` entry for `implements` (instrument A: grammar inventory over
-`implements_clause`, `superclass`, `interface_declaration`, `extends_clause`) to
-print RULED-SOUND instead of RULED-UNJUSTIFIED.** The table is shared harness, so
-the need is reported rather than made. The written ruling the gate reads is in
-place (JSD33, verified to match the gate's own `rulingFor` predicate).
+The gate that arbitrates this is `script/m14/ontology-coverage-gate.ts`. Its
+`JAVASCRIPT_RULED` entry now exists — `script/m14/javascript-ruled.ts`, registered
+as `RULED_BY_LANG.javascript` — so the lane is adjudicated on a corpus probe
+(instrument A over `implements_clause`, `superclass`, `interface_declaration` and
+`extends_clause`) rather than on spec prose, and a node type that would mean the
+construct fails the gate instead of decorating it.
+`script/m14/verify-ruling-tables-registered.ts` confirms the file and the registry
+agree. The instrument is `script/m14/javascript-implements-ruling.ts`; re-run at
+this commit over the typescript corpus (6,124 admitted files) it measures the
+grammar at 118 named types with none a supertype clause, the same scan finding
+`implements_clause` in the sibling typescript grammar, 1,502 corpus `class_heritage`
+clauses carrying 0 `implements` tokens, and all 23 multi-named-child clauses inside
+an ERROR node. The written ruling is JSD33/JSD38–JSD40.
+
+RUN at this commit (`ontology-coverage-gate.ts javascript --fresh`, 11,422 admitted
+js-family files across the whole corpus root): the verdict table reads `implements
+RULED-SOUND` off `script/m14/javascript-ruled.ts` — instrument A, "the grammar
+produced 215 distinct node types across the corpus and NONE expresses it" — with
+`emitted 9/10`, `FALSIFIED 0`, `ruled-without-justification 0`, exit 0. The nine
+emitted types include `extends` 2,328 edges and `overrides` 1,402, so both
+class-based types fire at corpus scale as well as in the 120-file firing sample
+above. Run log: `validation/m14/tmp/javascript-gate-run.log`.
 
 ---
 
@@ -256,10 +296,15 @@ csharp only.
 
 ## Open findings, measured, not fixed here
 
-Each is outside this lane's files. Each carries the number, because a finding
-without one is a complaint.
+Each carries the number, because a finding without one is a complaint. **Two of
+them are no longer open** — §2 (a `calls` target must be a name) and §5 (the named
+re-export clause's members) are fixed, each with the analyzer and the oracle moved
+in one change, and their headings say so. The §2 heading's "1,236" stays as the
+finding's original measurement; §2 carries the post-fix numbers, the falsification
+arm and the mutant beside it, because a fixed finding whose number is quietly
+replaced by the new one leaves no way to check the claim.
 
-### 1. `pool-worker.filterNoiseRelationships` deletes this lane's relationships, and the differential cannot see it — NOW REPRODUCIBLE FROM A COMMITTED INSTRUMENT
+### 1. `pool-worker.filterNoiseRelationships` deletes this lane's relationships, and the differential cannot see it — INSTRUMENT COMMITTED, BOTH HALVES FIXED THIS ROUND (binding hatch + collision rule), loss now MEASURED AT ZERO
 
 `text`, `type`, `parent`, `firstChild`, `lastChild`, `nextSibling`, `startIndex`
 are web-tree-sitter Node accessor names, and they are in `NOISE_TARGETS`. The set
@@ -282,6 +327,21 @@ re-stating a rule that has since moved):
 | lodash, all 51 files | 21,063 | 21,032 | 31 | **27** | 0.128% | 0 |
 | ts corpus, 1,500 files | 31,010 | 30,840 | 170 | **155** | 0.500% | 0 |
 
+**THIS TABLE IS SUPERSEDED AND IS KEPT AS THE OPENING MEASUREMENT, NOT AS THE CURRENT ONE.**
+It was taken while the instrument asked the filter with the language argument only, so it
+counted rows production keeps (see the correction in §1). Re-measured the way production
+asks the filter, on the same two corpora and the same sample sizes:
+
+| sample | engine rows | pool rows | lost | gained |
+| --- | --- | --- | --- | --- |
+| svelte, 600 files | 36,881 | 36,881 | **0** | 0 |
+| lodash, all 51 files | 20,898 | 20,898 | **0** | 0 |
+
+(Engine totals differ from the table above by +155 / −165 rows because the analyzer itself
+moved between the two runs — §2's name-shape rule, §5's re-export clause and the `exports`
+forwarding fix all land on the same corpora. The comparison that matters is engine vs pool
+WITHIN a run, and that is now row-for-row.)
+
 **Two numbers, and the difference is not noise.** The COUNT delta is 470 and the
 SET delta is 381 on svelte. The 89-row gap is duplicate rows: the engine emits
 byte-identical `(source, target, type, line)` tuples more than once, so a count
@@ -289,7 +349,8 @@ subtraction charges the filter for rows that were never unique. Both figures are
 quoted because the previous round reported only the count delta and this round's
 set-based instrument is the stricter one. `gained = 0` on all three samples,
 which is what makes "the filter only deletes" a measurement rather than an
-assumption.
+assumption — and it holds at `0` on both re-measured corpora above, before and
+after every fix in this section.
 
 Per label on the svelte 600-file sample: `uses` 373 lost (`type` 258, `parent` 89,
 `text` 14, `lastChild` 6, `firstChild` 4, `nextSibling` 2), `calls` 2, `contains`
@@ -301,21 +362,152 @@ Per label on the svelte 600-file sample: `uses` 373 lost (`type` 258, `parent` 8
 `calls` 17, `contains` 5, `imports` 6, `references` 1.
 
 **The instrument also names the mechanism, which the count alone did not.** Every
-one of these rows has a target leaf the filter would keep IF THE FILE DECLARED
-THE NAME (`would-survive-if-declared` is the whole column). So the loss is not
-"the filter blocks these names" — the filter's declaration escape hatch is doing
-its job — it is "the hatch is unreachable for a name the file only READS, CALLS
-or BINDS".
+one of these rows had a target leaf the filter would keep IF THE FILE DECLARED
+THE NAME (the `would-survive-if-declared` column). So the loss was never "the filter
+blocks these names" — the filter's declaration escape hatch is doing its job — it was
+"the hatch is unreachable for a name the file only READS, CALLS or BINDS". That
+classification is what set the terms of the fix: reach the hatch for the names the source
+wrote, and leave it shut for everything else.
+
+**THE IMPORT-BINDING HALF IS FIXED (this round, `src/ast/pool-worker.ts`).** The
+hatch admitted only names the file DECLARES, and tested the WHOLE target against a
+set of symbol names. Both had to change for the case this finding names, and neither
+change is a widening of the noise list:
+
+- `importBindingNames()` builds the set of names the file BINDS — the escape hatch's
+  own reasoning is "an analyzer that leaks `node.type` emits a name the file never
+  mentions", and `import text from "./text.js"` is a name the file DOES mention;
+- the hatch is now tested on the **leaf**, because the target of an `imports` row is
+  path-spelled (`./text.js:text`) and a symbol-name set can never match that string.
+
+Measured on the production entry, not inferred: for a probe file importing three
+noise-listed names, the pool path went from dropping `uses f -> text`, `uses f -> type`,
+`imports (file) -> ./text.js:text` and `imports (file) -> ./x.js:type` to keeping all
+four — while `uses f -> parent`, a property read on a name the file neither declares nor
+binds, was still deleted at that point. That half is the collision rule below, and it is
+fixed in this same round; the sentence that used to close here ("the half that is not
+mine to decide") was written before the discriminator had been measured and does not
+survive it.
+On the svelte 600-file sample this change alone recovers 3 rows (`uses` 17,815 → 17,816,
+`imports` 2,880 → 2,882, `gained` still 0), and the SET-based total does not move at that
+step because the recovered rows share `(source, target, type, line)` keys with rows the
+filter already kept — the duplicate-key effect the two-number rule above records, now
+visible from the other side.
+
+**THE REST IS FIXED TOO — the "policy decision" paragraph that used to close this
+section is SUPERSEDED, and not by a decision to widen the list.** What remained after the
+binding hatch was 354 lost rows on svelte and 21 on lodash, all of them noise-named
+targets the file neither declares nor binds. The question was whether admitting them
+would let back in the bug the list was written for. It would not, and the discriminator is
+recorded by the ANALYZER rather than guessed from the name: **a noise-named target the
+analyzer recorded as a read it derived from source structure is a real read; a leak — an
+analyzer passing `node.type` where a symbol name belongs — carries no such marker at all.**
+Three markers, each added against a measurement, and the ladder is the two-path
+instrument's `lost` column (per file, with production's own declared/bound arguments):
+
+| step (each row = that rule step ADDED) | svelte, first 600 `.js` | lodash, all 51 `.js` |
+| --- | --- | --- |
+| binding hatch only (no collision rule) | 354 of 36,881 (0.960%) | 21 of 20,898 (0.100%) |
+| + member reads (`metadata.isFieldAccess`) | 10 | 4 |
+| + member calls (`metadata.calleeExpression` dotted) | 10 | 0 |
+| + template interpolations (`metadata.isTemplateInterpolation`) | **0** | **0** |
+
+`gained 0` at every step, before and after: the filter only ever deletes, and the two
+paths now agree EXACTLY on both samples — 36,881 = 36,881 and 20,898 = 20,898 rows, so
+nothing this analyzer emits for these files is dropped on the way to the graph.
+
+**A third corpus, and the row that is NOT this finding.** The `typescript` repo's `.js`
+files (1,500 admitted) re-measure at engine 25,664 / pool 25,656 / **4 lost / gained 0**,
+and those 4 are a different defect class, named rather than folded in: three are
+`contains C123 -> [s: string]` index-signature members and one is a multiline
+`instanceof` recovery target (`references (file) -> fs.File; var hex = 0xBADC0DE`). None of
+the four targets a `NOISE_TARGETS` name — they are deleted by the universal identifier
+sanitizer (bracket, whitespace and newline shapes), which is unchanged by this section and
+is not measured by the finding's leaf classification. Stated because a `lost` column that
+reads 0 twice and 4 once invites the reader to assume the 4 are noise-name rows; they are
+not, and the instrument's `lost` is "the filter deleted it", a superset of the noise list.
+
+**The ladder is derived, not asserted**, and that is the check on it: each row of the
+collision-rule-less baseline was classified by the marker it carries, the residual after
+all three
+steps is 0, and the endpoints are real runs of the rule. A residual of 0 is also the
+statement that **the rule never had to admit an unmarked row** — the leak shape is still
+refused, which is a negative case in the gate rather than a hope.
+
+**A correction to the first recording of these numbers, kept visible.** The ladder was
+first written as `378 → 16 → 0` (svelte) and `4 → 0` (lodash), and the sections above
+still carry those figures as what they were. They were measured while the instrument asked
+the filter with **only the language argument**, whereas production
+(`pool-worker.ts:1432`) passes the per-file declared and bound names too — so that
+configuration counted rows production KEEPS as lost, and the artifact said so itself:
+`imports 2 lost` on a sample where production had lost none, one of the two being
+`phases/1-parse/state/fragment.js` / `import text from './text.js'`, the exact
+import-binding case the hatch was added for. The instrument is now per-file and
+production-configured; every figure in this section's ladder is from it, and the earlier
+ones are superseded rather than adjusted. (The same defect the whole finding is about —
+an instrument describing a path the product does not run — committed by this lane's own
+instrument, caught by comparing its column against production's own counts.)
+
+**WHAT STILL GETS DELETED, and why that is the right shape:** a collision target with NO
+recorded marker — the leak — and the universal test-lifecycle group (`setUp`,
+`tearDown`, `beforeEach`, `afterEach`), which the rule deliberately does not cover even
+in a member position (`this.setUp()` is framework noise in every language). A language
+outside the JS family skips the accessor list entirely rather than having it applied by
+a rule that reads metadata (the M60 LUA-16 exemption, which recovered 345 real Lua
+`type()` stdlib calls).
+
+**Pinned by a gate, because no fixture can reach this file.** `filterNoiseRelationships`
+is called by no fixture in the tree: svelte/vue fixtures go through
+`ASTEngine.parseFile` and the rest run their analyzers directly. So the pin is
+`script/m14/js-ontology/js-filter-hatch-probe.ts`, now **15 cases through the filter
+itself**, in two groups:
+
+- the binding hatch — declared name survives; an import binding survives bare, as a
+  path-spelled target, as a local alias (`import { other as type }`) and under the
+  imported spelling (`parent as par`);
+- the collision rule — a marked member read, member call and template interpolation are
+  all admitted; a BARE target with no marker and a bare undotted call are still refused;
+  the same marked row is exempt in a language outside the family; and the universal
+  group keeps its full force in a member position;
+- plus the negatives that keep the positives honest: a name the file neither declares nor
+  binds is refused, including when nothing is passed at all.
+
+Wired: **15 of 15 pass, exit 0**. Falsified in BOTH halves, independently, with the file
+restored byte-identically afterwards (`sha256` checked): disable the collision rule and it
+reads **3 fail** — exactly the three marker cases — and disable the bound-names hatch and
+it reads **4 fail** — exactly the four binding cases — with every negative still passing
+in both runs. The first versions of this gate each contained a case that could not fail
+(a target not in `NOISE_TARGETS`; a `python` expectation of `false` that asserted the
+opposite of the M60 exemption's actual behaviour) and both were replaced, because a green
+assertion that cannot fail is the defect this whole section is about.
+
+**NOTHING IS LEFT OPEN IN THIS FINDING.** It was carried for two rounds as "instrument
+committed, one half fixed, the rest a policy decision with its number", and the policy
+paragraph's two premises do not survive measurement. It said the bulk of the loss is
+property reads on names nothing in the file introduces; the measurement is that 344 of
+the 354 remaining rows on svelte (97.2%) are **reads the analyzer recorded as reads it
+derived from source structure**, and the last 10 are template interpolations of function
+parameters. It said admitting them "changes the production graph for every language"; the
+rule is scoped to the JS family by the same `NOISE_TARGET_FAMILIES` lookup the M60
+LUA-16 fix established, and a non-family language skips the list altogether, so the
+graphs it can change are the ones this lane owns. Both are now asserted in the gate rather
+than argued in prose.
+
+The residual after the rule is **0 lost, 0 gained on both samples** — the number the
+finding was opened for, reached, and pinned.
 
 **Why no gate saw it, and this is the part that generalises.** Every differential
 figure for javascript describes the `ASTEngine.parseFile` path, while the product
 indexes through the pool worker. So a lane can publish 0 unexplained, 100%
 covered and 0 MISSING while the graph a user queries is missing rows. The
-per-label instrument now sees it from the other side and attributes every row:
-on svelte 218 of 225 MISSING rows are filter deletions, on lodash 21 of 21.
-Written up as JSD36; instrument `javascript-two-path-loss.ts`.
+per-label instrument now sees it from the other side and attributes every row — at the
+height of the finding that read `on svelte 218 of 225 MISSING rows are filter deletions,
+on lodash 21 of 21`, and after the fixes in this section both corpora read `MISSING 0 /
+filter 0 / real 0` on every label except the two named real gaps above.
+Written up as JSD36; instruments `javascript-two-path-loss.ts` and
+`javascript-label-oracle-agreement.ts`.
 
-### 2. 1,236 `calls` targets on the ts corpus are expressions, not names
+### 2. 1,236 `calls` targets on the ts corpus are expressions, not names — FIXED THIS ROUND, analyzer and oracle in one change
 
 `extractCallRelationships`' malformed-callee guard refuses a callee over 100
 chars, containing a newline, a backtick, `${`, or one of `{ } ; =`. A conditional
@@ -330,6 +522,20 @@ population this defect is about:
 | ts (13,202 files) | 64,557 | 1,236 (1.915%) | 124 |
 | svelte (3,447) | 31,940 | 152 (0.476%) | 123 |
 | lodash (51) | 12,555 | 165 (1.314%) | 0 |
+
+**The ts column's population is no longer reproducible from this checkout, and that
+is stated rather than papered over.** The `typescript` corpus is now SPARSE
+(`/tsc/src/`): 6,124 of its 13,203 tracked `.js` files are on disk, and the
+instrument reads **22,210 `calls` rows / 550 non-name / 2 `#private`** on that
+materialized set. The `svelte` row is the instrument's
+validation, and it reproduces on the two figures that fix the POPULATION — **3,447
+files and 123 `#private` rows, identical** — while its totals are 33 rows higher
+(31,973 `calls` rows now, 154 failing the alphanumeric test against the 31,940 /
+152 recorded above). The 33 rows are this lane's other rounds landing on the same
+analyzer, and the 2-row gap in the alphanumeric column is NOT attributed: the
+instrument is the same, so either the recorded figure or the current one is a row
+count taken over a slightly different admitted set, and I would rather say so than
+pick the explanation that makes the new numbers line up.
 
 **A correction to the previous round's conclusion about these rows.** It stated
 that these rows "reach the product — `pool-worker`'s noise filter does not catch
@@ -347,57 +553,147 @@ identifier. That is a reason to fix the analyzer's guard on its own merits, not 
 reason to leave it.
 
 `#x` is a **legitimate** call target — `this.#x()` names the private method `#x`,
-and this lane already publishes `#events` as a symbol — so the fix must be a
-name-shape rule that admits a `#` segment, not an alphanumeric filter. **I have
-not shipped it, deliberately**: the differential's oracle
-(`deriveJavaScriptEdges`, `differential.ts:4477`) mirrors the analyzer's guard
-character for character, so tightening one side alone turns every one of these
-into a MISSING row — about 29 on svelte and 165 on lodash against a recorded
-baseline of 0. The change is four lines in each file and must land in the same
-merge. The oracle derives the same garbage, which is why both sides of the
-comparison currently agree on it (`calls MISSING 2` on the svelte draw is the
-mirror of the two ternary callees the production filter deletes).
+and this lane already publishes `#events` as a symbol — so the fix had to be a
+name-shape rule that admits a `#` segment, not an alphanumeric filter.
 
-Reproduce by rerunning the probe named in the "Two paths" paragraph below.
+**SHIPPED THIS ROUND, analyzer and oracle in one change.** `extractCallRelationships`
+now publishes a `calls` row only when the callee leaf passes
+`isNameShapedCallTarget` — `ID_Start`/`ID_Continue` as char codes, plus a leading
+`#` — and the token test (`length > 100`, newline, backtick, `${`,
+`hasBraceEquals`) is **gone**, because a proxy for a name test is not a name test.
+The oracle moved with it: `deriveJavaScriptEdges` (`differential.ts`) applies the
+same rule test for test, and the two functions' comments say so, since tightening
+one side alone turns every affected row into a MISSING row.
 
-### 3. Four of this lane's mutants are NEVER RUN — the fixes they protect have no teeth
+**What it costs and what it buys, measured.** On the svelte corpus the `calls` rows
+fall 31,973 → 31,942 and the non-name count falls 31 → 0, with the 123 `#private`
+rows intact — which is the measurement that says the rule is a shape test and not
+a filter. On the same-files differential draws after the co-move:
+
+| corpus | files | tree-truth before → after | covered | MISSING | unexplained | sample hash |
+| --- | --- | --- | --- | --- | --- | --- |
+| lodash (recorded baseline's drawn set) | 55 | 12,819 → **12,597** | 12,597 (**100%**) | **0** | 0 (0%) | `494e1b94766e8ade` |
+| svelte (fresh rotation) | 120 | — → **1,412** | 1,412 (**100%**) | **0** | 0 (0%) | `cf3b53aff7e7b43d` |
+
+The lodash draw is the honest arm: it reproduces the recorded baseline's hash, so
+it is the SAME file set, and the 222 rows leave BOTH sides — truth 12,819 → 12,597
+and analyzer 12,783 → 12,561 — with coverage still 100% and 0 unexplained. A
+co-move that dropped rows on one side only would have surfaced here as 222 MISSING
+rows; it surfaces as 0.
+
+**Pinned, falsified, and given a mutant.** `javascript/non-name-callee-refused`
+(new) writes six of the pre-fix shapes and forbids each spelling, with four expect
+rows as the positive controls (`fn()`, the member leaf `save`, the INNER call of
+`define()()`, and `this.#tick()` for the `#` clause). Suite: **76 pass / 0 fail**.
+**Falsification arm:** reverting ONLY this guard in a copy of the analyzer reads
+**75 pass / 1 fail**, the single failure is this fixture, and six of its seven
+forbid rows fire. The seventh — the IIFE `(function () {})` — does NOT, and the
+fixture says so at the row: the replaced guard's `hasBraceEquals` clause already
+caught that shape, so it is a contract pin, not a pre-fix arm. That distinction is
+recorded because a fixture claiming an arm it does not have is the defect this lane
+keeps finding in other people's notes. Lane mutant
+`javascript/restore-source-text-call-target` (sixth) reverts the guard by
+re-publishing the parenthesised callee spans it finds in the source text — with the
+old token test applied to each span first, so the revert is exactly as wide as the
+guard — and dies on this fixture alone (`0 -> 1`); the lane runner reads **6 lane
+mutants, 6 caught, 0 survived**.
+
+**What the fix does NOT do, with the number attached.** It drops rows whose callee
+has no name; it does not RECOVER the name a transparent wrapper hides. The census
+buckets those rows, and they are not small: svelte **26 paren + 5 call-expression**
+rows, the materialized ts tree **174 paren + 161 call-expression**. `(fn)` names
+`fn` and `(0, ral_1.default)` names the interop's `default`, so an unwrap rule
+would turn a dropped row into a real call — a second change, with its own oracle
+co-move and its own A/B, and it needs a decision about whether a recovered interop
+call should resolve to the property leaf the member path already publishes.
+
+**The `typescript` lane's twin is NOT touched by this change.** `extractCallRelationships`
+has a TS counterpart with its own oracle (`deriveTypeScriptEdges`), which still
+carries the token guard; this round measured the javascript analyzer only, so any
+TS-side occurrence is unmeasured here rather than assumed absent.
+
+**Two-path re-measure, because this section used to quote a filtered-row count.**
+The claim that "17 of the malformed `calls` rows are dropped from the product" (and
+2 on the svelte 600-file sample) is SUPERSEDED: those rows no longer exist to be
+dropped. Re-running `javascript-two-path-loss.ts` on the same 600-file sample reads
+`calls` engine = pool = 12,951 with **0 lost**, and a total that read **378 lost of
+36,881 (1.025%), gained 0** at that point — all of it outside the `calls` label, which
+left the JSD36 finding (§1) intact and removed the `calls` half of it. **That total is now
+`0 lost of 36,881`** (the current re-measure, §1's ladder): the 378 did not move because
+of anything in this section, they were §1's, and §1 is closed.
+
+Reproduce with `script/m14/js-ontology/js-callee-shape-census.ts --corpus svelte`
+(read-only), and the differential draws with
+`bun run script/m14/differential.ts --repo lodash --lang javascript --sample 120`.
+
+### 3. Six of this lane's mutants were NEVER RUN — WIRED THIS ROUND, and the wiring is checked
 
 This is the finding this round most wants the master to act on, because it is the
 same class as a DERIVATION finding pointed the other way: a check that is stored
 and never executed.
 
-`script/m14/javascript-mutants.ts` declares four mutants.
-`script/m14/mutate-analyzer.ts` builds its `MUTANTS` list **without importing
-that file**. Measured at this commit: the registry holds **56** `javascript/*`
-mutant ids; the lane file declares 4; and the strings `restore-empty-edge-endpoints`,
-`restore-global-instanceof-source`, `restore-empty-pattern-binding-symbol` and
-`class-scope-preempts-literal-owner` appear **zero times** in the registry. So
+`script/m14/javascript-mutants.ts` declares six mutants.
+`script/m14/mutate-analyzer.ts` **built** its `MUTANTS` list without importing
+that file. Measured at the commit that found it: the registry held **56**
+`javascript/*` mutant ids; the lane file declared its own; and the lane ids
+(`restore-empty-edge-endpoints`, `restore-global-instanceof-source`,
+`restore-empty-pattern-binding-symbol`, `class-scope-preempts-literal-owner`,
+`restore-reexport-module-star`, `restore-source-text-call-target`) appeared **zero
+times** in the registry, so a canonical run reported every javascript mutant CAUGHT
+while never executing the lane's own. The consequence was concrete: those six are
+the only regression protection for the three rule-R7 fixes this lane shipped — the
+empty-endpoint guard, the `global` instanceof source, the writable-name requirement
+in `collectPatternPairs` — and for the containment owner fix, the JSD40 re-export
+fix and §2's name-shape guard.
+
+**FIXED THIS ROUND: the import line and the spread are IN `mutate-analyzer.ts`**
+(the file also carries a note that the six are lane-owned definitions and that this
+registry holds the two lines, so a merge that removes them costs two lines).
+Verified by running the canonical harness with its own dev selector:
 
 ```
-bun run script/m14/mutate-analyzer.ts --lang javascript
+BB_MUTANT_ONLY="javascript/" bun run script/m14/mutate-analyzer.ts
+  -> 62 mutants selected of 1,845, all 62 CAUGHT, exit 0
 ```
 
-executes 56 javascript mutants, reports all 56 CAUGHT, and never touches these
-four. The consequence is concrete: those four are the only regression protection
-for the three rule-R7 fixes this lane shipped — the empty-endpoint guard, the
-`global` instanceof source, the writable-name requirement in `collectPatternPairs`
-— and for the containment owner fix. **The previous round's "javascript: 60 of 60
-caught" therefore reported 56 that ran plus 4 that did not.**
+62 is the registry's own 56 plus these 6, and 0 survived. **Two corrections to the
+prose that reported this finding**, both measured: the canonical command is the
+`BB_MUTANT_ONLY` prefix filter — the harness has **no `--lang` flag**, so the
+`--lang javascript` spelling the earlier report quoted selects nothing by language;
+and a filtered registry run deliberately writes **no** canonical
+`validation/m14/results/M14.0.F4.json`, which is why this is verified by a filtered
+run rather than by a full sweep that would take the whole 1,845-mutant battery.
 
 `script/m14/javascript-mutant-runner.ts` (new, lane-owned) runs them through the
 same `runLang` the registry uses, so the pass/fail rule is not restated:
 
 ```
-clean suite: 74 pass / 0 fail over 74 fixtures
+clean suite: 76 pass / 0 fail over 76 fixtures
 CAUGHT   javascript/restore-empty-edge-endpoints  (0 -> 2 failures; new failures: javascript/empty-endpoints-refused, javascript/recovery-empty-node-endpoints)
 CAUGHT   javascript/restore-global-instanceof-source  (0 -> 2 failures; new failures: javascript/instanceof-module-scope-source, javascript/instanceof-source)
 CAUGHT   javascript/restore-empty-pattern-binding-symbol  (0 -> 1 failures; new failures: javascript/recovery-empty-node-endpoints)
+CAUGHT   javascript/restore-source-text-call-target  (0 -> 1 failures; new failures: javascript/non-name-callee-refused)
 CAUGHT   javascript/class-scope-preempts-literal-owner  (0 -> 1 failures; new failures: javascript/literal-owner-inside-class)
-4 lane mutants, 4 caught, 0 survived
+CAUGHT   javascript/restore-reexport-module-star  (0 -> 3 failures; new failures: javascript/barrel-named-clause, javascript/barrel-reexport, javascript/reexport-forms)
+6 lane mutants, 6 caught, 0 survived
 ```
 
-All four die, so the fixtures can hold them; the gap is the wiring, and it needs
-one import line and one spread in the shared registry. Reported, not taken.
+All six die, so the fixtures can hold them — and now the registry runs them, so
+the teeth are in the command a milestone quotes. The lane's own runner also
+**checks the wiring rather than assuming it**: it reads `mutate-analyzer.ts` and
+prints `WIRING OK` or a `NOTE` naming the two missing lines, and that check was
+falsified (disabling the spread flips it to the NOTE, renaming the import does not
+escape it — the first version of the check matched the identifier as a SUBSTRING
+and reported OK on a disconnected tree, which is why the test is now the trimmed
+spread line itself). The
+fifth is the JSD40 revert (the named re-export clause's members collapsed back to
+`path:*`), and it fails exactly the three re-export fixtures — which is also the
+check that the new pins are scoped to this behaviour rather than to the lane. The
+sixth is this round's §2 revert, and it fails exactly `non-name-callee-refused`;
+unlike the other five it re-derives nothing from a tree the transform layer does
+not have — it locates the pre-fix spans in the SOURCE TEXT and applies the replaced
+guard's own token test to each, which is what keeps it a revert of the guard rather
+than a widening of it.
 
 ### 4. Six M14.0.F4 mutation survivors, none of them this lane
 
@@ -405,13 +701,15 @@ A full registry run at this commit: **6 survived** —
 `java/bare-read-type-attribution`, `groovy/modifier-return-type-loss`,
 `groovy/ctor-name-revert`, `scala/drop-import-source-rewrite`,
 `make/swallow-the-rule-after-a-comment`, `php/drop-external-override-guess`.
-javascript: **56 of 56 caught in the shared registry, plus the 4 lane mutants
-above when run through this lane's own runner** — 60 defined, 60 caught, but only
-56 of them are reached by the canonical command. The workstream's "4 mutation
+javascript: **62 of 62 caught in the shared registry** — 62 defined, 62 caught, and
+now all 62 are reached by the canonical command (§3 was wired this round; filtered
+run: 62 selected of 1,845, all CAUGHT, exit 0). Before the wiring the same sentence
+had to read "56 of 56 in the registry plus 6 in the lane's own runner", which is the
+shape §3 exists to report. The workstream's "4 mutation
 survivors in scala/csharp/elixir" no longer matches: scala has 1, csharp and
 elixir have 0, and java/groovy/make/php have 5 between them.
 
-### 5. `imports` throws away the members a named re-export clause writes
+### 5. `imports` threw away the members a named re-export clause writes — FIXED THIS ROUND, analyzer and oracle in one change
 
 `export { a, b } from "./m"` names two members. The lane spells **every**
 re-export target `${modulePath}:*` at confidence 0.6 with
@@ -421,16 +719,68 @@ specifiers, the ts corpus 607 statements carrying 519, lodash 0.** So 713
 statements and 790 written member names are published as a module-level
 dependency with no member, and demoted below the 0.7 threshold for it.
 
-It is not defensible as a design choice: `import { a } from "./m"` already yields
-`m:a` at 1.0 with `metadata.declaredName`, measured and oracle-confirmed, so the
-same member name from the same module path is a first-class edge in one direction
-and discarded in the other. **Not shipped here, deliberately**: the import
-oracle's contract in `deriveJavaScriptImportEdges` states `export … from` → `path:*`
-for all three re-export forms verbatim, so changing the analyzer alone turns all
-790 into MISSING rows against a recorded baseline of 0 — which is what the
-previous round's finding §2 says about its own unfixed defect. The change is in
-both files and must land in one merge; `script/m14/differential.ts` is the
-master's. Reported, not taken.
+It was not defensible as a design choice: `import { a } from "./m"` already
+yields `m:a` at 1.0 with `metadata.declaredName`, measured and
+oracle-confirmed, so the same member name from the same module path was a
+first-class edge in one direction and discarded in the other.
+
+**Fixed this round, and the reason it became fixable is the reason it was
+reported as unfixable.** The blocker was never a rule — it was the co-move: the
+import oracle's contract in `deriveJavaScriptImportEdges` stated `export … from`
+→ `path:*` for all three re-export forms verbatim, so an analyzer-only change
+turned all 790 rows into MISSING. Both files move in one change:
+
+- the ANALYZER publishes one `imports` row per written specifier at 1.0 — the
+  `name` field's spelling, which is the member in the SOURCE module, not the
+  alias this module re-exports it under — with `declaredName`/`declaredKind` and
+  the specifier's own line. `export *` and `export * as ns` keep `path:*` at 0.6
+  marked unresolved; an EMPTY clause (`export {} from "m"`) falls back to it,
+  because the dependency is real and no member is named;
+- the ORACLE derives the same member rows, so no row became MISSING.
+
+**The A/B, because the differential cannot attribute this change.** The
+cold-pool draw rotates on every run, so a before/after of two differential runs
+compares two different file sets. A throwaway probe
+(`script/m14/tmp/js-jsd40-reexport-ab.ts`, git-excluded, imports both the
+PRE-CHANGE analyzer and the PRE-CHANGE oracle from copies — never re-stating
+either rule) parses one tree per file instead, which is exact:
+
+| same 13 files | old | new | rows in | rows out |
+| --- | --- | --- | --- | --- |
+| analyzer `imports` rows | 199 | **364** | 271 member rows | 106 `path:*` rows |
+| oracle `imports` rows | 198 | **355** | 262 member rows | 105 `path:*` rows |
+| per-file TARGET-SET delta disagreeing | — | **0 of 13** | | |
+
+Those 13 files are 13 of the corpus's 3,446 tracked js files and they carry 106
+named re-export statements — the whole-corpus figure this finding measured last
+round, so a fixture-sized A/B *is* the population here. The oracle's totals are
+lower because it dedups per target while the analyzer emits a row per statement.
+Row-shape invariants held: every analyzer row only in NEW is member-spelled (no
+`:*`), and every row only in OLD is a module star.
+
+Store side, same 250-file draw: `imports` detached 676 → 674 and attached
+526 → 528. **That comparison is inside this instrument's own ±9-row band and is
+not the evidence** — it is reported so the next reader does not mistake it for
+some. Exactly 1 of the 13 files is inside the 250-file cut
+(`packages/svelte/src/compiler/index.js`, 4 named re-exports), which bounds what
+a 250-file sample can show.
+
+Pinned so it cannot regress: `barrel-named-clause` and `barrel-reexport` assert
+the member rows and FORBID `./m:*` / `./mod:*`, and `reexport-forms` (new) pins
+the four forms that must NOT move — `export * as ns`, `export { default as D }`
+→ `path:default` (not `path:D`), `export { readFile as read } from "fs"` →
+`fs:readFile` (not `fs:read`), an empty clause, and an ES2022 string-literal
+member name. Suite: **76 pass / 0 fail**; lane mutants 6 caught / 0 survived (the
+JSD40 round recorded 4 and the §2 round added the sixth).
+**Falsification arm** (the fixtures must bite on the behaviour they were written
+for): with the PRE-change analyzer swapped back in the suite reads **72 pass / 3
+fail**, and the three failures are exactly `barrel-named-clause`,
+`barrel-reexport` and `reexport-forms` — no other fixture in the suite moved, so
+the pins are scoped to this change rather than to the lane.
+`firing-check.mjs JAVASCRIPT` 9 types fired, 120/120 parsed, `implements` still
+the only silent type; `verify-override-retarget.ts` all properties hold;
+`typecheck` and `typecheck:scripts` exit 0. JSD40's resolution now records both
+halves as shipped.
 
 ### 6. A latent owner shape with ZERO corpus occurrences — measured, and not shipped
 
@@ -484,35 +834,67 @@ javascript's complexity budget is **unscored rather than within budget**, and th
 lane's re-measurement below was run against a scratch root precisely so the
 sealed file was not touched.
 
-### 9. `rel-type-coverage-gate.ts --langs=` destroys the artifact it writes
+### 9. `rel-type-coverage-gate.ts --langs=` destroyed the artifact it writes — ALREADY FIXED 2026-10-09, and this row was STALE
 
-Its own header says the flag "restrict[s] the report (never narrows the gate's
-own claim)", but the run **writes** `validation/m60/results/rel-type-coverage.json`
-containing only the selected lanes — `--langs=javascript` replaced 1,418 lines of
-other lanes' evidence with 18 lines. Reverted here by hand; the flag needs to
-suppress the write the way the differential's `--emit` scoping does. This round ran
-the gate **without** `--langs` and restored the artifact afterwards for the same
-reason.
+When this finding was written, `--langs=javascript` **wrote**
+`validation/m60/results/rel-type-coverage.json` containing only the selected lanes
+— replacing 1,418 lines of other lanes' evidence with 18. That was repaired in the
+gate on 2026-10-09 with a scoped-run guard (`const scoped = !!lanesIn`, then no
+canonical write, no baseline write, and a `evidence NOT written: …` line naming the
+lane count), and this row was not updated to say so. **Re-verified 2026-10-10 by
+checksum rather than by reading the guard**: `sha256` of the artifact before
+`--langs=javascript` was `2482049b…`, the run printed the refusal and exited 0, and
+the hash afterwards is identical, at 1,820 lines both times. The same run reports
+`baseline: 4 recorded, 0 NEW, 4 repaid` — §11's subject.
 
-### 10. `verify-doc-truth-emissions.ts` drops the FIRST body row of every claim table
+The lesson is the one this doc keeps re-learning from the other direction: a lane
+that reports "the gate is master-owned, not taken" must re-check before the next
+handover, because a fixed finding reads exactly like an unfixed one until someone
+measures it.
 
-`parseClaimTable` (`script/m14/verify-doc-truth-emissions.ts:439`) walks the rows
-after the header, and on the first one does `if (!started) { started = true;
-continue }` — which **discards it**. Every analyzer's claim table therefore loses
-exactly its first data row, silently: there is no count check, so a table with
-one row and a table with nine parse the same.
+### 10. `verify-doc-truth-emissions.ts` dropped the FIRST body row of every claim table — FIXED THIS ROUND
 
-For this lane the lost row is `calls`, the largest type by volume (30,758 edges
-on svelte), and it is now visible as `UNDOCUMENTED [javascript] calls
-(relationship) — docs/analyzers/real-javascript-analyzer.md:36` on a line that
-plainly reads `| calls | **EMITTED** | … |`. The fix is to `push` that row
-instead of `continue`-ing it. The gate is the master's file; reported, not taken.
+`parseClaimTable` (`script/m14/verify-doc-truth-emissions.ts`) walked the rows after
+the header and, on the first one, did `if (!started) { started = true; continue }` —
+which **discarded it**. Every analyzer's claim table lost exactly its first data
+row, silently: there was no count check, so a table with one row and a table with
+nine parsed the same. A gate that under-reports is worse than a missing gate,
+because its green is trusted.
 
-The lane's half of this is fixed: the claim table's second column now reads
-`Emitted?` instead of `Verdict`, which is the only way `looksLikeClaimHeader`
-accepts it, so this lane's claims are machine-checked for the first time. Nine of
-the ten types are now parsed and graded; the tenth (`calls`) is blocked on the
-row-skip above rather than on anything the doc says.
+For this lane the lost row is `calls`, the largest type by volume (30,758 edges on
+svelte), and it surfaced as `UNDOCUMENTED [javascript] calls (relationship)` on a
+doc line that plainly reads `| calls | **EMITTED** | … |`.
+
+**Fixed, and the fix is three lines: the flag is gone.** The loop starts AT the
+header, so the question `started` was asking — "has the table begun?" — cannot
+arise; the table's own rule is now the loop's rule (the first non-`|` line after the
+header ends it). What that changed, measured on the same tree:
+
+| | before the fix | after |
+| --- | --- | --- |
+| UNDOCUMENTED (fleet) | 34 | **10** |
+| javascript findings | 1 (`calls`) | **0** |
+| FALSE_NEGATIVE (fleet) | 7 | 7 — **the identical seven**, byte-diffed |
+| new classes revealed | — | `MIXED_ROW [nim]` (its first row mixes engine and non-kind names) |
+
+So 24 first rows across the fleet went from invisible to parsed and clean, one
+previously hidden defect appeared, and the javascript lane's doc now passes the gate
+with all ten types graded.
+
+The parser contract is pinned by a direct probe (`bun -e` over the exported
+`parseClaimTable`, same two-row table both ways): **pre-fix it returns 1 row and that
+row is `uses`** — `calls`, the first body row, is gone — and post-fix it returns 2,
+with `names[0] = ["calls"]` and `claim: YES`. The pre-fix half was measured by
+restoring the three lines in a checksummed copy, not inferred from reading them.
+
+The lane's half of this was already fixed and is what made the row visible: the
+claim table's second column reads `Emitted?` rather than `Verdict`, which is the
+only way `looksLikeClaimHeader` accepts it.
+
+**The gate is a shared harness file and the fleet verdict is still FAIL** — 7
+FALSE_NEGATIVE rows and 1 MISSING_DOC, none of them this lane's. Those seven are
+other lanes' docs saying "not emitted" about a channel that emits, and the fix is
+what makes them checkable rather than what creates them.
 
 ### 11. This lane's DERIVATION debt is repaid, and the recorded debt is stale
 
@@ -548,6 +930,992 @@ agreement.
 
 ---
 
+## Resolution, incoming and outgoing: what actually binds, and what cannot
+
+Every other section of this file measures what the ANALYZER emits. None of them
+measures the graph a consumer queries, because the store resolves names, applies
+its own filters, and runs two post-index passes that the analyzer never sees. The
+two instruments below close that gap, and the answer they give is not the one the
+lane's firing and differential numbers imply.
+
+**`script/m14/javascript-store-resolution.mts`** indexes a javascript-only project
+through `indexProjectParallel` into a temp data dir and reads
+`brain_relationship.target_symbol_id` / `source_symbol_id` back. It reports, per
+label: attached, detached (`target_external` set, no symbol), landed-in-the-source-
+file, landed-elsewhere, and source-dangling. The sample is the deterministic FIRST
+N of the sorted admitted list, so two runs are comparable. Its one scored claim is
+deliberately narrow: an attached target is CORRECT when the edge's own file declares
+that name (decidable from one file), and rows whose target is declared elsewhere are
+reported as UNVERIFIABLE beside the scored ones rather than added to them.
+
+**`script/m14/js-ontology/js-detached-triage.mts`** answers the question the store
+instrument cannot: whether the name a detached row carries is declared ANYWHERE in
+the corpus. It scans every admitted corpus file through the same `parseFile` the
+indexer uses, caches the result with a file-list digest (a stale cache is refused,
+not reused), and splits the detached population into corpus-declared / ECMAScript
+standard-library / neither. The standard-library set is enumerated from the running
+engine's own prototypes and globals, so it is executed rather than typed.
+
+### The arms
+
+Both arms are the same 1,200-file draw of the pinned svelte corpus, the same
+instrument, and the same machine; the before arm is a clean `git worktree` of
+`8a7c6ec96` (HEAD) so the only difference is this round's three changes.
+
+| 1,200-file svelte draw | before (HEAD) | after |
+| --- | --- | --- |
+| stored relationships | 42,066 | 42,066 |
+| attached targets | 27,328 (65.0%) | 27,335 (65.0%) |
+| detached targets | 14,738 | 14,731 |
+| `imports` detached | 765 | 758 |
+| `imports` landed in the source file | 1,191 | 1,201 |
+| symbols carrying `super_types` | **0** | **10** |
+| containers with a method index (qualified `Owner.method`) | 84 | 93 |
+| `overrides` rows the pass can interpret | **0 of 52** | **52 of 52** |
+| source-dangling rows | 5,067 | 5,067 |
+
+**The row deltas are inside the noise and must be read as such.** Two HEAD arms of
+the same population differed by 22 rows on `imports` alone (765 here, 787 on an
+earlier HEAD run), because insert-time resolution runs against a partially stored
+symbol table and scheduling decides some ties — the same effect the `_i13` pass
+documents. `+10 imports landed in the source file` is not a claim this file makes.
+The load-bearing evidence is structural: `super_types` 0 → 10 (the column was NULL
+for EVERY language on the worker path, not just this lane), the method index 84 →
+93, and `overrides` 0-of-52-interpretable → 52-of-52.
+
+**This table is the HIERARCHY round's record and its 1,200-file figures were not
+re-measured afterwards.** The file-level wave that followed (below) changed the
+source spelling of every module-scope row, added the store id fix, and then the
+import resolver; those rounds are measured at the **250-file draw**, in §"Outgoing"
+and §"Incoming". Nothing in this table is a current number, and the 5,067
+source-dangling row is the specific figure the file-level wave moved.
+
+### What the detached population actually is
+
+At 1,200 files, 14,731 detached rows split by what the WHOLE corpus says about the
+name (triage instrument above, corpus scan 3,447/3,447 parsed, 0 failures):
+
+| class | rows | share | what it means |
+| --- | --- | --- | --- |
+| declared in the SAMPLE, still unbound | 48 | 0.3% | the resolver had a candidate and did not take it |
+| declared elsewhere in the CORPUS | 1,016 | 6.9% | a cross-file target, left to a name pass that could see it |
+| ECMAScript standard-library member name | 3,010 | 20.5% | no file anywhere declares `push`, `slice`, `resolve` |
+| neither | 10,657 | 72.6% | DOM/browser APIs, library bindings, JSDoc-typed properties |
+
+**The 1,016-row class is name-level, not binding-level, and its top entries say
+so.** The most frequent members are `b` (241 rows, a name declared in 3 of 3,447
+files), `fn` (191, one file), `DEV` (145, one file), `input` (68, three files),
+`click` (65, one file). A one- or two-letter name declared somewhere is not
+evidence that the edge meant it; on a minified file it is evidence of the opposite.
+Reading this class as "1,016 bindings the graph missed" would be the same
+shape of error as reading a MISSING row as a language gap (§Open findings 1).
+
+**The 10,657-row "neither" class is the honest ceiling.** Its members are
+`assert`, `querySelector`, `innerHTML`, `window`, `document`, `getComputedStyle`
+(browser and node surfaces, declared in no project file by construction) and
+`expression`, `start`, `end`, `binding`, `attribute`, `options`, `path` — property
+names of values whose types live in JSDoc (`@param {AST.RenderTag} node`), which
+this analyzer does not read and could not publish as declarations if it did.
+
+So the truthful statement about incoming resolution on this lane is: **65% of
+emitted edges attach to a stored symbol, 100% of the decidable ones land in the
+source file (8,497 of 8,497), and of the remainder 20.5% names the language's own
+standard library while 72.6% names a DOM/browser or JSDoc-typed property that no
+declaration exists for.** "Almost 100% resolution" is not reachable by name
+resolution here, and a report that claimed it would have to have marked these rows
+external — a claim that is false for `this.state` and for `import { x } from` …
+`'#compiler'` bindings alike.
+
+#### The BINDING-level route, which is a different class and is not the ceiling
+
+Re-measured at the full corpus (3,447 files, real `indexProjectParallel`) and on a
+closed population (`packages/svelte/src`, 368 files, all real source), the numbers
+above hold: **76,306 edges, 65.1% attached, own-file decidable 100% (17,396 of
+17,396), 74 detached rows whose raw target equals a stored symbol name.** Those 74
+are the name-level residue the table above explains.
+
+But the name-level test is not the only decidable one, and the store's strategies
+implement ONLY it: `_res_name_unique` needs the name to be unique project-wide, and
+`_res_qname` needs the target spelled `Owner.member`. Neither can read the row's own
+**import graph**, which is the one piece of evidence that turns a bare leaf into an
+exact answer: the import statement names the module, and the module names the symbol.
+Measured by `script/m14/javascript-import-decidability.ts` on the closed population:
+
+| route (all require the module to be IN the project and to declare the item) | rows |
+| --- | --- |
+| OWN_FILE — the row's file declares the leaf (the store already lands these) | 3,414 |
+| NAMED — `import { x } from './m'` | 2,666 |
+| ALIAS — `import { x as y }` | 4 |
+| DEFAULT — `import y from './m'` | 38 |
+| NAMESPACE — `import * as ns from './m'` then `ns.leaf` | 479 |
+| SHADOWED — the leaf is a parameter of the row's own source symbol | 3,263 (not decidable, and not the import) |
+| **IMPORT-DECIDABLE, not own-file** | **3,187 (11.1% of these labels' rows)** |
+
+The first reading of this table was **2,581 (9.0%) with NAMESPACE 0 and ALIAS 0**, and the
+difference is the four blind spots listed above plus one store-side defect (JSD42) — not a
+change of rule. Each was a route reported as ABSENT because the instrument could not SEE
+it: a namespace binding keyed by the string `"*"` instead of the local name, the receiver
+of `ns.member(...)` read from the target while it lives on `metadata.calleeExpression`, an
+alias's declared name looked for under a `localName` key the `imports` record does not
+carry (the edge target spells the local, `metadata.declaredName` the declared), and the
+store dropping every clause member but the last.
+
+Examples, from the instrument's own output: `uses flip -> cubicOut` where the file
+imports `cubicOut`; `calls migrate -> parse` where `parse` comes from
+`../phases/1-parse/index.js`; `instantiates constructor -> CompileDiagnostic` from
+`./utils/compile_diagnostic.js`. Each is a binding a resolver could take without
+guessing, on evidence already in the store.
+
+**THE SEAM THAT BLOCKED IT WAS THE LANE'S OWN, AND IT IS FIXED THIS ROUND (JSD41).**
+
+*Before*, read back out of a real index (`packages/svelte/src`, 368 files, through
+`indexProjectParallel`): every JavaScript import row was
+`('./wrapper/wrapper_bench.js', NULL, './wrapper/wrapper_bench.js', 'named')` — the
+MODULE PATH in `imported_name`, `imported_as` NULL for every row, and `import_type`
+`'named'` even for `import x from './m'` and `import * as ns from './m'`.
+
+Two independent causes, both measured. (1) The worker's import mapping emitted neither
+`localName` nor the key the store reads for the type: `parallel-indexer`'s insert reads
+`imp.alias ?? imp.localName` for `imported_as` and
+`imp.importType ?? (isDefault ? "default" : isNamespace ? "namespace" : "named")` for
+`import_type`, and this lane spells the type in `type`. (2) `import * as w from
+'./warnings.js'` published **no binding anywhere**: the record carried `items: ["*"]` and
+the alias `w` was in the tree but in no field, so no resolver could attribute
+`w.get_prototype_of(...)`.
+
+The consumer consequence is why this is not cosmetic: `src/ast/patterns.ts` computes
+unused imports as `usedName = imported_as || imported_name` and then looks that name up
+IN THE FILE, so for this lane it searched for a module specifier the source never writes.
+
+*Fixed in this lane's own two files*, with no shared column semantics changed:
+`real-javascript-analyzer.ts` publishes three parallel arrays per import statement —
+`bindings` (the LOCAL name for every form, including the namespace alias),
+`declaredNames` and `kinds` — plus `namespaceName`, so the filter's escape hatch also
+counts a namespace binding as a name the file BINDS; `pool-worker.ts` emits `localName`
+and `importType` **per item**, which is what the store already reads. Per item, not per
+statement: `import a, { b } from './m'` used to label both items with the statement's
+single `isDefault` flag.
+
+*After*, on the same two-file index (all four forms plus a side-effect import):
+`thing`/`default`, `alpha`/`named`, `bee`/`named` for `beta as bee`, `ns`/**namespace**,
+and the side-effect import still binds nothing. Pinned by
+`script/m14/verify-js-import-seam.ts` — **8 checks, exit 0**, run through the real indexer
+rather than by reading the mapping — and falsified: with both halves removed it reads
+**5 of 8 failing**, the two files restored byte-identically (`sha256`) afterwards.
+**Not changed, and pinned as such by the same gate:** `imported_name` still carries the
+MODULE SPECIFIER for this record shape. The column means different things in different
+lanes (a module-shaped record puts its module there), so changing it is a fleet-wide call
+and not this lane's; the gate pins the current value so a future change is visible rather
+than silent.
+
+**THE RESOLVER IS BUILT, AND IT LANDS 100% OF THAT POPULATION.**
+`src/ast/binding-resolution.ts` runs inside `resolveRelationships` AFTER every name
+strategy and before the cross-language normalization, and it does the one thing none of
+them can: it reads the row's OWN import statement. Two actions, and the second is the one
+that matters — **attach** a bare target the name passes left NULL, and **correct** one they
+attached to a DIFFERENT file's same-named symbol. It refuses, by construction, every case
+where the evidence is not exact (no import binding for the leaf; two modules binding the
+same local; a module that does not resolve to exactly one project file; more than one
+declaration of the name in the target file; an export surface that does not contain it), and
+it DETACHES a row whose name is a parameter of its own source symbol (JSD43).
+
+Measured by `script/m14/javascript-import-landing.ts` — which RECOMPUTES each expectation
+from the source rather than reading the resolver's return value, so a pass that reports
+corrections and stores nothing cannot pass it — on the same closed 368-file population,
+indexed through `indexProjectParallel`:
+
+| route | decidable | landed | wrong-file | detached | % landed |
+| --- | --- | --- | --- | --- | --- |
+| named | 2,567 | 2,567 | 0 | 0 | **100.0%** |
+| alias | 14 | 14 | 0 | 0 | **100.0%** |
+| default | 38 | 38 | 0 | 0 | **100.0%** |
+| namespace | 474 | 474 | 0 | 0 | **100.0%** |
+| **ALL** | **3,093** | **3,093** | **0** | **0** | **100.0%** |
+
+**Falsified, not asserted.** With the pass unwired the same instrument reads **2,796 of
+3,093 (90.4%)**: **283** rows on a wrong file, **14** alias rows failing (4 detached, 10 on a
+namesake), **3** namespace rows on a namesake. The 100% is therefore attributable to the
+pass rather than to a corpus that happens to be easy. The store-side denominator is 3,093
+against the parse-side 3,187 because the store holds only rows that survived indexing (noise
+filtering, files whose parse failed); the difference is recorded rather than smoothed.
+
+Two defects found by running the resolver against real source rather than a fixture, both
+fixed and both gated:
+
+* **JSD42 — the store kept one binding per clause.** The import row's id was
+  `fileId:import:module:line`, so every member of a clause collided and `INSERT OR REPLACE`
+  kept the LAST: `create-subscriber.js` writes `{ get, tick, untrack }`, `{ effect_tracking,
+  render_effect }`, `{ source, increment }` and the store held `untrack`, `render_effect`,
+  `increment`. A binding the store never recorded is one no resolver can read, so those rows
+  kept the name pass's answer with no evidence left to correct them against. Fixed in
+  `parallel-indexer.ts` (the row id carries the imported name); gate
+  `verify-js-binding-resolution.ts` B7/B8; falsified by restoring the old id, which reads the
+  five-binding file as `['ns','p2']`. **Fleet benefit, measured:** the groovy lane goes from
+  **20 fixture failures to 2** on this change alone.
+* **JSD43 — a shadowed name was left on its namesake.** `store/index-server.js` declares
+  `export function toStore(get, set)` while importing `get`, and its two `get` rows were
+  attached to `compiler/phases/scope.js:get`; `batch.js` declares
+  `capture(source, value, is_derived)` and its `source` row landed on
+  `compiler/preprocess/index.js:source`. A parameter of the row's own source symbol is in
+  scope by construction, so the attachment is provably wrong — and the name is not the import
+  either. The pass now DETACHES those rows (`shadowed-local-binding`), counted separately in
+  its outcome; gate A6 pins the planner decision and B9 the stored state.
+
+**A name that reaches a file ONLY through a re-export chain (both halves SHIPPED this
+round, and the second half was a store-path defect the chain found).** The resolver above
+reads the row's OWN import statement, so it could say nothing about a name the row's file
+never imports — `import { tick } from './index-client.js'` is a binding to a barrel, and
+nothing in the store said which module declares `tick`. The analyzer had already published
+the evidence and nothing read it: `export { tick } from './runtime.js'` writes an `imports`
+edge with `metadata.isReExport: true`, `metadata.declaredName: tick` and, when the clause
+renames, `metadata.exportedAs`. The clause is the evidence; the `exports` edge beside it was
+often pointed at the WRONG module, because an `exports` edge is about the name THIS module
+publishes and nothing in it says where the declaration lives. Two actions, gated at B12/B13
+and falsified (**9 of 46 gate checks fail with the chain disabled** — A14, A15, A17, A25b,
+A26, B10, B11, B12, B13 — files restored by sha256; the arm was re-measured when the gate
+grew from 33 checks to 46, which is why it reads `9 of 46` and not the `7 of 33` this
+paragraph first cited: A25b and A26 are the two additions that also route through the
+clause walk, and an arm that is not re-run when its instrument grows is a stale number): an `exports` row that declares nothing locally now follows the file's own clause to
+the module the clause names, and a consumer row whose target file is a barrel follows the
+same chain — including a TWO-HOP chain — to the declarer.
+
+MEASURED on the closed 368-file population, same instrument, both arms in one session on
+the same draw (the unwired arm is a one-line early return in `resolveThroughReexports`,
+restored byte-identically at sha256 `12adfbf6dfbe447f970b0a437b130fe95dc9c531d7952855e84fa6014be01a7a`):
+
+| 368-file svelte `src`, import-decidable rows | chain unwired | chain wired |
+| --- | --- | --- |
+| all routes | 3,097 of 3,099 (**99.9%**) — 1 wrong-file, 1 no-symbol | **3,099 of 3,099 (100.0%)** |
+| of those, the `reexport` route | 4 landed, 1 wrong-file, 1 no-symbol of 6 | **6 of 6** |
+| clause-decidable re-export EDGES | 209 of 270 on the declarer; **56 wrong-file, 5 detached** | **270 of 270, 0 wrong, 0 detached** |
+
+**So the chain closes 63 stored facts: 61 edge targets and 2 consumer rows.** The edges are
+the larger half and the reason the route is worth more than its six consumer rows: 61
+export-edge facts (56 wrong + 5 detached) were settled by a same-named symbol in the WRONG
+module before the chain could read the clause. Both halves are named rather than counted.
+The consumer rows, from the unwired arm's own report: `reactivity/window/index.js -> get`
+held `compiler/phases/scope.js:get` instead of `internal/client/runtime.js:get` (a
+confident wrong-file attachment), and `reactivity/date.js -> derived` held
+`deriveds.js:derived` instead of `deriveds.js:user_derived` — the ALIASED re-export
+(`export { user_derived as derived }`), where the store had the right file and a name that
+module does not declare. The edges: `index-client.js -> tick : clause says
+internal/client/runtime.js:tick, edge holds index-server.js:tick`, and
+`index-server.js -> beforeUpdate : clause says internal/shared/utils.js:noop, edge holds
+index-client.js:beforeUpdate` — an aliased re-export (`noop as beforeUpdate`) whose
+client-side namesake is a DIFFERENT function.
+
+One number moved that is not attributable to the chain, and it is recorded rather than
+smoothed: the instrument's decidable total is 3,099 this round against the **3,093** recorded
+in the previous round, and 3,099 − 6 equals 3,093 exactly — consistent with the six re-export
+rows having been classified as undecidable because the instrument did not know the route
+yet. The previous round's "with the pass unwired" arm (2,796 of 3,093, 90.4%) is a
+different arm and was not re-run; the number here is the CHAIN unwired with every other
+resolver action live.
+
+Still not decidable through the chain, and refused by construction: `export * as ns` (it
+binds a name in THIS module and redistributes nothing, so there is no member of the source
+module to point at — the bare `export *` that sat in this same list is SHIPPED, §JSD46), a
+member the source module does not declare, two declarations of the name in the source module,
+a specifier that does not resolve to exactly one project file, and a chain longer than the
+hop budget.
+
+**JSD44 — the store-path name register: `self` was published, admitted, and dropped by a
+fourth copy of one list.** The chain above is what walked into this. `export function
+self(fn)` at `packages/svelte/src/internal/client/dom/legacy/event-modifiers.js:27` is
+published by the analyzer, passes `keepSymbol`, and appeared in NO symbol row
+project-wide — and it is the ONLY declaration of that name in the population, so nothing
+else could stand in for it. Reproduced on a single-file index: **parse 8 symbols, store 7**;
+after the fix, **8 and 8**. On the 368-file draw read back from the store, the three barrels
+that publish `self` (`internal/client/index.js:83`, `legacy/legacy-client.js`,
+`legacy/legacy-server.js`) all name `internal/client/dom/legacy/event-modifiers.js:self:27`
+today; while the declaration had no row, an `exports` row for `self` had no candidate to
+name anywhere in the project. That is the register's cost measured at the store, and it is a
+STORE-level effect: it is not attributed to the chain, which reaches a declarer the
+name-across-the-project strategy can also reach when the name is unique.
+
+The cause is a register problem, not a copy problem. One list of refused symbol names
+existed in FOUR places: `keepSymbol`'s universal set (pool-worker.ts), the indexer's
+`SYMBOL_NAME_DENYLIST` (parallel-indexer.ts), the keyword regex + read-side SQL condition in
+analysis-exclusions.ts, and the per-language RESERVED table beside `keepSymbol`. The FIRST
+was measured and corrected — R 12 symbols deleted across 9 files, graphql 1 of 8,796
+(`Query.me`), sql 3 of 18,325, lua 236 declarations (leaving 677 edges naming nothing), hcl
+H10, solidity's store-vs-analyzer divergence — and the other three kept refusing `self`,
+`Self`, `me`, `My`, `root`, `program`, `source_file` anyway, on the production path, where
+nothing reported the loss. (`this`/`super` and the synthetic analyzer artifacts are the
+genuine residue of that list and stay refused; per-language reservations stay per-language,
+which is why this cannot be fixed by deleting the names everywhere.)
+
+FIXED STRUCTURALLY, which is the only version of this fix that lasts: the universal set and
+the per-language table now live in `src/ast/symbol-name-rules.ts`, `keepSymbol` and the
+indexer's `storeableName`/insert path both call one `isDenylistedSymbolName(name, lang)`, and
+the names that LEFT the list are kept as a register (`SYMBOL_NAME_DENYLIST_REMOVED`) that
+carries the measurement for each, so a future edit that "restores a missing entry" has to
+argue with evidence. New gate `script/m14/verify-symbol-name-register.ts` — **8 checks,
+8 pass**, run through `indexProjectParallel` and read back from `brain_symbol`,
+`brain_import`, `brain_relationship` and the read-side SQL condition, with a two-file
+declaration/consumer project and a PHP control: R1 the declared `self` IS a row; R2a/R2b the
+import records the binding AND a call through it lands on that row's id; R3 the read-side SQL
+mirror does not hide it either; R4 `super` and the synthetic artifacts are STILL refused; R5
+a PHP `self` is STILL refused, with R5b showing the same name stored for javascript — the
+scoping claim, not a blanket deletion. FALSIFIED in two independent arms, each reading
+**6 of 8 with R1 failing** and each restored byte-identically by sha256: `self` back in the
+shared register, and `self` back in the analysis-exclusions replica alone — which is the
+proof that the extra copies were load-bearing rather than vestigial.
+
+MEASURED effect on this lane's population: on the 368-file draw the store now holds **4 rows
+whose names the old list refused** (3 `root`, 1 `self`) out of **2,799** symbol rows —
+re-counted from the store on this tree, not carried over. Note what that number does NOT
+claim: four rows is the register's effect, and the re-export chain's own effect is measured
+separately above (the `reexport` route's 6 rows and the 61 edges), because the two were
+fixed in the same round and a number cannot be attributed to both. The fleet-wide effect
+is quoted, NOT re-measured by this lane: the per-lane counts above are the removal register's
+own, and the lanes they belong to (R, lua, sql, graphql, hcl, python, zig) now store those
+names — their store-side numbers are theirs to re-take.
+
+The pass's refusals are reported by reason (`no-import-evidence`, `specifier-not-internal`,
+`ambiguous-multiple-files`, `item-not-exported-by-target`, `exports-not-locally-declared`,
+…), so a reader can tell "undecidable" from "decided wrongly" — which is the distinction the
+whole lane is built on.
+
+**JSD46 — the two CLAUSE-LESS re-export forms: byte-identical records, and one of them
+redistributes.** `export * from './m'` publishes every member of `./m` without writing a
+single name; `export * as ns from './m'` binds ONE name in this module and redistributes
+nothing. Measured through `parseFile`, one file per form: both emitted the `imports` edge
+`./m:*` at 0.6 with `{isReExport: true, unresolved: true}` and nothing else — and read back
+out of a real index, both emitted the SAME `brain_import` row (`imported_name` = the module
+path, `imported_as` = NULL, `import_type` = 'named'). So the namespace alias existed in no
+field anywhere, and a resolver that read a star edge as a redistribution would have invented
+an edge for every member of `./m` the file does not export.
+
+The discriminator is a TREE fact rather than a text guess: the grammar marks the namespace
+form with a NAMED `namespace_export` child (`"* as ns"`), which is also why
+`hasToken(node, '*')` is FALSE for it — the `*` sits inside that named node. The analyzer now
+publishes `metadata.starForm` = `all` | `namespace` (plus `namespaceName` for the second) on
+the edge, and the resolver files a redistribution ONLY where that field says `all` — a
+required marker rather than a default, because a record that does not state the form is the
+record a guess would be wrong about. That strictness also keeps the route unreachable from
+outside this lane: the resolver indexes `imports` edges, and no other analyzer publishes
+`isReExport` on one (haskell's `isReExport` rides an `exports` edge, nim's key is
+`nimReExport`, the ts lane spells it `reExport`), read out of those three lanes rather than
+assumed. The namespace form publishes the same per-item binding arrays a namespace
+IMPORT publishes, so the store records `imported_as = 'ns'` and `import_type = 'namespace'`
+where it previously recorded NULL and 'named'. The edge spelling, confidence and `unresolved`
+flag are unchanged on both forms, because the module dependency is the same fact in each —
+which is why the existing `reexport-forms` fixture did not move, and why the new
+`star-reexport` fixture pins the discriminator instead of re-pinning the spelling.
+
+The resolver follows a bare star as a STATEMENT (there is no name to file it by), carrying
+the same name to the next hop, and refuses what the language refuses: `default` (never
+redistributed), two sources that both declare the name (ambiguous — the union is keyed by
+symbol, so two sources naming the SAME declaration still agree), a named clause on the same
+file (it shadows a star for that name), a name declared twice in one source module, a star
+source outside the project, and any hop that does not resolve to exactly one project file.
+The barrel's recorded export surface deliberately does NOT gate this route: the analyzer
+cannot enumerate the members of a module it has not resolved, so a surface lacking the name
+is not evidence that the name is unpublished — the `export *` statement is.
+
+MEASURED on the closed 368-file population with the instrument taught the route, both arms on
+the same deterministic draw (the unwired arm is a one-line early return in
+`resolveThroughStarSources`, restored byte-identically):
+
+| 368-file svelte `src`, import-decidable | star route disabled | star route enabled |
+| --- | --- | --- |
+| all routes | 3,113 decidable | 3,113 decidable, **3,113 landed (100.0%)** |
+| the new `star` route | 14 decidable, **14 landed, 0 wrong-file, 0 detached** | 14 decidable, **14 landed, 0 wrong-file, 0 detached** |
+| `not decidable by the import statement` | 18,943 | 18,943 |
+
+**Read those rows twice, because the honest conclusion is in the thing they do not show:**
+enabling the route moves those 14 rows OUT of "undecidable" (3,099 → 3,113 decided, 18,957 →
+18,943 not decidable, exactly −14) but changes ZERO landing verdicts on this draw — the
+name-across-the-project strategy had already answered all 14, because their names are unique.
+That is not a reason to skip the route, and it is the reason the route is not sold on the
+draw: **263 of this draw's 2,189 distinct names ARE declared in more than one file**, so the
+name pass has a real competitor for 12% of names and answers anyway (that is how it produced
+the wrong-file rows the earlier rounds had to detach). The collision case is where this route
+is load-bearing, and it is pinned where a draw cannot hide it — the gate's decoy project,
+where the name pass picks the decoy: **B14/B15 fail without the route (40 of 46), and A21–A28
+and B14/B15 fail with it disabled**.
+
+MEASURED AND NOT BUILT, and the measurement is what justifies parking it. The namespace
+form's own member route (a consumer's `import { ns } from barrel` then `ns.member`, where the
+barrel publishes the namespace) needs the consumer's alias, and a conservative rule would have
+to refuse whenever the barrel publishes more than one namespace. **The population: the form
+appears in exactly ONE corpus — typescript, 24 statements across 9 files, and all 9 live
+inside `tsc/testdata/baselines`** (the concatenated baseline dumps this lane already records
+as unparseable by design), with **0** in svelte, rxjs, element-plus, vuejs, shadcn-svelte,
+vue-element-admin and lodash. Its CONSUMER population is measured too: no file in any of those
+corpora imports one of the names those barrels publish, so the route would ship with nothing
+that can exercise it. That is a census of the trees in `fixtures`, not an analyzer run, and it
+is recorded as such — the point of the number is that it can be re-taken rather than
+re-argued.
+
+TWO DEFECTS FOUND BY THE NEW CHECKS THEMSELVES, which is what the checks are for: the first
+end-to-end run of the star cases read `attached 0` and left both rows detached, because the
+clause-index loop skipped every `*` target BEFORE the branch that files bare stars (an
+ordering defect, found by running the gate once and reading its outcome); and A28 failed
+because the clause walk and the star walk shared one `(file, name)` cycle key, so the clause
+hop blocked the star hop that follows it for the same pair — the keys are now
+mechanism-tagged and `depth` still bounds every ping-pong between the two.
+
+**How the resolver moved the NAME-level store numbers, measured on the same 250-file draw
+the sections below use** (`javascript-store-resolution.mts --files=250`, re-run this round):
+
+| 250-file svelte draw | before this round | after |
+| --- | --- | --- |
+| attached edges, all labels | 5,613 (28.7%) | 5,496 (**27.7%**) |
+| `imports` attached | 527 / 1,202 (43.9%) | 528 / 1,203 (43.9%) |
+| own-file decidable, landed in the source file | 100.0% | **2,569 of 2,569 (100.0%)** |
+| detached rows whose target IS A PARAMETER of the row's own source symbol | — | **1,527** |
+
+The attachment RATE falls by a point and that is the point: the pass removes
+1,527 provably-wrong attachments (the parameter-shadowed class of JSD43) and adds
+import-bound ones, and the two movements partly offset. A reader who saw only "attached%
+28.7 → 27.7" would call this a regression; the row that matters is that the edges cleared
+were **provably not the name they claimed** and the edges added are **exactly the symbol the
+row's own import statement names**. The `imports` figure is unchanged inside the noise band
+this file already documents for that label. The full-corpus figures quoted above —
+76,306 edges, 65.1% attached, 17,396 of 17,396 own-file, 74 detached — are the **pre-resolver**
+reading and were NOT re-measured this round; they are left in place, labelled, rather than
+restated from a smaller draw.
+
+**A measurement artifact, recorded because it produced a wrong number first and the
+wrong number was large.** The first version of this instrument ran on the lodash
+project and reported **1,602** detached rows whose target names a stored symbol.
+That project is not closed for this measurement: 4 of its 55 tracked `.js` files
+exceed the 512KB cap — including `lodash.js` itself at 546KB — so the run indexed
+`lib/`, `fp/` and the smaller `dist/` bundles while the names it called "bindable"
+(`isEqual`, `map`, `filter`) are declared in the file it skipped. 1,602 was an
+artifact of the sample, and it is the same defect this lane keeps finding in its own
+instruments: a population described as closed that is not. The committed instrument
+defaults to `packages/svelte/src` (368 files, every one under the cap) and prints its
+admitted count so the next reader can check closure before quoting a number.
+
+### Outgoing: 12.0% of edges have no source symbol, and the obvious fix is not one
+
+5,067 of 42,066 rows carry `source_symbol_id IS NULL` (12.0%; 10.3% on the 250-file
+draw). Grouped by the analyzer's own spelling, the top entries are module
+basenames — `index` (222), `errors` (181), `utils` (54+48), `transform-client`,
+`transform-server`, `constants`, `browser-support.detector` — which is exactly
+`moduleName`, the actor this analyzer uses for module-scope `imports`/`exports`/
+`uses`/`calls` rows and never publishes as a symbol.
+
+**The naive fix — publish a `Module` symbol named `moduleName` — was measured and
+rejected.** On the same representation, 155 of 250 sampled files declare a symbol
+whose name EQUALS the module basename (svelte's own convention:
+`visitors/Attribute.js` exports `function Attribute`). `nameToSymbol` is first-wins
+and the store sorts `module` kind first, so the symbol would flip which actor wins
+for every module-scope edge in those files while leaving the ambiguity itself
+intact — a different guess, not a resolution. Landing it needs an unambiguous file
+identity in the edge spelling, and that is what this round landed.
+
+#### The fix: the actor is the FILE, spelled the family's way
+
+The analyzer now spells a file-level source `"(file)"` — the sentinel rust
+(`RUST_FILE_SOURCE`), scala (`FILE_MODULE`), kotlin, zig, graphql and nim already
+publish — and stamps `metadata.fileLevel: true` on every row that carries it
+(seven emission sites, applied terminally so an eighth cannot forget). The store's
+existing M60/#910 branch (`!sourceSymbol && metadata.fileLevel` →
+`source_external = relativePath`) then records the project-relative path, which is
+a node a reader can follow, instead of a basename that may or may not be a
+declaration in this file. No store logic was added for it.
+
+`(` and `)` cannot appear in a JavaScript identifier, so no declaration can be
+named `(file)` and the store's name lookup can never bind these rows to the wrong
+symbol — which is exactly what the basename spelling did.
+
+**Eight expectations changed, deliberately.** `import-edges`, `dynamic-import`,
+`dynamic-import-qualified`, `cjs-export-methods`, `empty-endpoints-refused`,
+`instantiations`, `recovery-empty-node-endpoints` and
+`instanceof-module-scope-source` pinned `"from": "<module basename>"`, which was
+the defect restated as a contract. They now pin `"from": "(file)"`, and the
+rationale in each says why (the store binds a source BY NAME; a basename is a
+legal identifier; `fileLevel` is the channel the store already reads). The
+assertion is not weakened — it is strictly narrower: the old spelling could not
+distinguish a module-scope edge from an edge inside a function that happens to
+carry the module's name, and the new spelling cannot be confused with either. The
+lane's own mutant `restore-global-instanceof-source` still dies against the new
+spelling (`instanceof-module-scope-source`, `instanceof-source`), so the contract
+is pinned by mutation and not only by text.
+
+#### The measurement (250-file draw, all three states, same instrument)
+
+| | baseline | file-level actor | + the id fix below |
+| --- | --- | --- | --- |
+| stored edges | 19,371 | 19,122 | **19,529** |
+| `imports` analyzer vs stored | 1,202 / 1,128 | 1,202 / **905** | 1,202 / **1,202 match** |
+| `exports` analyzer vs stored | 547 / 535 | 547 / 509 | 547 / **547 match** |
+| outgoing `source_symbol_id IS NULL` | 1,989 | 2,487 | 2,894 |
+| … of which FILE-LEVEL (path in `source_external`) | **0** | 2,300 | **2,707** |
+| … of which NAME-SPELLED (names nothing bindable) | 1,989 | 187 | **187** |
+| outgoing rows with a usable actor | 89.7% | 98.6% | **99.0%** |
+| attached target edges | 5,398 (27.9%) | 5,306 (27.7%) | 5,368 (27.5%) |
+
+The draw is 250 files because that is the draw this lane's own instrument defaults
+to and the one every figure in this section can be re-run at; the 1,200-file
+figures elsewhere in this document predate the file-level wave and were NOT
+re-measured, so they must be read as the record of the round that produced them.
+
+The `NULL` count RISES and that is the correct direction: the rows it gains are
+the 718 edges that used to be attributed to whichever declaration shared the
+module's basename, and which are now attributed to the file that actually made
+them. The number that moves the right way is the NAME-SPELLED half — 1,989 → 187,
+a 90.6% reduction — because that is the population that names nothing a consumer
+can follow. The instrument now reports the split instead of one `NULL` count, and
+its header says why: the two populations mean opposite things.
+
+Two costs, both measured and both stated:
+
+- Attached target edges dip 5,398 → 5,368 (0.15%): the enrichment pass skips rows
+  whose source is dangling (`dangling source edges cannot be enriched`), so a
+  file-level row does not get the symbol-to-symbol target resolution a
+  symbol-sourced row gets. 132 target symbols therefore lose their only inbound
+  edge (1,125 → 993, 96.3% → 85.0% of published symbols). Paying 30 target links
+  for 2,707 correctly attributed sources is the trade this round chose; the
+  alternative it replaces mis-attributed 718 rows to the wrong declaration.
+- The instrument itself had a measurement bug, found here and fixed: it keyed its
+  per-file oracle by `path.relative(projDir, corpusFile)` — a `../../…` string that
+  matches nothing in the database — so every `declAtLine.get(sourceFile)` lookup
+  silently missed and the file-level membership test was unsatisfiable. The
+  corrected key is the project-relative path, which is the string the store
+  stores.
+
+#### The store id had no file in it
+
+The first file-level measurement showed `imports` 1,202 analyzer / 905 stored —
+297 rows gone. They were not filtered: `brain_relationship.id` is
+`projectId:rel:<sourceId>:<target>:<type>:<line>`, and `sourceId` is NULL for
+every row whose source did not resolve, so **two DIFFERENT files emitting the same
+`(target, type, line)` built the same id and `INSERT OR IGNORE` kept one**. Twelve
+`*.bench.js` files importing `node:assert:assert` at line 1 collapsed to one stored
+row; the same collapse cost 37 `#compiler/builders:*` @4 rows, 18 @3, 16
+`../../../errors.js:*` @3. The baseline already lost rows this way — its duplicate
+groups (`c>1`) are that loss in the act — and moving 2,300 more rows into the
+unresolved bucket turned the rest of the duplicates into losses.
+
+The fix is one component: `sourceId ?? \`file:${relativePath}\``. Rows whose source
+resolved keep their id byte for byte, so no resolvable edge is re-keyed and
+within-file multiplicity semantics (#822) are untouched; rows that name a real,
+distinct file stop being discarded. Effect on this lane: `imports` and `exports`
+now match the analyzer exactly (1,202/1,202 and 547/547), stored edges 19,122 →
+19,529, file-level rows 2,300 → 2,707. **Cross-language blast radius, stated:**
+this id is shared by all 43 lanes, so any lane with same-line unresolved-source
+edges in two files will now store rows it was silently dropping. The change can
+only ADD rows of that shape; it cannot re-key or delete one. Verified for this
+lane only — the 43-language differential sweep was not run this round.
+
+**This defect was already known and reported by another lane, and two of that
+lane's artifacts are now stale.** `script/m14/lanes/java-store-roundtrip.ts:249`
+names it exactly ("project:rel:null:<module>:imports:<line> and it carries NO FILE
+COMPONENT … Two different files that import the same module with that module
+written on the same line produce the SAME id and the second is silently
+dropped"), measures it (AnEnum.java and AbstractCollectionTester.java both
+importing `GwtCompatible` at line 19 → one row), and closes with "This is a
+SHARED-HARNESS defect (parallel-indexer.ts is MASTER-owned) … Reported, not
+fixed." That note is now history: this round fixed it, because the JS lane could
+not land its file-level work without it. `script/perf/probe-rel-id-collisions.mjs`
+describes the same id shape and then infers "a tuple that appears for N distinct
+source_external values therefore stands in for N emissions" — that inference
+describes the pre-fix state and is now FALSE (each source_external gets its own
+row); to keep measuring remaining loss it has to count STORED ROWS per
+(target,type,line) group rather than distinct contributors. Neither file was
+edited here: they belong to other lanes, and changing their recorded verdicts is
+those lanes' call, not this one's.
+
+Nothing above touched the analyzer's LABELS or TARGETS, so the differential is
+invariant by construction: on a fresh rotated 120-file draw it reads
+`1621/1621 covered (100%) MISSING=0 unexplained=0 heuristic=0`
+(`hash=e4b4539bd3e02b48`), and the draw that produced the committed
+`fc839056ff888724` figure read `1,457/1,456 MISSING=1` with the single MISSING row
+being an `extends` to the DOM global `MutationObserver` — unchanged, because the
+source field is not compared. Two draws, both clean.
+
+### Incoming: the `<module>:<item>` resolver, and the two gates a path spelling fixed
+
+Once the source side said "the FILE", the worst-attached label in the lane was
+`imports`: 1,202 rows, **926 detached (23.0%)**. The population is small and
+mechanical — a target is `./util.js:helper`, so the question "which symbol" has
+one honest answer — so it was measured rather than guessed. Splitting the 926 by
+the MODULE the specifier names, and resolving relative ones against the importing
+file's own directory:
+
+| specifier | rows | bound | detached | … of detached: BINDABLE | module not in sample | star |
+| --- | --- | --- | --- | --- | --- | --- |
+| relative (`./`, `../`) | 974 | 281 | 693 | **234** | 363 | 94 |
+| hash alias (`#compiler/…`) | 91 | 0 | 91 | 0 | 0 | 91 |
+| node builtin | 54 | 0 | 54 | 0 | 52 | 2 |
+| bare package | 83 | 8 | 75 | 0 | 57 | 18 |
+
+234 rows named a module that IS in the sample and DECLARES the item. They were
+declined by two gates, and both declined them for a reason that had stopped being
+true — in `src/ast/import-resolution.ts`, not in this analyzer.
+
+**Gate 1 — the export surface was recovered from a module basename, so a
+path-spelling lane had an EMPTY one.** An `exports` edge's source symbol is the
+module, which is not a symbol, so the file is recovered from `source_external`;
+the recovery accepted it only when it equalled a file's basename STEM, uniquely.
+A path cannot equal a stem, so every file in every file-level lane had no export
+surface — and the gate that keeps resolution honest ("a target must be in the
+importing module's export surface before it may be joined", added after a
+name-only match produced a confidently WRONG edge) then declined every import
+into the lane. **This one is a regression the file-level wave itself introduced:**
+the gate's rule was right, its file-recovery was written when `source_external`
+was a basename for every lane, and the wave changed that for eleven of them. The
+recovery now tries the exact PATH spelling first (nothing else can match it) and
+keeps the basename-uniqueness rule as the fallback for lanes that still write one.
+
+**Gate 2 — the ambiguity refusal rested on a premise the wave invalidated.**
+`planImportResolutions` refuses a specifier that resolves to several files, and
+its comment said why the tie cannot be broken: *"The relationship carries no
+importing file — `relId` is `${projectId}:rel:${sourceId}:…` and an import edge's
+source symbol does not exist, so the file is simply not in the row.
+`source_external` is the importing file's module BASENAME."* Both halves of that
+are now stale: the id carries the file (this round) and `source_external` IS the
+importing file's path for every `fileLevel` lane. So the planner resolves the
+specifier from the importer's own directory first, which is not a tie-break but an
+EXACT answer, and is strictly stronger than the map it precedes: `pathTargets` is
+keyed by the specifier STRING, so one `./util.js` written by three importers is a
+3-element set and gets refused even though each importer's meaning is unambiguous.
+The empty-set and non-path cases fall through to the old strategies unchanged.
+
+A third, smaller correction: the refusal CLASSIFIER re-derived its reason from
+`pathTargets` alone, so a row declined by the export gate was reported as
+"ambiguous-multiple-files". It now mirrors the branch, because a diagnostic that
+names the wrong gate sends the next reader to the wrong code.
+
+**Result** (250-file draw, same instrument):
+
+| | before | after |
+| --- | --- | --- |
+| `imports` attached | 276 / 1,202 (**23.0%**) | 527 / 1,202 (**43.9%**) |
+| `imports` detached | 926 | **~675** |
+| attached edges (all labels) | 5,381 (27.6%) | 5,613 (**28.7%**) |
+| target symbols with ≥1 inbound edge | 993 (85.0%) | **1,035 (88.6%)** |
+| source-side numbers (file-level / name-spelled) | 2,707 / 187 | 2,707 / 187 (untouched, as expected) |
+
+The target side wobbles ±9 rows between identical runs (the same noise class this
+document already records for `imports`), so the two decisive numbers are the
+`imports` label's own move and this: among the ~675 rows still detached, **only 5
+now name a module that is in the sample and declares the item** — down from 234.
+
+**Two counts in that table are corrected here** (the attached pair was written as
+530 and ~880 while the percentages were computed from the true pair, 276 and 527).
+A row whose count and its own percentage disagree is §7's defect class, not a typo
+to leave standing; the percentages were right and the counts now are too.
+Re-measured on the same draw after this round's re-export change: detached 676 →
+674 and attached 526 → 528, which is inside the ±9-row band and therefore §5's A/B
+rather than that pair carries the re-export claim.
+The remainder is 363 rows whose module is outside the 250-file sample (they bind
+on a full project, and cannot on a subset), 185 namespace/star imports (`:*` names
+no single symbol — resolving it would invent a node), and ~180 node builtins and
+bare packages, which are external by construction.
+
+**Pinned by mutation, through the real entry point.**
+`script/m14/verify-import-resolution-path-spelling.ts` builds a temp sqlite
+fixture of two files with the SAME basename (`src/a/util.js` and `src/b/util.js`,
+both declaring `helper`, both imported as `./util.js:helper`) and calls
+`resolveImportTargets` — four properties, exit 0. Two mutations were run against
+it and both were caught: neutering the importer-relative branch → 2 of 4 fail
+(`ambiguous-multiple-files` for the path row), and restoring the basename-only
+export recovery → 2 of 4 fail (the same row, declined by the export gate). The
+fourth property is the falsification case built in: with basename-spelled export
+rows the SAME row must NOT resolve, so a suite that only asserted the success
+would pass on a resolver that resolved everything.
+`script/audit-index-modules/verify-import-fingerprint-index.ts` (the committed
+audit for this module's other half) stays **50/50 green**, and
+`verify-override-retarget.ts` still holds.
+
+#### What the DETACHED targets are, and which of them any name-keyed resolver could ever take
+
+A resolver change can only move rows that have a CANDIDATE. So the store
+instrument now censuses the incoming side the same way it censuses the outgoing
+side — by the analyzer's own shape flags, with two candidate tests per row. Same
+250-file draw, two runs:
+
+| shape (`uses` unless stated) | rows | the route it has |
+| --- | --- | --- |
+| `calls` row | **5,311** | the leaf of a call — a prototype or a library member |
+| chain SEGMENT (property name) | **3,241** | the RECEIVER'S TYPE, i.e. JSDoc `@param {T}` + a declared member |
+| BARE read | 2,612 | a global (external) or a local binding (not a symbol) |
+| call RECEIVER root | 947 | same two cases as a bare read |
+| chain ROOT | 899 | same |
+| `imports` row | 674 | modules outside the sample, namespace imports, builtins |
+| template read | 162 | a local in scope |
+| `instantiates` 29 · `exports` 28 · `extends` 4 · `references` 1 · `contains` 1 | 63 | mechanical residue |
+| **total** | **13,909** | |
+
+*This table is the shape census from an earlier round, kept because its per-shape
+columns are what the later reason codes are argued against. Its total is SUPERSEDED
+— §"Every detached row now carries a REASON CODE" below reads 14,336 on the same
+nominal 250-file draw, and the two are not comparable row-for-row because the
+analyzer, the store's file-level branch and the symbol-name register all changed
+between the rounds. Read the reason-coded section for current numbers and this one
+for why each shape has the route it has.*
+
+**The candidate tests, and both come back empty.** The store resolves by NAME, so
+for each detached row the question is whether a name-keyed candidate exists at
+all:
+
+| test | run 1 | run 2 |
+| --- | --- | --- |
+| leaf names a STORED symbol anywhere in the sample | 11 | 15 |
+| …and that symbol is declared in the row's OWN file (a real miss) | **0** | **0** |
+| target IS a PARAMETER of the row's own source symbol | **1,383** | — |
+
+So there is no store miss left in this population: not one of 13,909 detached
+rows has a candidate in its own file. The two largest shapes — 8,552 rows, 61.5%
+of the population — were checked directly against the written index and return
+**0 of 5,311** `calls` and **0 of 3,241** segments whose leaf is a stored symbol
+anywhere: their targets are `push`/`map`/`includes`/`slice`/`filter` (Array,
+String, Set prototypes — declared by no corpus file, external by construction)
+and `node`/`state`/`length`/`expression`/`metadata`/`scope` (property reads whose
+declarations the analyzer does not publish — 27 `property` symbols in the whole
+sample). A resolver cannot bind a name that names nothing.
+
+**The 1,383-row parameter column closes a design question rather than opening
+one.** That is the population a "publish parameters as symbols" design would have
+bound, and publishing them is FORBIDDEN repo-wide: `SymbolKind` has no `Parameter`
+member at all, and csharp removed its own under `ParamsAreNotSymbols` /
+`LocalsAreNotSymbols` with swift/kotlin/julia recording the same removal (see
+`real-julia-analyzer.ts`, where the first version published them, produced two
+`undefined`-kind symbols and the compiler rejected the vocabulary). A parameter is
+a BINDING, not a declaration. The instrument prints the number as a closed route
+so no later round has to re-derive that it was considered.
+
+**A bug in the first version of this census, recorded because the doc's own rule
+is that a measurement states how it was checked.** It reused the OUTGOING loop's
+skip condition (`source_symbol_id != null → skip`) and so censused only the 2,894
+rows whose SOURCE is also unattributed — a population in which, by construction,
+almost no row has an enclosing function with parameters. It printed "target is a
+parameter: 0" beside a direct SQL query on the same database that returned 1,358
+`uses` rows. The skip is now on the TARGET (`target_symbol_id != null → skip`) and
+the two methods agree (1,383 all-labels vs 1,358 `uses`-only — the 25-row gap is
+exactly the `calls` label). The instrument's other invariants hold on both runs:
+`source_external` sentinel left un-rewritten = 0, decidable rows landed in the
+source file = 2,565 of 2,565 (100.0%).
+
+**What this leaves as the next lever, stated as a decision rather than a task.**
+The remaining detached population is not resolver-tunable: it is either external
+(prototype/global/DOM/library surface, unnameable in-corpus) or contract-closed
+(parameters/locals). The segment class could only ever bind if the analyzer
+PUBLISHED the members its property reads name — an ontology change (new symbol
+rows, `metadata.declaresProperties`-style payload on the JS lane, an oracle
+co-move in `deriveJavaScriptEdges`), which is a new wave with its own gates, not
+more of this one.
+
+#### Every detached row now carries a REASON CODE, and the codes are exhaustive
+
+A count of `DETACHED: 14,336` is a population that has not been asked why, and a
+shape census is only half an answer: "`calls` row" does not say whether the call
+was the resolver's to take. The instrument now assigns every detached row exactly
+one reason, decidable from this draw alone — the row's own file, the bindings
+`brain_import` records for that file, the engine-enumerated standard-library set,
+and the spelling itself. The classes are mutually exclusive by construction and
+exhaustive by construction, so a class that silently stops matching prints as a
+non-zero `unclassified` remainder instead of a quieter total:
+
+| class | rows | what it means |
+| --- | --- | --- |
+| 1. the SOURCE is unattributed | **1,557** | belongs to the OUTGOING table, not to the resolver |
+| 2. label outside the resolver's scope | **0** | `contains`/`overrides` — a different pass owns them |
+| 3. target IS a parameter of the row's own source symbol | **1,527** | a binding, contract-closed (above) |
+| 4. the row's file records NO binding for the leaf | **10,464** | the import statement cannot decide it — sub-classified below |
+| 5. the binding's module is EXTERNAL | **255** | a package or a node builtin: no project file to name |
+| 6. the module is RELATIVE but resolves OUTSIDE this draw | **530** | the sample boundary, not a resolver gap |
+| 7. the module is INSIDE the draw **and declares the leaf** | **0** | the only class that IS the lane's open work |
+| 8. the module is INSIDE the draw but declares no such name | **3** | the edge names an import BINDING, not a declaration |
+| **total** | **14,336** | `unclassified: 0` |
+
+**Class 7 reads 0, and getting there was two corrections to this instrument's own
+first answer.** The first version filed 788 rows as resolver-eligible. It was
+asking only whether the binding's module was relative, never whether the draw
+CONTAINED the module it named: the sampled examples all turned out to be modules
+outside the 250-file draw (`utils.js`, `compiler/state.js`), which is what class 6
+exists to separate — that check alone moved the class to 533. The last three rows
+were `import * as acorn from '../acorn.js'` (read as `acorn`) and
+`import entities from './entities.js'` (read as `entities`); both modules are in
+the draw (ranks 50 and 63 of the admitted list) and NEITHER declares a symbol of
+that name — `acorn.js` declares `parse`, `remove_parens`, …, `entities.js` has
+exactly `export default {...}` — so the edge's target is the local BINDING. A
+binding is not a declaration: its route is the `imports` edge that the store
+already carries (`acorn:*`), and attaching the `uses` row to a namesake would
+invent a target. Measured on the same draw, the member READ of such a namespace
+does resolve where a member exists: `acorn.parse(...)` in
+`1-parse/read/script.js` lands on
+`…/1-parse/acorn.js:parse:26`, attached. Class 8 is that population, and class 7 —
+the rows this lane's resolver was eligible to decide and did not — is empty.
+
+**Class 4's 10,464 rows are what is left, and they split four ways.** "No binding
+for the leaf" lumps a prototype method, a property read off a local object and a
+name the draw declares into one number; the sub-classes tell them apart, and the
+sub-class sum is printed so the split cannot drift from its class:
+
+| sub-class | rows | route |
+| --- | --- | --- |
+| a) ECMAScript standard-library name (engine-enumerated) | **3,101** | none — no project file declares it |
+| b) the draw DOES declare that name | **0** | receiver typing only |
+| c) chain SEGMENT of a name the draw declares nowhere | **3,014** | a member of a local object or an external surface |
+| d) BARE read of a name no file in the draw declares | **4,349** | a local binding (may not become a symbol) or an external surface |
+| **total** | **10,464** | `unclassified: 0` |
+
+Sub-class (b) at 0 is the strongest single statement here: not one detached row in
+class 4 names a symbol this draw declares, so no name-keyed lookup could have
+taken any of them. The shapes inside class 4 are `calls` 4,453 · chain SEGMENT
+3,288 · BARE read 1,746 · chain ROOT 446 · call RECEIVER 427 · template read 100 ·
+`extends` 3 · `instantiates` 1.
+
+**The two tables close on each other, and the closure is printed rather than
+claimed.** Class 1 defers its rows to the OUTGOING table instead of judging them,
+so the classification is only complete if those rows are classified there too. The
+instrument counts rows with BOTH ends unattributed independently of the reason
+loop and prints the two numbers side by side; on this draw `1,557` and `1,557`,
+with the agreement spelled out (`nothing escapes both`). The outgoing table
+classifies all 2,900 NULL-source rows — 2,711 file-level (attributed: the store's
+M60/#910 branch rewrote the sentinel, and the un-rewritten count is 0) and 189
+name-spelled, of which **178 are neither** (an external surface or an unpublishable
+local binding) and **11 name a symbol the sample does declare** — a source-side
+attachment the name pass did not make, counted here rather than absorbed.
+
+**A gap this round's own verification found, recorded because a check has to be
+stated for what it covers.** `typecheck:scripts` compiles
+`script/m14/**/*.ts` — a glob that does **not** match `.mts`, so every `.mts`
+instrument in that directory sits outside it; measured by listing the config's own
+program, which contains the `.ts` scripts and none of the 75 `.mts` ones. Both of
+this lane's `.mts` instruments (`javascript-store-resolution.mts`,
+`js-ontology/js-detached-triage.mts`) were therefore type-checked here under an
+explicit include, and `tsc` reads **0 errors** for them. Widening the shared
+include is NOT done in this lane: under the same explicit include the directory
+reads **97 errors across 24 other lanes' `.mts` scripts** (protobuf 19 + 3 + 2 + 1 +
+1 + 1, python 17 + 7 + 7, java-fold 6, vb 5 + 1, py10 5 + 4, svelte 3 + 2 + 2 + 1,
+vue 3 + 2, groovy 2, perl 1 + 1, clean-ambiguity-split 1), plus 3 `Bun`-global
+errors that only the ad-hoc program surfaces in `.ts` files which compile cleanly
+in the config they belong to. Flipping the glob would therefore turn a passing
+check red for work that is not this lane's — the gap is reported, with its size,
+rather than silently inherited.
+
+**Reproducibility, stated as a bound — and the variance is LOCALIZED, which is the
+stronger statement.** The instrument indexes through `indexProjectParallel`, and
+four runs of the same command on the same tree read 14,343 / 14,335 / 14,336 /
+14,339 detached rows with 1,564 / 1,556 / 1,557 / 1,560 in class 1. Every OTHER
+class is byte-identical across all four runs — 1,527 / 0 / 10,464
+(3,101 · 0 · 3,014 · 4,349) / 255 / 530 / **0** / 3 — as is the outgoing split
+(2,711 + 189) and the class-1 cross-check against the outgoing table, which agreed
+in every run. So the spread sits exactly where the mechanism predicts it: class 1
+is the population whose SOURCE resolution is a race between workers, and the
+classes that judge the INCOMING side do not move at all. The decidable numerator
+moves with the same bound — 2,570 · 2,578 · 2,577 · 2,574 across the four runs, and
+2,565 in the earlier round this doc reports — with **100.0% landed in the source
+file and 0 wrong-file in every one of them**, and the file's own JSON now writes
+every class including the zero ones, so a consumer cannot read an absent key as an
+empty class.
+
+**The classification was then re-run on an independent draw** (`--files=120`, a
+different population of 7,121 detached rows rather than the same 250 files): the
+classes stay exhaustive (`unclassified: 0` in all three tables), the cross-table
+closure agrees again (1,110 = 1,110), class 7 is **0** again, and the 3 rows in
+class 8 are the same two bindings — so the empty resolver-eligible class is a
+property of the lane's resolver, not of one draw's arithmetic. Decidable rows on
+that draw: 1,602 of 1,602 landed, 0 wrong-file.
+
+### What was landed
+
+Eight items, each measured at both ends:
+
+1. **`real-javascript-analyzer.ts`** — a class symbol now carries
+   `metadata.superTypes` from its heritage clause, and members carry
+   `qualifiedName = Owner.member`. Neither existed, so the store's `super_types`
+   column had no writer for this lane and `override-retarget`'s method index had no
+   qualified names to build from.
+2. **`pool-worker.ts`** — the metadata allowlist now carries `superTypes`. This was
+   the actual blocker: the store binds `symbol.metadata.superTypes` →
+   `brain_symbol.super_types`, and the worker dropped the key, so the hierarchy was
+   NULL for every language on the production path (0 of 3,757 symbols at 1,200
+   files). The CSS `declaresProperties` and markdown `headingLevel` seams are the
+   same defect class, met from the same side.
+3. **`override-retarget.ts`** — the pass read the overriding owner from
+   `source_external` only, the column that is populated exactly when the source did
+   NOT resolve. Every row whose source resolved was skipped at its first line; on
+   this corpus that is 52 of 52 rows. It now falls back to the resolved source
+   symbol's `qualified_name`.
+4. **`real-javascript-analyzer.ts` + `parallel-indexer.ts`, this round** — the
+   file-level actor (`"(file)"` + `metadata.fileLevel`, replacing the module
+   basename) and the store id that had no file in it when the source was
+   unresolved. Both are documented with their before/after measurements in
+   §"Outgoing" below — that section is the record, and it is where the eight
+   expectation updates are justified.
+5. **`import-resolution.ts`, this round** — the two gates that a path spelling
+   fixed: the export surface is recovered from the PATH first (a path-spelling
+   lane had an EMPTY one, which declined every import into the lane), and the
+   planner resolves a specifier from the importing file's own directory now that
+   the file is in the row. §"Incoming" above has the population, the
+   falsification and the result.
+6. **`script/m14/javascript-store-resolution.mts`, this round** — the outgoing
+   split gained its incoming counterpart: the detached-target census by shape flag
+   (with the parameter column and the two name-candidate tests), printed and
+   written into the `--json` artifact as `detachedByShape`, `detachedByLabel` and
+   `targetIsParameterOfSource`. It is what makes "the target side has nothing left
+   to take" a measurement instead of a hunch — see §"Incoming" above, including
+   the off-by-loop bug it caught in its own first version. **Extended this round
+   from a census into a classification**: every detached row carries exactly one
+   reason code (eight classes, exhaustive, sum printed against the total), class 4
+   is sub-classified four ways, the outgoing defect half carries its own reason
+   codes, the two tables are cross-checked for closure, and the results go into
+   `--json` as `detachedByReason`, `nameSpelledByReason`, `noBindingSubClasses`
+   and `noBindingByShape`. That extension is what turned "there are 14k detached
+   rows" into "none of them is the resolver's to take", and it also retracted a
+   number this doc previously reported — see JSD47 and the reason-code subsection
+   of §"Incoming".
+7. **`real-javascript-analyzer.ts` + `differential.ts` (the oracle), this round** —
+   the named re-export clause's members, in ONE change: the analyzer publishes
+   `path:<member>` per written specifier at 1.0 with `declaredName`, the oracle
+   derives the same rows, and two updated fixtures plus one new one pin the
+   boundary. Open findings §5 has the A/B (271 member rows in, 106 `path:*` rows
+   out, per-file deltas agreeing on all 13 files) and the reason it had to be both
+   files at once.
+8. **`real-javascript-analyzer.ts` + `differential.ts` (the oracle), this round** —
+   §2: a published `calls` target must be a NAME, so the token-membership guard is
+   now `isNameShapedCallTarget` (ID_Start/ID_Continue plus a leading `#`) in the
+   analyzer, mirrored test-for-test in `deriveJavaScriptEdges`. Measured on the
+   corpora before the change: 31 of 31,973 svelte `calls` rows (0.097%) and 550 of
+   22,210 ts rows (2.476%) held source text; after it, 0 and 0, with the 123 svelte
+   `#private` call targets intact. The lodash differential draw reproduces the
+   recorded baseline hash and reads **100% covered / 0 MISSING / 0 unexplained**,
+   with the same 222 rows leaving BOTH sides. Open findings §2 has the fixture, the
+   guard-revert arm (**75 pass / 1 fail**, that fixture the only failure), the sixth
+   lane mutant, and the follow-on this fix deliberately does NOT do (recovering the
+   name a transparent wrapper hides: 26 + 174 paren rows). Its three arms are the
+   point: the finding appeared in at least two earlier rounds and was reported each
+   time, and neither report could state a fixture that covered it (the suite's 75
+   fixtures passed with the defect live) or a mutant that reverted it (the five
+   older lane ids name other defect classes) — so the class survived a lane that had
+   already closed the neighbouring one.
+
+`script/m14/verify-override-retarget.ts` gains the arm that pins the third seam: a
+row with `source_external` NULL and `source_symbol_id` pointing at
+`JsLeaf.render`, whose first-parent guess is not the declaring ancestor. 17 checks,
+exit 0. Before the seam the pass derived an owner for none of the lane's rows
+whatever their hierarchy said; after it, 47 of the 52 svelte rows resolve their
+ancestry and are correctly classified UNVERIFIABLE because their base is the
+GLOBAL `URLSearchParams` — the one answer no in-corpus declaration can give, and
+now the answer the pass actually reports. The remaining 5 have no persisted
+hierarchy at all.
+
+The hierarchy round changed no fixture: the lane's own runner read `74 pass / 0
+fail over 74 fixtures` and `4 lane mutants, 4 caught, 0 survived` before and after
+it, and `firing-check.mjs JAVASCRIPT` read `9 types fired, 120/120 parsed` with
+`implements` the only silent type (the RULED verdict). It added symbol payload
+(hierarchy and qualified names), not edges — which is why the fixture suite was
+unchanged and why the dispatch-path count was the check that could see the
+difference.
+
+The file-level round that followed DID change behaviour, and both gates were
+re-run against it: `74 pass / 0 fail over 74 fixtures` (with the eight
+expectations listed under "Outgoing" updated to the new contract), `4 lane
+mutants, 4 caught, 0 survived`, `firing-check.mjs JAVASCRIPT` `9 types fired,
+120/120 parsed`, `verify-override-retarget.ts` 17/17 exit 0, `typecheck` and
+`typecheck:scripts` exit 0.
+
+---
+
 ## The six definitions of done, checked
 
 | Requirement | Result |
@@ -555,9 +1923,9 @@ agreement.
 | every type has a verdict with a number | 10/10 — nine EMITTED with counts and file spreads on three corpora re-measured at this commit, one RULED with **six** instruments of which three are new and two of those decisive |
 | emitted types answer all six questions | the ten subsections above; each answer cites its instrument and measurement, names what the instrument cannot see, and — new this round — **attributes every MISSING row** to the production noise filter or to a real gap. 218 of 225 MISSING rows on the svelte draw are filter deletions; the 7 that are not are all oracle over-derivation, listed by construct and file |
 | no unknown symbols, no empty names, no placeholder-literal endpoints | 0 empty endpoints, 0 `global` sources, 0 empty symbol names, re-measured on all three corpora. Remaining "placeholder-looking" endpoints enumerated and classified, with one **classification corrected this round**: `module` as a `calls` TARGET is a written method name (`template.module(data)` in `lodash/lib/fp/build-modules.js:102`, `QUnit.module(…)` in `lodash/test/test-fp.js`), not the CommonJS free variable — 100 rows on lodash that the R7 heuristic mislabels, 0 on svelte |
-| fixtures assert the new behaviour and a mutant must die | 74 fixtures, 74 pass / 0 fail. **No analyzer behaviour changed this round**, so no new fixture is claimed: the full-corpus relationship count is byte-identical (svelte 75,561 before and after), which is the measurement that says the payload did not move. The four lane mutants were re-run through the new runner and **4 of 4 die** — while §3 records that the canonical command does not run them at all |
-| mutation, differential and payload/latency re-run | mutation: javascript **56 caught / 0 survived** in the shared registry, plus **4 caught / 0 survived** through `javascript-mutant-runner.ts`; the 6 registry survivors are java 1, groovy 2, scala 1, make 1, php 1. differential: svelte 120 files 1,457 truth / 1,456 covered / MISSING=1 / unexplained=0 / heuristic=0, hash `fc839056ff888724`; lodash 55 files 12,819 / 12,819 / MISSING=0 / unexplained=0, hash `494e1b94766e8ade`; ts corpus 200 files 3,445 truth / 3,406 covered / MISSING=39 / unexplained=1 (an `exports` row), all 39 MISSING in `tsc/testdata/baselines` files the JS grammar cannot parse. payload: **399-file svelte sample 34,569 relationships at this commit** — see the caveat below |
-| doc + spec updated | this file; JSD33 (`implements` RULED), JSD34 (class-expression heritage), JSD35 (R7 runtime), JSD36 (`pool-worker` loss), **JSD38–JSD40 added this round** (grammar-declared inventory, the probe that fires on the sibling grammar, the counterfactual parse, and the JSDoc resolvability measurement) |
+| fixtures assert the new behaviour and a mutant must die | **77 fixtures, 77 pass / 0 fail** (the two new pins are `reexport-forms` and `star-reexport`). **No analyzer behaviour changed in the hierarchy round**; the file-level round that followed DID change behaviour — eight expectations were updated to the new contract and the mutant arms were re-run against it (§Outgoing has the list and the reason) — so this row's claim is per-round and now reads: every behaviour change this lane has landed is pinned by a fixture AND by a mutant that dies without it. In the hierarchy round, no new fixture was claimed: the full-corpus relationship count is byte-identical (svelte 75,561 before and after), which is the measurement that says the payload did not move. **The JSD40 re-export round is the current case and it meets both halves**: 3 fixtures (2 updated, 1 new, with `forbidRelationships` rows naming the pre-fix spelling), and a fifth lane mutant `restore-reexport-module-star` that dies on exactly those three — plus the pre-change-analyzer arm, where the suite reads **72 pass / 3 fail** and the three are again exactly them. The lane mutants were re-run through the runner and **7 of 7 die** (the seventh, `restore-star-form-indistinct`, is the JSD46 arm and dies on exactly the new `star-reexport` fixture), and §3's wiring is in, so the canonical registry runs them too (**62 selected of 1,845, all 62 CAUGHT**, filtered run, exit 0). **The §2 round is the second case and it also meets both halves**: 1 new fixture (7 forbid rows, six of them pre-fix arms and the seventh labelled as a contract pin, with 4 expect rows as the positive controls) and a sixth lane mutant that dies on exactly it, with the guard-revert arm reading **75 pass / 1 fail** and that failure being the new fixture. Its corpus measurement is the name-shape census (31 of 31,973 svelte rows → 0) plus two differential draws at 100% covered / 0 MISSING / 0 unexplained |
+| mutation, differential and payload/latency re-run | mutation: javascript **56 caught / 0 survived** in the shared registry, plus **5 caught / 0 survived** through `javascript-mutant-runner.ts`; the 6 registry survivors are java 1, groovy 2, scala 1, make 1, php 1. differential: svelte 120 files 1,457 truth / 1,456 covered / MISSING=1 / unexplained=0 / heuristic=0, hash `fc839056ff888724` on that draw, and on a **fresh rotated 120-file draw** `1621 / 1621 (100%) MISSING=0 / unexplained=0 / heuristic=0`, hash `e4b4539bd3e02b48`, and again after the JSD40 re-export change `1756 / 1756 (100%) MISSING=0 / unexplained=0 / heuristic=0`, hash `1d25ea4fb04ffcce` — the draw rotates per invocation (`coldPoolPick`), so a hash is only comparable within one draw and three clean draws is the stronger statement; lodash 55 files 12,819 / 12,819 / MISSING=0 / unexplained=0, hash `494e1b94766e8ade`; ts corpus 200 files 3,445 truth / 3,406 covered / MISSING=39 / unexplained=1 (an `exports` row), all 39 MISSING in `tsc/testdata/baselines` files the JS grammar cannot parse. payload: **399-file svelte sample 34,569 relationships at this commit** — see the caveat below |
+| doc + spec updated | this file; JSD33 (`implements` RULED), JSD34 (class-expression heritage), JSD35 (R7 runtime), JSD36 (`pool-worker` loss), JSD38 (`implements` grammar inventory + the probe that fires on the sibling grammar + the counterfactual parse), JSD39 (the JSDoc resolvability measurement), JSD40 both halves SHIPPED, **JSD41 (the store's view of an import: binding + type)**, **JSD42 (the import row kept one binding per clause — the shared-insert seam)**, **JSD43 (a shadowed name is detached, not left on a namesake)**, **JSD44 (the store-path symbol-name register: `self` and six others dropped by a fourth copy of one list)**, **JSD45 (the re-export chain: a name a file publishes without declaring)**, **JSD46 (the two clause-less star forms: the redistribution followed by statement, and the namespace binding told apart from it)**, **JSD47 (the residue: every detached row carries one reason code, the classes are exhaustive, and the resolver-eligible class is EMPTY by measurement — with the earlier 788/533 reading corrected as this instrument's own artifact)** — and the resolver these unblocked, measured on the closed 368-file population at **3,113 of 3,113 (100.0%)** import-decidable rows landed with the pass, the chain and the star route wired, **3,097 of 3,099 (99.9%)** with the chain unwired, and **2,796 of 3,093 (90.4%)** with the whole pass unwired — that arm was measured in the JSD43 round, when the instrument's denominator read 3,093; this round's denominator reads 3,099, and the six-row difference is exactly the re-export route, which the instrument now classifies instead of counting as undecidable |
 
 ### Payload and latency
 
@@ -699,11 +2067,19 @@ fix; the decorator pre-pass, 15.0%). **Added this round:** one linear pass over
 | corpus | files | tree-truth | covered | MISSING | analyzer-edges | unexplained | heuristic | sample hash |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | svelte (primary) | 120 | 1,457 | 1,456 (99.9%) | 1 | 1,456 | 0 (0%) | 0 | `fc839056ff888724` |
+| svelte, re-run after the re-export change | 120 | 1,756 | 1,756 (**100%**) | **0** | 1,756 | 0 (0%) | 0 | `1d25ea4fb04ffcce` |
 | lodash (second) | 55 | 12,819 | 12,819 (100%) | 0 | 12,783 | 0 (0%) | 0 | `494e1b94766e8ade` |
 
 The lodash hash reproduces the recorded baseline's drawn set exactly. The single
 svelte MISSING is `extends -> Svelte4Component` from an unbound class expression
 — JSD34's declared silence, quoted rather than hidden.
+
+**The two svelte rows are two different file sets and must not be subtracted.**
+The cold-pool rotation draws never-sampled files each wave, which is the point of
+it, so the 1,457 → 1,756 move combines the rotation with this round's change and
+attributes neither. What the second row does say is that on a fresh 120-file draw
+the analyzer and the co-moved oracle agree on every row — 0 MISSING, 0
+unexplained, 100% covered — and the attribution is §5's same-files A/B instead.
 
 **Two limits of this comparison, stated because the numbers are worth less
 without them.** `differential.ts` matches on **label and target only, never
@@ -760,21 +2136,35 @@ Two corpus facts that decide how these numbers may be read:
 
 ## Evidence pointers
 
-- Fixtures: `validation/m14/fixtures/javascript/` (74; **0 added this round, and
-  the reason is in the definitions-of-done table: the analyzer emitted no new
-  edge, so there is no new behaviour for a fixture to assert**)
-- Spec: `script/m14/spec/javascript-completeness.json` (JSD33–JSD36 from the
-  previous round; **JSD38–JSD40 added this round** — the grammar's declared
-  vocabulary and the probe that fires on the sibling grammar, the JSDoc
-  resolvability measurement, and the `imports` DERIVATION verdict with its
-  independence caveat)
+- Fixtures: `validation/m14/fixtures/javascript/` (**77** on disk; **+2 this round** —
+  `reexport-forms` and `star-reexport` — plus member-row assertions and `forbidRelationships` rows
+  added to `barrel-named-clause` and `barrel-reexport`. The older "0 added" note
+  belongs to the hierarchy round, which emitted no new edge and therefore had no
+  new behaviour for a fixture to assert)
+- Spec: `script/m14/spec/javascript-completeness.json` (JSD33–JSD36 from an
+  earlier round; JSD38–JSD40 — the grammar's declared vocabulary and the probe
+  that fires on the sibling grammar, the JSDoc resolvability measurement, and the
+  `imports` DERIVATION verdict with its independence caveat; **JSD41–JSD43 added
+  this round** — the store's view of an import, the import row's identity, and the
+  shadowed-name detach — **and JSD44/JSD45/JSD46 in the same round**: the
+  store-path symbol-name register (the four replicas of one list, with the names
+  it was dropping), the re-export chain, and the two clause-less star forms (the
+  redistribution followed by statement, and the namespace binding told apart from
+  it), each with the fix, the gate and the falsification arm)
 - Lane-owned instruments (committed):
+  - `script/m14/javascript-store-resolution.mts` — **new** — the STORE graph: indexes a javascript-only project through `indexProjectParallel` into a temp store and reads `target_symbol_id` / `source_symbol_id` back, per label, with the `overrides`-verified-ancestry section
+  - `script/m14/js-ontology/js-detached-triage.mts` — **new** — splits every detached target by whether the WHOLE corpus declares the name, whether it is an engine-enumerated standard-library member, or neither. Refuses a stale corpus index rather than reusing it
+  - `validation/m14/measurements/js-corpus-declarations.json` — the cached corpus declaration index (3,447 files, file-list digest `59a19c867ad9ed6a`); the triage refuses it if the population moved
   - `script/m14/javascript-ontology-census.ts` — fires / resolved / confident / R7, over every admitted file
   - `script/m14/javascript-label-oracle-agreement.ts` — per-label oracle agreement, importing the shared oracles; **extended this round to attribute every MISSING row to the production noise filter or to a real gap**
   - `script/m14/javascript-two-path-loss.ts` — **new** — the engine-vs-pool delta per label, asking `filterNoiseRelationships` itself which rows it deletes
   - `script/m14/javascript-implements-ruling.ts` — **new** — the six instruments behind the `implements` ruling, including the counterfactual parse, the probe-fires check, and the JSDoc resolvability count
+  - `script/m14/verify-js-import-seam.ts` — **new** — the store's view of an import (binding + type) through the real indexer, 8 checks, falsified against the pre-fix behaviour
+  - `script/m14/verify-js-binding-resolution.ts` — **new**, **46 checks** — the import-graph resolver: 29 planner cases (every gate and every refusal, including the re-export chain's A14–A20 and the star route's A21–A28) plus 17 end-to-end store assertions over a decoy-bearing project (B10–B13 the chain's, B14–B17 the star route's), falsified at **37 of 46 with the chain disabled** (A14, A15, A17, A25b, A26, B10–B13 — re-measured on the 46-check gate, not carried over from the 33-check one) and at **40 of 46 with the star route disabled** (A21, A22, A24, A28, B14, B15). Its summary line read a hardcoded `32` while 33 checks ran, which is now counted from the checks that execute — the same defect class this gate exists to catch one layer down
+  - `script/m14/verify-symbol-name-register.ts` — **new**, **8 checks** — the store-path name register through the real indexer: the declared `self` IS a row, the binding lands on it, the read-side SQL mirror does not hide it, `super`/synthetic artifacts are still refused, PHP's `self` is still refused while javascript's is stored, and the removed-name register carries a measurement per entry; falsified in two independent arms (register, and the analysis-exclusions replica alone), each 6 of 8
+  - `script/m14/javascript-import-landing.ts` — **new** — the OUTCOME on the closed population: every import-decidable row classified against an expectation recomputed from the SOURCE, per route, with the wrong-file rows printed
   - `script/m14/javascript-mutants.ts` — this lane's four regression mutants
-  - `script/m14/javascript-mutant-runner.ts` — **new** — runs those four through the shared `runLang`, because the shared registry does not import them (Open findings §3)
+  - `script/m14/javascript-mutant-runner.ts` — runs the lane's seven through the shared `runLang` and **checks that the registry still imports them** (Open findings §3 — wired 2026-10-10, so this file's own NOTE branch is now the regression arm for the wiring, not a statement of the current state)
 - Their artifacts are written to `validation/m14/tmp/`, which this checkout
   excludes via `.git/info/exclude` — the repository's convention for lane output,
   so a reader re-runs the committed instrument rather than reading a stored blob.
@@ -786,8 +2176,13 @@ Two corpus facts that decide how these numbers may be read:
   HEAD the committed copy records a javascript claim at "line 29, 9 rows", while
   re-running the generator against the committed doc yields `absent` — because
   that doc's table header said `Verdict`. The generator rewrites the file on every
-  run; this lane restored it after each run rather than carrying a whole-tree diff
-  of a shared generated doc. The committed copy is the master's to regenerate.
+  run; this lane restores it after each run rather than carrying a whole-tree diff
+  of a shared generated doc, and did so again this round. The committed copy is the
+  master's to regenerate — and it is now **wrong in a second way**, because it was
+  produced by the gate BEFORE §10's first-row fix: a fresh run reports
+  `UNDOCUMENTED=10` where the committed copy records 34. §10 carries both numbers,
+  the javascript row's disappearance from the findings list, and the one new class
+  the fix revealed (`MIXED_ROW [nim]`).
 - Harness artifacts (regenerated by their own verifiers, not hand-edited):
   `validation/m14/results/M14.0.F4.json`,
   `validation/m12/results/javascript-complexity.json`,

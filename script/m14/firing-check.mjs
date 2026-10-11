@@ -29,7 +29,15 @@ const LANES = {
   // `implements`, 15 with `override`. Measured on the production path: 10/10 at
   // 200 files, 9/10 at 40 (overrides draws none of its 15 carriers).
   TYPESCRIPT:  ["typescript", "real-typescript-analyzer", "rxjs"],
-  JAVASCRIPT:  ["javascript", "real-javascript-analyzer", "lodash"],
+  // Corpus switched off lodash 2026-10-08. lodash is ES5 (51 files, 0 `class`
+  // declarations), so `extends`/`overrides` can never fire there: 7/10, with the
+  // two class-based types read as SILENT when the analyzer emits both. The lane's
+  // pinned corpus is svelte (differential.ts LANG_REPOS.javascript), but the
+  // svelte ROOT starves them too -- the 400-file cap fills with `benchmarking/`
+  // before `packages/` is reached, measured 1 extends / 0 overrides at 400 files.
+  // Its package source fires 9/10 with `implements` the only silent type, which
+  // is the RULED verdict (JS has no implements clause), not a gap.
+  JAVASCRIPT:  ["javascript", "real-javascript-analyzer", "svelte/packages/svelte/src"],
   ELIXIR:      ["elixir", "real-elixir-analyzer", "elixir"],
   CPP:         ["cpp", "real-cpp-analyzer", "cpp-example"],
   RUBY:        ["ruby", "real-ruby-analyzer", "ruby"],
@@ -80,7 +88,7 @@ for (const L of targets) {
   const exts = { rust: [".rs"], python: [".py"], go: [".go"], kotlin: [".kt", ".kts"], scala: [".scala"],
     groovy: [".groovy"], haskell: [".hs"], swift: [".swift"], perl: [".pl", ".pm"], clojure: [".clj", ".cljs"],
     vb: [".vb", ".bas", ".frm", ".cls"], vue: [".vue"], svelte: [".svelte"], html: [".html", ".htm"], css: [".css"],
-    csharp: [".cs"], java: [".java"], "objective-c": [".m"], typescript: [".ts", ".tsx"], javascript: [".js", ".mjs"],
+    csharp: [".cs"], java: [".java"], "objective-c": [".m"], typescript: [".ts", ".tsx"],    javascript: [".js", ".mjs"],
     elixir: [".ex", ".exs"], cpp: [".cpp", ".cc", ".h"], ruby: [".rb"], erlang: [".erl", ".hrl"], c: [".c", ".h"] }[lang] || []
   const files = pickFiles(dir, exts, Number(process.env.NFILES||120))
   if (!files.length) { report.push([L, `NO CORPUS under ${corpusDir}`, 0, []]); continue }

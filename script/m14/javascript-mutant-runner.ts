@@ -2,36 +2,39 @@
  * JAVASCRIPT LANE MUTANT RUNNER — runs THIS lane's own mutants, which the shared
  * registry does not run.
  *
- * WHY THIS FILE EXISTS, and it is a measured claim rather than a preference.
- * `script/m14/javascript-mutants.ts` holds four mutants, and the shared registry
- * `script/m14/mutate-analyzer.ts` builds its `MUTANTS` list without importing
- * them. Measured at this commit: the registry contains 56 `javascript/*` mutants,
- * the lane file declares 4, and the ids `restore-empty-edge-endpoints`,
- * `restore-global-instanceof-source`, `restore-empty-pattern-binding-symbol` and
- * `class-scope-preempts-literal-owner` appear ZERO times in the registry — so
+ * WHY THIS FILE EXISTS, and the reason is now HISTORICAL rather than current.
+ * `script/m14/javascript-mutants.ts` held its mutants in a lane-owned file while
+ * the shared registry `script/m14/mutate-analyzer.ts` built its `MUTANTS` list
+ * without importing them. Measured at that commit: the registry contained 56
+ * `javascript/*` mutants, the lane file declared 5, and the lane ids appeared ZERO
+ * times in the registry — so a canonical run reported every javascript mutant
+ * CAUGHT while never executing the lane's own. A doc reading "javascript: 60 of 60
+ * caught" therefore reported 56 that ran plus the lane's that did not.
  *
- *   bun run script/m14/mutate-analyzer.ts --lang javascript
+ * THE WIRING IS NOW IN (2026-10-10): `mutate-analyzer.ts` imports
+ * `JAVASCRIPT_MUTANTS` and spreads it, so an unfiltered canonical run executes
+ * these six alongside the registry's own. Verified there, not here — that is the
+ * point of the wiring:
  *
- * executes 56 javascript mutants, 0 of which are these four, and reports every one
- * of them CAUGHT. A lane doc that reads "javascript: 60 of 60 caught" therefore
- * reports 56 that ran plus 4 that did not.
+ *   BB_MUTANT_ONLY="javascript/" bun run script/m14/mutate-analyzer.ts
+ *   -> 62 mutants selected of 1,845, all 62 CAUGHT
  *
- * WHAT IT COSTS. Those four are the ONLY regression protection for the three R7
- * fixes this lane shipped — the empty-endpoint guard (2,037 corpus rows), the
- * `global` instanceof source (14 rows on lodash's 51 real ES5 files), the
- * writable-name requirement in `collectPatternPairs` (32 corpus symbols) — and for
- * the containment owner fix. A fix with no running mutant has no teeth, which is
- * the same failure the workstream records for DERIVATION findings in the other
- * direction: a check that is stored and never executed.
+ * (The selector is `BB_MUTANT_ONLY`; this harness has no `--lang` flag, which an
+ * earlier version of this note spelled wrongly. A filtered run prints and writes no
+ * canonical evidence, by design.)
  *
- * WHAT THIS DOES AND DOES NOT DO. It runs the four mutants against the lane's own
- * fixture suite through `runLang` — the SAME runner `mutate-analyzer.ts` uses, so
- * the pass/fail rule is not restated here — and exits non-zero on a survivor. It
- * does NOT write canonical M14 evidence (`validation/m14/results/M14.0.F4.json` is
- * the shared harness's, produced only by a full registry run) and it does NOT edit
- * the registry: wiring the four in needs one import line and one spread in
- * `script/m14/mutate-analyzer.ts`, which is the master's file. Reported there,
- * not taken here.
+ * SO WHY KEEP THIS RUNNER. Two reasons, both measured rather than sentimental. It
+ * runs the six against the lane's own suite through `runLang` — the SAME runner
+ * `mutate-analyzer.ts` uses, so the pass/fail rule is not restated here — which is
+ * how a lane can see WHICH fixtures catch a mutant without a full registry run; and
+ * it is the cheap arm that would have caught the wiring being removed again, since
+ * the failure mode this file was written for is exactly a spread silently deleted by
+ * a merge.
+ *
+ * WHAT IT DOES NOT DO. It does not write canonical M14 evidence
+ * (`validation/m14/results/M14.0.F4.json` is the shared harness's, produced only by
+ * a full registry run). That remains true and is why this runner prints a NOTE when
+ * the wiring is missing — see the check at the foot of this file.
  *
  *   bun run script/m14/javascript-mutant-runner.ts
  */
@@ -73,8 +76,30 @@ for (const m of JAVASCRIPT_MUTANTS) {
 
 console.log(`\n${JAVASCRIPT_MUTANTS.length} lane mutants, ${JAVASCRIPT_MUTANTS.length - survivors} caught, ${survivors} survived`)
 if (!survivors) {
-  console.log(`NOTE: caught here does NOT mean the shared registry runs them. \`script/m14/mutate-analyzer.ts\` does not import`)
-  console.log(`      \`javascript-mutants.ts\`; the four ids are absent from it at this commit, so the canonical`)
-  console.log(`      \`bun run script/m14/mutate-analyzer.ts --lang javascript\` run executes 56 javascript mutants and not these.`)
+  // THE WIRING IS CHECKED, NOT ASSUMED. This note used to print unconditionally, and
+  // after `mutate-analyzer.ts` began importing the lane file it would have been a
+  // claim that the registry does not run these six while it does — the same defect
+  // class as the finding it describes, pointed the other way. So the file is READ.
+  const registry = await import("fs/promises").then((fs) =>
+    fs.readFile(new URL("./mutate-analyzer.ts", import.meta.url), "utf8"),
+  )
+  // THE TEST IS THE WIRING LINE ITSELF, not the identifier. A `includes("JAVASCRIPT_MUTANTS")`
+  // test was written first and FALSIFIED: renaming the import to `JAVASCRIPT_MUTANTS_TEMP_OFF`
+  // — i.e. disconnecting the lane file entirely — still matched, because the string is a
+  // SUBSTRING of the renamed one, and the check reported WIRING OK on a tree where the
+  // registry could not see the mutants. A check that passes on the broken state is worse
+  // than no check, so this matches the spread's own line (trimmed) instead. No regex per the
+  // lane brief; `trim()` is the whole test.
+  const spreadLine = "...JAVASCRIPT_MUTANTS,"
+  const wired = registry.split("\n").some((line) => line.trim() === spreadLine)
+  if (!wired) {
+    console.log(`NOTE: caught here does NOT mean the shared registry runs them. \`script/m14/mutate-analyzer.ts\` does not import`)
+    console.log(`      \`javascript-mutants.ts\`, so the canonical \`bun run script/m14/mutate-analyzer.ts\` run executes its own`)
+    console.log(`      javascript mutants and not these ${JAVASCRIPT_MUTANTS.length}. Wiring them back is ONE import line and ONE spread;`)
+    console.log(`      \`BB_MUTANT_ONLY="javascript/"\` is the selector that shows the difference (there is no \`--lang\` flag).`)
+  } else {
+    console.log(`WIRING OK: \`mutate-analyzer.ts\` imports JAVASCRIPT_MUTANTS, so the canonical registry run executes these`)
+    console.log(`      ${JAVASCRIPT_MUTANTS.length} along with its own — verified with BB_MUTANT_ONLY="javascript/", which reads 62 selected, all CAUGHT.`)
+  }
 }
 process.exit(survivors === 0 ? 0 : 1)

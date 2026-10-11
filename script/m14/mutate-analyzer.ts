@@ -32,6 +32,17 @@ import { MARKDOWN_MUTANTS } from "../m60/markdown-mutants"
 import { SCSS_MUTANTS } from "../m60/scss-mutants"
 import { SOLIDITY_MUTANTS } from "../m60/solidity-mutants"
 import { YAML_MUTANTS } from "../m60/yaml-mutants"
+// The javascript lane's mutants live in script/m14/javascript-mutants.ts and are spread in
+// below. Same two-line wiring as the fsharp/css/nim/protobuf/lane files above, and it was
+// missing for the same reason: the definitions were lane-owned and correct, and nothing
+// imported them. Measured before this line landed: `BB_MUTANT_ONLY="javascript/"` executed
+// the registry's own javascript mutants and NONE of these six, whose ids appeared zero
+// times in this file — so the fixes they protect (the empty-endpoint guard, the `global`
+// instanceof source, the writable-name rule in `collectPatternPairs`, the containment
+// owner, the JSD40 re-export members and the §2 name-shape guard) had a mutation arm in
+// the lane's own runner only. A mutant the registry does not import is indistinguishable
+// from a defect class with no mutant, which is the shape F4 exists to prevent.
+import { JAVASCRIPT_MUTANTS } from "./javascript-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2465,6 +2476,14 @@ export const MUTANTS: Mutant[] = [
   ...SOLIDITY_MUTANTS,
   ...YAML_MUTANTS,
   ...SQL_ONTOLOGY_MUTANTS,
+  // javascript — the lane measured six of its own defect classes with a running mutant in
+  // `script/m14/javascript-mutant-runner.ts`, and this spread is what puts them in front of
+  // the canonical command. Verified after wiring: `BB_MUTANT_ONLY="javascript/"` selects
+  // them alongside the registry's own javascript mutants and reports every one CAUGHT.
+  // NOTE ON THE SELECTOR: this harness has no `--lang` flag — its dev filter is the
+  // `BB_MUTANT_ONLY` prefix (see `mutantFilter` below), and a filtered run deliberately
+  // writes NO canonical F4 evidence.
+  ...JAVASCRIPT_MUTANTS,
   // ---------------------------------------------------------------- VB wave
   // 2026-09-27. The vb lane reported a 1.000 F5 differential and a healthy-looking
   // corpus profile while THREE whole classes of output were missing or wrong. Each

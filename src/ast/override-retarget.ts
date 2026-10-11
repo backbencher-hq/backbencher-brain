@@ -88,10 +88,33 @@ export function retargetCrossFileOverrides(rawDb: any, projectId: string): Overr
       set.add(nm)
     }
 
+    // ── WHERE THE OWNER COMES FROM WHEN `source_external` IS NULL ──
+    //
+    // The pass reads `Owner.method` off the row to know whose ancestors to walk, and
+    // it read that ONLY from `source_external` — the column that is populated exactly
+    // when the source DID NOT resolve to a symbol. So every row whose source resolved
+    // was skipped by the first `continue`, whatever its hierarchy said.
+    //
+    // That is not a corner: it is the shape an analyzer produces when it names the
+    // overriding member in container-qualified form, which is the form this pass
+    // requires. Measured on the pinned JavaScript corpus (svelte, 1,200-file draw):
+    // 52 of 52 `overrides` rows arrived with `source_external` NULL and the source
+    // bound to the method symbol, so the pass derived an owner for 0 of them and
+    // re-pointed none. The same shape appears in every lane whose edge source is a
+    // resolved member.
+    //
+    // The resolved source symbol carries the same fact in `qualified_name`
+    // (`Owner.method`) and the two are read in that order. A source that is not a
+    // member — a class name, say, with no dot — still derives no owner and the row
+    // is left exactly as the analyzer published it, which is the pre-existing
+    // behaviour for a row this pass cannot interpret.
     const rows = rawDb
       .prepare(
-        `SELECT id, source_external, target_external FROM brain_relationship
-         WHERE project_id = ? AND relationship_type = 'overrides' AND confidence < ?`,
+        `SELECT r.id, r.source_external, r.target_external,
+                s.qualified_name AS s_qualified, s.name AS s_name
+         FROM brain_relationship r
+         LEFT JOIN brain_symbol s ON s.id = r.source_symbol_id
+         WHERE r.project_id = ? AND r.relationship_type = 'overrides' AND r.confidence < ?`,
       )
       .all(projectId, CONF_FLOOR) as any[]
 
@@ -101,7 +124,12 @@ export function retargetCrossFileOverrides(rawDb: any, projectId: string): Overr
 
     for (const row of rows) {
       out.scanned++
-      const source = String(row.source_external ?? "")
+      // The analyzer's own spelling first; failing that, the identity of the symbol the
+      // source actually RESOLVED to. `Owner.method` is what the walk needs, and both
+      // spellings carry it.
+      let source = String(row.source_external ?? "")
+      if (!source) source = String(row.s_qualified ?? "")
+      if (!source) source = String(row.s_name ?? "")
       const dot = source.lastIndexOf(".")
       if (dot <= 0) continue
       const owner = source.slice(0, dot)
