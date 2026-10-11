@@ -5781,10 +5781,11 @@ arm9 (`cause-claim-oracle-arm9.log`).
 than a category.** 37 of dart-http's 246 claims (15 %) name a base the emitting file IMPORTS: the
 analyzer already reads files from disk for its pubspec facts, so resolving ONE hop — publishing the
 imported file's declarations — would close those rows with no project index at all, and the class is
-measurable per project (`(b)`'s share of the claims column) before anything is built. It is not
-built here: every candidate change of this size gets its price measured first, and the price for
+measurable per project (`(b)`'s share of the claims column) before anything is built. Itis not built here: every candidate change of this size gets its price measured first, and the price for
 this one is the oracle's own (b) column over the whole population, which the arm9-chained run
-produces.
+produces. It has: (b) is 289,901 of 581,957 on the after state — the 297,580 spelled rows land
+mostly in (c) and (d), and proxicall's class moved only 225,854 → 233,908 — so the concentration
+above is a fact about the overrides population, not about the import hop's reach.
 
 **THE PRICE CAME IN AT 238,667 ROWS, AND ITS CONCENTRATION IS THE POINT.** Class (b) is 84 % of the
 claim population (below), and 94 % of (b) is ONE type: sampled and printed, 225,399 of proxicall's
@@ -5837,6 +5838,69 @@ hand. Three explanations were possible and two are killed by measurement, not by
   abstract class AbstractTypeParameterScope(final LookupScope _parent)`,
   `expression_generator.dart:7495 abstract class Selector(`, `collection_encoding.dart:45
   abstract class MapLiteralBuilder._(`.
+
+### The oracle re-run at the spelling — 581,957 claims, and the hole's FALSE-CLAIM exposure
+
+(`cause-claim-oracle-arm9.log`, 2026-10-10 20:08–21:16, chained behind arm9 in the same shell, the
+analyzer at `ab900b82c`; same instrument, same admission, same classifier. The population grew
+because the cause the spelling attaches travels on EVERY spelled receiver row — the oracle counts
+the marker, not the gate's bucket — and it now counts 297,580 rows the pre-run never saw:
+
+```
+repo               files admitted   claims   REFUTED     (b) import   (c) index   (d) nowhere
+pb-reference                    0        0          –            –           –             –
+   (its 2 tracked .dart paths are absent from the working tree — counted, named, not dropped)
+nvim-treesitter                 5        0          –            –           –             –
+dart-http                     333      2587          0          190          779          1618
+riverpod                     1295     10288          0          252         7147          2889
+proxicall                    2350    280551          0       233908        20101         26542
+flutter-packages             4028     98422          0        22651        37002         38769
+dart-sdk                    25727    190109        123        32900       151671          5415
+TOTAL                             581957        123       289901       216700         75233
+parse failures 0 · degraded files 2
+```
+
+**The growth cross-checks the gate to the row, which is what two implementations are for:**
+581,957 − 284,377 = **+297,580**, and the gate's two claimed marker sets sum to exactly that — calls
+`baseBeyondRunScope+qualifier` 135,561 + uses 162,019. The same 297,580 rows exist in both
+instruments' books; the gate STATES the 101,157 whose target names nothing and reads the rest as
+ordinary resolutions and ambiguity, and the oracle counts all of them, because the marker IS the
+claim. Nothing was removed, either: the pre-run's 284,377 (the overrides population) is still
+inside the total, unchanged.
+
+**The falsifiable half is no longer clean, and the 120 new rows are the grammar hole's false-claim
+exposure.** dart-sdk's REFUTED went 3 → **123**; every other repo reads 0 in both runs. The run's
+own examples name the shape — a member read claiming the base its OWN FILE declares:
+
+```
+dart-sdk/pkg/analysis_server/lib/src/lsp/handlers/custom/migration/migration_schedule.dart:143
+    MigrationSchedule._ claims base `MigrationSchedule`, declared in this file
+    (the file declares it as `class MigrationSchedule._(` … with concise-constructor fields)
+dart-sdk/pkg/cfg/lib/ir/instructions.dart:1778
+    UnaryIntOpcode.toDouble claims base `UnaryIntOpcode`, declared in this file
+    (declared as `enum UnaryIntOpcode(final String token) {` — a 3.12/3.13 header)
+dart-sdk/pkg/front_end/lib/src/base/identifiers.dart:225
+    QualifiedName.qualifier claims base `QualifiedName`, declared in this file
+    (declared as `sealed class QualifiedName(super.suffix) extends IdentifierImpl;`)
+```
+
+Same defect as the three overrides rows above, one edge type over: the header syntax is
+unparseable to the shipped grammar, the declaration is not published, the receiver's type is not in
+`visibleTypes`, so the spelling attaches the claim — and the claim says "beyond the run's scope"
+about a type the run's own file declares. Before the spelling these rows were bare leaves and the
+hole's cost was MISSING members; now it is 120 FALSE CLAIMS, counted against the lane. The 123 is
+the pre-run's three (the overrides path is unchanged, so the same rows still refute) plus these
+120. The watchdog's 440-file dart-sdk baseline is where they live, and the next arm's baseline
+should carry the refuted count, not just the presence flag.
+
+**And the two instruments refute DIFFERENT things — the contract working as designed.** The gate's
+three `causeFAIL` rows (the `GenericClass<int>.new` const patterns named in the after-table above)
+are NOT among the oracle's 123: the oracle compares the stated base against the file's declared
+NAMES, and `GenericClass<int>` is not a name any file declares, so its classifier files those three
+under (d). The gate refuses what the oracle cannot see — a base that is not identifier-shaped — and
+the oracle refuses what the gate cannot see — a base the emitting file declares. Every false claim
+THE TWO NETS CATCH is in exactly one of them: **126 = 123 + 3**, and both nets have to be empty
+before this chapter can call the bucket-3 population clean.
 
 ### What the three refutations actually are: a GRAMMAR hole, measured
 
