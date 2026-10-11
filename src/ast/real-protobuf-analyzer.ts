@@ -1,6 +1,7 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
-import { fileClaimForTarget } from "./file-claim"
+import * as path from "node:path"
+import { dirOf, fileClaimForTarget } from "./file-claim"
 
 /**
  * THE PROTOBUF DECLARATION SPEC for the project index — the fact this lane needs the indexer to hold
@@ -41,6 +42,7 @@ import { fileClaimForTarget } from "./file-claim"
  * why this lane's `extends`/`implements` columns are empty. Borrowing Solidity's arrays would
  * fabricate structure the language does not have.
  */
+
 export const PROTOBUF_DECLARATION_SPEC = {
   typeNodes: { message: "class", enum: "enum", service: "interface" },
   memberNodes: [] as string[],
@@ -1633,11 +1635,45 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (r.type !== ASTEngine.RelationshipType.Imports) continue
         const md = r.metadata as Record<string, unknown> | undefined
         if (!md || typeof md.importProjectFile === "string") continue
+        const written = String(r.target ?? "")
+        // THE IMPORT ROOT IS SOMEWHERE ABOVE, AND THIS IS THE ARM THAT REACHES IT.
+        //
+        // MEASURED, and it is a refutation of this lane's own earlier ceiling: r-lane's
+        // `probe-imports-split` prices the claimable subset at **1,061 edges (67.4%)** — its three
+        // arms being ROOT-RELATIVE, FILE-RELATIVE and SUFFIX ("any admitted file whose path ends with
+        // `/<import>`") — while the first version of this pass closed **304** and called it the
+        // ceiling. The gap is exactly the SUFFIX arm: a protobuf import path is written relative to an
+        // IMPORT ROOT that may be any directory above the file, so a vendored
+        // `google/protobuf/timestamp.proto` lives under `vendor/` and neither the file's own directory
+        // nor the project root names it.
+        //
+        // A per-file analyzer cannot ENUMERATE the project to reproduce a suffix match, and it should
+        // not: the safe, checkable form of the same idea is to try each ANCESTOR DIRECTORY of this file
+        // as the import root, which is a bounded walk (the file's depth) and yields an EXACT admitted
+        // path rather than a guessed one. Every candidate still passes the guard's admitting (admitted
+        // extension, project boundary, `statSync`), so a wrong guess is refused rather than claimed.
+        // THE CANDIDATES MUST BE PROJECT-RELATIVE, and the first version of this arm was not: it
+        // walked the ABSOLUTE file path upward, and the guard takes `extraCandidates` as already
+        // project-relative (it stats `path.join(root, candidate)`), so every candidate was tested
+        // against a path that does not exist and the arm changed NOTHING — 304 before, 304 after.
+        // The walk is over the file's PROJECT-RELATIVE directory chain, which is the spelling the
+        // guard's own `dirOf` produces.
+        const extraCandidates: string[] = []
+        const target = written.trim()
+        if (target.length > 0 && !target.includes("://") && !target.startsWith("/")) {
+          const fileRel = path.relative(path.resolve(claimRoot), filePath).split(path.sep).join("/")
+          let rel = dirOf(fileRel).replace(/\/$/, "")
+          while (rel.length > 0) {
+            extraCandidates.push(`${rel}/${target}`)
+            rel = dirOf(rel).replace(/\/$/, "")
+          }
+        }
         const claim = fileClaimForTarget({
           projectRoot: claimRoot,
           filePath,
-          written: String(r.target ?? ""),
+          written,
           admittedExtensions: ["proto"],
+          extraCandidates,
         })
         if (claim === null) continue
         md.importProjectFile = claim
