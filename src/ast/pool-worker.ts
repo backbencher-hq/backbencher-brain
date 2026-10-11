@@ -11,6 +11,10 @@ import type { ASTEngine } from "./engine"
 // silently becoming `any` here and `ProjectIndex` at the use site.
 import type { ProjectIndex } from "./project-index"
 import { detectLanguageFromPath } from "./language-detection"
+// THE BINDING SEPARATOR IS IMPORTED, NEVER RE-SPELLED. It is `\u0000` in `types.ts`, and a filter that
+// hard-coded its own copy would drift from the spelling the analyzers write — the "one spelling, two
+// places" hazard this programme keeps paying for.
+import { BINDING_SEP } from "./types"
 
 const require = createRequire(import.meta.url)
 
@@ -695,7 +699,26 @@ export function filterNoiseRelationships(rels: any[], language: string, declared
   // is unchanged: a target of `:` or `` still has no non-empty segment and is
   // still dropped, and `file.h:12`/`std::vector` resolve exactly as before.
   const extractLeaf = (name: string): string => {
-    const noLine = name.replace(/:\d+$/, "")
+    // THE BINDING SEPARATOR IS NOT PART OF THE TARGET, AND LEAVING IT IN SILENTLY DELETES EDGES.
+    //
+    // A target spelled `<read source>\u0000<binding>` — the family mechanism for a local binding, which
+    // dart adopted and php has now adopted across all five variable-read arms — was passed through this
+    // leaf extractor whole. `split(":")` and `split(".")` do not split on the separator, so the SOURCE
+    // NAME stayed attached and counted toward the 80-character budget below, a budget whose intent is
+    // code snippets rather than identifiers.
+    //
+    // MEASURED CONSEQUENCE (php-lane, whole 5,094-file population, pre-registered prediction against
+    // observed): **1,132 additional edges dropped, 0 fewer** — the entire gap. Named instance: an 89-char
+    // test method whose leaf reached 93 chars and was deleted. **THE LOSS IS SILENT**: the edge is
+    // ABSENT from the graph rather than mis-bound, so no column, count or fixture shows it and only an
+    // explicit difference of two totals finds it. php-lane found it by exactly that difference.
+    //
+    // EVERY LANE THAT ADOPTS `BINDING_SEP` INHERITS THIS, and php is only the first. The segment AFTER
+    // the separator is the target; everything before it is the read site.
+    const afterSep = BINDING_SEP.length > 0 && name.includes(BINDING_SEP)
+      ? name.slice(name.lastIndexOf(BINDING_SEP) + BINDING_SEP.length)
+      : name
+    const noLine = afterSep.replace(/:\d+$/, "")
     const segments = noLine.split(":").filter((s) => s.length > 0)
     const last = segments[segments.length - 1] ?? ""
     const dotParts = last.split(".")
