@@ -5537,27 +5537,32 @@ The whole-corpus per-file run, taken after the `contains` ruling went live and a
 the claims. It is the table the spelling change below is measured against, and one row of it is the
 reason the ruling mattered:
 
+Both per-file tables in this chapter — before and after — print the full FOURTEEN-column set the
+gate writes. Four of them (`ext?`, `bind?`, `bindFAIL`, `causeFAIL`) were dropped from the first
+transcription of `incoming-dart-arm8-perfile.log`; they are restored here from that same log, so the
+before-table carries no column the after-table has to invent:
+
 ```
-type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK  extFAIL  bindOK   causeOK
-calls         662188   266158    0        330527     176899     59531       0      0        5972     0
-uses          1337664  248758    0        478210     267080     54118       0      0        556564   0
-contains      700388   700388    97797    0          0          0           0      0        0        0
-imports       105308   81965     0        0          0          2854        20474  0        0        0
-references    73561    29380     0        44181      18002      0           0      0        0        0
-exports       2030     1887      0        0          0          89          50     0        0        0
-extends       38185    15395     0        13957      7982       8832        0      0        0        0
-implements    12404    4682      0        6980       3467       736         0      0        0        0
-overrides     316123   275068    0        9291       672        2771        1386   128      0        27479
-instantiates  155428   61018     0        52717      24425      41693       0      0        0        0
-TOTAL         3403279  1684699   97797    935863     498527     170624      21910  128      562536   27479
+type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL
+calls         662188   266158    0        330527     176899     59531       0       0       0        5972     0       0         0        0
+uses          1337664  248758    0        478210     267080     54118       0       0       0        556564   12      0         0        0
+contains      700388   700388    97797    0          0          0           0       0       0        0        0       0         0        0
+imports       105308   81965     0        0          0          2854        20474   15      0        0        0       0         0        0
+references    73561    29380     0        44181      18002      0           0       0       0        0        0       0         0        0
+exports       2030     1887      0        0          0          89          50      4       0        0        0       0         0        0
+extends       38185    15395     0        13957      7982       8832        0       0       0        0        0       0         0        0
+implements    12404    4682      0        6980       3467       736         0       0       0        0        0       0         0        0
+overrides     316123   275068    0        9291       672        2771        1386    0       128      0        0       0         27479    0
+instantiates  155428   61018     0        52717      24425      41693       0       0       0        0        0       0         0        0
+TOTAL         3403279  1684699   97797    935863     498527     170624      21910   19      128      562536   12      0         27479    0
 ```
 
-STATUS OF THE AFTER-TABLE, so this section cannot be read as the finished comparison: the run that
-measures the spelling is **arm9** (`incoming-dart-arm9-spelled.log`, from a worktree frozen at
-`ab900b82c`), and at the time of writing it is 16,000 of 33,738 files in (1,551 s) — 0 failed, 0
-degraded — with the oracle re-run chained behind it in the same shell. No after-column is quoted
-anywhere in this document until that run prints its table, and the numbers below are the BEFORE
-state only.
+STATUS OF THE AFTER-TABLE: it is LANDED. **arm9** (`incoming-dart-arm9-spelled.log`, from a
+worktree frozen at `ab900b82c`) read the same 33,738-file population with 0 parse failures and the
+same 2 degraded fallbacks, and the oracle re-run chained behind it writes
+`cause-claim-oracle-arm9.log`. `### The AFTER-table — arm9` below is the after state with a delta
+table that reconciles every column that moved; the table above is the BEFORE state, and it is the
+table arm9 was measured against.
 
 **`contains` reads 700,388 resolved / 97,797 collision-flagged / ZERO ambiguous**, where arm7 (which
 predated the ruling) read 602,591 / 97,797. The 97,797 did not disappear — they moved into the
@@ -5622,6 +5627,129 @@ whose claim is null); spread it to the `receiverMemberOutsideRun` branch (case A
 other fixtures). Suite 29/29 with the new `dart/receiver-spelling` fixture, `tsc --noEmit` clean.
 arm9 (`incoming-dart-arm9-spelled.log`) is the corpus measurement of this commit, taken from a
 worktree frozen at it, for comparison against the arm8 table above.
+
+### The AFTER-table — arm9 (`incoming-dart-arm9-spelled.log`), and every column that moved
+
+The same gate, the same 33,738 admitted files, the same per-project resolution scope, from a
+worktree frozen at the spelling commit `ab900b82c`: 0 parse failures, 2 degraded fallbacks — the same
+two files arm8 fell back on. Nothing else could have moved a cell: between arm8's run (15:01) and
+this worktree, `ab900b82c` is the ONLY commit to touch the analyzer (the file's log jumps from
+`0b6619c30`, 2026-10-09, to it), and the gate and its rule file have no commit after 14:25. Every
+delta below is the spelling and nothing else:
+
+```
+type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL
+calls         673025   311841    0        259567     118062     45042       0       0       0        5972     0       0         50603    0
+uses          1358346  314453    0        395227     203938     41531       0       0       0        556564   12      0         50554    3
+contains      700388   700388    97797    0          0          0           0       0       0        0        0       0         0        0
+imports       105308   81965     0        0          0          2854        20474   15      0        0        0       0         0        0
+references    73561    29380     0        44181      18002      0           0       0       0        0        0       0         0        0
+exports       2030     1887      0        0          0          89          50      4       0        0        0       0         0        0
+extends       38185    15395     0        13957      7982       8832        0       0       0        0        0       0         0        0
+implements    12404    4682      0        6980       3467       736         0       0       0        0        0       0         0        0
+overrides     316123   275068    0        9291       672        2771        1386    0       128      0        0       0         27479    0
+instantiates  155428   61018     0        52717      24425      41693       0       0       0        0        0       0         0        0
+TOTAL         3434798  1796077   97797    781920     376548     143548      21910   19      128      562536   12      0         128636   3
+```
+
+The verdict line, the same table read as one sentence:
+
+```
+arm8  VERDICT: FAIL — 935863 ambiguous + 170624 unresolved of 3403279 edges, resolved against the
+      file's OWN PROJECT (production's scope), and 128 external claim(s) REFUTED by the project;
+      19 external claim(s) unverifiable (21910 verified + 19 unverifiable external)
+      (the same edges under the pooled corpus key space: 1011202 ambiguous + 102199 unresolved)
+
+arm9  VERDICT: FAIL — 781920 ambiguous + 143548 unresolved of 3434798 edges, resolved against the
+      file's OWN PROJECT (production's scope), and 128 external claim(s) REFUTED by the project,
+      and 3 declared cause(s) REFUTED — the stated base is not the edge's own owner, or the edge
+      also claims to be outside the population; 19 external claim(s) unverifiable
+      (21910 verified + 19 unverifiable external)
+      (the same edges under the pooled corpus key space: 846296 ambiguous + 86876 unresolved)
+```
+
+Every column, arm8 → arm9, with the rows each delta moved in:
+
+```
+column        arm8          arm9          Δ             moved in
+edges         3403279       3434798       +31519        calls +10837 · uses +20682
+resolved      1684699       1796077       +111378       calls +45683 · uses +65695
+collRes       97797         97797         0             —
+amb(decl)     935863        781920        −153943       calls −70960 · uses −82983
+amb(kind)     498527        376548        −121979       calls −58837 · uses −63142
+unresolved    170624        143548        −27076        calls −14489 · uses −12587
+extOK         21910         21910         0             —
+ext?          19            19            0             —
+extFAIL       128           128           0             —
+bindOK        562536        562536        0             —
+bind?         12            12            0             —
+bindFAIL      0             0             0             —
+causeOK       27479         128636        +101157       calls +50603 · uses +50554
+causeFAIL     0             3             +3            uses +3 — the three rows named below
+```
+
+**EIGHT OF THE TEN ROWS DID NOT MOVE**, and not approximately: `contains`, `imports`, `references`,
+`exports`, `extends`, `implements`, `overrides` and `instantiates` are byte-identical in all
+fourteen columns. The whole corpus delta is `calls` and `uses`, and it balances column by column:
+
+```
+calls   +45683 resolved   +50603 causeOK                  − 70960 amb(decl) − 14489 unresolved  = +10837 edges
+uses    +65695 resolved   +50554 causeOK   +3 causeFAIL   − 82983 amb(decl) − 12587 unresolved  = +20682 edges
+TOTAL  +111378            +101157         +3            −153943          − 27076              = +31519 edges
+```
+
+**Against the census's price: three flows landed, and one was unpriceable by construction.** The
+census priced the two cut populations — calls 126,295 rows (which is exactly the
+`receiverCause+receiverType` set arm8's marker table prints, to the row) and uses 150,088 — and it
+predicted +109,446 amb→resolved, −7,455 resolved→unresolved, 55,973 amb→unresolved and 41,887 stays
+ambiguous. Measured against that:
+
+- **resolved: +111,378 net against +101,991 priced (calls 41,969 → 45,683; uses 60,022 → 65,695).**
+  The excess sits in the flow the census could not price for a structural reason: it prices ROWS,
+  and the un-dedup produces NEW ROWS — a spelled read surviving beside its bare twin
+  (`uses useAll -> A.count` next to `uses useAll -> count`). The commit's own fixture work found the
+  effect; this run is its first whole-corpus count.
+- **unresolved: −27,076, where the census expected the column to GROW** (7,455 refused
+  leaf-coincidence resolutions plus 55,973 rows leaving ambiguity without resolving). The rows are
+  right and the column is wrong: a row the spelled target cannot answer and the bare leaf answered
+  only by coincidence is not `unresolved` any more — it is STATED, in the column below. The gate
+  reads the claim ONLY where the target names nothing, so none of these rows was bought a
+  resolution; the loss became a disclosed bucket-3 row instead of an anonymous gap.
+- **causeOK: +101,157 (calls +50,603 · uses +50,554), against the 55,973 the census named.** The
+  census counted the rows that would leave ambiguity without resolving; the realized column is
+  larger because rows that were ALREADY unresolved, rows resolved only by the leaf's coincidence,
+  and the un-dedup's new rows declare the same cause and land in the same column. The gate's marker
+  table shows the population set by set: the pair arm8 read as `receiverCause+receiverType` is gone,
+  and arm9 reads it as `baseBeyondRunScope+qualifier` — calls **59,393 resolved · 25,565 still
+  ambiguous · 50,603 stated** (plus the `isLocalRead` variant 411/61/601) — and uses as
+  `baseBeyondRunScope+isMemberRead+qualifier` **86,017 · 18,001 · 49,194** plus the
+  `isConstantPattern` variant **6,718 · 726 · 1,363**. The still-ambiguous residue, **44,292**, is
+  the floor the census put at 41,887: two files declaring the same owner AND member name, where no
+  spelling decides.
+- **edges: +31,519 (calls +10,837 · uses +20,682), priced by nothing** — the un-dedup's new rows.
+- **amb(kind) −121,979** is a subset column and moves with `amb(decl)`; it is not a second fact.
+
+**causeFAIL 0 → 3 — a refuted declared cause is counted against the lane, so the three rows are
+named.** All three are `uses` reads the const-pattern emission site spelled:
+
+```
+dart-sdk/pkg/front_end/parser_testcases/patterns/const_patterns.dart:107
+    uses test -> GenericClass<int>.new   cause=GenericClass<int>   (`case GenericClass<int>.new:`)
+dart-sdk/pkg/front_end/testcases/patterns/const_patterns.dart:113
+    uses test -> GenericClass<int>.new   cause=GenericClass<int>   (`case const (GenericClass<int>.new):`)
+dart-sdk/tests/language/patterns/invalid_const_pattern_test.dart:543
+    uses test -> GenericClass<int>.new   cause=GenericClass<int>   (`case GenericClass<int>.new:`)
+```
+
+Property 3 of the claim contract says the stated base must be an identifier-SHAPED name that IS the
+target's own owner; `GenericClass<int>` is neither — it is a type name with its arguments attached.
+The ordinary member-read sites spell the receiver's declared type NAME; the const-pattern site
+spells the head as the source wrote it. The claim is also false in the way the oracle exists to
+catch: all three files declare `class GenericClass<T>` themselves, so the type was in the run's
+hand. The repair is to strip the arguments (a balanced `<…>`) before the visibility test and the
+claim, which turns the three rows into spelled-but-unclaimed `GenericClass.new` reads — and, the
+name being visible in these files, into three resolutions. That is a new work item with its own
+fixtures and its own arm; this table records the three rows arm9 caught, not a fix applied after it.
 
 ### Bucket 3 gets its fourth property — an independent oracle, and what it says
 
