@@ -939,6 +939,61 @@ scope difference with its measurement and leaves the decision open. And not that
 up to date: `--board-log` overwrites the WHOLE shared log, so a board row is merged deliberately,
 never as a side effect of a round. **Nothing here is a PASS.**
 
+## ROUND 16 — PRODUCTION ADMISSION: the gate admits 53 files the INDEXER ITSELF SKIPS, and the same claim is VERIFIED by one walk and REFUTED by the other
+
+**THE FLEET QUESTION.** Every lane's verdict is computed by a gate that admits a file by EXTENSION over
+the git-tracked population, while `parallel-indexer` drops a file whose path matches its own
+`skipPatterns` before it is ever parsed. If those sets differ, every lane's residual is measured over
+files PRODUCTION NEVER SEES. Measured here rather than worried about.
+
+**THE 53, NAMED** (`production-admission-diff.ts`, which IMPORTS `ParallelIndexerConfig.skipPatterns`
+rather than re-spelling it — the rule is the indexer's):
+
+| count | pattern |
+|---|---|
+| 15 | `/.*\.(generated\|Generated\|gen\|Gen)\./i` |
+| 10 | `/pnpm-lock\.yaml$/` |
+| 9 | `/\/deps\//` |
+| 7 | `/\/build\//` |
+| 6 | `/\/generated\//i` |
+| 2 | `/\/\.env/` · 2 `/\/tree-sitter-clean\//` · 1 `/\/coverage\//` · 1 `/\/platforms\//` |
+
+by repository: redis 9 · consul 6 · hasura-engine 5 · Grace 4 · … The 53 are the whole difference
+between the gate's **18,364** admitted files and production's **18,311**.
+
+**WHAT THEY CONTRIBUTE — the edge counts, NOT the residual:**
+
+| type | gate population (18,364) | production population (18,311) | Δ |
+|---|---|---|---|
+| `contains` | 1,380,046 | 1,278,388 | **−101,658** |
+| `references` | 21,417 | 21,218 | −199 |
+| `imports` | 8,366 | 8,338 | −28 |
+| `overrides` | 26 | 22 | −4 |
+| **TOTAL** | **1,414,582** | **1,312,693** | **−101,889 (−7.2 %)** |
+| **amb(decl)** | **137** | **137** | **0** |
+| **unresolved** | **47** | **47** | **0** |
+
+**ZERO OF THE 184 COMES FROM THE 53, AND THAT IS PROVABLE RATHER THAN SAMPLED:** production's
+population is a strict SUBSET of the gate's, and the two runs report the SAME ambiguity and the SAME
+unresolved count — which can only happen if no excluded edge is in either class. **yaml's residual is
+population-invariant.** (99.7 % of the edge difference is `contains` from ten `pnpm-lock.yaml` files.)
+
+**BUT ONE COLUMN INVERTS, AND THIS IS THE PART THAT TRAVELS: `imports` extFAIL 0 → 3.** Named, not
+counted: `3 imports "./.github/actions/build/ci" claim=projectFile`, from
+`.github/workflows/linux-ci.yml` and `macos-ci.yml`, candidate `.github/actions/build/ci/action.yml`.
+**That file EXISTS on disk (1,274 B) — and the indexer's own `/\/build\//` pattern refuses it.** So
+the analyzer's `projectCarriesFile` claim is TRUE, the gate's walk admits the file and VERIFIES it
+(extFAIL 0), and production's walk cannot see it and REFUTES it (extFAIL 3). **The same claim, the same
+revision, two admissions, opposite verdicts.**
+
+**WHICH POPULATION IS THE RIGHT ONE, stated rather than implied.** They answer different questions and
+both are legitimate: the gate's population is what the ANALYZER is contracted over (extension over
+tracked files — the analyzer is per-file and emits for every file it is handed), while production's is
+what the STORE holds. A lane's verdict is therefore **about the analyzer over the gate's population**,
+and any claim whose truth rests on a file the indexer skips has a population-dependent verdict. The
+count is printed here so no reader has to discover it: **the qualifier is about edge counts and about
+file-backed claims, NOT about any lane's residual** — on this lane's 184 it changes nothing.
+
 ## COMPLETION PACKAGE — current revision
 
 Whole admitted population: **1,414,582 edges · 18,364 files · 189 repos · 0 failed · 0 degraded.**
