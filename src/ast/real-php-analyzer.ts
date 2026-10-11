@@ -3,6 +3,10 @@ import { statSync } from "node:fs"
 import * as path from "node:path"
 import { ASTEngine } from "./engine"
 import { fileClaimForTarget } from "./file-claim"
+// The separator a BINDING's target carries, imported from the FAMILY constant rather than
+// re-spelled here: the analyzer writes it, the arbiter checks it, and two copies of a spelling
+// would be two rules (`src/ast/types.ts:190`).
+import { BINDING_SEP } from "./types"
 import {
   PHP_INTERNAL_FUNCTIONS,
   PHP_INTERNAL_CLASSES,
@@ -1870,30 +1874,16 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (first && first.startIndex === n.startIndex && first.endIndex === n.endIndex) {
           const base = this.variableBareName(n)
           if (base && base !== "this") {
-            relationships.push({
-              source: inFunction || "global",
-              target: base,
-              type: ASTEngine.RelationshipType.Uses,
-              confidence: 0.9,
-              line_number: this.nodeLine(n),
-              metadata: { phpSpecific: true, isSubscriptBase: true },
-            })
+            this.pushPhpBindingRead(relationships, { source: inFunction || "global", base, line: this.nodeLine(n), arm: "isSubscriptBase" })
           }
         }
       } else if (type === "variable_name" && parent && parent.type === "anonymous_function_use_clause") {
         // PHP-C (first review): closure captures (`use ($factor)`) copy
-        // outer values — every name in the clause is a genuine read.
-        // Arrow-fn implicit captures need inventory (review 2).
+        // outer values — every name in the clause is a genuine read, and an
+        // OUTER frame's binding, so it is spelled as one.
         const base = this.variableBareName(n)
         if (base && base !== "this") {
-          relationships.push({
-            source: inFunction || "global",
-            target: base,
-            type: ASTEngine.RelationshipType.Uses,
-            confidence: 0.9,
-            line_number: this.nodeLine(n),
-            metadata: { phpSpecific: true, isClosureCapture: true },
-          })
+          this.pushPhpBindingRead(relationships, { source: inFunction || "global", base, line: this.nodeLine(n), arm: "isClosureCapture" })
         }
       } else if (type === "variable_name" && this.isInsideInterpolation(n)) {
         // PHP-F (first review): string interpolation reads (`"hello $name"`,
@@ -1901,28 +1891,15 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // is evaluated (dart DT-F blanket parity). `$this` is implicit.
         const base = this.variableBareName(n)
         if (base && base !== "this") {
-          relationships.push({
-            source: inFunction || "global",
-            target: base,
-            type: ASTEngine.RelationshipType.Uses,
-            confidence: 0.9,
-            line_number: this.nodeLine(n),
-            metadata: { phpSpecific: true, isInterpolationRead: true },
-          })
+          this.pushPhpBindingRead(relationships, { source: inFunction || "global", base, line: this.nodeLine(n), arm: "isInterpolationRead" })
         }
       } else if (type === "name" && parent && parent.type === "dynamic_variable_name") {
         // PHP-F: `"${o}"` parses the variable as a bare name inside a
-        // dynamic_variable_name — unambiguously a read there.
+        // dynamic_variable_name — unambiguously a read there, and a variable
+        // read is a binding in either spelling.
         const base = n.text
         if (base && base !== "this") {
-          relationships.push({
-            source: inFunction || "global",
-            target: base,
-            type: ASTEngine.RelationshipType.Uses,
-            confidence: 0.9,
-            line_number: this.nodeLine(n),
-            metadata: { phpSpecific: true, isInterpolationRead: true },
-          })
+          this.pushPhpBindingRead(relationships, { source: inFunction || "global", base, line: this.nodeLine(n), arm: "isInterpolationRead" })
         }
       }
 
@@ -3106,6 +3083,60 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * A `$variable` VALUE READ IS A BINDING, NOT A DECLARATION REFERENCE — and the SPELLING is what
+   * says so.
+   *
+   * The family contract publishes no locals, parameters, superglobals or closure captures as
+   * symbols (`src/ast/types.ts:148-190`), so an edge that reads one has no declaration to point at.
+   * It still has to say WHICH binding it read, and the string it writes is what the store resolves:
+   * `parallel-indexer.ts:resolveRelationships` matches the target against `qualified_name` and then
+   * against a bare `name` admitted only while that name is declared exactly once in the project —
+   * and **it never reads the edge's metadata**. A bare local name is therefore indistinguishable
+   * from a declaration's name, and where the local's name collides with a unique declaration the
+   * read is bound to that declaration.
+   *
+   * MEASURED, whole admitted population, before this change: `uses` on `metadata.isLocalRead` alone
+   * read **resolved 10,484 · amb 48,219 · unresolved 45,497** (105,079 edges, and 10,484 false
+   * links), and the declarations those "resolved" reads bound to were **property 7,714 · method
+   * 2,713 · class 34 · interface 3 · function 20** — never a local, because a local is never
+   * published. The phantom is reproduced in-repo against the gate's OWN rule:
+   * `validation/m14/fixtures/php/local-read-phantom.mts` — `uses run -> counter` classifies
+   * `resolved (decls=1, kinds=property)` and binds to `Telemetry::$counter` in a file `reads.php`
+   * never names. The counterfactual is the argument: strip the separator and the store's own rule
+   * re-creates the false link.
+   *
+   * DART TOOK THIS ROUTE FOR THE IDENTICAL DEFECT (`validation/m14/fixtures/dart/local-read-phantom.ts`),
+   * and the gate has had the bucket all along — `bindOK`/`bind?`/`bindFAIL`, which read 0 for php
+   * before this change because nothing ever MARKED a binding, so nothing could be wrong.
+   *
+   * WHY IT CANNOT LAUNDER A GAP: `verifyBindingClaim` REFUTES a binding claim whose target could
+   * name a declaration, and the gate voids the claim's evidence for the whole population if any
+   * published key carries the separator (measured here: 0 keys, 350,368 edges — stated before and
+   * after, per HANDOFF §6.11).
+   */
+  private pushPhpBindingRead(
+    relationships: ASTEngine.UniversalRelationship[],
+    read: { source: string; base: string; /**
+     * `nodeLine` is typed `number | undefined` and EVERY call site below passed it straight into
+     * `line_number` before this helper existed, so the helpers' parameter must accept the same
+     * type or the change is not behaviour-preserving — the first version typed it `number` and the
+     * repo typecheck went RED on all seven sites (TS2322). The key stays PRESENT with an undefined
+     * value, exactly as the code it replaces emitted it; a conditional spread would have dropped
+     * the key and quietly changed the output shape.
+     */
+    line: number | undefined; arm: string },
+  ): void {
+    relationships.push({
+      source: read.source,
+      target: `${read.source}${BINDING_SEP}${read.base}`,
+      type: ASTEngine.RelationshipType.Uses,
+      confidence: 0.9,
+      line_number: read.line,
+      metadata: { phpSpecific: true, localBinding: true, [read.arm]: true },
+    })
+  }
+
+  /**
    * PHP2: bare `$var` value reads. Lookup order encodes PHP scoping:
    * frame chain (params/locals/use/catch/loop), then file functions, then
    * superglobals. `$this` never reads. Skips: declaration/write/label
@@ -3144,33 +3175,16 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (this.isInsideInterpolation(n)) return
     // Call-callee variables read the callable (`$fn(n)`); every other
     // variable position reads the value when bound.
+    //
+    // ALL THREE ARMS ARE BINDINGS and are spelled as such: a frame binding, a name that is also a
+    // top-level function's, and a superglobal are each a VARIABLE, and none of them is a published
+    // symbol. `pushPhpBindingRead` carries the measurement and the counterfactual.
     if (phpScopeHas(scope, base)) {
-      relationships.push({
-        source,
-        target: base,
-        type: ASTEngine.RelationshipType.Uses,
-        confidence: 0.9,
-        line_number: this.nodeLine(n),
-        metadata: { phpSpecific: true, isLocalRead: true },
-      })
+      this.pushPhpBindingRead(relationships, { source, base, line: this.nodeLine(n), arm: "isLocalRead" })
     } else if (scopeCtx.funcValues.has(base)) {
-      relationships.push({
-        source,
-        target: base,
-        type: ASTEngine.RelationshipType.Uses,
-        confidence: 0.9,
-        line_number: this.nodeLine(n),
-        metadata: { phpSpecific: true, isGlobalRead: true },
-      });
+      this.pushPhpBindingRead(relationships, { source, base, line: this.nodeLine(n), arm: "isGlobalRead" })
     } else if (PHP_SUPERGLOBALS.has(base)) {
-      relationships.push({
-        source,
-        target: base,
-        type: ASTEngine.RelationshipType.Uses,
-        confidence: 0.9,
-        line_number: this.nodeLine(n),
-        metadata: { phpSpecific: true, isGlobalRead: true },
-      });
+      this.pushPhpBindingRead(relationships, { source, base, line: this.nodeLine(n), arm: "isGlobalRead" })
     }
   }
 

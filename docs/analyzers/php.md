@@ -21,6 +21,233 @@ would have hidden the question instead of answering it.
 `BB_DATA_DIR` matters: the store gates open a real store, and a denied `mkdir` under `~/.bb`
 reads exactly like a missing database. Point it inside the workspace.
 
+## 0. RE-TAKEN 2026-10-11 — the baseline, the named causes, and two rulings that did NOT survive
+
+Everything above this line was written before the shared-indexer landings and before the lane's own
+residual was partitioned. **A lane's own doc is a claim, not a source.** This section re-takes the
+measurement, names the causes with counts, and records two things this lane had wrong — one about the
+programme record and one about its own instrument.
+
+### 0.1 The baseline, and which run it is
+
+| what | run |
+|---|---|
+| **BEFORE** | `incoming-gate.ts php php 0`, whole admitted population, **HEAD `1f5951a0a`**, 5,094 of 5,094 files parsed, unguarded `nice -n 10` (`.bb-heavy-v3.lock` was held), label in `.tmp-php/gate-baseline.log` |
+| **AFTER** | same command, same population, analyzer modified (the fix below), **HEAD `8fdf5ba6e`**, `.tmp-php/gate-after.log` |
+| partition | `validation/m14/fixtures/php/tools/residual-marker-partition.mts` (5,094 files, HEAD `d00541101`) |
+
+Nothing in the analysis path for php changed between the two runs: `src/ast/real-php-analyzer.ts`,
+`pool-worker.ts`, `incoming-rule.ts`, `member-owner-resolution.ts` and `file-claim.ts` were all
+untouched by the intervening commits (`git diff --name-only 1f5951a0a..8fdf5ba6e` lists the bash,
+dart, graphql, makefile, protobuf and zig analyzers plus `parallel-indexer.ts`'s `.proto` index entry,
+none of which the php walk reads). The instrument's own `incoming-gate.ts` DID change, but only its
+population/closure **disclosure** lines — `63063d378` is print-only (34 insertions, 0 deletions) and
+changes no count.
+
+**The baseline reproduces the doc's figures exactly**, which is what makes it a baseline rather than a
+new number: 350,368 edges · 136,944 resolved · 120,520 `amb(decl)` · 79,934 unresolved · 12,970 `extOK`
+· `extFAIL` 0 · **residual 200,454 = 57.2%**. `FALLBACK ROWS` printed **nothing in either run**, which
+per §5ll is the measurement: 0 of these edges come from `extractFallback()`, so the residual is the
+analyzer's and not a property of how many files aborted under load.
+
+### 0.2 The 57.2% by NAMED CAUSE — the gate's own marker-set rule, uncapped
+
+The gate's "EDGES A MARKER SET EXPLAINS" block prints **at most 5 marker sets per type**. `calls` closes
+exactly with its five; `uses` does not — its five printed sets sum to 139,864 of 155,016 edges, so
+**15,152 edges (9.8%) sat in sets the block never printed**, carrying `amb` 3,482 + `unres` 1,052. The
+instruction "split the residual by the gate's marker table" therefore could not reach closure, and this
+lane's largest cause was invisible in the instrument built to name it. That is now disclosed by the
+instrument itself (`63063d378`, landed from this lane's arithmetic) as a per-type
+`⋯ OMITTED N further marker set(s)` row — and it fires on php's own after-run.
+
+The partition below is produced by a probe that **reproduces TABLE 1 exactly — all 14 columns, all 10
+types** — before it prints anything; a probe that cannot do that is evidence about the probe (§5w).
+
+| type | marker set (metadata keys on the edge) | edges | resolved | amb | unres | extClaim |
+|---|---|---|---|---|---|---|
+| uses | `isLocalRead+phpSpecific` | 102,396 | 9,861 | 47,038 | 45,497 | — |
+| uses | `isMemberRead+owner+phpSpecific+resolvedBy` | 16,685 | 13,214 | 3,471 | — | — |
+| uses | `isSubscriptBase+phpSpecific` | 10,161 | 907 | 3,521 | 5,733 | — |
+| uses | `isMemberRead+phpSpecific` | 8,884 | 3,717 | 4,533 | 634 | — |
+| uses | `isConstFetch+isMemberRead+owner+phpSpecific` | 4,159 | 3,326 | 601 | 232 | — |
+| uses | `external+externalKind+isLocalRead+phpSpecific` | 2,683 | 623 | 1,181 | — | 879 |
+| uses | `external+externalKind+isSubscriptBase+phpSpecific` | 2,412 | 10 | 19 | — | 2,383 |
+| uses | `isMemberRead+isStaticRead+owner+phpSpecific` | 1,738 | 316 | 1,421 | 1 | — |
+| uses | `isMemberRead+owner+phpSpecific` | 1,360 | 277 | 994 | 89 | — |
+| uses | `isInterpolationRead+phpSpecific` | 656 | 88 | 103 | 465 | — |
+| uses | `isClosureCapture+phpSpecific` | 350 | 31 | 161 | 158 | — |
+| uses | 19 further sets (11 with amb+unres>0) | 15,152 → 2,178 + 12,974 | | | | |
+| calls | `phpSpecific` / `owner+phpSpecific` / +`resolvedBy` | 47,902 / 43,641 / 10,916 | | 26,312 / 20,611 / 697 | 9,394 / 11,885 / — | — |
+| imports | `fileLevel+isImport+phpSpecific+relationshipType` | 21,096 | 15,828 | 1,904 | 3,364 | — |
+| imports | `external+externalKind+fileLevel+isImport+…` | 6,849 | 188 | 365 | — | 6,296 |
+| imports | `fileLevel+importProjectFile+includeType+isImport+…` | 147 | — | — | — | 147 |
+| references | `declaredOn+relationshipType` | 9,711 | 6,725 | 1,681 | 1,305 | — |
+| instantiates | `isNew+phpSpecific` | 12,102 | 9,068 | 2,506 | 528 | — |
+| extends / implements | `phpSpecific` | 2,941 / 934 | 1,173 / 617 | 1,589 / 135 | 179 / 182 | — |
+| contains / exports / overrides | `isContained` / `calleeShape+…` / `isOverride+phpSpecific` | 35,112 / 58 / 2 | all resolved | | | |
+
+**The largest single cause in the lane is `uses` on `isLocalRead`: 102,396 edges — 51% of the entire
+200,454 residual — and the doc's stated cause for it is the WRONG MECHANISM.** §4 and Clause 1 say
+"generic member reads off a receiver whose TYPE the tree does not state", giving `request` 1,819,
+`expected` 1,259, `i` 958, `actual` 761, `node` 545 as examples. Those are **variable names**. An
+`isLocalRead` edge is a BARE `$variable` read (`emitPhpVariableRead`, `real-php-analyzer.ts`), whose
+target is the VARIABLE NAME — a member read is `isMemberRead`, a different and much smaller class. The
+member-read wall is real and remains (11,033 `amb` + 956 `unres` across the `isMemberRead` sets); it was
+simply never the plurality.
+
+### 0.3 REFUTATION — `owner_provable 0` was an unreachable predicate, and the class it was supposed to guard SURVIVES on a reachable one
+
+Clause 5 read: *"**Zero, and it is measured rather than characterised** (PROBE): `owner_provable` is 0
+for every type … A non-zero count would have REFUTED the rule's completeness; the probe prints examples
+when it finds any and found none."* The predicate cannot fire:
+
+1. its `members` set is built **only** from symbols whose kind is class/interface/trait/enum — i.e.
+   nested DECLARATIONS, never member symbols, so `members.has(owner + "." + target)` cannot be satisfied
+   by a member;
+2. its population filter (`keyCount.get(tgt) > 0 → skip`) removes every edge whose bare target the file
+   publishes, so the by-construction argument covers the unresolved subset only;
+3. on a file's TRUE member table it still fires 0, because every owner-carrying edge in the corpus is
+   already owner-qualified (`Receiver.viaThis`) and the concatenation builds a double-qualified key.
+
+Measured over the whole population: **the probe's exact predicate fires 0 times over ALL 80,128
+owner-carrying edges** — not only the unresolved ones. **The reachable form of the same question is now
+the control**: an owner-carrying edge with a BARE target whose `<owner>.<target>` the file publishes is a
+MISS of the qualification rule, and the count is **0 of 51,227** bare owner-carrying edges; the other
+28,901 are the ones the rule already re-spelled, which independently reproduces the owner-qualification
+probe's headline figure exactly. **So the rule's completeness survives — on a predicate that could have
+failed.** The Lead recorded the general rule as HANDOFF §6.11 ("a zero is evidence only if the predicate
+could have returned non-zero"), fleet-wide.
+
+The composition probe's OTHER zero, `builtin_unclaimed`, stands on its own definition (target names
+nothing in the key space AND carries no claim), measured over 80,081 unresolved edges. It has a known,
+counted edge: `phpInternalKind` is generated from php-src's 107 `.stub.php` files, so a predefined
+constant declared in C is invisible to it — **11 of 36** hand-listed PHP predefined constants are absent
+(`PHP_INT_MAX`, `PHP_INT_MIN`, `PHP_INT_SIZE`, `PHP_VERSION`, `PHP_OS`, `PHP_SAPI`, `PHP_FLOAT_EPSILON`,
+`PHP_FLOAT_MAX`, `STDIN`, `STDOUT`, `STDERR`). Of the 780 all-caps unlabelled unresolved targets, the one
+verified internal is `PHP_VERSION` at **42 edges**, which sits in the RULED boundary with the wrong reason
+attached. The 366 `leaf_declared` edges keep their ruling (**0 same-namespace / 366 other**), and that
+zero's predicate was separately shown REACHABLE — 3 constructed inputs fire it, the 366's shape does not.
+
+### 0.4 THE FIX — a `$variable` value read is a BINDING, and the SPELLING is what says so
+
+The family publishes no locals, parameters, superglobals or closure captures as symbols
+(`src/ast/types.ts:148-190`), so an edge that reads one has no declaration to point at — but the string
+it writes is what the store resolves, and `resolveRelationships` never reads the edge's metadata. A bare
+local name is therefore indistinguishable from a declaration's name.
+
+**Measured on the bare spelling, whole population:** every `metadata.isLocalRead` edge — 105,079 of them
+— carried a VARIABLE name, and the declarations the key space "resolved" **10,484** of them to were
+**property 7,714 · method 2,713 · class 34 · interface 3 · function 20**: never a local, because a local
+is never published. Those 10,484 are **false links by construction** — a per-file census cannot produce a
+correct one. And the columns that would have caught them read 0 for the same reason: nothing ever MARKED
+a binding, so nothing could be wrong (`bindOK`/`bind?`/`bindFAIL` all 0).
+
+The fix is the family's existing spelling, applied to **all seven emission sites of the five
+`$variable`-read arms** (`isLocalRead`, `isGlobalRead`×2, `isSubscriptBase`, `isClosureCapture`,
+`isInterpolationRead`×2), through ONE private helper so the rule has one spelling in one place.
+Dart took this route for the identical defect (`validation/m14/fixtures/dart/local-read-phantom.ts`);
+php was four arms behind it.
+
+| run | edges | resolved | amb(decl) | unresolved | extOK | **bindOK** | extFAIL | residual |
+|---|---|---|---|---|---|---|---|---|
+| BEFORE | 350,368 | 136,944 | 120,520 | 79,934 | 12,970 | **0** | 0 | **200,454 (57.2%)** |
+| AFTER | 349,236 | 125,423 | 68,491 | 28,079 | 9,629 | **117,614** | 0 | **96,570 (27.6%)** |
+| `uses` only, BEFORE | 155,016 | 33,821 | 63,466 | 52,917 | 4,812 | 0 | | |
+| `uses` only, AFTER | 153,884 | 22,300 | 11,437 | 1,062 | 1,471 | 117,614 | | |
+
+**Pre-registered and then checked.** The prediction was written from the partition arithmetic BEFORE the
+after-run returned (`.tmp-php/PREDICTION.md`): `uses` resolved 22,300 · amb 11,437 · unres 1,062 · extOK
+1,471; TOTAL resolved 125,423 · amb 68,491 · unresolved 28,079 · extOK 9,629. **All eight landed
+exactly.** `bindOK` (predicted 118,746) and the edge total (predicted 350,368) are short by the same
+**1,132** — and that difference is now MEASURED, not inferred: **the SHARED noise filter drops them.**
+
+`pool-worker.ts`'s `filterNoiseRelationships` rejects an edge whose `extractLeaf(target)` exceeds 80
+characters, and `extractLeaf` splits on `:` and `.` — **not on the binding separator** — so in
+`<source>\0<binding>` the SOURCE name counts toward the budget. A long callable name pushes the edge over
+the line and it is deleted on the way to the index. Measured over the whole admitted population by
+running the filter over both analyzers' output file by file (`tools/analyzer-count-invariance.mts`'s
+companion run): **1,132 additional edges dropped, 0 fewer**, which is the entire gap. Named instance:
+`gql-graphql-php/tests/Executor/NonNullTest.php`, a test method named
+`testNullsASynchronouslyReturnedObjectThatContainsANonNullableFieldThatThrowsSynchronously` (89 chars) →
+leaf 93-98 chars → dropped; the same reads emitted at 41 drops in that one file.
+
+* The analyzer change itself is **edge-count neutral**: `tools/analyzer-count-invariance.mts` runs the
+  base revision's analyzer and the working tree's analyzer over **all 5,094 corpus files** with one
+  parser in one process and reports **0 files differing** in per-type edge count.
+* The four disposition columns moving EXACTLY as predicted is consistent: every arm edge stops being
+  `resolved`/`amb`/`unres`/`ext` whether it survives or is dropped, so only `bindOK` and the total can
+  show the loss.
+* **THIS IS A FLEET FINDING AND IT IS NOT THIS LANE'S FILE TO FIX.** Any lane adopting `BINDING_SEP`
+  inherits it: the separator is invisible to `extractLeaf`, so the qualifier counts toward a limit whose
+  stated intent is to reject code SNIPPETS, where the thing being measured should be the leaf of the
+  NAME — here, the binding after the separator. The css lane already moved this same budget to the leaf
+  "where the intent always was" when 46 of its edges per 60 files were deleted. The remedy is one line in
+  `filterNoiseRelationships` (`extractLeaf` should take the segment after the last separator), and it is
+  the Lead's, not this lane's: `src/ast/pool-worker.ts` is a shared file outside this lane's scope.
+* Until then the lane's honest position is that **1,132 of its `uses` reads are absent from the graph
+  rather than mis-bound** — which is the lesser evil the programme has already ruled on twice ("a WRONG
+  edge is worse than no edge"), and it is a DISCLOSED, COUNTED loss rather than a silent one.
+
+**The claims that make the fix safe, each with its check:**
+
+* `separator tripwire: 0 published key(s) contain` the separator, **before AND after** (350,368 → 349,236
+  edges measured) — HANDOFF §6.11 requires the N stated on both sides, because a published key carrying
+  the separator would void every `extOK` claim in the population.
+* `extFAIL` **0**, `bind?` **0**, `bindFAIL` **0** after. A binding claim is REFUTED outright when the
+  target could name a declaration, so the spelling cannot be used to excuse a gap.
+* the `extOK` fall (4,812 → 1,471 on `uses`) is CORRECT and is part of the same fix: those were `uses`
+  edges on `$end`, `$count`, `$serialize`… — variable names that happened to match a PHP internal, so the
+  labeller marked the read external. `phpInternalKind("run\0end")` is null, so the label is gone and the
+  edge is what it always was: a binding. A variable named `$end` is not a reference to `end()`.
+* the store side, against the GATE'S OWN rule rather than a copy of it:
+  `validation/m14/fixtures/php/local-read-phantom.mts`. **RED before** — `uses run -> "counter"`
+  classifies `resolved (decls=1, kinds=property)` and binds `run`'s own local to `Telemetry::$counter` in
+  a file `reads.php` never names. **GREEN after** — `bindingVerified (decls=0, verifiedBy=binding)`, with
+  the COUNTERFACTUAL proving the spelling is load-bearing: strip the separator and the same rule
+  re-creates the false link, and the claim alone catches a lost spelling (`bindingRefuted`).
+
+**Fixtures: 40 expectation rows re-spelled across 7 files**, each rewritten only where the fixed analyzer
+really emits that binding edge for that fixture, with the mechanism and the count written INTO each file
+as `variableReadSpelling`. No `forbidRelationships` row pinned a `$variable` target (measured: 0 of 39
+`uses` forbids), so no forbid was left silently vacuous. `npx tsx script/m14/run-fixtures.ts --lang php`:
+**`{"php":{"pass":32,"fail":0}}`**, no regressions (30 before, 32 after — the pair below is new),
+`npx tsc --noEmit` exit 0.
+
+### 0.5 What I got wrong, and how it was caught
+
+* **My own partition probe counted 208 `builtin_unclaimed` — and it was wrong.** The counter admitted
+  AMBIGUOUS edges (`pc.outcome !== "resolved"`), which is a different population with a different
+  meaning. Every one of the 10 examples it printed was an in-file declaration the labeller had correctly
+  skipped (`Location::$end`, `CustomScalarType::serialize`, `SyncPromiseQueue::count`). Caught by reading
+  the printed examples back against the files — not by review. The counter now admits `unresolved` only,
+  and the defect is recorded in the tool.
+* **The first version of the phantom probe could not pass**: it demanded that EVERY edge of an arm end
+  with the exemplar binding name, which no multi-binding arm can satisfy, and it selected the first bare
+  edge rather than a phantom, so its RED run reported `unresolved` instead of naming the false link.
+* **The first version of the fixture re-spelling script re-prefixed an already-spelled target**
+  (`source + "\0" + target` → `run\0run\0xs`) and matched 0 rows.
+* **My first analyzer edit was RED on the repo typecheck**: `nodeLine` is `number | undefined` and the
+  helper typed `line: number`. Seven errors, all one shape. Fixed by accepting the same type the call
+  sites already passed, rather than by a non-null assertion — and the key stays present with an
+  `undefined` value exactly as before, since a conditional spread would have changed the output shape.
+
+### 0.6 Unsettled
+
+* **1,132 `uses` reads are DROPPED, not mis-bound** — measured above, caused by the shared noise filter's
+  80-character LEAF budget counting the source name because `extractLeaf` does not split on the binding
+  separator. The remedy is one line in `pool-worker.ts` and it is outside this lane's write scope; until
+  it lands the loss is disclosed and counted rather than silent.
+* **The 27 files that "returned nothing"** cannot be classified by the instrument: the after-run's own
+  header says this counter cannot tell "content that cannot declare anything" from "a genuine parse
+  failure or timeout" from "a file the analyzer declined" — so the population's completeness is bounded
+  by an unread list rather than established.
+* **`isMemberRead` remains a real boundary-class**: 11,033 `amb` + 956 `unres` after the fix. Those ARE
+  member reads off receivers the tree does not type, and no name-keyed rule reaches them. The falsifier
+  is unchanged (a type-aware instrument) and is still not reachable.
+* The store-side effect of the fix — that a binding-spelled row is left NULL instead of mis-bound — is
+  proved by the gate's rule and the counterfactual above, not by a live store run; the lane's store
+  instrument (`owner-resolution-gate.mts`) covers the OWNER channel, not this one.
+
 ## 1. Coverage — declared, and it closes
 
 `coverage.implemented` is all ten types, `excluded: []`, `corpusUnexercised: []`; the block derives
@@ -207,6 +434,10 @@ explained entirely by `parseFile`'s normalization.
 
 ## 5b. THE COMPLETION PACKAGE — the four clauses
 
+> **SUPERSEDED IN PART — read §0 first.** The clause tables below were measured on 2026-10-10.
+> §0 re-takes them on the current revision, corrects the `uses` cause (§0.2) and the `owner_provable 0`
+> control (§0.3), and lands the binding fix that moves the residual from 57.2% to 27.6% (§0.4).
+
 Every figure below states its LAYER: **GATE** = the incoming gate's key-space model
 (`script/m14/incoming-gate.ts`, whole admitted population, one run); **STORE** = a real store run
 (`ONE RUN` — the store's binding is order- and run-dependent, §5p); **PROBE** = the production path
@@ -302,6 +533,9 @@ is a store run. Saying which layer a number came from is the point.
 | `tools/owner-claim-crosstab.mts` | per project, would an external claim verify or refute |
 | `tools/fqn-keyspace-probe.mts` | the FQN proposal, measured on the production path (zero delta) |
 | `owner-resolution-gate.mts` | the store-side owner channel, five defect/control pins (needs `BB_DATA_DIR`) |
+| `tools/residual-marker-partition.mts` | the UNCAPPED marker-set partition, plus the three falsifier tests — **and it reproduces the gate's TABLE 1 exactly, all 14 columns of all 10 types, before it prints a bucket** |
+| `local-read-phantom.mts` | the variable-read false link, against the gate's OWN rule, with the counterfactual that strips the separator and re-creates it |
+| `tools/analyzer-count-invariance.mts` | does an analyzer change move the NUMBER of edges? base revision vs working tree, all 5,094 files, one process (`BB_AB_BASE`) |
 
 ## 7. What is NOT claimed
 
