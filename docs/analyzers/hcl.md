@@ -962,6 +962,46 @@ are arbitrary picks whatever else is true. **The intent column this needs (sourc
 the bound declaration) is the next edit; it is not in the instrument yet, and no number above depends on
 it.**
 
+### Cause 19 — PRE-REGISTRATION for the nim intent run: three buckets, and the numbers that decide
+
+Written BEFORE the intent run, so the run can fail. The question: for the 16,242 twin rows, is the bound
+declaration's file reachable from the source file? (Nim `import`/`include`, which the store already holds
+as `imports` rows — and note that on this very run nim's `imports` are only 973 bound of 2,021, so the
+evidence for reachability is itself half-missing, which is why the third bucket below is mandatory rather
+than tidy.)
+
+BUCKETS, each counted separately and never folded:
+
+| bucket | definition | reading |
+|---|---|---|
+| **REACHABLE** | an `imports` row in the same project whose SOURCE is the twin row's source file and whose bound target symbol's file IS the twin's bound declaration file | plausibly the declaration the edge meant |
+| **UNREACHABLE** | the source file has import rows, NONE of which reaches the bound declaration's file | an arbitrary pick — the negative control, and it carries whatever the REACHABLE share does not |
+| **UNDECIDABLE** | the source file has at least one `imports` row that is itself UNBOUND, so reachability cannot be established either way | a finding about the INSTRUMENT if large; if small, the two outcomes above are clean |
+
+PRE-REGISTERED THRESHOLDS, on the share of the 16,242 that are REACHABLE (UNDECIDABLE excluded from the
+denominator, reported beside it):
+
+* **≥ 70% REACHABLE → "twins are wrong" FAILS TO FIRE.** The indexer's 37,318-of-49,729 control arm does
+  not generalise to binding choice, the intent legend's scoping is the stronger reading, and a large share
+  of the fleet's `twin` columns are risk-shaped numbers that have been read as defects. That is the bigger
+  claim of the two and it needs the UNREACHABLE bucket to carry it.
+* **≤ 40% REACHABLE → "twins are wrong" STANDS.** The twins are arbitrary picks, 37,318/49,729
+  generalises, and `twin` is a defect class everywhere it appears in the fleet.
+* **40-70% → INCONCLUSIVE, and it stays inconclusive**: the result is reported as a split, not rounded to
+  whichever side is nearer, and the next measurement is a second repository rather than a re-reading of
+  the same one.
+
+WHY THE THRESHOLDS ARE THESE AND NOT 50%: the claim under test is not "more likely right than wrong" but
+"a twin is a risk worth a lane's attention". A 50% floor would let a coin flip pass as a repair, and the
+fleet reads `twin` columns as defect columns — so the test must clear a margin, and the margin is set
+before the data rather than after it. The precedent is this lane's own `contains` pair, where the floor
+(50) was pre-registered before the confirming run.
+
+STATUS, PLAINLY: this is the pre-registration only. The intent column is NOT implemented yet (the join
+above needs an `imports`-to-symbol join plus the three-bucket counters) and the nim run has NOT been
+re-taken, so no number exists for any bucket. Nothing in Causes 17-18 depends on this, and the artefact
+will carry the run's label when it exists.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
