@@ -33,7 +33,7 @@ import { CrossLanguageIntelligencePersister } from "./cross-language-intelligenc
 import { detectLanguageFromPath } from "./language-detection"
 import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
-import { resolveImportTargets } from "./import-resolution"
+import { resolveImportTargets, settleImportTargets } from "./import-resolution"
 import { resolveImportBoundTargets } from "./binding-resolution"
 import { retargetCrossFileOverrides } from "./override-retarget"
 import { ASTEngine } from "./engine"
@@ -4940,6 +4940,40 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
         log.debug("import-bound target resolution", {
           scanned: bound.scanned, attached: bound.attached,
           corrected: bound.corrected, detached: bound.detached,
+        })
+      }
+    }
+
+    // ── THE `<module>:<item>` HALF OF THE SAME QUESTION (M14 JS lane) ──
+    //
+    // The pass above reads the row's own import statement, but it refuses this
+    // form (see its note), so the `module:item` half kept the answer the INSERT
+    // path gave it: a leaf-name match with `LIMIT 1` over the symbols stored AT
+    // THAT MOMENT. Batches land in worker-completion order, so which of two
+    // same-named candidates won was a function of scheduling — measured on the
+    // pinned JS draw, indexing the same 250 files twice, 4 to 42 `imports` rows
+    // per pair resolve to a different target while row identity, symbol identity
+    // and the planner's own decisions agree exactly. No later pass could repair
+    // it: every one of them is guarded on `target_symbol_id IS NULL`.
+    //
+    // This is the same point in the same phase — both tables complete, the
+    // import/export evidence in place, before the cross-language normalization
+    // below fills its bridge — and `settleImportTargets` re-decides every row
+    // rather than only the NULL ones: the planner's answer wins where it proves
+    // one, and the insert path's own ranking is re-evaluated over the complete
+    // table everywhere else. Idempotent by construction, so a re-run (or a
+    // second site calling it) reports `corrected: 0, settled: 0`.
+    //
+    // See `script/m14/verify-resolution-determinism.ts`, which indexes the same
+    // draw twice and compares every endpoint, and the JS lane doc §JSD49/JSD50
+    // for the before/after populations.
+    {
+      const settle = settleImportTargets(rawDb as any, projectId)
+      if (settle.corrected > 0 || settle.settled > 0) {
+        log.debug("import-target settlement", {
+          scanned: settle.scanned, planned: settle.planned,
+          corrected: settle.corrected, settled: settle.settled,
+          unresolved: settle.unresolved, unchanged: settle.unchanged,
         })
       }
     }

@@ -62,6 +62,19 @@ export interface ImportTargetRow {
    * the planner falls back to the item spelled in the target.
    */
   metadata?: { declaredName?: string; declaredKind?: string } | null
+  /**
+   * `brain_relationship.target_symbol_id` as stored — read only by
+   * `settleImportTargets`, which re-decides rows that already carry one and so
+   * needs to know whether a target is already the settled answer (idempotence)
+   * and whether a settled NULL has a target to remove.
+   */
+  currentTarget?: string | null
+  /**
+   * The file the row's SOURCE symbol lives in — the second route to the row's
+   * own file, for a lane whose `source_external` is not a path this project
+   * contains. Settlement only; the planner reads `source_external`.
+   */
+  sourceFileId?: string | null
 }
 
 export interface ImportResolutionIndex {
@@ -454,33 +467,145 @@ export interface ImportResolutionOutcome {
 }
 
 /**
- * Resolve the `<module>:<item>` import edges this project left unresolved.
- * Safe to call when there is nothing to do; never throws into the caller.
+ * What the SETTLEMENT pass did — see `settleImportTargets`.
+ *
+ * `corrected` and `settled` are the two halves of the same closure: a row the
+ * module-aware planner proves is CORRECTED to the planner's answer (whatever the
+ * insert path had attached), and a row it cannot prove is SETTLED by the same
+ * leaf ranking the insert path used, re-evaluated over the complete table.
+ * `unchanged` is the idempotence gauge: on a second run over the same store it
+ * counts every row, and `corrected`/`settled` are 0.
  */
-export function resolveImportTargets(db: MinimalDb, projectId: string): ImportResolutionOutcome {
-  const byReason: Record<string, number> = {}
-  const bump = (k: string) => { byReason[k] = (byReason[k] ?? 0) + 1 }
-  const out: ImportResolutionOutcome = { scanned: 0, resolved: 0, byReason }
-  let files: any[] = []
-  let symbols: any[] = []
-  let imports: any[] = []
-  let rows: ImportTargetRow[] = []
-  let exports: Array<{ fileId: string; name: string; isDefault?: boolean; symbolId?: string }> = []
+export interface ImportSettlementOutcome {
+  scanned: number
+  planned: number
+  corrected: number
+  settled: number
+  unresolved: number
+  unchanged: number
+  /**
+   * Rows that carried a target WHEN THE PASS RAN — the population it actually
+   * re-decided. A gauge rather than a verdict: on a draw whose `module:item`
+   * rows are all detached it reads 0, which says the fixed point was checked on
+   * nothing rather than that it held. `scanned` is the population; this is the
+   * half of it the pass could disagree with.
+   */
+  attached: number
+  byReason: Record<string, number>
+}
+
+/**
+ * One candidate the leaf ranking can choose — a symbol plus the two things the
+ * ranking compares it against: its file and that file's language.
+ */
+interface LeafCandidate {
+  symbolId: string
+  fileId: string
+  isDeclaration: number
+  language: string
+}
+
+/**
+ * `resolveTargetStmt`'s ranking, re-evaluated in memory over a symbol table that
+ * is COMPLETE.
+ *
+ * The insert path asks SQLite
+ *
+ *   ORDER BY COALESCE(s.is_declaration, 0) ASC, (s.file_id = ?) DESC,
+ *            (f.language = ?) DESC, s.id
+ *   LIMIT 1
+ *
+ * with `?` the file and language of the file being stored, and with `LIMIT 1`
+ * over whatever the table held AT THAT MOMENT. For a parallel index that is a
+ * prefix — the batches land as workers finish — so the answer was a function of
+ * scheduling rather than of the store. This is the same total order with the
+ * same four keys, answered once the table is complete: a definition ahead of a
+ * declaration, then the row's own file, then the row's own language, then the
+ * id. It is a fixed point (ranking a table cannot change the table), which is
+ * what makes the pass built on it idempotent.
+ *
+ * The id comparison is a string compare, which is what SQLite's default BINARY
+ * collation does to these ids byte-for-byte; the two orderings part company
+ * only on code points at or above U+10000, where UTF-16 orders a surrogate pair
+ * below U+E000 and UTF-8 does not. Ids are `project:path:name:line`, so that
+ * needs an astral character in a path AND a tie on all three keys above.
+ */
+function rankLeafCandidates(
+  cands: LeafCandidate[],
+  rowFile: string | null,
+  rowLang: string,
+): string | null {
+  if (cands.length === 0) return null
+  let best = cands[0]
+  for (const c of cands) {
+    let cmp = 0
+    if (best.isDeclaration !== c.isDeclaration) cmp = best.isDeclaration - c.isDeclaration
+    else {
+      const bs = rowFile != null && best.fileId === rowFile ? 1 : 0
+      const cs = rowFile != null && c.fileId === rowFile ? 1 : 0
+      if (bs !== cs) cmp = cs - bs
+      else {
+        const bl = best.language === rowLang ? 1 : 0
+        const cl = c.language === rowLang ? 1 : 0
+        if (bl !== cl) cmp = cl - bl
+        else cmp = best.symbolId < c.symbolId ? -1 : best.symbolId > c.symbolId ? 1 : 0
+      }
+    }
+    if (cmp > 0) best = c
+  }
+  return best.symbolId
+}
+
+/**
+ * The five inputs both import-resolution passes read, loaded once so the export
+ * surface is recovered by ONE piece of code rather than two copies.
+ */
+interface ImportResolutionInputs {
+  files: Array<{ fileId: string; relativePath: string; language: string }>
+  symbols: Array<{ symbolId: string; fileId: string; name: string; isDeclaration: number }>
+  imports: Array<{ fileId: string; importPath: string }>
+  rows: ImportTargetRow[]
+  exports: Array<{ fileId: string; name: string; isDefault?: boolean; symbolId?: string }>
+}
+
+/**
+ * Load them, or `null` when the store cannot answer.
+ *
+ * `unresolvedOnly` is the one difference between the two callers, and it is a
+ * QUERY-level difference on purpose: `resolveImportTargets` fills NULLs and must
+ * not revisit a row another strategy already claimed, while `settleImportTargets`
+ * reads EVERY row, because re-deciding rows that already carry a target is
+ * exactly its job. The extra columns (`language`, `is_declaration`) are the two
+ * keys the leaf ranking compares on and the target-null/`sourceFileId` pair is
+ * what settlement needs; they cost nothing to read for the filler, which
+ * ignores them.
+ */
+function loadImportInputs(
+  db: MinimalDb,
+  projectId: string,
+  opts: { unresolvedOnly: boolean },
+): ImportResolutionInputs | null {
   try {
-    files = db.prepare(
-      `SELECT id AS fileId, relative_path AS relativePath FROM brain_file WHERE project_id = ?`,
-    ).all(projectId) as any[]
-    symbols = db.prepare(
-      `SELECT id AS symbolId, file_id AS fileId, name AS name FROM brain_symbol WHERE project_id = ?`,
-    ).all(projectId) as any[]
-    imports = db.prepare(
+    const files = db.prepare(
+      `SELECT id AS fileId, relative_path AS relativePath, COALESCE(language, '') AS language
+         FROM brain_file WHERE project_id = ?`,
+    ).all(projectId) as ImportResolutionInputs["files"]
+    const symbols = db.prepare(
+      `SELECT id AS symbolId, file_id AS fileId, name AS name, COALESCE(is_declaration, 0) AS isDeclaration
+         FROM brain_symbol WHERE project_id = ?`,
+    ).all(projectId) as ImportResolutionInputs["symbols"]
+    const imports = db.prepare(
       `SELECT file_id AS fileId, import_path AS importPath FROM brain_import WHERE project_id = ?`,
-    ).all(projectId) as any[]
-    rows = db.prepare(
-      `SELECT id, target_external AS target_external, source_external AS source_external, metadata
-         FROM brain_relationship
-        WHERE project_id = ? AND relationship_type = 'imports'
-          AND target_symbol_id IS NULL AND target_external IS NOT NULL AND instr(target_external, ':') > 0`,
+    ).all(projectId) as ImportResolutionInputs["imports"]
+    const rows = db.prepare(
+      `SELECT r.id AS id, r.target_external AS target_external, r.source_external AS source_external,
+              r.metadata AS metadata, r.target_symbol_id AS currentTarget,
+              ss.file_id AS sourceFileId
+         FROM brain_relationship r
+         LEFT JOIN brain_symbol ss ON ss.id = r.source_symbol_id
+        WHERE r.project_id = ? AND r.relationship_type = 'imports'
+          AND r.target_external IS NOT NULL AND instr(r.target_external, ':') > 0
+          ${opts.unresolvedOnly ? "AND r.target_symbol_id IS NULL" : ""}`,
     ).all(projectId) as ImportTargetRow[]
     for (const r of rows) {
       if (typeof r.metadata === "string") {
@@ -527,7 +652,7 @@ export function resolveImportTargets(db: MinimalDb, projectId: string): ImportRe
     for (const sy of symbols) symFile.set(sy.symbolId, sy.fileId)
     const relPathOfFile = new Map<string, string>()
     for (const f of files) relPathOfFile.set(String(f.fileId), String(f.relativePath))
-    exports = []
+    const exports: ImportResolutionInputs["exports"] = []
     for (const er of exportRows) {
       if (!er.sym) continue
       const fileId = symFile.get(er.sym)
@@ -546,11 +671,25 @@ export function resolveImportTargets(db: MinimalDb, projectId: string): ImportRe
         exports.push({ fileId, name: er.tgt, isDefault, symbolId: er.sym })
       }
     }
+    return { files, symbols, imports, rows, exports }
   } catch (e: any) {
     // A project with no import table, or a store that has not been migrated,
     // must not fail an index run over a relationship class that is a bonus.
-    return out
+    return null
   }
+}
+
+/**
+ * Resolve the `<module>:<item>` import edges this project left unresolved.
+ * Safe to call when there is nothing to do; never throws into the caller.
+ */
+export function resolveImportTargets(db: MinimalDb, projectId: string): ImportResolutionOutcome {
+  const byReason: Record<string, number> = {}
+  const bump = (k: string) => { byReason[k] = (byReason[k] ?? 0) + 1 }
+  const out: ImportResolutionOutcome = { scanned: 0, resolved: 0, byReason }
+  const inputs = loadImportInputs(db, projectId, { unresolvedOnly: true })
+  if (!inputs) return out
+  const { files, symbols, imports, rows, exports } = inputs
   out.scanned = rows.length
   if (rows.length === 0) return out
 
@@ -605,6 +744,164 @@ export function resolveImportTargets(db: MinimalDb, projectId: string): ImportRe
     if (tg.size > 1) { bump("ambiguous-multiple-files"); continue }
     const ex = index.exportsByFile.get([...(tg ?? [])][0])
     bump(!ex ? "no-export-surface-recorded" : (ex.has(item) ? "no-such-symbol-in-target-file" : "item-not-exported-by-target"))
+  }
+  return out
+}
+
+/**
+ * SETTLE the `<module>:<item>` targets: make every one of them a function of the
+ * COMPLETE tables rather than of the order the parallel batches happened to be
+ * stored in.
+ *
+ * ## The defect this removes
+ *
+ * `storeResults` resolves each relationship's target as it stores the batch, with
+ * `resolveTargetStmt` — ranked on the target's LEAF name, `LIMIT 1`, over
+ * whatever the symbol table held AT THAT MOMENT. A parallel index stores batches
+ * in worker-completion order, so a leaf match that had two candidate files
+ * answered differently from run to run, and every later pass was guarded on
+ * `target_symbol_id IS NULL`, which made the first answer FINAL. Measured on the
+ * pinned 250-file JS draw, indexing the same source twice:
+ *
+ *   row identity, symbol identity, planner decisions   0 differences
+ *   resolved targets of `imports` rows                 4–42 rows differ per pair
+ *
+ * Every divergent row is this form, so this pass closes the class: it is the
+ * first point at which BOTH tables are complete and the import/export evidence
+ * exists, and it re-decides every row rather than only the NULL ones.
+ *
+ * ## The rule, and why it is this rule
+ *
+ *   proven by the module-aware planner   → the planner's answer, ALWAYS.
+ *     The planner resolves the specifier from the importing file's own directory
+ *     and gates on the target module's export surface, so it is evidence rather
+ *     than a guess; when it is right it must not lose to a name match the insert
+ *     path made against a partial table.
+ *   otherwise                            → `rankLeafCandidates` over the
+ *     COMPLETE symbol table, the same four keys the insert path used. This is
+ *     the insert path's own policy, evaluated correctly; the alternative
+ *     (detach everything the planner does not prove) would discard a mechanism
+ *     this lane uses everywhere else — a bare `name` target is attached by
+ *     exactly this ranking, deterministically, by the I13 pass.
+ *
+ * Both halves are idempotent: the planner's plan is a pure function of the
+ * tables, and ranking a complete table cannot change it. A second run over the
+ * same store therefore reports `corrected: 0, settled: 0` with every row counted
+ * `unchanged`, which is the property the gate asserts.
+ *
+ * ## What it costs, measured on the pinned draw (250 files)
+ *
+ *   1,203 `module:item` import rows
+ *    519 attach a target, 684 do not
+ *    503 are planner-proven; of the rows that already carried a target, 115
+ *        stored something OTHER than the planner's answer and are CORRECTED
+ *     22 detached rows gain a target — the ranking can answer them because the
+ *        LEAF name exists somewhere in the project. That is the honest price of
+ *        determinism, and it is the same answer the insert path already
+ *        produced whenever the name happened to be stored early enough; the
+ *        other 662 detached rows have no same-named symbol anywhere and stay
+ *        detached in every run.
+ *      1 attached row the ranking re-rank (the two mechanisms agreed on the
+ *        rest).
+ *
+ * A store that has not been through the insert path at all (a fresh, unwritten
+ * project, or a lane whose analyzer emits no `imports` edges) reads as
+ * `scanned: 0` and does nothing.
+ */
+export function settleImportTargets(db: MinimalDb, projectId: string): ImportSettlementOutcome {
+  const byReason: Record<string, number> = {}
+  const bump = (k: string) => { byReason[k] = (byReason[k] ?? 0) + 1 }
+  const out: ImportSettlementOutcome = {
+    scanned: 0, planned: 0, corrected: 0, settled: 0, unresolved: 0, unchanged: 0,
+    attached: 0, byReason,
+  }
+  const inputs = loadImportInputs(db, projectId, { unresolvedOnly: false })
+  if (!inputs) return out
+  const { files, symbols, imports, rows, exports } = inputs
+  out.scanned = rows.length
+  if (rows.length === 0) return out
+
+  const index = buildImportResolutionIndex(files, symbols, imports, exports)
+  const plan = planImportResolutions(rows, index)
+  const provenById = new Map(plan.map((p) => [p.id, p]))
+  out.planned = plan.length
+
+  const fileLang = new Map<string, string>()
+  for (const f of files) fileLang.set(f.fileId, f.language)
+  const symbolFile = new Map<string, string>()
+  const candidatesByName = new Map<string, LeafCandidate[]>()
+  for (const s of symbols) {
+    symbolFile.set(s.symbolId, s.fileId)
+    const arr = candidatesByName.get(s.name) ?? []
+    arr.push({
+      symbolId: s.symbolId,
+      fileId: s.fileId,
+      isDeclaration: s.isDeclaration ?? 0,
+      language: fileLang.get(s.fileId) ?? "",
+    })
+    candidatesByName.set(s.name, arr)
+  }
+
+  // `is_cross_file` is recomputed the way the INSERT path computes it — the
+  // settled target's file against the row's own file — because this pass is
+  // allowed to move a row to a different file and leaving the flag behind would
+  // store a cross-file edge as same-file. Note that the planner's own UPDATE in
+  // `resolveImportTargets` spells its comparison against the TARGET symbol's
+  // file, which makes it a constant 0; that is left as it is (it fills NULLs on
+  // rows the insert path never resolved), and it is not what a row settled here
+  // carries.
+  const update = db.prepare(
+    `UPDATE brain_relationship
+        SET target_symbol_id = ?,
+            is_cross_file = CASE WHEN ? IS NOT NULL AND ? != (
+                  SELECT file_id FROM brain_symbol WHERE id = ?
+                ) THEN 1 ELSE 0 END
+      WHERE id = ?`,
+  )
+  // A settled answer of NULL means "still detached", and a row that carries a
+  // target the ranking cannot reproduce is one the insert path attached out of a
+  // prefix that the complete table does not support. Detaching it is the
+  // deterministic answer, and it is the only branch here that REMOVES an edge.
+  const detach = db.prepare(
+    `UPDATE brain_relationship SET target_symbol_id = NULL, is_cross_file = 0 WHERE id = ?`,
+  )
+
+  for (const row of rows) {
+    const split = splitImportTarget(row.target_external ?? "")
+    if (!split) { bump("not-module-item-form"); continue }
+    const proven = provenById.get(row.id)
+    // The row's own file: the importing file's PATH when the source spelling is
+    // one this project contains (the file-level lanes — the same spelling
+    // `importerRelativeFileIds` reads), else the file its source SYMBOL lives in.
+    const rowFile = (row.source_external != null
+      ? index.fileIdByPath.get(row.source_external) ?? null
+      : null) ?? row.sourceFileId ?? null
+    const rowLang = rowFile != null ? fileLang.get(rowFile) ?? "" : ""
+    const settled = proven
+      ? proven.symbolId
+      : rankLeafCandidates(candidatesByName.get(split.item) ?? [], rowFile, rowLang)
+    const current = row.currentTarget ?? null
+    if (current != null) out.attached++
+
+    if (settled == null) {
+      out.unresolved++
+      if (current != null) {
+        try {
+          const r = detach.run(row.id)
+          if ((typeof r?.changes === "number" ? r.changes : 1) > 0) out.settled++
+        } catch { /* one bad row must not abandon the pass */ }
+      }
+      continue
+    }
+    if (current === settled) { out.unchanged++; continue }
+    const targetFile = proven ? proven.fileId : symbolFile.get(settled) ?? null
+    try {
+      const r = update.run(settled, rowFile, rowFile, settled, row.id)
+      if ((typeof r?.changes === "number" ? r.changes : 1) > 0) {
+        if (proven) out.corrected++
+        else out.settled++
+      }
+    } catch { /* one bad row must not abandon the pass */ }
   }
   return out
 }

@@ -107,12 +107,28 @@ type Sym = {
   /** `brain_file.language` of the file that declares it — the ranking's 3rd key. */
   lang: string
 }
+type SettleAgain = {
+  scanned: number
+  planned: number
+  corrected: number
+  settled: number
+  unresolved: number
+  unchanged: number
+  attached: number
+}
 type Dump = {
   pid: string
   rows: Row[]
   symbols: Sym[]
   langs: Record<string, string>
   fileIds: Record<string, string>
+  /**
+   * `settleImportTargets` asked a SECOND time over the store the index run just
+   * settled. The pass is a fixed point by construction, so this must report no
+   * correction and no settlement: a non-zero number here means the stored target
+   * is still not a function of the complete tables, whatever the endpoints say.
+   */
+  settleAgain: SettleAgain
   /**
    * row id -> the symbol the MODULE-AWARE planner decides for it, asked of the
    * FINAL index regardless of what the row already carries. The other mechanism
@@ -228,8 +244,19 @@ async function oneRound(out: string) {
     langs[String(f.p)] = String(f.l)
     fileIds[String(f.p)] = String(f.id)
   }
-  fs.writeFileSync(out, JSON.stringify({ pid: String(pid), rows, symbols, langs, fileIds, plan } satisfies Dump))
-  process.stderr.write(`round done: ${rows.length} rows, ${symbols.length} symbols -> ${out}\n`)
+  // IDEMPOTENCE, measured rather than argued: ask the settlement pass to run
+  // again over the store it has just settled. `scanned`/`planned` must be
+  // non-zero (or the pass was never reached and this check is vacuous, which is
+  // reported too) while `corrected` and `settled` must both be 0.
+  const { settleImportTargets } = await import(path.join(ROOT, "src/ast/import-resolution.ts"))
+  const again = settleImportTargets(raw as any, pid)
+  const settleAgain: SettleAgain = {
+    scanned: again.scanned, planned: again.planned, corrected: again.corrected,
+    settled: again.settled, unresolved: again.unresolved, unchanged: again.unchanged,
+    attached: again.attached,
+  }
+  fs.writeFileSync(out, JSON.stringify({ pid: String(pid), rows, symbols, langs, fileIds, plan, settleAgain } satisfies Dump))
+  process.stderr.write(`round done: ${rows.length} rows, ${symbols.length} symbols, settle-again ${again.corrected}c/${again.settled}s of ${again.scanned} -> ${out}\n`)
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -413,6 +440,51 @@ async function main() {
     "resolved endpoints are identical across runs",
     divergent.length === 0,
     divergent.length === 0 ? `0 of ${ids.length} rows diverge` : `${divergent.length} of ${ids.length} rows diverge`,
+  )
+
+  // 4. THE FIXED POINT — the settlement pass must have nothing left to do on the
+  // store the index run just produced, in BOTH runs. Without this the property
+  // above could hold for a store that is still a function of scheduling, just
+  // one that happened to answer the same way twice.
+  //
+  // The non-vacuity predicate is `scanned > 0` and deliberately NOT `planned > 0`:
+  // whether the module-aware planner proves anything is a property of the DRAW
+  // (lodash's 250-file draw has 77 `module:item` rows and proves none of them,
+  // because its modules are CommonJS and carry no export surface), whereas
+  // `scanned` is the count of rows the pass actually read. Both are printed, and
+  // the gauges are compared between the runs below, so a draw where the pass had
+  // nothing attached to re-decide SHOWS as `attached 0` rather than passing
+  // quietly as a strong result.
+  const vacuous = [A, B].filter((S) => (S.settleAgain?.scanned ?? 0) === 0)
+  const unsettled = [A, B].filter((S) => (S.settleAgain?.corrected ?? 0) !== 0 || (S.settleAgain?.settled ?? 0) !== 0)
+  const show = (S: Dump) =>
+    S.settleAgain
+      ? `${S.settleAgain.corrected} corrected / ${S.settleAgain.settled} settled / ${S.settleAgain.unchanged} unchanged` +
+        ` / ${S.settleAgain.unresolved} with no answer / ${S.settleAgain.attached} attached, of ${S.settleAgain.scanned} scanned (${S.settleAgain.planned} planner-proven)`
+      : "(no settlement record)"
+  check(
+    "the settlement pass is a fixed point on the store it just settled",
+    unsettled.length === 0,
+    `A: ${show(A)}; B: ${show(B)}`,
+  )
+  check(
+    "the settlement pass actually read the population (the checks above are not vacuous)",
+    vacuous.length === 0,
+    `A: ${A.settleAgain?.scanned ?? 0} rows read, ${A.settleAgain?.attached ?? 0} of them carrying a target; B: ${B.settleAgain?.scanned ?? 0} read, ${B.settleAgain?.attached ?? 0} carrying one`,
+  )
+  // 5. THE PASS'S OWN GAUGES must agree to the row across the two runs. This is
+  // the determinism property stated on the PASS rather than on the store: two
+  // indexings of the same source must leave the pass the same amount of work to
+  // find, with the same answers already stored — otherwise the pass is a function
+  // of something other than the tables it reads.
+  const gaugeKeys: (keyof SettleAgain)[] = ["scanned", "planned", "attached", "unchanged", "unresolved", "corrected", "settled"]
+  const gaugeDiff = A.settleAgain && B.settleAgain
+    ? gaugeKeys.filter((k) => A.settleAgain[k] !== B.settleAgain[k]).map((k) => `${k} ${A.settleAgain[k]} vs ${B.settleAgain[k]}`)
+    : ["a run carries no settlement record"]
+  check(
+    "the settlement pass's own gauges agree across runs",
+    gaugeDiff.length === 0,
+    gaugeDiff.length === 0 ? gaugeKeys.map((k) => `${k}=${A.settleAgain?.[k] ?? "?"}`).join(" ") : gaugeDiff.join("; "),
   )
 
   for (const d of divergent) {
