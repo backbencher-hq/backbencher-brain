@@ -27,11 +27,13 @@
 
 import * as fs from "fs"
 import * as path from "path"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const ROOT = path.resolve(__dirname, "..", "..")
 const SPEC_DIR = path.join(ROOT, "script", "m14", "spec")
 const WASM_DIR = path.join(ROOT, "wasm")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+const CORPUS_ROOT = resolveCorpusRoot(process.cwd()) ?? "CORPUS_ROOT_UNRESOLVED"
 const EVIDENCE = path.join(ROOT, "validation", "m14", "results", "M14.0.F8.json")
 const CENSUS_FILES = process.argv.includes("--files") ? parseInt(process.argv[process.argv.indexOf("--files") + 1]) : 60
 

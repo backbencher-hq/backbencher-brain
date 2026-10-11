@@ -75,8 +75,21 @@ const suite = readFileSync(path.join(ROOT, "script/m62/verify-suite.mts"), "utf8
 type Hit = { file: string; user: string; count: number; inChain: boolean }
 const hits: Hit[] = []
 
+// SCAN CODE, NOT PROSE. A comment that QUOTES the old path to explain what it was
+// replaced with is documentation, and must not count as a live defect — otherwise
+// fixing a file makes the gate stay red, which teaches people to ignore it.
+//
+// Strings are KEPT, because a path in a string literal IS the defect. That is the same
+// distinction script/m62/path_encoding_scan.ts draws and that
+// script/m62/verify-indexer-option-contract.ts learned the hard way: it reported five
+// of its own findings against the comment explaining a fix.
+const { blankCommentsAndStrings } = await import("./path_encoding_scan.ts")
+
 for (const rel of files) {
-  const src = readFileSync(path.join(ROOT, rel), "utf8")
+  const raw = readFileSync(path.join(ROOT, rel), "utf8")
+  const src = /\.ts$|\.mts$|\.js$/.test(rel)
+    ? blankCommentsAndStrings(raw, { keepStrings: true })
+    : raw
   FOREIGN.lastIndex = 0
   const users = new Set<string>()
   let count = 0

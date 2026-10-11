@@ -16,6 +16,7 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { getUnifiedHealth } from "../../src/intelligence/health/health-provider"
 import { Harness } from "./harness"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const harness = new Harness({
   issue: "M13.33",
@@ -91,7 +92,8 @@ const bb = path.resolve("bin/bb")
 rmSync(root, { recursive: true, force: true })
 
 // ── 3. Corpus: internally consistent health reports ───────────────────────
-const REPO_ROOT = "$HOME/fixtures/repositories"
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 const SAMPLE: Array<[string, string, string]> = [
   ["rake", "lib/rake", "Ruby"],
   ["rebar3", "apps", "Erlang"],

@@ -20,6 +20,7 @@ import { BrainDatabase } from "../../src/brain/database"
 import { BrainTools } from "../../src/ast/tools"
 import { searchContent } from "../../src/intelligence/search/content-search"
 import { Harness } from "./harness"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const harness = new Harness({
   issue: "M13.20",
@@ -38,7 +39,9 @@ const harness = new Harness({
   ],
 })
 
-const REPO_ROOT = "$HOME/fixtures/repositories"
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+
+const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 // (repo, subPath, symbolHint, family)
 const SAMPLE: Array<[string, string, string, string]> = [
   ["rake", "lib/rake", "Application", "Ruby"],

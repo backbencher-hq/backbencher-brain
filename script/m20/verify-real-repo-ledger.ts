@@ -27,6 +27,7 @@ import { patternSourceFingerprint } from "../../src/intelligence/patterns/eviden
 import { securitySourceFingerprint } from "../../src/intelligence/security/evidence"
 import { docSourceFingerprint } from "../../src/intelligence/documentation/evidence"
 import { createHash } from "node:crypto"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 let checks = 0
 let passed = 0
@@ -46,7 +47,9 @@ function crossToolSourceFingerprint(rootPath: string): string {
   return createHash("sha256").update(joined).digest("hex")
 }
 
-const REPO_ROOT = "$HOME/fixtures/repositories"
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+
+const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 const TSC = "$HOME/TypeScript/src/compiler"
 const corpora: Array<{ id: string; path: string; family: string }> = [
   { id: "rake", path: path.join(REPO_ROOT, "rake", "lib", "rake"), family: "ruby" },

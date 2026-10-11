@@ -8,6 +8,7 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { generateMigrationPlans } from "../../src/intelligence/migration/migration-engine"
 import { Harness } from "./harness"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const harness = new Harness({
   issue: "M13.49", code: "M2", tool: "bb_migrate",
@@ -61,7 +62,8 @@ rmSync(root, { recursive: true, force: true })
 }
 
 // Corpus
-const REPO_ROOT = "$HOME/fixtures/repositories"
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 for (const [repo, subPath, family] of [["rake","lib/rake","Ruby"],["rebar3","apps","Erlang"]]) {
   const idxRoot = path.join(REPO_ROOT, repo, subPath)
   if (!existsSync(idxRoot)) { harness.check("corpus "+repo+": present", false, "missing"); continue }
