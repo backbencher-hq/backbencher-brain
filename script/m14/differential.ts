@@ -120,7 +120,11 @@ const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : p
 // from a genuinely absent corpus — a misleading way to learn a path is wrong. Third instance of
 // the same merge signature in this one file (the csharp oracles, the lost braces, and now an env
 // lookup): all small, all silent, all load-bearing, and none of them visible to any gate.
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+// Was: a literal foreign corpus root — see script/lib/corpus-root.ts. That path is
+// the OTHER laptop's home directory, so on this machine the gate measured a directory
+// that does not exist. Measured on m13/verify-ask-e2e-corpus: 4/8 checks passed
+// before this class of fix, 19/20 after, from the corpus root alone.
+const CORPUS_ROOT = resolveCorpusRoot(process.cwd()) ?? "CORPUS_ROOT_UNRESOLVED"
 // Crash-resume journal for full sweeps: each completed lane is persisted
 // immediately (see the per-lane write in the sweep loop). Cleared after a
 // successful final evidence emit.
@@ -736,6 +740,7 @@ import {
   deriveZigInstantiation,
   deriveZigReferenceEdges,
 } from "./zig-truth"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[] }> = {
   // M14 #277: bash joins the differential lane. It had a `bash-differential.json`
