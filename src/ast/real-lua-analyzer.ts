@@ -1022,7 +1022,12 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const source = frame.callable || "global"
     if (callName !== "pcall" && callName !== "xpcall") {
-      this.addRelationship(ctx, source, callName, ASTEngine.RelationshipType.Calls, { luaSpecific: true }, callee.nameNode)
+      // M60 LUA-56: THE CALLEE'S SHAPE TRAVELS WITH THE EDGE. See `callee()`: the branch that
+      // produced `callName` also decided whether that name was WRITTEN as a bare identifier or
+      // as the FIELD of a receiver this edge does not carry, and the fact was discarded until
+      // now. It is additive metadata — every consumer that ignores it sees the identical graph —
+      // and it is the fact that separates the two mechanisms LUA-G5 recorded as one class.
+      this.addRelationship(ctx, source, callName, ASTEngine.RelationshipType.Calls, { luaSpecific: true, ...callee.shapeMark }, callee.nameNode)
     }
 
     if (qualified === "coroutine.create" || qualified === "coroutine.wrap") {
@@ -2354,11 +2359,38 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return undefined
   }
 
-  private callee(functionNode: Node): { name: string; nameNode: Node } | undefined {
-    if (functionNode.type === "identifier") return { name: functionNode.text, nameNode: functionNode }
+  // M60 LUA-56 — WHY THE SHAPE IS RETURNED WITH THE NAME. `calls` is this lane's largest
+  // remaining cause (42,889 not-resolved edges, 30,370 ambiguous + 12,519 unresolved, measured
+  // on the whole admitted population), and the class is TWO mechanisms wearing one label:
+  //
+  //   `foo()`      an IDENTIFIER callee — the name the language looks up through the file's
+  //                lexical scope and then `_ENV`. This is the only shape about which an
+  //                externality question can even be asked, because the target IS the name.
+  //   `M.foo()`    an INDEX callee — `callee()` publishes the FIELD (LUA-13), so the target is a
+  //   `M:foo()`    member name whose CONTAINER the edge does not carry. "declared nowhere in the
+  //   `M["foo"]()` project" is then a statement about a field, not about a global.
+  //
+  // The distinction is DECIDED BY THE BRANCH THAT PRODUCES THE NAME — the same node test that
+  // returns the name decides which form it is — so it is returned from here rather than
+  // re-derived at the call site, where a second copy of the node test could silently drift from
+  // this one. That is the "one spelling, two places" hazard this lane has paid for repeatedly.
+  //
+  // THE TWO KEYS ARE A PARTITION of the `calls` population (every edge carries exactly one), and
+  // they are marker KEYS rather than one value-carrying key on purpose: the gate's marker table
+  // and this lane's own cause reader both group by KEY ONLY ("a value would split one marker into
+  // a signature per symbol it names"), so a fact that must be separable there has to be a key.
+  //
+  // THE THIRD STATE IS DELIBERATE. The fallthrough below publishes a name taken from arbitrary
+  // node text — the payload-as-a-name defect LUA-22/LUA-29/LUA-30 closed for every form the
+  // pinned grammar can produce — and it carries NO shape key. An edge in that state is therefore
+  // visible as a hole (the lane's `calls-file-scope-pricing.mts` reports it as UNPUBLISHED, and a
+  // non-zero reading there means the grammar grew a callee form this whitelist has not seen)
+  // rather than being silently filed under one of the two shapes.
+  private callee(functionNode: Node): { name: string; nameNode: Node; shapeMark: Record<string, true> } | undefined {
+    if (functionNode.type === "identifier") return { name: functionNode.text, nameNode: functionNode, shapeMark: { calleeIdentifier: true } }
     if (functionNode.type === "dot_index_expression" || functionNode.type === "method_index_expression") {
       const last = functionNode.namedChildCount > 0 ? functionNode.namedChild(functionNode.namedChildCount - 1) : undefined
-      if (last?.text) return { name: last.text, nameNode: last }
+      if (last?.text) return { name: last.text, nameNode: last, shapeMark: { calleeIndexed: true } }
     }
     // M60 LUA-22: a call through a COMPUTED index has no name to record.
     // `dao[method or context .. "_by_" .. endpoint_key](...)` —
@@ -2403,7 +2435,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const field = functionNode.childForFieldName("field")
       if (field?.type !== "string") return undefined
       const literal = this.stringValue(field)
-      return literal ? { name: literal, nameNode: field } : undefined
+      return literal ? { name: literal, nameNode: field, shapeMark: { calleeIndexed: true } } : undefined
     }
     // M60 LUA-29: a call ON A CALL has no name either, and this fallthrough was
     // publishing one. `require("some.module")()` — the shape at
@@ -2430,7 +2462,9 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (functionNode.type === "function_call" || functionNode.type === "table_constructor" ||
         functionNode.type === "binary_expression" || functionNode.type === "parenthesized_expression" ||
         functionNode.type === "string" || functionNode.type === "number") return undefined
-    if (functionNode.text) return { name: functionNode.text, nameNode: functionNode }
+    // LUA-56: NO SHAPE KEY ON THIS PATH, and that is the disclosure rather than an omission —
+    // see the docstring above. This branch publishes a name it cannot characterise.
+    if (functionNode.text) return { name: functionNode.text, nameNode: functionNode, shapeMark: {} }
     return undefined
   }
 
