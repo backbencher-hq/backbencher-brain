@@ -691,22 +691,26 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
       //
       // The lane's ruling said `overrides` is "deliberately NOT emitted, because what an
       // `override` overrides is a command-line or environment binding, which is not a symbol in
-      // the graph, so the edge would dangle by construction". RE-MEASURED over the maximal
-      // admitted population (699 make files across 65 repos — every `Makefile`/`GNUmakefile`/
-      // `*.mk`/`*.make`, not the 129 `.mk` the gate samples): 5 `override_directive` sites in 3
-      // files, and the blanket reason is true for TWO of them and false for THREE:
+      // the graph, so the edge would dangle by construction". RE-MEASURED over the whole
+      // ROUTER-admitted population (697 make files across 65 repos — every path
+      // `detectLanguageFromPath` sends to `make`, NOT the 129 `.mk`-shaped files the incoming
+      // gate can admit): 5 `override_directive` SITES in 4 files, of which 3 sites in 2 files
+      // carry a base declaration in the same file and are emitted, and 2 do not:
       //
-      //   otp/make/target.mk:48  override TARGET := $(OVERRIDE_TARGET)   TARGET declared at line 29
-      //   otp/make/target.mk:60  override TARGET := $(shell … config.sub …)   same base
-      //   redis/deps/xxhash/Makefile:66  override DISPATCH := 0          DISPATCH declared at 61
-      //   boundary/Makefile:91   override LINT_DIFF_BRANCH = main        the only declaration — base is the command line
-      //   tree-sitter-clean/Makefile:24  override CFLAGS += …            the only declaration — base is the environment
+      //   otp/make/target.mk:48  override TARGET := $(OVERRIDE_TARGET)   TARGET declared at line 29   EDGE
+      //   otp/make/target.mk:60  override TARGET := $(shell … config.sub …)   same base               EDGE
+      //   redis/deps/xxhash/Makefile:66  override DISPATCH := 0          DISPATCH declared at 61      EDGE
+      //   boundary/Makefile:91   override LINT_DIFF_BRANCH = main        the only declaration — base is the command line   refused
+      //   tree-sitter-clean/Makefile:24  override CFLAGS += …            the only declaration — base is the environment    refused
       //
-      // (`bun validation/m14/fixtures/make/mk-override-probe.mts` and `…-base.mts`.) So the edge
-      // is emitted where the base IS a declaration this file holds, and NOT where it is not —
-      // which is the same distinction the json lane ruled on for a re-declared key ("a parser
-      // that keeps the last one has performed a redefinition", 21 named duplicates across 11
-      // files), and it keeps the lane's own reason intact for the two sites it was true of.
+      // (`validation/m14/fixtures/make/tools/construct-census.mts` -> `construct-census.current.json`,
+      // run `bun`; the earlier version of this comment cited `mk-override-probe.mts` and
+      // `…-base.mts`, NEITHER OF WHICH WAS EVER COMMITTED — a citation to a missing file reads like
+      // evidence and was itself the defect.) So the edge is emitted where the base IS a declaration
+      // this file holds, and NOT where it is not — which is the same distinction the json lane
+      // ruled on for a re-declared key ("a parser that keeps the last one has performed a
+      // redefinition", 21 named duplicates across 11 files), and it keeps the lane's own reason
+      // intact for the two sites it was true of.
       // BOTH lines ride the edge, so a reader can see which binding is replaced and where.
       for (const site of overrideSites) {
         const base = (declaredAtLines.get(site.name) ?? []).filter((l) => l !== site.line)
