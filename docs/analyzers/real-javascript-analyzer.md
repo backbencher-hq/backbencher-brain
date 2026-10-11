@@ -1887,6 +1887,45 @@ file and 0 wrong-file in every one of them**, and the file's own JSON now writes
 every class including the zero ones, so a consumer cannot read an absent key as an
 empty class.
 
+**The variance was then localized, and it is NOT the source side — this doc's earlier
+guess ("class 1, the source-side race") was wrong.**
+`script/m14/verify-resolution-determinism.ts` indexes the same deterministic 250-file
+draw into TWO separate projects and compares every `brain_relationship` row by its
+endpoints. Measured: the two runs' row identity sets, symbol identity sets and the
+module-aware planner's decisions are **identical** (19,855 rows, 1,172 symbols, 0
+differences), while **8 / 9 / 10 / 4 / 28 / 42 rows** of the six pairs run so far resolve
+to a DIFFERENT target — a spread that grows with scheduling pressure, which is the shape
+the mechanism predicts. Every one of those rows is an `imports` edge in the
+`module:item` form, and each side is classified against the mechanisms that can write
+such a target, recomputed from that run's own tables:
+
+  - the **insert-time leaf ranking** — `resolveTargetStmt`, keyed on the target's LEAF
+    (`zimmerframe:walk` is asked for as `walk`), ranked
+    `COALESCE(is_declaration,0), same-file, same-language, id` with `LIMIT 1`. For a
+    parallel index the batches are stored as workers finish, so the table it ranks is
+    the PREFIX written by then: the gate replays that prefix (candidate files written no
+    later than the row's own importing file, read from `brain_symbol.rowid` order) and
+    reports the two answers it produces — measured on real rows, `0/1 candidate files
+    written by then` vs `1/1`;
+  - the **module-aware planner** (`resolveImportTargets`), which resolves the specifier
+    from the importing file's directory and is guarded on `target_symbol_id IS NULL` —
+    so it can attach a row the prefix ranking left alone, and can never correct one the
+    prefix ranking attached FIRST.
+
+That second half is the defect: for `./utils.js:is_global` one run stores the planner's
+answer (`css/utils.js`) and the other the prefix ranking's (`css-prune.js`), because the
+leaves of both mechanisms produce a symbol whose NAME is the row's item. Rows the
+planner does not prove are left with whatever the prefix saw — of the draw's
+`zimmerframe:walk` rows some are attached in one run and NULL in the other. The
+per-side labels are the measurement, and they are lopsided in the direction that names
+the defect: in the 42-row draw, **34 are A: module-aware planner / B: insert-time leaf
+ranking**, 5 are NULL-vs-ranking and 3 are the mirror of the first. The gate is 4 checks,
+**3 pass / 1 fail** (row identity equal, symbol identity equal, every divergence
+attributed with 0 unexplained; the property itself red): record
+`validation/m14/measurements/resolution-determinism.before.json`. The fix is designed
+(planner-where-proven, else the same leaf ranking over the COMPLETE symbol table, both
+idempotent) and is the open item below.
+
 **The classification was then re-run on an independent draw** (`--files=120`, a
 different population of 7,121 detached rows rather than the same 250 files): the
 classes stay exhaustive (`unclassified: 0` in all three tables), the cross-table
@@ -1981,6 +2020,19 @@ Eight items, each measured at both ends:
    the row's own file on the file-level class. The same round retracted a claim from JSD47 —
    the 11 rows it carried as "a source-side attachment the name pass did not make" are name
    COLLISIONS with local bindings — see §"Incoming"'s reason-code subsection.
+
+10. **`verify-resolution-determinism.ts`, the JSD49 round** — the reproducibility bound
+   this doc carried in prose became a checked property, and checking it corrected the
+   mechanism the prose named. The gate indexes the same draw into two projects and compares
+   every relationship by its endpoints: row identity, symbol identity and the module-aware
+   planner's decisions are IDENTICAL, while 8 / 9 / 10 / 4 / 28 / 42 rows resolve to a
+   different target across the six pairs measured, and every one of them is attributed,
+   from that run's own tables, to the insert-time leaf ranking racing the module-aware
+   planner (34 of the 42 read `A: module-aware planner; B: insert-time leaf ranking`).
+   GATE **3 of 4, the property red on purpose**; record
+   `validation/m14/measurements/resolution-determinism.before.json`. JSD49 has the
+   mechanism, the evidence and the designed fix; the fix itself is the lane's next item and
+   is NOT claimed here.
 
 `script/m14/verify-override-retarget.ts` gains the arm that pins the third seam: a
 row with `source_external` NULL and `source_symbol_id` pointing at
