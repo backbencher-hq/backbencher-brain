@@ -1184,3 +1184,24 @@ if (failures.length > 0) {
   console.log("Failures:");
   for (const f of failures) console.log(`  - ${f}`);
 }
+
+// THIS FILE COMPUTED A VERDICT AND PRINTED IT, AND NEVER EXITED NON-ZERO.
+//
+// The line above prints `T2: VERIFIED` or `T2: KNOWN-GAP` — both plain text. With no
+// process.exit anywhere in this file, the process exited 0 either way, so every
+// automated caller (verify:suite, `npm run verify`) read a green exit code that meant
+// nothing. This gate is in the `npm run verify` chain.
+//
+// CANARY, run before this was added: every mutant's import was pointed at a path that
+// does not exist, so none of the nine could load, and the run printed
+//
+//     T2: KNOWN-GAP (55/55 passed, 0/9 mutants caught, 9 not judged)     exit 0
+//
+// Fifty-five checks passed, every mutant was unjudged, and the exit code was 0. The
+// verdict string said KNOWN-GAP; nothing acted on it.
+//
+// The three conditions the verdict string already uses are used here, so the exit code
+// and the printed verdict cannot disagree: failures, mutants not all caught, and
+// mutants not all judged. Found by script/m62/verify-gates-can-fail.ts.
+const verified = failures.length === 0 && mutantsCaught === mutantsTotal && mutantsNotJudged === 0
+process.exit(verified ? 0 : 1)

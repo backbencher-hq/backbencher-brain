@@ -20,9 +20,26 @@ async function emit(code: string, issue: string, extra?: any) {
   const total = passed + negativePassed
   const e = { issue, code, tool: "docs", title: issue.split(":")[1]?.trim() ?? code, verified: failed === 0, checks, passed: total, failed, negatives, generatedAt: new Date().toISOString(), ...(extra || {}) }
   writeFileSync(path.join(RESULTS_DIR, code + ".json"), JSON.stringify(e, null, 2) + "\n")
+  if (failed > 0) anyFailed = true
   console.log(code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
 }
 async function reset() { checks = passed = failed = negatives = negativePassed = 0 }
+
+// THIS FILE PRINTED A VERDICT PER LEG AND NEVER EXITED NON-ZERO.
+//
+// `emit` writes `${code}.json` with `verified: failed === 0` and prints VERIFIED or
+// KNOWN-GAP, but nothing turned that into an exit code, so the process always exited
+// 0. This gate is in the `npm run verify` chain, so a green chain carried no
+// information for this leg. Found by script/m62/verify-gates-can-fail.ts.
+//
+// The run-wide accumulator is necessary because `reset()` clears the per-leg counters
+// after every emit: without it, a failure in D1 followed by a clean D3 would exit 0
+// and lose the one failure that mattered.
+//
+// It mirrors the recorded verdict rather than replacing it. The evidence JSON this
+// file writes is what other gates read, so changing the record to make the exit code
+// simpler would change what the suite knows.
+let anyFailed = false
 function has(f: string): boolean { return existsSync(path.join(ROOT_DIR, f)) }
 function read(f: string): string { return readFileSync(path.join(ROOT_DIR, f), "utf8") }
 
@@ -94,3 +111,5 @@ async function main() {
 }
 
 await main()
+
+process.exit(anyFailed ? 1 : 0)

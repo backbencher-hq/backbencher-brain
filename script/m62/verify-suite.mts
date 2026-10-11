@@ -57,6 +57,10 @@ const GATES: Gate[] = [
   // and each carries its own canary.
   { name: "m62 reindex-replaces", script: "script/m62/verify-reindex-replaces.ts" },
   { name: "m62 indexer-option-contract", script: "script/m62/verify-indexer-option-contract.ts" },
+  // Added once it went green: all three gates it named can now fail. Canaried by
+  // removing one process.exit and watching it report 2 again.
+  { name: "m62 gates-can-fail", script: "script/m62/verify-gates-can-fail.ts" },
+  { name: "m62 mutant-crash-honesty", script: "script/m62/verify-mutant-crash-honesty.ts" },
   { name: "m23 p3 edge cases", script: "script/m23/verify-p3-edge-cases.ts" },
   { name: "m24 closure", script: "script/m24/verify-closure.ts" },
   { name: "m24 governance", script: "script/m24/verify-governance.ts" },
