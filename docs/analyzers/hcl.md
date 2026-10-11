@@ -619,6 +619,32 @@ different mechanisms, exactly as the Lead framed the split:
 LIMITS: thirteen of sixteen repositories (the remaining three were still indexing), and the split is a
 count over that population, not a fleet total.
 
+### Cause 9 — the two churn mechanisms SEPARATE, and the `exports` fix is not as narrow as it looked
+
+**The mechanisms separate in the data already committed**, by reading the churn per ARM rather than in
+total (`store-determinism.terragrunt-800.json`):
+
+| arm comparison | what changes | contains | references | exports |
+|---|---|---|---|---|
+| sorted vs **reversed** | file/insert order only | 113 | **0** | **0** |
+| sorted vs **eager** | when resolution runs | 5 | 96 | **99** |
+| reversed vs eager | both | 117 | 96 | **99** |
+
+`exports` churns **99 under eager-vs-deferred and 0 under file-order reversal**. The
+`file_id`-is-insert-order lead predicts exactly the opposite signature — churn under order reversal —
+so for `exports` the mechanism is table COMPLETENESS (deferred resolution reading a table that is not
+complete yet), not insertion order. `contains` is the one type that churns under order (113/0/117),
+which is what `resolveContainsTargetStmt`'s insert-time resolution predicts. Settled with data, not by
+a new run.
+
+**And a design constraint on the fix, found before landing it:** a scoped `exports` target cannot be
+scoped ALONE. Pass 1 binds `target_external = qualified_name` exactly, so the SYMBOL's qualifiedName
+must carry the same scope for the target to match — which means the "exports-only" change touches the
+qualified name of every exported symbol, i.e. it is a public identifier change (narrower than the
+lane-wide rename, but not free). Alternatively the target may be scoped only where the symbol's qname is
+already unique in the project. Recorded rather than landed: the choice between those two is a
+consumer-visible decision and belongs with the lane owner before the rename is paid at all.
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
