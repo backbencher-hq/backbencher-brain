@@ -1180,6 +1180,22 @@ refuses to publish **any** symbol with that name. The lane's own
 from the edge side. `root` (157 edges, 57 files) and `unknown` (39 edges, 33 files)
 are the same denylist entry. §8.
 
+> **CORRECTION (2026-10-10, measured — the paragraph above is STALE and is kept as
+> history).** `self`/`Self` are **no longer in `UNIVERSAL`**. The shared file's own
+> comment records the removals with the lane and the count that earned each one —
+> "`self, Self` deleted R/Python/Zig `self`" — and `root`, `unknown`, `me`, `My`,
+> `destructor`, `program`, `source_file` were removed the same way. What REMAINS in
+> `UNIVERSAL` is `this`, `super`, `SCSS_FILE_SCOPE`, `GlobalScope`,
+> `module_declaration`, `package_manifest`.
+>
+> **Measured on the current revision: of this lane's 52,852 edges whose target names
+> no declaration anywhere, ZERO name a `UNIVERSAL` entry** (denylisted 0 · dotted
+> 45,390 · short 304 · other 7,158). So zig contributes **no evidence** to the owed
+> "move `this`/`super` out of `UNIVERSAL`" fix, and the 240-edge `Self` figure above
+> cannot be quoted as support for it. A lane doc is a claim, not a source: the
+> correction was earned by re-measuring the denylist rather than by rereading it.
+> Artifacts: `validation/m14/fixtures/zig/measurements/residual-rule-ceilings-2026-10-10.jsonl`.
+
 Also measured, and counter-intuitive: **36 of the 37 names in the analyzer's own
 `ZIG_DECLARED_TYPE_BUILTINS` ARE published symbol names somewhere in this corpus** —
 including `u8`, for `zig/test/behavior/basic.zig`'s `const @"u8" = u16;` and
