@@ -1686,6 +1686,40 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
         )
       for (const m of mine) show(m)
       for (const m of bindOnly) show(m)
+      // THE TABLE MUST SHOW ITS OWN CLOSURE. `mine` is the top 5 by amb+unres and `bindOnly` catches
+      // the binding/cause-bearing sets — so a set ranked BELOW the top 5 with NO binding and NO cause
+      // was printed NOWHERE, and its edges were silently absent from a table whose entire stated
+      // purpose is to be the worklist a lane works from.
+      //
+      // php-lane found it by arithmetic on its own table, not by reading the prose: `uses`'s five
+      // printed sets sum to 139,864 of 155,016 edges — **15,152 edges (9.8%) in marker sets this
+      // block never prints**, carrying amb 3,482 + unres 1,052 — so the instruction "split the
+      // residual by the gate's marker table" could not reach closure, and the lane's largest
+      // remaining cause was INVISIBLE in the instrument built to name it.
+      //
+      // Seventh instance of one family in this programme: a table that does not show its own
+      // closure. The remedy is a DISCLOSURE, not a wider cap — the cap is what keeps the table
+      // readable, and an instrument that silently drops rows is worse than one that prints fewer and
+      // says so. Read this row into your worklist; do not read the printed rows as the whole set.
+      {
+        const omitted = markRows.filter((m) => m.type === type && !mine.includes(m) && !bindOnly.includes(m))
+        if (omitted.length) {
+          const s = omitted.reduce(
+            (a, m) => ({
+              resolved: a.resolved + m.b.resolved, amb: a.amb + m.b.amb,
+              unres: a.unres + m.b.unres, ext: a.ext + m.b.ext,
+            }),
+            { resolved: 0, amb: 0, unres: 0, ext: 0 },
+          )
+          console.log(
+            w("  ⋯ OMITTED", 14) + w(`${omitted.length} further marker set(s) NOT printed above`, 52) +
+            w(s.resolved, 10) + w(s.amb, 9) + w(s.unres, 9) + w(s.ext, 10) + w(0, 9) + "0",
+          )
+          console.log(
+            w("", 14) + w(`  ^ add these to the rows above or the type will not close`, 52),
+          )
+        }
+      }
     }
     console.log("-".repeat(122))
     console.log(
