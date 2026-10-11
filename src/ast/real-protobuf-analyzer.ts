@@ -3,6 +3,69 @@ import { ASTEngine } from "./engine"
 import { fileClaimForTarget } from "./file-claim"
 
 /**
+ * THE PROTOBUF DECLARATION SPEC for the project index — the fact this lane needs the indexer to hold
+ * so its import-scope rule can accept a candidate ONLY WHEN THE PROJECT DECLARES IT.
+ *
+ * ## Why it exists at all
+ *
+ * `resolveViaImports` builds the right candidate and a guard that assumes a directory mirrors a
+ * package discards it. That refusal is CORRECT given what it can see: a `.proto` directory need not
+ * mirror its package (consul's `private/pbcommon` declares `hashicorp.consul.internal.common`), so a
+ * rule that accepted the candidate unchecked would be a guess. The fix is not to soften the rule but
+ * to give it something to see, and this spec is that something.
+ *
+ * ## Measured, before it was written
+ *
+ * PRICE (`validation/m14/fixtures/protobuf/tools/index-spec-pricing.mts`, whole corpus, 847 `.proto`
+ * files across 21 repos):
+ *   * the SOLIDITY default — what an `PROJECT_INDEX_EXTENSIONS` entry would use today, because
+ *     `specByLang` has no protobuf entry — yields **0 names and 0 types** over the whole corpus. An
+ *     entry without a spec indexes the right SHAPE and holds nothing;
+ *   * this spec yields **8,048 names at ~18ms/file (~15–25s for the whole corpus)**, paid ONCE per
+ *     project run before workers dispatch.
+ *
+ * ## The two traps this spec exists to avoid, each of which cost a measurement run
+ *
+ * 1. **THE GRAMMAR PUTS NO DECLARATION NAME IN A `name` FIELD.** `message Foo { }` is a `message`
+ *    node whose FIRST NAMED CHILD is `message_name` (`enum`/`rpc`/`service` behave the same), and the
+ *    index's generic extractor reads `childForFieldName("name")` — undefined for every one of them.
+ *    A spec that lists only `typeNodes` therefore holds nothing at all.
+ * 2. **`package` IS A SIBLING OF THE DECLARATION, NOT AN ANCESTOR.** A file is
+ *    `source_file > (syntax, package, import…, message…)`, so walking parents upward never sees it.
+ *    The first resolver written here produced 6,377 BARE names and the walk's candidate read ABSENT
+ *    from the key space; reading the package from the ROOT's children is what makes the index speak
+ *    the spelling the walk builds.
+ *
+ * `memberNodes` and `baseNodes` are required by the builder and are EMPTY ON PURPOSE: a protobuf
+ * field is not a member of a TYPE the way a method is, and the language has no inheritance — which is
+ * why this lane's `extends`/`implements` columns are empty. Borrowing Solidity's arrays would
+ * fabricate structure the language does not have.
+ */
+export const PROTOBUF_DECLARATION_SPEC = {
+  typeNodes: { message: "class", enum: "enum", service: "interface" },
+  memberNodes: [] as string[],
+  baseNodes: [] as string[],
+  nameResolver: (n: Node): string => {
+    // `namedChildren` is `(Node | null)[]` in this grammar's typings, so every read goes through a
+    // null filter rather than a `!`: a null child here would be a parser artefact, not a declaration.
+    const children = (n.namedChildren ?? []).filter((c): c is Node => c !== null && c !== undefined)
+    const own = children.find((c) => String(c.type).endsWith("_name"))?.text
+      ?? n.childForFieldName("name")?.text ?? ""
+    if (own.length === 0) return ""
+    let root: Node = n
+    while (root.parent !== null && root.parent !== undefined) root = root.parent
+    const rootChildren = (root.namedChildren ?? []).filter((c): c is Node => c !== null && c !== undefined)
+    const packages: string[] = []
+    for (const c of rootChildren) {
+      if (String(c.type) !== "package") continue
+      const text = String(c.text ?? "").replace(/^\s*package\s+/, "").replace(/;\s*$/, "").trim()
+      if (text.length > 0) packages.push(text)
+    }
+    return packages.length > 0 ? `${packages.join(".")}.${own}` : own
+  },
+}
+
+/**
  * REAL PROTOBUF ANALYZER — pure tree-sitter AST extraction against the vendored,
  * patched and pinned `tree-sitter-proto` grammar (snake_case node types:
  * `source_file`, `message`, `enum`, `service`, `rpc`, `field`, `map_field`,
@@ -762,8 +825,15 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           // **DO NOT SOFTEN THIS.** A basename match (`common.proto` for `…common`), a directory
           // guess, or any arm that accepts a candidate the project does not declare REINSTATES THE
           // GUESS this lane refused: it cannot check existence, so it can re-point an edge silently —
-          // julia's 1%-ceiling shape. The 43-edge sizing is deliberately small and a small ceiling is
-          // no reason to buy it with a rule that can mis-bind. A candidate accepted here reaches a
+          // julia's 1%-ceiling shape. The sizing is deliberately small and a small ceiling is no
+          // reason to buy it with a rule that can mis-bind.
+          //
+          // MEASURED AFTER THE SPEC EXISTED, and it replaces the 43 this comment used to quote:
+          // parsing every admitted file twice, with and without the index, changes **38 edges**
+          // (38 gained, 38 lost — the same rows re-pointed). The 43 was the SIZE OF THE SHAPE;
+          // 38 is what the arm actually reaches, and the gap is edges of that shape that already
+          // resolve another way or never reach here. Both numbers are real; they answer different
+          // questions, and this comment quotes the one a reader can check against the code. A candidate accepted here reaches a
           // declaration that genuinely exists, which is why this is a fix rather than a ruling, and
           // any other arm destroys that property.
           //
