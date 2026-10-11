@@ -1,6 +1,6 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
-import { fileClaimForTarget } from "./file-claim"
+import { FILE_CLAIM_MAX_BYTES, fileClaimForTarget } from "./file-claim"
 
 /**
  * REAL GRAPHQL ANALYZER — pure tree-sitter AST extraction against the vendored
@@ -1323,6 +1323,10 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           filePath,
           written: String(r.target ?? ""),
           admittedExtensions: ["graphql", "gql"],
+          // THE POPULATION'S SIZE CAP, passed because this lane HAS over-cap files (4 for graphql,
+          // 2 for scss on the gate's own population line). A claim about one of them would be
+          // REFUTED, and nothing in the row would say why.
+          maxFileSizeBytes: FILE_CLAIM_MAX_BYTES,
         })
         if (claim === null) continue
         md.importProjectFile = claim

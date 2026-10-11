@@ -33,6 +33,14 @@
 import { statSync } from "node:fs"
 import * as path from "node:path"
 
+/**
+ * THE INDEXER'S OWN ADMISSION CAP. `src/ast/parallel-indexer.ts` skips a file larger than
+ * `maxFileSizeBytes` (1 MB) and extracts it structurally instead, so such a file is NOT in the
+ * population a claim is checked against — and a claim about it is REFUTED, not merely unverified.
+ * Exported so a lane passes one identifier rather than re-typing a magic number.
+ */
+export const FILE_CLAIM_MAX_BYTES = 1 * 1024 * 1024
+
 /** Characters that mean the target is not a plain path (glob, whitespace, shell expansion). */
 const NOT_A_PLAIN_PATH = [" ", "\t", "*", "?", "<", ">", "|", "{", "}", "$"]
 
@@ -60,6 +68,12 @@ export type FileClaimInput = {
    * first so `dirname(__FILE__)` is not left mangled.
    */
   magicConstants?: Readonly<Record<string, string>>
+  /**
+   * The population's size cap, when the lane's admitted list has one. A candidate LARGER than this is
+   * not admitted, so it is not claimable: the guard refuses it exactly as it refuses a missing file,
+   * because a claim about it would be REFUTED. Omit it only where the lane's population has no cap.
+   */
+  maxFileSizeBytes?: number
 }
 
 /**
@@ -144,7 +158,9 @@ export function fileClaimForTarget(input: FileClaimInput): string | null {
     // refutations from 392 to 0 across five lanes.
     if (!admitted.has(extOf(candidate))) continue
     try {
-      if (!statSync(path.join(root, candidate)).isFile()) continue
+      const st = statSync(path.join(root, candidate))
+      if (!st.isFile()) continue
+      if (input.maxFileSizeBytes !== undefined && st.size > input.maxFileSizeBytes) continue
     } catch { continue }
     return candidate
   }

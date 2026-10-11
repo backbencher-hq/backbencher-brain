@@ -54,7 +54,7 @@ import type { Node } from "web-tree-sitter"
 import * as path from "node:path"
 import { ASTEngine } from "./engine"
 import { RealCssAnalyzer } from "./real-css-analyzer"
-import { dirOf, fileClaimForTarget, foldProjectPath } from "./file-claim"
+import { dirOf, FILE_CLAIM_MAX_BYTES, fileClaimForTarget, foldProjectPath } from "./file-claim"
 
 function stripAllQuotes(text: string): string {
   let out = ""
@@ -378,6 +378,10 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
           filePath,
           written,
           admittedExtensions: ["scss"],
+          // THE POPULATION'S SIZE CAP, passed because this lane HAS over-cap files (4 for graphql,
+          // 2 for scss on the gate's own population line). A claim about one of them would be
+          // REFUTED, and nothing in the row would say why.
+          maxFileSizeBytes: FILE_CLAIM_MAX_BYTES,
           extraCandidates: extra,
         })
         if (claim === null) continue
