@@ -1540,12 +1540,20 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
         `(run with maxFiles 0 for the real one). Passed as ` +
         `{ projectIndex } exactly as \`pool-worker.ts\` parse_batch does. ` +
         `INDEX-ASSISTED POPULATION, and the distinction is not academic: with the index IN, ` +
-        `cross-file base resolution and the widened type-visibility gate are measured, and ` +
-        `real production PARSE does not hand dart an index at all — ` +
-        `\`parallel-indexer.ts\` PROJECT_INDEX_EXTENSIONS names only \`.sol\`, so a dart file ` +
-        `there is parsed with no context and behaves as this run's --index-less arm does. ` +
-        `The scope is production's (per project); THIS population is production's only once ` +
-        `\`.dart\` is added to that table. Its counts are not comparable to a --index-less run.`,
+        `cross-file base resolution and the widened type-visibility gate are measured. ` +
+        // WHICH LANGUAGES PRODUCTION ACTUALLY INDEXES, stated as a fact that was WRONG here twice:
+        // this line said "names only .sol" (it named .sol and .fs) and then that the population is
+        // production's "only once .dart is added". `.dart` IS STILL NOT IN THE TABLE — the dart spec
+        // exists and is unreachable in production — so a dart file is parsed with no context and
+        // behaves as this run's --index-less arm does, while `.proto` IS in the table since
+        // 2026-10-11 and its --index population IS production's. A header that is wrong about which
+        // languages are indexed is the population rule applied to the instrument itself.
+        `THE TABLE (src/ast/parallel-indexer.ts PROJECT_INDEX_EXTENSIONS) carries ` +
+        `\`.sol\`, \`.fs\` and \`.proto\`: ` +
+        `for SOLIDITY, FSHARP and PROTOBUF this population IS production's, and for every other ` +
+        `language — DART included, whose spec exists in project-index.ts but is unreachable because ` +
+        `\`.dart\` was never added — the analyzer is parsed with no context and behaves as this ` +
+        `run's --index-less arm does. Its counts are not comparable to a --index-less run.`,
   )
   console.log(
     `excluded from that population: ${rep.excluded.absent} tracked-but-absent/unreadable + ` +
