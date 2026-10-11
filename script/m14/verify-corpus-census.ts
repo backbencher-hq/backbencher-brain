@@ -28,8 +28,18 @@
 import * as fs from "fs"
 import * as path from "path"
 import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+import { fileURLToPath } from "node:url"
 
-const ROOT = path.resolve(__dirname, "..", "..")
+// `__dirname` / `__filename` do not exist in an ES module, and package.json
+//  declares "type": "module". Reaching for one here means this file dies at LOAD
+//  with a ReferenceError, prints a stack trace, and runs no check at all — while
+//  `tsc` stays silent, because @types/node declares both.
+//  The repo already has the idiom (script/m14/html-ontology-census.ts):
+//    const SELF = fileURLToPath(import.meta.url)
+//  which is correct under tsx, bun and plain node alike.
+const SELF_PATH = fileURLToPath(import.meta.url)
+const HERE = path.dirname(SELF_PATH)
+const ROOT = path.resolve(HERE, "..", "..")
 const SPEC_DIR = path.join(ROOT, "script", "m14", "spec")
 const WASM_DIR = path.join(ROOT, "wasm")
 // Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.

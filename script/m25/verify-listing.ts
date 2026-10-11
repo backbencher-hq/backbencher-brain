@@ -26,6 +26,7 @@ import { tmpdir } from "node:os"
 import { createHash } from "node:crypto"
 import { join, resolve } from "node:path"
 import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
+import { fileURLToPath } from "node:url"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const README_PATH = join(ROOT, "ide/vscode/README.md")
@@ -217,7 +218,7 @@ const MUTANTS: Array<{ name: string; from: string; to: string; probe: (mod: Reco
 
 const tmp = mkdtempSync(join(tmpdir(), "d1-mutants-"))
 try {
-  const source = readFileSync(import.meta.filename ?? __filename, "utf8")
+  const source = readFileSync(fileURLToPath(import.meta.url), "utf8")
   for (const [i, mutant] of MUTANTS.entries()) {
     const mutantPath = join(tmp, `mutant.${i}.ts`)
     if (!source.includes(mutant.from)) {

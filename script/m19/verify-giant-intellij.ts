@@ -12,6 +12,7 @@ import { cpus, totalmem } from "node:os"
 import { execFileSync } from "node:child_process"
 import { BrainDatabase } from "../../src/brain/database"
 import { getProjectId } from "../../src/cli/index"
+import { readdirSync } from "node:fs"
 
 let checks = 0, passed = 0, failed = 0
 function ck(label: string, cond: boolean, detail?: string) {
@@ -45,7 +46,7 @@ function repoState(repo: string): { head: string | null; dirtyFiles: number | nu
 }
 
 function walk(dir: string, acc: string[] = []): string[] {
-  for (const entry of require("node:fs").readdirSync(dir, { withFileTypes: true })) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, entry.name)
     if ([".git", "node_modules", "obj", "bin", "testData", ".idea"].includes(entry.name)) continue
     if (entry.isDirectory()) walk(p, acc)

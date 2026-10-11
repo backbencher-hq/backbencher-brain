@@ -43,8 +43,16 @@ import { parseFile, ASTEngine } from "../../src/ast/engine"
 import { getParser } from "./run-fixtures"
 import { emitEvidence } from "./evidence-harness"
 import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+import { fileURLToPath } from "node:url"
 
-const ROOT = path.resolve(__dirname, "..", "..")
+// `__dirname` does not exist in an ES module, and package.json declares
+  // "type": "module". Using it here threw `ReferenceError: __dirname is not defined in
+  // ES module scope` at load — the gate printed a stack trace and exited, having run
+  // no check at all. It was in `npm run verify`, so the leg contributed nothing.
+  // The repo already has the idiom (script/m14/html-ontology-census.ts and others use
+  // fileURLToPath(import.meta.url)); this now matches it.
+const HERE = path.dirname(fileURLToPath(import.meta.url))
+const ROOT = path.resolve(HERE, "..", "..")
 // Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
 const REPOS = resolveCorpusRoot(process.cwd()) ?? "REPOS_UNRESOLVED"
 const LANES: Array<{ lang: "c" | "cpp" | "rust" | "go" | "clean"; dirs: string[]; exts: string[]; limit?: number; why?: string }> = [
