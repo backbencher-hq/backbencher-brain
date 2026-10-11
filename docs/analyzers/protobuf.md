@@ -123,6 +123,43 @@ A non-protobuf lane's row is unchanged by the gate edit (`toml` 13 / 318 / 0, id
 of `probe-uses-split` (9,761 same-file-one · 92 same-file-multi · 2,658 cross-file-only · 971
 no-candidate), and every number in this page that a store run has not confirmed.
 
+### The 68 shortfall, CLASSIFIED (`tools/suffix-gap-classify.mts`)
+
+r-lane's SUFFIX arm matches ANY admitted file whose path ends with `/<import>`. This lane reaches
+ROOT-RELATIVE, FILE-RELATIVE and every ANCESTOR DIRECTORY of the importing file. The difference is
+measured, not characterised:
+
+```
+   imports edges                                    1,574
+   claimed by this lane's arm                         993
+   reachable ONLY by the SUFFIX arm (the gap)          68
+   reachable by NEITHER (the ruled residue)           513
+   of the gap: under an ancestor the arm already tried   0  ·  elsewhere entirely  68
+```
+
+**THE 68 ARE A DECLARED BOUNDARY OF PER-FILE ANALYSIS, and the reason is structural rather than a
+failure to try.** Every one of them is imported from a file whose ancestors do not contain the match:
+consul's `proto/private/pbconfigentry/config_entry.proto` imports `annotations/ratelimit/ratelimit.proto`,
+which lives in `proto-public/` — a SIBLING source root, not an ancestor. The same shape recurs 25 times
+for `vendor/github.com/gogo/protobuf/gogoproto/gogo.proto`. No bounded ancestor walk reaches a sibling
+tree, so the only route is knowing the PROJECT'S FILE LIST.
+
+**AND THE ANALYZER DOES NOT HAVE IT.** `ProjectIndex` carries `typeKinds`, `typeMembers`, `typeBases`,
+`symbolNames`, `damagedFiles` and `stats` — **no file paths**, so the index that this lane just made live
+cannot answer "which file ends with this import either". Enumerating the project from inside a per-file
+analyzer would be unbounded AND would re-implement the indexer's discovery rules (gitignore, the size
+cap, extension admission) — the class of error this programme keeps finding, in the one place that has
+no business holding it.
+
+**A BOUNDED RULE DOES EXIST, AND IT IS PRICED RATHER THAN BUILT** (a shared-interface change, so it is
+reported): give `ProjectIndex` the repo-relative file paths it already reads (`stats.files`), and the arm
+becomes "an indexed path ending with `/<import>`". Across all 1,574 imports, **772 have exactly ONE
+admitted suffix match and 3 have more than one** (`movie.proto` matches three vendored copies), so such a
+rule would reach the gap and would have to CHOOSE in 0.4% of cases — a policy the programme must state
+before a lane picks a copy. Cost: a path set per indexed lane riding the serialized index into every
+worker; cheap at build time, but a shared interface and a payload change affecting every indexed
+language. **Not built for 68 edges without that ruling.**
+
 ## 3. Instruments
 
 | instrument | what it answers |
