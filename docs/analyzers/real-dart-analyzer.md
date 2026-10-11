@@ -5261,6 +5261,25 @@ that CAUGHT the fake-`Object` defect (31 riverpod overrides refused while an unn
 published under `Object`). A class of defect that has already occurred once is worth 128 honest
 refutations on the one project that carries the SDK's own sources.
 
+**CORRECTION, 2026-10-11 — the paragraph above reads the gate's sentence and mistakes it for the
+defect.** "Refuted for one reason: the dart-sdk checkout's own sources declare `Object`" is the
+gate's MECHANISM, and it is correct as far as it goes, but it never asked what the ROW is about. The
+`Object.<member>` rows above are not the honest `isExternalBase` claims the retarget writes: every
+one names a member `Object` DOES NOT DECLARE (`length`, `operator []`, `operator []=`, `add`,
+`path`, `exception`, `stackTrace`, … — not one of the five in `DART_OBJECT_INTERFACE_MEMBERS`), and
+they come from a different branch entirely. The shape is `class LineStarts extends Object with
+ListMixin<int> { @override int get length => ...; }` over dart-sdk; `extends Object` is how a Dart
+file writes "no superclass", the member is the MIXIN's, and the first-heritage-parent fallback named
+`Object` anyway. MEASURED: exactly **128** such rows over dart-sdk (the count on the nose, and
+nothing else produces one), every one with a real base besides `Object` (46
+`AnalysisDriverUnitIndex` through `implements idl.AnalysisDriverUnitIndex`, 9 `ListMixin`, 7
+`SetMixin`, 4 `TouchList`, …). So the fixture's own rule — "a member outside Object's five must
+never be retargeted onto Object" — was already written down and had simply never been enforced
+against this branch. **FIXED 2026-10-11 (`e0b2456f4`); the receipt, and the guard that keeps it from
+being a relocation rather than a withdrawal, are in §"2026-10-11 — the fabricated `Object.<member>`
+rows CLOSED" at the end of this document.** The refutation column it removes is not a claim being
+laundered, it is a fabricated edge being withdrawn.
+
 ### THE RECEIVER AVAILABILITY CUT, measured — and it REFRAMES the biggest lever
 
 `validation/m14/fixtures/dart/receiver-availability-cut.ts`, over the three whole projects
@@ -5976,9 +5995,12 @@ arm10 VERDICT: FAIL — 781920 ambiguous + 143548 unresolved of 3434795 edges �
       claim(s) REFUTED by the project; 19 external claim(s) unverifiable
 ```
 
-The verdict is still FAIL, and the remaining clause is NOT this fix's: the 128 `overrides` rows
-(`Object.length`, `Object.operator []`, …) are the standing population the after-table above already
-names, and the ambiguity/unresolved halves are the lane's roadmap. What the fix bought is that the
+The verdict is still FAIL, and the remaining clause is NOT this fix's. **SUPERSEDED THE SAME DAY, and
+left standing only because it was true from 12:43 to 15:23:** the 128 `overrides` rows
+(`Object.length`, `Object.operator []`, …) are the fabricated `Object.<member>` rows the CORRECTION at
+§"MEASURED — whole corpus, PER-FILE" diagnoses, and `e0b2456f4` closes them — arm11's verdict carries
+no REFUTED clause at all (§"2026-10-11 — the fabricated `Object.<member>` rows CLOSED", at the end of
+this document). The ambiguity/unresolved halves are still the lane's roadmap. What the fix bought is that the
 `causeFAIL` column — the one column whose contract says it MUST be 0 — reads 0, and the bucket-3
 population is now stated causes only: **128,636 `causeOK`, 0 refuted**.
 
@@ -6307,3 +6329,189 @@ decision because these rows never reached it. Whole-population run: 7 names, 6 o
 2 DEGRADED files are the deep-nesting tests, named rather than dropped. `pb-reference` is the 7th
 name and admits ZERO files: its 2 tracked `.dart` paths are absent from the working tree, which the
 census now says out loud instead of printing an empty repository.
+
+## 2026-10-11 — the fabricated `Object.<member>` rows CLOSED (`e0b2456f4`), and the REFUTED clause leaves the verdict
+
+The CORRECTION at §"MEASURED — whole corpus, PER-FILE" is the diagnosis; this is the fix and its
+receipt. It closes the last clause in the dart verdict that named a REFUTED claim.
+
+### The defect, in the shape it actually has
+
+`class LineStarts extends Object with ListMixin<int> { @override int get length => ...; }` —
+dart-sdk's `pkg/_fe_analyzer_shared/lib/src/scanner/abstract_scanner.dart`. `extends Object` is how a
+Dart file writes "no superclass" (`Object` is implicit on every class, so naming it adds nothing) and
+`Object` declares exactly five members (`DART_OBJECT_INTERFACE_MEMBERS`). The member here is the
+MIXIN's. Pass 3's fallback — the branch that fires when no in-file base could be walked — asked
+`firstHeritage` for the class's first heritage parent, got `Object`, and published **`Object.length`**
+with `metadata.isExternalBase: true`. On the one project whose checkout publishes
+`sdk/lib/core/object.dart` that claim is falsifiable and false, so the gate counted it. MEASURED:
+exactly **128** such rows over dart-sdk, every one with a real base besides `Object` (46 name
+`AnalysisDriverUnitIndex` through `implements idl.AnalysisDriverUnitIndex`, 9 `ListMixin`, 7
+`SetMixin`, 4 `TouchList`, …) and **0** with no other base at all — plus **18** more on the projects
+that do NOT publish `Object` (dart-http 12, flutter-packages 6), where the same fabricated target came
+back `extOK` instead: gate `overrides` extOK 1,386, of which 1,368 are the legitimate
+Object-interface rows (`firstHeritageParent+isExternalBase+isObjectInterfaceBase…`) and **18 are this
+defect**. 128 + 18 = 146.
+
+### The fix: skip `Object`, name the first REAL base, and publish nothing when there is none
+
+`baseOrder`, built beside `basesOf`, is the class's real bases in the file's own clause order:
+`extends`, `implements`, and a `with` mixin (which this pass publishes as a `uses` edge carrying
+`isMixin: true`), first occurrence, deduped. A bare `uses` is ANY type the file mentions, so it can
+never become a fallback base — `class X extends Object { void f(List<int> x) {} }` mentions `List` and
+inherits nothing from it, and naming it would be the same fabricated-edge shape in a new coat.
+```ts
+const rawFirst = firstHeritage.get(s.ownerName) ?? null
+const first = rawFirst === DART_OBJECT_TYPE && !DART_OBJECT_INTERFACE_MEMBERS.has(s.name)
+  ? ((baseOrder.get(s.ownerName) ?? []).find((b) => b !== DART_OBJECT_TYPE) ?? null)
+  : rawFirst
+```
+Four boundaries, each one pinned by a fixture case rather than argued
+(`dart/object-interface-override`, new cases K/L/M/N beside the five that were already there):
+
+| case | shape | what it must produce |
+| --- | --- | --- |
+| K | `class LineStarts extends Object with ListMixin<int>`, `@override int get length` | `LineStarts.length -> ListMixin.length` `{baseBeyondRunScope:"ListMixin"}` — the MIXIN, not `Object` |
+| N | `class MultiMix extends Object with MixinA, MixinB` | names `MixinA` — the FIRST clause, never `MixinB`, never `Object` |
+| L | `class PlainRoot extends Object` and nothing else | **NO ROW** — an out-of-file base may be guessed, a KNOWN-empty one may not |
+| M | `class MentionsOnly extends Object` mentioning `Widgetish` in a parameter | **NO ROW** — a mention is not a base |
+| Direct (unchanged) | `class Direct extends Object { @override String toString() }` | `Direct.toString -> Object.toString` `{isExternalBase:true}` — the member IS Object's |
+
+The fixture forbids every refuted spelling (`LineStarts.length -> Object.length`,
+`LineStarts.operator [] -> Object.operator []`, `PlainRoot.length -> Object.length`,
+`MentionsOnly.length -> Widgetish.length`, `MultiMix.length -> MixinB.length`) and the count moves
+8 → **11** rows. Two new mutants, both fired with the other 29 fixtures green: **M6 SKIP TOO FAR**
+drops `Object.<member>` rows that lack `isObjectInterfaceBase` — caught by the missing
+`Direct.toString` control AND the count; **M7 NO-SUPPRESSION CONTROL** appends every forbidden row with
+its metadata pins intact — caught. Seven mutants, all constructed and all caught; `bun run
+script/m14/run-fixtures.ts --lang dart` 30/30; `npx tsc --noEmit` clean. And the lane's own
+overrides oracle battery is unmoved: `script/m14/verify-dart-overrides.ts` reads **13/14** with the
+SAME single disagreement as before the fix (`containment: a const constructor is a member`,
+`A->constructor` missing), which fails identically in the frozen pre-fix arm10 worktree — pre-existing
+and unrelated, recorded so the number is not later read as this change's.
+
+### Why this is a withdrawal and not a relocation of the 128
+
+The retargeted rows stop being `isExternalBase` claims and become `baseBeyondRunScope` CAUSE claims,
+which the gate deliberately cannot refute (`CAUSE_CLAIM_KEY` is not in `EXTERNAL_KEYS`). That is
+exactly the move the section above warns against, so the guard is stated and MEASURED rather than
+assumed: a cause claim's stated reason must be a base the file's OWN clause named, and the second
+implementation's only refutation class is **"the named base is declared in the emitting file"** — a
+file's own declarations were in the run's hands, so naming one is a false reason.
+
+`dt-object-infile-base.mts` (a text scan shaped like the oracle's truth source: literals and comments
+blanked, declarations read from what remains) walks every Object-first non-interface override shape
+over the seven projects and asks it:
+
+```
+fabricated Object-first non-interface override rows: 176
+  retargeted to a real base:                              176      (0 dropped, 0 still spelled Object.<member>)
+  in the emitting file's own declarations, AS A CAUSE CLAIM (what the oracle walks):  0
+  in the emitting file's own declarations, as a RESOLVED row (no claim at all):      30
+```
+
+The 176 is a deliberate superset — the probe's own text-level reconstruction of "first heritage
+parent" — and the 30 in-file rows are the proof it is a superset: every one of them carries **no
+cause claim at all** (`baseBeyondRunScope` undefined), because a base the file declares is in the
+per-file run's hands and those rows RESOLVE (dart-sdk's `Derived.f -> Mixin.f` with `Mixin` declared
+right there, `G.x -> B.x`, `C.foo -> B.foo`, …). 176 − 30 = **146**, the same 146 the marker table
+below counts independently. **Cause claims naming a base their own file declares: 0.**
+
+### arm11 — the whole-corpus after-table, and every cell that moved
+
+`/tmp/dartgate/incoming-dart-arm11.log`, 2026-10-11 14:17–15:23, the arm11 worktree at `ab900b82c`
+with this change copied in (`src/ast/real-dart-analyzer.ts` sha256 `ef6afa5d642c5c61…`, byte-identical
+to the committed file), `incoming-gate.ts dart dart 0` over the whole population (33,738 parsed of
+33,738, 0 failed, 2 degraded, `instrument self-test: PASS`), `EXIT=1`:
+
+```
+type                  edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK  ext?  extFAIL  bindOK   bind?  bindFAIL  causeOK  causeFAIL
+arm10  overrides      316123   275068    0        9291       672        2771        1386   0     128      0        0      0         27479    0
+arm11  overrides      316123   275171    0        9303       672        2771        1368   0     0        0        0      0         27510    0
+arm10  TOTAL          3434795  1796077   97797    781920     376548     143548      21910  19    128      562536   12     0         128636   0
+arm11  TOTAL          3434795  1796180   97797    781932     376548     143548      21892  19    0        562536   12     0         128667   0
+```
+
+Δ, and it is ONE ROW plus the TOTAL — every other type row (`calls`, `uses`, `contains`, `imports`,
+`references`, `exports`, `extends`, `implements`, `instantiates`) byte-identical, `amb(kind)`,
+`unresolved` and `collRes` included:
+
+```
+overrides   edges      316123 -> 316123    0        no edge added, none dropped — this retargets
+            resolved   275068 -> 275171   +103      the real base's `<Base>.<member>` IS a project key
+            amb(decl)    9291 ->   9303    +12      … and in 12 rows the project declares it more than once
+            extOK        1386 ->   1368    -18      the 18 `Object.<member>` rows on projects that do
+                                                     NOT publish Object; withdrawn with the rest
+            extFAIL       128 ->      0   -128      the clause this round existed for
+            causeOK     27479 ->  27510    +31      … and where the base names nothing in the project,
+                                                     the edge STATES the cause instead of claiming
+TOTAL       extFAIL       128 ->      0
+```
+
+`+103 +12 −18 −128 +31 = 0`: every moved row is accounted for, and the edge count is unchanged in the
+type row and in the TOTAL. The gate's own marker table says the same thing: the set
+`isExternalBase+isOverride+relationshipType` goes `0 res / 4 amb / 128 unres / 18 extClaim` →
+`0 / 4 / 0 / 0` (150 rows → 4), and `baseBeyondRunScope+isOverride+relationshipType` absorbs exactly
+them: `254178 / 2720 / 27479` → `254281 / 2732 / 27510` = +103/+12/+31 = **146**. The pooled view
+(TABLE 2, not the verdict's scope) moves identically: `overrides` resolved 275,333 → 275,436,
+amb(decl) 11,215 → 11,227, extFAIL **146 → 0** — 146 there because a pooled key space declares
+`Object` once for all projects.
+
+### The verdict: the clause is gone
+
+```
+arm10 VERDICT: FAIL — 781920 ambiguous + 143548 unresolved of 3434795 edges, resolved against the
+      file's OWN PROJECT (production's scope); and 128 external claim(s) REFUTED by the project;
+      19 external claim(s) unverifiable
+
+arm11 VERDICT: FAIL — 781932 ambiguous + 143548 unresolved of 3434795 edges, resolved against the
+      file's OWN PROJECT (production's scope); 19 external claim(s) unverifiable (21892 verified +
+      19 unverifiable external)
+```
+
+The `EXTERNAL CLAIMS THE POPULATION REFUTES` block and the string `REFUTED by the project` are both
+absent from the arm11 log (grep: 0 hits in 3.4M edges; arm10's log has the block and 25 named rows
+plus `namesOmitted.refuted` for the other 103). `extFAIL` now reads **0 on every row of TABLE 1**,
+`causeFAIL`/`bindFAIL` stay 0, and `extOK` −18 is the same withdrawal counted from the confirming
+side.
+
+**The verdict is still FAIL, and this section does not claim otherwise.** The gate's `bad` = ambiguous
++ unresolved + refuted is 925,596 → **925,480**; the remaining 925,480 are the lane's roadmap residue
+(781,932 ambiguous + 143,548 unresolved), and the one clause that named a *refuted claim* is gone.
+Those residues need the index work §"The four levers, sized from the ARBITER's own marker table"
+prices, not another suppression: this fix removed a FABRICATED edge, which is why it could close a
+refutation column without moving the ambiguity or unresolved columns at all.
+
+### The second net, on arm11 — the independent implementation agrees, and the 123 do not move
+
+`cause-claim-oracle-arm11.log`, 15:39–16:25, same worktree, `ORACLE_EXIT=0` (its control fired before
+it read a corpus file). This is the instrument whose ONLY refutation class is the one the fix could
+have violated — "the named base is declared in the emitting file" — so it is the check that decides
+whether 128 withdrawals became 128 FALSE causes:
+
+```
+repo               files admitted   claims   REFUTED     (b) import   (c) index   (d) nowhere
+pb-reference                    0        0          –            –           –             –
+nvim-treesitter                 5        0          –            –           –             –
+dart-http                     333      2599          0          202         779          1618
+riverpod                     1295     10288          0          252        7147          2889
+proxicall                    2350    280551          0       233908       20101         26542
+flutter-packages             4028     98428          0        22651       37002         38775
+dart-sdk                    25727    190234        123        32900      151795          5416
+TOTAL                             582100        123       289913      216824         75240
+```
+
+Against arm10's run of the same instrument: **claims 581,954 → 582,100 (+146)** — the exact
+population the marker table above counts, and the per-project split is each project's OWN
+fabricated-row count from the probe (dart-sdk +128, dart-http +12, flutter-packages +6, riverpod 0,
+proxicall 0) — and **REFUTED 123 → 123, UNMOVED**, in dart-sdk and in every other project, printing
+the SAME twelve example rows (`migration_schedule.dart:143`, `instructions.dart:1778`,
+`identifiers.dart:225`, …). The 146 new claims are DECOMPOSED rather than judged — (b) +12 · (c) +124
+· (d) +10 — because what would close each one is a file read or an index, not a fix, and none of them
+is a false reason. `parse failures 0 · degraded files 2`, same as arm10.
+
+So the two nets agree on arm11's own question, from opposite sides: the gate says the refuted column
+is EMPTY, and the independent implementation — sharing nothing with the analyzer — says none of the
+rows that replaced it states a false reason. **146 retargeted rows, 0 new refutations.** The 123 that
+remain are the primary-constructor GRAMMAR hole of §"What the three refutations actually are: a
+GRAMMAR hole, measured" — unchanged, in the same files and lines, and out of scope for this round.
