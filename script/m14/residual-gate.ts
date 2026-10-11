@@ -242,9 +242,9 @@ function runLane(lang: string): { rows: Array<{ type: string; edges: number; res
       pop.emptyCount = (pop.emptyContentless ?? 0) + (pop.emptyHoles ?? 0)
       if (lastEmptyLine >= 0) {
         for (let j = lastEmptyLine + 1; j < lines.length && j <= lastEmptyLine + 5; j++) {
-          const fm = /^\s{4}(HOLE {2}|empty )(.+)$/.exec(lines[j])
+          const fm = /^\s{4}(empty |\?\?\?\?\? )(.+)$/.exec(lines[j])
           if (!fm) break
-          pop.emptyFiles.push({ kind: fm[1].startsWith("HOLE") ? "hole" : "contentless", path: fm[2].trim() })
+          pop.emptyFiles.push({ kind: fm[1] === "empty " ? "contentless" : "unknown", path: fm[2].trim() })
         }
       }
     }
@@ -290,7 +290,7 @@ if (LANE) {
   const scope = isSample
     ? `SAMPLE — ${population.sampleOf} of ${population.sampleTotal} admitted files. NOT the whole population, and a stride sample truncates each project's symbol table too, so its project-scoped RESOLVED share is biased UP.`
     : (holes > 0 || deg > 0)
-      ? `WHOLE admitted population, BUT INCOMPLETE — ${holes} file(s) hold CONTENT and returned nothing (a timed-out file contributes NOTHING) and ${deg} were degraded. The counts below describe MISSING evidence, not wrong evidence.`
+      ? `WHOLE admitted population — ${holes} file(s) hold CONTENT and returned nothing and ${deg} were degraded. WHETHER THAT IS A HOLE IS NOT DECIDED HERE: this counter cannot separate a parse failure from content that cannot declare anything. julia-lane's three were all BENIGN (`# empty` stubs and a comments-only file, no declaring node); graphql-lane's 45 are attributed to `engine.ts:1991` timeouts. Read the files.`
       : population.emptyLegacyUnsplit
         ? `WHOLE admitted population; ${empty} file(s) returned nothing and the instrument did NOT split them by content, so their kind is UNKNOWN — a 0-byte file leaves the population COMPLETE, a timed-out one puts a HOLE in it, and this run cannot tell you which.`
         : population.parsed === null
@@ -309,10 +309,15 @@ if (LANE) {
     if (contentless > 0) console.log(
       `  ${contentless} of them hold NO CONTENT AT ALL (0 bytes or whitespace): the run missed nothing,\n` +
       `  the population is COMPLETE, and these are NOT a defect.`)
+    // NOT ASSERTED AS A HOLE — see the module docstring and julia-lane's measurement (three benign
+    // files) against graphql-lane's 45 (attributed to `engine.ts:1991` timeouts). BOTH readings occur
+    // in this fleet, so the counter is genuinely undecidable and asserting either way is the defect.
     if (holes > 0) console.log(
-      `  ${holes} hold CONTENT AND RETURNED NOTHING — a real HOLE in the population.`)
+      `  ${holes} hold CONTENT AND RETURNED NOTHING. THIS COUNTER CANNOT TELL a parse failure from\n` +
+      `  content that cannot declare anything: it is NOT a hole by declaration, and it is NOT clean\n` +
+      `  either. Read the files before either verdict travels with these numbers.`)
     for (const f of population.emptyFiles) console.log(
-      `    ${f.kind === "hole" ? "HOLE  " : f.kind === "contentless" ? "empty " : "????? "}${f.path}`)
+      `    ${f.kind === "contentless" ? "empty " : "????? "}${f.path}`)
     if (!population.emptyLegacyUnsplit && population.emptyCount !== null && namedShown < population.emptyCount) console.log(
       `  (${population.emptyCount - namedShown} further file(s) are COUNTED BUT NOT NAMED — the instrument names\n` +
       `   only its first five, so their kind is unclassified and must NOT be reported as either.)`)

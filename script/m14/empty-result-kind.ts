@@ -36,7 +36,14 @@
 
 import { readFileSync } from "node:fs"
 
-export type EmptyKind = "contentless" | "hole"
+/**
+ * `hole` is RETAINED IN THE UNION so consumers written against it still COMPILE while they are updated;
+ * the classifier no longer RETURNS it. That combination is deliberate and it is the safe intermediate:
+ * a consumer filtering `kind === "hole"` now gets an empty list and therefore prints nothing, which is
+ * **silence instead of a false claim** — strictly better, and the disclosure is restored when that
+ * consumer is updated to `unknown`.
+ */
+export type EmptyKind = "contentless" | "unknown" | "hole"
 export type EmptyResult = { kind: EmptyKind; path: string }
 
 /** Classify ONE file that returned no symbols and no relationships. */
@@ -45,10 +52,31 @@ export function classifyEmptyResult(filePath: string): EmptyResult {
   try {
     contentless = readFileSync(filePath, "utf8").trim() === ""
   } catch {
-    // Unreadable is a HOLE: we could not establish that there was nothing to read.
+    // Unreadable: we could not establish that there was nothing to read, so the kind is UNKNOWN.
     contentless = false
   }
-  return { kind: contentless ? "contentless" : "hole", path: filePath }
+  // ── WHY THE OTHER KIND IS `unknown` AND NOT `hole` ─────────────────────────────────────────────
+  //
+  // It was `hole`, and the block asserted "a timed-out file contributes NOTHING, so the population is
+  // INCOMPLETE". **That assertion is not established by this counter, and julia-lane measured it
+  // false.** Its three flagged files were two 8-BYTE files containing `# empty` and a 162-byte
+  // comments-only `julia/etc/startup.jl` — all three parse to 2-3 nodes with **no declaring node at
+  // all**. A comment-only file CANNOT contribute a symbol or a relationship, so for those the
+  // population is **COMPLETE** and no evidence is missing.
+  //
+  // "0 bytes" is one thing. "Non-empty but returned nothing" is at least THREE things this counter
+  // cannot separate: (1) content that cannot declare anything — comments, blank-only bodies;
+  // (2) a genuine parse failure or timeout, which IS a hole; (3) a file the analyzer declined. The
+  // counter has no way to tell them apart, and **a counter that cannot separate two meanings must not
+  // assert one of them.** So it reports `unknown` and says so, and the reader is told plainly that
+  // this run cannot answer the question rather than being handed the alarming reading.
+  //
+  // THIS IS THE THIRD ITERATION ON THIS ONE BLOCK, and the pattern is worth recording: iteration 1
+  // conflated empty with timed-out; iteration 2 fixed that and classified the files ITSELF, in a second
+  // copy of the rule that diverged immediately; iteration 3 asserted `hole` for anything non-empty.
+  // **Every one of the three was caught by a LANE'S MEASUREMENT, not by my own reasoning** — which is
+  // the strongest argument in this programme for a lane being able to refute the instrument.
+  return { kind: contentless ? "contentless" : "unknown", path: filePath }
 }
 
 export function classifyEmptyResults(files: string[]): EmptyResult[] {

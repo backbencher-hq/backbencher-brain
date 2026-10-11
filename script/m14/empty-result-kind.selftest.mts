@@ -54,15 +54,19 @@ try {
   // ── A / B / C / D: both directions, asserted per arm
   expect("A 0-byte file", classifyEmptyResult(zeroByte).kind, "contentless")
   expect("B whitespace-only file", classifyEmptyResult(whitespace).kind, "contentless")
-  expect("C file with content", classifyEmptyResult(withContent).kind, "hole")
-  expect("D nonexistent path", classifyEmptyResult(missing).kind, "hole")
+  // C AND D ARE `unknown`, NOT `hole` — and that is the correction julia-lane forced. A file holding
+  // content is EITHER a parse failure OR content that cannot declare anything, and this predicate
+  // cannot separate them, so it must not name one. Asserting `hole` here is what made the block print
+  // "the population is INCOMPLETE" over three benign files.
+  expect("C file with content", classifyEmptyResult(withContent).kind, "unknown")
+  expect("D nonexistent path", classifyEmptyResult(missing).kind, "unknown")
 
   // ── F: no arm may satisfy both kinds. A single `kind` string cannot, but the assertion is written
   // out because the failure mode it guards is a future return type that carries both.
   for (const [label, p] of [["A", zeroByte], ["C", withContent]] as const) {
     const k = classifyEmptyResult(p).kind
-    if (k === "contentless" || k === "hole") pass++
-    else failures.push(`F arm ${label}: kind is neither contentless nor hole (${k})`)
+    if (k === "contentless" || k === "unknown") pass++
+    else failures.push(`F arm ${label}: kind is neither contentless nor unknown (${k})`)
   }
 
   // ── E: THE REGRESSION PIN. The three files that produced the false "INCOMPLETE" claim. If this
@@ -87,8 +91,8 @@ try {
   // same hazard as two copies, one level down.
   const bulk = classifyEmptyResults([zeroByte, withContent, missing])
   expect("G bulk[0]", bulk[0].kind, "contentless")
-  expect("G bulk[1]", bulk[1].kind, "hole")
-  expect("G bulk[2]", bulk[2].kind, "hole")
+  expect("G bulk[1]", bulk[1].kind, "unknown")
+  expect("G bulk[2]", bulk[2].kind, "unknown")
 } finally {
   rmSync(dir, { recursive: true, force: true })
 }
