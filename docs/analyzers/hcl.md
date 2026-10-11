@@ -819,6 +819,45 @@ consumer-visible cost is named and accepted: the public qualified name of every 
 so a consumer holding an old spelling will not match it — a deliberate trade for determinacy, for the
 release note.
 
+### Cause 15 — POST-LANDING BASELINE: the movable class measures ZERO, so the rename's case has evaporated
+
+The precondition this lane waited for — a baseline taken on the indexer AFTER the five landings — now
+exists, and it changes the decision. One labelled run, `nice -n 10`, no lock (phantom-held; a 20-minute
+hold is a fleet stall, not a private cost):
+
+`.tmp-hcl/post-landing/terragrunt.json` → `validation/m14/fixtures/hcl/store-binding-truth.post-landing.terragrunt.json`
+(terragrunt, **3,376 indexer-eligible of 3,399** copied; exclusions `testdata` 17, `test` 4,
+`.terraform.lock.hcl` 2):
+
+| measure | pre-landing | **post-landing** |
+|---|---|---|
+| movable rows (`scopedWouldMove`) | 582 (this repo, earlier pass) | **0** |
+| spelling project-unique (the 229 class) | part of 582 | **0** |
+| duplicates exist (the 2,079 class) | part of 582 | **0** |
+| twin exists somewhere | — | 76 |
+| no candidate anywhere | — | 1,825 |
+
+**The class the rename was priced to fix measures zero on the post-landing indexer** — `12,865 → 0` is
+r-lane's fleet reading and this run reproduces the direction independently on this lane's own instrument,
+unchanged. The duplicates that made pass 1's choice ambiguous, and the unique-spelling rows that should
+have bound the own file, are both gone: the indexer landings (`71286549c`'s `contains` deferral and the
+key-selection changes) addressed the mechanism the rename was aimed at.
+
+**CONSEQUENCE, stated rather than implied: the rename must NOT be paid.** 269 fixture pins, a public
+qualified-name change for every exported symbol, and a store pair would buy a class that now measures 0
+in the repository that carried the largest share of it. Condition (4) of the falsifier — "the 2,079 NOT
+moving" — is no longer testable because there is nothing left to move, and condition (5) is satisfied by
+r-lane's zero independently. What remains is `references`' wrong-file class (6,167 fleet-wide), which is
+a different question:
+
+**`references` other-file is dominated by cross-MODULE reads, and is a RISK, not proven wrongness.** The
+post-landing unbound worklist is `module.ddb.aws_dynamodb_table.asset_metadata` 12,
+`module.iam.aws_iam_policy.lambda_basic_execution` 12, `module.iam.aws_iam_role.lambda_role` 12, and so
+on — chains reaching into modules that are not in the indexed population, which is what a cross-document
+reference IS for a type whose target is not the edge's own file. The intent legend is explicit that
+`"twin"` marks a WRONG EDGE only for `contains`/`exports`; for `references` a foreign declaration is a
+RISK. **So sample before pricing, which is the assignment this run starts.**
+
 ### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
 
 | clause | verdict |
