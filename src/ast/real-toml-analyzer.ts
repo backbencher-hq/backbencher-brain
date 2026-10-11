@@ -64,6 +64,7 @@
 import * as path from "path"
 import { statSync } from "fs"
 import { ASTEngine } from "./engine"
+import { dirOf, fileClaimForTarget, foldProjectPath } from "./file-claim"
 import { applyDocumentScope, documentDirScope } from "./project-scoped-identity"
 import type { Node } from "web-tree-sitter"
 
@@ -99,23 +100,46 @@ const DEPENDENCY_MANIFESTS = ["Cargo.toml", "Project.toml", "JuliaProject.toml",
  * counts an unresolved edge, and a fabricated candidate would manufacture the refutation.
  */
 function dependencyFileClaim(written: string, filePath: string, projectRoot: string | null): string | null {
+  // ON THE SHARED GUARD since 2026-10-11. The arithmetic stays TOML's own — a `path` dependency names
+  // a DIRECTORY, and the file the project can confirm is the manifest inside it — while the admitting
+  // (admitted extension, project boundary, `statSync`) is `fileClaimForTarget`.
+  //
+  // THE EXTENSION CLAUSE IS NEW HERE AND IT IS THE POINT OF THE SHARED GUARD: the arbiter's facts are
+  // the lane's admitted `.toml` files, so a candidate of any other extension can never verify while a
+  // miss still REFUTES. The old fallback returned `posix` when it was merely *a file* — the guard now
+  // requires that file to be one this lane's population can hold.
+  //
+  // BEHAVIOUR IS MEASURED, NOT ASSUMED: whole population, the lane's `imports` row must keep
+  // `extOK 318` and `extFAIL 0`. If the count moves, the extension clause dropped a claim the old
+  // arithmetic made, and that claim would have been about a file outside the admitted list.
   if (projectRoot === null || projectRoot.length === 0) return null
-  const w = written.trim()
-  if (w.length === 0 || w.length > 300) return null
-  for (const ch of [" ", "\t", "*", "?", "<", ">", "|", "{", "}", "$"]) if (w.includes(ch)) return null
-  if (w.startsWith("/") || w.startsWith("~") || w.includes("://")) return null
   const root = path.resolve(projectRoot)
-  const abs = path.resolve(path.dirname(filePath), w)
-  const posix = path.relative(root, abs).split(path.sep).join("/")
-  if (posix === ".." || posix.startsWith("../")) return null // outside the project: nothing to claim
-  const isFile = (p: string): boolean => {
-    try { return statSync(p).isFile() } catch { return false }
+  const fileRel = path.relative(root, filePath).split(path.sep).join("/")
+  const posix = foldProjectPath(dirOf(fileRel), written.trim())
+  const extraCandidates: string[] = []
+  if (posix !== null) {
+    for (const m of DEPENDENCY_MANIFESTS) extraCandidates.push(`${posix}/${m}`)
+    extraCandidates.push(posix)
+  } else if (written.trim().length > 0 && path.resolve(path.dirname(filePath), written.trim()) === root) {
+    // A `path` THAT LANDS EXACTLY ON THE PROJECT ROOT — `path = ".."` in `docs/Project.toml`, or
+    // `"../.."` two levels down. Its project-relative form is EMPTY, and `foldProjectPath` answers
+    // null for that: correct on its own terms, since an empty path is not a file. But the claim here
+    // is about the manifest AT the root, and it is REAL and verified — 10 edges over the whole
+    // population were lost to this before the branch below existed.
+    //
+    // HANDLED HERE RATHER THAN BY RELAXING THE GUARD. `src/ast/file-claim.ts` is a landed shared file
+    // and is not this lane's to change; the limitation ("a target that resolves to the project root
+    // has no candidate") is reported to its owner with this count as the evidence, because the same
+    // hole would swallow any lane whose targets name DIRECTORIES rather than files.
+    for (const m of DEPENDENCY_MANIFESTS) extraCandidates.push(m)
   }
-  for (const m of DEPENDENCY_MANIFESTS) {
-    const cand = posix.length === 0 ? m : `${posix}/${m}`
-    if (isFile(path.join(root, cand))) return cand
-  }
-  return posix.length > 0 && isFile(path.join(root, posix)) ? posix : null
+  return fileClaimForTarget({
+    projectRoot: root,
+    filePath,
+    written,
+    admittedExtensions: ["toml"],
+    extraCandidates,
+  })
 }
 
 /** TOML's bare-key alphabet is A-Za-z0-9_-; a quoted key is anything in quotes. */
