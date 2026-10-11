@@ -401,6 +401,59 @@ branch; it is flagged with its exact 2 targets rather than changed here, because
 The falsifier column is the point of the table: each row names the observation that would move it,
 so the ruling can be shown wrong instead of being trusted.
 
+## ROUND 11 — the falsifier's one edge FIXED, after pricing the rule (2026-10-10)
+
+The collision falsifier did not just fail — it named a defect, and a defect is not a ruling. So the
+rule it implied was PRICED before it was applied, and the price is the falsifier's own output rather
+than an argument:
+
+| | measured |
+|---|---|
+| CEILING — ambiguous edges a same-directory, same-kind resolution can reach | **1** (`serviceAccountName: apiserver`) |
+| CONTROL — of those, in a directory declaring that kind+name TWICE | **0** |
+| CONTROL — more that a PROJECT-WIDE version of the rule would bind | **117**, every one refused (another manifest set is another cluster) |
+
+Clean control, so the rule was applied: `resolveSameDirectoryResource` resolves a
+`yaml_resource_ref` whose referring KEY maps to a kind against a SIBLING in the referring file's own
+directory that declares `kind: <K>` and a top-level `metadata.name: <target>`, targeting that
+sibling's DOCUMENT IDENTITY (the same shape the in-file path already produced). It refuses rather
+than guesses: project root required, `.yaml`/`.yml` siblings only, and it returns null the moment a
+SECOND sibling matches.
+
+**What it reads, stated because it is a departure.** `analyze()` is synchronous and the only parser
+accessor (`engine.getParser`) is async, so the sibling is read as TEXT and the two spellings are
+matched. The read is a CANDIDATE FILTER, never an extraction: what it produces is a document
+identity, and the ARBITER then has to resolve that name against the project's key space — a wrong
+sibling makes the edge unresolved again, not wrong. The current file's own structure still comes
+from the tree. If a synchronous parser accessor ever lands in `engine.ts` (a shared file, so not this
+lane's to change), the read becomes a parse and nothing else moves.
+
+ARTEFACTS, so the before and the after cannot be confused: the run that FAILED (1 falsified, CEILING 1)
+is [name-collision-falsifier-priced-before.txt](../../validation/m14/fixtures/yaml/name-collision-falsifier-priced-before.txt);
+the run at this revision is [name-collision-falsifier.txt](../../validation/m14/fixtures/yaml/name-collision-falsifier.txt)
+(`RULING HOLDS`, CEILING 0).
+
+**The reach is 22 edges, not 1 — and that is a CORRECTION to the price, not a bonus.** The falsifier
+prices the AMBIGUOUS bucket, because that is where it was written to look. Measured over the whole
+population, the rule also moved 20 edges that were passing as VERIFIED EXTERNAL CLAIMS ("this names
+something outside the corpus") and 1 that was unverifiable — all of them references to an object the
+same directory declares, so the old claim was simply false:
+
+| references, whole population | before | after |
+|---|---|---|
+| resolved | 19,053 | **19,075** (+22) |
+| amb(decl) | 131 | **130** |
+| extOK (verified external claims) | 2,142 | **2,122** (−20) |
+| ext? | 44 | **43** |
+| **gate TOTAL** | resolved 1,403,526 · amb 138 · residual 185 | resolved **1,403,548** · amb **137** · residual **184** · every type **CLOSED** |
+
+**The falsifier now reads `RULING HOLDS on this population` — 0 falsified, CEILING 0** — and the
+control that makes the rule falsifiable in BOTH directions is
+[same-directory-referent-control.ts](../../validation/m14/fixtures/yaml/same-directory-referent-control.ts),
+10 assertions: the same-directory case RESOLVES to `a.sa`; a same-kind name in ANOTHER directory does
+NOT bind (the 117's shape); a WRONG kind in the same directory does NOT bind; TWO matching siblings
+REFUSE rather than pick; and an in-file declaration still resolves as it always did.
+
 ## COMPLETION PACKAGE — current revision
 
 Whole admitted population: **1,414,582 edges · 18,364 files · 189 repos · 0 failed · 0 degraded.**
@@ -415,8 +468,8 @@ reading as `extQ`.)
 **WHICH ARTIFACT HOLDS WHICH REVISION — stated because this package got it wrong once (see ROUND 10):**
 [residual-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/residual-yaml-whole-corpus-after.txt)
 is the four-clause gate's own **Round 10** run at this revision —
-`TOTAL 1,414,582 · resolved 1,403,526 (99.2 %) · ofWhich 4 · amb(decl) 138 · unresolved 47 ·
-residual 185 · extFAIL 0 · bindFAIL 0 · causeFAIL 0` — so the clause-1 number below and the
+`TOTAL 1,414,582 · resolved 1,403,548 (99.2 %) · ofWhich 4 · amb(decl) 137 · unresolved 47 ·
+residual 184 · extFAIL 0 · bindFAIL 0 · causeFAIL 0` · every type `CLOSED` (one printed bucket per edge) — so the clause-1 number below and the
 tie-break in clause 4 now come from the four-clause instrument ITSELF at the frozen tree rather than
 from a round-old copy; the enumerator's **Round 10** run (1,414,582 · amb 142 · `extQ` 254 ·
 `CLAIMABLE EDGES` NONE) is
@@ -428,8 +481,7 @@ RULING's falsifier is
 [census-yaml-whole-corpus-round7.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-round7.txt)
 (1,414,637 · `extQ` 282) as the round-by-round copy.)
 
-**WHY THE ENUMERATOR SAYS `amb 142` WHERE THE GATE SAYS 138, stated so it is not read as a
-discrepancy.** 142 − 138 = **4, and all four are `contains`.** The enumerator calls
+**THE ENUMERATOR NO LONGER DISAGREES WITH THE GATE — see the note in clause 1.** It used to say `amb 142` against the gate's 138; it now imports the gate's own `contains` predicate and reads **137**, the same as the gate. The paragraph below is kept as the record of what the gap was and why documenting it was the wrong fix: 142 − 138 = **4, and all four are `contains`.** The enumerator calls
 `incoming-rule.ts`'s `classifyEdge` DIRECTLY, so it is still counting `contains` by DECLARATION COUNT
 (a name declared twice anywhere in the project reads ambiguous) — the model `fa2dc27e8` retired,
 because production resolves `contains` with its own `WHERE s.project_id = ? AND s.name = ?` +
@@ -438,9 +490,9 @@ binds 1,380,046 of 1,380,046 in this lane. The gate's 138 is the production mode
 the clauses use; the enumerator's extra 4 are its instrument's own lag, recorded here rather than
 silently reconciled.
 
-**THE ANSWER, up front.** Clause 1 **fails by 185** — 138 ambiguous + 47 unresolved, every one
+**THE ANSWER, up front.** Clause 1 **fails by 184** — 137 ambiguous + 47 unresolved, every one
 attributed to a NAMED cause below, 0 refuted. Clauses 2, 3 and 4 are **met**. Two things stand
-between this lane and a formal `incoming-gate` PASS: **`bad` = 185** (that residual) and **`extQ` =
+between this lane and a formal `incoming-gate` PASS: **`bad` = 184** (that residual) and **`extQ` =
 254**, both read off the whole-population walk re-run at this revision (`FAIL — 138 ambiguous + 47
 unresolved of 1414582 edges …; 254 external claim(s) unverifiable (10617 verified + 254)`), and BOTH
 are ruled, each row with a mechanism and a falsifier, and the falsifier for the
@@ -482,16 +534,18 @@ clause 4 reads:
 | overrides | 26 | 26 | 0 | 0 | 0 | 0 | 0 | 0.0 % |
 | calls | 327 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 % |
 | imports | 8,366 | 1 | 0 | **7** | 0 | 0 | 0 | 0.1 % |
-| references | 21,417 | 19,053 | 0 | **131** | **47** | 0 | 0 | 0.8 % |
-| **TOTAL** | **1,414,582** | **1,403,526 (99.2 %)** | **4** | **138** | **47** | **0** | **0** | **185 (0.013 %)** |
+| references | 21,417 | **19,075** | 0 | **130** | **47** | 0 | 0 | 0.8 % |
+| **TOTAL** | **1,414,582** | **1,403,548 (99.2 %)** | **4** | **137** | **47** | **0** | **0** | **184 (0.013 %)** |
 
-**So the gate's resolved column reads 1,403,526 where the enumerator's reads 1,403,522, and that gap
-is exactly the `ofWhich` 4.** The same four duplicate-key `contains` edges are collision-resolved in
-the gate's model (its `ofWhich` column; its `selfTest` pins `ambiguousByDecl === 0` for them) and
-folded into `amb` by the enumerator, whose TOTAL therefore reads 142 ambiguous / residual 189.
-**185 and 189 are the same four edges seen by two instruments** — see the arithmetic in the
-ROUNDS 7–10 section above; neither is a PASS and the package quotes the four-clause instrument's 185
-wherever a verdict is stated.
+**THE TWO INSTRUMENTS NOW AGREE EDGE FOR EDGE: 137 ambiguous, 47 unresolved, 184 residual on both.**
+The four-edge gap this paragraph used to explain is GONE, and it was retired rather than documented:
+the enumerator used to call `incoming-rule.ts`'s `classifyEdge` WITHOUT the caller's `contains`
+predicate, so it classified a containment by DECLARATION COUNT — the model `fa2dc27e8` retired,
+because production resolves a containment with its own `WHERE s.project_id = ? AND s.name = ?`
+`ORDER BY (s.file_id = ?) DESC LIMIT 1` statement and has no "N candidates" state at all. It now
+imports `isContainsEdge` and passes it, which is bash-lane's pattern: the counting rule is IMPORTED,
+not mirrored, so the split is evidence about the GATE rather than about the probe. A reader can no
+longer pick the wrong number because there is only one.
 
 Every cause was fixed with a before/after on the same instrument. Raw artifacts beside each commit;
 the two current ones are
@@ -543,7 +597,7 @@ further rows are the LEAD's, and are flagged rather than changed: one (`verifyRe
 refusing `@release/v1`, 2 edges) is a rule-shape question in a shared gate, and two are POPULATION
 decisions (admitting `.psm1`/`.json`/`.sh` to an evidence base that is `.yaml`/`.yml` by construction).
 
-So this lane is at **residual 185 with zero refutations and 254 ruled unverifiable claims**, not at
+So this lane is at **residual 184 with zero refutations and 253 ruled unverifiable claims**, not at
 PASS, and the difference between the two statements is a measurement: the extQ class was cut by 87%
 (1,903 → 254) by correcting false claims, and every claim in it now carries its reason, its count and its falsifier.
 
@@ -568,7 +622,7 @@ a different symbol — the `$ref`'s own site). Reaching it would mean synthesisi
 a stray scalar node, which is fabrication. Signed: one key node per `$ref`, 14 edges, 14 versioned
 spec files.
 
-**The 138 ambiguous, by cause — and this is the table Round 7's falsifier rewrote.**
+**The 137 ambiguous, by cause — and this is the table Round 7's falsifier rewrote, with the one edge it FALSIFIED since FIXED (ROUND 11).**
 
 The falsifier is `validation/m14/fixtures/yaml/name-collision-falsifier.ts`, and it reads the KIND off
 the REFERRING KEY and looks for that kind and name in the project's own text. It is what turns each
@@ -576,11 +630,11 @@ row below from an argument into a verdict:
 
 | count | type | cause | disposition (falsifier verdict) |
 |---|---|---|---|
-| **1** | references | `serviceAccountName: apiserver` in `staging/src/k8s.io/sample-apiserver/artifacts/example/deployment.yaml`; `…/artifacts/example/sa.yaml` declares `kind: ServiceAccount`, `metadata.name: apiserver` | **FALSIFIED — a REAL missed resolution.** One manifest set; `kubectl apply -f <dir>` reads both. Reported, not ruled: a per-file analyzer has no channel to a sibling file (it sees one file plus a `statSync`), so the fix is a project-wide or same-directory resource index. **This is the one edge of the 142 the lane does not claim is ruled.** |
+| **0** | references | ~~`serviceAccountName: apiserver` …~~ | **FIXED in ROUND 11** — the falsified edge is now resolved: the rule was PRICED (CEILING 1, CONTROL 0, 117 refused), applied as `resolveSameDirectoryResource`, and the falsifier now reads `RULING HOLDS` with CEILING 0. The edge resolves to the sibling's document identity `staging.src.k8s.io.sample-apiserver.artifacts.example.sa`. |
 | 117 | references | **k8s object references whose object the project does not declare.** `secretName: test`, `claimName: test`, `configMap.name: test` in pod-security testdata | **RULED.** The falsifier found a same-kind name only ELSEWHERE in the project (`hack/testdata/diff/secret.yaml`, a different manifest set — another cluster, not this referent), and no same-kind name in the referring directory. The 8 declarations named `test` are unrelated: CRD fields, CRD schema properties, an annotation key, a CircleCI job, Taskfile tasks. |
 | 10 | references | `serviceAccountName: default` (7, the cluster's built-in ServiceAccount), `secretName: kubeconfig` (2), `secretName: secret` (1) | **RULED** — a kind was asked for and the project declares no object of it with that name (falsifier: 0 same-kind hits anywhere). |
 | 6 | imports | **role NAMES the project does not have** — `dnf` (2), `import_role`, `role`, `no_log`, `include_vars`, in ansible integration tests that name keywords as roles | **RULED** — the falsifier checks `roles/<name>/` and finds no such directory; a role import names a role, and not naming it would drop a true edge. |
-| 8 | references / imports | no kind axis at all: `data` (3, `$ref` targets) and `foobar` (1, `include:`); plus the 4 duplicate-key `contains` collisions the enumerator's TOTAL carries and the gate counts as `collRes` | **RULED** — the generic count model, not the kind question; every one is a bare name that collides with an ordinary key of the same spelling. |
+| 4 | references / imports | no kind axis at all: `data` (3, `$ref` targets) and `foobar` (1, `include:`) | **RULED** — the generic count model, not the kind question; every one is a bare name that collides with an ordinary key of the same spelling. |
 
 **1 of 142 is a defect and 141 are ruled** — and the 1 is named with the file pair that proves it.
 That is the whole value of writing the falsifier first: the lane proposed a ruling for 142 edges and its
@@ -674,7 +728,7 @@ grade it, not as the lane would prefer it:
 
 | clause | what it asks | yaml | verdict |
 |---|---|---|---|
-| 1 | residual 0 for every applicable type | 185 of 1,414,582 (138 amb + 47 unresolved) | **FAILS by 185** — every edge attributed below |
+| 1 | residual 0 for every applicable type | 184 of 1,414,582 (137 amb + 47 unresolved) | **FAILS by 184** — every edge attributed below |
 | 2 | `extFAIL` = `bindFAIL` = `causeFAIL` = 0 | 0 · 0 · 0 on the whole population | **MET** — with `extQ` 254 *ruled*, not zero |
 | 3 | every remaining edge attributed to a named cause with a measured count, fixed with a before/after or ruled with evidence | the 138 ambiguous are 117 same-kind-name-elsewhere + 7 ansible role names + 6 no-kind-axis + 4 duplicate-key `contains` + 1 SAME-DIRECTORY MISS + 3 `$ref`-to-nothing (named causes, each with a falsifier), and the 47 unresolved are 33 + 14 (two named causes); NINE causes fixed with before/after (the two tables above) | **MET** |
 | 4 | the tie-break: `ofWhich` 0, or an `intended` vs `arbitraryTwin` split from the store | `ofWhich` 4, all `contains`; `intended` 1,380,046/1,380,046 at the model level | **MET at the model level; the store-side split is NOT done** |
