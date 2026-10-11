@@ -1895,11 +1895,65 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
       console.log(`  (exact only where the edge line IS the target symbol's line: ${[...LINE_IS_TARGET_LINE].join(", ")}.)`)
       console.log(`  For every other type the edge line is the READ SITE, so a same-file row is sameFileUnproven —`)
       console.log(`  not wrong and not right; arbitraryTwin is the file-crossing class in both cases.`)
-      console.log("  " + w("type", 14) + w("edges", 9) + w("intended", 10) + w("sameFileUnproven", 17) + w("arbitraryTwin", 14) + "noDeclaration")
+      // ── THE COLUMN NAME `noDeclaration` MISLED A CAREFUL LANE, AND THE NAME IS THE DEFECT.
+      //
+      // nim-lane reported a contradiction of **45,967 edges** between this block and its own split, on the
+      // reading that `noDeclaration` means "no declaration in the EDGE'S OWN FILE". It means **nothing
+      // ANYWHERE in the run's key space**. The class nim measured — own file declares nothing, another
+      // file does — is `arbitraryTwin`, and on the FULL nim population this block reports:
+      //
+      //     calls  118262 edges · intended 0 · sameFileUnproven 46001 · arbitraryTwin 70223 · noDeclaration 2038
+      //     TOTAL  267284        · 29337      · 121009            · 113007            · 3931
+      //
+      // **70,223 arbitraryTwin IS nim's class, and both rows close EXACTLY on their own edge counts.**
+      // So there was no contradiction: there was a name that reads as "no declaration [in the file]" and
+      // means "no declaration [anywhere]". A lane that goes looking for its own-file-absent edges under a
+      // heading spelled `noDeclaration` will find a number two orders of magnitude too small and report a
+      // defect in the instrument — which is what happened, and the instrument is what was wrong.
+      //
+      // The header now spells the meaning, and the row shows its own CLOSURE so a reader never has to
+      // infer it: `Σ` is intended+sameFileUnproven+arbitraryTwin+noDeclaration, and it must equal `edges`.
+      // KEEPING THE ROW AT EXACTLY SIX TOKENS IS A CONTRACT, NOT A STYLE CHOICE. `residual-gate.ts`
+      // reads this block POSITIONALLY and rejects any candidate row whose column count is not 6 — and
+      // the last column inserted into a positional reader without a width guard produced FOUR FALSE
+      // extFAIL COUNTS in this programme. So the closure is NOT a seventh column: it is checked here
+      // and reported on its own line, which also keeps it out of the parser's row space entirely.
+      console.log(
+        "  " + w("type", 14) + w("edges", 9) + w("intended", 10) + w("sameFileUnproven", 17) +
+        w("arbitraryTwin", 25) + "nothingAnywhere",
+      )
+      const intentSum = (i: { intended: number; sameFileUnproven: number; arbitraryTwin: number; noDeclaration: number }) =>
+        i.intended + i.sameFileUnproven + i.arbitraryTwin + i.noDeclaration
+      const intentGaps: string[] = []
       for (const r of withIntent) {
-        console.log("  " + w(r.type, 14) + w(r.edges, 9) + w(r.intent.intended, 10) + w(r.intent.sameFileUnproven, 17) + w(r.intent.arbitraryTwin, 14) + String(r.intent.noDeclaration))
+        if (intentSum(r.intent) !== r.edges) intentGaps.push(`${r.type} ${r.edges - intentSum(r.intent)}`)
+        console.log(
+          "  " + w(r.type, 14) + w(r.edges, 9) + w(r.intent.intended, 10) + w(r.intent.sameFileUnproven, 17) +
+          w(r.intent.arbitraryTwin, 25) + String(r.intent.noDeclaration),
+        )
       }
-      console.log("  " + w("TOTAL", 14) + w(intentTotals.edges, 9) + w(intentTotals.intended, 10) + w(intentTotals.sameFileUnproven, 17) + w(intentTotals.arbitraryTwin, 14) + String(intentTotals.noDeclaration))
+      console.log(
+        "  " + w("TOTAL", 14) + w(intentTotals.edges, 9) + w(intentTotals.intended, 10) +
+        w(intentTotals.sameFileUnproven, 17) + w(intentTotals.arbitraryTwin, 25) +
+        String(intentTotals.noDeclaration),
+      )
+      // THE TABLE SHOWS ITS OWN CLOSURE — the third table in this gate that did not, and the omission
+      // is what let a careful lane read `noDeclaration` as the own-file class and report a 45,967-edge
+      // contradiction that does not exist. A row whose four classes do not sum to its edge count is a
+      // row with a class missing, and that is now printed instead of left to the reader to notice.
+      if (intentGaps.length === 0) {
+        console.log(`  INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere == edges.`)
+      } else {
+        console.log(
+          `  INTENT CLOSURE: ** ${intentGaps.length} ROW(S) DO NOT CLOSE ** — type and the unaccounted ` +
+          `edge count: ${intentGaps.join(" · ")}. A class is missing from the classification.`,
+        )
+      }
+      console.log(`  COLUMN NAMES SPELL THE MEANING, because a previous name cost a lane 45,967 edges of`)
+      console.log(`  false alarm: sameFileUnproven = the OWN FILE declares it (line inconclusive here);`)
+      console.log(`  arbitraryTwin = the OWN FILE DECLARES NOTHING and another file does — THIS is the`)
+      console.log(`  own-file-absent class; nothingAnywhere = NO FILE IN THE RUN declares it, which is NOT`)
+      console.log(`  the same question and is two orders of magnitude smaller on nim's calls row.`)
       console.log(`  validated against the STORE by validation/m14/fixtures/hcl/tools/store-binding-truth.mts — its`)
       console.log(`  own-file+own-line column is this class read off brain_relationship.target_symbol_id.`)
     }
