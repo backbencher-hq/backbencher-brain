@@ -64,7 +64,7 @@
 import * as path from "path"
 import { statSync } from "fs"
 import { ASTEngine } from "./engine"
-import { dirOf, fileClaimForTarget, foldProjectPath } from "./file-claim"
+import { dirOf, fileClaimForTarget, projectRelativeOf } from "./file-claim"
 import { applyDocumentScope, documentDirScope } from "./project-scoped-identity"
 import type { Node } from "web-tree-sitter"
 
@@ -115,23 +115,16 @@ function dependencyFileClaim(written: string, filePath: string, projectRoot: str
   if (projectRoot === null || projectRoot.length === 0) return null
   const root = path.resolve(projectRoot)
   const fileRel = path.relative(root, filePath).split(path.sep).join("/")
-  const posix = foldProjectPath(dirOf(fileRel), written.trim())
+  // THE WORKAROUND IS GONE, and the row must stay at 318 without it. `projectRelativeOf` answers `""`
+  // for a path that lands exactly on the project root (`path = ".."` in `docs/Project.toml`), where
+  // the manifest really is — the case `foldProjectPath` refuses, correctly, because the root is not a
+  // file. Before it existed this lane carried a local `path.resolve(...) === root` branch to recover
+  // the ten edges the fold lost; that branch is deleted here and the lane's own row is its control.
+  const posix = projectRelativeOf(dirOf(fileRel), written.trim())
   const extraCandidates: string[] = []
   if (posix !== null) {
-    for (const m of DEPENDENCY_MANIFESTS) extraCandidates.push(`${posix}/${m}`)
-    extraCandidates.push(posix)
-  } else if (written.trim().length > 0 && path.resolve(path.dirname(filePath), written.trim()) === root) {
-    // A `path` THAT LANDS EXACTLY ON THE PROJECT ROOT — `path = ".."` in `docs/Project.toml`, or
-    // `"../.."` two levels down. Its project-relative form is EMPTY, and `foldProjectPath` answers
-    // null for that: correct on its own terms, since an empty path is not a file. But the claim here
-    // is about the manifest AT the root, and it is REAL and verified — 10 edges over the whole
-    // population were lost to this before the branch below existed.
-    //
-    // HANDLED HERE RATHER THAN BY RELAXING THE GUARD. `src/ast/file-claim.ts` is a landed shared file
-    // and is not this lane's to change; the limitation ("a target that resolves to the project root
-    // has no candidate") is reported to its owner with this count as the evidence, because the same
-    // hole would swallow any lane whose targets name DIRECTORIES rather than files.
-    for (const m of DEPENDENCY_MANIFESTS) extraCandidates.push(m)
+    for (const m of DEPENDENCY_MANIFESTS) extraCandidates.push(posix.length === 0 ? m : `${posix}/${m}`)
+    if (posix.length > 0) extraCandidates.push(posix)
   }
   return fileClaimForTarget({
     projectRoot: root,

@@ -67,6 +67,24 @@ export type FileClaimInput = {
  * Returns null when it is not a plain relative path or when it escapes the base.
  */
 export function foldProjectPath(baseDir: string, written: string): string | null {
+  const rel = projectRelativeOf(baseDir, written)
+  // AN EMPTY RESULT MEANS THE PROJECT ROOT, AND THE ROOT IS NOT A FILE. Callers of this function want
+  // a path they can stat, so the root is not one — but a caller whose target names a DIRECTORY needs
+  // to know it reached the root, and that is what `projectRelativeOf` answers.
+  return rel !== null && rel.length > 0 ? rel : null
+}
+
+/**
+ * The same fold, with ONE difference that matters to DIRECTORY-SHAPED targets: a path that lands
+ * exactly on the project root returns `""` rather than null.
+ *
+ * MEASURED, toml, whole population (1,485 files): `path = ".."` in `docs/Project.toml` and `"../.."`
+ * two levels down land on the root, where `Project.toml` really is — and the gate VERIFIES that
+ * claim. Ten edges were lost to this case before it was handled, and the loss is INVISIBLE to every
+ * FILE-shaped lane, which is why it survived five lane adoptions of the shared guard: a file-shaped
+ * target never produces an empty project-relative form because it always names a file.
+ */
+export function projectRelativeOf(baseDir: string, written: string): string | null {
   const w = written.trim()
   if (w.length === 0 || w.length > 300) return null
   if (w.includes("://") || w.startsWith("/") || w.startsWith("~") || w.startsWith("\\")) return null
@@ -77,7 +95,7 @@ export function foldProjectPath(baseDir: string, written: string): string | null
     if (seg === "..") { if (out.length === 0) return null; out.pop(); continue }
     out.push(seg)
   }
-  return out.length > 0 ? out.join("/") : null
+  return out.join("/")
 }
 
 /** The directory part of a repo-relative POSIX path, with a trailing slash, or "" at the root. */
