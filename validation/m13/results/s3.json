@@ -5,7 +5,7 @@
   "code": "S3",
   "tool": "bb_search",
   "title": "bb_search: real-repo corpus (correctness + freshness truthfulness)",
-  "verifiedState": "known-gap",
+  "verifiedState": "verified",
   "layers": [
     "corpus"
   ],
@@ -104,16 +104,42 @@
       "detail": "stale=true"
     },
     {
-      "name": "corpus go-tools/go/analysis/passes (Go): present",
-      "pass": false,
-      "detail": "$HOME/Documents/Default Project/ishaq/fixtures/repositories/go-tools/go/analysis/passes missing"
+      "name": "corpus go_tools/go/analysis/passes (Go): symbols-mode finds unreachable",
+      "pass": true,
+      "detail": "got 2"
+    },
+    {
+      "name": "corpus go_tools/go/analysis/passes (Go): result carries a real file path",
+      "pass": true,
+      "detail": "unreachable/doc.go"
+    },
+    {
+      "name": "corpus go_tools/go/analysis/passes (Go): result carries a language",
+      "pass": true,
+      "detail": "go"
+    },
+    {
+      "name": "corpus go_tools/go/analysis/passes (Go): content-mode finds unreachable",
+      "pass": true,
+      "detail": "got 3"
+    },
+    {
+      "name": "corpus go_tools/go/analysis/passes (Go): pagination offset honored (distinct pages)",
+      "pass": true,
+      "detail": "p1=unreachable@14 p2=unreachable@5"
+    },
+    {
+      "name": "corpus go_tools/go/analysis/passes (Go): modified file's result is flagged stale (never fresh) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stale=true"
     }
   ],
-  "negativeCases": 3,
+  "negativeCases": 4,
   "summary": {
-    "total": 19,
-    "passed": 18,
-    "failed": 1
+    "total": 24,
+    "passed": 24,
+    "failed": 0
   },
   "decisions": {
     "sample": "one small sub-directory per major language family (Ruby, TypeScript, Erlang, Go, Zig) so indexing completes in seconds per entry — the proof is the search contract + freshness truthfulness, not exhaustive coverage",
@@ -124,5 +150,5 @@
     "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is M14.",
     "A sub-directory with no resolvable symbol is skipped (recorded, not failed)."
   ],
-  "generatedAt": "2026-10-11T15:50:24.537Z"
+  "generatedAt": "2026-10-11T19:08:57.754Z"
 }

@@ -17,6 +17,7 @@ import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { Harness } from "./harness"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const harness = new Harness({
   issue: "M13.38",
@@ -153,7 +154,12 @@ async function indexAndRunPatterns(rootDir: string): Promise<string> {
 // script/m12/zig-deep-review-evidence.ts, script/m15/verify-doc-deep.ts), and the
 // sibling gate script/m13/verify-edit-corpus.ts was fixed the same way in this
 // lane. An absent corpus is an absence of evidence, so it is recorded as a skip.
-const REPO_ROOT = process.env.BB_CORPUS_ROOT ?? path.join(process.env.HOME ?? "", "fixtures", "repositories")
+// This resolved the corpus as `$HOME/fixtures/repositories`, which does not exist on
+// this machine — the corpus is a SIBLING of the repo, at ../fixtures/repositories.
+// The gate therefore reported "corpus directory exists … missing" and measured nothing.
+// Routed through script/lib/corpus-root.ts, which searches the declared candidates in
+// order and names them all when none exists.
+const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 const SAMPLE: Array<[string, string, string]> = [
   ["rake", "lib/rake", "Ruby"],
   ["graphql-js", "src", "TypeScript"],

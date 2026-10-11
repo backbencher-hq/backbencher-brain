@@ -17,6 +17,7 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { ASTEngine } from "../../src/ast/engine"
 import { Harness } from "./harness"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 const harness = new Harness({
   issue: "M13.15",
@@ -48,7 +49,12 @@ const harness = new Harness({
 // how to enable the lane. This gate now does the same, so an absent corpus is a
 // recorded skip rather than a red gate that looks like a product failure — and a
 // corpus that IS present still runs for real.
-const REPO_ROOT = process.env.BB_CORPUS_ROOT ?? path.join(process.env.HOME ?? "", "fixtures", "repositories")
+// This resolved the corpus as `$HOME/fixtures/repositories`, which does not exist on
+// this machine — the corpus is a SIBLING of the repo, at ../fixtures/repositories.
+// The gate therefore reported "corpus directory exists … missing" and measured nothing.
+// Routed through script/lib/corpus-root.ts, which searches the declared candidates in
+// order and names them all when none exists.
+const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 // (repo, subPath, symbolHint, family) — subPath is indexed (small).
 const SAMPLE: Array<[string, string, string, string]> = [
   ["rake", "lib/rake", "Application", "Ruby"],
