@@ -316,7 +316,20 @@ async function main() {
   let ovNoHierarchy = 0
   let ovVerified = 0
   let ovUnverified = 0
+  // A NOT-verified row is one of TWO different things, and the census used to report them
+  // as one number. Either the draw DECLARES the base the row names - and then the project's
+  // own tables (`methodsByOwner` for that base and for its ancestors) prove there is no such
+  // member, which REFUTES the analyzer's claim - or the draw declares no such name at all,
+  // in which case nothing here can decide it and the row is an honest unknown riding the
+  // analyzer's declared 0.5 first-parent guess (the M3710 tier). The distinction is what a
+  // fix can act on: only the REFUTABLE half is decidable from tables the store already has.
+  let ovRefutable = 0
+  let ovUnknownBase = 0
   const ovWrong: string[] = []
+  const ovRefutedExamples: string[] = []
+  const ovUnknownExamples: string[] = []
+  /** Every name the draw declares, whatever its kind - the test for "is this base here". */
+  const declaredNames = new Set<string>(nameById.values())
   for (const r of ovRows) {
     // The source's owner: the analyzer's own spelling, or the identity of the symbol
     // the source resolved to when there is no external spelling (the same two reads
@@ -341,7 +354,18 @@ async function main() {
     if (verified) ovVerified++
     else {
       ovUnverified++
-      if (ovWrong.length < 10) ovWrong.push(`${owner} --overrides--> ${String(r.tgt)} (resolved to ${String(r.tname ?? "-")})`)
+      const base = String(r.tgt ?? "").split(".")[0] ?? ""
+      const line = `${owner} --overrides--> ${String(r.tgt)} (resolved to ${String(r.tname ?? "-")})`
+      if (base && declaredNames.has(base)) {
+        // The base is a project symbol and neither it nor any of its ancestors declares the
+        // member: the row's claim is refuted by tables the store already holds.
+        ovRefutable++
+        if (ovRefutedExamples.length < 6) ovRefutedExamples.push(`${line}   [base ${base} IS declared here]`)
+      } else {
+        ovUnknownBase++
+        if (ovUnknownExamples.length < 6) ovUnknownExamples.push(`${line}   [base ${base || "?"} is declared nowhere in this draw]`)
+      }
+      if (ovWrong.length < 10) ovWrong.push(line)
     }
   }
 
@@ -858,6 +882,13 @@ async function main() {
   console.log(`    owner has no persisted hierarchy               : ${ovPad(ovNoHierarchy)}`)
   console.log(`    VERIFIED (target declared by an ancestor)      : ${ovPad(ovVerified)}`)
   console.log(`    NOT verified                                   : ${ovPad(ovUnverified)}`)
+  // The two halves of NOT verified, printed whether or not this draw has any of each: a
+  // class that is absent because it matched nothing and a class that is absent because the
+  // code stopped producing it are the same zero in a table that only prints what it saw.
+  console.log(`      REFUTABLE (row names a base the draw DECLARES, which lacks the member): ${ovPad(ovRefutable)}`)
+  console.log(`      UNKNOWN BASE (row names a base declared nowhere in the draw)          : ${ovPad(ovUnknownBase)}`)
+  for (const line of ovRefutedExamples) console.log(`        refuted: ${line}`)
+  for (const line of ovUnknownExamples) console.log(`        unknown: ${line}`)
   for (const line of ovWrong) console.log(`      ${line}`)
 
   const decidable = T.correct + T.wrongFile
@@ -958,6 +989,12 @@ async function main() {
           noHierarchy: ovNoHierarchy,
           verified: ovVerified,
           unverified: ovUnverified,
+          // The two halves of `unverified`, machine-readable: `refutable` rows name a base
+          // the draw declares (so the project's own tables prove the claim false) and
+          // `unknownBase` rows name a base the draw does not declare at all (so nothing
+          // here can decide them and the analyzer's 0.5 guess is the honest reading).
+          refutable: ovRefutable,
+          unknownBase: ovUnknownBase,
           symbolsWithSuperTypes: supertypes.size,
           containersWithMethodIndex: methodsByOwner.size,
         },
