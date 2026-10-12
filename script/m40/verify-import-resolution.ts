@@ -85,7 +85,19 @@ NoDefault()
 const cli: any = await import(path.join(ROOT, "src/cli/index"))
 await cli.runCli(["index", proj])
 
-const Database = (await import("better-sqlite3")).default
+// THE DB IS OPENED THROUGH THE PROJECT'S OWN DRIVER, not better-sqlite3 directly
+// (`src/storage/db.node.ts` / `db.bun.ts`, the same pair `BrainDatabase` selects
+// between). Importing better-sqlite3 here made this gate unable to start under
+// the runner the pipeline declares for it: `bun run script/m40/verify-import-resolution.ts`
+// dies with `'better-sqlite3' is not yet supported in Bun … ERR_DLOPEN_FAILED`
+// before the first check runs, so `verify` and `verify:m40` stopped at this step
+// and the gate read as "not run" rather than as red. Measured both ways: crash
+// under `bun`, 7 passed / 0 failed under `npx tsx`. The driver pair exists
+// precisely so a script does not have to know which runtime it is on.
+const isBun = typeof (globalThis as any).Bun !== "undefined"
+const { openDatabase } = await import(
+  path.join(ROOT, isBun ? "src/storage/db.bun.ts" : "src/storage/db.node.ts"),
+) as typeof import("../../src/storage/db.node.ts")
 const { bbProjectsDir } = await import(path.join(ROOT, "src/util/bb-data-dir"))
 
 // find the project dir the CLI just wrote
@@ -95,7 +107,7 @@ let db: any = null
 for (const d of dirs) {
   const candidate = path.join(projectsRoot, d, "brain.db")
   if (!existsSync(candidate)) continue
-  const probe = new Database(candidate, { readonly: true })
+  const probe = openDatabase(candidate, { readonly: true })
   const n = probe.prepare(`SELECT count(*) c FROM brain_file WHERE relative_path LIKE '%app.js'`).get() as any
   if (n?.c > 0) { db = probe; break }
   probe.close()
