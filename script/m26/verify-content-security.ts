@@ -44,7 +44,24 @@ async function main(): Promise<void> {
   const { cspFor, escapeHtml, buildWebviewHtml, ADVERSARIAL_FIXTURES } = shell as {
     cspFor: (nonce: string, cspSource: string) => string
     escapeHtml: (v: string) => string
-    buildWebviewHtml: (o: { nonce?: string; cspSource: string; stateJson: string }) => { html: string; nonce: string; csp: string }
+    // WAS missing `styles?: boolean` and `bodyMarkup?: string`, which script/m26/webview-html.ts:111
+    // declares and script/m26/webview-html.ts:121 READS (`options.styles === false ? "" : …`).
+    // So the gate's own copy of the signature had drifted from the real one while the RUNTIME
+    // stayed correct — the exact failure this class of copy invites, and exactly the shape
+    // the comment above names: "the gate keeps passing while its type says fields that really
+    // exist do not".
+    //
+    // This copy is the reason script/m62/verify-handwritten-type-copies.ts matters, and also
+    // the reason its detector needed widening: it reported 15 drifted casts and this one was
+    // not among them, because it looks for a cast naming a product TYPE (BrainDatabase, hover,
+    // resolveReferences) and this is a cast declaring a product FUNCTION's signature.
+    buildWebviewHtml: (o: {
+      nonce?: string
+      cspSource: string
+      stateJson: string
+      bodyMarkup?: string
+      styles?: boolean
+    }) => { html: string; nonce: string; csp: string }
     ADVERSARIAL_FIXTURES: Array<{ name: string; payload: string; mustContain: string; mustNotContain: string[] }>
   }
   const source = readFileSync(SHELL, "utf8")

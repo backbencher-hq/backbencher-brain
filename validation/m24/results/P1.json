@@ -80,10 +80,10 @@
       "win32"
     ],
     "filesScanned": 184,
-    "spawnSitesJudged": 559,
+    "spawnSitesJudged": 564,
     "spawnSitesByReach": {
-      "directCallSitesResolvedByName": 238,
-      "localWrapperCallSitesArgumentScanned": 273,
+      "directCallSitesResolvedByName": 239,
+      "localWrapperCallSitesArgumentScanned": 277,
       "commandComputedAtRuntimeNotJudgedByName": 48
     },
     "findings": [],
@@ -259,7 +259,7 @@
     ],
     "ok": true
   },
-  "currentCommit": "53e07bd6dce0beffab00cff9d78672558268fa10",
+  "currentCommit": "2952238bb9da768750fb04bceef93e477782e3cf",
   "sourceFingerprint": "8f156b68257952e2e20aa72585047fe6348c926646522ea0eb7e08a2899e1ed9",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -270,7 +270,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-10-12T12:05:45.787Z",
+  "generatedAt": "2026-10-12T17:22:31.889Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -284,7 +284,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T12:05:45.788Z",
-    "contentSha256": "fea07176dbc89c8070a055c14b3e2d100f9ddbb6a4011888e61816e03fa7309b"
+    "sealedAt": "2026-10-12T17:22:31.891Z",
+    "contentSha256": "ed7d8ecdb218acb1a34120cc553d4177c16ff4fb155f44ab333e605e0cbedfcf"
   }
 }
