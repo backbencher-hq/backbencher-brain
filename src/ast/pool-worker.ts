@@ -75,7 +75,9 @@ function reportStartupProblem(what: string, error: unknown): void {
   const line = `${what}: ${message}`
   if (reportedStartupProblems.has(line)) return
   reportedStartupProblems.add(line)
-  // stderr first: it is the channel the parent forwards verbatim, so this is
+  process.stderr.write(`[BB-WORKER-STARTUP] ${line}\n`)
+  startupDiagnostics.push(line.slice(0, 300))
+}  // stderr first: it is the channel the parent forwards verbatim, so this is
   // visible on the user's terminal on the very next line.
   process.stderr.write(`[BB-WORKER-STARTUP] ${line}\n`)
   startupDiagnostics.push(line.slice(0, 300))
@@ -1426,6 +1428,18 @@ process.on("message", async (msg: any) => {
     }, Math.max(1, Math.round(watchdogMs / 2)))
     slowWarmNote.unref?.()
 
+    // Timed warmup: log a note if still warming after half the parent's watchdog.
+    const warmStartedAt = Date.now()
+    const watchdogMs = Number(process.env.BB_WORKER_STARTUP_TIMEOUT_MS || 0) || 30_000
+    const slowWarmNote = setTimeout(() => {
+      process.stderr.write(
+        `[BB-WORKER-STARTUP] still warming after ${Math.round(watchdogMs / 2)}ms ` +
+          `(loading tree-sitter grammars); the parent's watchdog is ${watchdogMs}ms
+`,
+      )
+    }, Math.max(1, Math.round(watchdogMs / 2)))
+    slowWarmNote.unref?.()
+
     const { engine: engineStatus, wasm: wasmStatus } = await warmUpWorker()
     // The parent has always handled `engine_fail` (parallel-indexer.ts:1557):
     // it counts the worker, reports the reason, and puts it in the idle pool
@@ -1461,6 +1475,18 @@ process.on("message", async (msg: any) => {
     })
 
     persistStartupDiagnostics()
+
+    if (startupDiagnostics.length > 0) {
+      // Persistent, because stderr is only visible to whoever happened to be
+      // watching the terminal. Same place parse errors already go.
+      try {
+        fs.appendFileSync(
+          bbDiagnosticsLogPath("worker-startup.log"),
+          `${new Date().toISOString()} | pid=${process.pid} | node=${process.version} | ${startupDiagnostics.join(" | ")}
+`,
+        )
+      } catch {}
+    }
   } else if (msg.type === "parse_batch") {
     const { batchId, files, projectPath, projectIndexes } = msg
     // SOL-21. A project index, when the parent built one, deserialised ONCE per worker
