@@ -467,7 +467,12 @@ function fsharpKindResolver(node: Node): DeclarationKind | undefined {
 //
 // SCSS has no type hierarchy (no implements/instantiates). The module IS the type unit.
 // The "kind" for an SCSS module is "module" (already in DeclarationKind).
-const SCSS_DECLARATION_SPEC: DeclarationSpec = {
+// EXPORTED, and that is the whole fix: every sibling spec in this file is exported, this one was
+// not, and three callers needed it — `script/m14/run-fixtures.ts` read it through an `any` handle
+// (so it was `undefined`, and `buildProjectIndexFromDisk`'s default silently indexed SCSS files with
+// SOLIDITY's spec), `parallel-indexer.ts` had no way to map the language, and the gate had no way to
+// build the index that would exercise the mechanism at all.
+export const SCSS_DECLARATION_SPEC: DeclarationSpec = {
   // The stylesheet root node IS the module declaration. Its name is the file's basename
   // (handled by the caller via file path). We treat it as a "module" kind.
   typeNodes: {

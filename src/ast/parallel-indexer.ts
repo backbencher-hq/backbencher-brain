@@ -1652,6 +1652,10 @@ export async function processWithWorkerPool(
         const specByLang: Record<string, unknown> = {
           solidity: mod.SOLIDITY_DECLARATION_SPEC,
           fsharp: mod.FSHARP_DECLARATION_SPEC,
+          // `.scss` was added to PROJECT_INDEX_EXTENSIONS without an entry here, so the lookup below
+          // fell through to `?? SOLIDITY_DECLARATION_SPEC` and indexed SCSS declarations with the
+          // SOLIDITY spec. The spec is now exported (see project-index.ts) and mapped by name.
+          scss: mod.SCSS_DECLARATION_SPEC,
           // DYNAMIC, like `mod` above: the indexer does not otherwise import an analyzer, and a static
           // import would pull the whole engine into its startup for a spec used once. The spec lives in
           // the language's own analyzer because the grammar's declarations are named by a CHILD node
