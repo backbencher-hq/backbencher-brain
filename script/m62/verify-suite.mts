@@ -61,6 +61,11 @@ const GATES: Gate[] = [
   // removing one process.exit and watching it report 2 again.
   { name: "m62 gates-can-fail", script: "script/m62/verify-gates-can-fail.ts" },
   { name: "m62 mutant-crash-honesty", script: "script/m62/verify-mutant-crash-honesty.ts" },
+  // Added 2026-10-12 for the defect class found in script/m26/verify-impact-mode.ts: an
+  // assertion helper called with the CONDITION where its signature declares the LABEL, so
+  // `condition` got a non-empty string and the check passed unconditionally. Canaried by
+  // planting one inverted call in a real file and watching the gate report it and exit 1.
+  { name: "m62 check-arg-order", script: "script/m62/verify-check-arg-order.ts" },
   { name: "m23 p3 edge cases", script: "script/m23/verify-p3-edge-cases.ts" },
   { name: "m24 closure", script: "script/m24/verify-closure.ts" },
   { name: "m24 governance", script: "script/m24/verify-governance.ts" },

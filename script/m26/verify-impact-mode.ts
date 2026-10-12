@@ -59,6 +59,37 @@ const CORE = join(ROOT, "script", "m26", "graph-core.ts")
 let checks = 0
 let passed = 0
 
+// THE ORDER OF THE FIRST TWO PARAMETERS IS LOAD-BEARING, AND NINE CALLS HAD IT BACKWARDS.
+//
+// This helper is declared `check(label, condition, detail)`. Nine calls in this file passed
+// `check(condition, label, fixture, detail)` instead. That does not merely print the wrong
+// label — it INVERTS THE CHECK. `condition` received the label STRING, and a non-empty
+// string is truthy, so every one of those nine checks took the `passed++` branch no matter
+// what the impact engine returned. Nine of twenty-nine checks in this gate could not fail.
+//
+// Two thirds of the damage was visible and one third was not, which is why it survived:
+//
+//   - SIX passed FOUR arguments, so arity did not match the signature and tsc reported
+//     TS2554 at each one.
+//   - THREE passed EXACTLY THREE arguments — condition, label, fixture — which is arity-
+//     correct for this signature. tsc reported nothing at all. Had I only chased the
+//     TS2554 list, those three would have stayed quietly green forever.
+//
+// Measured, not argued. With `false` hard-coded in place of the condition:
+//
+//     before:  FAIL count unchanged, gate reported  VERIFIED (29/29 passed)
+//     after:   1 FAIL,               gate reported  KNOWN-GAP (28/29 passed)
+//
+// The six four-argument calls also silently dropped their real detail string, because the
+// signature has a three-parameter arity. All nine now pass the fixture tag and the detail
+// as ONE concatenated third argument, so nothing that was being measured was lost in the
+// reordering — a failure prints `fixture/<name> <detail>`, e.g.
+//
+//     FAIL: R6: the exempt root's set is its own dependents, not its owner's
+//           — fixture/uniqConst ["caller1@0"]
+//
+// If you add a call here, the first argument must be a string literal. There is a repo-wide
+// gate for this class: script/m62/verify-check-arg-order.ts.
 function check(label: string, condition: boolean, detail = ""): void {
   checks++
   if (condition) passed++
@@ -296,22 +327,19 @@ async function main(): Promise<void> {
     // the point: nothing was substituted, so nothing needs substituting.
     const exempt = await impact.computeImpact(fx.raw, fx.projectId, "uniqConst")
     check(
-      exempt.root?.name === "uniqConst" && exempt.rootMatch?.via === "exact-exempt-kind",
       "R6: a constant the engine resolved by exact, unambiguous name is answered, and says the kind was exempt",
-      "fixture/uniqConst",
-      `root=${exempt.root?.name} via=${exempt.rootMatch?.via}`,
+      exempt.root?.name === "uniqConst" && exempt.rootMatch?.via === "exact-exempt-kind",
+      ("fixture/uniqConst" + " " + `root=${exempt.root?.name} via=${exempt.rootMatch?.via}`),
     )
     check(
-      exempt.impact.length === 1 && exempt.impact[0]?.name === "caller1" && exempt.impact[0]?.depth === 0,
       "R6: the exempt root's set is its own dependents, not its owner's",
-      "fixture/uniqConst",
-      JSON.stringify(exempt.impact.map((d: any) => `${d.name}@${d.depth}`)),
+      exempt.impact.length === 1 && exempt.impact[0]?.name === "caller1" && exempt.impact[0]?.depth === 0,
+      ("fixture/uniqConst" + " " + JSON.stringify(exempt.impact.map((d: any) => `${d.name}@${d.depth}`))),
     )
     check(
-      exempt.rootMatch?.nameMatches === 1,
       "R6: the exemption reads the name's ambiguity from the same rows the refusal would list",
-      "fixture/uniqConst",
-      String(exempt.rootMatch?.nameMatches),
+      exempt.rootMatch?.nameMatches === 1,
+      ("fixture/uniqConst" + " " + String(exempt.rootMatch?.nameMatches)),
     )
     // ...and the case it must not take: an AMBIGUOUS name. Refusing is the
     // identity module's law (M44 R1), and the error has to be actionable.
@@ -322,34 +350,43 @@ async function main(): Promise<void> {
       ambiguousMessage = e instanceof Error ? e.message : String(e)
     }
     check(
-      ambiguousMessage.includes("not a traversable root") || ambiguousMessage.includes("not found"),
       "R6: an ambiguous non-whitelisted name is still a declared error, never a guess",
-      "fixture/ambConst",
-      ambiguousMessage.slice(0, 110),
+      ambiguousMessage.includes("not a traversable root") || ambiguousMessage.includes("not found"),
+      ("fixture/ambConst" + " " + ambiguousMessage.slice(0, 110)),
     )
     check(
-      ambiguousMessage.includes("main.ts") && ambiguousMessage.includes("other.ts"),
       "R6: the refusal NAMES the candidates, so the next question can be asked with a file",
-      "fixture/ambConst",
-      ambiguousMessage.slice(0, 150),
+      ambiguousMessage.includes("main.ts") && ambiguousMessage.includes("other.ts"),
+      ("fixture/ambConst" + " " + ambiguousMessage.slice(0, 150)),
     )
 
     const wideResult = await impact.computeImpact(fx.raw, fx.projectId, "wideFn")
     const twice = wideResult.impact.find((d: any) => d.id === "sym:twice")
     const twiceShape = twice ? `${twice.name}@${twice.depth}/ev@${twice.evidenceAtDepth}/cross=${twice.isCrossLanguage}` : "ABSENT"
     check(
-      wideResult.totalCountIfKnown === 202 && wideResult.truncated === true && wideResult.truncationReason === "impact-node-budget-exhausted",
       "R5: a root whose site limit cut a real dependent declares a prefix and the true size",
-      "fixture/wideFn",
-      `shown=${wideResult.shownCount} total=${wideResult.totalCountIfKnown} reason=${wideResult.truncationReason}`,
+      wideResult.totalCountIfKnown === 202 && wideResult.truncated === true && wideResult.truncationReason === "impact-node-budget-exhausted",
+      ("fixture/wideFn" + " " + `shown=${wideResult.shownCount} total=${wideResult.totalCountIfKnown} reason=${wideResult.truncationReason}`),
     )
     // The shape the corpus lane measured at 7.98% of rows: the engine reached
     // `twice` through `gate` because its direct row was cut by the site limit, so
     // the engine's depth (1) and the shortest path (0) disagree — and the two
     // rows disagree about the cross-language flag as well.
-    check(twice !== undefined && twice.depth === 0, "R5: the dependent is reported at its SHORTEST path, not the engine's first trace", "fixture/wideFn", twiceShape)
-    check(twice !== undefined && twice.isCrossLanguage === false, "R5: the evidence is the row at the reported depth, so a longer path's flag is not quoted", "fixture/wideFn", twiceShape)
-    check(twice !== undefined && twice.evidenceAtDepth === twice.depth, "R5: the answer says which path the quoted evidence is on", "fixture/wideFn", twiceShape)
+    check(
+      "R5: the dependent is reported at its SHORTEST path, not the engine's first trace",
+      twice !== undefined && twice.depth === 0,
+      ("fixture/wideFn" + " " + twiceShape),
+    )
+    check(
+      "R5: the evidence is the row at the reported depth, so a longer path's flag is not quoted",
+      twice !== undefined && twice.isCrossLanguage === false,
+      ("fixture/wideFn" + " " + twiceShape),
+    )
+    check(
+      "R5: the answer says which path the quoted evidence is on",
+      twice !== undefined && twice.evidenceAtDepth === twice.depth,
+      ("fixture/wideFn" + " " + twiceShape),
+    )
 
     // --- R1: real engine + differential vs L3 --------------------------------
     const result = await impact.computeImpact(fx.raw, fx.projectId, "rootFn")
