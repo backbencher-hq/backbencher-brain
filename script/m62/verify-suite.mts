@@ -66,6 +66,12 @@ const GATES: Gate[] = [
   // `condition` got a non-empty string and the check passed unconditionally. Canaried by
   // planting one inverted call in a real file and watching the gate report it and exit 1.
   { name: "m62 check-arg-order", script: "script/m62/verify-check-arg-order.ts" },
+  // Added 2026-10-12 once it went green: all 16 hand-written product-type copies are now
+  // anchored to the real module with `typeof import(...)`, so the gate's own "stays red by
+  // design" declaration became false and was withdrawn. Anchoring them found a real renderer
+  // bug on the way (script/m26/graph-core.ts disclosed an exact-exempt-kind root as a
+  // substitution), so the class was worth closing rather than re-declaring.
+  { name: "m62 handwritten-type-copies", script: "script/m62/verify-handwritten-type-copies.ts" },
   { name: "m23 p3 edge cases", script: "script/m23/verify-p3-edge-cases.ts" },
   { name: "m24 closure", script: "script/m24/verify-closure.ts" },
   { name: "m24 governance", script: "script/m24/verify-governance.ts" },

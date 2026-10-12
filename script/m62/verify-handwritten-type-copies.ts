@@ -244,6 +244,21 @@ function findHandwrittenCopies(rel: string, abs: string, text: string, census: M
     const productTypeNames = census.get(productModule)!
     const anchors = [...productTypeNames].filter((n) => new RegExp(`\\b${n}\\b`).test(body))
     if (anchors.length > 0) return
+    //
+    // `typeof import("…")` IS THE FIX, SO IT IS NOT THE DISEASE.
+    //
+    //     const { hover } = (await import(path.join(ROOT, "src/lsp/hover.ts"))) as
+    //       typeof import("../../src/lsp/hover.ts")
+    //
+    // The dynamic `await import(<variable>)` returns `any`, so a cast is needed to type it —
+    // and this is the cast that ties the gate to the real module instead of to a snapshot of
+    // it. Any change to the product's signature becomes a type error here, which is the whole
+    // point. Reporting it would mean the gate rejects its own prescribed remedy, so the
+    // 16 remaining copies could never be fixed without the gate going red for doing it right.
+    //
+    // This is the same rule as the named-type anchor above, stated for the form the remedy
+    // takes: a cast is a SNAPSHOT only if it spells out the shape itself.
+    if (/\btypeof\s+import\s*\(/.test(body)) return
 
     const fn = body.match(/(\w+)\s*:/)?.[1]
     if (!fn) return
@@ -316,23 +331,26 @@ check(
         .join(", ")} ***`,
 )
 
-// WHY THIS GATE IS NOT IN verify-suite.mts, AND WHY THAT IS RECORDED HERE RATHER
-// THAN INVISIBLY.
+// IT IS GREEN NOW, AND IT IS IN verify-suite.mts, AND THE SWITCH IS RECORDED HERE.
 //
-// This gate is RED by design: several gates still hand-write a product type, and each
-// one is an open question about what that gate is measuring — not an environment
-// block. Filing it on the suite's honest-block allowlist would say "cannot run here",
-// which is false: it runs fine here and correctly reports a defect. That is the
-// laundering the allowlist exists to prevent.
+// This gate used to declare itself RED BY DESIGN and to sit outside the suite on that
+// declaration: 15 gates hand-wrote a product type, and each was an open question about
+// what that gate was measuring, not an environment block. Filing it on the honest-block
+// allowlist would have said "cannot run here", which is false — it runs fine here and
+// correctly reports a defect. That is the laundering the allowlist exists to prevent.
 //
-// This gate stays red, and it is not in verify-suite.mts. That is the declaration
-// the coverage gate looks for.
+// All 16 copies are now anchored to the real module with `typeof import(...)`, so the
+// class is empty and the declaration above is FALSE. Leaving it in place would be worse
+// than having never written it: script/m62/verify-suite-coverage.ts accepts a gate that
+// "declares itself unresolved", so a stale declaration would keep a gate out of the suite
+// while looking like a considered decision. A self-declaration is a claim about the world,
+// and it has to be withdrawn when the world changes.
 //
-// It is not invisible, though, and that is what script/m62/verify-suite-coverage.ts is
-// for: a gate in script/m62 that is neither run by the suite, nor on the blocked
-// allowlist, nor declared unresolved in its own header is reported by that gate as a
-// hole in the suite. This header is that declaration. Delete it and the coverage gate
-// goes red — which is the point.
+// It went green by fixing the gates, not by widening the gate until it agreed — which is
+// the direction that matters here, because the detector was simultaneously BROKEN and
+// under-reporting. Fixing the 16 copies alone would have been impossible without first
+// repairing it, because it reported two correctly-anchored casts as defects (see the
+// balanced-brace note below) and could not see three real ones at all.
 
 console.log(
   `\n  ${offenders.length} hand-written product type cop${offenders.length === 1 ? "y" : "ies"}.` +

@@ -390,9 +390,7 @@ const greetTargetRows = (
     .all() as Array<{ id: string; type: string; source_symbol_id: string | null; target_symbol_id: string | null; ln: number | null; name: string | null; decl: number | null; bs: number | null }>
 )
 {
-  const { isUsageSiteRow: isUsage } = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as {
-    isUsageSiteRow: (row: { source_symbol_id: string | null; target_symbol_id: string | null; relationship_type: string }, symbolId: string) => boolean
-  }
+  const { isUsageSiteRow: isUsage } = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as typeof import("../../src/lsp/relations.ts")
   // The predicate takes `relationship_type`; the query aliases it `type` for
   // readability, so the shape is named here rather than left for the reader to
   // infer from a crash.
@@ -470,10 +468,7 @@ try {
   // usage" is three answers; that is the defect this milestone exists to kill,
   // and a gate that keeps its own copy cannot catch it. The per-row shape the
   // predicates take is named next to the call so the mapping is checkable.
-  const { isUsageSiteRow, isResolvableUsageSiteRow } = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as {
-    isUsageSiteRow: (row: { source_symbol_id: string | null; target_symbol_id: string | null; relationship_type: string }, symbolId: string) => boolean
-    isResolvableUsageSiteRow: (row: { otherName?: string | null; otherPath?: string | null; byteStart?: number | null; byteEnd?: number | null; lineStart?: number | null; lineEnd?: number | null }) => boolean
-  }
+  const { isUsageSiteRow, isResolvableUsageSiteRow } = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as typeof import("../../src/lsp/relations.ts")
   const referrerRows = (
     raw
       .prepare(
@@ -560,7 +555,7 @@ try {
   )
   // The unit sentence must be the vocabulary owner's SINGLE copy, quoted by
   // every surface — three paraphrases of "usages" is how four numbers happened.
-  const { USAGE_COUNT_UNIT_LABEL: unitFromOwner } = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as { USAGE_COUNT_UNIT_LABEL: string }
+  const { USAGE_COUNT_UNIT_LABEL: unitFromOwner } = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as typeof import("../../src/lsp/relations.ts")
   check(
     "R3: the hub's unit sentence is the owner's copy, verbatim (no surface may paraphrase the unit)",
     countUnit === unitFromOwner && greetMd.includes(unitFromOwner),
@@ -707,9 +702,7 @@ let r5PastEof: {
   mkdirSync(path.join(r5data, "projects", r5projectId), { recursive: true })
   const priorDataDir = process.env.BB_DATA_DIR
   process.env.BB_DATA_DIR = r5data
-  const { BrainDatabase } = (await import(path.join(ROOT, "src/brain/database.ts"))) as {
-    BrainDatabase: { getRawInstance(projectId: string): Promise<any> }
-  }
+  const { BrainDatabase } = (await import(path.join(ROOT, "src/brain/database.ts"))) as typeof import("../../src/brain/database.ts")
   const r5db = await BrainDatabase.getRawInstance(r5projectId)
   const fIns = r5db.prepare("INSERT INTO brain_file (id, project_id, path, relative_path, language, file_hash) VALUES (?,?,?,?,?,?)")
   fIns.run("rf-caller", r5projectId, path.join(r5ws, "src/caller.ts"), "src/caller.ts", "typescript", "h1")
@@ -763,16 +756,9 @@ let r5PastEof: {
   // and omitted `truncated`, `limit`, `evidenceTier` and `absence`; the R5 mutation
   // suite below flips `coalescedRows++` and re-asserts, so a stale copy here would
   // let the mutation pass without the product's real counter moving. Anchored.
-  const r5nav = (await import(path.join(ROOT, "src/lsp/navigation.ts"))) as {
-    resolveReferences: (
-      db: unknown,
-      req: { filePath: string; line: number; character: number; includeDeclaration: boolean },
-    ) => ReferencesResult
-  }
-  const r5rich = (await import(path.join(ROOT, "src/lsp/rich_hover.ts"))) as {
-    usageSitesForSymbol: (db: unknown, symbolId: string) => Array<{ name: string; line: number; path: string }>
-  }
-  const r5rel = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as { countUsageSites: (db: unknown, symbolId: string) => number }
+  const r5nav = (await import(path.join(ROOT, "src/lsp/navigation.ts"))) as typeof import("../../src/lsp/navigation.ts")
+  const r5rich = (await import(path.join(ROOT, "src/lsp/rich_hover.ts"))) as typeof import("../../src/lsp/rich_hover.ts")
+  const r5rel = (await import(path.join(ROOT, "src/lsp/relations.ts"))) as typeof import("../../src/lsp/relations.ts")
 
   const r5local = r5nav.resolveReferences(r5db, {
     filePath: path.join(r5ws, "src/target.ts"),

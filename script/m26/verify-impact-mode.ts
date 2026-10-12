@@ -301,13 +301,9 @@ async function makeFixture(): Promise<{
 
 async function main(): Promise<void> {
   const mod = await import(IMPACT)
-  const impact = mod as {
-    computeImpact: (db: any, projectId: string, name: string, deps?: any) => Promise<any>
-    countImpactDependents: (db: any, projectId: string, id: string, opts?: any) => { total: number | null; direct: number; rowsScanned: number; expansions: number; hitScanCeiling: boolean }
-    IMPACT_BUDGET: { maxNodes: number; maxDepth: number }
-  }
+  const impact = mod as typeof import("../../src/lsp/impact.ts")
   const coreMod = await import(CORE)
-  const core = coreMod as { renderImpact: (r: any, dom: any) => any }
+  const core = coreMod as typeof import("./graph-core.ts")
   const source = readFileSync(IMPACT, "utf8")
   const coreSource = readFileSync(CORE, "utf8")
 
@@ -489,6 +485,31 @@ async function main(): Promise<void> {
     check(
       "G4b: the owning-declaration case keeps its own note and gains no second one",
       domOwner.el.find("bb-impact-resolution-note") !== null && domOwner.el.find("bb-root-match-note") === null,
+    )
+    // M63.T2's exempt-by-kind root is an EXACT hit, and must be treated as one here too.
+    //
+    // Found 2026-10-12 by anchoring a hand-written type copy instead of keeping a snapshot:
+    // with the snapshot the call site type-checked, and with it the real disagreement
+    // appeared — script/m26/graph-core.ts's `ImpactResultLike` had no "exact-exempt-kind",
+    // because M63.T2 added that value to src/lsp/impact.ts and the renderer was never told.
+    // The renderer's disclosure condition only excluded "exact" and "owning-declaration",
+    // so the new value fell through to a note reading
+    //
+    //     "<requested>" is not a stored symbol on its own — showing the impact of <other>
+    //
+    // which is false. src/lsp/impact.ts:62 describes the value in its own words: "the engine
+    // rooted at the exact requested name and completed the walk". Nothing was substituted,
+    // so there is nothing to disclose, and a user asking about an exempt-by-kind constant
+    // was told the panel had answered a different question.
+    const domExempt = makeDom()
+    core.renderImpact(
+      { ...result, rootMatch: { requested: "greet", via: "exact-exempt-kind", nameMatches: 1 } } as never,
+      domExempt as never,
+    )
+    check(
+      "G4b: an exact-exempt-kind root renders NO substitution note (it is an exact hit, not a substitution)",
+      domExempt.el.find("bb-root-match-note") === null,
+      JSON.stringify(domExempt.el.attrs),
     )
 
     // --- Latency (contract §3 render budget, headless regime) --------------------
@@ -691,7 +712,15 @@ async function main(): Promise<void> {
       {
         name: "M8 non-exact name rendered as an exact hit (silent substitution in the panel)",
         home: "core",
-        from: 'if (match && match.via !== "exact" && match.via !== "owning-declaration") {',
+        // ANCHORED ON THE WHOLE CONDITION, so any edit to it silently disables this mutant.
+        // That happened for real on 2026-10-12: the condition gained
+        // `match.via !== "exact-exempt-kind" && ` when script/m26/graph-core.ts learned that
+        // value, and the gate reported `ANCHOR NOT FOUND (a defect this suite no longer
+        // tests): M8 …` with 18/19 — a mutant quietly dropping out of the roster while the
+        // suite still looked green on the count. The gate REPORTING it is the only reason
+        // this was caught; the fix is to re-anchor, and the lesson is that this mechanism
+        // fails toward fewer tests rather than toward a red run.
+        from: 'if (match && match.via !== "exact" && match.via !== "exact-exempt-kind" && match.via !== "owning-declaration") {',
         to: "if (false) {",
         probe: (m) => {
           const d = makeDom()
