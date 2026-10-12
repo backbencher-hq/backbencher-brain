@@ -1121,6 +1121,26 @@ completed routes read **21,414 / 1,414,579 to the digit**, and ROUND 17's depth-
 (the sharded sum reproduces the walk on every other type, `contains` 1,380,046 identical) stands
 unchanged — only its causal story for the three edges is replaced, per §7 criterion 5.
 
+**THE SHARDED ROUTE AND THE ONE LONG WALK AGREE PER TYPE AT THIS REVISION — NOT JUST IN TOTAL**
+(Round 17's rule: a total can hide a compensating pair). 8 shards at `index % 8` (longest walk 2,296
+files, every shard `fallback:true 0 · 2.0-basic-fallback 0`) against the whole-population walk of
+18,364 files, both at `96874286d`:
+
+| type | 8 shards (max depth 2,296) | one long walk (18,364) | Δ |
+|---|---|---|---|
+| `contains` | 1,380,046 | 1,380,046 | **0** |
+| `references` | 21,414 | 21,414 | **0** |
+| `imports` | 8,366 | 8,366 | **0** |
+| `exports` | 4,080 | 4,080 | **0** |
+| `calls` | 327 | 327 | **0** |
+| `uses` | 165 | 165 | **0** |
+| `extends` | 155 | 155 | **0** |
+| `overrides` | 26 | 26 | **0** |
+| **TOTAL** | **1,414,579** | **1,414,579** | **0** |
+
+**Every column zero, including the two the total could have hidden** — so at this revision there is no
+shard-vs-walk difference at all, and the earlier `−3` is fully accounted for by the guard.
+
 **EVIDENCE, the four things this lane ships with every rule:** fixture `yaml/dependency-marker-name`
 (forbids the `k8s:optional` edge; pins the template / compose / workflow-`needs` boundary) PASSES and
 the suite reads **36 pass / 0 fail**; `dependency-marker-name-control.ts` runs the THREE REAL CORPUS
