@@ -295,6 +295,9 @@ interface TypeStat {
   emptyEndpoint: number
   placeholderEndpoint: number
   placeholderSites: Map<string, number>
+  /** Spellings in the list above that a file WROTE — reported, never convicted. */
+  writtenNameCollisions: number
+  writtenNameSites: Map<string, number>
   reservedSites: Map<string, number>
   samples: string[]
 }
@@ -303,6 +306,7 @@ function newTypeStat(): TypeStat {
     count: 0, files: 0, fileNames: [], conf: new Map(), evidence: new Map(),
     srcResolved: 0, tgtResolved: 0, tgtBuiltin: 0, emptyEndpoint: 0,
     placeholderEndpoint: 0, placeholderSites: new Map(), reservedSites: new Map(), samples: [],
+    writtenNameCollisions: 0, writtenNameSites: new Map(),
   }
 }
 
@@ -323,11 +327,53 @@ const PLACEHOLDERS = new Set([
 // reader deserves to see that the name collides with a global.
 const RESERVED_SPELLINGS = new Set(["null", "undefined", "NaN", "this", "super", "arguments", "globalThis"])
 
+/**
+ * IDENTIFIER-SHAPED, written with char codes rather than a regex per the lane
+ * brief. The distinction is the whole point of the conviction below: `UNKNOWN` is
+ * a spelling a JavaScript file can WRITE (and svelte's css/utils.js does), while
+ * `<unknown>` and `?` are spellings no grammar can produce as a name.
+ */
+function isWordSpelling(s: string): boolean {
+  const t = s.trim()
+  if (t.length === 0) return false
+  const first = t.charCodeAt(0)
+  const okFirst = (first >= 97 && first <= 122) || (first >= 65 && first <= 90) || first === 95 || first === 36
+  if (!okFirst) return false
+  for (let i = 1; i < t.length; i++) {
+    const c = t.charCodeAt(i)
+    const ok = (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || (c >= 48 && c <= 57) || c === 95 || c === 36
+    if (!ok) return false
+  }
+  return true
+}
+
 function isPlaceholder(s: string): boolean {
   const t = s.trim()
   if (PLACEHOLDERS.has(t)) return true
   if (t.length > 2 && t.startsWith("<") && t.endsWith(">")) return true
   return false
+}
+
+/**
+ * THE R7 CONVICTION, as a function of the SPELLING, the TEXT of the file that
+ * emitted the row, and the names that file declares. Exported because a rule whose
+ * arms cannot be exercised on their own is a rule nobody can falsify - the probe
+ * that does it is `js-r7-probe.ts`, and the first arm there is the live case below.
+ *
+ * `UNKNOWN` IS THE CASE THAT MADE THIS A FUNCTION. On the 250-file svelte draw the
+ * census convicted two `uses` edges whose target was `UNKNOWN` - and
+ * `packages/svelte/src/compiler/phases/2-analyze/css/utils.js` line 3 declares
+ * `const UNKNOWN = {}` and reads it twice (`set.has(UNKNOWN)`, `set.add(UNKNOWN)`).
+ * The list above is for SYNTHETIC spellings and a word-shaped spelling the source
+ * WROTE cannot be one; the exculpated rows are counted in `writtenNameCollisions`
+ * and printed with their sites rather than dropped, because a change that silently
+ * reduced a finding to zero would be indistinguishable from a fix.
+ */
+export function convictsPlaceholder(spelling: string, fileText: string, declaredNames: Set<string>): boolean {
+  if (!isPlaceholder(spelling)) return false
+  if (isWordSpelling(spelling) && fileText.includes(spelling)) return false
+  if (declaredNames.has(spelling) || declaredNames.has(leafOf(spelling))) return false
+  return true
 }
 function isReservedSpelling(s: string): boolean {
   return RESERVED_SPELLINGS.has(s.trim())
@@ -425,9 +471,25 @@ async function main() {
       const src = String(r.source ?? r.from ?? "")
       const tgt = String(r.target ?? r.to ?? "")
       if (isEmpty(src) || isEmpty(tgt)) st.emptyEndpoint++
-      if (isPlaceholder(src) || isPlaceholder(tgt)) {
+      // R7 IS A CONVICTION ABOUT A SPELLING THE SOURCE NEVER WROTE, so a spelling
+      // the emitting file DOES write cannot be one — even when the list above
+      // contains it. Found live on the 250-file svelte draw: `UNKNOWN` is in the
+      // list and `packages/svelte/src/compiler/phases/2-analyze/css/utils.js`
+      // declares `const UNKNOWN = {}` and reads it twice, so two `uses` edges were
+      // convicted for naming a symbol the file writes. The list exists for
+      // SYNTHETIC spellings (`<unknown>`, `?`, `n/a`); a word-shaped spelling that
+      // appears in the file's own text, or that resolves to a declared name, is the
+      // third class this census already names — a WRITTEN NAME colliding with the
+      // list — and the doctrine above is explicit that a rule convicting written
+      // names is worse than no rule, because it gets disabled. The exculpation is
+      // therefore REPORTED under its own counter rather than dropped: a change that
+      // silently reduced a finding to zero would be indistinguishable from a fix.
+      if (convictsPlaceholder(src, content, symNames) || convictsPlaceholder(tgt, content, symNames)) {
         st.placeholderEndpoint++
         bump(st.placeholderSites, `${f.replace(dir + "/", "")}: ${src || "(empty)"} -> ${tgt || "(empty)"}`)
+      } else if (isPlaceholder(src) || isPlaceholder(tgt)) {
+        st.writtenNameCollisions++
+        bump(st.writtenNameSites, `${f.replace(dir + "/", "")}: ${src || "(empty)"} -> ${tgt || "(empty)"}`)
       }
       if (isReservedSpelling(src) || isReservedSpelling(tgt)) bump(st.reservedSites, tgt || src)
       if (!isEmpty(src) && (symNames.has(src) || symNames.has(leafOf(src)))) st.srcResolved++
@@ -473,6 +535,10 @@ async function main() {
     console.log(`   evidenceClass/reasonCode: ${[...st.evidence.entries()].sort().map(([k, v]) => `${k}:${v}`).join("  ")}`)
     console.log(`   files: ${st.fileNames.slice(0, 8).join(", ")}`)
     for (const s of (relSampleByType.get(t) ?? [])) console.log(`   e.g. ${s}`)
+    if (st.writtenNameCollisions > 0) {
+      console.log(`   WRITTEN-NAME spellings colliding with the placeholder list (REPORTED, not R7 convictions): ${st.writtenNameCollisions}`)
+      for (const [k, v] of [...st.writtenNameSites.entries()].slice(0, 12)) console.log(`      ${k}  x${v}`)
+    }
     if (st.placeholderEndpoint > 0) {
       console.log(`   R7 PLACEHOLDER-LITERAL ENDPOINTS: ${st.placeholderEndpoint}`)
       for (const [k, v] of [...st.placeholderSites.entries()].slice(0, 12)) console.log(`      ${k}  x${v}`)
@@ -509,6 +575,8 @@ async function main() {
         srcResolved: s.srcResolved, tgtResolved: s.tgtResolved, tgtBuiltin: s.tgtBuiltin,
         emptyEndpoint: s.emptyEndpoint, placeholderEndpoint: s.placeholderEndpoint,
         placeholderSites: Object.fromEntries(s.placeholderSites),
+        writtenNameCollisions: s.writtenNameCollisions,
+        writtenNameSites: Object.fromEntries(s.writtenNameSites),
         reservedSpellings: Object.fromEntries(s.reservedSites),
         samples: relSampleByType.get(t) ?? [],
       }])),
@@ -526,4 +594,6 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error(String(e)); process.exit(1) })
+// Guarded so `convictsPlaceholder` above can be imported and exercised by the R7
+// probe without running the whole census (the repo's own `import.meta.main` idiom).
+if (import.meta.main) main().catch((e) => { console.error(String(e)); process.exit(1) })
