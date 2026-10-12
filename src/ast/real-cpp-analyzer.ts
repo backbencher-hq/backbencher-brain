@@ -3765,7 +3765,10 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           seenOv.add(k)
           relationships.push({
             source: `${pend.cls}.${pend.method}`,
-            target: `${hit.base}.${pend.method}`,
+            // THE TARGET IS THE DECLARED MEMBER, NOT `Base.method`: the resolver binds against
+            // DECLARATIONS, and a declaration is named by its leaf. Measured on this lane: 0 of 86
+            // `overrides` edges resolved with the dotted spelling.
+            target: pend.method,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: hit.confidence,
             // M59.A7 (#825): the overriding method's own declaration site (the
@@ -3775,6 +3778,12 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: {
               isVirtualOverride: true,
               reasonCode: hit.reasonCode,
+              // THE OWNER CARRIES THE DISTINCTION THE TARGET NO LONGER CAN, and the four-lane fix
+              // learned this the hard way: two fixtures there told a RIGHT edge from a WRONG one by
+              // the owner qualifier alone, and collapsing both spellings to the leaf left them
+              // unable to distinguish the rows. The owner moves HERE rather than disappearing, the
+              // same way `imports` keeps `module` when its target became the item.
+              overriddenOwner: hit.base,
               // M14-HONESTY-CONTRACT §4: any edge under 1.0 carries a
               // machine-readable reason code, and `override`/`final` is
               // recorded so a reader can tell an asserted override from an
