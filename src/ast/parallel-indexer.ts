@@ -6407,6 +6407,52 @@ export async function indexProjectParallel(
                 `${passStats.failed} failed`,
             )
           }
+          // ── THE WRITE-BACK (r-lane, 2026-10-12) ────────────────────────────────────────────────
+          //
+          // WHY THIS EXISTS, MEASURED RATHER THAN READ: the pass re-analyzes into an IN-MEMORY array and
+          // its confirmations were DISCARDED. On python the pass reported `1301 confirmed` and the store's
+          // `overrides` confidence census was `0.5=2204 0.95=507` BEFORE the pass and IDENTICAL AFTER it —
+          // not by 1301, not by one. On ruby, `53 confirmed` against `0.5=732 0.95=3`, unchanged across a
+          // two-arm A/B. So the companion tier — "read by fifteen lanes and populated by nobody in
+          // production" — was never persisted, in any lane, in any round.
+          //
+          // WHY HERE AND NOT EARLIER: the pass needs the COMPLETE symbol table, but `processInProcess`
+          // STREAMS batches to `storeResults` DURING parsing (`:1313`). Moving the pass before the store
+          // would mean holding every batch in memory until parsing ends — a change to the streaming
+          // design, not a move. So the pass stays and the store is updated after it.
+          //
+          // WHY A TARGETED UPDATE AND NOT A RE-STORE, which is the whole design: a re-store REPLACES a
+          // batch's rows with a newly parsed set, and any row the re-parse did not reproduce disappears
+          // silently. THIS IS THE FIRST CHANGE IN THIS PROGRAMME THAT CAN DELETE STORED DATA, so the merge
+          // shape is chosen to make that impossible BY CONSTRUCTION rather than to pass a test:
+          //
+          //   A ROW THE PASS COULD NOT CONFIRM IS NEVER NAMED BY THE WRITE-BACK. It keeps its stored
+          //   confidence, its reasonCode and its target_symbol_id, because only `UPDATE … WHERE id = ?`
+          //   statements are built, and only from the CONFIRMED set. An unconfirmed row is not merely
+          //   preserved — it is never the subject of a statement that could change or remove it.
+          //
+          // The identity comes from the pass itself (`confirmedKeys`), NOT from re-matching here: a second
+          // computation of the same predicate is a second answer.
+          if (passStats.confirmedKeys?.length) {
+            try {
+              const wbDb: any = await BrainDatabase.getRawInstance(projectId)
+              const upd = wbDb.prepare(
+                "UPDATE brain_relationship SET confidence = ? " +
+                  "WHERE project_id = ? AND relationship_type = 'overrides' " +
+                  "AND target_external = ? AND line_number IS ?",
+              )
+              const apply = wbDb.transaction((keys: any[]) => {
+                let n = 0
+                for (const k of keys) n += upd.run(k.confidence, String(projectId), k.target, k.line).changes
+                return n
+              })
+              const moved = apply(passStats.confirmedKeys)
+              log.info(`override companion (${companionLang}) write-back: ${moved} of ${passStats.confirmedKeys.length} confirmed rows persisted`)
+            } catch (e: any) {
+              // The write-back must never turn a completed index into a failed one.
+              log.warn(`override companion (${companionLang}) write-back failed: ${e?.message ?? e}`)
+            }
+          }
         }
       }
     }

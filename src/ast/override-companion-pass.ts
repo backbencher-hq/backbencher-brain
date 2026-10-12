@@ -83,6 +83,17 @@ export interface OverrideCompanionPassStats {
   reapplied: number
   /** `overrides` edges at or above the confirmed threshold after the pass. */
   confirmed: number
+  /**
+   * THE IDENTITIES BEHIND `confirmed` (r-lane, 2026-10-12). Counts are not enough to persist the pass's
+   * work: the write-back must UPDATE the exact stored rows it confirmed, and re-deriving the match at the
+   * write-back site would be A SECOND COMPUTATION OF THE SAME PREDICATE, free to disagree with this one.
+   * One computation, one answer — so the identity list is built BESIDE the count, not instead of it.
+   *
+   * `target` and `line` are the pair the store can be joined on: the analyzer's `target` is what the row
+   * carries as `target_external`, and `line_number` is stored as-is. `confidence` is carried rather than
+   * assumed so the write-back stores the value the analyzer actually produced.
+   */
+  confirmedKeys: Array<{ target: string; line: number | null; confidence: number }>
   /** `overrides` edges still below it: the base is outside the project. */
   stillGuess: number
   /** Errors from a re-analysis; the pass keeps the first-run result for these. */
@@ -104,6 +115,7 @@ export async function populateOverrideCompanion(
     refiles: 0,
     reapplied: 0,
     confirmed: 0,
+    confirmedKeys: [],
     stillGuess: 0,
     failed: 0,
   }
@@ -158,8 +170,16 @@ export async function populateOverrideCompanion(
   for (const result of affected) {
     for (const rel of result.relationships ?? []) {
       if ((rel as any).type !== OVERRIDES) continue
-      if (Number((rel as any).confidence ?? 0) >= CONFIDENCE_FLOOR) stats.confirmed++
-      else stats.stillGuess++
+      if (Number((rel as any).confidence ?? 0) >= CONFIDENCE_FLOOR) {
+        stats.confirmed++
+        // THE IDENTITY, BESIDE THE COUNT. The write-back persists these exact rows; recomputing the match
+        // there would be a second computation of this predicate and free to disagree with it.
+        stats.confirmedKeys.push({
+          target: String((rel as any).target ?? ""),
+          line: (rel as any).line_number ?? null,
+          confidence: Number((rel as any).confidence ?? 0),
+        })
+      } else stats.stillGuess++
     }
   }
   return stats
