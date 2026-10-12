@@ -407,6 +407,17 @@ const projectModules = new Set<string>()
 const projectModulePaths = new Set<string>()
 /** every edge carrying a dotted `metadata.qualified` route, when `--dump-qualified` is given */
 const qualifiedDump: string[] = []
+/**
+ * THE ROWS THE `not-bound-in-file` AXIS FIRES ON, in the order they are classified: `label<TAB>file
+ * <TAB>source<TAB>target<TAB>reasonCode`. Written beside the artefact (PY-D25, round 12) so
+ * `not-bound-in-file-gate.mts` re-checks the axis's own claim — "no binding this file supplies is
+ * visible to the read" — against CPython's scope chain, row by row, instead of against a memory.
+ */
+const notBoundRows: string[] = []
+const NOT_BOUND_AXIS = "not-bound-in-file"
+/** rows of the axis named by `--dump-axis`, written beside the artefact (see the writer at the end). */
+const DUMP_AXIS = argOf("--dump-axis")
+const axisDump = new Map<string, string[]>()
 const projectFiles = new Set<string>()
 /** per file: bare name -> declarations in THAT file only. */
 const fileByName = new Map<FileRecord, Map<string, Set<string>>>()
@@ -754,6 +765,23 @@ for (const f of files) {
         : notBoundInFile(f, tgt, why) ? "not-bound-in-file"
         : "UNEXPLAINED"
       bump(s.unresolvedClass, cls)
+      // The `not-bound-in-file` axis is a CLAIM about every row it fires on ("no binding this file
+      // supplies is visible to the read"), so the rows themselves are written out beside the
+      // artefact: `validation/m14/fixtures/python/not-bound-in-file-gate.mts` re-checks each one
+      // against CPython's own scope chain, and it can only do that if the run publishes the list.
+      // A gate over a remembered list would be a gate over a memory.
+      if (cls === "not-bound-in-file") notBoundRows.push(`${t}\t${f.label}\t${src}\t${tgt}\t${why}`)
+      // `--dump-axis=<class>` writes the rows of ANY named axis, so a doc's sentence about a bucket
+      // ("the 4 rows now on declared-dynamic") can be a list rather than a count nobody can open.
+      if (DUMP_AXIS && cls === DUMP_AXIS) {
+        const list = axisDump.get(cls) ?? []
+        // ONE ROW PER LINE: `metadata.qualified` can carry a route copied from the source, so an
+        // unescaped newline inside it splits a row over several lines and turns the list into
+        // something a reader has to parse by eye. Escape the separators instead.
+        const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/\t/g, "\\t").replace(/\r?\n/g, "\\n")
+        list.push(`${t}\t${f.label}\t${esc(src)}\t${esc(tgt)}\t${why}\t${esc(route)}`)
+        axisDump.set(cls, list)
+      }
       if (cls === "UNEXPLAINED") {
         s.unexplained++
         bump(s.unexplainedNames, leafOf(tgt))
@@ -863,7 +891,7 @@ for (const t of ALL_TYPES) {
   }
 }
 console.log(`\nlabels emitted ${emittedCount}/10   OUTGOING (source) UNRESOLVED across all ten: ${grandSrcUnresolved}`)
-console.log(`INCOMING (target) UNEXPLAINED across all ten: ${grandUnexplained}  <- the only defect axis; every other unresolved target is declared-dynamic, declared-local, declared-external, qualified-external, or an interpreter builtin`)
+console.log(`INCOMING (target) UNEXPLAINED across all ten: ${grandUnexplained}  <- the only defect axis; every other unresolved target is declared-dynamic, declared-local, declared-external, qualified-external, star-import-external, not-bound-in-file, or an interpreter builtin`)
 
 console.log("\n== confidence / evidenceClass / reasonCode / hygiene ==")
 for (const t of ALL_TYPES) {
@@ -946,6 +974,19 @@ const out: any = {
   untyped: untyped.count,
 }
 if (OUT) { writeFileSync(OUT, JSON.stringify(out, null, 2)); console.log(`\nwrote ${OUT}`) }
+if (OUT && DUMP_AXIS) {
+  const list = axisDump.get(DUMP_AXIS) ?? []
+  const p = path.join(path.dirname(OUT), `axis-${DUMP_AXIS}.rows.txt`)
+  writeFileSync(p, list.join("\n") + "\n")
+  console.log(`wrote ${list.length} row(s) on the ${DUMP_AXIS} axis to ${p}`)
+}
+if (OUT && notBoundRows.length) {
+  // The axis's own row list, pinned NEXT TO the artefact it belongs to, so the gate that re-checks
+  // the claim reads the same run the artefact came from and the two cannot drift apart.
+  const rowsPath = path.join(path.dirname(OUT), "not-bound-in-file.rows.txt")
+  writeFileSync(rowsPath, notBoundRows.join("\n") + "\n")
+  console.log(`wrote ${notBoundRows.length} ${NOT_BOUND_AXIS} row(s) to ${rowsPath}`)
+}
 if (DUMP_QUALIFIED) {
   writeFileSync(DUMP_QUALIFIED, qualifiedDump.join("\n") + "\n")
   console.log(`wrote ${qualifiedDump.length} qualified-route edge(s) to ${DUMP_QUALIFIED}`)

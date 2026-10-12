@@ -421,10 +421,92 @@ MUTANTS = [
         "expect": "CAUGHT",
     },
     {
+        "id": "round13/class-binder-per-name-dedupe-restored",
+        "what": "THE ROUND-12 SHAPE restored for the class half: class-body binders deduped on `(class, name)` again, so a second `for x in …:` in one class body publishes no member at that line and its `contains` edge disappears (the fixture's `x equals 2` and the L49 row are the falsifiers; the corpus row this fixes is `AnsibleUnwantedChecker -> method @L157`)",
+        "old": '''      if (p.className === null) {
+        if (seenModuleNames.has(p.name)) continue
+        seenModuleNames.add(p.name)
+      }''',
+        "new": '''      // MUTANT: per-NAME dedupe for every scope (the round-12 shape)
+      if (seenModuleNames.has(p.name)) continue
+      seenModuleNames.add(p.name)''',
+        "expect": "CAUGHT",
+    },
+    {
         "id": "round12/member-read-receiver-guard-dropped",
         "what": "THE OVER-FIRING VERSION, pinned: the last-named-child guard removed, so the RECEIVER leaf (`field` inside `field.related_model`) takes `member-read` although the file binds it as a local - the exact defect the probe caught before the rule shipped",
         "old": '      if (!lastNamed || lastNamed.startIndex !== leaf.startIndex || lastNamed.endIndex !== leaf.endIndex) {',
         "new": '      if (false) {',
+        "expect": "CAUGHT",
+    },
+    # ---------------------------------------------------------------- round 14 (PY-D28)
+    {
+        "id": "round14/getattr-provision-clause-disabled",
+        "what": "PY-D28 disabled at its call site: a module-level `__getattr__`'s spelled provisions are published as nothing again, so the module's own `exports` edge has no declaration to resolve against — the state the verdict reported as `tree_sitter_clean/__init__.py -> HIGHLIGHTS_QUERY` and `-> TAGS_QUERY`, both UNEXPLAINED",
+        "old": '        this.collectModuleGetattrProvisions(n, pending)',
+        "new": '        void n // MUTANT round14: module-level __getattr__ provisions not read',
+        "expect": "CAUGHT",
+    },
+    {
+        "id": "round14/getattr-class-gate-dropped",
+        "what": "the `currentClass === null` half of the gate removed, so a CLASS-body `__getattr__` (an instance protocol) has its body read as module provisions and its compared name published as a module Variable",
+        "old": '      if (n.type === "function_definition" && currentClass === null) {',
+        "new": '      if (n.type === "function_definition") { // MUTANT round14: the class gate dropped',
+        "expect": "CAUGHT",
+    },
+    {
+        "id": "round14/getattr-function-name-gate-dropped",
+        "what": "the `__getattr__` NAME gate removed: any module-level function whose body compares a parameter against string literals is read as a provision, so `__getattr__unrelated`'s `READ_BY_THE_WRONG_FUNCTION` becomes a declaration",
+        "old": '    if (!nameNode || nameNode.text !== "__getattr__") return',
+        "new": '    if (!nameNode) return // MUTANT round14: any function\'s literals read as provisions',
+        "expect": "CAUGHT",
+    },
+    {
+        "id": "round14/getattr-annotated-parameter-refused",
+        "what": "THE FIRST BUG THIS ROUND FIXED, restored: the parameter is read raw, so an annotated `def __getattr__(attr: str)` has type `typed_parameter` and the whole function is refused — 6 of the 26 corpus files annotate their parameter, and `_text.py` does (it names 4 of the 14 priced names)",
+        "old": '''    const param =
+      raw && (raw.type === "typed_parameter" || raw.type === "default_parameter" || raw.type === "typed_default_parameter")
+        ? (raw.childForFieldName("name") ?? raw.namedChild(0))
+        : raw''',
+        "new": '    const param = raw // MUTANT round14: the annotated spelling refused (the pre-probe state)',
+        "expect": "CAUGHT",
+    },
+    {
+        "id": "round14/getattr-parameter-hardcoded-to-name",
+        "what": "THE FIRST PRICE'S SPELLING, pinned: the comparison's left side is required to be the literal word `name` rather than the function's OWN parameter name, so `_text.py` (`importable_name`) and any file that names its parameter differently publishes nothing — 18 of the 26 corpus files name theirs something else",
+        "old": '    if (!param || param.type !== "identifier") return',
+        "new": '    if (!param || param.type !== "identifier" || param.text !== "name") return // MUTANT round14: the hardcoded spelling',
+        "expect": "CAUGHT",
+    },
+    {
+        "id": "round14/getattr-set-spelling-refused",
+        "what": "the SET spelling refused again (`attr in {\"C_EARLY\", \"C_LATE\"}`), which is what `ansible/module_utils/_text.py` writes — 3 of the 14 priced names publish nothing, all in that one `elif`",
+        "old": '              right.type === "tuple" || right.type === "list" || right.type === "set" ? right : null',
+        "new": '              right.type === "tuple" || right.type === "list" ? right : null // MUTANT round14: the set spelling refused',
+        "expect": "CAUGHT",
+    },
+    {
+        "id": "round14/getattr-inverted-guard-dropped",
+        "what": "THE DENY-LIST PUBLISHED: the inverted-guard skip removed, so `if attr in (\"NOT_PROVIDED\",): raise AttributeError` — a statement of what the module REFUSES — publishes `NOT_PROVIDED` as an export of a module that raises on it",
+        "old": '          if (!inverted) {',
+        "new": '          if (inverted || !inverted) { // MUTANT round14: the inverted guard dropped',
+        "expect": "CAUGHT",
+    },
+    {
+        "id": "round14/getattr-non-identifier-literal-published",
+        "what": "the identifier test on the literal removed, so `attr == \"not-a-name\"` publishes a symbol whose name is not a python identifier and which no reader can resolve",
+        "old": '      return /^[A-Za-z_][A-Za-z0-9_]*$/.test(value) ? value : null',
+        "new": '      return value // MUTANT round14: a non-identifier literal becomes a declaration',
+        "expect": "CAUGHT",
+    },
+    {
+        "id": "round14/getattr-module-half-per-site",
+        "what": "the module half made PER SITE like the class half, so a file that provides one name at two comparison sites publishes TWO module Variables of the same name — the module half's per-NAME rule (round 12) is the measured half of that asymmetry",
+        "old": '''      if (p.className === null) {
+        if (seenModuleNames.has(p.name)) continue
+        seenModuleNames.add(p.name)
+      }''',
+        "new": '      // MUTANT round14: the module half publishes per site',
         "expect": "CAUGHT",
     },
 ]

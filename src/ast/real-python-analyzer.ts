@@ -3799,10 +3799,26 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * store.
    *
    * PRICED with CPython's own `ast` before this method existed (`.tmp-py/price-module-bindings.py`):
-   * 351 module `for` targets, 98 `with … as`, 48 `except … as` in 283 files, plus 13 `for` targets
-   * in class bodies. One residual row depends on them today; the value of publishing them is that
-   * the analyzer's statement of the module namespace becomes TRUE of the source, so a future read
-   * of any of these 516 names cannot be UNEXPLAINED for a reason the source never wrote.
+   * 351 module `for` targets, 98 `with … as`, 48 `except … as` and 6 module-scope walrus targets in
+   * 283 files, plus 13 `for` targets in class bodies — 516 binder rows. MEASURED on the shipped
+   * analyzer (`.tmp-py/probe-binder-row-gap.mts`, `.tmp-py/census-bound-by-binder-failed.mts`): those
+   * files publish **480** symbols carrying `metadata.boundByBinder` — every one of them named by a
+   * priced row, 0 un-named — the walk dedupes a row whose name the file already declares in that
+   * scope (34 `for` + 1 `with` + 6 walrus rows measured naming a symbol without the field), and 56
+   * files CPython REJECTS contribute **14** more, for **494**: exactly the corpus-wide symbol delta of
+   * this round (206,445 -> 206,939), with every other label unmoved. One residual row depends on them
+   * today; the value of publishing them is that the analyzer's statement of the module namespace
+   * becomes TRUE of the source, so a future read of any of these names cannot be UNEXPLAINED for a
+   * reason the source never wrote.
+   *
+   * NOTE THE SEAM: `metadata.boundByBinder` is ANALYZER-SIDE only. `src/ast/pool-worker.ts`'s symbol
+   * metadata allowlist carries 1 of the 17 keys this analyzer publishes (`superTypes`, carried because
+   * the php lane's owner pass reads the ancestor column), so a store-level reader sees NULL — measured
+   * at 0% survival by `.tmp-py/seam-metadata-probe.mts` over the priced files. The SYMBOL crosses
+   * (which is what the mechanism is for); the provenance FIELD does not. That gap is PY-D26 in
+   * `docs/analyzers/LAPTOP-B-STATUS.md`, declared with its numbers rather than fixed here, because the
+   * allowlist's own rule is that a key belongs there once a READER consumes it and no store-level
+   * reader consumes this one yet.
    *
    * The TARGET is read through the shared walkers (`addPatternTargets` / `asBindingTarget`), so
    * `for k, v in …` binds two names and this reader cannot disagree with `collectFunctionLocals`
@@ -3823,6 +3839,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (frame.isExit) {
         currentClass = frame.setClass ?? null
         continue
+      }
+      // PY-D28 (round 14) — a MODULE-level `def __getattr__(name)` (PEP 562) PROVIDES names, and
+      // the provision is written in the file: `if name == "X": return …` / `if name in (…)`. The
+      // walk must read it BEFORE the function-body skip below, and it does not descend into the
+      // body for anything else: a module `__getattr__`'s own locals are PY-D14's business.
+      if (n.type === "function_definition" && currentClass === null) {
+        this.collectModuleGetattrProvisions(n, pending)
       }
       // A function body is another scope (PY-D14 reads its binders); a lambda and a comprehension
       // are scopes of their own. None of their bindings is a module or class attribute.
@@ -3882,11 +3905,39 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (const it of im.items ?? []) if (it !== "*") imported.add(it)
       }
     }
-    const seen = new Set<string>()
+    // PER SITE, NOT PER NAME, FOR THE CLASS HALF — and per NAME for the module half, with the
+    // reason for the difference measured rather than assumed (round 13).
+    //
+    // A class member is addressed by name AND LINE: that is what makes `contains` (and a member
+    // read) resolve against the right span, and it is why every other class-member path publishes
+    // PER SITE — `Y = 1` twice in a class body publishes two Properties. Round 12's binder walk
+    // deduped on `(scope, name)`, so two `for method in (…):` loops in one class body published ONE
+    // member, at the first target's line. The differential is what exposed it: the truth oracle
+    // derives members from the source per site, and reported `AnsibleUnwantedChecker -> method @L157`
+    // as MISSING while the analyzer had published it at L141.
+    //
+    // PRICED before the fix (CPython over the verdict's population): exactly ONE class-scope binder
+    // name in the corpus has more than one site (`ansible/test/.../pylint/plugins/unwanted.py`,
+    // `AnsibleUnwantedChecker.method`, L141 and L157), and ZERO binder names are also declared in the
+    // same class by an assignment, a method or an import — so the `already a member` guard below is
+    // inert today, the fix adds exactly ONE symbol and ONE `contains` edge, and no member is
+    // duplicated against the assignment path.
+    //
+    // The MODULE half stays per NAME, and that is a measured deferral rather than an oversight: a
+    // module Variable has no owner and therefore no containment edge, so nothing in the differential,
+    // the store's member channel or this lane's gates disagrees with it; and making it per site would
+    // add 90 symbols across the 58 names that hold more than one module-scope site — MEASURED this
+    // round by `.tmp-py/price-class-binder-sites.py` (11,245 files parsed, name-and-file-keyed; the
+    // round-12 estimate of ~100 symbols for 70 names was target-and-kind-keyed, so the two counts
+    // differ in metric rather than in corpus) — whose effect on the RESOLVED/AMBIGUOUS split is not
+    // yet measured. Recorded with its price so the next round inherits a number instead of a
+    // surprise.
+    const seenModuleNames = new Set<string>()
     for (const p of pending) {
-      const key = `${p.className ?? "\u0000module"}\u0000${p.name}`
-      if (seen.has(key)) continue
-      seen.add(key)
+      if (p.className === null) {
+        if (seenModuleNames.has(p.name)) continue
+        seenModuleNames.add(p.name)
+      }
       if (p.className) {
         if (byOwner.get(p.className)?.has(p.name)) continue
       } else if (ownerless.has(p.name) || imported.has(p.name)) continue
@@ -3905,6 +3956,147 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           boundByBinder: p.boundBy,
         },
       })
+    }
+  }
+
+  /**
+   * PY-D28 (round 14) — the names a MODULE-level `__getattr__` PROVIDES, from the file's own text.
+   *
+   * THE DEFECT THIS CLOSES, measured before the code existed. The verdict's last 7 unexplained rows
+   * were all `exports`; TWO of them are `tree_sitter_clean/__init__.py -> HIGHLIGHTS_QUERY` and
+   * `-> TAGS_QUERY`, and that file states the provision in its own source: a module-level
+   * `def __getattr__(name)` with `if name == "HIGHLIGHTS_QUERY": return _get_query(…)` and the same
+   * for `TAGS_QUERY` (both also listed in `__all__`). `hasattr(module, name)` is TRUE for those
+   * names at runtime; the analyzer published no declaration, so the module's own export edge could
+   * not resolve against its own file.
+   *
+   * PRICED with CPython's own `ast` over the corpus, TWICE, and the second pass is what the numbers
+   * below come from. The first pass (`.tmp-py/price-module-getattr-exports.py`, whose job was
+   * classifying the 7 verdict rows) hardcoded the parameter NAME to the word `name` and accepted only
+   * the shape it happened to read by hand; the second (`.tmp-py/price-module-getattr-round14.py`,
+   * `module-getattr-round14-price.json`) measures THIS rule's shape and is the authority:
+   *
+   *   - **26 files** define a MODULE-level `__getattr__` (11,245 parsed, 55 CPython rejects);
+   *     **6** of them spell any name as a literal, and **20** spell none (they forward to
+   *     `globals()`, build a dict, import dynamically) — a measured limit of the rule, not an
+   *     accident: this rule reads a provision the file SPELLS.
+   *   - those 6 files hold **14 literal names** (7 `== "LITERAL"` comparisons + 3 collection
+   *     comparisons: 3 tuples were read by the first pass, and `_text.py`'s
+   *     `in {"to_bytes", "to_native", "to_text"}` is a SET, which the first version of this method
+   *     refused — 3 names it published nothing for);
+   *   - of the 14, **1 is already statically bound in its own file** (cython's `gs`, published at L706)
+   *     and **2 are already in the file's import channel** — `_text.py`'s `codecs` (the local
+   *     `import codecs` written INSIDE the branch that provides it) and `Build/__init__.py`'s
+   *     `build_ext`; so the publication is **11 symbols**;
+   *   - **2** of the 14 are the verdict's `__all__` rows (`HIGHLIGHTS_QUERY`, `TAGS_QUERY`).
+   *
+   * VERIFIED on the shipped analyzer, not asserted: `.tmp-py/census-getattr-provisions.mts` walks
+   * EXACTLY the 6 files the price names and prints 11 published, 0 unexplained misses, and
+   * `14 - 1 - 2 = 11` as its own last line.
+   *
+   * WHAT IS READ, exactly: the comparison's left side must be the function's OWN parameter name (not
+   * the literal word `name` — 18 of the 26 files name their parameter something else, `_text.py`
+   * writes `importable_name`, and the first pass would have missed every literal in one of those),
+   * the operator must be `==` or `in`, and the right side must be a string literal or a tuple/list/
+   * SET of them. The parameter is read through the grammar's wrappers (`typed_parameter`,
+   * `default_parameter`, `typed_default_parameter`): 6 of the 26 files annotate their first parameter
+   * (`def __getattr__(name: str)`), and the first version of this method refused that spelling
+   * outright — which is how the probe, and not the price, is what settled the annotated case. A
+   * comparison whose enclosing `if` conSEQUENTLY raises `AttributeError` is the INVERTED shape
+   * (`if name in (…): raise`) — it states what is NOT provided, so it is skipped. MEASURED over the
+   * 26 files: **0** such rows exist today; the guard is here so a future one cannot publish its own
+   * deny-list as declarations. (The first version of the price's detector reported 3 — it counted the
+   * `else: raise` arm of the ordinary provide-or-die guard, which also hid `EvaluatorCompiler` from
+   * its own tally. The fix in that detector is why the two passes disagree on that name.)
+   *
+   * The position is the STRING LITERAL's own line, because that is where the file writes the name.
+   * `metadata.boundByBinder` carries `"getattr"`, the same key the binder walk uses, with a value
+   * naming this mechanism — no new metadata key is introduced, so the worker seam's key count (and
+   * PY-D26's 17-published / 1-carried measurement) is unchanged by this round.
+   */
+  private collectModuleGetattrProvisions(
+    fn: Node,
+    into: Array<{ name: string; node: Node; boundBy: string; className: string | null }>,
+  ): void {
+    const nameNode = fn.childForFieldName("name")
+    if (!nameNode || nameNode.text !== "__getattr__") return
+    const params = fn.childForFieldName("parameters")
+    const raw = params && params.namedChildCount > 0 ? params.namedChild(0) : null
+    // THE PARAMETER'S NAME, THROUGH THE GRAMMAR'S WRAPPERS. `def __getattr__(name)`, `def
+    // __getattr__(name: str)` and `def __getattr__(name: str = "")` all NAME their parameter; only
+    // the node type differs (`identifier`, `typed_parameter`, `typed_default_parameter`), and the
+    // name is the wrapper's first named child. The refuse-on-wrapper version of this line published
+    // SIX fewer provisions than the price said — 2 of the 5 priced files annotate their parameter
+    // (`ansible/.../common/json.py` names 5, `sqlalchemy/orm/evaluator.py` names 1) — and the probe
+    // (`.tmp-py/debug-getattr-shapes.mts`) is what showed the refusal was about the grammar rather
+    // than about the source. A splat (`*args`) and a name-less parameter are still refused: they
+    // state no name to compare against, and this rule reads a name the file SPELLS.
+    const param =
+      raw && (raw.type === "typed_parameter" || raw.type === "default_parameter" || raw.type === "typed_default_parameter")
+        ? (raw.childForFieldName("name") ?? raw.namedChild(0))
+        : raw
+    if (!param || param.type !== "identifier") return
+    const paramName = param.text
+    const body = fn.childForFieldName("body")
+    if (!body) return
+
+    const unquote = (text: string): string | null => {
+      const m = /^[A-Za-z]*(["'])([\s\S]*)\1$/.exec(text)
+      if (!m) return null
+      const value = m[2] ?? ""
+      // A name is a python identifier or it is not a name this rule can publish.
+      return /^[A-Za-z_][A-Za-z0-9_]*$/.test(value) ? value : null
+    }
+
+    const stack: Node[] = [body]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "comparison_operator" && n.childCount >= 3) {
+        const left = n.child(0)
+        const op = n.child(1)
+        const right = n.child(2)
+        if (left && op && right && left.type === "identifier" && left.text === paramName &&
+            (op.type === "==" || op.type === "in")) {
+          // The INVERTED guard: an `if` whose own branch raises AttributeError names what the
+          // module does NOT provide. Skip it rather than publish a deny-list.
+          let inverted = false
+          let up: Node | null = n.parent
+          while (up && up.id !== body.id) {
+            if (up.type === "if_statement") {
+              const cons = up.childForFieldName("consequence")
+              if (cons && cons.text.includes("raise") && cons.text.includes("AttributeError")) inverted = true
+              break
+            }
+            up = up.parent
+          }
+          if (!inverted) {
+            // tuple, list AND set: `if name in {"to_bytes", "to_native", "to_text"}` is the
+            // spelling `ansible/module_utils/_text.py` writes (measured — the first version of this
+            // rule accepted only tuple/list and published 3 fewer names than the price said, all in
+            // that one `elif`). All three are a literal collection of names; a `dict` is not, and
+            // `right.type === "string"` below is the single-literal spelling.
+            const lower =
+              right.type === "tuple" || right.type === "list" || right.type === "set" ? right : null
+            const cands: Node[] = []
+            if (lower) {
+              for (let i = 0; i < lower.namedChildCount; i++) {
+                const el = lower.namedChild(i)
+                if (el && el.type === "string") cands.push(el)
+              }
+            } else if (right.type === "string") {
+              cands.push(right)
+            }
+            for (const c of cands) {
+              const nm = unquote(c.text)
+              if (nm) into.push({ name: nm, node: c, boundBy: "getattr", className: null })
+            }
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
     }
   }
 

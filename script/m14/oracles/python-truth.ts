@@ -1094,6 +1094,55 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   // the sense a method is, and the analyzer publishes them. The first version of this
   // file walked only function bodies for attributes, so 312 class-constant `contains`
   // edges looked unexplained.
+  /**
+   * The NAMES a binding TARGET binds, read from the container shapes this grammar produces.
+   *
+   * The shapes are not decorative: `a, b = …` is a `pattern_list`, `(a, b)` is a `tuple_pattern`,
+   * `[a, b]` is a `list_pattern`, and `a, *rest` puts the splat in a FOURTH node type,
+   * `list_splat_pattern` — measured in round 11 (`.tmp-py/round11-shapes.mts`) after the analyzer
+   * descended `pattern_list` but not the splat inside it and silently dropped `rest`. A derivation
+   * that read only the first container would disagree with the analyzer about `for a, *b in rows:`
+   * in exactly the direction that reports a phantom missing member, so the list here is the same
+   * list, for the same measured reason.
+   *
+   * `as_pattern_target` is included because the `with`/`except` target arrives nested inside an
+   * `as_pattern` (`with open(p) as fh:` is `with_item value -> as_pattern -> as_pattern_target`),
+   * and `list`/`tuple` because an error-tolerant parse can hand back either spelling.
+   */
+  const targetNameNodes = (target: any): any[] => {
+    const out: any[] = []
+    const stack: any[] = [target]
+    while (stack.length > 0) {
+      const t = stack.pop()
+      if (!t) continue
+      if (t.type === "identifier") { out.push(t); continue }
+      if (t.type === "tuple_pattern" || t.type === "list_pattern" || t.type === "pattern_list" ||
+          t.type === "as_pattern_target" || t.type === "list_splat_pattern" ||
+          t.type === "list" || t.type === "tuple") {
+        for (let i = 0; i < t.namedChildCount; i++) stack.push(t.namedChild(i))
+      }
+    }
+    return out
+  }
+
+  /** The `as` clause of a `with_item` / `except_clause`, from the shape the grammar really gives. */
+  const asBindingTarget = (n: any): any => {
+    const pat = n.childForFieldName("value")
+    if (pat && pat.type === "as_pattern") {
+      for (let i = 0; i < pat.namedChildCount; i++) if (pat.namedChild(i).type === "as_pattern_target") return pat.namedChild(i)
+      return pat.namedChild(1)
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (!c) continue
+      if (c.type === "as_pattern") {
+        for (let j = 0; j < c.namedChildCount; j++) if (c.namedChild(j).type === "as_pattern_target") return c.namedChild(j)
+        return c.namedChild(1)
+      }
+    }
+    return null
+  }
+
   const walkClassBody = (n: any, cls: string): void => {
     // A method body is NOT the class body. `x = 1` inside a method is a LOCAL, and
     // Python does not give it a class-level name — the first version of this walk
@@ -1122,6 +1171,21 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     // this walk recognised only `=` — so `Cdef -> __doc__` came out at L45 here and L45 AND L86
     // there. The instance-attribute rule above had already made this correction; this is the
     // class-body rule, which is a different clause of the same sentence.
+    // A MULTI-TARGET ASSIGNMENT DECLARES EVERY NAME IN ITS PATTERN (PY-D21, round 11). `SUCCESS,
+    // FAILURE, ERROR = range(3)` in a class body is THREE class attributes, and the analyzer
+    // publishes three Properties — one per name — while this derivation read `left` as an
+    // identifier and required `type === "identifier"`, so every such member was an edge it could
+    // not account for. MEASURED (CPython over the verdict's population): 5 class-body multi-target
+    // declarations in the whole corpus — `cython/Cython/Tests/xmlrunner.py:62` (3 names),
+    // `cython/tests/run/test_grammar.py:389` (2), `gql-graphql-core/…/visitor.py:121` (4),
+    // `sqlalchemy/test/dialect/mysql/test_types.py:646` (4),
+    // `wagtail/…/0015_fill_filter_spec_field.py:13` (2) — and they are exactly the population the
+    // differential reported as unexplained `contains` rows on the cython rotation that exposed this.
+    //
+    // EACH NAME CARRIES ITS OWN NODE'S LINE, which is what the analyzer's PY-D21 path does: measured
+    // with `.tmp-py/probe-multiline-pattern-lines.mts` on `(alpha,\n beta) = PAIRS`, the analyzer
+    // publishes `alpha` at L6 and `beta` at L7. A statement-line rule would put both at L6 and make
+    // the second name a phantom MISSING row — the mirror image of the defect this rule fixes.
     if (n.type === "assignment" || n.type === "augmented_assignment" || n.type === "expression_statement") {
       const left = n.childForFieldName("left")
       // An ANNOTATED declaration (`name: bytes`) is a member too, and in a TypedDict it
@@ -1134,12 +1198,49 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         : n.type === "expression_statement" && n.namedChildCount > 0 && n.namedChild(0).type === "type"
           ? n.namedChild(0).childForFieldName("name") ?? (n.namedChild(0).namedChildCount > 0 ? n.namedChild(0).namedChild(0) : null)
           : null
-      if (nameNode && nameNode.type === "identifier") {
+      if (left && left.type !== "identifier") {
+        // The PATTERN case, disjoint from the identifier case above by construction: when `left`
+        // exists and is not an identifier it is one of the container shapes `targetNameNodes`
+        // knows, and each name in it is this class's member at its own line.
+        for (const member of targetNameNodes(left)) {
+          add("contains", cls, member.text, member.startPosition.row + 1)
+        }
+      } else if (nameNode && nameNode.type === "identifier") {
         // PER-SITE, not per-name. `if c: X = A else: X = B` is two assignments in the
         // source and the analyzer publishes two per-site members, which is what lets a
         // `contains` edge resolve by name AND line. Deduplicating by name is right for an
         // INSTANCE attribute (`self.x` in three methods is one attribute) and wrong here.
         add("contains", cls, nameNode.text, n.startPosition.row + 1)
+      }
+    }
+    // A BINDER STATEMENT IN A CLASS BODY DECLARES A MEMBER. Python's class body is a NAMESPACE,
+    // so `for i in range(0):`, `with open(p) as fh:` and `try: … except E as err:` written directly
+    // in one bind their names in the CLASS namespace exactly as `x = 1` does — the same statement
+    // at module scope binds a module name, and this oracle already derives THAT side (nothing, by
+    // the scripting-family contract: a module declares no owner). The class side is a member and
+    // the analyzer publishes it (PY-D23, round 12), so leaving it underived made every such member
+    // look like an edge the analyzer had invented.
+    //
+    // WHY THIS IS THE LANGUAGE'S RULE AND NOT A MIRROR OF THE ANALYZER: `cython/tests/run/
+    // py_classbody.py` states it in its own doctest — `ForLoopInPyClass.k` is `0` and `.m` is `1`,
+    // read off the class after three `for` loops in its body — and then records that `.i` raises
+    // `AttributeError` because THAT loop's `range(0)` never executes. A member bound lexically by
+    // a statement that never runs is still the statement's effect, which is precisely how the
+    // analyzer treats `if False: X = 1` too; the line is the TARGET's own, because `contains`
+    // resolves by name AND line and the analyzer publishes the symbol at the target node.
+    if (n.type === "for_statement" || n.type === "with_item" || n.type === "except_clause") {
+      const target = n.type === "for_statement"
+        ? n.childForFieldName("left") ?? n.namedChild(0)
+        : asBindingTarget(n)
+      // EVERY name carries the TARGET node's own line, not each identifier's: the analyzer
+      // publishes one symbol per name with the range of the node it read the target FROM, so a
+      // multi-line pattern (`for (a,\n     b) in rows:`) puts both members on the pattern's first
+      // line. Reading each identifier's line here instead would disagree on exactly that shape —
+      // one phantom missing member and one unexplained edge, from a difference in addressing
+      // rather than in meaning.
+      if (target) {
+        const targetLine = target.startPosition.row + 1
+        for (const nameNode of targetNameNodes(target)) add("contains", cls, nameNode.text, targetLine)
       }
     }
     // A CALL AT CLASS SCOPE is a call made by the class, and the lane scopes it to the

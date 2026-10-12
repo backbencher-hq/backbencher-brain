@@ -963,6 +963,140 @@ so it is recorded here and in the status doc's §9 with the two honest fixes (st
 the pattern binds more than one name, or document it as tree-sitter's node type rather than the
 source's semantics) instead of being quietly patched.
 
+### The names a non-assignment statement writes, and a member read that was called
+### a name (round 12, 2026-10-12)
+
+Round 12 moves the incoming residual 96 → **7** and publishes exactly the declarations the source
+writes — symbols **+494**, `contains` **+17**, every other label UNMOVED to the digit — because one
+mechanism publishes DECLARATIONS and the other turns a declaration-shaped name back into the READ it
+always was.
+
+| mechanism | what the source states | what the lane now publishes |
+| --- | --- | --- |
+| a module-scope or class-scope `for` TARGET, `with … as`, `except … as` | the name is bound in the scope the statement is written in | one module Variable per NAME; one Property per SITE in a class body (round 13), at the name's own position, with `metadata.boundByBinder` naming the statement kind |
+| an `isinstance`/`issubclass` type argument written as a MEMBER READ (`self._self_owner`, `field.related_model`, `passlib_exc.PasslibHashWarning`) | the target is a member of an object whose type nothing in the file states | `member-read` → declared-dynamic — NO declaration name, because the file declares none |
+
+**The assignment walker published assignments, so a module-scope `for mixin in mixins:` published
+nothing.** The row that proved it is wagtail's
+`references format_error -> mixin [instancecheck]` at `snippets/api/v3/router.py:76`: `mixin` is bound
+by a module-level `for` two lines above the read, and the store had no declaration for it, so the
+verdict could only call the read UNEXPLAINED — the ONE row in the round's price where the analyzer
+itself was wrong rather than the source unresolvable. `publishScopeBinderBindings` closes it for
+`for`/`async for`, `with … as`/`async with … as` and `except … as`, at module scope AND in class
+bodies (where the same statement writes a member).
+
+The TARGET is read through the SHARED walkers (`addPatternTargets` via `collectBinderNames`, and
+`asBindingTarget` for the two `as` shapes), so `for k, v in …` binds two names and this reader cannot
+disagree with PY-D14's local collector about what a target is — the defect class that survived nine
+rounds in `collectFunctionLocals`'s `with_item` case, which is exactly why the alias is read through
+the same accessor here. The WALK is an explicit-stack preorder (the dart lane's record: a recursive
+walk dies on deep nesting after the corpus walk has already been paid for) that descends compound
+statements, NEVER enters a function body (its binders are PY-D14's locals, not symbols), and never
+enters a lambda or a comprehension (their targets bind their own scope, PY-D22). A class body is
+entered with an exit frame, so a binder inside a class gets that class as owner and the Property kind,
+and the `for` in a class body nested in another class cannot lose its owner.
+
+The DEDUPE is per SCOPE and it is what keeps the publication additive: a module-scope binder is
+skipped when the file already declares that name at module scope or binds it by import, and a
+class-scope one is skipped when that class already has the member. That is why publishing 516 named
+binders added **494** symbols and not 516, and why a binder can never shadow a declaration — and the
+class-scope guard is INERT today, measured rather than assumed: of the corpus's 18 class-scope binder
+rows (17 distinct members), **zero** names are also declared in the same class by an assignment, a
+`def` or an import (`.tmp-py/price-class-binder-sites.py` → `.tmp-py/class-binder-sites-price.json`).
+
+THE CLASS HALF IS PER SITE and the module half is per NAME (round 13) — a difference with a reason,
+not a style. A class member is addressed by name AND LINE; that is what lets `contains` and a member
+read resolve against the right span, and every other class-member path in this analyzer already
+publishes per site (two `X = 1` statements in a class body are two Properties). Round 12's binder walk
+deduped BOTH scopes on `(scope, name)`, so the second site of a class-body binder published nothing at
+its own line — invisible to every gate in the lane, because a fixture calls the analyzer directly and
+the only instrument that could see it was the differential's truth side. The price before the fix:
+exactly ONE class-scope binder name in the corpus has two sites (`AnsibleUnwantedChecker.method`, L141
+and L157, `ansible/test/lib/ansible_test/_util/controller/sanity/pylint/plugins/unwanted.py`), so the
+fix adds exactly ONE symbol and ONE `contains` — measured on the re-run verdict: symbols 206,939 →
+**206,940** and `contains` 135,651 → **135,652**. The MODULE half stays per NAME with its price stated
+instead of assumed: 70 module names have more than one binder site (≈100 symbols), a module Variable
+has no owner and therefore no `contains` edge for any consumer to address by line, and the effect of
+making it per site on the RESOLVED/AMBIGUOUS split is not yet measured. The count is this round's own:
+**58** module names hold more than one binder site, and per-site publication would add **90** symbols
+(`.tmp-py/price-class-binder-sites.py`; the comment in the source records 70 names / ≈100 symbols under
+the round-12 frame — a difference of METRIC, not of corpus).
+
+**Priced with CPython's own `ast` before the method existed, then measured again on the shipped
+analyzer.** `.tmp-py/price-module-bindings.py` walks the module body and every class body of the
+verdict's population, descending compounds and never entering a new scope: **351 module `for` targets,
+98 `with … as`, 48 `except … as`, 6 module-scope walrus targets in 283 files, plus 13 `for` targets in
+class bodies — 516 binder rows**, and exactly ONE residual row depends on them (the wagtail one).
+`.tmp-py/probe-binder-row-gap.mts` then ran the SHIPPED analyzer over exactly the priced files and
+closed the arithmetic in both directions: **480 symbols carry `metadata.boundByBinder`**, and **every
+one of them is named by a priced row — 0 un-named**; the walk DEDUPES a row whose name the file
+already declares in that scope, measured as **41 rows naming a symbol without the field**
+(34 `for` + 1 `with … as` + the 6 walrus targets, whose names are bound by an assignment already).
+The price's 516 is a LOWER BOUND on what the analyzer may publish, because CPython rejects 56 of the
+11,488 files and tree-sitter is error-tolerant: `.tmp-py/census-bound-by-binder-failed.mts` reads
+those 56 separately and finds **14 more** binder symbols in them (13 `for`, 1 `with` —
+`docker/daemon/libnetwork/cmd/ssd/ssd.py` alone contributes 9, plus hledger's regression tool and two
+nvim-treesitter fragments). Measured total: **480 + 14 = 494**, which is the corpus-wide symbol delta
+of this round (206,445 -> 206,939, 206,939 re-counted by the census itself) to the digit — every symbol
+the round added is one of these binders.
+
+**The provenance field does NOT cross the worker boundary, and that is declared rather than papered
+over.** `.tmp-py/seam-metadata-probe.mts` runs both entry points over the priced files and compares
+metadata KEY SETS: the analyzer publishes **17** symbol-provenance keys and `parseFile` carries **1**
+(`superTypes` 505 -> 388, the key the php lane added when its owner pass needed the ancestor column).
+`pythonSpecific`, `isModuleVariable`, `hasTypeHints`, `isAsync`, `isClassMethod`, `isAbstract`,
+`isClassVariable`, `hasDocstring`, `isInstanceAttribute`, `baseClasses`, `isEnum`, `multiTargetForm`,
+`boundByBinder`, `isEnumMember`, `isNestedClass` and `boundByGlobalWrite` all measure **0%** survival,
+because `src/ast/pool-worker.ts`'s projection is a per-key allowlist and the allowlist's rule is that
+it names keys a READER CONSUMES. A fixture cannot see this — `run-fixtures.ts` calls the analyzer
+directly, `engine.parseFile` never crosses the worker — which is MD-5's "unpinnable" shape exactly.
+The SYMBOL crosses, which is what this round's mechanism is for; the FIELD is analyzer-side only, and
+it is recorded as PY-D26 in `docs/analyzers/LAPTOP-B-STATUS.md` with its numbers instead of being
+widened into the allowlist without a consumer.
+
+**PY-D24 — a member read is not a name.** `isinstance(x, self._self_owner)` is not a statement about
+a project-wide type called `_self_owner`; it is a read of a member on an object whose type nothing in
+the file states. The emitter published the last identifier as the target and the whole spelling as
+`metadata.qualified`, so the edge named a name the file never declares, and the verdict could only
+call it UNEXPLAINED (measured: exactly 3 rows — `_self_owner`, `related_model`,
+`PasslibHashWarning`). `dynamicTypeBindingReason` now answers `member-read` when the leaf is the LAST
+named child of an `attribute` (the MEMBER, never the receiver) and the attribute's root is a LOCAL of
+an enclosing function. Both guards are load-bearing and both are pinned as mutants: without the
+last-named-child test the RECEIVER leaf fires the rule and a reference to a genuine local is
+relabelled `member-read` (the probe caught three rows of that before the rule shipped), and without
+the receiver guard an import-bound root (`nn.Module`) would lose its `qualified-external` route and a
+class this file declares (`Config.DEFAULTS`) would lose its chance to resolve against the store. The
+fourth row in that cluster is `gdb.SignalEvent`, whose ROOT is bound by nothing — the rule does NOT
+cover it, and it is covered by the verdict's `not-bound-in-file` axis instead (round 12, PY-D25).
+
+### The class half is addressed by name AND line, and the truth extractor is what found it
+### (round 13, 2026-10-12)
+
+Round 12 published binder members and the differential's cython lane went from `unexplained=0` to
+`unexplained=3`, all `contains`, all in `cython/tests/run/py_classbody.py` (lines 52, 55 and 58
+binding `i`, `k` and `m`) — three `for` targets written directly in a class body. Round 13 closed it
+on the TRUTH side, where the gap was: the lane's oracle (`script/m14/oracles/python-truth.ts`) derived
+class members from `def` and `=`, so it could not state a binding the language writes and that very
+file's doctest exercises (`ForLoopInPyClass.k` → `0`, `.m` → `1`). The extractor now derives
+`for_statement` / `with_item` / `except_clause` at class scope — and a class-body assignment whose
+target is a PATTERN — with each name carrying the TARGET node's own line, because `contains` resolves
+by name AND line, and with the `as` shapes read through the same accessor the analyzer uses.
+
+The falsification is the round's evidence, and it is two whole-corpus runs rather than an argument:
+with the clause removed the FULL 475-file cython corpus reads `tree-truth=92,210 … unexplained=3
+(0%) MISSING=0`, naming exactly those three rows; restored it reads `92,213 … unexplained=0 (0%)
+MISSING=0`, with the SAME `analyzer-edges=28,012` and the same run hash — the clause adds exactly the
+3 truth edges it explains and moves no analyzer edge (`.tmp-py/round13-falsification-off.log`,
+`.tmp-py/round13-falsification-on.log`). Requests (37 files) and the cython canonical rotation both
+read `unexplained=0`.
+
+Deriving per site is what exposed the analyzer inconsistency described above — one member published
+per NAME where every other class-member path publishes per SITE. The class half is per site now, the
+module half per name, and both prices are written down. Fixtures **51/51**, mutants **50/50 caught**
+(including `round13/class-binder-per-name-dedupe-restored`), `tsc --noEmit` clean, inventory
+`--lang python` sections A–H **8/8**, python's label-coverage row clean, and the spec records the rule
+as **PY-D27**.
+
 ## Census
 
 - Baseline (M12 issue #166): 5 census regex entries in `real-python-analyzer.ts`.
