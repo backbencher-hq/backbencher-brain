@@ -2,7 +2,7 @@
   "issue": "495",
   "code": "V1",
   "status": "verified",
-  "currentCommit": "6efb33c2c05fa189205321a4bee43fd88e8a7a38",
+  "currentCommit": "f289523ba4937eca5c4bcc5be71b836ee2d96933",
   "sourceFingerprint": "115d5d1ad87e92e79617478f0600ed6829c5b2d73db91f70a740b336d8fcb2c8",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -12,7 +12,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-harness.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-10-12T01:13:49.910Z",
+  "generatedAt": "2026-10-12T02:22:08.814Z",
   "passed": 24,
   "failed": 0,
   "failures": [],
@@ -26,7 +26,7 @@
     {
       "runtime": "node-source",
       "status": "verified",
-      "commit": "6efb33c2c05fa189205321a4bee43fd88e8a7a38",
+      "commit": "f289523ba4937eca5c4bcc5be71b836ee2d96933",
       "machine": {
         "kernel": "Darwin 23.6.0",
         "kernelSource": "os.type() + os.release()",
@@ -46,43 +46,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 17.925866999999926,
+          "p95WarmMs": 18.793783000000076,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 5.404550000000199,
+          "p95WarmMs": 5.3757430000005115,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 6.283108999999968,
+          "p95WarmMs": 5.775727000000188,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 12.01538999999957,
+          "p95WarmMs": 5.649302999999236,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 5.557165000000168,
+          "p95WarmMs": 5.278473999999733,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 6.326600000000326,
+          "p95WarmMs": 5.687649999999849,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 9.939382000000478,
+          "p95WarmMs": 9.921709000000192,
           "samples": 60,
           "passed": true
         }
@@ -91,7 +91,7 @@
     {
       "runtime": "node-dist",
       "status": "verified",
-      "commit": "6efb33c2c05fa189205321a4bee43fd88e8a7a38",
+      "commit": "f289523ba4937eca5c4bcc5be71b836ee2d96933",
       "machine": {
         "kernel": "Darwin 23.6.0",
         "kernelSource": "os.type() + os.release()",
@@ -111,43 +111,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 13.820380000001023,
+          "p95WarmMs": 12.992851000000883,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 5.382997000000614,
+          "p95WarmMs": 5.270915000000969,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 5.828127000000677,
+          "p95WarmMs": 6.215481999999611,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 5.541763999999603,
+          "p95WarmMs": 5.449225000000297,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 5.626255000001038,
+          "p95WarmMs": 5.137946999999258,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 5.746703000000707,
+          "p95WarmMs": 5.617120999999315,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 9.217484000000695,
+          "p95WarmMs": 8.72602199999892,
           "samples": 60,
           "passed": true
         }
@@ -157,7 +157,7 @@
       "runtime": "bun-source",
       "status": "blocked",
       "reason": "bun runtime not found on PATH",
-      "commit": "6efb33c2c05fa189205321a4bee43fd88e8a7a38",
+      "commit": "f289523ba4937eca5c4bcc5be71b836ee2d96933",
       "machine": {
         "kernel": "Darwin 23.6.0",
         "kernelSource": "os.type() + os.release()",
@@ -249,7 +249,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T01:13:49.912Z",
-    "contentSha256": "0955408692b8d808ce3072fb367bd6bfe53ad09d08df863c6dcb6bd2652bb000"
+    "sealedAt": "2026-10-12T02:22:08.816Z",
+    "contentSha256": "449d0fa81b564e08d58e8bbea462206e6689ac94d23429aa63ba6d630af41998"
   }
 }

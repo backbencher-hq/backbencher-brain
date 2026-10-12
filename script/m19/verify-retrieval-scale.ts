@@ -17,6 +17,7 @@ import { getProjectId } from "../../src/cli/index"
 import { searchSymbols } from "../../src/intelligence/search/symbol-search"
 import { searchContent } from "../../src/intelligence/search/content-search"
 import { semanticVectorSearch } from "../../src/intelligence/search/semantic-search"
+import { resolveOptionalCorpus } from "../lib/optional-corpus.ts"
 
 let checks = 0, passed = 0, failed = 0
 function ck(label: string, cond: boolean, detail?: string) {
@@ -28,7 +29,15 @@ const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT_DIR, "validation/m19/results")
 if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 
-const REPO = "$HOME/intellij-community"
+// WAS: a literal foreign path — the owner's clone on the OTHER laptop. This machine has
+//  no such checkout, so the gate measured nothing: one crashed, one reported 5/7 with the
+//  corpus legs silently absent, one reported 0/16. Three shapes for one condition.
+//
+//  Now resolved through script/lib/optional-corpus.ts: env override, then the known
+//  locations, and when none exists a DECLARED BLOCK naming every path searched — so
+//  "not available here" reads differently from "the measurement failed".
+
+const REPO = resolveOptionalCorpus("intellij-community", "BB_GIANT_REPO") ?? "REPO_UNRESOLVED"
 const MACHINE = { platform: process.platform, arch: process.arch, cpu: (cpus() || []).slice(0, 2).map((c) => c.model.trim()).join(" | "), ramGb: Math.round((totalmem() / 1024 ** 3) * 10) / 10 }
 
 // Verified intellij names (grep + present in the index).
