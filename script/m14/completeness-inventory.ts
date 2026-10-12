@@ -1004,6 +1004,38 @@ async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   return named
 }
 
+/**
+ * EVERY symbol the pinned wasm declares — named node types AND the anonymous
+ * punctuation/keyword tokens — plus the universal ERROR/MISSING pair.
+ *
+ * The reverse of section A (`a classified row the grammar no longer produces`)
+ * needs this set, not `loadNamedNodeTypes`. Measured on the pinned haskell wasm:
+ * `stale` read 58 rows against the NAMED set and 4 against this one — 54 of them
+ * were real grammar symbols the lane classifies BY CONTRACT (`|]`, `::`, `where`,
+ * `stock`, …), and an anonymous token is exactly what a lane's analyzer branches
+ * on when it reads a keyword. The house rule already permits those rows
+ * (`verify-fixture-coverage.ts`: "specs legitimately declare keyword tokens (`if`,
+ * `begin`, `as`) as handled and analyzers do branch on them"), so a drift check
+ * that can only ever be satisfied by a NAMED type was reporting correct rows as
+ * grammar drift — the same defect the ERROR/MISSING injection above fixes, one
+ * symbol class over.
+ */
+async function loadAllNodeTypes(cfg: LangConfig): Promise<string[]> {
+  const wts: any = await import("web-tree-sitter")
+  const P = wts.Parser ?? wts.default ?? wts
+  const L = wts.Language ?? wts.default?.Language
+  await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
+  const g = await L.load(fs.readFileSync(path.join(ROOT, "wasm", cfg.wasm)))
+  const all = new Set<string>()
+  for (let i = 0; i < g.nodeTypeCount; i++) {
+    const n = g.nodeTypeForId(i)
+    if (n && !n.startsWith("_")) all.add(n)
+  }
+  if (!all.has("ERROR")) all.add("ERROR")   // produced by every parser; not in the ABI list
+  if (!all.has("MISSING")) all.add("MISSING")
+  return [...all]
+}
+
 function loadSpec(cfg: LangConfig) {
   const spec = JSON.parse(fs.readFileSync(path.join(ROOT, "script", "m14", "spec", cfg.classification), "utf8"))
   // Typed as `Set<string>`, not left to inference off an `any` spec: without the
@@ -1256,11 +1288,24 @@ function verifySectionH(): SectionCheck {
 
 async function runLang(cfg: LangConfig): Promise<{ checks: SectionCheck[]; summary: string; failures: number }> {
   const types = await loadNamedNodeTypes(cfg)
+  const allTypes = new Set(await loadAllNodeTypes(cfg))
   const { spec, handled, silent, gapTypes, decisionTypes } = loadSpec(cfg)
 
   const classified = (t: string) => handled.has(t) || silent.has(t) || gapTypes.has(t) || decisionTypes.has(t)
   const unclassified = types.filter((t) => !classified(t))
-  const staleRows = [...handled, ...silent].filter((t) => !types.includes(t))
+  // The reverse direction, measured against EVERY symbol the wasm declares (see
+  // `loadAllNodeTypes`), and split by what the offending row actually is:
+  //   drift — a spelling the pinned grammar no longer declares (a real finding:
+  //           objc `alignas_specifier` was renamed in the pinned objc grammar);
+  //   prose — a `node_type` field holding a SENTENCE, which `loadSpec` splits on
+  //           commas and treats as type names, so its tail becomes bogus rows too
+  //           (cpp's "partial/explicit class template specializations (template
+  //           <typename T> class Box<T*>; …)"). A field names grammar node types;
+  //           prose belongs in the record's own description field.
+  const notDeclared = [...handled, ...silent].filter((t) => !allTypes.has(t))
+  const isProse = (t: string) => /\s/.test(t) || /[()<>;'\"“]/.test(t)
+  const proseRows = notDeclared.filter(isProse)
+  const staleRows = notDeclared.filter((t) => !isProse(t))
 
   let failures = 0
   if (unclassified.length > 0) {
@@ -1271,6 +1316,10 @@ async function runLang(cfg: LangConfig): Promise<{ checks: SectionCheck[]; summa
     failures++
     console.error(`${cfg.id} COMPLETENESS FAIL: ${staleRows.length} classified row(s) no longer produced by the wasm (grammar drift?): ${staleRows.join(", ")}`)
   }
+  if (proseRows.length > 0) {
+    failures++
+    console.error(`${cfg.id} COMPLETENESS FAIL: ${proseRows.length} classified row(s) are not grammar symbols (prose in a node_type field): ${proseRows.join(", ")}`)
+  }
 
   const checks: SectionCheck[] = [
     {
@@ -1278,6 +1327,24 @@ async function runLang(cfg: LangConfig): Promise<{ checks: SectionCheck[]; summa
       description: `every named node type classified (${cfg.id})`,
       status: unclassified.length === 0 ? "pass" : "fail",
       detail: `${types.length} types, ${handled.size} handled, ${silent.size} silent, ${spec.gap.gaps.length} gaps, ${spec.design_decision.decisions.length} decisions`,
+    },
+    // THE REVERSE DIRECTION, as its own row. It used to exist only as a stderr
+    // line: `failures++` without a check, so a lane with 48 such rows could still
+    // publish a record whose section list read all-pass — the same defect the
+    // derived `inventory-fully-classified` row has (fixed above). A measurement
+    // that cannot appear in the evidence is a measurement no consumer can audit.
+    {
+      id: "section-a-classified-rows",
+      description: `every classified row is a symbol the pinned wasm declares (${cfg.id})`,
+      status: staleRows.length === 0 && proseRows.length === 0 ? "pass" : "fail",
+      detail:
+        staleRows.length === 0 && proseRows.length === 0
+          ? `${handled.size + silent.size} classified rows, all declared by the pinned grammar`
+          : [
+              staleRows.length ? `not declared by ${cfg.wasm} (grammar drift): ${staleRows.slice(0, 12).join(", ")}${staleRows.length > 12 ? ` (+${staleRows.length - 12})` : ""}` : null,
+              proseRows.length ? `not grammar symbols at all (prose in a node_type field): ${proseRows.slice(0, 4).map((p) => JSON.stringify(p.slice(0, 60))).join(", ")}${proseRows.length > 4 ? ` (+${proseRows.length - 4})` : ""}` : null,
+              `${allTypes.size} symbols declared (named + anonymous + ERROR/MISSING)`,
+            ].filter(Boolean).join(" | "),
     },
     await verifySectionB(cfg),
     verifySectionC(cfg),

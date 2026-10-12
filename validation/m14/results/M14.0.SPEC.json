@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "15d20b17bdd1fb7669c380dd00453cd7d1a3f060264ccadef6184af1b1ce37bb",
-    "sealedAt": "2026-10-12T15:38:21.691Z"
+    "contentSha256": "876d8c248fd60825e7875d3c72de9f853856ef76240111a47cf5e046d1772c42",
+    "sealedAt": "2026-10-12T15:42:25.270Z"
   },
   "checks": [
     {
@@ -28,6 +28,13 @@
       "description": "every named node type classified (bash)",
       "detail": "87 types, 32 handled, 28 silent, 1 gaps, 17 decisions",
       "id": "section-a-structural",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
+      "description": "every classified row is a symbol the pinned wasm declares (bash)",
+      "detail": "60 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
       "language": "bash",
       "status": "pass"
     },
@@ -107,6 +114,13 @@
       "status": "pass"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (java)",
+      "detail": "132 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "java",
+      "status": "pass"
+    },
+    {
       "description": "11 relationship kinds pinned by java fixtures; 10 emitted and all accounted for",
       "detail": "pinned: array_creation, calls, cast_target, class_literal, config_property, constructor_invocation, contains, declared_type, exports, extends, implements, imports, instantiates, java_exportable_unit, mapped_column, mapped_table, method_reference_receiver, module_exports, module_exports_mention, module_exports_package_to, module_opens_package, module_opens_package_to, module_provides_service, module_provides_service_with, module_requires, module_requires_mention, module_uses_provided_type, overrides, permits, record_pattern, references, single_type_import, static_member_import, switch_pattern, throws_type, type_on_demand_import, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
@@ -182,6 +196,13 @@
       "status": "fail"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (groovy)",
+      "detail": "146 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "groovy",
+      "status": "pass"
+    },
+    {
       "description": "9 relationship kinds pinned by groovy fixtures; 10 emitted and all accounted for",
       "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
       "id": "section-b-relationship-kinds",
@@ -253,6 +274,13 @@
       "description": "every named node type classified (kotlin)",
       "detail": "154 types, 68 handled, 45 silent, 9 gaps, 22 decisions",
       "id": "section-a-structural",
+      "language": "kotlin",
+      "status": "pass"
+    },
+    {
+      "description": "every classified row is a symbol the pinned wasm declares (kotlin)",
+      "detail": "113 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
       "language": "kotlin",
       "status": "pass"
     },
@@ -332,6 +360,13 @@
       "status": "pass"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (scala)",
+      "detail": "144 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
       "description": "9 relationship kinds pinned by scala fixtures; 10 emitted and all accounted for",
       "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
       "id": "section-b-relationship-kinds",
@@ -403,6 +438,13 @@
       "description": "every named node type classified (typescript)",
       "detail": "193 types, 108 handled, 73 silent, 9 gaps, 11 decisions",
       "id": "section-a-structural",
+      "language": "typescript",
+      "status": "pass"
+    },
+    {
+      "description": "every classified row is a symbol the pinned wasm declares (typescript)",
+      "detail": "181 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
       "language": "typescript",
       "status": "pass"
     },
@@ -482,6 +524,13 @@
       "status": "pass"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (javascript)",
+      "detail": "107 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
       "description": "9 relationship kinds pinned by javascript fixtures; 9 emitted and all accounted for",
       "detail": "pinned: calls, contains, exports, extends, imports, instanceof_check, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
@@ -553,6 +602,13 @@
       "description": "every named node type classified (vue)",
       "detail": "39 types, 22 handled, 6 silent, 4 gaps, 46 decisions",
       "id": "section-a-structural",
+      "language": "vue",
+      "status": "pass"
+    },
+    {
+      "description": "every classified row is a symbol the pinned wasm declares (vue)",
+      "detail": "28 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
       "language": "vue",
       "status": "pass"
     },
@@ -632,6 +688,13 @@
       "status": "pass"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (svelte)",
+      "detail": "55 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "svelte",
+      "status": "pass"
+    },
+    {
       "description": "10 relationship kinds pinned by svelte fixtures; 10 emitted and all accounted for",
       "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
@@ -703,6 +766,13 @@
       "description": "every named node type classified (c)",
       "detail": "165 types, 25 handled, 105 silent, 0 gaps, 24 decisions",
       "id": "section-a-structural",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": "every classified row is a symbol the pinned wasm declares (c)",
+      "detail": "130 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
       "language": "c",
       "status": "pass"
     },
@@ -782,6 +852,13 @@
       "status": "fail"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (cpp)",
+      "detail": "191 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
       "description": "7 relationship kinds pinned by cpp fixtures; 10 emitted and all accounted for",
       "detail": "EMITTED but absent from requiredKinds: contains, exports, implements — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
       "id": "section-b-relationship-kinds",
@@ -853,6 +930,13 @@
       "description": "every named node type classified (rust)",
       "detail": "187 types, 43 handled, 122 silent, 0 gaps, 43 decisions",
       "id": "section-a-structural",
+      "language": "rust",
+      "status": "pass"
+    },
+    {
+      "description": "every classified row is a symbol the pinned wasm declares (rust)",
+      "detail": "165 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
       "language": "rust",
       "status": "pass"
     },
@@ -932,6 +1016,13 @@
       "status": "pass"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (go)",
+      "detail": "105 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "go",
+      "status": "pass"
+    },
+    {
       "description": "8 relationship kinds pinned by go fixtures; 10 emitted and all accounted for",
       "detail": "EMITTED but absent from requiredKinds: exports, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
       "id": "section-b-relationship-kinds",
@@ -1003,6 +1094,13 @@
       "description": "every named node type classified (zig)",
       "detail": "98 types, 17 handled, 83 silent, 5 gaps, 68 decisions",
       "id": "section-a-structural",
+      "language": "zig",
+      "status": "pass"
+    },
+    {
+      "description": "every classified row is a symbol the pinned wasm declares (zig)",
+      "detail": "100 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
       "language": "zig",
       "status": "pass"
     },
@@ -1082,6 +1180,13 @@
       "status": "pass"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (csharp)",
+      "detail": "217 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
       "description": "9 relationship kinds pinned by csharp fixtures; 10 emitted and all accounted for",
       "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
       "id": "section-b-relationship-kinds",
@@ -1153,6 +1258,13 @@
       "description": "every named node type classified (dart)",
       "detail": "224 types, 96 handled, 107 silent, 6 gaps, 34 decisions",
       "id": "section-a-structural",
+      "language": "dart",
+      "status": "pass"
+    },
+    {
+      "description": "every classified row is a symbol the pinned wasm declares (dart)",
+      "detail": "203 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
       "language": "dart",
       "status": "pass"
     },
@@ -1232,6 +1344,13 @@
       "status": "pass"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (swift)",
+      "detail": "178 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
       "description": "8 relationship kinds pinned by swift fixtures; 10 emitted and all accounted for",
       "detail": "EMITTED but absent from requiredKinds: exports, imports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
       "id": "section-b-relationship-kinds",
@@ -1303,6 +1422,13 @@
       "description": "every named node type classified (objc)",
       "detail": "224 types, 43 handled, 142 silent, 3 gaps, 17 decisions",
       "id": "section-a-structural",
+      "language": "objc",
+      "status": "fail"
+    },
+    {
+      "description": "every classified row is a symbol the pinned wasm declares (objc)",
+      "detail": "not declared by tree-sitter-objc.wasm (grammar drift): alignas_specifier | 468 symbols declared (named + anonymous + ERROR/MISSING)",
+      "id": "section-a-classified-rows",
       "language": "objc",
       "status": "fail"
     },
@@ -1382,6 +1508,13 @@
       "status": "pass"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (php)",
+      "detail": "159 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "php",
+      "status": "pass"
+    },
+    {
       "description": "9 relationship kinds pinned by php fixtures; 10 emitted and all accounted for",
       "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
       "id": "section-b-relationship-kinds",
@@ -1453,6 +1586,13 @@
       "description": "every named node type classified (ruby)",
       "detail": "160 types, 120 handled, 12 silent, 0 gaps, 25 decisions",
       "id": "section-a-structural",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "every classified row is a symbol the pinned wasm declares (ruby)",
+      "detail": "132 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
       "language": "ruby",
       "status": "pass"
     },
@@ -1532,6 +1672,13 @@
       "status": "pass"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (python)",
+      "detail": "125 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "python",
+      "status": "pass"
+    },
+    {
       "description": "9 relationship kinds pinned by python fixtures; 10 emitted and all accounted for",
       "detail": "EMITTED but absent from requiredKinds: implements — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
       "id": "section-b-relationship-kinds",
@@ -1607,6 +1754,13 @@
       "status": "pass"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (haskell)",
+      "detail": "not declared by tree-sitter-haskell.wasm (grammar drift): _ | 289 symbols declared (named + anonymous + ERROR/MISSING)",
+      "id": "section-a-classified-rows",
+      "language": "haskell",
+      "status": "fail"
+    },
+    {
       "description": "6 relationship kinds pinned by haskell fixtures; 10 emitted and all accounted for",
       "detail": "EMITTED but absent from requiredKinds: exports, imports, overrides, uses — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
       "id": "section-b-relationship-kinds",
@@ -1678,6 +1832,13 @@
       "description": "every named node type classified (hcl)",
       "detail": "66 types, 57 handled, 9 silent, 0 gaps, 8 decisions",
       "id": "section-a-structural",
+      "language": "hcl",
+      "status": "pass"
+    },
+    {
+      "description": "every classified row is a symbol the pinned wasm declares (hcl)",
+      "detail": "66 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
       "language": "hcl",
       "status": "pass"
     },
@@ -1757,6 +1918,13 @@
       "status": "pass"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (xml)",
+      "detail": "53 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "xml",
+      "status": "pass"
+    },
+    {
       "description": "3 relationship kinds pinned by xml fixtures; 7 emitted and all accounted for",
       "detail": "EMITTED but absent from requiredKinds: calls, extends, overrides, uses — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
       "id": "section-b-relationship-kinds",
@@ -1828,6 +1996,13 @@
       "description": "every named node type classified (make)",
       "detail": "48 types, 32 handled, 12 silent, 4 gaps, 5 decisions",
       "id": "section-a-structural",
+      "language": "make",
+      "status": "pass"
+    },
+    {
+      "description": "every classified row is a symbol the pinned wasm declares (make)",
+      "detail": "44 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
       "language": "make",
       "status": "pass"
     },
@@ -1907,6 +2082,13 @@
       "status": "pass"
     },
     {
+      "description": "every classified row is a symbol the pinned wasm declares (perl)",
+      "detail": "128 classified rows, all declared by the pinned grammar",
+      "id": "section-a-classified-rows",
+      "language": "perl",
+      "status": "pass"
+    },
+    {
       "description": "6 relationship kinds pinned by perl fixtures; 8 emitted and all accounted for",
       "detail": "EMITTED but absent from requiredKinds: references, uses — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
       "id": "section-b-relationship-kinds",
@@ -1957,8 +2139,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "3878e5add3078b8bc5d78d3634218385740a3537",
-  "committedAt": "2026-10-12T11:25:49-04:00",
+  "commit": "052413ad6b5d6c9d75e7761b527a4ba5be6b9f9f",
+  "committedAt": "2026-10-12T11:39:48-04:00",
   "data": {
     "languages": {
       "bash": {
@@ -1987,6 +2169,10 @@
           "BD8b"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "60 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "87 types, 32 handled, 28 silent, 1 gaps, 17 decisions",
             "status": "pass"
@@ -2053,6 +2239,10 @@
           "HC7"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "130 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "165 types, 25 handled, 105 silent, 0 gaps, 24 decisions",
             "status": "pass"
@@ -2121,6 +2311,10 @@
           "CP8"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "191 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "262 types, 44 handled, 147 silent, 0 gaps, 26 decisions",
             "status": "fail"
@@ -2177,6 +2371,10 @@
           "CS-C4"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "217 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "241 types, 52 handled, 165 silent, 0 gaps, 14 decisions",
             "status": "pass"
@@ -2260,6 +2458,10 @@
           "DT2-D"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "203 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "224 types, 96 handled, 107 silent, 6 gaps, 34 decisions",
             "status": "pass"
@@ -2367,6 +2569,10 @@
           "GO41"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "105 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "109 types, 37 handled, 68 silent, 3 gaps, 61 decisions",
             "status": "pass"
@@ -2436,6 +2642,10 @@
           "S5"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "146 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "165 types, 73 handled, 73 silent, 8 gaps, 18 decisions",
             "status": "fail"
@@ -2500,6 +2710,10 @@
           "HS-D11"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "not declared by tree-sitter-haskell.wasm (grammar drift): _ | 289 symbols declared (named + anonymous + ERROR/MISSING)",
+            "status": "fail"
+          },
           "section-a-structural": {
             "detail": "255 types, 54 handled, 134 silent, 10 gaps, 12 decisions",
             "status": "pass"
@@ -2549,6 +2763,10 @@
           "HCL-D8"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "66 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "66 types, 57 handled, 9 silent, 0 gaps, 8 decisions",
             "status": "pass"
@@ -2625,6 +2843,10 @@
           "JDJ-2"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "132 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "145 types, 71 handled, 61 silent, 4 gaps, 29 decisions",
             "status": "pass"
@@ -2734,6 +2956,10 @@
           "JSD49"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "107 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "127 types, 88 handled, 19 silent, 14 gaps, 52 decisions",
             "status": "pass"
@@ -2808,6 +3034,10 @@
           "KDJ-3"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "113 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "154 types, 68 handled, 45 silent, 9 gaps, 22 decisions",
             "status": "pass"
@@ -2859,6 +3089,10 @@
           "MAKE-D5"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "44 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "48 types, 32 handled, 12 silent, 4 gaps, 5 decisions",
             "status": "pass"
@@ -2922,6 +3156,10 @@
           "OC-R3"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "not declared by tree-sitter-objc.wasm (grammar drift): alignas_specifier | 468 symbols declared (named + anonymous + ERROR/MISSING)",
+            "status": "fail"
+          },
           "section-a-structural": {
             "detail": "224 types, 43 handled, 142 silent, 3 gaps, 17 decisions",
             "status": "fail"
@@ -2977,6 +3215,10 @@
           "PERLD14"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "128 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "170 types, 53 handled, 75 silent, 0 gaps, 14 decisions",
             "status": "pass"
@@ -3053,6 +3295,10 @@
           "PHPD34"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "159 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "179 types, 66 handled, 93 silent, 0 gaps, 34 decisions",
             "status": "pass"
@@ -3103,6 +3349,10 @@
           "PY-D8"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "125 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "130 types, 60 handled, 65 silent, 0 gaps, 8 decisions",
             "status": "pass"
@@ -3169,6 +3419,10 @@
           "RB-K"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "132 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "160 types, 120 handled, 12 silent, 0 gaps, 25 decisions",
             "status": "pass"
@@ -3254,6 +3508,10 @@
           "RUST-D30"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "165 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "187 types, 43 handled, 122 silent, 0 gaps, 43 decisions",
             "status": "pass"
@@ -3356,6 +3614,10 @@
           "ScalaD-C"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "144 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "191 types, 135 handled, 9 silent, 9 gaps, 50 decisions",
             "status": "pass"
@@ -3436,6 +3698,10 @@
           "D12"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "55 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "76 types, 34 handled, 21 silent, 25 gaps, 12 decisions",
             "status": "pass"
@@ -3512,6 +3778,10 @@
           "SW-R3"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "178 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "187 types, 60 handled, 118 silent, 3 gaps, 30 decisions",
             "status": "pass"
@@ -3575,6 +3845,10 @@
           "D10"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "181 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "193 types, 108 handled, 73 silent, 9 gaps, 11 decisions",
             "status": "pass"
@@ -3668,6 +3942,10 @@
           "VSD50"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "28 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "39 types, 22 handled, 6 silent, 4 gaps, 46 decisions",
             "status": "pass"
@@ -3722,6 +4000,10 @@
           "XML-ONTOLOGY-INSTANTIATES"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "53 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "56 types, 28 handled, 25 silent, 0 gaps, 12 decisions",
             "status": "pass"
@@ -3838,6 +4120,10 @@
           "Z34"
         ],
         "sections": {
+          "section-a-classified-rows": {
+            "detail": "100 classified rows, all declared by the pinned grammar",
+            "status": "pass"
+          },
           "section-a-structural": {
             "detail": "98 types, 17 handled, 83 silent, 5 gaps, 68 decisions",
             "status": "pass"
@@ -3899,8 +4185,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-12T15:38:21.689Z",
-  "regeneratedAtCommit": "3878e5add3078b8bc5d78d3634218385740a3537",
+  "regeneratedAt": "2026-10-12T15:42:25.267Z",
+  "regeneratedAtCommit": "052413ad6b5d6c9d75e7761b527a4ba5be6b9f9f",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
