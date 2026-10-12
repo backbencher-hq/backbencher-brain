@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "b6f3232789eafdb1ddc93df0cd6aa95381b1af2f79949d3c577849b03d76bbb1",
-    "sealedAt": "2026-10-12T15:58:38.421Z"
+    "contentSha256": "1ccc150f40165a8cc48cad1f330ca0226fda141dd31102cf36a3527915923b53",
+    "sealedAt": "2026-10-12T17:38:50.000Z"
   },
   "checks": [
     {
@@ -60,15 +60,22 @@
       "status": "pass"
     },
     {
+      "description": "otp:bash's corpus is declared in differential.ts",
+      "detail": "otp is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
       "description": "otp:bash floor row present",
-      "detail": "no baseline floor row for otp:bash",
+      "detail": "no floor row for otp:bash — recorded reason: measured but not pinned: missing=0 unexplained=5 — pinning would bury a real anomaly (#870) (at 481fc4c4fe)",
       "id": "section-e-differential",
       "language": "bash",
       "status": "fail"
     },
     {
       "description": "bash avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "no avgMsPerFile for otp:bash",
+      "detail": "no avgMsPerFile for otp:bash — recorded reason: measured but not pinned: missing=0 unexplained=5 — pinning would bury a real anomaly (#870)",
       "id": "section-f-perf-budget",
       "language": "bash",
       "status": "fail"
@@ -138,6 +145,13 @@
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
       "detail": "2 tier(s) pinned: import_based, structural",
       "id": "section-d-evidence-tiers",
+      "language": "java",
+      "status": "pass"
+    },
+    {
+      "description": "grails-core:java's corpus is declared in differential.ts",
+      "detail": "grails-core is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
       "language": "java",
       "status": "pass"
     },
@@ -224,6 +238,13 @@
       "status": "pass"
     },
     {
+      "description": "grails-core:groovy's corpus is declared in differential.ts",
+      "detail": "grails-core is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "groovy",
+      "status": "pass"
+    },
+    {
       "description": "grails-core:groovy at corpus floor (missing 0, unexplained 0)",
       "detail": "floor grails-core:groovy: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
@@ -302,6 +323,13 @@
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
       "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
+      "language": "kotlin",
+      "status": "pass"
+    },
+    {
+      "description": "Exposed:kotlin's corpus is declared in differential.ts",
+      "detail": "Exposed is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
       "language": "kotlin",
       "status": "pass"
     },
@@ -388,6 +416,13 @@
       "status": "pass"
     },
     {
+      "description": "scala3:scala's corpus is declared in differential.ts",
+      "detail": "scala3 is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
       "description": "scala3:scala at corpus floor (missing 0, unexplained 0)",
       "detail": "floor scala3:scala: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
@@ -466,6 +501,13 @@
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
       "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
+      "language": "typescript",
+      "status": "pass"
+    },
+    {
+      "description": "vue-core:typescript's corpus is declared in differential.ts",
+      "detail": "vue-core is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
       "language": "typescript",
       "status": "pass"
     },
@@ -552,6 +594,13 @@
       "status": "pass"
     },
     {
+      "description": "lodash:javascript's corpus is declared in differential.ts",
+      "detail": "lodash is the lane's declared SECOND corpus (SECOND_CORPUS)",
+      "id": "section-e-lane-registered",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
       "description": "lodash:javascript at corpus floor (missing 0, unexplained 0)",
       "detail": "floor lodash:javascript: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
@@ -630,6 +679,13 @@
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
       "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
+      "language": "vue",
+      "status": "pass"
+    },
+    {
+      "description": "vue-core:vue's corpus is declared in differential.ts",
+      "detail": "vue-core is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
       "language": "vue",
       "status": "pass"
     },
@@ -716,6 +772,13 @@
       "status": "pass"
     },
     {
+      "description": "svelte:svelte's corpus is declared in differential.ts",
+      "detail": "svelte is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "svelte",
+      "status": "pass"
+    },
+    {
       "description": "svelte:svelte at corpus floor (missing 0, unexplained 0)",
       "detail": "floor svelte:svelte: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
@@ -794,6 +857,13 @@
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
       "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": "jq:c's corpus is declared in differential.ts",
+      "detail": "jq is the lane's declared SECOND corpus (SECOND_CORPUS)",
+      "id": "section-e-lane-registered",
       "language": "c",
       "status": "pass"
     },
@@ -880,6 +950,13 @@
       "status": "pass"
     },
     {
+      "description": "fmt:cpp's corpus is declared in differential.ts",
+      "detail": "fmt is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
       "description": "fmt:cpp at corpus floor (missing 0, unexplained 0)",
       "detail": "floor fmt:cpp: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
@@ -958,6 +1035,13 @@
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
       "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
+      "language": "rust",
+      "status": "pass"
+    },
+    {
+      "description": "ripgrep:rust's corpus is declared in differential.ts",
+      "detail": "ripgrep is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
       "language": "rust",
       "status": "pass"
     },
@@ -1044,6 +1128,13 @@
       "status": "pass"
     },
     {
+      "description": "go-tools:go's corpus is declared in differential.ts",
+      "detail": "go-tools is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "go",
+      "status": "pass"
+    },
+    {
       "description": "go-tools:go at corpus floor (missing 0, unexplained 0)",
       "detail": "floor go-tools:go: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
@@ -1122,6 +1213,13 @@
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
       "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
+      "language": "zig",
+      "status": "pass"
+    },
+    {
+      "description": "zig:zig's corpus is declared in differential.ts",
+      "detail": "zig is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
       "language": "zig",
       "status": "pass"
     },
@@ -1208,6 +1306,13 @@
       "status": "pass"
     },
     {
+      "description": "powershell:csharp's corpus is declared in differential.ts",
+      "detail": "powershell is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
       "description": "powershell:csharp at corpus floor (missing 0, unexplained 0)",
       "detail": "floor powershell:csharp: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
@@ -1286,6 +1391,13 @@
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
       "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
+      "language": "dart",
+      "status": "pass"
+    },
+    {
+      "description": "proxicall:dart's corpus is declared in differential.ts",
+      "detail": "proxicall is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
       "language": "dart",
       "status": "pass"
     },
@@ -1372,6 +1484,13 @@
       "status": "pass"
     },
     {
+      "description": "swift-nio:swift's corpus is declared in differential.ts",
+      "detail": "swift-nio is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
       "description": "swift-nio:swift at corpus floor (missing 0, unexplained 0)",
       "detail": "floor swift-nio:swift: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
@@ -1450,6 +1569,13 @@
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
       "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
+      "language": "objc",
+      "status": "pass"
+    },
+    {
+      "description": "sdwebimage:objc's corpus is declared in differential.ts",
+      "detail": "sdwebimage is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
       "language": "objc",
       "status": "pass"
     },
@@ -1536,6 +1662,13 @@
       "status": "pass"
     },
     {
+      "description": "phpunit:php's corpus is declared in differential.ts",
+      "detail": "phpunit is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "php",
+      "status": "pass"
+    },
+    {
       "description": "phpunit:php at corpus floor (missing 0, unexplained 0)",
       "detail": "floor phpunit:php: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
@@ -1614,6 +1747,13 @@
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
       "detail": "3 tier(s) pinned: inferred, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "rake:ruby's corpus is declared in differential.ts",
+      "detail": "rake is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
       "language": "ruby",
       "status": "pass"
     },
@@ -1700,6 +1840,13 @@
       "status": "pass"
     },
     {
+      "description": "cython:python's corpus is declared in differential.ts",
+      "detail": "cython is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "python",
+      "status": "pass"
+    },
+    {
       "description": "cython:python at corpus floor (missing 0, unexplained 0)",
       "detail": "floor cython:python: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
@@ -1778,6 +1925,13 @@
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
       "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "cabal:haskell's corpus is declared in differential.ts",
+      "detail": "cabal is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
       "language": "haskell",
       "status": "pass"
     },
@@ -1864,15 +2018,22 @@
       "status": "pass"
     },
     {
+      "description": "terraform:hcl's corpus is declared in differential.ts",
+      "detail": "terraform is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "hcl",
+      "status": "pass"
+    },
+    {
       "description": "terraform:hcl floor row present",
-      "detail": "no baseline floor row for terraform:hcl",
+      "detail": "no floor row for terraform:hcl — recorded reason: hcl's 128-line oracle block is not in this tree (dropped by merge 16075a5a1); the corpus IS checked out, so a sweep reaches the lane and derives zero truth edges — the row recovered from bc3bc4de1 is retained as evidence, not as a floor (at bc3bc4de1)",
       "id": "section-e-differential",
       "language": "hcl",
       "status": "fail"
     },
     {
       "description": "hcl avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "no avgMsPerFile for terraform:hcl",
+      "detail": "no avgMsPerFile for terraform:hcl — recorded reason: hcl's 128-line oracle block is not in this tree (dropped by merge 16075a5a1); the corpus IS checked out, so a sweep reaches the lane and derives zero truth edges — the row recovered from bc3bc4de1 is retained as evidence, not as a floor",
       "id": "section-f-perf-budget",
       "language": "hcl",
       "status": "fail"
@@ -1946,15 +2107,22 @@
       "status": "pass"
     },
     {
+      "description": "grails-core:xml's corpus is declared in differential.ts",
+      "detail": "grails-core is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "xml",
+      "status": "pass"
+    },
+    {
       "description": "grails-core:xml floor row present",
-      "detail": "no baseline floor row for grails-core:xml",
+      "detail": "no floor row for grails-core:xml — recorded reason: xml's 324-line oracle block is not in this tree: merge 16075a5a1 dropped it, and the lane had already withdrawn the claim it produced (c82067ea9 — the oracle resolved the XSD namespace for 1 of 62 elements and published `xsd:element` where the analyzer published `component-scan`; CHECK G replaced it). The corpus IS checked out, so a sweep reaches the lane and derives zero truth edges — the row recovered from 7ab888b79 is retained as evidence, not as a floor (at 7ab888b79)",
       "id": "section-e-differential",
       "language": "xml",
       "status": "fail"
     },
     {
       "description": "xml avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "no avgMsPerFile for grails-core:xml",
+      "detail": "no avgMsPerFile for grails-core:xml — recorded reason: xml's 324-line oracle block is not in this tree: merge 16075a5a1 dropped it, and the lane had already withdrawn the claim it produced (c82067ea9 — the oracle resolved the XSD namespace for 1 of 62 elements and published `xsd:element` where the analyzer published `component-scan`; CHECK G replaced it). The corpus IS checked out, so a sweep reaches the lane and derives zero truth edges — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
       "id": "section-f-perf-budget",
       "language": "xml",
       "status": "fail"
@@ -2028,15 +2196,22 @@
       "status": "pass"
     },
     {
+      "description": "tf-aws-components:make's corpus is declared in differential.ts",
+      "detail": "tf-aws-components is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "make",
+      "status": "pass"
+    },
+    {
       "description": "tf-aws-components:make floor row present",
-      "detail": "no baseline floor row for tf-aws-components:make",
+      "detail": "no floor row for tf-aws-components:make — recorded reason: make's 215-line oracle block is not in this tree (dropped by merge 16075a5a1), and the tf-aws-components corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor (at 7ab888b79)",
       "id": "section-e-differential",
       "language": "make",
       "status": "fail"
     },
     {
       "description": "make avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "no avgMsPerFile for tf-aws-components:make",
+      "detail": "no avgMsPerFile for tf-aws-components:make — recorded reason: make's 215-line oracle block is not in this tree (dropped by merge 16075a5a1), and the tf-aws-components corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
       "id": "section-f-perf-budget",
       "language": "make",
       "status": "fail"
@@ -2110,15 +2285,22 @@
       "status": "pass"
     },
     {
+      "description": "mojo:perl's corpus is declared in differential.ts",
+      "detail": "mojo is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "section-e-lane-registered",
+      "language": "perl",
+      "status": "pass"
+    },
+    {
       "description": "mojo:perl floor row present",
-      "detail": "no baseline floor row for mojo:perl",
+      "detail": "no floor row for mojo:perl — recorded reason: perl's oracle (derivePerlEdges + its dispatch block) is not in this tree (dropped by merge 16075a5a1), and the mojo corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor (at 7ab888b79)",
       "id": "section-e-differential",
       "language": "perl",
       "status": "fail"
     },
     {
       "description": "perl avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "no avgMsPerFile for mojo:perl",
+      "detail": "no avgMsPerFile for mojo:perl — recorded reason: perl's oracle (derivePerlEdges + its dispatch block) is not in this tree (dropped by merge 16075a5a1), and the mojo corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
       "id": "section-f-perf-budget",
       "language": "perl",
       "status": "fail"
@@ -2139,8 +2321,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "bd50eafaf58df01714e2987dcba9a0d371261cd9",
-  "committedAt": "2026-10-12T11:49:56-04:00",
+  "commit": "481fc4c4fe4c6d8855b23f5d8591276cab90651b",
+  "committedAt": "2026-10-12T13:38:50-04:00",
   "data": {
     "languages": {
       "bash": {
@@ -2190,11 +2372,15 @@
             "status": "pass"
           },
           "section-e-differential": {
-            "detail": "no baseline floor row for otp:bash",
+            "detail": "no floor row for otp:bash — recorded reason: measured but not pinned: missing=0 unexplained=5 — pinning would bury a real anomaly (#870) (at 481fc4c4fe)",
             "status": "fail"
           },
+          "section-e-lane-registered": {
+            "detail": "otp is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
-            "detail": "no avgMsPerFile for otp:bash",
+            "detail": "no avgMsPerFile for otp:bash — recorded reason: measured but not pinned: missing=0 unexplained=5 — pinning would bury a real anomaly (#870)",
             "status": "fail"
           },
           "section-g-docs": {
@@ -2261,6 +2447,10 @@
           },
           "section-e-differential": {
             "detail": "floor jq:c: missing=0, unexplained=0 — expected 0/0 per C-D4 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-e-lane-registered": {
+            "detail": "jq is the lane's declared SECOND corpus (SECOND_CORPUS)",
             "status": "pass"
           },
           "section-f-perf-budget": {
@@ -2335,6 +2525,10 @@
             "detail": "floor fmt:cpp: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "fmt is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "fmt:cpp 154.1 ms/file",
             "status": "pass"
@@ -2393,6 +2587,10 @@
           },
           "section-e-differential": {
             "detail": "floor powershell:csharp: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-e-lane-registered": {
+            "detail": "powershell is the lane's declared PRIMARY corpus (LANG_REPOS)",
             "status": "pass"
           },
           "section-f-perf-budget": {
@@ -2480,6 +2678,10 @@
           },
           "section-e-differential": {
             "detail": "floor proxicall:dart: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-e-lane-registered": {
+            "detail": "proxicall is the lane's declared PRIMARY corpus (LANG_REPOS)",
             "status": "pass"
           },
           "section-f-perf-budget": {
@@ -2593,6 +2795,10 @@
             "detail": "floor go-tools:go: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "go-tools is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "go-tools:go 36.4 ms/file",
             "status": "pass"
@@ -2666,6 +2872,10 @@
             "detail": "floor grails-core:groovy: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "grails-core is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "grails-core:groovy 17.7 ms/file",
             "status": "pass"
@@ -2734,6 +2944,10 @@
             "detail": "floor cabal:haskell: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "cabal is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "cabal:haskell 11.1 ms/file",
             "status": "pass"
@@ -2784,11 +2998,15 @@
             "status": "pass"
           },
           "section-e-differential": {
-            "detail": "no baseline floor row for terraform:hcl",
+            "detail": "no floor row for terraform:hcl — recorded reason: hcl's 128-line oracle block is not in this tree (dropped by merge 16075a5a1); the corpus IS checked out, so a sweep reaches the lane and derives zero truth edges — the row recovered from bc3bc4de1 is retained as evidence, not as a floor (at bc3bc4de1)",
             "status": "fail"
           },
+          "section-e-lane-registered": {
+            "detail": "terraform is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
-            "detail": "no avgMsPerFile for terraform:hcl",
+            "detail": "no avgMsPerFile for terraform:hcl — recorded reason: hcl's 128-line oracle block is not in this tree (dropped by merge 16075a5a1); the corpus IS checked out, so a sweep reaches the lane and derives zero truth edges — the row recovered from bc3bc4de1 is retained as evidence, not as a floor",
             "status": "fail"
           },
           "section-g-docs": {
@@ -2865,6 +3083,10 @@
           },
           "section-e-differential": {
             "detail": "floor grails-core:java: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-e-lane-registered": {
+            "detail": "grails-core is the lane's declared PRIMARY corpus (LANG_REPOS)",
             "status": "pass"
           },
           "section-f-perf-budget": {
@@ -2980,6 +3202,10 @@
             "detail": "floor lodash:javascript: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "lodash is the lane's declared SECOND corpus (SECOND_CORPUS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "lodash:javascript 1724.9 ms/file",
             "status": "pass"
@@ -3058,6 +3284,10 @@
             "detail": "floor Exposed:kotlin: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "Exposed is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "Exposed:kotlin 99.2 ms/file",
             "status": "pass"
@@ -3110,11 +3340,15 @@
             "status": "pass"
           },
           "section-e-differential": {
-            "detail": "no baseline floor row for tf-aws-components:make",
+            "detail": "no floor row for tf-aws-components:make — recorded reason: make's 215-line oracle block is not in this tree (dropped by merge 16075a5a1), and the tf-aws-components corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor (at 7ab888b79)",
             "status": "fail"
           },
+          "section-e-lane-registered": {
+            "detail": "tf-aws-components is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
-            "detail": "no avgMsPerFile for tf-aws-components:make",
+            "detail": "no avgMsPerFile for tf-aws-components:make — recorded reason: make's 215-line oracle block is not in this tree (dropped by merge 16075a5a1), and the tf-aws-components corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
             "status": "fail"
           },
           "section-g-docs": {
@@ -3180,6 +3414,10 @@
             "detail": "floor sdwebimage:objc: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "sdwebimage is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "sdwebimage:objc 26.6 ms/file",
             "status": "pass"
@@ -3236,11 +3474,15 @@
             "status": "pass"
           },
           "section-e-differential": {
-            "detail": "no baseline floor row for mojo:perl",
+            "detail": "no floor row for mojo:perl — recorded reason: perl's oracle (derivePerlEdges + its dispatch block) is not in this tree (dropped by merge 16075a5a1), and the mojo corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor (at 7ab888b79)",
             "status": "fail"
           },
+          "section-e-lane-registered": {
+            "detail": "mojo is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
-            "detail": "no avgMsPerFile for mojo:perl",
+            "detail": "no avgMsPerFile for mojo:perl — recorded reason: perl's oracle (derivePerlEdges + its dispatch block) is not in this tree (dropped by merge 16075a5a1), and the mojo corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
             "status": "fail"
           },
           "section-g-docs": {
@@ -3319,6 +3561,10 @@
             "detail": "floor phpunit:php: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "phpunit is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "phpunit:php 9.5 ms/file",
             "status": "pass"
@@ -3371,6 +3617,10 @@
           },
           "section-e-differential": {
             "detail": "floor cython:python: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-e-lane-registered": {
+            "detail": "cython is the lane's declared PRIMARY corpus (LANG_REPOS)",
             "status": "pass"
           },
           "section-f-perf-budget": {
@@ -3441,6 +3691,10 @@
           },
           "section-e-differential": {
             "detail": "floor rake:ruby: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-e-lane-registered": {
+            "detail": "rake is the lane's declared PRIMARY corpus (LANG_REPOS)",
             "status": "pass"
           },
           "section-f-perf-budget": {
@@ -3530,6 +3784,10 @@
           },
           "section-e-differential": {
             "detail": "floor ripgrep:rust: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-e-lane-registered": {
+            "detail": "ripgrep is the lane's declared PRIMARY corpus (LANG_REPOS)",
             "status": "pass"
           },
           "section-f-perf-budget": {
@@ -3638,6 +3896,10 @@
             "detail": "floor scala3:scala: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "scala3 is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "scala3:scala 3.8 ms/file",
             "status": "pass"
@@ -3722,6 +3984,10 @@
             "detail": "floor svelte:svelte: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "svelte is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "svelte:svelte 3.6 ms/file",
             "status": "pass"
@@ -3802,6 +4068,10 @@
             "detail": "floor swift-nio:swift: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "swift-nio is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "swift-nio:swift 92.1 ms/file",
             "status": "pass"
@@ -3867,6 +4137,10 @@
           },
           "section-e-differential": {
             "detail": "floor vue-core:typescript: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-e-lane-registered": {
+            "detail": "vue-core is the lane's declared PRIMARY corpus (LANG_REPOS)",
             "status": "pass"
           },
           "section-f-perf-budget": {
@@ -3966,6 +4240,10 @@
             "detail": "floor vue-core:vue: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "vue-core is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "vue-core:vue 142.1 ms/file",
             "status": "pass"
@@ -4021,11 +4299,15 @@
             "status": "pass"
           },
           "section-e-differential": {
-            "detail": "no baseline floor row for grails-core:xml",
+            "detail": "no floor row for grails-core:xml — recorded reason: xml's 324-line oracle block is not in this tree: merge 16075a5a1 dropped it, and the lane had already withdrawn the claim it produced (c82067ea9 — the oracle resolved the XSD namespace for 1 of 62 elements and published `xsd:element` where the analyzer published `component-scan`; CHECK G replaced it). The corpus IS checked out, so a sweep reaches the lane and derives zero truth edges — the row recovered from 7ab888b79 is retained as evidence, not as a floor (at 7ab888b79)",
             "status": "fail"
           },
+          "section-e-lane-registered": {
+            "detail": "grails-core is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
-            "detail": "no avgMsPerFile for grails-core:xml",
+            "detail": "no avgMsPerFile for grails-core:xml — recorded reason: xml's 324-line oracle block is not in this tree: merge 16075a5a1 dropped it, and the lane had already withdrawn the claim it produced (c82067ea9 — the oracle resolved the XSD namespace for 1 of 62 elements and published `xsd:element` where the analyzer published `component-scan`; CHECK G replaced it). The corpus IS checked out, so a sweep reaches the lane and derives zero truth edges — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
             "status": "fail"
           },
           "section-g-docs": {
@@ -4144,6 +4426,10 @@
             "detail": "floor zig:zig: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
+          "section-e-lane-registered": {
+            "detail": "zig is the lane's declared PRIMARY corpus (LANG_REPOS)",
+            "status": "pass"
+          },
           "section-f-perf-budget": {
             "detail": "zig:zig 85.5 ms/file",
             "status": "pass"
@@ -4185,8 +4471,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-12T15:58:38.419Z",
-  "regeneratedAtCommit": "bd50eafaf58df01714e2987dcba9a0d371261cd9",
+  "regeneratedAt": "2026-10-12T13:38:50-04:00",
+  "regeneratedAtCommit": "481fc4c4fe4c6d8855b23f5d8591276cab90651b",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"

@@ -1212,7 +1212,50 @@ function verifySectionD(cfg: LangConfig): SectionCheck {
   }
 }
 
-function verifySectionE(cfg: LangConfig): SectionCheck {
+/**
+ * The corpus declarations in script/m14/differential.ts, read once.
+ *
+ * Section E reads a floor row out of differential-baseline.json, and a row can only exist if the
+ * sweep MEASURED the lane — which requires the lane's corpus to be declared in LANG_REPOS (or
+ * SECOND_CORPUS, for a perfKey naming a second corpus: lodash:javascript, vue-core:vue). This
+ * accessor exists because "no baseline floor row" was unattributable, and the cause it hid was a
+ * MERGE: 16075a5a1 resolved differential.ts by taking the other parent's copy and deleted six
+ * LANG_REPOS entries (xml, perl, vb, hcl, make, nim) and five SECOND_CORPUS entries, so the sweep
+ * printed `SKIP <lang>: no corpus repo mapped in LANG_REPOS — declared unrun, not measured` and
+ * stayed green while five lanes' E/F rows sat red for weeks. The entries are restored; this row is
+ * what makes a repeat say WHICH invariant broke instead of "no row".
+ */
+let declaredCorpusCache: { primary: Set<string>; second: Set<string> } | null = null
+function declaredCorpora(): { primary: Set<string>; second: Set<string> } {
+  if (declaredCorpusCache) return declaredCorpusCache
+  const src = fs.readFileSync(path.join(ROOT, "script", "m14", "differential.ts"), "utf8")
+  const mapBlock = (anchor: string): string => {
+    const at = src.indexOf(anchor)
+    if (at < 0) return ""
+    const open = src.indexOf("{", at)
+    let depth = 0
+    for (let i = open; i < src.length; i++) {
+      if (src[i] === "{") depth++
+      else if (src[i] === "}") {
+        depth--
+        if (depth === 0) return src.slice(open + 1, i)
+      }
+    }
+    return ""
+  }
+  // The map is `lang -> corpus`, and the row's question is whether the CORPUS is declared, so it is
+  // the VALUES that matter. Entry-shaped lines only (`  key: "value",`): the blocks are dense with
+  // prose, and a comment quoting a corpus name is not a declaration.
+  const corporaOf = (text: string): Set<string> =>
+    new Set([...text.matchAll(/(?:^|\n)\s*[A-Za-z_]\w*:\s*"([^"]+)"/g)].map((m) => m[1]))
+  declaredCorpusCache = {
+    primary: corporaOf(mapBlock("export const LANG_REPOS: Record<string, string> = {")),
+    second: corporaOf(mapBlock("export const SECOND_CORPUS: Record<string, string> = {")),
+  }
+  return declaredCorpusCache
+}
+
+function verifySectionE(cfg: LangConfig): SectionCheck[] {
   // The corpus FLOOR is pinned in differential-baseline.json under the
   // language's floor key (perfKey: grails-core:java / grails-core:groovy /
   // Exposed:kotlin). M14.0.F5.json is a SNAPSHOT of the last single
@@ -1221,11 +1264,41 @@ function verifySectionE(cfg: LangConfig): SectionCheck {
   // (kotlin's floor is Exposed; the sweep's audit:differential runs
   // grails-core). The baseline is the pinned truth; the differential's own
   // regression gate enforces current counts never exceed it.
+  const repo = cfg.perfKey.split(":")[0]
+  const declared = declaredCorpora()
+  const registration: SectionCheck = {
+    id: "section-e-lane-registered",
+    description: `${cfg.perfKey}'s corpus is declared in differential.ts`,
+    status: declared.primary.has(repo) || declared.second.has(repo) ? "pass" : "fail",
+    detail: declared.primary.has(repo)
+      ? `${repo} is the lane's declared PRIMARY corpus (LANG_REPOS)`
+      : declared.second.has(repo)
+        ? `${repo} is the lane's declared SECOND corpus (SECOND_CORPUS)`
+        : `${repo} is not among the ${declared.primary.size} declared LANG_REPOS corpora nor the ${declared.second.size} SECOND_CORPUS corpora — the sweep skips this lane as "declared unrun, not measured", so its floor row can never be produced; look for a lost registration (script/m14/differential.ts's RESTORED block; validation/lane-protection/content-invariants.json)`,
+  }
   const p = path.join(ROOT, "validation", "m14", "differential-baseline.json")
-  if (!fs.existsSync(p)) return { id: "section-e-differential", description: "corpus floor pinned in differential-baseline.json", status: "fail", detail: "missing differential-baseline.json" }
+  if (!fs.existsSync(p)) return [registration, { id: "section-e-differential", description: "corpus floor pinned in differential-baseline.json", status: "fail", detail: "missing differential-baseline.json" }]
   const b = JSON.parse(fs.readFileSync(p, "utf8"))
   const row = b?.counts?.[cfg.perfKey]
-  if (!row) return { id: "section-e-differential", description: `${cfg.perfKey} floor row present`, status: "fail", detail: `no baseline floor row for ${cfg.perfKey}` }
+  // A row this checkout RECOVERED from a commit (a merge dropped it) is present and is real
+  // evidence, but it is not one this checkout can reproduce — say so next to the number rather
+  // than letting a reader assume it was measured here. mergeBaseline stamps `reMeasuredAt` when a
+  // sweep re-pins the key, and the note then disappears by itself.
+  const prov = b?.recovered?.[cfg.perfKey]
+  const provNote = prov && !prov.reMeasuredAt
+    ? ` — row RECOVERED from ${String(prov.recoveredFrom).slice(0, 10)} (lost at merge ${String(prov.lostAt).slice(0, 10)}), not re-measured in this checkout`
+    : ""
+  if (!row) {
+    const u = b?.unmeasured?.[cfg.perfKey]
+    return [registration, {
+      id: "section-e-differential",
+      description: `${cfg.perfKey} floor row present`,
+      status: "fail",
+      detail: u
+        ? `no floor row for ${cfg.perfKey} — recorded reason: ${u.reason}${u.at ? ` (at ${String(u.at).slice(0, 10)})` : ""}`
+        : `no baseline floor row for ${cfg.perfKey}`,
+    }]
+  }
   // Documented-residual floor (c, C-D4): the ruling pins the exact floor
   // counts in the config; section E verifies the baseline row MATCHES the
   // ruling (a future fix that lowers the residual must update both — the
@@ -1234,31 +1307,46 @@ function verifySectionE(cfg: LangConfig): SectionCheck {
   if (cfg.floorResidual) {
     const f = cfg.floorResidual
     const ok = row.missing === f.missing && row.unexplained === f.unexplained
-    return {
+    return [registration, {
       id: "section-e-differential",
       description: `${cfg.perfKey} at documented residual floor (${f.ruling}: missing ${f.missing}, unexplained ${f.unexplained})`,
       status: ok ? "pass" : "fail",
-      detail: `floor ${cfg.perfKey}: missing=${row.missing}, unexplained=${row.unexplained} — expected ${f.missing}/${f.unexplained} per ${f.ruling} (differential-baseline.json)`,
-    }
+      detail: `floor ${cfg.perfKey}: missing=${row.missing}, unexplained=${row.unexplained} — expected ${f.missing}/${f.unexplained} per ${f.ruling} (differential-baseline.json)${provNote}`,
+    }]
   }
   const ok = row.missing === 0 && row.unexplained === 0
-  return {
+  return [registration, {
     id: "section-e-differential",
     description: `${cfg.perfKey} at corpus floor (missing 0, unexplained 0)`,
     status: ok ? "pass" : "fail",
-    detail: `floor ${cfg.perfKey}: missing=${row.missing}, unexplained=${row.unexplained} (differential-baseline.json)`,
-  }
+    detail: `floor ${cfg.perfKey}: missing=${row.missing}, unexplained=${row.unexplained} (differential-baseline.json)${provNote}`,
+  }]
 }
 
 function verifySectionF(cfg: LangConfig): SectionCheck {
   if (!fs.existsSync(BASELINE)) return { id: "section-f-perf-budget", description: "perf budget recorded in differential-baseline.json", status: "fail", detail: "missing differential-baseline.json" }
   const b = JSON.parse(fs.readFileSync(BASELINE, "utf8"))
   const avg = b?.counts?.[cfg.perfKey]?.perf?.avgMsPerFile
+  const prov = b?.recovered?.[cfg.perfKey]
+  const provNote = prov && !prov.reMeasuredAt
+    ? ` — RECOVERED from ${String(prov.recoveredFrom).slice(0, 10)} (lost at merge ${String(prov.lostAt).slice(0, 10)}), not re-measured in this checkout`
+    : ""
+  if (typeof avg === "number" && avg > 0) {
+    return {
+      id: "section-f-perf-budget",
+      description: `${cfg.id} avgMsPerFile recorded (F9 gate enforces budget)`,
+      status: "pass",
+      // `samplesTimed` rides only some rows (the recovered ones carry it; the pre-#871 pins do
+      // not) — printed when present rather than as a bare "?", so the row states what it knows.
+      detail: `${cfg.perfKey} ${avg} ms/file${typeof b?.counts?.[cfg.perfKey]?.perf?.samplesTimed === "number" ? ` (${b.counts[cfg.perfKey].perf.samplesTimed} sample(s) timed)` : ""}${provNote}`,
+    }
+  }
+  const u = b?.unmeasured?.[cfg.perfKey]
   return {
     id: "section-f-perf-budget",
     description: `${cfg.id} avgMsPerFile recorded (F9 gate enforces budget)`,
-    status: typeof avg === "number" && avg > 0 ? "pass" : "fail",
-    detail: typeof avg === "number" && avg > 0 ? `${cfg.perfKey} ${avg} ms/file` : `no avgMsPerFile for ${cfg.perfKey}`,
+    status: "fail",
+    detail: u ? `no avgMsPerFile for ${cfg.perfKey} — recorded reason: ${u.reason}` : `no avgMsPerFile for ${cfg.perfKey}`,
   }
 }
 
@@ -1349,7 +1437,9 @@ async function runLang(cfg: LangConfig): Promise<{ checks: SectionCheck[]; summa
     await verifySectionB(cfg),
     verifySectionC(cfg),
     verifySectionD(cfg),
-    verifySectionE(cfg),
+    // Two rows: the corpus must be DECLARED before it can be MEASURED, and the two failures have
+    // different causes (a lost registration vs. a floor that moved).
+    ...verifySectionE(cfg),
     verifySectionF(cfg),
     verifySectionG(cfg),
     verifySectionH(),

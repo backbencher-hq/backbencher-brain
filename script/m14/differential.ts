@@ -574,6 +574,39 @@ export const LANG_REPOS: Record<string, string> = {
   // a friendlier repo: they are the grammar's residual, already inventoried, and a lane measured on
   // a dialect-free subset would not be measuring Julia.
   julia: "julia",
+  // ---------------------------------------------------------------------------------------
+  // RESTORED 2026-10-12 — six lanes a MERGE silently unregistered.
+  //
+  // `git log -S 'xml: "grails-core"' -- script/m14/differential.ts` shows it being ADDED at
+  // dec3b3c65 ("the xml differential lane EXISTS and RUNS") and never removed, yet HEAD has no
+  // xml entry — because the removal happened in a MERGE, and a merge commit's diff is not walked
+  // by a path-limited `-S`. The merge is 16075a5a1 ("merge(m48-recovery): 229 commits — the
+  // co-agent's sql, kotlin, powershell, css, nim, vb, perl waves"): its first parent 7ab888b79
+  // carries these six lanes AND nine pinned baseline rows, its second parent carries neither, and
+  // the merge kept the second parent's copy of both files. One resolution deleted:
+  //
+  //   LANG_REPOS    xml/perl/vb/hcl/make/nim
+  //   SECOND_CORPUS fsharp/hcl/make/nim/perl
+  //   baseline      9 floor rows + 9 sample-set hashes (see the `recovered` map in
+  //                 validation/m14/differential-baseline.json, written by recover-differential-rows.ts)
+  //
+  // The damage was invisible for weeks for the reason this project keeps rediscovering: a lane with
+  // no LANG_REPOS entry is SKIPPED ("declared unrun, not measured"), so the sweep stayed green while
+  // five lane gates (sections E/F) sat red with "no baseline floor row" — the symptom was read as
+  // "waiting on the canonical sweep" rather than "the registration is gone". The xml lane's own
+  // emitter went further and asserted the row WAS pinned (emit-xml-completeness.ts, "8/8 sections
+  // pass") while the gate said otherwise, and nothing compared the two.
+  //
+  // The values below are the ones the lost parent carried, not a fresh opinion: `git show
+  // 7ab888b79:script/m14/differential.ts` for each. They are guarded against a repeat by
+  // validation/lane-protection/content-invariants.json (the same owner-rule gate that exists
+  // because a laptop-sync commit once published a whole closed milestone's deletion).
+  xml: "grails-core",
+  perl: "mojo",
+  vb: "P3D-Legacy",
+  hcl: "terraform",
+  make: "tf-aws-components",
+  nim: "nim",
 }
 // M37.16 two-corpus gate (second-opinion hardening): every gated language runs
 // the SAME analyzer-vs-oracle differential on a SECOND, independent real corpus
@@ -675,6 +708,16 @@ export const SECOND_CORPUS: Record<string, string> = {
   // primary has 0 pipe tables worth speaking of and kubernetes has them everywhere,
   // and the primary's setext headings have no counterpart there at all.
   markdown: "kubernetes",
+  // RESTORED 2026-10-12 with the LANG_REPOS block above — same merge (16075a5a1), same lost parent
+  // (7ab888b79), same silence. A lane whose SECOND corpus is unregistered loses its second opinion
+  // while still reporting a green primary row, which is the one thing the two-corpus gate exists to
+  // prevent: `fsharp` had no second lane at all, `perl` lost `plack` (the dialect the mojo corpus
+  // does not reach), and hcl/make/nim lost theirs.
+  fsharp: "fsharp-data",
+  hcl: "tf-aws-components",
+  make: "consul",
+  nim: "pixie",
+  perl: "plack",
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
@@ -1137,6 +1180,38 @@ const ORACLE_HTML_TAGS = new Set(["a","abbr","address","area","article","aside",
 "altGlyph","altGlyphDef","altGlyphItem","glyphRef","animateColor","cursor",
 "color-profile","font","font-face","font-face-format","font-face-name",
 "font-face-src","font-face-uri","glyph","hkern","missing-glyph","vkern"])
+/**
+ * Vue's component-name resolution, derived here from the framework's own rule
+ * and NOT from the analyzer's source: `resolveAsset` tries the written tag, then
+ * `camelize`, then `capitalize(camelize)` — so `<el-button>` and `<ElButton>` and
+ * `<elButton>` all reach the registered `ElButton`. The oracle publishes the name
+ * the REGISTRY holds, because that is the fact `instantiates` asserts; the written
+ * spelling is recovered by the analyzer's `metadata.tagSpellingsWritten`.
+ *
+ * F31 (2026-10-12). Before this the oracle published the tag as written, and the
+ * lane matched it — the two AGREED on `instantiates -> el-button` for 1,409 edges
+ * whose target the corpus declares as `ElButton`, which is why the differential
+ * reported the lane clean while 62.2% of its payload pointed at a name no file
+ * publishes. The construct census (`vue-instantiates-targets.mts`) is what counts
+ * that row, and the analyzer now applies the same framework rule.
+ */
+function oracleVueRegistryName(tag: string): string {
+  // The boundary is measured rather than assumed (F31): the lane's draw holds 1,441
+  // edges where the written kebab spelling resolves nowhere and the capitalized form
+  // names a declaration, against 36 where the reverse holds — and every one of those
+  // 36 is a component whose FILE is named that way (`loading.vue`, `message.vue`,
+  // `calendar.vue`, `guide-svg.vue`, `vp-link.vue`). So the ONE shape that keeps its
+  // written spelling is a single all-lowercase word, because Vue tries it first and
+  // the corpus declares it; a kebab or camel spelling takes the registry name.
+  const kebab = tag.includes("-")
+  const camel = !kebab && /[A-Z]/.test(tag.slice(1))
+  if (!kebab && !camel) return tag
+  const pascal = kebab
+    ? tag.split("-").filter(Boolean).map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join("")
+    : tag.charAt(0).toUpperCase() + tag.slice(1)
+  return pascal.length > 0 ? pascal : tag
+}
+
 function deriveVueComponentUsages(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -1149,12 +1224,23 @@ function deriveVueComponentUsages(root: any): { label: string; from: string; tar
       // element node itself.
       const container = n.namedChildren.find((c: any) => c.type === "start_tag" || c.type === "self_closing_tag")
       const tag = container?.namedChildren.find((c: any) => c.type === "tag_name")
-      const name = tag?.text
+      const written = tag?.text
       // vue framework builtins are rendering primitives, not components
       const VUE_BUILTINS = new Set(["component", "transition", "transition-group", "keep-alive", "teleport", "suspense", "fragment"])
-      if (name && !ORACLE_HTML_TAGS.has(name) && !VUE_BUILTINS.has(name) && !seen.has(name)) {
-        seen.add(name)
-        edges.push({ label: "instantiates", from: "(expr)", target: name })
+      // A dotted tag spells only its ROOT segment (`<Form.Input/>` -> `Form`); the
+      // leaf is the analyzer's metadata and is not independently derivable as a
+      // name, so the oracle derives the root only — the same rule the lane applies.
+      const name = written?.includes(".") ? written.slice(0, written.indexOf(".")) : written
+      const registry = name ? oracleVueRegistryName(name) : undefined
+      // The builtin test reads the AS-WRITTEN spelling, not the registry name, and
+      // the ORDER is the contract: the set carries camelCase natives
+      // (`linearGradient`, `clipPath`, `foreignObject`, `feGaussianBlur`), so
+      // capitalizing first would turn a native SVG tag into `LinearGradient` and
+      // publish an `instantiates` the specification defines as markup. The analyzer
+      // filters on the written tag for the same reason.
+      if (name && registry && !ORACLE_HTML_TAGS.has(name) && !VUE_BUILTINS.has(name) && !seen.has(registry)) {
+        seen.add(registry)
+        edges.push({ label: "instantiates", from: "(expr)", target: registry })
       }
       if (n.type === "self_closing_tag") continue
     }
@@ -21551,12 +21637,30 @@ async function main() {
           ? scopedLangs.flatMap((l) => [LANG_REPOS[l], SECOND_CORPUS[l]]).filter((r): r is string => Boolean(r))
           : [...Object.values(LANG_REPOS), ...Object.values(SECOND_CORPUS)],
       )]
+  // 2026-10-12: a MISSING CHECKOUT is now a DECLARED per-lane state in a sweep, not a
+  // whole-sweep abort. The refusal above stays where its reason holds — a run that CLAIMS a lane
+  // must have that lane's checkout: `--repo X` still throws, and a scoped `--lang a,b` still
+  // throws for the PRIMARY repo of each lane it was asked to measure. What it no longer does is
+  // let one absent corpus (mojo, tf-aws-components, nim, pixie, consul, fsharp-data, P3D-Legacy —
+  // none of them on this box) take down the ~40 lanes that ARE measurable, or force the
+  // alternative that produced the six-lane loss this file's LANG_REPOS block records: an entry
+  // deleted rather than a checkout named. Every skipped lane is recorded in `unmeasuredLanes`,
+  // written into the artifact as a FAILING check and into the baseline as a `unmeasured` row, so
+  // the claim still cannot shrink SILENTLY — which was the property the throw was protecting.
+  const missingRepos: Record<string, string> = {}
+  const requiredRepos = REPO
+    ? [REPO]
+    : (scopedLangs ? scopedLangs.map((l) => LANG_REPOS[l]).filter((r): r is string => Boolean(r)) : [])
   for (const rp of activeRepos) {
     const rd = path.join(CORPUS_ROOT, rp)
-    if (!fs.existsSync(rd)) throw new Error(`corpus repo missing: ${rd}`)
+    if (!fs.existsSync(rd)) {
+      if (requiredRepos.includes(rp)) throw new Error(`corpus repo missing: ${rd}`)
+      missingRepos[rp] = rd
+    }
   }
   const repoPins: Record<string, string> = {}
   for (const rp of activeRepos) {
+    if (missingRepos[rp]) continue
     repoPins[rp] = execSync("git rev-parse HEAD", { cwd: path.join(CORPUS_ROOT, rp) }).toString().trim()
   }
   // M49 W16 (defect 1): a lane-batch child inherits the parent's frozen state,
@@ -21587,15 +21691,36 @@ async function main() {
   // which is the same total-artifact-loss failure this file's PARSER_CACHE note describes.
   // So a sweep DECLARES an unmappable lane and carries on; a probe still throws.
   const unmappedLanes: string[] = []
+  // Every lane the sweep will not measure, with the reason, in the shape the baseline's
+  // `unmeasured` map and the artifact's checks consume. Two distinct causes, both named:
+  //   no-mapping  — the lane has no declared corpus at all (a registration loss, guarded by
+  //                 validation/lane-protection/content-invariants.json since 2026-10-12)
+  //   no-checkout — the declared corpus is not under CORPUS_ROOT on this box
+  const unmeasuredLanes: { key: string; repo: string; lang: string; reason: string }[] = []
   const repoForSweep = (lang: string): string | null => {
     if (REPO) return REPO
     const mapped = LANG_REPOS[lang]
     if (!mapped) {
       unmappedLanes.push(lang)
+      unmeasuredLanes.push({ key: `${lang}`, repo: "", lang, reason: "no corpus repo mapped in LANG_REPOS — the lane is unregistered, not unmeasured" })
+      return null
+    }
+    if (missingRepos[mapped]) {
+      unmeasuredLanes.push({ key: `${mapped}:${lang}`, repo: mapped, lang, reason: `corpus repo missing: ${missingRepos[mapped]}` })
       return null
     }
     return mapped
   }
+
+  // One shape for every "this lane was NOT measured" row, used by both artifacts (canonical and
+  // lane-scoped). `fail`, never absent: an artifact that silently omits a lane looks like an
+  // artifact whose lanes are all fine.
+  const unmeasuredCheck = (u: { key: string; repo: string; lang: string; reason: string }) => ({
+    id: `differential-unmeasured-${u.key}`,
+    description: `${u.key}: NOT measured by this run`,
+    status: "fail" as const,
+    detail: `${u.reason}; no row for ${u.lang} in this run's report, so nothing here is a claim about that lane`,
+  })
 
   const report: Record<string, any> = {}
   const reportSecond: Record<string, any> = {}
@@ -21633,7 +21758,15 @@ async function main() {
     // at an unrelated repo and defeat the probe's intent.
     if (REPO) continue
     const second = SECOND_CORPUS[lang]
-    if (second && second !== primary) lanes.push({ lang, repo: second, isSecond: true })
+    if (second && second !== primary) {
+      // A second corpus that is not on this box is declared, not dropped: the lane keeps its
+      // primary row and the missing second opinion is recorded (two-corpus gate bookkeeping).
+      if (missingRepos[second]) {
+        unmeasuredLanes.push({ key: `${second}:${lang}`, repo: second, lang, reason: `second corpus repo missing: ${missingRepos[second]}` })
+        continue
+      }
+      lanes.push({ lang, repo: second, isSecond: true })
+    }
   }
 
   // ---------------------------------------------------------------------
@@ -23910,6 +24043,20 @@ async function main() {
         console.log(`  [MISSING] ${m.file} ${m.label}->${m.target}`)
       }
     }
+    // 2026-10-12: in a SWEEP these two guards DECLARE the lane instead of aborting the sweep.
+    //
+    // The reason is the incident script/m14/recover-differential-rows.ts and this file's LANG_REPOS
+    // RESTORED block record: merge 16075a5a1 dropped five lanes' oracle blocks AND their corpus
+    // registrations together, so the two losses CANCELLED OUT — every lane was skipped ("no corpus
+    // repo mapped") before it could reach a guard here, and the registrations alone could be
+    // restored without anything noticing. Re-registering the corpora without the oracles would make
+    // every sweep on a box that HOLDS those corpora abort on its first such lane, measuring nothing
+    // at all — the total-artifact-loss shape this file's parser-cache note already describes. So a
+    // missing oracle is a DECLARED per-lane failure: no row, a `unmeasured` entry in the baseline,
+    // and a failing check in the artifact, all three naming the lane and the zero-truth count.
+    //
+    // A PROBE still throws. `--repo X` asked about this one lane, and the only honest answer to
+    // "what does X say" when X cannot be measured is the loud refusal, not an absent row.
     if (sample.length === 0) {
       // Vacuous-pass guard: a repo with zero files of this language produces a
       // 0/0 row that "passes" without verifying anything. That dishonesty
@@ -23917,7 +24064,11 @@ async function main() {
       // language must be re-routed to a repo that contains it. Applies to BOTH
       // primary and second lanes (a second corpus with no files is a routing
       // error, never a silent skip).
-      throw new Error(`differential: corpus repo ${langRepo} contains no ${lang} files — fix LANG_REPOS/SECOND_CORPUS routing for ${lang}`)
+      const noFiles = `differential: corpus repo ${langRepo} contains no ${lang} files — fix LANG_REPOS/SECOND_CORPUS routing for ${lang}`
+      if (REPO) throw new Error(noFiles)
+      unmeasuredLanes.push({ key: `${langRepo}:${lang}`, repo: langRepo, lang, reason: noFiles })
+      try { (parser as any).delete?.() } catch { /* already torn down */ }
+      continue
     }
     if (treeEdgesTotal === 0) {
       // Parsed-but-empty guard (F5 refresh, 2026-09-12). When the
@@ -23930,7 +24081,15 @@ async function main() {
       // fabrication survives the crash that caused it. A non-empty sample that
       // derives zero truth edges is a dead parser or a dead oracle, never a
       // clean lane: either re-route the lane or fix the oracle.
-      throw new Error(`differential: ${langRepo}:${lang} parsed ${sample.length} file(s) and derived ZERO truth edges — the parser or the oracle is dead, not clean (a 0/0 row is a fabricated pass)`)
+      //
+      // This is the shape the five lanes at HEAD are in today: their oracle blocks are not in this
+      // tree (dropped by merge 16075a5a1; xml's withdrawn by its own lane at c82067ea9), so their
+      // samples parse and derive nothing. Declared, never counted as clean.
+      const zeroTruth = `differential: ${langRepo}:${lang} parsed ${sample.length} file(s) and derived ZERO truth edges — the parser or the oracle is dead, not clean (a 0/0 row is a fabricated pass)`
+      if (REPO) throw new Error(zeroTruth)
+      unmeasuredLanes.push({ key: `${langRepo}:${lang}`, repo: langRepo, lang, reason: `${zeroTruth}; this lane's oracle block is not in this tree (see recover-differential-rows.ts)` })
+      try { (parser as any).delete?.() } catch { /* already torn down */ }
+      continue
     }
     if (lane.isSecond) reportSecond[`${langRepo}:${lang}`] = row
     else report[lang] = row
@@ -24101,6 +24260,8 @@ async function main() {
     const clean: Record<string, any> = {}
     const hashes: Record<string, string> = { ...(previous.hashes ?? {}) }
     const pinSkipped: string[] = []
+    const pinnedKeys: string[] = []
+    const pinSkippedKeys: { key: string; missing: number; unexplained: number }[] = []
     for (const [k, v] of Object.entries<any>({ ...current, ...currentSecond })) {
       // #871 §2: pin ONLY lanes whose own parity is clean. Pinning a lane that
       // carries its own missing/unexplained would bake a real anomaly into the
@@ -24110,23 +24271,70 @@ async function main() {
       // this pin removes.
       if ((v.missing ?? 0) > 0 || (v.unexplained ?? 0) > 0) {
         pinSkipped.push(`${k} (missing=${v.missing ?? 0} unexplained=${v.unexplained ?? 0})`)
+        pinSkippedKeys.push({ key: k, missing: v.missing ?? 0, unexplained: v.unexplained ?? 0 })
         continue
       }
       clean[k] = { missing: v.missing, unexplained: v.unexplained, heuristic: v.heuristic, perf: v.perf }
+      pinnedKeys.push(k)
       // M49 G5: pin WHICH files produced this row. Without it a later rotation
       // is scored against a different sample and mislabelled a regression.
       if (v.sampleHash) { clean[k].sampleSetHash = v.sampleHash; hashes[k] = v.sampleHash }
     }
+    // ---------------------------------------------------------------------------------
+    // 2026-10-12 — the writer stops dropping fields it did not write, and records why a
+    // lane has no row.
+    //
+    // Two defects fixed here, both found while repairing the six-lane registration loss at
+    // merge 16075a5a1 (see LANG_REPOS's RESTORED block):
+    //
+    // 1. The merged object used to be rebuilt from four known keys, so any other top-level
+    //    field in the file was silently DISCARDED by the next merge — `floorMoves` was on disk
+    //    at HEAD and would have vanished on the next `--update-baseline` run, taking the
+    //    record of which floors moved with it. Unrelated producers may add fields to this
+    //    file; a writer that only knows its own keys must not delete theirs.
+    // 2. A lane with NO row was indistinguishable from a lane never measured: sections E/F said
+    //    "no baseline floor row" and a reader had to guess whether the sweep had measured it and
+    //    declined to pin (a real anomaly, #870) or had never run the lane at all (a missing
+    //    corpus). The `unmeasured` map names the cause, keyed exactly like the rows it explains.
+    //
+    const headSha = execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim()
+    const measuredNow = new Set([...Object.keys(current), ...Object.keys(currentSecond)])
+    const unmeasured: Record<string, any> = { ...(previous.unmeasured ?? {}) }
+    for (const k of Object.keys(unmeasured)) {
+      if (measuredNow.has(k)) delete unmeasured[k]
+    }
+    for (const u of unmeasuredLanes) {
+      unmeasured[u.key] = { repo: u.repo, language: u.lang, reason: u.reason, at: headSha }
+    }
+    for (const s of pinSkippedKeys) {
+      unmeasured[s.key] = {
+        reason: `measured but not pinned: missing=${s.missing} unexplained=${s.unexplained} — pinning would bury a real anomaly (#870)`,
+        at: headSha,
+      }
+    }
+    // Provenance for rows that were RECOVERED from a commit rather than measured by this run.
+    // `reMeasuredAt` is stamped only when this run re-pinned the key, so a reader can tell a row
+    // this checkout can reproduce from one it cannot (recover-differential-rows.ts writes the
+    // recoveredFrom/lostAtAt half).
+    const recovered: Record<string, any> = { ...(previous.recovered ?? {}) }
+    for (const k of pinnedKeys) {
+      if (recovered[k]) recovered[k] = { ...recovered[k], reMeasuredAt: headSha }
+    }
     const merged = {
+      // `...previous` FIRST: unknown fields survive a merge (defect 1 above).
+      ...previous,
       samplePerLang: SAMPLE_PER_LANG,
       // #871 §1: the load context the pinned rows were measured under — a
       // later breach can now be told apart from a busy machine.
       loadContext: { loadAvgStart: runLoadAvgStart, loadAvgEnd: loadAvg1(), sliceCount: willBatch ? Math.ceil(lanes.length / BATCH_SIZE) : 1 },
       counts: { ...(previous.counts ?? previous), ...clean },
       hashes,
+      unmeasured,
+      recovered,
     }
     fs.writeFileSync(BASELINE, JSON.stringify(merged, null, 2) + "\n")
     console.log(`differential baseline updated (primary + second lanes): ${Object.keys(clean).length} lane(s) pinned/refreshed; drawn file sets pinned: ${Object.keys(hashes).length}`)
+    if (unmeasuredLanes.length > 0) console.log(`differential baseline: DECLARED UNMEASURED — ${unmeasuredLanes.map((u) => `${u.key} (${u.reason})`).join(", ")}`)
     if (pinSkipped.length > 0) console.log(`differential baseline: NOT PINNED — ${pinSkipped.join(", ")} — a lane carrying its own missing/unexplained is never pinned (pinning would bury the anomaly; see #870)`)
   }
 
@@ -24202,6 +24410,10 @@ async function main() {
           },
           ...Object.entries<any>(report).map(([k, r]) => rowCheck(k, r)),
           ...Object.entries<any>(reportSecond).map(([k, r]) => rowCheck(k, r)),
+          // A lane this scoped run could not measure is a FAILING row in its own artifact,
+          // not an absent one: the artifact is the record, and "we were asked for perl and
+          // this box has no mojo checkout" is a fact about the run.
+          ...unmeasuredLanes.map((u) => unmeasuredCheck(u)),
         ],
         limitations: [
           { description: `LANE-SCOPED artifact: this run measured ${measured} lane(s) (${measuredKeys.join(", ")}), not the canonical two-corpus sweep. Its rows are not the M14.0.F5 claim, which carries every gated lane.` },
@@ -24217,6 +24429,7 @@ async function main() {
           report,
           secondCorpus: { mapping: SECOND_CORPUS, report: reportSecond },
           codeInputs: { ...codeInputs, ownInputs: [...ownInputs], sharedInputs: [...sharedInputs], laneDirt, sharedDirt, otherDirt },
+          unmeasuredLanes,
         },
       }
       // The artifact id must be a PLAIN LITERAL in the emit call. M49's producer
@@ -24359,6 +24572,12 @@ async function main() {
           ? `every measured input clean at head ${codeInputs.head.slice(0, 10)}`
           : `${codeInputs.dirty.length} modified measured input(s) at head ${codeInputs.head.slice(0, 10)}: ${codeInputs.dirty.slice(0, 6).join(", ")}${codeInputs.dirty.length > 6 ? ", …" : ""}`,
       },
+      // A lane the sweep did not measure — no corpus on this box, or (the registration loss this
+      // file's LANG_REPOS block records) no corpus mapped at all — is carried as a FAILING check.
+      // The property the old whole-sweep throw protected was "a missing checkout may not silently
+      // shrink the claim"; this keeps that property per lane and names the cause, instead of
+      // losing every other lane's measurement with it.
+      ...unmeasuredLanes.map((u) => unmeasuredCheck(u)),
       ...evaluation.checks.map(check => {
         const lang = check.id.replace("differential-", "")
         return { ...check, description: `${check.description} @${repoPins[repoFor(lang)]?.slice(0, 10) ?? "?"}` }
@@ -24389,6 +24608,8 @@ async function main() {
       // instead. Empty means every lane read exactly its pin.
       pinDrift,
       samplingRule: `seeded ${SAMPLE_PER_LANG} files/language (primary + second corpus lanes)`,
+      // Lanes the sweep did not measure, with the cause — the same list its failing checks carry.
+      unmeasuredLanes,
       report,
       secondCorpus: { mapping: SECOND_CORPUS, report: reportSecond },
       // M49 G5: exactly what the baseline comparison could and could not
