@@ -33,13 +33,28 @@
 import * as fs from "fs"
 import * as path from "path"
 import { RealJavaScriptAnalyzer } from "../../src/ast/real-javascript-analyzer"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
 const argv = process.argv.slice(2)
 const argOf = (name: string, dflt: string) => {
   const i = argv.indexOf(name)
   return i >= 0 && i + 1 < argv.length ? argv[i + 1] : dflt
 }
-const REPO = argOf("--repo", "$HOME/fixtures/repositories/svelte")
+//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+//  each repo path below resolved to a filesystem that does not exist here and the leg
+//  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+//  candidates in order and names them all when none exists.
+//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+//  each repo path below resolved to a filesystem that does not exist here and the leg
+//  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+//  candidates in order and names them all when none exists.
+// Per-repo corpus paths were built on the literal foreign root
+//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+//  each repo path below resolved to a filesystem that does not exist here and the leg
+//  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+//  candidates in order and names them all when none exists.
+const REPO = argOf("--repo", `${CORPUS_BASE}/svelte`)
 const LIMIT = parseInt(argOf("--files", "300"), 10)
 // Build-time TEMPLATE directories. Their relative imports only resolve AFTER
 // the files are copied and rewritten into the target tree, so they are not

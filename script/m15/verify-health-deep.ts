@@ -20,6 +20,8 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { getUnifiedHealth, formatUnifiedHealth } from "../../src/intelligence/health/health-provider"
 import { fileURLToPath } from "node:url"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
@@ -165,7 +167,20 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   // H5: real-repo e2e — real repo on disk (zig) with integrity + verbose
   // ═══════════════════════════════════════════════════════════════════
   {
-    const realRepo = "$HOME/fixtures/repositories/zig/src"
+    //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+    //  each repo path below resolved to a filesystem that does not exist here and the leg
+    //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+    //  candidates in order and names them all when none exists.
+    //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+    //  each repo path below resolved to a filesystem that does not exist here and the leg
+    //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+    //  candidates in order and names them all when none exists.
+    // Per-repo corpus paths were built on the literal foreign root
+    //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+    //  each repo path below resolved to a filesystem that does not exist here and the leg
+    //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+    //  candidates in order and names them all when none exists.
+    const realRepo = `${CORPUS_BASE}/zig/src`
     if (existsSync(realRepo)) {
       const projectId = await indexProject(realRepo)
       try {

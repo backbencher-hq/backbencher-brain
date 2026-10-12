@@ -28,6 +28,8 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, cpSync, existsSync } fro
 import { tmpdir } from "node:os"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULT = path.join(ROOT, "validation/m35/results/S1.json")
@@ -65,7 +67,20 @@ const TARGETED_MODES = ["callers", "callees", "trace", "dependencies", "impact",
 const PROJECT_WIDE_MODES = ["stats", "complexity", "test_mapping", "test_gaps", "test_quality"]
 const ALL_MODES = [...TARGETED_MODES, ...PROJECT_WIDE_MODES]
 const CORPUS_CANDIDATES = [
-  "$HOME/fixtures/repositories/lodash",
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  // Per-repo corpus paths were built on the literal foreign root
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  `${CORPUS_BASE}/lodash`,
   "$HOME/lodash",
 ]
 

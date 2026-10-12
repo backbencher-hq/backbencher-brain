@@ -4,6 +4,8 @@
 import { writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs"
 import path from "node:path"
 import { parseForSafety } from "../../src/ast/safety-primitives"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(l: string, c: boolean, d?: string) { checks++; if (c) passed++; else { failed++; console.log("  FAIL: " + l + (d ? " — " + d : "")) } }
@@ -39,7 +41,16 @@ async function emitFile(code: string, issue: string, tool: string, title: string
   // A hardcoded absolute path to the OTHER laptop's home directory. On this machine the
   // gate died before running a single check:
   //
-  //   Error: ENOENT: no such file or directory, scandir '$HOME/fixtures/repositories/graphql-js'
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  // Per-repo corpus paths were built on the literal foreign root
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  //   Error: ENOENT: no such file or directory, scandir `${CORPUS_BASE}/graphql-js`
   //
   // and it was in `npm run verify`, so that leg contributed nothing while appearing to
   // be part of the chain. Found by script/m62/verify-gates-can-fail.ts and then named by

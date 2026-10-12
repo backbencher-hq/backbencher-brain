@@ -61,6 +61,8 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { emitEvidence, type Check } from "./evidence-harness"
 import { fileURLToPath } from "node:url"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 // FULL CORPUS, with a cap that is above the largest corpus rather than a fraction
@@ -76,8 +78,25 @@ const SAMPLE_PER_CORPUS = 4000
 const MAX_FILE_BYTES = 400_000
 
 const CORPORA: { name: string; root: string }[] = [
-  { name: "svelte:javascript", root: "$HOME/fixtures/repositories/svelte" },
-  { name: "lodash:javascript", root: "$HOME/fixtures/repositories/lodash" },
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  // Per-repo corpus paths were built on the literal foreign root
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  { name: "svelte:javascript", root: `${CORPUS_BASE}/svelte` },
+  //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+  //  each repo path below resolved to a filesystem that does not exist here and the leg
+  //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+  //  candidates in order and names them all when none exists.
+  { name: "lodash:javascript", root: `${CORPUS_BASE}/lodash` },
 ]
 
 // --- DECLARED DISPOSITIONS -------------------------------------------------
