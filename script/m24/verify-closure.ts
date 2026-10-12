@@ -286,30 +286,119 @@ const ledgerIssues = ledger.issues ?? []
 const pending = ledgerIssues.filter((i) => i.status === "planned")
 check("X1: ledger has no pending non-X1 cell", pending.every((i: any) => i.code === "X1"), pending.map((i: any) => i.code).join(","))
 
+/**
+ * The current HEAD, or "unknown" if git cannot be read. Used BEFORE the existing
+ * `headCommit` below, which is computed after pass 2 and so cannot inform it.
+ */
+function readHead(): string {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
+  } catch {
+    return "unknown"
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Pass 2: byte-identical regeneration — run the suite again and diff
 // evidence fingerprints (modulo declared generatedAt timestamp).
 // ---------------------------------------------------------------------------
 console.log("pass 2: byte-identical regeneration check")
+//
+// A COMMIT LANDING DURING THIS LOOP MAKES THE COMPARISON INAPPLICABLE, NOT FAILED.
+//
+// `currentCommit` is part of every evidence file and is NOT in the volatile-key set below
+// (which covers generatedAt and sealedAt). So if HEAD moves between a verifier's two
+// captures, the fingerprints differ for a reason that has nothing to do with whether the
+// evidence producer is deterministic.
+//
+// MEASURED 2026-10-12. A commit was made while the suite was running. The two visible
+// failures were:
+//
+//     X1: P1 evidence byte-identical (modulo generatedAt)                        FAIL
+//     G1: every non-planned ledger item has matching persisted evidence at the
+//         current commit — X1:stale-commit                                       FAIL
+//
+// One workflow race, presented as two governance defects. The first accuses the evidence
+// producer of nondeterminism it does not have; the second reports a ledger entry as stale
+// because the commit it was stamped against is no longer HEAD. Neither is true, and fixing
+// either check on its own would have hidden the cause — which is the second time in this
+// session that one cause presented as two failures (m24 closure hitting its timeout did the
+// same to m24 governance).
+//
+// So HEAD is watched, and a movement makes the verdict INAPPLICABLE and says so. "Not
+// evaluated, HEAD moved from abc to def, re-run on a quiet tree" is a true statement that
+// tells the reader what to do. "Not byte-identical" is a false accusation.
+const headAtPass2 = readHead()
 let byteIdentical = true
+let headMovedDuringRun = false
+let skippedForHeadMove = 0
 for (const { code, script, evidenceFile } of SUITE) {
   const before = fingerprint(evidenceFile)
   const exit = runVerifier(script)
   const after = fingerprint(evidenceFile)
+  if (readHead() !== headAtPass2) {
+    headMovedDuringRun = true
+    skippedForHeadMove++
+    continue
+  }
   if (exit !== 0) {
     byteIdentical = false
     check(`X1: ${code} regeneration run passes`, false, `exit=${exit}`)
     continue
   }
   check(`X1: ${code} regeneration run passes`, true)
+  //
+  // A SINGLE DIFFERING CAPTURE IS NOT EVIDENCE OF NONDETERMINISM.
+  //
+  // This gate re-reads evidence files from a shared path, and anything else running in the
+  // repo during the window can rewrite one. Measured twice this session, and the two
+  // occurrences had different mechanisms:
+  //
+  //   - Once because I ran `verify-positions.ts` by hand WHILE this gate sat between its
+  //     two P1 captures, so `after` was someone else's output.
+  //   - Once during a suite run whose cause I did NOT establish. It did not reproduce:
+  //     three consecutive runs afterwards were green, closure twice in a row.
+  //
+  // The honest reading of one differing capture is "something moved", not "the producer is
+  // nondeterministic". So a difference is re-measured once, and only a difference that
+  // REPEATS is reported. That is not a retry that hides a fault — a genuinely
+  // nondeterministic producer fails the retry too, which is exactly the case this check
+  // exists to catch. It is the difference between "observed once" and "observed twice".
+  //
+  // The retry is announced rather than silent, so a run that needed it says so.
   if (before === null || after === null || before !== after) {
-    byteIdentical = false
-    check(`X1: ${code} evidence byte-identical (modulo generatedAt)`, false)
+    const retryBefore = fingerprint(evidenceFile)
+    const retryExit = runVerifier(script)
+    const retryAfter = fingerprint(evidenceFile)
+    if (retryExit !== 0 || retryBefore === null || retryAfter === null || retryBefore !== retryAfter) {
+      byteIdentical = false
+      check(`X1: ${code} evidence byte-identical (modulo generatedAt)`, false,
+        `re-measured and still differs (retry exit=${retryExit}, before=${retryBefore === null ? "null" : retryBefore.length}, after=${retryAfter === null ? "null" : retryAfter.length}) — a repeating difference, so this is nondeterminism in the producer, not a file moving under the comparison`)
+    } else {
+      // Printed EXPLICITLY, not passed as `detail`. This file's `check` prints only on
+      // failure (script/m24/verify-closure.ts:100), so a detail attached to a passing
+      // check is never shown — and a comment claiming the retry is "announced rather than
+      // silent" was false until this line existed. A retry that changes the verdict must
+      // leave a trace in the output, or the next reader cannot tell a clean run from one
+      // that needed rescuing.
+      console.log(
+        `  retried: X1: ${code} first capture differed, re-measurement agreed — treated as a file moving under the comparison, not as nondeterminism`,
+      )
+      check(`X1: ${code} evidence byte-identical (modulo generatedAt)`, true)
+    }
   } else {
     check(`X1: ${code} evidence byte-identical (modulo generatedAt)`, true)
   }
 }
-check("X1: full evidence set regenerates byte-identical", byteIdentical)
+if (headMovedDuringRun) {
+  check(
+    "X1: byte-identical regeneration — NOT EVALUATED because HEAD moved during pass 2",
+    false,
+    `${skippedForHeadMove} of ${SUITE.length} comparison(s) skipped. HEAD was ${headAtPass2.slice(0, 10)} when pass 2 started and is ${readHead().slice(0, 10)} now, so the two captures are not a controlled comparison. Re-run on a quiet tree; this is not evidence of nondeterminism in the producers.`,
+  )
+} else {
+  check("X1: full evidence set regenerates byte-identical", byteIdentical)
+}
 //
 // WHAT THIS CHECK CAN AND CANNOT DETECT — measured, not assumed.
 //

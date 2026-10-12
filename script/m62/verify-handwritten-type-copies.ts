@@ -52,7 +52,7 @@
 // future edit breaks the matcher again, the gate goes red on the canary instead of
 // green on nothing.
 
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
@@ -94,10 +94,64 @@ for (const f of walkSourceFiles(path.join(ROOT, "src"))) {
   for (const m of text.matchAll(/^export (?:interface|type) (\w+)/gm)) names.add(m[1]!)
   exportedTypes.set(f, names)
 }
+//
+// A MODULE UNDER script/ IS ALSO PRODUCT WHEN SOMETHING OUTSIDE script/ IMPORTS IT.
+//
+// The census above reads src/ only, and that made a real drift invisible. Found
+// 2026-10-12: script/m26/verify-content-security.ts:47 hand-writes the signature of
+// `buildWebviewHtml`, and its copy was missing `styles?: boolean` — which
+// script/m26/webview-html.ts:111 DECLARES and :121 READS. The runtime stayed correct
+// (the implementation honours the flag), so the gate's checks passed while its type
+// claimed a field the real signature does not have: precisely the failure this gate is
+// named for, in the one shape this gate could not see.
+//
+// webview-html.ts lives under script/, not src/, so it was not in the census. But it is
+// the canonical webview shell and every provider imports it:
+//
+//     ide/vscode/src/extension.ts:39   from "../../../script/m26/webview-html"
+//     ide/vscode/src/graph-panel.ts:173 from "../../../script/m26/webview-html"
+//     ide/vscode/src/impact-panel.ts:27 from "../../../script/m26/webview-html"
+//     ide/vscode/src/hub-panel.ts:173   from "../../../script/m26/webview-html"
+//
+// So the rule is not "under src/", it is "imported by a consumer outside the gate layer".
+// Modules under script/ that a non-script consumer imports are counted, by resolving the
+// specifiers those consumers actually write. Nothing is hard-coded: if a script/ module
+// stops being imported from outside, it leaves the census on its own.
+let adoptedProductModules = 0
+for (const consumer of walkSourceFiles(path.join(ROOT, "ide"))) {
+  if (!consumer.endsWith(".ts")) continue
+  for (const m of readFileSync(consumer, "utf8").matchAll(/["']((?:\.\.\/)+script\/[\w./-]+)["']/g)) {
+    const spec = m[1]!
+    // CONSUMERS WRITE THE SPECIFIER WITHOUT AN EXTENSION —
+    //   from "../../../script/m26/webview-html"
+    // so requiring `.ts` adopted nothing, and the vacuity check below caught exactly that
+    // on the first run of this change. A widened census that widens nothing is the old
+    // census wearing a new comment, which is the failure mode this session has hit three
+    // times (the path-encoding gate scanning zero files, verify-check-arg-order's first two
+    // versions, and this).
+    const base = path.resolve(path.dirname(consumer), spec)
+    const abs = [`${base}.ts`, path.join(base, "index.ts")].find((c) => existsSync(c))
+    if (!abs || exportedTypes.has(abs)) continue
+    const names = new Set<string>()
+    for (const t of readFileSync(abs, "utf8").matchAll(/^export (?:interface|type) (\w+)/gm)) names.add(t[1]!)
+    exportedTypes.set(abs, names)
+    adoptedProductModules++
+  }
+}
+
 check(
   "the src/ export census was readable (zero modules means the walk failed, not that none export types)",
   exportedTypes.size > 50 && [...exportedTypes.values()].some((s) => s.size > 0),
-  `${exportedTypes.size} src modules read, ${[...exportedTypes.values()].reduce((n, s) => n + s.size, 0)} exported types`,
+  `${exportedTypes.size} modules read (src/ plus ${adoptedProductModules} under script/ adopted because a non-script consumer imports them), ${[...exportedTypes.values()].reduce((n, s) => n + s.size, 0)} exported types`,
+)
+
+check(
+  "the adopted script/ product modules were actually found (a widened census that adopts nothing is the old census)",
+  adoptedProductModules > 0,
+  adoptedProductModules > 0
+    ? `${adoptedProductModules} script/ module(s) adopted as product modules via imports from ide/`
+    : `*** no script/ module was adopted, so the census is still src/-only and script/m26/webview-html.ts is invisible — the drift that hid ` +
+        `buildWebviewHtml's missing styles?: boolean is exactly what this must prevent ***`,
 )
 
 type Offender = { file: string; line: number; productModule: string; fn: string; form: string }
@@ -110,9 +164,38 @@ function findHandwrittenCopies(rel: string, abs: string, text: string, census: M
     if (!line.includes("await import(")) return
     // The specifier may sit on this line or the next two (multi-line import call).
     const window = lines.slice(i, i + 3).join(" ")
-    const m = window.match(/(?:path\.join\(ROOT,\s*)?["']((?:\.\.\/)*[a-z][\w./-]*\.ts)["']/)
-    if (!m) return
-    const spec = m[1]!
+    let m = window.match(/(?:path\.join\(ROOT,\s*)?["']((?:\.\.\/)*[a-z][\w./-]*\.ts)["']/)
+    let spec = m?.[1]
+    //
+    // A SPECIFIER PASSED AS A CONSTANT IS STILL A SPECIFIER.
+    //
+    // script/m26/verify-content-security.ts writes
+    //
+    //     const SHELL = join(ROOT, "script", "m26", "webview-html.ts")     line 31
+    //     const shell = await import(SHELL)                                line 43
+    //     const { buildWebviewHtml } = shell as { … }                      line 44
+    //
+    // so `await import(` is followed by a bare identifier and the three-line window holds no
+    // quoted path at all. That is how a real drifted copy of `buildWebviewHtml`'s signature
+    // — missing `styles?: boolean`, which the real module both declares and reads — stayed
+    // invisible to this gate. Three gaps in one detector, each found by a real instance and
+    // not by reading: src/-only census, extensionless specifiers, and now this.
+    if (!m) {
+      const idm = window.match(/await import\(\s*([A-Z_][A-Z0-9_]*)\s*\)/)
+      if (!idm) return
+      const decl = text.match(
+        new RegExp(`const\\s+${idm[1]}\\s*=\\s*join\\(\\s*ROOT\\s*,\\s*([^)]*)\\)`),
+      )
+      if (!decl) return
+      const segs = [...decl[1]!.matchAll(/"([^"]+)"/g)].map((x) => x[1]!)
+      if (segs.length === 0) return
+      spec = segs.join("/")
+    }
+    // `spec` is `string | undefined` because the literal match is optional and the
+    // constant-specifier branch assigns it. The reassignment of `m` that used to sit here
+    // was never read again — `spec` is what everything downstream uses — so it is gone
+    // rather than kept as a cast to satisfy nothing.
+    if (!spec) return
     const productModule = resolveImported(abs, spec)
     if (!census.has(productModule)) return
     const castAt = window.indexOf("as {")
