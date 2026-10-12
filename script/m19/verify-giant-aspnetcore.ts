@@ -12,6 +12,7 @@ import { execFileSync } from "node:child_process"
 import { BrainDatabase } from "../../src/brain/database"
 import { getProjectId } from "../../src/cli/index"
 import { hasValidExtension, shouldSkipCli } from "../../src/ast/parallel-indexer"
+import { optionalCorpusMissingMessage, resolveOptionalCorpus } from "../lib/optional-corpus.ts"
 
 let checks = 0, passed = 0, failed = 0
 function ck(label: string, cond: boolean, detail?: string) {
@@ -24,8 +25,23 @@ const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT_DIR, "validation/m19/results")
 if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 
-const REPO = "$HOME/aspnetcore"
-const PAPERCLIP = "$HOME/paperclip"
+// WAS: a literal foreign path — the owner's clone on the OTHER laptop. This machine has
+//  no such checkout, so the gate measured nothing: one crashed, one reported 5/7 with the
+//  corpus legs silently absent, one reported 0/16. Three shapes for one condition.
+//
+//  Now resolved through script/lib/optional-corpus.ts: env override, then the known
+//  locations, and when none exists a DECLARED BLOCK naming every path searched — so
+//  "not available here" reads differently from "the measurement failed".
+
+const REPO = resolveOptionalCorpus("aspnetcore", "BB_ASPNET_REPO") ?? "REPO_UNRESOLVED"
+// WAS: a literal foreign path — the owner's clone on the OTHER laptop. This machine has
+//  no such checkout, so the gate measured nothing: one crashed, one reported 5/7 with the
+//  corpus legs silently absent, one reported 0/16. Three shapes for one condition.
+//
+//  Now resolved through script/lib/optional-corpus.ts: env override, then the known
+//  locations, and when none exists a DECLARED BLOCK naming every path searched — so
+//  "not available here" reads differently from "the measurement failed".
+const PAPERCLIP = resolveOptionalCorpus("paperclip", "BB_PAPERCLIP_REPO") ?? "PAPERCLIP_UNRESOLVED"
 const S2_EXT = /\.(cs|fs|vb|cshtml|razor)$/
 const PAPERCLIP_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/
 const MACHINE = {
@@ -57,8 +73,24 @@ function walk(dir: string, extRe: RegExp, acc: string[] = []): string[] {
 
 async function main() {
   console.log("-- S2 giant aspnetcore + paperclip index verification --")
-  ck("S2: aspnetcore repo exists", existsSync(REPO), REPO)
-  ck("S2: paperclip repo exists", existsSync(PAPERCLIP), PAPERCLIP)
+  // As in script/m19/verify-giant-intellij.ts: these two RECORDED a missing repo and
+  // then walked it, so the gate died with ENOENT on a stack trace instead of reporting
+  // the absence. Both corpora are the owner's clones on the other laptop; neither is
+  // here. Report the absence and return.
+  // NOT `return`, for the reason established in script/m19/verify-giant-intellij.ts: a
+  // return here would exit main() before the process.exit at the bottom and the gate
+  // would exit 0 while printing FAIL. Both corpora are the owner's clones on the other
+  // laptop; when they are absent the leg reports the absence and skips its work, and
+  // the verdict and exit stay on the normal path.
+  // Hoisted so the evidence object can read it on BOTH paths: this gate records its
+  // verdict whether or not the corpora were measured, and a reader must be able to see
+  // which of the two happened. Same shape as the fix in verify-giant-intellij.ts.
+  let measured: Record<string, unknown> = { skipped: "the corpora are absent on this machine" }
+  const aspPresent = existsSync(REPO)
+  const clipPresent = existsSync(PAPERCLIP)
+  ck("S2: aspnetcore repo exists", aspPresent, aspPresent ? REPO : optionalCorpusMissingMessage("aspnetcore", "BB_ASPNET_REPO"))
+  ck("S2: paperclip repo exists", clipPresent, clipPresent ? PAPERCLIP : optionalCorpusMissingMessage("paperclip", "BB_PAPERCLIP_REPO"))
+  if (aspPresent && clipPresent) {
 
   const aspCandidates = walk(REPO, S2_EXT)
   const aspEligible = aspCandidates.filter((file) => !shouldSkipCli(file) && hasValidExtension(file))
@@ -140,7 +172,7 @@ async function main() {
   const fullFinalizationMeasured = paperclipFull || (hasCurrentSchema && timingRows.some((r: any) => r.deferredFinalization === false))
   ck("S2: at least one full-finalization timing run is evidenced", fullFinalizationMeasured, paperclipTiming ? "all timing rows used deferred finalization" : "missing timing")
 
-  const measured = {
+  measured = {
     repo: "aspnetcore",
     path: REPO,
     candidateFilesOnDisk: aspCandidates.length,
@@ -170,6 +202,8 @@ async function main() {
     },
     note: "aspnetcore and paperclip inventories are derived at verify time; deferred-finalization ingestion timings exclude heavy relationship enrichment, taint, gravity, and health",
   }
+  } // end S2 corpus work — skipped when either corpus is absent
+
 
   const e = {
     issue: "M19.S2", code: "S2", tool: "indexing pipeline (giant corpus)",

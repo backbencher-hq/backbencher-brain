@@ -13,6 +13,7 @@ import { execFileSync } from "node:child_process"
 import { BrainDatabase } from "../../src/brain/database"
 import { getProjectId } from "../../src/cli/index"
 import { readdirSync } from "node:fs"
+import { optionalCorpusMissingMessage, resolveOptionalCorpus } from "../lib/optional-corpus.ts"
 
 let checks = 0, passed = 0, failed = 0
 function ck(label: string, cond: boolean, detail?: string) {
@@ -25,7 +26,15 @@ const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT_DIR, "validation/m19/results")
 if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 
-const REPO = "$HOME/intellij-community"
+// WAS: a literal foreign path — the owner's clone on the OTHER laptop. This machine has
+//  no such checkout, so the gate measured nothing: one crashed, one reported 5/7 with the
+//  corpus legs silently absent, one reported 0/16. Three shapes for one condition.
+//
+//  Now resolved through script/lib/optional-corpus.ts: env override, then the known
+//  locations, and when none exists a DECLARED BLOCK naming every path searched — so
+//  "not available here" reads differently from "the measurement failed".
+
+const REPO = resolveOptionalCorpus("intellij-community", "BB_GIANT_REPO") ?? "REPO_UNRESOLVED"
 const SOURCE_EXT = /\.(java|kt|kts|groovy|scala)$/
 const MACHINE = {
   platform: process.platform,
@@ -65,7 +74,28 @@ function validControlRun(run: any): boolean {
 
 async function main() {
   console.log("-- S3 giant intellij-community index verification --")
-  ck("S3: repo exists", existsSync(REPO), REPO)
+  // The check RECORDS a missing repo but does not stop, and the next line walks it —
+  // the same shape as the m15 `winner` bug found earlier today: a non-aborting guard
+  // followed by unguarded use. With intellij-community absent (it is the owner's clone
+  // on the other laptop) the gate died with `ENOENT … scandir 'REPO_UNRESOLVED'` AFTER
+  // printing "S3: repo exists", so the failure mode was a stack trace rather than the
+  // declared block the resolver just produced.
+  //
+  // Both checks below now decide the outcome together: the repo is reported present or
+  // ABSENT, and the leg returns rather than walking a path that does not exist.
+  // NOT `return`. A return here exits main() BEFORE the process.exit line at the
+  // bottom, so the gate would exit 0 unconditionally — I introduced exactly that while
+  // fixing the crash, and caught it because the gate printed "FAIL: S3: repo exists"
+  // and still returned 0. A failure that exits 0 is worse than the crash it replaced.
+  // The corpus work is skipped inside the else; the verdict and exit stay on the normal
+  // path.
+  const repoPresent = existsSync(REPO)
+  // Declared here so the evidence object below can read it on BOTH paths: this gate
+  // records its verdict (and its declared block) whether or not the corpus was measured,
+  // and a reader must be able to see which of the two happened.
+  let measured: Record<string, unknown> = { skipped: "the corpus is absent on this machine" }
+  ck("S3: repo exists", repoPresent, repoPresent ? REPO : optionalCorpusMissingMessage("intellij-community", "BB_GIANT_REPO"))
+  if (repoPresent) {
 
   const candidateFiles = walk(REPO)
   ck("S3: source inventory is non-empty", candidateFiles.length > 0, "candidates=" + candidateFiles.length)
@@ -122,7 +152,7 @@ async function main() {
     (freshBatch?.batches?.[0]?.wallMs || "unknown") + " ms, so a complete cold run is outside the bounded verification window"
   ck("S3: measured partial reason is explicit", limitation.includes("first fresh 1,000-file batch took") && limitation.includes("outside the bounded verification window"), limitation)
 
-  const measured = {
+  measured = {
     repo: "intellij-community",
     path: REPO,
     candidateFilesOnDisk: candidateFiles.length,
@@ -138,6 +168,8 @@ async function main() {
     fullColdTimingComplete: false,
     note: limitation,
   }
+
+  } // end S3 corpus work — skipped entirely when the repo is absent
 
   const e = {
     issue: "M19.S3", code: "S3", tool: "indexing pipeline (mega corpus)",
