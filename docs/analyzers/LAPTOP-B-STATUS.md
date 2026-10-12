@@ -4045,7 +4045,12 @@ failing fixtures · `import-bound-name-seam.mts` exit 0 (A–E) · `script/m14/v
 own verifier) PASS · `resolution-verdict-gate.ts` exit 0 · `export-residual-gate.mts` exit 0 ·
 `not-bound-in-file-gate.mts` exit 0. In the SHARED checkout the python fixture run reads
 `pass 45 / fail 7`, all seven being missing `overrides` edges from that other lane's in-flight change —
-reported rather than smoothed over.
+While that change was IN FLIGHT the shared checkout's python fixture run read `pass 45 / fail 7`, all seven
+being missing `overrides` edges from it. After the lane committed (`d2ca95628`, which also swept this round's
+analyzer hunk into HEAD) the SHIPPED checkout reads `pass 51 / fail 1` — and the one remaining failure is a
+stale FORBID row in THEIR fixture (`python/companion-index/comp-child` still forbids
+`overrides target: "send"` while the same commit respells that target to the bare member name). Both numbers
+are reported rather than smoothed over, and neither is this round's.
 
 **What is NOT closed, with numbers.** (1) The CLASSIFICATION half of PY-D13: the projection puts the
 analyzer's `importType` in a field the indexer does not read, and `brain.sql.ts` documents `import_type` as
