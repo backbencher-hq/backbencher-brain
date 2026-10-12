@@ -1,23 +1,27 @@
 {
   "schemaVersion": 1,
   "generatedBy": "script/m61/verify-orphan-gates.ts",
-  "head": "de5ff45a42d9fe209c372d7e2737995daac7b1b0",
+  "head": "e462a379733f55601d9d04e00259c88d30bf2765",
   "note": "The declared-orphan baseline. A verifier listed here is present on disk and reachable from NO npm script and NO closure gate; the reason states why. Adding a new unwired verifier without adding it here fails G1 of script/m61/verify-orphan-gates.ts. Generated content is the census; the `orphans` map is the reviewed declaration.",
   "census": {
-    "verifiers": 606,
-    "wiredByNpmScripts": 416,
-    "wiredIncludingClosureGateBodies": 416,
-    "orphans": 190,
-    "declaredOrphans": 184,
-    "verifiersNamedBySource": 66,
-    "unprotectedBySource": 13,
+    "verifiers": 658,
+    "wiredByNpmScripts": 420,
+    "wiredIncludingClosureGateBodies": 420,
+    "orphans": 238,
+    "declaredOrphans": 185,
+    "verifiersNamedBySource": 308,
+    "unprotectedBySource": 17,
     "declaredSourceNamed": 8,
     "undeclaredSourceNamed": [
+      "script/m14/verify-erlang-identity.ts (named by src/ast/real-erlang-analyzer.ts)",
       "script/m24/verify-position-arithmetic.ts (named by src/lsp/navigation.ts)",
       "script/m26/verify-graph-transport.ts (named by src/lsp/server.ts)",
       "script/m28/verify-surface-parity.ts (named by src/intelligence/documentation/doc-engine.ts)",
       "script/m42/verify-rich-hover.ts (named by src/lsp/rich_hover.ts)",
-      "script/m55/verify-hover-coverage.ts (named by src/lsp/rich_hover.ts, src/lsp/rich_hover.ts)"
+      "script/m55/verify-hover-coverage.ts (named by src/lsp/rich_hover.ts, src/lsp/rich_hover.ts)",
+      "script/m60/verify-lua-dedupe-invariant.ts (named by src/ast/real-lua-analyzer.ts)",
+      "script/m60/verify-lua-stdlib-external.mts (named by src/ast/real-lua-analyzer.ts)",
+      "script/perf/verify-scaling-linear.ts (named by src/ast/parallel-indexer.ts, src/ast/parallel-indexer.ts)"
     ]
   },
   "orphans": {

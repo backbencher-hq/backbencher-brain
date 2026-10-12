@@ -173,7 +173,12 @@ async function main() {
   rmSync(process.env.BB_DATA_DIR!, { recursive: true, force: true })
 
   const { execFileSync } = await import("node:child_process")
-  const { writeFileSync: wf, mkdirSync: ms } = await import("node:fs")
+  const { mkdirSync: ms } = await import("node:fs")
+  // SEALED WRITE (M61), same repair as A1's below: this gate stamped raw JSON, so
+  // a re-record dropped the envelope the register names. Measured 2026-10-12: the
+  // committed record had no seal at all while the register carried a digest for it
+  // — the one row the repo-wide seal audit M61.A1 was still failing on.
+  const { writeSealed } = await import("../lib/evidence")
   const evidence = {
     gate: "M51.A2", issue: 717, at: new Date().toISOString(),
     commit: execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT }).toString().trim(),
@@ -182,8 +187,8 @@ async function main() {
     checks: { total: checks, passed, failed },
   }
   ms(join(ROOT, "validation/m51/results"), { recursive: true })
-  wf(join(ROOT, "validation/m51/results/A2.json"), JSON.stringify(evidence, null, 2))
-  console.log(`\nA2: ${passed}/${checks} passed, ${failed} failed → validation/m51/results/A2.json`)
+  const seal = writeSealed(join(ROOT, "validation/m51/results/A2.json"), evidence)
+  console.log(`\nA2: ${passed}/${checks} passed, ${failed} failed → validation/m51/results/A2.json (sealed ${seal.contentSha256.slice(0, 12)})`)
   if (failed > 0) process.exit(1)
 }
 

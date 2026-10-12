@@ -104,15 +104,21 @@ console.log(`${prod.ok ? "✅" : "❌"} P2.stdio-handshake: ${prod.detail}`)
 console.log(`\n=== M54.P2 GATE: ${prod.ok ? "PASS" : "FAIL"} ===`)
 {
   const { execSync } = await import("node:child_process")
-  const { mkdirSync, writeFileSync } = await import("node:fs")
+  const { mkdirSync } = await import("node:fs")
+  // SEALED WRITE (M61). This record is REGISTERED (validation/m61/seal-refresh-register.json
+  // carries a digest for it), and the writer stamped raw JSON — so every re-run
+  // dropped the envelope the register names. Measured 2026-10-12: the M54.X1
+  // closure gate re-ran this file live and left `seal=None` against a register row
+  // read as `bc9aab0b`, which is the stale-seal class the register exists to record.
+  const { writeSealed } = await import("../lib/evidence")
   const commit = execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim()
   mkdirSync(path.join(ROOT, "validation/m54/results"), { recursive: true })
-  writeFileSync(path.join(ROOT, "validation/m54/results/P2.json"), JSON.stringify({
+  writeSealed(path.join(ROOT, "validation/m54/results/P2.json"), {
     gate: "M54.P2", issue: 728, milestone: "M54", at: new Date().toISOString(), commit,
     checks: 1, passed: prod.ok ? 1 : 0, failed: prod.ok ? 0 : 1,
     verifierCommand: "npx tsx script/m54/verify-p2-stdio.ts",
     status: prod.ok ? "verified" : "known-gap",
     shape: { command: "node bin/bb mcp", toolsServed: prod.tools, minExpected: EXPECTED_MIN_TOOLS },
-  }, null, 2) + "\n")
+  })
 }
 process.exit(prod.ok ? 0 : 1)

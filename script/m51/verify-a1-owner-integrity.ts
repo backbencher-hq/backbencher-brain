@@ -125,10 +125,18 @@ async function main() {
     mutation: mutantOut,
     checks: { total: checks, passed, failed },
   }
-  const { writeFileSync: wf, mkdirSync: ms } = await import("node:fs")
+  // SEALED WRITE (M61). This gate stamped RAW JSON, so every re-run DROPPED the
+  // `bbSeal` envelope the committed record carried — measured 2026-10-12: a run
+  // of this file against the sealed HEAD record left a record whose seal is
+  // ABSENT while the M61 register still names the digest it had, which is the
+  // exact stale-seal class the register exists to record. `writeSealed` is the
+  // one write path (script/lib/evidence.ts, and M15.XR6 asserts the library
+  // declares it as such), so a re-record moves the digest WITH the content.
+  const { writeSealed } = await import("../lib/evidence")
+  const { mkdirSync: ms } = await import("node:fs")
   ms(join(ROOT, "validation/m51/results"), { recursive: true })
-  wf(join(ROOT, "validation/m51/results/A1.json"), JSON.stringify(evidence, null, 2))
-  console.log(`\nA1: ${passed}/${checks} passed, ${failed} failed → validation/m51/results/A1.json`)
+  const seal = writeSealed(join(ROOT, "validation/m51/results/A1.json"), evidence)
+  console.log(`\nA1: ${passed}/${checks} passed, ${failed} failed → validation/m51/results/A1.json (sealed ${seal.contentSha256.slice(0, 12)})`)
   if (failed > 0) process.exit(1)
 }
 

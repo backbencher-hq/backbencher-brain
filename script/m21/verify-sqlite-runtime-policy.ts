@@ -275,7 +275,12 @@ db.close()
     ]
   }
   mkdirSync(path.join(ROOT, "validation/m21/results"), { recursive: true })
-  writeFileSync(path.join(ROOT, "validation/m21/results/D2.json"), JSON.stringify(result, null, 2) + "\n")
+  // SEALED WRITE (M61). This record is REGISTERED, and the writer stamped raw
+  // JSON, so every re-run dropped the envelope the register names — measured
+  // 2026-10-12 after the M54.X1 closure gate re-ran this file live: `seal=None`
+  // against a register row read as `cdde11d4`.
+  const { writeSealed } = await import("../lib/evidence")
+  writeSealed(path.join(ROOT, "validation/m21/results/D2.json"), result)
   console.log(`D2: ${status.toUpperCase()} (${passed}/${checks}, ${negatives} negative)`)
   process.exit(status === "verified" ? 0 : 1)
 } finally {

@@ -1,19 +1,19 @@
 {
-  "status": "known-gap",
-  "passed": 19,
-  "failed": 1,
+  "status": "verified",
+  "passed": 20,
+  "failed": 0,
   "negatives": {
     "planned": 4
   },
   "verdict": {
-    "realComponentFailures": 1,
+    "realComponentFailures": 0,
     "mutantsCaught": 4,
     "mutantsTotal": 4,
     "ok": true
   },
-  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "currentCommit": "fcb140e46f695fb607e9e344cdf2564e19d6d6d3",
   "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
-  "sourceFingerprint": "fb70c44e36f60ea68130f355b8987fe6353939d657337940b608dbb929002fd9",
+  "sourceFingerprint": "15c348c6bf09e1b5e38ceb7124f2e6f3f95914501ca74bb0469345d607a6cdc1",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-precision-improvements.ts",
@@ -22,13 +22,11 @@
     "script/m29/r5-tier-fixture.ts"
   ],
   "evidenceFile": "R5-verify.json",
-  "generatedAt": "2026-10-05T22:40:21.483Z",
-  "details": [
-    "F0: dist is fresh (rebuilt after the last hover.ts change): run npm run build — the in-editor/server legs would test a stale fix"
-  ],
+  "generatedAt": "2026-10-12T14:54:19.269Z",
+  "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:40:21.484Z",
-    "contentSha256": "6cfa6cd975e2a7d2c271d43cf11ef05c9afc390a53d7b09214a0663eb1a21599"
+    "sealedAt": "2026-10-12T14:54:19.270Z",
+    "contentSha256": "b942538a2a2b4c7d3e3ba195cd3cd2ffcc0a878eba420150a61c842f77bcea9d"
   }
 }

@@ -26,6 +26,8 @@ process.env.BB_LOG_LEVEL = "3"
 process.env.BB_FK_ENFORCE = "0"
 
 let restored = false
+// The text this run wrote into the SOURCE, kept for the restore guard below.
+let mutantText = ""
 let result: { colonZero: number; orphans: number } | null = null
 try {
   mkdirSync(join(ROOT, "script/m51/tmp"), { recursive: true })
@@ -36,12 +38,25 @@ try {
   const r1 = "              const parentSymbol = nameToSymbol.get(_ownerName)\n"
   if (!mutant.includes(r1)) throw new Error("mutation anchor 1 missing")
   mutant = mutant.replace(r1, r1 + "              ownerSymbolId = `${fileId}:${_ownerName}:0`\n")
-  const r2 = "              if (parentSymbol && parentSymbol.name !== symbol.name) {"
+  // ANCHORS 2 and 3 RE-POINTED 2026-10-12 (#612 containment round). The guards
+  // this probe reverts are still there and still the M51.A1 ones — the second
+  // simply gained a `!ownerSymbolId && ` prefix so a covering same-name owner
+  // chosen above is not overwritten by the module fallback — and the probe's
+  // string pins still spelled the pre-#612 line, so the arm died with
+  // "mutation anchor 2 missing" BEFORE it wrote anything (the source stayed
+  // untouched, which is why the failure read as a crash rather than as a
+  // phantom). A pin that stops matching looks exactly like a guard that was
+  // removed, and the honest answer is to re-point it at the guard that IS
+  // there: `if (parentSymbol)` is still the pre-M51 unconditional module
+  // fallback, and `if (parentStartLine >= 0)` is still the old storeability
+  // test.
+  const r2 = "               if (!ownerSymbolId && parentSymbol && parentSymbol.name !== symbol.name) {"
   if (!mutant.includes(r2)) throw new Error("mutation anchor 2 missing")
-  mutant = mutant.replace(r2, "              if (parentSymbol) {")
-  const r3 = "                if (storeableName(parentSymbol.name, parentStartLine)) {"
+  mutant = mutant.replace(r2, "               if (parentSymbol) {")
+  const r3 = "                 if (storeableName(parentSymbol.name, parentStartLine)) {"
   if (!mutant.includes(r3)) throw new Error("mutation anchor 3 missing")
-  mutant = mutant.replace(r3, "                if (parentStartLine >= 0) {")
+  mutant = mutant.replace(r3, "                 if (parentStartLine >= 0) {")
+  mutantText = mutant
   writeFileSync(SRC, mutant)
 
   // Import AFTER the patch so the mutated module is what runs.
@@ -80,12 +95,34 @@ try {
 
   result = { colonZero, orphans }
 } finally {
-  writeFileSync(SRC, original)
-  restored = sha(readFileSync(SRC, "utf8")) === sha(original)
-  if (!restored) {
-    // Last-resort recovery from the .bak copy.
-    writeFileSync(SRC, readFileSync(join(ROOT, "script/m51/tmp/parallel-indexer.ts.bak"), "utf8"))
+  // THE RESTORE IS GUARDED, because this probe writes the REAL source file and
+  // other agents work in this checkout at the same time. Restoring
+  // unconditionally overwrites whatever is on disk with the pre-run copy, which
+  // silently destroys a concurrent edit and then reports a byte-identical
+  // restore — the hash check compared the file against the very text it had just
+  // written, so it could not see the loss. Measured shape of the hazard: the
+  // source's mtime moved 40s after one run of this probe. Three cases now, read
+  // from the disk itself: our mutant (restore), already the pre-run copy (nothing
+  // to do), or NEITHER — someone else wrote, and this probe refuses to overwrite
+  // a writer it cannot see, failing loudly while its `.bak` copy stays in place.
+  const disk = readFileSync(SRC, "utf8")
+  const diskHash = sha(disk)
+  if (diskHash === sha(original)) {
+    restored = true
+  } else if (mutantText && diskHash === sha(mutantText)) {
+    writeFileSync(SRC, original)
     restored = sha(readFileSync(SRC, "utf8")) === sha(original)
+    if (!restored) {
+      // Last-resort recovery from the .bak copy.
+      writeFileSync(SRC, readFileSync(join(ROOT, "script/m51/tmp/parallel-indexer.ts.bak"), "utf8"))
+      restored = sha(readFileSync(SRC, "utf8")) === sha(original)
+    }
+  } else {
+    throw new Error(
+      "parallel-indexer.ts changed underneath this probe: on-disk text is neither the pre-run copy nor this run's mutant. " +
+      "A concurrent writer edited the file, so this probe refuses to overwrite it. The pre-run copy is at " +
+      "script/m51/tmp/parallel-indexer.ts.bak — reconcile by hand, then re-run.",
+    )
   }
   if (restored) rmSync(join(ROOT, "script/m51/tmp"), { recursive: true, force: true })
 }

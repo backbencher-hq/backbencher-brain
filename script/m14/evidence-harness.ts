@@ -20,6 +20,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
+import { canonicalizeKeys, sealFor } from "../lib/evidence.ts"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const RESULTS_DIR = path.join(ROOT, "validation", "m14", "results")
@@ -185,8 +186,23 @@ export function emitEvidence(input: EvidenceInput, resultsDir = RESULTS_DIR): st
     regeneratedAtCommit: gitCommit(),
     regeneratedAt: new Date().toISOString(),
   }
+  // M61 D-1 (the seal law) — THIS WRITER IS 42 SCRIPTS' ONLY WRITE PATH, and it
+  // used to stamp RAW JSON. Every m14 record it wrote therefore carried no
+  // `bbSeal`: the seal machinery could never verify them, and a re-run
+  // SILENTLY DE-SEALED records that a one-shot M61 refresh had sealed
+  // (validation/m14/results/M14.0.SPEC.json is the measured instance — the M61
+  // seal register recorded its digest, then a lane re-measure here rewrote the
+  // file raw and the register no longer matched any seal in the record). The
+  // seal is computed over the CANONICALIZED record — the same sorted-key shape
+  // `stableStringify` writes — so a verifier that parses the file, drops the
+  // envelope and re-serializes recomputes exactly the digest sealed here
+  // (script/lib/evidence.ts verifySeal). Key order is load-bearing for that
+  // recomputation: sealing the unsorted in-memory object while writing sorted
+  // bytes would produce a record whose own seal reads as `tampered`.
+  const canonical = canonicalizeKeys(lineage)
+  const seal = sealFor(canonical)
   const tmp = `${file}.tmp-${process.pid}`
-  fs.writeFileSync(tmp, stableStringify(lineage) + "\n")
+  fs.writeFileSync(tmp, stableStringify({ ...(canonical as Record<string, unknown>), bbSeal: seal }) + "\n")
   fs.renameSync(tmp, file)
   return file
 }
