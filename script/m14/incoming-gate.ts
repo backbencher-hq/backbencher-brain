@@ -148,7 +148,12 @@ export const LANES_B: Record<string, string> = {
   // NOTE: no `key: "value"` shape and no backticks in this comment — the parser below reads this literal
   // quote-aware but NOT comment-aware.
 
-  protobuf: "proto", json: "json,jsonc",
+  protobuf: "proto", json: "json,jsonc,jsonl",
+  // `.jsonl` ADDED, and it is a SEPARATE list from the router — the two were half-kept three times today
+  // (graphqls, sass, and now this), so both sites are named in the same commit on purpose.
+  // NOTE: no shape of key-colon-quote in this comment and no backticks: the parser reads this literal
+  // quote-aware but NOT comment-aware, and a comment carrying one is read as a lane.
+
   // BOTH SPELLINGS, because one language does not become a different population by being spelled
   // `.yml`. Measured on ansible — 13 `.yaml` files against 2,068 `.yml`, 2,081 combined — so the
   // `--all` table was measuring 0.6% of the lane's files and reporting the 13-file verdict as the

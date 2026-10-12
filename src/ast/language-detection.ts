@@ -63,7 +63,16 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   // `less` still maps to "css" deliberately: LESS is a CSS superset and it is NOT in
   // SUPPORTED_LANGUAGES, so no unreachable language is declared by leaving it here.
   scss: "scss", sass: "sass", less: "css",
-  json: "json", jsonc: "json", yml: "yaml", yaml: "yaml",
+  json: "json", jsonc: "json",
+  // `.jsonl` ADDED — JSON LINES, one JSON document per line, which the `json` grammar reads with NO representational
+  // gap. Found by the fleet unrouted-extension census (script/m60/unrouted-extension-census.ts): 31 corpus files,
+  // 4,676 symbols and 4,651 relationships through the winning grammar, and the extension was simply missing.
+  // IT IS THE SAFEST ENTRY IN THAT CENSUS'S 154-ROW CANDIDATE SET, and chosen over the higher-priced `.jsonschema`
+  // (7,255 relationships from THREE files — about 2,400 per file, above any routed language's density here) because
+  // THIS ONE HAS NO REPRESENTATIONAL QUESTION TO ANSWER. The census measures that a grammar PRODUCES SYMBOLS, not
+  // that it is the RIGHT grammar — `.pyx` sits in the same list at 1,540 files with a Python grammar that cannot
+  // represent Cython, which is the failure mode `routing-outlier-census.ts` exists to catch.
+  jsonl: "json", yml: "yaml", yaml: "yaml",
   // `.graphqls` was missing while `graphql` and `gql` were present. It is the GraphQL SCHEMA extension —
   // the same format, spelled for schema files — so this is an omission and not a decision. MEASURED
   // THROUGH PRODUCTION DISCOVERY, not by walking the filesystem: the graphql lane's own instrument priced
