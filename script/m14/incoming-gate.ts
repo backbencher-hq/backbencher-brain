@@ -148,7 +148,12 @@ export const LANES_B: Record<string, string> = {
   // NOTE: no `key: "value"` shape and no backticks in this comment — the parser below reads this literal
   // quote-aware but NOT comment-aware.
 
-  protobuf: "proto", json: "json,jsonc,jsonl",
+  protobuf: "proto", json: "json,jsonc,jsonl,jsonlog",
+  // `.jsonlog` ADDED, at BOTH sites in one commit — the fourth time today these two lists had to be kept
+  // together (graphqls, sass, jsonl, and now this), so both are named here on purpose.
+  // NOTE: no shape of key-colon-quote in this comment and no backticks — the parser reads this literal
+  // quote-aware but NOT comment-aware.
+
   // `.jsonl` ADDED, and it is a SEPARATE list from the router — the two were half-kept three times today
   // (graphqls, sass, and now this), so both sites are named in the same commit on purpose.
   // NOTE: no shape of key-colon-quote in this comment and no backticks: the parser reads this literal

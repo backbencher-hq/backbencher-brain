@@ -72,7 +72,13 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   // THIS ONE HAS NO REPRESENTATIONAL QUESTION TO ANSWER. The census measures that a grammar PRODUCES SYMBOLS, not
   // that it is the RIGHT grammar — `.pyx` sits in the same list at 1,540 files with a Python grammar that cannot
   // represent Cython, which is the failure mode `routing-outlier-census.ts` exists to catch.
-  jsonl: "json", yml: "yaml", yaml: "yaml",
+  // `.jsonlog` ADDED — a JSON-per-line log, the same shape as `.jsonl` and read by the `json` grammar
+  // with no representational gap. From the fleet census: 5 corpus files, 408 symbols, 403 relationships.
+  // THE THIRD `.json`-family extension taken and the FIRST LEFT: `.jsonschema` (3 files, 7,255 relationships
+  // — ~2,400 per file, ABOVE ANY ROUTED LANGUAGE'S DENSITY HERE) is NOT taken, because the census measures
+  // that a grammar PRODUCES SYMBOLS and not that it is the RIGHT grammar, and that density is a claim
+  // nobody has checked. `.jsonl` and `.jsonlog` answer a question; `.jsonschema` asks one.
+  jsonl: "json", jsonlog: "json", yml: "yaml", yaml: "yaml",
   // `.graphqls` was missing while `graphql` and `gql` were present. It is the GraphQL SCHEMA extension —
   // the same format, spelled for schema files — so this is an omission and not a decision. MEASURED
   // THROUGH PRODUCTION DISCOVERY, not by walking the filesystem: the graphql lane's own instrument priced
