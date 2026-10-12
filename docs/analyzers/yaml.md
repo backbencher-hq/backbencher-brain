@@ -994,6 +994,59 @@ and any claim whose truth rests on a file the indexer skips has a population-dep
 count is printed here so no reader has to discover it: **the qualifier is about edge counts and about
 file-backed claims, NOT about any lane's residual** — on this lane's 184 it changes nothing.
 
+## ROUND 17 — IS THE 1,414,582 A DEGRADED WALK? The route was ONE long sequential walk, and the SHARDED route reproduces it to 3 edges in 1.4 million
+
+**THE FLEET FINDING THIS ANSWERS** (markdown, 17,460 files): from ~file 9,000 onward every file was
+answered by `extractFallback()` at ~0.3 edges/file where the analyzer yields 16–36 — **a 2.23×
+under-count** — while the run's own `degraded` line read **2**. yaml's population is **18,364 files,
+larger than the corpus where the collapse was demonstrated.**
+
+**1. WHICH ROUTE — one long walk, and the code says so.** `incoming-gate.ts` parses inside
+`for (const f of files)` with `await parseFile(f, repoOf(f), { projectIndex, projectRoot })`
+(`:794-795`) and defers only the CLASSIFICATION to a second pass. **So the 1,414,582 is ONE sequential
+walk of 18,364 files in one process.** The lane's own instruments (the enumerator, the disclosure
+census, `production-admission-diff.ts`) walk the same way.
+
+**2. RE-MEASURED ON THE SHARDED ROUTE** — `index % 8`, so the longest walk is **2,296 files**, well
+under the observed collapse depth. An edge belongs to the file that emitted it, so partitioning files
+partitions edges exactly and the shard sum is comparable:
+
+| type | 8 shards (max depth 2,296) | one long walk (18,364) | Δ |
+|---|---|---|---|
+| `contains` | 1,380,046 | 1,380,046 | **0** |
+| `references` | 21,414 | 21,417 | −3 |
+| `imports` | 8,366 | 8,366 | **0** |
+| `exports` | 4,080 | 4,080 | **0** |
+| `calls` | 327 | 327 | **0** |
+| `uses` | 165 | 165 | **0** |
+| `extends` | 155 | 155 | **0** |
+| `overrides` | 26 | 26 | **0** |
+| **TOTAL** | **1,414,579** | **1,414,582** | **−3 (0.0002 %)** |
+
+**NO DEPTH DEGRADATION ON THIS LANE.** A collapse past 9,000 files would have made the shard sum
+*larger* — markdown's sharded route was 2.23× its long walk — and here the difference is **three
+edges**, in the *other* direction, confined to one type. The explanation is the instrument's own call
+shape: the gate passes a built `ProjectIndex` (`{ projectIndex: idx, projectRoot }`) and the shard walk
+passes only `{ projectRoot }`, so three cross-file `references` do not appear. **A missing index
+explains a 3-edge deficit; depth collapse cannot explain a 3-edge deficit in the direction of MORE
+edges, and every other type — including the 1.38 M `contains` — matches to the digit.**
+
+**3. THE `degraded` LINE, CHECKED AGAINST THE FALLBACK REALITY.** All 8 shards report
+**`fallback:true 0 · analysisVersion 2.0-basic-fallback 0`** — the gate counts BOTH signatures
+(`incoming-gate.ts:832`), and this lane's runs say `degraded 0`. **And that zero is a READING, not
+silence: a CONTROL drives the fallback path deliberately** (a 1.8 MB document, answered structurally by
+`pool-worker`'s `FULL_AST_LIMIT`) and the gate's own predicate **FIRES** on the result
+(`fallback: true`, 0 symbols, 0 relationships). A counter that cannot fire would make `degraded 0`
+worthless; this one can. `degraded-control.txt`.
+
+**WHAT THIS DOES AND DOES NOT SETTLE, stated the way the ~56 are stated.** SETTLED: the edge total and
+every type count are not depth-degraded, so the 184's denominator is sound and the class sizes stand.
+NOT SETTLED BY THIS: whether the ~56 real-content files that returned nothing are a legitimate
+empty-declaration class or a recovery hole — but this narrows it, because a fallback result carries
+ZERO symbols and ZERO relationships, the counter can fire, and it reports 0 on this population, so
+**those 56 are the analyzer reading real content and finding nothing to declare, not files that fell
+through.**
+
 ## COMPLETION PACKAGE — current revision
 
 Whole admitted population: **1,414,582 edges · 18,364 files · 189 repos · 0 failed · 0 degraded.**
