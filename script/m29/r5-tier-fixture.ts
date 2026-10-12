@@ -29,6 +29,23 @@ import { fileURLToPath } from "node:url"
 
 const require = createRequire(import.meta.url)
 
+// THE DRIVER IS CHOSEN BY RUNTIME, through the project's own pair
+// (`src/storage/db.bun.ts` / `db.node.ts`, the one `BrainDatabase` selects
+// between). The fixture used `require("better-sqlite3")` for both of its opens,
+// which made `bun run script/m29/verify-precision-improvements.ts` die with
+// `ERR_DLOPEN_FAILED … 'better-sqlite3' is not yet supported in Bun` inside this
+// file — before the gate's first check — so the declared runner reported a crash
+// where it should have reported the milestone's verdict. Resolved once, at module
+// scope, so both opens (and the sync signature of `seedTierFixture`) stay as they
+// were.
+const MODULE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
+const { openDatabase } = (await import(
+  path.join(
+    MODULE_ROOT,
+    typeof (globalThis as any).Bun !== "undefined" ? "src/storage/db.bun.ts" : "src/storage/db.node.ts",
+  ),
+)) as typeof import("../../src/storage/db.node.ts")
+
 export interface TierFixture {
   dbPath: string
   symbolId: string
@@ -39,10 +56,9 @@ const PROJECT = "r5-tier-fixture"
 
 /** Seed a real db with analyzer-shaped rows. Returns paths + the symbol id. */
 export function seedTierFixture(): TierFixture {
-  const Database = require("better-sqlite3")
   const dir = mkdtempSync(path.join(os.tmpdir(), "r5-tier-"))
   const dbPath = path.join(dir, "brain.db")
-  const db = new Database(dbPath)
+  const db = openDatabase(dbPath)
 
   // Minimal real schema (columns hover/brain queries touch).
   db.exec(`
@@ -114,9 +130,8 @@ export async function probeFixture(): Promise<{ tiers: string[]; ok: boolean; de
   const fx = seedTierFixture()
   try {
     const { evidenceTiersFor } = await import(path.join(process.cwd(), "src/lsp/hover.ts"))
-    const Database = require("better-sqlite3")
-    const raw = new Database(fx.dbPath)
-    const tiers = evidenceTiersFor(raw as never, fx.symbolId) as string[]
+    const raw = openDatabase(fx.dbPath)
+    const tiers = evidenceTiersFor(raw, fx.symbolId) as string[]
     raw.close()
     const ok = EXPECTED_TIERS_STRICT.every((t) => tiers.includes(t))
     return { tiers, ok, detail: ok ? "structural evidence resolved" : `expected ${JSON.stringify(EXPECTED_TIERS_STRICT)} ⊆ got ${JSON.stringify(tiers)} — structural evidence downgraded` }
