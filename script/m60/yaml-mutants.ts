@@ -434,6 +434,63 @@ const rootAnchoredActionReverted = (r: any) => ({
   }),
 })
 
+/**
+ * The dependency marker-name guard REMOVED: a kube-api-linter `dependenttags.rules[].dependsOn`
+ * value goes back to emitting the unverifiable `references` edge the guard refuses — target
+ * `k8s:optional`, a kubebuilder MARKER no analyzer publishes, so no instrument could ever confirm
+ * the claim (measured: 3 of 1,895 `yaml_depends_on` targets, all this shape).
+ *
+ * A DISCLOSED DIVERGENCE, same shape as `volumeSourceScannedAsNames`: the result carries no scalar
+ * VALUES, so the transform cannot read the marker name the guard dropped off the file. It re-attaches
+ * the MEASURED corpus target (`k8s:optional`, the only colon-bearing template-free dependency value
+ * in the whole admitted population) to every dependency-key symbol under a `dependenttags` container
+ * — the structural site all three corpus edges came from, read off the result's own symbol paths.
+ * The shape reverted is the same (a dependency key at a marker-rule position emitting a claim nothing
+ * can check); the specific target is pinned by the measurement rather than read from the file, and
+ * that is the divergence, stated. Caught by yaml/dependency-marker-name, whose forbid row names the
+ * target and whose three expect rows pin the shapes the guard must NOT touch.
+ */
+const dependencyMarkerGuardRemoved = (r: any) => {
+  const DEP_KEYS = new Set(["depends_on", "dependsOn", "needs", "requires"])
+  const invented: any[] = []
+  for (const s of (r.symbols ?? []) as any[]) {
+    const q = String(s.qualifiedName ?? "")
+    const leaf = q.slice(q.lastIndexOf(".") + 1)
+    if (!DEP_KEYS.has(leaf)) continue
+    if (!q.includes(".dependenttags.")) continue
+    invented.push({
+      type: "references",
+      source: q,
+      target: "k8s:optional",
+      confidence: 0.8,
+      line_number: 0,
+      metadata: {
+        relationshipType: "yaml_depends_on",
+        isExternal: true,
+        resolved: false,
+        unresolvedReason: "not-declared-in-file",
+        referencedName: "k8s:optional",
+        evidenceClass: "inferred",
+      },
+    })
+  }
+  return { ...r, relationships: [...(r.relationships ?? []), ...invented] }
+}
+
+/**
+ * The guard OVER-FIRES: written without the `{{` exclusion, so a template value at a dependency
+ * position is refused too. A `${{ parameters.dependsOn }}` edge is a RULED external claim — real
+ * Azure Pipelines shape, 17 corpus edges — and dropping it loses a true edge to buy a cleaner extQ.
+ * Caught by yaml/dependency-marker-name's expect row, which pins the template edge with
+ * `meta.isExternal: true`.
+ */
+const dependencyMarkerGuardOverfires = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).filter(
+    (x: any) => !(x.metadata?.relationshipType === "yaml_depends_on" && String(x.target ?? "").includes("{{")),
+  ),
+})
+
 /** The override direction reversed: the replaced entry claims to override its replacement. */
 const overridesDirectionReversed = (r: any) => ({
   ...r,
@@ -704,5 +761,21 @@ export const YAML_MUTANTS = [
     description:
       "The publication over-fires to every nested descendant, as if the container were flat: `components.schemas.Item.properties.id` acquires its own `exports` edge alongside `Item`. The corpus cost of this shape is not small — `components.schemas.Item` holds `properties`, `properties.id` and `type`, and the measured 2511 publications would multiply by the schemas' depth. Caught by yaml/schema-publication-export, whose forbid rows name `Item.properties.id` and both container levels.",
     transform: exportsOverFires,
+  },
+  {
+    id: "yaml/dependency-marker-guard-removed",
+    language: "yaml",
+    defectClass: "over-firing",
+    description:
+      "The dependency marker-name guard REMOVED, so a kube-api-linter `dependenttags.rules[].dependsOn` value emits the `references` edge the guard refuses — target `k8s:optional`, a kubebuilder MARKER (a Go-comment annotation) no analyzer publishes in any lane, i.e. a claim no instrument could ever confirm. The guard is the population-priced form of the candidate guard this lane named and left unimplemented at 3 edges: the price is now measured (1,895 `yaml_depends_on` targets counted untruncated — 1,892 colon-free, 3 `k8s:optional`, zero collateral), and the shape rule is vocabulary-free. Caught by yaml/dependency-marker-name, whose forbid row names the target while its three expect rows pin the shapes the guard must NOT touch (a template value at the same key, a compose sibling service, a workflow job).",
+    transform: dependencyMarkerGuardRemoved,
+  },
+  {
+    id: "yaml/dependency-marker-guard-overfires",
+    language: "yaml",
+    defectClass: "dropped-relationship-type",
+    description:
+      "The guard WITHOUT its `{{` exclusion: a template value at a dependency position is refused too, so `${{ parameters.dependsOn }}` loses its edge. That edge is a RULED external claim on a real Azure Pipelines shape (17 corpus edges), and dropping it trades a true edge for a cleaner extQ — the direction every fix in this lane has refused. Caught by yaml/dependency-marker-name's expect row, which pins the template edge with `meta.isExternal: true` and `meta.resolved: false`.",
+    transform: dependencyMarkerGuardOverfires,
   },
 ]

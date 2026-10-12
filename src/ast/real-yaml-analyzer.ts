@@ -1236,6 +1236,8 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // (`test` 125 edges / 3 declarations, `get-go-version` 59 / 12, `build` 51 / 3 …). The
         // document-scoped identity `<document>.jobs.<id>` is unique, and the lane already
         // publishes it (`.github.workflows.publish-npm-nightly.jobs.test`, measured).
+        // The MARKER-NAME refusal below applies before the push — see the predicate.
+        if (RealYamlAnalyzer.markerNamespaceTarget(name)) continue
         ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_depends_on", line, document: current.document })
       }
     }
@@ -3277,6 +3279,53 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * A sequence, a scalar, or a mapping with no pair keys falls through to `scalarValues` unchanged,
    * so every shape that worked before still works.
    */
+  /**
+   * A DEPENDENCY VALUE THAT NAMES A MARKER, not a member of any document.
+   *
+   * `DEPENDS_ON_KEYS` fires on four loader spellings (Compose `depends_on`, GitHub `needs`,
+   * Azure `dependsOn`, CircleCI `requires`), and in every one of them the value names a
+   * DECLARATION the same document carries — a service, a job, a stage. One corpus position
+   * breaks that premise: kube-api-linter's config spells a rule-to-marker requirement
+   *
+   *     dependenttags:
+   *       rules:
+   *         - identifier: "k8s:unionMember"
+   *           dependsOn: ["k8s:optional"]        <- a kubebuilder MARKER, not a key
+   *
+   * where the value is a Go-comment annotation (`+k8s:optional` in Go struct docs) — not a
+   * key any analyzer publishes in any lane, so the `references` edge it produced (target
+   * `k8s:optional`, `isExternal: true`) was structurally unverifiable: no symbol named
+   * `k8s:optional` can exist in the key space, and no instrument could ever confirm it.
+   * Same class as `steps[].with.needs` (an action INPUT read as a job dependency) and the
+   * 31 `service_healthy` condition strings: the key is spelled `dependsOn`, but the value
+   * at this position names no dependency the graph indexes.
+   *
+   * MEASURED, whole admitted population, every `yaml_depends_on` target counted UNTRUNCATED
+   * (1,895 edges over 413 candidate files, `.tmp-probe/yaml-depends-position-r16.txt`):
+   * **1,892 carry no colon; the only colon-bearing, template-free targets are the 3
+   * `k8s:optional` sites above** (kubernetes' `hack/golangci{,-hints}.yaml` and
+   * `hack/kube-api-linter/kube-api-linter.yaml`, every one under `dependenttags.rules[]`),
+   * so the rule fires on exactly the measured class with ZERO collateral. The shape is
+   * loader-independent and vocabulary-free — no list of marker namespaces, which is what
+   * made the previously-named candidate guard ("an ancestor segment names a marker-rule
+   * container") unpriceable at 3 edges:
+   *
+   *   * a colon is legal in no member name any of the four loaders admits (GitHub job ids,
+   *     Compose service names, Azure stage names, CircleCI job names are colon-free by
+   *     their formats' own rules), and
+   *   * every template spelling that could carry a colon (`${{ … }}`) contains `{{` and is
+   *     excluded — a template edge stays a RULED external claim, unchanged.
+   *
+   * A lookup-first variant (refuse only when the name is ALSO undeclared in the file) was
+   * considered and measured equivalent on this population: `k8s:optional` occurs as a KEY
+   * declaration in 0 of the three emitting files (grep, all sites are VALUES beside
+   * `identifier:`/`conflicts:`), so shape-first and lookup-first refuse the same 3 edges.
+   * Shape-first is chosen because it fires at capture with no dependence on walk order.
+   */
+  static markerNamespaceTarget(name: string): boolean {
+    return name.includes(":") && !name.includes("{{")
+  }
+
   private dependencyTargets(valueNode: Node | null): string[] {
     if (!valueNode) return []
     const node = this.scalarNode(valueNode)

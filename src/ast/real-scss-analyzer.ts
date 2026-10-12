@@ -55,6 +55,7 @@ import * as path from "node:path"
 import { ASTEngine } from "./engine"
 import { RealCssAnalyzer } from "./real-css-analyzer"
 import { dirOf, FILE_CLAIM_MAX_BYTES, fileClaimForTarget, foldProjectPath } from "./file-claim"
+import type { ProjectIndex } from "./project-index"
 
 function stripAllQuotes(text: string): string {
   let out = ""
@@ -270,6 +271,8 @@ interface ScssContext {
   recoveryCap?: { cap: number; errorNodes: number; errorChildren: number; visited: number; skipped: number }
   sawContent: boolean
   sawAtRoot: boolean
+  /** Cross-file project index for resolving @use/@forward imports */
+  projectIndex?: ProjectIndex
 }
 
 /**
@@ -345,6 +348,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       sawDiagnostic: false,
       sawContent: false,
       sawAtRoot: false,
+      projectIndex: context?.projectIndex,
     }
     // The file IS a Sass module, and it is published FIRST so that a member's owner can
     // name it. Sass has no separate "module file": `@use './theme'` loads ANY stylesheet
@@ -1137,6 +1141,88 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(namespace ? { scssNamespace: namespace } : {}),
       },
     })
+
+    // CROSS-FILE RESOLUTION: if we have a projectIndex, resolve the imported module's exports
+    // and create exports edges from this file's module to the imported module's public members
+    if (ctx.projectIndex && namespace) {
+      this.resolveModuleImports(ctx, namespace, module)
+    }
+  }
+
+  /**
+   * Resolve an imported module's public members from the project index and create
+   * exports edges from this file's module to those members.
+   * This allows `@use 'other' as ns` to make `ns.$var`, `ns.mixin()`, `ns.function()` resolvable.
+   */
+  private resolveModuleImports(ctx: ScssContext, namespace: string, modulePath: string): void {
+    if (!ctx.projectIndex) return
+
+    // The projectIndex has typeMembers mapping module names to their exported members
+    // For SCSS, the module name in the index is the file's basename (e.g., "theme.scss")
+    // We need to find which type in the index corresponds to the imported module path
+    const index = ctx.projectIndex
+
+    // Try to find the module in the index by matching the module path
+    // The module path could be relative ('./theme'), absolute, or namespaced ('sass:map')
+    let targetTypeName: string | undefined
+
+    // First, try exact match on symbolNames (the index records all declared names)
+    for (const typeName of index.typeMembers.keys()) {
+      // The module's public surface is what @use exposes
+      // Check if this typeName corresponds to the imported module
+      if (typeName === modulePath || typeName.endsWith("/" + modulePath) || typeName.endsWith("\\" + modulePath)) {
+        targetTypeName = typeName
+        break
+      }
+      // For built-in sass: modules, they won't be in the project index
+      if (modulePath.startsWith("sass:")) return
+    }
+
+    if (!targetTypeName) return
+
+    // Get the closed members for this module (includes inherited members)
+    const closedMembers = (index as any).__closedMembers?.get(targetTypeName)
+    if (!closedMembers) return
+
+    // For each exported member, create an exports edge from this file's module
+    // to the member, qualified by the namespace
+    for (const memberName of closedMembers) {
+      // The namespace-qualified name is what @use 'mod' as ns makes available
+      const qualifiedName = `${namespace}.${memberName}`
+      
+      // Emit an exports edge: this file's module exports the qualified member
+      ctx.relationships.push({
+        source: ctx.moduleName,
+        target: qualifiedName,
+        type: ASTEngine.RelationshipType.Exports,
+        line_number: 0, // import statement line
+        confidence: 1.0,
+        metadata: {
+          evidenceClass: "structural",
+          cssSpecific: true,
+          isScssModuleMember: true,
+          scssModule: ctx.moduleName,
+          scssNamespace: namespace,
+          scssImportedFrom: modulePath,
+        },
+      })
+
+      // Also emit the member as a symbol so it can be referenced
+      ctx.symbols.push({
+        name: qualifiedName,
+        kind: ASTEngine.SymbolKind.Variable, // conservative; actual kind varies
+        range: { startLine: 1, startColumn: 0, endLine: 1, endColumn: 0, startIndex: 0, endIndex: 0 },
+        scope: "",
+        visibility: "public",
+        complexity: 1,
+        metadata: {
+          isScssVariable: true,
+          scssVariableName: qualifiedName,
+          scssNamespace: namespace,
+          scssImportedFrom: modulePath,
+        },
+      })
+    }
   }
 
   // ── `@mixin` / `@function` ──────────────────────────────────────────────────

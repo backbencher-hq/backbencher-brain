@@ -811,6 +811,22 @@ the BOUNDARY — an ordinary external action keeps `remoteRef` with no spelling 
 only CONTAINS `$/` is untouched, `../` is untouched) and by one fixture each with its FORBID rows on
 the pre-fix target. The mutants that revert each rule are CAUGHT.
 
+## ROUND 18 — the dependency marker-name guard: a value that names no member any loader admits (2026-10-11)
+
+| class | what was wrong | guard |
+|---|---|---|
+| a kube-api-linter `dependenttags.rules[].dependsOn` value emitted as a `references` edge | the KEY is `dependsOn`, so the position rule fires honestly — but the VALUE (`k8s:optional`) is a kubebuilder MARKER, a Go-comment annotation `+k8s:optional` that no analyzer publishes in any lane, so the edge (target `k8s:optional`, `isExternal: true`) was structurally unverifiable: no symbol by that name can exist in the key space. Same class as `steps[].with.needs` (an action INPUT read as a job dependency) and the 31 `service_healthy` condition strings. MEASURED whole-corpus, every one of the **1,895** `yaml_depends_on` targets counted UNTRUNCATED (`.tmp-probe/yaml-depends-position-r16.txt`): **1,892 colon-free · 3 colon-bearing without a template marker, all `k8s:optional`, all under `dependenttags.rules[]` · 0 collateral** | `markerNamespaceTarget`: a colon-bearing, template-free value at a dependency position is refused at capture. VOCABULARY-FREE (no marker-namespace list — a colon is legal in no member name Compose/GitHub/Azure/CircleCI admit), `{{`-gated so template edges (`${{ parameters.dependsOn }}` ×17) stay RULED external claims, and measured equivalent to a lookup-first variant (`k8s:optional` is a KEY declaration in 0 of the 3 emitting files) — shape-first chosen for walk-order independence. `ext?` 226 → **223**, residual **184 unchanged** |
+
+Pinned by fixture `yaml/dependency-marker-name` (forbids the marker edge; three expect rows are the
+BOUNDARY — template value, compose sibling service, workflow `needs`) and by
+`dependency-marker-name-control.ts` (3 REAL corpus files + 5 crafted arms through the production
+path, 22 assertions, exit 0, including the symbol-still-published arm — the guard drops the edge, not
+the declaration — and the predicate falsifier). Two mutants, both CAUGHT:
+`yaml/dependency-marker-guard-removed` (a disclosed-divergence revert in the
+`volumeSourceScannedAsNames` tradition — the result carries no scalar values, so the mutant
+re-attaches the MEASURED target to the structural site) and
+`yaml/dependency-marker-guard-overfires` (the `{{` exclusion deleted).
+
 ## Issue
 
 M14.7 / M60 / M49 #286. Closes the YAML analyzer wave: 24 measured defect classes, grammar

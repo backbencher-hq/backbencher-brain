@@ -1047,6 +1047,111 @@ ZERO symbols and ZERO relationships, the counter can fire, and it reports 0 on t
 **those 56 are the analyzer reading real content and finding nothing to declare, not files that fell
 through.**
 
+## ROUND 18 — the marker-name guard: the row ROUND 15 named "NOT implemented" is now priced and LANDED, `ext?` 226 → 223 (2026-10-11)
+
+**THE ROW, AND WHY IT MOVED.** ROUND 15's adjudication table (§D above) left one `ext?` row with
+its price unstated: `references yaml_depends_on` → `k8s:optional` ×3, where kube-api-linter's config
+spells a rule-to-marker requirement `dependenttags.rules[].dependsOn: ["k8s:optional"]` and the value
+is a kubebuilder MARKER (a Go-comment annotation `+k8s:optional`) — not a key any analyzer publishes
+in any lane, so the `references` edge it produced was structurally unverifiable. The row said "a
+candidate guard is named and NOT implemented: 3 edges does not buy an unmeasured vocabulary rule" —
+and this round is the measurement that rule was waiting for, taken the way Round 7 priced the
+`include:` selector positions: **every target of the kind, counted untruncated over the whole
+admitted population, before a line changed.**
+
+**THE PRICE** (`.tmp-probe/yaml-depends-position-r16.txt`, which walks the same 413 candidate files
+the Round-8 position census did and counts the colon shape over ALL 1,895 `yaml_depends_on` targets,
+not the top-8 slice each position prints):
+
+| shape | targets | sites |
+|---|---|---|
+| no colon | **1,892** | every loader's true dependency — job ids, service names, stage names, CircleCI job names |
+| colon + template (`${{ … }}`) | 0 | (the template values in this population carry no colon; the `{{` test still guards the class) |
+| colon, NO template | **3** | `k8s:optional` ×3 — all three under `dependenttags.rules[]`, in kubernetes' `hack/golangci{,-hints}.yaml` and `hack/kube-api-linter/kube-api-linter.yaml` |
+
+Zero collateral is the finding that makes the guard a FIX rather than a trade: the rule fires on
+exactly the measured class and nothing else in the population. And it is VOCABULARY-FREE — no list of
+marker namespaces, which is what made the unnamed-before candidate ("an ancestor segment names a
+marker-rule container") unpriceable at 3 edges. The shape is loader-independent on its own terms: a
+colon is legal in no member name any of the four `DEPENDS_ON_KEYS` loaders admits, and every template
+spelling that could carry one contains `{{` and is excluded, so a `${{ parameters.dependsOn }}` edge
+stays a RULED external claim, unchanged (17 of them, still in `ext?`). The lookup-first variant
+(refuse only when the name is ALSO undeclared in the file) was measured equivalent — `k8s:optional`
+occurs as a KEY declaration in 0 of the 3 emitting files — and shape-first is chosen because it fires
+at capture with no dependence on walk order. The whole rule, with this measurement, is the doc
+comment on `RealYamlAnalyzer.markerNamespaceTarget`.
+
+**WHAT MOVED, whole admitted population, one instrument (`census-yaml-whole-corpus-round18.txt`):**
+
+| column | ROUND 15 | ROUND 18 | Δ |
+|---|---|---|---|
+| `TOTAL` | 1,414,582 | **1,414,579** | −3 (the marker edges) |
+| `references` | 21,417 | **21,414** | −3 |
+| `references` ext? | 43 | **40** | −3 |
+| `ext?` (all) | 226 | **223** | −3 |
+| `extOK` | 10,624 | 10,624 | 0 |
+| `amb(decl)` · `unresolved` · residual | 137 · 47 · 184 | 137 · 47 · **184** | 0 — the class was never in the residual |
+| `extFAIL` | 0 | **0** | 0 |
+
+The `EXT-Q INVENTORY` no longer contains a `yaml_depends_on` uri-scheme row at all; the remaining
+uri-scheme rows are the 88 pubspec includes and the 5 `urn:k8s:` resource refs, both still RULED.
+
+**THE FOUR-CLAUSE INSTRUMENT CONFIRMS, AT THE SAME REVISION** (`residual-yaml-whole-corpus-round18.txt`,
+also rotated into `residual-yaml-whole-corpus-after.txt`):
+`TOTAL 1,414,579 · resolved 1,403,548 (99.2 %) · ofWhich 4 · amb(decl) 137 · unresolved 47 · extOK
+10,624 · ext? 223 · residual 184 · extFAIL 0 · bindFAIL 0 · causeFAIL 0`, `RESIDUAL_EXIT=0` —
+every column identical to the enumerator above, and the residual unchanged at 184 because the marker
+class was never in it.
+
+**AND THE ROUND 17 SECTION ABOVE (the route verification) GETS ITS `−3` ATTRIBUTION CORRECTED —
+the route conclusion is untouched.** That section attributes its sharded-vs-walk `references` `−3`
+to the instrument call shape ("three cross-file references do not appear" without a built
+`ProjectIndex`). This round's numbers refute that attribution and replace it with a measured one:
+
+| call shape | pre-guard (round 14/15 artifacts) | post-guard (ROUND 18) |
+|---|---|---|
+| census, `{ projectRoot }` only — NO `ProjectIndex` | **21,417** | **21,414** |
+| `incoming-gate`, built `ProjectIndex` passed | **21,417** | (re-run in flight) |
+| shard walk (`index % 8`), `{ projectRoot }` only | — | **21,414** |
+
+The index shape moves ZERO edges — 21,417 = 21,417 at the same revision on both call shapes — so the
+entire `−3` is THIS round's guard, not a missing index; the census's own pre/post pair on one call
+shape isolates it exactly. The practical result is the one ROUND 17 was seeking: at this revision all
+completed routes read **21,414 / 1,414,579 to the digit**, and ROUND 17's depth-degradation finding
+(the sharded sum reproduces the walk on every other type, `contains` 1,380,046 identical) stands
+unchanged — only its causal story for the three edges is replaced, per §7 criterion 5.
+
+**EVIDENCE, the four things this lane ships with every rule:** fixture `yaml/dependency-marker-name`
+(forbids the `k8s:optional` edge; pins the template / compose / workflow-`needs` boundary) PASSES and
+the suite reads **36 pass / 0 fail**; `dependency-marker-name-control.ts` runs the THREE REAL CORPUS
+FILES plus five crafted arms through the production path — 20 assertions, exit 0, including the
+falsifier direction (the predicate refuses `k8s:optional`, does NOT refuse the template spelling or
+a bare name) and the symbol-still-published arm (the guard drops the edge, not the declaration);
+**28/28 yaml mutants caught**, both new ones by the new fixture — `yaml/dependency-marker-guard-removed`
+(a disclosed-divergence revert in the `volumeSourceScannedAsNames` tradition: the result carries no
+scalar values, so the mutant re-attaches the MEASURED target to the structural site) and
+`yaml/dependency-marker-guard-overfires` (the `{{` exclusion deleted, which would drop the 17 ruled
+template edges); `tsc --noEmit` clean.
+
+**ALSO ADJUDICATED, NO CHANGE:** the one remaining path-like row, `../../analysis_options.yaml` in
+`riverpod/packages/hooks_riverpod/test/analysis_options.yaml` — the target `packages/analysis_options.yaml`
+is carried by NEITHER `git ls-files` NOR the disk in that checkout, so the claim is correctly
+unverifiable (`ext?`): refuting it would say the reference is false when it is the checkout that
+lacks the file. It stays RULED.
+
+**WHAT THIS ROUND DOES NOT CLAIM.** Not a PASS: `ext?` is **223**, not 0, and clause 1 is still short
+by 184. Not that the remaining 223 are fixable by marking — they are the same RULED class with the
+same falsifiers, one row smaller.
+
+**INSTRUMENT NOTE, and it is a shared defect found by this round's re-run:** the whole-population
+`incoming-gate yaml yaml,yml --all` re-launched at this revision DIED with `GATE_EXIT=134` —
+`FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory` — at the default
+node heap while building a repo's DART index (33,739 files) partway through the walk. The re-run with
+`NODE_OPTIONS=--max-old-space-size=4608` is in flight (`.tmp-probe/yaml-gate-r16.txt`); the lane's two
+instruments (enumerator above, four-clause gate below) complete at the default heap because they walk
+one language. Reported-not-fixed: the gate is shared, and the fix belongs in how it is launched or in
+its per-project index lifecycle, not in a lane's edit.
+
 ## COMPLETION PACKAGE — current revision
 
 Whole admitted population: **1,414,582 edges · 18,364 files · 189 repos · 0 failed · 0 degraded.**
@@ -1060,16 +1165,18 @@ reading as `extQ`.)
 
 **WHICH ARTIFACT HOLDS WHICH REVISION — stated because this package got it wrong once (see ROUND 10):**
 [residual-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/residual-yaml-whole-corpus-after.txt)
-is the four-clause gate's own run at this revision, re-confirmed **UNCHANGED at HEAD
-`bd2335f52` (ROUND 13)** and **RE-RUN at ROUND 14** (which is the content now in it and in
-[residual-yaml-whole-corpus-round14.txt](../../validation/m14/fixtures/yaml/residual-yaml-whole-corpus-round14.txt)) —
-`TOTAL 1,414,582 · resolved 1,403,548 (99.2 %) · ofWhich 4 · amb(decl) 137 · unresolved 47 ·
-extOK 10,606 · ext? 244 · residual 184 · extFAIL 0 · bindFAIL 0 · causeFAIL 0` · every type `CLOSED`
+is the four-clause gate's own run at this revision — **RE-RUN at ROUND 18** (which is the content now
+in it and in
+[residual-yaml-whole-corpus-round18.txt](../../validation/m14/fixtures/yaml/residual-yaml-whole-corpus-round18.txt)) —
+`TOTAL 1,414,579 · resolved 1,403,548 (99.2 %) · ofWhich 4 · amb(decl) 137 · unresolved 47 ·
+extOK 10,624 · ext? 223 · residual 184 · extFAIL 0 · bindFAIL 0 · causeFAIL 0` · every type `CLOSED`
 (one printed bucket per edge), `RESIDUAL_EXIT=0` — so the clause-1 number below and the
-tie-break in clause 4 now come from the four-clause instrument ITSELF at the frozen tree rather than
-from a round-old copy; the enumerator's **ROUND 12** run (1,414,582 · amb 137 · `extQ` 253 ·
-`CLAIMABLE EDGES` NONE) is
-[census-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-after.txt);
+tie-break in clause 4 come from the four-clause instrument ITSELF at the frozen tree; its ROUND 14
+predecessor (1,414,582 · ext? 244) is kept as
+[residual-yaml-whole-corpus-round14.txt](../../validation/m14/fixtures/yaml/residual-yaml-whole-corpus-round14.txt);
+the enumerator's current run is
+[census-yaml-whole-corpus-round18.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-round18.txt)
+(1,414,579 · amb 137 · `EXT-Q INVENTORY` **223** · `CLAIMABLE EDGES` NONE);
 the `extQ` census that carries the ruling is
 [extq-yaml-whole-corpus.txt](../../validation/m14/fixtures/yaml/extq-yaml-whole-corpus.txt); and the
 RULING's falsifier is
@@ -1089,12 +1196,17 @@ silently reconciled.
 **THE ANSWER, up front.** Clause 1 **fails by 184** — 137 ambiguous + 47 unresolved, every one
 attributed to a NAMED cause below, 0 refuted. Clauses 2, 3 and 4 are **met**. Two things stand
 between this lane and a formal `incoming-gate` PASS: **`bad` = 184** (that residual) and **`extQ` =
-226**, both read off the whole-population walk re-run at this revision (`FAIL — 137 ambiguous + 47
-unresolved of 1414582 edges …; 226 external claim(s) unverifiable (10624 verified + 226)`; ROUND 15
-moved `extQ` 244 → 226 by FIXING 18 false external claims — the `$` owner class — and ROUND 14 moved
-it 253 → 244 by FIXING nine more, so where a paragraph below still says 253 or 244 it is quoting the
-ROUND-13 / ROUND-14 reading of this class), and BOTH
-are ruled, each row with a mechanism and a falsifier, and the falsifier for the
+223**, read off the ROUND 18 whole-population enumerator
+([census-yaml-whole-corpus-round18.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-round18.txt):
+`TOTAL 1,414,579 · resolved 1,403,548 · amb 137 · unresolved 47 · extOK 10,624 · ext? 223 · extFAIL 0`;
+the `incoming-gate` re-run at this revision is in flight after its first launch DIED of a heap OOM —
+see ROUND 18's instrument note; its last completed reading was `226 external claim(s) unverifiable
+(10624 verified + 226)` on 1,414,582 edges at the ROUND 15 revision). The movement is all FIXES:
+ROUND 18 moved `extQ` 226 → 223 (3 kube-api-linter marker-name edges, priced 3-of-1,895 before a line
+changed), ROUND 15 moved it 244 → 226 by FIXING 18 false external claims — the `$` owner class — and
+ROUND 14 moved it 253 → 244 by FIXING nine more, so where a paragraph below still says 253, 244 or
+226 it is quoting the ROUND-13/14/15 reading of this class. BOTH remaining numbers are
+ruled, each row with a mechanism and a falsifier, and the falsifier for the
 largest class **fired** (ROUND 7: it failed for exactly 1 of the 142 ambiguous edges, and ROUND 11
 then FIXED that edge with the cross-file resource rule — the falsifier now reads `RULING HOLDS`). On
 the SAMPLE draws `bad === 0`,
@@ -1119,7 +1231,8 @@ npx tsx validation/m14/fixtures/yaml/pubspec-package-price.ts   # the ext-Q URI 
 npx tsx validation/m14/fixtures/yaml/materialized-action-price.ts    # ROUND 14's price: 523 local uses -> 10 matched -> 9 convert / 1 refused
 npx tsx validation/m14/fixtures/yaml/materialized-action-control.ts  # ROUND 14's control: 10 arms, 30 assertions, exit 0
 npx tsx validation/m14/fixtures/yaml/store-scope-probe.ts     # the store layer, no context of its own
-npx tsx script/m14/run-fixtures.ts --lang yaml                # 34 pass / 0 fail
+npx tsx validation/m14/fixtures/yaml/dependency-marker-name-control.ts  # ROUND 18's control: 3 corpus files + 5 arms, 20 assertions, exit 0
+npx tsx script/m14/run-fixtures.ts --lang yaml                # 36 pass / 0 fail
 ```
 
 ### Clause 1 — per-type residual, each non-zero type with its named cause
@@ -1184,7 +1297,7 @@ claims, not by marking differently** (the section above: 1,560 of the 1,903 were
 about a file the project HAS — 1,356 cross-file `$ref`s and 208 local reusable-workflow calls —
 and 67 more were false dependency edges sitting in the VERIFIED column). **Round 7 moved it again,
 343 → 335 (the role-entry fix) → 255 (Rounds 7–9) → 254 (Round 10) → **253** (ROUND 11) → **244**
-(ROUND 14) → **226** (ROUND 15)**, by removing 80 edges that were being counted
+(ROUND 14) → **226** (ROUND 15) → **223** (ROUND 18)**, by removing 80 edges that were being counted
 as unverifiable imports and are not imports at all (Azure Pipeline branch filters, semgrep/flutter/
 ffigen/Dart-builder selector lists, a Spring Boot endpoint list, a GitHub Actions job output) and by
 re-claiming the quoted hasura includes as VERIFIED files — again by fixing claims, not by marking.
@@ -1195,8 +1308,14 @@ single site the rule declined to convert is waypoint's, whose checkout pins no `
 out: 18 `uses: $/.github/actions/…` sites claimed a GitHub OWNER `$`, when the target is a path in
 the checked-out tree and the manifest is a file the project carries. Both rounds' arithmetic is in
 their sections above; the column's movement is `imports` `extOK` 8,157 → 8,175 and `ext?` 201 → 183.
+**ROUND 18 moved it 226 → 223 the same way**, and it is the row ROUND 15 itself left priced-but-
+unimplemented: 3 `references yaml_depends_on` edges whose target is the kube-api-linter MARKER
+`k8s:optional` — a Go-comment annotation no analyzer publishes, so the claim could never be
+confirmed. The guard is a vocabulary-free shape rule (colon-bearing, template-free value at a
+dependency position) priced over every one of the 1,895 `yaml_depends_on` targets untruncated: 3 hit,
+1,892 untouched, zero collateral (ROUND 18's section).
 
-The remaining **226 are ruled as a CLASS, with the four things the fleet ruling requires**: the
+The remaining **223 are ruled as a CLASS, with the four things the fleet ruling requires**: the
 SHAPE split (the enumerator's 17 rows, grouped to 6 below), the MECHANISM (each row's "why nothing
 can check it"), the COUNT split by shape, and a FALSIFIER per row ("what WOULD verify one"). The
 largest single piece of
@@ -1264,10 +1383,12 @@ That is the whole value of writing the falsifier first: the lane proposed a ruli
 own instrument cut it to 141. (**ROUND 11 then FIXED the 1** — see that section.)
 
 The enumerator is refreshed at THIS revision as
-[census-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-after.txt)
-(1,414,582 edges · amb 130 + 7 · unresolved 33 + 14 · extFAIL 0 · `EXT-Q INVENTORY` **244**, whose
-`CLAIMABLE EDGES` section reads NONE), which is the ROUND 14 run and is the artifact every "current"
-number in this document comes from, with the emitting-key instrument beside it as
+[census-yaml-whole-corpus-round18.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-round18.txt)
+(1,414,579 edges · amb 130 + 7 · unresolved 33 + 14 · extFAIL 0 · `EXT-Q INVENTORY` **223**, whose
+`CLAIMABLE EDGES` section reads NONE), which is the ROUND 18 run and is the artifact every "current"
+number in this document comes from (the ROUND 14 copy of the same walk is
+[census-yaml-whole-corpus-after.txt](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-after.txt),
+1,414,582 · `EXT-Q INVENTORY` 244), with the emitting-key instrument beside it as
 [include-key-position-yaml-whole-corpus.txt](../../validation/m14/fixtures/yaml/include-key-position-yaml-whole-corpus.txt).
 The per-round copies carry their OWN totals and are kept so a reader can see each step rather than a
 final number: [round 7](../../validation/m14/fixtures/yaml/census-yaml-whole-corpus-round7.txt)
@@ -1358,12 +1479,12 @@ grade it, not as the lane would prefer it:
 | clause | what it asks | yaml | verdict |
 |---|---|---|---|
 | 1 | residual 0 for every applicable type | 184 of 1,414,582 (137 amb + 47 unresolved) | **FAILS by 184** — every edge attributed below |
-| 2 | `extFAIL` = `bindFAIL` = `causeFAIL` = 0 | 0 · 0 · 0 on the whole population | **MET** — with `extQ` 226 *ruled*, not zero |
+| 2 | `extFAIL` = `bindFAIL` = `causeFAIL` = 0 | 0 · 0 · 0 on the whole population | **MET** — with `extQ` 223 *ruled*, not zero |
 | 3 | every remaining edge attributed to a named cause with a measured count, fixed with a before/after or ruled with evidence | the 137 ambiguous are 117 same-kind-name-elsewhere + 10 kind-asked-no-object + 6 ansible role names + 4 no-kind-axis (named causes, each with a falsifier), and the 47 unresolved are 33 + 14 (two named causes); TEN causes fixed with before/after, including ROUND 11's cross-file resource rule that fixed the one SAME-DIRECTORY MISS the falsifier had proved (the two tables above) | **MET** |
 | 4 | the tie-break: `ofWhich` 0, or an `intended` vs `arbitraryTwin` split from the store | `ofWhich` 4, all `contains`; `intended` 1,380,046/1,380,046 at the model level, AND a real store built per repository reads `contains 13,162 rows · 13,160 intended (own file, own line) · 0 sameFileOffLine · 0 arbitraryTwin · 2 unbound · 0 collision rows` | **MET, at BOTH levels** |
 
-**If the owner rules that no external claim may be unverifiable, yaml fails clause 2 by 226 edges** —
-the same structural failure json carries by 120. Those 226 are not un-fixed claims: they are targets
+**If the owner rules that no external claim may be unverifiable, yaml fails clause 2 by 223 edges** —
+the same structural failure json carries by 120. Those 223 are not un-fixed claims: they are targets
 (templates, URIs, globs, runtime-materialised paths) that no single-file parse can name, and the only
 alternative to ruling them is to refute them, which would falsify a claim that is not false.
 
@@ -1468,7 +1589,7 @@ symbol's own line, where the store resolver's own first two keys (`file_id = edg
    keeping a count it had already written down as explainable. **MET.**
 
 **So the lane is DONE by §7 — all five, each against an artifact — while the stronger four-clause
-completion test is clause-1-short by 184, and clause-2-short by 244 if unverifiability is forbidden.**
+completion test is clause-1-short by 184, and clause-2-short by 223 if unverifiability is forbidden.**
 The difference between those two sentences is the point: §7 asks whether the lane has done the work it
 owes; the four clauses ask whether every edge is PROVEN. yaml has done the work, and states plainly
 which edges are proven, which are ruled, and where the remaining 184 live — and the ONE that its
