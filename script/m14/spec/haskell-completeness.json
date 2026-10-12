@@ -174,7 +174,6 @@
       "`",
       "::",
       "|]",
-      "_",
       "<-",
       "where",
       "\\",
@@ -207,6 +206,9 @@
       "p"
     ,
       "MISSING"],
+    "_removed": {
+      "_": "REMOVED 2026-10-12: no symbol the pinned haskell wasm declares carries the spelling `_` (checked against every id, named and anonymous), and the analyzer reads it 0 times. A row naming a symbol the grammar does not declare is not a classification; the wildcard is a pattern-level construct the analyzer reaches through the pattern node's own kind."
+    },
     "_notes": {
       "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-haskell-analyzer.ts:132-133); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
     },
