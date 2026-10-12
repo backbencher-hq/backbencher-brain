@@ -88,6 +88,17 @@ alone — rows now print their corpus and admitted count (`c0b9bcdd5`).
 prose ruling (`dart hcl make markdown powershell yaml`), and **4 are unadjudicated:
 `clean`, `graphql`, `r`, `scss`** — no table and no spec ruling.
 
+> **CORRECTION 2026-10-12 (`graphql`).** Both halves of that last sentence are false for this lane, and
+> the refutation is the paragraph above cutting against it: `graphql` has a registered corpus-measured
+> table (`script/m14/graphql-ruled.ts`, 3 entries: `extends` instrument B, `calls` and `instantiates`
+> instrument A), AND a spec `coverage` block AND — the part that did not exist until now — a **space
+> attestation** whose pointers the arbiter verifies
+> (`validation/m14/fixtures/graphql/ruling-attestation.json`). What WAS missing was not a ruling but a
+> ruling the gate could check: two of the three entries had never declared the key space in which a
+> GraphQL construct can hide. The three lanes left in the sentence above (`clean`, `r`, `scss`) still
+> need the same treatment this lane just took, and the wiring defect in §0b (`lua nim protobuf julia xml
+> sql`) still needs the fleet-level re-run.
+
 **Types that fire but are compared against nothing** (emitted ∩ never-audited, from the
 coverage gate). 81 type-instances fleet-wide (was 83 before php's `contains`/`imports` oracles
 landed on 2026-10-08):
@@ -248,6 +259,68 @@ other 22 lanes need.
 
 ## Blocked / pending
 
+0. **graphql, 2026-10-12 — three of this lane's four blockers were not what the documents said they
+   were, and the corrections are measured rather than argued.** (a) **Both of the arbiter's instruments
+   were parsing this lane with the BASH grammar** (`LANGS` in `differential.ts` had no `graphql` entry,
+   so `?? "tree-sitter-bash.wasm"` applied): the `A` rows read 57 node types — bash's inventory, the same
+   number every lane printed — and the `B` rows counted on bash trees. Fixed by one additive map entry;
+   the same probe now reads **75 named + 53 anonymous = 128 distinct** over 2,338,690 nodes on 1,911
+   files, agreeing with the lane's separately written census. **Six lanes are still unwired: `lua nim
+   protobuf julia xml sql`** — the fleet-level re-run in `real-graphql-analyzer.md` §0b still stands for
+   them. (b) **The arbiter's refusal of `calls`/`instantiates` was correct and is now answered with an
+   attestation the gate verifies pointer by pointer** (`validation/m14/fixtures/graphql/ruling-attestation.json`
+   over `rulebook-space-probe.json`): GraphQL is key-bearing — 50,284 bindings over 7 node types — and the
+   site rule is 0 for both, with the raw keyword calibration (22 + 340 keyword-shaped KEYS, every one an
+   ordinary field name) beside it so the 0 is a measurement rather than an inert counter. (c) **The
+   coverage block had `imports` excluded as `grammar-absence` while the analyzer emitted 170 of them**,
+   and its "whole-corpus" evidence was a **143-file** sub-corpus: 143 is gql-gqlgen's count, the arbiter
+   admits **1,911**. The block now reads `graphql yes 7 8 2 imports -` (7 implemented of 8 applicable, 0
+   problems). (d) **The "45 empty files = the 120-second timeout" attribution is REFUTED**: re-measured
+   through production `parseFile`, **0 files are slow, 0 degraded, 43 are refused by the grammar, 2 are
+   1–2 byte stubs, and 0 parses cleanly-and-declares-without-yielding** — the only cell that would have
+   been a defect. (e) **The arbiter's `extends` probe contained an INFINITE LOOP that hung every run for
+   107 minutes at 98% CPU** — `unwrap` re-read the child list from the node it was called with instead of
+   the node it had descended to, so a `Definition` (`Definition -> TypeSystemDefinition -> …`) never
+   advanced; 65,424 corpus nodes have that shape and the old code never returned within a 5,000-step
+   bound, while the fixed probe runs the whole population in **3.4 s** and the arbiter now completes in
+   **~7 minutes**. With it fixed the lane's criterion-2 adjudication is
+   **`emitted 7/10 · ruled-sound 3 · FALSIFIED 0 · ruled-without-justification 0 · ruled-unknown 0`** —
+   taken to be read together with §0c: the first two walks each degraded exactly ONE file to the pool's
+   regex fallback and read `RULED-UNKNOWN × 3`, the third measured 1,911/1,911 and certified them, so a
+   lane's `RULED-UNKNOWN` is a race's outcome and not a verdict.
+   (f) **The lane's one open verification is CLOSED, and the store probe that closed it found two product
+   facts on the way.** The determinacy ruling — 20,121 ambiguous edges, "production binds the own-file
+   declaration" — was a MODEL reading of `resolveTargetStmt`'s `ORDER BY`.
+   `validation/m14/fixtures/graphql/store-binding-truth.mts` now copies the corpus into a project root,
+   indexes it through the PRODUCTION indexer, and reads each binding off
+   `brain_relationship.target_symbol_id`: over the whole index **all 60,333 `own-once` edges bound exactly
+   the own-file declaration — 0 bound elsewhere and 0 bound to nothing** (contains 14,855 · uses 8,516 ·
+   references 33,934 · implements 3,028), and `own-many` bound in-file 45,035 of 45,035, so the clause
+   ORDER is confirmed and not only its first clause. Two things the probe surfaced and did not smooth:
+   **all 9,643 `overrides` edges classify `own-none` (the edge's own file declares the target name zero
+   times) yet 9,641 bound to a symbol IN that file** — the analyzer's override target is not the
+   declaration's `name`, so the type is reported-not-scored; and **254 of 2,008 copied files never reached
+   the store**, now charged rule by rule with **0 left unexplained**: **156** to the built-in ignore glob
+   `**/testData/**`, which swallows the corpus's lowercase `testdata/` because the `ignore` package
+   (5.3.2) matches case-insensitively by default (measured: `ignores("x/testdata/a")` is `true`,
+   `x/test/a` and `x/tests/a` are kept), **1** to `skipPatterns`' `/\/generated\//i`, and **97** because
+   **`.graphqls` is routed by NO extension map anywhere in the fleet** — `language-detection.ts` maps
+   `graphql` and `gql` and nothing else, so production reads 0 of the corpus's 97 `.graphqls` files
+   regardless of path. That last one is a product gap rather than a ruling; this lane's census (1,911 =
+   305 `.gql` + 1,606 `.graphql`) already excludes those files and now states why.
+   (g) **Both refusals are PRICED, and the extension one is not a tuning decision.
+   `validation/m14/fixtures/graphql/unrouted-population-price.mts` measured the same 97 `.graphqls` files
+   twice, because the first measurement is the finding: as they sit, production answers all 97 with the
+   REGEX fallback — 0 symbols, 0 relationships — so an unmapped extension does not degrade these files, it
+   hands them to an instrument that cannot see a type definition. Routed to the analyzer, the same content
+   yields 83,371 symbols and **195,108 relationships** (references 70,812 · contains 69,625 · uses 18,784 ·
+   overrides 18,162 · exports 13,746 · implements 3,979) — three quarters of the size of the graph this
+   language publishes today, from ONE map entry in `language-detection.ts`. It is NOT this lane's to make:
+   the gate selects its corpus with `detectLanguageFromPath`, so the entry moves this lane's own file
+   population (1,911 to ~2,008) and every published number over it. The other refusal is a rule, not a
+   defect: the 156 `testdata` files are 3,575 relationships on test fixtures, and the case-folded glob sits
+   beside a rule that deliberately KEEPS `/test/` and `/tests/` (1,056 `.graphql` files under a test segment
+   are in the store), so narrowing it is a product call with a number attached.
 1. ~~**The enum blocker — affects every lane, both laptops.**~~ **REFUTED 2026-10-07, on the
    current tree, by the file itself.** `src/ast/types.ts:84` reads `Imports = "imports"` (the
    change landed in `3ebe0fb38`), and the comment above it records the same refutation from
@@ -2598,6 +2671,383 @@ came from the v1 price run and is superseded by the per-symbol check, not repeat
 - Round-3 items unchanged: **D5** (750 `uses` self-loops), the flat-corpus pins in
   `python-ontology-census.ts` / `firing-check*.mjs`.
 
+## python round 12 (2026-10-12) — 96 → 7 UNEXPLAINED: ZERO left on `calls` and on `references`, and 85 of the 89 rows that left were DECLARED by a CPython re-check instead of excused
+
+### 1. The 96 were priced ROW BY ROW before any code changed, and that is the whole reason the one real gap was found
+
+`.tmp-py/price-bare-names.py` took round 11's residual dump and asked, per row, the question the axis
+would have to answer: does python's own lexical scope chain, walked from that read, see a binding? It
+split the **47 bare-name rows** into **1** where the analyzer was WRONG (wagtail's `mixin` — a
+module-scope `for` target the assignment walker never published), **42** where nothing in the file
+supplies the name (CPython agreeing row by row), and **4** that are attribute reads rather than
+declarations at all (3 `isinstance` type arguments written as member reads, plus `gdb.SignalEvent`,
+whose ROOT is bound by nothing). The other **42** rows of the 96 are the ones round 11 already split
+into three named verdicts: files CPython itself rejects (the ASN.1 documents, a python-2 build script,
+a syntax-highlighter fragment). The 7 `exports` rows were left alone on purpose (§7).
+
+The order matters and is the round's method: had the 89 been resolved by saying "the target is
+unresolved and the edge already declares its own reason code, so call it declared", the ONE row where
+the analyzer was the defect would have been declared too — invisible, and pinned in a gate as if it
+were a fact of the corpus. Pricing row by row cost one CPython walk and found it.
+
+### 2. PY-D23 — a module-scope binding written by a statement that is not an assignment
+
+`extractAssignment` published assignments, so `for mixin in mixins:` at module scope published
+nothing and wagtail's `references format_error -> mixin [instancecheck]` at
+`snippets/api/v3/router.py:76` had no declaration to resolve against. `publishScopeBinderBindings`
+now publishes `for`/`async for` targets, `with … as` / `async with … as` and `except … as` at module
+scope AND in class bodies (where the same statement writes a member), through the SHARED target
+walkers, with an explicit-stack preorder that never enters a function body, a lambda or a
+comprehension. The full rule, its two guards and its dedupe are in
+[real-python-analyzer.md](docs/analyzers/real-python-analyzer.md)'s round-12 section.
+
+**Priced, then measured on the shipped analyzer, and the arithmetic CLOSES.** The price walks the
+module body and every class body of the verdict's population with CPython's `ast`: **351 module `for`
+targets, 98 `with … as`, 48 `except … as`, 6 module-scope walrus targets in 283 files, plus 13 `for`
+targets in class bodies — 516 binder rows**, of which exactly ONE residual row depended. The
+verification ran the SHIPPED analyzer over exactly the priced files
+(`.tmp-py/probe-binder-row-gap.mts`): **480 symbols carry `metadata.boundByBinder`**, and **every one
+of them is named by a priced row (0 un-named)**; the walk DEDUPES a row whose name the file already
+declares in that scope, measured as **41 rows naming a symbol without the field** (34 `for` +
+1 `with … as` + the 6 walrus targets). CPython rejects 56 of the 11,488 files and tree-sitter is
+error-tolerant, so `.tmp-py/census-bound-by-binder-failed.mts` reads those 56 separately and finds
+**14 more** binder symbols (13 `for`, 1 `with`; `docker/daemon/libnetwork/cmd/ssd/ssd.py` alone
+contributes 9). Measured total: **480 + 14 = 494** — and the round's corpus symbol delta is **+494**
+(206,445 → 206,939), so EVERY symbol the round added is one of these binders, and nothing else
+published one.
+
+The graph moved by exactly what a declaration costs: **symbols +494**, **`contains` +17** (the
+class-scope binders are members, and a module Variable has no containment — round 11's asymmetry
+again), and **not one edge on any other label** (all ten labels identical to round 11's run except
+`contains`, checked label by label).
+
+### 3. PY-D24 — an `isinstance` type argument written as a member read is a READ, not a declaration
+
+`isinstance(x, self._self_owner)`, `issubclass(source.__class__, field.related_model)`,
+`isinstance(w.message, passlib_exc.PasslibHashWarning)`: the emitter published the last identifier as
+the target and the whole spelling as `metadata.qualified`, so three edges named names the files never
+declare and the verdict could only call them UNEXPLAINED. The rule now answers `member-read` (→
+declared-dynamic) when the leaf is the attribute's LAST named child — the MEMBER, never the receiver —
+and the attribute's ROOT is a local of an enclosing function. Both guards are mutants: without the
+last-named-child test the receiver leaf takes `member-read` although the file binds it as a local
+(the probe caught 3 such rows before the rule shipped), and without the receiver guard an import-bound
+root loses `qualified-external` while a class the file declares loses its chance to resolve against
+the store. The fourth row of that cluster, `gdb.SignalEvent`, is deliberately NOT covered — its root
+is bound by nothing, which is the axis's business, not this rule's.
+
+### 4. PY-D25 — the `not-bound-in-file` axis: a DECLARED axis, and the gate that makes it falsifiable
+
+The verdict's axes exist so that "unresolved" is not one word. Round 12 adds the one the residual
+needed: the edge's OWN `reasonCode` says the analyzer's binding checks found nothing
+(`bare-name-callee` for a call, `annotation-type` / `instanceof-check` for a reference), the file does
+not bind the leaf by import, and the target is unresolved against EVERY declaration in the
+population — i.e. the complete, checkable statement **"nothing in this file supplies this name"**.
+It is a claim about each row, not a bulk excuse, and two things keep it honest:
+
+- it was **priced row by row** before it existed (`.tmp-py/price-bare-names.py`, CPython's `ast`, scope
+  by scope), which is how the wagtail gap was caught and FIXED rather than declared;
+- `validation/m14/fixtures/python/not-bound-in-file-gate.mts` re-checks the whole population on every
+  run with CPython as an INDEPENDENT instrument: **artefact axis total 85 = 55 calls + 30 references,
+  rows file 85, AGREE 43 · UNPARSEABLE 42 · DISAGREE 0** — a row whose file DOES bind the name fails
+  the gate. The rows come from the verdict run itself (`not-bound-in-file.rows.txt`, written beside
+  the pinned artefact), never from a remembered list.
+
+### 5. The verdict, re-measured over the same 11,488 files
+
+| label | round-11 UNEXPLAINED | round-12 UNEXPLAINED | round-12 axes |
+| --- | --- | --- | --- |
+| calls | 55 | **0** | not-bound-in-file **55** · dynamic 27,579 · external 31,194 · declared-local 4,287 · builtin 3,053 · star-import-external 173 |
+| references | 34 | **0** | qualified-external 889 · builtin 374 · declared-local 146 · not-bound-in-file **30** · star-import-external 8 · dynamic 4 |
+| exports | 7 | **7** | UNEXPLAINED 7 |
+| uses / contains / imports / extends / implements / overrides / instantiates | 0 | **0** | — |
+| **total** | **96** | **7** | — |
+
+Nothing was moved to a second defect axis to get there. Of the 96: **89 left** — **85** onto the new
+axis (42 of them in files CPython rejects, 43 with CPython agreeing no binding exists), **4** onto
+`declared-dynamic` (`references` carried no `declared-dynamic` row at all before this round; PY-D24's
+`member-read` code is what put them there, and the run writes the list out with
+`--dump-axis declared-dynamic`, so the four are NAMED rather than counted: `self._self_owner`
+(ansible `_wrapt.py`), `passlib_exc.PasslibHashWarning`, `field.related_model` (wagtail
+`models/copying.py`), and — a row the round's price did NOT list — `coverage.Coverage` in ansible's
+pytest plugin, recorded as found rather than assumed to be one of the three), and **1 RESOLVED** by the
+fixed analyzer (wagtail's `mixin`). The excuse-axis totals are printed beside the number rather than summed into it,
+and the axis's bin movements are stated rather than smoothed: `calls` UNRESOLVED 66,346 → 66,341,
+AMBIGUOUS 290,616 → 290,655, RESOLVED 167,017 → 166,983; `references` UNRESOLVED 1,456 → 1,451,
+AMBIGUOUS 27,190 → 27,217, EXTERNAL 7,508 → 7,486. A name that now has a declaration next to another
+declaration of the same spelling is AMBIGUOUS by the census's own definition — the bin is where two
+candidates belong, and the alternative (leaving the declaration unpublished) is a claim the source
+does not make.
+
+### 6. PY-D26 (DECLARED, OPEN) — the provenance FIELD does not cross the worker boundary: 17 published keys, 1 carried
+
+The round's own verification produced a finding it did NOT paper over. `.tmp-py/seam-metadata-probe.mts`
+runs BOTH entry points over the priced files and compares the metadata KEY SETS per symbol: the python
+analyzer publishes **17** symbol-provenance keys and `parseFile` carries **1** — `superTypes`
+(505 → 388), the key the php lane added when its owner pass needed the ancestor column. The other 16
+measure **0% survival**: `pythonSpecific`, `isModuleVariable`, `hasTypeHints`, `isAsync`,
+`isClassMethod`, `isAbstract`, `isClassVariable`, `hasDocstring`, `isInstanceAttribute`, `baseClasses`,
+`isEnum`, `multiTargetForm`, `boundByBinder`, `isEnumMember`, `isNestedClass`, `boundByGlobalWrite`.
+
+The cause is `src/ast/pool-worker.ts`'s symbol-metadata projection: a per-key ALLOWLIST whose own
+documented rule is that it names the keys a READER CONSUMES (CSS's F6/F8/CC1 keys, markdown's
+outline keys, bash's three label inputs, and `superTypes` from php's round 7). Python's keys are not
+in it, so a store-level consumer reads NULL for module-variable-ness, class-variable-ness, type
+hints, async-ness, abstractness, enum-ness, base classes, docstrings, binder provenance or
+multi-target provenance.
+
+**Why no gate saw it, and why it is declared rather than fixed in this round.** A fixture cannot:
+`run-fixtures.ts` calls the analyzer DIRECTLY and `engine.parseFile` never crosses the worker, so the
+fixture that pins `metadata.boundByBinder` (and the one that pins `metadata.multiTargetForm`, round
+11) pass while the production path drops both — MD-5's "unpinnable" shape, and the same defect class
+as the php lane's round-7 `superTypes` finding, which was FIXED in its round because the owner pass
+READ that column. No store-level reader consumes a python symbol-provenance key today, and the
+allowlist's rule is explicit that a key belongs in it once a reader consumes it — so widening it now
+would carry facts nobody reads. The SYMBOL crosses, which is what the mechanism exists for; the field
+is analyzer-side only. What the round DOES do is measure it (a probe, both entry points, per key, over
+the population the round's fields live in) and name it, so the next round inherits a number and not a
+surprise. The instrument that can see this seam is `.tmp-py/seam-metadata-probe.mts`; the one the
+repo already has for the same seam is `script/m14/verify-pipeline-e2e.ts` (markdown's, which indexes
+through the real CLI and asserts rows in `brain.db`).
+
+### 7. The 7 that remain, and why the new axis is NOT applied to them
+
+All 7 are `exports`: sqlalchemy's dialects `__getattr__`, `instrument_declarative`, `celery_app`, and
+tree-sitter-clean's `HIGHLIGHTS_QUERY` / `TAGS_QUERY` — `__all__` names the module provides LAZILY,
+so the declaration is real and the binding is made at runtime. **Unchanged at 7 in rounds 8, 9, 10,
+11 and 12.** The `not-bound-in-file` axis is deliberately NOT applied here for the same reason the
+wildcard axis is not: an `exports` target is a name the module ITSELF declares in `__all__`, so
+"nothing in this file supplies the name" is false by construction — the file supplies it, at runtime.
+`resolution-verdict-gate.ts` now carries the ceiling at the measured **7** (8 → 7) and says so in the
+exports cause text.
+
+### 8. Verified together (analyzer = the shipped source)
+
+- python fixtures **51/51 PASS**, 0 fail (`bun run script/m14/run-fixtures.ts --lang python`, baseline
+  gate "no regressions"). Two new and both authored BEFORE the analyzer ran:
+  `module-binder-binds-a-module-name` (a module-scope `for` target, a class-scope one, a `with … as`
+  and an `except … as`, plus the SCOPE rows: a `for` target inside a `def` is a LOCAL and publishes
+  ZERO symbols) and `member-read-is-not-a-declaration` (the `isinstance` member read answers
+  `member-read`, and the same name bound in a local keeps `local-binding-target` — the two rows that
+  keep PY-D24 from swallowing a genuine local).
+- mutants **49/49 CAUGHT**, 0 survived, 0 not applied — FOUR new, each a different wrong fix: PY-D23's
+  walk disabled (the wagtail row returns), the `with … as` / `except … as` halves dropped while the
+  `for` half stays, PY-D24's rule dropped (the 3 member reads return to UNEXPLAINED), and PY-D24's
+  last-named-child guard dropped (the OVER-FIRING version — the receiver leaf takes `member-read`
+  although the file binds it as a local, which the probe caught before the rule shipped).
+- fixture-coverage gate **python PASS** (`handled=71 fixtureTypes=151 uncovered=0 ambiguous=0
+  deadLiterals=0`) — UNCHANGED from round 11, and correctly so: this round reads no new node type
+  (`for_statement`, `with_item`, `except_clause` and `attribute` were already handled); the coverage
+  claim that matters is that the new walk did not add a literal no fixture contains.
+- `completeness-inventory.ts --lang python`: **130 types classified; sections A–H 8/8 pass**.
+- `tsc --noEmit` exit **0**, zero diagnostics.
+- verdict `--fresh` over **11,488/11,488** files (11,488 parsed, 0 failed); `resolution-verdict-gate.ts`
+  **PASSES** with every ceiling tightened to the measurement (calls 55 → **0**, references 34 → **0**,
+  exports 8 → **7**), 10/10 emitted, OUTGOING UNRESOLVED **0 for all ten**, 7 UNEXPLAINED total. The
+  pinned artefact was re-copied from THIS run, and the run also wrote the axis's own row list beside
+  it (`not-bound-in-file.rows.txt`, 85 rows) so the next gate reads the same run.
+- **the new axis gate PASSES**: `not-bound-in-file-gate.mts` — artefact axis 85 = rows 85, CPython
+  re-check **AGREE 43 · UNPARSEABLE 42 · DISAGREE 0**, with the rejected files and their line numbers
+  NAMED (the ASN.1 documents at line 1, the py2 build script at 107, the highlighter fragment at 49).
+- `star-import-axis-gate.mts` **PASSES** (all decision directions, incl. the corpus-convicted
+  collision row) and reads the axis off the artefact: calls 173 · references 8.
+- seam gates unchanged and green: `owner-resolution-gate` PASS (both controls, idempotent, dangling 0),
+  `store-heritage-seam` PASS, `import-bound-name-seam` PASS (PY-D13's store half is still the DECLARED
+  gap, pinned by name), `owner-channel-census` **375 scanned / 357 resolved (95.2%)** — identical to
+  rounds 5, 10 and 11, so the member channel was not touched.
+- arbiter `python --fresh`: **emitted 10/10 · ruled-sound 0 · FALSIFIED 0 ·
+  ruled-without-justification 0 · ruled-unknown 0**; the walk reports **11,482/11,488 files measured by
+  the analyzer, 6 DEGRADED (measured by the regex fallback and excluded from EMITTED), 0 abandoned**, so
+  its table is a LOWER BOUND by construction (calls 534,923 · uses 389,916 · contains 135,640 ·
+  imports 97,094 · references 61,947 · exports 3,043 · extends 20,954 · implements 333 · overrides
+  33,492 · instantiates 13,133). **It does NOT reproduce the verdict's counts** (535,006 / 135,651 /
+  61,955), and the difference is exactly those 6 degraded files — round 11's doc read the two tables as
+  identical; this round states the gap and its measured cause instead of repeating the claim.
+- differential `--lang python`: requests `files=37 tree-truth=5,326 covered=5,326 (100%) MISSING=0
+  analyzer-edges=2,552 unexplained=0` — unchanged; cython `files=60 tree-truth=34,662
+  covered=34,662 (100%) MISSING=0 analyzer-edges=7,053 **unexplained=3 (all `contains`)**` where round
+  11 read 0. The 3 are NAMED and the mechanism is confirmed rather than guessed (§9).
+- **php neutrality, measured rather than argued**: `php/owner-resolution-gate` PASS;
+  `php/store-resolution-census` PASS. Two side-effect rewrites of OTHER lanes' artefacts were reverted
+  rather than committed (`validation/m14/results/M14.0.F6.json`, `M14.0.SPEC.json` — the
+  fixture-coverage and inventory gates rewrite them on read, the limitation the cpp lane recorded;
+  `validation/m60/php/store-resolution-census.json` — re-running the php census rewrites it under a
+  different frame, 5,094 → 600 files in frame, so its committed numbers are the php lane's to refresh).
+  `script/m14/spec/graphql-completeness.json` was left UNTOUCHED: it is another lane's file, it was
+  edited concurrently in this shared checkout, and reverting a change I cannot prove I made would
+destroy someone else's work.
+
+### 9. Still open after round 12
+
+- **CLOSED IN ROUND 13 (below).** The cython differential's 3 new `contains` rows, NAMED. Round 11 read `unexplained=0` on
+  cython; round 12 reads **3, all `contains`**, and they are three class-body `for` targets in
+  `cython/tests/run/py_classbody.py` — lines 52, 55 and 58 binding `i`, `k` and `m` — which PY-D23 now
+  publishes as class Properties, each emitting `ForLoopInPyClass -> name`
+  (`.tmp-py/probe-classbody-contains.mts`: 3 symbols, `boundByBinder=for`, `isClassVariable`, and
+  exactly 3 `contains` edges). The mechanism is REAL and the file proves it in its own doctest:
+  `ForLoopInPyClass.k` → `0`, `.m` → `1`. (It also records that `.i` raises `AttributeError`, because
+  that loop's `range(0)` never executes — a RUNTIME fact; the lane publishes LEXICAL bindings, exactly
+  as it does for a name assigned inside `if False:`, so `i` is published on the same rule.) The gap is
+  therefore the DIFFERENTIAL'S truth side, which derives class members from `def`/assignment and does
+  not model class-body loop bindings: the next round's first item is to extend that extractor (or to
+  declare the truth gap by name in the differential's own output) rather than to stop publishing a
+  binding the source writes and its own doctest exercises. Round 13 derived the class-body binder in
+  the oracle AND fixed the analyzer inconsistency the derivation exposed (one member published per
+  NAME where every other class-member path publishes per SITE) — see the round-13 section.
+- **PY-D26** (§6): 17 python symbol-provenance keys published, 1 carried across the worker boundary.
+  Fixing it needs a READER; the first consumer worth having is a store-level check that a binder
+  symbol really landed, which is also what would make the seam pinnable in a fixture.
+- **The 42 rows in files CPython cannot parse** stay declared and NAMED per row by the axis gate
+  (ASN.1 documents at line 1, the py2 build script at 107, the highlighter fragment at 49); the
+  file-level decision is still not this lane's to take alone.
+- **7 `exports`** — unchanged in rounds 8–12, `__all__` names provided lazily, axis deliberately not
+  applied (§7).
+- **The `(x): int` / `(y): int = 0` field over-claim** from round 11's §9 is unchanged and still open:
+  `multiTargetForm: "tuple_pattern"` for a parenthesised single name that the source did not write as a
+  tuple.
+- **PY-D13's store half** — unchanged and pinned by a green gate: `import-bound-name-seam.mts` still
+  reads `brain_import.imported_as` NULL and `import_type = "named"` for `import typing as t`, which is
+  the DECLARED gap it was written to pin.
+- Round-3 items unchanged: **D5** (750 `uses` self-loops), the flat-corpus pins in
+  `python-ontology-census.ts` / `firing-check*.mjs`.
+
+## python round 13 (2026-10-12) — the truth extractor learns the class body: 3 UNEXPLAINED → 0, falsified in both directions, and deriving the rule exposed an ANALYZER inconsistency
+
+Round 12 published class-body binder members (PY-D23) and left the differential reading `3 (0%)`, all
+`contains`, all in one file. Round 12's own §9 recorded the next step as "extend that extractor (or
+declare the truth gap by name) rather than to stop publishing a binding the source writes and its own
+doctest exercises". Round 13 extends it — and the derivation is what exposed an analyzer
+inconsistency that no gate had seen: one member published per NAME where every other class-member
+path publishes per SITE.
+
+- cython, canonical 60-file rotation: `files=60 tree-truth=34,665 covered=34,665 (100%) MISSING=0
+  analyzer-edges=7,053 **unexplained=0 (0%)** heuristic=119` (`.tmp-py/round13-lane-cython.log`). The
+  lane's own standing rule applies to the truth TOTAL: the cold-pool rotation draws fresh files every
+  wave, so a truth count is comparable only within one run — which is why the falsification below is
+  run on the FULL corpus, where the file set is fixed.
+- cython, FULL corpus — `--sample 5000` draws all 475 files, so that run is not a sample at all:
+  `tree-truth=92,213 covered=92,213 (100%) MISSING=0 analyzer-edges=28,012 **unexplained=0 (0%)**`.
+- requests, canonical: `files=37 tree-truth=5,326 covered=5,326 (100%) MISSING=0 analyzer-edges=2,552
+  unexplained=0 (0%)` — unchanged to the digit, which is the CONTROL: that corpus has no row of this
+  shape, and a change there would have been a regression rather than a fix.
+
+### 1. The rule is the language's, and the corpus file states it in its own doctest
+
+`cython/tests/run/py_classbody.py` writes three `for` loops directly in a class body and then reads
+the class: `ForLoopInPyClass.k` → `0`, `.m` → `1`. A python class body is a NAMESPACE, so a binder
+statement written directly in one binds its names in the class exactly as `x = 1` does — the same
+statement at module scope binds a module name, and the analyzer already publishes that half (PY-D23).
+The same doctest records `.i` raising `AttributeError`, because THAT loop's `range(0)` never
+executes: a RUNTIME fact. The lane publishes LEXICAL bindings (it does exactly the same for a name
+assigned inside `if False:`), and the truth side is a statement about the SOURCE — so it derives the
+same set, or it measures the interpreter instead of the code.
+
+`walkClassBody` gained the clause for `for_statement` / `with_item` / `except_clause` at class scope,
+reading each target through the same container shapes the analyzer's shared walker knows
+(`pattern_list`, `tuple_pattern`, `list_pattern`, `list_splat_pattern`, `as_pattern_target`), with the
+`as` shapes read through the same accessor (`asBindingTarget`). EACH NAME CARRIES THE TARGET NODE'S OWN
+LINE, because `contains` resolves by name AND line: a statement-line rule would put a multi-line
+pattern's second name on the first line and trade this defect for a phantom MISSING row — the mirror
+image of the bug being fixed. A class-body ASSIGNMENT whose target is a pattern
+(`SUCCESS, FAILURE, ERROR = range(3)`) is the same clause of the same sentence and is derived too, so
+the extractor no longer requires the target to be spelled as a plain identifier.
+
+### 2. Falsified in both directions, on the whole corpus
+
+The clause was REMOVED, measured, and restored — the instrument the PY-D11 pair used, run on the full
+475-file population so that the two rows differ by the clause and by nothing else:
+
+| run | truth edges | unexplained | the rows | analyzer-edges | run hash |
+|---|---:|---:|---|---:|---|
+| clause REMOVED (`.tmp-py/round13-falsification-off.log`) | 92,210 | **3 (0%)**, all `contains` | `tests/run/py_classbody.py` `contains ForLoopInPyClass -> i` @L52, `-> k` @L55, `-> m` @L58 | 28,012 | `8e2340b6bbdeb581` |
+| clause RESTORED (`.tmp-py/round13-falsification-on.log`) | 92,213 | **0 (0%)** | — | 28,012 | `8e2340b6bbdeb581` |
+
+Three facts that table is built to make checkable rather than plausible:
+
+- **It explains exactly the 3 rows and nothing else**: 92,213 − 92,210 = 3, and the disabled run's
+  `[UNEXPLAINED]` samples name those three rows.
+- **It does not over-derive**: `MISSING=0` in BOTH runs — no derived member is a phantom, so the clause
+  is not buying green with edges the analyzer never published.
+- **It is analyzer-neutral**: `analyzer-edges=28,012` and the run hash are IDENTICAL on both sides, so
+  the truth lane moved and the lane under test did not. That is what makes these 3 rows a TRUTH-side
+  gap rather than a pair of implementations agreeing on an unstated assumption.
+- The restore is byte-identical: `md5sum script/m14/oracles/python-truth.ts` =
+  `d3a5d15ae8d02924b468439c8877b5d5` before the experiment and after it.
+
+(One intermediate state inside this round — analyzer already per-site, oracle not yet complete — read
+4 rows on its own 60-file draw (`.tmp-py/r13-diff-cython.log`). Different file set, superseded by the
+pair above, and not used as evidence anywhere: the lane's truth counts are comparable only within one
+run.)
+
+### 3. Deriving the rule exposed an ANALYZER inconsistency — fixed, not tolerated
+
+Deriving members PER SITE is what the truth side must do (`contains` resolves by name AND line) and it
+is what every other class-member path in the analyzer already did: two `X = 1` statements in a class
+body publish two Properties. Round 12's binder walk deduped on `(scope, name)` instead, so a SECOND
+binder statement binding the same name in one class body published nothing at its own line.
+
+**PRICED with CPython's own `ast` before the fix** (`.tmp-py/price-class-binder-sites.py` →
+`.tmp-py/class-binder-sites-price.json`, this round, over the same corpus): 11,245 files parse, 55 are
+rejected; **18 class-scope binder rows naming 17 distinct members**, and of those exactly ONE has more
+than one site — `ansible/test/lib/ansible_test/_util/controller/sanity/pylint/plugins/unwanted.py`,
+`AnsibleUnwantedChecker.method`, **L141 and L157**. **ZERO** binder names are also declared in the same
+class by an assignment, a `def` or an import, so the `already a member` guard is INERT today and the
+fix cannot duplicate against the assignment path. Measured on the re-run verdict: symbols 206,939 →
+**206,940** and `contains` 135,651 → **135,652** — exactly the ONE symbol and ONE edge the price
+named, with every other label unmoved and the incoming residual still **7, `exports` only**
+(`.tmp-py/unexplained-round13.txt`, identical to `.tmp-py/unexplained-round12.txt`).
+
+The MODULE half deliberately stays per NAME, and that is a MEASURED deferral rather than an oversight:
+**58** module names have more than one binder site — **90** extra symbols if the module half were made
+per site (this round's own name-and-file-keyed count, `.tmp-py/price-class-binder-sites.py`; the
+analyzer's round-12 comment records `70 names / ≈100 symbols` under its own target-and-kind-keyed
+frame, and the two differ in METRIC rather than in corpus). A module Variable has no owner and
+therefore no `contains` edge for any consumer to address by line, and the effect on the
+RESOLVED/AMBIGUOUS split is not yet measured — so it is recorded with its price for the next round
+instead of being widened under a green run.
+
+### 4. Verified together
+
+- fixtures: `script/m14/run-fixtures.ts --lang python` → `{"python":{"pass":51,"fail":0}}`, exit 0,
+  "all fixtures pass". The rewritten `module-binder-binds-a-module-name.{py,expectation.json}` is the
+  pin for the per-site rule: two class-body `for x in PAIRS:` statements are TWO members with a
+  `contains` row at EACH line (42 and 49), while two module-scope `for single in PAIRS:` statements are
+  ONE module Variable (`expectSymbolCount`: `x` equals 2, `single` equals 1).
+- mutants: `python3 script/m14/python-implements-mutants.py` → **50 CAUGHT, 0 survived, 0 not
+  applied**, control `0 failing fixture(s)`, exit 0 — including the new
+  `round13/class-binder-per-name-dedupe-restored`, which restores the round-12 shape for the class half
+  and is caught by the fixture's second site (`.tmp-py/round13-mutants.log`).
+- `npx tsc --noEmit`: exit 0, zero diagnostics, empty output (`.tmp-py/round13-tsc.log`).
+- spec: `PY-D27` appended to `script/m14/spec/python-completeness.json` (`design_decision.count` 25 →
+  26, 26/26 items; the file stays ASCII-only — 144 `\u2014` escapes, 0 raw em dashes — and parses).
+- `script/m14/completeness-inventory.ts --lang python`: **130 types classified; sections A–H 8/8
+  pass**, exit 0 (`.tmp-py/round13-inventory-python.log`).
+- `script/m14/verify-label-coverage.ts`: python's row is `| python | cython | 25 | 4,857 | 4,857 | —
+  | — |` — every emitted label compared, nothing unaudited. THE GATE'S OVERALL EXIT 1 IS NOT THIS
+  LANE'S: it reports 45 undeclared gaps across 20 OTHER lanes (rust, scala, scss, swift, css, …), a
+  pre-existing condition this round neither caused nor can fix alone.
+- `script/m14/verify-truth-existence.ts`: python has NO admitted label without an oracle — the failure
+  list names clean, cpp, elixir, erlang and rust, none of them python. (Fact for the next reader: this
+  gate runs the differential at `--sample 6` and takes more than five minutes; the first attempt hit a
+  300s timeout and the second, at 550s, completed.)
+- one generated artefact of MY OWN runs was reverted rather than committed:
+  `validation/m14/results/M14.0.SPEC.json` (the inventory gate rewrites it on read — 63 insertions /
+  2,858 deletions under a regenerate frame, the limitation the cpp lane recorded). Every other file in
+  the working tree that this lane did not touch belongs to another lane editing the same checkout.
+
+### 5. Still open after round 13
+
+- **PY-D26** unchanged: 17 python symbol-provenance keys published by the analyzer, 1 (`superTypes`)
+  carried across the worker allowlist, and no store-level reader for `boundByBinder` yet — declared
+  with numbers; the first consumer worth having is a check that a binder symbol really landed.
+- **The module half's per-name publication**, with its price in hand (58 names, **90** extra symbols —
+  §3) — the next round can take it with a number instead of a surprise.
+- Unchanged from round 12's §9: the 7 `exports` (lazy `__all__`), the 42 rows in files CPython cannot
+  parse (named per row by the axis gate), the `(x): int` field label from round 11, PY-D13's store
+  half, and round 3's D5.
+- The gate failures that are GREEN here but RED elsewhere — 45 undeclared label-coverage gaps in 20
+  lanes, 6 undeclared no-truth labels in 5 lanes — are other lanes' recorded debt. They are named so
+  that no later reader reads this lane's green as the gate's.
+
 ## Totals today
 
 - Outgoing at `10/10 applicable`: **3 of 23** (`dart`, `fsharp`, `php`).
@@ -3102,3 +3552,70 @@ came from the v1 price run and is superseded by the per-symbol check, not repeat
   depth-degradation finding itself is untouched. **Still NOT claimed: a
   PASS** — `ext?` is **223**, not 0; clause 1 is short by **184**; §7's five criteria remain MET.
 - Zero regexes: **yes** (18 → 0; laptop A's handoff records they have not matched this).
+
+- **dart — the override-EXPOSURE watchdog lands (`DT-EXP`): the CORPUS fails now, not the fixture, and
+  the population is re-measured on every run.** `validation/m14/fixtures/dart/override-exposure-watchdog.ts`
+  walks the gate's population (tracked `.dart` ≤ 1 MB, `parseFile` at production's per-file scope) and
+  **exits non-zero if ANY `overrides` row names a base that does not expose the member**. The 128-class
+  (`class LineStarts extends Object with ListMixin<int>` naming `Object.length`) is decidable with NO file
+  evidence (`DART_OBJECT_INTERFACE_MEMBERS`), an in-file heritage-free `class`/`mixin` is decidable from the
+  file's own blanked text, and everything else — out-of-file owner, owner with heritage, enum/extension
+  type/body-less, extension `on` the owner — is **counted, never judged**: the out-of-file half stays
+  `cause-claim-oracle.ts`'s question instead of becoming a second instrument that drifts. Any refuted row,
+  failed control or unparseable file exits non-zero, and the controls run through the SAME classifier before
+  any corpus file is read. **The first whole-corpus run refuted 159 rows in dart-sdk and 156 of them were the
+  instrument's own false accusations**; the decomposition is exact by differencing the two baselines over the
+  same 25,727 files (`overrides rows 58,075 → 58,072 −3` = the analyzer's constructor rows ·
+  `in-file owner body carries 14,760 → 14,766 +6` · `owner has heritage 9,951 → 10,101 +150`). Five
+  instrument defects, each now a control, each of them OVER-REFUTING a CORRECT edge: a PRIMARY CONSTRUCTOR's
+  `({…})` parameter brace read as the body (heritage invisible, members "absent"); a nested block comment
+  leaking `}` (Dart nests them); a nested quote inside an interpolation closing the string early; a member
+  NAMED `operator` (`Operator? get operator;` is dart's own front-end spelling — the symbol-shaped rule read
+  it as absent); and a name declared TWICE (dart-sdk's `duplicated_declarations.dart` testcase, now read as
+  the union of its declarations). **Three were TRUE and led to an analyzer fix:** every constructor symbol is
+  named `constructor`, so a subclass member with that name matched the BASE's CONSTRUCTOR by name and
+  published at 0.95 (3 rows, `pkg/compiler/lib/src/universe/recorded_use.dart` among them — a file with no
+  `mixin`, which is why a mixin-shaped candidate cut found only 2). Constructors are excluded from the
+  analyzer's override member surface and `dart/object-interface-override` pins BOTH directions (**case O
+  forbids** `CtorSub.constructor -> CtorBase.constructor`, **case P keeps**
+  `GetterSub.constructor -> GetterBase.constructor`, because the rule is on the SYMBOL and not the spelling);
+  the **PRE-FIX analyzer FAILS that pin** (13 rows against 12, forbidden row present at 0.95) while the fixed
+  one passes, and M7 fabricates 14 forbidden rows. **Final whole-corpus run (`final-full.log`, 7 projects,
+  `EXIT=0`): 316,120 rows · 19,271 decidable (6.10 %) · `Object.<member>` outside the five 0 · in-file
+  fabrications 0 · 296,849 counted-not-judged · heritage/extension/kind 11,791 · parse failures 0 · degraded
+  2**, every project's row count identical to the baseline (dart-http 326, riverpod 7,903, proxicall 230,442,
+  flutter-packages 19,377, dart-sdk 58,072). The committed `override-exposure-baseline.json` — which records
+  the analyzer's sha256 with it — is rewritten by `--write-baseline`, and every run diffs the per-project
+  counts so `NEW PROJECT` / `POPULATION GREW` / `MORE UNCHECKABLE BASES` / `EXPOSURE` print instead of
+  widening in silence. Controls `--control-only` PASS in ~1 s; dart fixtures **30/0**; dart mutant battery
+  **7/7 constructed and caught**; `npx tsc --noEmit` clean; spec entry **DT-EXP**. **NOT claimed:** the
+  296,849 counted-not-judged rows are not verified — 6.10 % is the honest coverage of THIS one question, not
+  a resolution figure for the lane, whose incoming columns are still the gap round 18 measured.
+
+- **dart — arm12: the first whole-corpus constant at HEAD, every moved cell attributed, and TWO fleet gate
+  defects found in it (both fixed).** arm11 was run in a frozen worktree; 364 commits had landed since, so
+  the table at HEAD had never been taken. `.tmp-probe/dartgate/incoming-dart-arm12.log` (2026-10-12
+  10:46–11:28, `HEAD b19a9d4b6` + working tree, `incoming-gate.ts dart dart 0`, 33,739 parsed of 33,739,
+  0 failed, 2 degraded, self-test PASS, `EXIT=1`) reads **3,436,111 edges · resolved 1,796,210 · amb(decl)
+  781,930 · unresolved 143,551 · extOK 21,719 · extFAIL 173 · bindOK 563,833 · bind? 0 · causeOK 128,667**
+  (`contains` 700,399/700,399 = the post-ruling row, unchanged). **Eight cells moved vs arm11 and three
+  named causes close the arithmetic exactly: `edges +1,316 = +1,297 − 12 (pool-worker `e1c15d0fe`, the
+  binding-separator leaf fix: +1,297 restored binding-spelled edges, −12 malformed empty bindings now
+  dropped) + 34 (a gate population defect) − 3 (this lane's constructor fix)`.**
+  **The two gate defects are `d13b999c0`'s own two halves, each measured:** (1) `admitByExtension`'s basename
+  clause (`base === e`) admitted `dart-sdk/sdk/bin/dart` — a 1,462-byte **bash script** — into the DART
+  population as the only such file corpus-wide, contributing **34 bash-analyzer edges** (19 uses · 11 contains
+  · 4 calls; `one-file-edges.mts`); production's predicate does not: `detectLanguageFromPath` names it `bash`.
+  (2) the new symlink following in `projectFactsForDart` reached ProxiCall's 33 `windows/flutter/ephemeral/
+  .plugin_symlinks/*` — Flutter's links INTO the pub cache — taking its `packages` set **2 → 62** and flipping
+  **173 TRUE `package:<pkg>/…` claims to `REFUTED`** (firebase_core/auth/storage, network_info_plus,
+  flutter_webrtc, app_links, sentry_flutter, printing, share_plus, firebase_app_check, package_info_plus,
+  device_info_plus, file_picker; `fact-walk-probe.mjs` confirms old walk misses every one). **A dependency
+  reached through a build symlink is not the project's own pubspec.** Both fixed in the gate: the basename
+  clause now requires the ROUTER to agree (`detectLanguageFromPath(rel) === lang`; `Makefile` keeps its
+  admission), and `.plugin_symlinks` joins `.symlinks`/`build` in `DART_FACT_WALK_SKIP` (the symlink following
+  itself kept — it is sql-lane's measured fix). Controls: population re-measured **33,739 → 33,738** and the
+  fact walk back to **2 packages, 0 links followed**, gate self-test PASS, `tsc --noEmit` and
+  `typecheck:scripts` both exit 0. **arm13 pre-registered before its run**: edges 3,436,077 (−34), extFAIL
+  173 → 0, extOK 21,719 → 21,892, everything else unchanged except `resolved` (−31, ± any edge colliding
+  with the script's 12 symbol names). Full receipt in `real-dart-analyzer.md` §arm12.

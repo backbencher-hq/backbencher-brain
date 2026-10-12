@@ -107,6 +107,9 @@ import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
+// THE ROUTER'S OWN DETECTION, imported rather than re-spelled: the basename clause below has to
+// agree with what production admits, and production admits by `detectLanguageFromPath`.
+import { detectLanguageFromPath } from "../../src/ast/language-detection"
 // The separator a binding's target carries. Imported from the FAMILY constant rather than
 // re-spelled here: the analyzer writes it (src/ast/types.ts) and this gate checks it, and two
 // copies of a spelling would be two rules.
@@ -243,11 +246,24 @@ const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
  * The basename clause cannot admit anything the extension test would not, EXCEPT a file whose whole
  * name equals an admitted ext — which is precisely the case it is for. It is not a widening of the
  * lane's population; it is the population the lane already claimed to have.
+ *
+ * AND THE CLAUSE NEEDS THE ROUTER'S AGREEMENT, NOT A SPELLING MATCH. It was written as
+ * `base === e`, and for `Makefile` that coincides with the router's own basename table — but for
+ * dart it admitted `dart-sdk/sdk/bin/dart`, a 1,462-byte BASH SCRIPT whose basename happens to
+ * equal the extension spelling. Measured 2026-10-12 (arm12, whole corpus): that ONE file added
+ * **34 edges the bash analyzer emitted** to the dart table (19 uses · 11 contains · 4 calls),
+ * because production's predicate (`parallel-indexer.ts:694`,
+ * `detectLanguageFromPath(filePath) !== null`) routes it as `bash` and never puts it in the dart
+ * population. The widening exists for a NAME the ROUTER maps to a language, so the faithful test
+ * is the router's own: a bare basename is admitted only when detection attributes it to THIS lane.
+ * `Makefile` still passes (the basename table maps it to `make`); the script does not (detection
+ * names no language for a spelling-only probe, and with its content names `bash`).
  */
-function admitByExtension(rel: string, exts: string[]): boolean {
+function admitByExtension(rel: string, exts: string[], lang: string): boolean {
   const low = rel.toLowerCase()
   const base = low.slice(low.lastIndexOf("/") + 1)
-  return exts.some((e) => low.endsWith(`.${e}`) || base === e)
+  if (exts.some((e) => low.endsWith(`.${e}`))) return true
+  return exts.some((e) => base === e) && detectLanguageFromPath(rel) === lang
 }
 
 function discoverFiles(lang: string, ext: string, exts: string[], maxFiles: number, onlyRepos?: Set<string>): {
@@ -300,7 +316,7 @@ function discoverFiles(lang: string, ext: string, exts: string[], maxFiles: numb
       continue
     }
     for (const rel of tracked) {
-      if (!admitByExtension(rel, exts)) continue
+      if (!admitByExtension(rel, exts, lang)) continue
       const abs = path.join(dir, rel)
       try {
         // THE SIZE CAP IS PART OF THE POPULATION CLAIM, so it is counted and printed.
@@ -358,6 +374,17 @@ function discoverFiles(lang: string, ext: string, exts: string[], maxFiles: numb
  */
 const DART_FACT_WALK_SKIP = new Set([
   ".git", ".hg", ".svn", "node_modules", ".dart_tool", ".symlinks", "build", "coverage", ".pub-cache", "out",
+  // THE SAME FARM UNDER ANOTHER PLATFORM'S NAME. `windows/flutter/ephemeral/.plugin_symlinks/*`
+  // are Flutter's links INTO the pub cache — one per plugin dependency — and following them
+  // (d13b999c0 taught this walk to follow symlinked directories, for sql-lane's whole repository
+  // behind `repositories/proxicall`) took ProxiCall's `packages` fact set from **2 to 62**.
+  // Measured 2026-10-12 (arm12, whole corpus): `verifyImportClaim` refutes a `package:<pkg>/…`
+  // claim when the project declares `<pkg>`, so **173 claims that are TRUE —
+  // `package:firebase_core/firebase_core.dart` IS outside ProxiCall, whose own pubspec never
+  // declares it — read REFUTED and were counted against the lane.** A dependency reached through
+  // a build symlink is not the project's own pubspec, which is what `.symlinks` and `build` are
+  // already in this set to say.
+  ".plugin_symlinks",
 ])
 
 /**
@@ -1539,8 +1566,10 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   console.log(
     `population: admitted extensions = ${rep.admittedExts.map((e) => `.${e}`).join(", ")} ` +
     `(${rep.admittedExts.length === 1 ? "ONE spelling — check the lane does not carry another" : "both spellings admitted"}) ` +
-    `— PLUS a bare BASENAME equal to any of them, because \`Makefile\` has no extension to match ` +
-    `and an extension-only rule measured 129 files where the production router admits 697.`,
+    `— PLUS a bare BASENAME equal to any of them WHEN THE ROUTER'S OWN DETECTION GIVES IT TO ` +
+    `THIS LANE (\`Makefile\` has no extension to match, and an extension-only rule measured 129 ` +
+    `files where the production router admits 697 — but the router's verdict is a LANGUAGE, not a ` +
+    `spelling: \`dart-sdk/sdk/bin/dart\` is a bash script and is NOT this lane's file).`,
   )
   console.log(
     rep.index === null

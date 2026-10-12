@@ -123,7 +123,7 @@ export interface DeclarationSpec {
    * `childForFieldName("name")` reads "" for every one of those, i.e. an index of the right
    * shape holding nothing. Absent the hook the behaviour is byte-for-byte what it was.
    */
-  nameResolver?: (node: Node) => string
+  nameResolver?: (node: Node, fileName?: string) => string
   /**
    * Read a declaration's DIRECT base names from its own node. Preferred over `baseNodes` when
    * the grammar does not put bases in a node carrying an `ancestor` field: python's live in
@@ -713,7 +713,7 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
    *  otherwise — which is every previous language, so nothing that used this file before
    *  reads a different name. */
   const nameOf = (n: Node): string =>
-    spec.nameResolver !== undefined ? spec.nameResolver(n) : (n.childForFieldName("name")?.text ?? "")
+    spec.nameResolver !== undefined ? spec.nameResolver(n, fileName) : (n.childForFieldName("name")?.text ?? "")
   while (stack.length > 0) {
     const { node, owner, scopes } = stack.pop()!
     let nextOwner = owner

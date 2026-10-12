@@ -427,7 +427,7 @@ function cssProjectRootOf(filePath: string): string | null {
  * Returns `""` for an empty path; the caller then publishes no scope and the lane behaves
  * exactly as it did before this change.
  */
-function cssFileScopeOf(filePath: string): string {
+export function cssFileScopeOf(filePath: string): string {
   if (!filePath || filePath.length === 0) return ""
   const abs = path.resolve(filePath)
   const root = cssProjectRootOf(abs)

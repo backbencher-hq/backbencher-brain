@@ -53,7 +53,7 @@
 import type { Node } from "web-tree-sitter"
 import * as path from "node:path"
 import { ASTEngine } from "./engine"
-import { RealCssAnalyzer } from "./real-css-analyzer"
+import { RealCssAnalyzer, cssFileScopeOf } from "./real-css-analyzer"
 import { dirOf, FILE_CLAIM_MAX_BYTES, fileClaimForTarget, foldProjectPath } from "./file-claim"
 import type { ProjectIndex } from "./project-index"
 
@@ -1194,16 +1194,49 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     const closedMembers = ((index as any).__closedMembers as Map<string, Set<string>> | undefined)?.get(targetTypeName) ?? declared
     if (!closedMembers || closedMembers.size === 0) return
 
+    /**
+     * THE FILE SCOPE IS REUSED, NOT RE-DERIVED. Every importing file emits `ns.member` and pushes a
+     * symbol of that name, so a module imported by N files produced N declarations of ONE name —
+     * measured on the built-index arm: **+3,206 `exports` edges, +3,182 of them ambiguous, resolved
+     * +24**, a net harm. The delegate already owns the remedy: `publishFileScopedIdentities` gives
+     * same-named symbols a FILE-SCOPED `qualifiedName` (`<scope>::<name>`) while leaving `name`
+     * alone, and this lane's symbols are added AFTER the delegate ran, so they were never scoped.
+     *
+     * The prefix is read OFF THE DELEGATE'S OWN OUTPUT rather than recomputed: `cssFileScopeOf` is
+     * module-private, and two implementations of one naming rule is how a graph ends up with
+     * `.card` on one side of an edge and `div .card` on the other. Any base symbol's qualified name
+     * carries the prefix this file was indexed under, so the first one that has it is THE prefix.
+     */
+    let scopePrefix = ""
+    for (const sym of ctx.symbols) {
+      const q = String(sym.qualifiedName ?? "")
+      const sep = q.indexOf("::")
+      if (sep > 0) { scopePrefix = q.slice(0, sep); break }
+    }
+    // A FILE THE DELEGATE PUBLISHED NOTHING FOR has no symbol to read the prefix from — a partial
+    // that is only `@use` lines and no rules. Measured: the symbols-only read left 1,591 of the 3,182
+    // ambiguities in place. The rule is therefore IMPORTED (`cssFileScopeOf` is now exported) rather
+    // than re-implemented: one naming rule, one implementation, same function.
+    if (scopePrefix === "") {
+      const moduleSym = ctx.symbols.find((sym) => sym.metadata?.isScssModule === true)
+      const modulePath = String((moduleSym?.metadata as Record<string, unknown> | undefined)?.scssModulePath ?? "")
+      if (modulePath !== "") scopePrefix = cssFileScopeOf(modulePath)
+    }
+
     // For each exported member, create an exports edge from this file's module
     // to the member, qualified by the namespace
     for (const memberName of closedMembers) {
       // The namespace-qualified name is what @use 'mod' as ns makes available
       const qualifiedName = `${namespace}.${memberName}`
-      
+      // ...and the SCOPE-qualified spelling is what makes it unique to THIS file. The edge targets
+      // the scoped spelling; the symbol keeps the bare name and carries the scoped qualified name,
+      // exactly as the delegate's own scoped symbols do.
+      const scopedName = scopePrefix === "" ? qualifiedName : `${scopePrefix}::${qualifiedName}`
+
       // Emit an exports edge: this file's module exports the qualified member
       ctx.relationships.push({
         source: ctx.moduleName,
-        target: qualifiedName,
+        target: scopedName,
         type: ASTEngine.RelationshipType.Exports,
         // THE EDGE'S OWN LINE, not a fabricated 0: the import statement's line is what the edge
         // describes, and `0` is the sentinel this programme has refused everywhere else.
@@ -1222,6 +1255,8 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Also emit the member as a symbol so it can be referenced
       ctx.symbols.push({
         name: qualifiedName,
+        // the discriminator rides the PREFIX, never the name — the delegate's own rule
+        qualifiedName: scopedName,
         kind: ASTEngine.SymbolKind.Variable, // conservative; actual kind varies
         range: { startLine: 1, startColumn: 0, endLine: 1, endColumn: 0, startIndex: 0, endIndex: 0 },
         scope: "",
