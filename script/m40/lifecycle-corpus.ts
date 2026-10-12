@@ -315,14 +315,36 @@ async function main() {
     }
     if (drift.length) {
       console.error(`CORPUS CHECK: FAIL — lifecycle behavior drifted from committed baseline. Drifting scenarios: ${drift.slice(0, 10).join(", ")}${drift.length > 10 ? ` (+${drift.length - 10} more)` : ""}`)
+      // Naming the scenario is not a diagnosis. Print the OBSERVED vs COMMITTED
+      // record for each drifting scenario, field by field: a reader must be able
+      // to tell "this run measured 9 in-edges where the baseline says 8" from
+      // "this run lost the field", without re-running the suite by hand.
+      for (const k of drift) {
+        if (k.startsWith("-removed:")) {
+          console.error(`  ${k.slice("-removed:".length)}: field present in the baseline, absent from this run`)
+          continue
+        }
+        const committedV = committed.summary?.[k]
+        const observedV = summary[k]
+        const cv = (committedV ?? {}) as Record<string, unknown>
+        const ov = (observedV ?? {}) as Record<string, unknown>
+        const keys = [...new Set([...Object.keys(cv), ...Object.keys(ov)])].sort()
+        const fields = keys.filter((f) => JSON.stringify(cv[f]) !== JSON.stringify(ov[f]))
+        console.error(`  ${k}: ` + fields.map((f) => `${f}: committed=${JSON.stringify(cv[f])} observed=${JSON.stringify(ov[f])}`).join(" | "))
+      }
       process.exit(1)
     }
     console.log("CORPUS CHECK: PASS — observed lifecycle behavior matches committed baseline")
   } else {
-    const { mkdirSync: mkd, writeFileSync: wfs } = await import("node:fs")
-    mkd(path.dirname(BASELINE), { recursive: true })
-    wfs(BASELINE, JSON.stringify({ schemaVersion: 1, generatedAt: new Date().toISOString(), summary }, null, 2) + "\n")
-    console.log("baseline written:", BASELINE)
+    // M61: the baseline is EVIDENCE — the gate reads it, the sealing audit
+    // audits it — so it is written through the library's sealed writer. The raw
+    // `writeFileSync` this replaces produced an UNSEALED record and, on a
+    // re-record, silently DROPPED the `bbSeal` envelope the committed baseline
+    // carried: the producer shape `refresh-stale-seals.ts` was written for
+    // (a record whose envelope stops matching its own bytes).
+    const { writeSealed } = await import("../lib/evidence")
+    const seal = writeSealed(BASELINE, { schemaVersion: 1, generatedAt: new Date().toISOString(), summary })
+    console.log(`baseline written: ${BASELINE} (sealed ${seal.contentSha256.slice(0, 12)})`)
   }
 
   // X1 lesson: closure's read-only probes must never overwrite real evidence.

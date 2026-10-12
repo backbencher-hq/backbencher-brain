@@ -6454,9 +6454,14 @@ class TypeScriptAnalysisRunner {
         // the collector recorded one. Absent rather than invented when it did not
         // — an absent line reads as "unknown" and a guessed one reads as true.
         ...(item.range?.startLine ? { line_number: item.range.startLine } : {}),
+        // The export record's own metadata is carried through (see the JS
+        // analyzer's sibling note): a lane that records the declaration behind a
+        // default export must not have that name dropped here, or the row's
+        // `default` target can never be recovered by any resolver.
         metadata: {
           isDefault: item.isDefault,
           kind: item.type,
+          ...(item.metadata ?? {}),
         },
       })
     }

@@ -458,6 +458,11 @@ async function cmdIndex(
       const b = stats.m40Bounded
       const parts = [`${b.touchedSymbols} symbols touched`]
       if (b.repairedInEdges > 0) parts.push(`${b.repairedInEdges} cross-file edges restored`)
+      // Named separately: these needed the shared `<module>:<item>` resolver, and
+      // a run that resolves 4,000 import edges has done something the bare-name
+      // rules could not — the user should be able to tell them apart.
+      if ((b.importResolvedInEdges ?? 0) > 0) parts.push(`${b.importResolvedInEdges} of them import edges`)
+      if ((b.healedZeroLines ?? 0) > 0) parts.push(`${b.healedZeroLines} legacy zero-line rows healed`)
       if (b.purgedDeletedFiles > 0) parts.push(`${b.purgedDeletedFiles} deleted files purged`)
       console.log(`  bounded: ${parts.join(" | ")}`)
     }

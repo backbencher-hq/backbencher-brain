@@ -187,7 +187,9 @@ try {
 
 // ── emit evidence ──
 const HEAD = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
-const { mkdirSync: mkd, writeFileSync: wfs } = await import("node:fs")
+// M61: evidence is written SEALED — see the sibling note in verify-a2-bounded-post.
+const { mkdirSync: mkd } = await import("node:fs")
+const { writeSealed } = await import("../lib/evidence")
 Object.assign(evidence, {
   status: failed === 0 ? "verified" : "blocked",
   currentCommit: HEAD,
@@ -202,7 +204,7 @@ mkd(RESULTS_DIR, { recursive: true })
 // M40 lesson (caught by X1): evidence is stamped ONLY by a real, green,
 // non-seam run. Control/mutation probes must never overwrite real evidence —
 // a mutation world's "blocked" output is not the gate's verdict.
-if (failed === 0 && !MUTATE && process.env.BB_M40_SELFTEST_CONTROL !== "1" && process.env.BB_M40_READ_ONLY !== "1") wfs(path.join(RESULTS_DIR, "A3.json"), JSON.stringify(evidence, null, 2) + "\n")
+if (failed === 0 && !MUTATE && process.env.BB_M40_SELFTEST_CONTROL !== "1" && process.env.BB_M40_READ_ONLY !== "1") writeSealed(path.join(RESULTS_DIR, "A3.json"), evidence)
 
 console.log(`A3 write-parity: ${passed} passed, ${failed} failed, ${negatives} negatives${MUTATE ? " [MUTATION RUN]" : ""}`)
 if (failures.length) for (const f of failures) console.log(`  FAIL: ${f}`)

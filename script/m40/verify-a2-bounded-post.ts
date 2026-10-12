@@ -31,10 +31,16 @@ const MUTATE = process.env.BB_M40_MUTATE_A2_UNBOUNDED === "1"
 
 let passed = 0, failed = 0, negatives = 0
 const failures: string[] = []
+// The check LIST is recorded, not just the failure list: the evidence has to
+// carry the numbers the write-ups cite (E1 vs E0, the repaired/import-resolved
+// counters), or a reader has no artifact to check them against — twice in this
+// lane a paragraph cited a run whose record could not be read back to it.
+const checks: string[] = []
 function check(name: string, ok: boolean, detail = "", isNegative = false) {
   if (isNegative) negatives++
   if (ok) passed++
   else { failed++; failures.push(`${name}${detail ? ` — ${detail}` : ""}`) }
+  checks.push(`${ok ? "ok" : "FAIL"}: ${name}${detail ? ` — ${detail}` : ""}`)
 }
 
 const { getProjectId } = await import("../../src/cli/index")
@@ -46,6 +52,11 @@ const proj = path.join(root, "proj")
 mkdirSync(path.join(proj, "src"), { recursive: true })
 
 let boundedMs = -1, fullMs = -1, refreshedRows = -1, totalEdges0 = -1
+// Hoisted so the evidence can carry the bounded pass's own telemetry. `s1` is
+// scoped to the try block; this is the object the CLI prints (and the numbers
+// the round's write-up cites: repairedInEdges / importResolvedInEdges /
+// healedZeroLines), captured where it is produced.
+let boundedTelemetry: Record<string, unknown> | null = null
 const boundedSamples: number[] = []
 const fullSamples: number[] = []
 
@@ -123,6 +134,7 @@ try {
     raw.prepare(`DELETE FROM brain_relationship WHERE project_id = ? AND target_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)`).run(pid, `${pid}:src/hub0.ts`)
     negatives++
   }
+  boundedTelemetry = (s1.m40Bounded as Record<string, unknown> | undefined) ?? null
   boundedMs = s1.phases?.postProcessingMs ?? -1
   console.log("  [timing] bounded phases:", JSON.stringify(s1.phases?.postProcessingPhases ?? []))
   check("A2: incremental run succeeds", s1.errorFiles === 0, `errors=${s1.errorFiles}`)
@@ -137,8 +149,29 @@ try {
   check("A2: restored edges are resolved", unresolvedIntoHub === 0, String(unresolvedIntoHub))
   const enriched = (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?) AND metadata IS NOT NULL`).get(pid, `${pid}:src/hub0.ts`) as any).c
   check("A2: edges sourced from edited file are enriched", enriched > 0, String(enriched))
-  const restoredEnriched = (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND target_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?) AND source_symbol_id NOT IN (SELECT id FROM brain_symbol WHERE file_id = ?) AND metadata IS NOT NULL`).get(pid, `${pid}:src/hub0.ts`, `${pid}:src/hub0.ts`) as any).c
-  check("A2: restored in-edges keep their enrichment metadata", restoredEnriched >= Math.floor(E1 * 0.9), `restoredEnriched=${restoredEnriched} E1=${E1}`)
+  // Population (a): restored in-edges whose SOURCE is a symbol in another file.
+  // The count is taken over this population and not over E1, because E1 now
+  // includes the FILE-LEVEL in-edges (`imports`/`exports` rows whose source is
+  // the importing file, `source_symbol_id` NULL) that the shared
+  // `<module>:<item>` resolver restores — and `source_symbol_id NOT IN (…)` is
+  // NULL, not TRUE, when the source is NULL, so the old form silently dropped
+  // exactly those rows from the numerator while E1 counted them. Measured
+  // before that change (js-repoint-miss-probe.ts): a re-stored file whose
+  // symbols MOVED lost every inbound `imports` row, 14 → 10 in-edges in a
+  // 5-file draw; at this fixture's scale A2 read 11999 of 15994. The predicate
+  // is now stated on purpose rather than by accident of NULL handling.
+  const restoredSymbolSourced = (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id JOIN brain_symbol ss ON ss.id = r.source_symbol_id WHERE r.project_id = ? AND t.file_id = ? AND ss.file_id != ?`).get(pid, `${pid}:src/hub0.ts`, `${pid}:src/hub0.ts`) as any).c
+  const restoredEnriched = (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id JOIN brain_symbol ss ON ss.id = r.source_symbol_id WHERE r.project_id = ? AND t.file_id = ? AND ss.file_id != ? AND r.metadata IS NOT NULL`).get(pid, `${pid}:src/hub0.ts`, `${pid}:src/hub0.ts`) as any).c
+  check("A2: restored in-edges keep their enrichment metadata", restoredEnriched >= Math.floor(restoredSymbolSourced * 0.9), `restoredEnriched=${restoredEnriched} of ${restoredSymbolSourced} symbol-sourced in-edges (E1=${E1})`)
+  // Population (b): the file-level in-edges — the rows this pass now re-points
+  // through the shared resolver. Their metadata was written by the full pass and
+  // must SURVIVE the re-store (nothing rewrites a surviving row), so this is a
+  // preservation check, not an enrichment one. The edited file's OWN file-level
+  // rows are excluded: they are re-emitted by the re-parse, not restored, and
+  // the row's own id carries the emitting file (`…:file:src/hub0.ts:…`).
+  const fileLevelPop = (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id WHERE r.project_id = ? AND t.file_id = ? AND r.source_symbol_id IS NULL AND r.id LIKE '%:file:%' AND r.id NOT LIKE ?`).get(pid, `${pid}:src/hub0.ts`, `%:file:src/hub0.ts:%`) as any).c
+  const fileLevelEnriched = (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id WHERE r.project_id = ? AND t.file_id = ? AND r.source_symbol_id IS NULL AND r.id LIKE '%:file:%' AND r.id NOT LIKE ? AND r.metadata IS NOT NULL`).get(pid, `${pid}:src/hub0.ts`, `%:file:src/hub0.ts:%`) as any).c
+  check("A2: restored FILE-LEVEL in-edges keep their metadata", fileLevelPop > 0 && fileLevelEnriched >= Math.floor(fileLevelPop * 0.9), `fileLevelEnriched=${fileLevelEnriched} of ${fileLevelPop} file-level in-edges (the population the <module>:<item> resolver restores)`)
 
   // 4. gravity restoration: re-parsed symbols must have non-zero scores again
   const g = (raw.prepare(`SELECT COUNT(*) c FROM brain_symbol WHERE project_id = ? AND file_id = ? AND gravity_score > 0`).get(pid, `${pid}:src/hub0.ts`) as any).c
@@ -221,7 +254,12 @@ try {
 
 // ── emit evidence ──
 const HEAD = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
-const { mkdirSync: mkd, writeFileSync: wfs } = await import("node:fs")
+// M61: evidence is written SEALED. The raw writeFileSync this replaces produced
+// an unsealed record on every run — and, on a re-record, dropped the `bbSeal`
+// envelope the committed evidence carried, which the sealing audit reads as a
+// register row naming a digest the file no longer has.
+const { mkdirSync: mkd } = await import("node:fs")
+const { writeSealed } = await import("../lib/evidence")
 const evidence = {
   status: failed === 0 ? "verified" : "blocked",
   currentCommit: HEAD,
@@ -229,8 +267,13 @@ const evidence = {
   verifierCommand: "bun run script/m40/verify-a2-bounded-post.ts",
   generatedAt: new Date().toISOString(),
   passed, failed, negativeCases: negatives,
+  // The bounded pass's telemetry and the full check list: the record has to
+  // carry the measurements the prose cites, or the prose is the only place
+  // they exist.
+  bounded: boundedTelemetry,
   timing: { boundedMs, fullMs, refreshedRows, totalEdges0, boundedSamples, fullSamples },
   mutation: MUTATE ? "A2_UNBOUNDED (gate-fail proof run)" : "not-run (control)",
+  checks,
   failures,
 }
 mkd(RESULTS_DIR, { recursive: true })
@@ -238,7 +281,7 @@ mkd(RESULTS_DIR, { recursive: true })
 // non-read-only run (X1 lesson: closure's read-only probes must never
 // overwrite real evidence).
 if (failed === 0 && !MUTATE && process.env.BB_M40_SELFTEST_CONTROL !== "1" && process.env.BB_M40_READ_ONLY !== "1") {
-  wfs(path.join(RESULTS_DIR, "A2.json"), JSON.stringify(evidence, null, 2) + "\n")
+  writeSealed(path.join(RESULTS_DIR, "A2.json"), evidence)
 }
 
 console.log(`A2 bounded-post: ${passed} passed, ${failed} failed, ${negatives} negatives (bounded=${boundedMs}ms full=${fullMs}ms)${MUTATE ? " [MUTATION RUN]" : ""}`)

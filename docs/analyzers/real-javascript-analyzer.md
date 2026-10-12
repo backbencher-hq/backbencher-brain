@@ -2155,6 +2155,99 @@ and landing in the row's OWN file, 0 wrong-file in all five runs.
    run under bun at all because it requires `better-sqlite3`); they are listed in the record
    because a reader of this column needs to know which of its consumers are currently red.
 
+13. **The INBOUND half of the store (`parallel-indexer.ts`, this round)** — the same defect class
+   read in the other direction, and the one the earlier rounds had been measuring against without
+   naming. The store DELETED every relationship row from ANOTHER file that pointed into the file
+   it was re-storing. Such a row cannot be re-emitted by the re-parsed file — it belongs to its own
+   source — so the store destroyed rows it had no way to rebuild, and the repair pass was the only
+   thing that ever put them back: as a re-spelled `` `${source}:${type}:${target}:${line}:m40` ``
+   COPY re-bound by name, which is why a re-index and a full index disagreed about the same edge
+   and why the copy carried none of the original's id, metadata or flags.
+   The schema settles the question the delete was answering: `brain_relationship.source_symbol_id`
+   → `brain_symbol(id)` is `ON DELETE CASCADE` (a re-store removes its own rows), while
+   `target_symbol_id` → `brain_symbol(id)` is `ON DELETE SET NULL` — deleting a symbol KEEPS the
+   rows that merely point at it and clears the pointer. So the delete was pure loss, and the repair
+   is now an UPDATE of surviving rows: **exact** by the captured target id (a re-stored file whose
+   symbols did not move re-points to the same symbol — no name matching, which is what picked a
+   different same-named symbol before), **by name** only where that symbol is genuinely gone and
+   only inside the re-stored files, then the shared `<module>:<item>` resolver
+   (`resolveImportTargets`, M60/JD2) for the spellings no bare-name rule can match, called with the
+   captured row ids so a `--changed` run cannot resolve rows in files it never touched. A legacy
+   `line_number = 0` (M59/#821) is healed to NULL, bounded to the same captured population — the
+   old heal rode on the re-insert, so it had to be earned back by a statement of its own.
+   Two further defects sat in the CAPTURE predicate, both silent: `source_symbol_id NOT IN (…)` is
+   NULL — not TRUE — when the source is NULL, so every **file-level** row (an `imports` row whose
+   source is the importing file, `source_external` set and `source_symbol_id` NULL) escaped the
+   capture entirely; and the predicate excluded rows whose source file was re-stored in the same
+   run, on the theory that such a file re-emits them — true only when it is stored AFTER the file
+   it points into.
+   Measured, with the arm that makes each claim falsifiable:
+   - **the file-level loss, at two scales.** `script/m14/js-ontology/js-lifecycle-drift-probe.ts`
+     indexes N modules that each `import` one function from a single hub and re-stores the HUB
+     alone. At N=200: **HEAD keeps 201 edges into the hub and loses all 200 file-level `imports`
+     rows** (`exports` 201, `calls` 200, `imports` 0); the fixed store keeps **401** edges
+     (`imports` 200, 0 unresolved). The same shape at the M40 lifecycle corpus's 1,500-module scale
+     is the S4 drift: relationships **3003 → 4502** (+1499, ≈1 per module file), all of it the
+     restored rows, which is why the baseline was re-recorded in this round rather than treated as
+     a regression. S1 reads 8 → **9** in-edges and S5 2 → **3** resolved edges for the same reason.
+   - **A2, the write path.** `A2: caller edges into edited file RESTORED` read **E1=11999 vs
+     E0=15994** with the old repair (3995 rows lost, every one of them the `<module>:<item>` form)
+     and reads **15997 vs 15994** now, with the run's own telemetry in the record:
+     `bounded.repairedInEdges=15994` — every in-edge into the edited hub re-pointed rather than
+     copied — of which `bounded.importResolvedInEdges=3998` are the file-level `<module>:<item>`
+     rows no bare-name rule can answer (the check beside it counts the same population:
+     `fileLevelEnriched=3998 of 3998`), and `bounded.stillUnresolvedInEdges=0`. 26 checks, 0 failed.
+     The gate's enrichment check also had to be stated on purpose: `source_symbol_id NOT IN (…)`
+     dropped the file-level rows from its numerator while the in-edge count kept counting them, so
+     it now names both populations (symbol-sourced, and file-level) and measures each.
+   - **identity, not just counts.** `script/m14/verify-store-path-parity.ts` on the 120-file svelte
+     draw, re-indexing every file through the production incremental entry point: **10,171 rows
+     before and after, 0 only-before, 0 only-after; 832 symbols, symmetric difference 0**; **no row
+     LOSES its resolved target** (0 of 10,171) and every derived-flag difference belongs to a row
+     whose target also differs (no second rule writes the flag). 6 of 7 checks green; the seventh
+     is the named residue below.
+   - **the residue, named.** 66 of 10,171 rows (0.65%) store a DIFFERENT `target` after a re-index:
+     64 where the full pass left NULL and the re-index bound a symbol, 2 where both bound and
+     picked different ones (`calls parse` twice, in two files) — and 45 of the 66 carry a name that
+     is ambiguous in the project. All of it is ONE mechanism: the insert path's
+     `resolveTargetStmt` binds a bare name by proximity (same file, then same language, then any,
+     id tie-break) while the resolution pass refuses a name that is not unique. Which writer
+     reaches a row first depends on batch order, which is why the count moves between runs of the
+     same draw (65, 69, 70, and the 66 recorded in
+     `validation/m14/results/JS-STORE-PATH-PARITY.json`, which is the run this paragraph cites —
+     the artifact and the prose are the same measurement, so they are read together). Recorded as
+     **gap J12** and not absorbed:
+     the fix is a decider for ambiguous names (the row's own import binding first, then relax), and
+     until it lands this column's claim is "no loss, one decision disagreement".
+   - **M59.** `script/m59/verify-legacy-zero-heal.ts` was rewritten onto the new contract and reads
+     **16 checks, 0 failed**, including two negative controls: the out-of-scope legacy zero must
+     SURVIVE (the heal is scoped, not a global sweep) and the detector must fire on it (the checks
+     above are not vacuous). It also pins the ordering the production path has and a repair-only
+     caller does not: the snapshot must be taken while the pointer is live, because the capture
+     joins the target SYMBOL.
+   - **unchanged by this round:** `verify-a3-write-parity` 21/0/3, `verify-a5-flag-semantics`
+     266/0/3, `verify-a7-cli-parity` 24/0/5, `verify-resolution-determinism` 8/8 (0 of 19,855 rows
+     differing on target+flags), the JS fixtures **77/0**, the vue store round-trip PASS, and
+     `typecheck` exit 0. The M40 lifecycle corpus reads 37/37 with its baseline re-recorded (and
+     its writer now seals the record through `writeSealed`, because the raw write dropped the
+     `bbSeal` envelope the committed baseline carried — the producer shape `refresh-stale-seals.ts`
+     exists for).
+
+**The same round found a pre-existing resolution hole and closed it (JD2.4, the default import).**
+`script/m40/verify-import-resolution.ts` reads **6/7 at HEAD in a clean worktree** and 7/7 now. The
+commit that pinned the naming rule (JD-J14: a NAMED default declaration is exported under the name
+`default`, `fragment` is not reachable by name) recorded the declaration's own name in
+`metadata.localName` "so nothing is lost" — and `extractExportRelationships` in BOTH the JS and TS
+analyzers then dropped it, storing the row with `{isDefault}` alone. A row whose target is the
+literal `default` matches no symbol (the name is in the symbol denylist) and had no name to be
+recovered by, so `defaultExportByFile` was empty and **`import Def from "./m"` could not resolve for
+any module with a named default export**. The analyzer now carries the record's metadata through,
+the resolver recovers the symbol by the declaration's name in the row's own file (only when it
+identifies exactly one symbol), and the gate's surface check counts the default declaration under
+both names it is reachable by — without that, JD2.6 and JD2.4 contradict each other.
+`script/m14/js-ontology/js-default-export-probe.ts` is the instrument: it shows the row, the
+metadata it carries and whether the import attached, before and after.
+
 `script/m14/verify-override-retarget.ts` gains the arm that pins the third seam: a
 row with `source_external` NULL and `source_symbol_id` pointing at
 `JsLeaf.render`, whose first-parent guess is not the declaring ancestor. 17 checks,

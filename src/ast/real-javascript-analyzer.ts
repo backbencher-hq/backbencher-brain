@@ -2166,7 +2166,20 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           // The exported NAME's own line, from the export's range when the
           // collector recorded one. Absent rather than invented when it did not.
           ...(item.range?.startLine ? { line_number: item.range.startLine } : {}),
-          metadata: { isDefault: item.isDefault },
+          // The export record's OWN metadata is carried through, not replaced by
+          // `{isDefault}`. JD-J14 decided that a NAMED default declaration is
+          // exported under the literal name `default` (ECMAScript) and kept the
+          // declaration's own name in `metadata.localName` "so nothing is lost" —
+          // and then this line dropped it, so the loss was total: the row's
+          // target `default` matches no symbol (it is in the symbol denylist),
+          // the resolver had no name to recover it by, and `import Def from
+          // "./m"` could not resolve for ANY module with a named default export.
+          // MEASURED (`script/m14/js-ontology/js-default-export-probe.ts`): the
+          // row stored `{isDefault:true, fileLevel:true, …}` with no target
+          // symbol and no local name; `script/m40/verify-import-resolution.ts`
+          // JD2.4 has been red since. `{...item.metadata}` is additive — the
+          // engine's own evidenceClass/fileLevel/scopeName are added later.
+          metadata: { isDefault: item.isDefault, ...(item.metadata ?? {}) },
         })
     }
   }

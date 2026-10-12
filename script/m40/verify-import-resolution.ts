@@ -152,9 +152,19 @@ check("JD2.7 NEGATIVE: a default import of a module with no default export is RE
 
 // 6. no import edge may point at a symbol its target file does not export
 {
+  // The names a module's surface offers. A NAMED default declaration contributes
+  // TWO: the public name it is exported UNDER (`default`, which is what JD-J14
+  // measured and pinned) and the declaration's own name, which is the symbol a
+  // default import actually reaches and which the analyzer records in
+  // `metadata.localName` — the same field the resolver recovers the target from.
+  // Without the second, this check contradicts JD2.4 above: that check requires
+  // `import Def from "./lib.js"` to attach to the symbol `Main`, while a surface
+  // built only from `target_external` says the module never exported `Main`.
+  // (Before JD-J14 renamed the row's target, both passed by accident.)
   const exportNames = new Set(
     (db.prepare(
-      `SELECT DISTINCT target_external AS n FROM brain_relationship WHERE relationship_type='exports'`,
+      `SELECT DISTINCT COALESCE(json_extract(metadata, '$.localName'), target_external) AS n
+         FROM brain_relationship WHERE relationship_type='exports'`,
     ).all() as any[]).map((r) => r.n),
   )
   const bad = imports.filter((r) => r.name && r.tgt.includes(":") && !exportNames.has(r.name))

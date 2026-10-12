@@ -651,25 +651,65 @@ function loadImportInputs(
     const symFile = new Map<string, string>()
     for (const sy of symbols) symFile.set(sy.symbolId, sy.fileId)
     const relPathOfFile = new Map<string, string>()
-    for (const f of files) relPathOfFile.set(String(f.fileId), String(f.relativePath))
+    const relPathToFile = new Map<string, string>()
+    for (const f of files) {
+      relPathOfFile.set(String(f.fileId), String(f.relativePath))
+      relPathToFile.set(String(f.relativePath), String(f.fileId))
+    }
+    // (file, name) -> symbol ids, for the recovery below. Built here rather than
+    // re-queried so the recovery reads the same rows the rest of this pass does.
+    const symIdsByNameInFile = new Map<string, string[]>()
+    for (const sy of symbols) {
+      const key = `${sy.fileId}\u0000${sy.name}`
+      const arr = symIdsByNameInFile.get(key) ?? []
+      arr.push(sy.symbolId)
+      symIdsByNameInFile.set(key, arr)
+    }
     const exports: ImportResolutionInputs["exports"] = []
     for (const er of exportRows) {
-      if (!er.sym) continue
-      const fileId = symFile.get(er.sym)
-      if (!fileId) continue
+      let isDefault = false
+      let localName: string | undefined
+      if (er.metadata) {
+        try {
+          const m = JSON.parse(er.metadata)
+          isDefault = m?.isDefault === true
+          localName = typeof m?.localName === "string" ? m.localName : undefined
+        } catch { /* unparsed: not a default */ }
+      }
+      let symbolId = er.sym
+      let fileId = symbolId ? symFile.get(symbolId) : undefined
+      // A NAMED default declaration is exported under the name `default`
+      // (ECMAScript: `export default function fragment(){}` publishes the name
+      // `default`), which is in the symbol denylist and matches no symbol — so
+      // the row cannot resolve by name and the default export stays invisible to
+      // every importer of that module. MEASURED (`js-default-export-probe.ts`):
+      // `export default class Main` stores `exports target=default
+      // isDefault=true` with no target symbol, `defaultExportByFile` is empty,
+      // and `import Def from "./lib.js"` therefore never resolves — the JD2.4
+      // check of script/m40/verify-import-resolution.ts has been red since the
+      // naming decision landed.
+      //
+      // The name is not lost: the analyzer records the declaration's own name in
+      // this row's metadata (`viaDefaultDeclaration.localName`, and `localName`
+      // for `export { x as default }`) precisely so it can be recovered. This is
+      // that recovery — the declaration's name, in the row's OWN file, and only
+      // when it identifies exactly one symbol. Nothing is guessed: a file with
+      // two same-named symbols stays unresolved.
+      if (!fileId && isDefault && localName) {
+        const f = relPathToFile.get(String(er.src ?? ""))
+        if (f) {
+          const ids = symIdsByNameInFile.get(`${f}\u0000${localName}`) ?? []
+          if (ids.length === 1) { fileId = f; symbolId = ids[0] }
+        }
+      }
+      if (!fileId || !symbolId) continue
       const spelling = er.src ?? ""
       // Exact for a path spelling; basename-uniqueness for the older one.
       if (relPathOfFile.get(fileId) !== spelling) {
         const cands = byBase.get(spelling) ?? []
         if (cands.length !== 1 || cands[0] !== fileId) continue
       }
-      {
-        let isDefault = false
-        if (er.metadata) {
-          try { isDefault = JSON.parse(er.metadata)?.isDefault === true } catch { /* unparsed: not a default */ }
-        }
-        exports.push({ fileId, name: er.tgt, isDefault, symbolId: er.sym })
-      }
+      exports.push({ fileId, name: er.tgt, isDefault, symbolId })
     }
     return { files, symbols, imports, rows, exports }
   } catch (e: any) {
@@ -682,14 +722,27 @@ function loadImportInputs(
 /**
  * Resolve the `<module>:<item>` import edges this project left unresolved.
  * Safe to call when there is nothing to do; never throws into the caller.
+ *
+ * `opts.onlyRowIds` restricts the call to a caller-supplied row set. It exists
+ * for the bounded incremental pass, which must make the SAME decisions as the
+ * full pass — the modules/symbols/exports tables it reads are project-wide
+ * either way, and a second copy of these rules is exactly what this file was
+ * factored out to prevent — while writing only the rows its own run re-stored,
+ * so a `--changed` run cannot silently resolve rows in files it never touched.
+ * Absent = the whole project (the full pass).
  */
-export function resolveImportTargets(db: MinimalDb, projectId: string): ImportResolutionOutcome {
+export function resolveImportTargets(
+  db: MinimalDb,
+  projectId: string,
+  opts: { onlyRowIds?: Set<string> } = {},
+): ImportResolutionOutcome {
   const byReason: Record<string, number> = {}
   const bump = (k: string) => { byReason[k] = (byReason[k] ?? 0) + 1 }
   const out: ImportResolutionOutcome = { scanned: 0, resolved: 0, byReason }
   const inputs = loadImportInputs(db, projectId, { unresolvedOnly: true })
   if (!inputs) return out
-  const { files, symbols, imports, rows, exports } = inputs
+  const { files, symbols, imports, exports } = inputs
+  const rows = opts.onlyRowIds ? inputs.rows.filter((r) => opts.onlyRowIds!.has(r.id)) : inputs.rows
   out.scanned = rows.length
   if (rows.length === 0) return out
 
