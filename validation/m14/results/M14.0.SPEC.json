@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "c6c75bd8f10c339882af414b096c60681dbf4aff6999510ee8f69512bf215f30",
-    "sealedAt": "2026-10-12T15:15:53.629Z"
+    "contentSha256": "15d20b17bdd1fb7669c380dd00453cd7d1a3f060264ccadef6184af1b1ce37bb",
+    "sealedAt": "2026-10-12T15:38:21.691Z"
   },
   "checks": [
     {
@@ -157,7 +157,7 @@
     },
     {
       "description": "groovy: every named node type classified",
-      "detail": "165 types, 72 handled, 72 silent, 8 gaps, 18 decisions",
+      "detail": "165 types, 73 handled, 73 silent, 8 gaps, 18 decisions",
       "id": "inventory-fully-classified",
       "language": "groovy",
       "status": "fail"
@@ -176,7 +176,7 @@
     },
     {
       "description": "every named node type classified (groovy)",
-      "detail": "165 types, 72 handled, 72 silent, 8 gaps, 18 decisions",
+      "detail": "165 types, 73 handled, 73 silent, 8 gaps, 18 decisions",
       "id": "section-a-structural",
       "language": "groovy",
       "status": "fail"
@@ -382,10 +382,10 @@
     },
     {
       "description": "typescript: every named node type classified",
-      "detail": "193 types, 107 handled, 72 silent, 9 gaps, 11 decisions",
+      "detail": "193 types, 108 handled, 73 silent, 9 gaps, 11 decisions",
       "id": "inventory-fully-classified",
       "language": "typescript",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "typescript: 9 confirmed gaps declared",
@@ -401,10 +401,10 @@
     },
     {
       "description": "every named node type classified (typescript)",
-      "detail": "193 types, 107 handled, 72 silent, 9 gaps, 11 decisions",
+      "detail": "193 types, 108 handled, 73 silent, 9 gaps, 11 decisions",
       "id": "section-a-structural",
       "language": "typescript",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "10 relationship kinds pinned by typescript fixtures; 10 emitted and all accounted for",
@@ -682,10 +682,10 @@
     },
     {
       "description": "c: every named node type classified",
-      "detail": "165 types, 24 handled, 104 silent, 0 gaps, 24 decisions",
+      "detail": "165 types, 25 handled, 105 silent, 0 gaps, 24 decisions",
       "id": "inventory-fully-classified",
       "language": "c",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "c: 0 confirmed gaps declared",
@@ -701,10 +701,10 @@
     },
     {
       "description": "every named node type classified (c)",
-      "detail": "165 types, 24 handled, 104 silent, 0 gaps, 24 decisions",
+      "detail": "165 types, 25 handled, 105 silent, 0 gaps, 24 decisions",
       "id": "section-a-structural",
       "language": "c",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "4 relationship kinds pinned by c fixtures; 8 emitted and all accounted for",
@@ -757,7 +757,7 @@
     },
     {
       "description": "cpp: every named node type classified",
-      "detail": "262 types, 43 handled, 146 silent, 0 gaps, 26 decisions",
+      "detail": "262 types, 44 handled, 147 silent, 0 gaps, 26 decisions",
       "id": "inventory-fully-classified",
       "language": "cpp",
       "status": "fail"
@@ -776,7 +776,7 @@
     },
     {
       "description": "every named node type classified (cpp)",
-      "detail": "262 types, 43 handled, 146 silent, 0 gaps, 26 decisions",
+      "detail": "262 types, 44 handled, 147 silent, 0 gaps, 26 decisions",
       "id": "section-a-structural",
       "language": "cpp",
       "status": "fail"
@@ -832,10 +832,10 @@
     },
     {
       "description": "rust: every named node type classified",
-      "detail": "187 types, 42 handled, 121 silent, 0 gaps, 43 decisions",
+      "detail": "187 types, 43 handled, 122 silent, 0 gaps, 43 decisions",
       "id": "inventory-fully-classified",
       "language": "rust",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "rust: 0 confirmed gaps declared",
@@ -851,10 +851,10 @@
     },
     {
       "description": "every named node type classified (rust)",
-      "detail": "187 types, 42 handled, 121 silent, 0 gaps, 43 decisions",
+      "detail": "187 types, 43 handled, 122 silent, 0 gaps, 43 decisions",
       "id": "section-a-structural",
       "language": "rust",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "8 relationship kinds pinned by rust fixtures; 10 emitted and all accounted for",
@@ -907,10 +907,10 @@
     },
     {
       "description": "go: every named node type classified",
-      "detail": "109 types, 36 handled, 67 silent, 3 gaps, 61 decisions",
+      "detail": "109 types, 37 handled, 68 silent, 3 gaps, 61 decisions",
       "id": "inventory-fully-classified",
       "language": "go",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "go: 3 confirmed gaps declared",
@@ -926,10 +926,10 @@
     },
     {
       "description": "every named node type classified (go)",
-      "detail": "109 types, 36 handled, 67 silent, 3 gaps, 61 decisions",
+      "detail": "109 types, 37 handled, 68 silent, 3 gaps, 61 decisions",
       "id": "section-a-structural",
       "language": "go",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "8 relationship kinds pinned by go fixtures; 10 emitted and all accounted for",
@@ -1057,10 +1057,10 @@
     },
     {
       "description": "csharp: every named node type classified",
-      "detail": "241 types, 51 handled, 164 silent, 0 gaps, 14 decisions",
+      "detail": "241 types, 52 handled, 165 silent, 0 gaps, 14 decisions",
       "id": "inventory-fully-classified",
       "language": "csharp",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "csharp: 0 confirmed gaps declared",
@@ -1076,10 +1076,10 @@
     },
     {
       "description": "every named node type classified (csharp)",
-      "detail": "241 types, 51 handled, 164 silent, 0 gaps, 14 decisions",
+      "detail": "241 types, 52 handled, 165 silent, 0 gaps, 14 decisions",
       "id": "section-a-structural",
       "language": "csharp",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "9 relationship kinds pinned by csharp fixtures; 10 emitted and all accounted for",
@@ -1132,10 +1132,10 @@
     },
     {
       "description": "dart: every named node type classified",
-      "detail": "224 types, 95 handled, 106 silent, 6 gaps, 34 decisions",
+      "detail": "224 types, 96 handled, 107 silent, 6 gaps, 34 decisions",
       "id": "inventory-fully-classified",
       "language": "dart",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "dart: 6 confirmed gaps declared",
@@ -1151,10 +1151,10 @@
     },
     {
       "description": "every named node type classified (dart)",
-      "detail": "224 types, 95 handled, 106 silent, 6 gaps, 34 decisions",
+      "detail": "224 types, 96 handled, 107 silent, 6 gaps, 34 decisions",
       "id": "section-a-structural",
       "language": "dart",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "8 relationship kinds pinned by dart fixtures; 10 emitted and all accounted for",
@@ -1207,10 +1207,10 @@
     },
     {
       "description": "swift: every named node type classified",
-      "detail": "187 types, 59 handled, 117 silent, 3 gaps, 30 decisions",
+      "detail": "187 types, 60 handled, 118 silent, 3 gaps, 30 decisions",
       "id": "inventory-fully-classified",
       "language": "swift",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "swift: 3 confirmed gaps declared",
@@ -1226,10 +1226,10 @@
     },
     {
       "description": "every named node type classified (swift)",
-      "detail": "187 types, 59 handled, 117 silent, 3 gaps, 30 decisions",
+      "detail": "187 types, 60 handled, 118 silent, 3 gaps, 30 decisions",
       "id": "section-a-structural",
       "language": "swift",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "8 relationship kinds pinned by swift fixtures; 10 emitted and all accounted for",
@@ -1282,7 +1282,7 @@
     },
     {
       "description": "objc: every named node type classified",
-      "detail": "224 types, 43 handled, 140 silent, 3 gaps, 17 decisions",
+      "detail": "224 types, 43 handled, 142 silent, 3 gaps, 17 decisions",
       "id": "inventory-fully-classified",
       "language": "objc",
       "status": "fail"
@@ -1301,7 +1301,7 @@
     },
     {
       "description": "every named node type classified (objc)",
-      "detail": "224 types, 43 handled, 140 silent, 3 gaps, 17 decisions",
+      "detail": "224 types, 43 handled, 142 silent, 3 gaps, 17 decisions",
       "id": "section-a-structural",
       "language": "objc",
       "status": "fail"
@@ -1432,10 +1432,10 @@
     },
     {
       "description": "ruby: every named node type classified",
-      "detail": "160 types, 120 handled, 10 silent, 0 gaps, 25 decisions",
+      "detail": "160 types, 120 handled, 12 silent, 0 gaps, 25 decisions",
       "id": "inventory-fully-classified",
       "language": "ruby",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "ruby: 0 confirmed gaps declared",
@@ -1451,10 +1451,10 @@
     },
     {
       "description": "every named node type classified (ruby)",
-      "detail": "160 types, 120 handled, 10 silent, 0 gaps, 25 decisions",
+      "detail": "160 types, 120 handled, 12 silent, 0 gaps, 25 decisions",
       "id": "section-a-structural",
       "language": "ruby",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "6 relationship kinds pinned by ruby fixtures; 10 emitted and all accounted for",
@@ -1582,10 +1582,10 @@
     },
     {
       "description": "haskell: every named node type classified",
-      "detail": "255 types, 53 handled, 133 silent, 10 gaps, 12 decisions",
+      "detail": "255 types, 54 handled, 134 silent, 10 gaps, 12 decisions",
       "id": "inventory-fully-classified",
       "language": "haskell",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "haskell: 10 confirmed gaps declared",
@@ -1601,10 +1601,10 @@
     },
     {
       "description": "every named node type classified (haskell)",
-      "detail": "255 types, 53 handled, 133 silent, 10 gaps, 12 decisions",
+      "detail": "255 types, 54 handled, 134 silent, 10 gaps, 12 decisions",
       "id": "section-a-structural",
       "language": "haskell",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "6 relationship kinds pinned by haskell fixtures; 10 emitted and all accounted for",
@@ -1657,10 +1657,10 @@
     },
     {
       "description": "hcl: every named node type classified",
-      "detail": "66 types, 57 handled, 7 silent, 0 gaps, 8 decisions",
+      "detail": "66 types, 57 handled, 9 silent, 0 gaps, 8 decisions",
       "id": "inventory-fully-classified",
       "language": "hcl",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "hcl: 0 confirmed gaps declared",
@@ -1676,10 +1676,10 @@
     },
     {
       "description": "every named node type classified (hcl)",
-      "detail": "66 types, 57 handled, 7 silent, 0 gaps, 8 decisions",
+      "detail": "66 types, 57 handled, 9 silent, 0 gaps, 8 decisions",
       "id": "section-a-structural",
       "language": "hcl",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "5 relationship kinds pinned by hcl fixtures; 7 emitted and all accounted for",
@@ -1732,10 +1732,10 @@
     },
     {
       "description": "xml: every named node type classified",
-      "detail": "56 types, 27 handled, 24 silent, 0 gaps, 12 decisions",
+      "detail": "56 types, 28 handled, 25 silent, 0 gaps, 12 decisions",
       "id": "inventory-fully-classified",
       "language": "xml",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "xml: 0 confirmed gaps declared",
@@ -1751,10 +1751,10 @@
     },
     {
       "description": "every named node type classified (xml)",
-      "detail": "56 types, 27 handled, 24 silent, 0 gaps, 12 decisions",
+      "detail": "56 types, 28 handled, 25 silent, 0 gaps, 12 decisions",
       "id": "section-a-structural",
       "language": "xml",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "3 relationship kinds pinned by xml fixtures; 7 emitted and all accounted for",
@@ -1807,10 +1807,10 @@
     },
     {
       "description": "make: every named node type classified",
-      "detail": "48 types, 32 handled, 10 silent, 4 gaps, 5 decisions",
+      "detail": "48 types, 32 handled, 12 silent, 4 gaps, 5 decisions",
       "id": "inventory-fully-classified",
       "language": "make",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "make: 4 confirmed gaps declared",
@@ -1826,10 +1826,10 @@
     },
     {
       "description": "every named node type classified (make)",
-      "detail": "48 types, 32 handled, 10 silent, 4 gaps, 5 decisions",
+      "detail": "48 types, 32 handled, 12 silent, 4 gaps, 5 decisions",
       "id": "section-a-structural",
       "language": "make",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "6 relationship kinds pinned by make fixtures; 0 emitted and all accounted for",
@@ -1882,10 +1882,10 @@
     },
     {
       "description": "perl: every named node type classified",
-      "detail": "170 types, 52 handled, 74 silent, 0 gaps, 14 decisions",
+      "detail": "170 types, 53 handled, 75 silent, 0 gaps, 14 decisions",
       "id": "inventory-fully-classified",
       "language": "perl",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "perl: 0 confirmed gaps declared",
@@ -1901,10 +1901,10 @@
     },
     {
       "description": "every named node type classified (perl)",
-      "detail": "170 types, 52 handled, 74 silent, 0 gaps, 14 decisions",
+      "detail": "170 types, 53 handled, 75 silent, 0 gaps, 14 decisions",
       "id": "section-a-structural",
       "language": "perl",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "6 relationship kinds pinned by perl fixtures; 8 emitted and all accounted for",
@@ -1957,8 +1957,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "4c58eb4c21d3e920d6f4a8403aabe64b4092be10",
-  "committedAt": "2026-10-12T10:59:29-04:00",
+  "commit": "3878e5add3078b8bc5d78d3634218385740a3537",
+  "committedAt": "2026-10-12T11:25:49-04:00",
   "data": {
     "languages": {
       "bash": {
@@ -2054,8 +2054,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "165 types, 24 handled, 104 silent, 0 gaps, 24 decisions",
-            "status": "fail"
+            "detail": "165 types, 25 handled, 105 silent, 0 gaps, 24 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "EMITTED but absent from requiredKinds: calls, contains, instantiates, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
@@ -2122,7 +2122,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "262 types, 43 handled, 146 silent, 0 gaps, 26 decisions",
+            "detail": "262 types, 44 handled, 147 silent, 0 gaps, 26 decisions",
             "status": "fail"
           },
           "section-b-relationship-kinds": {
@@ -2178,8 +2178,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "241 types, 51 handled, 164 silent, 0 gaps, 14 decisions",
-            "status": "fail"
+            "detail": "241 types, 52 handled, 165 silent, 0 gaps, 14 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
@@ -2261,8 +2261,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "224 types, 95 handled, 106 silent, 6 gaps, 34 decisions",
-            "status": "fail"
+            "detail": "224 types, 96 handled, 107 silent, 6 gaps, 34 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "EMITTED but absent from requiredKinds: exports, references — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
@@ -2368,8 +2368,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "109 types, 36 handled, 67 silent, 3 gaps, 61 decisions",
-            "status": "fail"
+            "detail": "109 types, 37 handled, 68 silent, 3 gaps, 61 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "EMITTED but absent from requiredKinds: exports, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
@@ -2437,7 +2437,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "165 types, 72 handled, 72 silent, 8 gaps, 18 decisions",
+            "detail": "165 types, 73 handled, 73 silent, 8 gaps, 18 decisions",
             "status": "fail"
           },
           "section-b-relationship-kinds": {
@@ -2501,8 +2501,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "255 types, 53 handled, 133 silent, 10 gaps, 12 decisions",
-            "status": "fail"
+            "detail": "255 types, 54 handled, 134 silent, 10 gaps, 12 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "EMITTED but absent from requiredKinds: exports, imports, overrides, uses — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
@@ -2550,8 +2550,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "66 types, 57 handled, 7 silent, 0 gaps, 8 decisions",
-            "status": "fail"
+            "detail": "66 types, 57 handled, 9 silent, 0 gaps, 8 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "EMITTED but absent from requiredKinds: calls, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
@@ -2674,7 +2674,7 @@
           "J10: `class A extends B { get x() {} }` where `B` has an accessor `x` does override it in JavaScript — accessor pairs are prototype members and a subclass accessor shadows the base one. The lane emits no `overrides` edge for it, because the analyzer classifies an accessor as `property` (a declared contract) and the override pass considers only Methods and Constructors.",
           "J11: a `calls` TARGET is not necessarily a NAME: the callee guard tests TOKEN MEMBERSHIP (length > 100, a newline, a backtick, `${`, and `{` / `}` / `;` / `=`), so a parenthesised, conditional, sequence or call-expression callee passes the guard and the callee's own SOURCE TEXT is published in `target` — `(fn)`, `(0, interop_1.default)`, `(cond ? a : b)`, `define()`, the quoted string, `[]`. Measured through the analyzer's own output: 31 of 31,973 `calls` rows on svelte (0.097%) and 550 of 22,210 on the materialized ts tree (2.476%), beside 123 (`svelte`) and 2 (`ts`) `#private` call targets that are CORRECT and must be preserved — `this.#x()` calls a method BY NAME.",
           "J12: A re-indexed file's inbound edges whose target name is ambiguous in the project keep whatever symbol the writer that ran FIRST happened to pick. The insert path's `resolveTargetStmt` binds a bare name by proximity (same file, then same language, then any, id tie-break) and claims a cross even when the name has many candidates; the resolution pass refuses a name that is not unique (`_res_name.cnt = 1`). Which one touches a row first depends on batch order, so the stored edge is a function of indexing ORDER, not of the source.",
-          "JSD54: an `overrides` row's target is bound to the row's OWN method - a self-edge - instead of the base member it names, whenever the base is declared in another file or is a host global"
+          "JSD54: an `overrides` row's target was bound to the row's OWN method - a self-edge - instead of the base member it names, whenever the base was declared in another file or was a host global"
         ],
         "nodeTypeCount": 127,
         "pendingDecisions": [
@@ -2860,8 +2860,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "48 types, 32 handled, 10 silent, 4 gaps, 5 decisions",
-            "status": "fail"
+            "detail": "48 types, 32 handled, 12 silent, 4 gaps, 5 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "pinned: calls, contains, exports, imports, references, uses; emitted: ",
@@ -2923,7 +2923,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "224 types, 43 handled, 140 silent, 3 gaps, 17 decisions",
+            "detail": "224 types, 43 handled, 142 silent, 3 gaps, 17 decisions",
             "status": "fail"
           },
           "section-b-relationship-kinds": {
@@ -2978,8 +2978,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "170 types, 52 handled, 74 silent, 0 gaps, 14 decisions",
-            "status": "fail"
+            "detail": "170 types, 53 handled, 75 silent, 0 gaps, 14 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "EMITTED but absent from requiredKinds: references, uses — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
@@ -3170,8 +3170,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "160 types, 120 handled, 10 silent, 0 gaps, 25 decisions",
-            "status": "fail"
+            "detail": "160 types, 120 handled, 12 silent, 0 gaps, 25 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "EMITTED but absent from requiredKinds: exports, imports, overrides, references — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
@@ -3255,8 +3255,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "187 types, 42 handled, 121 silent, 0 gaps, 43 decisions",
-            "status": "fail"
+            "detail": "187 types, 43 handled, 122 silent, 0 gaps, 43 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "EMITTED but absent from requiredKinds: imports, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
@@ -3513,8 +3513,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "187 types, 59 handled, 117 silent, 3 gaps, 30 decisions",
-            "status": "fail"
+            "detail": "187 types, 60 handled, 118 silent, 3 gaps, 30 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "EMITTED but absent from requiredKinds: exports, imports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
@@ -3576,8 +3576,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "193 types, 107 handled, 72 silent, 9 gaps, 11 decisions",
-            "status": "fail"
+            "detail": "193 types, 108 handled, 73 silent, 9 gaps, 11 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "pinned: calls, cast_target, contains, declared_type, exports, extends, implements, imports, instanceof_check, instantiates, overrides, references, return_type, satisfies_target, type_alias, type_argument, type_parameter_constraint, type_predicate_target, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
@@ -3723,8 +3723,8 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "56 types, 27 handled, 24 silent, 0 gaps, 12 decisions",
-            "status": "fail"
+            "detail": "56 types, 28 handled, 25 silent, 0 gaps, 12 decisions",
+            "status": "pass"
           },
           "section-b-relationship-kinds": {
             "detail": "EMITTED but absent from requiredKinds: calls, extends, overrides, uses — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
@@ -3899,8 +3899,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-12T15:15:53.623Z",
-  "regeneratedAtCommit": "4c58eb4c21d3e920d6f4a8403aabe64b4092be10",
+  "regeneratedAt": "2026-10-12T15:38:21.689Z",
+  "regeneratedAtCommit": "3878e5add3078b8bc5d78d3634218385740a3537",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"

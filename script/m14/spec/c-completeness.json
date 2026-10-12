@@ -27,7 +27,11 @@
    "union_specifier",
    "macro_prefixed_type_specifier",
    "macro_specifier"
-  ]
+  ,
+      "ERROR"],
+    "_notes": {
+      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-c-analyzer.ts:1040 and the `case \"ERROR\"` recovery branch at :1921), and `exports-marker-conventions-963.c` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
+    }
  },
  "internal_silent": {
   "types": [
@@ -135,7 +139,11 @@
    "update_expression",
    "subscript_expression",
    "preproc_header_name"
-  ]
+  ,
+      "MISSING"],
+    "_notes": {
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-c-analyzer.ts:763 and :800 (the `isError`/missing-tail reads)); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+    }
  },
  "gap": {
   "_description": "No confirmed C emission gaps remain after current fixture review; differential and mutation are separate evidence requirements.",

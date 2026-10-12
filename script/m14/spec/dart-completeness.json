@@ -98,7 +98,11 @@
       "uri",
       "void_type",
       "while_statement"
-    ],
+    ,
+      "ERROR"],
+    "_notes": {
+      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-dart-analyzer.ts:369-373 (with the module-level type set at :135)), and `extension-type.dart` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
+    },
     "corpus_verified": {
       "qualified": "authentic ProxiCall/lib files: `SessionOfflineBannerMode.reconnecting` -> `uses build->reconnecting` + `contains`; and 2,405 recovered `case Enum.member:` pattern reads (fix 3d4d7fa4)",
       "typed_identifier": "authentic ProxiCall/lib files: `T data` in a generic repository -> `data:property` with `contains` and `uses` edges"
@@ -221,7 +225,11 @@
       "uri_test",
       "yield_each_statement",
       "yield_statement"
-    ],
+    ,
+      "MISSING"],
+    "_notes": {
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-dart-analyzer.ts:373); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+    },
     "corpus_silent_rationale": "function_expression (767 corpus files) and lambda_expression (17) are silent per DARTD2 — local functions, lambdas and function expressions are not module-level symbols. They were never LISTED, which is what left them unclassified rather than unaudited.",
     "constructor_initializer_note": "initializer_list_entry / field_initializer / initializers are the `<this>.field = value` list a CONSTRUCTOR writes. They emit no symbol of their own because DARTD3 rules Dart constructors have no distinct NAME — the FIELD each entry initializes is the symbol, and DARTD13's post-pass already binds its declared type. Master review 3 (F2) removed these from the GAP list, where they had been asking for a symbol the family ruled out, and bucketed them here instead."
   },

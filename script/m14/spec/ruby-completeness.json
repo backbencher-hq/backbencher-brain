@@ -139,7 +139,13 @@
       "heredoc_beginning",
       "heredoc_end",
       "then"
-    ]
+    ,
+      "ERROR",
+      "MISSING"],
+    "_notes": {
+      "ERROR": "produced by every tree-sitter parser and not a construct. The analyzer DOES consult it — the error-collection walk reads `n.type === \"ERROR\" || n.isMissing` (src/ast/real-ruby-analyzer.ts:421-425) — but NO committed ruby fixture produces an ERROR node, so a `handled_verified` row would be a claim with no witness (`verify-fixture-coverage` reads `uncovered: ERROR` and blocks release). Recorded silent with this reason instead of trusted: authoring a ruby error-recovery fixture moves this row to handled_verified.",
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-ruby-analyzer.ts:421-425); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+    }
   },
   "gap": {
     "description": "All confirmed gaps closed as of 2026-09-01",

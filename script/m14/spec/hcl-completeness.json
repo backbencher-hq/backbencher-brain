@@ -98,7 +98,13 @@
       "heredoc_identifier",
       "heredoc_start",
       "strip_marker"
-    ]
+    ,
+      "ERROR",
+      "MISSING"],
+    "_notes": {
+      "ERROR": "produced by every tree-sitter parser and not a construct; this lane's analyzer does not consult ERROR anywhere (measured src/ast/real-hcl-analyzer.ts (0 reads): no `type === \"ERROR\"` / `isError` read), so the row is silent by contract rather than handled. Silent here means the analyzer never looks, which is auditable.",
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-hcl-analyzer.ts (0 reads; negative-syntax-error.tf still exercises the grammar's own repair)); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+    }
   },
   "gap": {
     "_description": "No confirmed HCL emission gap remains. The two residuals are measured, adjudicated and RULED in design_decision (HCL-D3 the Go-template reference, HCL-D4 the unreachable swallow class) rather than left silent. Reference recall 0.999931 and precision 1.000000 against an independent grammar oracle over 9,079 files; 180,809/180,809 relationships carry the product's `line_number`; 0 empty names, 0 ownerless properties, 0 document/block identity collisions.",

@@ -57,7 +57,11 @@
       "gadt_constructors",
       "gadt_constructor",
       "foreign_import"
-    ],
+    ,
+      "ERROR"],
+    "_notes": {
+      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-haskell-analyzer.ts:132-133 and :956), and `exports-and-ffi.hs` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
+    },
     "_closed_gaps": {
       "foreign_import": "HS-G4, closed 2026-09-29: Ffi.hs is 6 declarations and published 0 symbols (only the module). The Haskell-side name is signature -> variable; the C entity is kept as metadata and a references edge.",
       "gadt_constructor": "HS-G2, closed 2026-09-29 \u2014 see gadt_constructors.",
@@ -201,7 +205,11 @@
       "default",
       "e",
       "p"
-    ],
+    ,
+      "MISSING"],
+    "_notes": {
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-haskell-analyzer.ts:132-133); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+    },
     "_m60hk_note": "M60-HK: `$`/`$$`/`d`/`ERROR` were classified after restoring the cabal corpus. `$` is the ordinary apply operator; `$$` and `d` are machinist template delimiters that appear because cabal ships .template.hs files, which are NOT valid Haskell (`$$name$$` placeholders); `ERROR` is the defensive parse-error node and only fires on those same 13 template/macro files. All four emit nothing, which is correct.",
     "_m60hk_note2": "M60-HK, measured over the restored three-corpus sweep: %=65 '=34 stock=17 anyclass=17 ''=11 #=9 nominal=4 default=2 e=2 p=1. `%` and `'` are operators and type-level ticks and declare nothing. stock/anyclass/nominal are DeriveAnyClass strategies -- the same family as HS-G9's unhandled `via`, and likewise no symbol by design. `default` is a class default signature (HS-G7). ''/#/e/p occur only in cabal's machinist template files, which are not valid Haskell at all."
   },

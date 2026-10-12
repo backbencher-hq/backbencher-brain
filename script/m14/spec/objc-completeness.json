@@ -217,7 +217,13 @@
       "version",
       "version_number",
       "visibility_specification"
-    ]
+    ,
+      "ERROR",
+      "MISSING"],
+    "_notes": {
+      "ERROR": "produced by every tree-sitter parser and not a construct; this lane's analyzer does not consult ERROR anywhere (measured src/ast/real-objective-c-analyzer.ts: no `type === \"ERROR\"` / `isError` read), so the row is silent by contract rather than handled. Silent here means the analyzer never looks, which is auditable.",
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-objective-c-analyzer.ts:41, :172, :241); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+    }
   },
   "gap": {
     "gaps": [
