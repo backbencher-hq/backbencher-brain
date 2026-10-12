@@ -80,9 +80,9 @@
     },
     {
       "description": "python adversarial fixtures",
-      "detail": "25/35 fixtures pass",
+      "detail": "35/35 fixtures pass",
       "id": "fixtures-python",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "go adversarial fixtures",
@@ -92,9 +92,9 @@
     },
     {
       "description": "zig adversarial fixtures",
-      "detail": "16/16 fixtures pass",
+      "detail": "14/16 fixtures pass",
       "id": "fixtures-zig",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "csharp adversarial fixtures",
@@ -104,9 +104,9 @@
     },
     {
       "description": "dart adversarial fixtures",
-      "detail": "21/21 fixtures pass",
+      "detail": "21/28 fixtures pass",
       "id": "fixtures-dart",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "swift adversarial fixtures",
@@ -140,7 +140,7 @@
     },
     {
       "description": "php adversarial fixtures",
-      "detail": "24/24 fixtures pass",
+      "detail": "30/30 fixtures pass",
       "id": "fixtures-php",
       "status": "pass"
     },
@@ -218,7 +218,7 @@
     },
     {
       "description": "fsharp adversarial fixtures",
-      "detail": "11/11 fixtures pass",
+      "detail": "15/15 fixtures pass",
       "id": "fixtures-fsharp",
       "status": "pass"
     },
@@ -242,7 +242,7 @@
     },
     {
       "description": "toml adversarial fixtures",
-      "detail": "7/7 fixtures pass",
+      "detail": "9/9 fixtures pass",
       "id": "fixtures-toml",
       "status": "pass"
     },
@@ -266,7 +266,7 @@
     },
     {
       "description": "bash adversarial fixtures",
-      "detail": "32/32 fixtures pass",
+      "detail": "34/34 fixtures pass",
       "id": "fixtures-bash",
       "status": "pass"
     },
@@ -278,7 +278,7 @@
     },
     {
       "description": "powershell adversarial fixtures",
-      "detail": "18/18 fixtures pass",
+      "detail": "19/19 fixtures pass",
       "id": "fixtures-powershell",
       "status": "pass"
     },
@@ -290,8 +290,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "d2bad8b7d3cadb6927319fa0b751de6c88b022e4",
-  "committedAt": "2026-10-08T17:09:01-04:00",
+  "commit": "1dcad1ca597387f114d4cea6f4da08ddc58ed0d9",
+  "committedAt": "2026-10-09T18:13:18-04:00",
   "data": {
     "details": [
       {
@@ -4615,11 +4615,8 @@
       },
       {
         "fixture": "python/dispatch-reason-codes",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"load\",\"target\":\"stash\",\"meta.reasonCode\":\"member-read\",\"meta.qualified\":\"self.stash\",\"meta.isMemberRead\":true}; got: imports[dispatch_reason_codes->os:*]@1; calls[draw->render]@0.9; instantiates[draw->Store]@0.9; calls[draw->save]@0.9; calls[draw->join]@0.9; instantiates[__init__->Store]@0.9; calls[__init__->save]@0.9; extends[Derived->Base]@1; contains[Store->save]@1; contains[Store->load]@1; contains[Widget->draw]@1; contains[Client->__init__]@1; contains[Client->store]@1; contains[Base->handle]@1; contains[Derived->handle]@1; overrides[Derived.handle->Base.handle]@0.95; uses[load->stash]@0.9; uses[draw->path]@0.9; uses[__init__->store]@0.9; uses[__init__->submit]@0.9",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"draw\",\"target\":\"path\",\"meta.reasonCode\":\"member-read\",\"meta.qualified\":\"os.path\",\"note\":\"the RECEIVER of a member call is traversal, so the read is `path` and the edge carries the chain that names it\"}; got: imports[dispatch_reason_codes->os:*]@1; calls[draw->render]@0.9; instantiates[draw->Store]@0.9; calls[draw->save]@0.9; calls[draw->join]@0.9; instantiates[__init__->Store]@0.9; calls[__init__->save]@0.9; extends[Derived->Base]@1; contains[Store->save]@1; contains[Store->load]@1; contains[Widget->draw]@1; contains[Client->__init__]@1; contains[Client->store]@1; contains[Base->handle]@1; contains[Derived->handle]@1; overrides[Derived.handle->Base.handle]@0.95; uses[load->stash]@0.9; uses[draw->path]@0.9; uses[__init__->store]@0.9; uses[__init__->submit]@0.9"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "python/dunder-all-expression-list",
@@ -4663,48 +4660,23 @@
       },
       {
         "fixture": "python/interface-declaration-needs-abc-meta",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"RealContract\",\"target\":\"ABC\",\"line_number\":88,\"meta.reasonCode\":\"stdlib-interface-marker\",\"note\":\"the ABC base is the declaration. `@abstractmethod` on a member is NOT half of it — see the forbid on `SubNoopAbstract`\"}; got: imports[interface_declaration_needs_abc_meta->abc:*]@1; imports[interface_declaration_needs_abc_meta->typing:*]@1; imports[interface_declaration_needs_abc_meta->abc:ABC]@1; imports[interface_declaration_needs_abc_meta->abc:ABCMeta]@1; imports[interface_declaration_needs_abc_meta->abc:abstractmethod]@1; imports[interface_declaration_needs_abc_meta->typing:Protocol]@1; imports[interface_declaration_needs_abc_meta->typing:TypeVar]@1; calls[interface_declaration_needs_abc_meta->TypeVar]@0.9; extends[NoopAbstract->object]@1; extends[SubNoopAbstract->NoopAbstract]@1; extends[NoopAbstractDecorators->object]@1; extends[SubNoopAbstractDecorators->NoopAbstractDecorators]@1; calls[create->cls]@0.9; extends[Plain->object]@1; implements[RealContract->ABC]@1; extends[SubPlain->Plain]@1; implements[AbcBase->ABC]@1; extends[SubAbcBase->AbcBase]@1; extends[SubMetaclassBase->MetaclassBase]@1; implements[ProtocolBase->Protocol]@1; extends[SubProtocolBase->ProtocolBase]@1; implements[ParameterisedBase->Protocol]@1; extends[SubParameterisedBase->ParameterisedBase]@1; implements[EmptyAbc->ABC]@1; extends[SubEmptyAbc->EmptyAbc]@1; contains[NoopAbstract->build]@1; contains[SubNoopAbstract->build]@1; contains[NoopAbstractDecorators->name]@1; contains[NoopAbstractDecorators->create]@1; contains[SubNoopAbstractDecorators->name]@1",
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"AbcBase\",\"target\":\"ABC\",\"line_number\":103,\"meta.reasonCode\":\"stdlib-interface-marker\"}; got: imports[interface_declaration_needs_abc_meta->abc:*]@1; imports[interface_declaration_needs_abc_meta->typing:*]@1; imports[interface_declaration_needs_abc_meta->abc:ABC]@1; imports[interface_declaration_needs_abc_meta->abc:ABCMeta]@1; imports[interface_declaration_needs_abc_meta->abc:abstractmethod]@1; imports[interface_declaration_needs_abc_meta->typing:Protocol]@1; imports[interface_declaration_needs_abc_meta->typing:TypeVar]@1; calls[interface_declaration_needs_abc_meta->TypeVar]@0.9; extends[NoopAbstract->object]@1; extends[SubNoopAbstract->NoopAbstract]@1; extends[NoopAbstractDecorators->object]@1; extends[SubNoopAbstractDecorators->NoopAbstractDecorators]@1; calls[create->cls]@0.9; extends[Plain->object]@1; implements[RealContract->ABC]@1; extends[SubPlain->Plain]@1; implements[AbcBase->ABC]@1; extends[SubAbcBase->AbcBase]@1; extends[SubMetaclassBase->MetaclassBase]@1; implements[ProtocolBase->Protocol]@1; extends[SubProtocolBase->ProtocolBase]@1; implements[ParameterisedBase->Protocol]@1; extends[SubParameterisedBase->ParameterisedBase]@1; implements[EmptyAbc->ABC]@1; extends[SubEmptyAbc->EmptyAbc]@1; contains[NoopAbstract->build]@1; contains[SubNoopAbstract->build]@1; contains[NoopAbstractDecorators->name]@1; contains[NoopAbstractDecorators->create]@1; contains[SubNoopAbstractDecorators->name]@1",
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"SubAbcBase\",\"target\":\"AbcBase\",\"line_number\":109,\"meta.reasonCode\":\"in-file-interface-base\"}; got: imports[interface_declaration_needs_abc_meta->abc:*]@1; imports[interface_declaration_needs_abc_meta->typing:*]@1; imports[interface_declaration_needs_abc_meta->abc:ABC]@1; imports[interface_declaration_needs_abc_meta->abc:ABCMeta]@1; imports[interface_declaration_needs_abc_meta->abc:abstractmethod]@1; imports[interface_declaration_needs_abc_meta->typing:Protocol]@1; imports[interface_declaration_needs_abc_meta->typing:TypeVar]@1; calls[interface_declaration_needs_abc_meta->TypeVar]@0.9; extends[NoopAbstract->object]@1; extends[SubNoopAbstract->NoopAbstract]@1; extends[NoopAbstractDecorators->object]@1; extends[SubNoopAbstractDecorators->NoopAbstractDecorators]@1; calls[create->cls]@0.9; extends[Plain->object]@1; implements[RealContract->ABC]@1; extends[SubPlain->Plain]@1; implements[AbcBase->ABC]@1; extends[SubAbcBase->AbcBase]@1; extends[SubMetaclassBase->MetaclassBase]@1; implements[ProtocolBase->Protocol]@1; extends[SubProtocolBase->ProtocolBase]@1; implements[ParameterisedBase->Protocol]@1; extends[SubParameterisedBase->ParameterisedBase]@1; implements[EmptyAbc->ABC]@1; extends[SubEmptyAbc->EmptyAbc]@1; contains[NoopAbstract->build]@1; contains[SubNoopAbstract->build]@1; contains[NoopAbstractDecorators->name]@1; contains[NoopAbstractDecorators->create]@1; contains[SubNoopAbstractDecorators->name]@1",
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"SubMetaclassBase\",\"target\":\"MetaclassBase\",\"line_number\":120,\"meta.reasonCode\":\"in-file-interface-base\",\"note\":\"`MetaclassBase(metaclass=ABCMeta)` declares its interface in the header keyword and needs no import and no positional reading\"}; got: imports[interface_declaration_needs_abc_meta->abc:*]@1; imports[interface_declaration_needs_abc_meta->typing:*]@1; imports[interface_declaration_needs_abc_meta->abc:ABC]@1; imports[interface_declaration_needs_abc_meta->abc:ABCMeta]@1; imports[interface_declaration_needs_abc_meta->abc:abstractmethod]@1; imports[interface_declaration_needs_abc_meta->typing:Protocol]@1; imports[interface_declaration_needs_abc_meta->typing:TypeVar]@1; calls[interface_declaration_needs_abc_meta->TypeVar]@0.9; extends[NoopAbstract->object]@1; extends[SubNoopAbstract->NoopAbstract]@1; extends[NoopAbstractDecorators->object]@1; extends[SubNoopAbstractDecorators->NoopAbstractDecorators]@1; calls[create->cls]@0.9; extends[Plain->object]@1; implements[RealContract->ABC]@1; extends[SubPlain->Plain]@1; implements[AbcBase->ABC]@1; extends[SubAbcBase->AbcBase]@1; extends[SubMetaclassBase->MetaclassBase]@1; implements[ProtocolBase->Protocol]@1; extends[SubProtocolBase->ProtocolBase]@1; implements[ParameterisedBase->Protocol]@1; extends[SubParameterisedBase->ParameterisedBase]@1; implements[EmptyAbc->ABC]@1; extends[SubEmptyAbc->EmptyAbc]@1; contains[NoopAbstract->build]@1; contains[SubNoopAbstract->build]@1; contains[NoopAbstractDecorators->name]@1; contains[NoopAbstractDecorators->create]@1; contains[SubNoopAbstractDecorators->name]@1",
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"ProtocolBase\",\"target\":\"Protocol\",\"line_number\":125,\"meta.reasonCode\":\"stdlib-interface-marker\",\"note\":\"PEP 544. CPython refuses to instantiate a protocol outright, so this one is both declared AND enforced\"}; got: imports[interface_declaration_needs_abc_meta->abc:*]@1; imports[interface_declaration_needs_abc_meta->typing:*]@1; imports[interface_declaration_needs_abc_meta->abc:ABC]@1; imports[interface_declaration_needs_abc_meta->abc:ABCMeta]@1; imports[interface_declaration_needs_abc_meta->abc:abstractmethod]@1; imports[interface_declaration_needs_abc_meta->typing:Protocol]@1; imports[interface_declaration_needs_abc_meta->typing:TypeVar]@1; calls[interface_declaration_needs_abc_meta->TypeVar]@0.9; extends[NoopAbstract->object]@1; extends[SubNoopAbstract->NoopAbstract]@1; extends[NoopAbstractDecorators->object]@1; extends[SubNoopAbstractDecorators->NoopAbstractDecorators]@1; calls[create->cls]@0.9; extends[Plain->object]@1; implements[RealContract->ABC]@1; extends[SubPlain->Plain]@1; implements[AbcBase->ABC]@1; extends[SubAbcBase->AbcBase]@1; extends[SubMetaclassBase->MetaclassBase]@1; implements[ProtocolBase->Protocol]@1; extends[SubProtocolBase->ProtocolBase]@1; implements[ParameterisedBase->Protocol]@1; extends[SubParameterisedBase->ParameterisedBase]@1; implements[EmptyAbc->ABC]@1; extends[SubEmptyAbc->EmptyAbc]@1; contains[NoopAbstract->build]@1; contains[SubNoopAbstract->build]@1; contains[NoopAbstractDecorators->name]@1; contains[NoopAbstractDecorators->create]@1; contains[SubNoopAbstractDecorators->name]@1",
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"SubProtocolBase\",\"target\":\"ProtocolBase\",\"line_number\":130,\"meta.reasonCode\":\"in-file-interface-base\",\"note\":\"a concrete class inheriting a Protocol: CPython instantiates `SubProtocolBase`, which is the whole point of the relationship\"}; got: imports[interface_declaration_needs_abc_meta->abc:*]@1; imports[interface_declaration_needs_abc_meta->typing:*]@1; imports[interface_declaration_needs_abc_meta->abc:ABC]@1; imports[interface_declaration_needs_abc_meta->abc:ABCMeta]@1; imports[interface_declaration_needs_abc_meta->abc:abstractmethod]@1; imports[interface_declaration_needs_abc_meta->typing:Protocol]@1; imports[interface_declaration_needs_abc_meta->typing:TypeVar]@1; calls[interface_declaration_needs_abc_meta->TypeVar]@0.9; extends[NoopAbstract->object]@1; extends[SubNoopAbstract->NoopAbstract]@1; extends[NoopAbstractDecorators->object]@1; extends[SubNoopAbstractDecorators->NoopAbstractDecorators]@1; calls[create->cls]@0.9; extends[Plain->object]@1; implements[RealContract->ABC]@1; extends[SubPlain->Plain]@1; implements[AbcBase->ABC]@1; extends[SubAbcBase->AbcBase]@1; extends[SubMetaclassBase->MetaclassBase]@1; implements[ProtocolBase->Protocol]@1; extends[SubProtocolBase->ProtocolBase]@1; implements[ParameterisedBase->Protocol]@1; extends[SubParameterisedBase->ParameterisedBase]@1; implements[EmptyAbc->ABC]@1; extends[SubEmptyAbc->EmptyAbc]@1; contains[NoopAbstract->build]@1; contains[SubNoopAbstract->build]@1; contains[NoopAbstractDecorators->name]@1; contains[NoopAbstractDecorators->create]@1; contains[SubNoopAbstractDecorators->name]@1",
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"ParameterisedBase\",\"target\":\"Protocol\",\"line_number\":145,\"meta.reasonCode\":\"stdlib-interface-marker\",\"note\":\"the QUALIFIED head of a subscript. `b.type === \\\"attribute\\\"` classified `dotted_name(\\\"typing.Protocol\\\")` as a BARE name, so this edge used to be produced by the positional binding test on `Protocol` rather than by the qualified spelling it is written with\"}; got: imports[interface_declaration_needs_abc_meta->abc:*]@1; imports[interface_declaration_needs_abc_meta->typing:*]@1; imports[interface_declaration_needs_abc_meta->abc:ABC]@1; imports[interface_declaration_needs_abc_meta->abc:ABCMeta]@1; imports[interface_declaration_needs_abc_meta->abc:abstractmethod]@1; imports[interface_declaration_needs_abc_meta->typing:Protocol]@1; imports[interface_declaration_needs_abc_meta->typing:TypeVar]@1; calls[interface_declaration_needs_abc_meta->TypeVar]@0.9; extends[NoopAbstract->object]@1; extends[SubNoopAbstract->NoopAbstract]@1; extends[NoopAbstractDecorators->object]@1; extends[SubNoopAbstractDecorators->NoopAbstractDecorators]@1; calls[create->cls]@0.9; extends[Plain->object]@1; implements[RealContract->ABC]@1; extends[SubPlain->Plain]@1; implements[AbcBase->ABC]@1; extends[SubAbcBase->AbcBase]@1; extends[SubMetaclassBase->MetaclassBase]@1; implements[ProtocolBase->Protocol]@1; extends[SubProtocolBase->ProtocolBase]@1; implements[ParameterisedBase->Protocol]@1; extends[SubParameterisedBase->ParameterisedBase]@1; implements[EmptyAbc->ABC]@1; extends[SubEmptyAbc->EmptyAbc]@1; contains[NoopAbstract->build]@1; contains[SubNoopAbstract->build]@1; contains[NoopAbstractDecorators->name]@1; contains[NoopAbstractDecorators->create]@1; contains[SubNoopAbstractDecorators->name]@1",
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"SubParameterisedBase\",\"target\":\"ParameterisedBase\",\"line_number\":150,\"meta.reasonCode\":\"in-file-interface-base\"}; got: imports[interface_declaration_needs_abc_meta->abc:*]@1; imports[interface_declaration_needs_abc_meta->typing:*]@1; imports[interface_declaration_needs_abc_meta->abc:ABC]@1; imports[interface_declaration_needs_abc_meta->abc:ABCMeta]@1; imports[interface_declaration_needs_abc_meta->abc:abstractmethod]@1; imports[interface_declaration_needs_abc_meta->typing:Protocol]@1; imports[interface_declaration_needs_abc_meta->typing:TypeVar]@1; calls[interface_declaration_needs_abc_meta->TypeVar]@0.9; extends[NoopAbstract->object]@1; extends[SubNoopAbstract->NoopAbstract]@1; extends[NoopAbstractDecorators->object]@1; extends[SubNoopAbstractDecorators->NoopAbstractDecorators]@1; calls[create->cls]@0.9; extends[Plain->object]@1; implements[RealContract->ABC]@1; extends[SubPlain->Plain]@1; implements[AbcBase->ABC]@1; extends[SubAbcBase->AbcBase]@1; extends[SubMetaclassBase->MetaclassBase]@1; implements[ProtocolBase->Protocol]@1; extends[SubProtocolBase->ProtocolBase]@1; implements[ParameterisedBase->Protocol]@1; extends[SubParameterisedBase->ParameterisedBase]@1; implements[EmptyAbc->ABC]@1; extends[SubEmptyAbc->EmptyAbc]@1; contains[NoopAbstract->build]@1; contains[SubNoopAbstract->build]@1; contains[NoopAbstractDecorators->name]@1; contains[NoopAbstractDecorators->create]@1; contains[SubNoopAbstractDecorators->name]@1",
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"EmptyAbc\",\"target\":\"ABC\",\"line_number\":175,\"meta.reasonCode\":\"stdlib-interface-marker\",\"note\":\"DECLARED BOUNDARY, pinned here by name. `EmptyAbc(ABC)` has an EMPTY `__abstractmethods__` and CPython instantiates it, so under an ENFORCEMENT reading this row would not exist. It exists because `implements` in this lane is a declared interface relationship — the source names a supertype it declares to be an interface — and `python/interface-implements` already depends on that reading for `Qualified(abc.ABC)`. Moving to the enforcement reading has to break both rows deliberately\"}; got: imports[interface_declaration_needs_abc_meta->abc:*]@1; imports[interface_declaration_needs_abc_meta->typing:*]@1; imports[interface_declaration_needs_abc_meta->abc:ABC]@1; imports[interface_declaration_needs_abc_meta->abc:ABCMeta]@1; imports[interface_declaration_needs_abc_meta->abc:abstractmethod]@1; imports[interface_declaration_needs_abc_meta->typing:Protocol]@1; imports[interface_declaration_needs_abc_meta->typing:TypeVar]@1; calls[interface_declaration_needs_abc_meta->TypeVar]@0.9; extends[NoopAbstract->object]@1; extends[SubNoopAbstract->NoopAbstract]@1; extends[NoopAbstractDecorators->object]@1; extends[SubNoopAbstractDecorators->NoopAbstractDecorators]@1; calls[create->cls]@0.9; extends[Plain->object]@1; implements[RealContract->ABC]@1; extends[SubPlain->Plain]@1; implements[AbcBase->ABC]@1; extends[SubAbcBase->AbcBase]@1; extends[SubMetaclassBase->MetaclassBase]@1; implements[ProtocolBase->Protocol]@1; extends[SubProtocolBase->ProtocolBase]@1; implements[ParameterisedBase->Protocol]@1; extends[SubParameterisedBase->ParameterisedBase]@1; implements[EmptyAbc->ABC]@1; extends[SubEmptyAbc->EmptyAbc]@1; contains[NoopAbstract->build]@1; contains[SubNoopAbstract->build]@1; contains[NoopAbstractDecorators->name]@1; contains[NoopAbstractDecorators->create]@1; contains[SubNoopAbstractDecorators->name]@1",
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"SubEmptyAbc\",\"target\":\"EmptyAbc\",\"line_number\":179,\"meta.reasonCode\":\"in-file-interface-base\",\"note\":\"the same declared reading applied to tier 1: the base is an in-file ABC-shaped class\"}; got: imports[interface_declaration_needs_abc_meta->abc:*]@1; imports[interface_declaration_needs_abc_meta->typing:*]@1; imports[interface_declaration_needs_abc_meta->abc:ABC]@1; imports[interface_declaration_needs_abc_meta->abc:ABCMeta]@1; imports[interface_declaration_needs_abc_meta->abc:abstractmethod]@1; imports[interface_declaration_needs_abc_meta->typing:Protocol]@1; imports[interface_declaration_needs_abc_meta->typing:TypeVar]@1; calls[interface_declaration_needs_abc_meta->TypeVar]@0.9; extends[NoopAbstract->object]@1; extends[SubNoopAbstract->NoopAbstract]@1; extends[NoopAbstractDecorators->object]@1; extends[SubNoopAbstractDecorators->NoopAbstractDecorators]@1; calls[create->cls]@0.9; extends[Plain->object]@1; implements[RealContract->ABC]@1; extends[SubPlain->Plain]@1; implements[AbcBase->ABC]@1; extends[SubAbcBase->AbcBase]@1; extends[SubMetaclassBase->MetaclassBase]@1; implements[ProtocolBase->Protocol]@1; extends[SubProtocolBase->ProtocolBase]@1; implements[ParameterisedBase->Protocol]@1; extends[SubParameterisedBase->ParameterisedBase]@1; implements[EmptyAbc->ABC]@1; extends[SubEmptyAbc->EmptyAbc]@1; contains[NoopAbstract->build]@1; contains[SubNoopAbstract->build]@1; contains[NoopAbstractDecorators->name]@1; contains[NoopAbstractDecorators->create]@1; contains[SubNoopAbstractDecorators->name]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "python/interface-implements",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"implements\",\"source\":\"Repository\",\"target\":\"ABC\",\"meta.reasonCode\":\"stdlib-interface-marker\",\"meta.evidenceClass\":\"structural\",\"note\":\"`class Repository(ABC)` with `from abc import ABC` at L12. CPython: metaclass ABCMeta, isabstract True.\"}; got: imports[interface_implements->abc:*]@1; imports[interface_implements->abc:ABC]@1; imports[interface_implements->abc:abstractmethod]@1; imports[interface_implements->typing:Protocol]@1; implements[Repository->ABC]@1; extends[Service->Repository]@1; implements[Reader->Protocol]@1; extends[ConcreteReader->Reader]@1; extends[InheritsMetaclassShape->MetaclassShape]@1; extends[InheritsPlain->Plain]@1; extends[InheritsLocal->Local]@1; implements[AboveTheRebind->ABC]@1; implements[BelowTheRebind->ABC]@1; contains[Repository->save]@1; contains[Service->save]@1; contains[Reader->read]@1; contains[ConcreteReader->read]@1; contains[MetaclassShape->go]@1; contains[InheritsMetaclassShape->go]@1; contains[Plain->never_enforced]@1; contains[InheritsPlain->other]@1; contains[Local->thing]@1; contains[InheritsLocal->other]@1; contains[ABC->looks_like_the_marker]@1; contains[AboveTheRebind->still_the_stdlib]@1; contains[BelowTheRebind->now_the_local_class]@1; overrides[Service.save->Repository.save]@0.95; overrides[Reader.read->Protocol.read]@0.5; overrides[ConcreteReader.read->Reader.read]@0.95; overrides[InheritsMetaclassShape.go->MetaclassShape.go]@0.95",
-          "expected relationship not found: {\"type\":\"implements\",\"source\":\"Service\",\"target\":\"Repository\",\"meta.reasonCode\":\"in-file-interface-base\",\"note\":\"an in-file base whose OWN HEADER declares it an interface. CPython: Repository.__mro__ contains abc.ABC.\"}; got: imports[interface_implements->abc:*]@1; imports[interface_implements->abc:ABC]@1; imports[interface_implements->abc:abstractmethod]@1; imports[interface_implements->typing:Protocol]@1; implements[Repository->ABC]@1; extends[Service->Repository]@1; implements[Reader->Protocol]@1; extends[ConcreteReader->Reader]@1; extends[InheritsMetaclassShape->MetaclassShape]@1; extends[InheritsPlain->Plain]@1; extends[InheritsLocal->Local]@1; implements[AboveTheRebind->ABC]@1; implements[BelowTheRebind->ABC]@1; contains[Repository->save]@1; contains[Service->save]@1; contains[Reader->read]@1; contains[ConcreteReader->read]@1; contains[MetaclassShape->go]@1; contains[InheritsMetaclassShape->go]@1; contains[Plain->never_enforced]@1; contains[InheritsPlain->other]@1; contains[Local->thing]@1; contains[InheritsLocal->other]@1; contains[ABC->looks_like_the_marker]@1; contains[AboveTheRebind->still_the_stdlib]@1; contains[BelowTheRebind->now_the_local_class]@1; overrides[Service.save->Repository.save]@0.95; overrides[Reader.read->Protocol.read]@0.5; overrides[ConcreteReader.read->Reader.read]@0.95; overrides[InheritsMetaclassShape.go->MetaclassShape.go]@0.95",
-          "expected relationship not found: {\"type\":\"implements\",\"source\":\"Reader\",\"target\":\"Protocol\",\"meta.reasonCode\":\"stdlib-interface-marker\",\"note\":\"PEP 544. CPython: metaclass _ProtocolMeta; `Reader()` is refused outright — \\\"Protocols cannot be instantiated\\\" — abstract member or not.\"}; got: imports[interface_implements->abc:*]@1; imports[interface_implements->abc:ABC]@1; imports[interface_implements->abc:abstractmethod]@1; imports[interface_implements->typing:Protocol]@1; implements[Repository->ABC]@1; extends[Service->Repository]@1; implements[Reader->Protocol]@1; extends[ConcreteReader->Reader]@1; extends[InheritsMetaclassShape->MetaclassShape]@1; extends[InheritsPlain->Plain]@1; extends[InheritsLocal->Local]@1; implements[AboveTheRebind->ABC]@1; implements[BelowTheRebind->ABC]@1; contains[Repository->save]@1; contains[Service->save]@1; contains[Reader->read]@1; contains[ConcreteReader->read]@1; contains[MetaclassShape->go]@1; contains[InheritsMetaclassShape->go]@1; contains[Plain->never_enforced]@1; contains[InheritsPlain->other]@1; contains[Local->thing]@1; contains[InheritsLocal->other]@1; contains[ABC->looks_like_the_marker]@1; contains[AboveTheRebind->still_the_stdlib]@1; contains[BelowTheRebind->now_the_local_class]@1; overrides[Service.save->Repository.save]@0.95; overrides[Reader.read->Protocol.read]@0.5; overrides[ConcreteReader.read->Reader.read]@0.95; overrides[InheritsMetaclassShape.go->MetaclassShape.go]@0.95",
-          "expected relationship not found: {\"type\":\"implements\",\"source\":\"ConcreteReader\",\"target\":\"Reader\",\"meta.reasonCode\":\"in-file-interface-base\",\"note\":\"conformance to a protocol is inheritance in python, so this is both `extends` and `implements`\"}; got: imports[interface_implements->abc:*]@1; imports[interface_implements->abc:ABC]@1; imports[interface_implements->abc:abstractmethod]@1; imports[interface_implements->typing:Protocol]@1; implements[Repository->ABC]@1; extends[Service->Repository]@1; implements[Reader->Protocol]@1; extends[ConcreteReader->Reader]@1; extends[InheritsMetaclassShape->MetaclassShape]@1; extends[InheritsPlain->Plain]@1; extends[InheritsLocal->Local]@1; implements[AboveTheRebind->ABC]@1; implements[BelowTheRebind->ABC]@1; contains[Repository->save]@1; contains[Service->save]@1; contains[Reader->read]@1; contains[ConcreteReader->read]@1; contains[MetaclassShape->go]@1; contains[InheritsMetaclassShape->go]@1; contains[Plain->never_enforced]@1; contains[InheritsPlain->other]@1; contains[Local->thing]@1; contains[InheritsLocal->other]@1; contains[ABC->looks_like_the_marker]@1; contains[AboveTheRebind->still_the_stdlib]@1; contains[BelowTheRebind->now_the_local_class]@1; overrides[Service.save->Repository.save]@0.95; overrides[Reader.read->Protocol.read]@0.5; overrides[ConcreteReader.read->Reader.read]@0.95; overrides[InheritsMetaclassShape.go->MetaclassShape.go]@0.95",
-          "expected relationship not found: {\"type\":\"implements\",\"source\":\"InheritsMetaclassShape\",\"target\":\"MetaclassShape\",\"meta.reasonCode\":\"in-file-interface-base\",\"note\":\"`metaclass=abc.ABCMeta` is the interface declaration that needs no import and no positional base\"}; got: imports[interface_implements->abc:*]@1; imports[interface_implements->abc:ABC]@1; imports[interface_implements->abc:abstractmethod]@1; imports[interface_implements->typing:Protocol]@1; implements[Repository->ABC]@1; extends[Service->Repository]@1; implements[Reader->Protocol]@1; extends[ConcreteReader->Reader]@1; extends[InheritsMetaclassShape->MetaclassShape]@1; extends[InheritsPlain->Plain]@1; extends[InheritsLocal->Local]@1; implements[AboveTheRebind->ABC]@1; implements[BelowTheRebind->ABC]@1; contains[Repository->save]@1; contains[Service->save]@1; contains[Reader->read]@1; contains[ConcreteReader->read]@1; contains[MetaclassShape->go]@1; contains[InheritsMetaclassShape->go]@1; contains[Plain->never_enforced]@1; contains[InheritsPlain->other]@1; contains[Local->thing]@1; contains[InheritsLocal->other]@1; contains[ABC->looks_like_the_marker]@1; contains[AboveTheRebind->still_the_stdlib]@1; contains[BelowTheRebind->now_the_local_class]@1; overrides[Service.save->Repository.save]@0.95; overrides[Reader.read->Protocol.read]@0.5; overrides[ConcreteReader.read->Reader.read]@0.95; overrides[InheritsMetaclassShape.go->MetaclassShape.go]@0.95",
-          "forbidden relationship present: {\"type\":\"implements\",\"source\":\"BelowTheRebind\",\"target\":\"ABC\",\"note\":\"`class BelowTheRebind(ABC)` sits BELOW a local `class ABC`, so the bare name binds to the LOCAL class. CPython: `BelowTheRebind.__mro__` is (BelowTheRebind, ABC, object) with the local ABC, metaclass `type` — indistinguishable from `AboveTheRebind.__mro__` by printing, so only the binding order answers it.\"} (found implements[BelowTheRebind->ABC]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "python/interface-qualified-subscript-head",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"QualifiedProtocolBase\",\"target\":\"Protocol\",\"line_number\":38,\"meta.reasonCode\":\"stdlib-interface-marker\",\"note\":\"the source spelled it QUALIFIED — `typing.Protocol[RuntimeT]` — so it names a module and the stdlib class is what the base list holds, whatever the local `class Protocol` at 33 binds the bare name to. With `b.type === \\\"attribute\\\"` this head was read as bare, `stdlibBoundAt` found the local class, and BOTH rows below died\"}; got: imports[interface_qualified_subscript_head->typing:*]@1; imports[interface_qualified_subscript_head->typing:TypeVar]@1; calls[interface_qualified_subscript_head->TypeVar]@0.9; extends[QualifiedProtocolBase->Protocol]@1; extends[SubQualifiedProtocolBase->QualifiedProtocolBase]@1; extends[QualifiedAbcBase->Generic]@1; extends[SubQualifiedAbcBase->QualifiedAbcBase]@1; extends[InheritsTheLocalProtocol->Protocol]@1; contains[Protocol->local]@1; contains[QualifiedProtocolBase->run]@1; contains[SubQualifiedProtocolBase->run]@1; contains[QualifiedAbcBase->run]@1; contains[SubQualifiedAbcBase->run]@1; overrides[SubQualifiedProtocolBase.run->QualifiedProtocolBase.run]@0.95; overrides[SubQualifiedAbcBase.run->QualifiedAbcBase.run]@0.95; references[run->RuntimeT]@0.95",
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"SubQualifiedProtocolBase\",\"target\":\"QualifiedProtocolBase\",\"line_number\":43,\"meta.reasonCode\":\"in-file-interface-base\",\"note\":\"tier 1 depends on the row above: the base is an in-file class that declares an interface\"}; got: imports[interface_qualified_subscript_head->typing:*]@1; imports[interface_qualified_subscript_head->typing:TypeVar]@1; calls[interface_qualified_subscript_head->TypeVar]@0.9; extends[QualifiedProtocolBase->Protocol]@1; extends[SubQualifiedProtocolBase->QualifiedProtocolBase]@1; extends[QualifiedAbcBase->Generic]@1; extends[SubQualifiedAbcBase->QualifiedAbcBase]@1; extends[InheritsTheLocalProtocol->Protocol]@1; contains[Protocol->local]@1; contains[QualifiedProtocolBase->run]@1; contains[SubQualifiedProtocolBase->run]@1; contains[QualifiedAbcBase->run]@1; contains[SubQualifiedAbcBase->run]@1; overrides[SubQualifiedProtocolBase.run->QualifiedProtocolBase.run]@0.95; overrides[SubQualifiedAbcBase.run->QualifiedAbcBase.run]@0.95; references[run->RuntimeT]@0.95"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "python/lambda-body-has-no-call-source",
-        "ok": false,
-        "problems": [
-          "forbidden relationship present: {\"type\":\"calls\",\"source\":\"Handlers\",\"target\":\"decode\",\"note\":\"THE defect. The call is in a lambda in the class body of `Handlers`; `Handlers` did not call `decode` and `Handlers.decode` does not exist. Measured: 2 unexplained edges of this shape in multiprocessing/shared_memory.py, 113 sites across 43 of 678 corpus files.\"} (found calls[Handlers->decode]@0.9)",
-          "forbidden relationship present: {\"type\":\"calls\",\"source\":\"Handlers\",\"target\":\"rstrip\",\"note\":\"the sibling lambda on the next line — two lambdas, one class, two false claims about the class\"} (found calls[Handlers->rstrip]@0.9)",
-          "forbidden relationship present: {\"type\":\"calls\",\"source\":\"lambda_body_has_no_call_source\",\"target\":\"upper\",\"note\":\"the module-scope instance of the same shape: the module scope is a real navigable name, and naming it as the caller of a lambda's body call is still a false claim\"} (found calls[lambda_body_has_no_call_source->upper]@0.9)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "python/lambda-scope-is-not-class-scope",
@@ -4718,12 +4690,8 @@
       },
       {
         "fixture": "python/literal-versus-computed",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"contains\",\"source\":\"Colour\",\"target\":\"SHADED\",\"note\":\"the PY-30 row: the member's value is an `expression_list` and the member is still a declaration. CPython: `Colour.SHADED` resolves.\"}; got: imports[literal_versus_computed->enum:Enum]@1; extends[Colour->Enum]@1; exports[literal_versus_computed->bare_one]@1; exports[literal_versus_computed->bare_two]@1; exports[literal_versus_computed->added_later]@1; contains[Colour->RED]@1",
-          "expected relationship not found: {\"type\":\"contains\",\"source\":\"Colour\",\"target\":\"PAIRED\",\"note\":\"a list-valued enum member, same rule\"}; got: imports[literal_versus_computed->enum:Enum]@1; extends[Colour->Enum]@1; exports[literal_versus_computed->bare_one]@1; exports[literal_versus_computed->bare_two]@1; exports[literal_versus_computed->added_later]@1; contains[Colour->RED]@1",
-          "expected relationship not found: {\"type\":\"contains\",\"source\":\"Colour\",\"target\":\"BARE\",\"note\":\"a bare comma-separated value, the exact shape pstats.SortKey uses\"}; got: imports[literal_versus_computed->enum:Enum]@1; extends[Colour->Enum]@1; exports[literal_versus_computed->bare_one]@1; exports[literal_versus_computed->bare_two]@1; exports[literal_versus_computed->added_later]@1; contains[Colour->RED]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "python/module-all-exports",
@@ -4742,20 +4710,13 @@
       },
       {
         "fixture": "python/nested-def-reference-source",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"load\",\"target\":\"DuckDBPyRelation\",\"note\":\"the annotation on `nested_helper`'s PARAMETER belongs to the enclosing METHOD: entering a def inside a method is a local, and the main walk attributes its body to the method\"}; got: imports[nested_def_reference_source->duckdb:*]@1; calls[load->nested_helper]@0.9; calls[module_level->also_nested]@0.9; contains[Loader->load]@1; contains[Loader->convert]@1; references[load->duckdb]@0.95; references[load->DuckDBPyConnection]@0.95; references[nested_helper->duckdb]@0.95; references[nested_helper->DuckDBPyRelation]@0.95; references[nested_helper->duckdb]@0.95; references[nested_helper->DuckDBPyRelation]@0.95; references[nested_helper->DuckDBPyConnection]@0.95; references[convert->duckdb]@0.95; references[convert->DuckDBPyConnection]@0.95; references[convert->duckdb]@0.95; references[convert->DuckDBPyRelation]@0.95; references[nested_def_reference_source->duckdb]@0.95; references[nested_def_reference_source->DuckDBPyConnection]@0.95; references[module_level->duckdb]@0.95; references[module_level->DuckDBPyRelation]@0.95; references[module_level->duckdb]@0.95; references[module_level->DuckDBPyRelation]@0.95; references[also_nested->duckdb]@0.95; references[also_nested->DuckDBPyRelation]@0.95; references[also_nested->duckdb]@0.95; references[also_nested->DuckDBPyConnection]@0.95; uses[load->DuckDBPyConnection]@0.9; uses[load->DuckDBPyRelation]@0.9; uses[load->DuckDBPyConnection]@0.9; uses[convert->DuckDBPyRelation]@0.9",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"module_level\",\"target\":\"DuckDBPyConnection\",\"note\":\"the same shape at module scope\"}; got: imports[nested_def_reference_source->duckdb:*]@1; calls[load->nested_helper]@0.9; calls[module_level->also_nested]@0.9; contains[Loader->load]@1; contains[Loader->convert]@1; references[load->duckdb]@0.95; references[load->DuckDBPyConnection]@0.95; references[nested_helper->duckdb]@0.95; references[nested_helper->DuckDBPyRelation]@0.95; references[nested_helper->duckdb]@0.95; references[nested_helper->DuckDBPyRelation]@0.95; references[nested_helper->DuckDBPyConnection]@0.95; references[convert->duckdb]@0.95; references[convert->DuckDBPyConnection]@0.95; references[convert->duckdb]@0.95; references[convert->DuckDBPyRelation]@0.95; references[nested_def_reference_source->duckdb]@0.95; references[nested_def_reference_source->DuckDBPyConnection]@0.95; references[module_level->duckdb]@0.95; references[module_level->DuckDBPyRelation]@0.95; references[module_level->duckdb]@0.95; references[module_level->DuckDBPyRelation]@0.95; references[also_nested->duckdb]@0.95; references[also_nested->DuckDBPyRelation]@0.95; references[also_nested->duckdb]@0.95; references[also_nested->DuckDBPyConnection]@0.95; uses[load->DuckDBPyConnection]@0.9; uses[load->DuckDBPyRelation]@0.9; uses[load->DuckDBPyConnection]@0.9; uses[convert->DuckDBPyRelation]@0.9",
-          "forbidden relationship present: {\"type\":\"references\",\"source\":\"nested_helper\",\"target\":\"DuckDBPyRelation\",\"note\":\"THE defect. `nested_helper` is a local of `load`; CPython cannot resolve it as `Loader.nested_helper` and the graph holds no symbol for it, so an edge sourced there has nowhere to attach.\"} (found references[nested_helper->DuckDBPyRelation]@0.95)",
-          "forbidden relationship present: {\"type\":\"references\",\"source\":\"also_nested\",\"target\":\"DuckDBPyConnection\",\"note\":\"the module-scope instance of the same shape\"} (found references[also_nested->DuckDBPyConnection]@0.95)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "python/object-base-guess-refused",
-        "ok": false,
-        "problems": [
-          "forbidden relationship present: {\"type\":\"overrides\",\"source\":\"Plain.describe\",\"target\":\"object.describe\",\"note\":\"THE DEFECT. `object` has no `describe` — CPython's `hasattr(object, 'describe')` is False — so this edge was a false statement at 0.5, one per method of every `class X(object)` in the corpus\"} (found overrides[Plain.describe->object.describe]@0.5)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "python/payload-and-complexity",
@@ -4764,26 +4725,13 @@
       },
       {
         "fixture": "python/qualified-endpoint-spellings",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"extends\",\"from\":\"SiblingCase\",\"target\":\"TestCase\",\"meta.qualified\":\"unittest.TestCase\",\"meta.evidenceClass\":\"structural\",\"note\":\"the leaf is the base; `unittest` is the import root that carries the lookup. `import unittest` is on line 17 of this file, so the edge now joins to something the parse declared.\"}; got: imports[qualified_endpoint_spellings->unittest:*]@1; imports[qualified_endpoint_spellings->pyarrow:*]@1; extends[SiblingCase->TestCase]@1; extends[Derived->Bare]@1; references[read_rows->pa]@0.95; references[read_rows->Table]@0.95; uses[read_rows->Table]@0.9; uses[read_rows->num_rows]@0.9; uses[read_local->num_rows]@0.9",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"read_rows\",\"target\":\"Table\",\"meta.qualified\":\"pa.Table\",\"meta.reasonCode\":\"member-read\",\"note\":\"through an import ALIAS, which is the common form in python and the case a bare leaf cannot survive\"}; got: imports[qualified_endpoint_spellings->unittest:*]@1; imports[qualified_endpoint_spellings->pyarrow:*]@1; extends[SiblingCase->TestCase]@1; extends[Derived->Bare]@1; references[read_rows->pa]@0.95; references[read_rows->Table]@0.95; uses[read_rows->Table]@0.9; uses[read_rows->num_rows]@0.9; uses[read_local->num_rows]@0.9",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"read_rows\",\"target\":\"num_rows\",\"meta.qualified\":\"table.num_rows\",\"note\":\"through a PARAMETER. The receiver's type is still written nowhere — `qualified` records the spelling, it does not claim the type is known.\"}; got: imports[qualified_endpoint_spellings->unittest:*]@1; imports[qualified_endpoint_spellings->pyarrow:*]@1; extends[SiblingCase->TestCase]@1; extends[Derived->Bare]@1; references[read_rows->pa]@0.95; references[read_rows->Table]@0.95; uses[read_rows->Table]@0.9; uses[read_rows->num_rows]@0.9; uses[read_local->num_rows]@0.9",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"read_local\",\"target\":\"num_rows\",\"meta.qualified\":\"rows.num_rows\",\"note\":\"the same leaf name as the row above from a different function. `contains`-style name collisions are why the endpoint needs a route, not just a name.\"}; got: imports[qualified_endpoint_spellings->unittest:*]@1; imports[qualified_endpoint_spellings->pyarrow:*]@1; extends[SiblingCase->TestCase]@1; extends[Derived->Bare]@1; references[read_rows->pa]@0.95; references[read_rows->Table]@0.95; uses[read_rows->Table]@0.9; uses[read_rows->num_rows]@0.9; uses[read_local->num_rows]@0.9"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "python/reference-source-scope-and-reason-codes",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"outer\",\"target\":\"SourceType\",\"line_number\":37,\"meta.reasonCode\":\"annotation-type-name\",\"note\":\"PY-24: `outer` IS a symbol, so this is the right source\"}; got: imports[reference_source_scope_and_reason_codes->typing:Protocol]@1; implements[Payload->Protocol]@1; calls[makes_one->kind]@0.9; instantiates[build->Owner]@0.9; contains[Payload->kind]@1; contains[Nested->method]@1; contains[Owner->method]@1; contains[Owner->uses_member]@1; contains[Owner->makes_one]@1; contains[Owner->plain_reader]@1; contains[Factory->build]@1; overrides[Payload.kind->Protocol.kind]@0.5; references[outer->SourceType]@0.95; references[nested_a->NestedType]@0.95; references[nested_b->NestedType]@0.95; references[method->MethodParamType]@0.95; references[makes_one->Payload]@0.95; references[annotated->FreeFunctionReturnType]@0.95; references[annotated->FreeFunctionParamType]@0.95; references[build->Owner]@0.95; references[build->Payload]@0.95; uses[outer->value]@0.9; uses[outer->value]@0.9; uses[method->value]@0.9; uses[uses_member->value]@0.9; uses[plain_reader->value]@0.9",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"outer\",\"target\":\"NestedType\",\"line_number\":40,\"meta.reasonCode\":\"annotation-type-name\",\"note\":\"PY-24, the whole point: this annotation is written on `def nested_a(target: NestedType)`, which is a LOCAL of `outer`. Before the fix the edge read `references nested_a -> NestedType` and `nested_a` is not in the graph. `nested_b` annotates the same type and the type's documented dedup is per (source, target, kind), so ONE row covers both — that is why there is no second row at 43, and the second case is pinned as a forbid instead\"}; got: imports[reference_source_scope_and_reason_codes->typing:Protocol]@1; implements[Payload->Protocol]@1; calls[makes_one->kind]@0.9; instantiates[build->Owner]@0.9; contains[Payload->kind]@1; contains[Nested->method]@1; contains[Owner->method]@1; contains[Owner->uses_member]@1; contains[Owner->makes_one]@1; contains[Owner->plain_reader]@1; contains[Factory->build]@1; overrides[Payload.kind->Protocol.kind]@0.5; references[outer->SourceType]@0.95; references[nested_a->NestedType]@0.95; references[nested_b->NestedType]@0.95; references[method->MethodParamType]@0.95; references[makes_one->Payload]@0.95; references[annotated->FreeFunctionReturnType]@0.95; references[annotated->FreeFunctionParamType]@0.95; references[build->Owner]@0.95; references[build->Payload]@0.95; uses[outer->value]@0.9; uses[outer->value]@0.9; uses[method->value]@0.9; uses[uses_member->value]@0.9; uses[plain_reader->value]@0.9",
-          "expected relationship not found: {\"type\":\"calls\",\"from\":\"makes_one\",\"target\":\"kind\",\"line_number\":64,\"confidence\":0.9,\"meta.reasonCode\":\"callee-leaf-name\",\"note\":\"PY-25. A call SITE is a fact about the source; the target is a name reduced from the callee expression, so the resolution is what carries the uncertainty — and the code says so\"}; got: imports[reference_source_scope_and_reason_codes->typing:Protocol]@1; implements[Payload->Protocol]@1; calls[makes_one->kind]@0.9; instantiates[build->Owner]@0.9; contains[Payload->kind]@1; contains[Nested->method]@1; contains[Owner->method]@1; contains[Owner->uses_member]@1; contains[Owner->makes_one]@1; contains[Owner->plain_reader]@1; contains[Factory->build]@1; overrides[Payload.kind->Protocol.kind]@0.5; references[outer->SourceType]@0.95; references[nested_a->NestedType]@0.95; references[nested_b->NestedType]@0.95; references[method->MethodParamType]@0.95; references[makes_one->Payload]@0.95; references[annotated->FreeFunctionReturnType]@0.95; references[annotated->FreeFunctionParamType]@0.95; references[build->Owner]@0.95; references[build->Payload]@0.95; uses[outer->value]@0.9; uses[outer->value]@0.9; uses[method->value]@0.9; uses[uses_member->value]@0.9; uses[plain_reader->value]@0.9",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"uses_member\",\"target\":\"value\",\"line_number\":61,\"confidence\":0.9,\"meta.reasonCode\":\"member-read-leaf-name\",\"meta.isMemberRead\":true,\"note\":\"PY-25\"}; got: imports[reference_source_scope_and_reason_codes->typing:Protocol]@1; implements[Payload->Protocol]@1; calls[makes_one->kind]@0.9; instantiates[build->Owner]@0.9; contains[Payload->kind]@1; contains[Nested->method]@1; contains[Owner->method]@1; contains[Owner->uses_member]@1; contains[Owner->makes_one]@1; contains[Owner->plain_reader]@1; contains[Factory->build]@1; overrides[Payload.kind->Protocol.kind]@0.5; references[outer->SourceType]@0.95; references[nested_a->NestedType]@0.95; references[nested_b->NestedType]@0.95; references[method->MethodParamType]@0.95; references[makes_one->Payload]@0.95; references[annotated->FreeFunctionReturnType]@0.95; references[annotated->FreeFunctionParamType]@0.95; references[build->Owner]@0.95; references[build->Payload]@0.95; uses[outer->value]@0.9; uses[outer->value]@0.9; uses[method->value]@0.9; uses[uses_member->value]@0.9; uses[plain_reader->value]@0.9",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"build\",\"target\":\"Owner\",\"line_number\":80,\"confidence\":0.9,\"meta.reasonCode\":\"in-file-class-callee\",\"note\":\"PY-25. `Owner()` is a call in the grammar whatever its capitalisation says; `instantiates` is the READING of it, so the code records that the classification is the inference and not the call\"}; got: imports[reference_source_scope_and_reason_codes->typing:Protocol]@1; implements[Payload->Protocol]@1; calls[makes_one->kind]@0.9; instantiates[build->Owner]@0.9; contains[Payload->kind]@1; contains[Nested->method]@1; contains[Owner->method]@1; contains[Owner->uses_member]@1; contains[Owner->makes_one]@1; contains[Owner->plain_reader]@1; contains[Factory->build]@1; overrides[Payload.kind->Protocol.kind]@0.5; references[outer->SourceType]@0.95; references[nested_a->NestedType]@0.95; references[nested_b->NestedType]@0.95; references[method->MethodParamType]@0.95; references[makes_one->Payload]@0.95; references[annotated->FreeFunctionReturnType]@0.95; references[annotated->FreeFunctionParamType]@0.95; references[build->Owner]@0.95; references[build->Payload]@0.95; uses[outer->value]@0.9; uses[outer->value]@0.9; uses[method->value]@0.9; uses[uses_member->value]@0.9; uses[plain_reader->value]@0.9",
-          "forbidden relationship present: {\"type\":\"references\",\"from\":\"nested_a\",\"target\":\"NestedType\",\"note\":\"PY-24: `nested_a` is a LOCAL of `outer`, published no symbol, and `outer.nested_a` does not resolve in python. This edge names a scope the graph does not have, so nothing can be traversed from it\"} (found references[nested_a->NestedType]@0.95)",
-          "forbidden relationship present: {\"type\":\"references\",\"from\":\"nested_b\",\"target\":\"NestedType\",\"note\":\"PY-24, pinned a second time so that fixing the first case by name cannot satisfy the row\"} (found references[nested_b->NestedType]@0.95)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "python/reserved-endpoint-qualification",
@@ -4964,8 +4912,12 @@
       },
       {
         "fixture": "zig/alias-receiver",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"calls\",\"source\":\"externalTypes\",\"target\":\"std.ArrayList\",\"meta.zigExternalRef\":true,\"meta.zigImportAlias\":\"std\",\"meta.zigImportModule\":\"std\",\"note\":\"THE POSITIVE CASE. `std.ArrayList(u8)` is a generic type application that parses as a call_expression; its receiver is a name this file binds by @import, so the edge publishes the path the source writes. meta.zigImportAlias and meta.zigImportModule are pinned separately because a target that names a module without saying WHICH would still leave a consumer unable to exclude it by rule.\"}; got: references[(global)->std]@1; references[(global)->c.zig]@1; references[(global)->extpkg]@1; references[(global)->gobject]@1; calls[externalTypes->std.ArrayList]@0.85; calls[externalValues->std.debug.assert]@0.85; uses[externalValues->std.debug]@0.75; uses[localModule->COUNT]@0.75; uses[shadowedBinding->VALUE]@0.75; uses[shadowedBinding->print]@0.75; calls[receiverIsACall->writer]@0.85; calls[receiverIsACall->std.io.getStdOut]@0.85; uses[receiverIsACall->std.io]@0.75; calls[receiverIsACall->print]@0.85; calls[aliasedModule->g.Object.new]@0.85; uses[aliasedModule->g.Object]@0.75; imports[(global)->gobject]@0.9; imports[(global)->extpkg]@0.9; imports[(global)->c.zig]@0.9; imports[(global)->std]@0.9; exports[(file)->externalTypes]@1; exports[(file)->externalValues]@1; exports[(file)->localModule]@1; exports[(file)->shadowedBinding]@1; exports[(file)->receiverIsACall]@1; exports[(file)->aliasedModule]@1; references[(declared-type)->std.ArrayList]@0.9",
+          "expected relationship not found: {\"type\":\"references\",\"source\":\"(declared-type)\",\"target\":\"std.ArrayList\",\"meta.zigExternalRef\":true,\"meta.zigImportAlias\":\"std\",\"meta.zigImportModule\":\"std\",\"note\":\"the declared-type twin of the same annotation. The two passes qualify through ONE alias map, and a regression that wired only one of them would leave this row passing without the calls row above — which is why both are here.\"}; got: references[(global)->std]@1; references[(global)->c.zig]@1; references[(global)->extpkg]@1; references[(global)->gobject]@1; calls[externalTypes->std.ArrayList]@0.85; calls[externalValues->std.debug.assert]@0.85; uses[externalValues->std.debug]@0.75; uses[localModule->COUNT]@0.75; uses[shadowedBinding->VALUE]@0.75; uses[shadowedBinding->print]@0.75; calls[receiverIsACall->writer]@0.85; calls[receiverIsACall->std.io.getStdOut]@0.85; uses[receiverIsACall->std.io]@0.75; calls[receiverIsACall->print]@0.85; calls[aliasedModule->g.Object.new]@0.85; uses[aliasedModule->g.Object]@0.75; imports[(global)->gobject]@0.9; imports[(global)->extpkg]@0.9; imports[(global)->c.zig]@0.9; imports[(global)->std]@0.9; exports[(file)->externalTypes]@1; exports[(file)->externalValues]@1; exports[(file)->localModule]@1; exports[(file)->shadowedBinding]@1; exports[(file)->receiverIsACall]@1; exports[(file)->aliasedModule]@1; references[(declared-type)->std.ArrayList]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"externalValues\",\"target\":\"std.debug\",\"meta.zigExternalRef\":true,\"note\":\"the INNER field_expression of the same access is a separate `uses` edge, and it must carry its OWN path. Climbing to the outermost field_expression would name `std.debug.assert` here — a path this node did not spell. The two rows above and this one are the whole reason the walk descends from the edge's own node.\"}; got: references[(global)->std]@1; references[(global)->c.zig]@1; references[(global)->extpkg]@1; references[(global)->gobject]@1; calls[externalTypes->std.ArrayList]@0.85; calls[externalValues->std.debug.assert]@0.85; uses[externalValues->std.debug]@0.75; uses[localModule->COUNT]@0.75; uses[shadowedBinding->VALUE]@0.75; uses[shadowedBinding->print]@0.75; calls[receiverIsACall->writer]@0.85; calls[receiverIsACall->std.io.getStdOut]@0.85; uses[receiverIsACall->std.io]@0.75; calls[receiverIsACall->print]@0.85; calls[aliasedModule->g.Object.new]@0.85; uses[aliasedModule->g.Object]@0.75; imports[(global)->gobject]@0.9; imports[(global)->extpkg]@0.9; imports[(global)->c.zig]@0.9; imports[(global)->std]@0.9; exports[(file)->externalTypes]@1; exports[(file)->externalValues]@1; exports[(file)->localModule]@1; exports[(file)->shadowedBinding]@1; exports[(file)->receiverIsACall]@1; exports[(file)->aliasedModule]@1; references[(declared-type)->std.ArrayList]@0.9"
+        ]
       },
       {
         "fixture": "zig/bare-value-reads",
@@ -5029,8 +4981,10 @@
       },
       {
         "fixture": "zig/target-scope",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"calls\",\"source\":\"external\",\"target\":\"std.ArrayList\",\"meta.targetScope\":\"file-external\",\"note\":\"nothing in this file declares ArrayList. The edge must SAY it is external rather than implying a per-file binding exists. Z66: it now names the RECEIVER too — `std.ArrayList`, the spelling the source writes — with meta.zigImportAlias=std and meta.zigImportModule=std, so a consumer can exclude an external dependency by a rule instead of by a guess. The bare leaf is forbidden below: it is what made a module member and a same-named local declaration the same target.\",\"meta.zigExternalRef\":true}; got: references[(global)->std]@1; references[(global)->./other.zig]@1; contains[Local->Local.field]@1; contains[Local->Local.make]@1; contains[Collide->Collide.x]@1; calls[external->std.ArrayList]@0.85; calls[local->make]@0.85; uses[local->field]@0.75; calls[local->Collide]@0.85; imports[(global)->./other.zig]@0.9; imports[(global)->std]@0.9; exports[(file)->Local]@1; references[(declared-type)->Local]@0.9; references[(declared-type)->std.ArrayList]@0.9"
+        ]
       },
       {
         "fixture": "zig/unpublished-scope-source-z59",
@@ -5219,13 +5173,17 @@
       },
       {
         "fixture": "dart/bare-member-read-uses",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"shadowed\",\"target\":\"shadowed#count\",\"confidenceMin\":0.9,\"meta.localBinding\":true,\"comment\":\"DT2: the locally-bound count genuinely reads as a local — and since 2026-10-08 the target SAYS so (`<callable>#<binding>`), because the store resolves by name alone and a bare `count` was bound to Store's field (Strategy 2, metadata unread)\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.zero]@1; contains[Store->Store.bare]@1; contains[Store->Store.dotted]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.chained]@1; uses[bare->Store.count]@0.6; uses[dotted->Store.count]@0.9; uses[shadowed->shadowed\u0000count]@0.9; uses[chained->Store.count]@0.6; uses[chained->Store.total]@0.6"
+        ]
       },
       {
         "fixture": "dart/callsite-lines-825",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"perimeter\",\"target\":\"perimeter#sides\",\"meta.isLocalRead\":true,\"meta.localBinding\":true,\"line_number\":51,\"comment\":\"a bound parameter read: the identifier is written on the expression body's line (51). Target respelled 2026-10-08 to `<callable>#<binding>` — a PARAMETER is a binding too, and the bare `sides` was resolvable by name against any single `sides` declaration in the project\"}; got: imports[callsite-lines-825->dart:async:*]@1; exports[callsite-lines-825->fixtures/dart/src/api.dart]@1; imports[callsite-lines-825->fixtures/dart/src/widgets.dart]@1; extends[Figure->Base]@1; implements[Figure->Shape]@1; instantiates[Reporter->_Reporter]@0.95; implements[_Reporter->Reporter]@1; contains[Shape->Shape.area]@1; contains[Base->Base.area]@1; contains[Figure->Figure._wrapped]@1; contains[Figure->Figure.perimeter]@1; contains[Figure->Figure.area]@1; contains[Figure->Figure.total]@1; contains[Counter->Counter.constructor]@1; contains[Counter->Counter.value]@1; contains[Counter->Counter.acquire]@1; contains[Reporter->Reporter.constructor]@1; contains[Ledger->Ledger.xs]@1; contains[Ledger->Ledger.total]@1; contains[Ledger->Ledger.firstOf]@1; contains[Ledger->Ledger.label]@1; contains[Ledger->Ledger.spinAll]@1; overrides[Figure.area->Base.area]@0.95; uses[perimeter->perimeter\u0000sides]@0.9; calls[perimeter->toDouble]@0.9; uses[constructor->constructor\u0000v]@0.9; uses[acquire->Counter.value]@0.6; uses[firstOf->Ledger.xs]@0.6; uses[firstOf->xs]@0.9; uses[label->gTotal]@0.9"
+        ]
       },
       {
         "fixture": "dart/dedup-and-attribution",
@@ -5239,8 +5197,10 @@
       },
       {
         "fixture": "dart/enum-constant-decls",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"describe\",\"target\":\"describe#s\",\"meta.localBinding\":true,\"comment\":\"the parameter read is a bound local (0.9) — respelled 2026-10-08 to `<callable>#<binding>`; the bare `s` was a name the store would have bound to any single `s` declaration in the project\"}; got: contains[Shape->Shape.circle]@1; contains[Shape->Shape.square]@1; contains[Payload->Payload.small]@1; contains[Payload->Payload.large]@1; contains[Payload->Payload.constructor]@1; contains[Payload->Payload.bytes]@1; contains[Payload->Payload.isLarge]@1; uses[Payload->kSmall]@0.9; uses[Payload->kLarge]@0.9; uses[isLarge->Payload.bytes]@0.6; references[describe->Shape]@0.95; uses[describe->describe\u0000s]@0.9; uses[describe->Shape.circle]@0.9"
+        ]
       },
       {
         "fixture": "dart/extension-type",
@@ -5249,6 +5209,21 @@
       },
       {
         "fixture": "dart/family-closure-cascades",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/flutter-bloc-generic-target",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/import-resolution-sibling",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/import-resolution",
         "ok": true,
         "problems": []
       },
@@ -5268,19 +5243,36 @@
         "problems": []
       },
       {
+        "fixture": "dart/local-read/declares",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/local-read/reads",
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"run\",\"target\":\"run#counter\",\"line_number\":15,\"confidence\":0.9,\"meta.isLocalRead\":true,\"meta.localBinding\":true,\"comment\":\"the read of the function's OWN local: `#` not `.`, because a dot would make the target a member spelling the store would try to bind, and the consumers' leaf rule (after the last colon, then after the last dot) would reduce it back to the bare name\"}; got: uses[run->run\u0000counter]@0.9"
+        ]
+      },
+      {
         "fixture": "dart/member-value-reads",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "dart/nested-block-shadows-member",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected 1 relationship(s) {\"type\":\"uses\",\"from\":\"run\",\"target\":\"run#value\"}; got 0",
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"run\",\"target\":\"run#value\",\"line_number\":48,\"confidence\":0.9,\"meta.isLocalRead\":true,\"meta.localBinding\":true,\"comment\":\"the FIRST of three local reads of the same name (48, 51, 53). The edge carries `isLocalRead` so a consumer can tell it from a declaration read, and (2026-10-08) the target is SPELLED as a binding — `<callable>#<binding>` — because the marker is metadata and the store resolves by string: a bare `value` was bound to any single `value` declaration in the project\"}; got: contains[Box->Box.value]@1; contains[Box->Box.run]@1; contains[Box->Box.readsMember]@1; uses[run->run\u0000value]@0.9; uses[readsMember->Box.value]@0.6"
+        ]
       },
       {
         "fixture": "dart/object-interface-override",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"freezedMap\",\"target\":\"freezedMap#$default\",\"meta.isLocalRead\":true,\"meta.localBinding\":true,\"note\":\"case I — a callee that is a formal parameter, tagged so the row is countable as a binding rather than a declaration, and (2026-10-08) SPELLED so the store cannot resolve it: a bare `$default` would be bound to any single declaration of that name in the project (`resolveRelationships` Strategy 2, which never reads this metadata)\"}; got: implements[ProtocolException->Exception]@1; implements[ValueException->Exception]@1; implements[PlainException->Exception]@1; extends[Banner->Widget]@1; extends[Inner->Outer]@1; extends[Direct->Object]@1; extends[Haunted->Ghost]@1; extends[NeedsBuild->UndeclaredBase]@1; contains[ProtocolException->ProtocolException.toString]@1; contains[ValueException->ValueException.code]@1; contains[ValueException->ValueException.constructor]@1; contains[ValueException->ValueException.operator ==]@1; contains[ValueException->ValueException.hashCode]@1; contains[PlainException->PlainException.toString]@1; contains[Widget->Widget.build]@1; contains[Banner->Banner.build]@1; contains[Outer->Outer.build]@1; contains[Inner->Inner.build]@1; contains[Direct->Direct.toString]@1; contains[Haunted->Haunted.toString]@1; contains[NeedsBuild->NeedsBuild.build]@1; overrides[ProtocolException.toString->Object.toString]@0.8; overrides[ValueException.operator ==->Object.operator ==]@0.8; overrides[ValueException.hashCode->Object.hashCode]@0.8; overrides[PlainException.toString->Object.toString]@0.8; overrides[Banner.build->Widget.build]@0.95; overrides[Inner.build->Outer.build]@0.95; overrides[Direct.toString->Object.toString]@0.8; overrides[NeedsBuild.build->UndeclaredBase.build]@0.8; uses[operator ==->operator ==\u0000other]@0.9"
+        ]
       },
       {
         "fixture": "dart/override-witness-shapes",
@@ -5303,6 +5295,11 @@
         "problems": []
       },
       {
+        "fixture": "dart/receiver-cause",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/type-references",
         "ok": true,
         "problems": []
@@ -5313,14 +5310,38 @@
         "problems": []
       },
       {
+        "fixture": "dart/unnamed-extension-name",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/untyped-method-is-method",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "dart/value-reads",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"helper\",\"target\":\"helper#x\",\"comment\":\"DT2: parameters read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"compute\",\"target\":\"compute#k\",\"comment\":\"DT2: parameters read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"compute\",\"target\":\"compute#depth\",\"comment\":\"DT2: body locals read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"compute\",\"target\":\"compute#limit\",\"comment\":\"DT2: parameters read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"compute\",\"target\":\"compute#total\",\"comment\":\"DT2: locals shadow members (single edge)\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"shadowed\",\"target\":\"shadowed#count\",\"comment\":\"DT2: shadowed member reads as the local\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"sums\",\"target\":\"sums#i\",\"comment\":\"DT2: classic-for loop variables read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"sums\",\"target\":\"sums#xs\",\"comment\":\"DT2: parameters read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"sums\",\"target\":\"sums#total\",\"comment\":\"DT2: locals read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"sums\",\"target\":\"sums#x\",\"comment\":\"DT2: for-in variables read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"takes\",\"target\":\"takes#h\",\"comment\":\"DT2: argument values read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"guarded\",\"target\":\"guarded#e\",\"comment\":\"DT2: catch params read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"blocks\",\"target\":\"blocks#xs\",\"comment\":\"DT2: parameters read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"blocks\",\"target\":\"blocks#x\",\"comment\":\"DT2: lambda params read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"blocks\",\"target\":\"blocks#p\",\"comment\":\"DT2: block-literal params read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"blocks\",\"target\":\"blocks#q\",\"comment\":\"DT2: block-literal params read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"inits\",\"target\":\"inits#b\",\"comment\":\"DT2: cascade receivers read\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9",
+          "expected relationship not found: {\"type\":\"uses\",\"source\":\"constructor\",\"target\":\"constructor#p\",\"comment\":\"DT2: initializer lists read constructor params\"}; got: contains[Store->Store.count]@1; contains[Store->Store.total]@1; contains[Store->Store.compute]@1; contains[Store->Store.shadowed]@1; contains[Store->Store.sums]@1; contains[Store->Store.takes]@1; contains[Store->Store.guarded]@1; contains[Store->Store.blocks]@1; contains[Store->Store.inits]@1; contains[Holder->Holder.x]@1; contains[Holder->Holder.constructor]@1; uses[helper->helper\u0000x]@0.9; uses[compute->compute\u0000k]@0.9; calls[compute->Store.compute]@0.9; uses[compute->compute\u0000depth]@0.9; uses[compute->compute\u0000limit]@0.9; uses[compute->compute\u0000total]@0.9; uses[compute->Store.count]@0.6; uses[shadowed->shadowed\u0000count]@0.9; uses[sums->sums\u0000i]@0.9; uses[sums->sums\u0000xs]@0.9; uses[sums->length]@0.9; uses[sums->sums\u0000total]@0.9; uses[sums->xs]@0.9; uses[sums->sums\u0000x]@0.9; calls[takes->run]@0.9; uses[takes->takes\u0000h]@0.9; calls[guarded->fetch]@0.9; uses[guarded->guarded\u0000e]@0.9; calls[guarded->log]@0.9"
+        ]
       },
       {
         "fixture": "swift/attributed-enum-case",
@@ -5724,6 +5745,11 @@
         "problems": []
       },
       {
+        "fixture": "php/enum-self-heritage",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "php/error-recovery",
         "ok": true,
         "problems": []
@@ -5759,12 +5785,27 @@
         "problems": []
       },
       {
+        "fixture": "php/heritage-published",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "php/include-paths",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "php/keyword-member-names",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "php/line-contract",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/member-identity",
         "ok": true,
         "problems": []
       },
@@ -5775,6 +5816,11 @@
       },
       {
         "fixture": "php/namespace-containment",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/nested-named-functions",
         "ok": true,
         "problems": []
       },
@@ -5795,6 +5841,11 @@
       },
       {
         "fixture": "php/receiver-owner",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/recovery-swallowed-members",
         "ok": true,
         "problems": []
       },
@@ -7374,7 +7425,22 @@
         "problems": []
       },
       {
+        "fixture": "fsharp/call-target-spelling",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "fsharp/declared-type-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "fsharp/fs-p10-project/fs-p10-client",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "fsharp/fs-p10-project/fs-p10-domain",
         "ok": true,
         "problems": []
       },
@@ -7385,6 +7451,11 @@
       },
       {
         "fixture": "fsharp/measure-attribute",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "fsharp/mutual-type-group",
         "ok": true,
         "problems": []
       },
@@ -7640,6 +7711,16 @@
       },
       {
         "fixture": "toml/module-name-collision",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "toml/path-dependencies",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "toml/reference-anchors",
         "ok": true,
         "problems": []
       },
@@ -7948,6 +8029,11 @@
         "problems": []
       },
       {
+        "fixture": "bash/export-quoted-shape-bd11",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "bash/external-command-name-collision",
         "ok": true,
         "problems": []
@@ -7959,6 +8045,11 @@
       },
       {
         "fixture": "bash/implicit-binding-sites",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "bash/incoming-external-marker-bd12",
         "ok": true,
         "problems": []
       },
@@ -8129,6 +8220,11 @@
       },
       {
         "fixture": "powershell/export-flag-psb15",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "powershell/externality-arbiter-psb17",
         "ok": true,
         "problems": []
       },
@@ -8371,7 +8467,7 @@
     "summary": {
       "bash": {
         "fail": 0,
-        "pass": 32
+        "pass": 34
       },
       "c": {
         "fail": 4,
@@ -8398,7 +8494,7 @@
         "pass": 20
       },
       "dart": {
-        "fail": 0,
+        "fail": 7,
         "pass": 21
       },
       "elixir": {
@@ -8411,7 +8507,7 @@
       },
       "fsharp": {
         "fail": 0,
-        "pass": 11
+        "pass": 15
       },
       "go": {
         "fail": 2,
@@ -8483,19 +8579,19 @@
       },
       "php": {
         "fail": 0,
-        "pass": 24
+        "pass": 30
       },
       "powershell": {
         "fail": 0,
-        "pass": 18
+        "pass": 19
       },
       "protobuf": {
         "fail": 0,
         "pass": 13
       },
       "python": {
-        "fail": 10,
-        "pass": 25
+        "fail": 0,
+        "pass": 35
       },
       "r": {
         "fail": 0,
@@ -8535,7 +8631,7 @@
       },
       "toml": {
         "fail": 0,
-        "pass": 7
+        "pass": 9
       },
       "typescript": {
         "fail": 6,
@@ -8558,8 +8654,8 @@
         "pass": 33
       },
       "zig": {
-        "fail": 0,
-        "pass": 16
+        "fail": 2,
+        "pass": 14
       }
     }
   },
@@ -8576,9 +8672,9 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-08T21:14:07.675Z",
-  "regeneratedAtCommit": "d2bad8b7d3cadb6927319fa0b751de6c88b022e4",
-  "runtime": "node v26.3.0",
+  "regeneratedAt": "2026-10-09T22:14:01.065Z",
+  "regeneratedAtCommit": "1dcad1ca597387f114d4cea6f4da08ddc58ed0d9",
+  "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
 }
