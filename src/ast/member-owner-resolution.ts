@@ -37,8 +37,11 @@
  *   2. the candidates are the members that name the target whose `owner_symbol_id` is that symbol;
  *      the type's KIND filter is applied first (`calls` → callable kinds, `uses` → member kinds), so
  *      a `uses` against a name a class carries as both a method and a property stays unresolved;
- *   3. exactly one candidate resolves. Zero candidates fall through to the ancestors; two or more
- *      decline, because "which one" is not something this pass is allowed to decide;
+ *   3. exactly one candidate resolves. Zero candidates fall through to the ancestors. TWO OR MORE
+ *      candidates of the SAME KIND are one member published more than once (python's annotation
+ *      beside its instance assignment, or `@overload` stubs beside the implementation), so they
+ *      resolve too, to the smallest id. Two or more candidates of DIFFERENT KINDS decline, because
+ *      "which one" between a method and a property is not something this pass is allowed to decide;
  *   4. the ANCESTOR walk uses `brain_symbol.super_types`, which the analyzers publish and this pass
  *      reads as the class's own statement of its heritage. A parent name that is ambiguous, or that
  *      names no symbol in this project, ends that branch — a class whose parent is outside the
@@ -84,6 +87,14 @@ export type MemberOwnerResolutionResult = {
   scanned: number
   /** Resolved because the owner itself declares the member. */
   ownerResolved: number
+  /**
+   * Of `ownerResolved`, the number that resolved over a SET of same-kind candidates that are the
+   * SAME member published more than once (python's `x: T` annotation beside `self.x = ...`, or a
+   * run of `@overload` stubs beside the implementation). Split out because it is a different fact
+   * from "the class declares the member exactly once", and folding it in would hide how much of
+   * the owner channel is answering a duplicate rather than a unique declaration.
+   */
+  sameKindDuplicateResolved: number
   /** Resolved because exactly one resolvable ancestor declares the member. */
   inheritedResolved: number
   /** Resolved in total (the two above). */
@@ -196,6 +207,7 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string): Memb
   const out: MemberOwnerResolutionResult = {
     scanned: 0,
     ownerResolved: 0,
+    sameKindDuplicateResolved: 0,
     inheritedResolved: 0,
     resolved: 0,
     ownerNotInPopulation: 0,
@@ -387,7 +399,36 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string): Memb
         out.resolved++
         continue
       }
-      if (direct.length > 1) { out.ambiguousInChain++; continue }
+      if (direct.length > 1) {
+        // SAME-KIND candidates are ONE member, and the rule is a fact about the CANDIDATES rather
+        // than about a language. A language can publish two symbols for a single member — python's
+        // `x: T` (class-body annotation, PEP 526) beside `self.x = ...` (instance assignment) is
+        // the measured shape, and a run of `@overload` stubs beside the implementation is the
+        // other — and when every candidate shares the owner's identity, the member name AND the
+        // kind, "which one" is not a choice between different declarations: they are the same
+        // member. Binding to any of them lands the edge on that member, so the pass resolves
+        // rather than declines, choosing the SMALLEST id as TEXT so the answer is stable across
+        // runs and resumable indexing.
+        //
+        // A candidate set with MORE THAN ONE KIND still DECLINES: a `uses` against a name a class
+        // carries as both a method and a property is a real ambiguity (two different members of
+        // one name), and picking between KINDS is exactly the guess this pass exists to refuse.
+        // php cannot reach the same-kind branch for a single class (it forbids two properties or
+        // two methods of one name) and python's whole admitted corpus reaches it on ~1,700 rows,
+        // which is why this is stated as a rule about the candidates and not as a language switch.
+        const kinds = new Set(direct.map((m) => m.kind))
+        if (kinds.size === 1) {
+          let pick = direct[0]!
+          for (const m of direct) if (m.id < pick.id) pick = m
+          update.run(pick.id, pick.id, row.id)
+          out.sameKindDuplicateResolved++
+          out.ownerResolved++
+          out.resolved++
+          continue
+        }
+        out.ambiguousInChain++
+        continue
+      }
       if (qualified) { out.notDeclared++; continue }
 
       // Rule 2: nothing in the owner itself — the member is inherited or foreign. BARE targets only:

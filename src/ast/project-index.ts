@@ -675,7 +675,7 @@ function addTo<K>(map: Map<K, Set<string>>, key: K, value: string): void {
 
 /** Read one already-parsed tree into `index`. Exported so a caller that already has
  *  a tree (a worker mid-file, a census) does not pay to parse again. */
-export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec): void {
+export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec, fileName?: string): void {
   // The owner is tracked by walking DOWN rather than by searching upward per member:
   // a tree walk that resolved each member's owner by scanning the whole file is the
   // shape that turns an index build into quadratic work, and this runs once per file

@@ -1620,7 +1620,7 @@ export async function processWithWorkerPool(
     // `.proto` ADDED 2026-10-11 (protobuf lane). The entry is INERT WITHOUT A SPEC: measured over the
     // whole corpus (847 .proto files), the Solidity default yields 0 names and 0 types — an entry that
     // indexes the right SHAPE and holds nothing, which is the dart situation one layer down.
-    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf" }
+    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss" }
     let projectIndexes: Record<string, unknown> | undefined
     try {
       const wanted = new Set<string>()
@@ -1641,6 +1641,7 @@ export async function processWithWorkerPool(
           solidity: path.join(repoRoot, "wasm", "tree-sitter-solidity.wasm"),
           fsharp: path.join(repoRoot, "wasm", "tree-sitter-fsharp.wasm"),
           protobuf: path.join(repoRoot, "wasm", "tree-sitter-protobuf.wasm"),
+          scss: path.join(repoRoot, "wasm", "tree-sitter-scss.wasm"),
         }
         // The SPEC is per language for the reason project-index.ts gives: the generic extractor
         // reads `childForFieldName("name")`, which is true of Solidity and false of F# three ways
