@@ -109,7 +109,12 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   // what the evidence supports; rulings NIMD4/NIMD5 in
   // script/m14/spec/nim-completeness.json.
   nim: "nim", nims: "nim", nimble: "nim",
-  java: "java", kt: "kotlin", kts: "kotlin", scala: "scala", sc: "scala", groovy: "groovy",
+  java: "java", kt: "kotlin", kts: "kotlin", scala: "scala", sc: "scala",
+  // `.sbt` ADDED — the Scala Build Tool's own format, which IS Scala source (an sbt file is a Scala program
+  // against the sbt DSL). MEASURED by the scala lane: 163 corpus files, routed to NOTHING. Same defect class
+  // as `.cts` and `.graphqls` — the file is read, answered with the fallback, and produces no symbols while
+  // APPEARING in the population. `.ktm` is deliberately NOT added: the lane measured 0 files for it.
+  sbt: "scala", groovy: "groovy",
   // M49 W21 (#850): Gradle's Groovy DSL. `.gradle` had NO registry entry, so every
   // `build.gradle`/`settings.gradle` was rejected by detectLanguage before a grammar
   // was chosen — the largest real-world Groovy surface (454 files in grails-core alone)
@@ -134,7 +139,13 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   // tree and recovery keeps symbols flowing through the ERROR regions — which is what
   // made a 68.8 %-unparseable corpus read as a pass. Nothing now claims to have
   // analyzed them; if a Cython grammar is ever vendored, this is the line it changes.
-  rb: "ruby", php: "php", lua: "lua", pl: "perl", pm: "perl", t: "perl", perl: "perl",
+  rb: "ruby",
+  // `.phpt` ADDED — the PHP test-file format, PHP source with an expected-output section. MEASURED by the php
+  // lane: 1,314 corpus files, routed to NOTHING.
+  // `.inc` IS DELIBERATELY NOT ADDED (61 files): `.inc` is genuinely ambiguous across languages — PHP include,
+  // Pascal include, assembly include — and this table's own rule is that a format is declared on measurement,
+  // not on the extension's existence. 61 files do not justify guessing which language they are.
+  php: "php", phpt: "php", lua: "lua", pl: "perl", pm: "perl", t: "perl", perl: "perl",
   ex: "elixir", exs: "elixir", erl: "erlang", hrl: "erlang",
   hs: "haskell", lhs: "haskell", icl: "clean", dcl: "clean", clj: "clojure", cljs: "clojure", cljc: "clojure", edn: "clojure",
   swift: "swift", dart: "dart", cs: "csharp", csx: "csharp", vb: "vb", fs: "fsharp", fsi: "fsharp", fsx: "fsharp",
