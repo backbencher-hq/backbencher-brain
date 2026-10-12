@@ -1172,6 +1172,55 @@ instruments (enumerator above, four-clause gate below) complete at the default h
 one language. Reported-not-fixed: the gate is shared, and the fix belongs in how it is launched or in
 its per-project index lifecycle, not in a lane's edit.
 
+## ROUND 19 — `**/testData/**` MATCHES `testdata/` CASE-INSENSITIVELY: **this lane's verdict was ALREADY on the larger population**, and the 7,065 files carry 122 of the 184
+
+**THE FLEET FINDING.** The `ignore` package matches `**/testData/**` case-insensitively, so the glob
+swallows lowercase `testdata/`; the shared globs sit at `fingerprint.ts:106` and
+`parallel-indexer.ts:1127` (the INDEXER's discovery). The fleet census: 12,479 routed-extension files,
+of which **6,979 `.yaml` + 86 `.yml` = 7,065** are this lane's.
+
+**1. THIS LANE'S DISCOVERY DOES NOT USE THE GLOB — so the verdict never lost those files.**
+`incoming-gate.ts` admits with `git ls-files` (`:312`), and so does every instrument in this lane. The
+arithmetic closes on the recorded numbers: **18,999 tracked `.yaml/.yml` − 630 absent − 5 over the
+1 MB cap = 18,364 admitted**, and a path census of that admitted set finds **7,065 files under a
+lowercase `testdata/` component, `.yaml` 6,979 + `.yml` 86** — the census's numbers to the digit, by
+extension included. **The 7,065 were always inside the population every yaml number was measured on.**
+
+**2. THE CASE-INSENSITIVITY, CONTROLLED ON THE PACKAGE ITSELF** (`ignore-case-control.mjs`):
+`**/testData/**` **ignores** `src/testData/foo.yaml`, `src/testdata/foo.yaml` **and**
+`src/TESTDATA/foo.yaml`, and `**/perf/**` ignores `src/perf/bar.yaml`. The glob written in camelCase
+excludes three spellings nobody wrote.
+
+**3. THE OTHER CAMELCASE GLOBS, PRICED FOR THIS LANE** (`**/perf/**`, `**/Microbenchmarks/**`,
+`**/wwwroot/**`, `**/testassets/**`, `**/benchmarkapps/**`, `**/coverage/**`): under a case-folding
+component the counts are `coverage` **1**, and `perf` / `microbenchmarks` / `wwwroot` / `testassets` /
+`benchmarkapps` **0** each. **`**/testData/**` is the only one that matters here**, and it matters a lot.
+
+**4. WHAT THE 7,065 CONTRIBUTE — AND THE RESIDUAL IS NOT POPULATION-INVARIANT HERE**
+(`lowercase-testdata-subset.txt`, the enumerator restricted to those files):
+
+| | 7,065 testdata files | share of the lane |
+|---|---|---|
+| edges | **375,977** | **26.6 %** of 1,414,579 |
+| `contains` | 372,755 | |
+| `references` | 3,160 (2,578 resolved, **122 amb**) | |
+| `imports` / `overrides` | 51 / 11 | |
+| **amb(decl)** | **122** | **117 `test`** (k8s pod-security-admission testdata) + **5 `default`** (k8s `pkg/apis/core/v1/testdata/`) |
+| **unresolved** | **0** | the 47 come from elsewhere |
+| extFAIL | **0** | |
+
+**So the 184 is NOT invariant to this population — it GROWS with it.** On the indexer's smaller
+population the residual would read **62** (15 ambiguous + 47 unresolved); on the gate's larger
+population it reads **184**. **The recorded 184 is the LARGER-population number, and for a verdict about
+the ANALYZER that is the conservative direction**: it counts edges the product's own walk would never
+see, and it says so.
+
+**5. ARE THE LOWERCASE `testdata/` DIRECTORIES DISPOSABLE? NO, and the price says so.** They hold
+**26.6 % of this lane's edges** — k8s's pod-security-admission fixture corpus, `pkg/apis/*/testdata`,
+compose/consul integration fixtures. A rule that drops a quarter of a lane's edges should be a
+DECISION, not a library default: either the glob matches what it was written as (camelCase, per the
+Lead's ruling), or the product states that all test data is excluded and records that choice.
+
 ## COMPLETION PACKAGE — current revision
 
 Whole admitted population: **1,414,582 edges · 18,364 files · 189 repos · 0 failed · 0 degraded.**
