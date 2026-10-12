@@ -509,6 +509,24 @@ MUTANTS = [
         "new": '      // MUTANT round14: the module half publishes per site',
         "expect": "CAUGHT",
     },
+    # ---------------------------------------------------------------- round 15 (PY-D31 narrowed)
+    {
+        "id": "round15/guard-reads-file-wide-import-channel",
+        "what": "THE ROUND-14 STATE restored: the publication guard consults the FILE-WIDE import channel again, so a name a FUNCTION-LOCAL import binds blocks a module-scope publication — the declared asymmetry PY-D31 recorded, and 2 of the 14 priced provision names corpus-wide (`cython/Cython/Build/__init__.py`'s `build_ext`, `_text.py`'s `codecs`). Caught by the fixture's `SHADOWED_BY_LOCAL_IMPORT` row, whose count goes 1 -> 0",
+        "old": '''      const r = im.range as any
+      const line: number | null = typeof r?.startLine === "number" ? r.startLine
+        : typeof r?.start?.line === "number" ? r.start.line : null
+      if (line !== null && !moduleScopeImportLines.has(line)) continue''',
+        "new": '      // MUTANT round15: the file-wide import channel (the pre-narrowing read)',
+        "expect": "CAUGHT",
+    },
+    {
+        "id": "round15/guard-ignores-import-channel-entirely",
+        "what": "THE OVER-CORRECTION, pinned: the channel check dropped instead of SCOPED, so a name the file imports at MODULE scope is published as a second declaration of the same spelling in the same scope — the ambiguity the guard exists to prevent. Caught by the fixture's `path` forbid row (bound by `from os import path as MODULE_SCOPED_IMPORT`)",
+        "old": '      if (line !== null && !moduleScopeImportLines.has(line)) continue',
+        "new": '      // MUTANT round15: the import channel not consulted at all',
+        "expect": "CAUGHT",
+    },
 ]
 
 

@@ -3831,6 +3831,18 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   private publishScopeBinderBindings(rootNode: Node, ctx: PythonContext): void {
     type Pending = { name: string; node: Node; boundBy: string; className: string | null }
     const pending: Pending[] = []
+    // WHICH IMPORT STATEMENTS ARE ABOUT THE MODULE NAMESPACE (round 15, PY-D31's narrowing). The
+    // publication guard below reads the file-wide import channel, so a name a FUNCTION-LOCAL import
+    // happens to bind blocked a module-scope publication — the guard's own sentence says "a
+    // module-scope declaration (or an import-bound name)", and a local import is neither. The walk
+    // already knows the answer: it never enters a function body (it `continue`s on one, below) and it
+    // sets `currentClass` inside a class body, so any import statement popped HERE with no class open
+    // is a module-scope import by construction. PRICED BEFORE THE CHANGE with CPython over the corpus
+    // (`.tmp-py/price-guard-narrowing.py`, `guard-narrowing-price.json`): the guard drops exactly 2
+    // candidates corpus-wide (`build_ext`, `codecs`), both PROVISIONS and both dropped by a
+    // function-local import, while the BINDER half loses ZERO rows — so the narrowing publishes 2
+    // symbols and moves no round-12 number, which is what the previous round could not say.
+    const moduleScopeImportLines = new Set<number>()
     const stack: Array<{ node: Node; isExit?: boolean; setClass?: string | null }> = [{ node: rootNode }]
     let currentClass: string | null = null
     while (stack.length > 0) {
@@ -3873,6 +3885,12 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             this.collectBinderNames(this.asBindingTarget(n), "except", currentClass, pending)
             break
           }
+          case "import_statement":
+          case "import_from_statement": {
+            const importLine = this.nodeLine(n)
+            if (currentClass === null && typeof importLine === "number") moduleScopeImportLines.add(importLine)
+            break
+          }
         }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -3897,8 +3915,20 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         ownerless.add(s.name)
       }
     }
+    // MODULE-SCOPE IMPORTS ONLY, and every shape the two import handlers build is read exactly as
+    // they write it: `import a.b` contributes the ROOT (`a`), `import a.b as c` contributes BOTH `c`
+    // and `a`, and `from m import a, b` contributes the ITEM names — never a bound alias, because the
+    // `as` name rides the item's relationship metadata and not the ImportInfo the channel is built
+    // from. That asymmetry is measured rather than assumed: `from os import sep as X` puts `sep` in
+    // the channel and not `X`, which is why round 14 had to pin both spellings in the fixture. An
+    // import row with no line (never observed in this lane, both handlers set `range`) is kept — a
+    // missing position must not silently WIDEN the publication, so it is treated as module scope.
     const imported = new Set<string>()
     for (const im of ctx.imports) {
+      const r = im.range as any
+      const line: number | null = typeof r?.startLine === "number" ? r.startLine
+        : typeof r?.start?.line === "number" ? r.start.line : null
+      if (line !== null && !moduleScopeImportLines.has(line)) continue
       if (im.alias) imported.add(im.alias)
       if (im.module && im.isNamespaceImport) imported.add(im.module.split(".")[0]!)
       if (!(im.items ?? []).includes("*")) {
@@ -3985,14 +4015,15 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    *     `in {"to_bytes", "to_native", "to_text"}` is a SET, which the first version of this method
    *     refused — 3 names it published nothing for);
    *   - of the 14, **1 is already statically bound in its own file** (cython's `gs`, published at L706)
-   *     and **2 are already in the file's import channel** — `_text.py`'s `codecs` (the local
-   *     `import codecs` written INSIDE the branch that provides it) and `Build/__init__.py`'s
-   *     `build_ext`; so the publication is **11 symbols**;
+   *     and 2 more were in the file's import channel — `_text.py`'s `codecs` (the local `import codecs`
+   *     written INSIDE the branch that provides it) and `Build/__init__.py`'s `build_ext`. ROUND 15
+   *     NARROWED that guard to module-scope imports, which is the rule's own sentence, so those 2 are
+   *     published as well and the count is **13 of the 14**;
    *   - **2** of the 14 are the verdict's `__all__` rows (`HIGHLIGHTS_QUERY`, `TAGS_QUERY`).
    *
    * VERIFIED on the shipped analyzer, not asserted: `.tmp-py/census-getattr-provisions.mts` walks
-   * EXACTLY the 6 files the price names and prints 11 published, 0 unexplained misses, and
-   * `14 - 1 - 2 = 11` as its own last line.
+   * EXACTLY the 6 files the price names and prints **13 published, 0 unexplained misses**, with the
+   * only drop the one statically-bound name.
    *
    * WHAT IS READ, exactly: the comparison's left side must be the function's OWN parameter name (not
    * the literal word `name` — 18 of the 26 files name their parameter something else, `_text.py`

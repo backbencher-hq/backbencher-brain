@@ -293,13 +293,24 @@ other 22 lanes need.
    declaration" — was a MODEL reading of `resolveTargetStmt`'s `ORDER BY`.
    `validation/m14/fixtures/graphql/store-binding-truth.mts` now copies the corpus into a project root,
    indexes it through the PRODUCTION indexer, and reads each binding off
-   `brain_relationship.target_symbol_id`: over the whole index **all 60,333 `own-once` edges bound exactly
-   the own-file declaration — 0 bound elsewhere and 0 bound to nothing** (contains 14,855 · uses 8,516 ·
-   references 33,934 · implements 3,028), and `own-many` bound in-file 45,035 of 45,035, so the clause
-   ORDER is confirmed and not only its first clause. Two things the probe surfaced and did not smooth:
-   **all 9,643 `overrides` edges classify `own-none` (the edge's own file declares the target name zero
-   times) yet 9,641 bound to a symbol IN that file** — the analyzer's override target is not the
-   declaration's `name`, so the type is reported-not-scored; and **254 of 2,008 copied files never reached
+   `brain_relationship.target_symbol_id`: over the whole index **all 61,334 `own-once` edges bound exactly
+   the own-file declaration — 0 bound elsewhere and 0 bound to nothing** (contains 15,253 · uses 8,686 ·
+   references 34,276 · implements 3,119), and `own-many` bound in-file 45,672 of 45,672, so the clause
+   ORDER is confirmed and not only its first clause. (Those are the POST-fix store's numbers; the pre-fix
+   run, before `1c530e78b` admitted 156 more files, read 60,333 / 45,035.)
+   **The probe's first key was WRONG, and the mistake is left visible rather than swapped out.** The first
+   version matched the edge's target against `brain_symbol.name` alone and therefore reported a
+   "disagreement": all 9,643 `overrides` edges classified `own-none` yet 9,641 bound to a symbol in the
+   edge's own file. That was the INSTRUMENT, not the analyzer. A declaration answers to three spellings —
+   (a) the symbol's `name`, (b) its `qualified_name` (the ALIAS of the same declaration, which the lane's
+   own probe already bumps as a key), and (c) `extractLeaf(target)` against `name` (the key
+   `resolveTargetStmt` is queried with). Measured on the same store: **(a) 61,334 · (b) 69,907 · (c) 273**
+   edges, and **every one of the 131,514 own-file-determinate edges bound its own-file declaration — 0
+   bound elsewhere, 0 bound to nothing** (pre-fix: 60,333 · 68,773 · 273 = 129,379). So the lane's own
+   TABLE 4 was never wrong; the store probe was.
+   The lesson is general and is why the artifact now carries both axes: an instrument whose key does not
+   match the resolver's reports phantom anomalies, and it reports them confidently.
+   Two things the probe surfaced and did not smooth: **254 of 2,008 copied files never reached
    the store**, now charged rule by rule with **0 left unexplained**: **156** to the built-in ignore glob
    `**/testData/**`, which swallows the corpus's lowercase `testdata/` because the `ignore` package
    (5.3.2) matches case-insensitively by default (measured: `ignores("x/testdata/a")` is `true`,
@@ -317,10 +328,15 @@ other 22 lanes need.
    overrides 18,162 · exports 13,746 · implements 3,979) — three quarters of the size of the graph this
    language publishes today, from ONE map entry in `language-detection.ts`. It is NOT this lane's to make:
    the gate selects its corpus with `detectLanguageFromPath`, so the entry moves this lane's own file
-   population (1,911 to ~2,008) and every published number over it. The other refusal is a rule, not a
-   defect: the 156 `testdata` files are 3,575 relationships on test fixtures, and the case-folded glob sits
-   beside a rule that deliberately KEEPS `/test/` and `/tests/` (1,056 `.graphql` files under a test segment
-   are in the store), so narrowing it is a product call with a number attached.
+   population (1,911 to ~2,008) and every published number over it. **The other refusal was a defect and is
+   now FIXED**: the 156 `testdata` files are 3,575 relationships on test fixtures, the glob matched
+   case-insensitively so it swallowed the corpus's lowercase `testdata/` while keeping `/test/` and
+   `/tests/` (1,056 `.graphql` files under a test segment — deliberately kept, measured), and the shared
+   indexer landed `1c530e78b` (`ignorecase: false`, four construction sites) the same afternoon, citing
+   this lane's 156 as one of its three confirmations. **Its falsifier is this lane's post-fix store run:
+   1,754 → 1,909 files admitted and 257,279 → 261,745 relationship rows**, with the own-file-determinate
+   class moving 129,379 → 131,514 and the refusal count 254 → 99 (97 `.graphqls` + 1 `/​generated/` + 1 file
+   spelled with the capital-D `testData` the rule was written for).
 1. ~~**The enum blocker — affects every lane, both laptops.**~~ **REFUTED 2026-10-07, on the
    current tree, by the file itself.** `src/ast/types.ts:84` reads `Imports = "imports"` (the
    change landed in `3ebe0fb38`), and the comment above it records the same refutation from
@@ -3119,7 +3135,7 @@ whose cause no longer describes the measured set is a false statement that still
 
 ### 4. An asymmetry DECLARED, and a harness invariant that forced a fixture rewrite
 
-- **PY-D31 (declared).** The publication guard reads `ctx.imports` FILE-WIDE, so a name a
+- **PY-D31 (declared; NARROWED IN ROUND 15, below).** The publication guard reads `ctx.imports` FILE-WIDE, so a name a
   **function-local** import binds is not published: `cython/Cython/Build/__init__.py`'s `build_ext`
   (imported inside the very branch that provides it) and `_text.py`'s `codecs` are the 2 dropped names,
   while the same situation spelled `from os import sep as X` publishes `X` because the channel holds the
@@ -3156,8 +3172,8 @@ whose cause no longer describes the measured set is a false statement that still
 
 - **The 5 `exports`** — 4 SUBMODULE rows (PY-D29, the resolution layer's, since it has the filesystem)
   and 1 stale `__all__` (PY-D30). Neither is publishable from a single file's text.
-- **PY-D31's narrowing** — needs the same price every other change here got: how many binder rows and
-  how many RESOLVED/AMBIGUOUS splits move if the guard reads only module-scope imports.
+- **PY-D31's narrowing** — **CLOSED IN ROUND 15 (below)**: priced at exactly 2 candidates and 0 binder
+  rows, then narrowed; the whole-population effect is +2 symbols and one `uses` cell.
 - **PY-D26** unchanged: 17 provenance keys published, 1 carried across the worker allowlist, no
   store-level reader for `boundByBinder` yet — so the mechanism is pinnable analyzer-side only.
 - **The module half's per-name publication**, with its price in hand (58 names, 90 extra symbols — round
@@ -3169,6 +3185,74 @@ whose cause no longer describes the measured set is a false statement that still
   field label from round 11, PY-D13's store half, round 3's D5, and the cross-lane gate debts (45
   undeclared label-coverage gaps in 20 lanes, 5 undeclared no-truth labels in 5 lanes) that are other
   lanes' to close.
+
+## python round 15 (2026-10-12) — round 14's own declared deferral is PRICED and CLOSED: the guard now reads module-scope imports, and the price said the row it feared does not exist
+
+Round 14 declared one asymmetry rather than fixing it, with the reason in writing: the publication
+guard read the file-wide import channel, so a name a FUNCTION-LOCAL import binds blocked a module-scope
+publication, and the same situation spelled with `as` published — because the channel holds the imported
+ITEM name and not the bound alias. The deferral's stated blocker was that the same guard serves round
+12's binder rows, whose sensitivity to the change was unmeasured. This round measured it first.
+
+### 1. The price, and what it refuted
+
+`.tmp-py/price-guard-narrowing.py` mirrors the SHIPPED channel construction rather than an idea of it —
+`import a.b` contributes its ROOT, `import a.b as c` contributes BOTH, `from m import a, b` contributes
+the ITEM names and never a bound alias — and collects the candidates the walk would publish at module
+scope (the `for`/`with as`/`except as` targets plus the names PY-D28 reads). Over 11,245 parsed files
+(55 CPython rejects) it reads: the guard drops **exactly 2** candidates corpus-wide — `build_ext` and
+`codecs`, both provisions, both dropped by a function-local import — and the **binder half loses ZERO
+rows**. The round-14 blocker is therefore refuted by its own instrument: narrowing moves no round-12
+number, so there was nothing left to weigh against the 2 names it costs.
+
+### 2. The fix uses what the walk already knew
+
+The walk never enters a function body (it skips them) and it sets `currentClass` inside a class body, so
+any import statement it pops with no class open is module scope BY CONSTRUCTION. Those lines go into
+`moduleScopeImportLines` and the guard consults only channel entries whose statement is in it. An import
+row with no line — never observed, both handlers set `range` — is KEPT, so a missing position cannot
+silently widen the publication; the conservative direction is preserved.
+
+### 3. Measured on the whole population, against the committed artefact
+
+`totalSymbols` **206,951 → 206,953** (+2, exactly the priced names), `totalRelationships` unchanged at
+1,290,653, every label's edge count unchanged, every label's `unexplained` unchanged (`exports` still
+5), and **exactly ONE resolution cell moved**: `uses` at project scope, `RESOLVED 46,922 → 46,923` and
+`EXTERNAL 155 → 154` — a row whose target had no declaration in the corpus to bind to now has one. Every
+`AMBIGUOUS` count is IDENTICAL, so publishing these 2 names created no second declaration of any
+spelling already present: that was the only real risk, it is the guard's own purpose, and it did not
+materialise. The row itself is not pinned by name (the verdict's `examples` are a sample of 6; pinning
+one row needs a per-axis dump = another whole-population run) — the CELL and its direction are what this
+round pins.
+
+### 4. Verified together, and falsifiable in both directions
+
+- fixtures **52/52** (exit 0): the fixture gained the guard's own case — `path`, bound by a MODULE-scope
+  `from os import path as MODULE_SCOPED_IMPORT`, stays a FORBID — and `SHADOWED_BY_LOCAL_IMPORT` flipped
+  from `expectSymbolCount: 0` to `1`, so the narrowing is pinned by a count in both directions.
+- mutants **61 caught · 0 survived · 0 not applied** (exit 0, control green): two new —
+  `round15/guard-reads-file-wide-import-channel` (the round-14 read restored) and
+  `round15/guard-ignores-import-channel-entirely` (the over-correction that DROPS the check instead of
+  scoping it, caught by the new `path` forbid).
+- `npx tsc --noEmit` exit 0; the verdict gate exit 0 with the `exports` ceiling still 5; the corpus
+  census `.tmp-py/census-getattr-provisions.mts` now reads **13 published, 0 unexplained misses**, with
+  the 2 formerly-masked names REQUIRED to be published rather than excused.
+- spec **PY-D31: DECLARED → FIXED**, with the price, the cells and the unpinned row all written down.
+- round 14's source comment claimed "11 published" and the gate's cause said 11; both now read 13 with
+  the narrowing named, because a figure that no longer describes the measured set is a false statement
+  that still passes.
+
+### 5. Still open after round 15
+
+- **The 5 `exports`** — 4 SUBMODULE rows (PY-D29) and 1 stale `__all__` (PY-D30), unchanged and still
+  decisions rather than work items.
+- **PY-D26** unchanged: 17 provenance keys published, 1 carried across the worker allowlist, and no
+  store-level reader for `boundByBinder` — so the mechanism stays pinnable analyzer-side only.
+- **The module half's per-name publication (58 names, 90 symbols)** and the 42 rows in files CPython
+  cannot parse (named per row by the axis gate), the `(x): int` field label, PY-D13's store half and
+  round 3's D5 — all unchanged.
+- **The one moved `uses` row is not identified by name.** Saying so is the honest form of the claim: the
+  cell and its direction are measured, the row would need a per-axis dump of the whole population.
 
 ## Totals today
 

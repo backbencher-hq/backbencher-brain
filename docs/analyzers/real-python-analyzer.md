@@ -1138,9 +1138,39 @@ by nothing at all; corpus-wide, 3,043 `__all__` entries reduce to 6 stale and 6 
 
 **One declared asymmetry** (PY-D31): the publication guard reads the file-wide import channel, so
 `cython/Cython/Build/__init__.py`'s `build_ext` — provided by the very branch that imports it locally —
-is not published, while the same situation spelled with `as` is. Measured at 2 of the 14 priced names
-and 0 verdict rows; narrowing it would also move round 12's binder-row count, whose sensitivity is
-unmeasured, so **both spellings are pinned by the fixture** and the narrowing waits for its own price.
+is not published, while the same situation spelled with `as` is. Round 14 declared it at 2 of the 14
+priced names and 0 verdict rows, and deferred the narrowing with the reason stated: narrowing it would
+also move round 12's binder-row count, whose sensitivity was unmeasured. **Round 15 priced it and
+narrowed it** — see the next section.
+
+### The guard is scoped to module-scope imports, and the price said the binder rows do not move
+### (round 15, 2026-10-12)
+
+`.tmp-py/price-guard-narrowing.py` mirrors the SHIPPED channel construction (`import a.b` contributes
+its ROOT, `import a.b as c` contributes BOTH, `from m import a, b` contributes the ITEM names and never
+a bound alias — the asymmetry round 14 had to pin), computes the candidates the walk would publish at
+module scope (the binder targets plus the PY-D28 provisions), and reads over 11,245 parsed files: the
+guard drops **exactly 2** candidates corpus-wide (`build_ext`, `codecs`), both provisions and both by a
+function-local import, while the **binder half loses zero rows**. That is what retired the round-14
+worry — by measurement, not argument.
+
+The fix uses what the walk already knows: it never enters a function body and it sets `currentClass`
+inside a class body, so any import statement it pops with no class open is module scope by
+construction, and those lines go into `moduleScopeImportLines`, which the guard now consults. An import
+row with no line (never observed here — both handlers set `range`) is KEPT, so a missing position
+cannot silently widen the publication.
+
+Measured against the committed artefact: `totalSymbols` **206,951 → 206,953** (+2, exactly the priced
+names), every edge count unchanged (1,290,653), every label's `unexplained` unchanged (`exports` still
+5) and **exactly one resolution cell moved** — `uses` at project scope, `RESOLVED 46,922 → 46,923` and
+`EXTERNAL 155 → 154`, because `codecs` is a name nothing declared before and one thing declares now.
+No `AMBIGUOUS` count moved anywhere: the 2 publications created no second declaration of any existing
+spelling, which is the risk the guard exists against and why the fixture now pins a
+module-scope-import row (`path`) as a **forbid**. The fixture's `SHADOWED_BY_LOCAL_IMPORT` row flipped
+from `expectSymbolCount: 0` to `1`, and two mutants are CAUGHT — the round-14 file-wide read restored,
+and the over-correction that drops the channel check instead of scoping it. Fixtures **52/52**, mutants
+**61/61 caught**, `tsc --noEmit` clean, the verdict gate still passing with its `exports` ceiling at 5,
+and the round-14 provision count corrected from 11 published to **13**.
 
 Fixtures **52/52**, mutants **59/59 caught** with 0 survivors (9 new, including the restored annotated
 refusal, the restored hardcoded `name` spelling, the restored set refusal, the deny-list publication,

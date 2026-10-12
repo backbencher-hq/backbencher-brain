@@ -16,7 +16,7 @@ defects behind them, see [`reviews/python/master-review.md`](../../reviews/pytho
 | Mutants | **59, none surviving** (`python3 script/m14/python-implements-mutants.py`: 59 caught · 0 survived · 0 not applied) |
 | Completeness | **127 named node types classified** — 71 handled-verified, 56 internal-silent, **0 gaps**, **30 design decisions** (`script/m14/spec/python-completeness.json`, re-read by `npx tsx script/m14/completeness-inventory.ts --lang python` → sections A–H **8/8**; the file is ASCII-only) |
 | Regex | **0 executable regex literals**, 0 `new RegExp(`, 0 `RegExp` — verified by stripping comments and strings first. **Caveat:** `clean-completeness-gate.ts` §4a hardcodes the `clean` lane and does not check this one, and the committed M12 census record is stale for python (`STALE … :589:/^@/`, a regex since removed) — see `reviews/regex-policy.md` |
-| Corpus | **11,488 files, 206,951 symbols, 1,290,653 relationships, 0 parse failures** — `validation/m14/fixtures/python/resolution-verdict.current.json`, re-measured 2026-10-12 (round 14). **42 rows still live in files CPython itself rejects** (ASN.1 documents and a py2 build script carrying a `.py` extension, a highlighter fragment) and are declared as a file-level residual rather than counted as damage |
+| Corpus | **11,488 files, 206,953 symbols, 1,290,653 relationships, 0 parse failures** — `validation/m14/fixtures/python/resolution-verdict.current.json`, re-measured 2026-10-12 (round 15). **42 rows still live in files CPython itself rejects** (ASN.1 documents and a py2 build script carrying a `.py` extension, a highlighter fragment) and are declared as a file-level residual rather than counted as damage |
 | Independent oracle | **Ten labels emitted, all ten under an independent derivation**, and the differential's two lanes read `covered=100% MISSING=0 unexplained=0` (cython rotation + the fixed 37-file `requests` corpus). Incoming `UNEXPLAINED` over the whole population is **5, all in `exports`** — 4 SUBMODULE rows and 1 stale `__all__` row, each named below — and **0** for the other nine labels; outgoing (source) unresolved is **0** for all ten |
 
 Every figure in this table is an instrument reading taken on **2026-10-12** (round 14). Rows added
@@ -98,9 +98,10 @@ export.
 Priced before the code existed, and the price is what found two bugs in the first version of the rule:
 of 11,245 parsed corpus files, **26** define a module-level `__getattr__`, **6** of them spell literal
 names (**20** spell none — they forward to `globals()`, build a dict, or import dynamically), and those
-6 hold **14** names. One is already statically bound in its own file, 2 are already in the file's import
-channel, so the rule publishes **11 symbols** — checked by walking exactly those files rather than
-asserted. Both measured defects are pinned as mutants: the annotated spelling (`def __getattr__(name:
+6 hold **14** names. One is already statically bound in its own file, so the rule publishes **13
+symbols** — checked by walking exactly those files rather than asserted. (Round 14 read 11 there,
+because 2 of the 14 were masked by the publication guard's file-wide import channel; round 15 scoped
+that guard to module-scope imports, priced at exactly those 2 names and **zero** binder rows.) Both measured defects are pinned as mutants: the annotated spelling (`def __getattr__(name:
 str)`, 6 of the 26 files) was refused outright, and the **set** spelling
 (`ansible/module_utils/_text.py`'s `elif importable_name in {"to_bytes", …}`) published nothing.
 
@@ -118,12 +119,18 @@ str)`, 6 of the 26 files) was refused outright, and the **set** spelling
   statement being read, and a stale entry is a fact about the source that a consumer would most want
   flagged. Corpus-wide, 3,043 `__all__` entries reduce to 6 such rows and 6 submodule rows.
 
-One asymmetry is **declared rather than fixed** (PY-D31): the guard that keeps a published binding
-from shadowing a declaration reads the file-wide import channel, so a name a **function-local** import
-binds (`cython/Cython/Build/__init__.py`'s `build_ext`) is not published, while the same situation
-spelled with `as` is. Blast radius measured: 2 of the 14 priced names, 0 verdict rows; narrowing it
-also moves round 12's binder-row count, whose sensitivity is unmeasured, so both spellings are pinned
-by the fixture and the narrowing waits for its own price.
+`PY-D31` is the one place this contract was **narrowed after being declared**. The guard that keeps a
+published binding from shadowing a declaration read the **file-wide** import channel, so a name a
+function-local import binds (`cython/Cython/Build/__init__.py`'s `build_ext`, `_text.py`'s `codecs`)
+was not published although a local import binds a *local* and states nothing about the module
+namespace. Round 14 declared the pair with its price; round 15 priced the narrowing — exactly those 2
+names and **zero** binder rows, which retired the worry that it would move a round-12 number — and
+fixed it by recording the lines of the import statements the walk itself pops with no class open. The
+whole-population effect is **+2 symbols, every edge count unchanged, and exactly one resolution cell
+moved** (`uses`, project scope: RESOLVED 46,922 → 46,923, EXTERNAL 155 → 154 — a row that had no
+declaration to bind to now has one). **No `AMBIGUOUS` count moved anywhere**, which is the guard's own
+purpose: a name the file already imports at module scope is still refused, and the fixture pins that
+direction as a forbid.
 
 ## Declared boundaries
 
