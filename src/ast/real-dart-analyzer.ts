@@ -3983,6 +3983,37 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     while (stack.length > 0) {
       const n = stack.pop()!
       const t = n.type
+      // A TYPED for-in VARIABLE (`for (Element e in xs)`, `for (final Element e in xs)`,
+      // `await for (final Element e in stream)`) — the type is WRITTEN IN THE SOURCE and this
+      // pass was not reading it, so `e.poke()` published a bare `poke` with
+      // `receiverCause: receiverTypeUnknown` (measured: .tmp-probe/dartgate/typed-head-probe.mts
+      // case D). The shape is `for_loop_parts (final_builtin)? (type_identifier) name: (identifier)
+      // value: (identifier)` and the guard is what keeps this rule OFF the C-style loop, which
+      // has NO name/value fields at all (`for_loop_parts init: … condition: … update: …`) and
+      // OFF the pattern form (`for (final (int n, Element e) in xs)` → a `record_pattern`, no
+      // name field), whose bindings DARTGAP1 already re-scoped by measurement. `inferred_type`
+      // is the grammar's spelling of `var`/`final`-without-a-type, and it DECLINES here for the
+      // same reason `var x = make()` does: nothing in the source names the type.
+      if (t === "for_loop_parts") {
+        const nameNode = n.childForFieldName?.("name")
+        const iterable = n.childForFieldName?.("value")
+        const inferred = (n.namedChildren ?? []).some((c: any) => c?.type === "inferred_type")
+        if (nameNode && iterable && !inferred) {
+          const nameIdx = (n.namedChildren ?? []).findIndex(
+            (c: any) => c && c.startIndex === nameNode.startIndex && c.endIndex === nameNode.endIndex,
+          )
+          for (let i = 0; i < nameIdx; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "type_identifier") {
+              // Type arguments are dropped exactly as `extractParameters` drops them (`List<int> e`
+              // records `List`), so this reader and the parameter reader agree by construction.
+              const plain = stripNullableSuffix(c.text)
+              if (isPlainIdentifier(plain)) out.set(nameNode.text, plain)
+              break
+            }
+          }
+        }
+      }
       if (t === "local_variable_declaration" || t === "declaration" || t === "initialized_variable_definition") {
         const name =
           n.childForFieldName?.("name")?.text ??
@@ -4471,7 +4502,19 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private extractParameters(node: Node): ASTEngine.Parameter[] {
     const out: ASTEngine.Parameter[] = []
-    const paramsNode = this.findChildByType(node, "formal_parameter_list")
+    // A `formal_parameter_list` IS ACCEPTED AS ITSELF, not only as a child of a signature.
+    //
+    // The traversal hands this reader a body's PREVIOUS NAMED SIBLING, and for an ANONYMOUS
+    // CLOSURE that sibling IS the list: tree-sitter-dart writes `function_expression
+    // parameters: (formal_parameter_list …) body: (function_expression_body …)`, so the body's
+    // previous named sibling is the list and nothing else is (probed:
+    // .tmp-probe/dartgate/lambda-shape.mts, cases B/C/J). Searching for a child list INSIDE the
+    // list found nothing, so every closure parameter stayed untyped while the identical method
+    // parameter published `Element.poke` — measured through the production path in
+    // .tmp-probe/dartgate/typed-head-probe.mts (case A `Element.poke`, cases B/C/J bare
+    // `poke`/`id` with `receiverCause: receiverTypeUnknown`). A local function is NOT affected:
+    // its body's sibling is a real `function_signature`, which this reader already handled.
+    const paramsNode = node.type === "formal_parameter_list" ? node : this.findChildByType(node, "formal_parameter_list")
     if (!paramsNode) return out
     const stack: Node[] = [paramsNode]
     while (stack.length > 0) {

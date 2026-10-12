@@ -5491,11 +5491,16 @@ it, so it holds the mapping that makes it unique; `isIndexResolved` is that mark
 LEVER 3 — NEEDS THE RECEIVER'S TYPE (a bare member read or call: no qualifier, nothing local to name)
    uses  isMemberRead                         301,464
    calls (no marker)                          234,043
-   uses  isInterpolationRead                   70,482
-   uses  isSubscriptBase                       11,609
+   uses  isInterpolationRead                   70,482   uses isSubscriptBase                       11,609
    calls isCascade / isLocalRead                4,791
                                                 --------
                                                622,389   48.9 %
+
+   // PRICED AT HEAD in the section below (`LEVER 3, priced at HEAD`): this row groups by MARKER,
+   // and `isMemberRead` mixes four different causes. The cause key splits it, and the split says
+   // 54.6 % of bare rows are the typing gap proper — of which 34.6 % are namable from the file
+   // itself and 2.6 % bind with nothing outside it.
+
 
 LEVER 4 — TYPE-NAME AND HERITAGE COLLISIONS
    instantiates (no marker) + isConstructorInvocation  48,002
@@ -5546,6 +5551,119 @@ from silently reverting them to ambiguous. The caller's test is now `isContainsE
 `incoming-rule.ts` and asserted by the control rather than re-spelled there — with four plants
 (predicate broken, rule leaking onto other types, collision flag dropped, and an unpublished target
 resolving anyway) each fired in a sandbox copy of the gate and each reporting its own failure text.
+
+### LEVER 3, priced at HEAD: how much a typed-receiver pass would actually bind
+
+Instrument: `validation/m14/fixtures/dart/receiver-cut-pricing.ts` (self-test PASS — each recovery class
+and each site shape reached), run `--sample=1500` over the gate's own population print (33,738 admitted
+`.dart` files across 199 repos, stride 22 = **4.45 %**), log `.tmp-probe/dartgate/lever3-pricing.log`.
+It reads the `metadata.receiverCause` label the analyzer writes when it refuses to qualify a bare
+member, so the population is the analyzer's own decision and not a census re-derivation of it.
+
+**The cause key hides four causes, and they have four different owners.** Sample rows (31,725):
+
+```
+edge · cause                        rows    share of bare
+uses  · receiverTypeUnknown       11,910    37.5 %
+calls · receiverMemberOutsideRun   5,657    17.8 %
+calls · receiverTypeUnknown        5,404    17.0 %
+calls · receiverUnnamed            5,083    16.0 %
+uses  · receiverUnnamed             3,091     9.7 %
+calls · libraryScopeCallee           448     1.4 %
+uses  · receiverMemberOutsideRun      132     0.4 %
+```
+
+`receiverInFileNotSpelled` — the sixth cause `qualifiedTarget` can emit — is not among them: **zero of
+31,725**. And the bucket that reads like typing, `receiverMemberOutsideRun`, is 93.3 % BARE CALLEES
+(5,399/5,789) whose owner is the enclosing type; of its 268 plain rows, 180 recover a type and **179 of
+those find that type in the file WITHOUT the member**, which is the label's own semantics confirmed on
+the rows it claims. That bucket is a heritage/index question, not a receiver one.
+
+**Inside the typing gap (17,314 rows = 54.6 % of bare — the only bucket a typed-receiver pass owns):**
+
+```
+shapes        plain 15,101 (87.2 %) · chained 1,532 · notOnLine 639 · other 42
+the receiver's TYPE IS NAMED in the same file      5,992   34.6 % of the gap
+  …the head is declared EXACTLY ONCE there         1,458    8.4 %
+  …the declaration PRECEDES the site              5,762   96.2 % of the 5,992
+  …the MEMBER is declared on that type in the file   444    2.6 %   ← binds with nothing outside the file
+  …type in file, member not                          136    0.8 %
+  …the type's own declaration is elsewhere         5,412   31.3 %
+declines      untyped var / dynamic                  2,276   13.1 %
+              no declaration of the head in the file 5,736   33.1 %
+              nearest declaration untyped while a typed
+              same-name one exists                   1,097    6.3 %
+```
+
+5,992 + 1,097 + 2,276 + 5,736 = 15,101, the plain rows exactly; + 2,213 other shapes = 17,314. Where the
+**namable types sit**: a parameter list 3,231 (53.9 % of the 5,992) · a statement declaration 2,479
+(41.4 %) · other 282 — and the parameter-list share is the finding, because `collectDartParameterTypes`
+walks the SIGNATURE SIBLING of a body, which a `lambda_expression`'s own parameter list is not: the
+closure that consumes a typed callback's arguments is written as `(HoverInformation hover) { … }`, and
+no sibling walk reaches the list inside the lambda.
+
+**TWO RUNS OF THE SAME SAMPLE, AND THE DIFFERENCE IS THE CORRECTION.** The first run's index kept the
+FIRST declaration of a head and reported 7,089 typed (40.9 %). The dump then showed one row
+(`get_hover_test.dart:354`) recovering `HoverInformation` from a callback parameter while the site's own
+declaration is `var hover = await prepareHover(…)` — an await result no type names. The index now keeps
+EVERY declaration, prefers the NEAREST PRECEDING one, and the second run splits exactly that 7,089 into
+**5,992 recovered + 1,097 measured collisions** (nearest declaration untyped, a typed same-name one
+exists). Every cell the two runs share is identical to the digit; 45 spread rows were read by eye and
+this was the one misclassification they found — now a counted class instead of a silent success. A
+THIRD run after the type fix below is byte-identical to the second on all 128 lines of output, so the
+numbers in this section are reproducible and not a lucky pass.
+
+**APPLIED TO ARM13's amb column** (gate column × sample cause shares — an estimate, not a count; the
+sample's shares are over ALL bare rows while the column is the ambiguous subset, and rows cluster by
+file so the binomial error is not the error):
+
+```
+bare ambiguity at HEAD   448,688   (calls {receiverCause} 216,573 + {isLocalRead+receiverCause} 985
+                                    + uses {isMemberRead+receiverCause} 231,130)
+  typing gap           ≈ 252,763   56.3 % of bare · 32.3 % of the lane's 781,930
+    namable in file    ≈  87,476   34.6 %   ← the pass's ceiling
+      exactly-once     ≈  21,285    8.4 %
+      BINDS ALONE      ≈   6,482    2.6 %   ← 0.83 % of the lane's ambiguity
+      type elsewhere   ≈  79,008   31.3 %   ← the pass names it; the INDEX must supply the member
+    untyped var/final  ≈  33,227   13.1 %   ← initializer inference, a different pass
+    no declaration     ≈  83,738   33.1 %   ← imports/index: the head is not in the file
+    collision          ≈  16,015    6.3 %   ← scope analysis
+  unnamed              ≈ 113,859   25.4 %   shape (call result / chain link / index), not a receiver
+  memberOutsideRun     ≈  76,192   17.0 %   the enclosing type does not declare it: heritage/INDEX
+  libraryScopeCallee   ≈   5,874    1.3 %   a name this file declares at top level: INDEX/heritage
+```
+
+What the arithmetic says, in one line: **the typed-receiver lever names the receiver's type for 34.6 %
+of the gap, binds 2.6 % of it with nothing outside the file, and is a PRECONDITION for the index lever
+rather than an alternative to it** — 31.3 % of the gap is bindable only once the module that declares the
+type supplies the member. It is not a knock-out, and **52.5 % of the gap is not a typing question at
+all** (untyped var/final 13.1 + collision 6.3 + no declaration in the file 33.1), of which the largest
+single piece needs the index (33.1 %) and the other two need passes a typed-receiver pass does not
+contain.
+
+**Limits, stated rather than argued away.** A stride sample measures a SHARE of the analyzer's own
+labels and does not state a resolution rate (the gate's header says a stride cannot answer one). The
+recoverer reads the bare type NAME and drops type arguments — `List<ClassMember> members` recovers
+`List` — while the analyzer's own `declaredTypeName` DECLINES a generic receiver, so the 34.6 % counts
+rows the pass would refuse: an upper bound in that direction too. And line order is not scope: **75.7 %**
+of the named rows have more than one same-named declaration in their file, so which declaration the
+receiver is cannot be decided from the file alone. And nothing type-checks the instrument: none of the
+five tsconfig programs includes `validation/**` (checked against each config's `include`, and by
+`tsc --listFiles`), so it runs under `tsx` with types stripped — this one was type-checked by hand in
+`.tmp-probe/dartgate/tsconfig.lever3.json` (a one-file program that includes it), **which caught a real
+error** — the multi-declaration field it hangs off its own return type, TS2353 — that `tsx` had been
+running past on every one of the runs above.
+
+**Two incidental findings, reported and NOT fixed here.** (1) `qualifiedTarget`'s docstring at
+`real-dart-analyzer.ts:2393` lists `receiverTypeOutsideRun` as a cause string; the code no longer returns
+it — a CAPITALIZED owner is SPELLED and carries the `baseBeyondRunScope` claim instead — so anyone sizing
+causes from the comment looks for a string the analyzer cannot emit. (2) `receiverInFileNotSpelled`, the
+branch that docstring calls "an analyzer gap rather than missing knowledge", is cold: zero rows in 31,725,
+and no occurrence in the arm12/arm13 logs either.
+
+What would firm these numbers: `--all` (the same instrument, 33,738 files), a scope-aware matcher for the
+75.7 %, and the STORE read as the member index — which turns "type declared elsewhere" (31.3 %) from an
+upper bound into a measured bind/unbind count.
 
 ### The residual, stated rather than argued away
 
@@ -6751,3 +6869,147 @@ and `imports.extOK 21,719 → 21,892` (+173); `bindOK` 563,833, `bind?` 0, `amb(
 collides with one of them (`dart`, `follow_links`, `file`, `PROG_NAME`, `CUR_DIR`, `OUT_DIR`, `DIRS`,
 `CONFIGS`, `DART_CONFIGURATION`, `CONFIG`, `DIR`, `BIN_DIR`) — in which case the delta is reported as
 that collision and not as a rounding.
+
+### arm13 — the after-table, and the pre-registration held on every cell
+
+`.tmp-probe/dartgate/incoming-dart-arm13.log`, 2026-10-12 13:42–15:03, `HEAD b19a9d4b6` + working tree
+**with the two gate fixes**, `incoming-gate.ts dart dart 0` over the whole population (33,738 parsed of
+33,738, 0 failed, 2 degraded, `instrument self-test: PASS`), `EXIT=1`:
+
+```
+type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL
+calls         673025   311841    0         259567     118062     45042       0       0       0        5972     0       0         50603    0
+uses          1359628  314453    0         395227     203938     41531       0       0       0        557861   0       0         50554    0
+contains      700388   700388    97797     0          0          0           0       0       0        0        0       0         0        0
+imports       105308   81965     0         0          0          2854        20474   15      0        0        0       0         0        0
+references    73561    29380     0         44181      18002      0           0       0       0        0        0       0         0        0
+exports       2030     1887      0         0          0          89          50      4       0        0        0       0         0        0
+extends       38185    15395     0         13957      7982       8832        0       0       0        0        0       0         0        0
+implements    12404    4682      0         6980       3467       736         0       0       0        0        0       0         0        0
+overrides     316120   275170    0         9301       672        2771        1368    0       0        0        0       0         27510    0
+instantiates  155428   61018     0         52717      24425      41693       0       0       0        0        0       0         0        0
+TOTAL         3436077  1796179   97797     781930     376548     143548      21892   19      0        563833   0       0         128667   0
+```
+
+Every pre-registered cell held, to the digit:
+
+```
+cell          registered            arm13      held
+population    33738                 33738      yes      (measured at 13:35, before the run)
+edges         3436111 − 34 → 3436077 3436077    yes
+extOK         21719 + 173 → 21892   21892      yes      (+173; imports row 20,301 → 20,474)
+extFAIL       173 → 0               0          yes      the clause is GONE from the verdict
+bindOK        563833                563833     yes
+bind?         0                     0          yes
+amb(decl)     781930                781930     yes
+causeOK       128667                128667     yes
+resolved      1796210 − 31 → 1796179 1796179    yes
+unresolved    143551 → 143548       143548     yes      ← the one slip in the PROSE, not the arithmetic
+collRes       97799 → 97797         97797      yes      (predicted "±")
+```
+
+**The one slip, named:** the pre-registration's prose said `unresolved` would be *unchanged* while its
+own arithmetic said `34 = 31 + 3` — the removed file's 3 unresolved edges belong to the SAME subtraction.
+The run reads −3, i.e. what the arithmetic implied; the sentence was wrong and the measurement was not
+touched. `collRes` −2 is the same file's two collision-bound `resolved` edges leaving with it.
+
+The per-type deltas are the script's own shape, which is the strongest form this control can take:
+
+```
+arm12 → arm13   calls −4 (2 resolved · 2 unresolved) · uses −19 (18 · 1) · contains −11 (11 · 0)
+              = −34 = the 19 uses · 11 contains · 4 calls `one-file-edges.mts` read off `sdk/bin/dart`
+```
+
+Every other row — including all ten types' `amb(decl)`, `amb(kind)`, `causeOK` and the marker table's
+`isLocalRead+localBinding` (557,861 + 5,972) — is byte-identical. The verdict is now:
+
+```
+VERDICT: FAIL — 781930 ambiguous + 143548 unresolved of 3436077 edges, resolved against the file's
+OWN PROJECT (production's scope); 19 external claim(s) unverifiable (21892 verified + 19 unverifiable
+external)
+```
+
+with **no `REFUTED by the project` clause**, and the ext detail line reads `of those 21892 verified:
+1368 by owner lookup in the key space, 20524 against the project's own pubspec files + file list`
+(1,368 + 20,524 = 21,892). The tally slack is unchanged (`INTENT CLOSURE: uses 2 · extends 1 ·
+implements 6`), and the run is `EXIT=1` because the lane still FAILs on 781,930 ambiguous + 143,548
+unresolved — which is the measurement, not a regression: arm12 and arm13 differ by exactly the 34 edges
+and the 173 claim cells above, both of which were misreported before.
+
+**What this closes and what it does not.** Two fleet-instrument defects are now closed with a measured
+after-table: the basename clause no longer admits a file the router gives to another language, and the
+dart fact walk no longer reads dependency pubspecs through Flutter's `.plugin_symlinks` build farm.
+Both were fleet-wide in principle — **any lane whose extension spelling can be a file's whole basename
+should re-read its population, and the 173 refutations were never this lane's** — and both should be
+re-measured by their own lanes on the same rule (`Makefile` keeps its admission; the symlink following
+itself is kept). What this does NOT do: move the lane's incoming residual. 781,930 ambiguous + 143,548
+unresolved is the number to size levers from, and it is now the number at HEAD rather than at a frozen
+worktree.
+
+**The content both runs measured is IN HISTORY, so the receipts are reproducible:** `44eec74c1`
+(2026-10-12 13:47) secures this lane's uncommitted round — `src/ast/real-dart-analyzer.ts` sha256
+`8f97cc27…`, the completeness spec, the fixtures and `override-exposure-watchdog.ts` + its baseline —
+and `76b5ec225` secures the gate, i.e. the two fixes above and the printed population rule. "Working
+tree" in the arm12/arm13 receipts means the content now carried by those two commits (arm13 started at
+13:42, five minutes before they were written, and a commit does not change working-tree content).
+The status board's two entries were swept into `624d7e3dd` (15:09) by another lane's commit; this document's arm12/arm13 sections were still uncommitted at the time of writing.
+### arm14 — the typed-receiver change, PRE-REGISTERED before the run
+
+**What changed, and it is two reads of a type the SOURCE writes — nothing is inferred here.**
+`src/ast/real-dart-analyzer.ts`, working tree, sha256 `dc7b55e4099c4107…` (was `8f97cc27…` at arm13):
+
+1. **`extractParameters` now accepts a `formal_parameter_list` AS ITSELF.** The traversal hands this
+   reader a body's PREVIOUS NAMED SIBLING, and for an anonymous closure that sibling IS the list —
+   tree-sitter-dart writes `function_expression parameters: (formal_parameter_list …) body:
+   (function_expression_body …)` (probed: `.tmp-probe/dartgate/lambda-shape.mts`, cases B/C/J). The
+   reader then searched for a `formal_parameter_list` CHILD inside the node it had been given, found
+   none, and returned no parameters: the identical METHOD parameter published `Element.poke` while the
+   closure parameter published a bare `poke` with `receiverCause: receiverTypeUnknown` (measured
+   through the production path: `.tmp-probe/dartgate/typed-head-probe.mts`, cases A/B/C/J). A local
+   function was never affected — its body's sibling is a real `function_signature`.
+2. **`collectDartLocalTypes` reads an explicitly typed for-in variable** from `for_loop_parts`
+   (`for (Element e in xs)`, `for (final Element e in xs)`, `await for (final Element e in stream)` —
+   one shape). The C-style loop is guarded off by construction (its `for_loop_parts` has
+   init/condition/update fields and no name/value pair), the Dart 3 pattern form carries no name field
+   (DARTGAP1's bucket, untouched), and `inferred_type` — the grammar's spelling of `var` — DECLINES,
+   exactly as `var x = make()` does.
+
+**The sample footprint, same 1,500-file stride sample, before → after** (logs
+`.tmp-probe/dartgate/lever3-pricing.log` and `…-afterfix.log`, self-test PASS in both):
+
+```
+bare rows (metadata.receiverCause)     31,725 → 31,284   (−441)
+  uses  · receiverTypeUnknown          11,910 → 11,712   (−198)
+  calls · receiverTypeUnknown           5,404 →  5,155   (−249)
+  calls · receiverMemberOutsideRun      5,657 →  5,658   (+1)
+  uses  · receiverMemberOutsideRun        132 →    133   (+1)
+  calls · receiverUnnamed               5,083 →  5,085   (+2)
+  uses  · receiverUnnamed               3,091 →  3,093   (+2)
+  calls · libraryScopeCallee              448 →    448   (±0)
+```
+
+**447 gap rows left the typing gap and 6 rows changed cause: −441 = 447 − 6.** Read from the other
+side, the gap's own structure moved with them (namable 5,992 → 5,567 · member declared on the type in
+the file 444 → 410 · the collision class 1,097 → 1,096). The moved rows are the ones where the
+recovered type is NOT visible in the file, so `qualifiedTarget` SPELLS `Type.member` and attaches
+`baseBeyondRunScope` — they leave the bare population entirely rather than changing label within it.
+
+**REGISTERED CELLS for arm14 (`incoming-gate.ts dart dart 0`, whole population), written BEFORE the
+run:**
+
+1. Population and parse UNCHANGED: 33,738 admitted · 0 failed · 2 degraded
+   (`deep_nesting_expression_test.dart`, `deep_nesting_statement_test.dart`).
+2. **Edge totals UNCHANGED: 3,436,077, and every per-type total unchanged** (calls 673,025 · uses
+   1,359,628 · contains 700,388 · imports 105,308 · references 73,561 · exports 2,030 · …). The change
+   rewrites TARGETS on rows that already exist; it adds and removes none. If a total moves, this
+   reading of the code is wrong and the arm is what says so.
+3. `causeOK` RISES by the order of the rows that left the gap: they are spelled and claimed.
+4. `resolved` RISES and `amb(decl)` FALLS by whatever of those spelled targets the projects can
+   answer. NO direction is registered on `unresolved`: a spelled `Type.member` can be unresolved where
+   the bare leaf was ambiguous, and vice versa — that split is what the arm is FOR.
+5. Magnitude: the sample lost 447 of 31,725 labelled bare rows (1.41 %) ⇒ ≈ **10,000 rows** leave the
+   receiver-cause population corpus-wide, so the `receiverCause`-keyed ambiguous rows should fall by
+   that order and the same rows should appear in the spelled/claimed marker sets.
+6. extFAIL stays 0; self-test PASS; fixtures 31/0 (verified BEFORE the run, including the new
+   `dart/typed-receiver-heads` pin).
+

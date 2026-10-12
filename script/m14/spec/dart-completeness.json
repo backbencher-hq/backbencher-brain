@@ -97,8 +97,10 @@
       "unconditional_assignable_selector",
       "uri",
       "void_type",
-      "while_statement"
+      "while_statement",
+      "ERROR"
     ],
+    "error_node_note": "ERROR \u2014 the wasm ABI's parse-error node, and this analyzer CONSULTS it rather than declining to see it: `rootNode.hasError` drives the error-collection pass (src/ast/real-dart-analyzer.ts:715-730) that reports every ERROR node inside a damaged region as a syntax warning, and ERROR is on the type-mention SKIP list (line 243, rationale at line 3439) because nothing inside a parse-error region is a fact about a well-formed program. Classified handled_verified for that reason, and because java, javascript, kotlin and bash record the identical pair the same way. Added 2026-10-12: `completeness-inventory.loadNamedNodeTypes` forces the ABI pair into every lane's type list, so leaving it unclassified failed section A on a node type the analyzer demonstrably rules on.",
     "corpus_verified": {
       "qualified": "authentic ProxiCall/lib files: `SessionOfflineBannerMode.reconnecting` -> `uses build->reconnecting` + `contains`; and 2,405 recovered `case Enum.member:` pattern reads (fix 3d4d7fa4)",
       "typed_identifier": "authentic ProxiCall/lib files: `T data` in a generic repository -> `data:property` with `contains` and `uses` edges"
@@ -220,8 +222,10 @@
       "unary_expression",
       "uri_test",
       "yield_each_statement",
-      "yield_statement"
+      "yield_statement",
+      "MISSING"
     ],
+    "missing_node_note": "MISSING \u2014 the wasm ABI's node type for a token the parser INSERTED. This analyzer consults the CONDITION (`n.isMissing`, the same error loop at src/ast/real-dart-analyzer.ts:720) and publishes no symbol, no edge and no payload of its own for the TYPE: a phantom token is not a fact about the source. That split \u2014 condition handled, type silent \u2014 is exactly what internal_silent records, and it is the same split java, javascript, kotlin and bash record for this pair (java checks both type strings at real-java-analyzer.ts:435 and still files MISSING here). The string `MISSING` appears nowhere in real-dart-analyzer.ts; the condition does.",
     "corpus_silent_rationale": "function_expression (767 corpus files) and lambda_expression (17) are silent per DARTD2 \u2014 local functions, lambdas and function expressions are not module-level symbols. They were never LISTED, which is what left them unclassified rather than unaudited.",
     "constructor_initializer_note": "initializer_list_entry / field_initializer / initializers are the `<this>.field = value` list a CONSTRUCTOR writes. They emit no symbol of their own because DARTD3 rules Dart constructors have no distinct NAME \u2014 the FIELD each entry initializes is the symbol, and DARTD13's post-pass already binds its declared type. Master review 3 (F2) removed these from the GAP list, where they had been asking for a symbol the family ruled out, and bucketed them here instead."
   },
@@ -579,7 +583,7 @@
     ],
     "lastUpdated": "2026-09-24 (M60 dart lane: DARTD20-DARTD22) \u00b7 2026-10-12 (dart lane: DT-EXP, the whole-corpus override-exposure watchdog)"
   },
-  "lastUpdated": "2026-09-30 (master review 3: F2 re-scope gaps to deferrable units, F3 classify 4 unclassified corpus types, F4 mark 6 fixture-only claims)",
+  "lastUpdated": "2026-09-30 (master review 3: F2 re-scope gaps to deferrable units, F3 classify 4 unclassified corpus types, F4 mark 6 fixture-only claims) \u00b7 2026-10-12 (dart lane: classify the forced ABI pair ERROR/MISSING \u2014 section A, with the code sites as the evidence)",
   "label_coverage": {
     "_description": "Which relationship labels this lane actually COMPARES. script/m14/verify-label-coverage.ts reads the differential allowlist, runs this analyzer over a corpus sample, and reports every label the analyzer EMITS that the allowlist DROPS: such a label is compared by nothing while the lane still prints a percentage. `contains` left this list when the M60 oracle landed.",
     "declared_gaps": [
