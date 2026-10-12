@@ -139,7 +139,15 @@ export type { ExternalClaim, ProjectFacts, Outcome, Classified, Outcomes }
 /** Laptop B's 23 lanes, from docs/analyzers/PROMPT-LAPTOP-B.md:15 — asserted, not inferred. */
 export const LANES_B: Record<string, string> = {
   bash: "sh,bash,zsh", fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble",
-  php: "php", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql",
+  php: "php", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql,graphqls",
+  // `.graphqls` ADDED. The lane definition carried `graphql` and `gql`, and the ROUTER carried the same two —
+  // so `.graphqls` was invisible to BOTH, which is why fixing one place would not have moved the gate's own
+  // population. MEASURED: 97 corpus `.graphqls` files, worth 83,371 SYMBOLS and 195,108 RELATIONSHIPS, read by
+  // nothing. The router fix is `1150b2140`; this is the lane definition beside it, and the two must agree or a
+  // lane's population and the engine's population are different sets.
+  // NOTE: no `key: "value"` shape and no backticks in this comment — the parser below reads this literal
+  // quote-aware but NOT comment-aware.
+
   protobuf: "proto", json: "json,jsonc",
   // BOTH SPELLINGS, because one language does not become a different population by being spelled
   // `.yml`. Measured on ansible — 13 `.yaml` files against 2,068 `.yml`, 2,081 combined — so the
