@@ -162,7 +162,15 @@ export const LANES_B: Record<string, string> = {
   // contained one and the board reported 26 lanes, three of them sentences. Comments here stay
   // free of `key: "value"` shapes and of backticks.
   yaml: "yaml,yml",
-  css: "css,less", scss: "scss",
+  css: "css,less", scss: "scss,sass",
+  // `.sass` ADDED. The ROUTER already maps it — to its own language, which `language-detection.ts` records as a
+  // fix in its own right — and NO LANE ADMITTED IT, so 67 corpus files were routed to a language nothing
+  // measured. Third instance of this shape in one day: the router and the lane definition are separate lists and
+  // only one of them was being kept; `.graphqls` was the first, and `.sass` is the same defect one file over.
+  // MEASURED: 67 admitted `.sass` files, ALL of them routed to `sass` (Documenter.jl 64, bulma 3).
+  // NOTE: no `key: "value"` shape and no backticks in this comment — the parser reads this literal quote-aware
+  // but NOT comment-aware, and a comment containing one is read as a lane.
+
   // `make: "mk,mak,makefile"` NOW ADMITS A BARE `Makefile`. It did not, because `admitByExtension`
   // matched a trailing dot-plus-ext and that file has no extension to match — and the note that stood
   // here REPORTED the gap for months instead of fixing it, which made the gate's population 129 files
