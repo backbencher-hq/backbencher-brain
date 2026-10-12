@@ -21,7 +21,7 @@
 // gate — the #760/#761 lesson, applied to this gate itself).
 //
 // Run: bun run script/m49/verify-script-integrity.ts
-import { readFileSync, readdirSync, existsSync } from "node:fs"
+import { readFileSync, readdirSync, existsSync, statSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -138,6 +138,95 @@ function main() {
         ? `${c.outside} of ${c.total} id literal(s) sit outside the array — unreachable registration (the 2026-09-12 incident class)`
         : `containment could not be adjudicated — see the scanner failure above`)
   }
+
+  // ── 3. A DECLARED RUNNER MUST BE ABLE TO START WHAT IT NAMES ───────────
+  //
+  // The incident this closes (2026-10-12, found by running the JavaScript lane's
+  // own instruments through their declared entry points): three gates were
+  // declared as `bun run <script>` in package.json while opening the store with
+  // better-sqlite3 directly, and Bun cannot load it —
+  // `ERR_DLOPEN_FAILED … 'better-sqlite3' is not yet supported in Bun`. Each died
+  // BEFORE its first check, so `verify` and its milestone aliases stopped at that
+  // step and the gate read as "not run" rather than as red: a red gate is a
+  // finding, an unrunnable one is silence. Repaired in 4b26bd3a (m40, m54) and in
+  // the m29 follow-up that found the same shape one hop down, in a fixture the
+  // gate imports; this check is what keeps the class closed.
+  //
+  // The predicate is deliberately about STATIC LOADING, and it is measured rather
+  // than guessed: a file counts when it is the entry itself or is pulled by a
+  // top-level static `import … from "./x"` (two hops), and the escape hatch is
+  // the runtime selection the project already has (`bun:sqlite`, or the
+  // `src/storage/db.bun.ts` / `db.node.ts` driver pair). A scan that followed
+  // every relative mention instead reported **136 of 383 entries** — all but
+  // three of them files that name better-sqlite3 somewhere off the startup path
+  // (inside a function, or behind a dynamic import the runtime never reaches),
+  // which is noise a gate cannot afford. Comments are stripped first, so the
+  // vendored name in a comment is not a finding.
+  function stripComments(src: string): string {
+    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+  }
+  const STATIC_SQLITE3_LOAD = /(?:^|\n)\s*import\s+(?!type\s)[^\n]*from\s+"better-sqlite3"|require\("better-sqlite3"\)|await import\("better-sqlite3"\)/
+  const SELECTS_DRIVER_BY_RUNTIME = /bun:sqlite|db\.bun\.ts|db\.node\.ts/
+  const startsUnderBun = (src: string) => {
+    const code = stripComments(src)
+    return SELECTS_DRIVER_BY_RUNTIME.test(code) || !STATIC_SQLITE3_LOAD.test(code)
+  }
+  negative("a static better-sqlite3 import with no runtime selection is detected", !startsUnderBun(`import Database from "better-sqlite3"\n`))
+  negative("the same load passes once the file selects its driver by runtime",
+    startsUnderBun(`const isBun = typeof (globalThis as any).Bun !== "undefined"\nconst { openDatabase } = await import(isBun ? "src/storage/db.bun.ts" : "src/storage/db.node.ts")\n`))
+  negative("the name in a COMMENT is not a finding (the predicate is about loading)",
+    startsUnderBun(`// we used to require("better-sqlite3") here and died on bun\nconst x = 1\n`))
+  negative("a TYPE-ONLY import is not a load", startsUnderBun(`import type Database from "better-sqlite3"\n`))
+
+  const STATIC_RELATIVE_IMPORT = /^\s*import\s[^\n]*?from\s+"(\.[^"]+)"/gm
+  function staticClosure(entry: string): string[] {
+    const seen = new Set<string>()
+    const walk = (p: string, depth: number) => {
+      if (seen.has(p) || depth > 2) return
+      seen.add(p)
+      let src = ""
+      try { src = readFileSync(p, "utf8") } catch { return }
+      for (const m of src.matchAll(STATIC_RELATIVE_IMPORT)) {
+        const cand = path.resolve(path.dirname(p), m[1])
+        for (const ext of ["", ".ts", ".mts"]) {
+          if (existsSync(cand + ext) && statSync(cand + ext).isFile()) { walk(cand + ext, depth + 1); break }
+        }
+      }
+    }
+    walk(entry, 0)
+    return [...seen]
+  }
+  const pkg = JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8")) as { scripts?: Record<string, string> }
+  const declared = new Map<string, string[]>()
+  for (const [name, cmd] of Object.entries(pkg.scripts ?? {})) {
+    for (const m of String(cmd).matchAll(/bun run (script\/[^\s&|;]+)/g)) {
+      const arr = declared.get(m[1]) ?? []
+      arr.push(name)
+      declared.set(m[1], arr)
+    }
+  }
+  check("the declared runners name gate scripts to sweep", declared.size > 0, `${declared.size} distinct path(s) across ${Object.keys(pkg.scripts ?? {}).length} scripts`)
+  const cannotStart: string[] = []
+  let swept = 0
+  for (const entry of [...declared.keys()].sort()) {
+    if (!existsSync(path.join(ROOT, entry))) continue
+    swept++
+    for (const f of staticClosure(path.join(ROOT, entry))) {
+      let src = ""
+      try { src = readFileSync(f, "utf8") } catch { continue }
+      if (!startsUnderBun(src)) {
+        cannotStart.push(`${entry} (declared by ${declared.get(entry)!.join(", ")}) loads ${path.relative(ROOT, f)}`)
+      }
+    }
+  }
+  check("the sweep reached every declared entry that exists", swept > 0, `${swept} of ${declared.size} swept`)
+  check(
+    "every `bun run` entry can start on Bun (no unguarded better-sqlite3 in its static closure)",
+    cannotStart.length === 0,
+    cannotStart.length === 0
+      ? `${swept} entr(ies) swept, 0 with an unguarded better-sqlite3 load`
+      : `${cannotStart.length} entr(ies) would die before their first check: ${cannotStart.slice(0, 4).join("; ")}`,
+  )
 
   console.log(`M49.G4: ${passed} passed, ${failed} failed, ${negatives} negative(s) exercised`)
   if (failed > 0) {
