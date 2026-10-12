@@ -583,7 +583,7 @@ interface ImportResolutionInputs {
 function loadImportInputs(
   db: MinimalDb,
   projectId: string,
-  opts: { unresolvedOnly: boolean },
+  opts: { unresolvedOnly: boolean; onlySourceFileIds?: string[] },
 ): ImportResolutionInputs | null {
   try {
     const files = db.prepare(
@@ -711,11 +711,153 @@ function loadImportInputs(
       }
       exports.push({ fileId, name: er.tgt, isDefault, symbolId })
     }
+    // ── the row's OWN file, for a scoped caller ────────────────────────────
+    //
+    // `onlySourceFileIds` exists for the bounded incremental pass, which must
+    // decide a re-stored file's import rows with the SAME rules the full pass
+    // runs while writing only the rows its own run owns. Three routes name the
+    // row's own file, in the order the store makes them true:
+    //   the source SYMBOL's file      (an attributed row)
+    //   the `:rel:file:<path>:` anchor in the row's own id
+    //                                 (a FILE-level row: the store writes the
+    //                                  anchor exactly when the source did not
+    //                                  resolve, so it is a contract, and the
+    //                                  match is a containment test rather than a
+    //                                  parse because a path may contain ':')
+    //   `source_external` as a path   (the file-level lanes' spelling, which the
+    //                                  store rewrites to the project-relative
+    //                                  path for exactly those rows)
+    // A row whose own file cannot be determined is NOT kept: the scoped caller
+    // would be writing a row it cannot prove it owns.
+    if (opts.onlySourceFileIds && opts.onlySourceFileIds.length > 0) {
+      const allowed = opts.onlySourceFileIds
+      const allowedPaths = allowed.map((fid) => relPathOfFile.get(String(fid)) ?? "").filter((p) => p.length > 0)
+      const anchors = allowedPaths.map((p) => `:rel:file:${p}:`)
+      return {
+        files,
+        symbols,
+        imports,
+        exports,
+        rows: rows.filter((r) => {
+          if (r.sourceFileId && allowed.includes(String(r.sourceFileId))) return true
+          if (anchors.some((a) => r.id.includes(a))) return true
+          const p = typeof r.source_external === "string" ? r.source_external : ""
+          return p.length > 0 && allowedPaths.includes(p)
+        }),
+      }
+    }
     return { files, symbols, imports, rows, exports }
   } catch (e: any) {
     // A project with no import table, or a store that has not been migrated,
     // must not fail an index run over a relationship class that is a bonus.
     return null
+  }
+}
+
+/**
+ * Decide a row's target by NAME, over the COMPLETE symbol table: the qualified
+ * name first, then a name that is UNIQUE project-wide. These are the two rules
+ * the full pass runs (strategies 1 and 2 of `resolveRelationships`), and this
+ * function exists so a second path can make the SAME decision without a second
+ * copy of it — the JSD44 lesson, where one list written four times left three
+ * copies refusing the names the fourth had just admitted.
+ *
+ * WHY THE BOUNDED PATH NEEDS IT. `storeResults` no longer ranks a bare name by
+ * proximity over the symbol table as it stood when the batch landed (J12): the
+ * insert path decides only what the ROW's OWN FILE proves and defers everything
+ * else to the passes that read the complete tables. The full index runs
+ * `resolveRelationships` after the store, so a deferred row is decided there —
+ * but the bounded incremental pass runs neither that pass nor the store's own
+ * resolution (its batches are stored with `skipResolution: true`), so after the
+ * J12 fix a re-stored file's own cross-file edge had NO decider and stayed NULL.
+ * MEASURED by the M40 lifecycle corpus: S2 (`bb_edit` inserting a call to a
+ * function in another file) read 0 resolved edges and failed, and S3 then
+ * counted the leftover as an orphan (3 rows against a 0 baseline) — both green
+ * once this ran, and nothing else in that corpus moved.
+ *
+ * `opts.sourceFileIds` restricts the writes to rows whose SOURCE symbol lives in
+ * one of these files — the rows a bounded run owns. Absent = the whole project
+ * (the full pass). Reads are project-wide either way; only the UPDATEs are
+ * scoped, which is the bounded path's contract (a `--changed` run must not write
+ * a row in a file it never touched).
+ */
+export function resolveNameTargets(
+  db: MinimalDb,
+  projectId: string,
+  opts: { sourceFileIds?: string[] } = {},
+): { scanned: number; resolved: number } {
+  const scopeIds = opts.sourceFileIds && opts.sourceFileIds.length > 0 ? opts.sourceFileIds : null
+  // The scope predicate is the one difference between the two callers; the
+  // rules above it are shared verbatim, including the is_cross_file expression
+  // (COALESCE to '' so an unknown source file counts as a cross rather than as
+  // NULL, which is what the full pass has always written).
+  const scopeClause = scopeIds
+    ? ` AND brain_relationship.source_symbol_id IN (SELECT id FROM brain_symbol WHERE project_id = ? AND file_id IN (${scopeIds.map(() => "?").join(",")}))`
+    : ""
+  const scopeArgs = scopeIds ? [projectId, ...scopeIds] : []
+  try {
+    db.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qname (qualified_name TEXT PRIMARY KEY, symbol_id TEXT NOT NULL, file_id TEXT)`)
+    db.run(`CREATE TEMP TABLE IF NOT EXISTS _res_name (name TEXT, symbol_id TEXT NOT NULL, file_id TEXT, cnt INTEGER)`)
+    db.run(`DELETE FROM _res_qname`)
+    db.run(`DELETE FROM _res_name`)
+    db.prepare(
+      `INSERT OR IGNORE INTO _res_qname (qualified_name, symbol_id, file_id)
+       SELECT qualified_name, MIN(id), MIN(file_id) FROM brain_symbol
+       WHERE project_id = ? AND qualified_name IS NOT NULL GROUP BY qualified_name`,
+    ).run(projectId)
+    db.prepare(
+      `INSERT OR IGNORE INTO _res_name (name, symbol_id, file_id, cnt)
+       SELECT name, id, file_id, COUNT(*) OVER (PARTITION BY name)
+       FROM brain_symbol WHERE project_id = ?`,
+    ).run(projectId)
+    db.run(`CREATE INDEX IF NOT EXISTS _res_name_idx ON _res_name(name)`)
+    db.run(`CREATE INDEX IF NOT EXISTS _res_name_uniq_idx ON _res_name(name, cnt)`)
+
+    const scannedRow = db.prepare(
+      `SELECT COUNT(*) AS c FROM brain_relationship
+        WHERE project_id = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL${scopeClause}`,
+    ).get(projectId, ...scopeArgs) as any
+    const scanned = Number(scannedRow?.c ?? 0)
+
+    const r1 = db.prepare(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_qname.symbol_id,
+          is_cross_file = CASE WHEN _res_qname.file_id != COALESCE(
+            (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1), ''
+          ) THEN 1 ELSE 0 END
+      FROM _res_qname
+      WHERE brain_relationship.target_external = _res_qname.qualified_name
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.target_external IS NOT NULL
+        AND brain_relationship.project_id = '${projectId}'${scopeClause}
+    `).run(...scopeArgs)
+
+    const r2 = db.prepare(`
+      UPDATE brain_relationship
+      SET target_symbol_id = _res_name.symbol_id,
+          is_cross_file = CASE WHEN _res_name.file_id != COALESCE(
+            (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1), ''
+          ) THEN 1 ELSE 0 END
+      FROM _res_name
+      WHERE brain_relationship.target_external = _res_name.name
+        AND _res_name.cnt = 1
+        AND brain_relationship.target_symbol_id IS NULL
+        AND brain_relationship.target_external IS NOT NULL
+        AND brain_relationship.project_id = '${projectId}'${scopeClause}
+    `).run(...scopeArgs)
+
+    const resolved = (Number(r1?.changes) || 0) + (Number(r2?.changes) || 0)
+    db.run(`DROP TABLE IF EXISTS _res_qname`)
+    db.run(`DROP TABLE IF EXISTS _res_name`)
+    return { scanned, resolved }
+  } catch (e: any) {
+    // A store that has not been migrated, or a temp table another pass holds,
+    // must not fail an index run over a relationship class that is a bonus.
+    try {
+      db.run(`DROP TABLE IF EXISTS _res_qname`)
+      db.run(`DROP TABLE IF EXISTS _res_name`)
+    } catch { /* best-effort */ }
+    return { scanned: 0, resolved: 0 }
   }
 }
 
@@ -730,16 +872,25 @@ function loadImportInputs(
  * factored out to prevent — while writing only the rows its own run re-stored,
  * so a `--changed` run cannot silently resolve rows in files it never touched.
  * Absent = the whole project (the full pass).
+ *
+ * `opts.onlySourceFileIds` is the same scope expressed as the set of files whose
+ * rows this run OWNS — the bounded pass's spelling, because it knows the files
+ * it re-stored and not their row ids (the store creates those). The row's own
+ * file is recovered by `loadImportInputs` (source symbol, id anchor, or path).
+ * The two scopes are alternatives; either alone, or both together.
  */
 export function resolveImportTargets(
   db: MinimalDb,
   projectId: string,
-  opts: { onlyRowIds?: Set<string> } = {},
+  opts: { onlyRowIds?: Set<string>; onlySourceFileIds?: string[] } = {},
 ): ImportResolutionOutcome {
   const byReason: Record<string, number> = {}
   const bump = (k: string) => { byReason[k] = (byReason[k] ?? 0) + 1 }
   const out: ImportResolutionOutcome = { scanned: 0, resolved: 0, byReason }
-  const inputs = loadImportInputs(db, projectId, { unresolvedOnly: true })
+  const inputs = loadImportInputs(db, projectId, {
+    unresolvedOnly: true,
+    ...(opts.onlySourceFileIds && opts.onlySourceFileIds.length > 0 ? { onlySourceFileIds: opts.onlySourceFileIds } : {}),
+  })
   if (!inputs) return out
   const { files, symbols, imports, exports } = inputs
   const rows = opts.onlyRowIds ? inputs.rows.filter((r) => opts.onlyRowIds!.has(r.id)) : inputs.rows

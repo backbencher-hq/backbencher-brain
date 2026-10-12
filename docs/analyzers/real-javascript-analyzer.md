@@ -234,6 +234,22 @@ would be a graph of targets nothing binds — 46 edges whose every endpoint is
 unresolvable — which is a decoration, not a relationship. The ruling stands, and
 (F) is what makes it falsifiable rather than a matter of taste.
 
+**The arbiter's own verdict, over the WHOLE admitted corpus (re-run 2026-10-12 at
+the tree that ships).** `ontology-coverage-gate.ts javascript --fresh` parsed
+**12,805/12,805 files (100.0%, newly walked 12,805)** — a fresh walk, not a
+resumed checkpoint, because the gate refuses by design to adjudicate one it did
+not parse — and read the table type by type: `calls` 643,407 edges, `uses`
+511,573, `contains` 31,832, `exports` 28,366, `imports` 18,813, `instantiates`
+9,275, `extends` 2,443, `overrides` 1,475, `references` 1,397, every one of them
+`EMITTED` in 4+ files; and `implements` **`RULED-SOUND` — "NOT EMITTED; the
+grammar produced 215 distinct node types across the corpus and NONE expresses
+it"**. The verdict line is `emitted 9/10   ruled-sound 1   FALSIFIED 0
+ruled-without-justification 0`, i.e. nothing is claimed inapplicable that is
+derivable, and nothing is left silent without a ruling. (`--coverage` is a
+different mode and is NOT this: it lists the lanes the arbiter can rule for and
+exits before any verdict — which is why the earlier attempt at this reading
+produced a preamble and no table.)
+
 The gate that arbitrates this is `script/m14/ontology-coverage-gate.ts`. Its
 `JAVASCRIPT_RULED` entry now exists — `script/m14/javascript-ruled.ts`, registered
 as `RULED_BY_LANG.javascript` — so the lane is adjudicated on a corpus probe
@@ -653,10 +669,15 @@ Verified by running the canonical harness with its own dev selector:
 
 ```
 BB_MUTANT_ONLY="javascript/" bun run script/m14/mutate-analyzer.ts
-  -> 62 mutants selected of 1,845, all 62 CAUGHT, exit 0
+  -> 63 mutants selected of 1,856, all 63 CAUGHT, exit 0   (re-measured 2026-10-12)
+  -> 62 mutants selected of 1,845, all 62 CAUGHT, exit 0   (when this sentence was written)
 ```
 
-62 is the registry's own 56 plus these 6, and 0 survived. **Two corrections to the
+63 is the registry's own 56 plus these 7, and 0 survived. Both lines are kept
+because the count is a property of the REGISTRY and moves when another lane adds a
+mutant: only the second number is a reading of this lane's own file, and it is the
+one the lane's runner can verify by reading the spread line (`javascript-mutant-runner.ts`,
+7 lane mutants, 7 caught, 0 survived, re-measured 2026-10-12). **Two corrections to the
 prose that reported this finding**, both measured: the canonical command is the
 `BB_MUTANT_ONLY` prefix filter — the harness has **no `--lang` flag**, so the
 `--lang javascript` spelling the earlier report quoted selects nothing by language;
@@ -701,9 +722,10 @@ A full registry run at this commit: **6 survived** —
 `java/bare-read-type-attribution`, `groovy/modifier-return-type-loss`,
 `groovy/ctor-name-revert`, `scala/drop-import-source-rewrite`,
 `make/swallow-the-rule-after-a-comment`, `php/drop-external-override-guess`.
-javascript: **62 of 62 caught in the shared registry** — 62 defined, 62 caught, and
-now all 62 are reached by the canonical command (§3 was wired this round; filtered
-run: 62 selected of 1,845, all CAUGHT, exit 0). Before the wiring the same sentence
+javascript: **63 of 63 caught in the shared registry** — 63 defined, 63 caught, and
+now all 63 are reached by the canonical command (§3 was wired this round; filtered
+run: 63 selected of 1,856, all CAUGHT, exit 0, re-measured 2026-10-12 — the registry
+held 1,845 ids and the selector read 62 when this sentence was first written). Before the wiring the same sentence
 had to read "56 of 56 in the registry plus 6 in the lane's own runner", which is the
 shape §3 exists to report. The workstream's "4 mutation
 survivors in scala/csharp/elixir" no longer matches: scala has 1, csharp and
@@ -1981,9 +2003,13 @@ is why its counts move), **16 detached rows gain a target** because the leaf nam
 somewhere in the project (22 on the earlier dump; the insert path already attached exactly
 those rows whenever the name happened to be stored early enough), and the remaining **662**
 name no symbol anywhere and stay detached in every run. A second, independent draw
-(`--corpus=lodash`, 250 files, 12,222 rows) reads **0 divergent rows, 7 of 7 checks, and
-identical pass gauges** — and it is recorded with its own weakness spelled out: that draw
-has 77 `module:item` rows, 0 attached and 0 planner-proven, so it verifies the PROPERTY
+(`--corpus=lodash`, 250 files, 12,222 rows) reads **0 divergent rows, 8 of 8 checks, and
+identical pass gauges** (`validation/m14/measurements/resolution-determinism-lodash.json`,
+re-measured 2026-10-12: gauges `scanned=77 planned=0 attached=0 unchanged=0 unresolved=77
+corrected=0 settled=0`, so the eighth check — the source-side endpoint, the outgoing half —
+is green on this draw too; the same run read 7 of 7 before the gate gained that check) — and
+it is recorded with its own weakness spelled out: that draw has 77 `module:item` rows,
+0 attached and 0 planner-proven, so it verifies the PROPERTY
 without exercising the correction, which is exactly the "green means nothing" shape this
 lane keeps catching in its own instruments. One further independent instrument, the closed
 368-file population, still reads **3,113 of 3,113 decidable rows landed with 0 wrong-file**
@@ -2189,7 +2215,9 @@ and landing in the row's OWN file, 0 wrong-file in all five runs.
      (`imports` 200, 0 unresolved). The same shape at the M40 lifecycle corpus's 1,500-module scale
      is the S4 drift: relationships **3003 → 4502** (+1499, ≈1 per module file), all of it the
      restored rows, which is why the baseline was re-recorded in this round rather than treated as
-     a regression. S1 reads 8 → **9** in-edges and S5 2 → **3** resolved edges for the same reason.
+     a regression. S1 reads 8 → **9** in-edges and S5 2 → **4** resolved edges across this round's
+     two changes (3 with the inbound repair alone, 4 once the bounded pass also decides the rows it
+     re-stored — the fourth is exactly the deferred cross-file call edge the J12 paragraph names).
    - **A2, the write path.** `A2: caller edges into edited file RESTORED` read **E1=11999 vs
      E0=15994** with the old repair (3995 rows lost, every one of them the `<module>:<item>` form)
      and reads **15997 vs 15994** now, with the run's own telemetry in the record:
@@ -2204,21 +2232,103 @@ and landing in the row's OWN file, 0 wrong-file in all five runs.
      draw, re-indexing every file through the production incremental entry point: **10,171 rows
      before and after, 0 only-before, 0 only-after; 832 symbols, symmetric difference 0**; **no row
      LOSES its resolved target** (0 of 10,171) and every derived-flag difference belongs to a row
-     whose target also differs (no second rule writes the flag). 6 of 7 checks green; the seventh
-     is the named residue below.
-   - **the residue, named.** 66 of 10,171 rows (0.65%) store a DIFFERENT `target` after a re-index:
-     64 where the full pass left NULL and the re-index bound a symbol, 2 where both bound and
-     picked different ones (`calls parse` twice, in two files) — and 45 of the 66 carry a name that
-     is ambiguous in the project. All of it is ONE mechanism: the insert path's
-     `resolveTargetStmt` binds a bare name by proximity (same file, then same language, then any,
-     id tie-break) while the resolution pass refuses a name that is not unique. Which writer
-     reaches a row first depends on batch order, which is why the count moves between runs of the
-     same draw (65, 69, 70, and the 66 recorded in
-     `validation/m14/results/JS-STORE-PATH-PARITY.json`, which is the run this paragraph cites —
-     the artifact and the prose are the same measurement, so they are read together). Recorded as
-     **gap J12** and not absorbed:
-     the fix is a decider for ambiguous names (the row's own import binding first, then relax), and
-     until it lands this column's claim is "no loss, one decision disagreement".
+     whose target also differs (no second rule writes the flag). **8 of 8 checks green** on the
+     250-file draw (the residue this paragraph closes was the seventh, at 120 files; the eighth
+     is the SOURCE-side endpoint check, added when this lane asked its incoming/outgoing question
+     on both ends, and it reads **0 of 19,855 rows differing on `source_symbol_id`**).
+   - **the residue, named — and then closed.** 66 of 10,171 rows (0.65%) STORED a different
+     `target` after a re-index: 64 where the full pass left NULL and the re-index bound a symbol, 2
+     where both bound and picked different ones (`calls parse` twice, in two files) — 45 of the 66
+     carrying a name that is ambiguous in the project. All of it was ONE mechanism: the insert
+     path's `resolveTargetStmt` ranked a bare name by proximity (same file, then same language, then
+     any, id tie-break) over the symbol table AS IT STOOD AT THAT MOMENT, while the resolution pass
+     refuses a name that is not unique — so which writer reached a row first, i.e. batch order,
+     decided the stored edge, and the count moved between runs of the same draw (65, 66, 69, 70;
+     the 66 recorded in the first version of `validation/m14/results/JS-STORE-PATH-PARITY.json`,
+     which is the run that version of this paragraph cited). Recorded as **gap J12**, then closed by
+     ORDERING the two writers instead of racing them: the insert path now decides only what the ROW
+     ITSELF can prove — a candidate in the row's OWN FILE (`AND s.file_id = ?`), a row-local fact no
+     batch order can change — and defers everything else to the passes that read the COMPLETE
+     tables, `_res_qname` for a qualified name and `_res_name` strategy 2 for a name that is UNIQUE
+     project-wide (the same single candidate the ranking would have picked, which is why deferring
+     loses no resolution). A name that is neither unique nor in the row's own file is left
+     UNRESOLVED instead of guessed: refusing to guess is the honest answer, and two independent
+     proximity guesses that agree only by luck are what this replaced. Measured on the 250-file draw
+     the determinism gate uses: the parity instrument reads **19,855 rows and 1,172 symbols
+     identical before and after a re-index, 0 divergent targets, 0 residue, 8 of 8 checks**;
+     `verify-resolution-determinism` reads **8 of 8 with 0 of 19,855 rows differing on target or
+     derived flags**; and the store instrument's attachment census is UNCHANGED by the fix —
+     `attachedTotal` 5,531 of 19,855, 14,324 detached, 2,589 decidable landing 100.0% in the
+     source's own file, `wrongFile` 0 — because the guess only ever fired when the table prefix
+     happened to hold a candidate at insert time, which is exactly why it was order-dependent. The
+     refusal therefore costs no attachment the graph had: the full-pass census was already the
+     honest baseline, and the incremental path now agrees with it. NOT taken, with its population
+     measured rather than left vague: the original ruling's FIRST route — binding an ambiguous name
+     through the row's own file's import statement — is ADDITIONAL COVERAGE, not a determinism
+     requirement, and the census's own reason table says so — class **7** ("the binding's module is
+     relative, INSIDE the draw, and that module DECLARES the leaf — RESOLVER-ELIGIBLE rows still
+     detached", the lane's real open item) reads **0** beside class 8's 3 rows (a module inside the
+     draw that declares no symbol of that name — the edge names an import BINDING, not a
+     declaration) — so no row is currently decidable that way and left unresolved; it lands as a
+     coverage change with its own measurement. The change is in the SHARED store path, so every
+     lane's stored targets move by the same rule and the store-level records were re-earned in this
+     round, not assumed: the three that ship are
+     `validation/m14/results/JS-STORE-PATH-PARITY.json` (8 of 8, 0 of 19,855 rows differing on any
+     stored payload, on the 250-file draw),
+     `validation/m14/measurements/resolution-determinism-j12.json` (8 of 8, content byte-identical
+     to the pre-fix `resolution-determinism.after.json`) and
+     `validation/m14/measurements/store-resolution-j12.json` (the census above, re-run against the
+     fixed source: every COUNT identical to the pre-fix `store-resolution-jsd50.after.json` —
+     attached 5,531 of 19,855, detached 14,324, decidable 2,589 at 100.0%, `wrongFile` 0 — with the
+     two `diagnosis` name lists this instrument caps at 200 rows differing by one tie at the cap
+     edge (`('spread', 8)` vs `('snip', 8)`, both count 8, and the row ids carry a different
+     project prefix), so the claim is that the counts did not move, not that the file is
+     byte-identical).
+   - **the J12 rule had to be backed in BOTH paths, and the corpus is what said so.** The insert
+     path's own-file rule is half a fix on its own: the FULL index hands the deferred rows to
+     `resolveRelationships` after the store, but the bounded incremental pass runs neither that pass
+     nor the store's own resolution (its batches are stored with `skipResolution: true`), so a
+     re-stored file's own cross-file edge had no decider at all. MEASURED by
+     `script/m40/lifecycle-corpus.ts` against the committed baseline: S2 (`bb_edit` inserting a call
+     to a function declared in another file) read **0 resolved outgoing edges and FAILED**, and S3
+     then counted the leftover row as an orphan (**3 against a 0 baseline**) — the corpus was 35/37
+     until both were fixed and is **37/37** now. The fix is the shared rule, not a third copy of it:
+     `resolveNameTargets` (`src/ast/import-resolution.ts`) is the two name strategies the full pass
+     runs — qualified name, then a name that is UNIQUE project-wide — factored into one callable
+     function with an optional `sourceFileIds` scope, and `resolveImportTargets` gained the same
+     scope as `onlySourceFileIds` for the `<module>:<item>` half (a file-level row's own file is
+     recovered from its source symbol, the `:rel:file:<path>:` anchor in its id, or
+     `source_external` as a path). The bounded pass calls BOTH halves for the files it re-stored, and
+     the full pass's inline copies were replaced by a call to the same function — a rule with two
+     spellings drifts (JSD44). The scope is what keeps the bounded contract: only the UPDATEs are
+     restricted, and only to rows whose source file this run re-stored.
+   - **the third half, and the parity gate is what named it.** Two deciders are not the full pass:
+     the name strategies bind by a name that is UNIQUE project-wide, and a name the row's OWN file
+     binds locally is not that symbol — which is why the full pass runs the binding pass LAST
+     (`resolveImportBoundTargets`, the pass that owns the shadow guard and the import-clause route)
+     and CLEARS those bindings. The bounded run ran neither, so the name half bound rows the full
+     pass stores NULL. MEASURED by `script/m14/verify-store-path-parity.ts` on the 250-file draw,
+     with the name and `<module>:<item>` halves but without this call: **118 of 19,855 rows the full
+     pass stores NULL and the re-index stores BOUND** — and the gate's own attribution says every
+     one of them is a `uses` row whose requested name is a parameter of its OWN source symbol
+     (`count` in `create_sbench_test(label, count, num_sources, fn)`, bound to the one project-wide
+     `count` in `.../reactivity/tests/kairo_triangle.bench.js`), i.e. exactly the class
+     `shadowed-local-binding` exists for. The fix is the same call, not a third copy of the shadow
+     rule: `resolveImportBoundTargets` gained the `onlySourceFileIds` scope (the rows it ACTS on;
+     every table it reads is complete either way, so a scoped call decides exactly what the full
+     pass decides), the bounded pass calls it after the other two, and the gate reads **8 of 8 with
+     0 of 19,855 rows differing on any stored payload**. This is also why the ORDER is the full
+     pass's order (name → `<module>:<item>` → binding): the third pass is what corrects the first
+     two, so a set of the same rules in a different order is a different answer.
+   - **named by an instrument, not by a count.** `script/m14/js-ontology/js-bounded-resolution-probe.ts`
+     reproduces the corpus's S5 adoption scenario and prints every row before and after: the
+     adoption run re-stores 2 files, the repair re-points 3 rows, the new step resolves **1** — the
+     deferred cross-file `calls` edge — and the world reads **4 rows, 4 resolved, 0 unresolved**,
+     with the CLI line `2 symbols touched | 3 cross-file edges restored | 1 re-stored rows resolved`.
+     S5's recorded `resolvedEdges` therefore moved **3 → 4** for exactly that row; the baseline was
+     re-recorded through the corpus's own sealed writer, and `--gate` reads PASS against it. Read as
+     a sequence rather than a single number: 3 was the world where the deferred row had no decider
+     in the adoption run, and 4 is the world where the row is resolved and no other row moved.
    - **M59.** `script/m59/verify-legacy-zero-heal.ts` was rewritten onto the new contract and reads
      **16 checks, 0 failed**, including two negative controls: the out-of-scope legacy zero must
      SURVIVE (the heal is scoped, not a global sweep) and the detector must fire on it (the checks
@@ -2282,9 +2392,9 @@ mutants, 4 caught, 0 survived`, `firing-check.mjs JAVASCRIPT` `9 types fired,
 | every type has a verdict with a number | 10/10 — nine EMITTED with counts and file spreads on three corpora re-measured at this commit, one RULED with **six** instruments of which three are new and two of those decisive |
 | emitted types answer all six questions | the ten subsections above; each answer cites its instrument and measurement, names what the instrument cannot see, and — new this round — **attributes every MISSING row** to the production noise filter or to a real gap. 218 of 225 MISSING rows on the svelte draw are filter deletions; the 7 that are not are all oracle over-derivation, listed by construct and file |
 | no unknown symbols, no empty names, no placeholder-literal endpoints | 0 empty endpoints, 0 `global` sources, 0 empty symbol names, re-measured on all three corpora. Remaining "placeholder-looking" endpoints enumerated and classified, with one **classification corrected this round**: `module` as a `calls` TARGET is a written method name (`template.module(data)` in `lodash/lib/fp/build-modules.js:102`, `QUnit.module(…)` in `lodash/test/test-fp.js`), not the CommonJS free variable — 100 rows on lodash that the R7 heuristic mislabels, 0 on svelte |
-| fixtures assert the new behaviour and a mutant must die | **77 fixtures, 77 pass / 0 fail** (the two new pins are `reexport-forms` and `star-reexport`). **No analyzer behaviour changed in the hierarchy round**; the file-level round that followed DID change behaviour — eight expectations were updated to the new contract and the mutant arms were re-run against it (§Outgoing has the list and the reason) — so this row's claim is per-round and now reads: every behaviour change this lane has landed is pinned by a fixture AND by a mutant that dies without it. In the hierarchy round, no new fixture was claimed: the full-corpus relationship count is byte-identical (svelte 75,561 before and after), which is the measurement that says the payload did not move. **The JSD40 re-export round is the current case and it meets both halves**: 3 fixtures (2 updated, 1 new, with `forbidRelationships` rows naming the pre-fix spelling), and a fifth lane mutant `restore-reexport-module-star` that dies on exactly those three — plus the pre-change-analyzer arm, where the suite reads **72 pass / 3 fail** and the three are again exactly them. The lane mutants were re-run through the runner and **7 of 7 die** (the seventh, `restore-star-form-indistinct`, is the JSD46 arm and dies on exactly the new `star-reexport` fixture), and §3's wiring is in, so the canonical registry runs them too (**62 selected of 1,845, all 62 CAUGHT**, filtered run, exit 0). **The §2 round is the second case and it also meets both halves**: 1 new fixture (7 forbid rows, six of them pre-fix arms and the seventh labelled as a contract pin, with 4 expect rows as the positive controls) and a sixth lane mutant that dies on exactly it, with the guard-revert arm reading **75 pass / 1 fail** and that failure being the new fixture. Its corpus measurement is the name-shape census (31 of 31,973 svelte rows → 0) plus two differential draws at 100% covered / 0 MISSING / 0 unexplained |
+| fixtures assert the new behaviour and a mutant must die | **77 fixtures, 77 pass / 0 fail** (the two new pins are `reexport-forms` and `star-reexport`). **No analyzer behaviour changed in the hierarchy round**; the file-level round that followed DID change behaviour — eight expectations were updated to the new contract and the mutant arms were re-run against it (§Outgoing has the list and the reason) — so this row's claim is per-round and now reads: every behaviour change this lane has landed is pinned by a fixture AND by a mutant that dies without it. In the hierarchy round, no new fixture was claimed: the full-corpus relationship count is byte-identical (svelte 75,561 before and after), which is the measurement that says the payload did not move. **The JSD40 re-export round is the current case and it meets both halves**: 3 fixtures (2 updated, 1 new, with `forbidRelationships` rows naming the pre-fix spelling), and a fifth lane mutant `restore-reexport-module-star` that dies on exactly those three — plus the pre-change-analyzer arm, where the suite reads **72 pass / 3 fail** and the three are again exactly them. The lane mutants were re-run through the runner and **7 of 7 die** (the seventh, `restore-star-form-indistinct`, is the JSD46 arm and dies on exactly the new `star-reexport` fixture), and §3's wiring is in, so the canonical registry runs them too (**63 selected of 1,856, all 63 CAUGHT**, filtered run, exit 0, re-measured 2026-10-12; 62 of 1,845 when this row was written). **The §2 round is the second case and it also meets both halves**: 1 new fixture (7 forbid rows, six of them pre-fix arms and the seventh labelled as a contract pin, with 4 expect rows as the positive controls) and a sixth lane mutant that dies on exactly it, with the guard-revert arm reading **75 pass / 1 fail** and that failure being the new fixture. Its corpus measurement is the name-shape census (31 of 31,973 svelte rows → 0) plus two differential draws at 100% covered / 0 MISSING / 0 unexplained |
 | mutation, differential and payload/latency re-run | mutation: javascript **56 caught / 0 survived** in the shared registry, plus **5 caught / 0 survived** through `javascript-mutant-runner.ts`; the 6 registry survivors are java 1, groovy 2, scala 1, make 1, php 1. differential: svelte 120 files 1,457 truth / 1,456 covered / MISSING=1 / unexplained=0 / heuristic=0, hash `fc839056ff888724` on that draw, and on a **fresh rotated 120-file draw** `1621 / 1621 (100%) MISSING=0 / unexplained=0 / heuristic=0`, hash `e4b4539bd3e02b48`, and again after the JSD40 re-export change `1756 / 1756 (100%) MISSING=0 / unexplained=0 / heuristic=0`, hash `1d25ea4fb04ffcce` — the draw rotates per invocation (`coldPoolPick`), so a hash is only comparable within one draw and three clean draws is the stronger statement; lodash 55 files 12,819 / 12,819 / MISSING=0 / unexplained=0, hash `494e1b94766e8ade`; ts corpus 200 files 3,445 truth / 3,406 covered / MISSING=39 / unexplained=1 (an `exports` row), all 39 MISSING in `tsc/testdata/baselines` files the JS grammar cannot parse. payload: **399-file svelte sample 34,569 relationships at this commit** — see the caveat below |
-| doc + spec updated | this file; JSD33 (`implements` RULED), JSD34 (class-expression heritage), JSD35 (R7 runtime), JSD36 (`pool-worker` loss), JSD38 (`implements` grammar inventory + the probe that fires on the sibling grammar + the counterfactual parse), JSD39 (the JSDoc resolvability measurement), JSD40 both halves SHIPPED, **JSD41 (the store's view of an import: binding + type)**, **JSD42 (the import row kept one binding per clause — the shared-insert seam)**, **JSD43 (a shadowed name is detached, not left on a namesake)**, **JSD44 (the store-path symbol-name register: `self` and six others dropped by a fourth copy of one list)**, **JSD45 (the re-export chain: a name a file publishes without declaring)**, **JSD46 (the two clause-less star forms: the redistribution followed by statement, and the namespace binding told apart from it)**, **JSD47 (the residue: every detached row carries one reason code, the classes are exhaustive, and the resolver-eligible class is EMPTY by measurement — with the earlier 788/533 reading corrected as this instrument's own artifact)**, **JSD48 (the outgoing half of the same question: the "declared" class split by WHOSE file declares the name, both same-file classes at 0 — so the 11 rows that were reported as an attachment the name pass did not make are name COLLISIONS with local bindings, not a resolver gap)**, **JSD49 (the reproducibility bound, measured as a property: row identity, symbol identity and the planner's decisions identical across two indexings of the same draw while 4–42 rows per pair resolve to a different TARGET — every one of them the `module:item` form, each side classified against the mechanisms that can write it, 0 unexplained)**, **JSD50 (the fix, landed: `settleImportTargets` re-decides every `module:item` row over the COMPLETE tables — planner-where-proven, else the insert path's own ranking — the gate goes 0 of 19,855 divergent and 7 of 7, the pass is a fixed point, and the arm that removes its one line reads 8–57 divergent rows on the same draw with 3 of 7 checks red)**, **JSD51 (the derived half, found by the payload check JSD50's gate gained: `is_cross_file` had five disagreeing writers, stored 0 on 9.6% of cross-file edges and flipped 66 rows between runs with every target identical — now one set-based closure that decides from the row itself, three routes deep, with the id's own `file:` anchor covering the whole unknown-source bucket)** — and the resolver these unblocked, measured on the closed 368-file population at **3,113 of 3,113 (100.0%)** import-decidable rows landed with the pass, the chain and the star route wired, **3,097 of 3,099 (99.9%)** with the chain unwired, and **2,796 of 3,093 (90.4%)** with the whole pass unwired — that arm was measured in the JSD43 round, when the instrument's denominator read 3,093; this round's denominator reads 3,099, and the six-row difference is exactly the re-export route, which the instrument now classifies instead of counting as undecidable |
+| doc + spec updated | this file; JSD33 (`implements` RULED), JSD34 (class-expression heritage), JSD35 (R7 runtime), JSD36 (`pool-worker` loss), JSD38 (`implements` grammar inventory + the probe that fires on the sibling grammar + the counterfactual parse), JSD39 (the JSDoc resolvability measurement), JSD40 both halves SHIPPED, **JSD41 (the store's view of an import: binding + type)**, **JSD42 (the import row kept one binding per clause — the shared-insert seam)**, **JSD43 (a shadowed name is detached, not left on a namesake)**, **JSD44 (the store-path symbol-name register: `self` and six others dropped by a fourth copy of one list)**, **JSD45 (the re-export chain: a name a file publishes without declaring)**, **JSD46 (the two clause-less star forms: the redistribution followed by statement, and the namespace binding told apart from it)**, **JSD47 (the residue: every detached row carries one reason code, the classes are exhaustive, and the resolver-eligible class is EMPTY by measurement — with the earlier 788/533 reading corrected as this instrument's own artifact)**, **JSD48 (the outgoing half of the same question: the "declared" class split by WHOSE file declares the name, both same-file classes at 0 — so the 11 rows that were reported as an attachment the name pass did not make are name COLLISIONS with local bindings, not a resolver gap)**, **JSD49 (the reproducibility bound, measured as a property: row identity, symbol identity and the planner's decisions identical across two indexings of the same draw while 4–42 rows per pair resolve to a different TARGET — every one of them the `module:item` form, each side classified against the mechanisms that can write it, 0 unexplained)**, **JSD50 (the fix, landed: `settleImportTargets` re-decides every `module:item` row over the COMPLETE tables — planner-where-proven, else the insert path's own ranking — the gate goes 0 of 19,855 divergent and 7 of 7, the pass is a fixed point, and the arm that removes its one line reads 8–57 divergent rows on the same draw with 3 of 7 checks red)**, **JSD51 (the derived half, found by the payload check JSD50's gate gained: `is_cross_file` had five disagreeing writers, stored 0 on 9.6% of cross-file edges and flipped 66 rows between runs with every target identical — now one set-based closure that decides from the row itself, three routes deep, with the id's own `file:` anchor covering the whole unknown-source bucket)** — and the resolver these unblocked, measured on the closed 368-file population at **3,113 of 3,113 (100.0%)** import-decidable rows landed with the pass, the chain and the star route wired, **3,097 of 3,099 (99.9%)** with the chain unwired, and **2,796 of 3,093 (90.4%)** with the whole pass unwired — that arm was measured in the JSD43 round, when the instrument's denominator read 3,093; this round's denominator reads 3,099, and the six-row difference is exactly the re-export route, which the instrument now classifies instead of counting as undecidable; **JSD52 (the inbound half of the store: a re-store DELETED rows it could not re-emit and rebuilt them as name-bound copies — the delete is gone, the repair is an exact-id UPDATE plus the shared resolver over the captured ids, and the file-level capture bug is measured at 201 → 401 edges on a 200-module probe, with its own M59 gate at 16 checks / 0 failed)**, **JSD53 (a NAMED default declaration is exported as `default` while its own name is kept — the metadata was dropped before the resolvers could use it, which is why `import Def from "./m"` could not resolve for any such module; the gate reads 6/7 at HEAD in a clean worktree and 7/7 here)**, and **J12 CLOSED (the ambiguous-name race: the insert path now decides only what the row's own file proves and defers the rest to the complete tables, and the bounded run backs the deferral with the full pass's three deciders in the full pass's order, scoped to the files it re-stored — the parity instrument goes 0 of 19,855 divergent on the 250-file draw with 8 of 8 checks, determinism reads 8 of 8, and the attachment census is unchanged at 5,531 attached / 14,324 detached, so the refusal costs no attachment; the third decider was added because the gate measured 118 rows the two-decider version bound that the full pass stores NULL)**, with the store-level records re-earned in this round (parity, determinism, store census) because the rule lives in the shared store path |
 
 ### Payload and latency
 

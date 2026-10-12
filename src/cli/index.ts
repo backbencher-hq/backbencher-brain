@@ -463,6 +463,10 @@ async function cmdIndex(
       // rules could not — the user should be able to tell them apart.
       if ((b.importResolvedInEdges ?? 0) > 0) parts.push(`${b.importResolvedInEdges} of them import edges`)
       if ((b.healedZeroLines ?? 0) > 0) parts.push(`${b.healedZeroLines} legacy zero-line rows healed`)
+      // Rows this run WROTE whose target the shared rules decided: the insert
+      // path leaves a cross-file name to the deciders (J12), so this is the
+      // number that says the re-stored files' own edges were settled, not lost.
+      if ((b.resolvedStoredEdges ?? 0) > 0) parts.push(`${b.resolvedStoredEdges} re-stored rows resolved`)
       if (b.purgedDeletedFiles > 0) parts.push(`${b.purgedDeletedFiles} deleted files purged`)
       console.log(`  bounded: ${parts.join(" | ")}`)
     }

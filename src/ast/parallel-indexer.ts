@@ -33,7 +33,7 @@ import { CrossLanguageIntelligencePersister } from "./cross-language-intelligenc
 import { detectLanguageFromPath } from "./language-detection"
 import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
-import { resolveImportTargets, settleImportTargets } from "./import-resolution"
+import { resolveImportTargets, resolveNameTargets, settleImportTargets } from "./import-resolution"
 import { resolveImportBoundTargets } from "./binding-resolution"
 import { retargetCrossFileOverrides } from "./override-retarget"
 import { ASTEngine } from "./engine"
@@ -413,6 +413,12 @@ export interface ParallelIndexingStats {
     /** M59/#821: captured rows carrying a legacy `line_number = 0`, healed to
      *  NULL by this run. 0 unless the run re-stored over a pre-M59 index. */
     healedZeroLines?: number
+    /** Rows this run WROTE whose target the shared rules decided over the
+     *  complete tables (name/qualified name, or `<module>:<item>`), scoped to
+     *  the re-stored files. The J12 insert path leaves a cross-file name to
+     *  these deciders, so this is the count that separates "settled" from
+     *  "lost" for the rows a `--changed` run owns. */
+    resolvedStoredEdges?: number
     purgedDeletedFiles: number
     touchedSymbols: number
   }
@@ -2761,13 +2767,41 @@ export async function storeResults(
    // every candidate is still a declaration, so the remaining rules decide
    // exactly as before. `COALESCE` puts legacy NULL rows in the definition
    // tier — the pre-#612 behaviour for DBs that have not been re-indexed.
-   const resolveTargetStmt = rawDb.prepare(
-     `SELECT s.id, s.file_id, f.language FROM brain_symbol s
-      LEFT JOIN brain_file f ON f.id = s.file_id
-      WHERE s.project_id = ? AND s.name = ?
-      ORDER BY COALESCE(s.is_declaration, 0) ASC, (s.file_id = ?) DESC, (f.language = ?) DESC, s.id
-      LIMIT 1`
-   )
+  //
+  // J12: THE INSERT PATH DECIDES ONLY WHAT THE ROW ITSELF CAN PROVE — a
+  // candidate in the row's OWN FILE. It used to rank the target's leaf name over
+  // the symbol table AS IT STOOD AT THAT MOMENT (`ORDER BY is_declaration,
+  // same-file, language, id LIMIT 1`), and a parallel index stores batches in
+  // worker-completion order, so a name with several candidates in the project
+  // was answered against a PREFIX of the table. Which file happened to be stored
+  // when the batch landed decided the winner, and every later pass is guarded on
+  // `target_symbol_id IS NULL`, which made that first answer FINAL. Measured by
+  // indexing the same 120 files twice through the production incremental entry:
+  // 70 of 10,171 rows stored a different target
+  // (script/m14/verify-store-path-parity.ts, which attributes every one of them
+  // to this race and refuses to excuse a row on a unique name).
+  //
+  // The two writers are ORDERED now instead of racing:
+  //   the row's own file   -> here, because it is a row-local fact that no batch
+  //                           order can change (the ranking keeps the same-file
+  //                           preference it always had; it is a filter as well)
+  //   everything else      -> the resolution passes, over the COMPLETE tables:
+  //                           `_res_qname` for a qualified name, and strategy 2
+  //                           of `_res_name` for a name that is UNIQUE
+  //                           project-wide — the same single candidate the
+  //                           ranking above would have picked, so deferring them
+  //                           loses no resolution. A name that is neither unique
+  //                           nor in the row's own file is left UNRESOLVED:
+  //                           refusing to guess is the honest answer, and two
+  //                           independent proximity guesses that agree only by
+  //                           luck are what this replaced.
+  const resolveTargetStmt = rawDb.prepare(
+    `SELECT s.id, s.file_id, f.language FROM brain_symbol s
+     LEFT JOIN brain_file f ON f.id = s.file_id
+     WHERE s.project_id = ? AND s.name = ? AND s.file_id = ?
+     ORDER BY COALESCE(s.is_declaration, 0) ASC, s.id
+     LIMIT 1`
+  )
 
    // #612 follow-up: a `contains` edge names its TARGET by NAME only, and the
    // graph's most repeated names are exactly the ones containment is built from —
@@ -4090,7 +4124,7 @@ export async function storeResults(
              const resolvedRow =
                relType === "contains" && relLine !== null
                  ? (resolveContainsTargetStmt.get(projectId, targetLeaf, fileId, relLine, fileLang) as any)
-                 : (resolveTargetStmt.get(projectId, targetLeaf, fileId, fileLang) as any)
+                 : (resolveTargetStmt.get(projectId, targetLeaf, fileId) as any)
              const targetId = resolvedRow?.id || null
  
              // is_cross_file must be honest: 1 only when the resolved target
@@ -4609,61 +4643,15 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
   let stats: ResolvePlanStats | null = null
 
   try {
-    // Build temp lookup tables once — avoids O(n*m) correlated subqueries
-    rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qname (qualified_name TEXT PRIMARY KEY, symbol_id TEXT NOT NULL, file_id TEXT)`)
-    rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_name (name TEXT, symbol_id TEXT NOT NULL, file_id TEXT, cnt INTEGER)`)
-    rawDb.run(`DELETE FROM _res_qname`)
-    rawDb.run(`DELETE FROM _res_name`)
-
-    // Populate qualified names (exact matches)
-    rawDb.prepare(
-      `INSERT OR IGNORE INTO _res_qname (qualified_name, symbol_id, file_id)
-       SELECT qualified_name, MIN(id), MIN(file_id) FROM brain_symbol
-       WHERE project_id = ? AND qualified_name IS NOT NULL GROUP BY qualified_name`
-    ).run(projectId)
-
-    // Populate names with uniqueness count
-    rawDb.prepare(
-      `INSERT OR IGNORE INTO _res_name (name, symbol_id, file_id, cnt)
-       SELECT name, id, file_id, COUNT(*) OVER (PARTITION BY name)
-       FROM brain_symbol WHERE project_id = ?`
-    ).run(projectId)
-
-    // Create indexes on temp tables
-    rawDb.run(`CREATE INDEX IF NOT EXISTS _res_name_idx ON _res_name(name)`)
-    rawDb.run(`CREATE INDEX IF NOT EXISTS _res_name_uniq_idx ON _res_name(name, cnt)`)
-
-    // Strategy 1: Qualified name exact match (fast JOIN)
-    const r1 = rawDb.run(`
-      UPDATE brain_relationship
-      SET target_symbol_id = _res_qname.symbol_id,
-          is_cross_file = CASE WHEN _res_qname.file_id != COALESCE(
-            (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1), ''
-          ) THEN 1 ELSE 0 END
-      FROM _res_qname
-      WHERE brain_relationship.target_external = _res_qname.qualified_name
-        AND brain_relationship.target_symbol_id IS NULL
-        AND brain_relationship.target_external IS NOT NULL
-        AND brain_relationship.project_id = '${projectId}'
-    `)
-
-    // Strategy 2: Unambiguous name match (only if unique)
-    const r2 = rawDb.run(`
-      UPDATE brain_relationship
-      SET target_symbol_id = _res_name.symbol_id,
-          is_cross_file = CASE WHEN _res_name.file_id != COALESCE(
-            (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1), ''
-          ) THEN 1 ELSE 0 END
-      FROM _res_name
-      WHERE brain_relationship.target_external = _res_name.name
-        AND _res_name.cnt = 1
-        AND brain_relationship.target_symbol_id IS NULL
-        AND brain_relationship.target_external IS NOT NULL
-        AND brain_relationship.project_id = '${projectId}'
-    `)
-
-    const resolved = (r1?.changes || 0) + (r2?.changes || 0)
-    log.debug("relationship resolution completed", { resolved, unresolved })
+    // Strategies 1 and 2 (qualified name, then a name that is UNIQUE
+    // project-wide) are CALLED, not spelled again here: they live in
+    // `resolveNameTargets` (import-resolution.ts) because the bounded
+    // incremental pass runs the same two rules for the rows it owns, and a rule
+    // with two spellings drifts — the JSD44 lesson, where four copies of one
+    // list left three of them refusing the names the fourth had just admitted.
+    const namePass = resolveNameTargets(rawDb as any, projectId)
+    const resolved = namePass.resolved
+    log.debug("relationship resolution completed", { resolved, unresolved, scanned: namePass.scanned })
 
     // Strategy 4 (M60, review JD2): the `<module>:<item>` import form.
     //
@@ -5120,9 +5108,8 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
         AND brain_relationship.target_symbol_id IS NOT NULL
     `)
 
-    // Cleanup
-    rawDb.run(`DROP TABLE IF EXISTS _res_qname`)
-    rawDb.run(`DROP TABLE IF EXISTS _res_name`)
+    // (No cleanup here: the temp lookup tables belong to `resolveNameTargets`,
+    // which drops them at the end of its own call.)
   } catch (err) {
     // Rethrow. This catch used to swallow, and swallowing here is what made a
     // FAILED resolution indistinguishable from a successful one at every
@@ -6094,6 +6081,7 @@ export async function indexProjectParallel(
         importResolvedInEdges: bounded.importResolvedInEdges,
         stillUnresolvedInEdges: bounded.stillUnresolvedInEdges,
         healedZeroLines: bounded.healedZeroLines,
+        resolvedStoredEdges: bounded.resolvedStoredEdges,
         purgedDeletedFiles: bounded.purgedDeletedFiles,
         touchedSymbols: bounded.touchedSymbols,
       }
@@ -6962,6 +6950,13 @@ export interface BoundedPostProcessingResult {
    *  healed to NULL by this run. 0 on a current index; non-zero only when the
    *  run re-stored over rows written by a pre-M59 build. */
   healedZeroLines?: number
+  /** Rows THIS RUN stored whose target was decided by the shared resolution
+   *  rules over the complete tables — the qualified-name and unique-name
+   *  strategies, plus the `<module>:<item>` resolver — scoped to the files it
+   *  re-stored. Separate from `repairedInEdges`, which measures rows whose
+   *  pointer this run CLEARED; these are rows this run WROTE and, after J12, the
+   *  insert path deliberately leaves to the deciders (its own file only). */
+  resolvedStoredEdges?: number
   purgedDeletedFiles: number
   touchedSymbols: number
 }
@@ -7145,6 +7140,54 @@ export async function runBoundedPostProcessing(
     }
   }
 
+  // 2. resolution for the rows THIS RUN STORED — the other half of J12.
+  //
+  // The insert path decides only what the row's own file proves (J12), and the
+  // full index hands the rest to `resolveRelationships` after the store. A
+  // bounded run runs neither that pass nor the store's own resolution (its
+  // batches are stored with `skipResolution: true`), so without this step a
+  // re-stored file's cross-file edge had NO decider at all. MEASURED by
+  // `script/m40/lifecycle-corpus.ts`: S2 (`bb_edit` inserting a call to a
+  // function declared in another file) read 0 resolved outgoing edges and
+  // failed, and S3 then counted the leftover row as an orphan (3 against a 0
+  // baseline).
+  //
+  // The three halves are the SHARED rules, called rather than copied, in the order
+  // the full pass runs them (name → `module:item` → the binding pass, which is what
+  // corrects both of the others), and all three are scoped to the files this run
+  // re-stored — a `--changed` run must not write a row in a file it never touched.
+  // Reads are project-wide either way, which is what makes the answer the same one
+  // the full pass would store.
+  let resolvedStoredEdges = 0
+  {
+    const _t = Date.now()
+    try {
+      const namePass = resolveNameTargets(rawDb as any, projectId, { sourceFileIds: touchedFileIds })
+      const impPass = resolveImportTargets(rawDb as any, projectId, { onlySourceFileIds: touchedFileIds })
+      // THE BINDING PASS, last, because the full pass runs it last: it is what
+      // CORRECTS the name strategies when the row's own file proves a different
+      // answer — the row's own import clause names the module, and a name the row's
+      // own file binds LOCALLY (a parameter of the row's own symbol, a local
+      // `const`) is not the same-named symbol the name pass just bound, so the pass
+      // CLEARS it (`shadowed-local-binding`, GATE 2 of the planner). Leaving it out
+      // is not a smaller fix, it is a different answer: MEASURED by
+      // `script/m14/verify-store-path-parity.ts` on the 250-file draw, the name and
+      // `module:item` halves alone leave **118 rows the full pass stores NULL and
+      // the bounded run stores BOUND** (0 once this call is added), and every one of
+      // them is a `uses` row whose requested name is a parameter of its own source
+      // symbol. Same rules, same order, scoped reads-free and writes-scoped.
+      const boundPass = resolveImportBoundTargets(rawDb as any, projectId, { onlySourceFileIds: touchedFileIds })
+      resolvedStoredEdges = namePass.resolved + impPass.resolved + boundPass.attached + boundPass.corrected
+      recordPhase("relationships", Date.now() - _t, "ok")
+      if (resolvedStoredEdges > 0 || boundPass.detached > 0) {
+        _log.log(`  bounded: resolved ${resolvedStoredEdges} edge(s) the re-stored files own (${namePass.resolved} by name, ${impPass.resolved} by module path, ${boundPass.attached + boundPass.corrected} by the file's own import statement); ${boundPass.detached} cleared as a local binding of the row's own symbol`)
+      }
+    } catch (e: any) {
+      recordPhase("relationships", Date.now() - _t, "failed")
+      log.warn("bounded stored-row resolution failed", { error: e?.message })
+    }
+  }
+
   // 3. `is_cross_file` — the SAME closure the full pass runs, scoped to what this
   // run re-stored. Without it the incremental path left the flag to the insert
   // path, whose rule (a cross is claimed only when the row's source SYMBOL
@@ -7225,7 +7268,7 @@ export async function runBoundedPostProcessing(
     }
   }
 
-  return { phases, totalMs: Date.now() - start, repairedInEdges, importResolvedInEdges: repairOut.importResolvedInEdges ?? 0, stillUnresolvedInEdges: repairOut.stillUnresolved ?? 0, healedZeroLines: repairOut.healedZeroLines ?? 0, purgedDeletedFiles, touchedSymbols: touchedSymbols.length }
+  return { phases, totalMs: Date.now() - start, repairedInEdges, importResolvedInEdges: repairOut.importResolvedInEdges ?? 0, stillUnresolvedInEdges: repairOut.stillUnresolved ?? 0, healedZeroLines: repairOut.healedZeroLines ?? 0, resolvedStoredEdges, purgedDeletedFiles, touchedSymbols: touchedSymbols.length }
 }
 
 // M48.C2 (#700): dir-mode change detection scoped to a subdirectory, computed

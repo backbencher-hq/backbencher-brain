@@ -527,8 +527,35 @@ export interface BindingResolutionOutcome {
 /**
  * Attach and correct edges by the importing file's own import graph. Safe to call when
  * there is nothing to do; never throws into the caller.
+ *
+ * `opts.onlySourceFileIds` scopes the rows this call ACTS on to those whose SOURCE
+ * (or, for a file-level `exports` row, whose exporting) file is one of these — the
+ * bounded incremental pass's spelling of ownership, because it knows the files it
+ * re-stored and not the row ids the store created. The reads stay project-wide
+ * either way: every decision below is a function of the complete tables (the
+ * importing file's own import statements, the exported surface of the module it
+ * names), so restricting the writes is what keeps the bounded contract without
+ * changing an answer. A row with no determinable own file is not kept under a
+ * scope — the caller would be writing a row it cannot prove it owns.
+ *
+ * WHY THE BOUNDED PATH NEEDS THE WHOLE PASS, not just its detach rule: the name
+ * strategies bind by a name that is UNIQUE project-wide, which includes a name the
+ * row's OWN file binds locally (a parameter of the row's own source symbol, a local
+ * `const`) — and this pass is what CLEARS those (`shadowed-local-binding`, GATE 2
+ * of the planner), plus the only route that attaches a row through a recorded
+ * import clause when the bare name is ambiguous. MEASURED by
+ * `script/m14/verify-store-path-parity.ts` on the 250-file draw: with the name and
+ * `module:item` half of the bounded resolution but without this call, the parity
+ * gate reads **118 rows the full pass left NULL and the re-index bound**, every one
+ * of them a `uses` row whose requested name is a parameter of its own source
+ * symbol (`count` in `create_sbench_test(label, count, num_sources, fn)`); with it,
+ * 0 rows differ.
  */
-export function resolveImportBoundTargets(db: MinimalDb, projectId: string): BindingResolutionOutcome {
+export function resolveImportBoundTargets(
+  db: MinimalDb,
+  projectId: string,
+  opts: { onlySourceFileIds?: string[] } = {},
+): BindingResolutionOutcome {
   const byReason: Record<string, number> = {}
   const out: BindingResolutionOutcome = { scanned: 0, attached: 0, corrected: 0, detached: 0, agreed: 0, byReason }
   const bump = (k: string) => { byReason[k] = (byReason[k] ?? 0) + 1 }
@@ -573,7 +600,7 @@ export function resolveImportBoundTargets(db: MinimalDb, projectId: string): Bin
     // source symbol there is no own-file evidence, so the name strategies resolve them by
     // name like a call — and can pick another file's symbol. `sfx` recovers the exporting
     // file from `source_external` so the own-file rule can answer for them.
-    const rows = db.prepare(
+    const allRows = db.prepare(
       `SELECT r.id AS id, r.relationship_type AS type, r.target_external AS target_external,
               r.target_symbol_id AS currentTarget, r.metadata AS md,
               COALESCE(sf.id, sfx.id) AS sourceFileId, ss.parameters AS sourceParams
@@ -589,6 +616,16 @@ export function resolveImportBoundTargets(db: MinimalDb, projectId: string): Bin
           AND instr(r.target_external, '.') = 0
           AND r.relationship_type IN ('calls','uses','instantiates','references','extends','exports')`,
     ).all(projectId) as any[]
+    // The SCOPE, applied to the rows this call may write. Everything the decision
+    // reads (the file table, the symbol table, the import records, the edges that
+    // carry the declared names) is already complete above, so a scoped call makes
+    // the same decision the full pass makes and only touches the rows it owns.
+    const inScope = opts.onlySourceFileIds && opts.onlySourceFileIds.length > 0
+      ? new Set(opts.onlySourceFileIds.map(String))
+      : null
+    const rows = inScope
+      ? allRows.filter((r: any) => r.sourceFileId && inScope.has(String(r.sourceFileId)))
+      : allRows
 
     const index: BindingIndex = {
       filePath: new Map(), fileIdByPath: new Map(), symbolsByFile: new Map(),
