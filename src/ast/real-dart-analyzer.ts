@@ -1739,8 +1739,28 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // resolveOverrides): in-file BFS over ALL heritage (extends + implements
     // + with), cross-file companion when provided, then a deterministic
     // first-heritage-parent fallback for cross-file framework bases.
+    // A CONSTRUCTOR IS NOT AN OVERRIDABLE MEMBER, and leaving it in this surface published a
+    // fabricated edge. Every constructor symbol the analyzer emits is named `constructor` (the
+    // language's own spelling), so a subclass member that happens to carry that name matched the
+    // base's constructor BY NAME alone:
+    //
+    //   sealed class RecordedUse {
+    //     RecordedUse();
+    //   }
+    //   class RecordedInstanceCreation extends RecordedUse {
+    //     final ConstructorEntity constructor;
+    //
+    // claimed `RecordedInstanceCreation.constructor -> RecordedUse.constructor` at 0.95, and
+    // `RecordedConstructorTearOff.constructor` claimed the same base member. Constructors are not
+    // inherited and cannot be overridden in Dart, and this is also the rule the ORACLE already
+    // holds: its member surface (`memberNamesOf` in script/m14/oracles/dart-overrides.ts) handles
+    // `method_signature` and `declaration` nodes only, so a constructor contributes no name there
+    // and the two implementations disagreed on exactly this one. MEASURED on dart-sdk with the
+    // exposure watchdog: these 2 rows (`pkg/compiler/lib/src/universe/recorded_use.dart`) were
+    // refuted while every instrument-side cause around them was eliminated.
     const byName = new Map<string, ASTEngine.UniversalSymbol[]>()
     for (const s of symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Constructor) continue
       const list = byName.get(s.name) ?? []
       list.push(s)
       byName.set(s.name, list)
