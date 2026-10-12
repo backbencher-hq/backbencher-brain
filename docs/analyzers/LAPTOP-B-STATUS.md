@@ -2900,7 +2900,9 @@ destroy someone else's work.
   (ASN.1 documents at line 1, the py2 build script at 107, the highlighter fragment at 49); the
   file-level decision is still not this lane's to take alone.
 - **7 `exports`** — unchanged in rounds 8–12, `__all__` names provided lazily, axis deliberately not
-  applied (§7).
+  applied (§7). **CLOSED FOR 2 OF THE 7 IN ROUND 14** (the two a module-level `__getattr__` SPELLS,
+  now published as declarations — `tree_sitter_clean/__init__.py -> HIGHLIGHTS_QUERY` and
+  `-> TAGS_QUERY`); the remaining 5 are split into two declared mechanisms by round 14 §3.
 - **The `(x): int` / `(y): int = 0` field over-claim** from round 11's §9 is unchanged and still open:
   `multiTargetForm: "tuple_pattern"` for a parenthesised single name that the source did not write as a
   tuple.
@@ -3041,12 +3043,132 @@ instead of being widened under a green run.
   with numbers; the first consumer worth having is a check that a binder symbol really landed.
 - **The module half's per-name publication**, with its price in hand (58 names, **90** extra symbols —
   §3) — the next round can take it with a number instead of a surprise.
-- Unchanged from round 12's §9: the 7 `exports` (lazy `__all__`), the 42 rows in files CPython cannot
-  parse (named per row by the axis gate), the `(x): int` field label from round 11, PY-D13's store
-  half, and round 3's D5.
+- Unchanged from round 12's §9: **the 7 `exports` — 2 of them CLOSED IN ROUND 14**, leaving 5 that
+  decompose into exactly two mechanisms (4 SUBMODULE rows, 1 stale `__all__`; round 14 §3) — the 42
+  rows in files CPython cannot parse (named per row by the axis gate), the `(x): int` field label from
+  round 11, PY-D13's store half, and round 3's D5.
 - The gate failures that are GREEN here but RED elsewhere — 45 undeclared label-coverage gaps in 20
   lanes, 6 undeclared no-truth labels in 5 lanes — are other lanes' recorded debt. They are named so
   that no later reader reads this lane's green as the gate's.
+
+## python round 14 (2026-10-12) — 7 UNEXPLAINED → 5 by publishing the names a module-level `__getattr__` SPELLS, and the price found two bugs in the code this round wrote
+
+Round 13 left `7 exports`, all `__all__` names "provided lazily". Two of them are provided by a
+construct the file writes in its own text — a module-level `def __getattr__(name)` (PEP 562) — so the
+round's question was whether that provision is readable without executing anything, and whether the
+two that are readable are the only two that are.
+
+### 1. The rule, and the price that bounded it before the code existed
+
+A module-level `__getattr__` states what the module PROVIDES, and the shapes it writes are literals:
+`if name == "X": return ...`, `if name in ("X", "Y")`, `elif name in {...}`. The published rule reads
+the comparison's left side against the function's OWN first parameter name (not the literal word
+`name`), accepts `==` and `in`, accepts a string literal or a tuple/list/**set** of them, requires the
+value to be a python identifier, and SKIPS a comparison whose `if` consequently raises `AttributeError`
+— that shape states what the module REFUSES, and publishing it would be a fabricated export. Each name
+lands at the **literal's own line** with `metadata.boundByBinder: "getattr"`, the key round 12
+introduced, so the seam's 17-published/1-carried arithmetic (PY-D26) is unchanged by this round.
+
+PRICED TWICE, and the second pass is the authority: the first (`.tmp-py/price-module-getattr-exports.py`)
+classified the 7 rows and never counted files that define a module-level `__getattr__` at all; the second
+(`.tmp-py/price-module-getattr-round14.py` → `module-getattr-round14-price.json`) measures the shipped
+rule over **11,245 parsed files / 55 CPython rejects** and reads **26** files defining a module-level
+`__getattr__`, **6** of them spelling literal names and **20** spelling none (they forward to `globals()`,
+build a dict, import dynamically — a measured limit of the rule, not an accident), **14** literal names
+across those 6 files, of which **1** is already statically bound in its own file (cython's `gs`, published
+at L706) and **2** are already in the file's import channel — so the publication is **11 symbols**.
+
+### 2. The price is what found two bugs in the rule's own first version
+
+Both were found by measuring the SHIPPED analyzer against the price, not by re-reading the rule:
+
+- **the annotated spelling was refused outright.** `def __getattr__(name: str)` parses its first
+  parameter as `typed_parameter`, and the first version required a bare `identifier` — so 6 of the 26
+  corpus files published NOTHING, silently. `.tmp-py/debug-getattr-shapes.mts` printed the parameter's
+  node type for all five files the first price named, which is how the refusal was located.
+- **the SET spelling published nothing.** `ansible/module_utils/_text.py` writes
+  `elif importable_name in {"to_bytes", "to_native", "to_text"}`; the first version accepted only
+  tuple/list, so all 3 names in that one `elif` were missing. That file also names its parameter
+  `importable_name`, which is why the rule keys on the function's OWN parameter and not on the word
+  `name` (18 of the 26 files name theirs something else).
+
+The check is a walk over EXACTLY the files the price names, so the two instruments cannot drift:
+`.tmp-py/census-getattr-provisions.mts` reads **11 published, 0 unexplained misses**, and prints
+`14 - 1 - 2 = 11` as its own last line.
+
+### 3. The corpus effect, and the two mechanisms that remain
+
+Measured on the whole-population instrument, not argued: `totalSymbols` **206,940 → 206,951** — exactly
+the 11 priced publications, with every other label unmoved — and `exports` incoming UNEXPLAINED
+**7 → 5**, naming exactly the rows that remain. The verdict's own gate moved with it: the declared
+ceiling is **7 → 5** and its cause is rewritten to the two mechanisms that survive, because a ceiling
+whose cause no longer describes the measured set is a false statement that still passes.
+
+- **4 SUBMODULE rows** — PY-D29. `sqlalchemy/lib/sqlalchemy/dialects/__init__.py` lists `mssql`, `mysql`,
+  `oracle`, `postgresql` in `__all__` and binds none: the package SHIPS `dialects/mssql/__init__.py`, so
+  python's import system supplies the attribute. The analyzer is handed ONE FILE, and publishing a
+  declaration would invent a position for a name the file writes nowhere. Priced: 3,043 `__all__` entries
+  corpus-wide, 6 satisfied by a submodule, 4 of them in the verdict's population.
+- **1 STALE `__all__` row** — PY-D30. `declarative/__init__.py -> instrument_declarative`: nothing binds
+  it, nothing imports it, no submodule ships it, no `__getattr__` names it, so the file's own export list
+  is WRONG. The edge stays — that statement is what the analyzer reads, and a stale export is a fact a
+  consumer wants flagged — but the row is declared with its population (6 of 3,043 corpus-wide, 1 in the
+  verdict's population) instead of being excused. Round 12's `not-bound-in-file` axis is deliberately NOT
+  applied here: for the submodule rows its claim is false by construction, and for this one it would be
+  TRUE, which is precisely why it is declared as a stale export.
+
+### 4. An asymmetry DECLARED, and a harness invariant that forced a fixture rewrite
+
+- **PY-D31 (declared).** The publication guard reads `ctx.imports` FILE-WIDE, so a name a
+  **function-local** import binds is not published: `cython/Cython/Build/__init__.py`'s `build_ext`
+  (imported inside the very branch that provides it) and `_text.py`'s `codecs` are the 2 dropped names,
+  while the same situation spelled `from os import sep as X` publishes `X` because the channel holds the
+  item name. Measured: 2 of the 14 priced names, 0 verdict rows, both dropped names function-scope.
+  Narrowing it also moves round 12's binder-row count, whose sensitivity is unmeasured, so BOTH
+  spellings are pinned by the fixture and the narrowing waits for its own price.
+- **The fixture runner's EXPORT INVARIANT fired, and the fixture was rewritten rather than the check.**
+  The first version of the fixture put the stale-`__all__` name (`NOT_PROVIDED`) in `__all__` and pinned
+  its `exports` edge as expected; the runner refuses exactly that — "export(s) do not resolve to a
+  top-level symbol" — because an `exports` edge to a name no symbol supplies is a contract violation.
+  The name was removed from `__all__` (its `forbidSymbols` row stays, which is what pins the inverted
+  guard), and the corpus instance of that shape is declared as PY-D30.
+
+### 5. Verified together (analyzer = the shipped source)
+
+- fixtures `bun script/m14/run-fixtures.ts --lang python`: **python 52 pass / 0 fail**, exit 0 — the new
+  `python/module-getattr-provides-names` pins the three positive spellings, the dedupe against an
+  assignment, both spellings of the local-import asymmetry, and the four refusals (inverted guard,
+  non-identifier literal, wrong function name, class body).
+- mutants `python3 script/m14/python-implements-mutants.py`: **59 caught · 0 survived · 0 not applied**,
+  control green — 9 new, including the restored annotated-parameter refusal, the restored hardcoded
+  `name` spelling, the restored set refusal, the deny-list publication, the dropped class gate and the
+  dropped module-half per-NAME dedupe.
+- `npx tsc --noEmit` exit 0 (empty output); `npx tsx script/m14/completeness-inventory.ts --lang python`
+  exit 0, **130 types classified, sections A–H 8/8**.
+- verdict `npx tsx script/m14/python-endpoint-resolution.ts --out validation/m14/fixtures/python/
+  resolution-verdict.current.json` → **11,488/11,488 files parsed, 0 failed, 206,951 symbols,
+  1,290,653 relationships**; `bun validation/m14/fixtures/python/resolution-verdict-gate.ts` exit 0,
+  **total incoming UNEXPLAINED 5**, all within named ceilings, 0 outgoing unresolved on all ten labels.
+- spec `script/m14/spec/python-completeness.json`: **30 decisions**, ASCII-only, re-parses; **PY-D28**
+  FIXED, **PY-D29/PY-D30/PY-D31** DECLARED with their populations.
+
+### 6. Still open after round 14
+
+- **The 5 `exports`** — 4 SUBMODULE rows (PY-D29, the resolution layer's, since it has the filesystem)
+  and 1 stale `__all__` (PY-D30). Neither is publishable from a single file's text.
+- **PY-D31's narrowing** — needs the same price every other change here got: how many binder rows and
+  how many RESOLVED/AMBIGUOUS splits move if the guard reads only module-scope imports.
+- **PY-D26** unchanged: 17 provenance keys published, 1 carried across the worker allowlist, no
+  store-level reader for `boundByBinder` yet — so the mechanism is pinnable analyzer-side only.
+- **The module half's per-name publication**, with its price in hand (58 names, 90 extra symbols — round
+  13 §3). Round 14 measured the provision half of the same question and found NO corpus instance: 14
+  priced names are 14 rows, so no provision name has two sites today. The fixture therefore writes one
+  deliberately (`SPELLED` twice), which is what gives that dedupe a falsifier at all — and pins the
+  per-NAME module rule against the per-SITE class rule in one file.
+- Unchanged: the 42 rows in files CPython cannot parse (named per row by the axis gate), the `(x): int`
+  field label from round 11, PY-D13's store half, round 3's D5, and the cross-lane gate debts (45
+  undeclared label-coverage gaps in 20 lanes, 5 undeclared no-truth labels in 5 lanes) that are other
+  lanes' to close.
 
 ## Totals today
 

@@ -1097,6 +1097,59 @@ module half per name, and both prices are written down. Fixtures **51/51**, muta
 `--lang python` sections A–H **8/8**, python's label-coverage row clean, and the spec records the rule
 as **PY-D27**.
 
+### A module-level `__getattr__` PROVIDES names, and the file spells them (round 14, 2026-10-12)
+
+The verdict's last 7 UNEXPLAINED incoming rows were all `exports`, and 2 of them were
+`tree_sitter_clean/__init__.py -> HIGHLIGHTS_QUERY` and `-> TAGS_QUERY`. That file states both
+provisions in its own source — a module-level `def __getattr__(name)` with
+`if name == "HIGHLIGHTS_QUERY": return _get_query(...)`, `TAGS_QUERY` the same, and both listed in
+`__all__` — so the name is public surface and the module's OWN export edge could not resolve against
+its own file.
+
+The rule reads what the file spells: the comparison's left side must be the function's OWN first
+parameter name (not the literal word `name`), the operator `==` or `in`, the right side a string
+literal or a tuple/list/**set** of them, the value a python identifier, and a comparison whose `if`
+consequently raises `AttributeError` is skipped — that shape states what the module REFUSES, and
+publishing it would be a fabricated export. Each name is published as a module Variable at the
+literal's own line under `metadata.boundByBinder: "getattr"`, the key round 12 introduced, so no new
+metadata key enters the worker seam.
+
+**Two pricing passes, and the second one is what found the bugs.** The first
+(`.tmp-py/price-module-getattr-exports.py`) classified the 7 verdict rows; it hardcoded the parameter
+spelling and never counted files that define a module-level `__getattr__` at all. The second
+(`.tmp-py/price-module-getattr-round14.py`) measures this rule over 11,245 parsed files: **26** define
+a module-level `__getattr__`, **6** spell literal names while **20** spell none, those 6 hold **14**
+names, **1** is already statically bound in its own file (cython's `gs`) and **2** are already in the
+file's import channel — so **11 symbols**. Measuring the shipped analyzer against that price is what
+exposed two defects in the rule's own first version: an **annotated** parameter (`def
+__getattr__(name: str)` — 6 of the 26 files) parses as `typed_parameter` and was refused outright,
+and `ansible/module_utils/_text.py` spells a branch `in {"to_bytes", "to_native", "to_text"}` — a
+**set** — which the first version published nothing for. Both are fixed and both are pinned as
+mutants; `.tmp-py/census-getattr-provisions.mts` now walks exactly the 6 files the price names and
+reads **11 published, 0 unexplained misses**, printing `14 - 1 - 2 = 11` as its own last line.
+
+Corpus effect, measured on the whole-population instrument rather than argued: `totalSymbols`
+**206,940 → 206,951** (exactly +11) and `exports` incoming UNEXPLAINED **7 → 5**, naming exactly the
+rows that remain. The gate's declared ceiling moves **7 → 5** with its cause rewritten to the two
+mechanisms that survive: **4 SUBMODULE rows** (PY-D29 — the package ships `dialects/mssql/__init__.py`,
+and the analyzer is handed one file, so a position for the name would be invented) and **1 stale
+`__all__` row** (PY-D30 — `declarative/__init__.py -> instrument_declarative`, a name the file supplies
+by nothing at all; corpus-wide, 3,043 `__all__` entries reduce to 6 stale and 6 submodule rows).
+
+**One declared asymmetry** (PY-D31): the publication guard reads the file-wide import channel, so
+`cython/Cython/Build/__init__.py`'s `build_ext` — provided by the very branch that imports it locally —
+is not published, while the same situation spelled with `as` is. Measured at 2 of the 14 priced names
+and 0 verdict rows; narrowing it would also move round 12's binder-row count, whose sensitivity is
+unmeasured, so **both spellings are pinned by the fixture** and the narrowing waits for its own price.
+
+Fixtures **52/52**, mutants **59/59 caught** with 0 survivors (9 new, including the restored annotated
+refusal, the restored hardcoded `name` spelling, the restored set refusal, the deny-list publication,
+the dropped class gate and the dropped module-half per-NAME dedupe), `tsc --noEmit` clean, inventory
+`--lang python` sections A–H **8/8**, spec **PY-D28** + **PY-D29/PY-D30/PY-D31**, and the fixture
+runner's EXPORT INVARIANT is what forced the fixture rewrite rather than a weakened check — an
+`exports` edge whose target is no top-level symbol is a violation, so the stale-`__all__` shape is
+declared as a residual instead of pinned as correct.
+
 ## Census
 
 - Baseline (M12 issue #166): 5 census regex entries in `real-python-analyzer.ts`.
