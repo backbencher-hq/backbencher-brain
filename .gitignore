@@ -338,3 +338,7 @@ ide/zed/bb-lsp/target/
 .selfcheck/
 .tmp-tsc.log
 --out
+
+# SCRATCH INSTRUMENT (r-lane, strategy counter). Created for ONE run and deleted immediately after.
+# Listed here BEFORE creation so it cannot be committed by accident.
+src/ast/__stratcount-indexer.ts
