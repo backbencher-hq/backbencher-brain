@@ -1,8 +1,8 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 10.22,
-    "loadAvgEnd": 9.53,
+    "loadAvgStart": 3.58,
+    "loadAvgEnd": 3.58,
     "sliceCount": 1
   },
   "counts": {
@@ -1588,6 +1588,24 @@
       "perf": {
         "avgMsPerFile": 722
       }
+    },
+    "mojo:perl": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 59.2
+      },
+      "sampleSetHash": "9b51006836efe023"
+    },
+    "plack:perl": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 8.7
+      },
+      "sampleSetHash": "2503e48eb336f10f"
     }
   },
   "hashes": {
@@ -1645,7 +1663,9 @@
     "kubernetes:markdown": "850beced0f7f393d",
     "element-plus:scss": "dd6619b1d6986840",
     "solidity:solidity": "e9708e750546e983",
-    "julia:julia": "0b7c135add6ea602"
+    "julia:julia": "0b7c135add6ea602",
+    "mojo:perl": "9b51006836efe023",
+    "plack:perl": "2503e48eb336f10f"
   },
   "floorMoves": {
     "solidity:solidity": {
@@ -1697,14 +1717,6 @@
       "recoveredRow": true,
       "at": "7ab888b79"
     },
-    "mojo:perl": {
-      "repo": "mojo",
-      "language": "perl",
-      "reason": "perl's oracle (derivePerlEdges + its dispatch block) is not in this tree (dropped by merge 16075a5a1), and the mojo corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
-      "corpusOnBox": false,
-      "recoveredRow": true,
-      "at": "7ab888b79"
-    },
     "nim:nim": {
       "repo": "nim",
       "language": "nim",
@@ -1718,14 +1730,6 @@
       "language": "nim",
       "reason": "same dropped oracle block, and the pixie corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
       "corpusOnBox": false,
-      "recoveredRow": true,
-      "at": "7ab888b79"
-    },
-    "plack:perl": {
-      "repo": "plack",
-      "language": "perl",
-      "reason": "perl's oracle is not in this tree (dropped by merge 16075a5a1); the plack corpus IS checked out, but a probe of it derives zero truth edges — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
-      "corpusOnBox": true,
       "recoveredRow": true,
       "at": "7ab888b79"
     },
@@ -1802,7 +1806,7 @@
         "sampleSetHash": "8a36c71dab2d084f"
       },
       "sampleSetHash": "8a36c71dab2d084f",
-      "reMeasuredAt": null,
+      "reMeasuredAt": "fe749f419abe0599ab0d87b65b54ed0ee97f9368",
       "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
     },
     "nim:nim": {
@@ -1862,7 +1866,7 @@
         "sampleSetHash": "fdc7963ba43db622"
       },
       "sampleSetHash": "fdc7963ba43db622",
-      "reMeasuredAt": null,
+      "reMeasuredAt": "fe749f419abe0599ab0d87b65b54ed0ee97f9368",
       "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
     },
     "tf-aws-components:hcl": {

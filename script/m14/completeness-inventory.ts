@@ -1445,20 +1445,26 @@ async function runLang(cfg: LangConfig): Promise<{ checks: SectionCheck[]; summa
     verifySectionH(),
   ]
   const sectionFails = checks.filter((c) => c.status !== "pass")
-  if (sectionFails.length > 0) {
-    failures++
-    // A language registered but not yet CONFORMANT (perl: E and F await the
-    // canonical sweep) needs its passing sections VISIBLE, not just its two
-    // failures — "6 of 8" is a different claim from "it failed", and only the
-    // first one tells a reviewer which work is left. Same courtesy as
-    // differential.ts's scoped-run banner: this prints, it does not write.
-    const SCOPED = !!(globalThis as any).__SCOPED_LANG
-    if (SCOPED) {
-      console.log(`${cfg.id} SECTIONS (scoped run — M14.0.SPEC evidence is NOT written):`)
-      for (const c of checks) console.log(`  ${c.status === "pass" ? "pass" : "FAIL"}  ${c.id.padEnd(28)} ${c.detail}`)
-    }
-    for (const c of sectionFails) console.error(`${cfg.id} SECTION FAIL: ${c.id} — ${c.detail}`)
+  // The scoped section list prints on EVERY `--lang` run, not only on failure. It used to be
+  // inside `if (sectionFails.length > 0)`, and the consequence was that a GREEN lane emitted no
+  // per-section rows at all — so `script/m14/verify-perl-wave.ts`, whose whole job is to carry
+  // "#419's own sections, as the inventory reports them" into the lane's artifact, parsed an
+  // empty set and recorded a failing `419-sections` row against a lane that had just passed 10
+  // of 10. An instrument whose output appears only when it fails cannot be a source of evidence
+  // for a claim, and the aggregate line it does print ("sections A-H: 10/10 pass") is exactly the
+  // shape this file's own comment rejects one paragraph up: it hides WHICH section moved.
+  //
+  // A language registered but not yet CONFORMANT needs its passing sections VISIBLE, not just its
+  // failures — "6 of 8" is a different claim from "it failed", and only the first one tells a
+  // reviewer which work is left. Same courtesy as differential.ts's scoped-run banner: this
+  // prints, it does not write.
+  const SCOPED = !!(globalThis as any).__SCOPED_LANG
+  if (sectionFails.length > 0) failures++
+  if (SCOPED) {
+    console.log(`${cfg.id} SECTIONS (scoped run — M14.0.SPEC evidence is NOT written):`)
+    for (const c of checks) console.log(`  ${c.status === "pass" ? "pass" : "FAIL"}  ${c.id.padEnd(28)} ${c.detail}`)
   }
+  for (const c of sectionFails) console.error(`${cfg.id} SECTION FAIL: ${c.id} — ${c.detail}`)
   const summary = `${cfg.id}: ${types.length} types classified; sections A-H: ${checks.length - sectionFails.length}/${checks.length} pass`
   return { checks, summary, failures }
 }

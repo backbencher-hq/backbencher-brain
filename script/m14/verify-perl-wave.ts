@@ -27,10 +27,18 @@
 // forbids — the limitation below says so instead of quietly keeping the figure.
 //
 // The claim set mirrors the committed record's checks one for one (its ids are kept,
-// so a reader comparing the two artifacts sees the same rows), including the two rows
-// that are SUPPOSED to be red: #419 sections E and F belong to the canonical
-// 30-language sweep, and a scoped `--lang perl` run must not write a canonical row to
-// make them green.
+// so a reader comparing the two artifacts sees the same rows), with TWO exceptions,
+// and both are 2026-10-12 corrections rather than a change of standard:
+//
+//   * `no-canonical-f5-row` / `no-canonical-perf-row` asserted that #419 sections E
+//     and F could NOT close — true while merge 16075a5a1 had the perl oracle out of
+//     the tree, and false now that it is restored and the two rows are pinned at 0/0.
+//     They are replaced by `canonical-f5-row-present` / `canonical-perf-row-present`,
+//     which assert the rows are there and clean, plus `floor-draw-is-canonical`, which
+//     keeps the pin comparable to the sweep it is the floor for.
+//   * the PERLD12 limitation said the lane emits no `uses`/`references` edge. Its
+//     analyzer does now (PERL-MR15), so the artifact declares those two labels as an
+//     OPEN GAP in this lane's F5 coverage instead of denying they exist.
 //
 // Usage: bun script/m14/verify-perl-wave.ts            (writes the artifact)
 //        bun script/m14/verify-perl-wave.ts --dry-run  (prints rows, writes nothing)
@@ -45,6 +53,8 @@ const DRY = process.argv.includes("--dry-run")
 const BUN = process.env.BB_BUN ?? "bun"
 const TSC_BIN = path.join(ROOT, "node_modules", "typescript", "bin", "tsc")
 const DIFFERENTIAL_BASELINE = path.join(ROOT, "validation/m14/differential-baseline.json")
+/** The sweep's draw size. `differential.ts` defaults to 60 with no `--sample`. */
+const CANONICAL_DRAW = 60
 const FIXTURE_DIR = path.join(ROOT, "validation/m14/fixtures/perl")
 
 interface Ran { out: string; status: number | null }
@@ -156,22 +166,41 @@ function main(): number {
       r.pct === "100" && r.missing === 0 && r.unexplained === 0, JSON.stringify(r))
   }
 
-  // ---- the two rows that are supposed to be RED --------------------------------
-  // #419 sections E and F are the canonical 30-language sweep's: a scoped run writes
-  // no baseline floor and no perf budget, and inventing one here would replace a
-  // 30-language artifact with a 2-corpus claim.
-  const baseline = JSON.parse(fs.readFileSync(DIFFERENTIAL_BASELINE, "utf8")) as { counts?: Record<string, { missing?: number; unexplained?: number; perf?: { avgMsPerFile?: number } }> }
-  const pinned = baseline.counts?.["mojo:perl"]
-  add("no-canonical-f5-row", "the canonical 30-language sweep has no mojo:perl row, so #419 section E cannot close",
-    !pinned,
-    pinned
-      ? "a baseline floor row for mojo:perl now EXISTS — section E can close, and this row should be replaced by its check rather than left red"
-      : "no baseline floor row for mojo:perl — a scoped --lang perl run writes no evidence by design; writing one here would replace a 30-language artifact with a 2-corpus claim")
-  add("no-canonical-perf-row", "no avgMsPerFile for mojo:perl, so #419 section F cannot close",
-    !pinned?.perf?.avgMsPerFile,
-    pinned?.perf?.avgMsPerFile
-      ? "avgMsPerFile for mojo:perl now EXISTS — section F can close, and this row should be replaced by its check rather than left red"
-      : "no avgMsPerFile for mojo:perl — same reason: the perf row belongs to the canonical sweep")
+  // ---- #419 sections E and F: the floor rows, PRESENT and CLEAN ------------------
+  // These two rows are the INVERSE of the pair they replace, and the inversion is the point. For
+  // three weeks the baseline carried no `mojo:perl` row at all, and the honest record was a red
+  // row saying so ("#419 section E cannot close"): the lane's F5 oracle had been dropped by merge
+  // 16075a5a1, so `--lang perl` was SKIPPED before it could derive a truth edge and no floor row
+  // could exist. The oracle and the scoped `--pin-baseline` are restored
+  // (script/m14/restore-perl-oracle.ts), both rows are pinned at 0 missing / 0 unexplained, and an
+  // assertion that a row is ABSENT is now the thing that would fail.
+  //
+  // What these rows may NOT claim is that the canonical 30-language sweep has been run here. They
+  // assert the rows a scoped pin wrote, they quote the draw those rows were measured at, and the
+  // sweep's own artifact stays the milestone owner's run: a scoped pin writes the floor REGISTRY,
+  // never the evidence artifact, which is the one thing differential.ts refuses to do.
+  const baseline = JSON.parse(fs.readFileSync(DIFFERENTIAL_BASELINE, "utf8")) as {
+    samplePerLang?: number
+    counts?: Record<string, { missing?: number; unexplained?: number; perf?: { avgMsPerFile?: number } }>
+  }
+  const FLOOR_LANES = ["mojo:perl", "plack:perl"] as const
+  const floorRows = FLOOR_LANES.map((k) => [k, baseline.counts?.[k]] as const)
+  const floorDetail = floorRows.map(([k, r]) => r ? `${k}: missing=${r.missing} unexplained=${r.unexplained}` : `${k}: NO ROW`).join(", ")
+  add("canonical-f5-row-present", "the floor registry carries a clean row for BOTH perl lanes, so #419 section E reads them",
+    floorRows.every(([, r]) => r !== undefined && (r.missing ?? -1) === 0 && (r.unexplained ?? -1) === 0),
+    `${floorDetail} (differential-baseline.json, pinned at samplePerLang=${baseline.samplePerLang ?? "?"})`)
+  add("canonical-perf-row-present", "the floor registry records avgMsPerFile for both perl lanes, so #419 section F reads them",
+    floorRows.every(([, r]) => (r?.perf?.avgMsPerFile ?? 0) > 0),
+    floorRows.map(([k, r]) => `${k}: ${r?.perf?.avgMsPerFile ?? "absent"} ms/file`).join(", "))
+  // The floors are only comparable to the canonical sweep while the FILE's draw size is the
+  // canonical one, and this row exists because getting that wrong is silent and total: a scoped pin
+  // run at `--sample 100000` writes `samplePerLang: 100000`, after which the next 60-file sweep
+  // reads "baseline sampled 100000/lang, this run 60/lang — probe mode, not comparable" and SKIPS
+  // its whole regression gate — one lane's pin disabling every other lane's floor. Measured: the
+  // first pin of these very rows did exactly that, and it was reverted.
+  add("floor-draw-is-canonical", "the floor registry's draw size is the canonical one, so the sweep's regression gate still compares",
+    baseline.samplePerLang === CANONICAL_DRAW,
+    `differential-baseline.json samplePerLang=${baseline.samplePerLang ?? "absent"} (canonical draw is ${CANONICAL_DRAW}; a scoped pin at any other draw must not relabel the registry)`)
 
   // ---- #419's own sections, as the inventory reports them ----------------------
   // Reported per section rather than as one aggregate: the wave's record carried a
@@ -207,17 +236,20 @@ function main(): number {
     ],
     checks,
     limitations: [
-      "#419 sections E and F are RED and are not defects: both are written by the canonical 30-language sweep, whose F5 artifact and perf budgets cover every gated lane at once. A scoped `--lang perl` run writes no baseline floor and no avgMsPerFile on purpose — replacing a 30-language artifact with a 2-corpus one would shrink the milestone claim rather than strengthen it.",
+      "#419 sections E and F are GREEN from a scoped `--pin-baseline` at the canonical 60-file draw (the 2026-10-12 restore), not from the milestone owner's 30-language sweep: the FLOOR REGISTRY (`differential-baseline.json`) is what those sections read, and a scoped pin writes the registry while still writing NO evidence artifact. `floor-draw-is-canonical` is the row that keeps the pin comparable — at any other `--sample` it would relabel the file's `samplePerLang` and make the next canonical sweep skip its regression gate entirely. The milestone-sized claim is therefore still the sweep's to make; what this artifact establishes is that perl's rows are present, 0/0, and measured at the same draw the sweep compares against.",
+      "PERL-MR15 (declared, NOT measured): HEAD's analyzer publishes `uses` (`\\&name` code references) and `references` (`->isa`/`->DOES`/`->can` literal queries) — rules that postdate the `bbb895867` commit from which the F5 oracle was recovered — and section B confirms both are emitted (13 pinned kinds, 8 emitted). `derivePerlEdges` derives NEITHER, and they are deliberately absent from the differential's compared-label allowlist: admitting a label with no truth would report every one of those edges as fabrication. So this lane's F5 covers calls/contains/extends/implements/instantiates/overrides and does NOT cover its two newest labels. Closing it means writing two independent oracles for those rules, not widening the allowlist.",
+      "`overrides` is the lane's only GUESSED relationship: first-parent chain, confidence 0.5, no source line. A perl class may inherit from several bases and only the first is consulted (PERLD13).",
       "This producer re-measures the gate rows and deliberately does NOT re-derive the seven-corpus census totals the wave's record carried (files/symbols/relationships/imports/exports, symbol-free files, lined relations, unresolved targets). Those come from `script/m14/tmp/perl-census.mts` and `perl-lineless.mts`, which stay named in `reproduce`; a figure transcribed from an older run into a fresh artifact is the kind of number this project does not accept.",
       "`overrides` is the lane's only GUESSED relationship: first-parent chain, confidence 0.5, no source line. A perl class may inherit from several bases and only the first is consulted (PERLD13).",
-      "Perl's dependency surface is the `imports` payload plus the Module Includes pattern, not a relationship; the lane emits no `uses` or `references` edge (PERLD12).",
+      "Perl's dependency surface is the `imports` payload plus the Module Includes pattern, not a relationship `imports` edge (PERLD12). NOTE (2026-10-12): the pre-fix reading of this line said the lane emits no `uses` or `references` edge at all, which the analyzer stopped being true of in the PERL-MR15 wave — see the MR15 limitation above, which supersedes it.",
       "`use base` / `use parent` inheritance is read from one file, so an `extends` target can be external to it.",
       "The fixture and mutant populations are read from the tree (expectation files on disk, `perl/` ids in the mutation registry) rather than from a constant, so adding a fixture or a mutant moves this artifact's expectation too; a population that shrinks without the row going red is the failure mode that rule exists to prevent.",
     ],
     data: {
       differential: Object.fromEntries(laneRows),
       completenessSections: sections,
-      baselineRows: { "mojo:perl": pinned ?? null },
+      baselineRows: Object.fromEntries(floorRows.map(([k, r]) => [k, r ?? null])),
+      baselineDraw: baseline.samplePerLang ?? null,
       failedChecks: failed,
       reproduce: [
         "bun script/m14/verify-perl-wave.ts",
@@ -225,6 +257,7 @@ function main(): number {
         "BB_MUTANT_ONLY=perl/ bun script/m14/mutate-analyzer.ts",
         "bun script/m14/completeness-inventory.ts --lang perl",
         "bun script/m14/differential.ts --lang perl --sample 100000",
+        "bun script/m14/differential.ts --lang perl --pin-baseline   # writes ONLY the two perl rows into the floor registry, at the canonical 60-file draw",
         "bun script/m14/tmp/perl-truth.mts",
         "bun script/m14/tmp/perl-zero-regex.mts",
         "bash script/m14/tmp/perl-head-gate.sh",
