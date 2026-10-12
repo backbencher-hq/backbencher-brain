@@ -71,6 +71,11 @@ type Payload = {
   xlang: number
   bridge: string
   src: string | null
+  /** The RESOLVED source symbol — the row's actor. Kept because the source is the
+   *  other half of "does this edge point where it says": the target is what the
+   *  edge names, the source is who names it, and a consumer reading `bb_graph`
+   *  upstream is wrong if a re-index re-attributes the source. */
+  ssym: string | null
   /** `target_external` and `line_number` — the two fields that decide the id's tail,
    *  kept so a row that changed SPELLING can be told from a row that is GONE. */
   tgt: string | null
@@ -118,7 +123,7 @@ async function main() {
     (q(`SELECT r.id AS id, r.relationship_type AS t, r.target_symbol_id AS target,
                 COALESCE(r.is_cross_file, -1) AS xfile, COALESCE(r.is_cross_language, -1) AS xlang,
                 COALESCE(r.bridge_mechanism, '') AS bridge, r.source_external AS src,
-                r.target_external AS tgt, r.line_number AS line
+                r.source_symbol_id AS ssym, r.target_external AS tgt, r.line_number AS line
            FROM brain_relationship r WHERE r.project_id = ?`, pid) as any[]).map((r) => ({
       id: String(r.id),
       type: String(r.t),
@@ -127,6 +132,7 @@ async function main() {
       xlang: Number(r.xlang ?? -1),
       bridge: String(r.bridge ?? ""),
       src: r.src ?? null,
+      ssym: r.ssym ?? null,
       tgt: r.tgt ?? null,
       line: r.line === null || r.line === undefined ? null : Number(r.line),
     }))
@@ -268,6 +274,38 @@ async function main() {
       : `${flagNotExplained.length} flag difference(s) on rows whose target is unchanged: ${flagNotExplained.slice(0, 5).join(", ")}`,
   )
 
+  // 3a-bis. THE SOURCE ENDPOINT. This gate compared the target and every derived
+  // flag and never `source_symbol_id`, so a row whose attributed SOURCE moved
+  // through a re-index was invisible here — the outgoing half of the question
+  // this file exists to ask. It is its own check rather than one more field: the
+  // target is what an edge NAMES, the source is WHO names it, and the two are
+  // decided by different code, so agreement on one says nothing about the other.
+  // The three directions are three different defects, so they are counted apart:
+  // a source that DISAPPEARS is the re-index losing the actor of an edge the full
+  // index had; one that APPEARS is the two paths disagreeing about whether the
+  // file declares an actor at all; and one that CHANGES SYMBOL is two deciders
+  // answering one question differently — J12's shape, on the other endpoint.
+  const sourceDivergent = [...byBefore.entries()].filter(([id, b]) => {
+    const a = byAfter.get(id)
+    if (!a) return false
+    return (b.ssym ?? null) !== (a.ssym ?? null)
+  })
+  const srcToNull = sourceDivergent.filter(([id, b]) => b.ssym && !byAfter.get(id)!.ssym).length
+  const srcFromNull = sourceDivergent.filter(([id, b]) => !b.ssym && byAfter.get(id)!.ssym).length
+  const srcChanged = sourceDivergent.filter(([id, b]) => b.ssym && byAfter.get(id)!.ssym && b.ssym !== byAfter.get(id)!.ssym).length
+  check(
+    "every row stores the same SOURCE symbol after a re-index",
+    sourceDivergent.length === 0,
+    sourceDivergent.length === 0
+      ? `0 of ${before.length} rows differ on source_symbol_id`
+      : `${sourceDivergent.length} of ${before.length} rows differ (${srcToNull} bound -> NULL, ${srcFromNull} NULL -> bound, ${srcChanged} bound -> a DIFFERENT symbol)`,
+  )
+  if (sourceDivergent.length) {
+    for (const [id, b] of sourceDivergent.slice(0, 8)) {
+      console.log(`    source moved: ${b.type} ${String(b.src ?? "-")}  ${b.ssym ?? "NULL"} -> ${byAfter.get(id)!.ssym ?? "NULL"}`)
+    }
+  }
+
   // 3b. THE RESOLVED TARGET — and where the two paths still disagree, WHICH
   // disagreement it is. A row whose target the FULL pass left NULL and the
   // re-index filled in is not a flag bug: it is the insert path's fast resolver
@@ -405,6 +443,16 @@ async function main() {
       addedIds: onlyAfter.slice(0, 60),
       divergentCount: divergent.length,
       flagDivergentCount: flagDivergent.length,
+      sourceResidue: {
+        count: sourceDivergent.length,
+        toNull: srcToNull,
+        fromNull: srcFromNull,
+        changedSymbol: srcChanged,
+        rows: sourceDivergent.slice(0, 200).map(([id, b]) => ({
+          id, type: b.type, src: b.src,
+          before: b.ssym ?? null, after: byAfter.get(id)!.ssym ?? null,
+        })),
+      },
       targetResidue: {
         count: attributed.length,
         explainedByTwoWriterDisagreement: explained,

@@ -99,7 +99,14 @@ if (!survivors) {
     console.log(`      \`BB_MUTANT_ONLY="javascript/"\` is the selector that shows the difference (there is no \`--lang\` flag).`)
   } else {
     console.log(`WIRING OK: \`mutate-analyzer.ts\` imports JAVASCRIPT_MUTANTS, so the canonical registry run executes these`)
-    console.log(`      ${JAVASCRIPT_MUTANTS.length} along with its own — verified with BB_MUTANT_ONLY="javascript/", which reads 62 selected, all CAUGHT.`)
+    // THE COUNT IS NOT PRINTED FROM A LITERAL, deliberately. This line used to read
+    // "which reads 62 selected, all CAUGHT" — true on 2026-10-10, false by 2026-10-12,
+    // when the registry had grown to 1,856 ids and the same selector read 63. That is
+    // a PRINTED measurement of a run this file does not perform, which is the defect
+    // class this lane keeps finding in documents; a script is not exempt from it. What
+    // this file verifies is read above (the spread line in the registry's source). The
+    // count belongs to the selector's own output, and it moves with the registry.
+    console.log(`      ${JAVASCRIPT_MUTANTS.length} along with its own — run BB_MUTANT_ONLY="javascript/" for that count (63 selected, all CAUGHT, 2026-10-12; 62 of 1,845 on 2026-10-10).`)
   }
 }
 process.exit(survivors === 0 ? 0 : 1)
