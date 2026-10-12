@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "85dd5cef29282957489a823de814c41e85392767dffd854412cef0f4e3c06a13",
-    "sealedAt": "2026-10-12T18:04:21.000Z"
+    "contentSha256": "17e9eba9b4e2d2fb6378c12cfc08cc72f92a7e62d871d8133859ac2d63eefeba",
+    "sealedAt": "2026-10-12T18:45:43.000Z"
   },
   "checks": [
     {
@@ -2292,18 +2292,18 @@
       "status": "pass"
     },
     {
-      "description": "mojo:perl floor row present",
-      "detail": "no floor row for mojo:perl — recorded reason: perl's oracle (derivePerlEdges + its dispatch block) is not in this tree (dropped by merge 16075a5a1), and the mojo corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor (at 7ab888b79)",
+      "description": "mojo:perl at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor mojo:perl: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
       "language": "perl",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "perl avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "no avgMsPerFile for mojo:perl — recorded reason: perl's oracle (derivePerlEdges + its dispatch block) is not in this tree (dropped by merge 16075a5a1), and the mojo corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
+      "detail": "mojo:perl 59.2 ms/file",
       "id": "section-f-perf-budget",
       "language": "perl",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "perl analyzer docs present and committed",
@@ -2321,8 +2321,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "a0c254be229e4fcf404903d70f86f4f31e279bf6",
-  "committedAt": "2026-10-12T14:04:21-04:00",
+  "commit": "1d7af8945475d64a76953092c9be538bdcfde06e",
+  "committedAt": "2026-10-12T14:45:43-04:00",
   "data": {
     "languages": {
       "bash": {
@@ -3474,16 +3474,16 @@
             "status": "pass"
           },
           "section-e-differential": {
-            "detail": "no floor row for mojo:perl — recorded reason: perl's oracle (derivePerlEdges + its dispatch block) is not in this tree (dropped by merge 16075a5a1), and the mojo corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor (at 7ab888b79)",
-            "status": "fail"
+            "detail": "floor mojo:perl: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
           },
           "section-e-lane-registered": {
             "detail": "mojo is the lane's declared PRIMARY corpus (LANG_REPOS)",
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "no avgMsPerFile for mojo:perl — recorded reason: perl's oracle (derivePerlEdges + its dispatch block) is not in this tree (dropped by merge 16075a5a1), and the mojo corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
-            "status": "fail"
+            "detail": "mojo:perl 59.2 ms/file",
+            "status": "pass"
           },
           "section-g-docs": {
             "detail": "docs/analyzers/real-perl-analyzer.md",
@@ -4471,8 +4471,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-12T14:04:21-04:00",
-  "regeneratedAtCommit": "a0c254be229e4fcf404903d70f86f4f31e279bf6",
+  "regeneratedAt": "2026-10-12T14:45:43-04:00",
+  "regeneratedAtCommit": "1d7af8945475d64a76953092c9be538bdcfde06e",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"

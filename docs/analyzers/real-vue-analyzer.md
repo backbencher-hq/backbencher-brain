@@ -89,7 +89,7 @@ construct the corpus cannot produce.
 | contains | EMITTED · 826 / 631 / 12 (files: 112 / 163 / 2) | Options-API members owned by the component (`ownerName`), plus every shape a `provide(key, …)` publishes; setup-scope top-levels stay module-scope | 1.0 |
 | references | EMITTED · 0 / 3,621 / 21 (files: 0 / 376 / 3) | component-contract family only: `defineProps`/`defineEmits` naming a declaration, `provide`/`inject` naming a key, plus the delegate's own type-level rows (`declared_type`, `type_argument`, `cast_target`, `instanceof_check`, …) | 0.8–1.0 |
 | references · the `provide`/`inject` key row | EMITTED · the row is a BINDING question as of F21 (2026-10-12) | the pass matches a call by its callee TEXT and then asks what BINDS the name: a DECORATOR position (`@inject("db")`) publishes nothing; a name bound by `import … from 'vue'` (or `vue/…`, `@vue/…`) publishes; a name bound by any OTHER module (`vue-router`) or by a TOP-LEVEL declaration of the same name (`function inject`) publishes nothing; an UNBOUND name is Vue's global and publishes. Corpus-measured cost: 1,162 `.vue` files hold 96 provide/inject call sites and **all 96 are `import … from 'vue'`** — so the guard suppresses 0 corpus rows and the two fixtures are the whole of its effect. Before F21 the row was fabricated for all three non-Vue shapes | 0.9 |
-| instantiates | EMITTED · 342 / 2,346 / 10 (files: 102 / 877 / 3) | template pass: every non-builtin element tag → leaf tag name; builtin HTML/SVG tags and Vue builtins (`component`, `transition`, `keep-alive`, `teleport`, `suspense`) filtered; a known namespace (`svg:circle`) is markup, an unknown one is a component | 0.95 |
+| instantiates | EMITTED · 342 / 2,346 / 10 (files: 102 / 877 / 3) | template pass: every non-builtin element tag → the **registry name** (F31: `<el-button>` → `ElButton`, `<cardWidget>` → `CardWidget`, by Vue's `resolveAsset` order — written spelling, camelize, capitalize — with `metadata.tagSpellingsWritten`/`tagAsWritten`/`componentNameCandidates`/`resolution: "registry-name"` carrying what was written); builtin HTML/SVG tags and Vue builtins (`component`, `transition`, `keep-alive`, `teleport`, `suspense`) filtered **on the as-written spelling**, because the set holds camelCase natives (`linearGradient`) and normalizing first would turn markup into a component; a known namespace (`svg:circle`) is markup, an unknown one is a component; one component is one edge however many spellings reach it | 0.95 |
 | exports | EMITTED · 0 / 2 / 0 after F19 | a **named** export → `module -> name`, target a real symbol: the two surviving corpus rows are `export interface StepItemState` / `export interface IStepsInject` in `packages/components/steps/src/item.vue`, both resolving 100%. The anonymous Options-API form `export default { … }` publishes NO edge (F19): `default` is a keyword, and that row resolved 0 of 121 both per-file and corpus-wide | 1.0 |
 | extends | EMITTED · 9 / 1 / 0 (files: 9 / 1 / 0) | Options-API heritage: `mixins: [M]` → `extends` with `metadata.isMixin: true`, `extends: Base` with `isMixin: false`, so the two stay distinguishable (F1). 9 corpus rows, all mixins, 0 `extends:` options; the single element-plus row is the TS delegate's interface extension (`interface ActivityType extends Partial<TimelineItemProps>`) | 0.9 |
 | imports | EMITTED · 197 / 3,685 / 25 relationship rows | the JS/TS delegates' import rows, carried by the seam. **The off-enum wording this row used to carry was stale and is corrected 2026-10-05**: `RelationshipType.Imports` read `"brain_import"` (the name of a TABLE) until `src/ast/types.ts:84` was repaired to `"imports"`, so the delegates were never off-enum in any sense a consumer could observe — they were emitting the value the enum has held since. `ParseResult.imports[]` is the SECOND channel and carries the same rows: 209 / 3,685 / 25 | 1.0 |
@@ -189,6 +189,153 @@ respectively, against 0.3% / 0% per-file. The endpoints are real
 registered in a `components: {}` map or a UI library, so they resolve in neither
 denominator. That is a RESOLUTION limit of the graph, not a wrong target: the
 source end resolves 100% in both.
+
+**F31 (2026-10-12) turned that paragraph's own conclusion into a measurement, and
+the measurement moved the number.** The resolution limit had a FIXABLE half and a
+non-fixable half, and the paragraph above conflated them. Measured on the 1,162-file
+four-repo draw through production `parseFile` (`vuejs`, `element-plus`,
+`vue-element-admin`, `vue-core`), 2,267 `instantiates` edges, exact string match
+against the names the draw publishes:
+
+| class of target | before F31 | after F31 |
+| --- | --- | --- |
+| names a symbol THIS file declares | 9 · 0.4% | 18 · 0.8% |
+| names a symbol ANOTHER admitted file declares | 102 · 4.5% | **1,510 · 66.6%** |
+| can be reached only through Vue's casing rule | 1,409 · 62.2% | 21 · 0.9% |
+| nothing in the corpus declares it under any spelling | 747 · 33.0% | 718 · 31.7% |
+| bound by an import in the carrying file | **0** | 0 |
+
+So the WALKABLE share of this lane's `instantiates` payload moved from **111 edges
+(4.9%) to 1,528 (67.4%)**, and the 21 that remain in the third row are the one shape
+the rule deliberately does not touch (below). The class was named by the project's own
+instrument for this question (`script/m14/vue-instantiates-targets.mts`), which rules
+on it in its header — *"the as-written target does not [match]. The graph cannot walk
+it and Vue resolves it. The analyzer owns this."* The rule was already written down
+twice here and not applied: Vue's `resolveAsset` tries the written spelling, then
+`camelize`, then `capitalize(camelize)` — which is what makes `<el-button>`, `<elButton>`
+and `<ElButton>` one component — and this lane's own F9(b) ruling publishes the name
+"the components registry holds and what a resolver must match" for a dotted tag
+(`<Form.Input/>` -> `Form`, never `Form.Input`).
+
+**The rule is two measurements, not one, and the second one corrected a first pass.**
+A kebab (or camel) tag publishes the registry name, because that is the side the corpus
+is on: **1,433 edges GAINED** (the written spelling resolves nowhere, `el-button` ->
+`ElButton` 221 edges, `el-icon` -> `ElIcon` 101) against **16 LOST** (the written
+spelling IS a declaration, the normalized one is not). A SINGLE ALL-LOWERCASE WORD is
+published as written, because capitalizing it is genuinely two-sided and net-negative:
+over the 53 such edges on the draw, **8 would gain and 20 would lose** (20 resolve as
+written, 10 of those also resolve capitalized, 15 resolve neither way) — and Vue tries
+the written spelling FIRST, which is why `<loading/>` names the component whose file is
+`loading.vue`. The first version of this rule capitalized that shape too, on the false
+generalization that a hyphenless tag is always better capitalized; the accounting
+falsified it (36 lost, 19 of them single words) and the fixture now pins the corrected
+branch with `<loading/>`/`<message/>` as controls.
+
+**What the 16 LOST edges are, and why they are the next measurement rather than a
+hole.** Every one is a component whose FILE is named the way the tag is written:
+`guide-svg.vue`, `vp-link.vue`, `sponsors-button.vue`, `upload-dragger.vue` (15
+distinct spellings). The tag rule spells such a component the way Vue registers it
+(`GuideSvg`) while this lane's file-stem fallback spells it the way the FILE is named
+(`guide-svg`), so the lane now holds two spellings for one component and those 16 edges
+sit between them. Fixing it means normalizing the stem fallback the same way, which
+moves SYMBOL names, not just targets — a separate change with its own measurement and
+its own fixture, recorded here rather than smuggled into this one.
+
+Instrument cross-check, quoted because it is a committed gate rather than a probe:
+`script/m14/vue-instantiates-targets.mts` reports **RESOLVED 1,565 (69.5%) on the PRE-fix
+tree and 1,527 (67.8%) after**, `CASING 0` in both. Its `RESOLVED` row counts the
+rule-aware answer, so it credited the lane for the 1,409-edge class that the graph could
+not walk, and the after figure is lower only because the single-lowercase-word shapes stop
+being counted at all (it has no candidates for a hyphenless target). Exact match against
+declarations — the thing a walk actually needs — moves the other way by 14x, which is the
+pair in the table above.
+
+Two-sided verification, because a target convention is exactly the kind of change two
+readings of one specification can agree about while both are wrong. The F5 oracle now
+derives the same name through its own implementation of the framework rule (a separate
+function, not a copy of the lane's), and the scoped differential reports
+`element-plus:vue` 400 files **tree-truth 2,883 covered 2,883 (100%) MISSING=0,
+analyzer-edges 2,879, unexplained=0** and `vue-element-admin:vue` 131 files **882 covered
+882 MISSING=0**, its 9 unexplained rows being the pre-existing `extends`-with-no-oracle
+label. The oracle's own count moved with the lane's (2,927 -> 2,883), which is what
+"both sides apply the same rule" looks like from outside.
+
+**F32 (2026-10-12). The MISSING-SYMBOL half the F31 section above points at, and it was
+bigger than the target question.** F17 (2026-10-31) ruled that a non-literal `name:`
+keeps the file stem and records `declaredNameUnreadable`, on the premise — written into
+its own rationale — that the value is "an IMPORTED IDENTIFIER, whose value lives in another
+module". That premise is true of an import and was generalized to every identifier, which
+is where it went wrong: element-plus declares nearly every component's name through a LOCAL
+constant three lines above the option that consumes it.
+
+```js
+const COMPONENT_NAME = 'ElInput'          // input.vue, and the same shape in ~25 components
+defineOptions({ name: COMPONENT_NAME })
+```
+
+Measured first, at the level that matters (the DECLARING file, not the using one — the first
+probe asked the wrong question and returned 4 of 724): of the 724 unresolved component-usage
+`instantiates` edges, **253 (34.9%) named a component whose own name is assigned as a string
+literal in the declaring file** — `ElInput` 59 edges, `ElSelect` 42, `ElSwitch` 33, `ElForm`
+20, 25 distinct names — while the lane published the stem and no consumer could bind the tag.
+The rule now reads a top-level `const`/`let`/`var NAME = '<literal>'` in the same program,
+refuses an IMPORTED identifier FIRST (F17's case, unchanged: `vue/component-name-identifier`
+is the control and still publishes the stem plus the marker), and records
+`metadata.nameFromLocalConst`, beside `identityFromFileStem`/`synthesized`, so the metadata
+says HOW the identity was obtained.
+
+The `<script setup>` path was wrong twice and both halves are fixed: it read the value with a
+string-only lookup, so an identifier value produced no name AND no marker — a component that
+named itself through a constant looked exactly like one that never named itself, and F17's
+marker had never fired on this path at all.
+
+| | before F32 | after F32 |
+| --- | --- | --- |
+| walkable `instantiates` targets (exact match) | 1,528 · 67.4% | **1,759 · 77.6%** |
+| nothing in the corpus declares it under any spelling | 718 · 31.7% | **487 · 21.5%** |
+
+So the lane's cumulative move on this payload is **4.9% (111 edges) -> 67.4% -> 77.6%**. The 231
+edges that closed against the 253 the text-level probe predicted is itself a measurement: the
+probe accepted any file carrying both the literal and a name shape, and a coarse probe
+over-counts — `ElMenu` and `ElMenuItem` both pointed at one `menu-item.vue`, and one literal
+per file can feed only one identity.
+
+Two-sided again, and for a sharper reason than last time: this change RENAMES a component's
+identity, so the oracle that derives `contains` from `name:` has to apply the same rule to
+agree — its own implementation of it, with the import refusal written out separately. Scoped
+F5 after the change: `element-plus:vue` 400 files **tree-truth 2,882 covered 2,882 (100%)
+MISSING=0, analyzer-edges 2,878, unexplained=0** and `vue-element-admin:vue` **882 covered 882
+MISSING=0** (its 9 unexplained are the pre-existing `extends`-with-no-oracle label). Fixtures
+`--lang vue` exit 0 at 63 pass / 1 pre-existing failure, with
+`vue/component-name-local-const`, `vue/options-name-local-const` and the imported control
+pinning all three arms; the mutant `vue/local-const-name-revert` reverts the rename and the
+re-point FROM the analyzer's own `nameFromLocalConst` metadata, and is CAUGHT by both new
+fixtures.
+
+**What did not move, and one thing that was wrong in the F5 instrument itself.**
+(1) The edge COUNT is unchanged at 2,251 component usages: normalization renames a
+target, it does not add or drop one, and moving the dedupe key from the written spelling
+to the registry name moved **0** edges on this draw — no admitted file writes one
+component two ways. That latent half is pinned by fixture, not by corpus:
+`vue/kebab-registry-name` writes `ElButton` three ways and expects ONE edge carrying all
+three (and normalization does not overreach: `<router-link/>` derives `RouterLink`, no
+admitted file declares it, and the edge stays unresolved — **a right NAME is not a
+fabricated DECLARATION**). (2) `script/m14/vue-instantiates-targets.mts` cannot report
+the class this change closed, which is worth stating because its header does: its
+`CASING` branch is UNREACHABLE. It tests `cands.some(c => c !== tag && corpusComps.has(c))`
+after the `RESOLVED` branch has already returned for any candidate in `corpusComps`
+OR `corpusNames`, so no input can reach `CASING` — measured by running it on the
+PRE-fix tree, where it reported `CASING 0` while 62.2% of the payload was in that state.
+Its `RESOLVED` row therefore counts the exact and the rule-aware answer in one number,
+which is why the two-sided table above is quoted from the analyzer's own output instead.
+Repairing that branch is a change to a committed instrument and is left as its own
+task. (3) The 718 ABSENT edges are not a wrong target: 10 of the top 18 ABSENT names
+(`ElInput`, `ElSelect`, `ElForm`, `ElMenu`, …) are components element-plus DOES declare,
+behind an in-file indirection this lane cannot read
+(`const COMPONENT_NAME = 'ElInput'; defineOptions({ name: COMPONENT_NAME })`) — measured:
+0 of them has a direct `name: '<N>'` literal in any `.vue` on the draw, and 10 of 18
+have the indirection — so that remainder is a MISSING-SYMBOL question (symbol naming),
+not a target question.
 
 ## The six questions, per emitted type
 
@@ -385,8 +532,10 @@ items in this lane, in order: (1) the template `calls` mirror in the vue oracle,
   event, `data` → method, `computed` → property, `methods` → method,
   lifecycle hooks → method — `Card.vue`
 - Template components: PascalCase (`<Card />`) and kebab-case
-  (`<router-link />`, `<router-view />`) → instantiates (leaf tag name;
-  builtin HTML/Vue tags filtered) — `UserList.vue`, `App.vue`
+  (`<router-link />`, `<router-view />`) → instantiates (the registry name —
+  `Card`, `RouterLink`, `RouterView`, by Vue's resolution rule; the written
+  spelling travels in metadata; builtin HTML/Vue tags filtered) — `UserList.vue`,
+  `App.vue`, `kebab-registry-name.vue`
 - Calls: leaf targets, member-expression chains, `this.$emit(...)`,
   `await fetch(...)` → `fetch`, `more.json()` → `json` — all fixtures
 - Negative fixtures: template bindings (`v-if`/`v-for`/`v-model`/`@input`/
