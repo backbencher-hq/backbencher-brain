@@ -12,16 +12,16 @@
     "node": "v22.14.0",
     "runtime": "fork-run"
   },
-  "currentCommit": "6a43c45f01de24003b552028117891437e35e5fd",
+  "currentCommit": "527f9bba52d5aa14d7987c422accfca134dfd915",
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-WINDSURF.json",
-  "generatedAt": "2026-10-12T17:47:42.154Z",
+  "generatedAt": "2026-10-12T19:07:13.795Z",
   "limitations": [
     "fork unavailable on this machine — claim level stays unset; no inheritance from other forks"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T17:47:42.154Z",
-    "contentSha256": "488fd2ce812e97d9af436a38505f3714183d21e028da9565fac0b3d1fa52d628"
+    "sealedAt": "2026-10-12T19:07:13.795Z",
+    "contentSha256": "a278dacfe2fe3a47dfce3b2f37a987412941fc0ddd1ee148dafdd1299b76f09c"
   }
 }
