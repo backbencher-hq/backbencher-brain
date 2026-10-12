@@ -581,6 +581,12 @@ type Row = {
 const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> = {
   dart: { spec: async () => (await import("../../src/ast/project-index")).DART_DECLARATION_SPEC, wasm: "tree-sitter-dart/tree-sitter-dart.wasm" },
   protobuf: { spec: async () => (await import("../../src/ast/real-protobuf-analyzer")).PROTOBUF_DECLARATION_SPEC, wasm: "tree-sitter-protobuf.wasm" },
+  // SCSS had NO entry, so `--index` built 0 indexes for the lane and the arm that exercises the
+  // cross-file mechanism could not be produced: the gate reported `project index: USED — 0 repo
+  // index(es) (0 built, 0 from cache, 0 damaged) over 0 file(s)` while production's
+  // PROJECT_INDEX_EXTENSIONS already carried `.scss`. The spec lives in project-index.ts and is
+  // exported as of this change.
+  scss: { spec: async () => (await import("../../src/ast/project-index")).SCSS_DECLARATION_SPEC, wasm: "tree-sitter-scss.wasm" },
 }
 const INDEX_CACHE = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
 
