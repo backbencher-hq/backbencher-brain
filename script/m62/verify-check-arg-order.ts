@@ -207,6 +207,32 @@ function looksBoolean(a: string): boolean {
 }
 
 /**
+ * Is this condition an UNAWAITED async call? A Promise object is always truthy, so a helper
+ * that does `if (condition)` takes its pass branch whatever the awaited work would have
+ * said.
+ *
+ * This is a DIFFERENT defect from a misordered call, and the compiler is much blinder to it.
+ * Found in script/a3-relationship-enrichment/verify-enrichment-integrity.ts:546, where
+ *
+ *     check("L2b: idempotence holds for a THIRD pass too", (async () => { … })(), "…")
+ *
+ * had the right argument COUNT, the label in the right slot, and only TS2345 to mark it.
+ *
+ * The test is deliberately narrow — the condition must be an async IIFE *invocation*, i.e. it
+ * must both start with `(async` and end with `()`. An async IIFE used as a bare STATEMENT is
+ * legitimate and common (script/m15/verify-edit-mask.ts wraps its whole body in one), and a
+ * loose test flagged it: the enclosing `(` belongs to some earlier call, not to this
+ * expression. Requiring the shape to be the whole argument removes that false positive.
+ */
+export function looksUnawaitedPromiseCondition(t: string): boolean {
+  const x = t.trim()
+  if (!/^\(\s*async\b/.test(x)) return false
+  if (!/\)\s*\(\s*\)$/.test(x)) return false
+  // A leading `await` makes it a real awaited value.
+  return !/^await\b/.test(x)
+}
+
+/**
  * Report calls to a label-first helper whose first argument is a boolean expression.
  *
  * Detection runs on BLANKED source — comments and string bodies replaced by spaces, same
@@ -235,18 +261,40 @@ export function invertedCalls(src: string): string[] {
       const body = blanks.slice(open + 1, end - 1)
       const args = splitArgRanges(body)
       if (args.length === 0) continue
+      const at = (k: number): string => blanks.slice(open + 1 + args[k]!.start, open + 1 + args[k]!.end).trim()
       const first = src.slice(open + 1 + args[0]!.start, open + 1 + args[0]!.end).trim()
-      // A string or template first argument IS the declared order.
-      if (first.startsWith('"') || first.startsWith("'") || first.startsWith("`")) continue
+      const line = blanks.slice(0, m.index).split("\n").length
+
+      // A string or template first argument IS the declared order — so the CONDITION is the
+      // second argument, and that is the slot to test for an unawaited promise.
+      //
+      // Getting this wrong was the first version of this check, and its self-test caught it:
+      // it looked at args[0] unconditionally, so for every correctly-ordered call it read
+      // the LABEL and found nothing. 0 hits on a synthetic inversion, which is the number a
+      // broken detector always produces.
+      if (first.startsWith('"') || first.startsWith("'") || first.startsWith("`")) {
+        if (args.length < 2) continue
+        const condBlanks = at(1)
+        if (looksUnawaitedPromiseCondition(condBlanks)) {
+          found.push(`line ${line}: ${name}("${first.slice(1, 40)}", ${condBlanks.replace(/\s+/g, " ").slice(0, 50)} …) — UNAWAITED PROMISE AS THE CONDITION`)
+        }
+        continue
+      }
+
       // The boolean test runs on the BLANKED text, not on `first`. Using the original here
       // read a label's own wording as a comparison: script/m17/verify-sec-corpus.ts:60 is
       // `ck(tag + ": persisted findings == live confirmed+mitigated", …)` and the `==` sits
       // INSIDE the string, so the gate called a concatenation a boolean expression. The
       // blanked form of that argument is `tag +`, which is not a comparison — which is the
       // answer the gate should have given all along.
-      const firstBlanks = blanks.slice(open + 1 + args[0]!.start, open + 1 + args[0]!.end).trim()
+      const firstBlanks = at(0)
+      // A misordered call ALSO cannot hold a promise condition in slot 0, but report it as
+      // an inversion first — that is the more specific defect.
+      if (looksUnawaitedPromiseCondition(firstBlanks)) {
+        found.push(`line ${line}: ${name}(… ${firstBlanks.replace(/\s+/g, " ").slice(0, 60)} …) — UNAWAITED PROMISE AS THE CONDITION`)
+        continue
+      }
       if (!looksBoolean(firstBlanks)) continue
-      const line = blanks.slice(0, m.index).split("\n").length
       found.push(`line ${line}: ${name}(${first.replace(/\s+/g, " ").slice(0, 60)} …)`)
     }
   }
@@ -301,6 +349,24 @@ check(
   "the detector does NOT fire on a helper whose parameters are not identifiable as label/condition",
   invertedCalls(`function check(a: unknown, b: unknown) {}\ncheck(a === b, "the label")`).length === 0,
   `${invertedCalls(`function check(a: unknown, b: unknown) {}\ncheck(a === b, "the label")`).length} hit(s) for an unnameable signature — skipped rather than guessed`,
+)
+
+check(
+  "the detector SEES an unawaited async IIFE used as the condition",
+  invertedCalls(`function check(label: string, condition: boolean, d = "") { if (condition) passed++ }\ncheck("L2b holds", (async () => { const p = await f(); return p === 1 })(), "detail")`).length === 1,
+  `${invertedCalls(`function check(label: string, condition: boolean, d = "") { if (condition) passed++ }\ncheck("L2b holds", (async () => { const p = await f(); return p === 1 })(), "detail")`).length} hit(s) — a Promise condition is always truthy, so the check cannot fail`,
+)
+
+check(
+  "the detector does NOT fire on an async IIFE used as a bare STATEMENT",
+  invertedCalls(`function ck(label: string, cond: boolean, d = "") { if (cond) passed++ }\nck("parse succeeds", true)\n;(async () => { await run() })()`).length === 0,
+  `${invertedCalls(`function ck(label: string, cond: boolean, d = "") { if (cond) passed++ }\nck("parse succeeds", true)\n;(async () => { await run() })()`).length} hit(s) for a statement-position IIFE — this exact shape is script/m15/verify-edit-mask.ts and it is correct`,
+)
+
+check(
+  "the detector does NOT fire when the async IIFE IS awaited",
+  invertedCalls(`function check(label: string, condition: boolean, d = "") { if (condition) passed++ }\nconst n = await (async () => 1)()\ncheck("n is one", n === 1)`).length === 0,
+  `${invertedCalls(`function check(label: string, condition: boolean, d = "") { if (condition) passed++ }\nconst n = await (async () => 1)()\ncheck("n is one", n === 1)`).length} hit(s) for an awaited IIFE`,
 )
 
 check(
