@@ -1,4 +1,9 @@
 {
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "c6c9d9fafb8e28f488d31ccda5e1f5025363a0e904cabc9355e68bd08bbb1461",
+    "sealedAt": "2026-10-12T16:00:47.098Z"
+  },
   "checks": [
     {
       "description": "vb adversarial fixtures",
@@ -290,8 +295,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "4c58eb4c21d3e920d6f4a8403aabe64b4092be10",
-  "committedAt": "2026-10-12T10:59:29-04:00",
+  "commit": "cae5fcfe01116ac793ab50c3937ae3412be97a2a",
+  "committedAt": "2026-10-12T11:59:47-04:00",
   "data": {
     "details": [
       {
@@ -8152,8 +8157,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-12T15:02:44.238Z",
-  "regeneratedAtCommit": "4c58eb4c21d3e920d6f4a8403aabe64b4092be10",
+  "regeneratedAt": "2026-10-12T16:00:47.091Z",
+  "regeneratedAtCommit": "cae5fcfe01116ac793ab50c3937ae3412be97a2a",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
