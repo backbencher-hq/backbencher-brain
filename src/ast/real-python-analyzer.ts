@@ -239,6 +239,14 @@ interface PythonContext {
    *  which is the channel `engine.ts` populates and `pool-worker` forwards. */
   overrideCompanion?: Map<string, Set<string>>
   currentFunction: string | undefined
+  /**
+   * PY-D14 (round 7): each `function_definition` NODE -> the bare names bound in THAT function's
+   * own scope (parameters, nested def/class names, local assignment/for/with/except/walrus
+   * targets). Filled by `collectFunctionLocals` before the walk, and read at a call site by
+   * walking the call's own ancestors — so no scope state has to be threaded, and the nested `def`
+   * the main walk deliberately does not open a scope for needs no special case.
+   */
+  functionLocals: Map<string, Set<string>>
   moduleName: string
   /**
    * The current class DECLARATION, not its name — `${name}@${startLine}`.
@@ -343,6 +351,36 @@ const PY_REFERENCE_REASON: Record<string, string> = {
   return_type: "return-annotation",
   instanceof_check: "instanceof-check",
 }
+
+/**
+ * PY-D15 / PY-D16 (round 8) — THE TWO WAYS A TYPE-HOLDING NAME BINDS LOCALLY, and why each is a
+ * different fact rather than two spellings of one.
+ *
+ * A `references` edge names a type. When the name is bound in the reference's OWN ENCLOSING
+ * FUNCTION, no project-wide declaration exists for it and none can be invented — but WHICH local
+ * scope bound it changes what a consumer should do, so the code says which one:
+ *
+ *   local-binding-target    a parameter, a walrus target, an assignment / `for` / `with` / `except`
+ *                           target, or a nested `def`/`class` name. The name holds a VALUE at
+ *                           runtime — `isinstance(obj, type_or_tuple)` where `type_or_tuple` comes
+ *                           from a dict lookup, `class Row(dump_cls)` where the base was chosen by
+ *                           an `if`. Nothing in this file decides its type; a reader of the edge
+ *                           must not treat the leaf as a class name.
+ *   inline-type-parameter   a PEP-695 `def f[T]` / `class C[T]` / `type A[T]` type parameter,
+ *                           declared by the reference's own def. This is NOT shadowing and NOT a
+ *                           value: the name is a TYPE, introduced by the signature being annotated.
+ *                           It stays unresolved at project scope for a reason worth stating — the
+ *                           parameter is bound in the def's own lexical scope, python exposes it
+ *                           nowhere else, so publishing a file-scope symbol for it would be a lie
+ *                           about scope (and two `def get[TValue]` in one file would publish two
+ *                           symbols of one name, which the store can only call ambiguous).
+ *
+ * Both are DECLARED, not defects: the analyzer is stating a fact about python's LEGB rule, exactly
+ * as `local-callee` does for a call. The local check runs FIRST of the two, so a def whose body
+ * rebinds a type-parameter name is reported by the binding that actually holds at runtime.
+ */
+// (The two codes are emitted by `dynamicTypeBindingReason`; they are read back by the resolution
+// verdict's `DECLARED_LOCAL` axis, which is where the mapping from a code to an axis lives.)
 
 /**
  * The python framework trigger surface (#747).
@@ -495,6 +533,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       qualifiedBasesByClassKey: new Map(),
       overrideCompanion: context?.overrideCompanion,
       currentFunction: undefined,
+      functionLocals: new Map(),
       moduleName,
     }
 
@@ -539,6 +578,11 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `class C(ABC)` can sit ABOVE the `from abc import ABC` that proves the base is not a
     // user class named ABC, and python resolves names at runtime rather than positionally.
     ctx.interfaceBindings = this.collectInterfaceBindings(rootNode)
+
+    // PY-D14 (round 7): the local binding set of every function, computed before the walk for the
+    // same reason the two pre-passes above are — a bare-name callee's scope is a fact about the
+    // whole function body, not about the position the walk happens to reach it from.
+    ctx.functionLocals = this.collectFunctionLocals(rootNode)
 
     // #748 (M49 dup-key family ruling, Option A — the same rule js/ts/vue
     // pinned): python binds the LAST definition of a name in one container
@@ -724,6 +768,17 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // PY-D18 (round 10): `global X` + a creating write is a MODULE-scope binding, so publish the
+    // symbol the write proves — after the walk, so the dedupe sees everything the file declared.
+    // The dangling edges that named such a name now resolve to a real declaration in the real
+    // scope CPython resolved it to, rather than being excused as unresolvable.
+    this.publishGlobalWriteBindings(rootNode, ctx)
+
+    // PY-D23 (round 12): a module-scope or class-scope binding written by a statement that is NOT
+    // an assignment — `for x in …`, `with … as x`, `except E as x`. Same post-loop placement for
+    // the same reason: the dedupe must see every declaration the file's other paths published.
+    this.publishScopeBinderBindings(rootNode, ctx)
+
     // Post-loop: contains for class → member ownership (module-level symbols
     // are ownerless — Python has no module declaration, JS-family contract).
     for (const s of ctx.symbols) {
@@ -767,7 +822,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // swift/objc all do — python was the only managedoo analyzer with none).
     // classifyEvidenceTier runs LAST so every edge — including declared-type
     // refs and member uses created above — leaves with an evidenceClass.
-    this.extractDeclaredTypeRefs(rootNode, ctx.relationships, phantomDefs, ctx.moduleName)
+    this.extractDeclaredTypeRefs(rootNode, ctx.relationships, phantomDefs, ctx.moduleName, ctx.functionLocals)
     this.extractMemberUses(rootNode, ctx, phantomDefs)
     this.extractVirtualRegistrations(rootNode, ctx)
     this.classifyEvidenceTier(ctx.relationships)
@@ -1313,12 +1368,30 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             return undefined
           })()
+          // PY-D15 (round 8) — A BASE THAT IS A VARIABLE, not a class.
+          //
+          // `class Row(dump_cls)` is real python and real in the corpus: the base is decided at
+          // RUNTIME by whichever branch ran (`dump_cls = _py_row.BaseRow` or `_cy_row.BaseRow`)
+          // and the class it names does not exist until then. The edge is worth publishing — the
+          // source does name a base — but a consumer must be able to tell it from
+          // `class SiblingCase(unittest.TestCase)`, which is the same shape and an entirely
+          // different claim.
+          //
+          // MEASURED over the whole-population verdict before this line: 15 UNEXPLAINED
+          // `extends` targets, 14 of them a name bound in the ENCLOSING FUNCTION (a test method's
+          // local, a parameter) and 1 a file CPython itself cannot parse. Confidence stays 1.0
+          // because the SOURCE fact is exact — the class body's base list is literally these names
+          // — which is the same reasoning that lets `implements` carry a reason code at 1.0 three
+          // lines below. What the code adds is that the TARGET is a value whose type nothing here
+          // knows, so a resolution step must not read the leaf as a class name.
+          const baseBindingReason = this.dynamicTypeBindingReason(arg, baseLeaf, ctx.functionLocals)
           this.pushRel(ctx, className, baseLeaf, ifaceKind
             ? ASTEngine.RelationshipType.Implements
             : ASTEngine.RelationshipType.Extends, 1.0, {
             pythonSpecific: true,
             ...(baseQualifier ? { qualified: baseQualifier } : {}),
             ...(ifaceKind ? { interfaceKind: ifaceKind.kind, reasonCode: ifaceKind.reasonCode } : {}),
+            ...(!ifaceKind && baseBindingReason ? { reasonCode: baseBindingReason } : {}),
           }, this.nodeLine(arg))
         }
       }
@@ -1817,6 +1890,16 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.noteFramework(ctx, moduleName)
         this.pushRel(ctx, ctx.moduleName, `${moduleName}:*`, ASTEngine.RelationshipType.Imports, 1.0, {
           pythonSpecific: true,
+          // PY-D13 (round 7): the BOUND local name. `import typing as t` binds `t`, and `t`
+          // is the only word in the file that spells this module in front of a member
+          // (`t.Protocol`, `t.Callable`), while the edge's target is the `module:*` pair the
+          // store keys on — so without this key the alias rides no relation at all and every
+          // `t.X` endpoint reads as a name bound by nothing. Published only when the binding
+          // DIFFERS from the imported name: `import typing` binds `typing`, and a key that
+          // repeats the module is noise a consumer would have to filter. See `PY-D13` in the
+          // lane spec for the half of this that is NOT fixed here (the worker projection
+          // drops `alias`, so the STORE still cannot see it).
+          ...(alias ? { importedAs: alias } : {}),
         }, this.nodeLine(name))
       }
     } else if (node.type === "import_from_statement") {
@@ -1839,15 +1922,26 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `Optional,` — the statement starts on the `from` line, the item on its
       // own). The relationship is emitted per item, so the node must survive
       // the string collection.
-      const itemNodes: Array<{ name: string; node: Node | null }> = []
+      const itemNodes: Array<{ name: string; node: Node | null; bound?: string }> = []
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
         if (!c) continue
         if (c.type === "dotted_name" || c.type === "identifier") {
           if (c.text !== moduleName) { items.push(c.text); itemNodes.push({ name: c.text, node: c }) }
         } else if (c.type === "aliased_import") {
+          // PY-D13 (round 7) — `from x import Z as W` binds `W`, and this branch recorded only
+          // the IMPORTED name `Z`: the alias node was read for nothing, so the name the file
+          // actually calls and annotates with (`W`, and `t` in `import typing as t`) appeared
+          // on no edge this lane published. The alias is a fact the parse already carries, so
+          // it is captured here and published per item below — one import statement can alias
+          // some items and not others, which is why the binding rides the ITEM and not the row.
           const itemNameNode = c.childForFieldName("name") || c.namedChild(0)
-          if (itemNameNode) { items.push(itemNameNode.text); itemNodes.push({ name: itemNameNode.text, node: itemNameNode }) }
+          const aliasNode = c.childForFieldName("alias") || c.namedChild(1)
+          const bound = aliasNode?.text
+          if (itemNameNode) {
+            items.push(itemNameNode.text)
+            itemNodes.push({ name: itemNameNode.text, node: itemNameNode, ...(bound ? { bound } : {}) })
+          }
         } else if (c.type === "wildcard_import") {
           items.push("*"); itemNodes.push({ name: "*", node: c })
         }
@@ -1888,6 +1982,19 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (const item of itemNodes) {
           this.pushRel(ctx, ctx.moduleName, `${moduleName}:${item.name === "*" ? "*" : item.name}`, ASTEngine.RelationshipType.Imports, 1.0, {
             pythonSpecific: true,
+            // the item's BOUND name, when the source wrote one (`… as W`). Absent for a plain
+            // item, because there the bound name IS the imported name the target already spells.
+            ...(item.bound ? { importedAs: item.bound } : {}),
+            // PY-D19 (round 10) — A WILDCARD IMPORT IS A DIFFERENT BINDING RULE, AND THE TARGET
+            // SPELLING CANNOT SAY SO. `from M import *` and `import M` both publish `M:*` (the
+            // target is the same import-graph endpoint), and the store's per-item projection
+            // (`pool-worker`: `{name, path, type, isExternal, line}`) flattens BOTH to
+            // `name: "*", type: "namespace"` — so the one fact that decides whether a bare name
+            // in this file can come from M's namespace is dropped one layer below the analyzer.
+            // The fact is stated HERE, on the edge the analyzer itself returned, where the
+            // resolution verdict reads it: `from M import *` binds M's public namespace into
+            // THIS module, `import M` binds only `M`.
+            ...(item.name === "*" ? { starImport: true } : {}),
           }, this.nodeLine(item.node))
         }
       }
@@ -2018,8 +2125,23 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
 
-    if (left.type !== "identifier") return
+    // PY-D21 (round 11) — A TARGET IS A TARGET, WHATEVER SHAPE IT IS WRITTEN IN.
+    //
+    // `left.type !== "identifier"` was the gate, and it refused EVERY multi-target assignment:
+    // `a, b = f()`, `[a, b] = f()`, `(a, b) = f()`, `a, *rest = f()` all bind names in the scope
+    // they are written in, and all published NOTHING. The measured cost is not a hypothetical: the
+    // file this was found in, `pb-grpc/examples/python/auth/async_customized_auth_client.py`, binds
+    // `helloworld_pb2, helloworld_pb2_grpc = grpc.protos_and_services("helloworld.proto")` at module
+    // scope, and every annotation in the repo's gRPC examples that names `helloworld_pb2` was an
+    // UNEXPLAINED reference while the binding sat in the file two lines above it
+    // (`.tmp-py/price-tuple-targets.py`: 12 residual rows, all `references`).
+    //
+    // The names are read with the shared pattern walker, so this reader and the local collector
+    // cannot disagree about what a target is — the defect that survived nine rounds in
+    // `collectFunctionLocals`'s `with_item` case.
     const name = left.text
+    const targetNodes = left.type === "identifier" ? [left] : this.patternTargetNodes(left)
+    if (targetNodes.length === 0) return
 
     // __all__ → the explicit export contract, and ONLY at module scope.
     //
@@ -2129,31 +2251,49 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // every lambda in the file, and a single missed decrement would silently re-open this
       // defect for the rest of the walk.
       if (this.insideNonClassScope(node)) return
-      ctx.symbols.push({
-        name,
-        kind: ASTEngine.SymbolKind.Property,
-        range: this.nodeToRange(left),
-        ownerName: ctx.currentClass,
-        ownerKind: ASTEngine.SymbolKind.Class,
-        // PYD3: underscore-prefix visibility is a PYTHON semantic, not a
-        // class-body-only one — `_cache` at class scope is exactly as
-        // protected as `_cache` at module scope (both now pythonVisibility()).
-        // The old hard-coded "public" made class variables the ONE symbol
-        // kind where the convention silently didn't apply.
-        visibility: this.pythonVisibility(name),
-        metadata: { pythonSpecific: true, isClassVariable: true },
-      })
+      for (const t of targetNodes) {
+        ctx.symbols.push({
+          name: t.text,
+          kind: ASTEngine.SymbolKind.Property,
+          range: this.nodeToRange(t),
+          ownerName: ctx.currentClass,
+          ownerKind: ASTEngine.SymbolKind.Class,
+          // PYD3: underscore-prefix visibility is a PYTHON semantic, not a
+          // class-body-only one — `_cache` at class scope is exactly as
+          // protected as `_cache` at module scope (both now pythonVisibility()).
+          // The old hard-coded "public" made class variables the ONE symbol
+          // kind where the convention silently didn't apply.
+          visibility: this.pythonVisibility(t.text),
+          metadata: { pythonSpecific: true, isClassVariable: true, ...this.multiTargetForm(left) },
+        })
+      }
       return
     }
 
     // Module-level assignment → Variable.
-    ctx.symbols.push({
-      name,
-      kind: ASTEngine.SymbolKind.Variable,
-      range: this.nodeToRange(left),
-      visibility: this.pythonVisibility(name),
-      metadata: { pythonSpecific: true, isModuleVariable: true },
-    })
+    for (const t of targetNodes) {
+      ctx.symbols.push({
+        name: t.text,
+        kind: ASTEngine.SymbolKind.Variable,
+        range: this.nodeToRange(t),
+        visibility: this.pythonVisibility(t.text),
+        metadata: { pythonSpecific: true, isModuleVariable: true, ...this.multiTargetForm(left) },
+      })
+    }
+  }
+
+  /**
+   * PROVENANCE for a symbol published from a MULTI-TARGET assignment: the shape the binding was
+   * written in. Empty for the ordinary single-identifier form, so an existing symbol's metadata is
+   * byte-identical to what it was — the fact is added, nothing is renamed.
+   *
+   * It is on the symbol for the reason round 10 put `boundByGlobalWrite` on one: a reader triaging a
+   * surface wants to know why a module variable exists when the source line at that position looks
+   * like `a, b = ...`, and the mutant harness needs a way to express the revert as a shape rather
+   * than as a fixture string.
+   */
+  private multiTargetForm(left: Node): Record<string, string> {
+    return left.type === "identifier" ? {} : { multiTargetForm: left.type }
   }
 
   private extractTypeAlias(node: Node, ctx: PythonContext) {
@@ -2186,6 +2326,21 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // nothing, which is a MISSING relationship and the only direction of this report that means
     // something is absent from the graph rather than over-claimed in it.
     if (!caller) return
+
+    // PY-D17 (round 9) — NO CALL IS DERIVED FROM A REGION THE PARSER FLAGGED.
+    //
+    // Same rule as the type-clause guard, on the other emitter. An ASN.1 document carrying a `.py`
+    // extension (`otp/lib/asn1/test/asn1_SUITE_data/*.py`, 22 files in the population) parses as a
+    // tree with hundreds of errors, and the analyzer was reading ASN.1 grammar as python calls —
+    // `calls BitStr -> STRING`, `-> SIZE`, `-> sunday` — every one of them a name that appears in
+    // the file but at no call position in any language. Two shapes are refused: a call whose own
+    // subtree contains an error (the parser failed inside the callee or its arguments), and a call
+    // that sits INSIDE an error node (the parser swallowed the statement whole). Both are the
+    // parser's verdict, not a guess about the source.
+    if ((node as any).hasError === true) return
+    for (let anc = node.parent; anc; anc = anc.parent) {
+      if (anc.type === "ERROR" || (anc as any).isMissing === true) return
+    }
 
     // Decorator calls (@dataclass(...)) are metadata on the decorated
     // symbol, not runtime call edges.
@@ -2317,11 +2472,24 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       ? (fullCallee.startsWith("self.") || fullCallee.startsWith("cls.")
           ? "dispatch-on-parameter"
           : ctx.importRoots.has(fullCallee.split(".")[0]!) ? "external-member-call" : "dispatch-on-receiver")
-      : "bare-name-callee"
+      : this.isLocalCalleeName(calleeLeaf, fullCallee, ctx.functionLocals)
+        ? "local-callee"
+        : "bare-name-callee"
+    // The relation-level OWNER CHANNEL — published on the SAME narrow shape the reason is
+    // (`self.m()` / `cls.m()`, one dot), so the store can resolve the member through the class
+    // that declares it. `self.store.save` and `recv.m` carry NO owner: the first's receiver is
+    // a VALUE whose type is unknown, the second is not the implicit parameter. See
+    // `memberOwnerOf` for why that boundary is load-bearing rather than tidy.
+    const dotIdx = fullCallee.indexOf(".")
+    const receiverName = dotIdx > 0 && fullCallee.indexOf(".", dotIdx + 1) === -1
+      ? fullCallee.slice(0, dotIdx)
+      : undefined
+    const memberOwner = this.memberOwnerOf(receiverName, ctx.currentClass)
     this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Calls, 0.9, {
       pythonSpecific: true,
       qualified: fullCallee,
       reasonCode: dispatchClass,
+      ...(memberOwner ? { owner: memberOwner } : {}),
     }, this.nodeLine(calleeLeaf))
   }
 
@@ -2350,7 +2518,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // comment records why that is not free: "web-tree-sitter wrappers are per-access, identity
     // never holds". Every `.parent` is a fresh object crossing the WASM boundary. Recursion
     // already has the value in hand, because a node's parent is the `parent` its caller passed.
-    const walk = (n: Node, inFn: string | undefined, parent: Node | null, gp: Node | null): void => {
+    const walk = (n: Node, inFn: string | undefined, cls: string | undefined, parent: Node | null, gp: Node | null): void => {
       const t = n.type
       // #748: a shadowed definition's body is never walked — its member reads
       // belong to a body the runtime has already rebound away.
@@ -2365,6 +2533,15 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "function_definition" && !inFn) {
         const nameNode = this.findChildByType(n, "identifier")
         nextFn = nameNode?.text
+      }
+      // INCOMING_PY: the enclosing CLASS, carried down for the same reason the enclosing
+      // function is — a nested def's `self.` reads still belong to the method's class. A
+      // `class_definition` rebinds it; the module scope leaves it undefined, which is what
+      // keeps a module-level `def f(self)` from inventing an owner it does not have.
+      let nextCls = cls
+      if (t === "class_definition") {
+        const classNameNode = this.findChildByType(n, "identifier")
+        if (classNameNode?.text) nextCls = classNameNode.text
       }
       if (t === "attribute" && inFn && parent) {
         const leaf = n.namedChild(n.namedChildCount - 1)
@@ -2408,6 +2585,12 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             const qualified = recvName && ctx.declaredTypes.has(recvName)
               ? qualifyReservedEndpoint(leaf.text, recvName)
               : leaf.text
+            // The relation-level OWNER CHANNEL, published only when the receiver is EXACTLY
+            // `self`/`cls` (the identifier form the enclosing class is the value of). The same
+            // narrow boundary as `calls`: a receiver the store cannot name (`table.num_rows`,
+            // `self.svc.inner`) carries NO owner, so the store leaves the row to the name
+            // strategies rather than binding the member to the wrong class. See `memberOwnerOf`.
+            const memberOwner = this.memberOwnerOf(recvName, cls)
             // PY-25 / INCOMING_PY — the read's ROUTE, which is the whole subject of a member
             // read in python: `self.stash` and a bare `stash` are the same leaf and two
             // different facts, and the lane was publishing them identically.
@@ -2426,16 +2609,17 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
               qualified: n.text,
               reasonCode: "member-read",
               ...(qualified !== leaf.text ? { qualifiedTarget: true, receiver: recvName } : {}),
+              ...(memberOwner ? { owner: memberOwner } : {}),
             }, this.nodeLine(leaf))
           }
         }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c) walk(c, nextFn, n, parent)
+        if (c) walk(c, nextFn, nextCls, n, parent)
       }
     }
-    walk(rootNode, undefined, null, null)
+    walk(rootNode, undefined, undefined, null, null)
   }
 
   /**
@@ -2445,7 +2629,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * scalar types (str/int/float/bool/bytes) are excluded from names; unions
    * (T | U), optionals, and generics descend via their children.
    */
-  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[], phantoms: Set<string>, moduleName: string): void {
+  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[], phantoms: Set<string>, moduleName: string, functionLocals: Map<string, Set<string>>): void {
     const emitted = new Set<string>()
     const PRIMITIVES = new Set(["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"])
 
@@ -2453,6 +2637,35 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // type NAME is written (a wrapped annotation's own line), so the node must
     // survive the collection.
     const collectTypeNodes = (n: Node, out: Node[]): void => {
+      // PY-D17 (round 9) — A CLAUSE THE PARSER FLAGGED NAMES NO TYPE.
+      //
+      // tree-sitter is error-tolerant, and where it fails it still hands back a tree with a
+      // plausible SHAPE whose node boundaries do not match the source. Descending that shape
+      // publishes names the author never wrote at a type position, and the clearest measured case
+      // is a parameter's OWN NAME:
+      //
+      //     def optional_memoryview(d: double[:], o: Optional[double[:]]): ...
+      //     (typed_parameter (identifier "d")
+      //        type: (type (generic_type (identifier "double")
+      //                     (type_parameter (ERROR)                       <- "[:]"
+      //                       (type (constrained_type (type (identifier))  <- "o"  <- THE NEXT PARAM
+      //                               (type (generic_type (identifier "Optional") ...))))))))
+      //
+      // `double[:]` is VALID CPython (an annotation is an arbitrary expression; `double[:]` is a
+      // slice) and tree-sitter's python grammar rejects it, so the whole parameter list collapses
+      // into ONE `typed_parameter` that swallowed `, o: Optional[...]`. The analyzer read that
+      // garbled `constrained_type` and published `references optional_memoryview -> o` — a
+      // fabricated edge in which a parameter is claimed to be a type. Reproduced minimally, and it
+      // is the same class of defect as PY-D11 (a keyword argument's NAME published as a type) and
+      // as the empty-identifier guard above.
+      //
+      // The rule is uniform and needs no shape enumeration: a type clause that CONTAINS a parser
+      // error is not trusted at all. `hasError` is the parser's own verdict on the subtree, so this
+      // is a statement about the parse rather than a heuristic about names. The cost is declared:
+      // the well-formed-looking `double`/`Optional` inside that same clause are dropped WITH it,
+      // because a name read out of a structure the parser got wrong is luck, not reading — and a
+      // confidently-wrong edge is worse than an honest NULL.
+      if ((n as any).hasError === true) return
       if (n.type === "identifier") {
         // INCOMING_PY: an identifier with NO TEXT names nothing, and an edge endpoint
         // that names nothing is worse than a weak one — it is a row every consumer can
@@ -2474,6 +2687,24 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         return
       }
       if (n.type === "none" || n.type === "string" || n.type === "concatenated_string") return
+      // INCOMING_PY (round 6) — A KEYWORD ARGUMENT'S NAME IS NOT A TYPE.
+      //
+      // In `read_token: Annotated[str, Field(min_length=1, strict=True, max_length=2048)]` the
+      // annotation expression holds a CALL, and this walk used to descend into it and publish
+      // `references ... -> min_length`, `-> strict` and `-> max_length` — the keyword NAMES of a
+      // validator. Those names are not types and bind to nothing; they were a measured slice of the
+      // UNEXPLAINED incoming targets the resolution verdict named (the census's own
+      // `unexplainedTargetNames`). The rule that fixes it is the same one `keyword_argument` already
+      // teaches everywhere else: the NAME is a parameter label, the VALUE is the expression.
+      //
+      // The VALUE is still walked, because a real type can live in one — `TypeVar("T", bound=Base)`
+      // must keep `Base` — so the fix drops the NAME child and recurses into the value rather than
+      // refusing the whole call.
+      if (n.type === "keyword_argument") {
+        const v = n.childForFieldName("value")
+        if (v) collectTypeNodes(v, out)
+        return
+      }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
         if (c) collectTypeNodes(c, out)
@@ -2595,6 +2826,25 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (emitted.has(key)) continue
           emitted.add(key)
           const qualifier = typeQualifier(tn)
+          // PY-D15 / PY-D16 (round 8) — THE POSITION IS NOT ALWAYS THE REASON.
+          //
+          // `relationshipType` says WHERE the name was written; the code above derived the
+          // reason from it and stopped there, so `isinstance(obj, type_or_tuple)` published
+          // `references is_safe_attribute -> type_or_tuple` at 0.95 with reasonCode
+          // `instanceof-check` — true, and useless: `type_or_tuple` is a WALRUS TARGET of the
+          // very condition it appears in, so the runtime type is decided by a dict lookup, and
+          // a consumer reading `instanceof-check` has no way to tell it from
+          // `isinstance(instance, SomeClass)`. MEASURED over the whole-population verdict before
+          // this line: of 389 UNEXPLAINED `references` targets, 232 name a binding of an
+          // ENCLOSING FUNCTION (parameters, walrus targets, locals) and 52 name a PEP-695
+          // `def f[T]` inline type parameter — 73.0% of the defect axis, one mechanism, and the
+          // same fact `calls` already states per edge since PY-D14.
+          //
+          // The POSITION is not lost: `metadata.relationshipType` still carries it, and it is the
+          // field whose whole job that is. The code NARROWS from the position to the binding
+          // whenever the binding is the reason the target cannot resolve, which is exactly what
+          // M14 §4 asks a reason code to say.
+          const bindingReason = this.dynamicTypeBindingReason(tn, t, functionLocals)
           relationships.push({
             source,
             target: t,
@@ -2617,7 +2867,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             // fields with one name, which is a consumer bug waiting to happen.
             metadata: {
               relationshipType: relType,
-              reasonCode: PY_REFERENCE_REASON[relType] ?? "declared-type",
+              reasonCode: bindingReason ?? PY_REFERENCE_REASON[relType] ?? "declared-type",
               ...(qualifier ? { qualified: qualifier } : {}),
             },
           })
@@ -2929,6 +3179,844 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ========================================================================
   // CORE UTILITIES (regex-free)
   // ========================================================================
+
+  /**
+   * The relation-level OWNER of a member-position edge, or `undefined`.
+   *
+   * PHPD42's lever, ported to this lane. The store's `resolveMemberTargetsByOwner`
+   * (`src/ast/member-owner-resolution.ts`) resolves a member target THROUGH the class that
+   * declares it and that class's `super_types` ancestors, instead of binding the bare member
+   * name by the insert-time ranking that picks the alphabetically-first `s.id` among every
+   * same-named declaration in the project. That ranking is not a fact about python — `render`
+   * is a method on many classes at once — and the owner channel is the one signal that turns
+   * "which of N" into "the class the receiver actually is".
+   *
+   * The key is published ONLY when the receiver is EXACTLY the implicit first parameter, spelled
+   * `self` or `cls` — the lane's own convention, and the same spelling its `dispatch-on-parameter`
+   * reason code already trusts. The exclusion is the whole point of the helper and it is not
+   * cosmetic: `self.store.save` names `save` on the VALUE of `self.store`, whose type this parse
+   * does not know, so labelling it with the enclosing class would let the store resolve `save` to
+   * a method of the OUTER class — a confident wrong edge, which is the failure the owner channel
+   * exists to remove. One dot, receiver `self`/`cls`, or no owner.
+   *
+   * The key is OMITTED rather than set to `undefined`/`null`, so a consumer can test presence and
+   * a fixture's `meta.owner: null` ("this edge must NOT carry an owner") is a real assertion about
+   * the absent case rather than a vacuous one — the same contract php's `withMemberOwner` states.
+   */
+  private memberOwnerOf(receiverName: string | undefined, enclosingClass: string | undefined): string | undefined {
+    if (!enclosingClass || !receiverName) return undefined
+    return receiverName === "self" || receiverName === "cls" ? enclosingClass : undefined
+  }
+
+  /**
+   * PY-D14 (round 7) — a bare-name callee is `local-callee` when the name is bound in an
+   * ENCLOSING FUNCTION's scope.
+   *
+   * The verdict named this lane's largest honest hole: 4,837 `calls` edges whose callee binds to
+   * nothing the project declares. The top names show one cause, not many — `run_eval` is a NESTED
+   * `def` inside `main` (a scope-local name this lane deliberately publishes no symbol for, on the
+   * JS-family contract), `django_capture_on_commit_callbacks` is a pytest-INJECTED PARAMETER — and
+   * they are the same fact: the callee is bound in an enclosing FUNCTION's scope, so no
+   * project-wide declaration exists for the edge to reach, and no amount of store work can invent
+   * one. Python's LEGB rule makes it a statement about the language rather than a guess about
+   * intent: a name bound in an enclosing function resolves to THAT binding, and a module-level
+   * name of the same spelling is shadowed for the whole body — so "local" is the MORE correct
+   * answer, not a fallback for a failed lookup.
+   *
+   * The check walks the CALL SITE'S OWN ANCESTORS and asks the pre-pass map, innermost outward, so
+   * it is the call's lexical position that decides and the answer needs no scope bookkeeping. A
+   * `global`/`nonlocal` name is subtracted by the pre-pass, because a write to it is not a local
+   * binding — the one shape where a naive collector would over-claim. Under-claiming is deliberate
+   * and safe: a lambda's or a comprehension's own parameters are not collected, so a call inside
+   * one stays `bare-name-callee` and is counted, never mislabelled.
+   *
+   * PY-D22 (round 11) — THE UNDER-CLAIM IS OVER, and it was never safe, only cheaper.
+   *
+   * That sentence was the whole argument for skipping comprehension and lambda scopes, and it named
+   * the cost as "counted, never mislabelled". The count is what round 10 finally read: a
+   * comprehension's `for` target IS a binding of the comprehension's own scope, so a read of it in
+   * the body resolves to THAT binding by python's own scoping rules — `[comp(page) for comp in
+   * comparison]` calls the comprehension's `comp`, and the graph said the name belonged to no scope
+   * in the project. `bare-name-callee` is not a weaker answer there, it is the WRONG one: it claims
+   * a project-wide name for a binding written four characters earlier.
+   *
+   * The check is the SAME shape as the function check beside it — walk the read's own ancestors and
+   * ask each scope node for its OWN bindings — so there is no scope bookkeeping and no state to
+   * thread. `locals.size === 0` was an early exit that made the helper answer `false` for a whole
+   * module-scope comprehension (a file with no `def` in it), so it is gone; the walk is bounded by
+   * the read's own depth either way.
+   */
+  private isLocalCalleeName(calleeLeaf: Node, name: string, locals: Map<string, Set<string>>): boolean {
+    if (!name) return false
+    let cur: Node | null = calleeLeaf.parent
+    while (cur) {
+      if (cur.type === "function_definition") {
+        const bound = locals.get(this.functionLocalsKey(cur))
+        if (bound && bound.has(name)) return true
+      } else if (this.scopeOwnBindings(cur).has(name)) {
+        return true
+      }
+      cur = cur.parent
+    }
+    return false
+  }
+
+  /**
+   * PY-D22 (round 11) — the names a NON-`def` scope node binds in its OWN scope: a comprehension's
+   * `for` targets and a lambda's parameters.
+   *
+   * MEASURED SHAPES (`.tmp-py/round11-shapes.mts`), because the two are not spelled alike:
+   *
+   *     [x for x in s]              list_comprehension -> for_in_clause(left: identifier)
+   *     [v for k, v in d.items()]   for_in_clause(left: pattern_list) — every target of every clause
+   *                                 is a binding of the SAME comprehension scope (measured with
+   *                                 three chained `for`s, all three clauses are direct children)
+   *     lambda q_, *args, k=1:      lambda -> lambda_parameters (NOT `parameters`)
+   *
+   * A target goes through the shared pattern walker, so `k, v` binds two names. Anything that is not
+   * one of these five node types binds nothing here, so the function returns an empty set and both
+   * callers keep their previous answer — the comprehension/lambda skip in `collectFunctionLocals`
+   * stays exactly as it was, because a comprehension's bindings are NOT its enclosing function's.
+   */
+  private scopeOwnBindings(scope: Node): Set<string> {
+    const out = new Set<string>()
+    switch (scope.type) {
+      case "list_comprehension":
+      case "set_comprehension":
+      case "dictionary_comprehension":
+      case "generator_expression":
+        for (let i = 0; i < scope.namedChildCount; i++) {
+          const c = scope.namedChild(i)
+          if (c?.type !== "for_in_clause") continue
+          this.addPatternTargets(c.childForFieldName("left") ?? c.namedChild(0), out)
+        }
+        return out
+      case "lambda": {
+        const params = scope.childForFieldName("parameters")
+        if (params) this.addParameterNames(params, out)
+        return out
+      }
+      default:
+        return out
+    }
+  }
+
+  /**
+   * The names a `parameters` / `lambda_parameters` node binds — the ONE reader, shared by PY-D14's
+   * function-local collector and PY-D22's scope check.
+   *
+   * Extracted in round 11 for the reason `addPatternTargets` was extracted in round 10: two readers
+   * of the same shape is how a dead case (`with_item`'s `alias`) survived nine rounds in this very
+   * file. A parameter binds its NAME only — `default_parameter` / `typed_default_parameter` carry a
+   * `name` field, `typed_parameter` leads with the identifier or the splat, and a splat/tuple falls
+   * back to identifier children — so `def f(x: SomeType = SOME_DEFAULT)` adds `x` and never
+   * `SomeType`, and a lambda's `*args` / `**kw` add `args` / `kw`.
+   */
+  private addParameterNames(params: Node, into: Set<string>): void {
+    const addParam = (p: Node): void => {
+      switch (p.type) {
+        case "identifier":
+          into.add(p.text)
+          return
+        case "default_parameter":
+        case "typed_default_parameter": {
+          const nm = p.childForFieldName("name")
+          if (nm && nm.type === "identifier") into.add(nm.text)
+          return
+        }
+        case "typed_parameter": {
+          const first = p.namedChild(0)
+          if (first?.type === "identifier") into.add(first.text)
+          else if (first) for (let i = 0; i < first.namedChildCount; i++) {
+            const c = first.namedChild(i)
+            if (c?.type === "identifier") into.add(c.text)
+          }
+          return
+        }
+        default: {
+          for (let i = 0; i < p.namedChildCount; i++) {
+            const c = p.namedChild(i)
+            if (c?.type === "identifier") into.add(c.text)
+          }
+        }
+      }
+    }
+    for (let i = 0; i < params.namedChildCount; i++) {
+      const p = params.namedChild(i)
+      if (p) addParam(p)
+    }
+  }
+
+  /**
+   * PY-D15 / PY-D16 (round 8) — the reason a TYPE-HOLDING name has no project-wide declaration:
+   * it is bound by the reference's own enclosing scope. Returns the code, or `undefined` when the
+   * name is not a local binding (in which case the caller keeps the position-based code).
+   *
+   * This is the reference-side sibling of `isLocalCalleeName`, and it is deliberately a SEPARATE
+   * helper rather than a widening of that one. A CALL's target is a callee and its code is
+   * `local-callee`; a REFERENCE's target is a type and its codes are the two above. Merging them
+   * would put one vocabulary on two axes — the mistake `external-member-call` is deliberately
+   * separated from `dispatch-on-receiver` to avoid.
+   *
+   * The LOCAL check comes first because it is the binding that actually holds at runtime: python's
+   * function scope is one namespace, so a def that both declares `[T]` and assigns `T = 5` binds a
+   * local when the body runs, and reporting the type parameter there would name the signature's
+   * binding for a name the body rebound. A name that is ONLY a type parameter is in no
+   * `functionLocals` set (the pre-pass reads `parameters`, never `type_parameter`), so the second
+   * check is reached exactly when the first cannot answer.
+   *
+   * Both checks walk the LEAF'S ANCESTORS, so the answer comes from the reference's own lexical
+   * position and needs no scope bookkeeping — the same property that makes `isLocalCalleeName`
+   * correct for a nested def whose enclosing function is three levels up.
+   */
+  private dynamicTypeBindingReason(leaf: Node | null | undefined, name: string, locals: Map<string, Set<string>>): string | undefined {
+    if (!leaf || !name) return undefined
+    // PY-D24 (round 12) — A MEMBER READ IS NOT A NAME, and when its receiver is a RUNTIME OBJECT
+    // the lane must say so instead of leaving a dangling declaration name.
+    //
+    // `isinstance(x, self._self_owner)`, `issubclass(source.__class__, field.related_model)`,
+    // `isinstance(w.message, passlib_exc.PasslibHashWarning)` — the type argument is an ATTRIBUTE
+    // of a local (a parameter, an assignment, a walrus target). The emitter publishes the last
+    // identifier as the target and the whole spelling as `metadata.qualified`, so the edge names
+    // `_self_owner` / `related_model` / `PasslibHashWarning` as if the file declared them, and the
+    // verdict could only call all three UNEXPLAINED (measured: exactly these 3 rows in the round-11
+    // residual, plus `gdb.SignalEvent`, whose ROOT is bound by nothing and is covered by the
+    // not-bound-in-file axis instead). The statement the source makes is not about a project-wide
+    // type; it is a member read on an object whose type nothing in the file states.
+    //
+    // The gate is the receiver's ROOT, resolved by python's own lexical walk: only a receiver that
+    // is a LOCAL of an enclosing function can have no static target here. An import-bound root
+    // (`nn.Module`) keeps the qualified-external route, and a class this file declares
+    // (`Config.DEFAULTS`) keeps the chance to resolve against the store.
+    if (leaf.parent?.type === "attribute") {
+      const attr = leaf.parent
+      // The MEMBER, not the receiver: the last named child is the attribute's own name, the same
+      // test `typeQualifier` uses to build the qualified spelling. Without it the receiver leaf
+      // (`field` inside `field.related_model`) fires this rule too, and a reference to a LOCAL
+      // binding would be relabelled `member-read` — which the probe showed on the first run, three
+      // rows of it, and is the reason this test is here rather than a check on the parent alone.
+      const lastNamed = attr.namedChild(attr.namedChildCount - 1)
+      if (!lastNamed || lastNamed.startIndex !== leaf.startIndex || lastNamed.endIndex !== leaf.endIndex) {
+        // fall through to the binding walk below
+      } else {
+      const object = attr.childForFieldName?.("object") ?? attr.namedChild(0)
+      const root = object ? this.firstIdentifier(object) : undefined
+      if (root && object) {
+        let up: Node | null = leaf.parent
+        while (up) {
+          if (up.type === "function_definition") {
+            const bound = locals.get(this.functionLocalsKey(up))
+            if (bound && bound.has(root)) return "member-read"
+          } else if (this.scopeOwnBindings(up).has(root)) {
+            return "member-read"
+          }
+          up = up.parent
+        }
+      }
+      }
+    }
+    let cur: Node | null = leaf.parent
+    while (cur) {
+      if (cur.type === "function_definition") {
+        const bound = locals.get(this.functionLocalsKey(cur))
+        if (bound && bound.has(name)) return "local-binding-target"
+      } else if (this.scopeOwnBindings(cur).has(name)) {
+        // PY-D22 (round 11) — a comprehension's `for` target and a lambda's parameter are bindings
+        // of their own scope, so an annotation naming one is bound by the SCOPE, not by the
+        // project. Measured shape: wagtail's `any(...)` guard over
+        // `[comp(...) for comp in comparison]` and saleor's `allowed_err` inside a comprehension
+        // that binds it were published as `instanceof-check` / `annotation-type`, which claims the
+        // name is a project-wide type.
+        return "local-binding-target"
+      }
+      if (cur.type === "function_definition" || cur.type === "class_definition") {
+        if (this.typeParameterNames(cur).has(name)) return "inline-type-parameter"
+      }
+      cur = cur.parent
+    }
+    return undefined
+  }
+
+  /**
+   * The names a PEP-695 `type_parameter` clause binds — `def f[T]`, `class C[T: str]`, `type A[U]`.
+   *
+   * The clause is one node whose named children are `type` nodes, one per parameter, and each
+   * parameter's NAME is the FIRST identifier in it: `TValue` is `type -> identifier`, and the
+   * bounded form `T: str` is `type -> constrained_type -> type -> identifier` with the bound's
+   * `str` following the name. Taking the first identifier therefore reads the name in every shape
+   * the grammar produces without enumerating them, and never mistakes a BOUND (`str`) for a name.
+   *
+   * A def with no clause returns the empty set, so the caller's two checks cost one child scan per
+   * enclosing def — bounded by the def's own direct children, not by its body.
+   */
+  private typeParameterNames(def: Node): Set<string> {
+    const out = new Set<string>()
+    for (let i = 0; i < def.namedChildCount; i++) {
+      const c = def.namedChild(i)
+      if (!c || c.type !== "type_parameter") continue
+      for (let j = 0; j < c.namedChildCount; j++) {
+        const tp = c.namedChild(j)
+        if (!tp) continue
+        const nm = this.firstIdentifier(tp)
+        if (nm) out.add(nm)
+      }
+    }
+    return out
+  }
+
+  /** The first `identifier` inside a subtree, in document order — or nothing. */
+  private firstIdentifier(n: Node): string | undefined {
+    if (n.type === "identifier") return n.text
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (!c) continue
+      const found = this.firstIdentifier(c)
+      if (found !== undefined) return found
+    }
+    return undefined
+  }
+
+  /**
+   * A stable key for a function node, because a `Node` can never be one.
+   *
+   * The lane already learned this once and says so at `extractMemberUses`: web-tree-sitter hands
+   * back a FRESH wrapper on every `.parent` / `.namedChild()` access — "identity never holds, every
+   * `.parent` is a fresh object crossing the WASM boundary" — so a `Map<Node, …>` is a map no
+   * lookup can hit. The pre-pass stores under the function's own start position instead, which is a
+   * plain number pair on the underlying tree and is therefore identical across wrappers. (The first
+   * version of this map keyed on the node and read `bare-name-callee` for every call in the file,
+   * which the probe showed immediately — the reason codes were all one value.)
+   */
+  private functionLocalsKey(n: Node): string {
+    return `${n.startPosition.row}:${n.startPosition.column}`
+  }
+
+  /**
+   * Descend a binding TARGET through tuple/list pattern containers only, collecting the
+   * `identifier` names it binds.
+   *
+   * `identifier` binds. A `tuple_pattern` / `list_pattern` / `pattern_list` (the bare `a, b`
+   * form) and a `tuple` / `list` literal used as a target are CONTAINERS
+   * whose elements bind. An `as_pattern_target` is the same question one level down —
+   * `with open(...) as (a, b)` wraps the container in one — so it is descended too. Nothing
+   * else is guessed at: a member or an index target (`self.x`, `d[k]`) binds a member or an
+   * element rather than a bare name, and an expression is not a target at all.
+   *
+   * Extracted in round 10 so the `global`-write collector reads a target EXACTLY as PY-D14's
+   * local collector does. The two helpers that read this shape separately is how the
+   * `with_item` / `except_clause` bug below survived nine rounds.
+   *
+   * `typed_pattern` WAS IN THIS LIST AND ROUND 10 REMOVED IT, because `verify-fixture-coverage.ts`
+   * flagged it as a DEAD LITERAL and the measurement agreed: no python fixture contains such a node,
+   * the eight source shapes that could plausibly produce one (`def f(a: int)`, `with ... as (a, b)`,
+   * `except E as e`, `match`/`case` with and without `as`, `for (a, b) in x`, a lambda default, a
+   * bare `x: int`, `(a): int = 1`) all parse as `typed_parameter` / `as_pattern` / `tuple_pattern`
+   * instead (`.tmp-py/typed-pattern-probe.mts`), and a walk of the whole corpus — 11,309 `.py` /
+   * `.pyi` files, tree-sitter's own tree — found **0** occurrences
+   * (`.tmp-py/typed-pattern-corpus.txt`). A branch that can never fire is a claim with no evidence,
+   * which is the lesson round 9 wrote down when it removed the fabricated reference.
+   *
+   * ROUND 11 ADDED `list_splat_pattern`, and it is the SAME lesson read the other way: `a, *rest = f()`
+   * binds `rest`, the probe (`.tmp-py/round11-shapes.mts`) shows the grammar spells that element
+   * `list_splat_pattern` (a `pattern_list` child holding one `identifier`), and the walker did not
+   * descend it — so `rest` was bound by no symbol and was not a function local either. It is covered
+   * by a fixture, which is the condition this docstring sets for keeping a literal. `**kw` in a
+   * target is NOT added: no python program binds one, so a `dictionary_splat_pattern` branch here
+   * would be exactly the dead literal round 10 deleted.
+   *
+   * Returns NODES, not names, because a caller that has to publish a symbol needs the identifier's
+   * own range (one declaration per name, each at its own position) while a caller that only needs
+   * membership needs the set. Both read the SAME walk: one reader, so the two can never disagree
+   * about what a binding target is.
+   */
+  private patternTargetNodes(target: Node | null | undefined): Node[] {
+    const out: Node[] = []
+    if (!target) return out
+    const stack: Node[] = [target]
+    while (stack.length > 0) {
+      const t = stack.pop()!
+      if (t.type === "identifier") { out.push(t); continue }
+      if (t.type === "tuple_pattern" || t.type === "list_pattern" || t.type === "pattern_list" ||
+          t.type === "as_pattern_target" || t.type === "list_splat_pattern" ||
+          t.type === "list" || t.type === "tuple") {
+        for (let i = 0; i < t.namedChildCount; i++) {
+          const c = t.namedChild(i)
+          if (c) stack.push(c)
+        }
+      }
+    }
+    return out
+  }
+
+  /** The names a binding TARGET binds — the name-only face of `patternTargetNodes`. */
+  private addPatternTargets(target: Node | null | undefined, into: Set<string>): void {
+    for (const n of this.patternTargetNodes(target)) into.add(n.text)
+  }
+
+  /**
+   * The TARGET of an `as` binding on a `with_item` / `except_clause`, read from the shape the
+   * grammar actually produces — which is NOT the shape this file read for nine rounds.
+   *
+   * MEASURED (`.tmp-py/global-shape-probe.mts`, round 10) on this grammar:
+   *
+   *     with open("x") as W:      with_item   value -> as_pattern -> as_pattern_target
+   *     except Exception as V:    except_clause value -> as_pattern -> as_pattern_target
+   *
+   * Round 7's `collectFunctionLocals` read `childForFieldName("alias")` for the `with_item` case
+   * and `childForFieldName("name")` for the `except_clause` case. BOTH ARE NULL on every real
+   * node, so neither case ever fired: the two spellings were documented as collected while the
+   * analyzer collected nothing, which is a claim with no falsifier — the same failure mode round 9
+   * removed a fabrication with. A `with`/`except` target therefore stayed in no local set, and
+   * every use of one was one reason code away from being read as a project-wide name.
+   */
+  private asBindingTarget(n: Node): Node | null {
+    const pat = n.childForFieldName("value")
+    if (pat?.type === "as_pattern") return this.findChildByType(pat, "as_pattern_target") ?? pat.namedChild(1)
+    const nested = this.findChildByType(n, "as_pattern")
+    if (nested) return this.findChildByType(nested, "as_pattern_target") ?? nested.namedChild(1)
+    return null
+  }
+
+  /**
+   * PY-D18 (round 10) — the names a function's OWN body creates in the MODULE namespace, keyed by
+   * the node of the earliest creating write, for the pairs the source STATES: a `global X` in that
+   * body plus a write to `X` in that same body that creates the binding.
+   *
+   * WHY THIS IS A RESOLUTION AND NOT AN EXCUSE. `global X; X = value` binds X in the MODULE
+   * namespace — the file's own scope, a place the ontology can hold — so the name is publishable
+   * as an ownerless module variable. Excusing it (a reason code that says "not resolvable") would
+   * be weaker than the source allows: python named the scope, and the scope is this file.
+   *
+   * PRICED before it was written (`.tmp-py/price-globals9.py`, CPython's own `ast`): 397 pairs in
+   * the corpus, 140 already module-bound, 257 that can carry a residual row, and a blast on the
+   * round-9 UNEXPLAINED dump of 98 rows (8 calls + 90 references, every call `bare-name-callee`,
+   * every reference `annotation-type`). Real shapes: cython's `Demos/benchmarks/run_benchmarks.py`
+   * declares `global run_python` in `init()`, assigns it, and calls it from module level 40 lines
+   * later; a sqlalchemy test module declares `global str30` inside a test function, assigns
+   * `Annotated[...]`, and a nested class annotates against it.
+   *
+   * PRECISION, re-measured against CPython rather than assumed:
+   *   * a CREATING write needs a VALUE. CPython: `exec("x: int", m.__dict__)` leaves `m.__dict__`
+   *     without `x`, so an `assignment` with no `right` field (`X: T`) does NOT count here even
+   *     though the price script counted it — the price was an upper bound, this is the rule.
+   *   * `X += 1` is a READ-modify-write: it requires the binding to already exist, so
+   *     `augmented_assignment` does not count. `del X` removes the binding, so
+   *     `delete_statement` does not count.
+   *   * OWN BODY ONLY. A nested `def`/`class` body is a different scope with its own `global`
+   *     statements, and each nested function is visited by this same sweep as its own node — so
+   *     nothing has to be inferred and nothing is inherited. A `lambda` or comprehension opens its
+   *     own scope too.
+   *   * the binding forms counted are the ones CPython binds a module name with: `X = …`,
+   *     `X: T = …`, `for X in …`, `with … as X`, `except E as X`, `(X := …)`, and an `import`
+   *     inside the function (which reaches the module namespace only after a `global` — exactly
+   *     the gate this helper applies).
+   */
+  private collectGlobalWriteNames(rootNode: Node): Map<string, Node> {
+    const out = new Map<string, Node>()
+    const functions: Node[] = []
+    const sweep: Node[] = [rootNode]
+    while (sweep.length > 0) {
+      const n = sweep.pop()!
+      if (n.type === "function_definition") functions.push(n)
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) sweep.push(c)
+      }
+    }
+    for (const fn of functions) {
+      const declared = new Set<string>()
+      const created = new Map<string, Node>()
+      const note = (into: Set<string>, node: Node | null | undefined): void => {
+        if (!node) return
+        for (const nm of into) {
+          const prev = created.get(nm)
+          if (!prev || node.startIndex < prev.startIndex) created.set(nm, node)
+        }
+      }
+      const stack: Node[] = []
+      for (let i = 0; i < fn.namedChildCount; i++) {
+        const c = fn.namedChild(i)
+        if (!c) continue
+        // The function's own NAME and its return annotation are not body statements.
+        if (c.type === "identifier" || c.type === "type" || c.type === "parameters") continue
+        stack.push(c)
+      }
+      while (stack.length > 0) {
+        const n = stack.pop()!
+        const t = n.type
+        if (t === "function_definition" || t === "class_definition") continue
+        if (t === "lambda" || t === "list_comprehension" || t === "set_comprehension" ||
+            t === "dictionary_comprehension" || t === "generator_expression") continue
+        switch (t) {
+          case "global_statement":
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c?.type === "identifier") declared.add(c.text)
+            }
+            break
+          case "assignment": {
+            if (!n.childForFieldName("right")) break
+            const left = n.childForFieldName("left") ?? n.namedChild(0)
+            const names = new Set<string>()
+            this.addPatternTargets(left, names)
+            note(names, left)
+            break
+          }
+          case "for_statement": {
+            const left = n.childForFieldName("left") ?? n.namedChild(0)
+            const names = new Set<string>()
+            this.addPatternTargets(left, names)
+            note(names, left)
+            break
+          }
+          case "with_item":
+          case "except_clause": {
+            const target = this.asBindingTarget(n)
+            const names = new Set<string>()
+            this.addPatternTargets(target, names)
+            note(names, target)
+            break
+          }
+          case "named_expression": {
+            const target = n.childForFieldName("name") ?? n.namedChild(0)
+            const names = new Set<string>()
+            this.addPatternTargets(target, names)
+            note(names, target)
+            break
+          }
+          case "import_statement":
+          case "import_from_statement": {
+            const names = new Set<string>()
+            this.addImportBoundNames(n, names)
+            note(names, n)
+            break
+          }
+          default:
+            break
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) stack.push(c)
+        }
+      }
+      for (const nm of declared) {
+        const w = created.get(nm)
+        if (!w) continue
+        const prev = out.get(nm)
+        if (!prev || w.startIndex < prev.startIndex) out.set(nm, w)
+      }
+    }
+    return out
+  }
+
+  /**
+   * The names an import STATEMENT binds in the scope it appears in. `import a.b` binds `a` (the
+   * first segment, not the whole dotted path); `import a.b as c` and `from m import S as R` bind
+   * the ALIAS; `from m import S` binds `S`; a `from` clause's module half binds nothing; a
+   * `wildcard_import` binds no single name (see PY-D19 for where those names are handled).
+   *
+   * Shared by PY-D18's write collector and its module-scope dedupe, so the two cannot drift on
+   * what an import statement binds.
+   */
+  private addImportBoundNames(node: Node, into: Set<string>): void {
+    let seenImport = node.type === "import_statement"
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      if (c.type === "import") { seenImport = true; continue }
+      if (!seenImport) continue
+      if (c.type === "dotted_name") {
+        const first = c.namedChild(0)
+        if (first?.type === "identifier") into.add(first.text)
+      } else if (c.type === "identifier") {
+        into.add(c.text)
+      } else if (c.type === "aliased_import") {
+        const alias = c.childForFieldName("alias") ?? c.namedChild(c.namedChildCount - 1)
+        if (alias?.type === "identifier") { into.add(alias.text); continue }
+        const nm = c.childForFieldName("name") ?? c.namedChild(0)
+        const first = nm?.namedChild(0) ?? nm
+        if (first?.type === "identifier") into.add(first.text)
+      }
+    }
+  }
+
+  /**
+   * PY-D18's SECOND HALF — publish the module-scope symbol for each `global`-created name that has
+   * no module-scope declaration already, AFTER the walk so the dedupe sees every symbol the file
+   * published (a module `def X`, a class `X`, a module-level `X = …`, an `import X`).
+   *
+   * The symbol is ownerless (python has no module declaration; the module scope is named after the
+   * file — the JS-family contract this lane already follows for module variables) and marked so a
+   * reader can tell WHERE the binding came from: the write inside the function, at the write's own
+   * line. Nothing else is emitted — no `contains` (there is no owner), no export, no relationship;
+   * the edge that was dangling now names a real declaration in the real scope python resolved it
+   * to, and the resolver in `python-endpoint-resolution.ts` finds it by name like any other.
+   */
+  private publishGlobalWriteBindings(rootNode: Node, ctx: PythonContext): void {
+    const writes = this.collectGlobalWriteNames(rootNode)
+    if (writes.size === 0) return
+    const bound = new Set<string>()
+    for (const s of ctx.symbols) if (s.name && !s.ownerName) bound.add(s.name)
+    for (const im of ctx.imports) {
+      if (im.alias) bound.add(im.alias)
+      if (im.module && im.isNamespaceImport) bound.add(im.module.split(".")[0]!)
+      // A `from` row's items are the names it binds EXCEPT when an item carries an alias (the
+      // ImportInfo shape keeps one alias for the row, not per item) — and a `*` binds no single
+      // name. Skipping an aliased row entirely is the conservative direction: it can only mean
+      // fewer symbols published, never a symbol published over a name the import already binds.
+      if (!(im.items ?? []).includes("*")) {
+        for (const it of im.items ?? []) if (it !== "*") bound.add(it)
+      }
+    }
+    for (const [name, node] of writes) {
+      if (bound.has(name)) continue
+      ctx.symbols.push({
+        name,
+        kind: ASTEngine.SymbolKind.Variable,
+        range: this.nodeToRange(node),
+        visibility: this.pythonVisibility(name),
+        metadata: {
+          pythonSpecific: true,
+          isModuleVariable: true,
+          // WHICH mechanism published it. A reader triaging a module variable whose declaration
+          // is not a module-level assignment needs the fact in hand, not a line number to go read.
+          boundByGlobalWrite: true,
+        },
+      })
+    }
+  }
+
+  /**
+   * PY-D23 (round 12) — a MODULE-scope (or CLASS-scope) binding written by a statement that is not
+   * an assignment.
+   *
+   * `for mixin in mixins:` at module scope binds `mixin` in the module namespace; `with … as fh`
+   * and `except E as err` bind at the scope they are written in, and so does a class-level
+   * `for`. The assignment walker published NONE of them, so a read of one had no declaration to
+   * resolve against and the verdict could only call it UNEXPLAINED — measured, one row:
+   * `wagtail/wagtail/snippets/api/v3/router.py:76` reads `mixin` inside a module-level `for` loop
+   * over `mixins`, published as `references … -> mixin [instanceof-check]` with no binding in the
+   * store.
+   *
+   * PRICED with CPython's own `ast` before this method existed (`.tmp-py/price-module-bindings.py`):
+   * 351 module `for` targets, 98 `with … as`, 48 `except … as` in 283 files, plus 13 `for` targets
+   * in class bodies. One residual row depends on them today; the value of publishing them is that
+   * the analyzer's statement of the module namespace becomes TRUE of the source, so a future read
+   * of any of these 516 names cannot be UNEXPLAINED for a reason the source never wrote.
+   *
+   * The TARGET is read through the shared walkers (`addPatternTargets` / `asBindingTarget`), so
+   * `for k, v in …` binds two names and this reader cannot disagree with `collectFunctionLocals`
+   * about what a target is. The WALK follows the scope rule that method states: descend compound
+   * statements, never enter a function body (its binders are PY-D14's locals — not symbols), and
+   * never enter a lambda or a comprehension (their targets bind their own scope). It is an
+   * explicit-stack preorder for the reason the dart lane recorded: a recursive walk dies on deep
+   * nesting after the corpus walk has already been paid for.
+   */
+  private publishScopeBinderBindings(rootNode: Node, ctx: PythonContext): void {
+    type Pending = { name: string; node: Node; boundBy: string; className: string | null }
+    const pending: Pending[] = []
+    const stack: Array<{ node: Node; isExit?: boolean; setClass?: string | null }> = [{ node: rootNode }]
+    let currentClass: string | null = null
+    while (stack.length > 0) {
+      const frame = stack.pop()!
+      const n = frame.node
+      if (frame.isExit) {
+        currentClass = frame.setClass ?? null
+        continue
+      }
+      // A function body is another scope (PY-D14 reads its binders); a lambda and a comprehension
+      // are scopes of their own. None of their bindings is a module or class attribute.
+      if (
+        n.type === "function_definition" || n.type === "lambda" ||
+        n.type === "list_comprehension" || n.type === "set_comprehension" ||
+        n.type === "dictionary_comprehension" || n.type === "generator_expression"
+      ) continue
+      if (n.type === "class_definition") {
+        const nm = this.findChildByType(n, "identifier")
+        stack.push({ node: n, isExit: true, setClass: currentClass })
+        currentClass = nm && nm.text ? nm.text : null
+      } else {
+        switch (n.type) {
+          case "for_statement": {
+            const left = n.childForFieldName("left") ?? n.namedChild(0)
+            this.collectBinderNames(left, "for", currentClass, pending)
+            break
+          }
+          case "with_item": {
+            this.collectBinderNames(this.asBindingTarget(n), "with", currentClass, pending)
+            break
+          }
+          case "except_clause": {
+            this.collectBinderNames(this.asBindingTarget(n), "except", currentClass, pending)
+            break
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push({ node: c })
+      }
+    }
+    if (pending.length === 0) return
+
+    // Dedupe against everything the file already declared, in the SCOPE the binding belongs to:
+    // a module-scope binder must not shadow a module-scope declaration (or an import-bound name),
+    // and a class-scope one must not duplicate a member of that class.
+    const ownerless = new Set<string>()
+    const byOwner = new Map<string, Set<string>>()
+    for (const s of ctx.symbols) {
+      if (!s.name) continue
+      if (s.ownerName) {
+        const set = byOwner.get(s.ownerName) ?? new Set<string>()
+        set.add(s.name)
+        byOwner.set(s.ownerName, set)
+      } else {
+        ownerless.add(s.name)
+      }
+    }
+    const imported = new Set<string>()
+    for (const im of ctx.imports) {
+      if (im.alias) imported.add(im.alias)
+      if (im.module && im.isNamespaceImport) imported.add(im.module.split(".")[0]!)
+      if (!(im.items ?? []).includes("*")) {
+        for (const it of im.items ?? []) if (it !== "*") imported.add(it)
+      }
+    }
+    const seen = new Set<string>()
+    for (const p of pending) {
+      const key = `${p.className ?? "\u0000module"}\u0000${p.name}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      if (p.className) {
+        if (byOwner.get(p.className)?.has(p.name)) continue
+      } else if (ownerless.has(p.name) || imported.has(p.name)) continue
+      ctx.symbols.push({
+        name: p.name,
+        kind: p.className ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.Variable,
+        range: this.nodeToRange(p.node),
+        ...(p.className
+          ? { ownerName: p.className, ownerKind: ASTEngine.SymbolKind.Class }
+          : {}),
+        visibility: this.pythonVisibility(p.name),
+        metadata: {
+          pythonSpecific: true,
+          ...(p.className ? { isClassVariable: true } : { isModuleVariable: true }),
+          // WHICH statement binds it — the module/class counterpart of `boundByGlobalWrite`.
+          boundByBinder: p.boundBy,
+        },
+      })
+    }
+  }
+
+  /** The names a binder statement's target writes, through the shared target walker. */
+  private collectBinderNames(
+    target: Node | null | undefined,
+    boundBy: string,
+    className: string | null,
+    into: Array<{ name: string; node: Node; boundBy: string; className: string | null }>,
+  ): void {
+    if (!target) return
+    const names = new Set<string>()
+    this.addPatternTargets(target, names)
+    for (const nm of names) into.push({ name: nm, node: target, boundBy, className })
+  }
+
+  /**
+   * PY-D14 — every function's OWN local bindings, keyed on the function NODE.
+   *
+   * Keyed on the node rather than on the name for the reason `currentClassKey` is: two `def f` in
+   * one file are two different scopes, and a name-keyed map would let one answer for the other.
+   *
+   * WHAT IS COLLECTED: parameters, nested `def`/`class` NAMES, and assignment / for-target / `with
+   * as` / `except as` / walrus TARGET names. WHAT IS NOT, and why each exclusion matters:
+   * a nested function's or class's BODY (its bindings belong to IT, so the walk stops at the
+   * declaration and records only the name); a comprehension's or lambda's targets (their own scope);
+   * an `attribute` / `subscript` target (it binds a member or an element, not a bare name); a
+   * parameter's DEFAULT VALUE or ANNOTATION expression (only the parameter's own `name` field is
+   * read, so `def f(x=RETRY_LIMIT)` does not make `RETRY_LIMIT` a local); and a name a `global` /
+   * `nonlocal` statement declares (a write to it targets another scope, so it is subtracted).
+   */
+  private collectFunctionLocals(rootNode: Node): Map<string, Set<string>> {
+    const out = new Map<string, Set<string>>()
+    // Descend a binding TARGET through the shared pattern walker. `identifier` binds; a member or
+    // an index does not bind a bare name, and an expression is not a target — so neither is
+    // guessed at. One walker, so every reader of a target agrees on what a target is.
+    const addTargets = (target: Node | null | undefined, into: Set<string>): void =>
+      this.addPatternTargets(target, into)
+    // A parameter binds its NAME only — the reader is `addParameterNames` (extracted in round 11 so
+    // PY-D22's scope check reads the same shapes).
+    const functions: Node[] = []
+    const queue: Node[] = [rootNode]
+    while (queue.length > 0) {
+      const n = queue.pop()!
+      if (n.type === "function_definition") functions.push(n)
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) queue.push(c)
+      }
+    }
+    for (const fn of functions) {
+      const names = new Set<string>()
+      const rebinds = new Set<string>()
+      const stack: Node[] = []
+      for (let i = 0; i < fn.namedChildCount; i++) {
+        const c = fn.namedChild(i)
+        if (!c) continue
+        if (c.type === "parameters") {
+          this.addParameterNames(c, names)
+          continue
+        }
+        stack.push(c)
+      }
+      while (stack.length > 0) {
+        const n = stack.pop()!
+        const t = n.type
+        if (t === "function_definition" || t === "class_definition") {
+          const nm = this.findChildByType(n, "identifier")
+          if (nm?.text) names.add(nm.text)
+          continue // its BODY is its own scope; only its name binds here
+        }
+        if (t === "lambda" || t === "list_comprehension" || t === "set_comprehension" ||
+            t === "dictionary_comprehension" || t === "generator_expression") continue
+        switch (t) {
+          case "assignment":
+          case "augmented_assignment":
+            addTargets(n.childForFieldName("left") ?? n.namedChild(0), names)
+            break
+          case "for_statement":
+            addTargets(n.childForFieldName("left") ?? n.namedChild(0), names)
+            break
+          case "named_expression":
+            addTargets(n.childForFieldName("name") ?? n.namedChild(0), names)
+            break
+          case "with_item":
+          case "except_clause":
+            // ROUND 10: the alias of BOTH is inside an `as_pattern` (`value -> as_pattern ->
+            // as_pattern_target`), and the fields these two cases used to read — `alias` for
+            // `with_item`, `name` for `except_clause` — are null on every real node. Both cases
+            // were dead code documented as working; see `asBindingTarget` for the probe.
+            addTargets(this.asBindingTarget(n), names)
+            break
+          case "global_statement":
+          case "nonlocal_statement":
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c?.type === "identifier") rebinds.add(c.text)
+            }
+            break
+          default:
+            break
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) stack.push(c)
+        }
+      }
+      for (const r of rebinds) names.delete(r)
+      out.set(this.functionLocalsKey(fn), names)
+    }
+    return out
+  }
 
   private pushRel(
     ctx: PythonContext,

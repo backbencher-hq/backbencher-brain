@@ -268,32 +268,101 @@ and `parallel-indexer` writes it to the `brain_import` **table**, never to
 | extends | EMITTED | 15,887 | 2,654 | 23.3% / — / 76.7% |
 | overrides | EMITTED | 26,397 | 1,986 | 5.6% / — / 94.4% |
 | instantiates | EMITTED | 7,595 | 909 | 89.9% |
-| **implements** | **RULED** | 0 | 0 | — see below |
+| **implements** | **EMITTED** | 333 | 97 | 60.4% / 31.2% / 25 ambiguous · **0 unresolved** |
 
-### `implements` — RULED, with the falsification written out
+### `implements` — EMITTED, and the ruling it reversed
 
-The one type this analyzer does not emit. Ruled on **instrument A** (grammar inventory)
-with **instrument B** published alongside, so the choice is the supervisor's:
+This section used to open "The one type this analyzer does not emit", ruled on **instrument
+A** (grammar inventory) with instrument B published as the falsifier. **That ruling was
+reversed on 2026-10-09 (PY-27 → PY-34), and the reversal is kept visible here rather than
+quietly overwritten** — the earlier verdict was confidently wrong in exactly the way
+`docs/M14-HONESTY-CONTRACT.md` exists to stop, and a reader who met it has to be able to see
+where it went.
 
-- **A.** The pinned grammar produces **196 distinct node types** over the pinned
-  population (198 across both) and **0 of 17** node-type names that would express a
-  conformance clause is among them.
-- **B.** Python's interface system is real and the corpus uses it: **14 ABC bases and 57
-  Protocol bases over 16,377 base-list entries (0.43%)**, plus 134 `@abstractmethod`
-  methods. All 71 base entries are already published as `extends`, because
-  `class C(X)` means the same thing whatever X is — `issubclass(C, X)` is True for a
-  concrete base, an `abc.ABC` and a `typing.Protocol` alike, and X is in `C.__mro__` in
-  all three.
-- **The deciding count.** Python *does* have conformance without inheritance:
-  `SomeABC.register(SomeConcrete)`, true for `issubclass` with no base-list entry.
-  Measured tight it reads **0 occurrences in 0 files over 5,986 files**, against 365
-  loose `.register(` calls in 75 files that are object and plugin registration.
+WHY A WAS THE WRONG INSTRUMENT. A is true and it is the wrong test: the pinned grammar
+produces **196 distinct node types** over the pinned population (198 across both) and **0 of
+17** conformance-clause node-type names is among them. But in python the conformance relation
+does not arrive as its own node — it arrives INSIDE the base list (`class C(Mapping)`), which
+is precisely where every other OO language puts `extends`. Instrument B had already measured
+the construct as present: **14 ABC bases and 57 Protocol bases over 16,377 base-list entries
+(0.43%)**. The lane's earlier reading published all 71 as `extends` on the ground that
+`issubclass(C, X)` is True for a concrete base, an `abc.ABC` and a `typing.Protocol` alike;
+the reversal accepts that reasoning and then asks the grounding question — **which of the two
+facts IS the edge?** PY-34 ruled ONE edge per base, the most specific true label
+(`implements`), with the inheritance fact carried where the store WALKS it:
+`metadata.superTypes` is published from the FULL base list, the indexer copies it into
+`brain_symbol.super_types`, and that column is what `member-owner-resolution` and
+`override-retarget` read. The additive reading — both labels for one base — is now a FORBID
+row in `python/interface-implements` and `python/interface-qualified-subscript-head`.
 
-`PYTHON_RULED_INSTRUMENT_B` is exported from `script/m14/python-ruled.ts`; registering it
-makes the gate report FALSIFIED with **71 occurrences across 33 files**, and those figures
-are re-verified by `validation/m14/fixtures/python/ruled-probe-check.ts` on every run.
+WHAT MAKES A BASE PROVEN is the **FILE'S OWN IMPORT**, never the spelling. `ABC` and
+`Protocol` are legal class names a user may declare — 27 `Protocol` base occurrences in this
+corpus are exactly that, 24 of them inside CPython's own `typing.py`, which DEFINES the class
+it then names — so the proof is an import in the file, a dotted spelling whose ROOT the file
+imported, or a class this file itself declares abstract by its HEADER (`metaclass=ABCMeta`).
+Three measured boundaries:
+
+- `typing.Generic` is EXCLUDED at **291 base occurrences** — more than `ABC` and `Protocol`
+  combined — because it is a type-parameter marker, not an interface. Without that exclusion
+  `implements` reads 301 edges on the fixture's 200-file frame rather than 10, and is wrong
+  about every one of them.
+- An `@abstractmethod` is NOT a declaration, and that is measured on the interpreter rather
+  than ruled: `__abstractmethods__` is computed by `ABCMeta.__new__`, so a decorator on a
+  class whose metaclass is `type` is a marker the interpreter does nothing with
+  (`python/interface-declaration-needs-abc-meta` pins `SubNoopAbstract`/`SubPlain` as forbids).
+- A bare marker name is POSITIONAL. `python/interface-implements` pins both halves: a class
+  declared BEFORE a local `class ABC` inherits the stdlib one (`from abc import ABC` still
+  binds it), and one declared AFTER inherits the local class — `__bases__` prints the
+  identical `ABC` for both, so only the binding order answers it.
+
+MEASURED, after the change. The population is the whole python surface on this box — the arbiter
+admits **11,488 `.py`/`.pyi` files** and walks them COMPLETE (`bun script/m14/ontology-coverage-gate.ts
+python --fresh`). Edges from the arbiter's own table; the target-resolution split from
+`npx tsx script/m14/python-endpoint-resolution.ts` on the same population:
+
+| | edges | files | resolved | external | ambiguous | UNRESOLVED |
+| --- | --- | --- | --- | --- | --- | --- |
+| `implements` | 333 | 97 | 201 | 104 | 25 | **0** |
+
+By reasonCode: `in-file-interface-base` 189 (170 resolved + 19 ambiguous),
+`stdlib-interface-marker` 141 (31 resolved + 6 ambiguous + 104 external — the target is a stdlib
+name this file imports and the corpus does not declare), `virtual-registration` 3 (1 resolved +
+2 ambiguous). **Zero unresolved** is the number that matters: an `implements` edge never names a
+target the graph cannot hold.
+
+The register tier — conformance with NO base-list entry — IS implemented, and its guard is the
+measurement that keeps it small. Measured over 5,984 corpus files there are **493 `X.register(Y)`
+calls and ONE whose receiver is provably an abstract base class** (`site.register` alone is 241,
+followed by `selector.register`, `SyncManager.register`, `self.register` and Flask's
+`blueprint.register`), and the surviving site is real: `collections.abc.Sequence.register(Row)` at
+`sqlite3/dbapi2.py:54`. That site lives in the UNPINNED `cpython-stdlib` directory, which is why
+the PINNED-population probe (`implements-probe.ts`) reads **0 occurrences in 0 files over the
+pinned 5,365**: the two numbers describe two populations, not a contradiction. `implements`
+therefore has exactly two source shapes — the base list (tiers 0 and 1) and a PROVEN `ABC.register`
+receiver (tier 3) — and the second is derived by the oracle too, so a differential can find it.
+
 Probe: `validation/m14/fixtures/python/implements-probe.ts` (calibrated; `--self-test`
 asserts exact counts and a corpus run exits non-zero if calibration fails).
+`PYTHON_RULED_INSTRUMENT_B` in `script/m14/python-ruled.ts` is kept as the *measurement* of
+instrument B, not as a falsifier this lane is now accountable to.
+
+**EXTENDED 2026-10-10 (round 3)** so the arbiter's SPACE attestation has something to point at: the
+probe now honours `BB_PY_CORPUS` (the env var `python-construct-census.mts` already used, and the only
+reason the instrument could not run on a FLAT corpus layout) and counts this language's
+attribute-keys space from the tree — `keywordArgumentNodes`, every `keyword_argument` node in the
+corpus (**227,330 across 7,913 files** on the box's 10,839-file flat population), of which 185 sit in
+a class header (`classHeaderKeywordArguments`) and 65 declare an interface (`metaclassArg`, the
+spelling `real-python-analyzer.ts` keys on at `if (kn === "metaclass")`). Its `--json` output is the
+artefact `validation/m14/fixtures/python/construct-census.current.json`, and
+`validation/m14/fixtures/python/ruling-attestation.json` points the arbiter at it, so that command now
+prints `VERIFIED nodeTypes=203, attributeKeys=227330, implements.constructSites=204` where it printed
+`attestation python: none`. The 204 is the regression trap: `abcBase` 22 + `protocolBase` 117 +
+`virtualRegister` 0 + `metaclassArg` 65, published as `implementsConstructSites` with its definition
+beside it, so a change that stopped the emission would read FALSIFIED with a count rather than
+RULED-SOUND. The arbiter's own walk independently counts **227,905** `keyword_argument` nodes over
+its 11,488 admitted files — 0.25% from the probe's 227,330, the difference being admission rules
+(untracked files, and files above the probe's 512 KiB cap), which is the agreement one wants between
+an instrument the lane owns and one it does not.
 
 ## The six questions, per emitted type
 
@@ -375,6 +444,53 @@ Also measured: `implements` is IN the compared-label list while this lane emits 
 because that harness entry is unconditional — python's instance of the `brain_import`
 denominator question raised in `REVIEW-2026-10-04` §1.
 
+**CLOSED 2026-10-10 — all four of those rows, in one change.** The root cause was not the
+oracle but the WIRING: `script/m14/differential.ts` imported only `PYTHON_BUILTINS` from the
+analyzer and derived python's truth with a ~440-line in-file function (`derivePythonEdges`)
+whose own comment said it MIRRORED `RealPythonAnalyzer` — a mirror is not a second opinion,
+which is the rule that file's header is built on. It derived six labels and had no rule for
+`contains`, `exports` or `imports`, so the allowlist dropped all three (the DERIVATION
+findings), and it had no rule for `implements` either, so that label sat in the compared set
+with no truth behind it and the harness printed `COMPARED WITH NO TRUTH`. The lane's own
+oracle (`script/m14/oracles/python-truth.ts`) derives **all ten**, and it is now imported and
+registered, with the three missing labels added to python's compared set. Measured after:
+the two pinned draws read **`covered=100%` / `MISSING=0` / `unexplained=0`** (cython
+`tree-truth=16,529`, requests `tree-truth=5,326`; `heuristic` 164 and 55 are the declared
+first-parent override guesses at confidence < 0.7, not fabrications), and
+`script/m14/verify-label-coverage.ts` now measures this lane at **`4857/4857`, no unaudited
+label** — it could not measure python at all when this section was written, because the pin
+it read (`cython` under a `python-corpus/` aggregate) did not resolve on that box; on THIS
+box `cython` and `requests` are top-level checkouts and the pin resolves.
+
+**The mirror itself is deleted as of 2026-10-10 (round 3).** `derivePythonEdges` — and
+`PYTHON_BUILTINS` with it, which had become the import's only consumer — is gone from
+`script/m14/differential.ts` (26,015 → 25,562 lines), and the differential was re-run afterwards
+precisely so the deletion is a measurement rather than an assertion: `covered=100%` / `MISSING=0` /
+`unexplained=0` on both pinned draws, unchanged. Round 1 had left the copy on disk "for one pass"
+because the file is shared; the pass is done.
+
+**The ARBITER reports the lane too, for the first time.** `bun script/m14/ontology-coverage-gate.ts
+python --fresh` reads `emitted 10/10 · ruled-sound 0 · FALSIFIED 0 · ruled-without-justification 0 ·
+ruled-unknown 0` and exits 0, over a walk it certifies COMPLETE (11,488/11,488 files measured by the
+analyzer in that run, 0 degraded, 0 abandoned). Before this round the same command printed
+`no RULING SOURCE for python` and exited 2, because `python: PYTHON_RULED` had never been added to
+`RULED_BY_LANG` — the one import plus one line `script/m14/python-ruled.ts` names as the wiring its
+lane cannot make for itself. Two things were needed and both are now in place: that wiring, and a bun
+transpile break in `script/m14/zig-ruled.ts` (a local function named `declare`, which bun reads as a
+TypeScript ambient declaration and aborts on) that took the gate down for EVERY lane while `tsc` and
+`tsx` were both happy with it.
+
+**...and its space attestation verifies as of 2026-10-10 (round 3).** The gate's line is no longer
+`attestation python: none`. Over the same COMPLETE 11,488-file walk it now reads
+`attestation python: validation/m14/fixtures/python/ruling-attestation.json — spaces node-types,
+attribute-keys; artefact validation/m14/fixtures/python/construct-census.current.json; VERIFIED
+nodeTypes=203, attributeKeys=227330, implements.constructSites=204`, with
+`emitted 10/10 · FALSIFIED 0 · ruled-without-justification 0 · ruled-unknown 0` and exit 0 unchanged.
+The population behind the artefact is declared in the attestation and is NOT the one PY-34's 71
+base-entry figure was measured on: 10,839 tracked `.py`/`.pyi` files across 49 top-level checkouts on
+the flat box versus five pinned checkouts — 204 and 71 count different things over different corpora,
+and the file says so.
+
 ## Payload
 
 `validation/m14/fixtures/python/payload-measure.ts`, production `parseFile`, 400 of 5,365
@@ -382,28 +498,470 @@ files: 40,769 relationships, **10.9 MiB un-narrowed**, of which `calls` 43.9% an
 27.0% of bytes. Narrowing to `calls` alone is 2.3×; to `exports` alone, 379×. python's
 un-narrowed payload is dominated by two labels, so a caller narrowing to the kinds it asked
 about saves proportionally less than the 2.5–4.8× band the workstream records for lodash and
-ripgrep — those graphs were not 71% calls+uses. **No edges were added on this branch**
-(`implements` is RULED and the analyzer's only change is a comment), so these are standing
-figures, not a before/after pair.
+ripgrep — those graphs were not 71% calls+uses. These are standing figures from before the
+2026-10-10 oracle-wiring change (which added no edge to the analyzer), so they are not a
+before/after pair; the `implements` label was added by PY-34 on 2026-10-09 and is counted in
+the table above.
 
-## Which fleet instruments can measure this lane (measured 2026-10-05)
+## Which fleet instruments can measure this lane (2026-10-05, RE-MEASURED 2026-10-10)
 
-Four of them cannot, and they share ONE root cause: the corpus was reorganised into
-`python-corpus/` (an aggregate of five git checkouts plus one unpinned directory) and the
-shared pins still point at the old layout.
+The 2026-10-05 reading was taken where python's corpus lived in a `python-corpus/` aggregate and
+the shared pins pointed at the older top-level layout. **On the box this lane was re-measured on
+2026-10-10 the layout is FLAT** — each checkout is its own top-level directory — so two of the four
+instruments now measure python, and the two that were not re-run are reported as NOT RE-VERIFIED
+rather than as still broken.
 
-| instrument | what it does | measured result |
+| instrument | 2026-10-05 | 2026-10-10 |
 | --- | --- | --- |
-| `script/m14/firing-check.mjs` | run the analyzer through production, tally types | `LANES.PYTHON` points at `python-codesql`, absent. Prints `PYTHON 0 types fired / NO CORPUS under python-codesql` and a SILENT list of all ten, **exit 0** |
-| `script/m14/firing-check-v2.mjs` | the corrected version | no `PYTHON` entry in `LANES` at all; `PY_INSTRUMENTS` → exit 2, "no lane matches" |
-| `script/m14/ontology-coverage-gate.ts` | the ARBITER | admits corpus only from a git-tracked **top-level** dir; prints `corpus: 424 admitted files` and then exits 2, "no RULING SOURCE for python". The 424 are stray `.py` inside other languages' repos (swift-corpus 286, haskell 41, otp 32, ruby 20) — 5,982 vs 424 is a 14× wrong population |
-| `script/m14/verify-label-coverage.ts` | the DERIVATION gate | `LANG_REPOS.python = "cython"` (`differential.ts:455`), `LANG_REPOS_SECOND.python = "requests"` (`:613`); neither is top-level any more. Prints `skipped (not a pass): python (no files under cython)` |
+| `script/m14/ontology-coverage-gate.ts` | the ARBITER | `corpus: 424 admitted`, then exit 2, `no RULING SOURCE for python` |
+| ^ | | **WORKS**: `emitted 10/10 · FALSIFIED 0 · ruled-without-justification 0 · ruled-unknown 0`, exit 0, over an 11,488-file COMPLETE walk. Needed TWO fixes: `python: PYTHON_RULED` added to `RULED_BY_LANG` (the wiring `script/m14/python-ruled.ts` names as the missing line), and a bun transpile break in `zig-ruled.ts` that took the gate down for EVERY lane |
+| `script/m14/verify-label-coverage.ts` | the DERIVATION gate | `skipped (not a pass): python (no files under cython)` |
+| ^ | | **WORKS**: `| python | cython | 25 | 4857 | 4857 | — | — |` — no unaudited label |
+| `script/m14/firing-check.mjs` | run the analyzer through production, tally types | `LANES.PYTHON` → `python-codesql`, absent. Prints `PYTHON 0 types fired / NO CORPUS` and a SILENT list of all ten, **exit 0** | NOT RE-VERIFIED (its own `LANES` pins are untouched) |
+| `script/m14/firing-check-v2.mjs` | the corrected version | no `PYTHON` entry in `LANES` at all; exit 2, "no lane matches" | NOT RE-VERIFIED |
+| `script/m14/python-ontology-census.ts` | the lane's own ontology census | already unusable here: it appends `python-corpus` to the corpus root, which does not exist on a flat box. Still on the list because a reader who follows the dossier to it gets `no git checkout under …/python-corpus` | NOT RE-VERIFIED; superseded for the emitted-type table by the arbiter's own table |
 
-An earlier note in this lane's history recorded `firing-check.mjs` as throwing a
-TypeError. It does not: it prints a **complete, confident, wrong** report and exits 0.
+An earlier note in this lane's history recorded `firing-check.mjs` as throwing a TypeError. It does
+not: it prints a **complete, confident, wrong** report and exits 0.
 
-All four are supervisor-owned. The one-line fixes are in `script/m14/python-ruled.ts`
-(the arbiter's import) and are named in this report; none was made here.
+The instruments that DO derive their population from the filesystem are `python-lane-census.mjs`
+(which takes an explicit `BB_CORPUS` directory of checkouts), `python-construct-census.mts`
+(`BB_PY_CORPUS`) and — since round 3 — `implements-probe.ts`, which reads the same `BB_PY_CORPUS` so
+the instrument behind the gate's attestation can run where the gate runs. That matters beyond
+convenience: the DENSEST source of abstract-base usage in
+python is the UNPINNED `cpython-stdlib` copy, which a `git ls-files` derivation silently drops.
+
+Round 4 added three more, all filesystem-derived and re-runnable: `python/owner-resolution-gate.mts`
+(the store pass on five crafted files, three controls), `python/owner-channel-census.mts` (prices the
+owner lever on a real repo through the real index; `BB_CORPUS_ROOT`/`BB_PY_REPO`, and it REFUSES with
+exit 2 rather than printing zeros when its repo is absent), and the builtin-type-name fixtures paired
+with the seam gate's new section D.
+
+Round 6 added the gate over the INCOMING direction's verdict: `python/resolution-verdict-gate.ts`
+(re-checks the committed `resolution-verdict.current.json` against pinned per-label ceilings, and
+REFUSES exit 2 when the artefact is absent). Round 7 added its companion DIAGNOSTIC: the
+`--dump-unexplained` mode of `python-endpoint-resolution.ts`, which writes EVERY unexplained edge
+rather than the report's top-40 slice — the file both round-7 levers were priced from by hand before
+any analyzer code changed.
+
+Round 8 added `python/import-bound-name-seam.mts`, and it is the first instrument in this folder that
+measures BOTH sides of the analyzer/store seam in one process: it generates a small project on disk,
+calls `indexProjectParallel` (the production path, worker pool included), and then reads the
+analyzer's own output and the store's `brain_import` / `brain_symbol` / `brain_relationship` tables in
+the same run. Row B is pinned at the DECLARED gap (PY-D13 store half) rather than asserted absent, so
+the instrument goes red and names the flip the moment the shared fix lands; row C is the control that
+keeps B meaningful; row D is the route, and its own history is the reason it is shaped the way it is
+(see the round-8 section below). Round 8 also kept the two analyzer-only instruments the round-7 work
+left in place: `python/reference-binding-is-not-a-guess.expectation.json` and
+`python/inline-type-parameter-is-not-a-class.expectation.json`, both with FORBID rows for the
+over-claim direction.
+
+Round 9 added `python/parser-error-region-is-not-a-type.{py,expectation.json}` — the fabrication fixture
+(a parameter published as a type, with the declared cost and three clean-clause controls in ONE file) — and
+extended the mutant harness to 31 cases with `parser-error/{type-clause-claims-again, no-clause-is-trusted,
+call-in-error-region}`. The call-side guard shipped only AFTER its mutant was shown to be caught: the first
+version SURVIVED, the fixture gained the module-level call that exercises it, and only then was it allowed
+to land. **A guard with no falsifier is a claim with no evidence.**
+
+## Resolution — the incoming direction, whole population (measured 2026-10-10)
+
+`npx tsx script/m14/python-endpoint-resolution.ts` over the arbiter's 11,488-file population:
+205,928 symbols, 1,292,311 relationships. `npx tsx script/m14/python-endpoint-defects.ts` names
+the classes that census counts:
+
+| class | whole population |
+| --- | --- |
+| `implements` UNRESOLVED | **0** (201 resolved, 104 external, 25 ambiguous) |
+| D1 `contains` into a symbol the production path deletes | 0 |
+| D2 `references` into a builtin name FROM A TYPE POSITION — **DECLARED, not a fault** (see below) | **7,687 in 1,732 files** |
+| D2b the same reference arriving from a position outside `declared_type`/`return_type`/`instanceof_check` | **0** |
+| D3 empty or whitespace-only endpoints | 0 |
+| D4a / D4b placeholder-literal endpoints (invented / present in the file) | 0 / 0 |
+| D5 `uses` self-loops (target leaf == the reading function's own name) | **750 in 178 files** |
+| D6a / D6b empty or placeholder-literal symbol names | 0 / 0 |
+| D7 relationships the production path discards after `analyze()` | 0 |
+
+D2 and D5 are the two classes the arbiter does not name, and both are DECLARED here rather than
+quietly fixed, with the measurement that decides each:
+
+- **D2 is a DECLARED POSITION, and as of round 3 it is pinned in BOTH directions — the slice no
+  fixture claimed is now claimed.** `dict` and `list` were already EXPECTED by
+  `validation/m14/fixtures/python/type-usage-graph.expectation.json` (with `str` and `None` FORBID);
+  the exception hierarchy — `Exception` 97, `BaseException` 180, plus `type` 383 — was the part no
+  fixture pinned, and the question it raised was never "how many" but "from where". Measured on a
+  synthetic source containing every candidate position: `def f() -> Exception`,
+  `def g(x: BaseException)`, `class C: field: Exception`, `isinstance(x, Exception)` and
+  `-> Exception | None` each emit exactly one `references` edge, and `except Exception as ex:` and
+  `raise ValueError("x")` emit **none**. So the axis is the POSITION, not the name: a type position
+  names a type whether or not the interpreter happens to define it, and only the 11 SCALARS are
+  filtered. Two new fixtures hold the rule at both ends —
+  `python/builtin-type-name-is-still-a-reference` asserts the four firing rows,
+  `python/builtin-type-name-is-not-a-control-flow-edge` FORBIDS the two exception rows — and the
+  defect axis moved to `D2b`, the part that can actually be wrong: a builtin reference arriving from
+  a position outside the three declared type positions, measured at **0 of the 7,687** over the
+  arbiter's 11,488-file population. D2's number is therefore a population size with a named cause
+  rather than a fault count, recorded as `PY-D9` in `script/m14/spec/python-completeness.json`. No
+  analyzer or oracle change was needed, and that is the point: the analyzer was already consistent
+  with the position its own fixture pinned — the instrument that disagreed was the census that
+  called the position a defect.
+- **D5 is a NAME COINCIDENCE, not a self-dependency.** `uses to_json -> to_json` is emitted inside
+  `def to_json` by `if hasattr(self.actual_instance, "to_json") and callable(self.actual_instance.to_json)`
+  — a read of ANOTHER object's member that happens to share the reading function's name, and the
+  same shape as `ansible`'s `@property def changed` reading `loop_result.changed`. The edge is a
+  TRUE statement about the source; the hazard is that a naive name-resolution walk binds the read to
+  the reading scope itself. Dropping it would delete a true edge, which is the worse failure, so it
+  is reported as a resolution hazard with its count rather than as a defect.
+
+### The owner channel — the member-resolution mechanism (round 4, 2026-10-10)
+
+Everything above measures whether an endpoint BINDS. For a member edge the binding rule the store
+actually runs is a ranking: `resolveTargetStmt` picks among every same-named declaration in the
+project, same file first, then lexicographic `s.id` compared as TEXT. That is a tie-break, not a
+fact about python — `render` is a method on many classes at once. php closed this for its lane with
+a relation-level `metadata.owner` (PHPD42) and a pass that walks the receiver's class and its
+`super_types` ancestors; until round 4 python published **no owner at all** (0 of every `calls`/`uses`
+edge), so the pass had no input on this lane.
+
+`real-python-analyzer.ts` now publishes `metadata.owner` on a member-position edge when the receiver
+is EXACTLY the implicit first parameter, spelled `self` or `cls`, with a single dot (`memberOwnerOf`)
+— the same spelling the `dispatch-on-parameter` reason code trusts, and the case the store's rule 0
+answers by IDENTITY (the source method's own class). **The narrowness is the design:**
+`self.store.save` carries NO owner (the receiver is the VALUE of `self.store`, type unknown, and the
+enclosing class would bind `save` to a method of the wrong class), as do a local receiver and a
+module-level `def f(self)`.
+
+Measured on a real repo through the real index (`python/owner-channel-census.mts`, `requests`): 375
+owner-carrying rows of 3,325 member rows (11.3%), **357 resolved (95.2%)** — 350 direct (162 of them
+the same-kind duplicate rule below) plus 7 inherited — and 18 declined (14 names the owner's chain
+does not declare, 4 genuinely multi-kind). The first measurement, before round 5, was 195 resolved
+(52.0%): the gap was 162 rows where the owner's class declares the target name TWICE — the
+annotation (`x: T`) + assignment (`self.x = ...`) shape, which the analyzer and the oracle both
+publish as two members. Round 5 taught the SHARED pass (`member-owner-resolution.ts`) that a
+candidate set sharing the owner's identity, the name and the KIND is ONE member, so it resolves
+to the smallest id while a multi-KIND set still declines; the rule is php-neutral by construction
+(php cannot declare two members of one name and kind in a class) and was measured so — php's owner
+gate and store-resolution census PASS with the new branch firing **zero** times. Recorded as
+`PY-D10`. The pass's contract in isolation is `python/owner-resolution-gate.mts` (three-store
+controls, now including a DUPLICATE case), and `store-heritage-seam.mts` section D measures it
+end-to-end through `indexProjectParallel`, cross-file ancestor walk included.
+
+### The resolution verdict — WHY an incoming target is unresolved (round 6, 2026-10-10)
+
+Everything above measures whether an endpoint BINDS. Round 6 measures why an incoming target does
+NOT, because "unresolved" was one bucket covering several different facts, and averaging them
+reported a rate that meant none of them. `script/m14/python-endpoint-resolution.ts` now classifies
+every UNRESOLVED incoming target by the fact that explains it — preferring the analyzer's own
+statement (`reasonCode`, `qualified`) and asking the interpreter (`dir(builtins)`) only where nothing
+else answers:
+
+| axis | what it is | defect? |
+| --- | --- | --- |
+| `declared-dynamic` | the lane says the target is chosen at runtime (`dispatch-on-receiver`/`dispatch-on-parameter`/`member-read`/`first-parent-guess`) | no — python being python |
+| `declared-external` | `external-member-call`: the receiver is rooted at a module THIS file imported | no — followable, out of file |
+| `qualified-external` | the `qualified` spelling is a dotted chain whose root the file imported or the population declares | no — the route says which module owns it |
+| `builtin` | the leaf is a name the interpreter owns (`dir(builtins)`) | no — no file CAN declare it |
+| `UNEXPLAINED` | none of the above | **yes — the only axis that names a defect** |
+
+Whole population (11,488 files, 205,928 symbols, 1,290,877 relationships): outgoing UNRESOLVED **0
+for all ten labels**; incoming `UNEXPLAINED` **6,283** — calls **4,837**, references **1,332**,
+extends **105**, exports **9**, and **0** for uses/contains/imports/implements/overrides/instantiates.
+The verdict is a committed artefact (`python/resolution-verdict.current.json`) that
+`python/resolution-verdict-gate.ts` re-checks against pinned ceilings — **10/10 emitted**, outgoing
+`== 0`, and a per-label `UNEXPLAINED` allowance no higher than round 6's own numbers — REFUSING exit 2
+when the artefact is missing rather than passing vacuously.
+
+**Round 6's first use of the instrument convicted the analyzer.** `Annotated[str, Field(min_length=1)]`
+holds a CALL inside an annotation, and the type-reference walk descended into it and published the
+validator's keyword-argument NAMES as types (`references … -> min_length`, `-> strict`). The walk now
+skips the `keyword_argument` name and keeps its value (`TypeVar("T", bound=Base)` must keep `Base`),
+which moved **`references` 63,498 → 62,064 (−1,434 edges)** and is pinned by
+`python/references-do-not-name-keyword-arguments`. Both `collectTypeNodes` (analyzer and oracle)
+carried the same mistake, which is why the differential stayed green through it: **a mirror written
+in lockstep is a consistency check, not a truth check.**
+
+The remaining axes are honest holes with named causes, not tidy-ups:
+
+- **calls 4,837** — the callee is bound in the ENCLOSING FUNCTION's scope: a nested `def` (`run_eval`
+  inside `main`) is deliberately not published as a symbol, and a pytest-injected parameter
+  (`django_capture_on_commit_callbacks`) has no project declaration. A distinct `local-callee` reason
+  code the analyzer can state as a fact is the lever; until it exists these stay counted, not waived.
+- **references 1,332 / extends 105** — dominated by the ALIAS-BOUND route: `import typing as t` and
+  `from torch.nn import Module as NNModule`, where the `qualified` root is a name the file bound by an
+  alias the store never received. The analyzer's `ImportInfo` keeps `alias`, but
+  `src/ast/pool-worker.ts`'s import projection drops it and `src/ast/parallel-indexer.ts` reads the
+  absent field, so the store stores `imported_as: NULL` / `import_type: named`. Shared, master-owned
+  surface — **DECLARED as `PY-D13`, measured, not changed unilaterally.**
+- **exports 9** — `__all__` names provided lazily (`dialects/__init__.py` via `__getattr__`,
+  `celery_app`, `instrument_declarative`).
+
+### The two levers worked, and what the number does when the fixes are honest (round 7, 2026-10-10)
+
+Round 6 named the hole; round 7 works the two causes it named. **The population's edge counts do not
+move at all** — 1,290,877 relationships before and after, every label identical to the digit —
+because neither change adds, removes or retargets an edge. Each makes the analyzer say what the
+source already said.
+
+| lever | what it states | independent measurement (CPython `ast`, over the verdict's dumped edges) |
+| --- | --- | --- |
+| `local-callee` | the callee is bound in an **enclosing function**'s scope (nested `def`, parameter, local) — so no project declaration exists, and LEGB means the local binding SHADOWS any module-level name of the same spelling | **4,230 of 4,837** calls |
+| `metadata.importedAs` | the alias **bound** by `import X as Y` / `from X import Z as W` — the only word in the file that spells the module in front of a member (`t.Protocol`) | **1,035 of 1,446** reference/extends rows |
+
+The implementation is a pre-pass (`collectFunctionLocals`) plus a call-site check that walks the
+callee leaf's own ancestors, and `importedAs` on the `imports` edge. Three things about it are
+load-bearing rather than incidental:
+
+- **A `Node` can never be a Map key.** The first version keyed the pre-pass on the
+  `function_definition` node and every call in the file read `bare-name-callee` — because
+  web-tree-sitter returns a FRESH wrapper on every `.parent`/`.namedChild()` access (the lane says so
+  at `extractMemberUses`: "identity never holds"). It is keyed on the function's start position now.
+- **What is deliberately NOT collected**: a nested function's BODY (its bindings are its own —
+  walking in marks a call in `outer` to a name bound only in `inner` as local); lambda and
+  comprehension targets; `attribute`/`subscript` targets; a parameter's default/annotation
+  expression; and any name a `global`/`nonlocal` statement declares, which is SUBTRACTED.
+- **The negative direction is pinned too.** Both fixtures carry forbid rows for the over-claim (a
+  module-level `def` must stay resolvable; an un-aliased import must NOT get an `importedAs`), and
+  three of the six new mutants fail exactly those rows — the harness includes the fabrication
+  directions, not only the loss ones.
+
+The verdict, over the same 11,488 files: UNEXPLAINED **6,283 → 755** (calls 4,837 → 344 with 4,280
+now `declared-local`; references 1,332 → 389; extends 105 → 15; exports 9 → 7), outgoing UNRESOLVED
+still **0 for all ten**. Two movements are not relabelling at all: **563 `references` rows and ~213
+`calls` rows left UNRESOLVED entirely** and now bin EXTERNAL, because the name they target IS one the
+file imported — resolution, not a new label. The residual is named rather than smoothed: wildcard
+imports (`from dataclasses import *` binds every public name of a module — cython's deliberate test,
+duckdb's `from pyspark.sql.types import *`), two corpus files CPython itself cannot parse (where the
+analyzer's tree-based check still answers, which is why it moved 4,280 where CPython could see
+4,230), bases the source holds in a VARIABLE (`dump_cls`, `mixin_cls`), and lazy `__all__` names. **No
+`wildcard-import` axis was invented**: a star import is unbounded, so claiming `make_dataclass` came
+from `dataclasses` would be a guess dressed as a fact, and the number stays where the evidence is.
+
+The store-side gap is UNCHANGED and still DECLARED (**PY-D13**): the bound name is now on the
+relation, but `src/ast/pool-worker.ts`'s projection still drops `alias`, so `brain_import.imported_as`
+stays NULL and the store cannot resolve `t.Protocol` itself. The matching spec entries are **PY-D13
+(amended: lane side FIXED, store side OPEN)** and **PY-D14 (FIXED)**.
+
+### The reference side, and a type parameter that is a binding rather than a class (round 8, 2026-10-11)
+
+Round 7's lever was stated for the CALLEE axis. Round 8 asks the identical question of the REFERENCE
+axis — a type name in an annotation, a base in a class header — and gets the identical answer plus a
+second one. Both were priced with CPython's own parser over the verdict's dumped edges BEFORE any
+analyzer code changed, so the change aims at a measured population rather than at an intuition.
+
+| lever | what it states | independent measurement (CPython `ast` over the dumped edges) |
+| --- | --- | --- |
+| `local-binding-target` | the type name is bound in the **reference's own enclosing scope** — a parameter, a nested `def`/`class` name, an assignment target — so there is no project declaration to find | **232 of 389** references, **14 of 15** extends |
+| `inline-type-parameter` (PY-D16) | a PEP-695 `def f[T]` / `class C[T]` / `type A[U]` parameter is a BINDING the signature declares, not a class the project defines; it can neither resolve nor honestly sit unresolved | **52 of 389** references |
+
+`local-binding-target` is emitted by a SEPARATE helper (`dynamicTypeBindingReason`), deliberately not
+by widening `isLocalCalleeName`: a call's target is a callee and its code is `local-callee`, a
+reference's target is a type and its code is `local-binding-target`. One vocabulary on two axes is the
+mistake `external-member-call` is kept apart from `dispatch-on-receiver` to avoid. The check reuses
+round 7's `collectFunctionLocals` pre-pass and walks the leaf's ancestors, so it is lexical and needs
+no scope state — and it asks the LOCAL binding first, because Python's function scope is one namespace
+and a def that both declares `[T]` and assigns `T = 5` binds a local when the body runs.
+
+`inline-type-parameter` reads the `type_parameter` clause and takes the FIRST identifier of each
+parameter: `TValue` is `type -> identifier`, and the bounded form `T: str` is
+`type -> constrained_type -> type -> identifier` with the BOUND (`str`) following the name. Reading the
+first identifier therefore names every grammar shape without enumerating them, and a bound can never
+be mistaken for a name — which is exactly what the mutant `inline-type-parameter/bound-read-as-the-name`
+forbids.
+
+The `extends` emitter had NO reason code at all before this round, which is why the axis could only
+ever read a raw unresolved target; it now asks the same helper, and `extends` incoming UNEXPLAINED
+reaches **0** (the 15 are DECLARED as `local-binding-target`, not resolved and not silent).
+
+The verdict, over the same 11,488 files: UNEXPLAINED **755 → 548** (references 389 → 197 with 193 now
+`declared-local`; extends 15 → 0; calls 344 unchanged; exports 7 unchanged), outgoing UNRESOLVED still
+**0 for all ten**, and every label's edge count identical to the digit (1,290,877 total) — which is the
+check that the change states metadata and moves nothing else. The residual is priced rather than
+smoothed: 92 references are names a function declares `global` and binds there (a MODULE-scope name
+created at run time — a `@testing.fixture` doing `global _GenericPep695` and assigning it, with a
+module-level class annotating against it), 64 sit in files CPython cannot parse at all, 26 come from
+`from dataclasses import *`, 12 are generated protobuf module handles, 3 are member reads off a dynamic
+receiver; on the callee side 164 rows live in files carrying a wildcard import, 135 in files CPython
+cannot parse, **13 are the same `global`-in-function shape** (`global run_python` inside cython's
+`run_benchmarks.check_gnu_time`, then called from two other functions), and the rest are names bound
+nowhere in their file at all. **The `global`-in-function shape is the largest named residual on both
+axes and is NOT the local case**: `global X` plus a write is an explicit declaration that `X` lives in
+the module namespace, so a project-scope binding is the correct reading and the analyzer currently
+records none.
+
+### A fabrication on the reference side, and the parser's verdict as the rule (round 9, 2026-10-11)
+
+Rounds 7 and 8 added metadata and moved no edge. Round 9 REMOVES edges, because what it found was not
+an unexplained target but a wrong one: `references f -> o` where `o` is `f`'s own second parameter.
+
+```python
+def f(d: double[:], o: Optional[double[:]]):
+    pass
+```
+
+`double[:]` is VALID CPython (an annotation is an arbitrary expression; `double[:]` is a slice of the name
+`double`) and tree-sitter's python grammar rejects a slice in that position, so the whole parameter list
+collapses into ONE `typed_parameter` whose `type` clause swallowed `, o: Optional[...]` and presented `o`
+inside a synthesised `constrained_type`. The analyzer read that and published a parameter as a type — the
+same defect class as PY-D11 (a keyword argument's NAME published as a type) and as the empty-identifier
+guard this collector already carried.
+
+| what | rule | where |
+| --- | --- | --- |
+| `references` | a type clause whose subtree CONTAINS an error (`hasError`) names NO type — the whole clause is refused | `extractDeclaredTypeRefs` → `collectTypeNodes` |
+| `calls` | a call whose own subtree was flagged, OR a call the parser swallowed into an `ERROR` node, publishes no callee | `processCall` |
+
+The rule is the PARSER'S OWN VERDICT rather than an enumeration of garbled shapes, which is what makes it
+auditable. **The cost is declared:** `double` and `Optional` inside the garbled clause are refused with it,
+because a name read out of a structure the parser got wrong is luck, not reading — and the fixture forbids
+all three so a later round cannot narrow the guard to just the embarrassing identifier. The
+over-correction direction is pinned harder: `def f(d: double[:]) -> None` KEEPS `double`, because there
+the clause is `(type (identifier))` and the ERROR is a SIBLING, and the three clean annotations around it
+keep `Optional`/`list`/`Mapping`/`dict`.
+
+**The oracle had to change with it, and that is PROVEN rather than argued.**
+`script/m14/oracles/python-truth.ts` derives the differential's truth from the same tree, so a one-sided fix
+would show up as MISSING — and the unmirrored oracle derived the same fabricated edge, which made the
+differential read AGREEMENT (the two-derivations-of-one-unstated-assumption trap PY-D11 named). Measured
+directly: with the oracle's guard ALONE removed and the analyzer's left in place, cython reports
+**`MISSING=1`**, and that one edge is the fabrication. Restored, both lanes report
+`MISSING=0 unexplained=0`.
+
+Two limits on how the differential may be cited, both learned in this round. Its TOTALS are not comparable
+across runs, because the cold-pool rotation deliberately draws never-sampled files each wave (its own
+comment: *reproducible, but every wave sees fresh files*; the counter moved 14 → 15 → 16 here), so only the
+within-run `covered`/`MISSING`/`unexplained` and the result hash mean anything across runs. And a
+differential is a DIFFERENTIAL: it can only catch what its own oracle models — the fabrication below was in
+both derivations and therefore invisible to it until the oracle was changed, which the `MISSING=1`
+falsification now demonstrates.
+
+Measured over the same 11,488 files: edges 1,290,877 → 1,290,620 (**−257**, the first round in this arc
+whose count moves) and UNEXPLAINED **548 → 390** (calls 344 → 238, references 197 → 145, extends 0,
+exports 7), outgoing UNRESOLVED still **0 for all ten**. The residual is re-priced rather than smoothed:
+90 references are names a function declares `global` and binds there, 26 come from
+`from dataclasses import *`, 14 sit in files CPython cannot parse, 12 are generated protobuf module
+handles, 3 are member reads off a dynamic receiver; on the callee side 196 are wildcard-import or
+nowhere-bound names, 29 are in CPython-unparseable files, and 13 are the same `global`-in-function shape.
+The ASN.1 documents named `.py` (`otp/lib/asn1/test/asn1_SUITE_data/*.py`, 22 files) keep 14 references and
+29 calls whose OWN clauses parse cleanly — they are named here, not claimed clean, because refusing them
+would need a file-level "this is not python" verdict that belongs to file classification rather than to this
+analyzer.
+
+### The module namespace a `global` write proves, and a wildcard import's route (round 10, 2026-10-11)
+
+Round 9 removed dishonest edges. Round 10 moves the incoming residual 390 → 119 with the EDGE COUNT
+UNCHANGED (1,290,620 both sides), because both of its mechanisms declare something the source already
+says rather than guessing at something it does not.
+
+| mechanism | what the source states | what the lane now publishes |
+| --- | --- | --- |
+| `global X` in a function plus a CREATING write in the same body | X is bound in the MODULE namespace — CPython has it in `globals()` afterwards | an ownerless module-scope Variable at the write line (`isModuleVariable` + `boundByGlobalWrite`), so the edge RESOLVES |
+| `from M import *` | M's public namespace is bound into this file | `metadata.starImport: true` on the `imports` edge; the verdict's `star-import-external` axis declares the route external when EVERY star module is OUT OF VIEW |
+| `with … as X` / `except E as X` | X is a LOCAL of that function | the binding is read from the `as_pattern` the grammar really produces |
+
+**A creating write needs a VALUE**, and that is measured rather than assumed: `exec("x: int",
+m.__dict__)` adds no namespace entry, so a valueless annotation does not create; `X += 1` requires the
+binding and `del X` removes it; only the function's OWN body counts (a nested `def` has its own `global`
+statements, and an outer `global` plus an inner write is not a pair); and a name already declared at
+module scope or bound by an import gets no second declaration.
+
+**The wildcard fact needs a home because the store's projection cannot carry it.** `from M import *` and
+`import M` publish the same `M:*` endpoint, and `pool-worker`'s per-item projection flattens both to
+`{name: "*", type: "namespace"}` — so the difference is stated on the analyzer's own edge, the same
+doctrine PY-D13 set for the bound alias. The axis's in-view gate was CONVICTED BY THE CORPUS once: its
+first version used file stems, and over the round-9 residual it blocked 169 of the 171 priced rows on
+name collisions between unrelated repositories (cython stars the STANDARD LIBRARY `dataclasses`; another
+repo happens to have a `dataclasses.py`). The implemented rule is the priced one — the population's
+dotted module paths plus package prefixes — and `star-import-axis-gate.mts` pins every direction,
+including that collision.
+
+**This round also CORRECTED this lane's own documentation.** Round 7's PY-D14 advertised `with as` and
+`except as` targets among its collected bindings, and both cases read field names this grammar does not
+have — `childForFieldName("alias")` on `with_item`, `childForFieldName("name")` on `except_clause` — so
+neither ever fired. The alias lives in an `as_pattern` (`value → as_pattern → as_pattern_target`),
+measured with a probe before the fix; the fixture pins the reason code rather than the endpoints, and a
+mutant restores the dead reads. Corpus footprint: `local-callee` 12,989 → 12,998.
+
+The residual is priced, not smoothed. Of the round-9 dump's 390 rows, CPython attributes **98** to the
+`global` mechanism, **171** to the wildcard route, **43** to files CPython itself cannot parse, and **78**
+to neither — and after the round **0 of the 98** and **0 of the 171** remain. The 119 that are left:
+calls 65 (28 in CPython-unparseable ASN.1 documents named `.py`, 37 bare names bound by nothing),
+references 47 (14 unparseable, 33 bound by nothing), exports 7 (`__all__` names provided lazily). One
+dead literal was removed on the way — `typed_pattern`, flagged by the fixture-coverage gate and confirmed
+by the corpus (11,309 files, 0 occurrences) — because a branch that can never fire is a claim with no
+evidence.
+
+### Two more bindings the source writes, and the one scope the reader skipped (round 11, 2026-10-11)
+
+Round 11 moves the incoming residual 119 → 96 and changes the graph in exactly ONE place — `contains`
++15 — because one mechanism publishes DECLARATIONS and the other publishes only a REASON CODE.
+
+| mechanism | what the source states | what the lane now publishes |
+| --- | --- | --- |
+| a MULTI-TARGET assignment (`a, b = f()`, `(a, (b, c)) = f()`, `[a, b] = f()`, `a, *rest = f()`) | each name in the pattern is bound in the scope the statement is written in | one module Variable per name (or one Property per name in a class body), at the name's own position, with `metadata.multiTargetForm` naming the spelling |
+| a comprehension's `for` TARGET / a lambda's PARAMETER | the name is bound in the comprehension's or lambda's OWN scope | `local-callee` for a call, `local-binding-target` for a reference — no symbol, because a scope binding is not a declaration |
+
+**`extractAssignment` gated on `left.type === "identifier"` and returned for everything else**, so a
+multi-target assignment published nothing at module scope and nothing at class scope. The corpus shape
+is not hypothetical: `helloworld_pb2, helloworld_pb2_grpc = grpc.protos_and_services("helloworld.proto")`
+at module scope in `pb-grpc`'s examples, with 12 of the round-10 residual's rows being annotations
+naming those two names. The target is read with the SHARED walker (`patternTargetNodes`, the
+node-returning face of round 10's `addPatternTargets`) so the symbol publisher and PY-D14's local
+collector cannot disagree about what a target is — the defect class that survived nine rounds in
+`collectFunctionLocals`'s `with_item` case.
+
+**The walker gained `list_splat_pattern` and the coverage gate is the argument for it.** Measured
+(`.tmp-py/round11-shapes.mts`): `a, *rest = f()` spells the splat as an element holding one
+identifier, and the walker descended `pattern_list` but not the splat inside it — so `rest` bound
+nothing AND was not a function local. `typed_pattern` was DELETED in round 10 as a literal no source
+produces; this is the mirror case (a literal 28,136 function-body targets contain and the reader did
+not handle), kept because a fixture now contains it. `**kw` in a target is deliberately NOT added: no
+python program binds one, so a branch for it would be the dead literal round 10 removed.
+
+**A comprehension's `for` target was the last "deliberate under-claim" in the read path.**
+`collectFunctionLocals` skips comprehension and lambda nodes — right about SCOPE, and the skip stays —
+but `isLocalCalleeName` and `dynamicTypeBindingReason` then found no enclosing scope binding the name
+and published `bare-name-callee` / `annotation-type`, which claims the name is a PROJECT-WIDE name for
+a binding written four characters to the left (`[comp(page) for comp in comparison]`). The fix is
+`scopeOwnBindings(scope)`: the same ancestor walk, asked at each scope node for its OWN bindings. A
+comprehension's clauses are all DIRECT children and its target goes through the shared walker (`for k,
+v in ...` binds two), and a lambda's parameters live under `lambda_parameters` — NOT `parameters` —
+which is why the parameter reader was extracted and shared rather than copied.
+
+**The precision is LEXICAL, and it is what a name-keyed rule would miss.** A read of the same name
+AFTER the comprehension is not bound by it (python 3 gives a comprehension its own scope) and stays
+`bare-name-callee`; a name the comprehension never binds stays `bare-name-callee` too. The cheap wrong
+fix — adding comprehension targets to the enclosing function's local set — passes every positive row
+and fails exactly those two, and it is pinned as a mutant. `locals.size === 0` was an early exit that
+made the answer `false` for a module-scope comprehension in a file with no `def`, and it is gone.
+
+**Priced before it was written, then re-measured after.** A: the analyzer published 276 symbols
+carrying `metadata.multiTargetForm` and **270 of them are CONFIRMED name-by-name against CPython's
+`ast`** (`.tmp-py/verify-multitarget-census.py`); the price's own counts on the verdict's population
+are **182 module-scope names in 58 files, 15 class-body names in 5 files, and 28,136 function-body
+names that are LOCALS and therefore never symbols** (`.tmp-py/price-tuple-targets-round11-rerun.log`,
+`.tmp-py/tuple-targets-price.json`). The 6 the check does not confirm are 4 in the nvim fragment
+CPython cannot parse and the `(x): int` / `(y): int = 0` spelling question recorded at the end of this
+section; the residual rows the mechanism carries are 12 references (10 `helloworld_pb2` +
+2 `helloworld_pb2_grpc`). B: 13,247 comprehensions and 3,348 lambda scopes, 24,578 such reads in
+2,621 files; 11 residual rows (10 calls + 1 reference) and ZERO on the lambda side — the lambda half
+is fixed because it is the same fact with a different spelling, not because a row demanded it. After
+the fix: UNEXPLAINED calls 65 → 55, references 47 → 34, exports 7 → 7, total 119 → 96, and the excuse
+axis moved with it (`declared-local` 4,280 → 4,290 on calls, 146 → 147 on references). The 42
+top-level rows in files CPython cannot parse are now NAMED as three different verdicts (11 of the 13
+ASN.1 documents rejected at line 1, one at line 2 and one at line 2085; a Python 2 build script whose
+`xrange` is a py2 builtin; a highlighter fragment) rather than excused by one word.
+
+**One finding this section's verification produced and did NOT fix, deliberately.** The per-symbol
+check of all 276 `multiTargetForm` symbols found exactly two that CPython reads differently from the
+field: `(x): int` and `(y): int = 0` in `cython/tests/run/pep526_variable_annotations.py`.
+`.tmp-py/paren-target-probe.mts` pins the shape — tree-sitter spells `(x)` as `tuple_pattern`
+wrapping ONE identifier and CPython spells it an annotated `Name`, and the analyzer reads the spelling.
+The SCOPE and KIND published are right (both ARE module-scope names, exactly as bare `z: int` is, and
+the same probe pins that), so this is a FIELD over-claiming: `multiTargetForm: "tuple_pattern"` says
+the source wrote a tuple when it did not. It was found AFTER the round's fresh verdict, arbiter and
+gates were green, and a field label does not get changed under a verified run without re-running it —
+so it is recorded here and in the status doc's §9 with the two honest fixes (stamp the field only when
+the pattern binds more than one name, or document it as tree-sitter's node type rather than the
+source's semantics) instead of being quietly patched.
 
 ## Census
 
