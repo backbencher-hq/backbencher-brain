@@ -23,8 +23,28 @@ import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT, "validation/m43/results")
-const RAKE_REPO = "$HOME/fixtures/repositories/rake"
-const RIPGREP_REPO = "$HOME/fixtures/repositories/ripgrep"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
+
+//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+//  each repo path below resolved to a filesystem that does not exist here and the leg
+//  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+//  candidates in order and names them all when none exists.
+//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+//  each repo path below resolved to a filesystem that does not exist here and the leg
+//  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+//  candidates in order and names them all when none exists.
+// Per-repo corpus paths were built on the literal foreign root
+//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+//  each repo path below resolved to a filesystem that does not exist here and the leg
+//  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+//  candidates in order and names them all when none exists.
+const RAKE_REPO = `${CORPUS_BASE}/rake`
+//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+//  each repo path below resolved to a filesystem that does not exist here and the leg
+//  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+//  candidates in order and names them all when none exists.
+const RIPGREP_REPO = `${CORPUS_BASE}/ripgrep`
 
 delete process.env.BB_EMBEDDING_BASE_URL
 delete process.env.BB_EMBEDDING_API_KEY
