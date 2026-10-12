@@ -407,59 +407,76 @@
     },
     "next_step": "Run the same census with `--repo-wide` when load allows, to move edges from `unresolved` into the sample-budget column and to give the IN-CORPUS column a real number; then implement the boolean `isExternal` marker on the three spec-builtin classes (2,188 edges) and re-run the gate at both scopes."
   },
-  "coverage": {
-    "implemented": [
-      "contains",
-      "exports",
-      "implements",
-      "overrides",
-      "references",
-      "uses"
-    ],
-    "excluded": [
-      {
-        "label": "calls",
-        "evidence": "grammar-absence",
-        "from": "whole-corpus firing over ALL 143 admitted .graphql/.gql files (gql-gqlgen, `[corpus=gql-gqlgen WHOLE]`, 143/143 parsed, 0 degraded, instrument self-test PASS): calls 0 edges, while contains 1,580 \u00b7 exports 795 \u00b7 implements 113 \u00b7 overrides 190 \u00b7 references 1,877 \u00b7 uses 527 fire on the same run. SDL describes a schema; a resolver is not written in it, so there is no call expression in this grammar."
-      },
-      {
-        "label": "extends",
-        "evidence": "grammar-absence",
-        "from": "whole-corpus firing over ALL 143 admitted .graphql/.gql files (gql-gqlgen, `[corpus=gql-gqlgen WHOLE]`, 143/143 parsed, 0 degraded, instrument self-test PASS): extends 0 edges. GraphQL has `implements` for interfaces and no supertype clause \u2014 the two are separate constructs and only one exists here."
-      },
-      {
+"coverage": {
+  "implemented": [
+    "contains",
+    "exports",
+    "implements",
+    "imports",
+    "overrides",
+    "references",
+    "uses"
+  ],
+  "excluded": [
+    {
+      "label": "calls",
+      "evidence": "grammar-absence",
+      "from": "0 construct sites, measured in BOTH spaces the arbiter requires and verified by it: 0 of the 10 call-shaped node types is among the 75 named types the wired grammar produced over 2,338,690 nodes on 1,911 admitted files, and 0 of the 22 keyword-shaped KEYS this corpus writes (21 `apply:`, 1 `execute:`, every one an ordinary field or argument NAME whose value is a type or an enum) applies anything. Nearest real form, named and NOT relabelled: 1,150 argument-bearing `Field` and 2,962 argument-bearing `Directive` nodes, all published as `uses`. Instrument: validation/m14/fixtures/graphql/rulebook-space-probe.json, read by validation/m14/fixtures/graphql/ruling-attestation.json."
+    },
+    {
+      "label": "instantiates",
+      "evidence": "grammar-absence",
+      "from": "0 construct sites, measured in both spaces: 0 of the 8 construction-shaped node types is among the 75 named types, and the key space (50,284 bindings over 7 key-bearing node types) fired 340 keyword-shaped keys (`create` 337, `new` 3) with 0 of them constructing an instance of a DECLARED type. The value-shape test alone read 304 on `create: [{node: …}]` — an input VALUE whose key names no declared type — which is exactly why the rule requires both halves and why the second half is applied over the whole population rather than per file. Excluded population named: 3,715 `ObjectValue` nodes are argument values. Instrument: validation/m14/fixtures/graphql/rulebook-space-probe.json, read by validation/m14/fixtures/graphql/ruling-attestation.json."
+    }
+  ],
+  "corpusUnexercised": [
+    {
+      "label": "extends",
+      "evidence": "zero-sites",
+      "from": "0 occurrences meet the BRANCH, which is a fact about this corpus rather than about the grammar: GraphQL writes `A implements B` and `A extends B` with the same rule, and the analyzer labels the clause `extends` only when the supertype is a Class or a Type IN THE SAME DOCUMENT — so the construct is expressible (`implements` fires 1,710 edges here) and the SITE COUNT is what is zero. Measured: 0 of 3,330 `implements` clauses resolve to an inheritance-shaped supertype declared in their own document; 3,225 name an interface and 105 name a supertype in another file. Instrument B in script/m14/graphql-ruled.ts, which carries `publishedCount: 0` / `publishedFiles: 0`; census: script/m14/tmp/graphql/out/ontology-census.json (extends_condition_met 0)."
+    }
+  ],
+  "_retracted_exclusions": {
+    "imports": {
+      "was": {
         "label": "imports",
         "evidence": "grammar-absence",
         "from": "whole-corpus firing over ALL 143 admitted .graphql/.gql files (gql-gqlgen, `[corpus=gql-gqlgen WHOLE]`, 143/143 parsed, 0 degraded, instrument self-test PASS): imports 0 edges. SDL composes documents by concatenation, not by an import directive; six other types fire on the same run."
       },
-      {
-        "label": "instantiates",
-        "evidence": "grammar-absence",
-        "from": "whole-corpus firing over ALL 143 admitted .graphql/.gql files (gql-gqlgen, `[corpus=gql-gqlgen WHOLE]`, 143/143 parsed, 0 degraded, instrument self-test PASS): instantiates 0 edges. A schema declares types; it does not construct values."
-      }
-    ],
-    "corpusUnexercised": [],
-    "_implemented_measured": {
-      "_unit": "edges published through the production path over the WHOLE 143-file graphql population (no stride, 143/143 parsed, 0 degraded). Instrument: BB_PICK_CAP=500 NFILES=300 bun script/m14/firing-check.mjs GRAPHQL.",
-      "contains": {
-        "edges": 1580
-      },
-      "exports": {
-        "edges": 795
-      },
-      "implements": {
-        "edges": 113
-      },
-      "overrides": {
-        "edges": 190
-      },
-      "references": {
-        "edges": 1877
-      },
-      "uses": {
-        "edges": 527
-      }
+      "why_it_was_wrong": "The exclusion was measured on a 143-file sub-corpus (gql-gqlgen only) and generalised to the whole lane. The `#import \"<file>\"` convention is real: 170 directives across 131 files of the 1,911-file population, 156 of them naming a file that EXISTS on disk (91.76%) when resolved against the importing file's own directory. A grammar cannot see a CONVENTION — the blind spot the ruled table's own docblock records for `calls` — so the type was ruled absent while the corpus carried it. The analyzer now emits `imports`, and it is implemented above.",
+      "when": "2026-10-12"
     },
-    "_from": "MEASURED whole-corpus, not sampled. This lane's instrument population IS its whole corpus (143 of 143 admitted), so the sample caveat does not apply: six types fire and four are zero on the same run. HANDOFF \u00a74 recorded `graphql 6/10 from=firing-log` with `calls extends imports instantiates` open as GAPS; they are now grammar-absence, each with the whole-corpus zero cited."
-  }
+    "population": {
+      "was": "ALL 143 admitted .graphql/.gql files (gql-gqlgen, `[corpus=gql-gqlgen WHOLE]`)",
+      "now": "1,911 admitted files across 22 repositories",
+      "why_it_was_wrong": "143 is one repository's file count, not this lane's population. The arbiter admits 1,911 files and names the 4 it excludes over the 1 MB cap, so every 'whole-corpus' zero measured on 143 files was a zero about gql-gqlgen. Kept rather than deleted because the reading is what made three of the four exclusions look settled."
+    }
+  },
+  "_implemented_measured": {
+    "_unit": "edges published through the production path over the WHOLE 1,911-file graphql population — no stride, no sample. Instrument: the whole-population incoming/residual walk (TOTAL 205,327 edges), and independently the arbiter's own EMITTED tally from script/m14/ontology-coverage-gate.ts, run with --fresh, which counts each type from production parseFile. The per-type totals below sum to that TOTAL exactly.",
+    "contains": {
+      "edges": 60112
+    },
+    "exports": {
+      "edges": 13991
+    },
+    "implements": {
+      "edges": 3177
+    },
+    "imports": {
+      "edges": 170
+    },
+    "overrides": {
+      "edges": 9790
+    },
+    "references": {
+      "edges": 67328
+    },
+    "uses": {
+      "edges": 50759
+    },
+    "_sum": 205327
+  },
+  "_from": "MEASURED whole-corpus, not sampled: 1,911 admitted files, SEVEN types firing and THREE ruled — and the three rulings are no longer prose. `calls` and `instantiates` are attested in BOTH spaces the arbiter requires (validation/m14/fixtures/graphql/ruling-attestation.json, whose pointers the gate verifies against validation/m14/fixtures/graphql/rulebook-space-probe.json), and `extends` is declared zero-sites rather than grammar-absence because the construct IS expressible here. HANDOFF §4 recorded `graphql 6/10 from=firing-log` with `calls extends imports instantiates` open as GAPS; `imports` was not a gap at all — it was a 143-file measurement generalised to a 1,911-file population — and it is implemented above, with the retraction and the population correction both recorded rather than overwritten."
+}
 }
