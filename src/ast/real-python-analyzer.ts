@@ -1975,6 +1975,20 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         isNamespace: true,
         range: this.nodeToRange(node),
       }
+      // ROUND 17 — THE BOUND NAME, ON THE ROW THE SEAM READS (PY-D13's store half).
+      // `itemNodes` has carried the per-item binding since round 7 — it is what the `imports` EDGE
+      // publishes as `metadata.importedAs` — and the row the store consumes carried NONE of it: the
+      // worker projection emits `{name, path, type, isExternal, line}` and the indexer writes
+      // `brain_import.imported_as` from `imp.alias ?? imp.localName`, so the column stayed NULL for
+      // this shape while the FALLBACK path filled it (M60). The list is PER ITEM and NAME-KEYED
+      // rather than a single `alias` because one statement binds several names
+      // (`from m import a as b, c as d`) and each item's row needs its OWN binding. `items` keeps the
+      // IMPORTED names: those are what the `module:item` edge target spells and what the verdict
+      // counts, so the binding must not move into them.
+      const boundItems = itemNodes.filter((it) => it.bound)
+      if (boundItems.length > 0) {
+        importRow.itemBindings = boundItems.map((it) => ({ name: it.name, as: it.bound as string }))
+      }
       if (moduleName.length > 0) importRow.module = moduleName
       ctx.imports.push(importRow)
       this.noteFramework(ctx, moduleName)
@@ -3088,7 +3102,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // line: 670 `overrides` edges below 1.0 and 81 of them (the verified tier)
           // carried no reason code, so a consumer could not tell a verified MRO edge
           // from the `first-parent-guess` tier except by reading the confidence.
-          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${declaring}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, { reasonCode: "mro-base-declares-method" }, s.range?.startLine)
+          this.pushRel(ctx, `${s.ownerName}.${s.name}`, s.name, ASTEngine.RelationshipType.Overrides, 0.95, { reasonCode: "mro-base-declares-method" }, s.range?.startLine)
           continue
         }
         // `object.__init__` is the one external override that is a FACT and not a
@@ -3098,7 +3112,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // the language, not inferred across a module boundary. It is 27 of the 1,190
         // guesses the oracle confirmed, so it is the part worth keeping.
         if (s.name === "__init__" && bases.includes("object")) {
-          this.pushRel(ctx, `${s.ownerName}.__init__`, "object.__init__", ASTEngine.RelationshipType.Overrides, 0.95, { reasonCode: "object-init-universal" }, s.range?.startLine)
+          this.pushRel(ctx, `${s.ownerName}.__init__`, "__init__", ASTEngine.RelationshipType.Overrides, 0.95, { reasonCode: "object-init-universal" }, s.range?.startLine)
         }
         // No base declares it, so this is a guess. Guess the best candidate — and the
         // best candidate is NOT always the leftmost.
@@ -3179,7 +3193,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         const firstUnread = bases.find((b) => !declaredClasses.has(b))
         const objectGuessIsFalse = firstUnread === "object" && !OBJECT_MEMBERS.has(s.name)
         if (firstUnread !== undefined && !overrideCompanion?.has(firstUnread) && !objectGuessIsFalse) {
-          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${firstUnread}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.5, { reasonCode: "first-parent-guess" }, s.range?.startLine)
+          this.pushRel(ctx, `${s.ownerName}.${s.name}`, s.name, ASTEngine.RelationshipType.Overrides, 0.5, { reasonCode: "first-parent-guess" }, s.range?.startLine)
         }
         // (The duplicate 60-line rationale that used to follow here, and the
         //  "PY-7, resolved by measurement. The first-parent guess is GONE" block

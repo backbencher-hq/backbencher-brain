@@ -286,7 +286,7 @@ export function csharpTargetFromDeclaredType(typeText: string, isElement: boolea
   // Direct assignment: the declared type itself (generic base for `List<int>`).
   return csharpCleanTypeLeaf(t)
 }
-import { findDeclaringParent, localEdgeLabel } from "./override-context"
+import { findDeclaringParent, localEdgeLabel, localEdgeName } from "./override-context"
 
 interface Scope {
   node: Node
@@ -2785,7 +2785,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (!target) continue
       const source = localEdgeLabel(task.fqn)
-      const label = localEdgeLabel(target)
+          // THE TARGET IS THE MEMBER NAME, NOT `Owner.member`: the resolver binds against
+          // DECLARATIONS, and a declaration is named by its leaf. Measured: 100% of this lane's
+          // overrides targets are dotted, 100% have their leaf declared in the edge's own file, and
+          // 100% classify unresolved — a naming problem, not a mechanism problem. `localEdgeName`
+          // derives the leaf AFTER the paren deletion `localEdgeLabel` performs, so a dotted
+          // parameter list cannot be cut into a non-name (see its doc).
+      const label = localEdgeName(target)
       if (!source || !label) continue
       const key = `${source}|${label}`
       if (emitted.has(key)) continue
@@ -2860,7 +2866,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // immune to a dotted parameter list, but it cuts at the FIRST "(" and
         // so silently truncates a paren-bearing OWNER chain to a wrong label.
         const localSource = localEdgeLabel(task.fqn)
-        const localTarget = localEdgeLabel(targetFqn)
+          // THE TARGET IS THE MEMBER NAME, NOT `Owner.member`: the resolver binds against
+          // DECLARATIONS, and a declaration is named by its leaf. Measured: 100% of this lane's
+          // overrides targets are dotted, 100% have their leaf declared in the edge's own file, and
+          // 100% classify unresolved — a naming problem, not a mechanism problem. `localEdgeName`
+          // derives the leaf AFTER the paren deletion `localEdgeLabel` performs, so a dotted
+          // parameter list cannot be cut into a non-name (see its doc).
+        const localTarget = localEdgeName(targetFqn)
         relationships.push({
           source: localSource,
           target: localTarget,

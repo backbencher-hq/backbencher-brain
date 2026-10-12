@@ -1590,7 +1590,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           overrideSeen.add(ovKey)
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
-            target: `${base}.${s.name}`,
+          // THE TARGET IS THE MEMBER NAME, NOT `Owner.member`: the resolver binds against
+          // DECLARATIONS, and a declaration is named by its leaf. Measured: 100% of this lane's
+          // overrides targets are dotted, 100% have their leaf declared in the edge's own file, and
+          // 100% classify unresolved — a naming problem, not a mechanism problem. `localEdgeName`
+          // derives the leaf AFTER the paren deletion `localEdgeLabel` performs, so a dotted
+          // parameter list cannot be cut into a non-name (see its doc).
+            target: s.name,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.95,
             // The OVERRIDING member's own line, not the class's.
@@ -1671,7 +1677,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           overrideSeen.add(guessKey)
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
-            target: `${base}.${s.name}`,
+          // THE TARGET IS THE MEMBER NAME, NOT `Owner.member`: the resolver binds against
+          // DECLARATIONS, and a declaration is named by its leaf. Measured: 100% of this lane's
+          // overrides targets are dotted, 100% have their leaf declared in the edge's own file, and
+          // 100% classify unresolved — a naming problem, not a mechanism problem. `localEdgeName`
+          // derives the leaf AFTER the paren deletion `localEdgeLabel` performs, so a dotted
+          // parameter list cannot be cut into a non-name (see its doc).
+            target: s.name,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.5,
             ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),

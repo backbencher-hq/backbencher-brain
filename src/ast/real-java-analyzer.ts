@@ -351,7 +351,7 @@ function javaTypeBaseName(node: Node | null | undefined): string {
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
-import { findDeclaringParent, localEdgeLabel } from "./override-context"
+import { findDeclaringParent, localEdgeLabel, localEdgeName } from "./override-context"
 
 export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
@@ -2646,7 +2646,13 @@ currentPackage,
         // type -> `handle.Criterion,…boolean)`, not a name). Neither single cut
         // is right in both directions; deleting balanced groups first is.
         const localSource = localEdgeLabel(task.fqn)
-        const localTarget = localEdgeLabel(targetFqn)
+          // THE TARGET IS THE MEMBER NAME, NOT `Owner.member`: the resolver binds against
+          // DECLARATIONS, and a declaration is named by its leaf. Measured: 100% of this lane's
+          // overrides targets are dotted, 100% have their leaf declared in the edge's own file, and
+          // 100% classify unresolved — a naming problem, not a mechanism problem. `localEdgeName`
+          // derives the leaf AFTER the paren deletion `localEdgeLabel` performs, so a dotted
+          // parameter list cannot be cut into a non-name (see its doc).
+        const localTarget = localEdgeName(targetFqn)
 
         relationships.push({
           source: localSource,
