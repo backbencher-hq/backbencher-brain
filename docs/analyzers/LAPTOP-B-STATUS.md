@@ -3252,7 +3252,8 @@ round pins.
 ### 5. Still open after round 15
 
 - **The 5 `exports`** — 4 SUBMODULE rows (PY-D29) and 1 stale `__all__` (PY-D30), unchanged and still
-  decisions rather than work items.
+  decisions rather than work items. **CLOSED AS A DEFECT AXIS IN ROUND 16** — see the round-16 section
+  below; the rows stay UNRESOLVED, the defect count does not.
 - **PY-D26** unchanged: 17 provenance keys published, 1 carried across the worker allowlist, and no
   store-level reader for `boundByBinder` — so the mechanism stays pinnable analyzer-side only.
 - **The module half's per-name publication (58 names, 90 symbols)** and the 42 rows in files CPython
@@ -3261,7 +3262,123 @@ round pins.
 - **The one moved `uses` row is not identified by name.** Saying so is the honest form of the claim: the
   cell and its direction are measured, the row would need a per-axis dump of the whole population.
 
+## python round 16 (2026-10-12) — the last 5 UNEXPLAINED rows are TWO mechanisms, both NAMED and GATED: `exports` 5 → 0 with the rows left UNRESOLVED, and each new axis falsified in three directions
+
+Every previous round closed rows by making the graph bind them or by publishing a declaration the file
+itself writes. These 5 rows cannot be closed that way, and the honest move is the one the lane's other
+axes already use: name the cause with a predicate somebody else can check. **What the ceiling bounds is
+the DEFECT axis, not the binding** — the rows are still UNRESOLVED, and the round says so everywhere it
+reports the number.
+
+### 1. Priced first, with CPython and the filesystem rather than with this lane's instrument
+
+`.tmp-py/price-export-residual-r16.py` reads each row with `ast` plus the path layer: is the target
+bound ANYWHERE in its file, does the file's `__all__` state it, is a module of that name shipped BESIDE
+the file, how many files of the population mention it, and are its mentions outside `__all__`. The
+answer is **4 shipped-submodule · 1 stale-export · 0 rows fitting NEITHER predicate** — and the zero is
+the number that matters, because a row with no predicate would be work this round still owed.
+
+- **4 shipped-submodule.** `sqlalchemy/dialects/__init__.py` writes
+  `__all__ = ("mssql", "mysql", "oracle", "postgresql", "sqlite")`, binds none of them, and the package
+  SHIPS `dialects/mssql/__init__.py`, `mysql/`, `oracle/`, `postgresql/`. Python's import system supplies
+  such a name — a lazy `__all__` of SUBMODULES is the idiom — and a MODULE is not a DECLARATION, which is
+  exactly why a name index cannot hold it. **The axis does not claim the name resolves.**
+- **1 stale-export.** `ext/declarative/__init__.py` lists `instrument_declarative`, binds it nowhere,
+  imports it nowhere, ships no submodule of that name, and the name occurs in **exactly ONE file of
+  11,488 — the `__all__` that names it** (SQLAlchemy dropped the function and left the list entry). The
+  file's stated public surface names something that exists nowhere: a defect in the CORPUS, and the edge
+  the file states is honest to emit.
+- Note the 5th `__all__` name, `sqlite`, was never on the defect axis: it binds by LEAF to a declaration
+  elsewhere in the population, which is the verdict's declared project-scope model, not a claim that it
+  resolves to the module.
+
+### 2. The two axes, built from what the instrument already holds
+
+`shipped-submodule` needs only the ADMISSION SET (is `<dir>/<name>/__init__.py` in it?) and
+`stale-export` only the file's own `exports` edges (they ARE its `__all__`) plus a memoised population
+mention count over the text each file was handed. Nothing re-parses source. Neither axis reuses
+`not-bound-in-file`: that axis requires a binding `reasonCode` and so structurally cannot apply to an
+`exports` row, and folding these rows into it would erase the distinction they carry.
+
+### 3. The gate, and its falsification in three directions
+
+`validation/m14/fixtures/python/export-residual-gate.mts` re-derives every clause per row with CPython —
+the `__all__` literal, the file's COMPLETE binding set, the sibling path on disk, and a population-wide
+identifier scan with **word boundaries** (11,334 files for the stale axis, so a name that is merely a
+substring of a longer identifier elsewhere does not count as a mention). Result: **AGREE 4 + 1 ·
+UNPARSEABLE 0 · DISAGREE 0**, exit 0. Refusals, because each would otherwise be a silent PASS: a missing
+row list (exit 2), a row count that disagrees with the artefact's own axis total (exit 1), and an
+artefact carrying NEITHER axis (exit 2).
+
+**Falsified before it was trusted**, three directions, each observed exit 1 and then RESTORED to PASS:
+(1) a 5th `shipped-submodule` row the artefact does not carry → count mismatch; (2) the stale-export row
+re-pointed at `declarative_base` → DISAGREE ("the file BINDS the name, so the edge should have resolved
+by declaration; 61 other file(s) of the population mention the name"); (3) a submodule row re-pointed at
+`no_such_module` → DISAGREE ("the file's own `__all__` does not state the name; no module of that name is
+shipped beside the file").
+
+### 4. Measured on the whole population
+
+11,488 files · **206,953** symbols · **1,290,653** relationships — all three IDENTICAL to the committed
+artefact; every label's edge count, bins and `unexplained` identical except `exports`, whose
+`unresolvedClass` now reads `{shipped-submodule: 4, stale-export: 1}` with `unexplained: 0`; OUTGOING
+unresolved **0 on all ten**. The verdict gate's `exports` ceiling went **5 → 0** with its cause rewritten
+and its header now naming nine axes, and total incoming UNEXPLAINED across the ten labels is **0**. The
+BINS did not move: `exports` still carries 5 UNRESOLVED project-scope targets (5 EXTERNAL at file scope)
+— the ceiling bounds the defect axis, and that is the only thing this round moved.
+
+### 5. A reproducibility finding, measured and NOT explained
+
+Two full-population runs of the same instrument over the same corpus reproduce **every count exactly** —
+1,436 scalars compared, 0 differing; every bin, axis total and label count identical — but not the ORDER
+in which files are walked: **32 of 70 sample lists** (`examples`, `fileSample`, `ambiguousTargets`,
+`unresolvedProjectTargets`) differ as MULTISETS, and one top-40 tie boundary swapped a key (`timedelta`
+↔ `nodes`, both count 1). Two back-to-back `--limit 400` runs are byte-identical INCLUDING samples, and
+`os.listdir` is stable within a session, so the effect appears only at full population and **its cause is
+not established here** — reported, not dressed up. The cleanest evidence is a COMPLETE list rather than
+a sample: this round's run rewrote `not-bound-in-file.rows.txt` with the SAME 85 rows as the committed
+one and in a DIFFERENT ORDER (sorted-equal, order-different) — so the axis row SETS are order-invariant
+while their line order is not. It cannot reach a pinned number: every gate reads counts and those
+COMPLETE row lists, and a row's axis depends on `(file, target)` plus the project indices, never on walk
+order.
+
+### 6. Verified together
+
+- `.tmp-py/price-export-residual-r16.py` exit 0 — 4 / 1 / 0.
+- `bun validation/m14/fixtures/python/export-residual-gate.mts` exit 0 (AGREE 5, DISAGREE 0), and three
+  observed falsifications at exit 1.
+- `bun validation/m14/fixtures/python/resolution-verdict-gate.ts` exit 0 — `exports` cap 0, total
+  UNEXPLAINED 0, outgoing 0 on all ten.
+- fixtures **52/52** (the analyzer was NOT touched this round, so this is a regression check, not new
+  coverage) and `npx tsc --noEmit` exit 0.
+- inventory `--lang python` — 130 types classified, sections A–H **8/8**, exit 0; the spec re-parses, is
+  all-ASCII and round-trips byte-for-byte after the edit, with **PY-D29 / PY-D30 kept `DECLARED`**
+  (unchanged status on purpose: the rows are still unresolved) and each gaining a paragraph recording the
+  closure of the defect axis.
+- The mutant battery is NOT re-run as new work: `src/ast/real-python-analyzer.ts` is byte-identical to
+  the committed state (0 mutant markers, empty diff vs HEAD), so round 15's **61 caught · 0 survived · 0
+  not applied** stands for the shipped analyzer.
+
+### 7. Still open after round 16
+
+- **The rows themselves stay unresolved as declarations** — that is now a measured property with a gate
+  around it rather than a defect axis.
+- **PY-D26**, the module half's per-name rule, the 42 rows in files CPython rejects, the `(x): int` field
+  label, PY-D13's store half and round 3's D5 — all unchanged.
+- **The sample-list instability of §5** is an open question about the instrument's REPORTING layer, not
+  about any pinned number.
+
 ## Totals today
+
+- **python's INCOMING defect axis is now 0 across all ten labels** (round 16): `exports` **5 → 0** by
+  naming and gating the last two mechanisms (4 `shipped-submodule` · 1 `stale-export`), with outgoing
+  unresolved **0 on all ten** and total incoming UNEXPLAINED **0**. Commands:
+  `bun validation/m14/fixtures/python/resolution-verdict-gate.ts` ·
+  `bun validation/m14/fixtures/python/export-residual-gate.mts` · artefact
+  `validation/m14/fixtures/python/resolution-verdict.current.json`. **What did NOT move:** the 5 rows are
+  still UNRESOLVED as name-declarations (`exports` project-scope bins unchanged), so this is a DEFECT
+  count reaching zero, NOT the incoming rows resolving — and the lane's other residuals (PY-D26, the
+  module half, the CPython-reject files) are untouched.
 
 - Outgoing at `10/10 applicable`: **3 of 23** (`dart`, `fsharp`, `php`).
 - Outgoing at `N/N applicable` **with incoming resolving**: **0 of 23**.

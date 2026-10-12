@@ -105,19 +105,28 @@ that guard to module-scope imports, priced at exactly those 2 names and **zero**
 str)`, 6 of the 26 files) was refused outright, and the **set** spelling
 (`ansible/module_utils/_text.py`'s `elif importable_name in {"to_bytes", …}`) published nothing.
 
-**Two residuals remain, and neither is publishable from one file's text.**
+**The last 5 UNEXPLAINED rows were two mechanisms, and neither is publishable from one file's text.
+Round 16 named each with a gated predicate, so `exports` is now at ZERO on the defect axis — while
+the rows themselves stay UNRESOLVED as declarations, which is the honest half of that sentence.**
 
-- **4 SUBMODULE rows** (PY-D29). `sqlalchemy/lib/sqlalchemy/dialects/__init__.py` lists `mssql`,
-  `mysql`, `oracle` and `postgresql` in `__all__` and binds none of them — the package **ships**
-  `dialects/mssql/__init__.py`, so python's import system supplies the attribute. The analyzer is
-  handed one file and cannot see the directory; inventing a position for the name would be the
+- **4 SUBMODULE rows** (PY-D29), axis `shipped-submodule`. `sqlalchemy/lib/sqlalchemy/dialects/__init__.py`
+  lists `mssql`, `mysql`, `oracle` and `postgresql` in `__all__` and binds none of them — the package
+  **ships** `dialects/mssql/__init__.py`, so python's import system supplies the attribute. The analyzer
+  is handed one file and cannot see the directory; inventing a position for the name would be the
   fabrication the endpoint rules exist to stop, so this belongs to the resolution layer that has the
-  filesystem.
-- **1 STALE `__all__` row** (PY-D30). `sqlalchemy/lib/sqlalchemy/ext/declarative/__init__.py` lists
-  `instrument_declarative`; the file binds it nowhere, imports it nowhere, ships no submodule of that
-  name and names it in no `__getattr__`. The edge **stays** — the file's own export list is the
-  statement being read, and a stale entry is a fact about the source that a consumer would most want
-  flagged. Corpus-wide, 3,043 `__all__` entries reduce to 6 such rows and 6 submodule rows.
+  filesystem. The axis asserts the **shipped module exists beside the file and the file binds the name
+  nowhere** — it never asserts that the name resolves.
+- **1 STALE `__all__` row** (PY-D30), axis `stale-export`. `sqlalchemy/lib/sqlalchemy/ext/declarative/__init__.py`
+  lists `instrument_declarative`; the file binds it nowhere, imports it nowhere, ships no submodule of
+  that name and names it in no `__getattr__` — and the name occurs in **exactly one file of 11,488**,
+  the `__all__` that names it. The edge **stays** — the file's own export list is the statement being
+  read, and a stale entry is a fact about the source that a consumer would most want flagged.
+
+Both axes were priced with CPython rather than with the lane's own instrument (**4 · 1 · 0** rows
+fitting neither predicate), and every row of both is re-checked against CPython's `ast` and the
+filesystem by `validation/m14/fixtures/python/export-residual-gate.mts` — the `__all__` literal, the
+file's complete binding set, the sibling path, the population-wide mention count — which was itself
+falsified in three directions before being trusted.
 
 `PY-D31` is the one place this contract was **narrowed after being declared**. The guard that keeps a
 published binding from shadowing a declaration read the **file-wide** import channel, so a name a
@@ -174,10 +183,11 @@ first. Over the corpus, **2,029 of 3,271 files (62.0%)** carry a framework.
 | --- | --- |
 | grammar bytes | `validation/m14/grammar-pins.json`, lane `python` |
 | 52 fixtures | `validation/m14/fixtures/python/` |
-| 59 mutants | `script/m14/python-implements-mutants.py` (ids prefixed `round*`/`python/`) |
+| 61 mutants | `script/m14/python-implements-mutants.py` (ids prefixed `round*`/`python/`) |
 | node-type classification | `script/m14/spec/python-completeness.json` |
 | independent truth | `script/m14/oracles/python-truth.ts` + `python-truth-diff.ts` |
-| the whole-population verdict | `validation/m14/fixtures/python/resolution-verdict.current.json` + `resolution-verdict-gate.ts` (the per-label contract, with each residual's cause and ceiling) |
+| the whole-population verdict | `validation/m14/fixtures/python/resolution-verdict.current.json` + `resolution-verdict-gate.ts` (the per-label contract, with each residual's cause and ceiling — `exports` now **0**) |
+| the two export-residual axes | `export-residual-gate.mts` + the run's own `shipped-submodule.rows.txt` / `stale-export.rows.txt`, re-checked with CPython's `ast` and the filesystem |
 | the round-14 provision rule | `.tmp-py/price-module-getattr-round14.py` (the price) and `.tmp-py/census-getattr-provisions.mts` (the check) |
 | the measurements behind all of it | `reviews/python/master-review.md` |
 

@@ -193,6 +193,27 @@ const SYNTHETIC_SCOPE_NAMES = new Set([
  *                      `validation/m14/fixtures/python/not-bound-in-file-gate.mts`; it exists
  *                      because an axis like this one is exactly where a future analyzer gap would
  *                      hide, and the gate fails on any row whose file DOES bind the name.
+ *   shipped-submodule  ROUND 16 — the target is a BARE name, nothing in the population DECLARES it,
+ *                      and the population ships it as a MODULE beside the source file
+ *                      (`<dir>/<name>/__init__.py`, `<dir>/<name>.py`, `<name>.pyi`). Python's
+ *                      import system supplies such a name: `__all__ = ("mssql", "mysql", ...)` in a
+ *                      package's `__init__.py` is the idiomatic way to re-export SUBMODULES lazily,
+ *                      and `from pkg import mssql` succeeds because the submodule is importable.
+ *                      The name INDEX cannot hold it — a module is not a DECLARATION — so the row
+ *                      dangles with no defect in it. Corpus case: `sqlalchemy/dialects/__init__.py`,
+ *                      whose four named dialects are shipped packages beside it.
+ *   stale-export       ROUND 16 — the target is a BARE name the file's OWN `__all__` states, is
+ *                      bound nowhere in the file, has no module shipped beside it, and NO OTHER
+ *                      file of the population so much as MENTIONS it. The file's stated public
+ *                      surface names something that exists nowhere in 11,488 files: a defect in
+ *                      the CORPUS, and the analyzer is right to emit the edge the file states, so
+ *                      the dangling row is the honest report of someone else's stale `__all__`.
+ *                      Corpus case: `sqlalchemy/ext/declarative/__init__.py` lists
+ *                      `instrument_declarative`, a name SQLAlchemy dropped while leaving it in
+ *                      `__all__`; the name occurs in exactly ONE file of the population — the
+ *                      `__all__` that names it.
+ *                      BOTH axes are re-checked row by row, against CPython's `ast` and the
+ *                      filesystem, by `validation/m14/fixtures/python/export-residual-gate.mts`.
  *   UNEXPLAINED        none of the above. This is the ONLY axis that names a defect, and it is the
  *                      number the verdict below must drive to zero or to a pinned allowance.
  */
@@ -415,10 +436,26 @@ const qualifiedDump: string[] = []
  */
 const notBoundRows: string[] = []
 const NOT_BOUND_AXIS = "not-bound-in-file"
+/**
+ * ROUND 16 — the same convention for the two axes that carry the `exports` residual: the rows the
+ * axis fired on, in classification order, `type<TAB>file<TAB>source<TAB>target<TAB>reasonCode`,
+ * written beside the artefact so `export-residual-gate.mts` re-checks the PREDICATE rather than a
+ * count. Written UNCONDITIONALLY when `--out` is given (even at zero rows), because a gate that
+ * cannot tell "the axis fired on nothing" from "the run predates the axis" would pass on both.
+ */
+const shippedSubmoduleRows: string[] = []
+const staleExportRows: string[] = []
+const SHIPPED_SUBMODULE_AXIS = "shipped-submodule"
+const STALE_EXPORT_AXIS = "stale-export"
 /** rows of the axis named by `--dump-axis`, written beside the artefact (see the writer at the end). */
 const DUMP_AXIS = argOf("--dump-axis")
 const axisDump = new Map<string, string[]>()
 const projectFiles = new Set<string>()
+/** ROUND 16: every admitted file's `repo/rel` label, so `shipped-submodule` can ask whether a
+ *  module of the target's name is SHIPPED beside the file — a path question, not a name question. */
+const admittedLabels = new Set<string>()
+/** per file: the targets of its own `exports` edges — its stated `__all__`. */
+const fileExports = new Map<FileRecord, Set<string>>()
 /** per file: bare name -> declarations in THAT file only. */
 const fileByName = new Map<FileRecord, Map<string, Set<string>>>()
 /** per file: the names it binds by import. */
@@ -455,6 +492,7 @@ const declSig = (s: Sym, f: FileRecord): string =>
 for (const f of files) {
   projectModules.add(f.moduleScope)
   projectFiles.add(f.rel)
+  admittedLabels.add(f.label)
   const local = new Map<string, Set<string>>()
   const imported = new Set<string>()
   const addLocal = (k: string, sig: string) => {
@@ -504,8 +542,19 @@ for (const f of files) {
   // fact the analyzer states on its own edge (`metadata.starImport`) and that the projection one
   // layer below cannot carry. The module is the target's `module:*` half.
   const stars = new Set<string>()
+  // ROUND 16 — the file's own stated public surface, read off its `exports` edges. The `stale-export`
+  // predicate needs "the file's `__all__` states this name", and the analyzer already published that
+  // fact as an edge, so the axis reads it here rather than re-parsing the source (this instrument
+  // never does).
+  const exported = new Set<string>()
   for (const r of f.rels) {
-    if (typeOf(r) !== "imports") continue
+    const kind = typeOf(r)
+    if (kind === "exports") {
+      const tgt = endpointsOf(r)[1]
+      if (tgt) exported.add(tgt)
+      continue
+    }
+    if (kind !== "imports") continue
     const md = (r.metadata ?? {}) as Record<string, any>
     const as = md.importedAs
     if (typeof as === "string" && as) imported.add(as)
@@ -529,6 +578,7 @@ for (const f of files) {
   fileByName.set(f, local)
   fileImported.set(f, imported)
   fileStarModules.set(f, stars)
+  fileExports.set(f, exported)
 }
 
 /**
@@ -551,6 +601,65 @@ const notBoundInFile = (f: FileRecord, tgt: string, why: string): boolean => {
   const imported = fileImported.get(f)
   if (imported && imported.has(leaf)) return false
   return true
+}
+
+const relDirOf = (rel: string): string => (rel.includes("/") ? rel.slice(0, rel.lastIndexOf("/")) : "")
+
+/**
+ * ROUND 16 — `shipped-submodule`. See the axis doc above for the corpus case and the argument that
+ * a MODULE has no declaration to bind to. The predicate is in two parts, and both are facts this
+ * instrument already holds or can ask for one file at a time:
+ *
+ *   1. the target is a BARE name. A dotted target is a module PATH (other axes own it), and the
+ *      `module:item` spelling is an import endpoint, not a submodule binding;
+ *   2. the population ships `<dir of this file>/<name>/__init__.py`, `<dir>/<name>.py` or `<name>.pyi`.
+ *
+ * NOTHING ELSE is needed, and that is the point: reaching this axis already means the target is
+ * UNRESOLVED against the whole project index, which is built from EVERY symbol of EVERY file —
+ * including this file's. So "the file does not bind the name" and "no file declares it" are not
+ * extra clauses to check; they are what it MEANS for the row to be here.
+ */
+const shippedSubmodule = (f: FileRecord, tgt: string): boolean => {
+  if (!tgt || tgt.includes(".") || tgt.includes(":")) return false
+  const prefix = f.label.slice(0, f.label.length - f.rel.length)
+  const dir = relDirOf(f.rel)
+  const base = `${prefix}${dir ? `${dir}/` : ""}`
+  return admittedLabels.has(`${base}${tgt}/__init__.py`)
+    || admittedLabels.has(`${base}${tgt}/__init__.pyi`)
+    || admittedLabels.has(`${base}${tgt}.py`)
+    || admittedLabels.has(`${base}${tgt}.pyi`)
+}
+
+/**
+ * How many files of the population MENTION a name, memoised per name. The test is the same
+ * substring test the rest of this instrument uses on the text it was handed; it is an UPPER bound
+ * on the number of files that declare the name, which is the direction a "nothing elsewhere"
+ * predicate has to be conservative in.
+ */
+const namePopulationMentions = new Map<string, number>()
+const populationMentions = (name: string): number => {
+  const memo = namePopulationMentions.get(name)
+  if (memo !== undefined) return memo
+  let n = 0
+  for (const g of files) if (g.text.includes(name)) n++
+  namePopulationMentions.set(name, n)
+  return n
+}
+
+/**
+ * ROUND 16 — `stale-export`. Three facts, each checkable without re-parsing:
+ *
+ *   1. the file's own `exports` edges state the name (its `__all__`);
+ *   2. the name is a BARE name, so no dotted route or `module:item` spelling is involved;
+ *   3. NO OTHER file of the population mentions it AT ALL — the count is 1, this file. That is
+ *      strictly stronger than "no declaration exists": a declaration anywhere would be a mention,
+ *      so the name exists in this one file, inside the `__all__` that names it, and nowhere else.
+ */
+const staleExport = (f: FileRecord, tgt: string): boolean => {
+  if (!tgt || tgt.includes(".") || tgt.includes(":")) return false
+  const exported = fileExports.get(f)
+  if (!exported || !exported.has(tgt)) return false
+  return populationMentions(tgt) === 1
 }
 
 // ---------------------------------------------------------------- classify
@@ -763,6 +872,8 @@ for (const f of files) {
         : starImportBindsOutOfView(f, tgt) ? "star-import-external"
         : PY_BUILTIN_NAMES.has(leafOf(tgt)) ? "builtin"
         : notBoundInFile(f, tgt, why) ? "not-bound-in-file"
+        : shippedSubmodule(f, tgt) ? SHIPPED_SUBMODULE_AXIS
+        : staleExport(f, tgt) ? STALE_EXPORT_AXIS
         : "UNEXPLAINED"
       bump(s.unresolvedClass, cls)
       // The `not-bound-in-file` axis is a CLAIM about every row it fires on ("no binding this file
@@ -771,6 +882,8 @@ for (const f of files) {
       // against CPython's own scope chain, and it can only do that if the run publishes the list.
       // A gate over a remembered list would be a gate over a memory.
       if (cls === "not-bound-in-file") notBoundRows.push(`${t}\t${f.label}\t${src}\t${tgt}\t${why}`)
+      if (cls === SHIPPED_SUBMODULE_AXIS) shippedSubmoduleRows.push(`${t}\t${f.label}\t${src}\t${tgt}\t${why}`)
+      if (cls === STALE_EXPORT_AXIS) staleExportRows.push(`${t}\t${f.label}\t${src}\t${tgt}\t${why}`)
       // `--dump-axis=<class>` writes the rows of ANY named axis, so a doc's sentence about a bucket
       // ("the 4 rows now on declared-dynamic") can be a list rather than a count nobody can open.
       if (DUMP_AXIS && cls === DUMP_AXIS) {
@@ -891,7 +1004,7 @@ for (const t of ALL_TYPES) {
   }
 }
 console.log(`\nlabels emitted ${emittedCount}/10   OUTGOING (source) UNRESOLVED across all ten: ${grandSrcUnresolved}`)
-console.log(`INCOMING (target) UNEXPLAINED across all ten: ${grandUnexplained}  <- the only defect axis; every other unresolved target is declared-dynamic, declared-local, declared-external, qualified-external, star-import-external, not-bound-in-file, or an interpreter builtin`)
+console.log(`INCOMING (target) UNEXPLAINED across all ten: ${grandUnexplained}  <- the only defect axis; every other unresolved target is declared-dynamic, declared-local, declared-external, qualified-external, star-import-external, not-bound-in-file, shipped-submodule, stale-export, or an interpreter builtin`)
 
 console.log("\n== confidence / evidenceClass / reasonCode / hygiene ==")
 for (const t of ALL_TYPES) {
@@ -986,6 +1099,15 @@ if (OUT && notBoundRows.length) {
   const rowsPath = path.join(path.dirname(OUT), "not-bound-in-file.rows.txt")
   writeFileSync(rowsPath, notBoundRows.join("\n") + "\n")
   console.log(`wrote ${notBoundRows.length} ${NOT_BOUND_AXIS} row(s) to ${rowsPath}`)
+}
+// ROUND 16 — the two `exports` residual axes. Written UNCONDITIONALLY when `--out` is given, unlike
+// the list above: `export-residual-gate.mts` distinguishes "the axis fired on nothing" from "this
+// run predates the axis" by the file's PRESENCE, so an empty axis still writes its list.
+for (const [axis, rows] of [[SHIPPED_SUBMODULE_AXIS, shippedSubmoduleRows], [STALE_EXPORT_AXIS, staleExportRows]] as const) {
+  if (!OUT) break
+  const p = path.join(path.dirname(OUT), `${axis}.rows.txt`)
+  writeFileSync(p, rows.length ? rows.join("\n") + "\n" : "")
+  console.log(`wrote ${rows.length} ${axis} row(s) to ${p}`)
 }
 if (DUMP_QUALIFIED) {
   writeFileSync(DUMP_QUALIFIED, qualifiedDump.join("\n") + "\n")
