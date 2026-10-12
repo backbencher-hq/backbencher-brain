@@ -468,7 +468,7 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
     } _(${USAGE_SITE_FILTER_LABEL})_`,
   )
   if (data.evidenceTiers.length > 0) {
-    lines.push(`evidence: ${data.evidenceTiers.join(", ")}`)
+    lines.push(`evidence: ${(data.evidenceTiers||[]).join(", ")}`)
   } else {
     lines.push("evidence: none (no indexed relationships)")
   }
