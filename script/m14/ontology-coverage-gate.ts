@@ -75,6 +75,12 @@ import { POWERSHELL_RULED } from "./powershell-ruled"
 // restates the `Ruled` shape "once the supervisor adds the wiring" — this is that wiring, and
 // until it landed the gate read an inline copy instead (see the deleted block below).
 import { JSON_RULED } from "./json-ruled"
+// python (2026-10-10): the lane's ruling table, imported like the nineteen above. Until this
+// line and the `python:` entry below it landed, the gate printed `no RULING SOURCE for python`
+// and exited 2 for the whole lane — which is what `script/m14/python-ruled.ts` recorded as the
+// one supervisor-owned import + one line it needed. See that file's header for the implements
+// reversal the table now carries.
+import { PYTHON_RULED } from "./python-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 /** The lane is the first NON-FLAG argument: `--self-test` / `--coverage` must not be read as a lane
@@ -553,6 +559,7 @@ clean: CLEAN_RULED,
   graphql: GRAPHQL_RULED,
   dart: DART_RULED,
   powershell: POWERSHELL_RULED,
+  python: PYTHON_RULED,
 }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 

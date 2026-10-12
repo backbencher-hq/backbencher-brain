@@ -230,7 +230,13 @@ function declaredNamesByScope(root: any): { name: string; kind: string; scope: s
   const found: { name: string; kind: string; scope: string; line: number }[] = []
   const lineOf = (c: any) => Number(c?.startPosition?.row ?? -1) + 1
 
-  const declare = (scope: Map<string, string>, label: string, name: string, kind: string, line: number) => {
+  // NOT named `declare`: that is a TypeScript CONTEXTUAL KEYWORD (ambient declarations), and
+  // bun's transpiler reads `declare(...)` as the start of one and aborts on the file —
+  // `error: Unexpected }` at the end of this function, with the real cause 15 lines above.
+  // The documented arbiter command is `bun script/m14/ontology-coverage-gate.ts`, which imports
+  // this module, so the name took the whole gate down for every lane while `tsc` and `tsx` were
+  // both perfectly happy with it. Renamed 2026-10-10 (python round 1); behaviour is identical.
+  const declareName = (scope: Map<string, string>, label: string, name: string, kind: string, line: number) => {
     if (!name) return
     if (scope.has(name)) found.push({ name, kind, scope: label, line })
     else scope.set(name, kind)
@@ -244,12 +250,12 @@ function declaredNamesByScope(root: any): { name: string; kind: string; scope: s
     if (n.type === "error_set_declaration") {
       for (let j = 0; j < n.namedChildCount; j++) {
         const m = n.namedChild(j)
-        if (m.type === "identifier") declare(scope, label, String(m.text ?? ""), "error-member", lineOf(m))
+        if (m.type === "identifier") declareName(scope, label, String(m.text ?? ""), "error-member", lineOf(m))
       }
     }
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
-      if (c.type === "function_declaration") declare(scope, label, declaredName(c), "function", lineOf(c))
+      if (c.type === "function_declaration") declareName(scope, label, declaredName(c), "function", lineOf(c))
       else if (c.type === "container_field") {
         // The `name` FIELD, not the first identifier (Z28), AND the presence of a
         // `type` FIELD, which is what separates a NAMED field from a POSITIONAL one.
@@ -262,8 +268,8 @@ function declaredNamesByScope(root: any): { name: string; kind: string; scope: s
         // the arbiter duly called the `overrides` ruling FALSIFIED on it. The
         // discriminator is the missing `type`: a named field is `name: Type`.
         const nf = c.childForFieldName?.("name")
-        if (nf?.type === "identifier" && c.childForFieldName?.("type")) declare(scope, label, String(nf.text ?? ""), "member", lineOf(c))
-      } else if (c.type === "variable_declaration" && declaresANewName(c)) declare(scope, label, declaredName(c), "binding", lineOf(c))
+        if (nf?.type === "identifier" && c.childForFieldName?.("type")) declareName(scope, label, String(nf.text ?? ""), "member", lineOf(c))
+      } else if (c.type === "variable_declaration" && declaresANewName(c)) declareName(scope, label, declaredName(c), "binding", lineOf(c))
     }
     for (let i = 0; i < n.childCount; i++) {
       const c = n.child(i)

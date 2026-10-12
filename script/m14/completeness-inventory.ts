@@ -290,7 +290,16 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // PY-6, PY-7 and PY-8 all concern, and while it sat outside the required list the
     // gate had nothing to say about any of them. `exports` was worse: emitted, unpinned
     // by ANY fixture, and unrequired, so nothing in the repository could see it at all.
-    requiredKinds: ["calls", "extends", "instantiates", "uses", "contains", "imports", "references", "overrides", "exports"],
+    //
+    // ROUND 10 found the THIRD instance of the same omission with the same instrument:
+    // `implements` was emitted (333 edges over the 11,488-file population — the PY-D3/
+    // PY-26 wave's whole subject) while this row did not name it, so the inventory could
+    // report only "EMITTED but absent from requiredKinds". Named here for the same reason
+    // as the other two: a kind outside the required list cannot fail. The lane's
+    // implements fixtures (`interface-implements`, `interface-qualified-subscript-head`,
+    // and the store-heritage seam) already pin both directions, so the row is satisfiable
+    // rather than aspirational.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "imports", "references", "overrides", "exports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "python/payload-and-complexity" },
     },

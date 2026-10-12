@@ -644,7 +644,9 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
           ? mod.PYTHON_DECLARATION_SPEC
           : runLangLang === "fsharp"
             ? mod.FSHARP_DECLARATION_SPEC
-            : undefined
+            : runLangLang === "scss"
+              ? mod.SCSS_DECLARATION_SPEC
+              : undefined
       const built = await mod.buildProjectIndexFromDisk(
         path.join(ROOT, "wasm", `tree-sitter-${runLangLang}.wasm`),
         subDirs.get(sub)!.map((f) => path.join(dir, sub, f)),

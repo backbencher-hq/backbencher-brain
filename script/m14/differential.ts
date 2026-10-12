@@ -69,6 +69,19 @@ import { deriveClojureContainsTruth, deriveClojureUsesTruth, deriveClojureStatic
 // typescript's 846 lines and clojure's three.
 // M60: erlang `contains` — see script/m14/oracles/erlang-contains.ts for the rule.
 import { deriveErlangContainsTruth } from "./oracles/erlang-contains"
+// M60 python lane: the lane's OWN oracle (`script/m14/oracles/python-truth.ts`, ~1,100
+// lines) is imported here, replacing the in-file copy `derivePythonEdges`, DELETED in round 2
+// (2026-10-10): with the lane oracle wired, the copy was dead and its stub was removed entirely.
+// That copy derived six labels and stated outright that it MIRRORED `RealPythonAnalyzer` —
+// a mirror is not a second opinion, which is the rule this file's own header is built on.
+// Measured consequences of the copy: three of python's labels (`contains`, `exports`,
+// `imports`) were registered DERIVATION findings (emitted by the analyzer, compared by
+// nothing) because the copy had no rule for them, and `implements` — which the analyzer DOES
+// emit (PY-34, most-specific-label ruling) — was in the compared set with an oracle that had
+// no rule for it either, so every implements edge read as unexplained and the harness printed
+// "COMPARED WITH NO TRUTH". The lane oracle derives all ten from the tree by python's own
+// rules; see its header for the per-label policy and the independence argument.
+import { derivePythonTruth } from "./oracles/python-truth"
 // M60: rust `contains` — see script/m14/oracles/rust-contains.ts for the rule.
 import { deriveRustContainsTruth } from "./oracles/rust-contains"
 // M60 label-coverage sweep: these two oracles were BUILT (846 lines, each with
@@ -89,7 +102,6 @@ import { deriveTypeScriptUsesTruth } from "./oracles/typescript-uses"
 import { deriveSolidityEdges, deriveSolidityCallReferenceEdges } from "./oracles/solidity"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
-import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
 import { CLOJURE_CORE_BUILTINS } from "../../src/ast/real-clojure-analyzer"
 import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew, csharpTypeNameText, csharpDeclaredTypeRefs, csharpUsingDirectiveTarget } from "../../src/ast/real-csharp-analyzer"
 // RESTORED 2026-10-08: this line used to import THREE RULES (`phpStaticIncludePath`,
@@ -812,6 +824,17 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // question was most worth asking, because two grammar defects had been fixed
   // upstream of it and both changed the tree the oracle reads.
   css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
+  // graphql joins the map it was never in — and its ABSENCE was not a neutral omission:
+  // `ontology-coverage-gate.ts:322` resolves its grammar as `(LANGS as any)[LANG]?.wasm ??
+  // "tree-sitter-bash.wasm"`, so every run of the arbiter for this lane parsed all 1,911
+  // corpus files with the BASH grammar. Its instrument A (`grammarNodeTypes`) then
+  // reported the lane's absence rulings RULED-SOUND for a reason that had nothing to do
+  // with GraphQL (no sought node type exists in a bash inventory), and instrument B
+  // (`countOnTree`) counted `extends` construct sites as 0 on a bash tree — a vacuous
+  // pass, the failure mode this programme exists to avoid. The entry is byte-identical
+  // to run-fixtures.ts's (the same wasm pin, the same class, the same three extensions
+  // language-detection routes here), so the two maps cannot drift on this lane.
+  graphql: { wasm: "tree-sitter-graphql.wasm", analyzerFile: "real-graphql-analyzer", className: "RealGraphqlAnalyzer", ext: "graphql,graphqls,gql" },
   // (This entry was written twice, byte-identical, by a merge. The first copy is removed:
   // `tsc` reported TS1117 for it, and the duplicate-key detector that should have caught
   // it silently reported none — see script/m14/tmp/cs-deep-42 for why that detector's own
@@ -14570,459 +14593,6 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
   return edges
 }
 
-// Zig truth: calls (identifier + field_expression-leaf callees) and uses
-// (field access NOT in call-callee position), mirroring the family leaf
-// contract the analyzer implements (zig wave 2026-08-29): a call_expression
-// emits calls -> callee LEAF (helper -> helper, std.debug.print -> print,
-// lst.append -> append); a field_expression that is not a call's direct
-// callee emits uses -> field leaf (list.items.len -> len). Both skip bare
-// numeric/builtin tokens. This mirrors the analyzer's analyzeZigCodeRelationships
-// so the differential can verify it (it previously had NO oracle and the
-// analyzer emitted no calls/uses at all).
-export function derivePythonEdges(root: any): { label: string; from: string; target: string }[] {
-  const edges: { label: string; from: string; target: string }[] = []
-  const seen = new Set<string>()
-  const push = (label: string, target: string) => {
-    const k = label + ":" + target
-    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
-  }
-  // Mirror the analyzer's PYTHON_BUILTINS filter (imported — never duplicated).
-  const isBuiltin = (name: string): boolean =>
-    PYTHON_BUILTINS.has(name) ||
-    (name.startsWith("__") && name.endsWith("__"))
-  // Uppercase-head leaf the analyzer treats as a possible class name; only
-  // in-file declared names become instantiates (tracked via declaredTypes
-  // pass below).
-  const isUpper = (name: string): boolean => {
-    const c = name.charCodeAt(0)
-    return c >= 65 && c <= 90
-  }
-
-  // Pass 1: collect in-file declared class/enum names (the analyzer's
-  // declaredTypes gate — instantiates is only emitted for those).
-  const declaredTypes = new Set<string>()
-  const scan = (n: any) => {
-    if (n.type === "class_definition") {
-      const nameNode = n.namedChildren.find((c: any) => c.type === "identifier")
-      if (nameNode?.text) declaredTypes.add(nameNode.text)
-    }
-    for (let i = 0; i < n.namedChildCount; i++) scan(n.namedChild(i))
-  }
-  scan(root)
-
-  // Class structure maps for in-file override resolution (same contract as
-  // the analyzer's extractOverrideRelationships: base from the FIRST
-  // extends edge — Python MRO; methods registered per class).
-  const baseByClass = new Map<string, string>()
-  const classMethods = new Map<string, Set<string>>()
-  const regMethod = (cls: string | undefined, m: string) => {
-    if (!cls || !m) return
-    const set = classMethods.get(cls) ?? new Set()
-    set.add(m)
-    classMethods.set(cls, set)
-  }
-
-  // #748 (M49 dup-key family ruling, Option A): python binds the LAST
-  // definition of a name in one container scope, so an EARLIER same-name def
-  // is a PHANTOM whose body can never run. The oracle derives from BOTH bodies
-  // today (it walks every function_definition), and the analyzer's fix drops
-  // the shadowed one — so the rule has to be expressed on THIS side in the same
-  // commit, or every phantom-body edge would surface as MISSING. Container
-  // identity is the scope NODE (module / class_definition), and "symbol-level"
-  // is the analyzer's published scope model: a class opens a container and
-  // clears the function scope, a def inside a def is not a symbol (PYD5) and
-  // so cannot be a phantom. Measured before the change: 0 duplicate-name
-  // scopes across both pinned corpora (cython 475 + requests 37 files).
-  // Identity is a BYTE RANGE, never the node object or the class name: the
-  // wrappers are per-access (so a Set<Node> membership silently never holds),
-  // and container identity must be the scope node so two same-named classes
-  // stay distinct containers.
-  //
-  // A DECLARATION CHAIN is not a rebinding: `@overload` stubs and property
-  // accessors (`@property` / `@x.setter` / `@x.getter` / `@x.deleter`) coexist
-  // by design and the family ruling keeps them. MEASURED on the pinned corpora:
-  // 21 of 25 duplicate-name scopes are chains, 4 are genuine rebindings.
-  const chainLeaf = new Set(["overload", "property", "setter", "getter", "deleter"])
-  const decoratorLeaf = (d: any): string | undefined => {
-    const inner = d.namedChild(0)
-    if (!inner) return undefined
-    if (inner.type === "identifier") return inner.text
-    if (inner.type === "call") return decoratorLeaf(inner.namedChild(0))
-    const last = inner.namedChild(inner.namedChildCount - 1)
-    return last?.text
-  }
-  const isDeclarationChain = (defs: any[], name: string): boolean => {
-    for (const d of defs) {
-      const parent = d.parent
-      if (!parent || parent.type !== "decorated_definition") continue
-      for (let i = 0; i < parent.namedChildCount; i++) {
-        const c = parent.namedChild(i)
-        if (!c || c.type !== "decorator") continue
-        const leaf = decoratorLeaf(c)
-        if (leaf && chainLeaf.has(leaf)) return true
-        if (c.text.replace(/^@/, "").trim().startsWith(`${name}.`)) return true
-      }
-    }
-    return false
-  }
-  const phantoms = new Set<string>()
-  {
-    const nodeKey = (n: any): string => `${n.startIndex}:${n.endIndex}`
-    const containerKey = (n: any): string => `${n.type}:${n.startIndex}:${n.endIndex}`
-    const byContainer = new Map<string, Map<string, { key: string; node: any }[]>>()
-    const frames: { n: any; container: string; inFn: boolean }[] = [{ n: root, container: containerKey(root), inFn: false }]
-    while (frames.length > 0) {
-      const { n, container, inFn } = frames.pop()!
-      let nextContainer = container
-      let nextInFn = inFn
-      if (n.type === "class_definition" || n.type === "module") {
-        nextContainer = containerKey(n)
-        nextInFn = false
-      } else if (n.type === "function_definition") {
-        if (!inFn) {
-          const name = n.namedChildren.find((c: any) => c.type === "identifier")?.text
-          if (name) {
-            const m = byContainer.get(container) ?? new Map<string, { key: string; node: any }[]>()
-            m.set(name, [...(m.get(name) ?? []), { key: nodeKey(n), node: n }])
-            byContainer.set(container, m)
-          }
-        }
-        nextInFn = true
-      }
-      for (let i = n.namedChildCount - 1; i >= 0; i--) {
-        const c = n.namedChild(i)
-        if (c) frames.push({ n: c, container: nextContainer, inFn: nextInFn })
-      }
-    }
-    // ALTERNATIVES ARE NOT SHADOWS: same-name defs in different branches are
-    // both live, so only a rebinding INSIDE one statement block is a phantom.
-    const blockKey = (n: any): string => {
-      for (let p: any = n.parent; p; p = p.parent) {
-        if (p.type === "block") return `${p.type}:${p.startIndex}:${p.endIndex}`
-      }
-      return ""
-    }
-    for (const m of byContainer.values())
-      for (const [name, defs] of m) {
-        if (isDeclarationChain(defs.map((d) => d.node), name)) continue
-        for (let i = 0; i < defs.length - 1; i++) {
-          const later = defs.slice(i + 1).some((d) => blockKey(d.node) === blockKey(defs[i].node))
-          if (later) phantoms.add(defs[i].key)
-        }
-      }
-  }
-  const isPhantom = (n: any): boolean => phantoms.has(`${n.startIndex}:${n.endIndex}`)
-
-  // Pass 2: structural edge derivation (mirrors RealPythonAnalyzer).
-  const stack: any[] = [{ n: root, parent: null, inFn: undefined as string | undefined }]
-  while (stack.length > 0) {
-    const { n, parent, inFn } = stack.pop()!
-    const t = n.type
-    // The shadowed earlier definition — see the phantom pre-pass above. Its
-    // subtree is not walked, so it contributes no edge, exactly like the walk
-    // it mirrors.
-    if (isPhantom(n)) continue
-    // PYD5: rebind the owner ONLY when entering a symbol-level def (inFn is
-    // still undefined). A def inside a def is NOT a symbol — the calls
-    // contract attributes its body to the ENCLOSING function, so its member
-    // reads must keep the outer owner too (mirrors extractMemberUses).
-    let nextFn = inFn
-    if (t === "function_definition" && !inFn) {
-      const nameNode = n.namedChildren.find((c: any) => c.type === "identifier")
-      nextFn = nameNode?.text ?? inFn
-    }
-    // Enum flag shared by both class_definition branches below (extends
-    // derivation sets it; member registration reads it).
-    let isEnumCls = false
-
-    if (t === "class_definition") {
-      const className = n.namedChildren.find((c: any) => c.type === "identifier")?.text ?? "?"
-      const args = n.namedChildren.find((c: any) => c.type === "argument_list")
-      if (args) {
-        for (let i = 0; i < args.namedChildCount; i++) {
-          const arg = args.namedChild(i)
-          if (!arg) continue
-          // base-class LEAF only: subscript Generic[T] -> Generic,
-          // attribute a.b -> b (mirrors baseClassLeaf).
-          let leaf: string | undefined
-          if (arg.type === "identifier") leaf = arg.text
-          else if (arg.type === "subscript" || arg.type === "attribute") {
-            const inner = arg.type === "attribute"
-              ? arg.namedChild(arg.namedChildCount - 1)
-              : arg.namedChild(0)
-            leaf = inner?.text
-            if (leaf && leaf.includes(".")) leaf = leaf.split(".").pop()
-          }
-          if (leaf && leaf !== className) {
-            push("extends", leaf)
-            if (leaf === "Enum") isEnumCls = true
-            if (!baseByClass.has(className)) baseByClass.set(className, leaf)
-          }
-        }
-      }
-    }
-
-    if (t === "assignment") {
-      // annotated assignment `x: T = v` → references:declared_type (the
-      // analyzer's walk emits these from the assignment case; builtin
-      // scalars excluded; attribute-path types descend to leaves)
-      const typeNode = n.namedChildren.find((c: any) => c.type === "type")
-      if (typeNode) {
-        const stackT: any[] = [typeNode]
-        while (stackT.length > 0) {
-          const tn = stackT.pop()!
-          if (tn.type === "identifier") {
-            if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"].includes(tn.text)) push("references", tn.text)
-          } else if (tn.type !== "string" && tn.type !== "concatenated_string" && tn.type !== "none") {
-            for (let i = 0; i < tn.namedChildCount; i++) stackT.push(tn.namedChild(i))
-          }
-        }
-      }
-    }
-
-    if (t === "function_definition") {
-      // return annotation → references:return_type (builtin scalars excluded)
-      const typeNode = n.namedChildren.find((c: any) => c.type === "type")
-      if (typeNode) {
-        const stackT: any[] = [typeNode]
-        while (stackT.length > 0) {
-          const tn = stackT.pop()!
-          if (tn.type === "identifier") {
-            if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"].includes(tn.text)) push("references", tn.text)
-          } else if (tn.type !== "string" && tn.type !== "concatenated_string" && tn.type !== "none") {
-            for (let i = 0; i < tn.namedChildCount; i++) stackT.push(tn.namedChild(i))
-          }
-        }
-      }
-      // typed params → references:declared_type
-      const paramsNode = n.namedChildren.find((c: any) => c.type === "parameters")
-      if (paramsNode) {
-        for (let i = 0; i < paramsNode.namedChildCount; i++) {
-          const p = paramsNode.namedChild(i)
-          const ptype = p?.type === "typed_parameter" || p?.type === "typed_default_parameter"
-            ? p.namedChildren.find((c: any) => c.type === "type")
-            : undefined
-          if (ptype) {
-            const stackT: any[] = [ptype]
-            while (stackT.length > 0) {
-              const tn = stackT.pop()!
-              if (tn.type === "identifier") {
-                if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any"].includes(tn.text)) push("references", tn.text)
-              } else if (tn.type !== "string" && tn.type !== "concatenated_string" && tn.type !== "none") {
-                for (let j = 0; j < tn.namedChildCount; j++) stackT.push(tn.namedChild(j))
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (t === "function_definition" && parent && parent.type === "class_definition") {
-      const clsName = parent.namedChildren.find((c: any) => c.type === "identifier")?.text
-      const mname = n.namedChildren.find((c: any) => c.type === "identifier")?.text
-      regMethod(clsName, mname)
-    }
-
-    if (t === "class_definition") {
-      // register own DIRECT methods too (the generic regMethod branch above
-      // needs parent — but during the LIFO walk the class node is popped
-      // before its methods, so methods deep inside the block reach the
-      // generic branch only via their own parent chain; direct scan here is
-      // the belt-and-braces pass the analyzer does at extractClass time)
-      const clsName2 = n.namedChildren.find((c: any) => c.type === "identifier")?.text
-      const block = n.namedChildren.find((c: any) => c.type === "block")
-      if (clsName2 && block) {
-        if (isEnumCls) {
-          // Enum class: members are ONLY the analyzer's extractClass contract
-          // — direct-body constant-valued assignments (string/integer/float/
-          // true/false/none/identifier RHS). No deep scan, no method
-          // registration (enum methods are registered by the generic
-          // function_definition branch above).
-          for (let i = 0; i < block.namedChildCount; i++) {
-            const stmt = block.namedChild(i)
-            if (stmt?.type !== "expression_statement") continue
-            const assign = stmt.namedChild(0)
-            if (assign?.type !== "assignment") continue
-            const left = assign.namedChild(0)
-            const right = assign.namedChild(assign.namedChildCount - 1)
-            if (left?.type !== "identifier") continue
-            if (right && (right.type === "string" || right.type === "integer" ||
-                right.type === "float" || right.type === "true" || right.type === "false" ||
-                right.type === "none" || right.type === "identifier")) {
-              regMethod(clsName2, left.text)
-            }
-          }
-        } else {
-          // register every method declared anywhere in the class body except
-          // inside NESTED classes (methods of inner classes belong to them) —
-          // descends decorated_definition wrappers and compound statements.
-          // Class-body assignment LHS also register: the analyzer's
-          // extractAssignment class-variable branch turns `code_object = None`
-          // at class scope into a Property owned by the class, and
-          // baseDeclares treats ANY base-owned symbol as an override target
-          // (Cython's CFuncDefNode.code_object -> FuncDefNode hook pattern).
-          // Function bodies are skipped (locals are not symbols); compound
-          // statements descend (the analyzer's currentClass persists inside
-          // if/for/try at class scope). `__all__` is intercepted before the
-          // Property branch by the analyzer, so it never registers.
-          const mstack: any[] = [block]
-          while (mstack.length > 0) {
-            const m = mstack.pop()!
-            if (m.type === "function_definition") {
-              regMethod(clsName2, m.namedChildren.find((c: any) => c.type === "identifier")?.text)
-              continue
-            }
-            if (m.type === "class_definition") continue
-            if (m.type === "assignment") {
-              // #928: a CHAINED class-attribute assignment (`a = b = c`) binds EVERY
-              // name — tree-sitter nests chains RIGHT: `x = y = z = 1` is
-              // assignment(identifier x, assignment(identifier y,
-              // assignment(identifier z, integer))). This oracle registered only
-              // namedChild(0), so a subclass `def` of any non-first chain name found no
-              // base member and 10 real overrides in Cython's PyrexTypes.py (where the
-              // chain is LINE-CONTINUATION-wrapped over four lines) read UNEXPLAINED at
-              // depth. A right-nested chain has exactly one target per level, so the
-              // targets are identifier(0) of every nested assignment; the innermost
-              // right-hand side is the value, never a target. Annotated (`x: T = v`,
-              // incl. `a: T = b = c`) has a `type` child between the name and the
-              // value — the name is still namedChild(0) and the chain, if any, nests
-              // after the type. This mirrors the analyzer's class-variable branch,
-              // which owns every name of the chain as a Property of the class.
-              let node: any = m
-              while (node?.type === "assignment") {
-                const lhs = node.namedChild(0)
-                if (lhs?.type === "identifier" && lhs.text !== "__all__") regMethod(clsName2, lhs.text)
-                node = node.namedChildren.find((k: any) => k?.type === "assignment")
-              }
-              continue
-            }
-            if (m.type === "augmented_assignment" || m.type === "named_expression") {
-              const lhs = m.namedChild(0)
-              if (lhs?.type === "identifier" && lhs.text !== "__all__") regMethod(clsName2, lhs.text)
-              continue
-            }
-            for (let i = 0; i < m.namedChildCount; i++) mstack.push(m.namedChild(i))
-          }
-        }
-      }
-    }
-
-    if (t === "function_definition") {
-      // In-file overrides (mirror the analyzer's harness-companion contract):
-      // method redeclared in a subclass whose base (from the extends edges
-      // derived above) declares the same-name method. Pure clause structure.
-      // NOTE: the method's structural parent is the class BLOCK, not the
-      // class — use the node's real .parent pointer and walk up to the
-      // class_definition.
-      let owner: any = null
-      let up: any = n.parent
-      while (up) {
-        if (up.type === "class_definition") { owner = up; break }
-        if (up.type === "function_definition" || up.type === "module") break
-        up = up.parent
-      }
-      if (owner) {
-        const clsName = owner.namedChildren.find((c: any) => c.type === "identifier")?.text
-        const mname = n.namedChildren.find((c: any) => c.type === "identifier")?.text
-        if (clsName && mname) {
-          const base = baseByClass.get(clsName)
-          if (base && classMethods.get(base)?.has(mname)) {
-            push("overrides", `${base}.${mname}`)
-          }
-        }
-      }
-    }
-
-    if (t === "call") {
-      // isinstance(x, T) / issubclass(a, B): second positional arg names a
-      // type → references:instanceof_check (mirror extractDeclaredTypeRefs).
-      const fn = n.namedChild(0)
-      if (fn && (fn.text === "isinstance" || fn.text === "issubclass")) {
-        const args = n.namedChildren.find((c: any) => c.type === "argument_list")
-        const last = args && args.namedChildCount >= 2 ? args.namedChild(args.namedChildCount - 1) : undefined
-        if (last) {
-          // Same primitive exclusion as the analyzer's PRIMITIVES — self/cls
-          // are conventional method/classmethod receivers (and here `cls` is
-          // a local bound class), never type-name references (PYD cython
-          // corpus: Pipeline.py `isinstance(t, cls)` was oracle-only noise).
-          const stackT: any[] = [last]
-          while (stackT.length > 0) {
-            const tn = stackT.pop()!
-            if (tn.type === "identifier") {
-              if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"].includes(tn.text)) push("references", tn.text)
-            } else for (let i = 0; i < tn.namedChildCount; i++) stackT.push(tn.namedChild(i))
-          }
-        }
-      }
-      // Decorator-position calls (@wraps(f), @magic_arguments()): the
-      // analyzer treats decorators as metadata on the decorated symbol, not
-      // runtime call edges — the oracle must skip them identically (PYD1
-      // differential: 8 decorator-site calls were oracle-only noise).
-      let anc: any = parent
-      let inDecorator = false
-      while (anc) {
-        if (anc.type === "decorator") { inDecorator = true; break }
-        if (anc.type === "function_definition" || anc.type === "class_definition" || anc.type === "module") break
-        anc = anc.parent
-      }
-      if (!inDecorator) {
-      let fn = n.namedChild(0)
-      // M60 #902: the callee rule is the analyzer's own list of shapes that name
-      // their callee statically — identifier, attribute (leaf) — plus TRANSPARENT
-      // grouping, which unwraps. Everything else names nothing: a conditional
-      // callee is whichever branch the condition selects, a lambda callee is the
-      // lambda (not its body), and `f()()`'s callee is the RESULT of `f()` (the
-      // inner call emits its own edge). The analyzer descended into the first
-      // named child for every unlisted shape and published the `if` branch of a
-      // conditional as a callee; the oracle refused it, which is the single
-      // UNEXPLAINED edge this mirror now mirrors exactly.
-      while (fn && fn.type === "parenthesized_expression" && fn.namedChildCount >= 1) fn = fn.namedChild(0)
-      if (fn) {
-        const calleeLeaf =
-          fn.type === "identifier" ? fn.text :
-          fn.type === "attribute" ? fn.namedChild(fn.namedChildCount - 1)?.text :
-          undefined
-        if (calleeLeaf && !isBuiltin(calleeLeaf)) {
-          if (isUpper(calleeLeaf) && declaredTypes.has(calleeLeaf)) push("instantiates", calleeLeaf)
-          else if (!isUpper(calleeLeaf)) push("calls", calleeLeaf)
-        }
-      }
-      }
-    }
-
-    if (t === "attribute" && inFn && parent) {
-      const leaf = n.namedChild(n.namedChildCount - 1)
-      if (leaf && leaf.type === "identifier") {
-        // Write / call-function / call-receiver gates (byte-range compare —
-        // web-tree-sitter wrappers are per-access, identity never holds).
-        const gp = parent.parent
-        const isAssignLhs = parent.type === "assignment" &&
-          parent.namedChild(0)?.startIndex === n.startIndex && parent.namedChild(0)?.endIndex === n.endIndex
-        const gpIsAssign = gp?.type === "assignment"
-        const gpLhs = gpIsAssign ? gp!.namedChild(0) : undefined
-        const isGpAssignLhs = !!gpLhs && gpLhs.startIndex === n.startIndex && gpLhs.endIndex === n.endIndex
-        const isAugLhs = parent.type === "augmented_assignment" &&
-          parent.namedChild(0)?.startIndex === n.startIndex && parent.namedChild(0)?.endIndex === n.endIndex
-        const isCallFn = parent.type === "call" &&
-          parent.namedChild(0)?.startIndex === n.startIndex && parent.namedChild(0)?.endIndex === n.endIndex
-        const gpIsCall = gp?.type === "call"
-        const gpFn = gpIsCall ? gp!.namedChild(0) : undefined
-        const isReceiverOfCall = !!gpFn && gpFn.type === "attribute" &&
-          gpFn.startIndex === n.startIndex && gpFn.endIndex === n.endIndex
-        if (!isAssignLhs && !isGpAssignLhs && !isAugLhs && !isCallFn && !isReceiverOfCall) {
-          push("uses", leaf.text)
-        }
-      }
-    }
-
-    for (let i = n.namedChildCount - 1; i >= 0; i--) {
-      const c = n.namedChild(i)
-      if (c) stack.push({ n: c, parent: n, inFn: nextFn })
-    }
-  }
-  return edges
-}
-
 // Haskell oracle (HSD wave 2026-09-03): independently derivable truth for
 // class/instance/data/deriving/superclass structure + in-file calls. Mirrors
 // the analyzer's declared contract (see script/m14/spec/haskell-completeness.json).
@@ -23608,8 +23178,30 @@ async function main() {
         }
       }
       if (lang === "python") {
-        for (const e of derivePythonEdges(root)) {
-          ;(truth as any[]).push(e)
+        // The lane's oracle, imported — NOT the in-file mirror that used to sit in this file.
+        //
+        // The module scope the oracle attributes module-level edges to: the file's stem
+        // normalised to a legal python identifier (PY-13), derived here the same way the
+        // analyzer derives it. `from` is NOT part of the (label, target) match, so this is
+        // for sample readability rather than for the verdict; it is spelled the same only so
+        // that a reader comparing a printed row to the analyzer's does not see a difference
+        // the comparison never looked at. Regex-free, per the lane's own rule.
+        const pyBase = relPath.split("/").pop() || "module"
+        const pyDot = pyBase.lastIndexOf(".")
+        const pyStem = pyDot > 0 ? pyBase.slice(0, pyDot) : pyBase
+        let pyName = ""
+        for (let i = 0; i < pyStem.length; i++) {
+          const cc = pyStem.charCodeAt(i)
+          const ok = (cc >= 65 && cc <= 90) || (cc >= 97 && cc <= 122) || (cc >= 48 && cc <= 57) || cc === 95
+          pyName += ok ? pyStem[i] : "_"
+        }
+        if (pyName.length === 0) pyName = "module"
+        else { const f = pyName.charCodeAt(0); if (f >= 48 && f <= 57) pyName = `_${pyName}` }
+        // Shape adapter only: the oracle speaks {type, from, to}, this harness's truth rows
+        // are {label, from, target}. No rule is reinterpreted (the same adapter clojure's
+        // two rescued oracles use above).
+        for (const e of derivePythonTruth(root, pyName)) {
+          ;(truth as any[]).push({ label: e.type, from: e.from, target: e.to })
         }
       }
       if (lang === "haskell") {
@@ -24144,7 +23736,17 @@ async function main() {
 // HARNESS's own matcher before being added, so this widens what is CHECKED without
 // changing any verdict: script/m14/tmp/cs-deep-60-undercompared-labels.ts is the
 // measurement, and it is what found the gap in the first place.
-...(lang === "csharp" ? ["calls", "contains", "references", "uses", "extends", "implements", "instantiates"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
+...(lang === "csharp" ? ["calls", "contains", "references", "uses", "extends", "implements", "instantiates"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : []),
+        // PYTHON — the three labels that were registered DERIVATION findings: the analyzer
+        // emits `contains` (72,371 edges corpus-wide), `imports` (37,832 relationship rows at
+        // 1.0) and `exports`, and this allowlist dropped every one of them so the lane
+        // compared none. The lane oracle derives all three (see its sections at
+        // `walkClassBody`/`walkImports`/`walkExports`), and the whole-corpus comparison
+        // (`script/m14/python-truth-diff.ts`, nine labels) agrees with the analyzer on them,
+        // so widening the compared set records coverage that was always there rather than
+        // inventing an obligation. Adding a label HERE without the arm is the asymmetry the
+        // note above warns about; the arm is the oracle and it is wired one block up.
+        ...(lang === "python" ? ["contains", "exports", "imports"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
