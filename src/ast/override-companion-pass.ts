@@ -94,6 +94,13 @@ export interface OverrideCompanionPassStats {
    * assumed so the write-back stores the value the analyzer actually produced.
    */
   confirmedKeys: Array<{ target: string; line: number | null; confidence: number }>
+  /**
+   * THE IDENTITIES OF THE UNCONFIRMED (r-lane). Clause 4's second form asks whether these rows are STILL
+   * PRESENT AND STILL AT 0.5 after the write-back — the clause that catches a write-back which tidies a
+   * confirmed count by quietly moving the rest. Symmetric to `confirmedKeys`, and exposed for the same
+   * reason: the acceptance needs the identities, not the count.
+   */
+  stillGuessKeys: Array<{ target: string; line: number | null }>
   /** `overrides` edges still below it: the base is outside the project. */
   stillGuess: number
   /** Errors from a re-analysis; the pass keeps the first-run result for these. */
@@ -116,6 +123,7 @@ export async function populateOverrideCompanion(
     reapplied: 0,
     confirmed: 0,
     confirmedKeys: [],
+    stillGuessKeys: [],
     stillGuess: 0,
     failed: 0,
   }
@@ -179,7 +187,13 @@ export async function populateOverrideCompanion(
           line: (rel as any).line_number ?? null,
           confidence: Number((rel as any).confidence ?? 0),
         })
-      } else stats.stillGuess++
+      } else {
+        stats.stillGuess++
+        stats.stillGuessKeys.push({
+          target: String((rel as any).target ?? ""),
+          line: (rel as any).line_number ?? null,
+        })
+      }
     }
   }
   return stats
