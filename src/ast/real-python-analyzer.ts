@@ -1980,8 +1980,30 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.noteFramework(ctx, moduleName)
       if (moduleName.length > 0) {
         for (const item of itemNodes) {
-          this.pushRel(ctx, ctx.moduleName, `${moduleName}:${item.name === "*" ? "*" : item.name}`, ASTEngine.RelationshipType.Imports, 1.0, {
+        // THE BARE ITEM NAME, FOR A LOCAL MODULE ONLY. THREE lanes emit `<module>:<item>` — this one,
+        // javascript and python — and a
+        // colon makes the target path-like to the gate's `pathLikeTarget` AND is refused by
+        // `_i13_pick`'s own predicate (`instr(target_external,':') = 0`, parallel-indexer.ts:4484)
+        // — two independent refusals, measured: `imports` resolved 0 with 0 ambiguous in every lane.
+        // The edge's target is the SYMBOL it refers to; the module is already in `metadata.module`.
+        //
+        // NOT JAVA, and the count was corrected here after being written wrong: `real-java-analyzer.ts`
+        // emits `target: moduleName` with no colon at all (`:600`, `:658`), and `grails-core` measures
+        // 0 colon edges across 1,942 java files — java's `imports` zero has a different cause and must
+        // not be priced with this change.
+        //
+        // LOCAL ONLY, and the restriction is the difference between a fix and a defect: measured on
+        // the recorded ceiling, 432 (ts) + 276 (js) + 5 (py) EXTERNAL items would resolve to a
+        // project-local symbol that merely SHARES THE NAME — a false binding, not a fix. A relative
+        // (`./`, `../`) or absolute specifier is local by the grammar of the source itself; anything
+        // else keeps its current spelling untouched, which is what makes the external half provably
+        // unmoved.
+          const pyBareLocalItem = item.name !== "" && item.name !== "*" && (moduleName.startsWith(".") || moduleName.startsWith("/"))
+          this.pushRel(ctx, ctx.moduleName, pyBareLocalItem ? item.name : `${moduleName}:${item.name === "*" ? "*" : item.name}`, ASTEngine.RelationshipType.Imports, 1.0, {
             pythonSpecific: true,
+            // THE MODULE, NOW THAT IT IS NO LONGER GLUED INTO THE TARGET: for a local module the
+            // target is the bare item, and without this the module half would be LOST, not moved.
+            module: moduleName,
             // the item's BOUND name, when the source wrote one (`… as W`). Absent for a plain
             // item, because there the bound name IS the imported name the target already spells.
             ...(item.bound ? { importedAs: item.bound } : {}),
