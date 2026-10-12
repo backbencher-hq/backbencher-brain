@@ -309,6 +309,20 @@
           "why_neither_is_sound": "(a) `source` is CONDITIONAL (it can sit inside an `if`) and ORDER-dependent, so a file the edge's file reaches is not necessarily in effect at the edge's line. (b) A sole declaration elsewhere does not put the name in THIS file's scope: the declaring file may never be sourced on this path. Both would bind edges to declarations that may not hold \u2014 the failure mode `bindingInEffect` refuses everywhere else.",
           "boundary_closed": "So there is NO sound lever beneath the runtime-order boundary: every rule there either guesses or needs the runtime call path. The two candidates are priced (254 and >=189) against a class of 11,080, which closes the ruling instead of leaving it as the last word by default."
         }
+      },
+      {
+        "id": "BD17",
+        "node_type": "ontology:the 53,978 partitioned per type, and the resolution seam",
+        "status": "PARTITIONED PER TYPE, CLOSING EXACTLY \u00b7 every remaining class is a boundary FOR ITS OWN TYPE with a count and a reason \u00b7 ONE measured lever (172) is indexer-side, not analyzer-side",
+        "counts": {
+          "partition": "uses 67,700 (50,358/9,420/7,922) \u00b7 calls 45,761 (10,580/7,305/27,089, ext? 787) \u00b7 contains 32,478 all resolved (collRes 16,715) \u00b7 exports 1,652 (1,382/269/1) \u00b7 imports 570 (20/30/520) \u00b7 references 570 (20/30/520) \u00b7 overrides 85 (0/85/0). SUM 148,816 = the instrument total, CLOSES EXACTLY.",
+          "shortfall_by_type": "calls 35,181 \u00b7 uses 17,342 \u00b7 imports 550 \u00b7 references 550 \u00b7 exports 270 \u00b7 overrides 85 = 53,978.",
+          "calls_unres_boundary": "27,089 = 16,396 path-resolved externals (`type -t` = file) + 10,690 host-unresolvable + 3. The declarations are OUTSIDE the project; a per-file analyzer cannot name what does not exist, and this lane's attempt to mark the bare-name class external was MEASURED AND WITHDRAWN (82 of 435 refuted, 18.9%).",
+          "uses_unres_boundary": "7,922 environment/shell-supplied, declared nowhere in any form (BASH_SOURCE, PWD, MOUNT).",
+          "imports_references_boundary": "1,040 path-shaped, and the mechanical fix was ALREADY TRIED AND REFUTED IN THIS LANE with a measured example recorded in the source: bash resolves a relative `source` against $PWD at RUN TIME, not against the script's directory, so resolving `source ./eng/common/tools.sh` from inside eng/common/ produced the nonexistent eng/common/eng/common/tools.sh \u2014 an earlier version of that decision did exactly this and was reverted. Same runtime fact that refused this lane's `projectFile` claim. Shapes: 712 dynamic \u00b7 154 relative \u00b7 106 expansion-decided \u00b7 52 absolute \u00b7 16 identifier.",
+          "contract_classes": "calls+uses amb 16,725 \u00b7 exports amb 269 \u00b7 overrides amb 85 \u2014 every edge carries a usable field for its type (targetLine / targetResolution decline / overridesLine), falsifier run, 0 with neither. Resolvable only by changing the CONSUMER's rule, not by a spelling.",
+          "the_one_measured_lever": "172 edges whose target is declared in a file this file sources at TOP LEVEL and BEFORE the edge (of the 189 whose file merely sources it). NOT IMPLEMENTABLE AT THIS SEAM: knowing that `lib/util.sh` declares TEST_DIR requires reading lib/util.sh, which a per-file analyzer does not do, and knowing WHICH file was sourced requires $PWD, which it cannot know. Reported as an INDEXER-side opportunity with its count rather than claimed here."
+        }
       }
     ]
   },
