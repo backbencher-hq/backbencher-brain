@@ -4121,10 +4121,25 @@ export async function storeResults(
              // that distinguishes the many same-named members a C-family file
              // declares. Every other relationship type keeps line_number as a
              // SITE (where the call/read happened) and must NOT be resolved by it.
+             // JSD54: AN `overrides` TARGET IS NEVER IN THE ROW'S OWN FILE. The file
+             // that emits the row declares the OVERRIDING method, so this lookup —
+             // which matches the target's LEAF inside `fileId` — can only ever find
+             // the row's own source symbol, and the edge then claims a method
+             // overrides ITSELF. Measured on a two-file project through this entry
+             // point (script/m14/tmp/ab-override-target-probe.ts): `Derived ->
+             // Base.m`, base declared in another file, bound to `Derived.m` — while
+             // Strategy 1 of `resolveRelationships`, which runs later over the
+             // COMPLETE tables and is the only writer that can name a base, would
+             // have answered `Base.m` correctly. A row's own file cannot be evidence
+             // about the base it names, so this type always defers: the qualified
+             // pass decides it, and if that pass cannot prove it the row stays
+             // detached, which is the honest state for an external base.
              const resolvedRow =
-               relType === "contains" && relLine !== null
-                 ? (resolveContainsTargetStmt.get(projectId, targetLeaf, fileId, relLine, fileLang) as any)
-                 : (resolveTargetStmt.get(projectId, targetLeaf, fileId) as any)
+               relType === "overrides"
+                 ? null
+                 : relType === "contains" && relLine !== null
+                   ? (resolveContainsTargetStmt.get(projectId, targetLeaf, fileId, relLine, fileLang) as any)
+                   : (resolveTargetStmt.get(projectId, targetLeaf, fileId) as any)
              const targetId = resolvedRow?.id || null
  
              // is_cross_file must be honest: 1 only when the resolved target
@@ -4481,7 +4496,20 @@ export async function storeResults(
              AND brain_relationship.target_external IS NOT NULL
              AND brain_relationship.project_id = '${projectId}'
              AND INSTR(brain_relationship.target_external, '.') > 0
+             AND brain_relationship.relationship_type != 'overrides'
          `)
+
+         // JSD54: `overrides` IS EXCLUDED FROM STRATEGY 3 ABOVE, on purpose. For an
+         // override the part before the dot NAMES THE BASE (`Error.toString`, `Base.m`),
+         // and this strategy ignores it: it takes the text AFTER the first dot and binds
+         // `MIN(sym.id)` among ALL symbols with that name, so a base that no project
+         // file declares — a host global like `Error` — lands on an arbitrary member of
+         // an unrelated class. Measured (script/m14/tmp/ab-override-target-probe.ts):
+         // before this exclusion the builtin arm bound to the row's OWN method. Strategy
+         // 1 already owns every override that can be PROVEN, by exact qualified name
+         // over the complete table; what it cannot prove stays detached, which is the
+         // correct state for a base outside the project. Nothing else moves: this is the
+         // only label excluded here.
  
          // Strategy 4 (M60, review JD2): the `<module>:<item>` import form.
          // See the standalone resolver for the full note. SAME shared

@@ -12,9 +12,9 @@
   "incremental": {
     "indexed": 250,
     "errors": 0,
-    "ms": 21687
+    "ms": 20924
   },
-  "fullIndexMs": 21383,
+  "fullIndexMs": 20914,
   "rowIdentityChurn": {
     "gone": 0,
     "added": 0
