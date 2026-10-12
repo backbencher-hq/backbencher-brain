@@ -1,0 +1,4799 @@
+{
+  "schemaVersion": 2,
+  "kind": "m60-unrouted-extension-rulings",
+  "generatedAt": "2026-10-12T20:56:55.171Z",
+  "producedBy": "script/m60/unrouted-extension-rulings.ts",
+  "question": "of the extensions a grammar already reads, which are ACTUALLY fixable by a routing entry — and which are closed by a ruling, a fragment name, or a stride that disagrees with itself?",
+  "joinedAgainst": {
+    "census": {
+      "artifact": "validation/m14/measurements/unrouted-extension-census.json",
+      "generatedAt": "2026-10-12T20:47:35.159Z",
+      "fixableRows": 147
+    },
+    "rulingTable": {
+      "module": "script/m60/routing-outlier-census.ts",
+      "exported": "EXTENSION_RELATION",
+      "declaredExtensions": 44
+    }
+  },
+  "method": {
+    "sniffFilesPerExtension": 25,
+    "consensusFloor": 0.8,
+    "signatures": {
+      "shebang-shell": "bash",
+      "shebang-python": "python",
+      "shebang-node": "javascript",
+      "shebang-perl": "perl",
+      "shebang-ruby": "ruby",
+      "xml-declaration": "xml",
+      "html-doctype": "html",
+      "json-parses": "json",
+      "yaml-directive": "yaml",
+      "front-matter-fence": null,
+      "braces-unparsed": null,
+      "unknown": null,
+      "unreadable": null
+    }
+  },
+  "counts": {
+    "fixableRows": 147,
+    "actionableWithAnExistingRuling": 0,
+    "actionableWithAContentProposal": 13,
+    "needsARulingWithoutAProposal": 121,
+    "mixedStrides": 11,
+    "closedByRuling": 1,
+    "declaredAmbiguousSniff": 0,
+    "notActionableNameFragments": 12,
+    "proposalsTheGrammarItselfDeclares": 0,
+    "proposalsItsGrammarDoesNotDeclare": 8,
+    "proposalsWithNoVendoredDeclarationToCheck": 5,
+    "proposalsAwaitingTheOwningLanesStandard": 13,
+    "conflictsBetweenCensusAndContent": 11,
+    "relationshipsBehindTheContentProposals": 19835
+  },
+  "boundaries": [
+    "a signature reads the first 1 KB and knows nothing about semantics: it proposes, it does not rule",
+    "a proposal needs a dominant language-bearing signature at >= 80% of the stride; a stride that disagrees with itself is reported as mixed and proposes nothing",
+    "a filename fragment is never a work item, whatever its parse result reads",
+    "`closed-by-ruling` rows are not defects: routing them would re-add a retired extension and fail R11",
+    "the prize column is the census's own extrapolation under its declared caps; this instrument re-prices nothing"
+  ],
+  "rows": [
+    {
+      "ext": ".mdx",
+      "files": 3380,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".md",
+        "language": "markdown",
+        "pricedRelationships": 875,
+        "relationshipsScaledToWholeTextPool": 118300
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "front-matter-fence": 25
+        },
+        "dominant": "front-matter-fence",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "apollo-server/docs/source/api/apollo-server.mdx: --- title: 'API Reference: ApolloServer' api_reference: true --- This article documents the `Apollo",
+          "apollo-server/docs/source/api/express-middleware.mdx: --- title: 'API Reference: expressMiddleware' api_reference: true --- import TopLevelAwait from \".."
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".hrx",
+      "files": 3041,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 515,
+        "relationshipsScaledToWholeTextPool": 62562
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "sass-spec/spec/callable/arguments.hrx: <===> mixin/_utils.scss @use 'sass:meta'; @mixin a($args...) { b { positional: meta.inspect($",
+          "sass-spec/spec/callable/parameters.hrx: <===> mixin/trailing_comma/no_default/input.scss @mixin a($b, ) { c: $b; } d {@include a(1)} <=="
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".resx",
+      "files": 2207,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": {
+        "grammarDir": "grammars/tree-sitter-xml",
+        "declares": [
+          "xml",
+          "svg",
+          "xsd",
+          "xslt",
+          "xsl",
+          "rng"
+        ],
+        "declaresThisExtension": false
+      },
+      "awaitsTheOwningLanesStandard": {
+        "reason": "grammars/tree-sitter-xml/tree-sitter.json declares [xml, svg, xsd, xslt, xsl, rng] and does NOT name `.resx` — the lane's own standard is that routing is taken from the grammar's declaration, so this is evidence for that lane to rule on, not an entry to add"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 138,
+        "relationshipsScaledToWholeTextPool": 12177
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "xml-declaration": 24,
+          "unknown": 1
+        },
+        "dominant": "xml-declaration",
+        "dominantShare": 0.96,
+        "verdict": "consensus",
+        "excerpts": [
+          "PSScriptAnalyzer/Engine/Strings.resx:  <?xml version=\"1.0\" encoding=\"utf-8\"?> <root> <!-- Microsoft ResX Schema Version 2",
+          "PSScriptAnalyzer/Rules/Strings.resx:  <?xml version=\"1.0\" encoding=\"utf-8\"?> <root> <!-- Microsoft ResX Schema Version 2.0 "
+        ]
+      },
+      "proposal": {
+        "language": "xml",
+        "basis": "content consensus: xml-declaration on 24/25 sniffed file(s)",
+        "confidence": "medium"
+      },
+      "conflict": {
+        "censusSaid": "r",
+        "contentSays": "xml",
+        "note": "the census's spelling candidate reads it as r; the stride's content is xml-declaration (xml) — the parse is real and the routing it suggests is not necessarily right"
+      },
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".rd",
+      "files": 1366,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 221,
+        "relationshipsScaledToWholeTextPool": 12075
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "Matrix/inst/NEWS.Rd: %% Build and check from R: %% news(db = tools:::.build_news_db_from_package_NEWS_Rd(\"<Matrix>/inst/N",
+          "Matrix/man/BunchKaufman-class.Rd: \\name{BunchKaufman-class} \\title{Dense Bunch-Kaufman Factorizations} % \\docType{class} \\keyword{alge"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".check",
+      "files": 4389,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 43,
+        "relationshipsScaledToWholeTextPool": 7544
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "braces-unparsed": 15,
+          "unknown": 10
+        },
+        "dominant": "braces-unparsed",
+        "dominantShare": 0.6,
+        "verdict": "mixed",
+        "excerpts": [
+          "cabal/Cabal-tests/tests/ParserTests/regressions/all-upper-bound.check: [missing-upper-bounds] On library, these packages miss upper bounds: - somelib - alphalib - be",
+          "cabal/Cabal-tests/tests/ParserTests/regressions/assoc-cpp-options.check: [cpp-options] 'cpp-options: -traditional' is not a portable C-preprocessor flag. "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: the stride DISAGREES WITH ITSELF, so no single entry would be right — NOT proposed for routing"
+    },
+    {
+      "ext": ".jsonschema",
+      "files": 3,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": {
+        "reason": "the json grammar ships as wasm only, so there is no vendored declaration to check and this instrument cannot certify the lane's standard"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".json",
+        "language": "json",
+        "pricedRelationships": 7255,
+        "relationshipsScaledToWholeTextPool": 7255
+      },
+      "content": {
+        "filesSniffed": 3,
+        "distribution": {
+          "json-parses": 3
+        },
+        "dominant": "json-parses",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "hasura-engine/v3/crates/auth/hasura-authn/tests/auth_config.jsonschema: { \"$schema\": \"http://json-schema.org/draft-07/schema#\", \"$id\": \"https://hasura.io/jsonschemas/me",
+          "hasura-engine/v3/crates/open-dds/metadata.jsonschema: { \"$schema\": \"http://json-schema.org/draft-07/schema#\", \"title\": \"OpenDdMetadata\", \"descriptio"
+        ]
+      },
+      "proposal": {
+        "language": "json",
+        "basis": "content consensus: json-parses on 3/3 sniffed file(s)",
+        "confidence": "medium"
+      },
+      "conflict": null,
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".zsh-theme",
+      "files": 144,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".zsh",
+        "language": "bash",
+        "pricedRelationships": 972,
+        "relationshipsScaledToWholeTextPool": 5599
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 24,
+          "shebang-shell": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.96,
+        "verdict": "consensus",
+        "excerpts": [
+          "ohmyzsh/custom/themes/example.zsh-theme: # Put your custom themes in this folder. # See: https://github.com/ohmyzsh/ohmyzsh/wiki/Customizatio",
+          "ohmyzsh/themes/3den.zsh-theme: PROMPT=$'%{$fg[white]%}$(ruby_prompt_info) %{$fg_bold[cyan]%}%~%{$reset_color%}$(git_prompt_info) %{"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".erlsrc",
+      "files": 6,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".erl",
+        "language": "erlang",
+        "pricedRelationships": 2919,
+        "relationshipsScaledToWholeTextPool": 2919
+      },
+      "content": {
+        "filesSniffed": 6,
+        "distribution": {
+          "unknown": 6
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "otp/lib/xmerl/src/xmerl_sax_parser_base.erlsrc: %%-*-erlang-*- %% %CopyrightBegin% %% %% SPDX-License-Identifier: Apache-2.0 %% %% Copyright Ericsso",
+          "otp/lib/xmerl/src/xmerl_sax_parser_latin1.erlsrc: %%-*-erlang-*- %%-------------------------------------------------------------------- %% %CopyrightB"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cabal",
+      "files": 977,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 68,
+        "relationshipsScaledToWholeTextPool": 2655
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "cabal/Cabal-QuickCheck/Cabal-QuickCheck.cabal: cabal-version: 2.2 name: Cabal-QuickCheck version: 3.19.0.0 synopsis: QuickCheck",
+          "cabal/Cabal-described/Cabal-described.cabal: cabal-version: 2.2 name: Cabal-described version: 3.19.0.0 synopsis: Described f"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".darttemplate",
+      "files": 124,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".dart",
+        "language": "dart",
+        "pricedRelationships": 324,
+        "relationshipsScaledToWholeTextPool": 1607
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "dart-sdk/tools/dom/templates/callback.darttemplate: // Copyright (c) 2012, the Dart project authors. Please see the AUTHORS file // for details. All ri",
+          "dart-sdk/tools/dom/templates/dart2js_impl.darttemplate: // Copyright (c) 2012, the Dart project authors. Please see the AUTHORS file // for details. All ri"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".rockspec",
+      "files": 37,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 991,
+        "relationshipsScaledToWholeTextPool": 1467
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "kong/kong-latest.rockspec: package = \"kong\" version = \"latest\" rockspec_format = \"3.0\" supported_platforms = {\"linux\", \"macosx\"",
+          "lapis/lapis-dev-1.rockspec: package = \"lapis\" version = \"dev-1\" source = { url = \"git+https://github.com/leafo/lapis.git\" } "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".bash-completion",
+      "files": 5,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".bash",
+        "language": "bash",
+        "pricedRelationships": 1170,
+        "relationshipsScaledToWholeTextPool": 1170
+      },
+      "content": {
+        "filesSniffed": 5,
+        "distribution": {
+          "unknown": 5
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nim/tools/nim.bash-completion: # bash completion for nim -*- shell-script -*- __is_short_or_long() { ",
+          "nim/tools/nimgrep.bash-completion: # bash completion for nimgrep -*- shell-script -*- __is_short_or_long() { "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".nimf",
+      "files": 9,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".nim",
+        "language": "nim",
+        "pricedRelationships": 632,
+        "relationshipsScaledToWholeTextPool": 632
+      },
+      "content": {
+        "filesSniffed": 9,
+        "distribution": {
+          "html-doctype": 2,
+          "unknown": 7
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.778,
+        "verdict": "mixed",
+        "excerpts": [
+          "nim/testament/testamenthtml.nimf: #? stdtmpl(subsChar = '%', metaChar = '#', emit = \"outfile.write\") #import strutils # #proc htmlQuot",
+          "nim/tests/template/sunset.nimf: #? stdtmpl #proc sunsetTemplate*(current, ticker, content: string, # tabs: openA"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: the stride DISAGREES WITH ITSELF, so no single entry would be right — NOT proposed for routing"
+    },
+    {
+      "ext": ".capnp",
+      "files": 3,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 549,
+        "relationshipsScaledToWholeTextPool": 549
+      },
+      "content": {
+        "filesSniffed": 3,
+        "distribution": {
+          "unknown": 3
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "hledger/.sandstorm/sandstorm-pkgdef.capnp: @0xbc169f81a53d625c; using Spk = import \"/sandstorm/package.capnp\"; # This imports: # $SANDSTORM_",
+          "nvim-treesitter/tests/indent/capnp/test.capnp: # Copyright (c) 2013-2014 Sandstorm Development Group, Inc. and contributors # Licensed under the MI"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".gotpl",
+      "files": 20,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".go",
+        "language": "go",
+        "pricedRelationships": 502,
+        "relationshipsScaledToWholeTextPool": 502
+      },
+      "content": {
+        "filesSniffed": 20,
+        "distribution": {
+          "braces-unparsed": 18,
+          "unknown": 2
+        },
+        "dominant": "braces-unparsed",
+        "dominantShare": 0.9,
+        "verdict": "consensus",
+        "excerpts": [
+          "gql-gqlgen/codegen/api!.gotpl: {{/* Context object: codegen.Data */}} {{ reserveImport \"context\" }} {{ reserveImport \"fmt\" }} {{ ",
+          "gql-gqlgen/codegen/args.gotpl: {{ range $name, $args := .Args }} func {{$.FuncReceiver}}{{ $name }}(ctx context.Context, {{$.ECFunc"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".common",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 408,
+        "relationshipsScaledToWholeTextPool": 408
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "docker/vendor/github.com/prometheus/procfs/Makefile.common: # Copyright The Prometheus Authors # Licensed under the Apache License, Version 2.0 (the \"License\");",
+          "kubernetes/vendor/github.com/prometheus/procfs/Makefile.common: # Copyright The Prometheus Authors # Licensed under the Apache License, Version 2.0 (the \"License\");"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".c_src",
+      "files": 7,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 315,
+        "relationshipsScaledToWholeTextPool": 315
+      },
+      "content": {
+        "filesSniffed": 7,
+        "distribution": {
+          "unknown": 7
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "otp/lib/wx/api_gen/wx_extra/wxEvtHandler.c_src:  void wxEvtHandler_Connect(WxeApp *app, wxeMemEnv *memenv, wxeCommand& Ecmd) { ErlNifEnv *env = Ec",
+          "otp/lib/wx/api_gen/wx_extra/wxGraphicsRenderer.c_src: %% %% %CopyrightBegin% %% %% SPDX-License-Identifier: Apache-2.0 %% %% Copyright Ericsson AB 2018-20"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".metal",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".m",
+        "language": "objective-c",
+        "pricedRelationships": 307,
+        "relationshipsScaledToWholeTextPool": 307
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "ghostty/src/renderer/shaders/shaders.metal: #include <metal_stdlib> using namespace metal; enum Padding : uint8_t { EXTEND_LEFT = 1u, EXTE"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".gox",
+      "files": 17,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".go",
+        "language": "go",
+        "pricedRelationships": 206,
+        "relationshipsScaledToWholeTextPool": 206
+      },
+      "content": {
+        "filesSniffed": 17,
+        "distribution": {
+          "unknown": 17
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "go-tools/go/gccgoexportdata/testdata/errors.gox: ELF\u0002\u0001\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000>\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�\u001f\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000@\u0000\u0000\u0000\u0000\u0000@\u0000v\u0000s\u0000\u0001\u0000\u0000\u0000\u0017\u0000\u0000\u0000\u0001\u0000\u0000\u0000\u0019\u0000\u0000\u0000\u0001\u0000\u0000\u0000-\u0000\u0000\u0000\u0001\u0000\u0000\u00002\u0000\u0000\u0000\u0001\u0000\u0000\u0000",
+          "go-tools/go/internal/gccgoimporter/testdata/aliases.gox: v2; package aliases; prefix go; package aliases go.aliases go.aliases; type <type 1 \"A0\" = <type 2 \""
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".core",
+      "files": 28,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 181,
+        "relationshipsScaledToWholeTextPool": 203
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "otp/lib/compiler/test/compile_SUITE_data/bad_core.core: module with totally wrong syntax ",
+          "otp/lib/compiler/test/compile_SUITE_data/bad_core_tokens.core: 'unfinished atom "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".hamlet",
+      "files": 10,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 180,
+        "relationshipsScaledToWholeTextPool": 180
+      },
+      "content": {
+        "filesSniffed": 10,
+        "distribution": {
+          "unknown": 9,
+          "html-doctype": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.9,
+        "verdict": "consensus",
+        "excerpts": [
+          "hledger/hledger-web/templates/add-form.hamlet: <script> jQuery(document).ready(function() { // Set up global completers which can be attach",
+          "hledger/hledger-web/templates/balance-report.hamlet: <tr :here == journalR:.inacct> <td .top .acct> <a href=@{journalR} :here == journalR:.inacct "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cmd",
+      "files": 56,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 73,
+        "relationshipsScaledToWholeTextPool": 164
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "Argu/build.cmd: @echo off dotnet tool restore dotnet fsi build.fsx %*",
+          "FSharp.Data/build.cmd: @echo off dotnet tool restore dotnet paket restore dotnet run --project build/build.fsproj -- %"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cmake",
+      "files": 64,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 63,
+        "relationshipsScaledToWholeTextPool": 161
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "dart-http/pkgs/flutter_http_example/linux/flutter/generated_plugins.cmake: # # Generated file, do not edit. # list(APPEND FLUTTER_PLUGIN_LIST ) list(APPEND FLUTTER_FFI_PLUGI",
+          "dart-http/pkgs/flutter_http_example/windows/flutter/generated_plugins.cmake: # # Generated file, do not edit. # list(APPEND FLUTTER_PLUGIN_LIST ) list(APPEND FLUTTER_FFI_PLUGI"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".ref",
+      "files": 43,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 88,
+        "relationshipsScaledToWholeTextPool": 151
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 21,
+          "html-doctype": 4
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.84,
+        "verdict": "consensus",
+        "excerpts": [
+          "libxslt/tests/XSLTMark/alphabetize.ref: <table> <row> <city> Anytown </city> <firstname> Al </firstname> <id> 0000 </id> <lastname> Aranow <",
+          "libxslt/tests/XSLTMark/attsets.ref: <salesdata att1=\"foo\" att2=\"bar\"> <year att1=\"foo\" att2=\"bar\"> <year att1=\"foo\" att2=\"bar\"> 1997 </y"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".hlp",
+      "files": 31,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 121,
+        "relationshipsScaledToWholeTextPool": 150
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "go-tools/gopls/internal/cmd/usage/api-json.hlp: print JSON describing gopls API Usage: gopls [flags] api-json The api-json command prints a JSON",
+          "go-tools/gopls/internal/cmd/usage/bug.hlp: report a bug in gopls Usage: gopls [flags] bug "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".shakespeare",
+      "files": 6,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 150,
+        "relationshipsScaledToWholeTextPool": 150
+      },
+      "content": {
+        "filesSniffed": 6,
+        "distribution": {
+          "unknown": 6
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "hasura-engine/server/src-rsr/mssql/mssql_delete_trigger.sql.shakespeare: CREATE OR ALTER TRIGGER #{qualifiedTriggerName} ON #{qualifiedTableName} AFTER DELETE #{replicationC",
+          "hasura-engine/server/src-rsr/mssql/mssql_fetch_events.sql.shakespeare: UPDATE hdb_catalog.event_log SET locked = SYSDATETIMEOFFSET() AT TIME ZONE 'UTC' OUT"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cheatmd",
+      "files": 3,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 145,
+        "relationshipsScaledToWholeTextPool": 145
+      },
+      "content": {
+        "filesSniffed": 3,
+        "distribution": {
+          "unknown": 3
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "elixir/lib/elixir/pages/cheatsheets/enum-cheat.cheatmd: <!-- SPDX-License-Identifier: Apache-2.0 SPDX-FileCopyrightText: 2021 The Elixir Team --> # Enu",
+          "elixir/lib/elixir/pages/cheatsheets/types-cheat.cheatmd: <!-- SPDX-License-Identifier: Apache-2.0 SPDX-FileCopyrightText: 2025 The Elixir Team --> # Set"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".json5",
+      "files": 7,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".json",
+        "language": "json",
+        "pricedRelationships": 137,
+        "relationshipsScaledToWholeTextPool": 137
+      },
+      "content": {
+        "filesSniffed": 7,
+        "distribution": {
+          "braces-unparsed": 6,
+          "unknown": 1
+        },
+        "dominant": "braces-unparsed",
+        "dominantShare": 0.857,
+        "verdict": "consensus",
+        "excerpts": [
+          "apollo-server/.prettierrc.json5: { \"trailingComma\": \"all\", \"singleQuote\": true, } ",
+          "apollo-server/renovate.json5: { extends: [ \"github>apollographql/renovate-config-apollo-open-source:default.json5\", \"gro"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".rnw",
+      "files": 13,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 135,
+        "relationshipsScaledToWholeTextPool": 135
+      },
+      "content": {
+        "filesSniffed": 13,
+        "distribution": {
+          "unknown": 13
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "Matrix/inst/doc/Comparisons.Rnw: \\documentclass{article} \\usepackage{myVignette} \\usepackage[authoryear,round]{natbib} \\bibliographys",
+          "Matrix/inst/doc/Design-issues.Rnw: \\documentclass{article} % \\usepackage{myVignette} \\usepackage[authoryear,round]{natbib} \\bibliograph"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".shtml",
+      "files": 18,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": {
+        "grammarDir": "grammars/tree-sitter-html",
+        "declares": [
+          "html"
+        ],
+        "declaresThisExtension": false
+      },
+      "awaitsTheOwningLanesStandard": {
+        "reason": "grammars/tree-sitter-html/tree-sitter.json declares [html] and does NOT name `.shtml` — the lane's own standard is that routing is taken from the grammar's declaration, so this is evidence for that lane to rule on, not an entry to add"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 132,
+        "relationshipsScaledToWholeTextPool": 132
+      },
+      "content": {
+        "filesSniffed": 18,
+        "distribution": {
+          "html-doctype": 18
+        },
+        "dominant": "html-doctype",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "otp/lib/inets/examples/server_root/htdocs/config.shtml: <HTML> <HEAD> <TITLE>/ssi.html (17-Apr-1997)</TITLE> </HEAD> <BODY> <H1>/ssi.html</H1> <!-- *******",
+          "otp/lib/inets/examples/server_root/htdocs/echo.shtml: <HTML> <HEAD> <TITLE>/echo.shtml</TITLE> </HEAD> <BODY> <H1>/echo.shtml</H1> <P>DOCUMENT_NAME: <!--"
+        ]
+      },
+      "proposal": {
+        "language": "html",
+        "basis": "content consensus: html-doctype on 18/18 sniffed file(s)",
+        "confidence": "high"
+      },
+      "conflict": {
+        "censusSaid": "bash",
+        "contentSays": "html",
+        "note": "the census's spelling candidate reads it as bash; the stride's content is html-doctype (html) — the parse is real and the routing it suggests is not necessarily right"
+      },
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".config",
+      "files": 321,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": {
+        "grammarDir": "grammars/tree-sitter-xml",
+        "declares": [
+          "xml",
+          "svg",
+          "xsd",
+          "xslt",
+          "xsl",
+          "rng"
+        ],
+        "declaresThisExtension": false
+      },
+      "awaitsTheOwningLanesStandard": {
+        "reason": "grammars/tree-sitter-xml/tree-sitter.json declares [xml, svg, xsd, xslt, xsl, rng] and does NOT name `.config` — the lane's own standard is that routing is taken from the grammar's declaration, so this is evidence for that lane to rule on, not an entry to add"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 10,
+        "relationshipsScaledToWholeTextPool": 128
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "xml-declaration": 21,
+          "unknown": 4
+        },
+        "dominant": "xml-declaration",
+        "dominantShare": 0.84,
+        "verdict": "consensus",
+        "excerpts": [
+          "Argu/nuget.config: <?xml version=\"1.0\" encoding=\"utf-8\"?> <configuration> <packageSources> <!--To inherit the glo",
+          "Deedle/tests/Deedle.Tests/App.config:  <?xml version=\"1.0\" encoding=\"utf-8\"?> <configuration> <startup> <supportedRuntime version=\"v"
+        ]
+      },
+      "proposal": {
+        "language": "xml",
+        "basis": "content consensus: xml-declaration on 21/25 sniffed file(s)",
+        "confidence": "medium"
+      },
+      "conflict": {
+        "censusSaid": "c",
+        "contentSays": "xml",
+        "note": "the census's spelling candidate reads it as c; the stride's content is xml-declaration (xml) — the parse is real and the routing it suggests is not necessarily right"
+      },
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".make",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".makefile",
+        "language": "make",
+        "pricedRelationships": 125,
+        "relationshipsScaledToWholeTextPool": 125
+      },
+      "content": {
+        "filesSniffed": 3,
+        "distribution": {
+          "unreadable": 1,
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.667,
+        "verdict": "mixed",
+        "excerpts": [
+          "julia/deps/llvm-ver.make: (unreadable)",
+          "redis/deps/xxhash/build/make/multiconf.make: # ########################################################################## # multiconf.make # Copy"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: the stride DISAGREES WITH ITSELF, so no single entry would be right — NOT proposed for routing"
+    },
+    {
+      "ext": ".code",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 113,
+        "relationshipsScaledToWholeTextPool": 113
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "docker/vendor/github.com/spdx/tools-golang/LICENSE.code: The tools-golang source code is provided and may be used, at your option, under either: * Apache Lic"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".hsc",
+      "files": 12,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 109,
+        "relationshipsScaledToWholeTextPool": 109
+      },
+      "content": {
+        "filesSniffed": 12,
+        "distribution": {
+          "unknown": 11,
+          "braces-unparsed": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.917,
+        "verdict": "consensus",
+        "excerpts": [
+          "cabal/cabal-testsuite/PackageTests/ForeignLibs/src/MyForeignLib/SomeBindings.hsc: -- | Module that needs the hsc2hs preprocessor module MyForeignLib.SomeBindings where #define FOO 1",
+          "cabal/cabal-testsuite/PackageTests/HsBootHack/dep/src/DepB.hsc: module DepB where import DepA data B = B A "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".gotmpl",
+      "files": 6,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".go",
+        "language": "go",
+        "pricedRelationships": 103,
+        "relationshipsScaledToWholeTextPool": 103
+      },
+      "content": {
+        "filesSniffed": 6,
+        "distribution": {
+          "braces-unparsed": 5,
+          "unknown": 1
+        },
+        "dominant": "braces-unparsed",
+        "dominantShare": 0.833,
+        "verdict": "consensus",
+        "excerpts": [
+          "docker/api/templates/schema.gotmpl: {{/* Custom \"schema\" template for Moby; it disables generating marshaling and validation cod",
+          "docker/api/templates/server/operation.gotmpl: {{/* Custom \"operation\" template for Moby; it disables all code generation and only produces"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".tig",
+      "files": 15,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".t",
+        "language": "perl",
+        "pricedRelationships": 95,
+        "relationshipsScaledToWholeTextPool": 95
+      },
+      "content": {
+        "filesSniffed": 15,
+        "distribution": {
+          "unknown": 15
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nvim-treesitter/tests/indent/tiger/classes.tig: class A { var a := 12 method method() : int = 1 } type B = class extends A { var b := 27 ",
+          "nvim-treesitter/tests/indent/tiger/control-flow.tig: ( if 12 then 27 else 42 ; for i := 12 to 27 do 42 ; whil"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".scala-deptypes",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".scala",
+        "language": "scala",
+        "pricedRelationships": 91,
+        "relationshipsScaledToWholeTextPool": 91
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "scala3/tests/run/nats.scala-deptypes: abstract class Nat { def toInt: Int } object Nat { case class S[N <: Nat](pred: N) extends Nat {"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".gohtml",
+      "files": 4,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": {
+        "grammarDir": "grammars/tree-sitter-html",
+        "declares": [
+          "html"
+        ],
+        "declaresThisExtension": false
+      },
+      "awaitsTheOwningLanesStandard": {
+        "reason": "grammars/tree-sitter-html/tree-sitter.json declares [html] and does NOT name `.gohtml` — the lane's own standard is that routing is taken from the grammar's declaration, so this is evidence for that lane to rule on, not an entry to add"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".go",
+        "language": "go",
+        "pricedRelationships": 88,
+        "relationshipsScaledToWholeTextPool": 88
+      },
+      "content": {
+        "filesSniffed": 4,
+        "distribution": {
+          "html-doctype": 4
+        },
+        "dominant": "html-doctype",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "hasura-engine/cli/pkg/console/templates/gohtml/latest/console.gohtml: <!DOCTYPE html> <html lang=\"en-us\"> <head> <script> window.__env = { apiHost",
+          "hasura-engine/cli/pkg/console/templates/gohtml/unversioned/console.gohtml: <!DOCTYPE html> <html lang=\"en-us\"> <head> <script> window.__env = { apiHost"
+        ]
+      },
+      "proposal": {
+        "language": "html",
+        "basis": "content consensus: html-doctype on 4/4 sniffed file(s)",
+        "confidence": "medium"
+      },
+      "conflict": {
+        "censusSaid": "go",
+        "contentSays": "html",
+        "note": "the census's spelling candidate reads it as go; the stride's content is html-doctype (html) — the parse is real and the routing it suggests is not necessarily right"
+      },
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".cypher",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 71,
+        "relationshipsScaledToWholeTextPool": 71
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "gql-graphql/packages/graphql/tests/performance/databaseQuery/cypher/query.cypher: // Test: MatchNestedWithoutSubquery MATCH (this:`Movie`) MATCH (this_actors:`Person`)-[this0:ACTED_I",
+          "gql-graphql-mesh/e2e/neo4j-example/movies.cypher: CREATE CONSTRAINT IF NOT EXISTS FOR (p:Person) REQUIRE (p.name) IS UNIQUE; CREATE INDEX IF NOT EXIST"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".rbs",
+      "files": 5,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 70,
+        "relationshipsScaledToWholeTextPool": 70
+      },
+      "content": {
+        "filesSniffed": 5,
+        "distribution": {
+          "unknown": 5
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "pb-reference/src/google/protobuf/compiler/ruby/ruby_generated_code_pb.rbs: # Generated by the protocol buffer compiler. DO NOT EDIT! # This RBS interface is provided for conv",
+          "pb-reference/src/google/protobuf/compiler/ruby/ruby_generated_code_proto2_pb.rbs: # Generated by the protocol buffer compiler. DO NOT EDIT! # This RBS interface is provided for conv"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".crash_dart",
+      "files": 67,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 25,
+        "relationshipsScaledToWholeTextPool": 65
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 23,
+          "braces-unparsed": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.92,
+        "verdict": "consensus",
+        "excerpts": [
+          "dart-sdk/pkg/front_end/parser_testcases/error_recovery/constructor_recovery_bad_name_general.crash_dart: class Foo { foo.x() { // Not OK. } foo.x() : initializer = true { // Not OK. } foo",
+          "dart-sdk/pkg/front_end/parser_testcases/error_recovery/constructor_recovery_bad_name_get.crash_dart: class Foo { get foo.x() { // Not OK. } get foo.x() : initializer = true { // Not OK. "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".zsh-completion",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".zsh",
+        "language": "bash",
+        "pricedRelationships": 65,
+        "relationshipsScaledToWholeTextPool": 65
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nim/tools/nim.zsh-completion: #compdef nim # Installation note: # Please name this file as _nim (with underscore!) and copy it to",
+          "nim-lang-nimble/nimble.zsh-completion: #compdef nimble _nimble() { local line _arguments -C \\ '1: :(install init publish uninstal"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".ps1xml",
+      "files": 11,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".ps1",
+        "language": "powershell",
+        "pricedRelationships": 62,
+        "relationshipsScaledToWholeTextPool": 62
+      },
+      "content": {
+        "filesSniffed": 11,
+        "distribution": {
+          "xml-declaration": 7,
+          "unknown": 4
+        },
+        "dominant": "xml-declaration",
+        "dominantShare": 0.636,
+        "verdict": "mixed",
+        "excerpts": [
+          "PSScriptAnalyzer/Engine/ScriptAnalyzer.format.ps1xml:  <?xml version=\"1.0\" encoding=\"utf-8\" ?> <Configuration> <ViewDefinitions> <View> <Name>PSScri",
+          "PSScriptAnalyzer/Engine/ScriptAnalyzer.types.ps1xml:  <?xml version=\"1.0\" encoding=\"utf-8\" ?> <Types> <Type> <Name>Microsoft.Windows.PowerShell.Scr"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: the stride DISAGREES WITH ITSELF, so no single entry would be right — NOT proposed for routing"
+    },
+    {
+      "ext": ".cocci",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 60,
+        "relationshipsScaledToWholeTextPool": 60
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "otp/lib/crypto/c_src/check_erlang.cocci: // %CopyrightBegin% // // SPDX-License-Identifier: Apache-2.0 // // Copyright Doug Hogan 2019. All R",
+          "otp/lib/crypto/c_src/check_openssl.cocci: // %CopyrightBegin% // // SPDX-License-Identifier: Apache-2.0 // // Copyright Doug Hogan 2019. All R"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cfg",
+      "files": 151,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 9,
+        "relationshipsScaledToWholeTextPool": 54
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 5,
+          "xml-declaration": 1,
+          "braces-unparsed": 19
+        },
+        "dominant": "braces-unparsed",
+        "dominantShare": 0.76,
+        "verdict": "mixed",
+        "excerpts": [
+          "Aporia/aporia.nim.cfg: threads:on threadAnalysis:off -d:debug @if windows: tlsEmulation:on deadCodeElim:on @end --path:",
+          "Exposed/documentation-website/Writerside/writerside.cfg: <?xml version=\"1.0\" encoding=\"UTF-8\"?> <!DOCTYPE ihp SYSTEM \"https://resources.jetbrains.com/writers"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: the stride DISAGREES WITH ITSELF, so no single entry would be right — NOT proposed for routing"
+    },
+    {
+      "ext": ".clj_kondo",
+      "files": 3,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".clj",
+        "language": "clojure",
+        "pricedRelationships": 49,
+        "relationshipsScaledToWholeTextPool": 49
+      },
+      "content": {
+        "filesSniffed": 3,
+        "distribution": {
+          "unknown": 3
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "clj-kondo/.clj-kondo/imports/borkdude/deflet/borkdude/deflet.clj_kondo: (ns borkdude.deflet (:require [clj-kondo.hooks-api :as hooks-api])) (defn deflet* [children] (l",
+          "clj-kondo/corpus/.clj-kondo/hooks/better_cond.clj_kondo: (ns hooks.better-cond (:refer-clojure :exclude [cond])) (require '[clj-kondo.hooks-api :as api]) "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".rl",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 48,
+        "relationshipsScaledToWholeTextPool": 48
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "gql-ruby/graphql-c_parser/ext/graphql_c_parser_ext/lexer.rl: %%{ machine graphql_c_lexer; IDENTIFIER = [_A-Za-z][_0-9A-Za-z]*; NEWLINE = [\\c\\r\\n]"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cnf",
+      "files": 13,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 46,
+        "relationshipsScaledToWholeTextPool": 46
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 2,
+          "braces-unparsed": 8,
+          "unreadable": 15
+        },
+        "dominant": "unreadable",
+        "dominantShare": 0.6,
+        "verdict": "mixed",
+        "excerpts": [
+          "ansible/test/integration/targets/prepare_http_tests/files/openssl_legacy.cnf: openssl_conf = openssl_init [openssl_init] providers = provider_sect [provider_sect] default = def",
+          "hasura-engine/server/test-manual/postgres-replicas-with-ssl-client-certs/openssl.cnf: # Taken from OpenSSL 3.0.7 and modified according to: https://wiki.openssl.org/index.php/OpenSSL_3.0"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: the stride DISAGREES WITH ITSELF, so no single entry would be right — NOT proposed for routing"
+    },
+    {
+      "ext": ".content",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 45,
+        "relationshipsScaledToWholeTextPool": 45
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "sqlite/ext/fts3/README.content:  FTS4 CONTENT OPTION Normally, in order to create a full-text index on a dataset, the FTS4 mod"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".com",
+      "files": 4,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 39,
+        "relationshipsScaledToWholeTextPool": 39
+      },
+      "content": {
+        "filesSniffed": 4,
+        "distribution": {
+          "shebang-shell": 1,
+          "unknown": 3
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.75,
+        "verdict": "mixed",
+        "excerpts": [
+          "hledger/hledger/test/cli/addons/hledger-addon.com: #!/bin/sh echo add-on: $0 echo args: $@ ",
+          "libxslt/vms/build_xslt.com: $! BUILD_XSLT.COM $! $! Build the XSLT library $! $! Arguments: $! $! p1 - \"DEBUG\" is you want to bu"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: the stride DISAGREES WITH ITSELF, so no single entry would be right — NOT proposed for routing"
+    },
+    {
+      "ext": ".shim",
+      "files": 19,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 38,
+        "relationshipsScaledToWholeTextPool": 38
+      },
+      "content": {
+        "filesSniffed": 19,
+        "distribution": {
+          "unknown": 19
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "cabal/cabal-testsuite/PackageTests/ExtraProgPathGlobal/scripts-winpath/pkg-config.shim: path = \"FINDSH/sh.exe\" args = \"SCRIPTSWINPATHDIR/pkg-config\" ",
+          "cabal/cabal-testsuite/PackageTests/ExtraProgPathGlobal/scripts/pkg-config.shim: path = \"FINDSH/sh.exe\" args = \"SCRIPTSDIR/pkg-config\" "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".d",
+      "files": 19,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".dart",
+        "language": "dart",
+        "pricedRelationships": 36,
+        "relationshipsScaledToWholeTextPool": 36
+      },
+      "content": {
+        "filesSniffed": 20,
+        "distribution": {
+          "unknown": 17,
+          "unreadable": 2,
+          "shebang-shell": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.85,
+        "verdict": "consensus",
+        "excerpts": [
+          "bash-completion/test/fixtures/make/sample.d: sample.o: sample.c sample.h sample.h: ",
+          "gql-genqlient/generate/testdata/expandFilenames/a/b/c.d: "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".res",
+      "files": 13,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 31,
+        "relationshipsScaledToWholeTextPool": 31
+      },
+      "content": {
+        "filesSniffed": 13,
+        "distribution": {
+          "unknown": 13
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "Paket/src/Paket/paket.res: \u0000\u0000\u0000\u0000 \u0000\u0000\u0000��\u0000\u0000��\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�'\u0000\u0000 \u0000\u0000\u0000��\u0003\u0000��\u0001\u0000\u0000\u0000\u0000\u0000\u0010\u0010 \u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�PNG \u001a \u0000\u0000\u0000 IHDR\u0000\u0000\u0001\u0000\u0000\u0000\u0001\u0000\b\u0006\u0000\u0000\u0000\\r�f\u0000\u0000\u0000",
+          "fsharp/src/fsi/fsi.res: \u0000\u0000\u0000\u0000 \u0000\u0000\u0000��\u0000\u0000��\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�\u0007\u0000\u0000 \u0000\u0000\u0000��\u0003\u0000��\u0001\u0000\u0000\u0000\u0000\u0000\u0010\u0010 \u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�PNG \u001a \u0000\u0000\u0000 IHDR\u0000\u0000\u0001\u0000\u0000\u0000\u0001\u0000\b\u0006\u0000\u0000\u0000\\r�f\u0000\u0000\u0000"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cil",
+      "files": 3,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 31,
+        "relationshipsScaledToWholeTextPool": 31
+      },
+      "content": {
+        "filesSniffed": 3,
+        "distribution": {
+          "unknown": 3
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "docker/contrib/selinux/docker-af-alg-deny.cil: ;; Block AF_ALG sockets in container domains to mitigate CVE-2026-31431. ;; AF_ALG exposes the kerne",
+          "docker/contrib/selinux/docker-af-vsock-deny.cil: ;; Block AF_VSOCK sockets in container domains. ;; AF_VSOCK could let a container connect to virtual"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".sw",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".swift",
+        "language": "swift",
+        "pricedRelationships": 30,
+        "relationshipsScaledToWholeTextPool": 30
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nvim-treesitter/tests/indent/sway/main.sw: library; use ::alloc::{alloc, realloc}; use ::assert::assert; use ::option::Option::{self, *}; use "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".http",
+      "files": 11,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 28,
+        "relationshipsScaledToWholeTextPool": 28
+      },
+      "content": {
+        "filesSniffed": 11,
+        "distribution": {
+          "unknown": 11
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "Exposed/documentation-website/Writerside/snippets/exposed-spring/requests.http: ### Post \"Hello!\" POST http://localhost:8080/ Content-Type: application/json { \"text\": \"Hello!\" }",
+          "Exposed/samples/exposed-ktor-r2dbc/endpoints.http: # PROJECTS ### Create new project for Ktor POST http://localhost:8080/projects Content-Type: applic"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".hack",
+      "files": 10,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 26,
+        "relationshipsScaledToWholeTextPool": 26
+      },
+      "content": {
+        "filesSniffed": 10,
+        "distribution": {
+          "unknown": 10
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nvim-treesitter/tests/query/highlights/hack/as-foreach.hack: foreach (($array as vec[]) as $item) {} // ^ @keyword.repeat // ^ @type # Our exp",
+          "nvim-treesitter/tests/query/highlights/hack/async-functions.hack: async function func0(): void {} // ^ @type.builtin async function func1<T1 as"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".csprojtest",
+      "files": 9,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 25,
+        "relationshipsScaledToWholeTextPool": 25
+      },
+      "content": {
+        "filesSniffed": 9,
+        "distribution": {
+          "unknown": 4,
+          "xml-declaration": 5
+        },
+        "dominant": "xml-declaration",
+        "dominantShare": 0.556,
+        "verdict": "mixed",
+        "excerpts": [
+          "Paket/tests/Paket.Tests/ProjectFile/TestData/AnalyzerProject.csprojtest: <Project Sdk=\"Microsoft.NET.Sdk\"> <PropertyGroup> <TargetFramework>netstandard1.3</TargetFrame",
+          "Paket/tests/Paket.Tests/ProjectFile/TestData/EmptyCsharpGuid.csprojtest:  <?xml version=\"1.0\" encoding=\"utf-8\"?> <Project ToolsVersion=\"4.0\" DefaultTargets=\"Build\" xmlns=\"ht"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: the stride DISAGREES WITH ITSELF, so no single entry would be right — NOT proposed for routing"
+    },
+    {
+      "ext": ".changes",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 24,
+        "relationshipsScaledToWholeTextPool": 24
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "r-Rcpp/inst/tinytest/src/r-cran-testrcpppackage_0.1.0-1_amd64.changes: Format: 1.8 Date: Fri, 03 Oct 2014 08:25:46 -0500 Source: r-cran-testrcpppackage Binary: r-cran-test",
+          "r-Rcpp/inst/tinytest/src/r-cran-testrcpppackage_0.1.0-1_i386.changes: Format: 1.8 Date: Fri, 03 Oct 2014 08:25:46 -0500 Source: r-cran-testrcpppackage Binary: r-cran-test"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".m4",
+      "files": 29,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".m",
+        "language": "objective-c",
+        "pricedRelationships": 19,
+        "relationshipsScaledToWholeTextPool": 22
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "hledger/doc/common.m4: m4_dnl m4 helpers and common text used in hledger docs (the manuals, mainly). m4_dnl When Shake.hs d",
+          "hledger/hledger-lib/.date.m4: m4_dnl Date to show in man pages. Updated by \"Shake manuals\" m4_define({{_monthyear_}}, {{August 202"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".ruleset",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": {
+        "grammarDir": "grammars/tree-sitter-xml",
+        "declares": [
+          "xml",
+          "svg",
+          "xsd",
+          "xslt",
+          "xsl",
+          "rng"
+        ],
+        "declaresThisExtension": false
+      },
+      "awaitsTheOwningLanesStandard": {
+        "reason": "grammars/tree-sitter-xml/tree-sitter.json declares [xml, svg, xsd, xslt, xsl, rng] and does NOT name `.ruleset` — the lane's own standard is that routing is taken from the grammar's declaration, so this is evidence for that lane to rule on, not an entry to add"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 21,
+        "relationshipsScaledToWholeTextPool": 21
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "xml-declaration": 2
+        },
+        "dominant": "xml-declaration",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "core/tests/WebSharper.CSharp.Tests/WebSharper.CSharp.Tests.ruleset:  <?xml version=\"1.0\" encoding=\"utf-8\"?> <RuleSet Name=\"Microsoft Managed Recommended Rules\" Descript",
+          "fsharp/vsintegration/src/FSharp.ProjectSystem.Base/FSharp.ProjectSystem.Base.ruleset: <?xml version=\"1.0\" encoding=\"utf-8\"?> <RuleSet Name=\"VSSDK workaround\" Description=\"Disable imprope"
+        ]
+      },
+      "proposal": {
+        "language": "xml",
+        "basis": "content consensus: xml-declaration on 2/2 sniffed file(s)",
+        "confidence": "medium"
+      },
+      "conflict": {
+        "censusSaid": "r",
+        "contentSays": "xml",
+        "note": "the census's spelling candidate reads it as r; the stride's content is xml-declaration (xml) — the parse is real and the routing it suggests is not necessarily right"
+      },
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".hs-boot",
+      "files": 6,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".hs",
+        "language": "haskell",
+        "pricedRelationships": 18,
+        "relationshipsScaledToWholeTextPool": 18
+      },
+      "content": {
+        "filesSniffed": 6,
+        "distribution": {
+          "unknown": 6
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "cabal/cabal-testsuite/PackageTests/Backpack/Includes4/impl/A.hs-boot: module A where data A instance Show A ",
+          "cabal/cabal-testsuite/PackageTests/HsBootHack/dep/src/DepB.hs-boot: module DepB where data B "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".tftpl",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".tf",
+        "language": "terraform",
+        "pricedRelationships": 18,
+        "relationshipsScaledToWholeTextPool": 18
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nomad/e2e/terraform/provision-infra/volumes.tftpl: type = \"csi\" id = \"efs-vol0\" name = \"efs-vol0\" external_id = \"${id}\" plugin_i"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".htc",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 17,
+        "relationshipsScaledToWholeTextPool": 17
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "cython/Doc/s5/ui/default/iepngfix.htc: <public:component> <public:attach event=\"onpropertychange\" onevent=\"doFix()\" /> <script> // I"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cls",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 16,
+        "relationshipsScaledToWholeTextPool": 16
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nim/doc/nimdoc.cls: \\ProvidesClass{nimdoc}[2022/04/17, 2018/01/01 LaTeX2e nonstandard class] \\LoadClass[a4paper,11pt]{a",
+          "r-pkgdown/vignettes/test/jss.cls: %% %% This is file `jss.cls', %% generated with the docstrip utility. %% %% The original source file"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".help",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 15,
+        "relationshipsScaledToWholeTextPool": 15
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "ripgrep/crates/core/flags/doc/template.long.help: ripgrep !!VERSION!! Andrew Gallant <jamslam@gmail.com> ripgrep (rg) recursively searches the curren",
+          "ripgrep/crates/core/flags/doc/template.short.help: ripgrep !!VERSION!! Andrew Gallant <jamslam@gmail.com> ripgrep (rg) recursively searches the curren"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".g",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".go",
+        "language": "go",
+        "pricedRelationships": 14,
+        "relationshipsScaledToWholeTextPool": 14
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "dart-sdk/pkg/front_end/tool/fuzz/Dart.g: // Copyright (c) 2017, the Dart project authors. Please see the AUTHORS file // for details. All ri",
+          "dart-sdk/tools/spec_parser/Dart.g: // Copyright (c) 2017, the Dart project authors. Please see the AUTHORS file // for details. All ri"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cppm",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".cpp",
+        "language": "cpp",
+        "pricedRelationships": 13,
+        "relationshipsScaledToWholeTextPool": 13
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nlohmann-json/src/modules/json.cppm: // __ _____ _____ _____ // __| | __| | | | JSON for Modern C++ // | | |__ | | |"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".tftmpl",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": {
+        "reason": "the bash grammar ships as wasm only, so there is no vendored declaration to check and this instrument cannot certify the lane's standard"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".tf",
+        "language": "terraform",
+        "pricedRelationships": 12,
+        "relationshipsScaledToWholeTextPool": 12
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "shebang-shell": 2
+        },
+        "dominant": "shebang-shell",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "terraform-aws-components/modules/account-map/account-info.tftmpl: #!/bin/bash # This script is automatically generated by `atmos terraform account-map`. # Do not mod",
+          "terraform-aws-components/modules/aws-team-roles/iam-role-info.tftmpl: #!/bin/bash functions=() functions+=(namespace) function namespace() { echo ${namespace} } decl"
+        ]
+      },
+      "proposal": {
+        "language": "bash",
+        "basis": "content consensus: shebang-shell on 2/2 sniffed file(s)",
+        "confidence": "medium"
+      },
+      "conflict": {
+        "censusSaid": "terraform",
+        "contentSays": "bash",
+        "note": "the census's spelling candidate reads it as terraform; the stride's content is shebang-shell (bash) — the parse is real and the routing it suggests is not necessarily right"
+      },
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".hex",
+      "files": 22,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 11,
+        "relationshipsScaledToWholeTextPool": 11
+      },
+      "content": {
+        "filesSniffed": 22,
+        "distribution": {
+          "unknown": 22
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "ghostty/src/terminal/snapshot/testdata/checkpoint-ready-v1.hex: # Ghostty snapshot fixture # Kaitai type: checkpoint_record # Kaitai params: 5 # Kaitai offset: 3 # ",
+          "ghostty/src/terminal/snapshot/testdata/complete-v1.hex: # Ghostty snapshot fixture # Kaitai type: ghostty_snapshot # Kaitai params: # Kaitai offset: 0 # Wir"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".clixml",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 11,
+        "relationshipsScaledToWholeTextPool": 11
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/assets/corruptedcim.clixml: <Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"> <Obj RefId=\"0\"> "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".canvas",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": {
+        "reason": "the json grammar ships as wasm only, so there is no vendored declaration to check and this instrument cannot certify the lane's standard"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 10,
+        "relationshipsScaledToWholeTextPool": 10
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "json-parses": 2
+        },
+        "dominant": "json-parses",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "hledger/doc/RELEASING.canvas: { \"nodes\":[ {\"type\":\"text\",\"text\":\"Up-to-date help\",\"id\":\"92dda98079ab4d1e\",\"x\":80,\"y\":1080,\"widt",
+          "hledger/doc/doc-update.canvas: { \"nodes\":[ {\"id\":\"bd79b78a937684a3\",\"type\":\"group\",\"x\":-641,\"y\":140,\"width\":789,\"height\":560,\"co"
+        ]
+      },
+      "proposal": {
+        "language": "json",
+        "basis": "content consensus: json-parses on 2/2 sniffed file(s)",
+        "confidence": "medium"
+      },
+      "conflict": {
+        "censusSaid": "c",
+        "contentSays": "json",
+        "note": "the census's spelling candidate reads it as c; the stride's content is json-parses (json) — the parse is real and the routing it suggests is not necessarily right"
+      },
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".chromium",
+      "files": 3,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 10,
+        "relationshipsScaledToWholeTextPool": 10
+      },
+      "content": {
+        "filesSniffed": 3,
+        "distribution": {
+          "unknown": 3
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "dart-sdk/pkg/vm_snapshot_analysis/lib/src/assets/d3/README.chromium: Name: d3 Short Name: d3 URL: https://github.com/mbostock/d3 Version: 3.4.4 Date: Mon Mar 24 20:45:44",
+          "dart-sdk/third_party/cpu_features/README.chromium: Name: cpu_features Short Name: cpu_features URL: https://github.com/google/cpu_features Version: v0."
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cu",
+      "files": 3,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 10,
+        "relationshipsScaledToWholeTextPool": 10
+      },
+      "content": {
+        "filesSniffed": 3,
+        "distribution": {
+          "unknown": 3
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "fmt/test/cuda-test/cuda-cpp14.cu: // Direct NVCC command line example: // // nvcc ./cuda-cpp14.cu -x cu -I\"../include\" -l\"fmtd\" -L\".",
+          "nlohmann-json/tests/cuda_example/json_cuda.cu: // __ _____ _____ _____ // __| | __| | | | JSON for Modern C++ (supporting code) // |"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".rc",
+      "files": 44,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 5,
+        "relationshipsScaledToWholeTextPool": 9
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "shebang-shell": 1,
+          "unknown": 24
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.96,
+        "verdict": "consensus",
+        "excerpts": [
+          "ansible/test/integration/targets/service/files/ansible.rc: #!/bin/sh # PROVIDE: ansible_test_service # REQUIRE: FILESYSTEMS devfs # BEFORE: LOGIN # KEYWORD: ",
+          "dart-http/pkgs/flutter_http_example/windows/runner/Runner.rc: // Microsoft Visual C++ generated resource script. // #pragma code_page(65001) #include \"resource.h\""
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".hsig",
+      "files": 22,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".hs",
+        "language": "haskell",
+        "pricedRelationships": 9,
+        "relationshipsScaledToWholeTextPool": 9
+      },
+      "content": {
+        "filesSniffed": 22,
+        "distribution": {
+          "unknown": 18,
+          "braces-unparsed": 4
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.818,
+        "verdict": "consensus",
+        "excerpts": [
+          "cabal/cabal-testsuite/PackageTests/Backpack/Fail3/UnfilledSig.hsig: signature UnfilledSig where ",
+          "cabal/cabal-testsuite/PackageTests/Backpack/Fail4/lib-a/UnfilledSig.hsig: signature UnfilledSig where "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".py-tpl",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": {
+        "reason": "the python grammar ships as wasm only, so there is no vendored declaration to check and this instrument cannot certify the lane's standard"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".py",
+        "language": "python",
+        "pricedRelationships": 9,
+        "relationshipsScaledToWholeTextPool": 9
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "shebang-python": 1
+        },
+        "dominant": "shebang-python",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "wagtail/wagtail/project_template/manage.py-tpl: #!/usr/bin/env python \"\"\"Django's command-line utility for administrative tasks.\"\"\" import os import"
+        ]
+      },
+      "proposal": {
+        "language": "python",
+        "basis": "content consensus: shebang-python on 1/1 sniffed file(s)",
+        "confidence": "medium"
+      },
+      "conflict": null,
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".tfrc",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".tf",
+        "language": "terraform",
+        "pricedRelationships": 9,
+        "relationshipsScaledToWholeTextPool": 9
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "terraform/internal/command/e2etest/testdata/custom-provider-install-method/cliconfig.tfrc: provider_installation { filesystem_mirror { path = \"./fs-mirror\" } direct { exclude = ",
+          "terragrunt/test/fixtures/private-registry/env.tfrc: credentials \"__registry_host__\" { token = \"__registry_token__\" }"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".zsh-template",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".zsh",
+        "language": "bash",
+        "pricedRelationships": 8,
+        "relationshipsScaledToWholeTextPool": 8
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "ohmyzsh/templates/zshrc.zsh-template: # If you come from bash you might have to change your $PATH. # export PATH=$HOME/bin:$HOME/.local/bi"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cross-compile",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 8,
+        "relationshipsScaledToWholeTextPool": 8
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "otp/.github/dockerfiles/Dockerfile.cross-compile: ## %CopyrightBegin% ## ## SPDX-License-Identifier: Apache-2.0 ## ## Copyright Ericsson AB 2024-2025."
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".ca",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 8,
+        "relationshipsScaledToWholeTextPool": 8
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "otp/lib/diameter/test/diameter_tls_SUITE_data/Makefile.ca: # -*- makefile -*- # %CopyrightBegin% # # SPDX-License-Identifier: Apache-2.0 # # Copyright Ericsson"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".sha256",
+      "files": 9,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 8,
+        "relationshipsScaledToWholeTextPool": 8
+      },
+      "content": {
+        "filesSniffed": 9,
+        "distribution": {
+          "unknown": 9
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "bash-completion/test/fixtures/sha256sum/foo.sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 foo ",
+          "duckdb/test/mbedtls/dummy_file.sha256: �!�:��6���6\u000e^a��\u0001�\u0003 ��=��/\u0011�F8})"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".zshrc",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".zsh",
+        "language": "bash",
+        "pricedRelationships": 8,
+        "relationshipsScaledToWholeTextPool": 8
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "ohmyzsh/templates/minimal.zshrc: export ZSH=\"$HOME/.oh-my-zsh\" ZSH_THEME=\"robbyrussell\" plugins=(git) source $ZSH/oh-my-zsh.sh "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cat",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 7,
+        "relationshipsScaledToWholeTextPool": 7
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "libxslt/tests/docbook/dtd/4.1.2/docbook.cat:  -- ...................................................................... -- -- Catalog data for"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".clean",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 7,
+        "relationshipsScaledToWholeTextPool": 7
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "tree-sitter-clean/examples/hello.clean: // tree-sitter-clean example — a small module exercising the grammar's // core features: module syst"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".helpsys",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 6,
+        "relationshipsScaledToWholeTextPool": 6
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "hledger/Makefile.helpsys: # Helpers for self-documenting makefiles. # Based on http://www.cmcrossroads.com/print/article/self-"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".clang",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 6,
+        "relationshipsScaledToWholeTextPool": 6
+      },
+      "content": {
+        "filesSniffed": 4,
+        "distribution": {
+          "unknown": 1,
+          "unreadable": 3
+        },
+        "dominant": "unreadable",
+        "dominantShare": 0.75,
+        "verdict": "mixed",
+        "excerpts": [
+          "otp/.github/dockerfiles/Dockerfile.clang: ## %CopyrightBegin% ## ## SPDX-License-Identifier: Apache-2.0 ## ## Copyright Ericsson AB 2024-2025.",
+          "pb-grpc/src/ruby/ext/grpc/ext-export-truffleruby-with-ruby-abi-version.clang: (unreadable)"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: the stride DISAGREES WITH ITSELF, so no single entry would be right — NOT proposed for routing"
+    },
+    {
+      "ext": ".luacov",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".lua",
+        "language": "lua",
+        "pricedRelationships": 6,
+        "relationshipsScaledToWholeTextPool": 6
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "kong/t/pdk.luacov: runreport = true includeuntestedfiles = true modules = { [\"kong.pdk.*\"] = \".\", } ",
+          "kong/t/phase_checks.luacov: statsfile = \"t/phase_checks.stats\" reportfile = \"t/phase_checks.report\" modules = { [\"kong.pdk.*\""
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".client",
+      "files": 6,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 5,
+        "relationshipsScaledToWholeTextPool": 5
+      },
+      "content": {
+        "filesSniffed": 7,
+        "distribution": {
+          "unknown": 6,
+          "unreadable": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.857,
+        "verdict": "consensus",
+        "excerpts": [
+          "docker/daemon/libnetwork/cmd/diagnostic/Dockerfile.client: FROM alpine RUN apk add --no-cache curl COPY diagnosticClient /usr/local/bin/diagnosticClient ENTRYP",
+          "pb-grpc/examples/cpp/csm/Dockerfile.client: # Copyright 2023 The gRPC Authors # # Licensed under the Apache License, Version 2.0 (the \"License\")"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".hledger",
+      "files": 4,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 5,
+        "relationshipsScaledToWholeTextPool": 5
+      },
+      "content": {
+        "filesSniffed": 4,
+        "distribution": {
+          "unknown": 4
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "hledger/examples/debconf/all.hledger: alias Expenses=expenses alias incomes=income alias Incomes=income include [0-9]*.hledger ",
+          "hledger/examples/lots/pta-lot-tracking-tests/hledger-lots.hledger: #+hledger-lots avg_cost:false, check:true #+hledger-lots no_desc: 2025-01-01 assets:broker:usd "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".dart-sdk",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".dart",
+        "language": "dart",
+        "pricedRelationships": 5,
+        "relationshipsScaledToWholeTextPool": 5
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "dart-sdk/README.dart-sdk: The Dart SDK is a set of tools and libraries for the Dart programming language. You can find inform"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".dartemplate",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".dart",
+        "language": "dart",
+        "pricedRelationships": 4,
+        "relationshipsScaledToWholeTextPool": 4
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "dart-sdk/tools/dom/templates/html/impl/impl_SharedWorkerGlobalScope.dartemplate: // Copyright (c) 2012, the Dart project authors. Please see the AUTHORS file // for details. All ri"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".sha1",
+      "files": 4,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 4,
+        "relationshipsScaledToWholeTextPool": 4
+      },
+      "content": {
+        "filesSniffed": 4,
+        "distribution": {
+          "unknown": 4
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "dart-sdk/pkg/front_end/test/types/benchmark_data.tar.gz.sha1: 99b405b34da1ffbac3c55d2aeece5d72bb9434b4",
+          "dart-sdk/third_party/clang.tar.gz.sha1: 9eec86b20d62ad8d5bc6af617e91f01ae4354166"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".schema",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sc",
+        "language": "scala",
+        "pricedRelationships": 4,
+        "relationshipsScaledToWholeTextPool": 4
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "gql-graphql-tools/packages/load-files/tests/test-assets/4/1.schema: type MyType { f: String } ",
+          "gql-graphql-tools/packages/load-files/tests/test-assets/5/1.schema: type MyType { f: String } "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".scala-added",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".scala",
+        "language": "scala",
+        "pricedRelationships": 4,
+        "relationshipsScaledToWholeTextPool": 4
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "scala3/sbt-test/macros/i23852/Dep.scala-added: class Dep(int: Int)"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".rdf",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": {
+        "grammarDir": "grammars/tree-sitter-xml",
+        "declares": [
+          "xml",
+          "svg",
+          "xsd",
+          "xslt",
+          "xsl",
+          "rng"
+        ],
+        "declaresThisExtension": false
+      },
+      "awaitsTheOwningLanesStandard": {
+        "reason": "grammars/tree-sitter-xml/tree-sitter.json declares [xml, svg, xsd, xslt, xsl, rng] and does NOT name `.rdf` — the lane's own standard is that routing is taken from the grammar's declaration, so this is evidence for that lane to rule on, not an entry to add"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 3,
+        "relationshipsScaledToWholeTextPool": 3
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "xml-declaration": 1
+        },
+        "dominant": "xml-declaration",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "grails-core/DOAP.rdf: <?xml version=\"1.0\"?> <?xml-stylesheet type=\"text/xsl\"?> <rdf:RDF xml:lang=\"en\" xmlns=\"http"
+        ]
+      },
+      "proposal": {
+        "language": "xml",
+        "basis": "content consensus: xml-declaration on 1/1 sniffed file(s)",
+        "confidence": "medium"
+      },
+      "conflict": {
+        "censusSaid": "r",
+        "contentSays": "xml",
+        "note": "the census's spelling candidate reads it as r; the stride's content is xml-declaration (xml) — the parse is real and the routing it suggests is not necessarily right"
+      },
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".cff",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 3,
+        "relationshipsScaledToWholeTextPool": 3
+      },
+      "content": {
+        "filesSniffed": 3,
+        "distribution": {
+          "unknown": 2,
+          "unreadable": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.667,
+        "verdict": "mixed",
+        "excerpts": [
+          "duckdb/CITATION.cff: cff-version: 1.2.0 message: \"If you use this software, please cite it as below.\" authors: - family-n",
+          "julia/CITATION.cff: (unreadable)"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: the stride DISAGREES WITH ITSELF, so no single entry would be right — NOT proposed for routing"
+    },
+    {
+      "ext": ".mdown",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".md",
+        "language": "markdown",
+        "pricedRelationships": 3,
+        "relationshipsScaledToWholeTextPool": 3
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "kubernetes/vendor/github.com/JeffAshton/win_pdh/README.mdown: About win_pdh ============= win_pdh is a Windows Performance Data Helper wrapper package for Go. O"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".b",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".bash",
+        "language": "bash",
+        "pricedRelationships": 3,
+        "relationshipsScaledToWholeTextPool": 3
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "luvit/tests/fixtures/resolve.conf.b: search . nameserver 127.0.0.1 nameserver 127.0.0.2 "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".h16",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 2,
+        "relationshipsScaledToWholeTextPool": 2
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "zig/lib/libc/include/any-windows-any/windowsx.h16: /** * This file has no copyright assigned and is placed in the Public Domain. * This file is part "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".nimble-link",
+      "files": 3,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".nimble",
+        "language": "nim",
+        "pricedRelationships": 2,
+        "relationshipsScaledToWholeTextPool": 2
+      },
+      "content": {
+        "filesSniffed": 3,
+        "distribution": {
+          "unknown": 3
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nim/tests/nimble/nimbleDir/linkedPkgs/pkgA-0.1.0/pkgA.nimble-link: ../../simplePkgs/pkgA-0.1.0/pkgA.nimble ../../simplePkgs/pkgA-0.1.0/",
+          "nim/tests/nimble/nimbleDir/linkedPkgs/pkgB-#head/pkgB.nimble-link: ../../simplePkgs/pkgB-#head/pkgB.nimble ../../simplePkgs/pkgB-#head/"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".readme",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "otp/lib/compiler/test/lfe.readme: Creating the LFE-derived test suites ==================================== Here is how to create `lf",
+          "sqlite/tool/genfkey.README:  OVERVIEW The SQLite library is capable of parsing SQL foreign key constraints supplied as par"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".rego",
+      "files": 8,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 8,
+        "distribution": {
+          "unknown": 8
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "consul/test/integration/consul-container/test/envoy_extensions/testdata/policies/policy.rego: package envoy.authz import future.keywords import input.attributes.request.http as http_request d",
+          "gql-graphql-platform/src/HotChocolate/AspNetCore/test/AspNetCore.Authorization.Opa.Tests/Policies/has_age_defined.rego: # Warning: this policy exists only for testing purposes. # How to correctly validate JWT tokens in O"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".xs",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".xsd",
+        "language": "xml",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "redwood/tasks/e2e/cypress/e2e/02-cli/02-cli-commands.cy.xs: /* eslint-disable no-undef, camelcase */ /// <reference types=\"cypress\" /> const BASE_DIR = Cypress"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".release",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".r",
+        "language": "r",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "docker/vendor/github.com/miekg/dns/Makefile.release: # Makefile for releasing. # # The release is controlled from version.go. The version found there is "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".yamlx",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".yaml",
+        "language": "yaml",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "dart-sdk/pkg/front_end/testcases/dartino/compile_time_error_005.incremental.yamlx: # Copyright (c) 2017, the Dart project authors. Please see the AUTHORS file # for details. All right"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".ci",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "clj-kondo/Dockerfile.ci: FROM ubuntu:latest RUN apt-get update \\ && apt-get install -y curl ARG TARGETARCH ARG TARGETOS",
+          "tfsec/Dockerfile.ci: FROM alpine:latest # install git RUN apk add --no-cache git COPY tfsec /usr/bin/tfsec ## use a no"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".scheck",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sc",
+        "language": "scala",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "scala3/tests/neg/i8032.scheck: -- [E007] Type Mismatch Error: tests/neg/i8032.scala:1:15 ------------------------------------------"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".handlers",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "braces-unparsed": 1,
+          "unknown": 1
+        },
+        "dominant": "braces-unparsed",
+        "dominantShare": 0.5,
+        "verdict": "mixed",
+        "excerpts": [
+          "ansible/test/integration/targets/handlers/inventory.handlers: [testgroup] A B C D E [testgroup:vars] ansible_connection=local ansible_python_interpreter=\"{{ ansi",
+          "grails-core/grails-core/src/main/resources/META-INF/spring.handlers: http\\://grails.org/schema/context=org.grails.spring.context.annotation.GrailsContextNamespaceHandler"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: the stride DISAGREES WITH ITSELF, so no single entry would be right — NOT proposed for routing"
+    },
+    {
+      "ext": ".hs-pp1",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".hs",
+        "language": "haskell",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "cabal/cabal-testsuite/PackageTests/BuildToolPaths/pbts/src/MyLib1.hs-pp1: module MyLib1 (someFunc1) where someFunc1 :: Int -> Int someFunc1 x = x + {# MyConstant #} "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".hs-pp2",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".hs",
+        "language": "haskell",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "cabal/cabal-testsuite/PackageTests/BuildToolPaths/pbts/src/MyLib2.hs-pp2: module MyLib2 (someFunc2) where someFunc2 :: Int -> Int someFunc2 x = x + {# MyConstant #} "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".sha256sum",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "otp/make/ex_doc.sha256sum: 118ba88f04a1bedf665d34f3c1f6312c6d28fcbea34bb1166c74c54339e02b69 ../bin/ex_doc "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".sha1sum",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "otp/make/ex_doc.sha1sum: 8400914438b1f2b330ff1a2c86c53b31180d252f ../bin/ex_doc "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".sha",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "otp/erts/emulator/ryu/xcharconv_ryu.h.sha: 608036cc0d13785707c32fef531632a9df967bd8 "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".so",
+      "files": 17,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sol",
+        "language": "solidity",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 23,
+        "distribution": {
+          "unknown": 23
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "bash-completion/test/fixtures/shared/ld.so.conf.d/libfoo.so: ",
+          "elixir/lib/mix/test/fixtures/archive/priv/not_really_an.so: see "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".s",
+      "files": 552,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sass",
+        "language": "sass",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "cabal/cabal-testsuite/PackageTests/FFI/ForeignOptsAsm/abits/asmlib_aarch64_darwin.S:  # macOS/AArch64 (Mach-O) .macro func name .globl _\\name _\\name: .endm .text ",
+          "cabal/cabal-testsuite/PackageTests/FFI/ForeignOptsAsm/abits/asmlib_x86_64_linux.S:  .text .globl meaning_of_life_asm .type meaning_of_life_asm, @function meanin"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".tfstate",
+      "files": 228,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": {
+        "reason": "the json grammar ships as wasm only, so there is no vendored declaration to check and this instrument cannot certify the lane's standard"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".tf",
+        "language": "terraform",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "json-parses": 25
+        },
+        "dominant": "json-parses",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "terraform/internal/builtin/providers/terraform/testdata/basic.tfstate: { \"version\": 4, \"terraform_version\": \"0.13.0\", \"serial\": 0, \"lineage\": \"\", \"outp",
+          "terraform/internal/builtin/providers/terraform/testdata/complex_outputs.tfstate: { \"version\": 4, \"terraform_version\": \"0.13.0\", \"serial\": 0, \"lineage\": \"\", \"outp"
+        ]
+      },
+      "proposal": {
+        "language": "json",
+        "basis": "content consensus: json-parses on 25/25 sniffed file(s)",
+        "confidence": "high"
+      },
+      "conflict": {
+        "censusSaid": "terraform",
+        "contentSays": "json",
+        "note": "the census's spelling candidate reads it as terraform; the stride's content is json-parses (json) — the parse is real and the routing it suggests is not necessarily right"
+      },
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".mf",
+      "files": 179,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".m",
+        "language": "objective-c",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "dbeaver/plugins/org.jkiss.dbeaver.cmp.simple.ui/META-INF/MANIFEST.MF: Manifest-Version: 1.0 Bundle-ManifestVersion: 2 Bundle-Vendor: DBeaver Corp Bundle-Name: DBeaver Sch",
+          "dbeaver/plugins/org.jkiss.dbeaver.cmp.simple/META-INF/MANIFEST.MF: Manifest-Version: 1.0 Bundle-ManifestVersion: 2 Bundle-Vendor: DBeaver Corp Bundle-Name: DBeaver Sch"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".msc",
+      "files": 3,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".m",
+        "language": "objective-c",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 3,
+        "distribution": {
+          "unknown": 3
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "cython/Demos/embed/Makefile.msc: # Makefile for Microsoft C Compiler, building a DLL PYVERSION = 2.2 PYHOME = \\Python$(PYVERSION:.=) ",
+          "sqlite/Makefile.msc: # # nmake Makefile for SQLite # ####################################################################"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".msxsl",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": {
+        "grammarDir": "grammars/tree-sitter-xml",
+        "declares": [
+          "xml",
+          "svg",
+          "xsd",
+          "xslt",
+          "xsl",
+          "rng"
+        ],
+        "declaresThisExtension": false
+      },
+      "awaitsTheOwningLanesStandard": {
+        "reason": "grammars/tree-sitter-xml/tree-sitter.json declares [xml, svg, xsd, xslt, xsl, rng] and does NOT name `.msxsl` — the lane's own standard is that routing is taken from the grammar's declaration, so this is evidence for that lane to rule on, not an entry to add"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".m",
+        "language": "objective-c",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "xml-declaration": 1
+        },
+        "dominant": "xml-declaration",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "otp/lib/xmerl/test/xmlconformance.msxsl: <?xml version='1.0'?> <!-- <<<<<<< conformance.msxsl Original version copyright 1999 by Sun M"
+        ]
+      },
+      "proposal": {
+        "language": "xml",
+        "basis": "content consensus: xml-declaration on 1/1 sniffed file(s)",
+        "confidence": "medium"
+      },
+      "conflict": {
+        "censusSaid": "objective-c",
+        "contentSays": "xml",
+        "note": "the census's spelling candidate reads it as objective-c; the stride's content is xml-declaration (xml) — the parse is real and the routing it suggests is not necessarily right"
+      },
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".cert",
+      "files": 14,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 14,
+        "distribution": {
+          "unknown": 14
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "ansible/test/integration/targets/rpm_key/files/TEST-V6-NON-PQC-KEY.cert: -----BEGIN PGP PUBLIC KEY BLOCK----- Comment: 451A 6DBE 3B0F 51EA FBEF 3585 D53F 0277 62A6 C0DE A0A",
+          "apollo-server/packages/server/src/__tests__/plugin/drainHttpServer/stoppable/fixture.cert: -----BEGIN CERTIFICATE----- MIIDBzCCAe+gAwIBAgIJALpsaWTYcddKMA0GCSqGSIb3DQEBBQUAMBoxGDAWBgNV BAMMD3d"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".solaris",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sol",
+        "language": "solidity",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "clean-stdlib/Makefile.solaris: # # Makefile for the Clean Standard Environment # # # make (= make stdenv): # compiles all modul"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".c-pp",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "sqlite/ext/wasm/api/EXPORTED_FUNCTIONS.c-pp: _malloc _free _realloc _sqlite3_aggregate_context _sqlite3_auto_extension _sqlite3_backup_init _sqli"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".l",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".less",
+        "language": "css",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "jq/src/lexer.l: %{ #include <assert.h> #include \"jv_alloc.h\" #include \"compile.h\" struct lexer_param; #include \"pa"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".jsonnet",
+      "files": 7,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".json",
+        "language": "json",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 7,
+        "distribution": {
+          "unknown": 6,
+          "braces-unparsed": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 0.857,
+        "verdict": "consensus",
+        "excerpts": [
+          "waypoint/pkg/config/funcs/testdata/jsonnet/dir/computed-fields.jsonnet: local Margarita(salted) = { ingredients: [ { kind: 'Tequila Blanco', qty: 2 }, { kind: 'Li",
+          "waypoint/pkg/config/funcs/testdata/jsonnet/dir/conditionals.jsonnet: local Mojito(virgin=false, large=false) = { // A local next to fields ends with ','. local facto"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".clif",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "pb-reference/src/google/protobuf/util/python/field_mask_util.clif: from \"google/protobuf/field_mask_pyclif.h\" import * from \"third_party/protobuf/util/python/field_ma"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".multi-arch",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".m",
+        "language": "objective-c",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "shellcheck/Dockerfile.multi-arch: # Alpine image FROM alpine:latest AS alpine LABEL maintainer=\"Vidar Holen <vidar@vidarholen.net>\" AR"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".pyprojtest",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": {
+        "grammarDir": "grammars/tree-sitter-xml",
+        "declares": [
+          "xml",
+          "svg",
+          "xsd",
+          "xslt",
+          "xsl",
+          "rng"
+        ],
+        "declaresThisExtension": false
+      },
+      "awaitsTheOwningLanesStandard": {
+        "reason": "grammars/tree-sitter-xml/tree-sitter.json declares [xml, svg, xsd, xslt, xsl, rng] and does NOT name `.pyprojtest` — the lane's own standard is that routing is taken from the grammar's declaration, so this is evidence for that lane to rule on, not an entry to add"
+      },
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".py",
+        "language": "python",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "xml-declaration": 1
+        },
+        "dominant": "xml-declaration",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "Paket/tests/Paket.Tests/ProjectFile/TestData/EmptyPyGuid.pyprojtest:  <?xml version=\"1.0\" encoding=\"utf-8\"?> <Project ToolsVersion=\"4.0\" DefaultTargets=\"Build\" xmlns=\"ht"
+        ]
+      },
+      "proposal": {
+        "language": "xml",
+        "basis": "content consensus: xml-declaration on 1/1 sniffed file(s)",
+        "confidence": "medium"
+      },
+      "conflict": {
+        "censusSaid": "python",
+        "contentSays": "xml",
+        "note": "the census's spelling candidate reads it as python; the stride's content is xml-declaration (xml) — the parse is real and the routing it suggests is not necessarily right"
+      },
+      "note": "needs a ruling: the stride's content proposes the target and the excerpts are the evidence for the human ruling"
+    },
+    {
+      "ext": ".classcheck",
+      "files": 11,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 11,
+        "distribution": {
+          "unknown": 11
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "scala3/tests/link/on-custom-lib/loadClass.classcheck: EmptyClass Test Test$ ",
+          "scala3/tests/link/on-custom-lib/loadObject.classcheck: EmptyObject EmptyObject$ Test Test$ "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".hastur",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".h",
+        "language": "c",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nimony/tests/nimony/setup.hastur: # Standalone `hastur tests/nimony` rebuilds just the compiler. build nimony ",
+          "nimony/tests/setup.hastur: # Prep for the whole test tree: build the full toolchain so every # suite (nimony runner + nj/vl/dag"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cached",
+      "files": 2,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".c",
+        "language": "c",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 2,
+        "distribution": {
+          "unknown": 2
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "Paket/integrationtests/scenarios/i003275-pack-localized-netstandard/before/paket-files/paket.restore.cached:  ",
+          "Paket/integrationtests/scenarios/i003608-invalid-cache/before/paket-files/paket.restore.cached: Some not parsable File"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".cljd",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".clj",
+        "language": "clojure",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "clj-kondo/corpus/clojure_dart/awesome.cljd: (ns awesome) foo "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".nimcfg",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".nim",
+        "language": "nim",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nim/lib/pure/coro.nimcfg: -d:nimCoroutines "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".shar",
+      "files": 1,
+      "nameShape": "extension-shaped",
+      "category": "needs-a-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "bash-completion/test/fixtures/bsdtar/test.shar: "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "needs a ruling: no language-bearing signature in the stride — NOT proposed for routing"
+    },
+    {
+      "ext": ".pyx",
+      "files": 1540,
+      "nameShape": "extension-shaped",
+      "category": "closed-by-ruling",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": {
+        "relation": "other-format",
+        "lang": "python",
+        "retired": true,
+        "note": "Cython source (`cdef`/`cpdef`/`cimport`/buffer syntax): NOT Python. Was routed to the Python grammar; measured 231/270 = 85.6 % ERROR. RETIRED BY THE #913 RULING (2026-09-24): no longer routed, so nothing claims to have analyzed it"
+      },
+      "censusCandidate": {
+        "candidate": ".py",
+        "language": "python",
+        "pricedRelationships": 394,
+        "relationshipsScaledToWholeTextPool": 24223
+      },
+      "content": {
+        "filesSniffed": 25,
+        "distribution": {
+          "unknown": 25
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "cython/Cython/Parser/ConcreteSyntaxTree.pyx: cdef extern from \"graminit.c\": ctypedef struct grammar: pass cdef grammar _PyParser_",
+          "cython/Cython/Runtime/refnanny.pyx: # cython: language_level=3, auto_pickle=False, freethreading_compatible=True from cpython.ref cimpo"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT ACTIONABLE: a ruling already states this extension is not the language whose spelling it shares, so the census's parse result does not reopen it"
+    },
+    {
+      "ext": ".sh with --install should install the default",
+      "files": 1,
+      "nameShape": "suspect-name-fragment",
+      "category": "not-actionable-name-fragment",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 39,
+        "relationshipsScaledToWholeTextPool": 39
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "shebang-shell": 1
+        },
+        "dominant": "shebang-shell",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nvm/test/sourcing/Sourcing nvm.sh with --install should install the default: #!/bin/sh \\. ../common.sh die () { echo \"$@\" ; exit 1; } supports_source_options () { [ \"_$(echo"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT A WORK ITEM: the key is a filename fragment, not an extension (the census's EXTENSION_SHAPE labels it). Its files are counted and its parse result is a curiosity."
+    },
+    {
+      "ext": ".sh should use the default if available and no nvm node is loaded",
+      "files": 1,
+      "nameShape": "suspect-name-fragment",
+      "category": "not-actionable-name-fragment",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 33,
+        "relationshipsScaledToWholeTextPool": 33
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "shebang-shell": 1
+        },
+        "dominant": "shebang-shell",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nvm/test/sourcing/Sourcing nvm.sh should use the default if available and no nvm node is loaded: #!/bin/sh die () { echo \"$@\" ; exit 1; } \\. ../common.sh # We need to unload nvm again first, as "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT A WORK ITEM: the key is a filename fragment, not an extension (the census's EXTENSION_SHAPE labels it). Its files are counted and its parse result is a curiosity."
+    },
+    {
+      "ext": ".sh with zsh extendedglob should use the default",
+      "files": 1,
+      "nameShape": "suspect-name-fragment",
+      "category": "not-actionable-name-fragment",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 30,
+        "relationshipsScaledToWholeTextPool": 30
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "shebang-shell": 1
+        },
+        "dominant": "shebang-shell",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nvm/test/sourcing/Sourcing nvm.sh with zsh extendedglob should use the default: #!/bin/sh die () { echo \"$@\" ; exit 1; } \\. ../common.sh # `#` is a pattern operator only under z"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT A WORK ITEM: the key is a filename fragment, not an extension (the census's EXTENSION_SHAPE labels it). Its files are counted and its parse result is a curiosity."
+    },
+    {
+      "ext": ".sh with --no-use should not use anything",
+      "files": 1,
+      "nameShape": "suspect-name-fragment",
+      "category": "not-actionable-name-fragment",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 26,
+        "relationshipsScaledToWholeTextPool": 26
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "shebang-shell": 1
+        },
+        "dominant": "shebang-shell",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nvm/test/sourcing/Sourcing nvm.sh with --no-use should not use anything: #!/bin/sh die () { echo \"$@\" ; exit 1; } supports_source_options () { [ \"_$(echo 'echo $1' | . /d"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT A WORK ITEM: the key is a filename fragment, not an extension (the census's EXTENSION_SHAPE labels it). Its files are counted and its parse result is a curiosity."
+    },
+    {
+      "ext": ".sh should keep version if one is active",
+      "files": 1,
+      "nameShape": "suspect-name-fragment",
+      "category": "not-actionable-name-fragment",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 19,
+        "relationshipsScaledToWholeTextPool": 19
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "shebang-shell": 1
+        },
+        "dominant": "shebang-shell",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nvm/test/sourcing/Sourcing nvm.sh should keep version if one is active: #!/bin/sh die () { echo \"$*\" ; echo \"|${NVM_DIR}|\"; exit 1; } echo '0.10.1' > ../../alias/default "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT A WORK ITEM: the key is a filename fragment, not an extension (the census's EXTENSION_SHAPE labels it). Its files are counted and its parse result is a curiosity."
+    },
+    {
+      "ext": ".sh global alias bug",
+      "files": 1,
+      "nameShape": "suspect-name-fragment",
+      "category": "not-actionable-name-fragment",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 16,
+        "relationshipsScaledToWholeTextPool": 16
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "shebang-shell": 1
+        },
+        "dominant": "shebang-shell",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nvm/test/sourcing/Sourcing nvm.sh global alias bug: #!/bin/sh die () { echo \"$@\" ; exit 1; } if [ -n \"${ZSH_VERSION-}\" ]; then # these are set by om"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT A WORK ITEM: the key is a filename fragment, not an extension (the census's EXTENSION_SHAPE labels it). Its files are counted and its parse result is a curiosity."
+    },
+    {
+      "ext": ".sh with no default should return 0",
+      "files": 1,
+      "nameShape": "suspect-name-fragment",
+      "category": "not-actionable-name-fragment",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 7,
+        "relationshipsScaledToWholeTextPool": 7
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "shebang-shell": 1
+        },
+        "dominant": "shebang-shell",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nvm/test/sourcing/Sourcing nvm.sh with no default should return 0: #!/bin/sh die () { echo \"$@\" ; exit 1; } touch ../../alias/default rm ../../alias/default || die '"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT A WORK ITEM: the key is a filename fragment, not an extension (the census's EXTENSION_SHAPE labels it). Its files are counted and its parse result is a curiosity."
+    },
+    {
+      "ext": ".yaml~head",
+      "files": 1,
+      "nameShape": "suspect-name-fragment",
+      "category": "not-actionable-name-fragment",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".yaml",
+        "language": "yaml",
+        "pricedRelationships": 6,
+        "relationshipsScaledToWholeTextPool": 6
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "unknown": 1
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "hasura-engine/server/forks/hedis/stack.yaml~HEAD: resolver: lts-15.15 packages: - \".\" flags: hedis: dev: true extra-package-dbs: [] "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT A WORK ITEM: the key is a filename fragment, not an extension (the census's EXTENSION_SHAPE labels it). Its files are counted and its parse result is a curiosity."
+    },
+    {
+      "ext": ".sh should make the nvm command available",
+      "files": 1,
+      "nameShape": "suspect-name-fragment",
+      "category": "not-actionable-name-fragment",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "shebang-shell": 1
+        },
+        "dominant": "shebang-shell",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nvm/test/fast/Sourcing nvm.sh should make the nvm command available: #!/bin/sh set -ex : nvm.sh \\. ../../nvm.sh nvm "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT A WORK ITEM: the key is a filename fragment, not an extension (the census's EXTENSION_SHAPE labels it). Its files are counted and its parse result is a curiosity."
+    },
+    {
+      "ext": ".yml~",
+      "files": 1,
+      "nameShape": "suspect-name-fragment",
+      "category": "not-actionable-name-fragment",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".yml",
+        "language": "yaml",
+        "pricedRelationships": 1,
+        "relationshipsScaledToWholeTextPool": 1
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "front-matter-fence": 1
+        },
+        "dominant": "front-matter-fence",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "ansible/test/units/inventory_test_data/group_vars/noparse/all.yml~: --- YAML_FILENAME_EXTENSIONS_TEST: False "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT A WORK ITEM: the key is a filename fragment, not an extension (the census's EXTENSION_SHAPE labels it). Its files are counted and its parse result is a curiosity."
+    },
+    {
+      "ext": ".jsongenerator$converter",
+      "files": 3,
+      "nameShape": "suspect-name-fragment",
+      "category": "not-actionable-name-fragment",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".json",
+        "language": "json",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 3,
+        "distribution": {
+          "unknown": 3
+        },
+        "dominant": "unknown",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "grails-core/grails-test-examples/graphql/grails-multi-datastore-app/src/main/resources/META-INF/services/grails.plugin.json.builder.JsonGenerator$Converter: myapp.ObjectIdJsonConverter",
+          "grails-core/grails-test-examples/hibernate7/views-functional-tests/src/main/resources/META-INF/services/groovy.json.JsonGenerator$Converter: functional.tests.MyOtherConverter functional.tests.MyConverter"
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT A WORK ITEM: the key is a filename fragment, not an extension (the census's EXTENSION_SHAPE labels it). Its files are counted and its parse result is a curiosity."
+    },
+    {
+      "ext": ".sh should not modify parameters of caller",
+      "files": 1,
+      "nameShape": "suspect-name-fragment",
+      "category": "not-actionable-name-fragment",
+      "grammarDeclaration": null,
+      "awaitsTheOwningLanesStandard": null,
+      "declared": null,
+      "censusCandidate": {
+        "candidate": ".sh",
+        "language": "bash",
+        "pricedRelationships": 0,
+        "relationshipsScaledToWholeTextPool": 0
+      },
+      "content": {
+        "filesSniffed": 1,
+        "distribution": {
+          "shebang-shell": 1
+        },
+        "dominant": "shebang-shell",
+        "dominantShare": 1,
+        "verdict": "unanimous",
+        "excerpts": [
+          "nvm/test/fast/Sourcing nvm.sh should not modify parameters of caller: #!/bin/sh set -ex set -- yes : nvm.sh \\. ../../nvm.sh [ \"$1\" = yes ] "
+        ]
+      },
+      "proposal": null,
+      "conflict": null,
+      "note": "NOT A WORK ITEM: the key is a filename fragment, not an extension (the census's EXTENSION_SHAPE labels it). Its files are counted and its parse result is a curiosity."
+    }
+  ]
+}
