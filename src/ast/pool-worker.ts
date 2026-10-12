@@ -75,9 +75,7 @@ function reportStartupProblem(what: string, error: unknown): void {
   const line = `${what}: ${message}`
   if (reportedStartupProblems.has(line)) return
   reportedStartupProblems.add(line)
-  process.stderr.write(`[BB-WORKER-STARTUP] ${line}\n`)
-  startupDiagnostics.push(line.slice(0, 300))
-}  // stderr first: it is the channel the parent forwards verbatim, so this is
+  // stderr first: it is the channel the parent forwards verbatim, so this is
   // visible on the user's terminal on the very next line.
   process.stderr.write(`[BB-WORKER-STARTUP] ${line}\n`)
   startupDiagnostics.push(line.slice(0, 300))
@@ -1428,17 +1426,16 @@ process.on("message", async (msg: any) => {
     }, Math.max(1, Math.round(watchdogMs / 2)))
     slowWarmNote.unref?.()
 
-    // Timed warmup: log a note if still warming after half the parent's watchdog.
-    const warmStartedAt = Date.now()
-    const watchdogMs = Number(process.env.BB_WORKER_STARTUP_TIMEOUT_MS || 0) || 30_000
-    const slowWarmNote = setTimeout(() => {
+    // Check BB_POOL_WORKER - a misconfigured env var (e.g. BB_POOL_WORKER=0) would
+    // make the worker skip the keep-alive and exit silently. The condition is the
+    // IPC channel (process.connected), not the env var. The env var is evidence.
+    if (process.env.BB_POOL_WORKER !== "1") {
       process.stderr.write(
-        `[BB-WORKER-STARTUP] still warming after ${Math.round(watchdogMs / 2)}ms ` +
-          `(loading tree-sitter grammars); the parent's watchdog is ${watchdogMs}ms
+        `[BB-WORKER-STARTUP] forked with BB_POOL_WORKER=${JSON.stringify(process.env.BB_POOL_WORKER ?? null)} rather than "1"; ` +
+          `serving anyway -- unset BB_POOL_WORKER to use in-process indexing
 `,
       )
-    }, Math.max(1, Math.round(watchdogMs / 2)))
-    slowWarmNote.unref?.()
+    }
 
     const { engine: engineStatus, wasm: wasmStatus } = await warmUpWorker()
     // The parent has always handled `engine_fail` (parallel-indexer.ts:1557):
@@ -1475,18 +1472,6 @@ process.on("message", async (msg: any) => {
     })
 
     persistStartupDiagnostics()
-
-    if (startupDiagnostics.length > 0) {
-      // Persistent, because stderr is only visible to whoever happened to be
-      // watching the terminal. Same place parse errors already go.
-      try {
-        fs.appendFileSync(
-          bbDiagnosticsLogPath("worker-startup.log"),
-          `${new Date().toISOString()} | pid=${process.pid} | node=${process.version} | ${startupDiagnostics.join(" | ")}
-`,
-        )
-      } catch {}
-    }
   } else if (msg.type === "parse_batch") {
     const { batchId, files, projectPath, projectIndexes } = msg
     // SOL-21. A project index, when the parent built one, deserialised ONCE per worker
