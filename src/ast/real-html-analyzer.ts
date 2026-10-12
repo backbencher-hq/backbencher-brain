@@ -780,25 +780,44 @@ interface IdrefRule {
   /** The `kind` recorded on the deferred reference, so the edge says WHICH
    *  association it is rather than only that a token was found. */
   kind: string
+  /** Is this attribute's content model an ID REFERENCE **LIST** or ONE reference?
+   *
+   *  The row-per-token rule below means the edge count alone cannot answer it: an
+   *  `aria-labelledby="a"` (a list that happens to hold one token) and a
+   *  `form="outer"` (genuinely single-valued) both publish exactly one row, so a
+   *  consumer cannot tell them apart and `input@list`'s "nothing is fetched" reading
+   *  is not falsifiable from the row. The flag is published as `metadata.idrefList`
+   *  on the LIST carriers only, so "one named element because the model is single"
+   *  and "one named element because the author wrote one token" stay distinguishable.
+   *
+   *  Set from the content model, not from the corpus: the ARIA 1.2 table says
+   *  `aria-labelledby`, `aria-describedby`, `aria-details`, `aria-controls`,
+   *  `aria-owns` and `aria-flowto` are ID reference LISTs while
+   *  `aria-errormessage` and `aria-activedescendant` are single references; the HTML
+   *  Standard makes `td`/`th` `headers` and `output` `for` space-separated token
+   *  lists while `input@form` and `input@list` name one element. */
+  list: boolean
 }
 const IDREF_RULES: IdrefRule[] = [
-  { tag: "", attr: "aria-labelledby", kind: "aria-labelledby" },
-  { tag: "", attr: "aria-describedby", kind: "aria-describedby" },
-  { tag: "", attr: "aria-details", kind: "aria-details" },
-  { tag: "", attr: "aria-errormessage", kind: "aria-errormessage" },
-  { tag: "", attr: "aria-controls", kind: "aria-controls" },
-  { tag: "", attr: "aria-owns", kind: "aria-owns" },
-  { tag: "", attr: "aria-flowto", kind: "aria-flowto" },
-  { tag: "", attr: "aria-activedescendant", kind: "aria-activedescendant" },
-  { tag: "td", attr: "headers", kind: "table-header" },
-  { tag: "th", attr: "headers", kind: "table-header" },
+  { tag: "", attr: "aria-labelledby", kind: "aria-labelledby", list: true },
+  { tag: "", attr: "aria-describedby", kind: "aria-describedby", list: true },
+  { tag: "", attr: "aria-details", kind: "aria-details", list: true },
+  { tag: "", attr: "aria-errormessage", kind: "aria-errormessage", list: false },
+  { tag: "", attr: "aria-controls", kind: "aria-controls", list: true },
+  { tag: "", attr: "aria-owns", kind: "aria-owns", list: true },
+  { tag: "", attr: "aria-flowto", kind: "aria-flowto", list: true },
+  { tag: "", attr: "aria-activedescendant", kind: "aria-activedescendant", list: false },
+  { tag: "td", attr: "headers", kind: "table-header", list: true },
+  { tag: "th", attr: "headers", kind: "table-header", list: true },
   // The form owner and the datalist an input offers. Both name an element in the
   // same document through its `id`, which is why they are here and not in the
-  // resource table: nothing is fetched and nothing is navigated to.
-  { tag: "", attr: "form", kind: "form-owner" },
-  { tag: "", attr: "list", kind: "datalist" },
-  // `<output for>` names the controls whose value the output reports.
-  { tag: "output", attr: "for", kind: "output-for" },
+  // resource table: nothing is fetched and nothing is navigated to. Both are
+  // SINGLE references, which is why they carry no `idrefList`.
+  { tag: "", attr: "form", kind: "form-owner", list: false },
+  { tag: "", attr: "list", kind: "datalist", list: false },
+  // `<output for>` names the controls whose value the output reports — a
+  // space-separated token list, like `headers`.
+  { tag: "output", attr: "for", kind: "output-for", list: true },
 ]
 
 /** What `emitResource` decided, so the caller can keep its document metrics exact
@@ -808,6 +827,29 @@ type ResourceOutcome = "fetch" | "fragment" | "navigation" | "external" | "scrip
 /** Tag names whose own `class`/`id`-less presence still carries meaning for the
  *  metrics. Kept as data so the census can read the analyzer's own vocabulary. */
 const HEADING_ELEMENTS: Record<string, boolean> = table<boolean>({ h1: true, h2: true, h3: true, h4: true, h5: true, h6: true })
+
+/**
+ * THE DELEGATE'S FILE-LEVEL ACTOR — the spelling the JavaScript delegate uses for an
+ * edge whose actor is the FILE rather than a symbol, and which the embedded-block seam
+ * must translate.
+ *
+ * `"(file)"` is the family's declared sentinel (`real-javascript-analyzer.ts`
+ * `FILE_LEVEL_SOURCE`, paired there with `metadata.fileLevel: true` and pinned by that
+ * lane's own fixtures; rust, scala, kotlin, zig, graphql and nim publish it too). `(` and
+ * `)` cannot appear in an identifier at all, so it can never collide with a name.
+ *
+ * WHY THE SEAM TRANSLATES IT. The seam hands each delegate the DOCUMENT's own module
+ * name as its file path, so a module-scope row a delegate produces is a statement about
+ * THIS document — and the document IS the module here, published as its own symbol
+ * (`name: moduleName`, kind `module`). `(file)` names no such symbol, so a row left
+ * carrying it resolves at nothing, which is what the html pins that source a delegated
+ * `imports`/`calls`/`instantiates` row at the document stem exist to catch.
+ *
+ * TRANSLATION, NOT SUPPRESSION: `metadata.fileLevel` and `metadata.scopeName` stay exactly
+ * as the delegate wrote them, so the row is still marked module-scope and the delegate's
+ * module name is preserved. Only the ACTOR is respelled as the artifact it belongs to.
+ */
+const DELEGATE_FILE_ACTOR = "(file)"
 
 export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
@@ -1205,7 +1247,35 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             const forAttr = attrs["for"]
             if (forAttr && forAttr.length > 0) {
               deferred.push({
-                source: frame.nearestNamed,
+                // THE ELEMENT THAT WRITES THE REFERENCE, not the nearest named
+                // ancestor — `currentId` is the label's OWN handle when it is
+                // addressable (an `id`/`name`) and the ancestor only when it is not.
+                //
+                // This branch used `frame.nearestNamed` unconditionally, and it was
+                // the ONLY one of the four in-document reference emitters that did:
+                // the resource carriers pass `currentId` (`emitResource`'s caller),
+                // the IDREF class passes `currentId` (`owner`), the fragment href in
+                // `emitResource` passes its caller's `source`, and the lane's own F5
+                // oracle `deriveHtmlEdges` passes `next` — which is the element's own
+                // symbol name whenever it has one. MEASURED, both documents through
+                // `deriveHtmlEdges`:
+                //
+                //   scope-barriers-and-references.html (labels `lbl-later`,
+                //     `lbl-above`, `lbl-twin`, each with an id):
+                //     oracle `uses lbl-later -> declared-below`; the analyzer said
+                //     `uses app -> declared-below` — 3 rows, 100% of that file's
+                //     label associations, sourced at the wrong actor.
+                //   idref-carriers.html (`<label id="lbl" for="named-target">`):
+                //     oracle `uses lbl -> named-target`; analyzer `uses app -> ...`.
+                //
+                // A label WITHOUT identity is unaffected: `currentId` is then the
+                // nearest named ancestor, which is what identity-addressable's
+                // `<label for="query">` (no id, inside `#search-form`) pins and what
+                // the oracle also derives (`uses search-form -> query`). So this
+                // changes the actor only where an actor was available to name, and it
+                // is what makes the analyzer agree with its own truth rather than
+                // pinning a divergence in two fixtures.
+                source: currentId,
                 handle: forAttr,
                 kind: "label",
                 rel: "uses",
@@ -1234,7 +1304,14 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
               const c = atEnd ? 32 : raw.charCodeAt(i)
               if (!(c === 32 || c === 9 || c === 10 || c === 13 || c === 12)) continue
               if (i > start) {
-                deferred.push({ source: owner, handle: raw.slice(start, i), kind: rule.kind, rel: "references", line })
+                deferred.push({
+                  source: owner,
+                  handle: raw.slice(start, i),
+                  kind: rule.kind,
+                  rel: "references",
+                  list: rule.list,
+                  line,
+                })
               }
               start = i + 1
             }
@@ -1347,6 +1424,11 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             htmlSpecific: true,
             isIdref: true,
             idrefKind: ref.kind,
+            // Published for the LIST carriers only, never as `idrefList: false`: a
+            // single-valued reference and a one-token list must not read alike, and
+            // the absent/present test is the only one that survives a consumer's
+            // truthiness check (`false` and `undefined` are both falsy).
+            ...(ref.list ? { idrefList: true } : {}),
             evidenceClass: "structural",
             ...(ambiguousHandles[ref.handle] ? { ambiguousTarget: true } : {}),
           },
@@ -1942,6 +2024,13 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
         }
+        // THE DELEGATE'S FILE-LEVEL ACTOR NAMES THIS DOCUMENT (M14 cross-lane, 2026-10-11).
+        // The seam hands the delegate the document's module name as its file path, so a
+        // module-scope row is a statement about THIS document; the sentinel the javascript
+        // lane now publishes for that actor names no symbol here, and three html fixtures
+        // (`inline-embedded-code`, `embedded-heritage`, `embedded-origin-marks`) pin rows
+        // sourced at the document stem. See the constant above.
+        if (r.source === DELEGATE_FILE_ACTOR) r.source = moduleName
         r.metadata = {
           ...(r.metadata ?? {}),
           htmlEmbedded: true,
@@ -2381,6 +2470,9 @@ interface DeferredReference {
    *  for a form-control association and a navigation; `references` is the
    *  address-space naming class (css `var()`, scss `$var`, a type reference). */
   rel: "uses" | "references"
+  /** The IDREF rule's `list`, carried to the emitted row as `metadata.idrefList`.
+   *  Absent for the `label`/`anchor` classes, which name exactly one element. */
+  list?: boolean
   line: number
 }
 

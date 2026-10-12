@@ -292,14 +292,19 @@ async function worker() {
     // attribution, so it is reported on EVERY run rather than filed and forgotten:
     // a defect that is only in a commit message is a defect that comes back.
     //
-    // The five top-level type declarations are named by node type, not by a
+    // The six top-level unit declarations are named by node type, not by a
     // curated list of SymbolKinds, because `record` and `@interface` both map to
     // `class` in this lane and a kind-based list would call them non-types.
+    // `module_declaration` is the sixth (M60 java fold): a module-info.java's
+    // `Module` symbol is the file's top-level declaration and carries no owner
+    // for the same legitimate reason a top-level class does not. Before this
+    // arm existed, the fold read as +3 owner-less symbols in +3 files — the
+    // DEFINITION reporting its own blind spot, not a change in the defect.
     for (const s of syms) {
       const nt = String(s.metadata?.nodeType ?? "")
       const isTopLevelTypeDecl =
         nt === "class_declaration" || nt === "interface_declaration" || nt === "enum_declaration" ||
-        nt === "record_declaration" || nt === "annotation_type_declaration"
+        nt === "record_declaration" || nt === "annotation_type_declaration" || nt === "module_declaration"
       if (s.ownerName || isTopLevelTypeDecl) continue
       ownerlessNonType++
       ownerlessNonTypeFiles.add(L)

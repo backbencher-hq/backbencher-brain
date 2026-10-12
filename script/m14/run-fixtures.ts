@@ -1522,7 +1522,32 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // aliased re-export of a local: some local symbol exists that is NOT
       // itself in the export list under its own name (alpha as beta)
       (isJsFamily && [...symbolNames].some((sn) => !exportedNamesSet.has(sn) && topLevelNames.has(sn)))
-    const unresolvable = [...new Set(exportNames)].filter((n: string) => !topLevelNames.has(n) && !isJsModuleBinding(n))
+    // SWIFT (DERIV_EXPORTS_SWIFT4) — a RE-EXPORTED MODULE is an export of the
+    // declaring file: `public import M` (SE-0409) and `@_exported import M`
+    // re-publish M to the file's importers, and M is an importable unit by
+    // construction — the binding IS the import statement in this same file.
+    // The rule above opens "an export must name an IMPORTABLE UNIT, i.e. a name
+    // an importer can bind": a module is exactly that, and what it cannot
+    // satisfy is the second clause, "resolves to a top-level SYMBOL", because a
+    // module is not a symbol (swift's `imports` row says so in its own
+    // contract). The exemption is CORROBORATED rather than self-asserted: the
+    // file must publish an `imports` edge for that module carrying
+    // `isModuleReExport: true`, so no lane can dodge this invariant by labelling
+    // a member a module. The export row declares its own category with
+    // `type: "module"` (the same shape the swift expectation pins).
+    const reExportedModules = new Set(
+      (result.imports ?? [])
+        .filter((i: any) => i?.metadata?.isModuleReExport === true && typeof i?.module === "string")
+        .map((i: any) => i.module),
+    )
+    const moduleExportNames = new Set(
+      (result.exports ?? [])
+        .filter((e: any) => e?.type === "module" && typeof e?.name === "string" && reExportedModules.has(e.name))
+        .map((e: any) => e.name),
+    )
+    const unresolvable = [...new Set(exportNames)].filter(
+      (n: string) => !topLevelNames.has(n) && !isJsModuleBinding(n) && !moduleExportNames.has(n),
+    )
     if (unresolvable.length) {
       problems.push(`export invariant violated: export(s) ${JSON.stringify(unresolvable)} do not resolve to a top-level symbol (membership rides Contains)`)
     }
@@ -1545,7 +1570,179 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
 
 export { runLang, LANGS, matchConstraints, getParser }
 
+/**
+ * M14.0.F3 — THE STALE-HIGH DECISION RULE, pure so the selftest can drive it.
+ *
+ * `current > base` is the regression rule and it fires in ONE direction, so a lane
+ * that IMPROVES leaves its old allowance in the record. That surplus is not neutral:
+ * it is a free pass for exactly that many new failures, and the number it buys is
+ * invisible precisely because the improvement printed nothing. Measured 2026-10-11
+ * over all 48 lanes: groovy recorded 20 and measured 0, elixir 15 -> 0, java 11 -> 0,
+ * cpp 6 -> 0, kotlin 6 -> 0, scala 5 -> 0, swift 4 -> 0 — **67 failures' worth of
+ * allowance those lanes no longer needed**, every one of them masking a regression
+ * the count gate could not see (docs/analyzers/BRANCH-INVENTORY-2026-10-07.md §18).
+ *
+ * MEASURED LANES ONLY, deliberately: a lane this run did not run is not evidence
+ * about its allowance, so a scoped run neither reports another lane's surplus nor
+ * can retire it (the update path already refuses a scoped write, exit 5).
+ */
+function allowanceDrift(
+  base: Record<string, number>,
+  measured: Record<string, number>,
+): { lane: string; recorded: number; measured: number; retirable: number }[] {
+  return Object.keys(measured)
+    .filter((l) => base[l] !== undefined && measured[l] < base[l])
+    .map((l) => ({ lane: l, recorded: base[l], measured: measured[l], retirable: base[l] - measured[l] }))
+    // Biggest surplus first (the lane most able to hide a regression leads the
+    // report), lane name as the tie-break so the output is stable and diffable.
+    .sort((a, b) => b.retirable - a.retirable || (a.lane < b.lane ? -1 : 1))
+}
+
+/** Prints the surplus and returns the total failures' worth of it (0 when there is none). */
+function reportStaleHigh(drift: Array<{ lane: string; recorded: number; measured: number; retirable: number }>): number {
+  if (!drift.length) return 0
+  const total = drift.reduce((a, d) => a + d.retirable, 0)
+  console.log(
+    `\nfixture allowance STALE-HIGH — ${drift.length} lane(s) record more failing fixtures than this run measures (${total} failure(s)' worth of allowance the code no longer needs):`,
+  )
+  for (const d of drift) console.log(`  ${d.lane}: recorded ${d.recorded}, measured ${d.measured} — ${d.retirable} retirable`)
+  console.log(
+    "  Not a regression, and not a pass either: each retirable slot is a free pass for one NEW failure in that lane, which is the direction this gate cannot otherwise see. " +
+      "Retire it with a FULL run carrying --update-baseline (a scoped run refuses, because the write would drop every lane it did not measure), or fail on it explicitly with --strict-allowance.",
+  )
+  return total
+}
+
+/**
+ * The OTHER half of the same disagreement, and the same defect in its purest form:
+ * a lane this run MEASURES failing that the record does not name at all.
+ *
+ * `current > base` is inexpressible when `base[l] === undefined`, so such a lane gets
+ * no regression line, no surplus line, and a verdict that still reads `no regressions` —
+ * it is not that its allowance is too high, it is that it has no allowance to compare
+ * against, and therefore no number at all to re-measure. Measured 2026-10-11: the record
+ * carries all 48 lanes, so nothing is unreported today — this is the LATENT half, the one
+ * that fires when a lane is added to LANGS (every wave in this milestone adds lanes and
+ * fixtures) or when a baseline is written before a lane exists.
+ *
+ * It is also why the failing-set gate's parenthetical had to change: it used to say a lane
+ * absent from `fixture-baseline.failing.json` was covered by the count gate, which is
+ * exactly false for a lane the count gate cannot name.
+ *
+ * REPORTED, not fatal, by the same rule as the surplus: standing up a lane is building,
+ * not regressing, so a gate may not go red on it (exit 4 stays the regression exit).
+ * `--strict-allowance` fails on it (exit 7) for whoever wants the record enforced.
+ */
+function unrecordedLanes(
+  base: Record<string, number>,
+  measured: Record<string, number>,
+): { lane: string; measured: number }[] {
+  return Object.keys(measured)
+    .filter((l) => measured[l] > 0 && base[l] === undefined)
+    .map((l) => ({ lane: l, measured: measured[l] }))
+    // Most failures first, lane name as the tie-break: the same ordering rule as the
+    // surplus report, so two runs over the same tree print byte-identical lines.
+    .sort((a, b) => b.measured - a.measured || (a.lane < b.lane ? -1 : 1))
+}
+
+/** Prints the unrecorded lanes and returns the failures they carry (0 when there are none). */
+function reportUnrecorded(rows: Array<{ lane: string; measured: number }>): number {
+  if (!rows.length) return 0
+  const total = rows.reduce((a, r) => a + r.measured, 0)
+  console.log(
+    `\nfixture baseline UNRECORDED — ${rows.length} lane(s) fail in this tree with no row in the record (${total} failure(s) no number can compare):`,
+  )
+  for (const r of rows) console.log(`  ${r.lane}: measured ${r.measured}, recorded — nothing`)
+  console.log(
+    "  The count gate is `current > base`, which cannot fire without a base: these failures are gated by nothing at all. " +
+      "Record them with a FULL run carrying --update-baseline, or fail on them explicitly with --strict-allowance.",
+  )
+  return total
+}
+
+/** Drives `allowanceDrift` on the cases the report has to get right. It does not stand up a
+ *  repository: the end-to-end path (a real baseline, a real run, the exit codes) is the gate's own
+ *  run, and the negative controls recorded in BRANCH-INVENTORY §19 are what prove that path can fire. */
+function selftestAllowance(): number {
+  const cases: Array<{ name: string; base: Record<string, number>; measured: Record<string, number>; want: string[]; wantSurplus: number }> = [
+    {
+      name: "lanes measuring fewer than they record -> surplus, biggest first",
+      base: { groovy: 20, cpp: 6, vue: 7 },
+      measured: { groovy: 0, cpp: 0, vue: 7 },
+      want: ["groovy:20->0", "cpp:6->0"],
+      wantSurplus: 26,
+    },
+    { name: "a lane at its baseline -> nothing to retire", base: { vue: 7 }, measured: { vue: 7 }, want: [], wantSurplus: 0 },
+    {
+      name: "a lane WORSE than its record -> the regression rule's business, not this one's",
+      base: { vue: 7 },
+      measured: { vue: 9 },
+      want: [],
+      wantSurplus: 0,
+    },
+    { name: "a lane the record does not name -> nothing to compare against", base: {}, measured: { html: 4 }, want: [], wantSurplus: 0 },
+    { name: "a lane this run did not measure -> not evidence about its allowance", base: { cpp: 6 }, measured: {}, want: [], wantSurplus: 0 },
+    {
+      name: "equal surplus -> lane name breaks the tie (stable, diffable output)",
+      base: { b: 3, a: 3 },
+      measured: { b: 0, a: 0 },
+      want: ["a:3->0", "b:3->0"],
+      wantSurplus: 6,
+    },
+  ]
+  let pass = 0
+  for (const c of cases) {
+    const got = allowanceDrift(c.base, c.measured)
+    const shape = got.map((d) => `${d.lane}:${d.recorded}->${d.measured}`)
+    const total = got.reduce((a, d) => a + d.retirable, 0)
+    if (JSON.stringify(shape) === JSON.stringify(c.want) && total === c.wantSurplus) {
+      pass++
+      console.log(`  ok    ${c.name}`)
+    } else {
+      console.log(`  FAIL  ${c.name}: want ${JSON.stringify(c.want)} (surplus ${c.wantSurplus}), got ${JSON.stringify(shape)} (surplus ${total})`)
+    }
+  }
+  // The other direction: failing lanes the record does not name. Same shape of test —
+  // the rule has to separate "unrecorded" from "recorded but lower", because the second
+  // is the regression rule's business and reporting it here too would double-count it.
+  const unrecCases: Array<{ name: string; base: Record<string, number>; measured: Record<string, number>; want: string[]; wantFailures: number }> = [
+    {
+      name: "a failing lane the record does not name -> reported, most failures first",
+      base: { perl: 8, vue: 7 },
+      measured: { perl: 8, vue: 7, groovy: 3 },
+      want: ["groovy:3"],
+      wantFailures: 3,
+    },
+    { name: "a recorded lane at its baseline -> the count gate's business, not this one's", base: { vue: 7 }, measured: { vue: 7 }, want: [], wantFailures: 0 },
+    { name: "a recorded lane WORSE than its record -> a regression, reported once, not as unrecorded", base: { vue: 7 }, measured: { vue: 9 }, want: [], wantFailures: 0 },
+    { name: "an unrecorded lane that PASSES -> nothing to record but a zero", base: {}, measured: { zig: 0 }, want: [], wantFailures: 0 },
+    {
+      name: "equal failure counts -> lane name breaks the tie (stable, diffable output)",
+      base: {},
+      measured: { b: 2, a: 2 },
+      want: ["a:2", "b:2"],
+      wantFailures: 4,
+    },
+  ]
+  let passUnrec = 0
+  for (const c of unrecCases) {
+    const got = unrecordedLanes(c.base, c.measured)
+    const shape = got.map((r) => `${r.lane}:${r.measured}`)
+    const total = got.reduce((a, r) => a + r.measured, 0)
+    if (JSON.stringify(shape) === JSON.stringify(c.want) && total === c.wantFailures) {
+      passUnrec++
+      console.log(`  ok    ${c.name}`)
+    } else {
+      console.log(`  FAIL  ${c.name}: want ${JSON.stringify(c.want)} (failures ${c.wantFailures}), got ${JSON.stringify(shape)} (failures ${total})`)
+    }
+  }
+  console.log(`selftest: ${pass}/${cases.length} allowance cases, ${passUnrec}/${unrecCases.length} unrecorded-lane cases`)
+  return pass === cases.length && passUnrec === unrecCases.length ? 0 : 1
+}
+
 async function main() {
+  if (process.argv.includes("--selftest")) process.exit(selftestAllowance())
+
   const argLangs = process.argv.includes("--lang")
     ? process.argv[process.argv.indexOf("--lang") + 1].split(",")
     : Object.keys(LANGS)
@@ -1638,21 +1835,156 @@ async function main() {
     data: { summary, details: allDetails },
   })
 
-  // improvement-forcing gate: failing-fixture counts must never grow
+  // improvement-forcing gate: failing-fixture counts must never grow — AND the
+  // failing fixtures BY NAME, because one number per lane cannot see a swap.
+  //
+  // M14.0.F3 (#M14-fixture-gate) — WHY THE SECOND FILE EXISTS. The count gate is
+  // `current > base`, and it is blind in the two directions that both showed up
+  // on this milestone's own tree, measured 2026-10-11 over all 48 lanes:
+  //
+  //   - STALE-HIGH, which MASKS. groovy recorded 20 while measuring 0, elixir 15,
+  //     java 11, cpp 6, kotlin 6, scala 5, swift 4 — 67 failures' worth of
+  //     allowance those lanes no longer needed, each one a free pass for that
+  //     many NEW failures. Seven lanes were gated by a number their own work had
+  //     already retired, and nothing reports that: an improvement is silent by
+  //     design (`current > base` only), so the baseline only ever drifts upward.
+  //   - STALE-LOW, which DROWNS. vue recorded 5 while measuring 7, svelte 9 while
+  //     10, html 1 while 4, so EVERY full run exited 4 naming the same three
+  //     regressions — and a gate that is red on every run stops being read, which
+  //     is how a genuinely new fourth regression gets through.
+  //   - AT BASELINE, which is SILENT BY CONSTRUCTION. Fix one red, land another,
+  //     and `7 -> 7` passes. No count can distinguish that from standing still.
+  //
+  // The first two are fixed by re-measuring (`--update-baseline`, which is what
+  // a drift report is asking for); the third cannot be fixed by any number, so
+  // the names are recorded beside the count, written by the same flag from the
+  // same run so the two artifacts cannot disagree about which fixtures are red.
+  // A failing fixture that the record does not name is a regression at the same
+  // exit code as a count increase; a recorded fixture that now PASSES is printed
+  // as information and never fails the gate, because the ratchet stays monotone
+  // in the improving direction (the operator retires the allowance by re-running
+  // with --update-baseline, exactly as the count already works).
+  //
+  // STALE-HIGH IS REPORTED NOW, NOT MERELY REPAIRABLE (2026-10-11, the follow-on
+  // §18 asked for). Re-measuring fixes a surplus; it does nothing about the next
+  // one, because until now the gate never SAID a surplus existed — the 67 retired
+  // failures were visible only to someone who chose to run --update-baseline, and
+  // the run's own verdict line read a clean `no regressions` while they sat in the
+  // file. `allowanceDrift` turns the surplus into a REPORT emitted on every run, at
+  // the measurement, from the same `base` and the same `currentFail` the regression
+  // comparison reads, so the two can never describe different runs; `reportStaleHigh`
+  // names the lanes and the failures' worth, and the verdict line carries the total
+  // so `no regressions` can no longer be read as "the record describes this tree".
+  // The default stays report-only, for the same reason the failing-set ratchet is
+  // monotone: an IMPROVEMENT must not be what turns a gate red, or the gate punishes
+  // the work the milestone is asking for. `--strict-allowance` is the opt-in that
+  // makes the surplus a failure (exit 7), and `--update-baseline` now prints what it
+  // retires, so the re-measurement is a visible act in the log it produces.
+  //
+  // AND THE SAME RULE ONE STOREY DOWN (2026-10-11, later the same day): a lane this run
+  // MEASURES FAILING that the record does not name at all was gated by NOTHING — no
+  // regression line (`current > base` has no `base`), no surplus line, and a verdict that
+  // still read a clean `no regressions` — while the failing-set gate's own parenthetical
+  // asserted "the count gate covers it". `unrecordedLanes` reports it beside the surplus,
+  // at the same measurement and from the same `base`/`currentFail` pair, and the
+  // parenthetical now says which of the two things is true.
   const BASELINE = path.join(ROOT, "validation", "m14", "fixture-baseline.json")
+  const FAILING_SET = path.join(ROOT, "validation", "m14", "fixture-baseline.failing.json")
   const currentFail: Record<string, number> = {}
-  for (const [l, s] of Object.entries(summary)) currentFail[l] = s.fail
+  const currentFailing: Record<string, string[]> = {}
+  for (const [l, s] of Object.entries(summary)) {
+    currentFail[l] = s.fail
+    currentFailing[l] = allDetails
+      .filter(d => !d.ok && typeof d.fixture === "string" && d.fixture.startsWith(`${l}/`))
+      .map(d => d.fixture.slice(l.length + 1))
+      .sort()
+  }
   const updateBaseline = process.argv.includes("--update-baseline")
+  // The opt-in that makes a stale-high surplus a FAILURE (exit 7). Off by default: a lane that
+  // improves must not be the thing that turns a run red (see the block comment above the paths).
+  const strictAllowance = process.argv.includes("--strict-allowance")
   if (updateBaseline) {
+    const before: Record<string, number> = fs.existsSync(BASELINE)
+      ? (JSON.parse(fs.readFileSync(BASELINE, "utf8")) as Record<string, number>)
+      : {}
     fs.writeFileSync(BASELINE, JSON.stringify(currentFail, null, 2) + "\n")
+    fs.writeFileSync(FAILING_SET, JSON.stringify(currentFailing, null, 2) + "\n")
     console.log("fixture baseline updated:", currentFail)
+    const retired = Object.keys(currentFail).filter((l) => before[l] !== undefined && currentFail[l] < before[l])
+    const retiredTotal = retired.reduce((a, l) => a + (before[l] - currentFail[l]), 0)
+    console.log(
+      retired.length
+        ? `fixture allowance retired by this write: ${retiredTotal} failure(s) across ${retired.length} lane(s) — ${retired.map((l) => `${l} ${before[l]} -> ${currentFail[l]}`).join(", ")}`
+        : "fixture allowance retired by this write: none (no lane measures fewer failures than it recorded)",
+    )
+    const named = Object.entries(currentFailing).filter(([, v]) => v.length).map(([l, v]) => `${l}: ${v.length}`)
+    console.log(named.length ? `fixture failing set updated (${named.join(", ")})` : "fixture failing set updated: every lane empty")
   } else if (fs.existsSync(BASELINE)) {
     const base = JSON.parse(fs.readFileSync(BASELINE, "utf8"))
     if (scoped) console.log(`(baseline gate covers only the ${argLangs.length} lane(s) this scoped run selected; a full run is the milestone's gate)`)
     const regressions = Object.keys(currentFail).filter(l => base[l] !== undefined && currentFail[l] > base[l])
     for (const r of regressions) console.error(`FIXTURE REGRESSION ${r}: ${base[r]} -> ${currentFail[r]} failures`)
-    if (regressions.length) process.exit(4)
-    console.log("fixture baseline gate: no regressions")
+    // The stale-high report, at the moment the numbers are measured (see the block comment above).
+    const drift = allowanceDrift(base, currentFail)
+    const surplus = reportStaleHigh(drift)
+    // The other direction, at the same measurement and from the same pair: failing lanes the
+    // record does not name, which no count comparison can fire on (see the block comment above).
+    const unrecorded = unrecordedLanes(base, currentFail)
+    const unrecordedFailures = reportUnrecorded(unrecorded)
+    const unauthored: string[] = []
+    if (fs.existsSync(FAILING_SET)) {
+      const recorded = JSON.parse(fs.readFileSync(FAILING_SET, "utf8")) as Record<string, string[]>
+      for (const l of Object.keys(currentFailing)) {
+        if (!Array.isArray(recorded[l])) {
+          // The claim this parenthetical makes has to match which record is missing, because
+          // for a lane the COUNT gate does not name either, "the count gate covers it" is false.
+          const fails = currentFailing[l].length
+          if (fails === 0) {
+            console.log(`(fixture failing-set gate: lane ${l} is not in ${path.basename(FAILING_SET)} and measures no failure — nothing to record)`)
+          } else if (base[l] === undefined) {
+            console.log(`(fixture failing-set gate: lane ${l} is in NEITHER record and fails ${fails} fixture(s) — reported above as UNRECORDED; --update-baseline records it)`)
+          } else {
+            console.log(`(fixture failing-set gate: lane ${l} is not in ${path.basename(FAILING_SET)} — the count gate covers it; --update-baseline records its names)`)
+          }
+          continue
+        }
+        const named = new Set(recorded[l])
+        for (const stem of currentFailing[l]) if (!named.has(stem)) unauthored.push(`${l}/${stem}`)
+        for (const stem of recorded[l]) if (!currentFailing[l].includes(stem)) console.log(`fixture now passes, allowance retirable with --update-baseline: ${l}/${stem}`)
+      }
+      for (const u of unauthored)
+        console.error(`FIXTURE REGRESSION ${u}: failing fixture is not in the recorded failing set (validation/m14/fixture-baseline.failing.json) — --update-baseline records a tracked defect finding, it does not fix a regression`)
+    } else {
+      console.log(`(fixture failing-set gate: ${path.basename(FAILING_SET)} absent — the count gate ran alone)`)
+    }
+    if (regressions.length || unauthored.length) process.exit(4)
+    if ((surplus > 0 || unrecorded.length) && strictAllowance) {
+      if (surplus > 0) {
+        console.error(
+          `\nFIXTURE ALLOWANCE STALE-HIGH under --strict-allowance: ${surplus} failure(s)' worth of recorded allowance is no longer needed by the code ` +
+            `(lane(s): ${drift.map((d) => `${d.lane} ${d.recorded} -> ${d.measured}`).join(", ")}). ` +
+            "Re-measure and commit the record in the same change that improved the lane: bun run script/m14/run-fixtures.ts --update-baseline",
+        )
+      }
+      if (unrecorded.length) {
+        console.error(
+          `\nFIXTURE BASELINE UNRECORDED under --strict-allowance: ${unrecordedFailures} failure(s) in ${unrecorded.length} lane(s) the record does not name ` +
+            `(lane(s): ${unrecorded.map((r) => `${r.lane} ${r.measured}`).join(", ")}). ` +
+            "A lane with no row fails under no number at all: record it with a full run — bun run script/m14/run-fixtures.ts --update-baseline",
+        )
+      }
+      process.exit(7)
+    }
+    // One sentence carries every disagreement this gate can see, so no reading of the verdict
+    // can take `no regressions` for "the record describes this tree".
+    const stale: string[] = []
+    if (surplus > 0) stale.push(`${drift.length} lane(s) carry ${surplus} failure(s)' worth of STALE-HIGH allowance`)
+    if (unrecorded.length) stale.push(`${unrecorded.length} failing lane(s) have no row in the record (${unrecordedFailures} failure(s))`)
+    console.log(
+      stale.length
+        ? `fixture baseline gate: no regressions — but ${stale.join("; and ")} (reported above; --update-baseline records the tree, --strict-allowance fails on it)`
+        : "fixture baseline gate: no regressions",
+    )
   }
   const totalFail = Object.values(summary).reduce((a, s) => a + s.fail, 0)
   console.log(totalFail > 0 ? `\n${totalFail} fixture(s) FAIL — these are honest defect findings, not harness errors` : "\nall fixtures pass")

@@ -235,9 +235,24 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // edge rides the SAME rewrite, gated on `isGroovyImport` so the clause
           // can never capture an unrelated edge whose source happens to equal the
           // package — the same guard java's JPMS `requires` rewrite needs.
+          // `fileLevel: true` rows are EXEMPT, and that is the whole point of
+        // them: the dependency edge names the PACKAGE as its source precisely so
+        // that source resolves to no symbol in the file, which is what makes
+        // parallel-indexer write `source_external` (the file path) and leave
+        // `source_symbol_id` NULL — the shape `bb_graph`'s per-file dependency
+        // query requires (`source_symbol_id IS NULL AND target_symbol_id IS NULL
+        // AND source_external = <file>`). Rewriting its source to the primary
+        // type resolved it to a symbol and the edge stopped answering the
+        // question it exists for; measured on
+        // groovy/imports-dependency-edge, which pins the package source and
+        // FORBIDS `imports source: Dep`. The type-level 0.9 mention edge keeps
+        // the rewrite (groovy/imports-dependency pins `source: Importer`), so
+        // both labels answer their own question: the mention is joined against
+        // references, the dependency is joined against the FILE.
         const isImportMention =
           (rel.type === ASTEngine.RelationshipType.Imports || rel.type === ASTEngine.RelationshipType.References) &&
-          rel.metadata?.isGroovyImport === true
+          rel.metadata?.isGroovyImport === true &&
+          rel.metadata?.fileLevel !== true
         if (isImportMention && (rel.source === walk.currentPackage || rel.source === "(script)" || rel.source === "root")) {
           rel.source = primaryType.name
         }
@@ -298,7 +313,19 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // them non-types. G7 (anon exclusion) is unaffected: an anonymous class
       // is never top-level, so the !ownerName half excludes it structurally —
       // the explicit isAnonymousClass check stays as belt-and-braces.
-      if (!s.metadata?.isAnonymousClass && !s.metadata?.isPhantom && !s.ownerName && TOP_LEVEL_TYPE_NODES.has(String(s.metadata?.nodeType ?? ""))) {
+      // CONVERGED EXPORTS (M49 JVM-closure ruling, owner-approved 2026-09-10;
+      // reviews/jvm-closure-audit.md — "exports = importable units: top-level
+      // types AND top-level functions"). A script's `def helper()` compiles to a
+      // method of the script class and `import <pkg>.<Script>.<helper>` names
+      // it, which is the same contract kotlin and scala implement for their
+      // top-level functions. The DERIV_EXPORTS_GROOVY3 comment above dropped the
+      // member half under the pre-ruling "types only" reading and took the
+      // function half with it; this restores the function half only.
+      const topLevelKind = String(s.kind ?? "")
+      const isTopLevelUnit =
+        TOP_LEVEL_TYPE_NODES.has(String(s.metadata?.nodeType ?? "")) ||
+        topLevelKind === "method" || topLevelKind === "function"
+      if (!s.metadata?.isAnonymousClass && !s.metadata?.isPhantom && !s.ownerName && isTopLevelUnit) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
     }
@@ -348,6 +375,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // unpublishable the moment one appears — but it is measured at 0
     // occurrences here and is reported as 0 rather than described as working.
     let exportsWithNoPackage = 0
+    let exportsNonPublic = 0
     if (exports.length > 0) {
       const published = new Set<string>()
       for (let i = 0; i < exports.length; i++) {
@@ -358,22 +386,48 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // edge names, and a second row asserting the same pair is noise.
         if (published.has(target)) continue
         published.add(target)
+        // A NON-PUBLIC TOP-LEVEL TYPE IS NOT PUBLISHED AT ALL (counted, not
+        // emitted). It was emitted at 0.6 with `reasonCode:
+        // non_public_top_level_type`, and that is the shape
+        // groovy/exports-publication forbids outright (`forbidRelationships:
+        // [{type: exports, target: Hidden}]`, and `Shielded` beside it): a
+        // `private`/`protected` top-level type is not importable from another
+        // compilation unit, so the edge asserts a name no importer can resolve.
+        // The claim-strength discount was the honest part of the old rule —
+        // but an edge at any confidence still asserts that the name IS an
+        // export, and the export surface is exactly what import-resolution
+        // joins on. The corpus measures 5 private and 1 protected top-level
+        // type, so this is a real-code arm, not a fixture-only one.
         const isPublic = e.visibility !== "private" && e.visibility !== "protected"
+        if (!isPublic) { exportsNonPublic++; continue }
         if (!walk.currentPackage) { exportsWithNoPackage++; continue }
+        // CONVERGED FAMILY VOCABULARY (groovy/exports-publication, imported
+        // beside java/exported-types): the label NAMES the kind of importable
+        // unit — `exported_type` for a top-level type (with `kind` carrying the
+        // declaration's own kind), `exported_function` for a top-level function
+        // — and `dottedName` is the name an importer writes, which is
+        // source + "." + target by construction. `evidenceClass: structural`
+        // is applied centrally by classifyEvidenceTier for `exports`.
+        // The pre-fold vocabulary (`groovy_exportable_unit` + `exportForm`) is
+        // read by nothing in src/ and is superseded by the ruling; the fixture
+        // that pinned it was moved with its reason recorded (see
+        // validation/m14/fixtures/groovy/exports-publication-edge.expectation.json).
+        const kindName = String(e.kind ?? "")
+        const isFunction = kindName === "method" || kindName === "function"
         relationships.push({
           source: walk.currentPackage,
           target,
           type: ASTEngine.RelationshipType.Exports,
-          confidence: isPublic ? 1.0 : 0.6,
+          confidence: 1.0,
           // M59 (#825): the exported DECLARATION's own line — the name is
           // written there, not at whatever construct encloses it. Absent rather
           // than 0 when the symbol carried no range (#823).
           ...(e.range?.startLine ? { line_number: e.range.startLine } : {}),
           metadata: {
-            relationshipType: "groovy_exportable_unit",
-            exportForm: isPublic ? "public_top_level_type" : "non_public_top_level_type",
-            ...(isPublic ? {} : { reasonCode: "non_public_top_level_type" }),
-            symbolKind: String(e.kind ?? ""),
+            relationshipType: isFunction ? "exported_function" : "exported_type",
+            ...(isFunction ? {} : { kind: kindName }),
+            dottedName: `${walk.currentPackage}.${target}`,
+            isGroovyExport: true,
           },
         })
       }
@@ -408,6 +462,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // reader of the relationship table cannot see, and it is reported
         // rather than absorbed. Measured over the corpus: 266 of 2,817 files.
         exportsWithNoPackage,
+        exportsNonPublic,
         framework: fw.framework,
         detectedFrameworks: fw.detected,
         analysisVersion: "5.0.0-groovy-pure-ast",
@@ -523,20 +578,21 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // and `a.b.C` is what the exporting side calls it, so the alias is
           // metadata and dropping it is what lets the two files join (the same
           // doctrine the TypeScript oracle states for `import { b as c }`).
-      relationships.push({
-        source: s.currentPackage || "(script)",
-        target: moduleName,
-        type: ASTEngine.RelationshipType.Imports,
-        confidence: 0.9,
-        ...this.lineField(nameNode, node),
-        metadata: {
-          ...importMeta,
-          isImport: true,
-          relationshipType: isStatic
-            ? (isWildcard ? "static_on_demand" : "static_member")
-            : (isWildcard ? "on_demand_type" : "single_type"),
-        },
-      })
+          // (The pre-fold 0.9 `imports` edge that stood here — sourced at the
+          // primary type with `single_type` / `on_demand_type` / `static_member`
+          // / `static_on_demand` — is RETIRED. It and the file-level edge below
+          // are the same fact, and `groovy/imports-dependency-edge` pins the
+          // consequence of keeping both: `forbidRelationships:
+          // [{type: imports, source: Dep}]` matches ANY imports row sourced at
+          // the type, so the two labels cannot coexist. The file-level edge wins
+          // because it is the one with a consumer (bb_graph's per-file
+          // dependency query, which requires `source_symbol_id IS NULL`) and the
+          // one the family is converging on — java/import-dependency-edges pins
+          // the identical shape. Nothing is lost by dropping the mention label:
+          // the MENTION still rides the `references` edge above, at 0.9, with
+          // `isGroovyImport: true`, which is what the reference surface joins
+          // against. groovy/imports-dependency was re-pinned to the surviving
+          // label with its reason recorded.)
 
           // ── DERIV_EXPORTS_GROOVY3 — the `imports` DEPENDENCY edge ──────────
           //
@@ -589,6 +645,13 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           isGroovyImport: true,
           isWildcard,
           isStatic,
+          // The ALIAS is a fact about the DECLARATION (`import a.b.C as D` binds D
+          // locally) and it survived on the retired 0.9 mention edge; the
+          // file-level edge has to carry it too, or re-pinning
+          // groovy/imports-dependency to the surviving label would silently drop
+          // the alias half of the import contract. The alias is never part of
+          // the target — `a.b.C` is the name the exporting side uses.
+          hasAlias,
           fileLevel: true,
         },
       })
@@ -780,62 +843,51 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         s.emptyNameRefusals = (s.emptyNameRefusals ?? 0) + 1
         return
       }
-          // G4 (review wave, java C3 parity): ctors were renamed from the literal
-          // "constructor" to their DECLARED name (the class name). That is reverted.
-          //
-          // The family convention is the literal, and this lane's own hand-audited truth
-          // follows it: java, kotlin and scala all record
-          // `symbol:<file>:<line>:constructor:constructor` with
-          // `attributes.name == "constructor"`, and groovy's
-          // validation/m12/ground-truth/groovy.json does the same. Naming a constructor
-          // after its class instead makes every one of them a guaranteed
-          // false-negative/false-positive PAIR, because the key
-          // (script/m11/differential-harness.ts `factKey`) includes `attributes.name`:
-          //   FN  symbol:Features.groovy:9:constructor:constructor
-          //   FP  symbol:Features.groovy:9:constructor:Color
-          //   FN  symbol:Features.groovy:20:constructor:constructor
-          //   FP  symbol:Features.groovy:20:constructor:Robot
-          // Five of each across the five fixtures — the whole of the constructor gap.
-          //
-          // The original justification was that "the old literal collided across classes
-          // (contains:A->constructor vs contains:B->constructor are indistinguishable;
-          // overloads collapsed)". That is real, but it is answered by the CONTAINER, not
-          // by renaming: the `contains` relationship already carries the owning class as
-          // its source, and `ownerName` is on the symbol, so A's constructor and B's are
-          // distinguishable. What the rename actually cost was every constructor in the
-          // lane, so the collision argument does not survive contact with the truth file.
-      // G4 (review wave, java C3 parity): ctors were renamed from the literal
-      // "constructor" to their DECLARED name (the class name). That is reverted.
+      // CONSTRUCTOR IDENTITY — the fold that renamed the literal.
       //
-      // The family convention is the literal, and this lane's own hand-audited truth
-      // follows it: java, kotlin and scala all record
-      // `symbol:<file>:<line>:constructor:constructor` with
-      // `attributes.name == "constructor"`, and groovy's
-      // validation/m12/ground-truth/groovy.json does the same. Naming a constructor after
-      // its class instead makes each one a guaranteed false-negative/false-positive PAIR,
-      // because the comparison key (script/m11/differential-harness.ts `factKey`)
-      // includes `attributes.name`:
-      //   FN  symbol:Features.groovy:9:constructor:constructor
-      //   FP  symbol:Features.groovy:9:constructor:Color
-      //   FN  symbol:Features.groovy:20:constructor:constructor
-      //   FP  symbol:Features.groovy:20:constructor:Robot
-      // Five of each across the five fixtures — the whole of the constructor gap.
+      // The lane used to publish every constructor as the literal name
+      // "constructor", and the comment here argued for it on two grounds: a
+      // hand-audited M12 truth file that recorded `attributes.name ==
+      // "constructor"`, and "the family convention" — java, kotlin and scala all
+      // recording the literal.
       //
-      // The original justification was that the literal "collided across classes
-      // (contains:A->constructor vs contains:B->constructor are indistinguishable;
-      // overloads collapsed)". That is real, but it is answered by the CONTAINER, not by
-      // renaming: `contains` already carries the owning class as its source, and
-      // `ownerName` is on the symbol, so A's constructor and B's remain distinguishable.
-      // What the rename actually cost was every constructor in the lane, so the collision
-      // argument does not survive contact with the truth file.
+      // Both grounds are spent, and the second was never true of the family as it
+      // stands today. The M12 record is a hand audit from 2026-08-29 whose
+      // facts are read by `script/verify-m12-final-audit.ts` only for EXISTENCE,
+      // never re-derived (that audit consumes the committed
+      // `validation/m12/results/*-differential.json`, it does not re-run an
+      // analyzer); and the live family pins the opposite. kotlin's fixtures state
+      // it outright — `{ "name": "Derived", "kind": "constructor", "equals": 3 }`
+      // ("one primary + two secondary constructors share the class name by the
+      // java C3 family convention") — and java's own fixtures
+      // (ctor-delegation, ctor-value-injection, record-varargs-compact-ctor) name
+      // constructors `CtorDelegation`, `PriceConfig`, `Point`. In this lane five
+      // fixtures want the class name and `empty-name-refusal` FORBIDS the literal
+      // (`{"type":"uses","source":"constructor","target":"length"}` is pinned as a
+      // pre-fix defect). The scala lane was folded onto the same ruling last
+      // (2026-10-10): it WAS the one member of the family still recording the
+      // literal, and its four fixtures that pinned the literal were re-pinned
+      // with their authority recorded in each file — so the sentence above is
+      // true of the family as it stands, not only of java/kotlin/groovy:
+      //   ctor-identity             {name: Alpha, kind: constructor, ownerName: Alpha}
+      //   ctor-field-split-lines    {name: Split, kind: constructor, ownerName: Split}
+      //   duplicate-parse-field     {name: Split, kind: constructor, ownerName: Split}
+      //   parameters-payload        `symbol Holder in Holder` — a constructor is
+      //                             addressed BY ITS CLASS NAME and owned by it
+      //   grammar-rebuild-constructs `calls[Rebuilt -> super]` — the delegation's
+      //                             source is the enclosing declaration's name
+      // Against that, the literal's only standing argument was the collision one,
+      // and it is answered by the CONTAINER rather than by the name, exactly as
+      // the java lane's own arbitration recorded: `contains` carries the owning
+      // class as its source and `ownerName` is on the symbol, so A's constructor
+      // and B's remain distinguishable — while kotlin shows the intended reading
+      // of overloads (three constructors sharing the class name, distinct by
+      // their parameter payloads).
       //
-      // NOTE the keys collide only because the record's relationship key omits the
-      // source symbol's file. That is a separate defect in the differential's identity
-      // contract, not in this analyzer, and it is recorded rather than worked around
-      // here: `contains:Color->constructor` in Features.groovy and the same pair in any
-      // other fixture produce the same factKey, so one of them can never be matched.
-      // Fixing the key contract is a change to script/m12, which every lane shares.
-      const name = "constructor"
+      // One narrow guard survives from the old code: a constructor whose name
+      // cannot be matched to its class stays the literal, so a recovered or
+      // interpolated class name can never publish a symbol named after nothing.
+
       const modifiers = this.extractModifiers(node)
       const visibility = this.extractVisibility(node)
       const annotations = this.extractAnnotations(node)
@@ -884,7 +936,13 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // fixtures became phantom constructors, their own names vanished, and
           // the differential went from 46 FP / 19 FN to 74 / 66. A demoted
           // misnamed constructor is a METHOD, so it keeps its declared name.
-      const memberName = isConstructor ? "constructor" : rawName
+      const memberName = isConstructor ? (enclosingName ?? "constructor") : rawName
+      // The symbol NAME is the member name itself (see the arbitration record
+      // above): a constructor carries its class's name, a method its own. This is
+      // the one place the name is decided; naming unconditionally would rename
+      // every method to "constructor" too (measured on the java lane's version of
+      // this fix: 11 methods across three fixtures became phantom constructors).
+      const name = memberName
       const parameters: ASTEngine.Parameter[] = []
       const paramList = this.findChild(node, (n) => n.type === "formal_parameters")
       if (paramList) {
@@ -1745,38 +1803,56 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const resolveSource = (start: Node): string => {
       // KAD6 sweep (M37 #597): include the start node when it IS the
-      // declaration. The method_declaration case emits its own return type
-      // through this resolver, which seeded at `.parent` — so `String
-      // greet()` inside `class Foo` attributed String to Foo (or Global at
-      // top level) instead of greet. Same bug kotlin's KAD6.
-      // R2 (closure audit): closed type alternation as a Set — the regex
-      // tested exact membership, nothing more.
-      // A declared TYPE belongs to the DECLARING TYPE, never to the method that
-      // mentions it. The method arm that used to come first attributed every
-      // signature type to the method -- `String format(String value)` produced
-      // `format -> String` twice (return_type and formal_parameter) and
-      // `findAll -> List` / `findAll -> T` for `List<T> findAll()`.
+      // declaration, so a `method_declaration`'s own return type resolves
+      // through its OWN node rather than its parent's.
       //
-      // This lane's hand-audited truth has 79 relationship rows and NOT ONE
-      // method-scoped `references` row: every declared-type edge is sourced at the
-      // class/trait/enum. The import-resolved `java.util.List` /
-      // `com.example.base.Entity` rows are unaffected -- they are emitted by the
-      // import path, not by this resolver.
+      // WHO OWNS A DECLARED TYPE — the attribution law, measured twice and then
+      // settled by the fixtures that pin both sides of it.
       //
-      // The 28 false positives this removed are all of one shape: a bare name
-      // (`String`, `List`, `Map`, `Optional`, `T`, `Date`, `CompletableFuture`,
-      // `User`) sourced at a method. Nothing that truth expects is lost, because
-      // truth expects no such row.
+      //   * a type written in a FIELD's type clause belongs to the declaring
+      //     type (`Cfg cfg` → `Svc -> Cfg`; `Outer.Criterion field` →
+      //     `Fields -> Outer.Criterion`).
+      //   * a type written inside a MEMBER method/constructor belongs to that
+      //     member: `Map<...> m2(List<Integer> a) throws IOException` publishes
+      //     its return type as `m2 -> Map`, `Outer.Criterion make(Outer.Criterion
+      //     param)` publishes its return type, its parameter and its local as
+      //     `make -> Outer.Criterion`, and `public String greet()` as
+      //     `greet -> String`. The fixtures say so in as many words (KAD6's
+      //     `from: m2` row for return_type, scoped-type-references' four
+      //     `source: make` rows, lambda-expression's typed lambda parameter
+      //     sourced at `run`).
+      //   * a type that has no member and no enclosing TYPE to be attributed to
+      //     is the script's: the recovery fixture's `def index(Integer max)`
+      //     inside a class whose name is an ERB interpolation parses with NO
+      //     class declaration at all (probe-verified: the whole file hangs off
+      //     `program` → `closure` → `ERROR` → `formal_parameters`), and the row
+      //     it expects is `(script) -> Integer`. GAD2: "(script)" is the same
+      //     sentinel the calls walk uses.
+      //
+      // The R2-era comment this replaces claimed the opposite ("a declared TYPE
+      // belongs to the DECLARING TYPE, never to the method that mentions it",
+      // from a hand audit whose 79 rows were all import-resolved qualified names
+      // and therefore could not see member attribution either way). That reading
+      // made every channel pin in the four fixtures above unreachable, which is
+      // why they were failing: the qualified-name filter next to it left only
+      // the import path's rows, and this resolver left only one possible owner.
       let p: Node | null = GROOVY_DECLARATION_TYPES.has(start.type) ? start : start.parent
+      let memberName: string | null = null
       while (p) {
-        if (p.type === "class_declaration" || p.type === "trait_declaration" || p.type === "enum_declaration") {
+        if (p.type === "method_declaration" || p.type === "constructor_declaration") {
+          if (memberName === null) {
+            const name = this.findChild(p, (c) => c.type === "identifier")
+            if (name) memberName = name.text
+          }
+        } else if (p.type === "class_declaration" || p.type === "trait_declaration" || p.type === "enum_declaration") {
           const name = this.findChild(p, (c) => c.type === "identifier")
-          if (name) return name.text
+          // A member of a NAMED type is attributed to the member; a type with no
+          // name (an anonymous body, an interpolated name the grammar could not
+          // read) cannot own the edge, so the walk keeps climbing.
+          if (name) return memberName ?? name.text
         }
         p = p.parent
       }
-      // GAD2: "(script)" — the same sentinel the calls walk uses; the old
-      // "global" split one script file's graph across two phantom nodes.
       return "(script)"
     }
 
@@ -1786,23 +1862,27 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const names: NamedNode[] = []
         collectTypeNames(r, names)
         for (const t of names) {
-          // A `declared_type` reference is emitted only for a QUALIFIED name.
+          // EVERY name the type clause writes is published, bare or qualified.
           //
-          // Measured: every one of the 15 `references` rows this lane's hand-audited
-          // truth expects is fully qualified -- java.util.List, java.util.Optional,
-          // java.util.Map, java.util.HashMap, java.util.concurrent.CompletableFuture,
-          // com.example.base.Entity, com.example.base.BaseService,
-          // com.example.repo.Repository -- and every one of them is a type the file
-          // IMPORTS, which is what lets it be written qualified. Truth has no bare
-          // target anywhere in its 79 relationship rows.
+          // The pre-fold lane emitted a `declared_type` reference only for a
+          // QUALIFIED name (`if (!t.name.includes(".")) continue`), justified by
+          // a hand audit whose 79 rows were all import-resolved qualified types.
+          // That filter is what made the whole bare-name half of this graph
+          // unreachable: `List<String> f`, `String greet()`, `catch (IOException
+          // | SQLException e)`, `o as String`, `(String) o`, `o instanceof Point
+          // p`, `Path scriptDir` and a typed lambda parameter all name their type
+          // without a dot, and every one of them is pinned by a fixture in this
+          // lane (type-usage-graph, multicatch-and-varargs, as-cast, cast-types,
+          // pattern-refs, class-body-dot-continuation-841, lines-825,
+          // lambda-expression, attribution-visibility, grammar-rebuild-constructs)
+          // with a channel pin on the qualified spelling beside it — the pins
+          // exist precisely so this class of silence is observable.
           //
-          // So `String format(String value)` should not report `format -> String`:
-          // `String` is not imported here, the name cannot be resolved to anything
-          // actionable, and the edge asserts a dependency the reader cannot follow.
-          // The import path already emits the qualified form where one exists
-          // (`UserService -> java.util.Map`), so nothing is lost by dropping the
-          // bare duplicate.
-          if (!t.name.includes(".")) continue
+          // A bare name is a real dependency edge: `IOException` in a throws
+          // clause is the type the reader follows, and the java lane publishes it
+          // for the same shape. The qualified/leaf/segment rules live in
+          // collectTypeNames, which is where a name is decided; this is not a
+          // second place to decide it.
           const key = `${source}|${t.name}|${kind}`
           if (emitted.has(key)) continue
           emitted.add(key)
@@ -1826,22 +1906,39 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       switch (n.type) {
         case "binary_expression": {
           // Groovy `as` coercion — `o as String`, `[] as Set`,
-          // `[mimeType] as MimeType[]`. Since the #742 grammar rebuild the
-          // pinned grammar parses this CORRECTLY as
-          // binary_expression(left, type) with the `as` operator; the cast
-          // target is the `type` field. The pre-rebuild grammar mis-parsed it
-          // as a local_variable_declaration whose "type" was the `as` keyword
-          // (that branch is kept below only so an older wasm still emits);
-          // this case is the real one now, and is what the as-cast fixture
-          // asserts.
-          const asType = n.childForFieldName("type")
-          if (asType && n.childForFieldName("left")) {
-            emit(n, [asType], "as_coercion", "cast_type")
-            // Do not descend further for this node: the generic type-clause
-            // scan below does not apply to expressions.
-            const lt = n.childForFieldName("left")
-            if (lt) walk(lt)
-            break
+          // `[mimeType] as MimeType[]`. The pinned grammar parses this CORRECTLY
+          // as binary_expression whose children are the operand, the `as` token
+          // and the cast type — but with NO field names (`childForFieldName("type")`
+          // and `childForFieldName("left")` both return null; probe-verified on
+          // `def s = o as String` at HEAD, which is why this branch emitted
+          // nothing at all and the as-cast fixture saw only its `contains` edge).
+          // The cast target is therefore found positionally: the first
+          // type-position child AFTER the `as` token. The pre-rebuild grammar
+          // mis-parsed the same source as a local_variable_declaration whose
+          // "type" was the `as` keyword (that branch below is kept only so an
+          // older wasm still emits); this case is the real one now, and is what
+          // the as-cast fixture asserts.
+          let asIdx = -1
+          for (let i = 0; i < n.childCount; i++) {
+            if (n.child(i)?.type === "as") { asIdx = i; break }
+          }
+          if (asIdx >= 0) {
+            let asType: Node | null = null
+            for (let i = asIdx + 1; i < n.childCount && !asType; i++) {
+              const c = n.child(i)
+              if (c && (c.type.endsWith("type") || c.type === "type_identifier" || c.type === "scoped_type_identifier")) asType = c
+            }
+            if (asType) {
+              emit(n, [asType], "as_coercion", "cast_type")
+              // The operand is an EXPRESSION and is still walked for its own
+              // references; the cast type itself is not descended into (the
+              // generic type-clause scan below does not apply to expressions).
+              for (let i = 0; i < n.namedChildCount; i++) {
+                const c = n.namedChild(i)
+                if (c && c !== asType) walk(c)
+              }
+              break
+            }
           }
           for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c) }
           break
@@ -2161,7 +2258,14 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // method, one of them a name no symbol carries: a `uses` row pointing at
           // `constructor` can never bind to the method whose body it came from.
         const isRealCtor = node.type === "constructor_declaration" && (owner === undefined || declaredName === owner)
-        nextMethod = isRealCtor ? "constructor" : (declaredName ?? method)
+        // CONSTRUCTOR IDENTITY, second site: the read-owner of a constructor body is
+        // the constructor SYMBOL's own name, which this fold changed from the
+        // literal "constructor" to the class name (see handleMethodDeclaration).
+        // A real constructor's declared name IS its class's name, so the class name
+        // is used directly and the literal survives only as the fallback for a
+        // constructor whose name node the parser could not produce — the same
+        // narrow guard the symbol path keeps.
+        nextMethod = isRealCtor ? (declaredName ?? owner ?? "constructor") : (declaredName ?? method)
       }
 
       if (node.type === "field_access") {
@@ -2237,7 +2341,12 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // member owns the edge, and the narrower claim is taken: within a constructor
           // body, a `this.field` access is attributed to the enclosing type. A plain
           // `field = …` in a method, and any non-`this` LHS, are untouched.
-          const inConstructorBody = method === "constructor"
+          // A constructor body is the one place the read-owner EQUALS the owning
+          // type's name: that is what the constructor identity fold (see
+          // handleMethodDeclaration) made true, and it is the test the literal
+          // "constructor" used to stand in for. A method can never share its
+          // class's name in Groovy — that shape IS the constructor.
+          const inConstructorBody = method !== undefined && method === owner
           const thisLhsInConstructor = inConstructorBody && isWrite &&
             (first === "this" || first === "super")
           // M60 ontology pass, second half of the same defect: the LEAF is read from
@@ -3205,10 +3314,30 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
    * An annotation is a modifier — `@Service` decorates the class, it is not
    * where the class is written. Measured on the pinned grammar, not assumed:
    * `class_declaration` for `@Service\nclass Svc` has children
-   * `[modifiers@5, identifier@6, class_body@6]`, so the class symbol's line was
-   * the ANNOTATION line. Same shape and same rule as java's
-   * `declarationLineNode` and scala's `declarationLineNode` — one rule for the
-   * whole JVM family rather than three dialects of it.
+   * `[modifiers@5, identifier@6, class_body@6]`, so the modifiers node starts on
+   * the annotation's line and every OTHER child starts on the declaration's.
+   *
+   * The rule is therefore: skip `modifiers` (annotated or not) and anchor at the
+   * declaration. This is `lines-825`'s law in as many words — "the line a
+   * relationship carries is the line its NAME is written on — not the line of
+   * the enclosing construct, and not the line of a modifier" — and it is what
+   * the fixture pins on BOTH `expectSymbolRanges` (`Wrapped` at 19, not its
+   * `@Deprecated` at 18; `label` at 23, not its `@Deprecated` at 22) and the
+   * `contains`/`overrides` line numbers (the `use()` written on 26, never the
+   * `@Deprecated` on 25). The same shape is `anonymous-body-overrides`, whose
+   * two override rows and their `contains` are pinned at the method line rather
+   * than the `@Override` above it.
+   *
+   * The comment this replaces did the opposite and cited a hand audit: M12's
+   * `Negative.groovy` records `symbol:Negative.groovy:18:class:Counter` where L18
+   * is `@Slf4j` and `class Counter` is written on L19. That record is the stale
+   * half of the same conflict the constructor-identity fold resolved (see
+   * handleMethodDeclaration): the M12 facts for this lane are read only for
+   * existence by `script/verify-m12-final-audit.ts`, are never re-derived, and
+   * land a navigation target on a modifier. The java lane's #825 fixture states
+   * the intent outright ("a tool navigating to a java symbol landed on the
+   * annotation"), and java is failing that same fixture today, so this is the
+   * family's leading edge rather than a groovy-only reading.
    */
   /** True when the field node is the same declaration as a sibling method, parsed twice (M59 #825 follow-up: `static Sphere valueOf` + the `final Distance distance`/ctor split). Proof, not heuristic: two distinct same-line declarations must be `;`-separated, so a sibling method starting after the field with only whitespace between them is the same tokens parsed twice — the full-span method wins. */
   private isDuplicateParseField(node: Node, content: string): boolean {
@@ -3263,13 +3392,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c) continue
-      if (c.type === "modifiers") {
-        // Anchor at the modifiers node ONLY when it actually carries an annotation;
-        // its start is then the first annotation's line.
-        const hasAnnotation = this.findChild(c, (n) => n.type === "annotation" || n.type === "marker_annotation") !== null
-        if (hasAnnotation) return c
-        continue
-      }
+      if (c.type === "modifiers") continue
       if (c.type === "annotation" || c.type === "marker_annotation") return c
       // M59 (#825) / F6: the grammar's own names. `"comment"` was dead here —
       // tree-sitter-groovy emits `line_comment`/`block_comment` only.

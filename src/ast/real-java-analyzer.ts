@@ -478,63 +478,26 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // ontology gate's own rule ("a ruled type whose construct probe finds a
         // non-zero count is FALSIFIED") is what settles it.
         //
-        // LABEL, decided from a storage contract rather than from taste. These
-        // edges go on `references`, not `exports`, for two measured reasons:
-        //   1. A JPMS directive names a PACKAGE or a MODULE, never a symbol. The
-        //      harness-global F3 export invariant (script/m14/run-fixtures.ts:
-        //      1363-1400) requires every export name to resolve to a top-level
-        //      IMPORTABLE UNIT; a package resolves to nothing.
-        //   2. `parallel-indexer.ts:3462-3467` DROPS any `exports` row whose
-        //      source or target is path-shaped (lower-case initial plus `.`, `:`
-        //      or `/`) — which every Java package name is. An `exports`-labelled
-        //      JPMS edge would be produced, counted by every census, and never
-        //      stored: the same defect this change exists to close for the
-        //      top-level export surface, reintroduced one construct later.
-        // `references` has no such filter, and java's import edges already
-        // persist that way (38,923 measured on this corpus).
-        //
-        // Every target is read from the GRAMMAR'S OWN FIELD (`module`, `package`,
-        // `modules`, `type`, `provided`, `provider`) — never from node text, so a
-        // directive with a qualified name, a `to a, b` list or a `with a, b` list
-        // cannot be mis-split. Confidence 1.0: the dependency is written in the
-        // file and nothing is inferred about it.
-        const modNameNode = node.childForFieldName("name")
-        const modName = modNameNode?.text ?? ""
-        moduleName = modName
-        if (modName) {
-          const body = node.namedChildren.find((c: Node | null) => !!c && c.type === "module_body")
-          if (body) {
-            for (let i = 0; i < body.namedChildCount; i++) {
-              const directive = body.namedChild(i)
-              if (!directive) continue
-              // (directive type, metadata relationshipType, target field name)
-              const shape = JAVA_MODULE_DIRECTIVE_FIELDS[directive.type]
-              if (!shape) continue
-              for (let k = 0; k < shape.length; k++) {
-                const { field, role, unfieldedAfter } = shape[k]
-                const targets: (Node | null)[] = directive.childrenForFieldName?.(field) ?? []
-                if (unfieldedAfter) {
-                  // The grammar leaves the first target of `to`/`with`
-                  // unfielded, so the field alone is not the whole list. Every
-                  // named NAME node that is not the anchor is a target; the
-                  // `,` and `with` / `to` keywords are anonymous children and
-                  // never appear in `namedChildren`, so nothing else can.
-                  const anchor = directive.childForFieldName(unfieldedAfter)
-                  for (let j = 0; j < directive.namedChildCount; j++) {
-                    const c = directive.namedChild(j)
-                    if (isJavaNameNode(c) && c.startIndex !== anchor?.startIndex && c.endIndex !== anchor?.endIndex) {
-                      targets.push(c)
-                    }
-                  }
-                }
-                for (let j = 0; j < targets.length; j++) {
-                  const t = targets[j]
-                  if (t) this.pushModuleDirective(relationships, modName, t, role)
-                }
-              }
-            }
-          }
-        }
+        // ONE IMPLEMENTATION, ONE WALK OF THE MODULE BODY. Two of them landed on
+        // this branch during the JPMS wave — this in-visitor walk of
+        // JAVA_MODULE_DIRECTIVE_FIELDS and a second `module_declaration` arm lower
+        // in the same if/else chain that called `emitJavaModuleDeclaration`. The
+        // second was UNREACHABLE (the earlier `else if` already matched the node),
+        // so the module symbol, the exported-package Namespace symbols, the
+        // `exports` edges and the whole `imports[]` channel for `requires` were
+        // dead code: a module-info.java still emitted 0 symbols, 0 exports[] and 0
+        // imports, and only the `references` rows below existed, because they were
+        // the half the live arm produced. The `references`-only label decision that
+        // comment justified is superseded by the fixture set: three INCOMING_JAVA
+        // fixtures (java/module-info, java/jpms-module-exports,
+        // java/module-exports-jpms) pin BOTH labels per directive, which is the
+        // family rule this lane already states for `import` declarations ("Both
+        // labels are kept … `imports` is the DEPENDENCY, `references` is the
+        // MENTION" — see the import site below), and java/module-info-directives' own
+        // forbid of an `exports` row for a package is re-pinned with the reason
+        // recorded in that file.
+        moduleName = node.childForFieldName("name")?.text ?? ""
+        this.emitJavaModuleDeclaration(node, symbols, relationships, imports)
       } else if (type === "import_declaration") {
         // EXPORTS_JAVA2: `static` and `*` are read as NODE TYPES, not searched
         // for in the declaration's text.
@@ -670,47 +633,6 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      else if (type === "module_declaration") {
-        // JLS 7.7 — the module system. This branch did not exist: the analyzer
-        // emitted 0 symbols, 0 relationships and 0 imports on a `module-info.java`,
-        // so Java's own named export mechanism produced no graph at all.
-        //
-        // MEASURED (java-construct-probe.mts, whole corpus, 3,275 `.java` files,
-        // all parsed, 0 failed): 3 `module-info.java` on disk, 3 parsed as
-        // `module_declaration` with root.hasError=false, carrying 24
-        // `exports_module_directive` and 12 `requires_module_directive` nodes.
-        // The strings "module_declaration" and "exports_module_directive" occurred
-        // nowhere in this file before this branch, so those 24 directives were 24
-        // exports edges that did not exist.
-        //
-        // The module NAME is a declaration (JLS 7.7): `module com.google.common`
-        // is the only place that name is written, and another module's
-        // `requires` clause names it. So it is a `Module` symbol.
-        this.emitJavaModuleDeclaration(
-          node,
-          symbols,
-          relationships,
-          (moduleName, range, transitive) => {
-            imports.push({
-              module: moduleName,
-              items: [],
-              isDefault: false,
-              range,
-              // The module system is a real dependency relation and the family
-              // records dependencies on the IMPORTS channel (ImportInfo ->
-              // brain_import), not as `imports` relationship rows. Emitting
-              // `RelationshipType.Imports` edges here would also add a SECOND
-              // un-audited type to this lane: rel-type-coverage-gate.ts reads the
-              // analyzer's constructible types and java's audited set is eight,
-              // so an `imports` edge takes the lane from one DERIVATION finding
-              // to two, for 12 rows, against a type no java oracle checks.
-              metadata: { isModuleRequires: true, ...(transitive ? { transitive: true } : {}) },
-              importType: transitive ? "java-module-requires-transitive" : "java-module-requires",
-            })
-          },
-        )
-      }
-
       else if (
         type === "class_declaration" ||
         type === "record_declaration" ||
@@ -762,26 +684,31 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           //   `currentPackage` non-empty — a type in the DEFAULT package cannot be
           //     imported by name at all (JLS 7.4.2), so publishing it would claim
           //     a reachability the language denies.
-          if (visibility === "public" && !parentContext && currentPackage) {
-            relationships.push({
-              source: currentPackage,
-              target: name,
-              type: ASTEngine.RelationshipType.Exports,
-              confidence: 1.0,
-              // The type is named by its own declaration node, annotations skipped.
-              line_number: this.symbolRange(node).startLine,
-              metadata: {
-                isJavaExport: true,
-                relationshipType: "exported_type",
-                kind: String(kind),
-                // The join key, stated because it is not obvious: an `exports`
-                // edge is `package -> simpleName`, and `source + "." + target`
-                // reconstructs the dotted path an `imports` edge targets, so the
-                // two labels meet without a resolver.
-                dottedName: `${currentPackage}.${name}`,
-              },
-            })
-          }
+          // THE EXPORT EDGE IS EMITTED ONCE, in the export post-pass below — this
+          // site is folded into it (M60 java fold).
+          //
+          // Both sites were live, so every public top-level type carried TWO
+          // `exports` rows with the SAME key (`package -> simpleName`): one here
+          // labeled `exported_type` at 1.0, one there labeled
+          // `java_exportable_unit` with `exportForm`. Two rows for one publication
+          // is the duplicate-channel defect the family has been folding out
+          // (`expectRelationshipCount` exists to catch it), and the surviving
+          // channel is the post-pass for three measured reasons:
+          //   1. it is the one this lane's oracle measures
+          //      (script/m14/lanes/java-imports-exports-oracle.ts: `meta` is
+          //      `java_exportable_unit|<reasonCode>`), and the java-verify evidence
+          //      records that surface by that label (`exports/java_exportable_unit:
+          //      3283 -> 3297`);
+          //   2. it is the one that records the PACKAGE-PRIVATE tier the two
+          //      EXPORTS_JAVA2 fixtures pin (java/exports-public-top-level-types
+          //      requires the 0.6 row for `internal` with its reasonCode) — this
+          //      site was public-only, so retiring the other one instead would have
+          //      made java's 718 package-private top-level types vanish from the
+          //      export surface rather than being published at a discounted tier;
+          //   3. its metadata is the richer set. `kind` + `dottedName` +
+          //      `isJavaExport` (this site's keys, the ones the imported
+          //      java/exported-types pins) are carried there now, so nothing this
+          //      site published is lost with it.
 
           // Sealed hierarchy: sealed class → permitted subtype. Direction is
           // parent→child (opposite of inheritance edges) and the subtypes are
@@ -1265,29 +1192,33 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
 
           const methodDoc = this.extractJavadocComment(node)
-          // Ctor identity: the symbol KEEPS ITS DECLARED NAME (the class name),
-          // matching the csharp family convention. The pre-fix "constructor"
-          // literal collided across classes (contains:A->constructor and
-          // contains:B->constructor are indistinguishable; every ctor overload          // collapsed). The kind field still says Constructor.
-          // A constructor is named "constructor", not after its class. The comment this
-          // replaces claimed "matching the csharp family convention", and that is simply
-    // false: the java, csharp AND kotlin truth files all record the literal, and
-          // `attributes.name` is part of the differential's comparison key, so every
-     // constructor was a guaranteed false-negative/false-positive PAIR:
-          //   FN  symbol:UserService.java:13:constructor:constructor
-    //   FP  symbol:UserService.java:13:constructor:UserService
-          //   FN  symbol:UserService.java:31:constructor:constructor
-    //   FP  symbol:UserService.java:31:constructor:User
-      //
-          // The collision argument is answered by the CONTAINER rather than the name:
-      // `contains` carries the owning class as its source and `ownerName` is on the
-   // symbol, so A's constructor and B's remain distinguishable. The identical G4
-          // comment had been reintroducing the same pair for every groovy constructor.
+          // CTOR IDENTITY: a constructor symbol is named after ITS CLASS, not with
+          // the literal "constructor".
           //
-          // Branch-local on purpose: naming this unconditionally renames every METHOD to
-          // "constructor" too, which is how the groovy lane's version of this fix was
-      // caught. `overrideTasks` below is already guarded by `!isConstructor`.
-          const memberName = isConstructor ? "constructor" : name
+          // This branch previously carried two contradictory halves (a merge left
+          // both in place): one arguing for the class name on the csharp family
+          // convention, one arguing for the literal on the M12 truth file. The
+          // FIXTURES settle it, and three of them say so in their own rationales:
+          //   ctor-delegation        `{"name": "CtorDelegation", "kind": "constructor"}`
+          //   ctor-value-injection   `{"name": "PriceConfig",   "kind": "constructor"}`
+          //   record-varargs-compact-ctor `{"name": "Point", "kind": "constructor"}`
+          // — all three citing M37.21 C3: "constructor symbols carry their CLASS
+          // NAME (… not the old colliding literal 'constructor') so distinct
+          // classes' ctors and their overloads stay distinguishable". The literal
+          // made `contains:A->constructor` and `contains:B->constructor`
+          // indistinguishable, and it collided in the store's name resolution for
+          // every ctor of every class in a project. The kotlin lane's pins call the
+          // class-name rule "the java C3 family convention" and groovy folded to it
+          // in the same wave, so this is the family's rule rather than a local
+          // preference.
+          //
+          // The `kind` field still says Constructor; the container is the
+          // owning class, so nothing about which class a ctor belongs to is lost.
+          //
+          // Branch-local on purpose: naming every member after its owner would
+          // rename every METHOD too. `overrideTasks` below is guarded by
+          // `!isConstructor` and keeps using the declared method name.
+          const memberName = isConstructor ? (parentContext?.name ?? name) : name
           const sym: ASTEngine.UniversalSymbol = {
             name: memberName,
             kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
@@ -2100,16 +2031,36 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // edge whose SOURCE is a package string enters the graph through a node
         // nothing can traverse, which is the same reason the mention needed
         // rewriting in the first place.
-        if ((rel.type === ASTEngine.RelationshipType.References || rel.type === ASTEngine.RelationshipType.Imports)
+        // FILE-LEVEL ROWS ARE EXEMPT, and that is the whole point of them: the
+        // file-level dependency names the PACKAGE precisely so that its source
+        // resolves to no symbol in the file, which is what makes
+        // parallel-indexer write `source_external` (the file path) and leave
+        // `source_symbol_id` NULL — the shape `bb_graph`'s per-file dependency
+        // query requires (`source_symbol_id IS NULL AND target_symbol_id IS NULL
+        // AND source_external = <file>`). Rewriting the source to the primary type
+        // resolved it to a symbol and the edge stopped answering the question it
+        // exists for. Measured: java/import-dependency-edges pins the package
+        // source (`com.acme.app`) on every `*_import` row; groovy folded to the
+        // identical rule for the identical reason.
+        //
+        // The MENTION keeps the rewrite: `references` (and the 1.0
+        // `import_declaration` dependency row, which carries no `fileLevel`) name a
+        // dotted path a reader resolves against the importing file's own type, and
+        // a source that binds to no symbol in the file is an edge nothing can
+        // traverse. So both labels answer their own question.
+        const isFileLevel = (rel.metadata ?? {}).fileLevel === true
+        if (!isFileLevel &&
+          (rel.type === ASTEngine.RelationshipType.References || rel.type === ASTEngine.RelationshipType.Imports)
           && (rel.source === currentPackage || rel.source === "root")) {
           rel.source = primaryType.name
           continue
         }
-        // The `imports` edge rides the same rewrite, and is gated on `isJavaImport`
-        // so it can never capture a JPMS `requires` edge whose module name happens
-        // to equal the package (a module-info.java has no package, and a file with
-        // both is possible).
+        // The 1.0 `imports` edge from an import declaration rides the same
+        // rewrite, gated on `isJavaImport` so it can never capture a JPMS
+        // `requires` edge whose module name happens to equal the package (a
+        // module-info.java has no package, and a file with both is possible).
         if (
+          !isFileLevel &&
           rel.type === ASTEngine.RelationshipType.Imports &&
           (rel.metadata ?? {}).isJavaImport === true &&
           (rel.source === currentPackage || rel.source === "root")
@@ -2243,7 +2194,16 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         exportNodeType === "interface_declaration" ||
         exportNodeType === "enum_declaration" ||
         exportNodeType === "record_declaration" ||
-        exportNodeType === "annotation_type_declaration"
+        exportNodeType === "annotation_type_declaration" ||
+        // JLS 7.7 — a MODULE is an importable unit too, named by another
+        // module's `requires M` clause: `module com.example.widget` is written
+        // once, in this file, and that is the name a `requires` directive binds.
+        // java/module-exports-jpms pins it in `exports[]` with `kind: module`.
+        // (The module symbol carries no package, so the export-EDGE post-pass
+        // below declines it — `exportsWithNoPackage` — rather than fabricating a
+        // `package -> module` row; the Namespace symbols it owns are members and
+        // ride `contains`.)
+        exportNodeType === "module_declaration"
       if (!s.metadata?.isPhantom && !s.ownerName && isTopLevelTypeDecl) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
@@ -2316,7 +2276,22 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             relationshipType: "java_exportable_unit",
             exportForm: isPublic ? "public_top_level_type" : "package_private_top_level_type",
             ...(isPublic ? {} : { reasonCode: "package_private_top_level_type" }),
-            symbolKind: String(e.kind ?? ""),
+            // The folded site's keys (see the note at the type-declaration
+            // branch, where this edge used to be emitted a second time).
+            //
+            // `isJavaExport` is TRUE only on the importable tier: JLS 7.6 makes a
+            // PUBLIC top-level type importable from another package, while a
+            // package-private one is reachable by name only from its own package
+            // (JLS 6.6.1) — which is exactly the claim the 0.6 tier and its
+            // `reasonCode` discount, and marking it as an export outright would
+            // assert the stronger fact.
+            ...(isPublic ? { isJavaExport: true } : {}),
+            kind: String(e.kind ?? ""),
+            // The join key, stated because it is not obvious: an `exports` edge is
+            // `package -> simpleName`, so `source + "." + target` reconstructs the
+            // dotted path an `imports` edge targets and the two labels meet without
+            // a resolver.
+            dottedName: `${currentPackage}.${target}`,
           },
         })
       }
@@ -2460,49 +2435,20 @@ currentPackage,
         moduleName: module,
       },
     })
-    // EXPORTS_JAVA2 — `requires M` (JLS 7.7.1) is a COMPILE-TIME MODULE
-    // DEPENDENCY, and `imports` is this family's label for a dependency. It is
-    // the JPMS spelling of exactly what an `import_declaration` says, which is
-    // why both go through the same kind rather than one going through
-    // `references` alone.
+    // NO `requires` ARM HERE. The JPMS dependency edge (`imports`, labelled
+    // `module_requires`) is emitted by emitJavaModuleDeclaration, which reads the
+    // `requires_modifier` that decides `transitive` vs `static` — facts this
+    // role-table walk cannot see, since it only carries a field name and a role.
     //
-    // It rides `references` too, and both are kept for the same reason the import
-    // site keeps both: the directive NAMES a module, so the dependency is a fact
-    // about the file, and the mention is the same string a reader resolves.
-    //
-    // Only `requires` — NOT `exports`/`opens`. JLS 7.7.2 `exports P` publishes
-    // this module's API outward; that is an `exports` fact about a PACKAGE, and
-    // the package-scoped half rides `references` above (see the storage note
-    // there: an `exports` row whose endpoint is path-shaped is dropped at
-    // parallel-indexer.ts:3462-3467, and every Java package name is path-shaped).
-    // Re-labelling `requires` as `imports` is safe for the same reason and only
-    // that reason: a module name in `requires com.google.common;` is a bare
-    // identifier, not a dotted path.
-    // The role string comes from JAVA_MODULE_DIRECTIVE_FIELDS above, where the
-    // `requires_module_directive` row declares role `requires_module`. This guard
-    // was first written as `module_requires_module` and matched NOTHING — a dead
-    // branch, invisible to source derivation and to the firing check, which
-    // reported the JPMS dependency edge as present because the guard sat in the
-    // same function as a branch that does fire. Found by mutant I6, which
-    // re-pointed the guard at a role the corpus does produce and produced
-    // byte-identical output. A predicate that cannot match is not a small thing.
-    if (role === "requires_module") {
-      relationships.push({
-        source: module,
-        target,
-        type: ASTEngine.RelationshipType.Imports,
-        confidence: 1.0,
-        ...line,
-        metadata: {
-          relationshipType: "module_requires_dependency",
-          isModuleDirective: true,
-          isJavaModuleDirective: true,
-          reasonCode: "module_directive",
-          moduleName: module,
-          fileLevel: true,
-        },
-      })
-    }
+    // This function used to carry a `if (role === "requires_module")` arm that
+    // pushed a second `imports` row labelled `module_requires_dependency`. With
+    // both paths live, every `requires` directive produced two `imports` rows for
+    // one declaration, and the two disagreed about the modifier: the arm below
+    // hard-coded transitiveness from the FIELD, so `requires static java.sql` was
+    // published as a transitive dependency at 1.0. The role table keeps its
+    // `requires_module_directive` entry because the shape registry is also the
+    // grammar's own documentation of what these directives look like; nothing
+    // dispatches on it any more.
   }
 
   private findChild(node: Node, predicate: (child: Node) => boolean): Node | null {
@@ -2946,32 +2892,32 @@ currentPackage,
    * a symbol and the edge that names it must never disagree about the line.
    */
   private declarationLineNode(node: Node): Node {
+    // THE NAME WINS, and that is the fixture contract rather than a preference.
+    //
+    // M59 (#825) / java/declaration-lines-825 states it in its own header: "the
+    // line a java relationship carries is the line its NAME is written on — not
+    // the line of the enclosing construct, and not the line of a modifier", and
+    // then pins the two cases: `@SuppressWarnings("unused")` on 20 must NOT be
+    // the line of `Annotated` (21), and `@Override` on 26 must NOT be the line of
+    // the overriding `label` (27). scala settled the same contract first and
+    // kotlin/csharp copy it; groovy folded to it in the same wave.
+    //
+    // The M12-era comment this replaces cited a hand audit that recorded the
+    // ANNOTATION line (`@Service L9 / class UserService truth 9`) and returned the
+    // `modifiers` child when it carried an annotation. That audit is the historical
+    // record `script/verify-m12-final-audit.ts` reads for existence only — it never
+    // re-runs an analyzer — so it cannot overrule a live fixture that says the
+    // opposite, and the fixtures state the cost: 25 of 93 symbols on a 300-file
+    // real sample landed on an annotation, so navigating to a symbol opened
+    // `@SuppressWarnings` instead of the declaration.
+    const named = this.declarationNameNode(node)
+    if (named) return named
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c) continue
-      // A symbol is anchored at its FIRST ANNOTATION, not at the keyword after it.
-      //
-      // tree-sitter-java nests annotations inside the `modifiers` child, so skipping
-      // `modifiers` outright moved every annotated declaration down a line. This lane's
-      // hand-audited truth records the annotation line, in all six cases in the fixtures:
-      //   @Service  L9  / class UserService  truth 9,  was 10
-      //   @Override L16 / format(…)(…)  truth 16, was 17
-      //   @Override L21 / save(…)(…)       truth 21, was 22
-      //   @Override L36 / getId()         truth 36, was 37
-      //   @Override L39 / getName()       truth 39, was 40
-      //   @Mapper   L21 / interface Mapper truth 21, was 22
-      // and the unannotated controls were already correct, so the rule is about
-      // annotations and nothing else.
-      //
-      // This is the family convention -- the csharp and groovy lanes anchor the same
-      // way. A `modifiers` child carrying NO annotation is still skipped, which keeps
-      // `private final Map<…> store` on its own line.
-      if (c.type === "modifiers") {
-        const hasAnnotation = this.findChildByType(c, "annotation") !== null || this.findChildByType(c, "marker_annotation") !== null
-        if (hasAnnotation) return c
-        continue
-      }
-      if (c.type === "annotation" || c.type === "marker_annotation") return c
+      // `modifiers` carries the annotations AND the keyword modifiers; the
+      // declaration is written after it, so it is skipped rather than returned.
+      if (c.type === "modifiers") continue
       // The grammar's OWN comment node names — M59 (#825) / F6: a literal the
       // grammar cannot produce is dead code, and this guard's `"comment"` was
       // one (tree-sitter-java emits `line_comment`/`block_comment`; there is no
@@ -2982,6 +2928,28 @@ currentPackage,
       return c
     }
     return node
+  }
+
+  /**
+   * The NAME node of a declaration, or null when the shape has none.
+   *
+   * `childForFieldName("name")` is the grammar's own answer for every shape that
+   * has one — class/interface/enum/record/annotation-type declarations, methods,
+   * constructors, enum constants and type parameters. A FIELD is the exception:
+   * its name lives in a nested `variable_declarator`, so the declarator is asked
+   * instead. Multi-declarator fields (`int a, b;`) carry one declarator each; the
+   * FIRST one is the declaration's own line, which is also the line the field
+   * symbol is published under.
+   */
+  private declarationNameNode(node: Node): Node | null {
+    const field = node.childForFieldName?.("name")
+    if (field && (field.type === "identifier" || field.type === "type_identifier")) return field
+    if (node.type === "field_declaration") {
+      const declarator = this.findChildByType(node, "variable_declarator")
+      const name = declarator?.childForFieldName?.("name")
+      if (name) return name
+    }
+    return null
   }
 
   /**
@@ -3179,9 +3147,16 @@ currentPackage,
         node.type === "compact_constructor_declaration"
       ) {
         const nameNode = node.childForFieldName("name") || this.findChildByType(node, "identifier")
+        // A ctor body's read-owner is the ENCLOSING TYPE, which is the symbol
+        // that now carries the constructor's name (see the ctor-identity note in
+        // the member branch). It used to be the literal "constructor", which
+        // resolved to the ctor symbol only while ctors were named that way — the
+        // same rename left this source dangling, and `uses` endpoints are joined
+        // against symbols (R7). `owner` is the enclosing type here; the fallback
+        // keeps the pre-fix spelling for a ctor whose owner the walk lost.
         nextMethod =
           node.type === "constructor_declaration" || node.type === "compact_constructor_declaration"
-            ? "constructor"
+            ? (owner ?? "constructor")
             : nameNode?.text ?? method
         // #739 GATE B (CGD15 family rule): a name the CURRENT function binds
         // locally is not a member read. Without this, `int count = 5; return
@@ -4084,41 +4059,62 @@ currentPackage,
   }
 
   /**
-   * JLS 7.7 — a `module-info.java` compilation unit.
+   * JLS 7.7 — a `module-info.java` compilation unit. The ONE implementation.
    *
-   * WHAT IS EMITTED, AND WHY ONLY THIS.
+   * WHAT IS EMITTED, PER DIRECTIVE SHAPE, and every row below is pinned by a
+   * fixture (three of them are INCOMING_JAVA fixtures written for this file):
    *
    *   `module M { … }`        a `Module` symbol. It carries no `ownerName`, so
    *                           the existing post-pass also lists it in `exports[]`
    *                           — correct, because `requires M` is how another
-   *                           module names it.
-   *   `exports P;`            an `exports` edge M -> P, plus a `Namespace`
-   *                           symbol for P owned by M. This is the type's whole
-   *                           point: `exports` means "this unit makes that
-   *                           visible to importers", and JLS 7.7.2 is Java's own
-   *                           named version of it. Both endpoints resolve,
-   *                           because both are declared in this one file.
-   *   `requires M2;`          an `imports[]` entry — see the call site for why
-   *                           this channel and not a relationship.
+   *                           module names it (java/module-exports-jpms).
+   *   `exports P [to M…];`    a `Namespace` symbol for P owned by M, an `exports`
+   *                           edge M -> P (`module_exports`, with the `to` list in
+   *                           `qualifiedTo`), a `references` MENTION of P
+   *                           (`module_exports_mention`), and a `references` row
+   *                           per `to` module (`module_exports_package_to`).
+   *   `requires [t|s] M2;`    an `imports` edge M -> M2 (`module_requires`), a
+   *                           `references` mention (`module_requires_mention`),
+   *                           and an `imports[]` entry (ImportInfo) — the channel
+   *                           `brain_import` reads.
+   *   `opens`/`uses`/`provides`  one `references` row per named target, labelled
+   *                           from JAVA_MODULE_DIRECTIVE_FIELDS.
    *
-   * WHAT IS DELIBERATELY NOT EMITTED, with the measurement that rules each one.
-   * `opens_module_directive`, `provides_module_directive` and
-   * `uses_module_directive` are node types the pinned grammar DOES produce (they
-   * are in tree-sitter-java's node-types), and this corpus contains ZERO of all
-   * three: 0, 0 and 0 nodes over 3,275 files. Java therefore HAS these
-   * constructs and this corpus does not exercise them, which is a different
-   * statement from "Java lacks them" and the reason no label is invented for
-   * them. `opens` grants deep reflective access and is not an export;
-   * `provides` declares a service implementation and `uses` declares a service
-   * consumer. Each of those is a defensible label and none of them can be
-   * checked against a corpus that has never written one — an unverifiable label
-   * on an edge is exactly what the fabrication rule forbids. Recorded as an open
-   * item rather than shipped as a guess.
+   * BOTH LABELS PER DIRECTIVE is the family rule this lane already states for
+   * `import` declarations at the analyzer's import site ("`imports` is the
+   * DEPENDENCY … and `references` is the MENTION"), and erlang's analyzer states
+   * it for its own `-import`. java/jpms-module-exports pins it row by row; the
+   * `mentions` are what the reference-resolution surface joins against, the
+   * dependencies are what the module-dependency pass reads.
    *
-   * The `to` clause of a qualified export (`exports P to M1, M2;`) is read and
-   * carried in metadata. It is not a second `exports` edge: it RESTRICTS who may
-   * read P, and an edge from M to M1 saying "exports" would assert the opposite
-   * of what the clause says.
+   * WHY `requires` IS AN `imports` EDGE AND `exports` AN `exports` EDGE. JLS 7.7.1
+   * makes `requires M` a compile-time MODULE DEPENDENCY, which is the same fact an
+   * `import` states, so it takes the same kind — the two halves of JPMS must not
+   * share a label or "what does this file depend on" becomes unanswerable
+   * (java/jpms-module-exports forbids an `imports` row for an exported package,
+   * and an `exports` row for a required module). JLS 7.7.2 makes `exports P`
+   * "this unit makes P visible to importers", which is exactly the `exports`
+   * kind's claim, and java/module-info + java/jpms-module-exports pin the row.
+   *
+   * `opens` grants deep REFLECTIVE access and is not an export in any sense the
+   * `exports` kind asserts, so no `exports` row is emitted for it (pinned by
+   * java/jpms-module-exports' forbid); it keeps its `references` row. The `to`
+   * clause RESTRICTS who may read P, so an `exports` edge from M to a `to` target
+   * would assert the opposite of what the clause says: it stays a mention plus
+   * `qualifiedTo` metadata.
+   *
+   * `requires static` is an OPTIONAL dependency at compile time and REQUIRED at
+   * run time, which is a different claim from a plain `requires`, so it is
+   * published at 0.9 with `inferred: true` and
+   * `reasonCode: "optional-module-dependency"` (java/module-info pins
+   * confidenceMin AND confidenceMax at 0.9 for exactly that row) rather than
+   * being spelled as a second label.
+   *
+   * `provides`/`uses` rows are the two remaining directive shapes in the grammar.
+   * This corpus contains 0 of both (probe: 0 `opens_module_directive`, 0
+   * `provides_module_directive`, 0 `uses_module_directive` over 3,275 files), so
+   * their labels are pinned by fixtures rather than by corpus frequency and are
+   * recorded as such.
    *
    * Node shapes are probe-verified against the pinned wasm, not assumed
    * (java-node-shape-probe.mts):
@@ -4135,7 +4131,7 @@ currentPackage,
     declNode: Node,
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
-    onRequires: (moduleName: string, range: ASTEngine.UniversalSymbol["range"], transitive: boolean) => void,
+    imports: ASTEngine.ImportInfo[],
   ): void {
     const nameNode = declNode.childForFieldName("name") || this.findChildByType(declNode, "scoped_identifier") || this.findChildByType(declNode, "identifier")
     if (!nameNode) return
@@ -4154,18 +4150,19 @@ currentPackage,
     const body = declNode.childForFieldName("body") || this.findChildByType(declNode, "module_body")
     if (!body) return
 
-    // Declared package -> its directive, so a package exported twice (two
-    // directives, or a repeated name) yields one Namespace symbol and one edge
-    // rather than two rows for one declaration.
+    // A declared package gets ONE Namespace symbol and ONE edge even when two
+    // directives name it (or one directive repeats it), so the module's export
+    // set cannot double-count a package.
     const emittedPackages = new Set<string>()
-    const stack: Node[] = [body]
-    while (stack.length > 0) {
-      const n = stack.pop()!
+    for (let i = 0; i < body.namedChildCount; i++) {
+      const n = body.namedChild(i)
+      if (!n) continue
       if (n.type === "exports_module_directive") {
         const pkgNode = this.findChildByType(n, "scoped_identifier") || this.findChildByType(n, "identifier")
         if (pkgNode && pkgNode.text && !emittedPackages.has(pkgNode.text)) {
           const pkgName = pkgNode.text
           emittedPackages.add(pkgName)
+          const qualifiedTo = this.readJavaQualifiedExportTargets(n)
           symbols.push({
             name: pkgName,
             kind: ASTEngine.SymbolKind.Namespace,
@@ -4187,30 +4184,147 @@ currentPackage,
             line_number: pkgNode.startPosition.row + 1,
             metadata: {
               relationshipType: "module_exports",
-              ...(this.readJavaQualifiedExportTargets(n) ? { qualifiedTo: this.readJavaQualifiedExportTargets(n) } : {}),
+              isModuleDirective: true,
+              isJavaModuleDirective: true,
+              moduleName,
+              ...(qualifiedTo ? { qualifiedTo } : {}),
+            },
+          })
+          // The MENTION beside the dependency, the same pairing every import
+          // declaration in this lane keeps: the dotted path is what the
+          // reference-resolution surface joins against.
+          relationships.push({
+            source: moduleName,
+            target: pkgName,
+            type: ASTEngine.RelationshipType.References,
+            confidence: 1.0,
+            line_number: pkgNode.startPosition.row + 1,
+            metadata: {
+              relationshipType: "module_exports_mention",
+              isModuleDirective: true,
+              isJavaModuleDirective: true,
+              reasonCode: "module_directive",
+              moduleName,
             },
           })
         }
       } else if (n.type === "requires_module_directive") {
-        // Skip the `transitive`/`static` modifier by NODE TYPE: the modifier is
-        // the only named child that is not a name node, so asking for the name
-        // shape is what keeps `requires transitive com.x` from publishing the
-        // module name as "transitive".
+        // The modifier is read as a NAMED NODE whose own text says which of the
+        // two it is: `requires transitive com.x` and `requires static com.y` are
+        // the same node type with different tokens, and the two are different
+        // facts (JLS 7.7.1). Skipping by node type alone (the pre-fold code)
+        // read BOTH as transitive.
         let modNode: Node | null = null
         let transitive = false
-        for (let i = 0; i < n.namedChildCount; i++) {
-          const c = n.namedChild(i)
+        let isStatic = false
+        for (let j = 0; j < n.namedChildCount; j++) {
+          const c = n.namedChild(j)
           if (!c) continue
-          if (c.type === "requires_modifier") { transitive = true; continue }
-          if (c.type === "scoped_identifier" || c.type === "identifier") { modNode = c; break }
+          if (c.type === "requires_modifier") {
+            if (c.text.trim() === "transitive") transitive = true
+            else if (c.text.trim() === "static") isStatic = true
+            continue
+          }
+          if (isJavaNameNode(c)) { modNode = c; break }
         }
-        if (modNode && modNode.text) {
-          onRequires(modNode.text, this.nodeToRange(modNode), transitive)
+        const required = modNode?.text ?? ""
+        if (!required) continue
+        const line = modNode!.startPosition.row + 1
+        const shared = {
+          isModuleDirective: true,
+          isJavaModuleDirective: true,
+          moduleName,
+          isModuleRequires: true,
         }
+        // JLS 7.7.1: a `requires` clause is a compile-time module dependency, and
+        // `imports` is this family's label for a dependency (see the import site).
+        relationships.push({
+          source: moduleName,
+          target: required,
+          type: ASTEngine.RelationshipType.Imports,
+          // 0.9 for `requires static`: the module is OPTIONAL at compile time and
+          // required at run time, so the dependency claim is discounted and the
+          // reason is machine-readable rather than silent (honesty contract §4).
+          confidence: isStatic ? 0.9 : 1.0,
+          line_number: line,
+          metadata: {
+            relationshipType: "module_requires",
+            ...shared,
+            isStatic,
+            isTransitive: transitive,
+            fileLevel: true,
+            ...(isStatic
+              ? { inferred: true, reasonCode: "optional-module-dependency" }
+              : { reasonCode: "module_directive" }),
+          },
+        })
+        relationships.push({
+          source: moduleName,
+          target: required,
+          type: ASTEngine.RelationshipType.References,
+          confidence: 1.0,
+          line_number: line,
+          metadata: {
+            relationshipType: "module_requires_mention",
+            ...shared,
+            reasonCode: "module_directive",
+          },
+        })
+        // The ImportInfo channel: `brain_import` reads it, and a module
+        // dependency is a dependency on the module system's own terms. The
+        // `transitive`/`isStatic` flags stay in metadata rather than becoming
+        // importType strings, so the wire value keeps meaning "which module".
+        imports.push({
+          module: required,
+          items: [],
+          isDefault: false,
+          range: this.nodeToRange(modNode!),
+          metadata: {
+            isModuleRequires: true,
+            ...(transitive ? { transitive: true } : {}),
+            ...(isStatic ? { isStatic: true } : {}),
+          },
+          importType: transitive ? "java-module-requires-transitive" : "java-module-requires",
+        })
+        continue
       }
-      for (let i = n.namedChildCount - 1; i >= 0; i--) {
-        const c = n.namedChild(i)
-        if (c) stack.push(c)
+      // Every remaining directive shape: one `references` row per named target,
+      // read from the GRAMMAR'S OWN FIELD (`package`, `modules`, `type`,
+      // `provided`, `provider`) — never from node text, so a directive with a
+      // qualified name, a `to a, b` list or a `with a, b` list cannot be
+      // mis-split.
+      const shape = JAVA_MODULE_DIRECTIVE_FIELDS[n.type]
+      if (!shape) continue
+      for (let k = 0; k < shape.length; k++) {
+        const { field, role, unfieldedAfter } = shape[k]
+        // The exported PACKAGE is handled by the `exports` arm above, which
+        // labels its mention `module_exports_mention`. Letting the role table
+        // emit it as well published a second `references` row for the same
+        // package under the pre-fold label `module_exports_package` — two
+        // mentions of one name, one of them in the retired vocabulary (found by
+        // java/module-exports-jpms' forbid of that label). The `to`-list role
+        // below is untouched: those targets are MODULES that may read P, a
+        // different fact from the package being exported.
+        if (role === "module_exports_package") continue
+        const targets: (Node | null)[] = n.childrenForFieldName?.(field) ?? []
+        if (unfieldedAfter) {
+          // The grammar leaves the first target of `to`/`with` unfielded, so the
+          // field alone is not the whole list. Every named NAME node that is not
+          // the anchor is a target; the `,` and `with` / `to` keywords are
+          // anonymous children and never appear in `namedChildren`, so nothing
+          // else can.
+          const anchor = n.childForFieldName(unfieldedAfter)
+          for (let j = 0; j < n.namedChildCount; j++) {
+            const c = n.namedChild(j)
+            if (isJavaNameNode(c) && c.startIndex !== anchor?.startIndex && c.endIndex !== anchor?.endIndex) {
+              targets.push(c)
+            }
+          }
+        }
+        for (let j = 0; j < targets.length; j++) {
+          const t = targets[j]
+          if (t) this.pushModuleDirective(relationships, moduleName, t, role)
+        }
       }
     }
   }

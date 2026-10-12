@@ -92,6 +92,45 @@ const HTML_BUILTIN_TAGS = new Set([
   "svg", "path", "g", "rect", "circle", "ellipse", "line", "polyline", "polygon",
   "text", "tspan", "use", "defs", "linearGradient", "radialGradient", "stop", "mask",
   "pattern", "marker", "view", "symbol", "clipPath",
+  // SVG — the FILTER module and the rest of the element vocabulary (F30, 2026-10-12).
+  //
+  // The list above covered the SVG elements a chart OR a decorative icon uses and
+  // stopped there, so `<filter>` and every filter PRIMITIVE fell through the builtin
+  // filter and were published as component usages: `<feGaussianBlur/>` emitted
+  // `instantiates -> feGaussianBlur`, a target no file in any corpus declares. Measured
+  // through production `parseFile` over the lane's 1,162-file draw (element-plus,
+  // vuejs, vue-element-admin, vue-core): 377 such edges from just six primitives —
+  // feGaussianBlur 64, feFlood 63, feColorMatrix 63, feOffset 63, feBlend 63,
+  // feComposite 61 — every one of them a dangling endpoint of exactly the class F23/F26
+  // removed for reads. An unknown namespace still fails toward VISIBILITY (see
+  // BUILTIN_NAMESPACES below); an element the SVG spec DEFINES is markup, and the rule
+  // this list encodes is that a real element is not a component — not that a lowercase
+  // name is not a component.
+  //
+  // NO DOUBLE QUOTES AND NO CLOSING-BRACKET-PAREN PAIR IN THIS COMMENT OR THE TWO
+  // BELOW, and that is a constraint, not a style preference:
+  // verify-cross-language-consistency.ts extracts this literal by slicing from the
+  // `new Set` open anchor to the FIRST closing-bracket-paren pair after it, then matching
+  // every quoted string in that slice. So a quoted phrase in a comment here becomes a
+  // PHANTOM TAG, and that pair ends the slice early — silently dropping the very tags the
+  // fix adds. Measured twice, not assumed: the first draft of this comment quoted the
+  // rule and the gate reported extra tags, and the second draft wrote the pair out and
+  // the gate reported every new SVG tag as missing from this list only.
+  "filter", "feBlend", "feColorMatrix", "feComponentTransfer", "feComposite",
+  "feConvolveMatrix", "feDiffuseLighting", "feDisplacementMap", "feDistantLight",
+  "feDropShadow", "feFlood", "feFuncA", "feFuncB", "feFuncG", "feFuncR",
+  "feGaussianBlur", "feImage", "feMerge", "feMergeNode", "feMorphology", "feOffset",
+  "fePointLight", "feSpecularLighting", "feSpotLight", "feTile", "feTurbulence",
+  // the rest of SVG 2's element list, plus the SVG 1.1 elements browsers still parse.
+  // Counted separately from the block above on purpose: the block above is measured on
+  // the corpus, this one is the SPEC's vocabulary, and the difference is recorded rather
+  // than blurred (same honesty rule the svelte lane's read map uses for its site lists).
+  "switch", "foreignObject", "desc", "metadata", "textPath", "tref", "mpath",
+  "animate", "animateMotion", "animateTransform", "set", "discard", "solidColor",
+  "mesh", "meshgradient", "meshpatch", "meshrow", "hatch", "hatchpath",
+  "altGlyph", "altGlyphDef", "altGlyphItem", "glyphRef", "animateColor", "cursor",
+  "color-profile", "font", "font-face", "font-face-format", "font-face-name",
+  "font-face-src", "font-face-uri", "glyph", "hkern", "missing-glyph", "vkern",
 ])
 
 const VUE_BUILTIN_TAGS = new Set([
@@ -138,6 +177,13 @@ function peelTypeWrappers(node: Node): Node {
   return cur
 }
 
+/** F21 (2026-10-12): is this module specifier Vue's own runtime package? A
+ *  component writing `inject` gets it from `vue` (or a subpath), so a name bound
+ *  by any other module is that module's function under Vue's name. */
+function isVueModuleSpecifier(specifier: string): boolean {
+  return specifier === "vue" || specifier.startsWith("vue/") || specifier.startsWith("@vue/")
+}
+
 function unquote(text: string): string {
   if (text.length >= 2) {
     const first = text[0]
@@ -151,6 +197,30 @@ function unquote(text: string): string {
 // ============================================================================
 // ANALYZER
 // ============================================================================
+
+/**
+ * THE DELEGATE'S FILE-LEVEL ACTOR — the spelling the JavaScript delegate uses for an
+ * edge whose actor is the FILE rather than a symbol, and which THIS seam must translate.
+ *
+ * `"(file)"` is the family's declared sentinel (`real-javascript-analyzer.ts`
+ * `FILE_LEVEL_SOURCE`, where it is pinned by that lane's own fixtures and paired with
+ * `metadata.fileLevel: true`; rust, scala, kotlin, zig, graphql and nim publish it too).
+ * `(` and `)` cannot appear in an identifier at all, so it can never collide with a name.
+ *
+ * WHY THE SEAM TRANSLATES IT. This seam hands the delegate THIS component's own file
+ * path (see the `sub = …analyze(…)` call), so every module-scope row the delegate
+ * produces is a statement about THIS component. `(file)` names no symbol in a `.vue`
+ * file — nothing in one is named that — so a row left carrying it has an actor no consumer
+ * can walk to, which is the fault F8 measured and this file exists to prevent: one
+ * component, two answers, with the Class unreachable and every script edge dangling.
+ *
+ * TRANSLATION, NOT SUPPRESSION: `metadata.fileLevel` and `metadata.scopeName` stay exactly
+ * as the delegate wrote them, so the row is still marked module-scope and the delegate's
+ * module name is preserved. Only the ACTOR is respelled as the artifact it belongs to.
+ * For a renamed component the value used here is the pre-rename identity, so F8's sweep
+ * below still applies the `name:` rename on top — translation first, rename second.
+ */
+const DELEGATE_FILE_ACTOR = "(file)"
 
 export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
@@ -596,6 +666,17 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         // catch a regression in it (the first version of the seam mutant SURVIVED
         // for exactly that reason), and a reader of the payload could not tell a
         // template line from a script line.
+        //
+        // THE DELEGATE'S FILE-LEVEL ACTOR NAMES THIS COMPONENT (M14 cross-lane,
+        // 2026-10-11). Measured: the javascript lane respelled its module-scope actor
+        // from the module basename to the family sentinel `"(file)"` for its own
+        // reasons (basename collisions, real-javascript-analyzer.ts's measurement of
+        // 6,694 rows), and this seam's F8 sweep matches `moduleName` — so three lanes'
+        // rows stopped being re-pointed at the component and the six fixtures that pin
+        // this contract went red (`vue/options-rename-identity`, `vue/payload-pins`,
+        // `svelte/relationship-kind-catalog`, `html/inline-embedded-code`,
+        // `html/embedded-heritage`, `html/embedded-origin-marks`).
+        if (r.source === DELEGATE_FILE_ACTOR) r.source = moduleName
         r.metadata = { ...(r.metadata ?? {}), sfcDelegated: true, sfcLineOffset: lineOffset }
         relationships.push(r)
       }
@@ -860,9 +941,44 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (n.type === "call_expression") {
               const callee = n.childForFieldName("function")?.text
               if (callee === "provide" || callee === "inject") {
+                // F21 (2026-10-12): the NAME test needed a BINDING test.
+                //
+                // The pass matches a call by its CALLEE TEXT alone, which is
+                // sound only while `provide`/`inject` still denote Vue's own
+                // function. Three shapes in the corpus write the same name for
+                // something else, and each produced a fabricated contract edge
+                // claiming the component receives a key nothing provides:
+                //
+                //   1. `@inject("db")` — a DI DECORATOR. Measured on
+                //      vue/contract-call-name-shapes: the row was
+                //      `references ContractShapes -> db`, and the component
+                //      never injects anything called db.
+                //   2. `import { inject } from 'vue-router'` — a FOREIGN
+                //      module's function under Vue's name (the same fixture,
+                //      second block: `foreignKey`).
+                //   3. `function inject(key) { … }` — a LOCAL declaration that
+                //      shadows the global (vue/contract-call-local-shadow:
+                //      `shadowedKey`).
+                //
+                // The guard is a BINDING question, not a wider name filter, and
+                // the three answers stay distinct on purpose: a name bound by
+                // `import … from 'vue'` is Vue's and still publishes; a name
+                // bound by another module or by a same-program declaration does
+                // NOT; an UNBOUND name is Vue's global (the shape the corpus
+                // writes everywhere else) and still publishes, which is what
+                // keeps the guard from being a blanket suppression — fixture
+                // local-shadow's own positive row depends on exactly that.
+                //
+                // Corpus-measured cost, not a claim: of 1,162 `.vue` files over
+                // element-plus / vue-element-admin / vuejs / vue-core, 96 provide/
+                // inject call sites exist and ALL 96 are `import … from 'vue'`
+                // bindings — zero local declarations, zero foreign modules, zero
+                // unbound. So on the restored corpus this suppresses nothing and
+                // the fixtures are the whole of its effect.
+                const vueContract = this.contractNameIsVueBinding(callee, n)
                 const argsNode = n.childForFieldName("arguments")
                 const keyNode = argsNode?.namedChild(0)
-                if (keyNode && (keyNode.type === "identifier" || keyNode.type === "string")) {
+                if (vueContract && keyNode && (keyNode.type === "identifier" || keyNode.type === "string")) {
                   const keyName = keyNode.type === "string" ? unquote(keyNode.text) : keyNode.text
                   if (keyName) {
                     pendingInjections.push({
@@ -2346,6 +2462,81 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       // tree this method used to walk.
     }
     return undefined
+  }
+
+  /**
+   * F21 (2026-10-12). Does `name` at this call site still denote Vue's
+   * `provide`/`inject`? Ordered narrowest-first, and the ORDER is the contract:
+   * a decorator is a syntactic position, so it decides before any name lookup; a
+   * bound name is decided by its module; only an UNBOUND name reaches the local
+   * declaration test, where a top-level declaration of the same name is the
+   * shadow. A nested declaration deliberately does NOT count: it does not shadow
+   * a call in a sibling scope, and treating it as one would suppress genuine
+   * contract edges in real components — the failure mode a blanket name filter
+   * has anyway.
+   */
+  private contractNameIsVueBinding(name: string, callNode: Node): boolean {
+    if (this.isInsideDecorator(callNode)) return false
+    const module = this.importModuleFor(name, callNode)
+    if (module !== undefined) return isVueModuleSpecifier(module)
+    return !this.hasProgramBinding(name, callNode)
+  }
+
+  /** Is this call written inside a decorator (`@inject("db")`)? */
+  private isInsideDecorator(node: Node): boolean {
+    let cur: Node | null = node.parent
+    while (cur) {
+      if (cur.type === "decorator") return true
+      cur = cur.parent
+    }
+    return false
+  }
+
+  /**
+   * Is `name` declared as a VALUE binding among this program's top-level
+   * statements (`function inject`, `class inject`, `const/let/var inject`, and a
+   * destructuring declaration that binds it)? Short-circuits on the same
+   * reasoning as `importModuleFor`: only top-level statements can shadow a
+   * program-wide global, and `program`'s direct children are their whole search
+   * space.
+   */
+  private hasProgramBinding(name: string, callNode: Node): boolean {
+    const root = this.scriptRootOf(callNode)
+    if (!root) return false
+    for (let i = 0; i < root.namedChildCount; i++) {
+      const n = root.namedChild(i)
+      if (!n) continue
+      if (n.type === "function_declaration" || n.type === "generator_function_declaration" ||
+          n.type === "class_declaration") {
+        if (n.childForFieldName("name")?.text === name) return true
+      } else if (n.type === "lexical_declaration" || n.type === "variable_declaration") {
+        for (let j = 0; j < n.namedChildCount; j++) {
+          const d = n.namedChild(j)
+          if (d?.type !== "variable_declarator") continue
+          const bound = d.childForFieldName("name")
+          if (!bound) continue
+          if (bound.type === "identifier" ? bound.text === name : this.patternBindsName(bound, name)) return true
+        }
+      }
+    }
+    return false
+  }
+
+  /** Does a destructuring PATTERN bind `name`? (an object/array pattern's own
+   *  identifier leaves, including a shorthand `{ inject }`.) */
+  private patternBindsName(pattern: Node, name: string): boolean {
+    const stack: Node[] = [pattern]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if ((n.type === "identifier" || n.type === "shorthand_property_identifier_pattern") && n.text === name) {
+        return true
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return false
   }
 
   private propNames(node: Node | undefined): string[] {

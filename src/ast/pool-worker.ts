@@ -871,7 +871,40 @@ export function filterNoiseRelationships(
     // JS `$` bindings) — dropping it silently deleted legitimate Vue call
     // targets; template-literal garbage is still blocked via `{`, `}` and the
     // backtick, and `${x}` contains braces.
-    if (leaf.length > 80 || leaf.length < 1) return false
+    if (leaf.length < 1) return false
+    // The 80-char cap blocks pasted SOURCE LINES, not long identifiers — and it
+    // was deleting real declarations whose names simply run long: Swift XCTest
+    // method names are the measured population (`testQuiescingAfterRequestAnd
+    // ResponseHeadsButBeforeAnyEndsThenRequestEndAfterResponseEnd`, 84 chars;
+    // 100 such edges on the 1,256-file swift draw), each one a method THIS FILE
+    // declares whose `contains` edge never reached the store. A name this file
+    // DECLARES is by definition an identifier, so the same declared-names hatch
+    // the NOISE_TARGETS rule uses admits it; pasted junk is not in the file's
+    // symbol table, so the cap keeps its full force there.
+    if (leaf.length > 80 && !(declaredNames && declaredNames.has(leaf))) return false
+    // OPERATOR NAMES. Three lanes name an operator declaration `operator X`
+    // (swift real-swift-analyzer.ts, dart real-dart-analyzer.ts, csharp
+    // real-csharp-analyzer.ts), and X can be spelled with angle brackets:
+    // Swift's `static func <`, `func >=`, `func <<`; Dart's `operator <`;
+    // C#'s `operator <<`. The ban below was written for TEMPLATE/HTML junk
+    // (`std::vector<int>`, `<script>`, `<tag>`), and that junk always carries
+    // LETTERS — a spelling made only of operator characters cannot be a source
+    // snippet, so it is admitted here and the ban keeps its full force
+    // everywhere else. Measured on the swift oracle draw (1,256 files) against
+    // the unpatched filter: 126 edges dropped, 26 of them operator-named, and
+    // ALL 26 were killed by this ban (`contains ByteCount -> operator <`,
+    // `contains NIODeadline -> operator >`, `exports StringConvertible ->
+    // operator <`). keepSymbol did not drop the SYMBOL, so each deleted edge
+    // left a stored symbol with no ownership edge — the store-vs-analyzer
+    // divergence shape this file already documents for other rules.
+    const operatorName = /^operator (\S+)$/.exec(leaf)
+    if (
+      operatorName &&
+      /^[<>=!&|^~+\-*/%]+$/.test(operatorName[1]) &&
+      (language === "swift" || language === "dart" || language === "csharp")
+    ) {
+      return true
+    }
     if (/[{}`<>\n\r\t]/.test(leaf)) return false
     if (leaf.startsWith(" ") || leaf.includes("  ")) return false
 

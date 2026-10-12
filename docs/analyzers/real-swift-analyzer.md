@@ -1,5 +1,18 @@
 # real-swift-analyzer.md
 
+**Two rounds, two sets of numbers — read each figure with its section's round.**
+This document spans round SWIFT3 (the ontology wave that added `imports` and the
+access-level `exports` rule) and round SWIFT4. The per-type verdict table, the
+section **Round SWIFT4 — what the emitter inherited, and what changed**, the
+fixtures/mutants block under it and the **Gate results** table's first half are
+SWIFT4's measurements, taken in this working copy. Per-type figures quoted inside
+the six-question prose, the §4 reason-code census, the Determinism and payload
+sections are SWIFT3's, measured on the tree that round shipped, and SWIFT4 did
+not re-run those instruments. Where a figure SWIFT3 recorded did not survive
+into the tree SWIFT4 inherited, SWIFT4 names it with both numbers rather than
+leaving the two irreconcilable — `imports` was 0 edges at `HEAD` and `exports`
+was published twice.
+
 ## Language
 
 - Analyzer file: `src/ast/real-swift-analyzer.ts`
@@ -56,7 +69,7 @@ and the first 600 of apple/swift @ `b5ec977b66deb5444d5acc0e0e1cdcb35f18d22c`
 | overrides | ✅ | `override` keyword (`modifiers > member_modifier [override]`) → qualified `Owner.method -> Parent.method` resolved via class-hierarchy BFS + shared companion index. Three confidence tiers: 1.0 exact in-file, 0.9 companion-indexed (`reasonCode: companion-index`), 0.5 first-parent guess (`reasonCode: first-parent-guess`) | 0.8 |
 | references | ✅ | file-scope imports → `references root -> module` (`import Foundation` → `references root -> Foundation`, ObjC M12.19 pattern). Target is the **spelled path**, so a scoped `import let WinSDK.IPPROTO_IP` names `WinSDK.IPPROTO_IP`. UNCHANGED by the ontology wave — see "The `references` label" below | 0.9 |
 | imports | ✅ **NEW** | the same import statement as a **module dependency**: one edge per MODULE, target = the first dotted path segment (Swift's own import grammar — a submodule or a scoped declaration hangs off the module). `import let WinSDK.IPPROTO_IP` → `imports root -> WinSDK`, with `scopedKind: let`, `scopedItem: IPPROTO_IP`, `submodulePath: WinSDK.IPPROTO_IP` in metadata. `metadata.isImport` (the marker completeness section B reads) and `metadata.fileLevel` (the M60/#910 contract, so the parallel-indexer stores the importing FILE in `source_external` instead of the placeholder string `root`) | 0.9 |
-| exports | ✅ **NEW** | Swift's API surface: a FILE-SCOPE declaration (`ownerName` unset) whose access level is `public`/`open`/`package`. Membership, not indentation — a member's export is reached through its type's export, so emitting one would restate a `contains` edge under a second label (go GO7 / clean's `ownerName` exclusion). Extensions are EXCLUDED (see below). First occurrence of a name wins (go GO7's export-uniqueness invariant) | 1.0 |
+| exports | ✅ **NEW** | Swift's API surface, published from the FILE'S LEAF NAME (`moduleLeafName`), never from the literal `root` — `root` is in the parallel-indexer's `SYMBOL_NAME_DENYLIST`, so an edge sourced there can never bind to a stored symbol. Two constructs publish: **(a)** a FILE-SCOPE declaration (`ownerName` unset) whose own access level is `public`/`open`/`package`, and **(b)** an import that RE-PUBLISHES its module — `public import M` (SE-0409) and `@_exported import M`. Membership, not indentation — a member's export is reached through its type's export, so emitting one would restate a `contains` edge under a second label (go GO7 / clean's `ownerName` exclusion). Extensions are EXCLUDED (see below). First occurrence of a name wins (go GO7's export-uniqueness invariant), and each published name also gets an `ExportInfo` row (a re-exported module's row is `type: "module"`) | 1.0 |
 
 ### `exports` — what Swift's export construct is, measured
 
@@ -78,6 +91,23 @@ interface. Measured by `bun script/m14/swift-import-export-probe.ts` over
 
 **Export-level total: 5,751 of 52,113 = 11.04%**, 3,999 distinct names.
 
+**The edge's SOURCE is the file's leaf name, and that is a deliberate change
+(SWIFT4).** The first implementation sourced every export at the literal string
+`root`, arguing that Swift's file declares no module so no file-level construct
+can name one. That argument is right about MODULES and wrong about EDGE
+ENDPOINTS: `root` is in `src/ast/parallel-indexer.ts`'s `SYMBOL_NAME_DENYLIST`
+("synthetic tree-sitter artifact names — never legitimate declarations"), so an
+edge sourced there can never bind to a stored symbol, while the family spells a
+file-as-module endpoint with the file's own leaf name — typescript's
+`moduleLeafName()`, go's `packageName`, python's `moduleName`. `moduleLeafName`
+now does the same for Swift, and `swift/exports-visibility` pins it, including
+the forbid `exports root -> Shape`. Measured in the 1,252-file draw: **818 of
+2,641** export edges have a source that a symbol in its own file also names (the
+file's leaf name coincides with one of its declarations), and the other 1,823
+name the FILE — which is what a module-level edge endpoint is. The leaf is a name
+for the file the edge was read from, not a claim about SwiftPM's module, which no
+Swift source file contains.
+
 Three exclusions, each with its measured cost:
 
 1. **Extensions** (54 file-scope `public extension` sites in the draw). An
@@ -88,16 +118,39 @@ Three exclusions, each with its measured cost:
 2. **Members.** `public struct PublicType { public var visibleField }` exports
    `PublicType`, not `visibleField`. A member is reached through its owner, and
    emitting both would put one fact in the graph under two labels.
-3. **The module re-export `@_exported import M`** (58 occurrences in the same
-   draw — swift-nio's `Sources/NIO/Exports.swift` and `Sources/NIOFS/Exports.swift`
-   are umbrella files built entirely from it). The construct is real and this
-   lane does NOT rule it; it produces no `exports` **edge** because a MODULE is
-   not a symbol, and the family's export invariant requires an export name to
-   resolve to a top-level symbol. `run-fixtures.ts` rejected this lane's first
-   implementation on exactly that rule
-   (`export(s) … do not resolve to a top-level symbol`) — the measurement, not
-   an argument. The fact ships as an `imports` edge carrying
-   `metadata.isModuleReExport: true` and on the `ImportInfo` row.
+3. **Nothing else.** The module re-export used to be excluded here, and this
+   round emits it instead — see `### exports — 2,641 edges (new)` and the
+   paragraph below, which is where the `run-fixtures.ts` invariant it once
+   tripped is answered.
+
+### The two forms of a module re-export — `@_exported` and `public import`
+
+Swift spells "this module re-publishes M" two ways, and this round emits both:
+`@_exported import M`, the underscored attribute the ontology wave already read,
+and `public import M`, SE-0409's access-controlled import, which the previous
+round did not read at all. They are different constructs that publish the same
+fact, so the form is CARRIED (`metadata.exportForm` is
+`underscored_exported_import` or `public_import`) rather than flattened, and
+`swift/exports-visibility` pins one fixture row per form. Corpus frequency, whole
+repos and not the draw (a `git grep` over the tracked files, so the numbers are
+reproducible from the pins): `@_exported` appears **21 times in 6 files** of
+swift-nio, **1 time** in alamofire and **286 times in 174 files** of apple/swift;
+`public import` appears **0** times in swift-nio, **0** in alamofire and **159
+times in 65 files** of apple/swift. In the census's 1,252-file draw the export
+probe sees **24** `@_exported` attributes in 9 files.
+
+The MODULE is an `ExportInfo` row (`type: "module"`) as well as an edge, and
+that reverses the ontology wave's decision. That decision was made because
+`run-fixtures.ts` enforces "an export must name an IMPORTABLE UNIT", and a
+module is not a symbol this index binds — the harness rejected the row with
+`export(s) … do not resolve to a top-level symbol`. The row is now admitted on
+the harness's own premise rather than around it: the name IS importable (that is
+what re-export means), the binding is the import statement in the same file,
+published as the `imports` edge carrying `metadata.isModuleReExport: true`, and
+the row says `type: "module"` so nothing can claim a member is a module. Both
+readers of that surface are served: `bb_graph` reads the edges, `run-fixtures`'
+invariant reads the rows. Measured: the draw carries **41** such edges, and they
+are exactly the 41 `exports` edges whose target binds to no symbol.
 
 ### `package` (Swift 5.9) — a grammar boundary, declared not claimed
 
@@ -139,52 +192,63 @@ consumer can tell them apart.
 
 ## Per-type verdict table — all ten, with the number behind each
 
-`bun script/m14/swift-ontology-census.ts`, production `parseFile`, 1,256 files,
-40,921 symbols, 128,506 relationships (123,062 before the ontology wave). The
-`files` column is capped at 400 distinct files per type in the census, so a
-value of 400 means "400 or more".
+`bun script/m14/swift-ontology-census.ts`, production `parseFile`, **1,252 files**
+(swift-nio 551 — the whole repo — + alamofire 101 — the whole repo — + the first
+600 tracked code-bearing files of apple/swift), **40,990 symbols**, **128,017
+relationships, every one of them carrying a line number**, 0 files failed to
+parse. The draw is the census's own admission rule (repo root included, tracked
+`.swift`, code-bearing, ≤400 KB) — see **The draw** below, including the 10
+repo-root files this round's instrument fix added.
 
-**Every count in this table was re-measured in this round** over the same corpus
-pins, with this round's analyzer changes in place, and not carried forward. The
-final run reproduces the committed census artifact exactly on all ten types
-(128,506 relationships, 40,921 symbols, 244 grammar-error files, 0 crashes). An
-intermediate run of the same sweep differed by one edge on two types —
-`contains` 27,330 and `exports` 2,609 — which is the ±1 reproducibility band
-recorded under **Determinism** below; the figures in this table are the final
-run's, and the band is stated rather than averaged away.
+**Every count in this table was re-measured in round DERIV_EXPORTS_SWIFT4** with
+that round's analyzer in place, and not carried forward. The three shard runs
+were repeated from scratch later the same day and **two of the three are
+byte-identical, timestamp field aside** (nio and alamofire, both merged and
+unmerged); the merged artifact is byte-identical too. The ±1 band the previous
+round recorded in `contains`/`exports` between two runs of one sweep did not
+reproduce here — what moved instead was the lane's own oracle's *file-level*
+counter (413 → 414 with all ten per-type totals identical), which is recorded
+under **Determinism** rather than averaged away.
+
+The `endpoint binding` column is the census's own pair, measured per file with
+that file's own symbol table: `src`/`tgt` count the edges whose source/target
+names a symbol the SAME FILE declared. It **replaces** the previous round's
+`target resolves` column, which was a cross-file resolution rate whose rule
+(the parallel-indexer's bare-name/leaf/suffix endpoint match) has no instrument
+in this lane any more — a number quoted from an instrument that is not re-run is
+not evidence, so it is dropped rather than carried. The cross-file resolution
+question is answered where it belongs: by the `imports`/`exports` sections below
+and by the shared indexer, whose `source_external` contract is what binds a
+file-level endpoint at all.
 
 | type | verdict | edges | files | target resolves | confidence | evidenceClass | m14 oracle | lane's own oracle |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| calls | EMITTED | 42,493 | 400+ | 89.69% | 0.95 (all) | usage_contextual | audited | — |
-| uses | EMITTED | 34,822 | 400+ | 94.43% | 0.90 ×25,015 · 0.95 ×6,454 · **0.60 ×3,353** | usage_contextual 31,469 · inferred 3,353 | audited | — |
-| contains | EMITTED | **27,329** | 400+ | **99.86%** | 1.0 (all) | structural | **none — DERIVATION debt** | **yes** |
-| references | EMITTED | 3,070 | 400+ | **3.81%** | 1.0 (all) | import_based | audited | — |
-| imports | EMITTED (was GAP) | **2,834** | 400+ | 2.05% (by design — see below) | 1.0 (all) | import_based | **none — DERIVATION debt** | **yes** |
-| exports | EMITTED (was GAP) | **2,610** | 400+ | **100.00%** | 1.0 (all) | structural | **none — DERIVATION debt** | **yes** |
-| extends | EMITTED | 1,336 | 400+ | 77.84% | 1.0 (all) | structural | audited | **yes** (split check) |
-| implements | EMITTED | 2,977 | 400+ | 47.50% | 1.0 (all) | structural | audited | **yes** (split check) |
-| overrides | EMITTED | 281 | 61 | **100.00%** | 0.50 ×210 · 1.0 ×71 | inferred 210 · structural 71 | **none — DERIVATION debt** | **premise probe** |
-| instantiates | EMITTED | 10,754 | 400+ | 88.13% | 1.0 ×10,504 · 0.95 ×250 | structural | audited | — |
+| calls | EMITTED | 42,527 | 1,163 | src 41,437 · tgt 11,363 | 0.95 (all) | usage_contextual | audited | — |
+| uses | EMITTED | 34,863 | 1,058 | src 34,170 · tgt 14,114 | 0.90 ×25,053 · 0.95 ×6,456 · **0.60 ×3,354** | usage_contextual 31,509 · inferred 3,354 | audited | — |
+| contains | EMITTED | **26,639** | 1,031 | src = tgt = 26,639 | 1.0 (all) | structural | **none — DERIVATION debt** | **yes** |
+| references | EMITTED | 3,072 | 1,109 | src 0 · tgt 0 (a module is not a symbol) | 1.0 (all) | import_based | audited | — |
+| imports | EMITTED (was DEAD at HEAD) | **2,836** | 1,109 | src 0 · tgt 0 (by design — see below) | 1.0 (all) | import_based | **none — DERIVATION debt** | **yes** |
+| exports | EMITTED (was DOUBLED at HEAD) | **2,641** | 585 | src 818 · tgt 2,600 | 1.0 (all) | structural 2,600 · import_based 41 | **none — DERIVATION debt** | **yes** |
+| extends | EMITTED | 1,336 | 418 | src 1,336 · tgt 427 | 1.0 (all) | structural | audited | **yes** (split check) |
+| implements | EMITTED | 2,978 | 611 | src 2,978 · tgt 590 | 1.0 (all) | structural | audited | **yes** (split check) |
+| overrides | EMITTED | 369 | 92 | src 369 · tgt 90 | 0.50 ×279 · 1.0 ×90 | inferred 279 · structural 90 | **none — DERIVATION debt** | **premise probe** |
+| instantiates | EMITTED | 10,756 | 1,064 | src 10,119 · tgt 3,240 | 1.0 ×10,505 · 0.95 ×251 | structural | audited | — |
 
-The last column is this round's answer to the DERIVATION debt the m14
-differential structurally cannot see: an independent tree walker for `contains`,
-`imports` and `exports`, a corpus-wide declaration index for the `overrides`
-premise, and a corpus-wide type-kind index for the `extends`/`implements` split.
-Each is named, scoped and measured in its own section below.
+The last column is the DERIVATION debt's answer: an independent tree walker for
+`contains`, `imports` and `exports`, a corpus-wide declaration index for the
+`overrides` premise, and a corpus-wide type-kind index for the
+`extends`/`implements` split. Each is named, scoped and measured in its own
+section below.
 
-The resolution column uses the **parallel-indexer's own endpoint rule** (bare
-name, leaf of a dotted name, qualified suffix), not a stricter one. The first
-version of this census tested only the whole endpoint string, which reported
-`overrides` at 0% — a fact about the probe, not about the graph, because every
-`overrides` edge is spelled `Owner.method -> Parent.method`. Corrected and
-re-measured; the corrected numbers are the ones above.
-
-**`imports` at 2.05% resolution is not a defect.** A module is not a symbol and
-the family's `imports` kind is deliberately not symbol-bound — its consumer is
-the file-dependency engine, keyed on `source_external`, not a symbol JOIN. The
-98% is the same fact as `references`' 98.11%, and it is the reason `imports`
-exists as a separate label. `exports` at 100% is the opposite property and is
-the check that matters for that type: every export names a top-level symbol.
+**`imports` at 0% in-file binding is not a defect, and neither is 100%.** A
+module is not a symbol, and the family's `imports` kind is deliberately not
+symbol-bound — its consumer is the file-dependency engine, keyed on
+`source_external`, not a symbol JOIN. That is the same fact as `references`' 0%,
+and it is the reason `imports` exists as a separate label. `exports` is the
+opposite property and the check that matters for that type: 2,600 of 2,641
+binding targets, and the 41 that do not bind are exactly the 41 `import_based`
+edges — the module re-exports, whose target is a module name and not a
+symbol. Two instruments agree on that split to the edge.
 
 **No type is RULED.** Swift expresses all ten constructs. The two that were
 missing at handover were GAPs, not exclusions, and both are now implemented.
@@ -192,19 +256,26 @@ missing at handover were GAPs, not exclusions, and both are now implemented.
 ## The six questions, per already-emitted type
 
 Source derivation answers only the first. Each answer below carries its
-measurement. **The shared limit of the oracle question applies to every row:**
+measurement. **Which round's measurement, exactly:** the `Exists` / `Oracle` /
+`Labelled` answers describe DERIVATIONS and are unchanged by round SWIFT4; the
+edge counts and the `Resolved` bullets are the ontology wave's, taken over its
+1,256-file draw under its cross-file resolution rule, and the authoritative
+current counts are the verdict table above (SWIFT4, 1,252-file draw, in-file
+binding). Where a subsection's own number moved, the heading names the current
+figure and the A/B in **Round SWIFT4** is the measurement. **The shared limit of
+the oracle question applies to every row:**
 the m14 differential's swift oracle is a second walker over the **same pinned
 grammar**, so a grammar bug present in both paths is invisible to it. Agreement
 means the two derivations match; it does not mean the grammar read the
 construct correctly.
 
-### contains — 27,329 edges
+### contains — 26,639 edges
 1. **Exists** — `analyze()` post-loop, `s.ownerName || s.scope`, deduped per
    (owner, name), extensions excluded from being a container. (`s.scope` is
    never set by `createSymbol`, so the fallback is inert — noted in the
    line-by-line read, not changed.)
-2. **Fires** — 27,329 edges over 1,256 files, present in every one of the three
-   corpora (swift-nio 14,040 · swift-corpus 10,382 · alamofire 2,907).
+2. **Fires** — 26,639 edges over 1,252 files, present in every one of the three
+   corpora (swift-nio 13,500 · swift-corpus 10,252 · alamofire 2,887).
 3. **Oracle** — **no m14 oracle**: the differential's compared-label allowlist for
    swift is `["extends","implements","instantiates","calls","uses","references"]`
    (differential.ts:23151/23186), so `contains` is dropped from the ANALYZER
@@ -217,20 +288,21 @@ construct correctly.
 4. **Labelled** — right. Ownership is the filter; `contains` asserts enclosure
    and the edge's line is the member's declaration line, which is what the
    indexer's `resolveContainsTargetStmt` anchors on.
-5. **Resolved** — **27,290 of 27,329 targets resolve to a symbol in the same
-   file (99.86%)**. **All 39 that do not are accounted for**: they are the
-   symbols the production `keepSymbol` filter deletes (`unknown` ×27, `root` ×9,
-   `self` ×2, `destructor` ×1). The dangling-endpoint probe counts the same 39
-   independently — two instruments, written separately, agreeing on the number.
-6. **Confident** — 27,329 of 27,329 at confidence 1.0, `evidenceClass:
+5. **Endpoint binding** — **26,639 of 26,639 (100.00%)**: both endpoints of every
+   `contains` edge name a symbol the same file declares, because both endpoints
+   ARE this file's declarations (the owner and the member). The ontology wave's
+   cross-file rule read 39 exceptions where this one reads none, and the two are
+   not in conflict: those 39 were `keepSymbol`'s denylist deletions, measured by
+   the dangling-endpoint probe, not by this column.
+6. **Confident** — 26,639 of 26,639 at confidence 1.0, `evidenceClass:
    structural`. Nothing below the 0.7 heuristic line. **0 edges without a
    `line_number`.**
 
-### uses — 34,822 edges
+### uses — 34,863 edges
 1. **Exists** — four handlers: `handleSelfUse` (`self.x`), `handleMemberUses`
    (non-self navigation reads), `handleKeyPathUses` (`\.x`), `handleBareUses`
    (bare reads of a DECLARED member of the enclosing type).
-2. **Fires** — 34,822 edges; **every branch is live**: confidence 0.90
+2. **Fires** — 34,863 edges; **every branch is live**: confidence 0.90
    (`isMemberRead`/`isKeyPath`, 25,015), 0.95 (`isFieldAccess`, 6,454), 0.60
    (`isBareRead`, 3,353). All three tiers non-zero means no branch is dead.
 3. **Oracle** — audited (swift is in the `uses`-audited set). Across every
@@ -246,11 +318,11 @@ construct correctly.
    the 0.60 edges carry `isBareRead`, which is a marker rather than a
    `reasonCode` field.
 
-### calls — 42,493 edges
+### calls — 42,527 edges
 1. **Exists** — `handleCall`/`emitCall`, with the SW-D21 case-pattern recovery
    gate, the SW-D23 nominal-recovery gate, the subscript-read gate, the
    `defer` gate, the builtin filter and the `XCT*` filter.
-2. **Fires** — 42,493 edges, every corpus (swift-nio 24,024 · swift-corpus
+2. **Fires** — 42,527 edges, every corpus (swift-nio 24,024 · swift-corpus
    13,548 · alamofire 4,921). 6,484 distinct targets.
 3. **Oracle** — audited. 0 missing / 0 unexplained on every draw.
 4. **Labelled** — right. Leaf targets, builtins filtered, no `calls -> init`,
@@ -262,9 +334,9 @@ construct correctly.
    limitation, not fixed here — it would change every `calls` edge's stored
    number.
 
-### references — 3,070 edges
+### references — 3,072 edges
 1. **Exists** — post-loop over the `imports: ImportInfo[]` array.
-2. **Fires** — 3,070 edges in 1,107 files, one per import statement, 461
+2. **Fires** — 3,072 edges in 1,109 files, one per import statement, 461
    distinct targets.
 3. **Oracle** — audited. The oracle's rule is the first
    `simple_identifier`/`identifier` child of the `import_declaration`, i.e. the
@@ -278,12 +350,12 @@ construct correctly.
 6. **Confident** — 3,070 of 3,070 at 1.0, `import_based`, all with a
    `line_number` at the module name's site.
 
-### extends — 1,336 edges / implements — 2,977 edges
+### extends — 1,336 edges / implements — 2,978 edges
 1. **Exists** — `handleProtocol` (protocol → inherited protocol) and
    `handleDeclaration` (first-base superclass for a class; every base of a
    struct, actor, extension or enum is an adoption; stdlib raw-value type in an
    enum's first slot is metadata).
-2. **Fires** — extends 1,336, implements 2,977, across all three corpora.
+2. **Fires** — extends 1,336, implements 2,978, across all three corpora.
 3. **Oracle** — both audited by the m14 differential (0 missing / 0
    unexplained on both corpora). **This round adds a check the differential
    cannot make** — see (4): the differential's oracle reads the same file, so it
@@ -332,10 +404,10 @@ construct correctly.
    confidence. Recorded rather than silently lowered — lowering it would change
    every stored row of both types.
 
-### overrides — 281 edges, the lane's weakest type
+### overrides — 369 edges, the lane's weakest type
 1. **Exists** — `override` keyword → `OverrideTask`; three-tier resolution
    (exact in-file BFS → companion index → first-parent guess).
-2. **Fires** — 281 edges in 61 files only (swift-nio 158 · swift-corpus 90 ·
+2. **Fires** — 369 edges in 92 files only (swift-nio 158 · swift-corpus 90 ·
    alamofire 33). The smallest type by an order of magnitude.
 3. **Oracle** — **no m14 oracle.** `overrides` is excluded from swift's compared
    labels (differential.ts:23151 drops it for csharp, dart, **swift**, cpp and
@@ -418,10 +490,10 @@ Swift `DeclarationSpec` in `src/ast/project-index.ts` and `".swift"` in
 `PROJECT_INDEX_EXTENSIONS` in `src/ast/parallel-indexer.ts`. **Reported to
 master, not made.** Until they land, `overrides` in production is the top row.
 
-### instantiates — 10,754 edges
+### instantiates — 10,756 edges
 1. **Exists** — bare capitalized call, `super`/`self`/`Self.init` delegation,
    and the post-walk enum-case conversion (SW-B/SW-H).
-2. **Fires** — 10,754 edges, 2,024 distinct targets.
+2. **Fires** — 10,756 edges (the distinct-target count is the ontology wave's and is not re-measured here).
 3. **Oracle** — audited. 0 missing / 0 unexplained.
 4. **Labelled** — right. Construction is `instantiates` only, never also a
    `calls` edge; XCTest assertion functions and stdlib numerics are filtered.
@@ -429,10 +501,10 @@ master, not made.** Until they land, `overrides` in production is the top row.
 6. **Confident** — 10,504 at 1.0 (bare construction) and 250 at 0.95
    (init delegation and the enum-case conversion), all `structural`.
 
-### imports — 2,834 edges (new)
+### imports — 2,836 edges (was DEAD at HEAD)
 1. **Exists** — post-loop over `ImportInfo[]`; `importScopeKind` reads the
    grammar's own scope token, `importAttributes` reads the import's attributes.
-2. **Fires** — 2,834 edges from 3,070 import declarations (the difference is
+2. **Fires** — 2,836 edges from 3,072 import declarations (the difference is
    per-module dedupe: 5 import statements in the fixture, 4 modules).
    318 distinct module targets.
 3. **Oracle** — none in the m14 differential, and it cannot get one without a
@@ -448,23 +520,29 @@ master, not made.** Until they land, `overrides` in production is the top row.
    `metadata.fileLevel: true` makes the parallel-indexer write this file's
    relative path into `source_external`, which is the key
    `bb_graph`'s file-level `dependencies` section reads.
-6. **Confident** — 2,834 of 2,834 at 1.0, `import_based`, every edge with the
-   module name's `line_number`.
+6. **Confident** — 2,836 of 2,836 at 1.0, `import_based`, every edge with the
+   module name's `line_number`. **`HEAD` published 0 of these edges** — the row
+   the loop reads its module from was not written — which is the single largest
+   difference between the inherited tree and this one (see **Round SWIFT4**).
 
-### exports — 2,610 edges (new)
+### exports — 2,641 edges (was DOUBLED at HEAD)
 1. **Exists** — post-loop over the symbol table: no `ownerName`, kind not
    `Extension`, `visibility ∈ {public, open, package}`, first name wins.
-2. **Fires** — 2,610 edges, 2,325 distinct names (swift-corpus 2,115 · swift-nio
-   395 · alamofire 100). The corpus skew is real: apple/swift's test corpus is
+2. **Fires** — 2,641 edges (swift-corpus 2,131 · swift-nio 409 · alamofire 101),
+   of which 41 are module re-exports. The distinct-name count of the ontology
+   wave's table is not re-measured this round. The corpus skew is real: apple/swift's test corpus is
    heavily `public`-surface while app libraries are `internal` by default.
 3. **Oracle** — none in the m14 differential (not in swift's compared labels).
    **This round adds the lane's own** (`swift-uncovered-oracle.ts`) — see "The
    lane's own oracle".
 4. **Labelled** — right: an access-level export is `evidenceClass: structural`
    (the tree states interface membership outright), matching c, clean and go.
-5. **Resolved** — **2,610 of 2,610 (100.0%)**, same file. The only type in the
-   lane at 100%, and the check that matters here.
-6. **Confident** — 2,610 of 2,610 at 1.0. No inference in the rule, so no
+5. **Endpoint binding** — **2,600 of 2,641 (98.4%)**, and the 41 that do not bind
+   are exactly the 41 `import_based` module re-exports: an export target is a
+   symbol except when it is a MODULE, and the two instruments (this census's
+   `evidenceClass` and its binding column) agree on which 41 those are. No other
+   type in the lane has that alignment.
+6. **Confident** — 2,641 of 2,641 at 1.0. No inference in the rule, so no
    reason code.
 
 ## DERIVATION debt — this lane is on the list, and it grew
@@ -474,12 +552,12 @@ emits that the differential never audits: "stored and compared against nothing".
 At handover swift carried **2**: `contains` and `overrides`. After the ontology
 wave it carries **4**:
 
-| type | edges now emitted | m14 oracle | this round's lane-owned oracle |
+| type | edges now emitted | m14 oracle | the lane-owned oracle |
 | --- | --- | --- | --- |
-| contains | 27,329 | none — the compared-label allowlist drops it from the analyzer side | independent tree walker, both directions |
-| overrides | 281 | none — excluded from swift's compared labels | corpus-wide declaration index; premise measured |
-| imports | 2,834 | none — added in the ontology wave | independent tree walker, both directions |
-| exports | 2,610 | none — added in the ontology wave | independent tree walker, both directions |
+| contains | 26,639 | none — the compared-label allowlist drops it from the analyzer side | independent tree walker, both directions |
+| overrides | 369 | none — excluded from swift's compared labels | corpus-wide declaration index; premise measured |
+| imports | 2,836 | none — added in the ontology wave | independent tree walker, both directions: 0 MISSING, 0 EXTRA |
+| exports | 2,641 | none — added in the ontology wave | independent tree walker, both directions |
 
 **SWIFT IS ONE OF THE 100 DERIVATION FINDINGS, and this round treats that as
 part of the job rather than a note.** The register still reads `4 un-audited`
@@ -487,6 +565,12 @@ for this lane and it is master-owned and shrink-only, so the four findings stay
 recorded there. What changed is that three of the four now have an independent
 second derivation that runs over the same corpus draw, and the fourth has its
 premise measured rather than asserted. See **The lane's own oracle**.
+
+**Superseded 2026-10-11.** The three derivations are now wired into the
+differential itself and the register reads `swift 1 un-audited: ["overrides"]` —
+the shrinking row is in the baseline, not just in this document. See
+**The DERIVATION register, repaid** below for the wiring, the error-file
+carve-out it needed, and the six runs behind the 100%.
 
 Clearing them in the shared harness still needs `script/m14/differential.ts`
 (master-owned): add the label to swift's compared-label list and add a
@@ -569,9 +653,13 @@ says nothing about either rule. 244 of the 1,256 files are in that population;
 the agreement figure below is over the **1,012 files both readers saw
 identically**.
 
-Artifact: `validation/m14/tmp/swift-uncovered-oracle.json`. Over the **1,012
-files both readers saw identically** (244 carry an ERROR node and are counted
-separately):
+Artifact: `validation/m14/tmp/swift-uncovered-oracle.json`. **The table below is
+SWIFT3's run** — over the **1,012 files both readers saw identically** (244 carry
+an ERROR node and are counted separately). SWIFT4's own run of the same oracle is
+table in **Round SWIFT4** (`imports` 2,108/2,108, `contains` 17,879/17,633 with
+312/66, `exports` 1,893/2,164 with 4/275), and the two differ only where the rules
+changed: the oracle mirrors SWIFT4's JOB 2 in its own walk and now sees the
+re-exported modules on both sides.
 
 | type | truth edges | analyzer edges | agreed | MISSING | EXTRA |
 | --- | --- | --- | --- | --- | --- |
@@ -607,21 +695,27 @@ ORACLE, and three concrete causes are identified:
    enclosing extension.
 
 **What this oracle does and does not establish.** It establishes that the
-analyzer's post-loop edge construction for these three types agrees, edge for
-edge, with an independent reading of the tree over 1,012 real files — and for
-`imports`, without a single exception. It does **not** establish that either
-reader read the Swift construct correctly: both read the same pinned grammar, so
-a construct the grammar mis-parses is invisible to the comparison, and 244 of the
-1,256 files are in that population. **The residue on `contains` (312/67) and
-`exports` (4/275) is not fully attributed**, and is reported as an open item
-rather than dismissed.
+analyzer's edge construction for these three types agrees, edge for edge, with an
+independent reading of the tree over 1,012 real files — and for `imports`,
+without a single exception. It does **not** establish that either reader read the
+Swift construct correctly: both read the same pinned grammar, so a construct the
+grammar mis-parses is invisible to the comparison, and 244 of the 1,256 files are
+in that population. **The residue on `contains` (312/66) and `exports` (4/275) was
+NOT fully attributed by this round**, and is reported as an open item rather than
+dismissed; round SWIFT4 pushed the attribution further (the four MISSING exports
+are members on `extension`/`protocol` bodies that the oracle reads at file scope,
+the EXTRA columns are the operator/backtick spellings) and left the rest stated
+with its number.
 
 One further property the oracle measures because nothing else does: **`exports`
 and the analyzer's own `ExportInfo[]` rows agree on every file** — every export
 edge target has a row and every row has an edge. Both are read by consumers
 (`bb_graph` reads the edges; `run-fixtures`' top-level-symbol invariant reads the
 rows), so a divergence between them would be consumer-visible and invisible to
-the differential.
+the differential. **SWIFT4 re-verified it, because that round added a second
+class of row (`type: "module"`): 176 of swift-nio's 176 files that publish
+anything name the same set in both channels, no row without an edge and no edge
+without a row** (`script/m14/tmp/sw-export-rows-vs-edges.ts`).
 
 ### `swift-overrides-premise-probe.ts` — `overrides`
 
@@ -743,6 +837,15 @@ callers, and `ASTEngine.getParser` deletes and reloads the cached parser every
 a ±1 reproducibility band on census totals rather than as a silent correction —
 the numbers in this doc are the ones this lane measured, and they differ from the
 committed census artifact by exactly those two edges.
+
+**Round SWIFT4 re-tested that band and did not reproduce it.** Every shard of its
+draw was run twice, ~25 minutes apart, with the same analyzer bytes: swift-nio
+(551 files, so the run crosses `getParser`'s 500-parse reload boundary at least
+once) and alamofire (101 files) came out **byte-identical apart from the run
+timestamp**, and so did the merged artifact. What moved by one instead is the
+lane's ORACLE's file-level counter (`filesWithAnyDifference` 413 → 414) with all
+ten per-type totals identical — a counter, not an edge count, and it is recorded
+with its number rather than averaged (limitation 13).
 
 
 
@@ -984,7 +1087,11 @@ are in `regressionsDetail` in
 `validation/m60/results/rel-type-coverage.json` and in **neither** appears in the
 printed list. The per-lane summary line above it lists every one
 (`swift 4 un-audited: ["contains","exports","imports","overrides"]`), which is
-how this lane's two additions were confirmed rather than assumed.
+how this lane's two additions were confirmed rather than assumed. **Superseded
+2026-10-11:** those two additions, and `contains`, are now audited by the
+differential, so the row this defect describes reads `1 un-audited:
+["overrides"]` — see **The DERIVATION register, repaid**. The defect itself
+(regressions cut from the console slice) is unchanged and still stands.
 
 ### 3. The differential's corpus-existence precheck is not language-scoped
 
@@ -1123,10 +1230,13 @@ dead defensive alternatives the grammar never emits (e.g. `actor_declaration`
 emits `property_declaration`; `public_keyword` — emits `visibility_modifier`
 tokens), the same category as C/C++/Rust/ObjC pre-existing dead refs.
 
-## What changed in the analyzer in this round
+## What changed in the analyzer in the ontology wave (SWIFT3)
 
 Three changes, each with the measurement that motivated it. Two change output;
-the third cannot, and says so.
+the third cannot, and says so. **The figures in this section are that round's,
+measured on the tree it shipped**; the round after it (SWIFT4, next section)
+found that two of the three `imports`/`exports` claims recorded here were no
+longer true of the tree it inherited, and says so with its own numbers.
 
 ### 1. `exports` no longer carries an unreachable second evidence tier
 
@@ -1191,6 +1301,558 @@ the premise probe's default mode still measures the same tiers.
 The gain is measured, and the wiring that would deliver it in production is
 **reported, not made** — see the `overrides` section and Known limitations.
 
+## Round SWIFT4 — what the emitter inherited, and what changed
+
+This round's brief was the export/import emitter after the ontology wave. It
+began by measuring the tree it inherited (`HEAD`, commit `71f4e1b38`) against
+the tree it produced, on the SAME draw, through the same `parseFile`, with no
+other file changed between the two runs.
+
+| the whole draw: 1,252 files, one reader, one run each | `HEAD` (inherited) | this round |
+| --- | --- | --- |
+| `imports` edges | **0** | **2,836** |
+| `exports` edges | **5,232** | **2,641** |
+| `contains` edges | 27,346 | 26,639 |
+| `uses` edges | 34,839 | 34,863 |
+| `calls` · `references` · `extends` · `implements` · `overrides` · `instantiates` | 42,527 · 3,072 · 1,336 · 2,978 · 369 · 10,756 | **identical, all six** |
+| symbols | 40,990 | 40,990 |
+| total relationships (all ten types + every other kind) | 128,455 | 128,017 |
+
+Per corpus, so the shapes are visible: swift-nio (`imports` 0 → 1,522, `exports` 802 →
+409, `contains` 14,040 → 13,500, `uses` 15,695 → 15,696), alamofire (`imports` 0 →
+188, `exports` 201 → 101, `contains` 2,907 → 2,887), apple/swift's first 600
+(`imports` 0 → 1,126, `exports` 4,229 → 2,131, `contains` 10,399 → 10,252, `uses`
+14,308 → 14,331). **Six of the ten types are identical on all three corpora**, so
+the round's footprint is exactly where it aimed and nowhere else. Note that the
+`overrides` row in the verdict table above reads 369 where the ontology wave's
+six-question section below reads 281: that difference is NOT this round's —
+`overrides` is 369 on both sides of this A/B, so it moved in the commit between
+the two rounds, on the same tree this round inherited.
+
+### 1. The `imports` channel was DEAD on the inherited tree
+
+`handleImport` pushed `imports.push({ module: moduleName, isExternal: true, range })`
+— no `metadata` — while the edge loop reads its module from
+`imp.metadata.module`. Every row was therefore skipped: a file with eight import
+statements emitted eight `references` edges and **zero** `imports` edges, and the
+channel measured **0 across all 551 swift-nio files**. The fix is the row that
+carries what the edge reads (`metadata: importMd`, with `module`, `scopedKind`,
+`scopedItem` and `isScopedImport`), and the draw's 2,836 edges are that fix
+measured. This is not a documentation drift: `bb_graph`'s file-level
+`dependencies` section is keyed on rows typed `imports` with `source_external`
+set, so the channel being dead is a consumer-visible absence of 2,836
+file-dependency edges.
+
+### 2. `exports` was DOUBLED on the inherited tree
+
+The inherited analyzer had two emission sites over the same symbol table. Every
+exported name got **two** edges, both sourced at `root`, differing only in
+metadata (`symbolKind` vs `fileLevel`) — `FileHandle.swift` emitted four export
+edges for its two exported names, and the corpora follow: swift-nio 802 edges
+where the round publishes 409, apple/swift's first 600 carries 4,229 where the
+round publishes 2,131. (The counts are not exactly two-for-one, because the two rules also
+differ in WHICH names they publish — the round reads the `public import` form
+and HEAD does not.) The round keeps one site: the walk-based `emitDeclarationExport`,
+which is where the leaf-name source, the two re-export forms and the
+`ExportInfo` rows all live.
+
+### 3. The source of an `exports` edge is the file's leaf name
+
+`root` is in `SYMBOL_NAME_DENYLIST`, so an edge sourced there can never bind —
+`swift/exports-visibility` now pins the forbid `exports root -> Shape`, and the
+leaf spelling matches typescript's `moduleLeafName()`, go's `packageName` and
+python's `moduleName`. Measured in the 1,252-file draw: 818 of 2,641 export edges
+have a source that a declaration in the same file also names; the other 1,823
+name the file. Mutant `SW-EXP-7-wrong-source-root` reverts the source and is
+killed; `SW-EXP-8-wrong-leaf-name` breaks the separator scan and is killed.
+
+### 4. `public import` (SE-0409) is the second re-export form
+
+Only `@_exported` was read before. Both forms are now carried by name
+(`metadata.exportForm`), and the re-exported module gets an `ExportInfo` row
+(`type: "module"`) as well as an edge — reversing the ontology wave's decision,
+on the harness's own premise ("an export must name an importable unit"; a module
+is importable by construction, and the `imports` edge in the same file is the
+binding). Mutants `SW-EXP-5-reexport-blind`, `SW-EXP-6-public-import-blind` and
+`SW-EXP-9-mislabelled-form` are killed.
+
+### 5. A declaration inside a FUNCTION BODY no longer owns anything
+
+INCOMING_SWIFT JOB 2 forbids `contains <function> -> <name>` in both spellings.
+The inherited tree minted it for every declaration nested in a function body, so
+the owner is withheld instead (`functionScoped` in `createSymbol`): the symbol
+still exists, still names its own members, and is still reachable as an
+`instantiates` target, but it is nobody's member. Measured: swift-nio −540
+`contains` edges in the A/B above, and the lane's oracle counts **738**
+declaration sites in the 1,256-file draw whose owner is a function — the sites
+both readers agree to exclude.
+
+### 6. Extension access inheritance now reads the DECLARATION's own modifier
+
+`public extension Store { func added() {} }` makes `added` public — Swift's own
+rule. The inherited rule could not tell "no modifier" from "explicitly
+`private`" because it read `getVisibility`, which returns `internal` for both, so
+inheritance applied to members that had stated a level of their own. The new
+`getDeclaredVisibility` returns null for "states none", and inheritance applies
+only to an `Extension` parent with `declaredVisibility === null`. A `public
+struct` still does NOT lift its members.
+
+### 7. The census now admits the files AT a repo root
+
+The draw enumerated one root per top-level directory of the corpus path, so
+files sitting AT a repo root (`Package.swift` and its siblings) belonged to no
+root and were never admitted: the instrument's own previous run admitted 1,246
+files (swift-nio 550 + alamofire 96 + 600) and the fixed one admits 1,252 (551 +
+101 + 600), which is the same draw with those root files in it. This is also why
+the census's draw and the lane's oracle's draw are 1,252 and 1,256: the oracle
+admits every tracked non-empty `.swift` file, so it also admits the four
+swift-nio headers that carry none of the census's code signals.
+`isGitToplevel()` is what makes the repo root replace the per-entry roots rather
+than join them (joining would double-count every nested file) and what stops a
+plain directory of repos from letting `git -C` walk UP into an enclosing
+repository. `calls`, `uses`, `references`, `extends`, `implements`, `overrides`
+and `instantiates` are identical between the two draws; `imports` moves by 6 and
+`exports` by 0 in the two repos whose root files were added (measured on
+swift-nio: 1,522 `imports` at 551 files).
+
+### What the round's own evidence says
+
+| gate | command | result |
+| --- | --- | --- |
+| swift fixtures | `bun script/m14/run-fixtures.ts --lang swift` | **21/21 pass, 0 fail**, "fixture baseline gate: no regressions" |
+| export mutants | `bun validation/m14/fixtures/swift/mutants-exports.mts` | **14/14 KILLED, 0 survived**; analyzer restored, sha256 verified |
+| the lane's oracle | `bun script/m14/swift-uncovered-oracle.ts` | `imports` **0 MISSING / 0 EXTRA**; `contains` 312/66; `exports` 4/275 (below) |
+| census, repeated | three shards, run twice | nio and alamofire **byte-identical** across runs; merged artifact byte-identical |
+
+**The oracle's table after an independent edit of the round's change (the rule
+it mirrors):**
+
+| type | truth edges | analyzer edges | agreed | MISSING | EXTRA |
+| --- | --- | --- | --- | --- | --- |
+| **imports** | 2,108 | 2,108 | **2,108 (100.00%)** | **0** | **0** |
+| contains | 17,879 | 17,633 | 17,567 (98.26%) | 312 | 66 |
+| exports | 1,893 | 2,164 | 1,889 (99.79%) | 4 | 275 |
+
+`contains` truth fell by 233 between the ontology wave's run and this one because
+the oracle mirrors JOB 2 in its own walk (it excludes a declaration whose owner is
+a function — 738 sites over the draw, `functionOwnedContainsExcluded`); `exports`
+rose by 32 on BOTH sides because both readers now see the re-exported modules
+(truth 1,861 → 1,893, analyzer 2,132 → 2,164). `imports` did not move: it was
+already 0/0 in both directions, and this round changed neither rule.
+
+**The residue is reported, not dismissed, and this round added attribution:**
+
+1. The **four MISSING `exports`** were probed file by file
+   (`script/m14/tmp/swift-export-residue-probe.ts`). Every one is a member of an
+   `extension` or a `protocol` that the ORACLE's walk reads at file scope — the
+   analyzer attributes it to its owner (`evaluate` in alamofire's
+   `ServerTrustEvaluation.swift` is in the analyzer's own symbol table as a
+   member of `ServerTrustEvaluating`), and a member's export would restate a
+   `contains` fact under a second label, which is the rule this lane pins. All
+   four files are in the CLEAN population (`swift-error-bucket-probe.ts`), so
+   this is an oracle-side attribution convention, not a damaged-tree artefact.
+2. The `contains` EXTRA column is the **backtick normalisation** and the
+   **oracle's operator list**, as the ontology wave recorded, and the round's
+   residue probe found the same one-sided-spelling family in the `exports`
+   column: `exports ApplySite -> ,` and `exports IUnknown+Identity -> ===` are
+   the analyzer's `operator ,` / `operator ===` labels, which the oracle's
+   `anonOperatorName` cannot derive because its token list does not carry them.
+3. The `contains` MISSING column is dominated by **stored properties**
+   (`Lock -> attrDestroyErr`, `AtomicBox -> ptr`), which the oracle attributes to
+   the enclosing type and the analyzer declines to publish as members — the same
+   shape as cause 3 the ontology wave recorded (a declaration inside an accessor
+   or closure that the oracle attributes to the enclosing type).
+4. **One number moved without explanation and is recorded as such:** the
+   oracle's file-level counter `filesWithAnyDifference` was 413 on one run and
+   414 on the next, with **every per-type total identical**. The counter is
+   incremented once per file that differs, and its inputs are deterministic; the
+   per-file determinism probe remains 0 of 600. It is stated, not averaged.
+
+### The fixtures and mutants this round's rules are pinned by
+
+`validation/m14/fixtures/swift/exports-visibility.{swift,expectation.json}` — the
+SWIFT4 fixture, whose rationale names the round and pins five shapes: (1)
+`public`/`open` on a file-scope declaration is an export; (2) `internal` and
+`private` are not; (3) a public MEMBER of an internal type is not a module export
+(Swift caps a member's access at its container's); (4) a re-exporting import is an
+export IN ADDITION to the `references` edge the same statement already produces;
+(5) `public extension Array` does not export `Array`. It carries the **leaf-name
+source** on ten `exports` rows, the **forbid `exports root -> Shape`** that pins
+the source change, and the M59.A7 line rule on the `Decorated` row (a declaration
+whose node starts on the `@available(...)` line 71 and whose NAME is on line 73
+must publish 73). Its own header records the corpus measurement the RULED
+question needed: over a 3,048-file stride of the derived 24,386-file population,
+**28 `public import`, 29 `@_exported import`**, 1,189 `public` nominals in 441
+files, 5,073 `public` members in 667 files, 62 `open` nominals.
+
+Three fixtures that existed before the round were **re-pinned** for the narrowed
+label, and their comments corrected rather than re-baselined:
+`imports-exports` (the export half is FILE-SCOPE declarations; a `public
+extension`'s member publishes a `public` SYMBOL but is not a module-level export),
+`module-exports` (an extension symbol is named after the EXTENDED type, so
+exporting it would name a declaration this file does not contain; extension
+members inherit the block's level and are still reached through the extended
+type) and `reexported-import` (both re-export forms, one row per form, leaf source,
+and the `type: "module"` `ExportInfo` row).
+
+`validation/m14/fixtures/swift/mutants-exports.mts` — **14 mutants, 14 killed**,
+each a deliberate defect injected into the real analyzer by exact source splicing,
+the shared fixture runner as the judge, and the analyzer restored in a `finally`
+with its sha256 verified. The four that guard this round's decisions most
+directly: `SW-EXP-7-wrong-source-root` (source at the literal `root`),
+`SW-EXP-8-wrong-leaf-name` (the separator scan off by one), `SW-EXP-9-mislabelled-form`
+(a visibility export labelled with the re-export form) and
+`SW-EXP-14-line-stolen-from-enclosing` (the line rule above).
+
+## Round SWIFT4b — the oracle converged, and every defect it surfaced was real
+
+The SWIFT4 round ended with a stated residue — `contains` 312/66, `exports`
+4/275 — attributed in kind but not reconciled. This round reconciled it. The
+residue decomposed into five instrument defects and four product defects, in
+that order, and both lists are recorded because the oracle is the only audit
+three of the four types have.
+
+### The instrument, corrected (each fix grounded in the pinned tree)
+
+1. **Normalisation was one-sided.** `normalize` (operator prefix, backtick
+   quoting) was applied to the analyzer side only, so a truth edge spelled
+   `` `default` `` against the analyzer's `default` — the same declaration —
+   counted as a MISSING/EXTRA pair. Both sides are normalised now, and the size
+   of the reconciliation is published per type (`truthRawSpellingChanged`:
+   contains 53, exports 0, imports 0 over the draw), so normalisation cannot
+   silently absorb a disagreement.
+2. **A body is not a container — the oracle read it as one.** The walk kept the
+   enclosing TYPE as the scope while descending through `init` (locals like
+   `var buffer` in ByteBuffer-conversions.swift), `deinit`, `subscript` and
+   computed-accessor bodies. The MISSING column's largest block was that single
+   omission: `Lock -> attr`, `String -> buffer`, `Array -> byteBuffer`,
+   `FileRegion -> eof`, `NIOFileHandle -> fd`.
+3. **File-scope properties were invisible.** The property branch was gated on
+   `ownerIsType`, so a file-scope `public let` — `public let benchmarks` in
+   every benchmark file, ApplySite.swift's `public let isFullApplySite` — never
+   entered the truth set while the analyzer published it. That one omission was
+   most of the 275 EXTRA exports.
+4. **Extension targets: generic arguments are not the extended type, and sugar
+   targets must bind.** `extension Sequence<UInt8>` named the extension `UInt8`
+   (the last type_identifier was the generic argument); `extension
+   [WeightedStack]` and `extension ParameterList?` bound no name at all, and
+   their members fell to FILE SCOPE (`AggregateStacks -> netAllocations`,
+   `ServerTrustEvaluation -> evaluate`, `Declarations -> bridged`). Both shapes
+   are read as the base identifier now; an extension the walk still cannot name
+   keeps its members instead of demoting them to module declarations.
+5. **The operator token list was hard-coded and incomplete.** The grammar lexes
+   `==`/`+`/`<`/`===` anonymously but `!==`/`~=` as a NAMED `custom_operator`;
+   the list missed both classes, so `func ===` at file scope could never be in
+   the truth set. The name is now read as the token immediately after `func`,
+   whatever its class.
+
+### The defects the corrected instrument surfaced (fixed, and pinned)
+
+1. **The analyzer fabricated `operator ,`.** `operatorName` accepted only
+   anonymous tokens, so `func ~=` and `func !==` fell through to the first
+   anonymous child — the parameter comma — publishing a symbol and an `exports`
+   edge named `operator ,` (ApplySite.swift:471, Instruction.swift:2339,
+   IUnknown+Identity.swift). A comma is not a declarable operator; fixed by
+   accepting the named `custom_operator` token, verified on the three corpus
+   sites (`operator ~=`, `operator !==`, `operator ===`).
+2. **Locals in bodies were published as members.** SWIFT4 removed ownership for
+   FUNCTION bodies via a parent-kind check, but `deinit`/`subscript`/accessor/
+   closure bodies mint no symbol of their own — the frame's parent stays the
+   enclosing TYPE, so their locals became members. Measured on the draw: 220+
+   fabricated edges (`Lock -> err` from a `deinit`, lock.swift:89; `AtomicBox ->
+   oldPtrBits`/`oldPtr` from a `deinit`; `NIONetworkInterface ->
+   baseString`/`maskString` from a getter; `ByteCount -> byteBufferMaxIndex`
+   from `byteBufferCapacity`'s getter). Fixed by threading an explicit
+   `localScope` flag through the walk (LOCAL_SCOPE_BODIES /
+   SCOPE_RESET_DECLARATIONS): a body's contents are locals until a nested
+   container opens its own scope.
+3. **The production filter deleted operator targets.** `filterNoiseRelationships`
+   bans any leaf containing `<`/`>`, written for template/HTML junk — which
+   always carries letters. Swift/Dart/C# spell operator declarations
+   `operator <`/`operator <<`, and 26 edges per 1,256-file draw were deleted
+   while `keepSymbol` kept the symbol: a stored symbol with no ownership edge
+   (`ByteCount -> operator <`, `NIODeadline -> operator >`, `StringConvertible
+   -> operator <`). Scoped exemption for pure-operator `operator X` leaves; the
+   cost probe now reads 0 operator drops.
+4. **The production filter deleted long declared names.** The 80-char cap
+   blocks pasted source lines, but Swift XCTest method names run past it: 100
+   edges per draw, every one a method the file declares
+   (`testQuiescingAfterRequestAndResponseHeadsButBeforeAnyEndsThenRequestEndAfterResponseEnd`,
+   84 chars). A name the file DECLARES is admitted by the same declared-names
+   hatch the NOISE_TARGETS rule already uses; the cost probe now reads 0
+   long-name drops (the remaining 3 are `setUp`/`tearDown`, hooks by design).
+
+### The converged numbers
+
+| type | truth | analyzer | agreed | MISSING | EXTRA |
+|---|---|---|---|---|---|
+| contains | 17,445 | 17,445 | 17,445 | 0 | 0 |
+| exports | 2,167 | 2,167 | 2,167 | 0 | 0 |
+| imports | 2,108 | 2,108 | 2,108 | 0 | 0 |
+
+Over the **1,012 clean files** both readers see identically, the oracle exits 0
+with `ORACLE AGREES on all three types, both directions`. The file-level counter
+is now split and stable across two runs: **0 clean files differ**, 23
+grammar-error files do; the 7 fabrication candidates are all in the error
+population, whose 27 MISSING / 89 EXTRA the output states are not part of the
+claim (the analyzer models ERROR recovery, the plain oracle does not). 25,918
+declaration sites are counted as body-excluded rather than emitted.
+
+Caveat kept intact: this is a second walker over the SAME pinned grammar, so a
+grammar bug present in both paths remains invisible — the limit the
+differential's own oracle carries too.
+
+### Verification on the final bytes
+
+- `run-fixtures --lang swift`: **21/21 pass**, "fixture baseline gate: no
+  regressions".
+- `mutants-exports.mts`: **14/14 killed** (`SW-EXP-3`'s anchor was updated to
+  the new export-gate line — the harness's "ANCHOR NOT UNIQUE" failure is
+  exactly what caught the drift), analyzer restored with sha256 verified.
+- `swift-uncovered-oracle.ts`: run twice after the last edit; identical clean
+  totals, 0 crashes.
+- `verify-analyzer-hygiene --lang swift`: clean. `tsc --noEmit` on
+  `tsconfig.json` and `tsconfig.scripts.json`: 0 errors.
+- The incoming lane's span-based oracle (400-file stride of swift-corpus)
+  reads analyzer-only 69 / oracle-only 55, and both directions are attributed
+  rather than dismissed: the analyzer-only rows are operator names its name
+  reader cannot spell (`stdlib/public/Cxx/std/String.swift` reads
+  `string|operator ==` …), and the oracle-only rows are what a SPAN rule
+  over-includes — declarations inside method bodies (the JOB 2 population:
+  `Automaton|result`/`rec`/`visited`) and nested-struct members attributed to
+  the enclosing extension (`FunctionDeclSyntax|returnType`, where the analyzer
+  correctly emits `SignatureStandin -> returnType`). Separating the two sample
+  caps made the directions visible; the instrument's own model is the source of
+  both residuals, not the analyzer.
+- `script/m14/tmp/swift-opfilter-cost.ts`: 126 filter drops before (26 operator
+  + 100 long-name), 3 after — the lifecycle hooks.
+
+### The incoming ratchet re-declared (2026-10-11)
+
+The other half of this lane's measurement — `validation/m14/instruments/swift/incoming-declaration.json`,
+ratcheted by `script/m14/java-incoming-gate.ts` — was **RED** against this
+round's bytes: 7 violations plus a digest mismatch. It is green now, and the
+route to green is recorded rather than the number alone.
+
+**The declaration was a HEAD measurement.** Its `meta.analyzerDigest` is
+`sha256:49f77d9e2258c039`, which is byte-for-byte `git show
+HEAD:src/ast/real-swift-analyzer.ts` (verified). So the drift is not a stale
+artifact chasing a commit — it is this lane's own uncommitted SM4/SWIFT4b
+emitter work, which the ratchet's rules require be re-declared deliberately.
+The 7 violations, in the gate's words:
+
+| type | class | declared | measured | move |
+| --- | --- | --- | --- | --- |
+| uses | otherUnresolved (ceiling) | 208 | 213 | +5 |
+| contains | resolved (floor) | 414 | 393 | −21 |
+| exports | resolved (floor) | 280 | 141 | −139 |
+| exports | otherUnresolved (ceiling) | 4 | 7 | +3 |
+| imports | ambiguous (ceiling) | 0 | 2 | +2 |
+| imports | otherUnresolved (ceiling) | 0 | 118 | +118 |
+| — | analyzer digest | `49f77d9e…` | `625f3c7c…` | re-declare |
+
+**Measured from a commit, as the gate demands, without touching this checkout.**
+`java-incoming-gate.ts` refuses to ratchet a tree that is not a commit (exit 3)
+because the numbers come from `pool-worker` parsing the corpus and this checkout
+is shared — right now `src/ast` carries **8** uncommitted files, six of them
+other lanes'. So the measurement ran in an isolated `git clone --shared` of
+HEAD (`14e8142d8`) at `/tmp/sww`, carrying exactly this lane's two files and
+committed there (clone-local commit `824b981a5`; the clone's objects are its
+own — the shared repo's object store does not contain that commit, checked with
+`git cat-file -t`). `src/ast` is clean in the clone, so no `--allow-dirty` was
+needed there. The control that makes this attributable: the clone's measured
+row set is **identical to the same gate run in the shared checkout with
+`--allow-dirty`**, so the copy measures the same thing the working tree does.
+
+**Re-declared, then re-verified:** `--update-baseline` rewrote the declaration
+at digest `sha256:625f3c7cdd588477`, and a plain verdict run returns
+`PASS`, `failures: []`, `unclassed 0` on all ten types.
+
+| type | edges before → after | resolved | ambiguous | otherUnresolved |
+| --- | --- | --- | --- | --- |
+| calls | 977 → 977 | 328 → 328 | 117 → 117 | 532 → 532 |
+| uses | 576 → 580 | 206 → 207 | 162 → 160 | 208 → 213 |
+| contains | 1,012 → 955 | 414 → **393** | 598 → 562 | 0 → 0 |
+| imports | 0 → **122** | 0 → **2** | 0 → **2** | 0 → **118** |
+| references | 127 → 127 | 2 → 2 | 4 → 4 | 121 → 121 |
+| exports | 438 → **226** | 280 → **141** | 154 → 78 | 4 → 7 |
+| extends | 57 → 57 | 15 → 15 | 22 → 22 | 20 → 20 |
+| implements | 159 → 159 | 67 → 67 | 31 → 31 | 61 → 61 |
+| overrides | 1 → 1 | 0 → 0 | 0 → 0 | 1 → 1 |
+| instantiates | 279 → 279 | 154 → 154 | 37 → 37 | 88 → 88 |
+| **total** | **3,626 → 3,483** | 1,466 → 1,309 | 1,125 → 1,013 | 1,035 → 1,161 |
+
+**Why each moved number moved, in kind — a raised ceiling is not a repaired
+class.**
+
+- `imports` 0 → 122 is a **dead emission repaired**, and the old declaration says
+  so in its own note (`IMPORTS IS 0 EDGES BY RECORDED DEFECT`: the emission read
+  `imp.metadata.module` while `handleImport` pushes the module at the top level).
+  118 of the 122 are unresolved because this lane publishes **no** provable
+  external marker — the new edges are backlog by construction, and the note that
+  explains a zero has been replaced by the note that explains the backlog.
+- `exports` 438 → 226 is SWIFT4's export gate replacing the old emitter. The census
+  A/B measured the same factor corpus-wide (5,232 → 2,641 = 0.505×; the sample is
+  0.516×). The removed edges are the ones the export mutants exist to pin: a
+  member of an internal type published as a module export, a `public extension
+  Array` exporting a stdlib name (`SW-EXP-4`), a duplicate name.
+- `contains` 1,012 → 955 and `uses` 576 → 580 are SWIFT4b's removals: body-scope
+  locals that minted no method symbol, and the operator/long-name drops the
+  production filter no longer needs. The independent evidence is this round's own
+  oracle, not the ratchet's classifier: over the 1,012 clean files both readers
+  see identically, the second walker now reports **0 MISSING / 0 EXTRA on
+  `contains`, `exports` and `imports`** — so a removed edge is one an independent
+  reading of the tree says is not there. The +5 `uses` and +3 `exports` unresolved
+  are the other side of the same event: a target whose only match was a fabricated
+  declaration no longer resolves to anything.
+- The `resolved` floor drops are therefore **not a lowered bar**; they are the
+  count those fabricated edges used to hold. Both the floors and the ceilings in
+  the new declaration are the re-measured truth, and the ratchet is again
+  one-directional from here.
+
+**Limits of this entry, stated.** (1) The oracle's 0/0 evidence covers the 1,012
+clean files of the 1,256-file draw — not this 200-file stride sample, and not the
+244 grammar-error files, where the 7 fabrication candidates still sit. (2) The
+declaration binds the **analyzer** digest only; `pool-worker.ts` also moves these
+numbers (it carries this lane's filter change), so any future `pool-worker` edit
+must re-measure rather than inherit these classes. (3) In the shared checkout the
+gate still exits **3** without `--allow-dirty` — a property of 8 uncommitted
+`src/ast` files, six of them other lanes', not of this declaration; the green
+verdict in this repo is the `--allow-dirty` run on the same bytes, and the
+un-flagged verdict is the clone run recorded above.
+
+### The DERIVATION register, repaid: `contains`, `exports`, `imports` wired (2026-10-11)
+
+The register read `swift 4 un-audited: ["contains","exports","imports","overrides"]`:
+the analyzer constructed all four, the differential's compared-label allowlist
+admitted none, so those edges were **stored and compared against nothing** while
+every gate this lane runs stayed green. Three of the four are audited now, and
+the fourth stays recorded for a structural reason rather than an omission.
+
+**The two halves, landed together.** Truth with no allowance reads as MISSING
+(the `#910` shape: c's include oracle measured 129 phantom MISSING the moment it
+was switched on); an allowance with no truth reports every emitted edge as
+fabrication (the G7 shape). So the same commit carries:
+
+| half | where | what |
+| --- | --- | --- |
+| truth | `script/m14/oracles/swift-contains-exports-imports.ts` (new) | the walker this lane's oracle already validated, extracted so both consumers read one rule set |
+| truth wiring | `script/m14/differential.ts`, the swift truth block | `contains` / `exports` / `imports` rows pushed for the tree, gated as below |
+| allowance | `script/m14/differential.ts`, the compared-label filter | `...(lang === "swift" ? ["contains"] : [])`, and the same for `exports` and `imports`, **each on its own physical line** |
+| ratchet | `validation/m60/rel-type-coverage-baseline.json` | swift's two recorded rows replaced by the one that remains |
+
+**The extraction is verified faithful, not assumed.** `swift-uncovered-oracle.ts`
+now imports the walker instead of carrying a copy; re-running it reproduced
+**every scalar counter** of the pre-extraction artifact (`contains` 17,445,
+`exports` 2,167, `imports` 2,108, 0 MISSING / 0 EXTRA, 25,918 body-excluded
+sites, 23 differing files, 7 fabrication candidates). The only fields that differ
+are the capped example lists, and they differ because the oracle runs 8 workers
+over a shared index (`await Promise.all(Array.from({ length: 8 }, () => worker()))`)
+and a 20-entry cap then depends on which worker reached a file first — a
+pre-existing property of the instrument's samples, not of the extraction.
+
+**Measured: six runs, three cold-pool rotations, both corpora, no disagreement.**
+
+| run | lane | tree-truth | covered | MISSING | analyzer-edges | unexplained |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | swift-nio | 2,685 | 2,685 (100%) | **0** | 2,622 | **0** |
+| 2 | alamofire | 4,079 | 4,079 (100%) | **0** | 3,715 | **0** |
+| 3 | swift-nio | 3,472 | 3,472 (100%) | **0** | 3,340 | **0** |
+| 4 | alamofire | 3,760 | 3,760 (100%) | **0** | 3,464 | **0** |
+| 5 | swift-nio | 3,760 | 3,760 (100%) | **0** | 3,663 | **0** |
+| 6 | alamofire | 3,632 | 3,632 (100%) | **0** | 3,336 | **0** |
+
+(`heuristic=0` on all six. The drawn set rotates every wave by design — the cold
+pool's whole point is never-sampled files — so the row counts move and the
+verdict does not; six rotations is the evidence, one run is not.)
+
+**The error-file carve-out, and why it is on both sides.** The first wiring run
+was not green: 16 MISSING / 24 unexplained. Bucketing by the pinned grammar's own
+verdict explained it — on the 60-file swift-nio draw, **41 clean files carried 2
+MISSING / 0 unexplained and 19 files with an ERROR node carried 1 MISSING / 9
+unexplained**. Both of the clean-file rows were one spelling each
+(`InputClosedAction -> `continue``, `FileDescriptor -> `open``);
+`AsyncTestingChannel.swift` shows the error-file shape: the walker cannot bind
+the enclosing type through the recovery, so its members read as file scope and
+the analyzer's correct `contains NIOAsyncTestingChannel -> parent` arrives as an
+`exports AsyncTestingChannel -> parent` obligation. That is the population this
+lane's oracle already declares **non-comparable** (the analyzer models ERROR
+recovery, a plain walker does not; 27 MISSING / 89 EXTRA over 244 files, counted
+separately and published in `validation/m14/tmp/swift-uncovered-oracle.json`).
+So the three labels are compared on the files both readers see identically, and
+the exclusion is applied to **both** sides — the truth push is guarded by
+`!root.hasError` and the analyzer-side filter drops the same three labels for the
+same files — because a one-sided exclusion reports every analyzer edge on those
+files as fabrication. Nothing is dropped silently: the excluded population is
+counted by the oracle artifact cited above.
+
+**Two spellings are reconciled in the rows, and the harness cannot do it.**
+`normTarget` is a target's last segment, so it cannot reconcile `` `continue` ``
+with `continue` (the analyzer strips quoting) or `operator ==` with the bare `==`
+(a `func ==` has no identifier, so the name comes from the token).
+`swiftTruthRows` emits both in the analyzer's convention; the oracle applies the
+identical reconciliation in its own comparison, which is why its counts never
+moved — and its `truthRawSpellingChanged` counter (contains 53 on the draw) is
+the published size of that reconciliation.
+
+**What it reads now.** `bun script/m60/rel-type-coverage-gate.ts --langs=swift`:
+
+    swift        1 un-audited: ["overrides"]
+    ...
+    baseline: 1 recorded, 0 NEW, 0 repaid        (exit 0)
+
+`overrides` remains un-audited and stays recorded, and the reason is the one this
+document already gives: its target is resolved across files through the
+companion index the analyzer builds, which a single-file tree walker does not
+have. It is measured by `script/m14/swift-overrides-premise-probe.ts` — the
+premise, by its own rule. Wiring a derivation that cannot see the target would
+manufacture the permanent MISSING the perl lane's note warns about.
+
+**Limits, stated.** (1) The baseline edit is targeted: the gate refuses to write
+a baseline from a scoped run (`--langs=swift`) because that would erase every
+other lane's recorded debt, so the two swift rows were replaced by hand with the
+string the gate itself printed, and a later full sweep must re-derive the same
+row. (2) The recorded DEBT file as a whole is still the master's: an unscoped
+gate run at this tree reports `baseline: 103 recorded, 89 NEW, 69 repaid` — the
+fleet baseline is dated 2026-10-01 and other lanes' in-flight analyzers are part
+of those 89, so re-recording it would ratify work this lane did not measure.
+That is why `--update-baseline` was NOT run unscoped. (3) The oracle and the
+differential now share one walker, so the oracle is no longer a second opinion on
+the differential's truth (it remains one on the analyzer's), and the pinned
+grammar's shared limit now covers both consumers. (4) The differential's drawn
+set rotates per wave, so its per-run `hash` is draw-specific and cannot be
+compared across runs — a property of the cold pool, not of this lane.
+
+### The two stored artifacts, refreshed (2026-10-11)
+
+Both halves of the register were refreshed the same day, and one of them could
+only be refreshed in part. Neither refresh moved any number this document quotes.
+
+| artifact | scope | result |
+| --- | --- | --- |
+| `validation/m60/results/rel-type-coverage.json` | **unscoped** — the gate reads sources, no corpora | rewritten: swift's row is `1 un-audited: ["overrides"]`, the fleet's findings went **126 → 123** (the three repaid labels), 48 lanes, `inputErrors []`, and the row this document's gate tables quote as `4 un-audited` is gone from the stored register |
+| `validation/m14/results/M14.0.F5.swift.json` | **lane-scoped** (`--lang swift --emit`) | new: `differential-swift pass`, `differential-alamofire:swift pass` (100% coverage, 0 MISSING, 0 unexplained on both), `claimLevel L1`, corpus pins recorded for swift-nio `d09ffc8a…` and alamofire `bda9ed57…` |
+| `validation/m14/results/M14.0.F5.json` | unscoped canonical | **NOT rewritten, and it provably cannot be on this machine**: the canonical sweep's own corpus precheck throws `corpus repo missing: …/grails-core` (fmt, jq, cython, dart-http, phpunit and others are absent too), so it refuses before it measures anything rather than emitting a partial canonical claim. The honesty gate's `M14.0.F5` freshness failure is that same job, still open. |
+
+Two things about the F5 artifact are worth writing down rather than reading off a
+green row. Its `--emit` branch had to be **declared as a literal**
+(`emitEvidence({ ...base, issueId: "M14.0.F5.swift" })` beside clean/fsharp/
+scala/powershell) because M49's producer register discovers a producer by that
+exact shape — the run REFUSED with an explicit error rather than writing an
+orphan, which is the gate working. And its two **code-input checks fail**
+(`differential-lane-code-inputs`, `differential-harness-code-inputs`): this
+lane's analyzer and the shared `differential.ts` are uncommitted, so the artifact
+discloses that its rows are real but not attributable to a commit. It carries
+that as a failing check rather than a claim, which is the honest form; the
+measurement itself is the two passing row checks above.
+
+**No other lane moves.** Every added line in `differential.ts` is swift-scoped:
+the truth push sits inside `if (lang === "swift")`, and the filter predicate
+requires `lang === "swift" && root.hasError` before it can suppress anything. An
+A/B on a non-swift lane (rust/ripgrep, HEAD's file vs this one) shows what the
+lane's numbers actually vary with — the drawn set — since three consecutive runs
+differed from each other on both versions.
+
 ## Fixtures and mutants for the ontology wave
 
 `validation/m14/fixtures/swift/imports-exports.swift` +
@@ -1249,26 +1911,44 @@ analyzer's own export array. Two of those three mutants were themselves no-ops
 as first written — a mutant that cannot produce the defect cannot prove the
 suite would notice it — and were rewritten as faithful reverts.
 
-## Gate results — re-run for this round
+## Gate results — the ontology wave's run
 
-Every gate below was re-run on this lane's branch **with this round's changes in
+Every gate below was re-run on this lane's branch **with that round's changes in
 place**. **No gate number is quoted here that was not produced by one of these
 runs.** "Pre-existing" means the finding names a file or lane this lane does not
-own; the counts are what the run printed.
+own; the counts are what the run printed. Round SWIFT4's own re-runs are the
+next table, and they are the ones to trust for the tree in this working copy.
+
+### Round SWIFT4 re-runs
+
+| gate | command | result |
+| --- | --- | --- |
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | **0 errors**, exit 0 |
+| swift fixtures | `bun script/m14/run-fixtures.ts --lang swift` | **21/21 pass, 0 fail**, "fixture baseline gate: no regressions" |
+| export mutants | `bun validation/m14/fixtures/swift/mutants-exports.mts` | **14/14 KILLED, 0 survived**; analyzer restored, sha256 verified |
+| census | `bun script/m14/swift-ontology-census.ts` — three shards + `--merge` | draw **1,252 files / 40,990 symbols / 128,017 relationships**; the nio and alamofire shards are **byte-identical** to the same shards run 25 minutes earlier, and so is the merged artifact |
+| lane's oracle | `bun script/m14/swift-uncovered-oracle.ts` | 1,256 files, 0 crashes, 244 grammar-error files: `imports` **0/0**, `contains` 312/66, `exports` 4/275 |
+| analyzer A/B (the round's headline) | the same census, run once against `HEAD`'s analyzer and once against this round's | the table in **Round SWIFT4**: `imports` 0 → 2,836, `exports` 5,232 → 2,641, `contains` 27,346 → 26,639, six types identical |
+| analyzer hygiene | `bun run script/m14/verify-analyzer-hygiene.ts` | **2 findings, neither swift** (groovy, elixir); release-gate line `2 finding(s) — release blocked` |
+| regex census | `bun run script/m12/verify-regex-census.ts` | **no swift row**; it discloses `working-tree drift … 8 analyzer(s): … real-swift-analyzer.ts`, which is this round's own edit |
+| DERIVATION register | `bun run script/m60/rel-type-coverage-gate.ts` | swift row **`4 un-audited: ["contains","exports","imports","overrides"]`** — that round's reading; **superseded 2026-10-11**, when the row became `1 un-audited: ["overrides"]` and was recorded in the baseline (see **The DERIVATION register, repaid**) |
+
+The gates this round did NOT re-run are not listed, and their ontology-wave
+results below remain that round's.
 
 | gate | command | result |
 | --- | --- | --- |
 | typecheck | `npx tsc --noEmit -p tsconfig.json` | **0 errors** |
-| fixtures | `bun script/m14/run-fixtures.ts --lang swift` | **18/18 pass, 0 fail** (16 pre-existing + `imports-exports` + the new `scoped-import-metadata`), "fixture baseline gate: no regressions" |
+| fixtures | `bun script/m14/run-fixtures.ts --lang swift` | **18/18 pass, 0 fail** at that round (the suite has since grown to 21) |
 | fixtures, deliberately broken | same, with change 2 reverted | **17/18** — `swift/scoped-import-metadata` fails with 4 problems in 2 directions (2 expect, 2 forbid) |
-| mutation | `bun script/m14/tmp/swift-mutant-run.ts` | **16/16 CAUGHT**, exit 0 |
+| mutation | `bun script/m14/tmp/swift-mutant-run.ts` | **16/16 CAUGHT**, exit 0 at that round |
 | differential, swift-nio | `bun script/m14/differential.ts --lang swift --repo swift-nio` | 100% truth coverage (2,042/2,042) · **MISSING 0** · **unexplained 0** · **heuristic 0** |
 | differential, alamofire | same, `--repo alamofire` | 100% truth coverage (1,992/1,992) · **MISSING 0** · **unexplained 0** · **heuristic 0** |
 | grammar audit | `bun run script/m14/audit-analyzer-grammar.ts` | `swift PASS refs=108 unknown=0 unknownFields=0` |
 | regex census | `bun run script/m12/verify-regex-census.ts` | **0 swift lines**; `RegExp` occurrences in the analyzer: **0**; regex-literal assignments: **0**. Gate exits non-zero on `MISSING` (css, julia) and `STALE` rows in other lanes. It now also prints `working-tree drift (disclosed, not fatal): 1 analyzer(s): real-swift-analyzer.ts` — that is this round's own edit, disclosed rather than fatal |
 | analyzer hygiene | `bun run script/m14/verify-analyzer-hygiene.ts` | **0 swift findings**; 3 findings in cpp/haskell/elixir |
 | standing rules R3/R4/R7/R8/R10 | `bun run script/m60/verify-standing-rules.ts` | **0 swift findings**; `G1: 152 passed, 6 failed` — the 6 are the declared-surface matrix, `m60-script-surface-typecheck.md` (R3), R4's stale closure commit, `real-sql-analyzer.ts:62` (R7), hcl/nim (R8), cpp (R10) |
-| DERIVATION register | `bun run script/m60/rel-type-coverage-gate.ts` | swift row **`4 un-audited: ["contains","exports","imports","overrides"]`** — unchanged from the ontology wave. The register is master-owned and shrink-only, so these findings stay **reported, not recorded** |
+| DERIVATION register | `bun run script/m60/rel-type-coverage-gate.ts` | swift row **`4 un-audited: ["contains","exports","imports","overrides"]`** — unchanged from the ontology wave at that round; **superseded 2026-10-11** (now `1 un-audited: ["overrides"]`, recorded in the baseline) |
 | doc-truth-emissions | `bun run script/m14/verify-doc-truth-emissions.ts` | swift `UNDOCUMENTED` **1** (`contains`, caused by the parser defect below, not by the doc); gate line `48 analyzers, FALSE_NEGATIVE=8 FALSE_POSITIVE=0 UNDOCUMENTED=41 MISSING_DOC=2 NO_CLAIM_TABLE=21 -> FAIL` |
 | honesty gate | `bun run script/m14/verify-honesty.ts` | **23 failures**, all evidence-freshness findings in other lanes; **0 swift-attributable**, **0 banned terms in any swift file**. It **caught one during this round** — a banned term in the new fixture's own text — which was rephrased, and the count returned to 23 |
 | payload / latency | `bun script/m14/swift-payload-latency.ts <label>` | see the payload section; the runs are identified by analyzer blob hash |
@@ -1338,15 +2018,54 @@ which would have imported another lane's state into this branch.
     modifier on an enum `case`. So the language does not express the construct
     and the gap is unreachable; recorded rather than changed, because changing
     it would be an unmotivated edit.
-13. **The census has a ±1 reproducibility band.** Per-file output is
-    deterministic (0 of 600 files differ across two passes), but the census's
-    8-way concurrent sweep moves `contains` and `exports` by one edge between
-    runs — see **Determinism**.
-14. **`contains` is emitted for functions nested inside functions.** A nested
-    `func` becomes a symbol owned by the enclosing function and gets a `contains`
-    edge, while a local `let`/`var` in the same body emits nothing. Both are
-    locals; only one produces an edge. Measured by the lane's oracle as
-    `localFunctionContains`; the asymmetry is stated rather than resolved,
-    because which convention is right is a family decision, not a lane one.
+13. **The old ±1 census band did not reproduce, and what moved instead is the
+    ORACLE's file-level counter.** Per-file output is deterministic (0 of 600
+    files differ across two passes); the ontology wave recorded the census's
+    8-way sweep moving `contains` and `exports` by one edge between runs, and
+    this round ran every shard twice and got **byte-identical artifacts** on
+    nio and alamofire. What did move, by one, is the lane's oracle:
+    `filesWithAnyDifference` read 413 on one run and 414 on the next with all
+    ten per-type totals identical. Unattributed, stated, and bounded by the
+    per-file probe.
+14. **A declaration inside a function body is nobody's member — RESOLVED this
+    round.** The previous round recorded `contains <function> -> <name>` for a
+    nested `func` (a local `let`/`var` in the same body emits nothing, so the
+    asymmetry was real). INCOMING_SWIFT JOB 2 forbids that edge in both
+    spellings, `createSymbol` now withholds the owner for a function-scoped
+    declaration, and the delta is measured: −540 `contains` edges on swift-nio
+    (14,040 → 13,500) and 738 declaration sites excluded by both readers over
+    the 1,256-file draw. The nested symbol still exists and is still an
+    `instantiates` target; it is simply not published as a member of a
+    function.
+15. **The `exports` source is a FILE-IDENTITY heuristic, not a module name.**
+    `moduleLeafName` publishes `NIOFileHandle` for `…/NIOFileHandle.swift`; the
+    compiled module is the SwiftPM target (`NIOCore`), which no Swift source
+    file spells. A consumer that needs the compiled module name cannot get it
+    from an `exports` edge, and the leaf can collide across directories (two
+    `Convenience.swift` files in one target). Every other lane has the same
+    shape — the endpoint names the file that was parsed — so this is a family
+    convention with a stated limit, not a Swift defect.
+16. **The oracle's residue is partly attributed — SUPERSEDED for the clean
+    population by Round SWIFT4b.** At the time of writing, `imports` was 0/0 in
+    both directions; `contains` was 312 MISSING / 66 EXTRA and `exports` 4
+    MISSING / 275 EXTRA over the 1,012 clean files both readers see identically,
+    attributed in kind but not reconciled. Round SWIFT4b reconciled it by fixing
+    the instrument (one-sided normalisation, bodies read as containers,
+    file-scope properties invisible, extension targets from generic arguments /
+    sugar, a hard-coded operator list) and the product defects the corrected
+    instrument exposed (the fabricated `operator ,`, body locals published as
+    members, and two production-filter rules deleting operator-named and long
+    declared names). Current figure: **0 MISSING / 0 EXTRA on all three types**
+    over the same clean files; the grammar-error population is counted
+    separately, and the shared-grammar limit below still caps what any
+    reconciliation can prove.
+17. **The `imports` channel did not exist on `HEAD`.** Measured A/B on one draw:
+    0 edges at `HEAD` against 1,522 in this round's tree, because the
+    `ImportInfo` row did not carry the `metadata.module` the edge loop reads.
+    The ontology wave's `imports` figures describe a channel that was alive when
+    it measured them and dead in the commit this round inherited, and the
+    `exports` figures describe one emission site where `HEAD` had two. Both are
+    stated in **Round SWIFT4** with the numbers, because a reader comparing this
+    document to `HEAD` would otherwise find them irreconcilable.
 
 Closes M12.21 (GitHub issue #160).

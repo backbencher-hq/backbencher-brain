@@ -45,7 +45,7 @@
  * union is exactly the sample the single-process run would take.
  */
 import { execFileSync } from "node:child_process"
-import { readFileSync, writeFileSync, statSync, readdirSync } from "node:fs"
+import { readFileSync, writeFileSync, statSync, readdirSync, realpathSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 import { getParser } from "../../src/ast/engine"
@@ -102,6 +102,32 @@ function collectTracked(dir: string): string[] {
   }
 }
 
+/**
+ * Is `dir` git's OWN toplevel, rather than merely a directory inside a repo?
+ *
+ * The distinction is load-bearing, and it is a defect this round fixed. The
+ * draw used to enumerate one root per TOP-LEVEL ENTRY of the corpus path, which
+ * silently dropped every file sitting AT a repo root — `Package.swift` and the
+ * root-level `.swift` files beside it belong to no subdirectory, so no root ever
+ * listed them (measured: 5 files in swift-nio and 5 in alamofire, so the draw
+ * was 1,246 files where the repo-list enumeration gives 1,256). Enumerating the
+ * repo root as well would double-count every nested file, so the root replaces
+ * the per-entry roots rather than joining them. The toplevel test is what keeps
+ * a plain DIRECTORY OF REPOS (the usual corpus shape) from letting `git -C` walk
+ * UP into an enclosing repository and enumerate a different project's files.
+ */
+function isGitToplevel(dir: string): boolean {
+  try {
+    const top = execFileSync("git", ["-C", dir, "rev-parse", "--show-toplevel"], {
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    }).trim()
+    return top.length > 0 && realpathSync(top) === realpathSync(dir)
+  } catch {
+    return false
+  }
+}
+
 function corpusFiles(corpus: string): CorpusFile[] {
   const out: CorpusFile[] = []
   const roots: Array<{ repo: string; dir: string }> = []
@@ -109,12 +135,17 @@ function corpusFiles(corpus: string): CorpusFile[] {
   try { st = statSync(corpus) } catch { return out }
   if (!st.isDirectory()) return out
   const entries = readdirSync(corpus)
-  for (const e of entries) {
-    const d = path.join(corpus, e)
-    try { if (statSync(d).isDirectory()) roots.push({ repo: e, dir: d }) } catch {}
+  if (isGitToplevel(corpus)) {
+    // A corpus path that IS a repo: enumerate it whole, root files included.
+    roots.push({ repo: path.basename(corpus), dir: corpus })
+  } else {
+    for (const e of entries) {
+      const d = path.join(corpus, e)
+      try { if (statSync(d).isDirectory()) roots.push({ repo: e, dir: d }) } catch {}
+    }
+    // A corpus path may be a repo itself (swift-corpus) or a directory of repos.
+    if (roots.length === 0) roots.push({ repo: path.basename(corpus), dir: corpus })
   }
-  // A corpus path may be a repo itself (swift-corpus) or a directory of repos.
-  if (roots.length === 0) roots.push({ repo: path.basename(corpus), dir: corpus })
 
   for (const root of roots) {
     for (const rel of collectTracked(root.dir)) {

@@ -63,11 +63,11 @@ which no emitter produces — that is the superseded v1 instrument, and
 
 | Relationship type | Verdict | Edges | Files | How resolved | Confidence model |
 | --- | --- | --- | --- | --- | --- |
-| instantiates | EMITTED | 12,857 | 2,618 | template pass: every non-builtin element tag → leaf tag name as written (`<Button />` → Button); builtin HTML tags and `svelte:` primitives filtered | 0.95 (12,753) / 1.0 (104) |
-| uses | EMITTED | 11,800 | 4,086 | template reads resolving to a name in scope, with `{#each}`/`{#await}`/`{#snippet}`/`{@const}` shadow tracking and the `$store` auto-subscription sigil | 0.95 (8,116) / 0.9 (1) / 0.85 (144) / **0.6 (3,539 — heuristic, see below)** |
+| instantiates | EMITTED | 12,857 | 2,618 | template pass: every non-builtin element tag → leaf tag name as written (`<Button />` → Button); builtin HTML tags and `svelte:` primitives filtered. The DYNAMIC `this={X}` path (`<svelte:component>` / `<svelte:element>`) resolves an import-bound bare identifier post-merge at that value's line, and since F22 (2026-10-12) it also carries the FULL site set in `metadata.dynamicTargetLines` while `line_number` keeps the LAST site — the map used to be `Map<name, line>`, which lost 36 of 125 corpus sites silently because the edge itself stayed right | 0.95 (12,753) / 1.0 (104) |
+| uses | EMITTED | 11,800 | 4,086 | template reads resolving to a name in scope, with `{#each}`/`{#await}`/`{#snippet}`/`{@const}` shadow tracking and the `$store` auto-subscription sigil. Three rules were REPAIRED inside this family in the 2026-10-12 round: a Svelte 5.36 declaration tag now BINDS (`{const doubler = …}`, F26 — head registered into the walk's shadow set, tail collected as reads) instead of publishing the declared name as a member read; a keyed `{#each}` block's KEY expression is a READ (F25 — `(keyOf(row))`/`(sortKey)` publish, while the ordinary `(row.id)` still contributes nothing because the collector's dot rule skips leaves, and the key's words are no longer registered as false template-locals); and a `{@render}` tag's ARGUMENTS are reads (F24). F27 (2026-10-12) added the two rules that make this family positional: a written OBJECT-LITERAL KEY is not a read (`{{ month: x }}` writes `month`; `{{ month }}` reads it; a COMPUTED key `{{ [k]: v }}` reads `k`), decided by the innermost open bracket plus a per-depth pending-`?` flag because `? :` and `: ` are the same character; and a SPREAD argument IS a read (`[...list]` publishes `list`), which the receiver-only dot rule had suppressed because the token before the name is a dot. Since F23 (2026-10-12) the shadow set is also widened per EXPRESSION for the two event carriers (`on:click={…}` and the Svelte-5 `onclick={…}` on an intrinsic tag), so an ARROW PARAMETER — `(evt) => …`, and the destructured `({ data }) => …` — is a template-local rather than a published member read; measured on the corpus at exactly 1 edge in 6,439 files, so the fixtures are the evidence and the corpus is not. **F28 (2026-10-12)** closed the last measured MISSING class in this family: every site that writes a BINDING PATTERN — `{#each … as …}`, `{#await … then …}`, `{:catch …}`, `{#snippet name(…)}`, `{let …}` / `{@const …}` heads — went through the flat word collector, which put EVERY word in the shadow set. So a pattern's READ positions were never published (`{#snippet counter(c = count)}` binds `c` and reads `count`; a computed key `{ [keyExpr]: v }` reads `keyExpr`; a default `x = expr` reads `expr`) and a PROPERTY name was a fabricated template-local (`{ a: b }` binds `b` alone, so registering `a` silenced a real member read of `a` for the whole block). The replacement is one positional, left-to-right pass that mutates the shadow set as it binds (`collectBindingPattern`), which is what makes the ordering rule hold: in `{ idx, [idx - 1]: last }` the computed key's `idx` reads a template-local by the time it is scanned and publishes nothing. A parameter ANNOTATION is neither a read nor a binding (`{#snippet typed(c: number = 4)}` publishes no `number`). Measured before the fix with the grammar-derived oracle (`script/m14/tmp/svelte-uses-oracle.ts`, which re-parses each fragment with the JAVASCRIPT grammar and so decides the split from `assignment_pattern.right` and `computed_property_name`): 35 unpublished template reads over 6,439 files, 27 of them this class, at 81 sites carrying a computed key or a default. **F29 (2026-10-12)** then made the DEDUPE lossy-on-purpose visible: the graph dedupe keys on `type|source|target` and keeps the FIRST row, and the script delegate's rows are pushed before the template pass, so a member read in BOTH script and template lost its template row silently — 384 of 5,781 template reads (6.6%) on the 3,085 corpus files where an independent oracle's shadow model is provably equivalent to this analyzer's. The survivor now gains `metadata.isTemplateRead: true` and `metadata.templateReadSites: [ … ]`; `line_number` and `confidence` are deliberately NOT moved (a payload field the shared budget and the differential baseline pin). The site list is written even for a single dropped site, unlike the read map's own convention, and the reason is what `line_number` means on each: on a template-read row it IS a site, but on the survivor it is the SCRIPT's line, so the list is the only place that site exists | 0.95 (8,116) / 0.9 (1) / 0.85 (144) / **0.6 (3,539 — heuristic, see below)** |
 | imports | EMITTED | 9,525 | 3,068 | script `import` → `${modulePath}:${item}`; a namespace import is `mod:*` | 1.0 (9,521) / **0.6 (4 — heuristic)** |
 | contains | EMITTED | 6,566 | 2,962 | component/type/class ownership from `ownerName`, plus the JS delegate's interface-member and object-member containment | 1.0 |
-| calls | EMITTED | 3,660 | 1,789 | script calls via JS analyzer leaf identities; `on:`/`onclick:` directives → call to the handler leaf; `{@render}` → the snippet leaf | 0.9 (2,946) / 0.85 (705) / 0.8 (9) |
+| calls | EMITTED | 3,660 | 1,789 | script calls via JS analyzer leaf identities; `on:`/`onclick:` directives → call to the handler leaf; `{@render}` → the snippet leaf. Since F24 (2026-10-12) a `{@render}` tag's ARGUMENTS are also reads (they are `uses` rows, not `calls`, so they are not counted in this row): one per argument identifier at ITS own line, the multiline form's base advancing past the newlines so `beta`/`gamma` land on 41/42 rather than the tag's 40. The callee is excluded from those reads (it belongs to this edge), a member leaf stays out (`row(obj.eps)` reads `obj`), and a snippet parameter stays out — the fixture pins all three as forbid rows | 0.9 (2,946) / 0.85 (705) / 0.8 (9) |
 | exports | EMITTED | 2,512 | 1,299 | `export let`/`export function`/`$props()` bindings → component public API; module-block exports stay module API | 1.0 |
 | references | EMITTED | 775 | 310 | decorator/type references merged from the delegate | 0.95 (484) / 0.8 (290) / 1.0 (1) |
 | extends | EMITTED | 17 | 16 | in-`<script>` class heritage, delegated to the JS/TS analyzer | 1.0 |
@@ -288,6 +288,62 @@ from `ownerName` in one pass. No O(n²) or per-symbol O(n) scans.
 - Corpus sample: `validation/m12/results/svelte-corpus-sample.txt`
 - Regex census: `validation/m12/results/regex-census.json` (0 for this analyzer)
 - Docs: this file
+
+## Recorded fixture baseline (2026-10-11, SUPERSEDED 2026-10-12)
+
+**Current state: 53 pass / 0 fail** (the 53rd is `svg-filter-builtin-tags`, added by F30 on 2026-10-12 —
+see the F30 note at the end of this section). The 2026-10-12 port closed the last two pins this section
+records — `pattern-reads` by F28 (the binding-pattern read/binding split) and
+`dedupe-template-read-record` by F29 (the dropped-site record) — after §24's round closed seven more
+(`declaration-tag-shadow`, `dynamic-target-sites`, `handler-param-shadow`, `keyed-each-key-reads`,
+`multi-site-read-record`, `object-key-not-a-read`, `render-tag-argument-reads`). Three fixtures were
+RE-PINNED in the process and every one of them only in FORM: the read record's key moved from the
+pre-fold `meta.templateReadLines` to the lane's ratified `meta.templateReadSites`, and four one-element
+site arrays became `line_number`-only rows (the read map is written only for MORE than one site). All
+39 svelte mutants are CAUGHT, including the two added with F28/F29
+(`svelte/binding-pattern-reads-lost`, `svelte/dropped-template-read-not-recorded`), and both typechecks
+are clean (`tsc --noEmit` and `-p tsconfig.scripts.json`). The allowance was then RETIRED by the
+ceremony, not by a scoped run: `bun run script/m14/run-fixtures.ts --update-baseline` (full suite, 50
+lanes, exit 0) rewrote `validation/m14/fixture-baseline.json` — **svelte 9 -> 0**, and every other lane
+byte-identical — and emptied this lane's entry in `validation/m14/fixture-baseline.failing.json`. The
+write's own words: `fixture allowance retired by this write: 13 failure(s) across 2 lane(s) — vue 5 -> 1,
+svelte 9 -> 0`. Reproducibility was checked rather than assumed: a FULL run afterwards, without
+`--update-baseline`, reports `fixture baseline gate: no regressions` with **no** stale-high and **no**
+unrecorded report, and both artifacts are SHA-256 identical to the written ones.
+
+The historical record, kept because it names what was wrong: `validation/m14/fixture-baseline.json`
+recorded this lane at **10 failing pins of 52**, and
+`validation/m14/fixture-baseline.failing.json` names them, because a count cannot say WHICH fixture is
+red. Nine were already red when the baseline was written at `31b6cd908`:
+`declaration-tag-shadow`, `dedupe-template-read-record`, `dynamic-target-sites`, `handler-param-shadow`,
+`keyed-each-key-reads`, `multi-site-read-record`, `object-key-not-a-read`, `pattern-reads` and
+`render-tag-argument-reads`. One — `relationship-kind-catalog`, which asserts a statement-level
+`imports` row — went red with the javascript round `4d1da43ed`, at the same commit that moved vue and
+html: this lane's `<script>` block delegates to that analyzer, so a delegate change is visible here
+while the javascript lane's own pins stay green. The fixture FILE's landing commit is a separate fact
+from the commit that turned it red — most of these files came with `1719ff6b3`, and
+`relationship-kind-catalog` with `3e8e5543f`, while the red arrives with the delegate. RECORDED rather
+than adjudicated: stale pin or a row the delegate owes back is open. The bisect (43/9 at `31b6cd908`,
+42/10 at HEAD, fixtures unchanged) and the gate change are §18 of
+`docs/analyzers/BRANCH-INVENTORY-2026-10-07.md`.
+
+**Re-measured 2026-10-12 (F30, the SVG element vocabulary): 53 pass / 0 fail, one mutant added.** This
+lane shares the builtin tag vocabulary with the vue lane, and
+`script/m14/verify-cross-language-consistency.ts` holds the two lists and the F5 oracle's IDENTICAL, so
+F30's fix (the SVG filter module and the rest of the element vocabulary — the vue lane measured 441
+fabricated `instantiates` edges from `<filter>` and six primitives over a 1,162-file draw) arrived here
+whether or not this lane asked for it. What this lane owes in return is proof that it USES the set rather
+than merely declaring it: set parity is a statement about two literals and cannot see a call site that
+compares against the wrong thing. `svelte/svg-filter-builtin-tags` is that proof, and
+`svelte/reemit-svg-filter-tags` (39 -> 40 mutants, CAUGHT) is the regression that keeps it honest — the
+fixture carries a real component in the same template so the check cannot be satisfied by silencing
+everything.
+
+The lane's own corpus weight was measured before it was assumed, and it is **zero: 0 of the 6,436
+`.svelte` files on disk (`svelte` 4,561 + `shadcn-svelte` 1,878) contain a filter primitive or a
+`<filter>` element at all.** So this lane inherits the vocabulary from the parity rule rather than from a
+defect visible here today — the live measurement is the vue lane's 441 edges — and what this lane owes is
+the behaviour pin above, not a corpus figure it has no draw for.
 
 ## Issue
 

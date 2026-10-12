@@ -239,15 +239,16 @@ every published name whether it is a declaration's name *and* not a macro's.
 | qualified/container name | ✅ | `ownerName` = enclosing namespace/class via scope stack (out-of-line definitions use the explicit `Class::` scope; template `Registry<T>::add` resolves through the `template_type` scope node); visibility from access specifiers (`public:`/`private:`/`protected:`). **A function is never an owner** except for a local `class`/`struct`/`enum`, which has members that need one. |
 | range (start/end line + column) | ✅ | the declaration/definition node |
 | parameters | ✅ | function declarator `parameter_list` → `name`/`type`/`defaultValue`/`isOptional` on method/function/constructor symbols. **M60.P1: this row was a FALSE CLAIM until this milestone** — the field was never produced, and `UniversalSymbol.decorators`/`returnType` sat as DEAD emit cells in `script/m60/payload-matrix.ts` while this table said ✅. Two rules make the values correct rather than merely present, and both are pinned by `cpp/m60-signature-payload` and by six mutants: **(1) the type slice stops at the parameter's NAME node, not its declarator** — a `reference_declarator`'s text is `& name` and its start index points at the `&`, so slicing at the declarator publishes `const std::string` for `const std::string& name`, a *different C++ type that overloads differently* (and the same slice is the override-matching key, so `f(Widget&)` and `f(Widget)` hashed alike); **(2) a defaulted parameter is a DIFFERENT node** (`optional_parameter_declaration`), so reading only `parameter_declaration` silently drops every defaulted parameter in the corpus. A variadic `...` is deliberately NOT a parameter — it has no name and no type, and the family shape has no slot for it. |
-| returnType | ✅ | the declaration's `type` field, EXCEPT for a deduced return type: `auto f() const -> std::string` has `type` = `auto`, so the real type is read from the `trailing_return_type` **child** of the declarator (measured shape: `function_declarator [trailing_return_type [->, type_descriptor]]`) — it is a child, not a field, and `childForFieldName` returns null for it. M60.P1: absent before this milestone. **Where `auto` is still published, it is the honest spelling, and that is a measured distinction rather than a leftover:** the trailing return type gives the type only when the author WROTE one. 95 corpus symbols spell a bare deduced return with no `->` at all (e.g. `auto UnpackStructImpl(const T& t, MakeIndexSequence<3>, char) { … }` in fmt's bundled gmock, 12+ of them in one header), and there the declared type genuinely *is* `auto` — the real type is deduced from the return statement in the body, which this analyzer does not evaluate and must not guess. Publishing `auto` there is truthful; publishing it for a written `-> std::string` is a name that resolves to nothing. |
+| returnType | ✅ | the declaration's `type` field, EXCEPT when it is a DECORATOR or the type must be read from a recovery, and EXCEPT for a deduced return type (both detailed below): `auto f() const -> std::string` has `type` = `auto`, so the real type is read from the `trailing_return_type` **child** of the declarator (measured shape: `function_declarator [trailing_return_type [->, type_descriptor]]`) — it is a child, not a field, and `childForFieldName` returns null for it. M60.P1: absent before this milestone. **Where `auto` is still published, it is the honest spelling, and that is a measured distinction rather than a leftover:** the trailing return type gives the type only when the author WROTE one. 95 corpus symbols spell a bare deduced return with no `->` at all (e.g. `auto UnpackStructImpl(const T& t, MakeIndexSequence<3>, char) { … }` in fmt's bundled gmock, 12+ of them in one header), and there the declared type genuinely *is* `auto` — the real type is deduced from the return statement in the body, which this analyzer does not evaluate and must not guess. Publishing `auto` there is truthful; publishing it for a written `-> std::string` is a name that resolves to nothing. **D17/D27 (decorated head, ported back onto this lane — `cpp/decorated-head-return-type`).** A macro standing where a type stands is a DECORATOR, and the field published the macro spelling: measured on this checkout, **121** symbols published an all-caps macro as their C++ return type, in 14 distinct spellings, and the same nodes published a second, worse defect in four of them (`JSON_HEDLEY_NON_NULL(3) invalid_iterator(int id_, const char* what_arg) : exception(id_, what_arg) {}` published `method invalid_iterator.exception` — a member named after the class's own BASE, no parameters, a body it does not have, and no constructor symbol at all). Four readers, each on evidence the tree states: (1) `macro_prefixed_type_specifier` is the grammar's OWN split, so the type is the specifier's non-macro children through `specifierTypeText`, joined through `collapseSpaces` (D27: `unsigned   long   long` publishes `unsigned long long`); (2) a type REJOINED to the name as a phantom qualifier (`DOCTEST_INTERFACE String operator+`) — the empty `::` separator `qualifiedDeclaratorLeaf` already reads for the NAME is what says the prefix is the type (`phantomQualifierType`); (3) a type the recovery left inside the declarator's own ERROR (`JSON_HEDLEY_NON_NULL(1) void grisu2(…)` → `ERROR[number_literal, primitive_type void]`), read OUTWARD from the declarator and bounded by the DECLARATION's span (`displacedReturnType` — not by node identity, which is not reference-stable in this binding and published the CLASS NAME as a constructor's type in the first cut); (4) with none of the three, a macro-spelled type field is a decorator only when the head is recovered — a clean head keeps its field, because `typedef void* HANDLE_CTX; … HANDLE_CTX Open();` is a real type the spelling cannot be distinguished from. The declared name comes off the same chain walk, so the constructor's `parameters` arrive with it. **Residual, measured, with the reason each survives: 19** — 6 decorator LINES that the recovery mints as symbols of their own (json.hpp:5381 is `JSON_HEDLEY_WARN_UNUSED_RESULT` typed, `JSON_HEDLEY_DEPRECATED_FOR(…)` named) and 13 doctest friend-macro heads where the real type is INSIDE the macro (`DOCTEST_APPROX_PREFIX` expands to a template+friend+`enable_if<…>::type`), which no reading of the source can recover and which the lane refuses to guess from a spelling. |
 | documentation/comments | — | n/a (C++ comments not extracted as doc) |
 | complexity metrics | ✅ | memory-safety score (smart pointers `std::make_unique`/`std::make_shared` boost, raw `new`/`delete` penalize); patterns (`auto`, `lambda`, `constexpr`, RAII, smart pointers); framework detection (Qt/STL/Win32) from `#include` patterns — pure-String scans |
 | syntax errors | ✅ | ERROR/missing nodes surfaced as warnings; counted in `parseErrors` |
 | decorators/attributes | ✅ | M60.P1: the declaration's modifiers as their **source spellings, in source order** (`["static", "constexpr"]`), on BOTH the function branch and the field/variable branch — `static constexpr int kMax = 2;` carries as much modifier information as `virtual double area() const = 0;`, so a field that answers for one and not the other is a field a consumer cannot rely on. The scan matches a child by TEXT and EXCLUDES the declaration's own payload fields (`type`, `declarator`, `default_value`, …), **not** by `isNamed`: the grammar is inconsistent and both forms occur in this lane's own fixtures — `virtual` is an unnamed token on a method, while `static`/`constexpr` are NAMED `storage_class_specifier`/`type_qualifier` wrappers on a field, and an `isNamed`-only rule finds the modifier on the method and misses it on the field. `override`/`final` are `virtual_specifier`s, a level below the declaration, so they need the second lookup. A destructor and an operator overload are deliberately absent: `~File` and `operator==` are part of the NAME, not modifiers applied to it. `isPureVirtual`/`isAbstract`/`isTemplate` remain separate metadata flags. |
 
-## Relationship ontology — the ten verdicts, each with a number
+## Relationship ontology
 
-The engine's `RelationshipType` carries **10 distinct values**. This lane emits
+The engine's `RelationshipType` carries **10 distinct values** — ten verdicts, each
+with a number. This lane emits
 **9** of them as relationships and rules **1**. Every verdict below is a MEASUREMENT
 on the two pinned C++ corpora through the PRODUCTION entry (`parseFile`, never
 `analyze()`): **162 candidate files, 128 admitted as C++ by
@@ -270,7 +271,22 @@ push sites; `script/cpp-review/ontology-census.ts` is what produced the counts.
 | references | **EMITTED** | 27 | 7 | 21 | `using`-dependencies only (the includes moved to `imports`) |
 | instantiates | **EMITTED** | 21 | 14 | 20 | `new_expression` → constructed type |
 | overrides | **EMITTED** | 9 | 2 | 9 | base-class virtuals, transitive, signature-aware |
-| implements | **RULED** | 0 | 0 | 0 | measured on four legs below |
+| implements | **EMITTED** | 2 | 1 | 2 | a base with a PURE VIRTUAL is C++'s interface; the earlier RULED line was prose and the CPP2 round falsified it (four legs below). **The three numbers in this row are the reconciliation census's over the 162-file walk** (both `implements` rows are in `cpp-sample`); every other row here is the CPP2/CPP3 measurement over the 128 |
+
+**Two populations appear in this document, and each table names the one it used**, because
+they differ by 34 files and a reader who mixes them will think a count moved:
+
+- the **extension-universe walk** (`script/cpp-review/ontology-census.ts`, `CPP_REPOS`,
+the lane's own extension list) — **162 files**, and the population of `## Corpus
+validation` and of the RECONCILIATION section;
+- the **production language-detection path** (`script/cpp-review/cpp2-implements-instrument.ts`,
+`128 files` admitted as C++ out of 162 candidates, 34 excluded as C) — the population
+of the CPP2/CPP3 tables, and the one the count column of the table ABOVE reports.
+
+The per-type table under `### The six questions` is the extension walk's, re-measured at
+this commit; the counts in this table are the CPP2/CPP3 measurement over the 128, which
+is why the same label can read 4,651 here and 4,678 there without either number being
+wrong.
 
 Totals after the CPP3 round: **6,060 symbols and 10,339 relationships** over the 128
 admitted files (from 6,197 and 10,636 at the ontology round's HEAD). The delta is
@@ -281,6 +297,338 @@ type's count rose. `script/cpp-review/perf-interleaved.ts` measures the same cha
 as **2,551,624 → 2,504,488 bytes of serialized output, −1.85%** for the CPP2 step and
 **2,504,488 → 2,502,465, −2,023 bytes (−0.08%)** for the CPP3 step, which is the
 number `bb_graph`'s payload budget actually cares about.
+
+### MAIN-FOLD re-measurement (2026-10-08) — main fires 9 of 10, and the claims it replaces
+
+The table above is the CPP2/CPP3/CPP4 **lane-branch** record. Main does not carry that
+analyzer: the Oct 7 fold (`4cf800a17`) replaced `real-cpp-analyzer.ts` with the
+`CPP_FIX` revision (`0178d03aa`, blob `e0c6f57c`) because it satisfied more of the pins
+main carries — and this lane's fixtures, its doc and its state file came from different
+generations of the same lane, so they disagree with each other. This section is the
+measured state of **main at HEAD** (and after this round's one fix), not a restatement of
+the branch work.
+
+Run, through the firing check's own harness (`script/m14/firing-check.mjs CPP`: the first
+120 files depth-first under `cpp-example`, `< 400 KB`, `.cpp/.cc/.h`, analyzer driven
+directly):
+
+```
+CPP  9 types fired  120/120 parsed
+   calls:36527 contains:1357 extends:64 implements:1 imports:599
+   instantiates:27 overrides:5 references:100 uses:754
+   SILENT (constructible but produced nothing): exports
+```
+
+Population: **2,462 symbols and 39,434 relationships over the 120 files**. Corpus:
+`cpp-example` = nlohmann/json with its bundled doctest. All ten, with files:
+
+| type | verdict | count | files | applicable denominator |
+|---|---|---|---|---|
+| calls | FIRES | 36,527 | 112 | — |
+| contains | FIRES | 1,357 | 80 | — |
+| imports | FIRES | 599 | 119 | 599/599 are `#include` (`include_dependency`) |
+| uses | FIRES | 754 | 52 | — |
+| references | FIRES | 100 | 78 | 100/100 are `using`-dependencies |
+| extends | FIRES | 64 | 18 | — |
+| instantiates | FIRES | 27 | 8 | — |
+| overrides | FIRES | 5 | 3 | — |
+| **implements** | **FIRES** | **1** | **1** | one in-file abstract base |
+| **exports** | **SILENT — RULED, denominator 0** | **0** | **0** | **0 of 120 files contain an export construct** |
+
+**`implements` — fired by this round's fix, and the construct verified.** The one row is
+`ExceptionTranslator -> IExceptionTranslator` (`tests/thirdparty/doctest/doctest.h:1803`),
+and the source states both halves: `struct DOCTEST_INTERFACE IExceptionTranslator { …
+virtual bool translate(String&) const = 0; }` and `class ExceptionTranslator : public
+IExceptionTranslator`. It read **0** on main before this round for the reason the branch's
+D19/D23 recorded: `getFunctionDetails`'s wrapper list did not contain `init_declarator`,
+and the `= 0` of the `declaration > init_declarator` shape lives on the
+`init_declarator`'s `value` field, so the interface member was never published and never
+registered as a contract. Both are fixed in place (the wrapper list gains
+`init_declarator`; the predicate reads both grammar shapes). Measured on the same corpus by
+`script/cpp-review/pure-virtual-census.ts`: **19 of 34 pure-virtual sites now publish**
+(17 of 34 before).
+
+**`exports` — RULED, with the denominator measured rather than asserted.** Main implements
+the inline-attribute arm (`__declspec(dllexport)`, `__attribute__((visibility("default")))`,
+`[[…]]`) and not the macro-marker arm the CPP2 branch described as `cppExportMarker`. That
+is the reason, not a preference:
+
+* **The corpus has no export construct at all on the firing sample.** Of the 120 files, the
+  only one that mentions an export mechanism is `tests/thirdparty/doctest/doctest.h`, and
+  there the component-bearing marker (`DOCTEST_SYMBOL_EXPORT`) appears **only in `#define`
+  bodies** (4 sites); the marker the declarations actually use is `DOCTEST_INTERFACE`
+  (**105 uses**), whose `_`-delimited components are `DOCTEST · INTERFACE` — no
+  `EXPORT`/`API`/`DLLEXPORT`/… component — so the documented marker rule would not read it
+  either, and the inline attribute spells in that file are inside `#define`s too. Over the
+  whole corpus (396 files < 400 KB): **0 marked declarations, 0 inline export attributes,
+  0 `exports` rows**.
+* **Where the construct IS real, main's rule cannot see it and the marker rule can.** On the
+  pinned `cpp-sample` (google/benchmark) there are **86 declarations spelled
+  `BENCHMARK_EXPORT`** (55 specifier-position, 16 before a complex type, 15 decorated class
+  heads) and main emits **0 `exports` rows**, because `BENCHMARK_EXPORT` is a `#define` over
+  `__declspec(dllexport)` / `visibility("default")`.
+* **And the two pins contradict, so neither rule can satisfy both.** `cpp/exports-marker-910`
+  requires an `exports` edge for the macro-mediated shape; `cpp/exports-visibility-attribute`
+  FORBIDS exactly that edge (`{target: "exported_through_a_macro"}`), on the declared
+  macro-expansion limitation. `LIB_EXPORT` and `BENCHMARK_EXPORT` are the same syntactic
+  shape — an all-caps macro with an `EXPORT` component in specifier position — so no
+  refinement of the component set separates them and the two fixtures cannot both pass.
+  Main's revision was chosen by the fold's own measurement, which is why the attribute pin
+  is the one satisfied today: implementing the marker arm would move cpp's failing-fixture
+  count from 6 to 7 and trip `validation/m14/fixture-baseline.json` (`"cpp": 6`).
+
+**`imports` and `references` are settled — the state file's open question is already
+answered on main.** A `#include` publishes **one `imports` edge** and no `references` edge;
+the `using`-dependency shape stays `references`. Measured on the 120-file sample: 599
+`imports` rows, **599 of 599** with `metadata.relationshipType === "include_dependency"`;
+100 `references` rows, **100 of 100** carrying `isUsingDeclaration: true`,
+`relationshipType: "using_dependency"`, `reasonCode: "using-dependency-name-only"`. So
+`references` is not a duplicate of `imports` here — the two kinds carry two constructs with
+two different targets (`<vector>` vs `std::vector`).
+
+**The reconciliation, one line per source.**
+
+| source | claim | measured status |
+|---|---|---|
+| this lane's brief | 5/10, silent on `extends implements exports overrides instantiates` | **not reproducible** on this checkout: `extends`/`overrides`/`instantiates` fire at HEAD and fire on every revision of this analyzer I can load; no blob in the tree produces that profile |
+| `.tools/onto-state/DERIV_EXPORTS_CPP3.state` | 7/10 | **correct for the pre-wave revision**: rebuilt `4cf800a17^` and measured **7/10** — `calls, extends, uses, contains, references(699 = includes), overrides, instantiates`, silent on `implements imports exports`. That is the revision the state file's DONE line ("#include … recorded as references") describes, and main moved past it |
+| main at HEAD, before this round | 8/10 | `implements` silent (D19/D23); `exports` silent (denominator 0) |
+| main at HEAD, after this round | **9/10** | the firing-check output above |
+| the table at the top of this section | 9 EMITTED + 1 RULED; `exports` 75/18; `implements` 0 | the **CPP2/CPP4 branch** record; not main |
+
+**Endpoint resolution, measured on the same 120 files.** The rows above were checked
+against the file's own published symbols (the census's rule) and against a corpus index
+built over all 465 cpp-example files (`< 400 KB`, `.cpp/.cc/.h/.hpp`):
+
+| type | rows | src = symbol | src = `global` | src BAD | tgt in-file | tgt corpus | tgt external | both in-file | both corpus |
+|---|---|---|---|---|---|---|---|---|---|
+| calls | 36,527 | 33,915 | 2,612 | **0** | 2,639 | 28,053 | 5,833 | 7.2% | **84.0%** |
+| contains | 1,357 | 1,166 | 191 | **0** | 1,357 | 0 | 0 | **100%** | **100%** |
+| extends | 64 | 64 | 0 | **0** | 33 | 8 | 23 | 51.6% | 64.1% |
+| implements | 1 | 1 | 0 | **0** | 1 | 0 | 0 | **100%** | **100%** |
+| imports | 599 | 0 | 599 | **0** | 6 | 42 | 551 | 1.0% | 8.0% |
+| instantiates | 27 | 21 | 6 | **0** | 11 | 7 | 9 | 40.7% | 66.7% |
+| overrides | 5 | 5 | 0 | **0** | 5 | 0 | 0 | **100%** | **100%** |
+| references | 100 | 0 | 100 | **0** | 1 | 0 | 99 | 1.0% | 1.0% |
+| uses | 754 | 504 | 250 | **0** | 567 | 105 | 82 | 75.2% | **89.1%** |
+
+**Every edge's SOURCE is either a published symbol of its own file or the declared
+`global` file-scope sentinel — `src BAD` is 0 on all nine types.** Target resolution is
+the honest weak spot, and it splits three ways: `contains`, `implements` and `overrides`
+resolve **100% in-file**; `uses` 75.2%, `extends` 51.6%, `instantiates` 40.7% in-file,
+rising to 89.1% / 64.1% / 66.7% against the corpus index; `calls` is 7.2% in-file but
+**84.0% corpus-resolvable** (most call targets are members defined in headers outside the
+sampled 120). `imports` (1–8%) and `references` (1%) are **0-by-design** — their targets
+are external module paths and namespace names, and a high rate here would mean invented
+symbols. Two of the 9 `instantiates` externals were NOT external in any defensible sense —
+`instantiates -> Reporter`, a TEMPLATE PARAMETER (`new Reporter(n)` inside
+`reporterCreator<Reporter>`), and `instantiates -> char` for `new char[4]`: minimal repros
+on both, targets that can never resolve to a symbol in any file. **Both are now refused**,
+and so is a third of the same class found later (`instantiates -> uint8_t` from
+`new uint8_t[5]`); the measurement is in "D1/D13 — the last two fabricated endpoints"
+below. The table above is the pre-fix 120-file reading and is left as it was recorded. A third loss sits behind the one `extends -> json_sax`
+that never resolves: `template<typename BasicJsonType> struct json_sax { virtual bool
+null() = 0; … }` (`include/nlohmann/detail/input/json_sax.hpp:35`) is **not published at
+all** by main's analyzer while its three subclasses are — a context-specific loss, since
+the minimal `template struct + pure virtual` repro publishes correctly.
+
+**There is no INCOMING direction in this lane.** Every row above is an outgoing edge
+derived from nodes inside one file; `analyze(rootNode, content, filePath)` reads no
+companion index, so "who references X" is resolved by the store/indexer linking rows to
+symbol ids, not by this analyzer. A reader who takes 599 `imports` rows to mean 599
+incoming file dependencies is reading a number this lane cannot produce.
+
+**Fixtures and gates, measured after the fix.** `cpp` fixtures 41 pass / 6 fail
+(`contains-name-line-921`, `exports-marker-910`, `pure-virtual-abstract-919`,
+`pure-virtual-signature-910`, `specifier-qualified-name-962`, `unnamed-scope-919`) — the
+same six as before the change, and the same six `fixture-baseline.json` already records,
+so the fix is a net gain with no gate movement. `verify-analyzer-hygiene` clean (25/25);
+`verify-regex-census` PASSED (this lane's source introduces no regex). Two reds are
+pre-existing and not this work: `script/cpp-review/relationship-ontology.ts` fails at HEAD
+for all ten types because the table above spells its claim cells `**EMITTED**`/`**RULED**`
+rather than `✅`/an explicit "never"; and the remaining five cpp fixtures are the
+D18/D20/D21/D23 work the branch carries and main does not.
+
+### D1/D13 — the last two fabricated endpoints, closed (2026-10-09)
+
+Two rows on main named an endpoint that is a symbol in NO translation unit. Both are now
+gone, and the re-measurement is on the full corpus (465 files < 400 KB, `.cpp/.cc/.h/.hpp`,
+5,868 symbols, 50,464 rows before / **50,463** after):
+
+| fabricated row | construct that produced it | fix |
+|---|---|---|
+| `uses namespace detail -> m_it` @ `include/nlohmann/detail/iterators/primitive_iterator.hpp:72` | `NLOHMANN_JSON_NAMESPACE_BEGIN` is a BARE macro, so the grammar swallows the macro AND the following `namespace detail {` head into one `function_definition` whose declarator TEXT is the two words `namespace detail`; the friend-body re-own path read that text as the enclosing scope's NAME | the owner now comes off the walk's OWN scope stack (`friendBodyOwner`), which holds only scopes whose symbols were published — a recovery that published nothing leaves the file scope, and the row now reads `uses global -> m_it` |
+| `instantiates -> Reporter` @ `tests/thirdparty/doctest/doctest.h:2106` | the whole 7,142-line file is ONE ERROR region, so no `template_declaration` node exists for `reporterCreator` and the template parameter list survives only as `ERROR("<typename Reporter>")` — a preceding sibling of the recovered return type, behind an unnamed `template` token | `isTemplateParameterName` gained a second arm that reads the displaced `< … >` frame (`isTemplateParameterListFrame`, token TYPES only: `<`, `>`, a `typename`/`class` keyword) and asks the SAME `templateParameterNames` reader the ordinary arm uses |
+
+The second one is why the first cut of the `instantiates` guard did not close the class it
+was written for: arm 1 walks ANCESTORS for a `template_declaration`, and in that file there
+is no such node to find. Both arms now share one parameter-name reader, so the two spellings
+cannot drift apart; the walk is bounded (a parameter after the construction is not evidence,
+so only nodes that START before it are read).
+
+**What the fix moved, and what it did not.** Rows 50,464 → 50,463 (`instantiates` 20 → 19),
+symbols unchanged at 5,868, name-vs-line violations unchanged (293, all the sanctioned
+`anonymous`/`constructor` sentinels), owner audit unchanged (0 owners pointing at an
+unpublished symbol), and the loss classes unchanged (1,846 function definitions outside
+ERROR, 1,734 published, 112 unpublished: 47 macro-recovery, 42 friend definitions, 15
+destructors, 7 macro-shaped — measured before and after). Source truth is now total on this
+corpus: **0 of 50,463 rows name a source that is not a published symbol in its own file or
+the declared `global` sentinel** (was 1). The residue is a documented convention, not a
+fabrication: 32,321 rows carry a test-macro HEADING as their source (`TEST_CASE("BJData")`),
+which the analyzer deliberately publishes as the function's own name, so the store resolves
+it; 2 rows carry `Owner.operator=`, a real published method.
+
+**Fixture and baseline.** `cpp/friend-owner-name-recovery` is the minimal repro plus two
+controls (a namespace the grammar parses NORMALLY, whose friend owner must be that
+namespace and not `global`; and `new T()` in a clean template, which must emit nothing while
+`new gadget()` in the same file still emits). Run against the HEAD analyzer on that exact
+file, HEAD emits 8 relationships including `uses namespace detail -> m_it` and
+`instantiates manufactured -> T`; the fixed analyzer emits 7, the two fabrications gone.
+`cpp` fixtures **42 pass / 6 fail** (the same six reds as before, `fixture-baseline.json`
+unchanged, `fixture baseline gate: no regressions`), `verify-analyzer-hygiene` clean (25/25),
+`tsc --noEmit` exit 0. The DISPLACED-frame arm is measured on the corpus, not pinned by this
+fixture: reproducing it needs the whole-file ERROR that only a 7,000-line macro-heavy header
+triggers, and no small source reproduces it (two attempts are recorded in the fixture's
+rationale).
+
+**Structure this leaves behind (build with it, not against it).** One owner per fact, and
+the owner is named in the code:
+
+* a CONTEXT's name — the walk's own `scopeStack`, filled only where a symbol was published;
+  `friendBodyOwner` is the only thing that re-owns a body, and it reads that stack. There is
+  no second reader of "what scope encloses this node" any more.
+* what a template PARAMETER LIST binds — `templateParameterNames`, used by both arms of
+  `isTemplateParameterName`.
+* what a parameter list LOOKS like when recovery displaced it — `isTemplateParameterListFrame`
+  (token types only).
+* whether a spelling can be a declared name — `isCppSpelledName` (keywords) and
+  `isPlainIdentifier` (identifier shape) stay separate on purpose: `size_t x;` is a real
+  declaration, while a context name must be one token.
+
+### The loss audit — friend definitions and destructors are published (2026-10-09)
+
+The corpus's largest remaining loss, and the one that mattered most semantically: a friend
+DEFINITION and a destructor DEFINITION were the two constructs the analyzer never published,
+so every edge naming one was unresolvable. Per C++ [class.friend] `friend bool
+operator==(w, w) { … }` defines a FREE FUNCTION in the enclosing namespace, reachable through
+ADL only — which is exactly how nlohmann's `to_json`/`from_json`/`operator==` serializers are
+found. The edges were missing at the ADL extension points the JSON library's whole extension
+API is built from, not at some incidental functions.
+
+**The census, one instrument on both byte sets** (line-and-name structural check: a
+`function_definition` is published iff a symbol starts on its line with its declared name;
+the pre-pass bytes are the working tree's analyzer with only these two arms reverted):
+
+| construct | before | after |
+|---|---|---|
+| friend definitions, outside ERROR | 0 published / 34 unpublished | **34 / 0** |
+| destructor definitions, outside ERROR | 0 / 15 | **15 / 0** |
+| every OTHER function definition | 1,539 / 258 | 1,539 / 258 (identical) |
+| friend definitions, ERROR regions INCLUDED | 0 / 56 | **56 / 0** |
+| destructor definitions, ERROR regions included | 0 / 21 | **21 / 0** |
+| every other function definition, ERROR included | 2,060 / 399 | 2,060 / 399 (identical) |
+
+The earlier rounds' loss audit reported `42 friend, 15 destructor` from a name-based
+classifier; this census's structural test disagrees in both directions on the friend count
+(34 outside ERROR, 56 with them) and is the number quoted here, because it is the same
+instrument on both sides. The destructor count agrees (15 / 21).
+
+**What the change moved.** Symbols 5,868 → **5,948** (`function` +58, `method` +22), rows
+50,463 → **50,516**. Every one of the 80 added symbols sits on a source line that literally
+writes `friend` (functions) or `~` (methods/destructors) — verified line by line, not by name
+pattern. Canonical `(file, type, target, line)` facts: **+54, −1**. The one lost fact is
+`uses global -> result @ json.hpp:5532`: `result` is a LOCAL (`basic_json result;`) whose read
+was reaching the file roster, and the friend's own scope now binds it, which is the same rule
+a method's locals already follow. The +54 are 38 `contains` rows and 16 `uses` rows — the
+`contains` rows name a friend or a destructor as a member of its TRUE enclosing scope
+(`contains ns -> to_json`, `contains lexer -> ~lexer`) and did not exist at all before; the 16
+`uses` facts are real reads (`operator<` reading `m_it`, `operator!=` reading `m_map`) that the
+old single-source dedupe (`${source}::uses::${name}`) had collapsed into one row per name
+because every friend body shared one owner. 52 `calls` rows and 25 `uses` rows changed SOURCE
+only, from the enclosing scope to the friend or destructor that performs the read
+(`calls operator== -> size`, `uses ~data -> m_value`).
+
+**Three defects in this pass's own first cut, found by exercising it.** (1) THE SCOPE LEAK.
+The friend branch pushed its scope but continued past the shared exit-record push, so the
+first friend stayed on `scopeStack` for the rest of the file: measured on a 4-line source, the
+second friend published `function eq::ne` — owned by the PREVIOUS friend — and the walk
+emitted `contains eq -> ne`, a containment edge between two unrelated free functions. Both
+endpoints are published symbols, so the endpoint-shape audit CANNOT see it; only an owner
+assert plus a forbid can. (2) THE PUBLISH GATE WALKED ANCESTORS. The gate asked
+`nodeHasFunctionBody`, whose loop climbs `cur.parent` scanning each ancestor's children for a
+`function_definition` — and the `translation_unit` is on that walk, so in any file with a
+definition above it, every friend DECLARATION inherited a body and published: measured on a
+3-line source, TWO `eq` symbols, one on the declaration's line, claiming a body it does not
+have. The grammar already spells the answer (`friend_declaration > function_definition` for a
+definition, `> declaration` for a declaration) so the visited node's own type is the whole
+test, and `nodeHasFunctionBody` was DELETED rather than narrowed. (3) A TEMPLATED FRIEND'S
+`isTemplate` was read from the member spelling only (`node.parent`), while a friend's own
+parameter list hangs one level higher (`template_declaration > friend_declaration >
+function_definition`): `template <class U> friend void h(U)` reported `isTemplate: false`.
+
+**Truth audits, both runs, identical harness.** Source truth is total: **0 of 50,516 rows
+name a source that is not a published symbol in its own file or the declared `global`
+sentinel**; name-vs-line violations unchanged (293, all the sanctioned `anonymous`/
+`constructor` sentinels); `instantiates` 19 rows with 0 keyword targets; 0 rows with missing
+or low confidence; the 5 `contains Color -> unknown` rows are byte-identical before and after
+(pre-existing). The endpoint-shape audit is **identical in both runs** — 32,323 rows across
+321 source spellings that no TU can spell (the documented test-macro HEADING convention,
+published as the symbol name) and 3 rows across 3 target spellings. No fabricated endpoint
+was added, and the fabrication class closed in the D1/D13 round did not return: every new
+source is the friend or destructor symbol just published, or the `global` sentinel when the
+recovery published no enclosing scope (json.hpp's `NLOHMANN_JSON_NAMESPACE_BEGIN` case).
+
+**Fixtures.** Two new: `cpp/friend-definition-published` (the publication with its true
+owner, a second friend whose owner must also be the namespace — the leak control, with the
+fabricated `contains` edge forbidden — a friend DECLARATION that must publish nothing while
+its out-of-line definition publishes exactly once via `expectSymbolCount`, and a file-scope
+friend whose owner is the sentinel) and `cpp/destructor-definition-published` (the in-class
+declaration and the out-of-line definition as TWO symbols of the same identity with their own
+ranges, the `~`-spelling name, and the body's reads owned by the destructor). **Two existing
+fixtures pinned the SUPERSEDED stance and were updated, not deleted**:
+`cpp/friend-definition-body-owner` (D13) asserted `expectSymbolCount operator== = 0`,
+`forbidSymbols: operator==` and `uses global -> lo_/a/b` — all four assertions are the
+pre-publication behavior; it now requires the one `operator==` symbol, the read sourced at
+the friend, and `uses global -> a`/`-> b` FORBIDDEN (they are parameter reads and a method's
+parameters are locals, so they are gone, not renamed), while the D13 controls (`param_type`
+must own no body read, the out-of-line `compare` stays owned by its class, `helper` still
+publishes nothing) are kept as they were. `cpp/friend-owner-name-recovery` pinned
+`uses clean_ns -> size_`; the read is now owned by the friend, so the control moved to the
+SYMBOL's `ownerName: clean_ns`, which is the stronger place to state it. No fixture pins the
+old stance now.
+
+**Structure this leaves behind.** One builder, `buildFunctionSymbol` (a closure beside the
+signature readers it uses), is the only place a cpp function symbol is constructed: the member
+arm — which is also the destructor, constructor and out-of-line arm — and the friend arm both
+call it, so the range/complexity/owner/signature/decorator discipline has ONE owner instead of
+two. The caller supplies what is construct-specific (`name`, `kind`, owner, visibility,
+`isStatic`, decorators, metadata flags); the builder decides how a symbol STATES it: the
+payload fields are omitted rather than emitted empty when there is no real signature, and the
+file-scope sentinel `global` never reaches `ownerName` (with `ownerKind` dropped alongside it,
+because an owner kind describing no owner is a claim about nobody). The macro-heading branch
+is deliberately not a caller: it publishes a macro heading (`isCppFunction: false`, no
+signature) rather than a C++ function. The friend branch reads one node type
+(`type === "function_definition"`) and one owner source (`friendBodyOwner` over the walk's
+`scopeStack`); `enclosingFriendDeclaration` is the single answer to "which friend declaration
+is this inside", its boolean-only sibling closure `hasFriendAncestor` was deleted, and
+`nodeHasFunctionBody` is gone with it. Destructors take the ordinary member-function path —
+no special case remains in the walk — and keep the source spelling `~name` (constructors stay
+the one normalized spelling, because theirs collides with the class symbol).
+
+**Consolidation, and how it was shown to be behavior-preserving.** The two symbol literals
+this replaced were 46 and 31 lines of the same field-by-field construction. Measured across
+all 465 corpus files, before vs after: **0 symbol differences** (`kind|owner|name|line`) and
+**0 relationship differences** (`type|source|target|line`); symbols 5,948 and rows 50,516,
+fixtures 44/6 `no regressions`, firing 9/10 with every per-type count identical, hygiene
+25/25, `tsc` 0, truth audit 0 unresolved sources of 50,516 rows, name-vs-line 293. The two
+rules the builder centralizes were measured before being relied on: 0 corpus symbols had
+`ownerName` undefined with `ownerKind` defined, and 0 ever carried the sentinel as
+`ownerName` — so gating the kind on the mapped name changes nothing observable. The payload
+fields the string-level comparison cannot see are pinned by the fixtures' payload assertions
+(`cpp/m60-signature-payload`, `cpp/payload-and-complexity`, and the two new fixtures' metadata
+flags), plus an invariant census on the frozen bytes: of 2,973 function-like symbols, the only
+ones lacking `metadata.isCppFunction` or `complexity` are the 330 macro headings, and the only
+ones lacking the `isStatic` key are friend definitions and macro headings (0 unexpected).
 
 ### CPP4 — the corpus was ABSENT, so the table above was re-measured from nothing
 
@@ -488,31 +836,36 @@ have.
 ### The six questions, answered per emitted type
 
 Source derivation answers the first and nothing else, so each of these is a
-MEASUREMENT over the same 128 admitted files. **Oracle agreement is from
-`script/cpp-review/ontology-oracle.ts`, a second walker over the same grammar** —
-and both sides walk the same pinned wasm, so a node the grammar does not produce is
-invisible to it by construction. That limit is stated once, here, rather than
-claimed away per row.
+MEASUREMENT, and every number below was re-measured **at this commit** over the two
+pinned corpora (162 files, `script/cpp-review/ontology-census.ts` for columns 1/2/5/R7
+and a per-type confidence histogram, `script/cpp-review/oracle-agreement.ts` for column
+3). Columns 4 and 6 are the tree's own facts about each row; column 3's BLIND entries
+are facts about the ORACLE and are named as such rather than scored. **Oracle agreement
+is from a second walker over the same grammar**, and both sides walk the same pinned
+wasm, so a node the grammar does not produce is invisible to it by construction. That
+limit is stated once, here, rather than claimed away per row.
 
-| type | 1 exists | 2 fires | 3 oracle agrees | 4 labelled | 5 resolved | 6 confident | R7 |
+| type | 1 exists | 2 fires (rows / files) | 3 oracle agrees | 4 labelled | 5 resolved (both ends, in-file index) | 6 confident | R7 |
 |---|---|---|---|---|---|---|---|
-| calls | yes | **4,651 rows / 107 files** | audited by `script/m14/differential.ts` — **not re-runnable on this machine** (the pinned `fmt`/`nlohmann-json` repos are absent and the harness refuses a corpus it was not pinned to); the lane oracle does not cover `calls` | yes, after **D25** — 9 rows said a class calls itself and were removed | source resolves in-file **13.3%**, corpus-wide **68.7%** — the gap is the callee, not the caller | confidence **ABSENT on all 4,651**; `evidenceClass: usage_contextual` on all | 0 empty, 0 placeholder, 0 missing `line_number` |
-| contains | yes | **3,755 / 98** | **3,535/3,535 = 100%** (lane oracle) | yes | **66.8%** both ends, **100%** target corpus-resolvable | 1.0 on all; `structural` | **0 empty, 0 placeholder** (was 20 placeholder targets and 133 sentinel symbols — fixed by D21) |
-| imports | yes (ontology round) | **913 / 123** | **169/169 = 100%** | yes | **0%** by design — the target is an EXTERNAL module name (`<vector>`), so no in-file symbol resolves it, and that is correct rather than a loss | 1.0 on all; `import_based` | 0 |
-| uses | yes | **846 / 81** | audited by the shared differential, not re-runnable here | yes | **34.6%** both ends, **91.6%** target corpus-resolvable | 459 @1.0, 387 @0.9 `usage_contextual`; **every sub-1.0 row carries `reasonCode: "member-name-unresolved"`** (M14 §4.1) | 0 |
-| exports | yes (ontology round) | **75 / 18** | **61/61 = 100%** | yes | **0%** by design — the target is the MARKER, not a declared entity | 1.0 on all; `structural` | 0 |
-| extends | yes | **42 / 29** | **26/26 = 100%** (lane oracle) | yes | 16.7% both ends, **92.9%** target corpus-resolvable | 1.0 on all; `structural` | 0 |
-| references | yes | **27 / 7** | **21/21 = 100%** (lane oracle) | yes | 0% — the target is the namespace the `using` names | 0.9 on all, `import_based`, **`reasonCode: "using-declaration-names-a-namespace"`** | 0 |
-| instantiates | yes | **21 / 14** | audited by the shared differential, not re-runnable here | yes | 38.1% both ends, 71.4% target corpus-resolvable | 1.0 on all; `structural` | 0 |
-| overrides | yes | **9 / 2** | **9/9 = 100%** (lane oracle) | yes | 0% — both endpoints are SYNTHETIC (`Cls.method`), not symbols | 0.9, `usage_contextual`, `reasonCode: "signature-match"` | 0 |
+| `calls` | yes | **4,678 / 111** | **99.5%** site-agnostic (8 MISSING, 0 unexplained) | yes, after **D25** — 9 rows said a class calls itself and were removed | 666/4,678 = **14.2%** — the gap is the CALLEE (the caller is a name this file publishes; the callee is usually a library method) | 1.0 on all 4,678; `evidenceClass: usage_contextual` on all | 0 empty, 0 `unknown`, 0 sub-1.0-without-a-code |
+| `contains` | yes | **5,311 / 128** | **97.0%** site-agnostic (9 MISSING, **886 unexplained** — pre-existing and LARGER on main's analyzer: 1,127) | yes | 5,212/5,311 = **98.1%** | 1.0 on all; `structural` | 0 placeholder targets (was 20, and 133 sentinel symbols — fixed by D21) |
+| `imports` | yes | **969 / 147** | **100%** (867 oracle facts, 0 MISSING) | yes | 1/969 = **0.1%** by design — the target is an EXTERNAL module name (`<vector>`), so no in-file symbol resolves it, and that is correct rather than a loss | 1.0 on all; `import_based` | 0 |
+| `uses` | yes | **865 / 85** | **100%** site-agnostic (0 MISSING) | yes | 507/865 = **58.6%** | 1.0 on 465, 0.9 on 400; `usage_contextual` on all; **every sub-1.0 row carries `reasonCode: "member-read-receiver-type-unresolved"`** (M14 §4.1) | 0 |
+| `exports` | yes | **75 / 18** | **BLIND** — the oracle derives 0 facts, so there is nothing to agree with | yes | 0/75 = **0%** by design — the target is the MARKER, not a declared entity | 1.0 on all; `structural`; `reasonCode: "export-marker-in-specifier"` | 0 |
+| `extends` | yes | **42 / 29** | **100%** (39 oracle facts, 0 MISSING, 3 unexplained) | yes | 6/42 = **14.3%** by design — a base is often a library type (`BenchmarkReporter`), which no in-file index can hold | 1.0 on all; `structural` | 0 |
+| `references` | yes | **27 / 7** | **100%** (27 oracle facts, 0 MISSING) | yes | 0/27 = **0%** — the target is the namespace the `using` names | 0.9 on all; `import_based`; **`reasonCode: "using-dependency-name-only"`** | 0 |
+| `instantiates` | yes | **17 / 10** | 78.9% site-agnostic (19 oracle facts, 4 MISSING) | yes | 6/17 = **35.3%** | 1.0 on all; `structural` | 0 |
+| `overrides` | yes | **9 / 2** | **BLIND** — the oracle derives 0 facts for this label | yes | 9/9 = **100%** — both endpoints are SYNTHETIC (`Cls.method`), and the lane publishes both halves | **1.0 on all 9**; `structural`; `reasonCode: "override-keyword+signature-match"` — every `override` on these corpora carries the KEYWORD. The 0.9 `signature-match` inference still exists and is pinned by `cpp/reason-code-4`; it does not OCCUR on these two corpora, which is the difference between a dead branch and a rare one | 0 |
+| `implements` | yes (CPP2 round) | **2 / 1** | **BLIND** — the oracle derives 0 facts for this label | yes | 2/2 = **100%** | 1.0 on both; `structural`; `reasonCode: "pure-virtual-base"` | 0 |
 
 `script/cpp-review/ontology-census.ts` measures every column above on each run:
 endpoint resolution against an index built from ANALYZER OUTPUT (exact about what the
 analyzer published, which is the population `bb_graph` resolves against), a
 confidence/`evidenceClass` distribution per type, and the four R7 checks — sub-1.0
 rows with no reason code, rows with no `line_number`, rows with an empty endpoint, and
-rows whose target is a placeholder literal. **All four are 0 on all nine emitted
-types.**
+rows whose target is a placeholder literal. **All four are 0 on all TEN emitted
+types** — the vocabulary is ten, and `implements` is in it since the CPP2 round, so a
+table of nine was one row short of its own header.
 
 **What each answer means, where it is not "fine".**
 
@@ -585,7 +938,7 @@ the LANGUAGE.
 | class | the contract it breaks | was | now |
 |---|---|---|---|
 | **D16** | a nested macro-decorated class keeps its OWNER | 10 classes published with `scope: "global"` and no `ownerName` | **0** |
-| **D17** | a macro is not a type: a published `returnType` is the DECLARED type | 87 | **0** |
+| **D17** | a macro is not a type: a published `returnType` is the DECLARED type | 87 (marker peel) / 121 (any macro spelling, this checkout) | **0** / **19**, residual shapes named in the `returnType` row |
 | **D18** | a decorated class head's real name is the class's name | 5 misnamed + 1 unpublished | **0** |
 | **D19** | a pure virtual is a member, and a parameter NAME is not part of a C++ signature | 3 members unpublished, every rename-hidden override lost | **0** |
 | **dead branch** | the analyzer reads only node types the pinned grammar produces | 7 `class_body` comparisons against a rule the fork does not declare | **0** |
@@ -938,6 +1291,83 @@ initialiser, not an interface operation. `cpp/pure-virtual-abstract-919` pins th
 class as NOT abstract, and pins an `override` as NOT a pure virtual (C++ forbids the
 two in one declaration).
 
+## The RECONCILIATION round — the analyzer this document described was not on main
+
+This round changed no RULE. It is recorded because it is the largest defect found in
+this lane so far, and because the way it was found is the lesson worth keeping.
+
+**Main carried this lane's DOCUMENT, its FIXTURES and all nine of its lab scripts, and
+not the ANALYZER.** The three rounds above (ontology, CPP2, CPP3) were written on
+branches whose analyzer file was never merged; the merge that landed them
+(`4cf800a17`, `merge(ontology): land the lane wave on main`) is a single-parent
+SQUASH, so what landed was the wave's docs, fixtures and scripts with the analyzer
+resolved to whatever main already had. Nobody lied: the merge was green, every gate
+that existed passed, and the loss was invisible for the same structural reason the
+lane keeps finding — **the fixtures and the document were merged from the branch and
+the code was not, so the suite and the prose agreed with the branch while the analyzer
+stayed behind.** Measured at `main`'s HEAD before the fix:
+
+| | at HEAD | after the reconciliation |
+|---|---|---|
+| `bun run script/m14/run-fixtures.ts --lang cpp` | `{"cpp":{"pass":40,"fail":11}}` | `{"cpp":{"pass":51,"fail":0}}` |
+| the six fixture classes D19/D21/D22/D23/D18 describe | ALL fail (sentinel, pure virtuals, decorated-head base clauses, unnamed scopes) | all pass |
+| the five fixtures of the loss audit + D17's decorated-head return type | fail | pass |
+
+**How it was found, and it was not by a diff.** The question was "can this language be
+declared done?", and the first honest thing to do with that question was to RUN the
+lane's own suite — which is the step a green build does not force. The number that
+gave it away was a `FAIL` in a fixture whose `rationale` quotes this very document.
+
+**What the merge had to reconcile, stated because "merged" hides the interesting
+part.** Two trees had independently implemented overlapping rules: `macroDecoratedClassDecl`,
+`collapseSpaces`, `isMacroSpelling`, the D13 friend-body owner, D15's decorated-class
+publish branch, D20's accessor argument, D25's class-scope guard and the D17 return-type
+reader all existed TWICE with different bodies. The reconciliation is a three-way merge
+(merge base `9a565c835`) resolved rule by rule, and every resolution where the two
+differed was decided by a MEASUREMENT, not by preference:
+
+- **D25 keeps main's guard** (`ownerIsTypeScope && parentContext?.name === targetName`)
+  because the lane's spelling (`source === targetName && kind === class`) suppresses the
+  real METHOD recursion `cpp/class-self-call-925` pins as two `expectRelationships` rows.
+  Measured: the lane's analyzer fails that fixture, main's passes it.
+- **`overrides` keeps main's reason codes** (`override-keyword+signature-match` /
+  `signature-match`), because `script/cpp-review/mutants.ts` and `cpp/reason-code-4` pin
+  them and the keyword is the author asserting the override. The lane's unconditioned
+  `signature-match` fails both.
+- **The sentinel retirement, the D18 decorated-head arms and D23's `cppPureVirtualDeclaration`
+  come from the lane**, because they are what the six failing fixtures measure and main
+  has no equivalent.
+- **The D13 friend-body owner keeps main's stack-based `friendBodyOwner`**, because the
+  fixture's `uses operator== -> lo_` row is main's shape and the lane's `enclosingScopeOf`
+  loses it.
+
+**The merge produced two defects of its own, and both are recorded rather than
+quietly cleaned.** A 95-line dispatch block landed TWICE (both copies reached the same
+conclusions, so behaviour was identical and no fixture could see it), and the lane's
+private `specifierTypeText` survived as a method with no callers because the resolution
+took main's reader for the return type. The duplicate was removed and the dead method
+removed with its measurement moved onto the reader that runs — and the SECOND of those
+is why `script/cpp-review/cpp2-source-mutants.ts` needed re-anchoring.
+
+**The gates were re-run, not re-argued**, and three of them were RED on the merged tree
+until they were repaired. Every one was a gate that had been written against one tree's
+spelling of a rule:
+
+| gate | what it said on the merged tree | why, and what was done |
+|---|---|---|
+| `script/m14/mutate-analyzer.ts` (`BB_MUTANT_ONLY="cpp/"`) | `1 SURVIVING MUTANT(S)` — `cpp/d13-friend-body-owned-by-class` | the revert was keyed on `source === "global"`, the owner a friend body had while a friend definition minted no symbol; the loss audit publishes the friend, so the read is `uses operator== -> lo_` and the revert matched nothing. Re-keyed on the owner it must not produce |
+| the same harness | `cpp/last-sig-wins-overrides` SURVIVES **at main's HEAD too** | pre-existing: the revert filtered rows by `reasonCode === "signature-match"`, and the keyword promotion renamed them. A reason-code-shaped predicate is what made a revert to a REGISTRY stop matching a registry; re-keyed on the source symbol. Measured before the fix: `1 SURVIVING MUTANT(S)` on unmodified HEAD |
+| `script/cpp-review/cpp2-source-mutants.ts` | `REVERT DID NOT APPLY` ×3, `SURVIVED` ×1, `4 not caught and not disclosed` | two D25 anchors named the lane's guard, one named a `returnTypeIsClassDefinition` site that was unique only before the duplicate landed, and the D27 anchor pointed inside the dead private method — the first D27 rewrite then targeted a LIVE call site that the `Counter` row does not take (`LIB_EXPORT` makes the specifier a `macro_prefixed_type_specifier`), and only the third anchor failed the fixture. Now `7 of 9 caught`, 2 disclosed |
+
+**What is NOT fixed, and is now measured rather than assumed**: the oracle. `script/m14/cpp-truth.ts`
+(the truth side of the differential) has not been taught the reconciled owner rules, so
+`oracle-agreement.ts` reports **886** unexplained `contains` rows over the two pinned
+corpora. The same command against main's analyzer reports **1,127**, so the
+reconciliation moves it in the improving direction and leaves a residual that belongs
+to the shared, master-owned oracle. It is stated in `## Corpus validation` with its
+numbers, and it is the reason the `contains` row's oracle column is the one column in
+the ontology table that is not green.
+
 ## Two defects found in this round and REPORTED, not fixed
 
 Both are outside what this round's scope could close honestly, and both are named here
@@ -1199,16 +1629,28 @@ census entry — the project's direction is fewer text rules, not more).
   specialization — 18 rows, measured.
 ## Fixtures and mutants
 
-**39 cpp fixture suites; the harness reports `{"cpp":{"pass":39,"fail":0}}`**
+**51 cpp fixture suites; the harness reports `{"cpp":{"pass":51,"fail":0}}`**
 (`bun run script/m14/run-fixtures.ts --lang cpp`, run at this commit — the harness
-emits that verdict, this document does not). **Two are new in the CPP2 round** and
-**one is new in the CPP3 round** (`cpp/class-scope-constructor`), each proved to FAIL
-against a deliberately broken analyzer by `script/cpp-review/cpp2-source-mutants.ts`
-(**7 of 9 mutants caught, 2 disclosed survivors** — see below), and **two pre-existing
-fixtures had rows CORRECTED** because they were pinning the defect as correct. One
-pre-existing fixture (`cpp/exports-marker-910`) also **gained** a row in the CPP3
-round, because D27's rule was written ungated: the first application of its revert left
-39 of 39 fixtures green.
+emits that verdict, this document does not). The reconciliation round adds **FOUR**
+(`cpp/decorated-head-return-type`, `cpp/destructor-definition-published`,
+`cpp/friend-definition-published`, `cpp/friend-owner-name-recovery`, the loss audit's
+and D17's pins), taking the tracked set from 47 to 51, and **the same 51 files against
+main's analyzer read `{"cpp":{"pass":40,"fail":11}}`** — six fixtures from the
+ontology/CPP2/CPP3 rounds and five from those four plus
+`cpp/friend-definition-body-owner`'s corrected expectation. That measurement is the
+whole of the reconciliation finding, and it is recorded in full under
+`### RECONCILIATION round`; the short version is that main carried this lane's
+fixtures, its nine lab scripts and this document while the ANALYZER the three rounds
+describe was never merged. **Two are new in the CPP2 round** and **one is new in the
+CPP3 round** (`cpp/class-scope-constructor`), each proved to FAIL against a
+deliberately broken analyzer by `script/cpp-review/cpp2-source-mutants.ts`
+(**7 of 9 mutants caught, 2 disclosed survivors** — see below), and **THREE
+pre-existing fixtures had rows CORRECTED** because they were pinning a superseded
+answer (`cpp/specifier-qualified-name-962`, `cpp/contains-name-line-921`, and
+`cpp/pure-virtual-signature-910`, each with its own measurement). One pre-existing
+fixture (`cpp/exports-marker-910`) also **gained** a row in the CPP3 round, because
+D27's rule was written ungated: the first application of its revert left 39 of 39
+fixtures green.
 
 | fixture | pins | how it is proved to fail |
 |---|---|---|
@@ -1223,7 +1665,7 @@ round, because D27's rule was written ungated: the first application of its reve
 | `cpp/exports-marker-910` | all four decorated-head shapes, the export marker's component rule with four negative controls, and the `returnType` strip | ontology-round source revert |
 | `cpp/pure-virtual-signature-910` | the `init_declarator` pure virtual published and overridden, and the type-only signature with renamed parameters plus two name-hiding controls | ontology-round source revert |
 
-### Two corrections of a wrong expectation, and why they are not relaxations
+### Three corrections of a wrong expectation, and why they are not relaxations
 
 **`cpp/specifier-qualified-name-962` asserted `enum anonymous` and
 `contains anonymous -> buffer_size` as EXPECTED rows**, on the reasoning — recorded in
@@ -1242,11 +1684,25 @@ and two `contains` edges on the sentinel.** The fixture's actual subject is #921
 same-line control survives with `line_number: 27` and `from: Widget`. The `from`
 changed from the sentinel to the real enclosing class, which is what D21 does.
 
-**The general lesson, and it is the CPPD15 lesson again.** Both fixtures were
-*pinning* a placeholder name as the expected answer, which is how a sentinel survives
-a year of gates: nothing in the suite can fail on a rule that both sides agree about.
-The measurement that found it was not a diff — it was asking what a construct with no
-name publishes.
+**`cpp/pure-virtual-signature-910`'s control row asserted
+`meta.reasonCode: "signature-match"` on `Same.ReportContext`, which IS written with
+`override`.** The corrected value is `override-keyword+signature-match` at confidence
+1.0, which is what `cpp/reason-code-4` (both sides of 1.0), `cpp/virtual-override-resolution`,
+`cpp/cross-file-override` and two mutants in the shared harness all pin; this row was
+written before the `override` KEYWORD was wired into the resolver and was never
+revisited, and it could not be caught in either tree alone because each tree carried
+the fixture that matched its own code. **The control's SUBJECT is untouched** — the
+edge must exist because the spelling is identical, which is what catches a matcher
+that ignored types; only the label moved, with the round that moved it.
+
+**The general lesson, and it is the CPPD15 lesson again.** All three fixtures were
+*pinning* an answer the code no longer gives — a placeholder name in two of them, a
+superseded reason code in the third — which is how a stale expectation survives a year
+of gates: nothing in the suite can fail on a rule that both sides agree about. For the
+first two, the measurement that found it was not a diff — it was asking what a
+construct with no name publishes. For the third it WAS a diff, and the only one that
+could see it: the reconciling of two trees whose fixtures had drifted apart, where
+each side's suite was green against its own code.
 
 Six are older and each pins one fixed class:
 
@@ -1261,8 +1717,14 @@ Six are older and each pins one fixed class:
 
 **55 cpp mutants in the shared harness, all caught**
 (`BB_MUTANT_ONLY="cpp/" bun run script/m14/mutate-analyzer.ts` → `all 55 mutants
-caught`, filtered 1,483 → 55), plus **5 source-level mutants in this lane's own
-`script/cpp-review/cpp2-source-mutants.ts`: 4 caught, 1 disclosed survivor.**
+caught`, filtered 1,483 → 55), plus **9 source-level mutants in this lane's own
+`script/cpp-review/cpp2-source-mutants.ts`: 7 caught, 2 disclosed survivors.** The
+file grew from 5 mutants to 9 across the CPP2/CPP3 rounds, and the reconciliation
+re-anchored four of them (see the reconciliation section) because they were keyed on
+the branch's spelling of rules that main states differently — an anchor that no longer
+matches is a gate that certifies nothing, and two of them had been rewritten to apply
+to code with no callers, which is the failure mode to look for: `applied: true` with
+`suite failure count 0`.
 
 The shared harness mutates the analyzer's RESULT (`transform(result, content)`), which
 is the right instrument for an edge or a payload rule and the wrong one for a rule
@@ -1293,7 +1755,7 @@ reasoning in the fixture's own `rationale`; the `#743b` grammar fix is untouched
 and `FMT_HAS_INCLUDE`/`MAX` — ordinary macro names — keep their edges, which is
 what shows the correction is scoped to names the language reserves.
 
-## Performance
+## Complexity envelope
 
 **No measurable time change, and the measurable win is output volume.** The
 first A/B ran each arm in its own process and reported 14.6 ms/file pre-fix
@@ -1385,6 +1847,109 @@ string comparison plus one enum comparison per `calls` branch and `collapseSpace
 one pass over a node's own text, so there is no mechanism a reader would point at —
 but the box cannot resolve 1.108 on a 3.3× spread, so the mechanism argument is not
 offered as the measurement. Stated, not resolved, for the fourth round running.
+
+### RECONCILIATION round — payload and independence, at the commit that united the two trees
+
+`BB_ROOT=. CPP_REPOS=sqlite,cpp-sample bun run script/cpp-review/ontology-census.ts`,
+162 files, one process per run, the production path (`getParser` → `analyze`).
+
+| | this commit | main's analyzer (same corpus, same run) |
+|---|---|---|
+| symbols | 8,153 | 8,153 |
+| relationship rows | 11,995 | 12,079 |
+| `contains` | 5,311 | 5,551 |
+| `calls` | 4,678 | 4,648 |
+| `uses` | 865 | 843 |
+| `exports` | 75 | 0 |
+| `overrides` | 9 | 0 |
+| `implements` | 2 | 0 |
+
+The row count moves −84, and every type that moved is named: `contains` −240
+(the D21 sentinel retirement stops publishing 133 symbols named `anonymous` and the
+rows that carried them), `uses` +22 and `calls` +30 (the friend definitions D13/the
+loss audit publishes: a friend's body is now walked under the friend, so its reads are
+edges instead of unattributed), `exports`/`overrides`/`implements` +86 (three rules
+that emit NOTHING on main's analyzer and are pinned by fixtures here). **No type was
+added and none grew without a named cause.**
+
+**Latency — no claim, and for the fifth round the box cannot resolve it.** The two
+trees were not run interleaved for this round (the interleaved harness exists and was
+used for CPP2/CPP3; running it again was out of this round's budget), so there is no
+before/after timing statement here at all. The machine-independent facts are the table
+above and the hot-path audit directly below it, which is unchanged by the reconciliation:
+the merged reader adds `sameExtent` (two integer comparisons), `CPP_ANONYMOUS` (a
+string compare on a name already in hand), `cppPureVirtualDeclaration` (one node's own
+children plus its `init_declarator` children) and `collapseSpaces` (one pass over a
+node's own text), and it REMOVES a duplicated 95-line dispatch block that the merge had
+produced in two copies — a dead copy the compiler could not delete, because both
+copies called methods with side effects on locals.
+
+## Corpus validation
+
+**Corpus target**: the two pinned C++ corpora `sqlite` and `cpp-sample` under
+`BB_CORPUS_ROOT` (default `$HOME/fixtures/repositories`), selected by
+`CPP_REPOS`. The other three repos this lane's earlier rounds used (`fmt`,
+`googletest`, `nlohmann-json`) are **absent from this machine**, which is why the
+corpus validation is reported against these two rather than substituted silently —
+`script/m14/differential.ts` REFUSES to run against a corpus it was not pinned to, and
+that refusal is the correct behaviour.
+
+**Population, derived and printed before any count** (`script/cpp-review/ontology-census.ts`,
+re-run at this commit — the script derives it by `readdir` over `CPP_REPOS`, filtered
+by the lane's own extension universe; there is no hand-written file list):
+
+| | value |
+|---|---|
+| repositories | 2 (`sqlite`, `cpp-sample`) |
+| files walked / admitted as C++ | 2,504 / **162** (`sqlite` 42, `cpp-sample` 120) |
+| bytes | 1,584,657 |
+| parsed | **162 / 162** |
+| symbols published | **8,153** |
+| relationship rows published | **11,995** |
+| error symbols published | 73 |
+| files carrying ERROR/MISSING nodes | 31 (408 nodes) |
+| timeouts | **0** |
+
+**Files / symbols / relationships / errors / timeouts is the template's line, and the
+honest reading of `errors` is the row above rather than a `PASS`.** 31 of 162 files
+(19%) carry a recovery node, because `.h` files in a corpus include headers written for
+compilers this grammar does not fully model; the lane's answer is not to hide them but
+to publish them as `errors` symbols, and the parse-success audit
+(`bun run script/m14/verify-parse-success.ts`) is the gate that holds the rate.
+
+**Oracle agreement is the corpus validation's weakest leg, and it is stated rather
+than rounded up.** `bun run script/cpp-review/oracle-agreement.ts --repo=sqlite,cpp-sample`
+(117 files drawn, site-agnostic comparison — the shared differential's own rule,
+which ignores the `from` endpoint):
+
+| label | oracle facts | published | MISSING | agree | unexplained |
+|---|---|---|---|---|---|
+| `calls` | 1,625 | 4,645 | 8 | **99.5%** | 0 |
+| `contains` | 300 | 1,364 | 9 | **97.0%** | 886 |
+| `uses` | 664 | 845 | 0 | **100.0%** | 0 |
+| `references` | 27 | 27 | 0 | **100.0%** | 0 |
+| `imports` | 867 | 867 | 0 | **100.0%** | 0 |
+| `extends` | 39 | 42 | 0 | **100.0%** | 3 |
+| `instantiates` | 19 | 17 | 4 | 78.9% | 0 |
+| `exports` | 0 | 65 | 0 | BLIND | 65 |
+| `overrides` | 0 | 9 | 0 | BLIND | 9 |
+| `implements` | 0 | 2 | 0 | BLIND | 2 |
+
+Three facts, each with its direction named:
+
+- **`contains` is the only label with a real disagreement** (886 rows the oracle does
+  not model), and it is PRE-EXISTING and LARGER on main's analyzer: the same command
+  against `HEAD`'s analyzer reports **1,127** unexplained `contains` rows. So the
+  reconciliation moves this number in the improving direction (−241), and the residual
+  is `cpp-truth.ts` (the oracle) not yet knowing the reconciled owner rules. It is the
+  oracle that is behind, and the oracle is master-owned (`script/m14/cpp-truth.ts`).
+- **`exports`, `overrides` and `implements` are BLIND**, not wrong: the oracle derives
+  **0** facts for each, so there is nothing to agree or disagree with. What pins those
+  three rules is the fixture suite and the source-level mutants, and the doc says so
+  rather than quoting `100%` from a comparison that had no facts to compare.
+- **`calls` and `uses` agree at 99.5%/100% site-agnostically** and disagree totally
+  under the STRICT comparison, which is a statement about the oracle's `from`
+  convention (it writes site strings the analyzer does not) and not about the edges.
 
 ## The lane's instruments (what re-measures every claim above)
 

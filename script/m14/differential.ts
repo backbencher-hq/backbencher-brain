@@ -55,6 +55,21 @@ import { deriveClojureContainsTruth, deriveClojureUsesTruth, deriveClojureStatic
 import { deriveErlangContainsTruth } from "./oracles/erlang-contains"
 // M60: rust `contains` — see script/m14/oracles/rust-contains.ts for the rule.
 import { deriveRustContainsTruth } from "./oracles/rust-contains"
+// M60 SWIFT DERIVATION (2026-10-11): swift emitted `contains`, `exports` and
+// `imports` and this file compared NONE of them — the register recorded the lane
+// as `4 un-audited: ["contains","exports","imports","overrides"]` and the
+// coverage gate, the fixtures and every mutation test were all green while three
+// of the four labels were stored and compared against nothing.
+//
+// The walk is lane-owned in oracles/ for the same reason the three above are: one
+// import and one registration of the rule, rather than a second copy this shared
+// file would have to keep editing in parallel. It is the SAME walker
+// `script/m14/swift-uncovered-oracle.ts` uses to audit the analyzer in both
+// directions, which is the strongest evidence available for these rows: over a
+// 1,256-file draw it agrees with the analyzer edge-for-edge (`contains`
+// 17,445/17,445, `exports` 2,167/2,167, `imports` 2,108/2,108, 0 MISSING /
+// 0 EXTRA on the 1,012 files both readers see identically).
+import { deriveSwiftTruth, moduleLeaf, swiftTruthRows } from "./oracles/swift-contains-exports-imports"
 // M60 label-coverage sweep: these two oracles were BUILT (846 lines, each with
 // its rule documented) and wired to NOTHING — zero imports anywhere in the repo.
 // typescript meanwhile published `references` and `uses` edges that the allowlist
@@ -1098,7 +1113,30 @@ interface TreeEdge { label: string; from: string; target: string }
 // independently-written core-HTML/SVG set is a component usage. The set
 // below is written from the HTML spec, deliberately NOT copied from the
 // analyzer's list, so disagreements surface as missing/unexplained.
-const ORACLE_HTML_TAGS = new Set(["a","abbr","address","area","article","aside","audio","b","base","bdi","bdo","blockquote","body","br","button","canvas","caption","cite","code","col","colgroup","data","datalist","dd","del","details","dfn","dialog","div","dl","dt","em","embed","fieldset","figcaption","figure","footer","form","h1","h2","h3","h4","h5","h6","head","header","hgroup","hr","html","i","iframe","img","input","ins","kbd","label","legend","li","link","main","map","mark","menu","meta","meter","nav","noscript","object","ol","optgroup","option","output","p","picture","pre","progress","q","rp","rt","ruby","s","samp","script","search","section","select","slot","small","source","span","strong","style","sub","summary","sup","table","tbody","td","template","textarea","tfoot","th","thead","time","title","tr","track","u","ul","var","video","wbr","svg","path","g","rect","circle","ellipse","line","polyline","polygon","text","tspan","use","defs","stop","view","linearGradient","radialGradient","clipPath","mask","pattern","marker","symbol"])
+const ORACLE_HTML_TAGS = new Set(["a","abbr","address","area","article","aside","audio","b","base","bdi","bdo","blockquote","body","br","button","canvas","caption","cite","code","col","colgroup","data","datalist","dd","del","details","dfn","dialog","div","dl","dt","em","embed","fieldset","figcaption","figure","footer","form","h1","h2","h3","h4","h5","h6","head","header","hgroup","hr","html","i","iframe","img","input","ins","kbd","label","legend","li","link","main","map","mark","menu","meta","meter","nav","noscript","object","ol","optgroup","option","output","p","picture","pre","progress","q","rp","rt","ruby","s","samp","script","search","section","select","slot","small","source","span","strong","style","sub","summary","sup","table","tbody","td","template","textarea","tfoot","th","thead","time","title","tr","track","u","ul","var","video","wbr","svg","path","g","rect","circle","ellipse","line","polyline","polygon","text","tspan","use","defs","stop","view","linearGradient","radialGradient","clipPath","mask","pattern","marker","symbol",
+
+// F30 (2026-10-12): the SVG FILTER module and the rest of the element vocabulary.
+//
+// This set is written from the HTML spec and deliberately NOT copied from the
+// analyzer's list, so a disagreement surfaces as a missing/unexplained row — but that
+// independence is about PROVENANCE, not about being allowed to disagree with the
+// specification. The SVG spec defines `<filter>` and 25 filter primitives as elements;
+// before this the oracle called every one of them a component usage, which is how the
+// vue lane's 377 dangling `instantiates` edges (6 primitives, 1,162-file draw) were
+// reproduced rather than caught. verify-cross-language-consistency.ts holds this set and
+// both analyzers' HTML_BUILTIN_TAGS IDENTICAL, so all three move together — by
+// construction, not by convention.
+"filter","feBlend","feColorMatrix","feComponentTransfer","feComposite",
+"feConvolveMatrix","feDiffuseLighting","feDisplacementMap","feDistantLight",
+"feDropShadow","feFlood","feFuncA","feFuncB","feFuncG","feFuncR",
+"feGaussianBlur","feImage","feMerge","feMergeNode","feMorphology","feOffset",
+"fePointLight","feSpecularLighting","feSpotLight","feTile","feTurbulence",
+"switch","foreignObject","desc","metadata","textPath","tref","mpath",
+"animate","animateMotion","animateTransform","set","discard","solidColor",
+"mesh","meshgradient","meshpatch","meshrow","hatch","hatchpath",
+"altGlyph","altGlyphDef","altGlyphItem","glyphRef","animateColor","cursor",
+"color-profile","font","font-face","font-face-format","font-face-name",
+"font-face-src","font-face-uri","glyph","hkern","missing-glyph","vkern"])
 function deriveVueComponentUsages(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -22990,6 +23028,56 @@ async function main() {
         for (const e of deriveSwiftBareUses(root, result?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
+        // M60 SWIFT DERIVATION (2026-10-11): the three labels the lane emitted and
+        // this file never compared. `contains` is the backbone a graph is walked
+        // by, `exports` is the module surface, and `imports` is the module
+        // dependency — all three were stored and compared against nothing, which
+        // is why the register listed them and why no gate could have noticed them
+        // going missing.
+        //
+        // Both halves of the change land together, and this file states the rule
+        // for a reason: truth with no allowance reads as MISSING (the #910 shape —
+        // measured 129 phantom MISSING the moment c's include oracle was switched
+        // on), and an allowance with no truth reports every emitted edge as
+        // fabrication (the G7 shape). The allowance sits in the compared-label
+        // filter below, in the same commit.
+        //
+        // `contains` truth is derived by the SAME rule the analyzer is audited
+        // against — lexical ownership, a body is not a container, one member per
+        // property binding, `enum_entry` members in enum bodies only — and the
+        // walker shares no code with `real-swift-analyzer.ts`. `moduleLeaf(relPath)`
+        // sources the module-level `exports` rows at the file's own leaf name,
+        // which is the analyzer's contract for that edge.
+        //
+        // THE ERROR-FILE CARVE-OUT, and why it is on BOTH sides rather than a
+        // silence on one. The pinned tree-sitter-swift grammar fails on ~19% of
+        // this corpus (244 of 1,256 files in the lane's own draw), and there the
+        // analyzer's ERROR RECOVERY and this plain walker do not read the same
+        // tree: measured on the 60-file swift-nio draw, files whose rootNode has
+        // an ERROR node carry 9 of 10 unexplained rows while the 41 clean files
+        // carry 0, and `AsyncTestingChannel.swift` shows the shape — the walker
+        // cannot bind the enclosing type through the recovery, so members read as
+        // file scope and the analyzer's `contains NIOAsyncTestingChannel -> parent`
+        // arrives as an `exports AsyncTestingChannel -> parent` obligation.
+        // Comparing them would publish the recovery difference as 16 MISSING / 24
+        // unexplained on a lane whose clean population agrees exactly, which is
+        // the false-gap failure this file's own notes describe in three other
+        // directions.
+        //
+        // So the three labels are compared on the files both readers see
+        // identically — the same rule the lane's oracle states for its own figure
+        // (`types` is the agreement over files without an ERROR node; the error
+        // population is counted separately there: 27 MISSING / 89 EXTRA, and
+        // published in `validation/m14/tmp/swift-uncovered-oracle.json`). Nothing
+        // here drops an analyzer edge silently: the analyzer-side filter below
+        // drops the same three labels for the same files, so an error file
+        // contributes to neither side and cannot read as coverage or as a gap.
+        if (!root.hasError) {
+          const swiftTruth = deriveSwiftTruth(root, moduleLeaf(relPath))
+          for (const e of swiftTruthRows(swiftTruth)) {
+            ;(truth as any[]).push(e)
+          }
+        }
       }
       if (lang === "objc") {
         for (const e of deriveObjcEdges(root)) {
@@ -23272,7 +23360,14 @@ async function main() {
       // strict superset of the exclusion: it drops `overrides` from the compared set for
       // dart and go as well as csharp/swift/cpp. Taking the local list would have
       // re-admitted two lanes whose override oracles were deliberately left unwired.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" && lang !== "go" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      }))      // The swift error-file carve-out's ANALYZER half: for the three
+      // labels wired this round, a file whose tree carries an ERROR node is
+      // compared on NEITHER side, because the truth walker and the analyzer's
+      // ERROR recovery read different trees there (see the note beside the swift
+      // truth push). Without this line the same exclusion would be one-sided:
+      // every analyzer edge on those files would be counted as a fabrication.
+      .filter((r: any) => !(lang === "swift" && !!root?.hasError && (r.label === "contains" || r.label === "exports" || r.label === "imports")))
+      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" && lang !== "go" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
@@ -23368,6 +23463,26 @@ async function main() {
           // because truth without the allowance is the #910 shape where a new
           // oracle's rows read as MISSING.
           ...(lang === "dart" ? ["contains"] : []),
+          // M60 SWIFT DERIVATION (2026-10-11): the three labels the lane emitted
+          // and the allowlist dropped from the ANALYZER side, so none of them was
+          // ever compared. Each is on its OWN physical line, for the reason the
+          // F# entry above records in full: this expression has silently lost live
+          // entries to a shared-line rewrite four times, and the symptom is not a
+          // failure but a SMALLER number.
+          //
+          // The rule this file states is the only rule here — a label is
+          // comparable exactly when the lane's oracle derives it, nothing less and
+          // nothing more. `oracles/swift-contains-exports-imports.ts` derives
+          // exactly these three: containment (a type owns its members), the module
+          // API surface (file-scope declarations plus `public import` /
+          // `@_exported import` re-exports), and module dependencies (`import M` ->
+          // M's first dotted segment). `overrides` is deliberately NOT added: its
+          // target resolves through the cross-file companion index a single-file
+          // walker does not have, so it stays measured by its premise probe rather
+          // than compared against a derivation that cannot see its target.
+          ...(lang === "swift" ? ["contains"] : []),
+          ...(lang === "swift" ? ["exports"] : []),
+          ...(lang === "swift" ? ["imports"] : []),
           // M60: clojure joins too — its contains oracle already existed and had no
           // consumer in this file, so the label was unadmitted AND unmeasured.
           ...(lang === "clojure" ? ["contains"] : []),
@@ -24134,6 +24249,15 @@ async function main() {
       // ONLY_LANGS yields, so the artifact is `M14.0.F5.scala.json` and the canonical
       // 43-language M14.0.F5.json stays untouched.
       else if (scope === "scala") emitEvidence({ ...base, issueId: "M14.0.F5.scala" })
+      // M60 SWIFT DERIVATION (2026-10-11): swift, by the same rule — a LITERAL
+      // branch, never a computed id, so M49's producer register finds it and the
+      // canonical 43-language artifact is untouched. This lane's rows are the
+      // evidence for the three labels wired this round: before this artifact there
+      // was no lane-scoped record of swift's differential state at all, only the
+      // canonical fleet file (which needs all 43 corpora and therefore cannot be
+      // re-derived on a box that holds a subset of them — the run refuses at the
+      // corpus precheck rather than emitting a partial canonical artifact).
+      else if (scope === "swift") emitEvidence({ ...base, issueId: "M14.0.F5.swift" })
       else throw new Error(
         `differential: --emit has no declared artifact id for scope "${scope}" — add one literal emit call `
         + '(`{ ...base, issueId: "M14.0.F5.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '

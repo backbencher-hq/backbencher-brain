@@ -590,7 +590,17 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/vue.md", "docs/analyzers/real-vue-analyzer.md"],
     differentialCheck: "differential-vue",
     perfKey: "vue-core:vue",
-    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    // `implements` ADDED 2026-10-12 (F28), the same gap as svelte's below: the
+    // analyzer emitted it and a fixture pinned it while this row did not name it, so
+    // section B classed the lane's class-heritage surface as "published but
+    // unclaimed" — measured by a fixture, required by nothing. The producer is the
+    // TypeScript delegate's heritage pass over a `<script lang="ts">` class, carried
+    // by this seam, and `vue/ts-class-heritage-seam` pins it beside the `overrides`
+    // edge the same heritage produces. The lane's doc already records it as
+    // CONSTRUCTIBLE/0-corpus (element-plus and vue-element-admin contain **0** class
+    // declarations inside any SFC, re-verified 2026-10-05), which is why the fixture
+    // is mandatory evidence here rather than the corpus.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "vue/template-decision-complexity" },
       parameters: { key: "expectParameters", pin: "vue/script-sub-analyzer parameters" },
@@ -698,7 +708,16 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/svelte.md", "docs/analyzers/real-svelte-analyzer.md"],
     differentialCheck: "differential-svelte",
     perfKey: "svelte:svelte",
-    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    // `implements` ADDED 2026-10-12 (F28). It was EMITTED and PINNED while the row
+    // did not name it, which section B reports as "the analyzer publishes these and
+    // the contract row does not name them" — so the lane's class-heritage surface
+    // was measured by a fixture and unclaimed by its own contract. The producer is
+    // the JS/TS delegate's heritage pass over a `<script lang="ts">` class
+    // (`class Widget implements Renderable`), carried by this seam like every other
+    // delegated row, and `svelte/heritage-implements-overrides` pins it together with
+    // the `overrides` edge that heritage also produces — which is why the two are
+    // separate kinds here rather than one "heritage" row.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "svelte/payload-pins (script complexity)" },
       parameters: { key: "expectParameters", pin: "svelte/script-sub-analyzer parameters" },
@@ -1327,7 +1346,26 @@ async function main() {
     anyFailure = anyFailure || r.failures > 0
     results.push(r)
   }
-  if (anyFailure) process.exit(1)
+  // A SCOPED RUN IS A DIAGNOSTIC AND MUST NOT WRITE THE CANONICAL ARTIFACT.
+  //
+  // M14.0.SPEC's `data.languages` is a REPO-WIDE claim — one row per gated lane — and
+  // `--lang X` measures exactly one of them. Before this guard, a scoped run wrote it:
+  // measured 2026-10-12, `--lang vue` left `validation/m14/results/M14.0.SPEC.json`
+  // holding ONE language while the committed artifact holds 21, i.e. a smaller claim
+  // published under the same name, which is the failure mode every other gate in this
+  // directory refuses (`verify-analyzer-docs.ts` prints "DEV-SCOPED run … the canonical
+  // …json was NOT touched" for exactly this reason, and `mutate-analyzer.ts` refuses to
+  // write M14.0.F4 from a `BB_MUTANT_ONLY` run). The scoped run still prints its section
+  // list and still exits non-zero on a failing lane — it just cannot speak for the fleet.
+  const SCOPED_RUN = !!(globalThis as any).__SCOPED_LANG
+  // THE VERDICT IS NOT TAKEN HERE. It used to be — `if (anyFailure) process.exit(1)` sat
+  // on this line — and that made the canonical artifact UNREFRESHABLE: 21 of the 26 gated
+  // lanes fail a section today, so every full run exited on this statement and the
+  // committed M14.0.SPEC stayed a 2026-09-16 snapshot of 21 languages while the gate had
+  // grown to 26. Measured 2026-10-12 (before this move): a full sweep completed all 26
+  // lanes and exited 1 with the artifact untouched. The exit now happens at the END of
+  // this file, after the measurement is written, so the exit code is still 1 and the
+  // record is still a measurement.
 
   // Emit evidence (machine-generated; never hand-edited)
   const { emitEvidence } = await import("./evidence-harness")
@@ -1339,8 +1377,24 @@ async function main() {
     const gapList = spec.gap.gaps.map((g: any) => `${g.id}: ${g.missing}`)
     const ruled = spec.design_decision.decisions.filter((d: any) => d.status === "RULED")
     const pending = spec.design_decision.decisions.filter((d: any) => d.status !== "RULED")
+    // `inventory-fully-classified` USED TO BE HARD-CODED `status: "pass"` — a check whose
+    // TITLE is a measurement ("every named node type classified") and whose verdict was a
+    // constant, so the record reported green for a lane whose own section A had just failed
+    // and whose stderr said `COMPLETENESS FAIL: 2 node type(s) in NO bucket: ERROR, MISSING`.
+    // That is the dishonesty the M14 honesty contract §1 bans, and it is measurably how the
+    // committed artifact came to be a 21-lane ALL-GREEN snapshot while the same run's stdout
+    // carried `SECTION FAIL` lines: the derived check kept the ledger agreeing with the lane.
+    // The verdict now reads the lane's own section A — the measurement it names — and cannot
+    // disagree with the run that produced it.
+    const sectionA = (r.checks as any[]).find((c) => c.id === "section-a-structural")
     checks.push(
-      { id: `inventory-fully-classified`, description: `${cfg.id}: every named node type classified`, status: "pass", language: cfg.id },
+      {
+        id: `inventory-fully-classified`,
+        description: `${cfg.id}: every named node type classified`,
+        status: sectionA?.status === "pass" ? "pass" : "fail",
+        detail: sectionA?.status === "pass" ? sectionA?.detail : (sectionA?.detail ?? "no section A measurement"),
+        language: cfg.id,
+      },
       { id: "gap-list-present", description: `${cfg.id}: ${spec.gap.gaps.length} confirmed gaps declared`, status: "pass", language: cfg.id },
       { id: "design-decisions-tracked", description: `${cfg.id}: ${ruled.length} ruled, ${pending.length} pending owner`, status: "pass", language: cfg.id },
       ...r.checks.map((c) => ({ ...c, language: cfg.id })),
@@ -1353,7 +1407,10 @@ async function main() {
       sections: Object.fromEntries(r.checks.map((c) => [c.id, { status: c.status, detail: c.detail ?? "" }])),
     }
   }
-  emitEvidence({
+  // Guarded by the same flag, and the guard has to be HERE too: skipping only the early
+  // `process.exit` would have let a scoped run reach this call and publish its one lane as
+  // the repo-wide artifact — the defect this block exists to stop, one line further down.
+  if (!SCOPED_RUN) emitEvidence({
     issueId: "M14.0.SPEC",
     title: "Completeness spec (#419) — A–H sections per language",
     claimLevel: "L2",
@@ -1370,6 +1427,17 @@ async function main() {
     data,
   })
   for (const r of results) console.log(r.summary)
+  if (SCOPED_RUN) {
+    console.log(
+      `\nDEV-SCOPED run (--lang ${langArg}) — the canonical validation/m14/results/M14.0.SPEC.json was NOT touched: it is a repo-wide claim over every gated lane, and a one-lane run would replace that claim with a smaller one. Re-run with no --lang to regenerate it.`,
+    )
+  }
+  // The measurement is written before the verdict, so a lane that fails a section can no
+  // longer make the canonical artifact UNREFRESHABLE. Before this ordering, `process.exit(1)`
+  // ran first, and since perl's sections E/F await their canonical sweep, NO full run could
+  // update M14.0.SPEC at all — which is why the committed artifact had drifted to 21
+  // languages while the tree gates 48. The exit code is unchanged: a failing run still exits 1.
+  if (anyFailure) process.exit(1)
 }
 
 main().catch((e) => { console.error(e); process.exit(1) })

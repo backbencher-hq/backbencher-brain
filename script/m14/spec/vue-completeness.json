@@ -2,7 +2,10 @@
   "language": "vue",
   "grammar": "tree-sitter-vue.wasm",
   "handled_verified": {
+    "_ruling": "ERROR and MISSING ADDED 2026-10-12 (F28). Both were in NO bucket, which section A reports as a failure rather than a silence: 2 of the vue grammar's named node types were unclassified while svelte, the lane this seam shares its script-block machinery with, had classified the same two since its own spec was written. HANDLED rather than silent, and that is a measurement: `real-vue-analyzer.ts` walks `rootNode.hasError` and turns every `n.type === \"ERROR\" || n.isMissing` node into a `ParseResult.errors` entry at that node's own range (severity warning), and `vue/script-error-offset` pins the resulting offset while the `vue/error-offset-revert` mutant is caught by it. A document with a parse error therefore still reports WHERE the error is, which is an emission, not an absence.",
     "types": [
+      "ERROR",
+      "MISSING",
       "attribute",
       "attribute_name",
       "attribute_value",

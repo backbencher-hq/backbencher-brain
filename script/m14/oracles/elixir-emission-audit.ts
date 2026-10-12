@@ -34,7 +34,16 @@ const REPOS = (arg("repo") ?? "elixir").split(",").filter(Boolean)
 const NFILES = Number(arg("nf") ?? process.env.NFILES ?? "0")
 const VERBOSE = process.argv.includes("--verbose")
 
-const REL_TYPES = ["calls", "extends", "implements", "uses", "brain_import", "exports", "contains", "references", "overrides", "instantiates"]
+// `imports` JOINED THIS ENUM 2026-10-10 (elixir fold): the list was written by the
+// EXPORTS wave, when this lane published no `imports` relationship at all and the
+// channel name `brain_import` stood in for it. The fold added the producer
+// (`import Mod` -> `imports`), and until the enum named it the table below counted
+// exactly ONE such row (the first occurrence creates the tally, every later one
+// lands in that never-printed bucket) — an instrument blind to the edge it was
+// supposed to audit. `brain_import` stays in the list: it is the CHANNEL, and for
+// this lane it is silent by design (the ImportInfo list is separate from the
+// relationship).
+const REL_TYPES = ["calls", "extends", "implements", "uses", "brain_import", "imports", "exports", "contains", "references", "overrides", "instantiates"]
 
 /** R7 / target-spelling classes, from validation/m60/target-spelling-register.json's
  *  own vocabulary, implemented as char scans. */
@@ -52,7 +61,14 @@ function hasDelimiter(s: string): boolean {
   }
   return false
 }
-const PLACEHOLDERS = new Set(["Unknown", "unknown", "global", "Global", "", "TODO", "undefined"])
+// EX-EX11b (2026-10-10): `unknown` lower-case is NOT a placeholder — a definition
+// the source genuinely names `unknown` is a real public member, and
+// `validation/m14/fixtures/elixir/ontology-placeholder-names` pins
+// `exports OntoPlaceholder -> unknown`. The sentinel this lane may never publish
+// is the CAPITAL `Unknown` (its own "I could not read it" spelling); the
+// lower-case entry made the audit report a fabricated R7 endpoint on a row the
+// corpus pins as correct.
+const PLACEHOLDERS = new Set(["Unknown", "global", "Global", "", "TODO", "undefined"])
 
 function walkFiles(dir: string, out: string[] = []): string[] {
   let ents: fs.Dirent[]

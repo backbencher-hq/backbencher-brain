@@ -114,272 +114,12 @@ const parser = new WSP()
 parser.setLanguage(await WSL.load(readFileSync(path.join(process.cwd(), "wasm", "tree-sitter-swift.wasm"))))
 
 /** Access levels that put a declaration in its module's interface. */
-const EXPORT_LEVELS = new Set(["public", "open", "package"])
-/** The scope-kind tokens Swift's import grammar admits (`import struct Foo.Bar`). */
-const IMPORT_SCOPE_KINDS = new Set(["struct", "class", "enum", "func", "var", "let", "typealias", "protocol", "actor", "macro"])
-/** A raw-representable enum's stdlib raw-value type — never an adopted protocol. */
-const ENUM_RAW = new Set([
-  "String", "Character", "Int", "Int8", "Int16", "Int32", "Int64",
-  "UInt", "UInt8", "UInt16", "UInt32", "UInt64", "Float", "Float32", "Float64", "Double",
-])
+import { deriveSwiftTruth, moduleLeaf, type SwiftTruth } from "./oracles/swift-contains-exports-imports"
 
-function firstChildOfType(n: any, type: string): any | null {
-  for (let i = 0; i < n.namedChildCount; i++) {
-    const c = n.namedChild(i)
-    if (c && c.type === type) return c
-  }
-  return null
-}
-function hasAnon(n: any, token: string): boolean {
-  for (let i = 0; i < n.childCount; i++) {
-    const c = n.child(i)
-    if (c && !c.isNamed && c.type === token) return true
-  }
-  return false
-}
-/** The declaration's access level, read from its own `visibility_modifier` child. */
-function accessLevel(n: any): string {
-  const mods = firstChildOfType(n, "modifiers")
-  if (mods) {
-    for (let i = 0; i < mods.namedChildCount; i++) {
-      const m = mods.namedChild(i)
-      if (!m || m.type !== "visibility_modifier") continue
-      const t = m.text
-      if (EXPORT_LEVELS.has(t) || t === "private" || t === "fileprivate" || t === "internal") return t
-    }
-  }
-  return "internal"
-}
-/** The last `type_identifier` under a node — an extension names its EXTENDED type. */
-function lastTypeIdentifier(n: any): any | null {
-  let found: any | null = null
-  const stack = [n]
-  while (stack.length > 0) {
-    const cur = stack.pop()
-    if (cur.type === "type_identifier") { found = cur; continue }
-    for (let i = cur.namedChildCount - 1; i >= 0; i--) {
-      const c = cur.namedChild(i)
-      if (c) stack.push(c)
-    }
-  }
-  return found
-}
-
+/** `${from}\u0000${target}` — the comparison half's key shape. The walker that
+ *  produces the truth lives in `oracles/swift-contains-exports-imports.ts`; the
+ *  differential consumes the same module, so the two audit one rule set. */
 type Edge = `${string}\u0000${string}`
-
-interface Truth {
-  contains: Set<Edge>
-  exports: Set<Edge>
-  imports: Set<Edge>
-  /** symbols the tree declares, for corroborating an EXTRA endpoint */
-  declaredNames: Set<string>
-  /** file-scope declarations the tree declares, for the exports uniqueness check */
-  fileScopeNames: string[]
-  /**
-   * `contains` edges whose SOURCE is a FUNCTION — a function declared inside
-   * another function's body. Counted separately because it is the one place the
-   * lane's membership rule and its local rule pull in opposite directions: the
-   * analyzer materializes a nested function as a symbol and emits `contains`
-   * for it, while a local `let`/`var` in the same body emits nothing (its owner
-   * is not a type, so `handleVariable` returns early). Both are locals; only one
-   * of them produces an edge. The number is what makes that asymmetry a
-   * measurement rather than an impression.
-   */
-  localFunctionContains: number
-}
-
-/** The EXTENDED type of an extension declaration — its own `user_type`, never a
- *  `type_identifier` from anywhere in the subtree. The first version of this
- *  oracle searched the whole declaration for the last `type_identifier`, so
- *  `extension Array where Element == Measurement { func f(_ d: String) }` came
- *  out named `String`: 5,543 spurious EXTRA `contains` edges on clean files, the
- *  probe being wrong about the language rather than the analyzer. */
-function extensionTargetName(n: any): string | null {
-  const ut = firstChildOfType(n, "user_type")
-  if (ut) return lastTypeIdentifier(ut)?.text ?? null
-  // No `user_type` (the grammar's own reduction can differ): take the
-  // `type_identifier` that is a DIRECT child, never one from the body.
-  return firstChildOfType(n, "type_identifier")?.text ?? null
-}
-
-/**
- * Derive the expected edge set for one file, from the tree alone.
- *
- * Declaration kinds the oracle reads — the same set the analyzer's symbol
- * contract lists, written out here independently:
- *   protocol_declaration                       -> a type
- *   class_declaration [class|struct|enum|extension|actor] -> a type
- *   function_declaration | protocol_function_declaration -> a member
- *   init_declaration                           -> a member named `constructor`
- *   property_declaration | protocol_property_declaration -> one member per `pattern`
- *   enum_entry                                 -> a member, in an ENUM body only
- *   typealias_declaration | associatedtype_declaration   -> a type
- * Ownership is LEXICAL: the nearest enclosing declaration is the container,
- * which is what "ownerName = parent.name" means when the walk pushes a frame.
- * `deinit_declaration`/`subscript_declaration` are not declarations the family
- * materializes, so they are not members here.
- */
-function deriveTruth(root: any): Truth {
-  const contains = new Set<Edge>()
-  const exports = new Set<Edge>()
-  const imports = new Set<Edge>()
-  const declaredNames = new Set<string>()
-  const fileScopeNames: string[] = []
-  let localFunctionContains = 0
-
-  // `owner` null = file scope. The container is the nearest enclosing
-  // DECLARATION (a type or a function); `ownerIsType` says which, because a
-  // property binding is a member of a TYPE and a local of a function.
-  const walk = (n: any, owner: string | null, ownerIsType: boolean, ownerIsEnum: boolean, insideFunction: boolean) => {
-    const t = n.type
-
-    if (t === "import_declaration") {
-      // The spelled path is the first identifier child; the MODULE is its first
-      // dotted segment (Swift's own rule — a submodule or a scoped declaration
-      // hangs off the module).
-      let spelled = ""
-      for (let i = 0; i < n.childCount; i++) {
-        const c = n.child(i)
-        if (c && (c.type === "simple_identifier" || c.type === "type_identifier" || c.type === "identifier")) { spelled = c.text; break }
-      }
-      if (spelled) {
-        const moduleName = spelled.split(".")[0]
-        if (moduleName) imports.add(`root\u0000${moduleName}`)
-      }
-      return // an import declares nothing
-    }
-
-    let childOwner = owner
-    let childOwnerIsType = ownerIsType
-    let childOwnerIsEnum = ownerIsEnum
-    let nextInsideFunction = insideFunction
-
-    if (t === "protocol_declaration" || t === "class_declaration") {
-      const isExtension = t === "class_declaration" && hasAnon(n, "extension")
-      const name = isExtension
-        ? extensionTargetName(n)
-        : (firstChildOfType(n, "type_identifier")?.text ?? firstChildOfType(n, "user_type")?.text ?? null)
-      if (name) {
-        declaredNames.add(name)
-        if (owner === null) {
-          fileScopeNames.push(name)
-          // E1: a FILE-SCOPE declaration in the module interface. Membership,
-          // not indentation. An extension is excluded because its symbol is
-          // named after the EXTENDED type, which is declared elsewhere (or is
-          // a stdlib type this file never declares).
-          if (!isExtension && EXPORT_LEVELS.has(accessLevel(n))) exports.add(`root\u0000${name}`)
-        } else {
-          contains.add(`${owner}\u0000${name}`)
-        }
-        childOwner = name
-        childOwnerIsType = true
-        childOwnerIsEnum = t === "class_declaration" && hasAnon(n, "enum")
-      }
-      nextInsideFunction = false
-    } else if (t === "function_declaration" || t === "protocol_function_declaration") {
-      // A function is a declaration wherever it appears. Nested inside another
-      // function it is a LOCAL, but it is named, ranged and addressable, so the
-      // oracle derives the containment and counts it separately (`localFunctionContains`)
-      // rather than asserting it away.
-      const nameNode = firstChildOfType(n, "simple_identifier") || firstChildOfType(n, "identifier")
-      const op = nameNode ? null : anonOperatorName(n)
-      const name = nameNode ? nameNode.text : op
-      if (name) {
-        declaredNames.add(name)
-        if (owner !== null) {
-          contains.add(`${owner}\u0000${name}`)
-          if (!ownerIsType) localFunctionContains++
-        } else {
-          fileScopeNames.push(name)
-          if (EXPORT_LEVELS.has(accessLevel(n))) exports.add(`root\u0000${name}`)
-        }
-      }
-      if (name) { childOwner = name; childOwnerIsType = false }
-      nextInsideFunction = true
-    } else if (t === "init_declaration") {
-      // The family's constructor name for a Swift initializer (Java/C# naming).
-      if (owner !== null && ownerIsType) contains.add(`${owner}\u0000constructor`)
-      nextInsideFunction = true
-    } else if (t === "property_declaration" || t === "protocol_property_declaration") {
-      if (ownerIsType) {
-        // One `pattern` per binding: `var a = 1, b = 2` is two declarations. A
-        // binding inside a FUNCTION body is a local and is not a symbol, which
-        // is the family's LocalsAreNotSymbols contract.
-        const names: string[] = []
-        for (let i = 0; i < n.namedChildCount; i++) {
-          const c = n.namedChild(i)
-          if (c && c.type === "pattern") {
-            const id = firstChildOfType(c, "simple_identifier") || firstChildOfType(c, "identifier") || firstNamed(c)
-            if (id) names.push(id.text)
-          }
-        }
-        if (names.length === 0) {
-          const id = firstChildOfType(n, "simple_identifier") || firstChildOfType(n, "identifier")
-          if (id) names.push(id.text)
-        }
-        for (const name of names) {
-          declaredNames.add(name)
-          if (owner !== null) contains.add(`${owner}\u0000${name}`)
-          else {
-            fileScopeNames.push(name)
-            if (EXPORT_LEVELS.has(accessLevel(n))) exports.add(`root\u0000${name}`)
-          }
-        }
-      }
-    } else if (t === "enum_entry") {
-      // A member of an ENUM body only. A `case` in a switch statement is not an
-      // enum member, and `ownerIsEnum` is false there because a switch is not a
-      // type declaration.
-      if (ownerIsEnum && owner !== null && !insideFunction) {
-        let nameNode: any | null = null
-        for (let i = 0; i < n.namedChildCount; i++) {
-          const c = n.namedChild(i)
-          if (!c || c.type === "modifiers" || c.type === "attribute") continue
-          nameNode = c
-          if (c.type === "simple_identifier" || c.type === "identifier") break
-        }
-        const name = nameNode ? nameNode.text : null
-        if (name && name !== "case") {
-          declaredNames.add(name)
-          contains.add(`${owner}\u0000${name}`)
-        }
-      }
-    } else if (t === "typealias_declaration" || t === "associatedtype_declaration") {
-      const nameNode = firstChildOfType(n, "type_identifier")
-      const name = nameNode ? nameNode.text : null
-      if (name) {
-        declaredNames.add(name)
-        if (owner !== null) contains.add(`${owner}\u0000${name}`)
-        else {
-          fileScopeNames.push(name)
-          if (EXPORT_LEVELS.has(accessLevel(n))) exports.add(`root\u0000${name}`)
-        }
-      }
-    }
-
-    for (let i = n.namedChildCount - 1; i >= 0; i--) {
-      const c = n.namedChild(i)
-      if (c) walk(c, childOwner, childOwnerIsType, childOwnerIsEnum, nextInsideFunction)
-    }
-  }
-
-  function firstNamed(n: any): any | null {
-    return n.namedChildCount > 0 ? n.namedChild(0) : null
-  }
-  /** `static func + (l:r:)` — the name is an anonymous operator token. */
-  function anonOperatorName(n: any): string | null {
-    for (let i = 0; i < n.childCount; i++) {
-      const c = n.child(i)
-      if (!c || c.isNamed) continue
-      if (["func", "static", "class", "mutating", "override", "public", "private", "internal", "fileprivate", "open", "final", "indirect"].includes(c.type)) continue
-      if (["+", "-", "*", "/", "%", "==", "!=", "<", ">", "<=", ">=", "++", "--", "+=", "-=", "*=", "/=", "%=", "[]", "..<", "..."].includes(c.type)) return c.type
-    }
-    return null
-  }
-
-  walk(root, null, false, false, false)
-  return { contains, exports, imports, declaredNames, fileScopeNames, localFunctionContains }
-}
 
 // ------------------------------------------------------------------ comparison
 /**
@@ -408,12 +148,13 @@ function normalize(v: string): string {
 }
 const stats: Record<string, {
   truth: number; analyzer: number; missing: number; extra: number; agreed: number
+  truthRawSpellingChanged: number
   missingExamples: string[]; extraExamples: string[]
   byRepo: Record<string, { analyzer: number; missing: number; extra: number }>
 }> = {
-  contains: { truth: 0, analyzer: 0, missing: 0, extra: 0, agreed: 0, missingExamples: [], extraExamples: [], byRepo: {} },
-  exports: { truth: 0, analyzer: 0, missing: 0, extra: 0, agreed: 0, missingExamples: [], extraExamples: [], byRepo: {} },
-  imports: { truth: 0, analyzer: 0, missing: 0, extra: 0, agreed: 0, missingExamples: [], extraExamples: [], byRepo: {} },
+  contains: { truth: 0, analyzer: 0, missing: 0, extra: 0, agreed: 0, truthRawSpellingChanged: 0, missingExamples: [], extraExamples: [], byRepo: {} },
+  exports: { truth: 0, analyzer: 0, missing: 0, extra: 0, agreed: 0, truthRawSpellingChanged: 0, missingExamples: [], extraExamples: [], byRepo: {} },
+  imports: { truth: 0, analyzer: 0, missing: 0, extra: 0, agreed: 0, truthRawSpellingChanged: 0, missingExamples: [], extraExamples: [], byRepo: {} },
 }
 // Clean files and ERROR-RECOVERED files are counted SEPARATELY, and that split
 // is the difference between a number about the analyzer and a number about two
@@ -423,7 +164,7 @@ const stats: Record<string, {
 // sides are not reading the same tree and a disagreement there says nothing
 // about either rule. The error population is reported, not discarded.
 const errorFileBucket = () => ({
-  truth: 0, analyzer: 0, missing: 0, extra: 0, agreed: 0,
+  truth: 0, analyzer: 0, missing: 0, extra: 0, agreed: 0, truthRawSpellingChanged: 0,
   byRepo: {} as Record<string, { analyzer: number; missing: number; extra: number }>,
   missingExamples: [] as string[], extraExamples: [] as string[],
 })
@@ -433,11 +174,15 @@ const errorFiles = {
   imports: errorFileBucket(),
 } as Record<string, ReturnType<typeof errorFileBucket>>
 let filesWithDiff = 0
+let filesWithDiffClean = 0
+let filesWithDiffError = 0
 let extraTargetNotDeclared = 0
+let extraTargetNotDeclaredError = 0
 const extraTargetExamples: string[] = []
+const extraTargetErrorExamples: string[] = []
 let filesCompared = 0
 let filesWithGrammarErrors = 0
-let localFunctionContains = 0
+let functionOwnedContainsExcluded = 0
 let crashFiles = 0
 
 let idx = 0
@@ -452,7 +197,7 @@ async function worker(): Promise<void> {
     const tree = parser.parse(text)
     if (!tree) continue
     const hasError = tree.rootNode.hasError
-    const truth = deriveTruth(tree.rootNode)
+    const truth = deriveSwiftTruth(tree.rootNode, moduleLeaf(f.abs))
     tree.delete?.()
 
     let r: any
@@ -460,7 +205,7 @@ async function worker(): Promise<void> {
     if (r.fallback) continue
     filesCompared++
     if (hasError) filesWithGrammarErrors++
-    localFunctionContains += truth.localFunctionContains
+    functionOwnedContainsExcluded += truth.functionOwnedContainsExcluded
 
     const got: Record<string, Set<Edge>> = { contains: new Set(), exports: new Set(), imports: new Set() }
     const exportRows = new Set<string>()
@@ -472,14 +217,34 @@ async function worker(): Promise<void> {
     }
     for (const e of r.exports ?? []) exportRows.add(normalize(String(e.name ?? "")))
 
+    // TWO-SIDED normalisation. `normalize` reconciles two naming conventions
+    // (see its header); the first version applied it to the ANALYZER side only,
+    // so every truth-side edge whose raw spelling differed — a backtick-quoted
+    // enum case against its stripped form, `operator ==` against `==` — landed
+    // in BOTH columns as a phantom pair even though the two sides agreed about
+    // the declaration. `truthRawSpellingChanged` reports the size of that
+    // reconciliation, so the normalisation can never silently absorb a real
+    // disagreement.
+    const truthNorm: Record<string, Set<Edge>> = { contains: new Set(), exports: new Set(), imports: new Set() }
+    const truthRawSpellingChanged: Record<string, number> = { contains: 0, exports: 0, imports: 0 }
+    for (const ty of ["contains", "exports", "imports"] as const) {
+      for (const e of truth[ty]) {
+        const i = e.indexOf("\u0000")
+        const ne = `${normalize(e.slice(0, i))}\u0000${normalize(e.slice(i + 1))}` as Edge
+        if (ne !== e) truthRawSpellingChanged[ty]++
+        truthNorm[ty].add(ne)
+      }
+    }
+
     let fileDiff = false
     for (const ty of ["contains", "exports", "imports"] as const) {
       const s = hasError ? errorFiles[ty] : stats[ty]
       s.truth += truth[ty].size
+      s.truthRawSpellingChanged += truthRawSpellingChanged[ty]
       s.analyzer += got[ty].size
       s.byRepo[f.repo] ??= { analyzer: 0, missing: 0, extra: 0 }
       s.byRepo[f.repo].analyzer += got[ty].size
-      for (const e of truth[ty]) {
+      for (const e of truthNorm[ty]) {
         if (got[ty].has(e)) { s.agreed++; continue }
         s.missing++
         s.byRepo[f.repo].missing++
@@ -487,7 +252,7 @@ async function worker(): Promise<void> {
         if (s.missingExamples.length < 20) s.missingExamples.push(`${label}: ${e.replace("\u0000", " -> ")}`)
       }
       for (const e of got[ty]) {
-        if (truth[ty].has(e)) continue
+        if (truthNorm[ty].has(e)) continue
         s.extra++
         s.byRepo[f.repo].extra++
         fileDiff = true
@@ -497,8 +262,16 @@ async function worker(): Promise<void> {
         const target = e.slice(e.indexOf("\u0000") + 1)
         if (target !== "root" && !truth.declaredNames.has(target) && truth[ty] !== undefined) {
           if (ty !== "imports") {
-            extraTargetNotDeclared++
-            if (extraTargetExamples.length < 20) extraTargetExamples.push(`${label}: ${ty} -> '${target}' is not declared in this file`)
+            // Split by population: a hit on a CLEAN file is an analyzer
+            // fabrication candidate; a hit on a grammar-error file is the
+            // recovery model the note above declares non-comparable.
+            if (hasError) {
+              extraTargetNotDeclaredError++
+              if (extraTargetErrorExamples.length < 20) extraTargetErrorExamples.push(`${label}: ${ty} -> '${target}' is not declared in this file`)
+            } else {
+              extraTargetNotDeclared++
+              if (extraTargetExamples.length < 20) extraTargetExamples.push(`${label}: ${ty} -> '${target}' is not declared in this file`)
+            }
           }
         }
       }
@@ -511,7 +284,11 @@ async function worker(): Promise<void> {
     const edgeTargets = new Set([...got.exports].map((e) => e.slice(e.indexOf("\u0000") + 1)))
     for (const n of exportRows) if (!edgeTargets.has(n)) fileDiff = true
     for (const n of edgeTargets) if (!exportRows.has(n)) fileDiff = true
-    if (fileDiff) filesWithDiff++
+    if (fileDiff) {
+      filesWithDiff++
+      if (hasError) filesWithDiffError++
+      else filesWithDiffClean++
+    }
   }
 }
 
@@ -528,11 +305,19 @@ const out = {
   filesWithGrammarErrors,
   grammarErrorFilesNote: "files whose tree rootNode.hasError are counted in `grammarErrorTypes` instead of `types`: the analyzer models ERROR recovery and this oracle does not, so the two sides are not reading the same tree there. `types` is therefore the agreement figure over files both readers saw identically.",
   types: stats,
+  truthRawSpellingReconciled: "per-type `truthRawSpellingChanged` inside `types`: truth edges whose raw spelling (operator prefix, backtick quotes) differed from the normalised comparison form — the size of the reconciliation, kept so normalisation cannot hide a disagreement",
   grammarErrorTypes: errorFiles,
-  localFunctionContains,
+  functionOwnedContainsExcluded,
   filesWithAnyDifference: filesWithDiff,
+  filesWithAnyDifferenceSplit: {
+    clean: filesWithDiffClean,
+    grammarError: filesWithDiffError,
+    note: "`clean` is the comparable population (0 is the gate); `grammarError` is the population the note above declares non-comparable — the analyzer's ERROR recovery pairs a container from a header the plain oracle cannot read.",
+  },
   extraEdgeTargetsNotDeclaredInFile: extraTargetNotDeclared,
+  extraEdgeTargetsNotDeclaredInErrorFiles: extraTargetNotDeclaredError,
   extraEdgeTargetExamples: extraTargetExamples,
+  extraEdgeTargetErrorExamples: extraTargetErrorExamples,
   notCoveredHere: {
     overrides: "its target is resolved across files through a companion index this single-file oracle does not have; measured instead by script/m14/swift-overrides-premise-probe.ts",
   },
@@ -545,13 +330,17 @@ for (const ty of ["contains", "exports", "imports"] as const) {
   const s = stats[ty]
   console.log(`${ty.padEnd(11)}${String(s.truth).padEnd(9)}${String(s.analyzer).padEnd(10)}${String(s.agreed).padEnd(9)}${String(s.missing).padEnd(9)}${s.extra}`)
 }
+console.log(`normalisation reconciled truth spellings — contains ${stats.contains.truthRawSpellingChanged}, exports ${stats.exports.truthRawSpellingChanged}, imports ${stats.imports.truthRawSpellingChanged}`)
 console.log(`\nclean files compared (no ERROR node): ${filesCompared - filesWithGrammarErrors}; files with a grammar error, counted separately: ${filesWithGrammarErrors}`)
-console.log(`contains edges whose SOURCE is a FUNCTION (a nested function declared inside another function): ${localFunctionContains}`)
-console.log(`files with at least one difference (clean files): ${filesWithDiff}`)
-console.log(`EXTRA edge targets not declared anywhere in their own file: ${extraTargetNotDeclared}`)
+console.log(`declarations excluded from \`contains\` because their lexical owner is a BODY (function, init, deinit, subscript, accessor or closure) rather than a type — JOB 2: a body is not a container: ${functionOwnedContainsExcluded}`)
+console.log(`files with at least one difference: clean ${filesWithDiffClean}, grammar-error ${filesWithDiffError}`)
+console.log(`EXTRA edge targets not declared anywhere in their own file: clean ${extraTargetNotDeclared}, grammar-error ${extraTargetNotDeclaredError}`)
 const bad = Object.entries(stats).filter(([, s]) => s.missing > 0 || s.extra > 0)
 if (bad.length === 0) {
   console.log(`\nORACLE AGREES on all three types, both directions, over ${filesCompared} files.`)
+  const errMissing = errorFiles.contains.missing + errorFiles.exports.missing + errorFiles.imports.missing
+  const errExtra = errorFiles.contains.extra + errorFiles.exports.extra + errorFiles.imports.extra
+  console.log(`The grammar-error population is NOT part of that claim (the analyzer models ERROR recovery, this oracle does not): ${errMissing} MISSING / ${errExtra} EXTRA, counted separately in \`grammarErrorTypes\`.`)
 } else {
   console.log(`\nDISAGREEMENT — see ${OUT}`)
   process.exitCode = 1

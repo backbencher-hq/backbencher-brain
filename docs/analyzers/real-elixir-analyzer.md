@@ -45,10 +45,11 @@
 | implements | ✅ | `defimpl` → `implements forType -> protocol`; `@behaviour`/`@behavior` attribute → `implements module -> behaviour` | 0.9–1.0 |
 | calls | ✅ | `call` nodes in body position with function sources. Alias-resolved qualified module calls (`Repo.get` with `alias MyApp.Repo` → `MyApp.Repo.get`); same-module calls stay leaf (`add_bid`); pipelines (`|>`) call the piped target. Resolution rules: qualified calls emit when the receiver is capitalized (a module/alias) — lowercase receivers are dynamic dispatch (`module.manifests()`) and emit nothing; unqualified calls emit ONLY when the target is declared in the enclosing module/class (checked post-walk against the full declaration set, so forward references resolve) — Kernel builtins (`length`, `is_*`, `function_exported?`) and imported functions are not local symbols and produce no edge. Exclusions: special forms (case/cond/quote/unquote/...), def signature heads, an attribute's own NAME and the declaration attributes (EX-D25 — a code-valued attribute is NOT excluded), member access (`order.side`), quoted code. Self-recursion IS emitted (Rust `calls find -> find` analog) | 1.0 |
 | instantiates | ✅ | (a) `%Struct{...}` literals in body position (`instantiates new -> MyApp.User`) — never for `Map.put`-style module calls, never for pattern-position structs in a def head; plain `%{}` emits nothing. (b) `struct(User, attrs)` (ELXD19). (c) **`raise Mod` / `raise Mod, msg` / `reraise Mod, stack` (EX-D17)** — the same construction through `Kernel.raise`'s exception entry point, so it is an `instantiates` edge and never a call; 401 alias-named sites in 200 files of elixir@024beb1b carried no edge before the fix. A `__MODULE__` first argument resolves to the enclosing module; a bare `raise "msg"`, a bound exception, or a computed module name is **silent** (no static target to name). Self-construction (`raise __MODULE__` in the module's own body) is suppressed with the rest of the X class | 0.9 |
+| imports | ✅ | **EX-EX7, promoted from `analyzer/ELIXIR4` (2026-10-10)** `import Mod` brings Mod's FUNCTIONS and MACROS into the enclosing scope unprefixed — an import statement in the sense the erlang lane established for `-import(Mod, [f/a])` (ER-D41), and the relationship `dependencies.ts` reads. Published BESIDE the module-dep `references` row, never instead of it: `framework-forms` and `import-only-forms` pin `references PlugUsage -> Plug.Conn` / `references OnlyUser -> Enum` on PASSING rows, and the module view reads that edge (§14). One edge per dependency at the dependency's own name-bearing line; a group form (`import Module.Types.{Helpers, Descr}`) expands per member (ELXD20/M60-924); a self-directive publishes neither edge (ELXD8). Class `import_based` (the tier name for a module-dependency directive). Measured (559-file corpus, production path): **278 edges in 150 files**, sources resolving in-file 255/278, targets external 249/278 by design (another file's module), 278/278 labelled, no fabricated endpoint | 1.0 |
 | references | ✅ | module dependencies only: `use`/`import`/`alias`/`require` → `references module -> dep` (the FP-family module-dep contract, Clojure ns → required libs). A multi-alias expands one dependency per member (`alias Foo.{Bar, Baz}`, ELXD20) and **EX-D26 (2026-09-29)** widened the member filter to `identifier` nodes, so lowercase FUNCTION aliases (`alias Helper.{make, name}`) publish `references -> Helper.make` / `-> Helper.name` and register the local name; a bare call through such an alias then resolves (`make()` → `calls -> Helper.make`). Measured 0 sites in 938 files of the six corpora — a latent hole, fixed because it is one predicate wide. Body identifiers emit NOTHING (the old 47-edge references flood is removed) | 0.9 |
 | uses | ✅ | **EX-EX3 × ELIXIR_FIX2-U1, reconciled (2026-10-07) — see §12** a MEMBER FIELD READ: a `call` whose target is a `dot`, with **no** `arguments` child, whose receiver is a lowercase variable or a `%`-literal (`%OntoUser{}.name`). Uppercase receiver = a module, so the same node shape is a remote reference and stays `calls` (Go's rule verbatim: "selectors that are the callee of a call_expression are skipped — the calls edge handles them"). Excluded with reasons: quoted block, def signature head, DECLARATION attribute value, `->` pattern position (ER-D7: a head pattern emits nothing). Two labels, deliberately countable apart: **`struct_field_read` at 0.9** when the file declares the field (gated on the declared-struct-field vocabulary, map-bound receivers dropped), **`usage_contextual` at 0.7** when the file declares no struct field at all, so there is nothing to verify against. A second producer of `uses` exists — the `use` directive, the language's mixin application, `isMixin: true` / `via: "use"` / `structural` at 0.9, one edge per dependency (§13). The pre-reconciliation FIX2 measurement (2,117 edges / 180 files, 96.43% of 2,244 construct sites, all at 0.7) is kept in §4 as the record of what that rule published; §12 has the current numbers and the collision they answer | 0.9 / 0.7 |
 | exports | ✅ | **ELIXIR_FIX2-X2 (2026-10-05)** what the module PUBLISHES. Elixir has no `export` keyword — the language draws the surface with the DEFINITION FORM: `def`/`defmacro`/`defguard`/`defdelegate`/`@type`/`@opaque`/`@callback`/`defstruct`/a nested `defmodule` are reachable from outside the file; `defp`/`defmacrop`/`defguardp`/`@typep` are not. Measured 5,076 edges / 420 files (whole 601-file corpus, after ELIXIR_FIX2-P6 removed 6 edges that named an un-nameable module's members). The private half is the falsifier: 7,918 `defp`-family + 41 `@typep` corpus sites that an "is it a function" rule would publish. NOT published: a struct `Property` (membership rides `contains`, the exports-family ruling), an ownerless symbol (no owner to publish from), `owner === name` (the EX-L3 self-loop). `res.exports` (the ExportInfo LIST) is a different channel and is unchanged | 1.0 |
-| overrides | ⚠ GAP-in-the-language, DOES NOT FIRE on this corpus | **ELIXIR_FIX2-O1/O2 (2026-10-05)** Elixir HAS the construct: `defoverridable` (26 corpus sites / 14 files) and `super(...)` (17 / 4), and the analyzer read NEITHER before. It reads both now and publishes only the shape with two DISTINCT endpoints — a file that both DECLARES a provider N (with `defoverridable`) and `use`s N, which measures **0 sites in 601 files**. Not published, each with its measurement: `use N` in another file + any `def f` (a FABRICATION — most defs in a `use N` module are new, 510 `use` sites / 325 files); `defoverridable f: 1` + a later `def f` in the SAME module (17 sites / 3 files — a real override, but this lane merges a multi-clause head into ONE symbol so both endpoints are the same string: 17 self-loops carrying no graph information); a def name repeated across two modules in one file (21 / 9, and not an override at all). Fixture `use-defoverridable` is where the branch fires | 0.9 |
+| overrides | ✅ | **EX-EX5 + EX-EX14 (2026-10-10): two producers, both promoted from the refused waves.** (a) `@impl` — Elixir's `@Override`: `@impl SomeProtocol` names the contract outright, an enclosing `defimpl Proto` names it, else exactly ONE `@behaviour`/`@behavior` target on the enclosing module, else (several targets) the `@callback` this module declares for exactly one of them; anything else stays SILENT (`@impl false`/`nil` explicitly denies). (b) `defoverridable` — the module marks `f/n` (`defoverridable f: 1`, or `[f: 1]`) and a LATER definition of the same `f/n` in the same module replaces it: the bash lane's BD8b shape, both endpoints naming the same identity with `overridesLine` (the prior declaration, 1-based), `markedLine` (the mark) and `redefinition: true`; a mark with nothing before it is an extension point, not an override, so it publishes nothing. NOT published, with the measurement: `use N` in another file + any `def f` (a FABRICATION — most defs in a `use N` module are new, 510 `use` sites / 325 files; the same-file `use N` + `defoverridable N` shape measures 0 sites in 601 files, kept in §5). Measured (559-file corpus, production path): **154 edges in 22 files**, 154/154 sources resolved, 25/154 targets resolved in-file and 129 external (the contract lives in the behaviour's file), 154/154 labelled, no fabricated endpoint. The pre-fold doc cell read "⚠ GAP-in-the-language, DOES NOT FIRE" — that claim is retired here, and the doc-truth gate caught the staleness when the producers landed | 1.0 |
 
 ## Noise-elimination contract (what produces NO edges)
 
@@ -264,11 +265,11 @@ by that measure and is reported as such rather than hidden.
 | type | exists | fires | correct (oracle agrees) | labelled | resolved | confident | R7 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `calls` | yes | 49,007 / 536 files | 100% oracle coverage on the compared labels (see §8 for the shared harness's own numbers) | yes — the callee/callable distinction is the receiver's first character, and both halves are pinned by fixtures and mutants | 24,273/49,007 = **49.5%** (targets are stdlib modules outside the corpus) | conf 0.8 × 48,955 and 0.9 × 52 — **100% heuristic**, every one carrying a `reasonCode` | 0 placeholder endpoints |
-| `contains` | yes | 9,849 / 463 | **9,061/9,063 matched; 2 MISS + 18 UNEXPLAINED, all classified** (§6) | yes — ownership only, never a name edge | 9,849/9,849 = **100.0%** | conf 1.0, `syntactic_declaration` — 0 heuristic | 1 apparent placeholder endpoint, **adjudicated a true identifier** (§6) |
+| `contains` | yes | 9,849 / 463 | **9,061/9,063 matched; 2 MISS + 18 UNEXPLAINED, all classified** (§6) | yes — ownership only, never a name edge | 9,849/9,849 = **100.0%** | conf 1.0, `structural` — 0 heuristic | 1 apparent placeholder endpoint, **adjudicated a true identifier** (§6) |
 | `uses` | yes | 2,117 / 180 | **1,026/1,026 matched, 0 MISSING, 0 UNEXPLAINED** — the oracle's own defects are listed in §6 | yes — the receiver's first character separates a field read from a remote reference, and the two agree by construction | 874/2,117 = **41.3%** (a field name is not a symbol in the corpus) | conf 0.7 × 2,117 — **100% heuristic**, `reasonCode: elixir_member_field_read` on every one | 0 |
 | `references` | yes | 930 / 380 | 100% on the compared labels | yes — the directive→module dependency contract | 630/930 = **67.7%** | conf 0.9 × 930 — 100% heuristic, `reasonCode` on all | 0 |
 | `implements` | yes | 191 / 66 | 100% on the compared labels | yes — `defimpl`→protocol at 1.0 and `@behaviour`→behaviour at 0.9 are one relation | 167/191 = **87.4%** | conf 1.0 × 118, 0.9 × 73 — 73 heuristic, `reasonCode` on all | 0 |
-| `exports` | yes | 5,076 / 420 | **4,618/4,620 matched; 2 MISS + 17 UNEXPLAINED, all classified** (§6) | yes — never a struct field, never an ownerless symbol, never the EX-L3 self-loop | 5,076/5,076 = **100.0%** | conf 1.0, `syntactic_declaration` — 0 heuristic | 0 |
+| `exports` | yes | 5,076 / 420 | **4,618/4,620 matched; 2 MISS + 17 UNEXPLAINED, all classified** (§6) | yes — never a struct field, never an ownerless symbol, never the EX-L3 self-loop | 5,076/5,076 = **100.0%** | conf 1.0, `structural` — 0 heuristic | 0 |
 | `instantiates` | yes | 1,187 / 164 | 100% on the compared labels | yes — never `calls`, never `references` | 508/1,187 = **42.8%** (`ArgumentError`, `KeyError`, `Date.Range` …) | conf 0.9 × 1,187 — 100% heuristic, `reasonCode` on all | 0 |
 
 The oracle caveat is the harness's own: the oracle is a **separate walker over
@@ -721,13 +722,162 @@ and a self-directive publishes neither edge (ELXD8).
 | the other nine audited types | byte-identical |
 
 `uses-mixin-forms` passes (5 `uses` rows + both `references` rows). `elx4-uses-mixin`
-does NOT, and the reason is a LABEL disagreement rather than missing edges: its three
-`uses` rows require `meta.evidenceClass: "usage_contextual"` for the same directive,
-and its `references` row requires `reference_qualified` where the dependency edge
-carries `structural_inference`. The rule states `structural` because a directive's text
-*names* the module — the evidence is syntax, not context — and `usage_contextual` is
-the `pushRel` default, which that pin's wave recorded without changing. The four
-findings are left visible instead of smoothed over: which label the lane publishes for
-a directive is the owner's call, and the third instance in this group (`references`, in
-the same pin) points at a vocabulary question rather than at this analyzer's reading of
-the language.
+did NOT for the same reason, and the four findings were left visible instead of
+smoothed over, because which label the lane publishes for a directive is the owner's
+call. All four were LABEL disagreements, never missing edges: three `uses` rows asked
+for `meta.evidenceClass: "usage_contextual"` and one `references` row for
+`reference_qualified` where the dependency edge carried `structural_inference`. The
+rule states `structural` because a directive's text *names* the module — the evidence
+is syntax, not context — and `usage_contextual` is the `pushRel` default, which that
+pin's wave recorded without changing.
+
+**Reconciled 2026-10-10 — EX-ONTOLOGY-VOCAB (owner's ruling).** The lane publishes the
+WAVE/TIER vocabulary the rest of the corpus already pins: `structural` on
+`contains`/`exports`/`implements`/`instantiates`/`overrides`, `import_based` on
+`imports`, `reference_qualified` on a target resolved through a name (so this group's
+dependency edge now carries `reference_qualified` where it carried
+`structural_inference`), and the member-read pair (`struct_field_read` at 0.9,
+`usage_contextual` at 0.7) unchanged. Measured before the ruling: `exports ->
+structural` is pinned by 23 lanes / 103 rows and `imports -> import_based` by 122 rows,
+while the per-construct spellings (`public_visibility`, `import_directive`,
+`module_directive`, `import_resolved_call`, `defoverridable_marker`) appear in this
+lane's four `ontology-*` fixtures and nowhere else; both 2026-10-04 elixir waves
+(`analyzer/ELIXIR4`, `analyzer/ELIXIR_EXPORTS2`) independently compute the tier names,
+and each was refused by the previous fold on a union-parse fault rather than on merit.
+Three pins moved with the ruling, each with the reason in its own `note`:
+`export-surface` (`syntactic_declaration` retired), `struct-update`
+(`structural_inference` retired) and `elx4-uses-mixin` (`usage_contextual` on the mixin
+row retired, so one construct keeps one label across both pins). The four `ontology-*`
+fixtures' remaining findings are EDGE findings — import directives, `@impl`-gated
+overrides, the `@type`/`@callback` export surface, and the EX-EX11/11b guards — and
+their labels were retired with the ruling.
+
+
+## 14. The fold, 2026-10-10: three refused waves reconciled — 65/82 → 82/82, zero regressions
+
+`docs/analyzers/BRANCH-INVENTORY-2026-10-07.md` §6/§10.5 named this lane as the next fold and
+stated the reason it had not happened: three elixir analyzer revisions were refused by the
+previous fold on **mechanical** grounds — `analyzer/ELIXIR` by `tsc` on a member union
+(`TS2740 … 'never[]'`), `analyzer/ELIXIR_EXPORTS2` and `analyzer/ELIXIR4` by the union tooling's
+own parse errors (`SYNTAX_ERR 2` / `SYNTAX_ERR 3`) — never because a measurement said they were
+worse. That is the whole reason the work sat in refs while 15–17 pins failed on main.
+
+### 14.1 What was measured first
+
+Each revision was run as a whole file through the real harness
+(`script/m14/lane-analyzer-probe.mjs`, which loads the branch's analyzer with THIS tree's runner
+and fixtures, so the only variable is the analyzer). Against main's 14 failing fixtures at the
+start of this fold, every one of them is fixed by at least one revision, and each revision also
+BREAKS pins main passes:
+
+| revision | fixes | breaks | refused for |
+| --- | --- | --- | --- |
+| `analyzer/ELIXIR_EXPORTS2` | 8 (`elx4-*`, `r7-*`, `exports-public-surface`, `overrides-defoverridable`) | 6 | union parse error |
+| `analyzer/ELIXIR4` | 7 (`elx4-*` incl. `imports`/`overrides`, `r7-directive-names`) | 8 | union parse error |
+| `analyzer/ELIXIR` | 5 (the four `ontology-*`, `elx4-unnamed-declarations`) | 9 | `tsc` on a member union |
+
+So the fold is a **union**: main keeps every pin it already passes, and the producers only the
+refused revisions have are promoted into main, one at a time, each verified by the fixture suite.
+
+### 14.2 Two reconciliations, because the corpus held two generations of the same claim
+
+The corpus (committed whole by `1719ff6b3`) contains pins from both generations, and they
+disagree. Each disagreement was settled by the **corpus's own vote**, counted before the choice,
+and the losing pin was moved with its reason written into its own `note`:
+
+1. **The evidence-class vocabulary** (§13 has the ruling): `structural` / `import_based` /
+   `reference_qualified` / `usage_contextual` (23 lanes / 103 `exports -> structural` rows; 122
+   `imports -> import_based` rows; both refused waves compute the tier names) beats this lane's
+   pre-wave `syntactic_declaration`/`structural_inference` and the per-construct generation
+   (`public_visibility`, `import_directive`, `module_directive`, `import_resolved_call`,
+   `defoverridable_marker`), which appear in this lane's four `ontology-*` pins and nowhere else.
+2. **Behaviour claims** — settled the same way, by counting the pins and reading which are on
+   PASSING rows:
+   - `import Mod` publishes the module-dep `references` row AND `imports` (`framework-forms`,
+     `import-only-forms`, `r7-directive-names` on the `references` side vs `ontology-directives`'
+     forbid on the other). Both are true statements; EX-EX7's `imports` holds as an addition, not
+     a replacement.
+   - A PUBLIC `@type` alias IS part of the export surface (`export-surface` and `ontology-exports`
+     pin it; `exports-public-surface`'s `handle` forbid was the lone dissent).
+   - A nested `defmodule` IS exported by its parent (`export-surface` pins
+     `exports Cc1.ExportSurface -> Cc1.ExportSurface.Inner`; `elx4-exports-surface`'s forbid was
+     the lone dissent).
+   - An `overrides` row's source carries its ARITY (`OverridesSurface.sample/0`) and its target is
+     the MEMBER's own name (`sample`), and the row carries `markedLine` — all three pinned by
+     `overrides-defoverridable` (six passing rows) against `elx4-overrides-defoverridable`'s and
+     `ontology-overrides`' single-generation spellings.
+   - `Unknown` (the analyzer's own sentinel) may never be an endpoint, but a definition the source
+     genuinely names `unknown` IS a member (EX-EX11b), and `unquote`/`unquote_splicing` are macro
+     syntax, never members (EX-EX11).
+
+### 14.3 The producers promoted into main
+
+| producer | promoted from | what it names |
+| --- | --- | --- |
+| `import` → `imports` | ELIXIR4 | the import statement itself (main published only the `references` half) |
+| `extractDirectiveName` | ELIXIR4/EXPORTS2 | a directive's module name from its FIRST argument's own node — atoms keep their colon (`:lists`, `:gen_server`), option text is never the name, a computed name publishes nothing |
+| `moduleNameOf` / `isAliasPath` / `joinModuleName` | ELIXIR4 | module names that are quoted atoms (`:"Elixir.A.B"`), atoms (`:atom_named`, absolute and unowned), or `__MODULE__`-relative (resolved against the enclosing module); `Elixir.`-absolute names are not re-prefixed |
+| EX-EX13 head guard | ELIXIR | a directive-SHAPED call inside a declaration head (`defmacro import(module, opts)`) is the head |
+| R7-NAMES attribute guard | this fold | a directive-shaped call inside an ATTRIBUTE (`@spec require(R7Alias) :: :ok`) is the attribute's text |
+| EX-EX11/11b placeholders | EXPORTS2/ELIXIR | `Unknown`/`global` never endpoints (the symbol stays, marked `unresolvedName`); `unquote`/`unquote_splicing` never members; the mark + the guards |
+| `recordOverride` + `defoverridable` marks | EXPORTS2 | the same-module override edge, with `overridesLine` + `markedLine` |
+| `@impl` staging + consumption | ELIXIR | Elixir's `@Override`, resolved through `@behaviour`/`defimpl`/`@impl SomeProto`, silent when ambiguous |
+| resolved-`:only` call re-labelling | ELIXIR | a call re-targeted through an `:only` import carries the class of the edge it published (`reference_qualified`), not the pre-resolution one |
+| `exportForm` / `isCallbackDeclaration` | main + this fold | the `@callback`-only behaviour surface reaches the edge |
+
+### 14.4 Measured after the fold (559-file corpus, production path, `script/m14/oracles/elixir-emission-audit.ts`)
+
+```
+type          edges   files   src-resolved  tgt-resolved  tgt-external  confidence        evidenceClass  R7
+calls        48751     530    48115/48751   17709/48751         31042  0.8:48699 0.9:52  48751/48751    Global sources (legal), operator names
+implements     191      66        191/191        95/191            96  0.9:73 1:118            191/191    -
+uses          2134     388       2128/2134      212/2134          1922  0.7:1462 0.9:672        2134/2134    Global sources (legal)
+imports        278     150        255/278        29/278           249  1:278                   278/278    Global sources (legal)
+exports       5055     418       5055/5055     5055/5055             0  1:5055                  5055/5055    `|`-operator names only
+contains      9822     461       9822/9822     9822/9822             0  1:9822                  9822/9822    `|`-operator names only
+references     915     375        885/915         74/915           841  0.9:915                  915/915    Global sources (legal)
+overrides      154      22        154/154         25/154           129  1:154                    154/154    -
+instantiates  1187     164       1187/1187       372/1187           815  0.9:1187                1187/1187    -
+```
+
+`overrides` and `imports` are the two types this fold brought from zero (main published neither).
+The 129 external `overrides` targets are the design: the contract a `@impl` names lives in the
+behaviour's own file. The `Global` sources are the `.exs`-script shape (a directive with no
+enclosing module), which this lane's law makes a LEGAL source and never a target. The audit's
+`|`-operator hits are Elixir operators used as function names (`def a ||| b` → `|||/2`), not
+fabricated text. The corpus here is the 559-file `elixir` checkout (§13's 568-file run was a
+different revision, so its cells are not comparable number-for-number).
+
+### 14.5 Verification, at this commit
+
+- **Fixtures: 82/82 PASS, 0 FAIL** — the lane's whole suite, including every pin this fold moved.
+  In the FULL suite (`bun run script/m14/run-fixtures.ts`, 1,447+ pins) elixir is the row that
+  reports `{"pass":82,"fail":0}`.
+- **Mutants: 87/87 CAUGHT** (`BB_MUTANT_ONLY="elixir/" bun run script/m14/mutate-analyzer.ts`).
+- `npx tsc --noEmit` exit 0.
+- `audit:fixture-provenance`: no fixture introduced or edited by this change fails.
+- `audit:doc-truth-emissions`: the two elixir findings this fold created and closed — the
+  `overrides (relationship)` cell claiming "DOES NOT FIRE" (now `✅`, §14.4) and the
+  `imports (relationship)` row that did not exist (now present) — are gone from the report.
+- The fixture BASELINE still records `elixir: 15`; this fold takes the lane to 0, and a baseline
+  is deliberately not rewritten by a scoped run (`run-fixtures.ts` refuses `--update-baseline`
+  outside a full run: "it would drop every lane the run did not cover"). Recorded here instead.
+
+### 14.6 Instrument repairs made with the fold (each one hid evidence)
+
+- `script/m14/oracles/elixir-emission-audit.ts`'s `REL_TYPES` listed `brain_import` (the
+  CHANNEL) but not `imports` (the relationship), so the table counted exactly ONE such row — the
+  first occurrence creates the tally and every later one lands in a bucket that is never printed.
+  The enum now names `imports`; the 278/150 row above is what that repair revealed.
+- The same audit's `PLACEHOLDERS` contained lower-case `unknown`, so it reported an R7 endpoint on
+  a row `ontology-placeholder-names` pins as correct (EX-EX11b). Removed.
+
+### 14.7 What is still NOT claimed
+
+- `ctx.imports` (the `ImportInfo[]` channel) is unchanged by this fold, and for this lane
+  `brain_import` remains silent — the relationship is the only `imports` channel that carries a
+  line and an endpoint pair (§14.4's `imports` row is the relationship, not the channel).
+- The `@impl` resolution order has no live corpus case for the `defimpl`-named form (1 site in the
+  ontology wave's measurement, 0 in this revision's sample); it is implemented and fixture-pinned,
+  not corpus-verified.
+- Elixir has no `extends`; the type stays silent (§3).

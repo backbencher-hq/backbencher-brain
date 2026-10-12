@@ -591,3 +591,235 @@ asserts something the enum does not contain.
   `validation/m14/tmp/kotlin-payload-latency-after-fixes.json`
 - M12 differential: `validation/m12/results/kotlin-differential.json`
 - Corpus sample list (M12): `validation/m12/results/kotlin-corpus-sample.txt`
+
+---
+
+# M60 (2026-10-10) — one JVM ruling already held; the other had a defect only a COLUMN pin could see
+
+The java and groovy folds closed with "kotlin (6 failures) and scala (5) follow it on the same
+axis" (`BRANCH-INVENTORY-2026-10-07.md` §14/§15), an inference from the *shape* of those lanes'
+declared failures. Measured, it is wrong for both: kotlin's six declared failures are the
+`exports`/`imports` vocabulary and the `context(...)` header
+(`context-parameters`, `exports-file-identity`, `exports-no-module-identity`,
+`exports-published-surface`, `exports-visibility`, `imports-exports-ontology`), and NONE of them is
+a constructor-identity or line-anchoring defect. What the two rulings actually do here is one
+ruling already met (constructor identity) and one real defect (a class-body property anchored on
+its `val` keyword) — and the defect was found by WRITING the pin, not by reading the code, which is
+the argument for writing pins first.
+
+## Ruling 1 — constructor identity: already held, and now counted
+
+`script/m14/lanes/jvm-rulings-ab.mts`, 1,500-file lexicographic slice of the 82,222-file kotlin
+corpora (`kotlinx-coroutines` + `kotlin`), run as an identity control because this lane's analyzer
+is byte-identical to its HEAD blob:
+
+| | this lane |
+| --- | --- |
+| constructor symbols | 1,978 |
+| distinct constructor names | 1,852 |
+| named literally `constructor` | **0** |
+| files / symbols / relationships | 1,500 / 21,194 / 119,555 — PRE and POST identical |
+| per-type deltas (all ten) | 0 |
+| identity / anchor / relationship-row movement | 0 / 0 / 0 |
+
+The zero column is the point of an identity control: the two sides are the same bytes, so any
+movement would have indicted the instrument, not the analyzer. (It did, once: the first version of
+that harness called `run-fixtures.ts`'s cached shared Parser from 8 concurrent workers, and 7
+kotlin files came back `Incompatible language version 0` on ONE side of an identical-content A/B.
+The harness now builds a parser per worker and parses each file ONCE for both sides.) The
+class-name convention itself is pinned by `kotlin/ctor-delegation`, which states it in its own
+words — "one primary + two secondary constructors share the class name by the java C3 family
+convention" — with `equals: 3` so a change is visible rather than silent.
+
+## Ruling 2 — declaration-name anchoring: the pin found a REAL defect, and it is a column
+
+The lane's `declarationLineNode` reads `findNameNode` first and falls back to the first non-trivia
+named child. tree-sitter-kotlin exposes **no `name` field** (measured: 0 name-field nodes over
+`kotlinx-coroutines`'s 1,039 files), so the field-based comparison the scala A/B uses is not
+expressible here — and the read is load-bearing, measured: removing it changes **7,126 symbol rows
+over 1,200 corpus files** (`kotlin/analysis-api-fir-diagnostics`'s properties and extension
+functions). What the read could NOT see is where a `property_declaration` keeps its name:
+
+```
+    property_declaration        L2:C5      <- the symbol was anchored here, at the `val`
+      binding_pattern_kind      L2:C5   "val"
+      variable_declaration      L2:C9
+        simple_identifier       L2:C9   "plain"    <- the name, one level DOWN
+```
+
+`findNameNode` scans only DIRECT named children, and a property's name is inside
+`variable_declaration` — so the scan found nothing, the positional fallback returned
+`binding_pattern_kind`, and **every class-body property in the corpus was anchored on its `val`/`var`
+KEYWORD's column**. The line was right, which is why nothing else could see it. java's
+declaration-name helper carries exactly this exception (`field_declaration` →
+`variable_declarator`); this is the same shape in a different grammar, and the fix is the same
+descent. It also fixes the shape that motivated the read in the first place — a
+`class_parameter`'s name is a direct child, so `data class HLDiagnostic(val original: …)` was
+already anchored at 9 rather than at the `val` on 5, while the identical-looking class-body
+`val original: Int` was not.
+
+**Corpus attribution** (`script/m14/lanes/jvm-rulings-ab.mts`, 1,500-file slice, HEAD blob vs the
+fixed tree, same engine, one parse per file):
+
+| measurement | HEAD | folded | delta |
+| --- | --- | --- | --- |
+| symbols / relationships / zero-symbol files | 21,194 / 119,555 / 48 | 21,194 / 119,555 / 48 | **0** |
+| per-type (all ten) | — | — | **0 each** |
+| constructor symbols / named `constructor` | 1,978 / 0 | 1,978 / 0 | 0 |
+| symbol identities that moved | — | — | **0 renames** |
+| identities whose ANCHOR moved | — | — | **5,516** (2 line moves, 5,514 column-only) |
+| owner-less control | 2,151 | 2,151 | 0 |
+
+The examples are the defect exactly: `importsToAdd|property|HLParameterConversion: [16:10] →
+[16:14]`, `kClass|property|FirToKtConversionCreator: [422:13] → [422:23]` — a four-token shift onto
+the property name. The 2 LINE moves and the 4 moved relationship-row keys were each adjudicated by
+opening the files the harness names for every moved row:
+
+- `compileTimeConstantProvider/…/recursivePropertyReference.kt` — `const val x = <expr>"$y"</expr>`
+  parses with an ERROR node spanning into line 2, and the pre-fix scan returned the trailing
+  `simple_identifier` at 2:15, a RECOVERED identifier belonging to the next declaration; the
+  descent reads the real name at 1:11. One `exports` key moved L2 → L1.
+- `compilerFacility/…/codeFragments/{capturing,inlineLambdas}/localFunctionInExplicitBackingField.kt`
+  — an explicit backing field (`val prop: List<Int>` then `field: MutableList<Int> = run { … }`)
+  was anchored on the PROPERTY's line and is now anchored on the backing field's own line. Three
+  `contains`/`exports` keys moved.
+
+## The pin, and the mutants that prove it can fail
+
+[kotlin/declaration-name-anchoring](validation/m14/fixtures/kotlin/declaration-name-anchoring.kt)
+now carries four shapes and pins their COLUMNS: a member behind an annotation (`@JvmField` 18,
+`flagged` 19 col 9 — it was 5 when the file was first written, and the value CHANGED because the
+analyzer did, not because the pin was bent), a member behind a doc comment (`/** doc */` 21,
+`documented` 22), a class behind its own annotation (`@Deprecated` 16, class 17), a wrapped class
+header (name 25, parameter 26), a class-body PROPERTY (`plain` 42 col 9), a receiver extension
+function (`generate` 52 col 26, where the positional walk returned the RECEIVER at 20) and the
+secondary constructors' bare `constructor(` line (30, forbidden). K1/K2/K3 below are the proof:
+
+| mutant | verdict | catch |
+| --- | --- | --- |
+| `K1` ctor back to the literal `constructor` | **DEAD** | `ctor-delegation`, `declaration-name-anchoring`, `secondary-ctor-lines` |
+| `K2` drop the `findNameNode` read | **DEAD** | `declaration-name-anchoring` |
+| `K3` drop the `variable_declaration` descent | **DEAD** | `declaration-name-anchoring` |
+
+Before this round, K2 SURVIVED the whole kotlin lane — 58 pass / 6 fail, identical to the clean
+baseline — so the rule the analyzer documents in prose had no failing pin at all. It has one now,
+and the file records both pre-fix columns it replaced.
+
+## What this round does NOT claim
+
+- **The six declared failures are untouched and are a different axis.** `context-parameters`,
+  `exports-file-identity`, `exports-no-module-identity`, `exports-published-surface`,
+  `exports-visibility` and `imports-exports-ontology` are the lane's own recorded `exports`/
+  `imports` defects; §14/§15's "kotlin and scala follow java on the same axis" is false for both
+  and is corrected in the branch inventory.
+- **The moved-row table is COUNT-based, so compensating movement hides.** Rows that shift between
+  two files with equal counts do not appear: the explicit-backing-field movement produced key
+  `L7` → gone, `L9` → appeared, and a `L8` key that stayed at 1 by moving from one file to the
+  other. The harness now names the file for every moved row, which is how that was seen; it still
+  cannot count a swap.
+- **No re-measurement of this file's older tables.** The numbers above come from a 1,500-file
+  sample of the 82,222-file corpora, and the tables elsewhere in this document were produced by
+  other instruments on other samples.
+
+## The exports/imports module identity, ruled and closed (2026-10-11) — the lane is GREEN
+
+The lane entered this round at **58 pass / 6 fail** (the failures named at the end of the M60
+section above) and leaves at **64 / 0**. Three of the six were defects the earlier section's
+"the lane's own recorded `exports`/`imports` defects" sentence had filed as one axis; they were
+not one axis, and the fourth thing the round needed was a ruling the fixtures disagreed about.
+
+**The ruling (owner, 2026-10-11).** A kotlin COMPILATION UNIT has no module object of its own, so
+the identity that answers "what does this unit publish" is the file's **first top-level type**.
+A file with no top-level type publishes **no `exports` relationship at all** — not one sourced at
+the file path (measured: 24 of 26 analyzer-only `exports` edges over a 120-file draw were a
+90-character absolute path), not one sourced at a bare basename, and not one sourced at the
+package — and it says so in `metadata.exportsWithheldNoModuleIdentity`, which is a **count** when
+something was withheld and **absent** when nothing was, because a zero is a claim that the count
+was measured to be zero. The `exports[]` ExportInfo array is untouched in both branches: that
+array is the surface `import-resolution.ts:314` gates symbol joins on.
+
+**What the fixtures forced, measured rather than assumed.** Two spellings are now emitted from ONE
+predicate (`emitKotlinExportRelationships`), so they cannot drift: `Pandora -> Published` (the
+unit) and `com.acme.x -> Published` (the package, the join partner of this lane's `imports` rows,
+whose source stayed the package because `source + "." + target` has to reconstruct the dotted path
+an import names — measured 10,853 of 10,885 `import_header`s sit in a package-bearing file). The
+`(file)` + `fileLevel` rows are emitted beside them for a file that HAS an identity, and withheld
+with the rest when it does not. This is what the five fixtures together require:
+`exports-published-surface` and `imports-exports-ontology` pin the unit source,
+`ontology-imports-exports` and `context-parameters` pin the package source, `exports-visibility`
+pins the `(file)` source, and `exports-no-module-identity` pins the withheld branch. Two pins were
+moved, each with its reason written into the fixture itself:
+
+- [kotlin/exports-file-identity](validation/m14/fixtures/kotlin/exports-file-identity.expectation.json)
+  — the basename spelling is withdrawn; the fixture is retargeted to the arm it still uniquely
+  covers (a no-type file carrying an import and a private name).
+- [kotlin/exports-visibility](validation/m14/fixtures/kotlin/exports-visibility.expectation.json)
+  — the package-source FORBID is withdrawn against the store: read back
+  (`parallel-indexer.ts:3995-4017`), the defensive filter rejects a lowercase-dotted source only
+  where it resolves to a symbol, and a package name resolves to nothing, so the row is stored as
+  `source_external` and is readable. A forbid that cannot fire is a false assurance, and two green
+  fixtures were contradicting it. The unresolved FILE PATH takes its place.
+- [kotlin/imports-exports-ontology](validation/m14/fixtures/kotlin/imports-exports-ontology.expectation.json)
+  — its two `imports` rows are re-pinned from the type to the package, for the reason above.
+
+**The three defects, each with the measurement that found it.**
+
+1. A Kotlin 2.2 `context(...)` HEADER is a declaration with no node of its own, so it arrived as a
+   `call_expression` and was published as one: `calls[Global -> context]` at 0.7, sourced at a
+   symbol no kotlin file declares (28 of the 524 `Global` call edges in a 400-file draw). The
+   refusal is the header's ENTIRE SUBTREE, not the node: the dumped tree of
+   `context(compute: (Int) -> String)` nests the recovery inside the header and reads the
+   parameter name as a call (`call_expression "compute: (Int)"`), so a node-level guard still
+   published `calls[Global -> compute]` — a call to a PARAMETER. The header is a sibling of the
+   declaration it introduces, never its parent, so refusing the subtree does not swallow that
+   declaration's own edges, which the fixture pins beside a real call to a function named
+   `context` (`context` is a soft keyword).
+2. A local `val` inside a property ACCESSOR body or a LAMBDA literal was published as a `property`
+   symbol (measured on `class D { val c=1; init { val a=2 }; fun m() { val b=3 }; val g: Int get()
+   { val d=4; return d }; val l = { i -> val e=5; e } }`: `a`, `d` and `e` were symbols, `b` was
+   already not). The member rule had excluded such a local from the OWNER, which answered the
+   wrong question: an unowned `property` still reaches the index, the export surface and every
+   name-keyed lookup as a declaration the file never declares. An `init` block is deliberately
+   NOT a body for this rule — its locals are M60 K2's ruling, with its own pins.
+3. The wildcard import's metadata carried this lane's `isWildcard` but not the ontology's
+   `isWildcardImport`, so the row existed and `imports-exports-ontology` still could not see it.
+
+**Verification at this commit.**
+
+```
+bun run script/m14/run-fixtures.ts --lang kotlin   -> all fixtures pass (64 / 0; was 58 / 6)
+npx tsc --noEmit                                   -> exit 0
+bun run audit:fixture-coverage                     -> kotlin PASS, uncovered=0 ambiguous=0
+bun run audit:doc-truth-emissions                  -> no kotlin finding (0 rows named `kotlin`)
+```
+
+**The mutants that close the gap (added 2026-10-11).** All three rules now have re-runnable entries
+in `script/m14/lanes/jvm-rulings-mutants.mts` — exact-string reverts, run in-process against this
+tree's own baseline, with the analyzer restored from memory and its content hash checked before and
+after each run:
+
+| mutant | reverts | catch |
+| --- | --- | --- |
+| `C1` | all three `context(...)` header guards (`return` + both `continue`s) | `context-parameters` |
+| `L1` | the local-declaration refusal | `exports-published-surface` |
+| `U1` | the unit identity: the withholding guard, the source spelling and the package row, as ONE faithful pre-round shape | `exports-no-module-identity`, `exports-published-surface`, `imports-exports-ontology` |
+
+`L1` is the one this round owed most: `exports-published-surface` was red before the change FOR TWO
+INDEPENDENT REASONS, so its green state did not isolate the locals arm — reverting ONLY the locals
+refusal, with the unit rows left in place, turns it red again, which is the split the earlier draft
+of this note said was owed. `U1` also demonstrates the withholding branch, the unit source and the
+package row are separately visible. Verdicts over the whole kotlin set: 0 survivors; the lane's
+36-mutant master suite was re-run in the same round and is 36/36 caught, including the repaired
+`kotlin/anon-type-claims-file-imports` (its trigger had gone stale — it tested for the retired
+`root` placeholder — and it now reattributes IMPORT-DEPENDENCY rows whatever their identity).
+
+**What the pin history shows anyway** — the red state each pin was written against, kept because it
+is the reason each row is worded the way it is:
+
+- `context-parameters` was RED before the guard with exactly the two forbid rows quoted above and
+  is green after it — the before/after pair is in this round's own run history.
+- `exports-no-module-identity` was RED on both its count and its forbid and is green after the
+  ruling, the same kind of pair.
+- The LOCALS refusal was measured directly (the one-line probe in item 2, which is how the defect
+  was found) and is now pinned ALONE by `L1`, rather than by the two-defect red of
+  `exports-published-surface`.

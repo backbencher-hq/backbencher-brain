@@ -48,7 +48,7 @@
 | returnType / type | — | Vue SFCs are not type-analyzed (script always parsed as JS — documented decision above) |
 | documentation/comments | ✅ | via the JS analyzer (JSDoc / `//` comments on script symbols) |
 | complexity metrics | ✅ | via the JS analyzer |
-| syntax errors | ✅ | ERROR/missing nodes surfaced; `parseErrors` counted in the differential |
+| syntax errors | ✅ | ERROR/missing nodes surfaced; `parseErrors` counted in the differential. The vue grammar's two error-recovery types are both classified HANDLED in `script/m14/spec/vue-completeness.json` (2026-10-12) and both EXERCISED by `vue/error-recovery`, which is what the pattern in the walk buys: each node becomes one warning at its own range, so a broken template reports WHERE rather than only THAT |
 | decorators/attributes | — | n/a |
 
 ## Relationship ontology
@@ -88,6 +88,7 @@ construct the corpus cannot produce.
 | uses | EMITTED · 2,080 / 3,216 / 32 (files: 112 / 716 / 4) | script-side identifier reads from the delegate PLUS template-expression reads (`{{ count }}`, `:label`, `@click`, `v-model`, `v-if`) emitted from the component to its member; template tokens are a hand-written stack machine, chain roots only, v-for/slot locals shadow same-named members (V4), an object-literal key is not a read (F10) | 0.95 template · **0.6 for 1,616 of the vue-element-admin rows** — see the honesty note below |
 | contains | EMITTED · 826 / 631 / 12 (files: 112 / 163 / 2) | Options-API members owned by the component (`ownerName`), plus every shape a `provide(key, …)` publishes; setup-scope top-levels stay module-scope | 1.0 |
 | references | EMITTED · 0 / 3,621 / 21 (files: 0 / 376 / 3) | component-contract family only: `defineProps`/`defineEmits` naming a declaration, `provide`/`inject` naming a key, plus the delegate's own type-level rows (`declared_type`, `type_argument`, `cast_target`, `instanceof_check`, …) | 0.8–1.0 |
+| references · the `provide`/`inject` key row | EMITTED · the row is a BINDING question as of F21 (2026-10-12) | the pass matches a call by its callee TEXT and then asks what BINDS the name: a DECORATOR position (`@inject("db")`) publishes nothing; a name bound by `import … from 'vue'` (or `vue/…`, `@vue/…`) publishes; a name bound by any OTHER module (`vue-router`) or by a TOP-LEVEL declaration of the same name (`function inject`) publishes nothing; an UNBOUND name is Vue's global and publishes. Corpus-measured cost: 1,162 `.vue` files hold 96 provide/inject call sites and **all 96 are `import … from 'vue'`** — so the guard suppresses 0 corpus rows and the two fixtures are the whole of its effect. Before F21 the row was fabricated for all three non-Vue shapes | 0.9 |
 | instantiates | EMITTED · 342 / 2,346 / 10 (files: 102 / 877 / 3) | template pass: every non-builtin element tag → leaf tag name; builtin HTML/SVG tags and Vue builtins (`component`, `transition`, `keep-alive`, `teleport`, `suspense`) filtered; a known namespace (`svg:circle`) is markup, an unknown one is a component | 0.95 |
 | exports | EMITTED · 0 / 2 / 0 after F19 | a **named** export → `module -> name`, target a real symbol: the two surviving corpus rows are `export interface StepItemState` / `export interface IStepsInject` in `packages/components/steps/src/item.vue`, both resolving 100%. The anonymous Options-API form `export default { … }` publishes NO edge (F19): `default` is a keyword, and that row resolved 0 of 121 both per-file and corpus-wide | 1.0 |
 | extends | EMITTED · 9 / 1 / 0 (files: 9 / 1 / 0) | Options-API heritage: `mixins: [M]` → `extends` with `metadata.isMixin: true`, `extends: Base` with `isMixin: false`, so the two stay distinguishable (F1). 9 corpus rows, all mixins, 0 `extends:` options; the single element-plus row is the TS delegate's interface extension (`interface ActivityType extends Partial<TimelineItemProps>`) | 0.9 |
@@ -629,8 +630,110 @@ hand-written parser disagreed with its removed regex on 170 of 799 shapes).
     number quoted here
 - Docs: this file
 
+## Recorded fixture baseline (2026-10-11)
+
+`validation/m14/fixture-baseline.json` records this lane at **7 failing pins of 60**, and
+`validation/m14/fixture-baseline.failing.json` names them, because a count cannot say WHICH fixture is
+red — a fixed pin and a newly broken one can trade places invisibly (`7 -> 7`). Five were already red
+when the baseline was written at `31b6cd908`: `contract-call-local-shadow`, `contract-call-name-shapes`,
+`heuristic-evidence-floor`, `js-default-export-delegate-row` and `ts-default-export`. Two arrive with
+the javascript round `4d1da43ed` — `options-rename-identity` and `payload-pins` — whose binding change
+altered the rows the JS delegate this analyzer consumes produces (the missing rows are the delegate's:
+`exports ActualName -> api`, `imports ActualName -> ./Child.vue:Child`, `calls payload-pins -> ref`).
+Both are RECORDED rather than adjudicated: whether they are stale pins or rows the delegate owes back
+is open. The bisect (this lane 55/5 at `31b6cd908`, 53/7 at HEAD, with the fixture files unchanged) and
+the gate change are §18 of `docs/analyzers/BRANCH-INVENTORY-2026-10-07.md`.
+
+**Re-measured 2026-10-12 (F21): this lane is at 59 pass / 1 fail of 60.** The four pins named above are
+green: `contract-call-local-shadow` and `contract-call-name-shapes` at the CAUSE (F21 replaced the pass's
+callee-text test with a binding test — see the `references · the provide/inject key row` entry in the
+ontology table), and `js-default-export-delegate-row` / `ts-default-export` by re-pinning against the F19
+ruling they were written before. The single remaining failure is `heuristic-evidence-floor`, the tier-floor
+pin: its claim is `src/lsp/evidence_tier.ts` rule 2 (every sub-0.7 row reads `inferred`) and the
+implementation applies that floor only inside `STRUCTURAL_KINDS`, so the disagreement is in the
+implementation — but the consumer is every lane's stored `evidenceClass` and the LSP tier badge, so it is a
+policy decision and is referred rather than fixed in a lane pass.
+
+`validation/m14/fixture-baseline.json` still recorded the 2026-10-11 state (7 of 60) until
+2026-10-12, because retiring an allowance is a FULL run's act (`--update-baseline`) and a scoped run
+reports it STALE-HIGH and refuses to write — the gate's words for that pair were "vue: recorded 5,
+measured 1 — 4 retirable". The ceremony has since been taken: a full run with `--update-baseline`
+(50 lanes, exit 0) retired **13 failure(s) across 2 lane(s) — vue 5 -> 1, svelte 9 -> 0**, leaving this
+lane recording exactly ONE failure, and `validation/m14/fixture-baseline.failing.json` now names it
+alone (`heuristic-evidence-floor`) instead of the five pins the 2026-10-11 record carried. A full run
+afterwards, without the flag, reports `fixture baseline gate: no regressions` with no stale-high and no
+unrecorded report, and both artifacts are SHA-256 identical to the written ones.
+
+**Re-measured 2026-10-12 (F28, the grammar census): still 60 pass / 1 fail of 60, and the ONE failure is
+unchanged** — `heuristic-evidence-floor`, the tier-floor pin above. What this round added is the two
+grammar node types the lane's completeness spec did not classify and no fixture exercised:
+`script/m14/completeness-inventory.ts` section A reports every node type a lane's spec leaves in no
+bucket, and the vue grammar's own ERROR-RECOVERY pair — `ERROR` and the zero-width MISSING token — was
+unclassifiable while the svelte lane, which shares this seam's script machinery, had classified both.
+They are HANDLED, and that is a measurement rather than a preference: `real-vue-analyzer.ts` walks
+`rootNode.hasError` and turns every `n.type === "ERROR" || n.isMissing` node into a `ParseResult.errors`
+warning at that node's OWN range, so a document that does not parse still reports WHERE. Classifying them
+HANDLED then exposed the half that was missing, because `script/m14/verify-fixture-coverage.ts` (F6, no
+dead analyzer literal) demands a fixture that EXERCISES every handled type: no vue fixture source carried
+a markup-level parse error at all. `vue/script-error-offset` pins a SCRIPT-side error produced by the
+JavaScript sub-parser and shifted to SFC coordinates, so it exercises neither vue-grammar node. The new
+fixture `vue/error-recovery` supplies both shapes — measured on the pinned grammar, `<div class= >` yields
+an ERROR at 29:13 and an unclosed `<p` yields a zero-width MISSING `>` at 30:5 — and pins that the
+component's identity and its script declarations SURVIVE a template that does not parse, because the seam
+parses the script block separately. Vue is 39 types classified, sections A-H 8/8, and the coverage gate
+reads `handled=22 fixtureTypes=29 uncovered=0 ambiguous=0 deadLiterals=0`.
+
+**Re-measured 2026-10-12 (F30, the SVG vocabulary): still 60 pass / 1 fail of 60, and the ONE failure is
+unchanged** — `heuristic-evidence-floor`, the tier-floor pin above. F30 adds no fixture: it EXTENDS
+`vue/modern-html-svg-builtin-tags`, which already pinned the builtin boundary, because the defect is the
+same contract one vocabulary level deeper.
+
+What it found, on this lane's 1,162-file draw (`vuejs`, `element-plus`, `vue-element-admin`, `vue-core`):
+`instantiates` carried **2,708 edges of which 2,533 (93.5%) named a target nothing publishes**, and **441
+of those were not unresolved components at all — they were markup**. The builtin list was the HTML spec's
+element set plus 23 SVG names, so `<filter>` and every filter PRIMITIVE fell through it and were published
+as component usages. That is not a hypothetical class of SVG: a filter chain is what every icon with a
+shadow, a blur or a saturate carries, and the corpus proved it — 64 files, seven tag names, 61 to 64 edges
+each (`filter` 64, `feGaussianBlur` 64, `feFlood` 63, `feColorMatrix` 63, `feOffset` 63, `feBlend` 63,
+`feComposite` 61). Measured by a counterfactual probe that walks neither side of the fix: a template-scoped
+census over the same 1,162 files with the PRE-F30 list, asking production `parseFile` for the file's
+symbols only (F30 changed no symbol). Its own gate is that it reproduces the pre-fix number for the six
+primitives — 377 — through a different route, and it does.
+
+The 441/377 split is the part worth reading twice. The type lost 441 edges while the UNRESOLVED bucket lost
+only 377, because 64 of them — every `<filter>` — resolved against a symbol published by a DIFFERENT file in
+the corpus: markup wearing a real component's name, which is strictly worse than a dangling edge, since a
+consumer cannot tell it from a usage of that symbol. Cross-checked in the other direction rather than
+assumed: **zero** of the 441 matched a symbol the SAME file declares, so the fabrication was never local.
+
+The fix is one vocabulary, three literals. This analyzer's `HTML_BUILTIN_TAGS`, the svelte lane's, and the
+F5 oracle's `ORACLE_HTML_TAGS` are held IDENTICAL by `script/m14/verify-cross-language-consistency.ts`
+(the #611 drift gate), so all three gained the same 62 names: SVG 2's filter module and the rest of the
+element vocabulary, in two blocks that are labelled separately in the source — the seven measured on the
+corpus, and the spec's remaining vocabulary, which is a claim about the specification and NOT a corpus
+measurement (only 7 of the 62 occur anywhere on the draw). An unknown namespace still fails toward
+VISIBILITY; a spec-defined element is markup.
+
+Verification: the F5 oracle agrees with this analyzer at **100% coverage, MISSING=0, unexplained=0** on a
+400-file `element-plus:vue` draw (truth 2,433) and a 131-file `vue-element-admin:vue` draw (truth 882,
+whose 9 unexplained edges are the known `extends`-with-no-oracle label). The mutant
+`vue/reemit-filtered-kebab-tags` was extended to re-emit the seven names and is CAUGHT by this fixture
+alone. Both typechecks are clean, the fixture-provenance gate reports no edited fixture failing, and the
+analyzer's own run moved 2,708 -> 2,267 instantiates with nothing else changed.
+
+The lane's remaining 2,156 unresolved instantiates (95.1%) are NOT touched by this and are not claimed:
+most are components imported from outside the file the edge was published in, which is a resolution
+question rather than a fabrication one.
+
 ## Issue
 
 Closes M12.12 (GitHub issue #151).
 VUE_FIX lane (2026-10-04): F19 `exports → default` at the SFC seam, F20's
 class-heritage seam fixture, and the per-type re-measurement recorded above.
+VUE_FIX lane (2026-10-12): F21, the provide/inject BINDING guard, and the four
+vue pins it moved — measurement and mutant in §24 of
+`docs/analyzers/BRANCH-INVENTORY-2026-10-07.md`.
+VUE_FIX lane (2026-10-12): F30, the SVG element vocabulary at the builtin
+boundary — 441 fabricated `instantiates` edges measured over the lane's
+1,162-file draw, and the three-way lockstep with the svelte lane and the F5
+oracle; §27 of `docs/analyzers/BRANCH-INVENTORY-2026-10-07.md`.

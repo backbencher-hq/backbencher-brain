@@ -1098,13 +1098,35 @@ function anonTypeClaimsFileImports() {
   return (r: any) => {
     const anon = (r.symbols ?? []).find((s: any) => String(s.name ?? "").startsWith("anonymous_"))
     if (!anon) return r
+    // REPAIRED 2026-10-11. This transform used to rewrite only rows still
+    // carrying the legacy `root` placeholder, and the analyzer stopped leaving
+    // that literal behind two waves ago (the import-reference source is now the
+    // primary top-level type, or the compilation unit's own name when the file
+    // has none) — so the mutant became a NO-OP that survived against HEAD's
+    // analyzer too, measured: 6 -> 6 failures on the kotlin lane with
+    // `kotlin/anon-type-claims-file-imports` the only mutant run. A survivor is
+    // not a style problem: it is a claim that this lane can detect the defect,
+    // and the claim was false. The trigger is now the CLASS the defect moves —
+    // an import-dependency row, whatever the analyzer attributed it to — which
+    // is exactly what the pre-ruling primary-type search did when an ownerless
+    // anonymous literal was a candidate for the file's primary type.
+    const isImportDependency = (x: any) => {
+      const t = String(x.type)
+      if (t !== "references" && t !== "imports") return false
+      return (
+        x.metadata?.isImportDep === true ||
+        x.metadata?.isKotlinImport === true ||
+        x.metadata?.module !== undefined ||
+        String(x.source ?? "") === "root"
+      )
+    }
     return {
       ...r,
-      relationships: (r.relationships ?? []).map((x: any) =>
-        String(x.type) === "references" && String(x.source ?? "") === "root"
-          ? { ...x, source: anon.name, from: anon.name, fromSymbol: anon.name }
-          : x,
-      ),
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (!isImportDependency(x)) return x
+        if (String(x.source ?? "") === anon.name) return x
+        return { ...x, source: anon.name, from: anon.name, fromSymbol: anon.name }
+      }),
     }
   }
 }
@@ -4460,9 +4482,18 @@ export const MUTANTS: Mutant[] = [
     language: "cpp",
     defectClass: "relationship-loss",
     description: "CPPD11 regression: virtual registry keeps one signature per method name (last-declared wins), so an override of the FIRST-declared base overload f(int) is silently dropped when the base also declares f(double)",
+    // The predicate used to carry `metadata.reasonCode === "signature-match"`, which was
+    // the label these rows had when this mutant was written. It stopped being the label
+    // when the `override` KEYWORD was wired into the resolver: `Derived::f` is written
+    // `void f(int) override {}`, so the row is now `override-keyword+signature-match` at
+    // confidence 1.0. The mutant then matched nothing and SURVIVED — measured at HEAD
+    // (`BB_MUTANT_ONLY="cpp/"` → `1 SURVIVING MUTANT(S)`) — which is the failure mode a
+    // reason-code-shaped predicate has and a source-shaped one does not: the revert is
+    // to the REGISTRY, and the registry's damage is a missing `Derived.f` row whatever
+    // label it would have carried.
     transform: r => ({
       ...r,
-      relationships: (r.relationships ?? []).filter(x => !(x.type === "overrides" && (x as any).metadata?.reasonCode === "signature-match" && String(x.source).startsWith("Derived.f"))),
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "overrides" && String(x.source).startsWith("Derived.f"))),
     }),
   },
   {
@@ -6365,7 +6396,7 @@ export const MUTANTS: Mutant[] = [
     id: "kotlin/anon-type-claims-file-imports",
     language: "kotlin",
     defectClass: "misattribution",
-    description: "M49/M37 (#867) regression, the SECOND defect class the corpus sweep exposed: import reference edges are rewritten onto the file's primary top-level type, and an ownerless anonymous object qualifies — so the anon type claims every import edge of the file (measured pre-ruling on kotlinx-coroutines/reactor/Flux.kt: 8 edges). Caught by kotlin/anon-type-not-file-primary-type's forbid pin.",
+    description: "M49/M37 (#867) regression, the SECOND defect class the corpus sweep exposed: import reference edges are rewritten onto the file's primary top-level type, and an ownerless anonymous object qualifies — so the anon type claims every import edge of the file (measured pre-ruling on kotlinx-coroutines/reactor/Flux.kt: 8 edges). Caught by kotlin/anon-type-not-file-primary-type's forbid pin. REPAIRED 2026-10-11 after this mutant was found SURVIVING the whole kotlin lane: its trigger tested for the legacy `root` placeholder, which no analyzer has emitted for two waves, so it could not fire on any fixture (measured against HEAD's analyzer as well — 6 -> 6 failures, so the survivor predates the 2026-10-11 round). It now reattributes IMPORT-DEPENDENCY rows, whichever identity the analyzer gave them.",
     transform: anonTypeClaimsFileImports(),
   },
   {
@@ -7742,6 +7773,18 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "svelte/reemit-svg-filter-tags",
+    language: "svelte",
+    defectClass: "relationship-fabrication",
+    description: "F30 regression: re-emits the SVG filter module and the wider SVG vocabulary as component instantiates — <filter> plus feGaussianBlur/feFlood/feColorMatrix/feOffset/feBlend/feComposite are markup this lane's builtin set filters; the vue twin measured 441 fabricated edges of this class over a 1,162-file draw (377 dangling, 64 resolving against another file's symbol), and svelte/svg-filter-builtin-tags is the fixture that pins this lane's half",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const source = "svg-filter-builtin-tags" // pinned: first-edge source is unstable across sub-analyzer evolution
+      const revert = ["filter", "feGaussianBlur", "feFlood", "feColorMatrix", "feOffset", "feBlend", "feComposite"]
+      return { ...r, relationships: [...rels, ...revert.map(target => ({ source, target, type: "instantiates", confidence: 0.95, metadata: { isComponentUsage: true } }))] }
+    },
+  },
+  {
     id: "svelte/reduplicate-rune-props",
     language: "svelte",
     defectClass: "symbol-duplication",
@@ -7853,6 +7896,452 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "Sv1 #736 regression (H2): reverts dynamic this= resolution — import-bound bare this={DynComp} emits no instantiates (template-attr-shapes pins DynComp)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "instantiates" && x.target === "DynComp")) }),
+  },
+  {
+    id: "svelte/object-key-is-a-read",
+    language: "svelte",
+    defectClass: "fabrication",
+    caughtBy: "svelte/object-key-not-a-read",
+    description: "F27 (2026-10-12) regression, BOTH halves of the family in one revert because they are one defect: the walker loses the positional object-key rule AND the spread clause of the receiver rule. Pre-fix, a written property KEY was published as a member read (`{{ month: \"january\" }}` emitted `uses -> month`, measured at 49 edges over 38 of 6,439 corpus files, the worst of them RESOLVING because chart-pie-stacked.svelte declares `{#snippet tooltip()}` and published `uses -> tooltip` off a Recharts config key) and a SPREAD argument was suppressed (`[...list]` published nothing for `list`) because the token before the name is a dot. Reverted from the SOURCE, since both halves are absences or presences a result transform must reconstruct: every identifier followed by `:` inside a brace on a template line regains a `uses` row at its own line (skipping one that already exists), and every identifier after `...` loses its component-sourced template read. The ternary half is deliberately NOT reverted — the fixture's `cond`/`alpha`/`beta` rows are reads under both revisions, so a revert of them would be a second defect rather than this one. MEASURED catch set, not the intended one: `svelte/object-key-not-a-read` (its `month` forbid row and its `list` expect row), PLUS `svelte/declaration-tag-shadow` and `svelte/template-attr-shapes` — the key scan follows `word:` inside any brace on a template line, which is coarser than the analyzer's innermost-bracket rule, so it re-adds keys in two other fixtures. Recorded because a mutant whose description claims a narrower catch than it has is the same species of overstatement this registry exists to prevent.",
+    transform: (r, source) => {
+      if (!source) return r
+      const rels: any[] = r.relationships ?? []
+      const component = rels.find((x: any) => String(x.type) === "uses" && x.metadata?.isTemplateExpression)?.source
+      if (!component) return r
+      const isWordChar = (ch: string): boolean =>
+        (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9") || ch === "_" || ch === "$"
+      const spread = new Set<string>()
+      const keys: Array<{ name: string; line: number }> = []
+      const lines = String(source).split("\n")
+      let inScript = false
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]!
+        if (/<script\b/.test(line)) { inScript = true; continue }
+        if (/<\/script>/.test(line)) { inScript = false; continue }
+        if (inScript) continue
+        for (let j = 0; j + 2 < line.length; j++) {
+          // (a) a SPREAD argument: `...name`
+          if (line[j] === "." && line[j + 1] === "." && line[j + 2] === ".") {
+            let k = j + 3
+            while (k < line.length && (line[k] === " " || line[k] === "\t")) k++
+            let m = k
+            while (m < line.length && isWordChar(line[m])) m++
+            if (m > k) spread.add(line.slice(k, m))
+          }
+          // (b) an object-literal KEY: a word immediately followed by `:` inside a brace
+          if (line[j] !== ":") continue
+          const before = line.slice(0, j)
+          if (!before.includes("{")) continue
+          let e = j - 1
+          while (e >= 0 && (line[e] === " " || line[e] === "\t")) e--
+          let b = e
+          while (b >= 0 && isWordChar(line[b])) b--
+          const word = line.slice(b + 1, e + 1)
+          if (word && isWordChar(word[0]) && !(word[0] >= "0" && word[0] <= "9")) keys.push({ name: word, line: i + 1 })
+        }
+      }
+      const have = new Set(rels.filter((x: any) => String(x.type) === "uses").map((x: any) => String(x.target)))
+      const added: any[] = []
+      for (const k of keys) {
+        // a key that the ternary rule would have left a read is already present;
+        // adding a second row for it would duplicate rather than revert
+        if (have.has(k.name)) continue
+        have.add(k.name)
+        added.push({
+          source: component,
+          target: k.name,
+          type: "uses",
+          confidence: 0.95,
+          line_number: k.line,
+          metadata: { isTemplateExpression: true },
+        })
+      }
+      const kept = rels.filter(
+        (x: any) => !(String(x.type) === "uses" && x.source === component && x.metadata?.isTemplateExpression === true && spread.has(String(x.target))),
+      )
+      if (added.length === 0 && kept.length === rels.length) return r
+      return { ...r, relationships: [...kept, ...added] }
+    },
+  },
+  {
+    id: "svelte/dropped-template-read-not-recorded",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    caughtBy: "svelte/dedupe-template-read-record",
+    description: "F29 (2026-10-12) regression: the graph dedupe drops a losing row silently again, so a template read that collided with a script read of the same member leaves no trace on the surviving edge. Pre-fix, the survivor carried the script's line and the script's 0.6 confidence with no marker — measured on the 3,085 corpus files where an independent oracle's shadow model is provably equivalent to this analyzer's (no `{#each}`, `{#await}`, `{#snippet}` or `{@const}` anywhere in the file): 384 of 5,781 template reads, 6.6%, every one with a script twin, and a consumer could not tell the member is ALSO read by the template. This is a RESULT transform rather than a source-derived revert, and deliberately so: the dropped row is an ABSENCE on the survivor (a key the pre-fix tree simply did not write), so removing the keys reproduces the pre-fix payload EXACTLY — edge count, target, line_number and confidence all unchanged, which is the fixture's own contract. It scopes itself to non-template survivors: a row that IS a template read keeps `templateReadSites`, because a mutant that also stripped those would be reverting `template-read-collapse`'s green pin (a second defect, not this one).",
+    transform: (r) => {
+      const rels: any[] = r.relationships ?? []
+      let touched = 0
+      const out = rels.map((x: any) => {
+        if (x.metadata?.isTemplateRead !== true) return x
+        if (x.metadata?.isTemplateExpression === true) return x
+        touched++
+        const m = { ...x.metadata }
+        delete m.isTemplateRead
+        delete m.templateReadSites
+        return { ...x, metadata: m }
+      })
+      return touched === 0 ? r : { ...r, relationships: out }
+    },
+  },
+  {
+    id: "svelte/binding-pattern-reads-lost",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    caughtBy: "svelte/pattern-reads",
+    description: "F28 (2026-10-12) regression: a template BINDING PATTERN goes back to being a flat word list, so its READ positions publish nothing again. Pre-fix, every site that writes a pattern — `{#each … as …}`, `{#await … then …}`, `{:catch …}`, `{#snippet name(…)}`, `{let …}` / `{@const …}` heads — handed its text to `collectShadowNames`, which put EVERY word in the shadow set: the computed key `[firstString]` and the default `c = count` were never published (27 of the 35 template reads the grammar-derived oracle named over 6,439 corpus files, at 81 sites carrying a computed key or a default), and a PROPERTY name like `a` in `{ a: b }` was registered as a template-local, silencing a real member read of `a` for the whole block. Reverted from the SOURCE and expressed as a DELETION, because the pre-fix defect on the read side is an ABSENCE and no result transform can restore a suppression: the mutant re-derives the fix's read positions from the template text — the identifiers inside a computed key's `[ … ]` and the identifiers inside a default value's `= …`, on each line that carries a pattern head — and drops those names' `uses` rows. It therefore reproduces the LOST-READ half only; the FALSE-SHADOW half (a sibling read that the pre-fix shadow silenced) is pinned by the fixture's `firstProp`/`idx`/`value`/`bound` forbid rows instead, and that asymmetry is recorded here rather than implied. MEASURED catch set: `svelte/pattern-reads`, on its seven expect rows (`count`, `default_arg`, `firstString`, `labelKey`, `th`, `defaultHeight`, `pick`).",
+    transform: (r, source) => {
+      if (!source) return r
+      const rels: any[] = r.relationships ?? []
+      const component = rels.find((x: any) => String(x.type) === "uses" && x.metadata?.isTemplateExpression)?.source
+      if (!component) return r
+      const isWordChar = (ch: string): boolean =>
+        (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9") || ch === "_" || ch === "$"
+      const isSpace = (ch: string): boolean => ch === " " || ch === "\t"
+      /** Every identifier the PRE-F28 walk could not find, from one pattern's text. */
+      const dead = new Set<string>()
+      const collectWords = (s: string): void => {
+        for (let i = 0; i < s.length; i++) {
+          const ch = s[i]
+          if (!isWordChar(ch) || (ch >= "0" && ch <= "9")) continue
+          let j = i
+          while (j < s.length && isWordChar(s[j])) j++
+          // a member LEAF (`obj.a`) was never published by either revision
+          let k = i - 1
+          while (k >= 0 && isSpace(s[k])) k--
+          const prev = k >= 0 ? s[k] : ""
+          if (prev !== "." && prev !== "'" && prev !== '"' && prev !== "`") dead.add(s.slice(i, j))
+          i = j
+        }
+      }
+      /** The pattern a head writes, from the head's own text (null when the line has none). */
+      const patternOf = (line: string): string | null => {
+        const each = line.indexOf("{#each ")
+        if (each >= 0) {
+          const as = line.indexOf(" as ", each)
+          if (as < 0) return null
+          let body = line.slice(as + 4)
+          const end = body.indexOf("}")
+          if (end >= 0) body = body.slice(0, end)
+          const last = body.lastIndexOf(")")
+          if (last >= 0) body = body.slice(0, body.lastIndexOf("(") >= 0 ? body.lastIndexOf("(") : last + 1)
+          return body
+        }
+        const aw = line.indexOf("{#await ")
+        if (aw >= 0) {
+          const then = line.indexOf(" then ", aw)
+          const as = line.indexOf(" as ", aw)
+          const at = then >= 0 ? then + 6 : as >= 0 ? as + 4 : -1
+          if (at < 0) return null
+          let body = line.slice(at)
+          const end = body.indexOf("}")
+          return end >= 0 ? body.slice(0, end) : body
+        }
+        const sn = line.indexOf("{#snippet ")
+        if (sn >= 0) {
+          const open = line.indexOf("(", sn)
+          const close = line.indexOf(")", open + 1)
+          return open >= 0 && close > open ? line.slice(open + 1, close) : null
+        }
+        for (const kw of ["{@const ", "{let ", "{const "]) {
+          const tag = line.indexOf(kw)
+          if (tag < 0) continue
+          const body = line.slice(tag + kw.length)
+          // the head is what precedes the first TOP-LEVEL `=`
+          let depth = 0
+          for (let i = 0; i < body.length; i++) {
+            const ch = body[i]
+            if (ch === "{" || ch === "[" || ch === "(") depth++
+            else if (ch === "}" || ch === "]" || ch === ")") { if (depth === 0) return body.slice(0, i); depth-- }
+            else if (ch === "=" && depth === 0) {
+              if (body[i + 1] === "=" || body[i - 1] === "=" || body[i - 1] === "!" || body[i - 1] === "<" || body[i - 1] === ">") continue
+              return body.slice(0, i)
+            }
+          }
+          return body
+        }
+        return null
+      }
+      const lines = String(source).split("\n")
+      let inScript = false
+      for (const line of lines) {
+        if (/<script\b/.test(line)) { inScript = true; continue }
+        if (/<\/script>/.test(line)) { inScript = false; continue }
+        if (inScript) continue
+        const pattern = patternOf(line)
+        if (!pattern) continue
+        // (a) a COMPUTED key: the inside of `[ … ]` is an expression
+        for (let i = 0; i < pattern.length; i++) {
+          if (pattern[i] !== "[") continue
+          let depth = 0
+          for (let j = i; j < pattern.length; j++) {
+            if (pattern[j] === "[") depth++
+            else if (pattern[j] === "]") { depth--; if (depth === 0) { collectWords(pattern.slice(i + 1, j)); i = j; break } }
+          }
+        }
+        // (b) a DEFAULT value: the expression after a `=` (never after `=>` or `==`)
+        for (let i = 0; i < pattern.length; i++) {
+          if (pattern[i] !== "=") continue
+          if (pattern[i + 1] === "=" || pattern[i + 1] === ">") continue
+          if (pattern[i - 1] === "=" || pattern[i - 1] === "!" || pattern[i - 1] === "<" || pattern[i - 1] === ">") continue
+          let depth = 0
+          let j = i + 1
+          while (j < pattern.length) {
+            const ch = pattern[j]
+            if (ch === "{" || ch === "[" || ch === "(") depth++
+            else if (ch === "}" || ch === "]" || ch === ")") { if (depth === 0) break; depth-- }
+            else if (ch === "," && depth === 0) break
+            j++
+          }
+          collectWords(pattern.slice(i + 1, j))
+          i = j
+        }
+      }
+      if (dead.size === 0) return r
+      const kept = rels.filter(
+        (x: any) => !(String(x.type) === "uses" && x.source === component && x.metadata?.isTemplateExpression === true && dead.has(String(x.target))),
+      )
+      return kept.length === rels.length ? r : { ...r, relationships: kept }
+    },
+  },
+  {
+    id: "svelte/declaration-tag-not-bound",
+    language: "svelte",
+    defectClass: "fabrication",
+    caughtBy: "svelte/declaration-tag-shadow",
+    description: "F26 (2026-10-12) regression: a Svelte 5.36 declaration tag stops BINDING again — `{let counter = …}` / `{const doubler = …}` is treated as an ordinary mustache, so the declared name is published as a component-member read of a declaration that shadows it. Reverted from the SOURCE, because the defect is the PRESENCE of a row the fix removed: every `let`/`const` tag's bound name (the head's identifiers, keyword excluded) becomes a component-sourced `uses` row at the tag's own line, skipping a name that already has one. The mutant reproduces the FABRICATION half only: the other half of the pre-fix state — that no shadow was registered, so a LATER sibling using the name still resolved to a member — cannot be restored by a result transform, because a suppressed read is absent from the output it would have polluted. That half is pinned by the fixture as an expect row on lines 45/46 instead, and it is recorded here rather than implied. Caught by svelte/declaration-tag-shadow's `uses -> doubler` forbid row.",
+    transform: (r, source) => {
+      if (!source) return r
+      const rels: any[] = r.relationships ?? []
+      const component = rels.find((x: any) => String(x.type) === "uses" && x.metadata?.isTemplateExpression)?.source
+      if (!component) return r
+      const have = new Set(rels.filter((x: any) => String(x.type) === "uses").map((x: any) => String(x.target)))
+      const isWordChar = (ch: string): boolean =>
+        (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9") || ch === "_" || ch === "$"
+      const added: any[] = []
+      const lines = String(source).split("\n")
+      let inScript = false
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]!
+        if (/<script\b/.test(line)) { inScript = true; continue }
+        if (/<\/script>/.test(line)) { inScript = false; continue }
+        if (inScript) continue
+        const at = line.indexOf("{")
+        if (at < 0) continue
+        const body = line.slice(at + 1).trim()
+        const kw = body.startsWith("let ") ? "let " : body.startsWith("const ") ? "const " : null
+        if (!kw) continue
+        const eq = body.indexOf("=")
+        const head = eq > 0 ? body.slice(kw.length, eq) : body.slice(kw.length)
+        for (let k = 0; k < head.length; k++) {
+          if (!isWordChar(head[k]) || (head[k] >= "0" && head[k] <= "9")) continue
+          let m = k
+          while (m < head.length && isWordChar(head[m])) m++
+          const name = head.slice(k, m)
+          if (!have.has(name)) {
+            have.add(name)
+            added.push({
+              source: component,
+              target: name,
+              type: "uses",
+              confidence: 0.95,
+              line_number: i + 1,
+              metadata: { isTemplateExpression: true },
+            })
+          }
+          k = m - 1
+        }
+      }
+      if (added.length === 0) return r
+      return { ...r, relationships: [...rels, ...added] }
+    },
+  },
+  {
+    id: "svelte/each-key-expression-not-read",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    caughtBy: "svelte/keyed-each-key-reads",
+    description: "F25 (2026-10-12) regression: a keyed `{#each}` block's KEY expression stops being a read again, which is the pre-fix state — `{#each rows as row (keyOf(row))}` published `uses rows` for the collection on the same line and NOTHING for `keyOf`, and `{#each rows as row (sortKey)}` published nothing for `sortKey`. Reverted from the SOURCE, because the rows to remove are distinguishable only by which clause produced them: every identifier of an each clause's parenthesised tail loses its component-sourced template read, with dot-preceded LEAVES excluded exactly as the collector excludes them (so `(row.id)` contributes no name — the fixture's own forbid row at 49 says that leaf belongs to the binding). The clause is located on one line, which every site of the fixture is; the corpus's 699 occurrences over 486 files were not re-measured for the multiline form, and a clause spanning lines is NOT reverted by this transform — recorded rather than implied, because a mutant that silently covers less than it claims is worse than a narrow one that says so. Caught by svelte/keyed-each-key-reads' `keyOf` and `sortKey` rows.",
+    transform: (r, source) => {
+      if (!source) return r
+      const rels: any[] = r.relationships ?? []
+      const component = rels.find((x: any) => String(x.type) === "uses" && x.metadata?.isTemplateExpression)?.source
+      if (!component) return r
+      const isWordChar = (ch: string): boolean =>
+        (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9") || ch === "_" || ch === "$"
+      const names = new Set<string>()
+      for (const line of String(source).split("\n")) {
+        const at = line.indexOf("{#each")
+        if (at < 0) continue
+        const clause = line.slice(at)
+        const open = clause.indexOf("(")
+        const close = clause.lastIndexOf(")")
+        if (open < 0 || close <= open) continue
+        const key = clause.slice(open + 1, close)
+        for (let i = 0; i < key.length; i++) {
+          if (!isWordChar(key[i]) || (key[i] >= "0" && key[i] <= "9")) continue
+          let j = i
+          while (j < key.length && isWordChar(key[j])) j++
+          let back = i - 1
+          while (back >= 0 && (key[back] === " " || key[back] === "\t")) back--
+          if (key[back] !== "." && key[back] !== "#") names.add(key.slice(i, j))
+          i = j - 1
+        }
+      }
+      if (names.size === 0) return r
+      return {
+        ...r,
+        relationships: rels.filter(
+          (x: any) => !(String(x.type) === "uses" && x.source === component && x.metadata?.isTemplateExpression === true && names.has(String(x.target))),
+        ),
+      }
+    },
+  },
+  {
+    id: "svelte/render-tag-argument-reads-dropped",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    caughtBy: "svelte/render-tag-argument-reads",
+    description: "F24 (2026-10-12) regression: a `{@render}` tag's ARGUMENTS stop being reads, so the snippet call's inputs are invisible to the graph while its `calls` edge (the callee) stays. That asymmetry is the pre-fix state and it is why the fixture pins both: `{@render row(alpha)}` published `calls -> row` and not one `uses`. Reverted from the SOURCE, since the rows to remove are distinguishable only by which tag produced them: every identifier in a render tag's argument list (the CALLEE excluded, a dot-preceded LEAF excluded, the parens stripped) loses its component-sourced template read. The `uses pick -> x` row is deliberately untouched — it is the script-side delegated read of the same name, and a mutant that removed both would be testing name collision rather than this rule. Caught by svelte/render-tag-argument-reads' six expected rows.",
+    transform: (r, source) => {
+      if (!source) return r
+      const rels: any[] = r.relationships ?? []
+      const component = rels.find((x: any) => String(x.type) === "uses" && x.metadata?.isTemplateExpression)?.source
+      if (!component) return r
+      const src = String(source)
+      const isWordChar = (ch: string): boolean =>
+        (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9") || ch === "_" || ch === "$"
+      const names = new Set<string>()
+      for (let i = src.indexOf("{@render"); i >= 0; i = src.indexOf("{@render", i + 1)) {
+        // the tag ends at the `}` that closes it; the argument list is the
+        // parenthesised part, and only its identifiers are arguments
+        // depth starts at 1 for the tag's OWN brace — the first revision of this
+        // mutant started at 0, so the closing `}` drove the count to -1 and no tag
+        // ever ended, which is how it SURVIVED with an empty name set.
+        let depth = 1
+        let end = -1
+        for (let j = i + 1; j < src.length; j++) {
+          if (src[j] === "{") depth++
+          else if (src[j] === "}") { depth--; if (depth === 0) { end = j; break } }
+        }
+        if (end < 0) continue
+        const body = src.slice(i + "{@render".length, end)
+        const open = body.indexOf("(")
+        if (open < 0) continue
+        const args = body.slice(open + 1).replace(/\)[\s\S]*$/, "")
+        for (let k = 0; k < args.length; k++) {
+          if (!isWordChar(args[k]) || (args[k] >= "0" && args[k] <= "9")) continue
+          let m = k
+          while (m < args.length && isWordChar(args[m])) m++
+          let back = k - 1
+          while (back >= 0 && (args[back] === " " || args[back] === "\t" || args[back] === "\n")) back--
+          if (args[back] !== "." && args[back] !== "#") names.add(args.slice(k, m))
+          k = m - 1
+        }
+      }
+      if (names.size === 0) return r
+      return {
+        ...r,
+        relationships: rels.filter(
+          (x: any) => !(String(x.type) === "uses" && x.source === component && x.metadata?.isTemplateExpression === true && names.has(String(x.target))),
+        ),
+      }
+    },
+  },
+  {
+    id: "svelte/handler-param-not-shadowed",
+    language: "svelte",
+    defectClass: "fabrication",
+    caughtBy: "svelte/handler-param-shadow",
+    description: "F23 (2026-10-12) regression: an event handler's own ARROW PARAMETERS go back to being published as component members. The pre-fix state is the presence of rows the fix removed, so it is re-derived from the SOURCE the way the walk produced it — for each `on:`/`onclick` carrier whose value is an arrow, the parameters written at its head become `uses` rows from the component at the handler's line. Two things keep that faithful instead of approximate: a name that ALREADY has a `uses` row is skipped, so the mutant adds only the endpoints the fix suppresses rather than duplicating a read that still resolves (the `$store` case on line 36); and a DESTRUCTURED parameter binds its parts (`({ data })` binds `data`), which is the shape a first version of the parameter scan got wrong. The corpus measured exactly 1 such edge in 6,439 files — `packages/svelte/tests/compiler-errors/samples/store-template-expression-scope/main.svelte` — so the fixtures, not the corpus, are the evidence. Caught by svelte/handler-param-shadow's two forbid rows (`uses -> evt` at the parameter's line, `uses -> data` for the destructured shape). NOT reverted here: the same defect's other half, where the pre-fix dedupe swallowed the real `$store` read on the next line — a result transform cannot restore a row the analyzer deduped away, and the fixture pins that half as an expect row instead.",
+    transform: (r, source) => {
+      if (!source) return r
+      const rels: any[] = r.relationships ?? []
+      const component = rels.find((x: any) => String(x.type) === "uses" && x.metadata?.isTemplateExpression)?.source
+      if (!component) return r
+      const have = new Set(rels.filter((x: any) => String(x.type) === "uses").map((x: any) => String(x.target)))
+      const isWordChar = (ch: string): boolean =>
+        (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9") || ch === "_" || ch === "$"
+      /** The bound names at the head of an arrow written on one line. */
+      const paramsOf = (text: string): string[] => {
+        let depth = 0
+        let arrow = -1
+        for (let i = 0; i < text.length; i++) {
+          const c = text[i]
+          if (c === "(" || c === "[" || c === "{") depth++
+          else if (c === ")" || c === "]" || c === "}") depth--
+          else if (depth === 0 && c === "=" && text[i + 1] === ">") { arrow = i; break }
+          else if (c === ";") break
+        }
+        if (arrow < 0) return []
+        let head = text.slice(0, arrow).trim()
+        if (head.startsWith("async")) head = head.slice(5).trim()
+        if (head.startsWith("(") && head.endsWith(")")) head = head.slice(1, -1)
+        const out: string[] = []
+        // every word in a BINDING position; a word right after `:` is the rename key
+        for (let i = 0; i < head.length; i++) {
+          if (!isWordChar(head[i]) || (head[i] >= "0" && head[i] <= "9")) continue
+          let j = i
+          while (j < head.length && isWordChar(head[j])) j++
+          let k = i - 1
+          while (k >= 0 && (head[k] === " " || head[k] === "\t")) k--
+          if (head[k] !== ":") out.push(head.slice(i, j))
+          i = j - 1
+        }
+        return out
+      }
+      const added: any[] = []
+      const lines = String(source).split("\n")
+      let inScript = false
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]!
+        if (/<script\b/.test(line)) { inScript = true; continue }
+        if (/<\/script>/.test(line)) { inScript = false; continue }
+        if (inScript) continue
+        const carrier = /(?:^|[\s"])on:?[a-z]+\s*=\s*\{?/.exec(line)
+        if (!carrier) continue
+        // The walker's own input is the EXPRESSION node's text — the value without
+        // the mustache braces — so the brace is stripped here for the same reason:
+        // left in, it puts the arrow's `=>` one bracket deep and no parameter is
+        // found, which is how the first revision of this mutant SURVIVED.
+        let value = line.slice(carrier.index)
+        const brace = value.indexOf("{")
+        if (brace >= 0) value = value.slice(brace + 1)
+        for (const p of paramsOf(value)) {
+          if (have.has(p)) continue
+          have.add(p)
+          added.push({
+            source: component,
+            target: p,
+            type: "uses",
+            confidence: 0.95,
+            line_number: i + 1,
+            metadata: { isTemplateExpression: true },
+          })
+        }
+      }
+      if (added.length === 0) return r
+      return { ...r, relationships: [...rels, ...added] }
+    },
+  },
+  {
+    id: "svelte/drop-dynamic-target-sites",
+    language: "svelte",
+    defectClass: "payload-loss",
+    caughtBy: "svelte/dynamic-target-sites",
+    description: "F22 (2026-10-12) regression, and deliberately NOT the sibling above. `svelte/drop-dynamic-this-instantiates` removes the EDGE, which every gate can see. This one restores the pre-fix PAYLOAD exactly: the edge survives at the right target and the right (last) line, and only `metadata.dynamicTargetLines` is gone — the state the lane shipped while `thisTargets` was a `Map<name, line>`, where a name written at several sites silently lost every one but the last. The fixture's own measurement: 125 sites in 73 files, 11 files writing one name more than once, 36 sites collapsed, with `svelte-component/input.svelte` writing `Component` 11 times in one file — and the EDGE was right in all of them, which is why no gate saw it and why the two mutants must be separate. Caught by svelte/dynamic-target-sites, whose two expect rows pin the site set for a collapsed name AND for a single-site name.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (String(x.type ?? x.relationshipType) !== "instantiates") return x
+        if (!x.metadata || !("dynamicTargetLines" in x.metadata)) return x
+        // Key REMOVED rather than set to undefined: the pre-fix payload had no
+        // such key at all, and a mutant that left `dynamicTargetLines: undefined`
+        // behind would test the runner's null handling instead of the fix.
+        const { dynamicTargetLines: _dropped, ...rest } = x.metadata
+        return { ...x, metadata: rest }
+      }),
+    }),
   },
   {
     id: "svelte/reemit-string-content-uses",
@@ -9090,11 +9579,17 @@ export const MUTANTS: Mutant[] = [
     id: "vue/reemit-filtered-kebab-tags",
     language: "vue",
     defectClass: "relationship-fabrication",
-    description: "M37.21 #611 regression: re-emits modern-HTML/SVG builtin tags as component instantiates — <search> (2023 HTML element) and the camelCase SVG tags (linearGradient, clipPath, mask, pattern, marker, symbol) are filtered by the analyzer's builtin set; re-adding them is the ORACLE_HTML_TAGS drift class that faked a MISSING in vue-element-admin",
+    description: "M37.21 #611 regression: re-emits modern-HTML/SVG builtin tags as component instantiates — <search> (2023 HTML element), the camelCase SVG tags (linearGradient, clipPath, mask, pattern, marker, symbol) and the SVG filter module (filter + feGaussianBlur/feFlood/feColorMatrix/feOffset/feBlend/feComposite) are filtered by the analyzer's builtin set; re-adding them is the ORACLE_HTML_TAGS drift class that faked a MISSING in vue-element-admin, and the FE half is the 377-edge dangling class F30 removed",
     transform: r => {
       const rels = r.relationships ?? []
       const source = "vue-component-usage" // pinned: first-edge source is unstable across sub-analyzer evolution
-      return { ...r, relationships: [...rels, { source, target: "search", type: "instantiates", confidence: 0.95, metadata: { isComponentUsage: true } }] }
+      // The filter primitives are the SECOND half of this mutant on purpose: the F30 fix
+      // and the pre-existing #611 fix are the same defect at two depths (a tag the spec
+      // defines, filtered as a component), so one mutant must cover both or a future
+      // revert of either half would survive. Every name here is a forbid row in
+      // vue/modern-html-svg-builtin-tags.expectation.json.
+      const revert = ["search", "filter", "feGaussianBlur", "feFlood", "feColorMatrix", "feOffset", "feBlend", "feComposite"]
+      return { ...r, relationships: [...rels, ...revert.map(target => ({ source, target, type: "instantiates", confidence: 0.95, metadata: { isComponentUsage: true } }))] }
     },
   },
   {
@@ -9596,6 +10091,60 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "vue/inject-name-guard-revert",
+    language: "vue",
+    defectClass: "fabrication",
+    caughtBy: "vue/contract-call-name-shapes",
+    description: "F21 regression: the provide/inject pass goes back to a bare NAME test, so a call whose CALLEE TEXT is `inject`/`provide` is a Vue contract whatever BINDS the name — `@inject(\"db\")` (a DI decorator, not Vue's function) fabricates `references ContractShapes -> db`, `import { inject } from 'vue-router'` fabricates `foreignKey`, and a local `function inject(key)` that shadows the global fabricates `shadowedKey`. This is the exact pre-fix state of three separate fixtures' forbid rows, and the state the corpus could not see: of 1,162 `.vue` files over the restored draw, all 96 provide/inject call sites are `import … from 'vue'`, so zero corpus rows move and the fixtures ARE the evidence. Caught by vue/contract-call-name-shapes' two `db` forbid rows + its `foreignKey` row, and independently by vue/contract-call-local-shadow's `shadowedKey` row. Distinct from vue/provide-inject-edge-drop (the F2 half): that one deletes the contract edges the fix ADDED, this one re-adds the rows the fix REMOVED, and a single mutant reverting both would pass whenever either half were pinned — the M49 T6 lesson.",
+    transform: (r, source) => {
+      // The defect is an EXTRACTION behaviour, so it cannot be reverted by
+      // duplicating what the guarded output already holds: with the guard in place
+      // `db`/`foreignKey`/`shadowedKey` are absent, and a transform that only
+      // looked for them would be a no-op and SURVIVE (the failure mode
+      // vue/computed-key-guard-drop records). It is re-derived from the SOURCE the
+      // way the pre-fix pass ran: the pre-fix rule was a pure name test over
+      // `<script>` blocks, so the same rule over the same lines reproduces it.
+      // Two details keep that faithful rather than approximate — a callee preceded
+      // by `.` is NOT matched, because the pre-fix pass compared the callee's own
+      // text and `this.inject(…)` never equalled `inject`; and a key that already
+      // has a contract row is skipped, so the revert adds only the rows the guard
+      // suppresses instead of duplicating a still-present positive.
+      if (!source) return r
+      const component = (r.symbols ?? []).find(
+        (s: any) => s?.kind === "class" && s?.metadata?.isVueComponent === true,
+      )?.name
+      if (!component) return r
+      const already = new Set(
+        (r.relationships ?? [])
+          .filter((x: any) => x.metadata?.isProvideContract === true || x.metadata?.isInjectContract === true)
+          .map((x: any) => String(x.target)),
+      )
+      const added: any[] = []
+      let inScript = false
+      const lines = String(source).split("\n")
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]!
+        if (/<script\b/.test(line)) { inScript = true; continue }
+        if (/<\/script>/.test(line)) { inScript = false; continue }
+        if (!inScript) continue
+        const m = /(?:^|[^.\w$])(inject|provide)\s*\(\s*(?:'([^']+)'|"([^"]+)"|([A-Za-z_$][\w$]*))/.exec(line)
+        if (!m) continue
+        const key = m[2] ?? m[3] ?? m[4]
+        if (!key || already.has(key)) continue
+        added.push({
+          source: component,
+          target: key,
+          type: "references",
+          confidence: 0.9,
+          line_number: i + 1,
+          metadata: { [m[1] === "provide" ? "isProvideContract" : "isInjectContract"]: true, sfcDelegated: true },
+        })
+      }
+      if (added.length === 0) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...added] }
+    },
+  },
+  {
     id: "vue/provided-owner-drop",
     language: "vue",
     defectClass: "symbol-identity",
@@ -9915,6 +10464,58 @@ export const MUTANTS: Mutant[] = [
     description: "G1-wave regression: removes the catch_formal_parameter case — multi-catch `catch (IOException | SQLException e)` emits zero declared_type refs (the union's catch_type members never reach the type-usage graph) — multicatch-and-varargs fixture expects BOTH IOException and SQLException",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
       !((x.metadata ?? {}).declaredOn === "catch_formal_parameter")) }),
+  },
+  {
+    id: "groovy/declared-type-qualified-only",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "the PRE-FOLD law reintroduced: the declared-type producer publishes only a QUALIFIED name (`if (!t.name.includes('.')) continue`), so every bare type — `List<String> f`, `public String greet()`, `catch (IOException | SQLException e)`, `o as String`, `(String) o`, `o instanceof Point p`, `Path scriptDir`, a typed lambda parameter — vanishes from the type-usage graph again. Caught by type-usage-graph, multicatch-and-varargs, as-cast, cast-types, pattern-refs, class-body-dot-continuation-841, lines-825, lambda-expression, attribution-visibility and grammar-rebuild-constructs, each of which pins the bare spelling beside a qualified channel pin.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => {
+      const rel = normRel(x)
+      const label = (x.metadata ?? {}).relationshipType
+      const DECLARED = ["declared_type", "return_type", "throws_type", "instanceof_expression", "case_pattern", "cast_type", "method_reference"]
+      return !(rel.type === "references" && DECLARED.indexOf(label) >= 0 && (rel.target ?? "").indexOf(".") === -1)
+    }) }),
+  },
+  {
+    id: "groovy/declared-type-class-attribution",
+    language: "groovy",
+    defectClass: "wrong-attribution",
+    description: "the PRE-FOLD attribution law reintroduced: every declared-type reference is re-sourced at the file's primary type instead of at the MEMBER that writes it, so `m2 -> Map` returns to `TypeGraph -> Map` and `make -> Outer.Criterion` to `Fields -> Outer.Criterion`. Caught by type-usage-graph (the KAD6 `from: m2` return_type row), scoped-type-references (four `source: make` rows), pattern-refs (`from: describe`/`pick`), method-refs (`from: run`), lambda-expression (`from: run`), lines-825 and anonymous-body-overrides.",
+    transform: r => {
+      const primary = (r.symbols ?? []).find((s: any) => !s.ownerName &&
+        ["class", "interface", "enum"].indexOf(String(s.kind)) >= 0)
+      if (!primary) return r
+      const DECLARED = ["declared_type", "return_type", "throws_type", "instanceof_expression", "case_pattern", "cast_type", "method_reference"]
+      const memberNames = new Set((r.symbols ?? []).filter((s: any) => (s.kind === "method" || s.kind === "constructor") && s.ownerName).map((s: any) => s.name))
+      return { ...r, relationships: (r.relationships ?? []).map((x: any) => {
+        const label = (x.metadata ?? {}).relationshipType
+        // `normRel` in this module normalizes `type` only — the endpoint field
+        // is read from the record itself (`source`), which is how the analyzer
+        // writes it. Reaching for `normRel(x).from` here silently matched
+        // nothing and the mutant SURVIVED its first run.
+        const src = x.source ?? x.from
+        if (x.type === "references" && DECLARED.indexOf(label) >= 0 && memberNames.has(src)) {
+          return { ...x, source: primary.name, from: primary.name }
+        }
+        return x
+      }) }
+    },
+  },
+  {
+    id: "groovy/filelevel-import-rewrite",
+    language: "groovy",
+    defectClass: "attribution",
+    description: "the PRE-FOLD import shape reintroduced: the file-level `imports` dependency edge is re-sourced at the file's primary type and loses its `fileLevel` flag, which is exactly the state in which parallel-indexer resolves source_symbol_id and bb_graph's per-file dependency query (`source_symbol_id IS NULL AND source_external = <file>`) can never return the row. Caught by imports-dependency-edge, which pins `source: com.acme.dep` with `meta.fileLevel: true` and FORBIDS `imports source: Dep`.",
+    transform: r => {
+      const primary = (r.symbols ?? []).find((s: any) => !s.ownerName &&
+        ["class", "interface", "enum"].indexOf(String(s.kind)) >= 0)
+      if (!primary) return r
+      return { ...r, relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "imports" && (x.metadata ?? {}).fileLevel === true
+          ? { ...x, source: primary.name, from: primary.name, metadata: { ...x.metadata, fileLevel: undefined } }
+          : x) }
+    },
   },
   {
     id: "csharp/drop-declared-type-refs",
@@ -18199,10 +18800,18 @@ export const MUTANTS: Mutant[] = [
     language: "cpp",
     defectClass: "fabricated-relationship",
     description: "D13 regression: re-own a friend DEFINITION's body to the enclosing class. CP2 correctly refuses to mint a member for a friend declaration, and the same blanket suppression meant a friend function DEFINED inside a class body — which has a body, and so has reads — left those reads with no owner at all, and the walk attributed them to the class. Measured on absl/random/uniform_int_distribution.h:87: `uses param_type -> b` for a read of a PARAMETER of `operator==`, where `param_type` also has member functions named `a()` and `b()` (lines 81-82), so the edge could not be told apart from reading those. It surfaced as the single UNEXPLAINED analyzer edge on abseil-cpp. Reverted generically: the friend body reads go back under the class. This is the second arm of the fixture on purpose — the first version of the FIX also failed it, because it re-attributed to the containing CLASS from a helper that returned the one scope a friend's body can never belong to, so the fixture's CONTROL (an out-of-line member definition, already owned correctly) is what keeps an over-broad re-owner from passing.",
+    // The predicate used to require `source === "global"`, which was the owner this
+    // read had while a friend definition minted no symbol. The loss audit published the
+    // friend as a FUNCTION, so the same read is now `uses operator== -> lo_` and the
+    // `global`-keyed revert matched nothing — it SURVIVED on the merged tree. The revert
+    // is to the OWNER SHAPE ("re-own a friend definition's body to the enclosing
+    // class"), so it is keyed on the one owner it must not produce rather than on the
+    // owner it happened to have: any `uses` row at the friend body's line whose source
+    // is not already `param_type` goes back to `param_type`.
     transform: r => ({
       ...r,
       relationships: (r.relationships ?? []).map((x: any) =>
-        x.type === "uses" && x.source === "global" && ["a", "b", "lo_"].includes(String(x.target)) && x.line_number === 26
+        x.type === "uses" && x.source !== "param_type" && ["a", "b", "lo_"].includes(String(x.target)) && x.line_number === 26
           ? { ...x, source: "param_type" }
           : x),
     }),

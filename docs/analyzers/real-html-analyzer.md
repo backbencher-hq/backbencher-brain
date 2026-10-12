@@ -300,6 +300,37 @@ Relabelling 4,496 published edges would also make html's own `references` a
 `references` is not in html's audited label set in `differential.ts`. Closing this
 needs the oracle and the analyzer changed in step; `script/m14/**` is not this
 lane's to edit. Recorded for the owner with the exact line.
+
+**Q4 CORRECTION (2026-10-12) — the question was answered, and the paragraph above
+is one measurement older than the answer.** The population it counts is fragment
+hrefs plus `label@for`, and those are STILL `uses` (`isInternalAnchor` and
+`isLabelAssociation` respectively: the oracle derives both as `uses`, the analyzer
+agrees with it, and 14 pins across `idref-references`, `scope-barriers-and-references`,
+`identity-addressable` and `idref-carriers` hold that in place). What the paragraph's
+last measurement of `references` — *"html's own `references` count is 0; all 78 are the
+CSS delegate's"* — could not yet see is the IDREF **class**, which the later IDREF wave
+added as this lane's THIRD natively-owned relationship type: `aria-labelledby`,
+`aria-describedby`, `aria-details`, `aria-errormessage`, `aria-controls`, `aria-owns`,
+`aria-flowto`, `aria-activedescendant`, `td`/`th` `headers`, `input@form` and
+`input@list`, plus `output@for`, are emitted today as `references` with `isIdref` and
+`idrefKind` naming the attribute (`IDREF_RULES`, `real-html-analyzer.ts`), measured
+before it was written at 19 sites / 19 tokens / 17 resolving over 1,185 documents, and
+pinned by `html/idref-references` with 14 rows. So the corpus counts in this section
+are a snapshot of the pre-IDREF-wave revision and are not re-derived here (the
+corpora the differential draws from are absent on this machine); the resolved ruling
+is `references` for the class and `uses` for the anchor, the label association and
+the resource carriers.
+
+**Q4, second correction (2026-10-12): the label association's ACTOR.** A `<label
+for>` was attributed to the nearest named ANCESTOR rather than to the element that
+writes the reference, in the only one of the lane's four in-document reference
+emitters that did so. The lane's own oracle disagreed with both the analyzer and
+`scope-barriers-and-references` (which pinned the wrong actor in three rows), which is
+why the pins were re-derived from `deriveHtmlEdges` first and the analyzer changed
+second, and why the two single-vs-list IDREF facts (`metadata.idrefList`, set from the
+ARIA 1.2 / HTML content model) are now pinned rather than described. Per-construct
+measurements and the full evidence ledger: §22 of
+`docs/analyzers/BRANCH-INVENTORY-2026-10-07.md`.
  Delegates are resolved **lazily and
 independently**, never as static imports: a static import makes a broken delegate a
 *load-time* failure of this module, and while the CSS analyzer was mid-rewrite with 5
@@ -461,7 +492,10 @@ the census can check, and the carrier table is consulted by a third party
 oracle's. One open question, with a number: html resolves **4,496** in-document
 IDREF references and labels every one `uses`, while the CSS delegate emits
 `references` for the structurally identical `var(--x)` case. See the Q4 note in
-*the inline-block seam* above for why that was reported rather than changed.
+*the inline-block seam* above for why that was reported rather than changed — and
+for the two 2026-10-12 corrections to it: the IDREF CLASS is now `references`
+(`isIdref`/`idrefKind`), while the anchor and the label association stay `uses`, and
+the label association's actor was fixed to the element that writes the reference.
 
 **Q5 RESOLVED.** Classified without reading any analyzer field: an endpoint is
 `sym` if it names a symbol of the merged file, `file` if it resolves on disk
@@ -621,6 +655,38 @@ they are the kind that hide: an F5 allowlist gap that filtered the analyzer's
 | Ledger row | `validation/m49/ledger.json` → `HTML1` |
 | Depth record | `validation/m60/results/depth-probes.json` |
 | Grammar provenance | `grammars/tree-sitter-html/` |
+
+## Recorded fixture baseline (2026-10-12)
+
+`validation/m14/fixture-baseline.json` records this lane at **0 failing pins of 18**, and
+`validation/m14/fixture-baseline.failing.json` names them (the lane's row is empty), because a count
+cannot say WHICH fixture is red. The lane reached 0 in two steps over two days.
+
+**2026-10-11 — three pins, one regression, repaired in the seams.** `inline-embedded-code`,
+`embedded-heritage` and `embedded-origin-marks` arrived red with the javascript round `4d1da43ed`, all
+three asserting rows the embedded delegate produces (`instantiates`, `calls`, `uses`, and the `imports`
+rows carrying `meta.embeddedLineOffset`, the per-block shift the seam exists to preserve). That commit
+also moved vue and svelte, because all three lanes consume the same delegate: one regression in the
+delegate's file-level actor (`"(file)"`), translated in each embedding seam rather than pinned away. The
+bisect (17/1 at `31b6cd908`, 14/4 at HEAD, fixtures unchanged), the gate change and the repair are §18
+and §21 of `docs/analyzers/BRANCH-INVENTORY-2026-10-07.md`.
+
+**2026-10-12 — `idref-carriers`, red since the baseline, adjudicated.** It was the lane's last red pin
+and the only one nobody had decided. Eight of its nine rows were the **superseded spelling** of the IDREF
+class: the fixture demanded `uses` + `idrefCarrier` for exactly the constructs `html/idref-references`
+demands `references` + `idrefKind` for (`aria-labelledby`, `aria-describedby`, `td@headers`, `input@form`,
+`input@list`), two mutually exclusive pins that landed together in the corpus import `1719ff6b3`. The
+tiebreak is the ontology's vocabulary — `uses` means a FETCH or a NAVIGATION, `references` is the
+address-space naming class — the spelling the analyzer implements and the sibling fixture argues; the F5
+oracle derives no IDREF rows, so it cannot arbitrate. Its ninth row was a **real defect**: the `<label
+for>` association's source was the nearest named ancestor instead of the element that WRITES the
+reference, and the lane's own oracle (`deriveHtmlEdges`) disagreed with BOTH the analyzer and
+`scope-barriers-and-references`, which pinned the wrong actor in three rows. Both were repaired the
+direction that lets the gate fail — pins re-derived from the oracle first, analyzer second — and the
+fixture's unique contribution (the LIST-vs-SINGLE `idrefList` flag from the content model, the
+`aria-*`-sweep controls, the frozen seventeen-counter `documentMetrics`) was kept rather than dropped.
+Per-construct tables, the oracle measurements and the full evidence ledger are §22 of
+`docs/analyzers/BRANCH-INVENTORY-2026-10-07.md`.
 
 ## Issue
 

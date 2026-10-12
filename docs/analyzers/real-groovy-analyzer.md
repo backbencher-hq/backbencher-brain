@@ -101,7 +101,7 @@ clean corpus.
 
 | Field | Supported? | How extracted (AST node/field) |
 | --- | --- | --- |
-| name | ✅ | `class_declaration`/`interface_declaration`/`trait_declaration`/`enum_declaration`/`method_declaration`/`constructor_declaration`/`field_declaration` → `name` field; enum members → `enum_body` constant names; constructors normalized to `constructor` |
+| name | ✅ | `class_declaration`/`interface_declaration`/`trait_declaration`/`enum_declaration`/`method_declaration`/`constructor_declaration`/`field_declaration` → `name` field; enum members → `enum_body` constant names; constructors carry their CLASS's name (§15.2) |
 | kind | ✅ | class → Class, trait/interface → Interface, enum → Enum, enum member → EnumMember, method → Method, constructor → Constructor, `static final` field → Constant, plain field → Property |
 | qualified/container name | ✅ | `id` = parent chain + name; `parent` = enclosing symbol name |
 | ownerName / ownerKind | ✅ | enclosing type symbol (class/trait/interface/enum); top-level declarations have no owner |
@@ -164,9 +164,9 @@ implemented, and are measured above.
 | instantiates | `object_creation_expression` (`new Type(...)`), with `type_identifier`, `generic_type` or `scoped_type_identifier` receivers. |
 | overrides | `@Override`, or an un-annotated instance method; three resolution tiers recorded in `metadata.reasonCode` — `exact-in-file` (1.0), `companion-index` (0.85), `first-parent-guess` (0.5). |
 | uses | `field_access` → leaf identifier; `array_access` reads; `leading_dot_call` member reads; GString interpolation reads. A receiver that is not a plain name yields **no** source and the read is attributed to the enclosing method (see the receiver section below). |
-| references | import MENTIONS (target = the dotted module path) plus declared-type references, qualified names only (see the qualification rule below). |
-| imports | one dependency per `import_declaration`, in all five Groovy forms, named in `metadata.relationshipType`: `single_type`, `on_demand_type`, `static_member`, `static_on_demand`. The `as` alias stays metadata and is never the target. |
-| exports | the importable units a file publishes — top-level types and top-level script methods — **sourced at the PACKAGE**, so `exports.source + "." + exports.target` reconstructs exactly the dotted name an `imports` edge targets. Two language-rule gates, each measured: a named package (a default-package type has no importable name; 270 of the 2,825 corpus files declare no package) and `visibility === "public"` (measured: 3,689 top-level types with no modifier written — Groovy's default is public — 39 written `public`, 5 `private`, 1 `protected`; the gate costs 6 rows and saves 6 fabrications). |
+| references | import MENTIONS (target = the dotted module path, at 0.9) plus declared-type references — bare AND qualified names, each attributed to the member that writes it (§15.1); the pre-fold qualified-only rule is retired. |
+| imports | one dependency per `import_declaration`, in all five Groovy forms, named in `metadata.relationshipType`: `single_type_import`, `type_on_demand_import`, `static_member_import` — sourced at the PACKAGE with `fileLevel: true`, at 1.0 (§15.3). The pre-fold 0.9 type-sourced MENTION label (`single_type`/`on_demand_type`/`static_member`/`static_on_demand`) is RETIRED; the mention still rides `references`. The `as` alias stays metadata and is never the target. |
+| exports | the importable units a file publishes — top-level types AND top-level script methods, which the M49 JVM-closure ruling settled (§15.5) — **sourced at the PACKAGE**, so `exports.source + "." + exports.target` reconstructs exactly the dotted name an `imports` edge targets. `metadata.relationshipType` names the unit (`exported_type` with `metadata.kind`, or `exported_function`) and `metadata.dottedName` is the name an importer writes. Two language-rule gates, each measured: a named package (a default-package type has no importable name; 270 of the 2,825 corpus files declare no package) and `visibility === "public"` (measured: 3,689 top-level types with no modifier written — Groovy's default is public — 39 written `public`, 5 `private`, 1 `protected`). A non-public top-level type publishes NO edge (§15.5 — the pre-fold 0.6 row asserted the name was an export). |
 | contains | owner → owned symbol via `ownerName`; top-level declarations never self-contain. |
 
 ### The two rules narrower than the family, and what each costs
@@ -174,18 +174,22 @@ implemented, and are measured above.
 Both are deliberate. Both are counted here rather than left in a comment, because a
 narrowing that is not counted reads as coverage.
 
-1. **`references` declared types are QUALIFIED-ONLY.** `collectDeclaredTypeRefs`
-   drops every bare type name (`if (!t.name.includes(".")) continue`). Measured with
-   `script/m60/groovy-bare-type-ref-census.ts` over all 2,825 files: 47,302
-   declared-type positions visited, **158 qualified names written against 24,049
-   bare names refused** — 50.8% of positions — of which **29.6% are followable** (a
-   type declared in the same file, 950, or imported by a dotted path whose leaf
-   matches, 6,239); the other 16,860 name a JDK/stdlib/Gradle type this corpus
-   cannot bind. The lane's stated reason is its hand-audited truth: 79 relationship
-   rows with **no bare target anywhere in them**. The java analyzer emits bare names
-   deliberately, with the defect that made it do so named in its own comment
-   (`GormProperties.java -> String`, `Opcodes.java -> Integer`). Two committed
-   contracts disagree and the adjudication belongs to the owner.
+1. ~~**`references` declared types are QUALIFIED-ONLY.**~~ **REVERSED by the fold —
+   the rule now publishes every written type and attributes it to its member; see
+   §15.1.** The history is kept because the reasoning is the interesting part: the
+   rule was measured at 158 qualified names written against 24,049 bare names
+   refused over all 2,825 files, and it was justified by the lane's hand-audited
+   truth (79 rows, no bare target anywhere). The truth file was an audit of
+   IMPORT-resolved rows — every one of those 79 is a dotted module path, which is
+   what an import writes — so it could not see the declared-type graph at all, and
+   the fixtures that pin that graph (type-usage-graph, scoped-type-references,
+   multicatch-and-varargs, as-cast, cast-types, pattern-refs, lines-825,
+   lambda-expression, attribution-visibility, class-body-dot-continuation-841,
+   grammar-rebuild-constructs) were all failing on it, each with a qualified
+   CHANNEL pin beside the bare row it could not satisfy. The java analyzer's bare
+   names were never the counter-example they were presented as, either: java
+   publishes `String`/`Integer` for the same shapes and its own fixtures pin them.
+
 2. **A `uses` read at script level is sourced at the receiver variable.** A read
    with no enclosing class or method takes the receiver's own name as its source,
    and this lane does not publish locals as symbols. That is why `uses` resolves at
@@ -344,6 +348,184 @@ What the same census reports over all 2,825 files:
   whose target is `self`; 28 `uses` rows whose SOURCE is `this`. These are the
   GAD2 pre-unification sentinels surviving on real sites and are R7 findings the
   owner should see.
+
+## M14 fold: the six laws this lane was failing (2026-10-10)
+
+The lane entered this pass at **61 of 81 fixtures green**, with 20 failures and 60
+distinct problems. It leaves at **81 of 81**, with the six laws below changed. Two of
+them were laws written into the analyzer's own comments as deliberate rulings; four
+were silence (a producer that emitted nothing for a whole channel). Each is stated with
+the measurement or the arbitration that decided it, because the two rulings were made
+against an artifact that is still in the tree and a reader will meet it.
+
+### 15.1 The declared-type graph publishes every written type, attributed to its member
+
+Two filters, both retired.
+
+* **The qualified-only filter.** `emit` dropped every name without a dot. Measured
+  consequence: `List<String> f`, `public String greet()`, `catch (IOException |
+  SQLException e)`, `o as String`, `(String) o`, `o instanceof Point p`, `Path
+  scriptDir` and a typed lambda parameter — every bare type in every declaration
+  position — reached no graph at all. The eleven fixtures that pin this graph now do.
+* **Class-only attribution.** `resolveSource` sourced every declared-type reference at
+  the enclosing type, on the recorded argument that the lane's hand audit had 79 rows
+  and not one of them was method-scoped. That audit was of IMPORT-resolved rows (all 79
+  are dotted module paths), so it could not see member attribution either way; the
+  fixtures state the opposite and do it row by row — `type-usage-graph` pins
+  `from: m2` for `Map` as a `return_type` (its own note calls the class-sourced form
+  the KAD6 defect), `scoped-type-references` pins four `source: make` rows, `pattern-refs`
+  `from: describe` / `from: pick`, `method-refs` and `lambda-expression` `from: run`.
+  The law now in force: a type written in a FIELD's clause belongs to the declaring
+  type, a type written inside a member belongs to that member, and a file with no
+  enclosing TYPE (an interpolated class name that the grammar cannot read) keeps the
+  `(script)` sentinel — `scoped-type-recovery-refusal` pins exactly that, and its
+  parse was probe-verified to contain no class declaration at all.
+
+Measured at HEAD through the fixture lane: the `references` graph gained the bare half
+in every one of the eleven positions, and `groovy/declared-type-class-attribution` (a
+new mutant that re-sources member refs at the primary type) is CAUGHT by nine fixtures.
+
+### 15.2 Constructors are named after their class
+
+The lane published the literal `"constructor"` and documented it as the family
+convention. That claim was stale in both halves:
+
+* **The family moved.** kotlin's fixtures pin `{ "name": "Derived", "kind":
+  "constructor", "equals": 3 }` with the note "one primary + two secondary constructors
+  share the class name **by the java C3 family convention**", and java's own fixtures
+  (ctor-delegation, ctor-value-injection, record-varargs-compact-ctor) name constructors
+  `CtorDelegation`, `PriceConfig`, `Point`. This lane's fixtures agree: ctor-identity,
+  ctor-field-split-lines, duplicate-parse-field and parameters-payload (`symbol Holder
+  in Holder` — a constructor addressed BY its class name and owned by it), while
+  `empty-name-refusal` FORBIDS the literal (`{type: uses, source: "constructor"}`).
+* **The hand audit still says otherwise, and it is not a re-running gate.**
+  `validation/m12/ground-truth/groovy.json` records `symbol:Features.groovy:9:constructor:constructor`
+  and `script/verify-m12-final-audit.ts` reads the ground-truth files only for
+  EXISTENCE — it consumes the committed `validation/m12/results/*-differential.json`
+  and never re-runs an analyzer. So the literal survives in a record and nowhere in a
+  gate; the fixtures are the gate. The collision argument the old comment answered with
+  `ownerName` is now answered twice: the `contains` source is the class, `ownerName` is
+  the class, and overloads are distinct by their parameter payload — which is exactly
+  what kotlin's `equals: 3` pin says.
+
+The same fold changed the two places the calls/uses walk derived the name
+independently (a constructor body's read-owner, and a constructor delegation's `calls`
+source), which is why `grammar-rebuild-constructs`' `calls[Rebuilt -> super]` and
+`empty-name-refusal`'s forbid are both satisfied. `groovy/ctor-name-revert` is CAUGHT by
+four fixtures.
+
+### 15.3 The file-level import dependency keeps the package as its source
+
+`imports` carries two facts and the lane emitted two edges for them: a 0.9 MENTION
+sourced at the file's primary type, and a 1.0 DEPENDENCY sourced at the package with
+`fileLevel: true`. A post-pass then rewrote BOTH to the primary type. That rewrite is
+what `bb_graph`'s per-file dependency query cannot survive: its SQL is
+`source_symbol_id IS NULL AND target_symbol_id IS NULL AND source_external = <file>`,
+and a source that resolves to a symbol makes `source_symbol_id` non-NULL. Two fixtures
+made the contradiction explicit — `imports-dependency-edge` pins the package source
+with `single_type_import`/`type_on_demand_import`/`static_member_import` and FORBIDS
+`imports, source: Dep`, while `imports-dependency` pinned the primary-type source with
+the older `single_type`/`on_demand_type`/`static_member`/`static_on_demand` vocabulary.
+They cannot both hold (the forbid matches any row from the type), so:
+
+* the file-level edge is EXEMPT from the rewrite and is the surviving `imports` label,
+  at 1.0, carrying `hasAlias` (the alias is a fact about the declaration and would
+  otherwise have been dropped with the retired label);
+* the retired mention label is gone from the analyzer — the mention still rides the
+  `references` edge at 0.9 with `isGroovyImport: true`, which is the edge the reference
+  surface joins against — and `groovy/imports-dependency` was re-pinned to the surviving
+  label with its six rows moved and its reason written into its own rationale;
+* one collapse is stated rather than hidden: `import static java.util.Collections.*` is
+  a STATIC ON-DEMAND import and the converged vocabulary has no separate spelling, so
+  it publishes as `static_member_import` with `isStatic: true` AND `isWildcard: true`
+  (java's twin does the same).
+
+### 15.4 Line attribution: the declaration's own line, not its annotation's
+
+`declarationLineNode` anchored every symbol at its FIRST ANNOTATION, with a comment
+citing the M12 hand audit (`Negative.groovy` L18 is `@Slf4j`, L19 is `class Counter`;
+the truth records 18). The fixtures pin the opposite, in the words of the #825 law
+itself: "the line a relationship carries is the line its NAME is written on — not the
+line of the enclosing construct, and not the line of a modifier", because "a tool
+navigating to a java symbol landed on the annotation". `lines-825` pins
+`expectSymbolRanges` (`Wrapped` at 19, not its `@Deprecated` at 18; `label` at 23, not
+22) and `contains`/`overrides` at 26 rather than 25; `anonymous-body-overrides` pins its
+two override rows at the method line rather than the `@Override` above them. Both are
+satisfied now, and java is failing its twin (`java/declaration-lines-825`) the same way
+— this is the family's leading edge, not a groovy-only reading. The M12 rows that cite
+the annotation line are stale in exactly the way §15.2 describes.
+
+### 15.5 Exports: the converged family contract, and one pin moved
+
+The lane published `exports` with a lane-local vocabulary (`groovy_exportable_unit` +
+`exportForm`) and published non-public top-level types at 0.6. Two fixtures disagreed
+about the SET as well, and here the arbiter is a written ruling rather than a fixture:
+
+> **RESOLVED (M49 exports convergence, 2026-09-10):** the fork is closed the OTHER way
+> — java/groovy were converted to the kotlin/scala contract. Owner ruling
+> (user-approved): **exports = importable units only (top-level types + top-level
+> functions)**; membership is carried by Contains, which all four analyzers already
+> emit. … The auditor's reason 1 was probe-corrected first: kotlin/scala also export
+> top-level functions, so the contract is "importable units", not "types only".
+> — `reviews/jvm-closure-audit.md`
+
+`groovy/exports-publication` (authored an hour after `exports-publication-edge`, in the
+same import commit, beside `java/exported-types`) pins that contract and names it; the
+older fixture pins "THE SET IS TYPES ONLY", which the ruling withdrew. Both cannot hold,
+so the losing pins were moved with their reason recorded in the fixture itself:
+`exports-publication-edge`'s three type rows now carry `exported_type` + `meta.kind` +
+`dottedName`, its line-18 top-level `def` is pinned as `exported_function` instead of
+forbidden, and what it uniquely pins is unchanged and still asserted (the package is the
+exporter; a nested type and a member are not exports; nothing may be sourced at
+`(script)` in a packaged file). In the analyzer, the vocabulary became
+`exported_type`/`exported_function` + `kind` + `dottedName` at 1.0, `exports[]` regained
+the top-level-function half the pre-ruling reading had taken with it, and a non-public
+top-level type now publishes NO edge at all rather than a 0.6 one — an edge at any
+confidence still asserts the name IS an export, and the export surface is what
+import-resolution joins on.
+
+### 15.6 What the fold did NOT do, and what is owed
+
+* **The corpus tables above are PRE-FOLD numbers.** They were measured on 2026-09-29
+  over all 2,825 files in 15 shards. This fold changes the `imports` row count (two
+  label edges per declaration become one, at a different confidence), the `references`
+  target distribution (the bare half is published), the `exports` vocabulary and the
+  constructor `name`. A re-measurement with `script/m60/groovy-ontology-census.ts` is
+  owed before any row above is quoted as current; the row-level deltas are recorded in
+  this section rather than folded into a table nobody re-ran.
+* **The `imports[]` `ImportInfo` channel is untouched**, so `brain_import` is unchanged.
+* **The lane's second corpus is still missing** (`geb` has no checkout), so the
+  two-corpus gate is still not running.
+* **The M12 ground truth still records the pre-fold names and lines.** It is a
+  historical record read only for existence; §15.2 and §15.4 say so rather than
+  quietly rewriting an audit.
+
+### 15.7 Verification at this commit
+
+```
+bun run script/m14/run-fixtures.ts --lang groovy   -> all fixtures pass   (81 pass / 0 fail; was 61 / 20)
+bun run script/m14/run-fixtures.ts                 -> groovy 81/0, elixir 82/0, cpp 51/0 (no new lane regressions;
+                                                      the vue 5->7 / svelte 9->10 / html 1->4 drift is pre-existing
+                                                      and lives in lanes this diff does not touch)
+BB_MUTANT_ONLY="groovy/" bun run script/m14/mutate-analyzer.ts -> all 59 mutants caught (56 pre-existing + 3 added:
+                                                      groovy/declared-type-qualified-only,
+                                                      groovy/declared-type-class-attribution,
+                                                      groovy/filelevel-import-rewrite)
+bun run script/m60/groovy-mutant-run.ts            -> 14 lane mutants, 0 surviving
+npx tsc --noEmit                                   -> exit 0
+bun run audit:fixture-provenance                   -> no fixture introduced or edited by this change fails
+bun run audit:doc-truth-emissions                  -> no groovy finding (gate summary FALSE_NEGATIVE=5 /
+                                                      UNDOCUMENTED=9 / MISSING_DOC=1 / NO_CLAIM_TABLE=18,
+                                                      unchanged: all in other lanes; 0 findings named `groovy`)
+```
+
+Neighbours this fold leaves open, in the order they are cheapest to take: java's
+`ctor-delegation`, `ctor-value-injection`, `declaration-lines-825`, `exported-types` and
+`import-dependency-edges` fail for the same four reasons (constructor identity,
+annotation-line anchoring, the exports vocabulary, the file-level import source), with
+the fixtures already written and the java analyzer carrying the same stale rulings; then
+kotlin (6 failures) and scala (5), whose constructor rules are already the ones this
+fold converged on.
 
 ## Supported constructs
 

@@ -378,6 +378,111 @@ surface therefore starts by reconciling those two pins, which is a written rulin
 re-run: the zero is LOCKED in swift's declaration and the note names the four fixtures, so the
 repair is a deliberate re-declaration and never a silent change.
 
+**Superseded 2026-10-11:** that deliberate re-declaration has happened. `imports` measures
+122 edges on the same 200-file stride, the zero and its note are gone, and the declaration
+passes at digest `sha256:625f3c7cdd588477` — see *Swift's incoming ratchet re-declared* below.
+
+## Swift's incoming ratchet re-declared (2026-10-11)
+
+Sixteen declarations are checked by `script/m14/java-incoming-gate.ts` (the JVM-family gate is
+parameterized by lane). **Swift's was red on the working tree: 7 violations plus a digest
+mismatch**, and it is green now. The finding, the method and the caveats are recorded in
+`real-swift-analyzer.md` § *The incoming ratchet re-declared*; what belongs here is the number
+and the reason it moved:
+
+| type | edges | resolved | ambiguous | otherUnresolved |
+|---|---|---|---|---|
+| contains | 1,012 → 955 | 414 → 393 | 598 → 562 | 0 |
+| imports | **0 → 122** | 0 → 2 | 0 → 2 | 0 → 118 |
+| exports | 438 → 226 | 280 → 141 | 154 → 78 | 4 → 7 |
+| uses | 576 → 580 | 206 → 207 | 162 → 160 | 208 → 213 |
+| six unchanged types | calls, references, extends, implements, overrides, instantiates | | | |
+| **total edges** | **3,626 → 3,483** | 1,466 → 1,453 | 1,125 → 1,014 | 1,035 → 1,074 |
+
+The declared numbers were HEAD's own (`analyzerDigest sha256:49f77d9e2258c039` is
+`git show HEAD:src/ast/real-swift-analyzer.ts`), so every move belongs to the lane's
+uncommitted work: `imports` is the dead emission the previous entry recorded as LOCKED
+(now repaired, its four authored fixtures pass), `exports` is SWIFT4's file-scope export gate,
+and the `contains`/`uses` shifts are SWIFT4b's removal of fabricated body-scope members —
+evidence for the last one is the lane's independent oracle reporting **0 MISSING / 0 EXTRA on
+all three covered types over 1,012 clean files**, not the ratchet's own classifier.
+
+**How it was measured matters as much as the numbers**, because the gate refuses a dirty tree:
+the 200-file ride ran in an isolated `git clone --shared` of HEAD carrying exactly this lane's
+two files (clone-local commit `824b981a5`; the shared repo does not contain that commit), and
+the clone's rows are identical to an `--allow-dirty` run in the shared checkout. The shared
+checkout still has **8 uncommitted `src/ast` files — six of them other lanes'** — so the gate
+exits 3 without `--allow-dirty` for every lane right now; that is an environment state, not a
+swift finding, and it is why the in-repo verdict was taken with `--allow-dirty` on the same
+bytes the clone measured.
+
+Caveat carried forward: the digest binds the analyzer only, and `pool-worker.ts` moves these
+numbers too, so the next `pool-worker` change re-measures rather than inherits.
+
+## Swift's DERIVATION row repaid: three labels wired into the differential (2026-10-11)
+
+Swift was the lane with the largest un-audited blob: `4 un-audited:
+["contains","exports","imports","overrides"]`, i.e. the analyzer constructed
+four types the differential's compared-label allowlist admitted none of. Three
+of the four are audited now and the register reads:
+
+    swift        1 un-audited: ["overrides"]
+    baseline: 1 recorded, 0 NEW, 0 repaid        (exit 0)
+
+The wiring is the two-halves change this file's notes describe for every other
+lane — truth and allowance in the same commit, or the label is compared by
+nothing. The truth is `script/m14/oracles/swift-contains-exports-imports.ts`, the
+walker the lane's own oracle already validated (extracted, not rewritten: the
+oracle's re-run reproduced every scalar counter, `contains` 17,445 / `exports`
+2,167 / `imports` 2,108, 0 MISSING / 0 EXTRA); the allowance is three
+swift-only entries in `differential.ts`; the ratchet is the baseline row.
+
+**Measured, six runs over three cold-pool rotations, both swift corpora:
+100% coverage, MISSING 0, unexplained 0, heuristic 0 every time.**
+
+Two things this round had to get right, and both are written into the lane doc
+rather than left in the numbers:
+
+- The pinned grammar fails on ~19% of the corpus, and there the analyzer's ERROR
+  recovery and a plain walker do not read the same tree. Measured bucket split on
+the 60-file swift-nio draw: 41 clean files 2 MISSING / 0 unexplained (both rows
+one spelling each, now reconciled), 19 error files 1 MISSING / 9 unexplained.
+The three labels are therefore compared only on files without an ERROR node, on
+BOTH sides; the excluded population stays published by the lane's oracle (27
+MISSING / 89 EXTRA over 244 files). A one-sided exclusion would have reported
+every analyzer edge on those files as fabrication.
+- `overrides` is still un-audited **on purpose**: its target resolves across files
+  through the companion index a single-file walker does not have, so it stays
+  measured by its premise probe. The register's remaining swift row is a ruling,
+  not a queue position.
+
+**The stored register was refreshed the same day, in full.**
+`bun script/m60/rel-type-coverage-gate.ts` unscoped rewrote
+`validation/m60/results/rel-type-coverage.json`: swift's row is now
+`1 un-audited: ["overrides"]` and the fleet's findings fell **126 → 123**. The
+run exits 1, and that is not this lane: `baseline: 103 recorded, 89 NEW, 69
+repaid` against a baseline dated 2026-10-01 whose 89 unrecorded findings are
+other lanes' in-flight analyzers, so `--update-baseline` was deliberately NOT
+run — re-recording that debt is the master's, and absorbing it here would ratify
+work this lane did not measure.
+
+The F5 half could only be refreshed in part, and the part is named:
+`bun script/m14/differential.ts --lang swift --emit` wrote
+`validation/m14/results/M14.0.F5.swift.json` (`differential-swift pass`,
+`differential-alamofire:swift pass`, 100% coverage / 0 MISSING / 0 unexplained on
+both corpora), while the canonical 43-language `M14.0.F5.json` **cannot be
+re-derived on this machine** — its corpus precheck throws `corpus repo missing:
+…/grails-core` before measuring anything, because the box holds a subset of the
+corpora. That is also the still-open `M14.0.F5` freshness failure in the honesty
+gate. The lane-scoped artifact's own two code-input checks fail on purpose: this
+lane's analyzer and the shared `differential.ts` are uncommitted, so the rows are
+real but not attributable to a commit.
+
+Remaining limits: the m60 baseline's swift rows were replaced by hand (the gate
+refuses to write a baseline from a scoped run, so a full sweep must re-derive the
+same row); and the oracle now shares the walker with the differential, so it is a
+second opinion on the ANALYZER only.
+
 ## Still to do at integration
 
 - Regenerate `website/src/data/brain-languages.ts` — its `emits` arrays are
