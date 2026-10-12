@@ -150,6 +150,33 @@ interface Hit {
 }
 const codeHits: Hit[] = []
 const suppressed: Hit[] = []
+// A PLANTED DEFECT THAT OUTLIVES ITS OWN SELF-TEST. This gate plants a file inside the
+// repository so it can prove the repository-scoped verdict can go red, and it removes that
+// file in a `finally`. A `finally` does not run when the process is killed.
+//
+// MEASURED, not hypothesised: a suite run I interrupted with SIGTERM left
+// `.tmp-gate-selftest-75362/planted.ts` behind, and the NEXT run of this gate scanned its
+// own debris and reported
+//
+//     FAIL: no undecoded URL.pathname in ANY source file in the repository
+//           — *** 1 defect(s) across 1 file(s): .tmp-gate-selftest-75362/planted.ts:1 ***
+//
+// which is a false FAIL with no code change anywhere near it. The two failure modes sit
+// next to each other and both had to be learned the expensive way: planting INSIDE the
+// repository is what makes the assertion meaningful, and planting inside the repository is
+// also what makes an interruption poison the next run.
+//
+// So the directory is swept at startup. It is safe to do this unconditionally and without
+// checking the age: the only writer is the self-test below, it holds the pid in its name,
+// and it is gone within milliseconds on any run that reaches its `finally`. A directory
+// matching this pattern is therefore either this run's (not yet created) or debris.
+for (const entry of readdirSync(ROOT, { withFileTypes: true })) {
+  if (!entry.isDirectory()) continue
+  if (!/^\.tmp-gate-selftest-\d+$/.test(entry.name)) continue
+  rmSync(path.join(ROOT, entry.name), { recursive: true, force: true })
+  console.log(`  stale self-test debris removed: ${entry.name} (left by an interrupted run)`)
+}
+
 const scanned = walkSourceFiles(ROOT)
 for (const f of scanned) {
   const rel = path.relative(ROOT, f)

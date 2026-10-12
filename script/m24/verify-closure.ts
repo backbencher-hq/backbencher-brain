@@ -33,6 +33,29 @@ const PACKAGE_PATH = path.join(ROOT, "package.json")
 // gate would create a self-referential stale-commit trap (it would judge
 // X1.json before this run writes it). The closure gate audits governance's
 // ledger + wiring instead.
+// HOW LONG THIS TAKES, measured rather than assumed, because the number decides whether a
+// timeout means anything.
+//
+// MEASURED 2026-10-12 on an otherwise idle machine: 422 seconds — 7m02s — exit 0. The suite
+// that runs this gate gives it a 15-minute budget (verify-suite.mts, `spawnSync({ timeout:
+// 15 * 60_000 })`), so the real run has 2.1x headroom and the budget is not the binding
+// constraint.
+//
+// The worst case is NOT the same number: each sub-verifier below is spawned with
+// `timeout: 300_000`, so nine of them is 45 minutes, which exceeds the 15-minute outer
+// budget. That arithmetic is worth keeping, because it is what makes a timeout
+// INTERPRETABLE — but it did not cause anything this session.
+//
+// WHAT ACTUALLY PRODUCED `exit=143` THREE TIMES, recorded so nobody re-derives it: this gate
+// was sharing the machine with another `verify-closure.ts`. Node's spawnSync sends SIGTERM
+// at the timeout, 128+15 = 143, and that is not a verdict. Two of the three occurrences
+// were my own fault — an orphaned run from an interrupted suite, and long foreground
+// commands competing for the same cores. A third cause is its own defect class: a gate
+// killed by a timeout leaves its evidence half-written, which is how `m24 governance` then
+// reported an apparently unrelated `G1: … P1:stale-commit,P2:stale-commit`. One cause, two
+// failures, and fixing the governance check alone would have hidden it.
+//
+// So: if this leg reports 143, look for a competing process before looking at this gate.
 const SUITE: Array<{ code: string; script: string; evidenceFile: string }> = [
   { code: "P1", script: "script/m24/verify-positions.ts", evidenceFile: "P1.json" },
   { code: "P2", script: "script/m24/verify-freshness.ts", evidenceFile: "P2.json" },
