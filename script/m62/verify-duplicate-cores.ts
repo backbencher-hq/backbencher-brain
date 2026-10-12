@@ -131,15 +131,138 @@ if (present.length >= 2) {
   const onlyA = [...fa.keys()].filter((k) => !fb.has(k)).sort()
   const onlyB = [...fb.keys()].filter((k) => !fa.has(k)).sort()
 
+
+// WHICH COPY IS AHEAD, PER FUNCTION. "They differ" is true and useless for a ruling: the
+// owner is asked to choose, and the gate has already measured most of the answer.
+//
+// The original report said only "6 of 8 shared functions have DIVERGED". Every one of those
+// six was then examined by hand, and they are NOT six of a kind:
+//
+//   entryDrift      m62 is a SUPERSET — same code plus the recordSealedAt key. m61's only
+//                   extra is a four-line COMMENT explaining why a stale projection is not
+//                   drift. Adopting m61 would LOSE a drift key.
+//   ledgerEntryFrom m62 is a SUPERSET — three more optional evidence fields.
+//   projectionMoved m62 is a SUPERSET — a re-seal check on recordSealedAt.
+//   validateLedger  NOT DRIFT. Both are milestone-specific on purpose: m61 hardcodes
+//                   M61/M29/M44/script\/m61, m62 hardcodes M62/M55/M61/script\/m62. m62's is
+//                   the more general shape (module constants and an ordering loop over the
+//                   code list, where m61 hardcodes V1..V6).
+//   laneViolations  m62 is BEHIND, cosmetically: its D-7 message drops the
+//                   `script\/m<lane>\/` path that m61 prints, so the violation is harder to
+//                   locate. One line, worth carrying over.
+//   isClosable      A REAL POLICY DIFFERENCE, and the only genuine question here. m61 lets a
+//                   BLOCKED issue close when its evidence carries a non-empty blockedReason;
+//                   m62 has no such branch, so only verified issues close.
+//
+// So the tally is 3 supersets for m62, 1 cosmetic regression, 1 milestone-specific pair, and
+// exactly ONE policy decision. Reporting only the divergence count hid all of that.
+function rawFunctionBodies(src: string): Map<string, string[]> {
+  const out = new Map<string, string[]>()
+  for (const m of src.matchAll(/export function (\w+)\s*\(/g)) {
+    const open = src.indexOf("{", m.index)
+    if (open === -1) continue
+    let depth = 0
+    let i = open
+    for (; i < src.length; i++) {
+      if (src[i] === "{") depth++
+      else if (src[i] === "}") {
+        depth--
+        if (depth === 0) break
+      }
+    }
+    const body = src
+      .slice(open + 1, i)
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .map((l) => l.replace(/\/\/.*$/, "").replace(/\s+/g, " ").trim())
+      .filter((l) => l !== "")
+    out.set(m[1]!, body)
+  }
+  return out
+}
+
+/**
+ * Classify one diverged function by which copy is ahead, or say plainly that it is a
+ * judgement call. Extracted as a PURE function over two line arrays so it can be tested
+ * without touching either core on disk — three attempts to canary this by editing
+ * governance_core.ts in place all failed to produce a usable signal: one left the file
+ * unparseable, and two moved the function out of the diverged set entirely, so the
+ * classifier was never actually invoked. A self-test is both cheaper and permanent.
+ */
+function classifySide(sa: string[], sb: string[]): "A-superset" | "B-superset" | "neither" {
+  const aInB = sa.every((l) => sb.includes(l))
+  const bInA = sb.every((l) => sa.includes(l))
+  if (aInB && !bInA) return "B-superset"
+  if (bInA && !aInB) return "A-superset"
+  return "neither"
+}
+
+function directionReport(
+  aPath: string,
+  bPath: string,
+  fa: Map<string, string>,
+  fb: Map<string, string>,
+  diverged: string[],
+): string {
+  const label = (p: string): string => (p.includes("/m61/") ? "m61" : "m62")
+  const ra = rawFunctionBodies(readFileSync(path.join(ROOT, aPath), "utf8"))
+  const rb = rawFunctionBodies(readFileSync(path.join(ROOT, bPath), "utf8"))
+  const lines: string[] = []
+  for (const f of diverged) {
+    const sa = ra.get(f) ?? []
+    const sb = rb.get(f) ?? []
+    if (sa.length === 0 || sb.length === 0) {
+      lines.push(`      ${f}: could not extract one side`)
+      continue
+    }
+    const side = classifySide(sa, sb)
+    const rel =
+      side === "B-superset"
+        ? `${label(bPath)} is a SUPERSET (+${sb.length - sa.length} code line(s))`
+        : side === "A-superset"
+          ? `${label(aPath)} is a SUPERSET (+${sa.length - sb.length} code line(s))`
+          : Math.abs(sa.length - sb.length) <= 1
+            ? "same shape, different text — READ BOTH, this one is a judgement call"
+            : `${label(sa.length > sb.length ? aPath : bPath)} is longer by ${Math.abs(sa.length - sb.length)} code line(s)`
+    lines.push(`      ${f}: ${rel}  [m61 ${sa.length} lines, m62 ${sb.length}]`)
+  }
+  return (
+    "    WHICH WAY each one goes, by comparing code lines with comments stripped:\n" + lines.join("\n")
+  )
+}
+
+
+
   check(
     "every shared function has ONE body across the copies",
     diverged.length === 0,
     diverged.length === 0
       ? `${shared.length} shared function(s), all byte-identical after comment stripping`
-      : `*** ${diverged.length} of ${shared.length} shared functions have DIVERGED: ${diverged.join(", ")} ***`,
+      : `*** ${diverged.length} of ${shared.length} shared functions have DIVERGED: ${diverged.join(", ")} ***` +
+        (diverged.length > 0 ? `\n${directionReport(a, b, fa, fb, diverged)}` : ""),
   )
 
-  // The specific divergence that decides whether a ledger entry is honest.
+  // --- self-tests for the classifier, so the direction report cannot quietly rot -------
+// A direction report that always said "READ BOTH" would be harmless-looking and useless,
+// and one that always named the same side would be worse than wrong. The real data does
+// exercise one branch — three functions are m62 supersets — but the other two are only
+// reachable by construction, so they are constructed here.
+const SELF_TESTS: Array<{ name: string; got: string; want: string }> = [
+  { name: "a strict subset of b is B-superset", got: classifySide(["x", "y"], ["x", "y", "z"]), want: "B-superset" },
+  { name: "a strict superset of b is A-superset", got: classifySide(["x", "y", "z"], ["x", "y"]), want: "A-superset" },
+  { name: "each side having a unique line is NEITHER, not whichever is longer", got: classifySide(["x", "z"], ["x", "y"]), want: "neither" },
+  { name: "identical sides are NEITHER", got: classifySide(["x"], ["x"]), want: "neither" },
+  { name: "equal length with different content is NEITHER", got: classifySide(["x"], ["y"]), want: "neither" },
+]
+for (const t of SELF_TESTS) {
+  check(
+    `the direction classifier: ${t.name}`,
+    t.got === t.want,
+    t.got === t.want ? t.got : `got ${t.got}, wanted ${t.want}`,
+  )
+}
+
+// The specific divergence that decides whether a ledger entry is honest.
   const driftA = ownedKeyList(fa.get("entryDrift") ?? "")
   const driftB = ownedKeyList(fb.get("entryDrift") ?? "")
   check(
