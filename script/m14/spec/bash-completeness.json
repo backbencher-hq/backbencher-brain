@@ -298,6 +298,17 @@
           "SAME-FILE-ONE_residual_named": "5,070 edges whose file declares the name exactly once and which the respell still does not reach \u2014 two named reasons: the declaration is NOT IN EFFECT at the edge's line (bash resolves at runtime: a function defined later does not answer an earlier call), or its KIND is not one the edge can denote (`calls` -> a function, never a variable \u2014 the `commandNameIsExternal` case). Both are `bindingInEffect` refusing to guess, which is the property that makes the 25,253 it DID resolve trustworthy."
         },
         "self_refutation": "MY FIRST FALSIFIER VERSION WAS WRONG AND SAID THE OPPOSITE. It checked only `targetLine`/`targetResolution`, reported **FALSIFIER FIRED: 85 edges carry no answer**, and named `overrides` edges in `dark/install.sh`, `hasura-engine/scripts/dev.sh`, `kong/scripts/release-lib.sh`. All three carry `overridesLine` (53 / 327 / 490) \u2014 the field that TYPE's rule uses \u2014 and with it the count is **0**. A falsifier must check the field the rule names, per type, or it refutes a ruling that holds; the corrected run is committed as `measurements/ambiguity-split-after-fix.txt`."
+      },
+      {
+        "id": "BD16",
+        "node_type": "ontology:the route question for this lane, and the levers below the runtime-order boundary",
+        "status": "CLEAN ON THE ROUTE (all four columns identical sharded vs sequential, 0 fallback rows in all 8 shards) \u00b7 THE BOUNDARY IS CLOSED (no sound lever below it; both candidates priced)",
+        "counts": {
+          "route_check": "SHARDED (8 shards, `index % N` over the sorted admitted list, every shard exit 0): edges 148,816 \u00b7 resolved 94,838 \u00b7 resolvedAmongCollision 16,715 \u00b7 ambiguousByDecl 17,139 \u00b7 unresolved 36,052 \u00b7 FALLBACK-FILES 0 and FALLBACK-ROWS 0 in every shard. SEQUENTIAL (`residual-gate --lane bash`): the same five numbers. **IDENTICAL ON EVERY COLUMN** \u2014 markdown's collapse at ~file 9,000 and its 2.23x under-count do NOT reproduce here.",
+          "levers_below_the_boundary": "CROSS-FILE-ONLY 11,080 edges over 1,233 targets. (a) TRANSITIVE sourcing closure at ANY depth: **>=189** (the shard-local measurement gave 179, a LOWER bound \u2014 a shard's source map holds only its own files). (b) THE PROJECT DECLARES THE NAME IN EXACTLY ONE FILE: **254**.",
+          "why_neither_is_sound": "(a) `source` is CONDITIONAL (it can sit inside an `if`) and ORDER-dependent, so a file the edge's file reaches is not necessarily in effect at the edge's line. (b) A sole declaration elsewhere does not put the name in THIS file's scope: the declaring file may never be sourced on this path. Both would bind edges to declarations that may not hold \u2014 the failure mode `bindingInEffect` refuses everywhere else.",
+          "boundary_closed": "So there is NO sound lever beneath the runtime-order boundary: every rule there either guesses or needs the runtime call path. The two candidates are priced (254 and >=189) against a class of 11,080, which closes the ruling instead of leaving it as the last word by default."
+        }
       }
     ]
   },
