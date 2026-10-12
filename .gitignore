@@ -345,3 +345,5 @@ src/ast/__stratcount-indexer.ts
 
 # SCRATCH INSTRUMENT (r-lane): the amb(decl) B-split. Ignored BEFORE creation; deleted after the run.
 validation/m14/fixtures/julia/__ambkind-split.ts
+# Any r-lane scratch instrument in julias fixture dir (the __ prefix is the convention).
+validation/m14/fixtures/julia/__*.ts
