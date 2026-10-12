@@ -87,6 +87,12 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   // while APPEARING in the population. Same defect class as `.cts`.
   graphql: "graphql", gql: "graphql", graphqls: "graphql",
   c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", "c++": "cpp", hpp: "cpp", hxx: "cpp",
+  // FOUR ADDED 2026-10-12, from the A-lane router census: .ipp (11 corpus files, inline C++ implementation),
+  // .inl (3, the same convention spelled differently), .cu (3, CUDA — a C++ dialect the cpp grammar reads),
+  // and .pod (11, Perl's own documentation format, beside the .pl/.pm/.t the perl lane already routes).
+  // MEASURED TOGETHER: 28 corpus files routed to NOTHING. Same class as .cts, .graphqls, .sbt and .phpt.
+  // AND THE CHECK THAT WOULD HAVE CAUGHT THEM IS COMMITTED: script/m60/unrouted-extension-gate.ts.
+  ipp: "cpp", inl: "cpp", cu: "cpp", pod: "perl",
   rs: "rust", go: "go", zig: "zig",
   // `.jl` measured, not assumed: 941 tracked files in the Julia corpus, all of which the pinned
   // grammar parses (772 clean, 177 carrying tree-sitter ERROR nodes the patch inventory records).
