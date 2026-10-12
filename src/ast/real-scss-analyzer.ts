@@ -778,6 +778,14 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     const published = new Set<string>()
     for (const sym of ctx.symbols) {
       if (sym.metadata?.isScssModule) continue
+      // A MEMBER RESOLVED FROM ANOTHER MODULE IS NOT THIS MODULE'S DECLARATION. The cross-file
+      // resolver pushes a symbol per imported member (`cv.bulmaStringToNumber`, scoped qualified
+      // name) and emits the scoped `exports` edge for it; without this guard THIS loop then
+      // re-exported every one of those symbols by their BARE name as well, so a module imported by
+      // N files produced N declarations of the same bare name. Measured on `bulma` with an index:
+      // `docs/_sass/docs/backers.scss` emitted 54 `exports` edges for 27 members — 27 scoped and 27
+      // bare — and the bare half is what left 1,591 ambiguities in place after the scoping fix.
+      if (sym.metadata?.scssImportedFrom) continue
       if (sym.kind !== ASTEngine.SymbolKind.Variable && sym.kind !== ASTEngine.SymbolKind.Function) continue
       // a control-flow scope is an `interface` and a mixin/function is a `function`; the
       // only `function`-kind symbols this lane publishes are `@mixin`/`@function`
