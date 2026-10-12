@@ -564,6 +564,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         let moduleName = this.childText(node, "scoped_identifier") || this.childText(node, "identifier")
         if (moduleName) {
+        // THE LOCALITY LOOKUP, and it is a LOOKUP rather than the package-prefix heuristic that
+        // scored precision 0.84 on this lane (four rules were scored against the path truth before
+        // any of this was written). A HIT means the project declares this FQN, so the edge targets the
+        // DECLARATION and carries the module; a MISS leaves the target BYTE-FOR-BYTE as it was — which
+        // is what makes the external half unchanged BY CONSTRUCTION rather than by a test.
+        const importIndex = context?.projectIndex
+        const declaredInProject = importIndex !== undefined && importIndex.typeKinds.has(moduleName)
+        const importedLeaf = moduleName.includes(".") ? moduleName.slice(moduleName.lastIndexOf(".") + 1) : moduleName
           imports.push({
             module: moduleName,
             items: [],
@@ -597,7 +605,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // node was always read; the edge kind was never used.
           relationships.push({
             source: currentPackage || "root",
-            target: moduleName,
+            target: declaredInProject ? importedLeaf : moduleName,
             type: ASTEngine.RelationshipType.Imports,
             confidence: 1.0,
             // M59 (#825): the line the imported module is NAMED on. 1.0 and not
@@ -606,7 +614,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             // not a name matched from text. The `references` mention beside it keeps
             // 0.9, which is the tier the family uses for a name-resolved mention.
             ...this.lineField(this.findChildByType(node, "scoped_identifier") || this.findChildByType(node, "identifier"), node),
-            metadata: { relationshipType: "import_declaration", isJavaImport: true, isWildcard: isAsterisk, isStatic, isModuleDependency: true },
+            metadata: { relationshipType: "import_declaration", isJavaImport: true, isWildcard: isAsterisk, isStatic, isModuleDependency: true, ...(declaredInProject ? { module: moduleName } : {}) },
           })
           relationships.push({
             source: currentPackage || "root",
@@ -655,7 +663,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // a use site.
           relationships.push({
             source: currentPackage || "root",
-            target: moduleName,
+            // same LOCALITY LOOKUP as the import edge above — computed once per import declaration
+            target: declaredInProject ? importedLeaf : moduleName,
             type: ASTEngine.RelationshipType.Imports,
             confidence: 1.0,
             ...this.lineField(this.findChildByType(node, "scoped_identifier") || this.findChildByType(node, "identifier"), node),
@@ -665,6 +674,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               isWildcard: isAsterisk,
               isStatic,
               fileLevel: true,
+              ...(declaredInProject ? { module: moduleName } : {}),
             },
           })
         }

@@ -170,6 +170,25 @@ export interface DeclarationSpec {
    */
   nameFromFile?: boolean
   /**
+   * ALSO RECORD `<package-from-path>.<TypeName>` FOR EVERY TYPE DECLARED IN A FILE.
+   *
+   * A JAVA PACKAGE **IS** ITS DIRECTORY, so the fully-qualified name of a type is derivable from the
+   * file path the builder ALREADY receives — no grammar change, no new scan. That matters because a
+   * reader of this index needs it to decide LOCALITY: `import java.util.List` and `import
+   * org.grails.Foo` are the same shape, and only a qualified lookup tells them apart. Four rules were
+   * SCORED against the path truth before this flag existed (grails-core, 33,734 imports edges):
+   *
+   *   package-prefix heuristic   precision 0.966   recall 0.055   false bindings    20
+   *   leaf-in-index (bare names) precision 0.833   recall 0.872   false bindings 1,798   <- guard broken
+   *   prefix AND leaf            precision 1.000   recall 0.051   false bindings     0   <- reaches 5%
+   *   FQN in a qualified index   precision 1.000   recall 0.851   false bindings     0   <- 8,730 locals
+   *
+   * The last row reaches exactly the LOCAL half the split measured, at ZERO false bindings, which is
+   * the property a caller needs: a hit means the project declares this type, a miss means it does not.
+   * Absent the flag the behaviour is byte-for-byte what it was.
+   */
+  qualifyTypeWithFile?: boolean
+  /**
    * Resolve a declaration's KIND from its own node, when the grammar spells TWO DIFFERENT kinds
    * with the SAME node type. `typeNodes` is a static map, so it can only answer a question the
    * grammar already separated — and F# does not separate this one: `type I = abstract member M :
@@ -554,6 +573,28 @@ export const SCSS_DECLARATION_SPEC: DeclarationSpec = {
   },
 }
 
+/**
+ * JAVA. The type unit is a compilation unit, the members are its declared members, and the bases live
+ * in `superclass`/`super_interfaces`. `qualifyTypeWithFile` is what makes the index able to answer a
+ * LOCALITY question at all: `import java.util.List` and `import org.grails.Foo` are the same shape and
+ * only a qualified lookup separates them. Measured with this spec: grails-core's 1,942 files index to
+ * **2,196 types · 15,190 members · 9,126 names · 0 damaged**, and the qualified lookup scores
+ * precision 1.0 with ZERO false bindings against the path truth.
+ */
+export const JAVA_DECLARATION_SPEC: DeclarationSpec = {
+  typeNodes: {
+    class_declaration: "class",
+    interface_declaration: "interface",
+    enum_declaration: "enum",
+    annotation_type_declaration: "interface",
+    record_declaration: "record",
+  },
+  memberNodes: ["method_declaration", "field_declaration", "constructor_declaration", "enum_constant", "annotation_type_element_declaration"],
+  memberNodesCallable: ["method_declaration", "constructor_declaration"],
+  baseNodes: ["superclass", "super_interfaces", "extends_interfaces"],
+  qualifyTypeWithFile: true,
+}
+
 export const FSHARP_DECLARATION_SPEC: DeclarationSpec = {
   typeNodes: FSHARP_TYPE_NODES,
   kindResolver: fsharpKindResolver,
@@ -779,6 +820,21 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
         name = fileName.split(/[\\/]/).pop() ?? ""
       }
       if (name !== "") {
+        // THE QUALIFIED ALIASES, when the spec asks for them: every dot-joined SUFFIX of the file's
+        // directory path plus the declared name. Suffixes rather than one guess at the source root,
+        // because the builder is not told where the source root is: `a/b/src/main/java/org/x/Foo.java`
+        // yields `org.x.Foo` (a suffix) and also longer forms that simply never match an import.
+        if (spec.qualifyTypeWithFile === true && fileName !== undefined && fileName !== "") {
+          const rel = fileName.split(/[\\/]/).filter((seg) => seg.length > 0)
+          rel.pop() // the file itself
+          for (let i = 0; i < rel.length; i++) {
+            const prefix = rel.slice(i).join(".")
+            if (prefix === "") continue
+            const qualified = `${prefix}.${name}`
+            if (!index.typeKinds.has(qualified)) index.typeKinds.set(qualified, kind)
+            index.symbolNames.add(qualified)
+          }
+        }
         // A name declared twice with DIFFERENT kinds is a compile error in Solidity;
         // recording `unknown` rather than letting the last writer win means a
         // downstream consumer sees the ambiguity instead of a confident wrong answer.

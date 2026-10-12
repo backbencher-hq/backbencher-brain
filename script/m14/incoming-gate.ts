@@ -668,6 +668,10 @@ const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> =
   // PROJECT_INDEX_EXTENSIONS already carried `.scss`. The spec lives in project-index.ts and is
   // exported as of this change.
   scss: { spec: async () => (await import("../../src/ast/project-index")).SCSS_DECLARATION_SPEC, wasm: "tree-sitter-scss.wasm" },
+  // JAVA, and the spec is the point rather than the wasm: `JAVA_DECLARATION_SPEC` carries
+  // `qualifyTypeWithFile`, which is what lets the analyzer decide whether an import is LOCAL —
+  // a qualified lookup instead of the package-prefix heuristic that scored 0.84 precision.
+  java: { spec: async () => (await import("../../src/ast/project-index")).JAVA_DECLARATION_SPEC, wasm: "tree-sitter-java.wasm" },
 }
 const INDEX_CACHE = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
 
@@ -740,6 +744,10 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   const pooledKinds = new Map<string, Set<string>>()
   const projectDecl = new Map<string, Map<string, number>>()
   const projectKinds = new Map<string, Map<string, Set<string>>>()
+  /** project -> key -> the set of NON-EMPTY qualifiedNames answering to it (`--binding-collapse`) */
+  const projectBindSet = new Map<string, Map<string, Set<string>>>()
+  /** project -> key -> how many of the key's declarations carry a qualifiedName at all */
+  const projectBindQual = new Map<string, Map<string, number>>()
   const rows = new Map<Type, Row>()
   // FALLBACK ROWS, counted separately and NEVER folded into the columns above.
   //
@@ -928,10 +936,16 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     if (!pDecl) projectDecl.set(repo, (pDecl = new Map()))
     let pKinds = projectKinds.get(repo)
     if (!pKinds) projectKinds.set(repo, (pKinds = new Map()))
+    // the binding-collapse evidence: which qualifiedNames answer to a key, and how many of the key's
+    // declarations carry one at all (see BINDING_COLLAPSE)
+    let pBindSet = projectBindSet.get(repo)
+    if (!pBindSet) projectBindSet.set(repo, (pBindSet = new Map()))
+    let pBindQual = projectBindQual.get(repo)
+    if (!pBindQual) projectBindQual.set(repo, (pBindQual = new Map()))
     /** the same increment in both key spaces, so a symbol can never be counted in one only.
      *  ALSO records WHERE the declaration lives: the exact intent test needs (file, line), and a
      *  count cannot answer "is the declaration the edge meant in the edge's own file?". */
-    const countKey = (key: string, kind: string, file: string, line: number | null) => {
+    const countKey = (key: string, kind: string, file: string, line: number | null, bindingOf: string) => {
       const at = declPos.get(key)
       const pos = { file, line: line ?? -1 }
       if (!at) declPos.set(key, [pos])
@@ -944,6 +958,12 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       let qs = pKinds!.get(key)
       if (!qs) pKinds!.set(key, (qs = new Set()))
       qs.add(kind)
+      if (bindingOf) {
+        let bs = pBindSet!.get(key)
+        if (!bs) pBindSet!.set(key, (bs = new Set()))
+        bs.add(bindingOf)
+        pBindQual!.set(key, (pBindQual!.get(key) ?? 0) + 1)
+      }
     }
 
     for (const s of Array.isArray(r.symbols) ? r.symbols : []) {
@@ -951,7 +971,10 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       if (name.length === 0) continue
       const symKind = String(s?.kind ?? "")
       const symLine = Number((s as any)?.range?.startLine ?? (s as any)?.range?.start_line ?? (s as any)?.line_start ?? (s as any)?.lineStart ?? (s as any)?.startLine ?? (s as any)?.line ?? 0) || null
-      countKey(name, symKind, f, symLine)
+      // read BEFORE the key is counted: `--binding-collapse` needs to know, per declaration, whether
+      // this symbol carries a qualifiedName at all
+      const symQual = String((s as any)?.qualifiedName ?? "")
+      countKey(name, symKind, f, symLine, symQual)
 
       // THE QUALIFIED-NAME ALIAS, and this gate's first version omitted it — which is
       // worth recording, because the omission did not produce a small error. It produced
@@ -968,9 +991,9 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // another spelling of that symbol, so incrementing both keys keeps the
       // declaration-count honest. This is also what `incoming-check.ts:182-188` does,
       // which is why its json row reads 0.
-      const q = String(s?.qualifiedName ?? "")
+      const q = symQual
       if (q.length > 0 && q !== name) {
-        countKey(q, symKind, f, symLine)
+        countKey(q, symKind, f, symLine, q)
         aliasedKeys++
       }
     }
@@ -1010,6 +1033,30 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       const edgeLine = Number((rel as any)?.line_number ?? (rel as any)?.lineNumber ?? (rel as any)?.line ?? 0) || null
       pending.push({ label, tgt, claim, sig, repo: repoOf(f), srcFile: f, line: edgeLine })
       continue
+    }
+  }
+
+  // THE BINDING COLLAPSE, applied to the per-project count ONCE, here, where the key space is
+  // complete — so `classifyEdge` and every downstream reader keep seeing a plain declaration count,
+  // and no shared rule function changes. A key collapses to ONE declaration only when EVERY
+  // declaration answering to it carries a qualifiedName AND they are all the same one.
+  let collapsedKeys = 0
+  if (BINDING_COLLAPSE) {
+    for (const [repo, decl] of projectDecl) {
+      const bs = projectBindSet.get(repo)
+      const bq = projectBindQual.get(repo)
+      if (!bs || !bq) continue
+      for (const [key, n] of decl) {
+        if (n < 2) continue
+        const names = bs.get(key)
+        if (!names || names.size !== 1) continue
+        // EVERY declaration of the key must carry a qualifiedName; a key whose declarations share
+        // only a SPELLING keeps its count, because that is a name coincidence and not a binding
+        // (JUL-D19: 95.8% of the naive collapse on this lane was exactly that).
+        if ((bq.get(key) ?? 0) !== n) continue
+        decl.set(key, 1)
+        collapsedKeys++
+      }
     }
   }
 
@@ -1088,7 +1135,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   for (const m of projectDecl.values()) scanSeparator(m.keys())
 
   return {
-    lang, ext: exts.join(","), admittedExts: exts, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, rows, fallbackRows, emptyResults,
+    lang, ext: exts.join(","), admittedExts: exts, files, total, repos, parsed, failed, degraded, degradedFiles, aliasedKeys, bindingCollapse: BINDING_COLLAPSE, bindingCollapsedKeys: collapsedKeys, rows, fallbackRows, emptyResults,
     bindingSpelling: { separator: BINDING_SEP, keys: separatorKeys, examples: separatorExamples },
     // THE EXCLUSIONS TRAVEL WITH THE POPULATION. A reader comparing two runs has to be able
     // to see whether the population moved under them, and a lane returning to a number it
@@ -1666,6 +1713,13 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
     `\`Dirent.isDirectory()\` is false for a symlink, so before this fix every such subtree was ` +
     `skipped and a package declared under one read as a claim no check can reach. Cycles are bounded ` +
     `by a realpath seen-set, so the count is a fact about the tree and not about a walk that spun.`,
+  )
+  if (rep.bindingCollapse === true) console.log(
+    `binding collapse (--binding-collapse): ${(rep.bindingCollapsedKeys ?? 0).toLocaleString()} key(s) read as ONE ` +
+    `declaration because every declaration answering to them carries the SAME NON-EMPTY qualifiedName ` +
+    `(julia's method table: one generic function, many method declarations). A key whose declarations ` +
+    `share only a SPELLING is NOT collapsed — that is the difference between one binding and a name ` +
+    `coincidence, and it was 95.8% of the naive count on this lane (JUL-D19).`,
   )
   console.log(
     `endpoint keys indexed: name + ${rep.aliasedKeys} qualifiedName alias(es). A lane that ` +
@@ -2273,6 +2327,25 @@ const argv = process.argv.slice(2)
 const JSON_OUT = argv.includes("--json")
 const ALL = argv.includes("--all")
 const USE_INDEX = argv.includes("--index")
+/**
+ * `--binding-collapse` — julia's METHOD TABLE, as a model rule rather than a heuristic.
+ *
+ * Julia declares one generic function across many files: `Base.getindex` is ONE binding with many
+ * method declarations, and a per-file analyzer publishes one symbol per declaration. The count model
+ * sees N declarations and calls every edge ambiguous. The rule here is narrow and checkable: collapse
+ * a key to ONE declaration **iff every declaration answering to it carries a NON-EMPTY
+ * `qualifiedName` and they are all THE SAME qualifiedName** — i.e. the NAME has one binding.
+ *
+ * WHY THE NON-EMPTY CONDITION IS THE WHOLE POINT: a set of file-scope declarations that merely SHARE
+ * A SPELLING also collapses to one binding key if the key is computed as `qualifiedName || name` —
+ * measured on this lane, that predicate read 28,530 collapsible edges when only 1,038 were a real
+ * method table (95.8% were name coincidences, JUL-D19). Requiring a non-empty qualifiedName on EVERY
+ * declaration is what separates "one generic function" from "two functions called the same thing".
+ *
+ * DEFAULT OFF, because the rule is a statement about julia's semantics and 47 other lanes run through
+ * this gate; a run that does not pass the flag is byte-for-byte the run it was before.
+ */
+const BINDING_COLLAPSE = argv.includes("--binding-collapse")
 // `--repo=a,b` measures whole named repositories instead of a stride over the corpus. See
 // `discoverFiles` for why a sampled run cannot answer a question about file-scoped targets.
 const REPO_ARG = argv.find((a) => a.startsWith("--repo="))

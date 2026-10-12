@@ -1628,7 +1628,13 @@ export async function processWithWorkerPool(
     // `.proto` ADDED 2026-10-11 (protobuf lane). The entry is INERT WITHOUT A SPEC: measured over the
     // whole corpus (847 .proto files), the Solidity default yields 0 names and 0 types — an entry that
     // indexes the right SHAPE and holds nothing, which is the dart situation one layer down.
-    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss" }
+    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity", ".fs": "fsharp", ".proto": "protobuf", ".scss": "scss", ".java": "java" }
+    // `.groovy` IS DELIBERATELY ABSENT, and it was added and then removed in the same change: this
+    // table is only half the contract, and the other half is `specByLang` below. With `.groovy` here
+    // and no groovy spec there, the lookup fell through to `?? SOLIDITY_DECLARATION_SPEC` and
+    // indexed GROOVY declarations with the SOLIDITY spec — which is EXACTLY the defect this file's
+    // `.scss` comment records from this morning (`.scss` reached the table without its spec being
+    // reachable). A lane is wired when BOTH halves exist, not when its extension is listed.
     let projectIndexes: Record<string, unknown> | undefined
     try {
       const wanted = new Set<string>()
@@ -1664,6 +1670,10 @@ export async function processWithWorkerPool(
           // fell through to `?? SOLIDITY_DECLARATION_SPEC` and indexed SCSS declarations with the
           // SOLIDITY spec. The spec is now exported (see project-index.ts) and mapped by name.
           scss: mod.SCSS_DECLARATION_SPEC,
+          // JAVA. `qualifyTypeWithFile` gives the index the fully-qualified type names a LOCALITY
+          // question needs (`java.util.List` vs `org.grails.Foo` are the same shape otherwise), which
+          // is the same reasoning `.scss` needed its spec for.
+          java: mod.JAVA_DECLARATION_SPEC,
           // DYNAMIC, like `mod` above: the indexer does not otherwise import an analyzer, and a static
           // import would pull the whole engine into its startup for a spec used once. The spec lives in
           // the language's own analyzer because the grammar's declarations are named by a CHILD node
