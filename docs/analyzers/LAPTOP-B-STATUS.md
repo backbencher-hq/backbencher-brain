@@ -326,7 +326,10 @@ other 22 lanes need.
    hands them to an instrument that cannot see a type definition. Routed to the analyzer, the same content
    yields 83,371 symbols and **195,108 relationships** (references 70,812 · contains 69,625 · uses 18,784 ·
    overrides 18,162 · exports 13,746 · implements 3,979) — three quarters of the size of the graph this
-   language publishes today, from ONE map entry in `language-detection.ts`. It is NOT this lane's to make:
+   language publishes today, from ONE map entry in `language-detection.ts`. **That entry is still absent and
+   is now the cited reference case**: `language-detection.ts:44` names "`.graphqls` (97 files)" as the same
+   defect class while fixing a `.cts` entry that was missing the same way (`6ed5d0508`, 3,118 files) — the
+   siblings were routed first, so the price stands as the decision input rather than as a closed item. It is NOT this lane's to make:
    the gate selects its corpus with `detectLanguageFromPath`, so the entry moves this lane's own file
    population (1,911 to ~2,008) and every published number over it. **The other refusal was a defect and is
    now FIXED**: the 156 `testdata` files are 3,575 relationships on test fixtures, the glob matched
@@ -3092,7 +3095,9 @@ rule over **11,245 parsed files / 55 CPython rejects** and reads **26** files de
 `__getattr__`, **6** of them spelling literal names and **20** spelling none (they forward to `globals()`,
 build a dict, import dynamically — a measured limit of the rule, not an accident), **14** literal names
 across those 6 files, of which **1** is already statically bound in its own file (cython's `gs`, published
-at L706) and **2** are already in the file's import channel — so the publication is **11 symbols**.
+at L706) and **2** are already in the file's import channel — so the publication was **11 symbols as round
+14 left it**. Round 15 below priced that second subtraction and removed it (both names are function-local
+imports, not module-scope ones), so the same price now publishes **13**.
 
 ### 2. The price is what found two bugs in the rule's own first version
 
@@ -3109,8 +3114,10 @@ Both were found by measuring the SHIPPED analyzer against the price, not by re-r
   `name` (18 of the 26 files name theirs something else).
 
 The check is a walk over EXACTLY the files the price names, so the two instruments cannot drift:
-`.tmp-py/census-getattr-provisions.mts` reads **11 published, 0 unexplained misses**, and prints
-`14 - 1 - 2 = 11` as its own last line.
+`.tmp-py/census-getattr-provisions.mts` prints its own arithmetic as its last line, and round 14 read
+**11 published, 0 unexplained misses** from `14 - 1 - 2 = 11`. **Round 15 changed that reading**: the
+script was rewritten to demand the narrowed set, and now reads **13 published, 0 unexplained misses**
+from `14 - 1 = 13`, exit 0 — so this paragraph is the round-14 record, not the current output.
 
 ### 3. The corpus effect, and the two mechanisms that remain
 
@@ -3825,3 +3832,17 @@ round pins.
   `typecheck:scripts` both exit 0. **arm13 pre-registered before its run**: edges 3,436,077 (−34), extFAIL
   173 → 0, extOK 21,719 → 21,892, everything else unchanged except `resolved` (−31, ± any edge colliding
   with the script's 12 symbol names). Full receipt in `real-dart-analyzer.md` §arm12.
+
+- **dart — arm13 LANDED: the two gate fixes are verified by a pre-registered after-table, held on every
+  cell.** `.tmp-probe/dartgate/incoming-dart-arm13.log` (2026-10-12 13:42–15:03, HEAD + the two gate
+  fixes, 33,738 parsed, 0 failed, 2 degraded, self-test PASS, `EXIT=1`): **3,436,077 edges · resolved
+  1,796,179 · amb(decl) 781,930 · unresolved 143,548 · extOK 21,892 · extFAIL 0 · bindOK 563,833 · bind?
+  0 · causeOK 128,667** — every pre-registered cell to the digit, and the per-type deltas ARE the removed
+  script (`calls −4 · uses −19 · contains −11 = the 19 uses/11 contains/4 calls `one-file-edges.mts` read
+  off `sdk/bin/dart`; resolved −31 · unresolved −3 · collRes −2). The verdict no longer carries the
+  `REFUTED by the project` clause, and its ext detail line reads 1,368 + 20,524 = 21,892 verified. One
+  prose slip in the pre-registration is recorded in the doc (`unresolved` "unchanged" should have read
+  −3; the arithmetic had it and the sentence did not). **What is NOT claimed:** the lane still FAILs on
+  **781,930 ambiguous + 143,548 unresolved**, and that is the current HEAD number to size levers from —
+  the two fixes corrected MISREPORTING (34 foreign edges, 173 false refutations), they did not move the
+  residual.

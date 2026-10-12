@@ -1120,13 +1120,17 @@ spelling and never counted files that define a module-level `__getattr__` at all
 (`.tmp-py/price-module-getattr-round14.py`) measures this rule over 11,245 parsed files: **26** define
 a module-level `__getattr__`, **6** spell literal names while **20** spell none, those 6 hold **14**
 names, **1** is already statically bound in its own file (cython's `gs`) and **2** are already in the
-file's import channel — so **11 symbols**. Measuring the shipped analyzer against that price is what
+file's import channel — so **11 symbols** as round 14 left it (round 15 below prices that second
+subtraction and lands on **13**). Measuring the shipped analyzer against that price is what
 exposed two defects in the rule's own first version: an **annotated** parameter (`def
 __getattr__(name: str)` — 6 of the 26 files) parses as `typed_parameter` and was refused outright,
 and `ansible/module_utils/_text.py` spells a branch `in {"to_bytes", "to_native", "to_text"}` — a
 **set** — which the first version published nothing for. Both are fixed and both are pinned as
-mutants; `.tmp-py/census-getattr-provisions.mts` now walks exactly the 6 files the price names and
-reads **11 published, 0 unexplained misses**, printing `14 - 1 - 2 = 11` as its own last line.
+mutants; `.tmp-py/census-getattr-provisions.mts` walks exactly the 6 files the price names and read
+**11 published, 0 unexplained misses** when round 14 left it, printing `14 - 1 - 2 = 11` as its own
+last line. **Round 15 re-pointed that instrument at the narrowed rule: it now reads 13 published /
+0 misses from `14 - 1 = 13`, exit 0** — so the 11 here is round 14's reading, and the section below
+is where it changed.
 
 Corpus effect, measured on the whole-population instrument rather than argued: `totalSymbols`
 **206,940 → 206,951** (exactly +11) and `exports` incoming UNEXPLAINED **7 → 5**, naming exactly the
