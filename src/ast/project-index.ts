@@ -65,6 +65,16 @@ export type DeclarationKind =
   | "union"
   | "extension"
   | "extension_type"
+  // SCSS's module kind. Added to the union for the reason "class", "mixin" and the F# kinds were:
+  // a shared type is NOT the place to pretend SCSS's module is another language's "library", and
+  // "unknown" would read as "we looked and could not tell" — which a stylesheet IS, so that would
+  // be a worse claim than "this is a module". The SCSS spec at `SCSS_DECLARATION_SPEC` below had
+  // already WRITTEN the argument (*"SCSS has no type hierarchy (no implements/instantiates). The
+  // module IS the type unit"*) while its comment claimed this member existed — and it did not,
+  // which left `npx tsc --noEmit` and `npm run audit:script-typecheck` at exit 2 FLEET-WIDE while
+  // the file sat uncommitted. THE LESSON IS THE ONE THIS SESSION KEEPS RELEARNING: a comment
+  // asserting a shared contract is not the contract.
+  | "module"
   | "unknown"
 
 export interface ProjectIndex {
@@ -435,6 +445,45 @@ function fsharpKindResolver(node: Node): DeclarationKind | undefined {
     }
   }
   return "interface"
+}
+
+// SCSS DECLARATION SPEC — for project-index cross-file resolution of @use/@forward
+// 
+// SCSS modules export top-level variables, mixins and functions. A `@use` or `@forward`
+// statement imports a module and optionally binds it to a namespace. The index needs
+// to record:
+//   - Module name (the file's basename, per SCSS spec)
+//   - Exported members: top-level $variables, @mixin, @function
+//   - Namespace aliases from @use ... as <ns>
+//
+// The grammar provides:
+//   - stylesheet: the root node, represents the module (file IS the module)
+//   - use_statement: @use 'path' as <ns>
+//   - forward_statement: @forward 'path' as <ns>
+//   - mixin_statement: @mixin name($params) { ... }
+//   - function_statement: @function name($params) { ... }
+//   - declaration with $variable name (property_name starting with $)
+//   - use_statement/forward_statement have `module` (string_value) and optional `plain_value`/`identifier` for `as` namespace
+//
+// SCSS has no type hierarchy (no implements/instantiates). The module IS the type unit.
+// The "kind" for an SCSS module is "module" (already in DeclarationKind).
+const SCSS_DECLARATION_SPEC: DeclarationSpec = {
+  // The stylesheet root node IS the module declaration. Its name is the file's basename
+  // (handled by the caller via file path). We treat it as a "module" kind.
+  typeNodes: {
+    stylesheet: "module",
+  },
+  // Modules are the "types" — the file IS the module
+  nameOnlyNodes: ["use_statement", "forward_statement"],
+  // Mixins and functions are callable members of a module
+  memberNodes: ["mixin_statement", "function_statement"],
+  memberNodesCallable: ["mixin_statement", "function_statement"],
+  // Variables are exported but not callable
+  // The module name is the file's basename; the index will use the file path from the caller
+  scopeNodes: ["mixin_statement", "function_statement", "if_statement", "each_statement", "for_statement", "while_statement", "rule_set"],
+  // Variables are declared by property_name starting with $ inside a declaration
+  // The index will pick these up as members of the module (via emitModuleExports in analyzer)
+  // We rely on the analyzer's own symbol emission for variables
 }
 
 export const FSHARP_DECLARATION_SPEC: DeclarationSpec = {
