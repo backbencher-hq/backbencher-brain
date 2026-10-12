@@ -101,8 +101,10 @@ names (**20** spell none — they forward to `globals()`, build a dict, or impor
 6 hold **14** names. One is already statically bound in its own file, so the rule publishes **13
 symbols** — checked by walking exactly those files rather than asserted. (Round 14 read 11 there,
 because 2 of the 14 were masked by the publication guard's file-wide import channel; round 15 scoped
-that guard to module-scope imports, priced at exactly those 2 names and **zero** binder rows.) Both measured defects are pinned as mutants: the annotated spelling (`def __getattr__(name:
-str)`, 6 of the 26 files) was refused outright, and the **set** spelling
+that guard to module-scope imports, priced at exactly those 2 names and **zero** binder rows.)
+
+Both measured defects are pinned as mutants: the annotated spelling (`def __getattr__(name: str)`, 6 of
+the 26 files) was refused outright, and the **set** spelling
 (`ansible/module_utils/_text.py`'s `elif importable_name in {"to_bytes", …}`) published nothing.
 
 **The last 5 UNEXPLAINED rows were two mechanisms, and neither is publishable from one file's text.
@@ -116,7 +118,8 @@ the rows themselves stay UNRESOLVED as declarations, which is the honest half of
   fabrication the endpoint rules exist to stop, so this belongs to the resolution layer that has the
   filesystem. The axis asserts the **shipped module exists beside the file and the file binds the name
   nowhere** — it never asserts that the name resolves.
-- **1 STALE `__all__` row** (PY-D30), axis `stale-export`. `sqlalchemy/lib/sqlalchemy/ext/declarative/__init__.py`
+- **1 STALE `__all__` row** (PY-D30), axis `stale-export`.
+  `sqlalchemy/lib/sqlalchemy/ext/declarative/__init__.py`
   lists `instrument_declarative`; the file binds it nowhere, imports it nowhere, ships no submodule of
   that name and names it in no `__getattr__` — and the name occurs in **exactly one file of 11,488**,
   the `__all__` that names it. The edge **stays** — the file's own export list is the statement being
