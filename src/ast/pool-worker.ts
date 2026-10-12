@@ -1479,17 +1479,79 @@ export async function parseFile(filePath: string, projectPath: string, context?:
         // the order is widest-known first and every step is a fallback, so nothing that
         // already resolved changes.
         const line = i.range?.startLine ?? i.line ?? i.line_number ?? i.lineNumber ?? 0
+        /**
+         * ROUND 17 — TWO FACTS THE ANALYZER PUBLISHES AND THIS PROJECTION DROPPED, which is why
+         * `brain_import.imported_as` had NO writer on the AST path for any language while the
+         * fallback path had one (M60), and why the classification five lanes declare never reached
+         * the column the file-dependency engine reads.
+         *
+         *   alias       `ImportInfo.alias` covers `import X as Y` (python, typescript). Python's
+         *               from-imports publish their bindings PER ITEM on `ImportInfo.itemBindings`,
+         *               which one `alias` cannot express (`from m import a as b, c as d` is two
+         *               bindings) — the seam's row id is per STATEMENT (`module:line`) while this
+         *               projection emits one row per ITEM, and the insert is `INSERT OR REPLACE`, so
+         *               the LAST item of a statement is what survives; the binding therefore has to
+         *               ride the item. Measured over the python population: **3,333** aliased
+         *               statements whose binding can reach the store (2,893 single-item, 20 whose
+         *               aliased item is last, 420 `import X as Y`), **6** that cannot (the aliased
+         *               item is not last — the six files are named in
+         *               `.tmp-py/price-last-item-wins.py`), and 41,560 where NULL is the CORRECT
+         *               value. The first price this round ran (`.tmp-py/price-import-alias-seam.py`)
+         *               bucketed by FIRST-vs-LATER and is superseded: the row semantics it assumed
+         *               are the opposite of the measured ones, which the probe
+         *               `.tmp-py/probe-import-rows.mts` shows directly (`… Sku as SKU, fixture`
+         *               stores `fixture`; `… fixture, Sku as SKU2` stores `Sku as SKU2`).
+         * NOT CARRIED HERE, and measured rather than waved at: the analyzer's `importType` (declared
+         * by makefile, objective-c, sql, xml, yaml, markdown, erlang, java, julia and clojure) is
+         * put into this projection's `type` field, which the indexer does not read — it reads
+         * `imp.importType` — so those lanes' classification is dropped for the store. Passing it
+         * through is a VOCABULARY decision, not a plumbing one: `brain.sql.ts` documents
+         * `import_type` as `"default", "named", "namespace", "side_effect"` while those lanes
+         * declare `make_include`, `include`, `sql_extension`, `java-module-requires`, …, so storing
+         * them would widen a documented contract. Python's own `import_type` is separately wrong
+         * for the same reason in reverse: the projection computes `"namespace"` for `import X`
+         * (correct) and for a from-import too (because the analyzer sets `isNamespace: true` on
+         * both), so `baseType` cannot be trusted as a classification for this lane. Pinned at its
+         * current value by `import-bound-name-seam.mts` (check B) so it cannot drift unseen.
+         */
+        const bindings = new Map<string, string>()
+        for (const b of (Array.isArray((i as any).itemBindings) ? (i as any).itemBindings : [])) {
+          if (b && typeof b.name === "string" && typeof b.as === "string" && b.name && b.as) {
+            bindings.set(b.name, b.as)
+          }
+        }
+        const itemCount = items.length
+        // A statement-wide `alias` is exact only when the statement has ONE item, i.e. when the
+        // binding cannot belong to a different item. A multi-item statement relies on the per-item
+        // list, which is the only shape that can distinguish `from m import a, c as d`.
+        const statementAlias = itemCount === 1 && typeof i.alias === "string" && i.alias
+          ? i.alias
+          : itemCount === 1 && typeof i.localName === "string" && i.localName
+            ? i.localName
+            : undefined
         return items
           .filter((name: string) => typeof name === "string" && name.length > 0)
           .map((name: string) => {
-            // "X as Y" → keep the alias form: name imported-as local alias
+            // "X as Y" → `name` is the IMPORTED name, `alias` the LOCAL BINDING.
+            //
+            // ROUND 17: this read `asMatch[2]` for BOTH, so the imported name was thrown away and
+            // `name` became the bound name — the one shape where the projection disagreed with the
+            // convention the fallback path's own comment states ("`name` keeps its original meaning,
+            // the imported name"). Measured consequence on the pipeline: `import { A as B } from
+            // "./a"` reached the indexer as `{name:"B", alias:"B"}`, so `imported_name` and
+            // `imported_as` were the SAME string and the imported `A` was nowhere in the store —
+            // while `patterns.ts` computes `usedName = imported_as || imported_name` and would have
+            // been right by accident. With the roles split, a consumer can tell which name the
+            // source module declares from which name this file binds.
             const asMatch = name.match(/^(\S+)\s+as\s+(\S+)$/)
-            const importedName = asMatch ? asMatch[2] : name
+            const importedName = asMatch ? asMatch[1] : name
             // Strip `type` qualifier: "type Repository" → "Repository"
             const cleanName = importedName.replace(/^type\s+/, "").trim()
+            const boundName = asMatch ? asMatch[2] : (bindings.get(name) ?? statementAlias)
             return {
               name: cleanName,
               path: i.module || i.path || "",
+              ...(boundName ? { alias: boundName } : {}),
               // The analyzer's OWN classification, when it declares one. Five lanes do:
               // makefile `make_include`, objective-c `include`, sql `sql_import`, xml
               // `xml-doctype`, yaml `yaml_tag_include` / `yaml_keyword_include` /

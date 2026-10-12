@@ -155,6 +155,13 @@ silently changing what the graph claims.
   not state.
 - `overrides` is **not** guessed for a base that is declared in this file but does not define
   the method. The method does not exist to override.
+- **The store seam has two declared halves left (round 17).** `brain_import.imported_as` is written now
+  (`t`, `PV`, `v` — and NULL for a plain import), but the CLASSIFICATION the projection puts in its own
+  `type` field is not read by the indexer (which reads `importType`), and `brain.sql.ts` fixes
+  `import_type` to a four-term vocabulary while ten other lanes declare values like `make_include` — so
+  routing it is a contract decision on a shared column, not a plumbing widen. And the row model keeps
+  ONE item per statement: the indexer's id is keyed on `module:line` and the insert is `INSERT OR
+  REPLACE`, so the LAST item wins (6 aliased statements corpus-wide lose their binding; PY-D32).
 - **Cython is not a framework.** It is the corpus's second-largest import root (429 sites
   across both spellings) and it is a *dialect* — and no analyzer in this repository publishes a
   `dialect` field, so recording it as a framework would be a false claim. Filed as **PY-16**.

@@ -439,6 +439,14 @@ MUTANTS = [
         "new": '      if (false) {',
         "expect": "CAUGHT",
     },
+    # ---------------------------------------------------------------- round 17 (PY-D13 store half)
+    {
+        "id": "round17/item-bindings-publication-dropped",
+        "what": "THE PRE-ROUND-17 STATE restored for the ROW the store reads: the from-import stops publishing its per-item binding, so `ImportInfo.itemBindings` is absent again and `brain_import.imported_as` goes back to NULL for every `from X import Z as W` (the edge keeps its `metadata.importedAs`, which is the round-7 half, so this is the exact asymmetry PY-D13 recorded). Caught by `python/import-alias-is-published-as-a-binding`'s `expectImports` rows, which pin the array itself - the mutant battery does not run the standalone seam pin (`import-bound-name-seam.mts`), so without those rows this publication would have had no falsifier in the suite.",
+        "old": '        importRow.itemBindings = boundItems.map((it) => ({ name: it.name, as: it.bound as string }))',
+        "new": '        void boundItems // MUTANT (round 17): the per-item binding publication dropped',
+        "expect": "CAUGHT",
+    },
     # ---------------------------------------------------------------- round 14 (PY-D28)
     {
         "id": "round14/getattr-provision-clause-disabled",

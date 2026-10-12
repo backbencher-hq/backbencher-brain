@@ -1978,7 +1978,7 @@ gate REFUSES (exit 2) if the artefact is absent rather than passing vacuously, s
 cannot drift the lane's verdict by deleting the evidence. Note the honesty clause: an allowance is a
 CEILING on a known hole, not a claim that the hole is correct, and the gate says so in its output.
 
-### 4. PY-D13 (DECLARED, OPEN) — the bound alias never crosses the worker boundary
+### 4. PY-D13 (DECLARED, OPEN *as of round 8*; STORE HALF CLOSED IN ROUND 17) — the bound alias never crosses the worker boundary
 `import typing as t` parses correctly: the analyzer's `ImportInfo` carries `alias: "t"`. Through the
 REAL pipeline the store's `brain_import` row is `{imported_name: "typing", imported_as: NULL,
 import_type: "named"}` — `src/ast/pool-worker.ts`'s `parseFile` import projection emits
@@ -2188,7 +2188,7 @@ reading and the analyzer currently records none.
 
 ### 8. Still open after round 8
 - **The `global`-in-function shape** (§5) — the largest named residual on two axes, and the next round's subject.
-- **PY-D13's store half** — unchanged and now pinned by a green gate instead of a paragraph.
+- **PY-D13's store half** — unchanged and now pinned by a green gate instead of a paragraph. **CLOSED IN ROUND 17** — the store half was fixed (both directions pinned by `import-bound-name-seam.mts` checks B and E); what remains declared is the CLASSIFICATION half (`import_type`).
 - The wildcard-import residual — deliberately left as evidence, not closed by a guess.
 - Round-3 items unchanged: **D5** (750 `uses` self-loops), the flat-corpus pins in `python-ontology-census.ts` / `firing-check*.mjs`.
 
@@ -2259,7 +2259,7 @@ Two things are measured and **NOT** fixed, deliberately:
 ### 8. Still open after round 9
 - **The `global`-in-function shape** — the largest named residual, statically decidable, next round's subject.
 - **The 22 ASN.1 documents named `.py`** — 14 refs + 29 calls remain; needs a file-level verdict that is not this lane's to take alone.
-- **PY-D13's store half** — unchanged and pinned by a green gate.
+- **PY-D13's store half** — unchanged and pinned by a green gate. **CLOSED IN ROUND 17** — the store half was fixed (both directions pinned by `import-bound-name-seam.mts` checks B and E); what remains declared is the CLASSIFICATION half (`import_type`).
 - Round-3 items unchanged: **D5** (750 `uses` self-loops), the flat-corpus pins in `python-ontology-census.ts` / `firing-check*.mjs`.
 
 ## python round 10 (2026-10-11) — 390 → 119 UNEXPLAINED with the edge count UNMOVED: the module namespace a `global` write proves, and a wildcard import's binding route
@@ -2412,7 +2412,7 @@ deadLiterals=0`); `tsc --noEmit` exit 0 with zero diagnostics.
   unexplained=0`, requests `covered=5326 (100%) MISSING=0 · analyzer-edges=2552 unexplained=0` (cold-pool
   rotation 18/17 — cross-run totals are still not evidence; only the within-run numbers are).
 - seam gates unchanged and green: `owner-resolution-gate` PASS, `store-heritage-seam` PASS,
-  `import-bound-name-seam` PASS (PY-D13's store half is still the DECLARED gap, pinned by name), and
+  `import-bound-name-seam` PASS (round 8 recorded PY-D13's store half as the DECLARED gap; **round 17 closed that half** — only the CLASSIFICATION half is still declared), and
   `owner-channel-census` reads 357/375 owner rows resolved — the same numbers round 5 measured, so the
   member channel was not touched.
 - **php neutrality, measured rather than argued** (the round changed no shared file, but the lane's rule is
@@ -2435,7 +2435,7 @@ deadLiterals=0`); `tsc --noEmit` exit 0 with zero diagnostics.
   decision rather than the analyzer's to take alone.
 - **70 bare names bound by nothing in their file** (37 calls + 33 references) and **7 exports** provided
   lazily by `__all__` — each named with examples in §6.
-- **PY-D13's store half** — unchanged and pinned by a green gate.
+- **PY-D13's store half** — unchanged and pinned by a green gate. **CLOSED IN ROUND 17** — the store half was fixed (both directions pinned by `import-bound-name-seam.mts` checks B and E); what remains declared is the CLASSIFICATION half (`import_type`).
 - Round-3 items unchanged: **D5** (750 `uses` self-loops), the flat-corpus pins in
   `python-ontology-census.ts` / `firing-check*.mjs`.
 
@@ -2631,7 +2631,7 @@ deliberately not applied to `exports`, because an export is a name the module IT
   edge counts are IDENTICAL to round 10's, which is the second independent confirmation that the
   round added no edge to the differential's corpora (neither has a class-body multi-target).
 - seam gates unchanged and green: `owner-resolution-gate` PASS, `store-heritage-seam` PASS,
-  `import-bound-name-seam` PASS (PY-D13's store half is still the DECLARED gap, pinned by name),
+  `import-bound-name-seam` PASS (round 8 recorded PY-D13's store half as the DECLARED gap; **round 17 closed that half** — only the CLASSIFICATION half is still declared),
   `owner-channel-census` **375 owner rows, 357 resolved** — identical to rounds 5 and 10, so the
   member channel was not touched.
 - **php neutrality, measured rather than argued**: `php/owner-resolution-gate` PASS;
@@ -2686,7 +2686,7 @@ came from the v1 price run and is superseded by the per-symbol check, not repeat
   in the builtin axis (`xrange` is 1 row).
 - **47 bare names bound by nothing + 7 lazy `__all__` exports** (the 54 non-broken rows are 27 calls
   + 20 references + 7 exports), named with examples in §6.
-- **PY-D13's store half** — unchanged and pinned by a green gate.
+- **PY-D13's store half** — unchanged and pinned by a green gate. **CLOSED IN ROUND 17** — the store half was fixed (both directions pinned by `import-bound-name-seam.mts` checks B and E); what remains declared is the CLASSIFICATION half (`import_type`).
 - Round-3 items unchanged: **D5** (750 `uses` self-loops), the flat-corpus pins in
   `python-ontology-census.ts` / `firing-check*.mjs`.
 
@@ -2870,7 +2870,7 @@ exports cause text.
 - `star-import-axis-gate.mts` **PASSES** (all decision directions, incl. the corpus-convicted
   collision row) and reads the axis off the artefact: calls 173 · references 8.
 - seam gates unchanged and green: `owner-resolution-gate` PASS (both controls, idempotent, dangling 0),
-  `store-heritage-seam` PASS, `import-bound-name-seam` PASS (PY-D13's store half is still the DECLARED
+  `store-heritage-seam` PASS, `import-bound-name-seam` PASS (**round 17 closed PY-D13's store half**; the CLASSIFICATION half is still the DECLARED
   gap, pinned by name), `owner-channel-census` **375 scanned / 357 resolved (95.2%)** — identical to
   rounds 5, 10 and 11, so the member channel was not touched.
 - arbiter `python --fresh`: **emitted 10/10 · ruled-sound 0 · FALSIFIED 0 ·
@@ -2925,9 +2925,9 @@ destroy someone else's work.
 - **The `(x): int` / `(y): int = 0` field over-claim** from round 11's §9 is unchanged and still open:
   `multiTargetForm: "tuple_pattern"` for a parenthesised single name that the source did not write as a
   tuple.
-- **PY-D13's store half** — unchanged and pinned by a green gate: `import-bound-name-seam.mts` still
-  reads `brain_import.imported_as` NULL and `import_type = "named"` for `import typing as t`, which is
-  the DECLARED gap it was written to pin.
+- **PY-D13's store half** — **CLOSED IN ROUND 17.** The pin no longer records a gap here: check B asserts
+  `imported_as` = `t` / `PV` / `v` and NULL for the plain `import os`, and `import_type = "named"` is
+  asserted as the CLASSIFICATION half that REMAINS declared (pinned so it cannot drift unseen).
 - Round-3 items unchanged: **D5** (750 `uses` self-loops), the flat-corpus pins in
   `python-ontology-census.ts` / `firing-check*.mjs`.
 
@@ -3065,7 +3065,7 @@ instead of being widened under a green run.
 - Unchanged from round 12's §9: **the 7 `exports` — 2 of them CLOSED IN ROUND 14**, leaving 5 that
   decompose into exactly two mechanisms (4 SUBMODULE rows, 1 stale `__all__`; round 14 §3) — the 42
   rows in files CPython cannot parse (named per row by the axis gate), the `(x): int` field label from
-  round 11, PY-D13's store half, and round 3's D5.
+  round 11, PY-D13's CLASSIFICATION half (its store half closed in round 17), and round 3's D5.
 - The gate failures that are GREEN here but RED elsewhere — 45 undeclared label-coverage gaps in 20
   lanes, 6 undeclared no-truth labels in 5 lanes — are other lanes' recorded debt. They are named so
   that no later reader reads this lane's green as the gate's.
@@ -3189,7 +3189,7 @@ whose cause no longer describes the measured set is a false statement that still
   deliberately (`SPELLED` twice), which is what gives that dedupe a falsifier at all — and pins the
   per-NAME module rule against the per-SITE class rule in one file.
 - Unchanged: the 42 rows in files CPython cannot parse (named per row by the axis gate), the `(x): int`
-  field label from round 11, PY-D13's store half, round 3's D5, and the cross-lane gate debts (45
+  field label from round 11, PY-D13's CLASSIFICATION half (its store half closed in round 17), round 3's D5, and the cross-lane gate debts (45
   undeclared label-coverage gaps in 20 lanes, 5 undeclared no-truth labels in 5 lanes) that are other
   lanes' to close.
 
@@ -3963,3 +3963,94 @@ order.
   **781,930 ambiguous + 143,548 unresolved**, and that is the current HEAD number to size levers from —
   the two fixes corrected MISREPORTING (34 foreign edges, 173 false refutations), they did not move the
   residual.
+
+- **dart — LEVER 3 PRICED at HEAD: the typing gap is 54.6 % of the labelled bare rows, 34.6 % of it is
+  namable from its own file, and 2.6 % binds with nothing outside the file.** New instrument
+  `validation/m14/fixtures/dart/receiver-cut-pricing.ts` (self-test PASS; typechecks clean under its own
+  program — it is in NO tsconfig program, which is why that program was needed), run `--sample=1500` over
+  the gate's own population print (33,738 files, stride 22 = 4.45 %), log
+  `.tmp-probe/dartgate/lever3-pricing.log`. It reads the `receiverCause` label the analyzer writes where
+  it refuses to qualify a bare member, so the population is the analyzer's own decision and not a census
+  re-derivation: `receiverTypeUnknown` 17,314 (54.6 %) · `receiverUnnamed` 8,174 (25.8 %) ·
+  `receiverMemberOutsideRun` 5,789 (18.2 %, of which 93.3 % are bare callees whose owner is the enclosing
+  type, and 179 of the 180 typed rows confirm the label's own semantics) · `libraryScopeCallee` 448 ·
+  `receiverInFileNotSpelled` **0 of 31,725**. Inside the typing gap: type named in the file 5,992
+  (34.6 %) · head declared exactly once 1,458 (8.4 %) · **member on that type in the same file 444
+  (2.6 %)** · type declared elsewhere 5,412 (31.3 %) · untyped var/final 2,276 (13.1 %) · no declaration
+  of the head in the file 5,736 (33.1 %) · nearest declaration untyped while a typed same-name one exists
+  1,097 (6.3 %). Applied to arm13's amb column: typing gap ≈ 252,763 (32.3 % of the lane's 781,930), of
+  which ≈ 87,476 namable and ≈ 6,482 bindable with nothing outside the file (0.83 % of the lane). The
+  two-run reconciliation is the receipt: a first-match index reported 7,089 typed, one dump row (`hover`
+  at `get_hover_test.dart:354`, whose own declaration is `var hover = await prepareHover(…)`) exposed a
+  same-name collision, so the index now keeps EVERY declaration and picks the NEAREST PRECEDING one —
+  5,992 recovered + 1,097 measured collisions = the same 7,089. **Not claimed:** a SHARE of labels in a
+  4.45 % stride sample, not a resolution rate; the recoverer drops type arguments while the analyzer
+  declines generic receivers; and 75.7 % of the namable rows have more than one same-named declaration
+  in their file, so scope is still open. Full receipt: `real-dart-analyzer.md` §LEVER 3, priced at HEAD.
+
+
+## Round 17 (2026-10-12) — THE STORE SEAM, BOTH HALVES: the bound name that had no writer, and the imported ITEM that had none either
+
+Round 17 works a seam this lane had declared since round 7 (PY-D13) and found a SECOND defect inside it that
+nobody had named. Both are on the shared projection, so both are priced, gated and falsified before being
+believed, and every number below is measured through the real pipeline (`indexProjectParallel`, worker pool
+included) rather than reasoned from the code's shape.
+
+**1. The bound name now crosses the boundary (PY-D13's store half, closed).** `brain_import.imported_as` had
+no writer on the AST path for *any* language: `src/ast/pool-worker.ts` projected each import as
+`{name, path, type, isExternal, line}` and `src/ast/parallel-indexer.ts` wrote the column from
+`imp.alias ?? imp.localName` — a key the projection never emitted, while the M60 fallback path filled the
+same column through a different route. The analyzer publishes the binding and always did: `ImportInfo.alias`
+for `import X as Y`, and for python's from-imports the per-item `ImportInfo.itemBindings`
+(`[{name, as}]`), because one row-level `alias` cannot express `from m import a as b, c as d`. The
+projection now emits `alias` and the store reads it: `t` for `import typing as t`, `PV` for
+`from models import ProductVariant as PV`, `v` for `import vendor as v` — and NULL for `import os`, which is
+the over-claim direction `patterns.ts` reads (`usedName = imported_as || imported_name`).
+
+**2. The store did not record WHAT was imported, only where from (new, PY-D32).** The indexer passed
+`moduleName = imp.module ?? imp.path ?? imp.localName` as `imported_name` and never read `imp.name` — the
+field the worker's per-item rows carry. Measured through the pipeline on a four-file project
+(`.tmp-py/probe-import-rows.mts`): `from models import ProductVariant as PV` stored
+`imported_name = "models"` with the item nowhere in `brain_import`, typescript's `import { C } from "./a"`
+stored `"./a"`, and java's `import java.util.List` was right only because there the two strings are the
+same. The projection's own `X as Y` handling made it worse: it read the BOUND name into both `name` and
+`alias`, so `import { A as B } from "./a"` reached the store as `imported_name = imported_as = "B"` — while
+its sibling regex fallback states the opposite convention in its own comment. Both are fixed, narrowly:
+`imported_name` is the item except where `name` is not the imported name (`*` — a star/namespace item asks
+for the MODULE, so `import os` stays `os`; `name === moduleName`; `name === alias`). The production consumer
+of this column is `patterns.ts`: it looked the module up in the file and reported item imports unused.
+
+**Priced before, not after.** `.tmp-py/price-last-item-wins.py` (5,929 parsed files) — and it CORRECTED the
+round's own first price: the alias half reaches **3,333** statements (2,893 single-item, 20 aliased-last, 420
+`import X as Y`) and **6** do not; `.tmp-py/price-import-alias-seam.py` is SUPERSEDED because it bucketed
+FIRST-vs-LATER, and the measured row semantics keep the LAST item — the indexer's id is
+`${fileId}:import:${moduleName}:${line}` (one row per STATEMENT) while the projection emits one row per ITEM
+and the insert is `INSERT OR REPLACE`. The six unreachable statements are named in PY-D32.
+
+**Gated, and every new assertion falsified in the direction that matters.** `import-bound-name-seam.mts`
+checks A and B were rewritten from "pinned at the declared gap" into positive assertions and a fifth check
+(E) pins the shared projection's two roles on a TYPESCRIPT import — because that conflation was not python's.
+Three reverts were run against it: the analyzer's `itemBindings` publication dropped (A + B red), the
+projection conflating the roles again (E red, naming the field and its store consequence), the indexer
+writing the module again (B + E red). Restoring returned PASS each time. The publication ALSO has a
+fixture-side falsifier — the new mutant `round17/item-bindings-publication-dropped`, needed because the
+mutant battery does not run the standalone pin.
+
+**Verified on a CLEAN base, because the checkout is shared.** Another lane was mid-edit in `src/ast/*.ts`
+(the `overrides` target respelling across five analyzers, fixtures not yet updated), which turns 7 python
+fixtures red for reasons that are not this lane's. Every number here was therefore measured in a
+`git worktree` at HEAD carrying ONLY this round's hunks: `npx tsc --noEmit` exit 0 · fixtures
+`{"python":{"pass":52,"fail":0}}` exit 0 · mutants **62 caught / 0 survived / 0 not applied**, control 0
+failing fixtures · `import-bound-name-seam.mts` exit 0 (A–E) · `script/m14/verify-import-alias.ts` (M60's
+own verifier) PASS · `resolution-verdict-gate.ts` exit 0 · `export-residual-gate.mts` exit 0 ·
+`not-bound-in-file-gate.mts` exit 0. In the SHARED checkout the python fixture run reads
+`pass 45 / fail 7`, all seven being missing `overrides` edges from that other lane's in-flight change —
+reported rather than smoothed over.
+
+**What is NOT closed, with numbers.** (1) The CLASSIFICATION half of PY-D13: the projection puts the
+analyzer's `importType` in a field the indexer does not read, and `brain.sql.ts` documents `import_type` as
+a four-term vocabulary while ten other lanes declare values like `make_include` / `java-module-requires`, so
+routing it is a contract decision — pinned at `named` so it cannot drift. (2) The row model: only the LAST
+item of a multi-item statement is visible (PY-D32, 6 statements). (3) The route is still unread — check D's
+finding is untouched by any of this: `models_alias.ProductVariant` and `v.ProductVariant` still land on the
+same symbol.

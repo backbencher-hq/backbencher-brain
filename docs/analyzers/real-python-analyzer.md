@@ -548,10 +548,12 @@ Round 8 added `python/import-bound-name-seam.mts`, and it is the first instrumen
 measures BOTH sides of the analyzer/store seam in one process: it generates a small project on disk,
 calls `indexProjectParallel` (the production path, worker pool included), and then reads the
 analyzer's own output and the store's `brain_import` / `brain_symbol` / `brain_relationship` tables in
-the same run. Row B is pinned at the DECLARED gap (PY-D13 store half) rather than asserted absent, so
-the instrument goes red and names the flip the moment the shared fix lands; row C is the control that
-keeps B meaningful; row D is the route, and its own history is the reason it is shaped the way it is
-(see the round-8 section below). Round 8 also kept the two analyzer-only instruments the round-7 work
+the same run. Row B was pinned at the DECLARED gap (PY-D13 store half) rather than asserted absent, so the instrument
+goes red and names the flip the moment the shared fix lands — **which is what happened in round 17**: B is
+now a positive assertion (`imported_as` = `t` / `PV` / `v`, NULL for the plain import) and a fifth check E
+pins the shared projection's two roles for `X as Y` on a TYPESCRIPT import; row C is the control that keeps
+B meaningful; row D is the route, and its own history is the reason it is shaped the way it is (see the
+round-8 section below). Round 8 also kept the two analyzer-only instruments the round-7 work
 left in place: `python/reference-binding-is-not-a-guess.expectation.json` and
 `python/inline-type-parameter-is-not-a-class.expectation.json`, both with FORBID rows for the
 over-claim direction.
@@ -688,9 +690,13 @@ The remaining axes are honest holes with named causes, not tidy-ups:
 - **references 1,332 / extends 105** — dominated by the ALIAS-BOUND route: `import typing as t` and
   `from torch.nn import Module as NNModule`, where the `qualified` root is a name the file bound by an
   alias the store never received. The analyzer's `ImportInfo` keeps `alias`, but
-  `src/ast/pool-worker.ts`'s import projection drops it and `src/ast/parallel-indexer.ts` reads the
-  absent field, so the store stores `imported_as: NULL` / `import_type: named`. Shared, master-owned
-  surface — **DECLARED as `PY-D13`, measured, not changed unilaterally.**
+  `src/ast/pool-worker.ts`'s import projection dropped it and `src/ast/parallel-indexer.ts` read the
+  absent field, so the store stored `imported_as: NULL` / `import_type: named`. Shared, master-owned
+  surface — **DECLARED as `PY-D13`, measured, not changed unilaterally.** **ROUND 17 CLOSED THE `imported_as`
+  HALF** (the projection now emits `alias`, the analyzer publishes the per-item `itemBindings` of a
+  from-import, and the store writes it); the `import_type` half stays declared, and the ROUTE is still not
+  read by anything on the store side, so the rows ABOVE still sit where they sat — the fix buys data
+  fidelity, not resolution.
 - **exports 9** — `__all__` names provided lazily (`dialects/__init__.py` via `__getattr__`,
   `celery_app`, `instrument_declarative`).
 
@@ -735,10 +741,14 @@ analyzer's tree-based check still answers, which is why it moved 4,280 where CPy
 `wildcard-import` axis was invented**: a star import is unbounded, so claiming `make_dataclass` came
 from `dataclasses` would be a guess dressed as a fact, and the number stays where the evidence is.
 
-The store-side gap is UNCHANGED and still DECLARED (**PY-D13**): the bound name is now on the
-relation, but `src/ast/pool-worker.ts`'s projection still drops `alias`, so `brain_import.imported_as`
-stays NULL and the store cannot resolve `t.Protocol` itself. The matching spec entries are **PY-D13
-(amended: lane side FIXED, store side OPEN)** and **PY-D14 (FIXED)**.
+The store-side gap was DECLARED (**PY-D13**) as of round 7: the bound name was on the relation, but
+`src/ast/pool-worker.ts`'s projection dropped `alias`, so `brain_import.imported_as` stayed NULL and the store
+could not resolve `t.Protocol` itself. **Round 17 (2026-10-12) closed that half** — projection, analyzer and
+store now all carry it, `imported_as` is asserted in both directions by the seam gate, and the store's
+`imported_name` was corrected in the same round (it held the MODULE, never the item: see PY-D32). What stays
+DECLARED is the CLASSIFICATION half (`import_type`), the row model that keeps only the last item of a
+multi-item statement, and the ROUTE. The matching spec entries are **PY-D13 (amended: lane side FIXED,
+store side FIXED, classification half DECLARED)**, **PY-D32 (new)** and **PY-D14 (FIXED)**.
 
 ### The reference side, and a type parameter that is a binding rather than a class (round 8, 2026-10-11)
 
