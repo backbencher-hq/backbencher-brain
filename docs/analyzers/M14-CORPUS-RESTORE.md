@@ -1,8 +1,10 @@
 # M14 — corpus restore: 35 checkouts restored, and what each unblocks
 
-**Status: RESTORED.** The corpus root holds **50 of the 50 repositories** the canonical m14 sweeps
-declare (`LANG_REPOS` + `SECOND_CORPUS` in `script/m14/differential.ts`), each a git checkout, so
-**the differential's corpus precheck passes and every previously BLOCKED lane's own corpora exist**.
+**Status: RESTORED, THEN PARTLY UNDONE BY A LATER DECLARATION — read "Second wave" below before
+trusting this count.** The corpus root held **50 of the 50 repositories** the canonical m14 sweeps
+declared when this was written (`LANG_REPOS` + `SECOND_CORPUS` in `script/m14/differential.ts`), each a
+git checkout, so
+**the differential's corpus precheck PASSED for every lane declared at that moment**.
 The earlier version of this document recorded this action as blocked at the network layer. That
 diagnosis was wrong, and the correction is the first section because it is the reusable part.
 
@@ -160,10 +162,13 @@ failing on it.
 
 ## The per-lane view
 
-Every lane whose corpora the harness declares now has them. `hcl`, `make`, `nim`, `perl`, `sql`, `vb`
+Every lane whose corpora the harness declares now has them. `hcl`, `make`, `nim`, `sql`, `vb`
 and `xml` are reported `SKIP … no corpus repo mapped in LANG_REPOS` by the sweep itself — those lanes
 have **no corpus declaration at all**, which is a harness registration gap and is NOT what this
-restore was about; the restore cannot fix them and does not claim to.
+restore was about; the restore cannot fix them and does not claim to. **`perl` left that set on
+2026-10-12** — its `LANG_REPOS`/`SECOND_CORPUS` entries were re-registered by the lane's own round,
+and the corpora behind the two newly-declared names did not exist: see "Second wave" below, which also
+records the first measurement the lane has been able to take.
 
 | lane | primary corpus | second corpus | canonical sweep |
 | --- | --- | --- | --- |
@@ -189,6 +194,7 @@ restore was about; the restore cannot fix them and does not claim to.
 | kotlin | Exposed | kotlinx-coroutines | runnable |
 | markdown | scala3 | kubernetes | runnable |
 | objc | sdwebimage | afnetworking | runnable |
+| perl | mojo (restored 2026-10-12) | plack (restored 2026-10-12) | runnable |
 | php | phpunit | phpmyadmin | runnable |
 | powershell | powershell | ansible | runnable |
 | python | cython | requests | runnable |
@@ -205,10 +211,122 @@ restore was about; the restore cannot fix them and does not claim to.
 | yaml | kubernetes | ansible | runnable |
 | zig | zig | zls | runnable |
 
+## Second wave (2026-10-12): the two perl corpora behind a re-registered lane
+
+A registration and the corpus behind it are two different artifacts, and this wave is the case where
+the first landed without the second. `script/m14/differential.ts` declares `perl: "mojo"` in
+`LANG_REPOS` and `perl: "plack"` in `SECOND_CORPUS` — re-registered by the perl lane's own round, with
+the merge history recorded in the maps' own comments. The lane could not run at all:
+
+    error: corpus repo missing: $HOME/fixtures/repositories/mojo
+
+`mojo` was absent from the corpus root, and `plack` was present but useless — a git checkout of
+`https://github.com/miyagawa/Plack` whose **upstream HEAD is a single `README.md`** (`git ls-remote
+origin HEAD` returns the local HEAD `8d07c668`, and that commit IS the repository). So the second
+corpus admitted **0 files**: `[cold-pool] plack:perl: 0/0 fresh (rot 1, corpus 0)`. A lane can look
+registered, pass the presence precheck, and still measure nothing on its second corpus.
+
+| corpus | declared name | restored from | revision | tracked | perl files |
+| --- | --- | --- | --- | --- | --- |
+| Mojo | `mojo` | `mojolicious/mojo` | `93f591742a7db` | 407 | 274 |
+| Plack | `plack` | `plack/Plack` (see the re-point below) | `c8215144d5e0c` | 276 | 225 |
+
+**The `mojo` pin is the one already on the record**, not a fresh choice: `validation/m12/corpus-manifest.json`
+names the perl corpus as `mojo@93f59174` (clean, "164 tracked *.pm/*.pl files" at the time it was
+measured). Restored by the same procedure as the first wave — `git init`, `remote add origin`,
+`fetch --depth 1 origin <pin>`, `checkout FETCH_HEAD`, `rev-parse HEAD` compared to the pin before the
+temp directory is moved into place — and it verified on the first attempt at
+`93f591742a7dbc0cee36875ab80a38f0666e32ae`.
+
+**`plack` is a RE-POINT, recorded because it changes which upstream the name means.** The declared
+origin holds one file upstream; the real Plack is `https://github.com/plack/Plack`, whose
+`refs/tags/1.0054` and `HEAD` are both `c8215144d5e0cdd826ae2f497a14ca4d5c8a00c9`. The corpus was
+fetched at that revision from that origin, and `plack`'s own remote was re-pointed in the same step, so
+the checkout and its `origin` now agree. Two nearby trees were checked and are NOT this revision: the
+local `perl-plack` checkout sits at `6cc035a6` ("Plack 1.0054", not advertised upstream at all) and
+`perl-mojolicious` at `569f254e`; neither is the pin the harness declares, which is why the corpus was
+fetched rather than copied from either.
+
+### What the lane says now that it can speak
+
+First measurement the perl lane has ever been able to take, `bun script/m14/differential.ts --lang perl
+--sample 40`, both corpora drawn 40 files, **exit 6**:
+
+    [mojo]  perl: COMPARED WITH NO TRUTH: extends (25 comparable, 0 truth), instantiates (49 comparable, 0 truth), overrides (117 comparable, 0 truth)
+    [plack] perl: COMPARED WITH NO TRUTH: extends (6 comparable, 0 truth), instantiates (24 comparable, 0 truth), overrides (20 comparable, 0 truth)
+
+Both corpora measured on that run (`mojo:perl 40/40 fresh (corpus 274)`, `plack:perl 40/40 fresh (corpus 225)`),
+and **what the first run after the restore reported was the lane's WIRING gap, not its corpora**: three
+labels in the comparison set with nothing behind them, so every edge of those three lands in
+`unexplained` or `heuristic`, neither of which is coverage. That is the measured form of what `script/m14/perl-truth.ts`'s header already records as `STILL NEEDED IN
+differential.ts (MASTER-owned, REPORTED not done)`, and it CORRECTS one line of that header: it says
+`instantiates` "is left to the harness oracle", while on both corpora the harness oracle carried **0
+truth** for it. Log: `validation/m14/measurements/perl-lane-corpus-restore.log`.
+
+**That gap was then closed by the lane's own in-flight edit, and the corpora are what made the closing
+readable.** While this wave was being recorded, `script/m14/differential.ts` gained perl's oracle in-file
+(`derivePerlEdges`, pushed under `if (lang === "perl")`) and perl's own `["calls"]` and `["contains"]`
+filter entries — uncommitted work in the shared file, recorded here as the lane's and not this
+restore's. Re-running the identical command against the restored corpora now reads:
+
+    [mojo]  perl: files=40 tree-truth=1419 covered=1419 (100%) MISSING=0 | analyzer-edges=1273 unexplained=0 (0%) heuristic=0
+    [plack] perl: files=40 tree-truth=390  covered=390  (100%) MISSING=0 | analyzer-edges=383  unexplained=0 (0%) heuristic=0
+    probe run (--lang perl): measured 2 lane(s)          exit 0
+
+which is the first complete perl reading on any corpus, and it was only possible because the two corpora
+exist. The same command before the restores exited 1 with `corpus repo missing: …/mojo` and measured
+nothing. The comparable-counts in the exit-6 block above are per-draw and the cold pool rotates
+(successive runs of the identical command read `20 / 43 / 210`, then `25 / 49 / 117`), so they are quoted
+with the draw that produced them rather than as constants. Transcript of both states:
+`validation/m14/measurements/corpus-blocked-lanes.log`.
+
+**What this wave does NOT do**: it does not wire any lane's oracle, admit labels to any filter, or touch
+`differential.ts` at all. Those are the lanes' and the master file's, and the perl case shows the order
+matters: the corpora had to exist before the wiring could be measured at all.
+
+### Part 2: the four corpora the same re-registration still owes
+
+The merge that re-registered perl also registered second corpora for `hcl`, `make` and `nim` and a
+primary for `vb` — and those corpora do not exist either. Read from the maps themselves
+(`validation/m14/measurements/corpus-presence-after-second-wave.log`): of the **36 second-corpus lanes and
+47 `LANG_REPOS` lanes**, four repository names the harness declares are absent from the shelf, and two of
+them are named by two lanes each:
+
+| missing repo | declared by | first wave's per-lane row said |
+| --- | --- | --- |
+| `tf-aws-components` | `make` (primary), `hcl` (second) | `SKIP … no corpus repo mapped` |
+| `consul` | `make` (second) | `SKIP …` |
+| `nim` | `nim` (primary) | `SKIP …` |
+| `pixie` | `nim` (second) | `SKIP …` |
+| `fsharp-data` | `fsharp` (second) | (second corpus, not listed) |
+| `P3D-Legacy` | `vb` (primary) | `SKIP …` |
+
+The consequence is not a weaker measurement, it is **no measurement**: three lanes' differentials now
+throw before their first file, verified lane by lane (transcript: `corpus-blocked-lanes.log`):
+
+    $ bun run script/m14/differential.ts --lang nim --sample 5   -> error: corpus repo missing: …/nim              exit 1
+    $ bun run script/m14/differential.ts --lang vb  --sample 5   -> error: corpus repo missing: …/P3D-Legacy      exit 1
+    $ bun run script/m14/differential.ts --lang make --sample 5  -> error: corpus repo missing: …/tf-aws-components exit 1
+
+The first wave's per-lane table described these six lanes as having "no corpus declaration at all", and
+that was true when it was written. The re-registration changed the declaration without changing the
+corpora, which moved them from *skipped* (a lane that looks absent) to *throwing* (a lane that breaks the
+run) — and an unscoped sweep cannot pass its precheck while any required repo is absent.
+
+**These four restores are deliberately NOT performed here.** A name is not a pin and, for at least one of
+them, not even a provenance: `pixie` is the name of a Go project and it is registered as the second
+corpus of the NIM lane, so fetching the obvious upstream would be substituting a different tree under a
+matching name — exactly what the first wave refused to do for `Clyde` and `clean-stdlib` until each
+upstream had been found and confirmed by an independent shape check. The lanes own these names, their
+pins and that confirmation; what this section contributes is that the absence is now measured, named per
+lane, and reproducible from the harness's own maps rather than discovered one exit-1 at a time.
+
 ## Reproducing this
 
-`script/m14/tmp/restore-missing-corpora.sh` (scratch — `script/m14/tmp/` is excluded, which is also why
-no new tracked script was added) holds the plan: `name|pin|candidate remote`, one `git init` +
+`script/m14/tmp/restore-missing-corpora.sh` (scratch — and note that the second wave's two restores were
+performed directly rather than by extending it, because one of them is a RE-POINT and the plan file's
+`name|pin|candidate remote` shape has no field for "the declared remote is an empty repository" —
+`script/m14/tmp/` is excluded, which is also why no new tracked script was added) holds the plan: `name|pin|candidate remote`, one `git init` +
 `fetch --depth 1 origin <pin>` + `checkout FETCH_HEAD` per repository, up to three attempts, the temp
 directory moved into place only after `rev-parse HEAD` equals the pin. It prints its plan by default
 and touches nothing without `--go`. Three additions were needed beyond the original plan and are worth
