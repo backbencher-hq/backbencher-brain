@@ -1011,7 +1011,7 @@ async function discoverAndFilterFiles(
         if (gitignoreEntry) {
           try {
             const gitignoreContent = await readFile(path.join(dir, ".gitignore"), "utf8")
-            localIg = ignore().add(ig).add(gitignoreContent)
+            localIg = ignore({ ignorecase: false }).add(ig).add(gitignoreContent)
           } catch {
             // Ignore read errors
           }
@@ -1106,7 +1106,15 @@ async function discoverAndFilterFiles(
       }
     }
 
-    const rootIg = ignore()
+    // CASE-SENSITIVE, because these are GITIGNORE patterns and git is case-sensitive.
+    // The `ignore` package defaults to case-INsensitive, so `**/testData/**` was matching
+    // lowercase `testdata/` — which git does NOT do with the same pattern and the same file.
+    // MEASURED: 12,479 routed-extension files across 452 lowercase `testdata/` directories,
+    // confirmed three ways (the graphql lane's own count of 156, a filesystem census that
+    // counted exactly 156 `.graphql`, and the predicate itself returning IGNORED for a
+    // lowercase path — while `ignorecase: false` and git both KEEP it).
+    // Falsifier: the indexer's own admission count should rise by the files this was losing.
+    const rootIg = ignore({ ignorecase: false })
     // Built-in ignore globs. These are DEFAULTS and are overridable: the user's
     // .bbignore is added BELOW, and last-match-wins means an explicit `!pattern`
     // there re-includes any of them. That ordering is the reason these can stay
