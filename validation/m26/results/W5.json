@@ -2,22 +2,22 @@
   "issue": "M26.W5",
   "code": "W5",
   "milestone": "M26",
-  "status": "known-gap",
-  "checks": 29,
-  "passed": 28,
-  "failed": 1,
+  "status": "verified",
+  "checks": 30,
+  "passed": 30,
+  "failed": 0,
   "mutantsCaught": 19,
   "mutantsTotal": 19,
-  "currentCommit": "518ed55a6ead5fc741a13c4054ef82cda2581da8",
+  "currentCommit": "4ab4019155f10f6395ab644c694bda960b68b992",
   "verifierCommand": "npx tsx script/m26/verify-impact-mode.ts",
-  "sourceFingerprint": "f23e88f1bbfa38bf3727667e77b74a7a8dcb19925f2734e471a2364ee879ad94",
+  "sourceFingerprint": "698a492c3179bdd5f6dcd760e57ae5f1eceb79a9550811d0b7d98925f557a9db",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m26/verify-impact-mode.ts",
     "src/lsp/impact.ts"
   ],
   "evidenceFile": "W5.json",
-  "generatedAt": "2026-10-12T06:26:44.012Z",
+  "generatedAt": "2026-10-12T18:49:45.591Z",
   "differential": {
     "sampling": "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 answers usage sites since M55.T3 (incoming, non-declaration) — no direction correction needed; containment delta verified separately",
     "l3TotalCount": 4,
@@ -32,7 +32,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-12T06:26:44.013Z",
-    "contentSha256": "e627b41c5d3ef420629fcd1e7a07658c607a305a9f9602fb02e8095544e93a80"
+    "sealedAt": "2026-10-12T18:49:45.593Z",
+    "contentSha256": "12b199a28c5322658457945d374e189728e8bfd1d8a1cf01d503a591120a3b86"
   }
 }

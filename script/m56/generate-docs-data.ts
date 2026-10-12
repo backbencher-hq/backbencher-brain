@@ -305,17 +305,13 @@ const derivedPassLabels = [passUnion[1]!, passUnion[2]!, passUnion[3]!, passUnio
 
 const { AUTO_REFRESH_DEFAULTS, AUTO_REFRESH_ENV_ALLOWLIST } = (await import(
   path.join(ROOT, "src/ast/auto-refresh.ts")
-)) as { AUTO_REFRESH_DEFAULTS: { maxFiles: number; maxBytes: number }; AUTO_REFRESH_ENV_ALLOWLIST: readonly string[] }
+)) as typeof import("../../src/ast/auto-refresh.ts")
 
 // --- 4. storage shape, proven at runtime -------------------------------------------
 
 const probeDir = path.join(tmpdir(), `m56-d1-datadir-${process.pid}`)
 process.env.BB_DATA_DIR = probeDir
-const { bbDataDir, bbProjectsDir, bbWasmDir } = (await import(path.join(ROOT, "src/util/bb-data-dir.ts"))) as {
-  bbDataDir: () => string
-  bbProjectsDir: () => string
-  bbWasmDir: () => string
-}
+const { bbDataDir, bbProjectsDir, bbWasmDir } = (await import(path.join(ROOT, "src/util/bb-data-dir.ts"))) as typeof import("../../src/util/bb-data-dir.ts")
 if (bbDataDir() !== path.resolve(probeDir)) fail(`bbDataDir() does not honor BB_DATA_DIR: ${bbDataDir()}`)
 if (bbProjectsDir() !== path.join(path.resolve(probeDir), "projects")) fail(`projects dir shape changed: ${bbProjectsDir()}`)
 if (bbWasmDir() !== path.join(path.resolve(probeDir), "wasm")) fail(`wasm dir shape changed: ${bbWasmDir()}`)
