@@ -200,7 +200,36 @@ function findHandwrittenCopies(rel: string, abs: string, text: string, census: M
     if (!census.has(productModule)) return
     const castAt = window.indexOf("as {")
     if (castAt === -1) return
-    const close = window.indexOf("}", castAt)
+    //
+    // BALANCED BRACES, NOT THE FIRST "}".
+    //
+    // `window.indexOf("}", castAt)` stopped the body at the first closing brace, which in a
+    // parameter type is usually a NESTED one. Concretely, script/m55/verify-relations.ts:118
+    // reads
+    //
+    //     hover: (db: unknown, req: { filePath: string; position: { line: number; … } }) =>
+    //       Promise<HoverResult>
+    //
+    // so the first "}" belongs to `position: { … }` and the body examined ended before
+    // `HoverResult` ever appeared. `HoverResult` IS exported — src/lsp/hover.ts:168, `export
+    // interface HoverResult` — so that cast is exactly the ANCHORED kind this gate says it
+    // must not report, and its own comment says so. The gate reported it anyway.
+    //
+    // A gate that flags correct code is worse than no gate: it teaches people to ignore it,
+    // which is the lesson script/m62/verify-indexer-option-contract.ts and
+    // verify-esm-only-globals.ts each learned the hard way.
+    let depth = 0
+    let close = -1
+    for (let k = castAt; k < window.length; k++) {
+      if (window[k] === "{") depth++
+      else if (window[k] === "}") {
+        depth--
+        if (depth === 0) {
+          close = k
+          break
+        }
+      }
+    }
     const body = window.slice(castAt, close === -1 ? undefined : close)
 
     // THE DISTINCTION THAT MATTERS. Not every `as { ... }` over a src import is a
