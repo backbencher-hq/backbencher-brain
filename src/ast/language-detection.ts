@@ -63,7 +63,14 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   // `less` still maps to "css" deliberately: LESS is a CSS superset and it is NOT in
   // SUPPORTED_LANGUAGES, so no unreachable language is declared by leaving it here.
   scss: "scss", sass: "sass", less: "css",
-  json: "json", jsonc: "json", yml: "yaml", yaml: "yaml", graphql: "graphql", gql: "graphql",
+  json: "json", jsonc: "json", yml: "yaml", yaml: "yaml",
+  // `.graphqls` was missing while `graphql` and `gql` were present. It is the GraphQL SCHEMA extension —
+  // the same format, spelled for schema files — so this is an omission and not a decision. MEASURED
+  // THROUGH PRODUCTION DISCOVERY, not by walking the filesystem: the graphql lane's own instrument priced
+  // 97 corpus `.graphqls` files as `filesTheIndexerDidNotAdmit`, and a Lead measurement of the ADMITTED
+  // count returns 0 — so all 97 are read by nothing, answered with the fallback, and produce no symbols
+  // while APPEARING in the population. Same defect class as `.cts`.
+  graphql: "graphql", gql: "graphql", graphqls: "graphql",
   c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", "c++": "cpp", hpp: "cpp", hxx: "cpp",
   rs: "rust", go: "go", zig: "zig",
   // `.jl` measured, not assumed: 941 tracked files in the Julia corpus, all of which the pinned
