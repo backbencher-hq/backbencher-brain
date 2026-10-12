@@ -324,3 +324,17 @@ ide/zed/bb-lsp/target/
 # `.git` FILE to model a submodule boundary, which must never be committed.
 .discovery-scratch/
 .store-honesty/
+
+# ── LANE SCRATCH (2026-10-11) ───────────────────────────────────────────────────────────────
+# The working tree had 463 untracked entries, ~230 of them per-lane scratch, and the volume was
+# hiding the real artifacts. These are WORKSPACE-LOCAL, regenerable, and belong to no lane's
+# evidence: every number a lane quotes is committed under validation/ or docs/, not here.
+# `.tmp-probe/` is PARTLY TRACKED already — ignoring it does not untrack what is committed, it
+# only stops new scratch from appearing in `git status`.
+.tmp-*/
+.tmp-*
+.bb-heavy*.lock
+.bb-verify/
+.selfcheck/
+.tmp-tsc.log
+--out

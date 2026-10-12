@@ -48,6 +48,7 @@ export const PYTHON_TRUTH_ORACLE_LABELS: ReadonlyArray<string> = [
   "contains",
   "exports",
   "extends",
+  "implements",
   "imports",
   "instantiates",
   "overrides",

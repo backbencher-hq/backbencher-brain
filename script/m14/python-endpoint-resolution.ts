@@ -56,6 +56,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
+import { starImportBindsOutOfView as starAxis } from "./python-star-axis"
 
 const ALL_TYPES = [
   "calls", "uses", "contains", "imports", "references",
@@ -70,6 +71,26 @@ const argOf = (flag: string): string | undefined => {
 }
 const LANG = "python"
 const OUT = argOf("--out")
+/**
+ * DIAGNOSTIC SIDECAR, opt-in. Writes EVERY UNEXPLAINED edge (not the report's top-40 slice) as
+ * `label\tfile\tsource\ttarget\treasonCode\tqualified` so a reader can price the axis by hand
+ * instead of reading a truncated histogram. Additive and read-only: the committed artifact keeps
+ * its shape, and the verdict this instrument renders is unchanged whether or not the flag is given.
+ */
+const DUMP_UNEXPLAINED = argOf("--dump-unexplained")
+/**
+ * DIAGNOSTIC SIDECAR #2, opt-in. Writes EVERY edge that carries a dotted `metadata.qualified`
+ * ROUTE, one per line:
+ *
+ *   file \t label \t source \t target \t route \t reasonCode \t projectBin \t rootIsPopulationModule
+ *
+ * It exists to answer a question the per-label tables cannot: of the routes this lane publishes,
+ * how many are rooted at a module the POPULATION declares (a resolution the store could actually
+ * make) and how many are rooted at an import that is external to it (where NULL is the honest
+ * answer). Those two are one axis in the verdict — `qualified-external` — and averaging them would
+ * report a rate that means neither.
+ */
+const DUMP_QUALIFIED = argOf("--dump-qualified")
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const REPO_FILTER = argOf("--repo")
 const LIMIT = Number(argOf("--limit") ?? "0")
@@ -116,6 +137,98 @@ const PLACEHOLDER_PREFIXES = ["<"]
 const SYNTHETIC_SCOPE_NAMES = new Set([
   "unknown", "SCSS_FILE_SCOPE", "window", "exports", "default", "GlobalScope", "global",
 ])
+
+/**
+ * THE VERDICT AXES — of an UNRESOLVED incoming target, WHY it is unresolved. Each axis is a fact
+ * the ANALYZER itself publishes on the edge, or a fact about the interpreter, and none is a guess
+ * the census makes. The point of naming them is that "unresolved" is not one thing: a member read
+ * whose receiver's type nothing knows (`self.x` -> `x`) is DERIVED unresolved, while a bare name
+ * that binds to nothing is a possible DEFECT, and averaging them would report a rate that means
+ * neither.
+ *
+ *   declared-dynamic   the edge's own reasonCode says the target is chosen at runtime
+ *                      (`dispatch-on-receiver`/`dispatch-on-parameter` for a call,
+ *                      `member-read` for a read, `first-parent-guess` for an override). The lane
+ *                      MEASURES this; it is python being python, not a missing resolution.
+ *   declared-external  `external-member-call` — the receiver is rooted at a module THIS file
+ *                      imported, so the member is reachable through the import edge even though its
+ *                      definition is out of view. Followable, and NOT a dangling name.
+ *   declared-local     `local-callee` — the callee is bound in an ENCLOSING FUNCTION's scope (a
+ *                      nested `def`, a parameter, a local binding), so no project-wide declaration
+ *                      exists for it to bind to. Python's LEGB rule resolves such a name to that
+ *                      binding, which SHADOWS any module-level declaration of the same spelling —
+ *                      so "unresolvable at project scope" is the correct answer, not a failed
+ *                      lookup. The lane states this per edge (`isLocalCalleeName`); it is not
+ *                      inferred here from the name's shape, which would be a guess.
+ *   qualified-external the edge's `qualified` spelling is a DOTTED chain whose root this file
+ *                      imported (or which names a module in the population): `nn.Module` as a base,
+ *                      `os.path.join` as a callee. The name is bare in the endpoint, but the ROUTE
+ *                      says which module owns it, so it is out-of-file rather than nowhere.
+ *   star-import-external the file says `from M import *` (PY-D19, round 10 — the fact is published on
+ *                      the analyzer's own `imports` edge as `metadata.starImport`, because the
+ *                      store's per-item projection flattens it into the same row as `import M`),
+ *                      EVERY module the file star-imports is OUT OF VIEW (not a module this
+ *                      population declares, and not a relative import), and the target is a BARE
+ *                      name. The binding route exists — M's public namespace is bound into this
+ *                      module — and M is not checkable here, so the row dangles structurally. The
+ *                      gate is the whole honesty of the axis: an IN-VIEW star module is checkable,
+ *                      and the residual row already proves it does not declare the name.
+ *   builtin            the target leaf is a name the INTERPRETER owns (`dir(builtins)`): a call to
+ *                      `SystemExit` under `raise`, a `-> int` that survived the scalar filter. No
+ *                      file CAN declare it, so binding to nothing is correct.
+ *   not-bound-in-file  PY-D25 (round 12) — the edge's OWN reasonCode says the analyzer's binding
+ *                      checks found nothing (`bare-name-callee` for a call, `annotation-type` /
+ *                      `instanceof-check` for a reference), the file does not import the leaf, and
+ *                      the target is UNRESOLVED against every declaration in the population. That
+ *                      is the complete, checkable statement "nothing in this file can supply this
+ *                      name": python's LEGB rule makes a module-level or function binding visible
+ *                      to the read, so with a binding anywhere in the file the resolution above
+ *                      would have found it (module/class binders are published since PY-D23) or
+ *                      the reason would be `local-…` instead. PRICED before it was written with
+ *                      CPython's own `ast`, per row, scope by scope (`.tmp-py/price-bare-names.py`:
+ *                      42 rows, every one agreed by CPython; `.tmp-py/price-module-bindings.py`
+ *                      found the ONE row where the analyzer itself was wrong — wagtail's `mixin`,
+ *                      which PY-D23 fixed rather than excused). The gate that re-checks this
+ *                      axis's whole population with CPython on every run is
+ *                      `validation/m14/fixtures/python/not-bound-in-file-gate.mts`; it exists
+ *                      because an axis like this one is exactly where a future analyzer gap would
+ *                      hide, and the gate fails on any row whose file DOES bind the name.
+ *   UNEXPLAINED        none of the above. This is the ONLY axis that names a defect, and it is the
+ *                      number the verdict below must drive to zero or to a pinned allowance.
+ */
+const DECLARED_NO_STATIC_TARGET = new Set([
+  "dispatch-on-receiver", "dispatch-on-parameter", "member-read", "first-parent-guess",
+])
+const DECLARED_EXTERNAL = new Set(["external-member-call"])
+/**
+ * The reason codes that mean "the analyzer's binding checks found nothing": `bare-name-callee` is
+ * set on a call after the local/module/import checks, and the two reference codes are the POSITION
+ * codes the emitter falls back to when `dynamicTypeBindingReason` finds no binding
+ * (`annotation-type`, `instanceof-check`). A code outside this set already states a binding
+ * (`local-…`, `member-read`, a dispatch code), so the axis must not touch it.
+ */
+const NO_BINDING_REASONS = new Set(["bare-name-callee", "annotation-type", "instanceof-check"])
+/**
+ * A name bound in an enclosing FUNCTION scope — see `declared-local` above. THREE codes, one axis,
+ * because the axis is about the BINDING (no project-wide declaration can exist for it, and python's
+ * LEGB rule makes the local win over any module-level namesake) while the codes name which kind of
+ * binding it is:
+ *
+ *   local-callee           a CALL whose callee binds in the enclosing function (PY-D14).
+ *   local-binding-target   a REFERENCE or a BASE whose name binds in the enclosing function — a
+ *                          parameter, a walrus target, an assignment/`for`/`with`/`except` target,
+ *                          a nested `def`/`class` name (PY-D15: `isinstance(obj, type_or_tuple)`
+ *                          where `type_or_tuple` is a walrus target; `class Row(dump_cls)` where
+ *                          the base was chosen by an `if`).
+ *   inline-type-parameter  a REFERENCE to a PEP-695 `def f[T]` / `class C[T]` type parameter
+ *                          (PY-D16) — a type the signature introduces, bound nowhere else.
+ *
+ * The last two are published by the analyzer PER EDGE, from the reference's own ancestor chain,
+ * never inferred here from the name's shape. The distinction between them is kept because the
+ * facts differ (a value vs a type) and the axis does not need it; a reader querying
+ * `reasonCode` gets it either way.
+ */
+const DECLARED_LOCAL = new Set(["local-callee", "local-binding-target", "inline-type-parameter"])
 
 const QUAL_SEP = "\u0000"
 
@@ -282,11 +395,30 @@ const projectByName = new Map<string, Set<string>>()
 const projectByQual = new Map<string, string>()
 /** every module scope and every file path, for the `module:item` spelling. */
 const projectModules = new Set<string>()
+/**
+ * PY-D19's in-view test: every DOTTED module path this population declares, built from file paths the
+ * same way an import writes them (`pyspark/sql/types.py` -> `pyspark.sql.types`, and a package's
+ * `__init__.py` -> the package). A star module is CHECKABLE when its path exists here or when some
+ * path lives under it. File STEMS are deliberately NOT used: the first version of the axis used
+ * module scopes, and over the round-9 residual it blocked 169 of the 171 priced rows on name
+ * collisions between unrelated repositories (stdlib `dataclasses` against some repo's
+ * `dataclasses.py`) — a collision is not evidence that the module is this project's.
+ */
+const projectModulePaths = new Set<string>()
+/** every edge carrying a dotted `metadata.qualified` route, when `--dump-qualified` is given */
+const qualifiedDump: string[] = []
 const projectFiles = new Set<string>()
 /** per file: bare name -> declarations in THAT file only. */
 const fileByName = new Map<FileRecord, Map<string, Set<string>>>()
 /** per file: the names it binds by import. */
 const fileImported = new Map<FileRecord, Set<string>>()
+/**
+ * per file: the modules it STAR-imports (`from M import *`), read from the analyzer's own
+ * `imports` edges — `metadata.starImport`, published by PY-D19. The store's per-item projection
+ * cannot carry the distinction (`from M import *` and `import M` both flatten to
+ * `{name: "*", type: "namespace"}`), so the edge is the surface that has it.
+ */
+const fileStarModules = new Map<FileRecord, Set<string>>()
 
 /**
  * THE SYMBOL SHAPE, read off a real production parse rather than assumed.
@@ -345,8 +477,69 @@ for (const f of files) {
     const root = String(im?.path ?? im?.module ?? "").split(".")[0]
     if (root) imported.add(root)
   }
+  // PY-D13 (round 7) — THE BOUND NAME OF AN ALIASED IMPORT.
+  //
+  // `import typing as t` binds `t`; the file's own words for the module are then `t.Protocol`,
+  // `t.Callable`, `t.Self`. The projection this census reads (`pool-worker`'s per-item
+  // `{name, path, type, isExternal, line}`) does NOT carry the alias, so `fileImported` held only
+  // `typing` and every `t.X` route fell through the `qualified-external` axis to UNEXPLAINED — a
+  // defect axis — while `typing.X` from the un-aliased spelling classified correctly. The alias IS
+  // on the analyzer's own surface: the `imports` edge carries `metadata.importedAs`, which the lane
+  // publishes (PY-D13) for exactly the shapes where the binding differs from the imported name.
+  // Reading a fact off the edge the analyzer returned is what this instrument does — it never
+  // re-parses source — so the alias is read HERE rather than inferred from the path.
+  //
+  // PY-D19 (round 10) — and the SAME loop reads the wildcard fact, for the same reason: it is a
+  // fact the analyzer states on its own edge (`metadata.starImport`) and that the projection one
+  // layer below cannot carry. The module is the target's `module:*` half.
+  const stars = new Set<string>()
+  for (const r of f.rels) {
+    if (typeOf(r) !== "imports") continue
+    const md = (r.metadata ?? {}) as Record<string, any>
+    const as = md.importedAs
+    if (typeof as === "string" && as) imported.add(as)
+    if (md.starImport === true) {
+      const tgt = endpointsOf(r)[1]
+      const colon = tgt.lastIndexOf(":")
+      const mod = colon > 0 ? tgt.slice(0, colon) : ""
+      if (mod) stars.add(mod)
+    }
+  }
+  // PY-D19: this file's own contribution to the dotted-module-path index (see
+  // `projectModulePaths`). Derived from the same repo-relative path the analyzer was handed, with
+  // the package spelling rule: `pkg/__init__.py` declares `pkg`.
+  {
+    const parts = f.rel.split("/")
+    const last = (parts[parts.length - 1] ?? "").replace(/\.pyi?$/, "")
+    const dirs = parts.slice(0, -1)
+    const mod = last === "__init__" ? dirs : [...dirs, last]
+    if (mod.length > 0) projectModulePaths.add(mod.join("."))
+  }
   fileByName.set(f, local)
   fileImported.set(f, imported)
+  fileStarModules.set(f, stars)
+}
+
+/**
+ * PY-D19 (round 10) — the axis's DECISION, read from the per-file star set `python-star-axis.ts`
+ * documents and exercises in every direction. The function is imported rather than inlined here
+ * because a guard that lives inside an 11,488-file census cannot be falsified without running one.
+ */
+const starImportBindsOutOfView = (f: FileRecord, tgt: string): boolean =>
+  starAxis(fileStarModules.get(f), projectModulePaths, tgt)
+
+/**
+ * PY-D25 — "nothing in this file can supply this name", read from the analyzer's own statement
+ * plus the file's import set. See the axis doc above for why the resolution above already
+ * exhausted every binding the file publishes, and for the CPython price and the gate.
+ */
+const notBoundInFile = (f: FileRecord, tgt: string, why: string): boolean => {
+  if (!NO_BINDING_REASONS.has(why)) return false
+  const leaf = leafOf(tgt)
+  if (!leaf) return false
+  const imported = fileImported.get(f)
+  if (imported && imported.has(leaf)) return false
+  return true
 }
 
 // ---------------------------------------------------------------- classify
@@ -377,6 +570,13 @@ type Stat = {
   byReason: Map<string, Map<Bin, number>>
   /** project-scope target bin, split by evidenceClass */
   byEvidence: Map<string, Map<Bin, number>>
+  /** project scope: of the UNRESOLVED targets, WHY each one is unresolved (the verdict axes below) */
+  unresolvedClass: Map<string, number>
+  /** UNRESOLVED targets that NO declared reason code, NO imported-root spelling and NO builtin explains */
+  unexplained: number
+  unexplainedNames: Map<string, number>
+  unexplainedExamples: string[]
+  unexplainedEdges: string[]
 }
 const mkStat = (): Stat => ({
   count: 0, files: new Set(),
@@ -385,6 +585,7 @@ const mkStat = (): Stat => ({
   selfLoop: 0, emptyEndpoints: 0, examples: [],
   unresolvedFileTgt: [], unresolvedProjTgt: [], ambTgt: [], r7: [], placeholderInSource: [],
   unresolvedNames: new Map(), byReason: new Map(), byEvidence: new Map(),
+  unresolvedClass: new Map(), unexplained: 0, unexplainedNames: new Map(), unexplainedExamples: [], unexplainedEdges: [],
 })
 const rows = new Map<Type, Stat>()
 for (const t of ALL_TYPES) rows.set(t, mkStat())
@@ -536,6 +737,34 @@ for (const f of files) {
     const evRow = s.byEvidence.get(evc) ?? new Map<Bin, number>()
     bumpBin(evRow, pt.bin)
     s.byEvidence.set(evc, evRow)
+    // THE VERDICT: classify each UNRESOLVED incoming target by WHY, in a fixed order that prefers
+    // the analyzer's own statement over the census's inference. Only the LAST axis is a defect.
+    // The edge's written ROUTE, read once — the verdict needs it for the axis, and the
+    // `--dump-qualified` sidecar needs it for EVERY edge (not only the unresolved ones).
+    const route = String((rel.metadata as any)?.qualified ?? "")
+    if (pt.bin === "UNRESOLVED") {
+      const root = route.includes(".") ? route.split(".")[0]! : ""
+      const imported = fileImported.get(f)!
+      const cls = DECLARED_NO_STATIC_TARGET.has(why) ? "declared-dynamic"
+        : DECLARED_LOCAL.has(why) ? "declared-local"
+        : DECLARED_EXTERNAL.has(why) ? "declared-external"
+        : root && (imported.has(root) || projectModules.has(root)) ? "qualified-external"
+        : starImportBindsOutOfView(f, tgt) ? "star-import-external"
+        : PY_BUILTIN_NAMES.has(leafOf(tgt)) ? "builtin"
+        : notBoundInFile(f, tgt, why) ? "not-bound-in-file"
+        : "UNEXPLAINED"
+      bump(s.unresolvedClass, cls)
+      if (cls === "UNEXPLAINED") {
+        s.unexplained++
+        bump(s.unexplainedNames, leafOf(tgt))
+        if (s.unexplainedExamples.length < 8) s.unexplainedExamples.push(`${f.label} ${src} -> ${tgt} [${why}]`)
+        s.unexplainedEdges.push(`${t}\t${f.label}\t${src}\t${tgt}\t${why}\t${route}`)
+      }
+    }
+    if (qualifiedDump && route.includes(".")) {
+      const r = route.split(".")[0]!
+      qualifiedDump.push(`${f.label}\t${t}\t${src}\t${tgt}\t${route}\t${why}\t${pt.bin}\t${projectModules.has(r) ? "1" : "0"}`)
+    }
     if (fs.bin === "R7_PLACEHOLDER" || ft.bin === "R7_PLACEHOLDER") {
       if (s.r7.length < 8) s.r7.push(`${f.label} ${src} -> ${tgt}`)
     }
@@ -608,6 +837,34 @@ for (const t of ALL_TYPES) {
 }
 console.log(`\nunresolved targets across all ten types: ${grandUnresolved} of ${totalRels.toLocaleString()} edges (${(100 * grandUnresolved / Math.max(1, totalRels)).toFixed(1)}%)`)
 
+// ---------------------------------------------------------------- verdict
+// THE PER-LABEL VERDICT, in BOTH directions. Outgoing first, because it is a one-line claim and
+// must be stated rather than assumed: an edge whose SOURCE binds to nothing is a lie the graph
+// tells about WHAT made the edge, and the census measures it the same way as a target.
+console.log("\n== PER-LABEL RESOLUTION VERDICT (project scope) ==")
+let grandSrcUnresolved = 0
+let grandUnexplained = 0
+let emittedCount = 0
+for (const t of ALL_TYPES) {
+  const s = rows.get(t)!
+  if (s.count === 0) { console.log(`${w(t, 14)} EMITTED: NO`); continue }
+  emittedCount++
+  const srcUnresolved = s.projSrc.get("UNRESOLVED") ?? 0
+  grandSrcUnresolved += srcUnresolved
+  const tgtUnresolved = s.projTgt.get("UNRESOLVED") ?? 0
+  const unexplained = s.unexplained
+  grandUnexplained += unexplained
+  const axes = [...s.unresolvedClass.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}:${v}`).join(" ")
+  console.log(`${w(t, 14)} emitted ${String(s.count).padStart(8)} · OUTGOING unresolved ${String(srcUnresolved).padStart(3)} · INCOMING resolved ${pct(s, s.projTgt, "RESOLVED")}% ambiguous ${pct(s, s.projTgt, "AMBIGUOUS")}% external ${pct(s, s.projTgt, "EXTERNAL")}% unresolved ${String(tgtUnresolved).padStart(7)}`)
+  if (tgtUnresolved > 0) console.log(`${w("", 14)}   axes: ${axes || "-"}`)
+  if (unexplained > 0) {
+    console.log(`${w("", 14)}   ** UNEXPLAINED ${unexplained} **  top names: ${[...s.unexplainedNames.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, v]): string => `${k}:${v}`).join("  ")}`)
+    for (const x of s.unexplainedExamples.slice(0, 6)) console.log(`${w("", 14)}      ${x}`)
+  }
+}
+console.log(`\nlabels emitted ${emittedCount}/10   OUTGOING (source) UNRESOLVED across all ten: ${grandSrcUnresolved}`)
+console.log(`INCOMING (target) UNEXPLAINED across all ten: ${grandUnexplained}  <- the only defect axis; every other unresolved target is declared-dynamic, declared-local, declared-external, qualified-external, or an interpreter builtin`)
+
 console.log("\n== confidence / evidenceClass / reasonCode / hygiene ==")
 for (const t of ALL_TYPES) {
   const s = rows.get(t)!
@@ -675,6 +932,10 @@ const out: any = {
       selfLoop: s.selfLoop,
       emptyEndpoints: s.emptyEndpoints,
       unresolvedTargetNames: Object.fromEntries([...s.unresolvedNames.entries()].sort((a, b) => b[1] - a[1]).slice(0, 40)),
+      unresolvedClass: Object.fromEntries(s.unresolvedClass),
+      unexplained: s.unexplained,
+      unexplainedTargetNames: Object.fromEntries([...s.unexplainedNames.entries()].sort((a, b) => b[1] - a[1]).slice(0, 40)),
+      unexplainedExamples: s.unexplainedExamples,
       examples: s.examples,
       unresolvedProjectTargets: s.unresolvedProjTgt,
       ambiguousTargets: s.ambTgt,
@@ -685,3 +946,13 @@ const out: any = {
   untyped: untyped.count,
 }
 if (OUT) { writeFileSync(OUT, JSON.stringify(out, null, 2)); console.log(`\nwrote ${OUT}`) }
+if (DUMP_QUALIFIED) {
+  writeFileSync(DUMP_QUALIFIED, qualifiedDump.join("\n") + "\n")
+  console.log(`wrote ${qualifiedDump.length} qualified-route edge(s) to ${DUMP_QUALIFIED}`)
+}
+if (DUMP_UNEXPLAINED) {
+  const all: string[] = []
+  for (const t of ALL_TYPES) all.push(...rows.get(t)!.unexplainedEdges)
+  writeFileSync(DUMP_UNEXPLAINED, all.join("\n") + "\n")
+  console.log(`wrote ${all.length} unexplained edge(s) to ${DUMP_UNEXPLAINED}`)
+}

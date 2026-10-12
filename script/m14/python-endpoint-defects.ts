@@ -19,12 +19,27 @@
  *       store deletes the `root` symbol, and the edge survives: an edge into
  *       nothing. The rule is read from the production function, never re-typed.
  *
- *   D2  references into an INTERPRETER BUILTIN. The analyzer filters 11 primitive
- *       type names (`str int float complex bool bytes object None Any self cls`)
- *       and not the other 144 in `dir(builtins)` — so `-> list`, `-> dict`,
- *       `-> set`, `-> tuple`, `-> type`, `-> property` become edges naming names
- *       the graph can never hold. Measured, not assumed: the builtin set is read
- *       from the interpreter by subprocess.
+ *   D2  references into an INTERPRETER BUILTIN, FROM A TYPE POSITION. MEASURED, and
+ *       RECLASSIFIED 2026-10-10: this is a DECLARED POSITION, not a defect, and the
+ *       count is a population size rather than a fault. The analyzer drops only the
+ *       11 scalars (`str int float complex bool bytes object None Any self cls`) and
+ *       emits every other name written in a type position, because a type position
+ *       NAMES A TYPE and a builtin is not an exception to that — `-> dict` and
+ *       `-> Exception` are the types the code wrote. `type-usage-graph` pinned the
+ *       container half of that before this session; the exception half is pinned now by
+ *       `python/builtin-type-name-is-still-a-reference` (each position fires) and
+ *       `python/builtin-type-name-is-not-a-control-flow-edge` (an `except` clause is NOT
+ *       a type position and must stay silent), so the rule is falsifiable in BOTH
+ *       directions instead of being an opinion held by this file. What remains a defect
+ *       is D2b below. The builtin set is read from the interpreter by subprocess, never
+ *       typed out here.
+ *
+ *   D2b THE DEFECT HALF OF D2: a reference to a builtin name whose
+ *       `metadata.relationshipType` is NOT one of the three declared type positions
+ *       (`declared_type`, `return_type`, `instanceof_check`) — i.e. the analyzer
+ *       emitting a reference from a position it does not document. This is the axis
+ *       that can actually be wrong: D2 can only be a design decision, while a reference
+ *       arriving from an undeclared position is a rule violation whatever the rule is.
  *
  *   D3  EMPTY or whitespace-only endpoints on any edge.
  *
@@ -86,6 +101,17 @@ const PY_BUILTIN_NAMES: Set<string> = (() => {
 const ANALYZER_PRIMITIVES = new Set([
   "str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls",
 ])
+/**
+ * The three TYPE POSITIONS `references` is documented to be emitted from, in the
+ * `metadata.relationshipType` spelling the production path writes. D2b is defined against this
+ * list, and the list is pinned by fixtures rather than by this comment: a synthetic source
+ * containing every candidate position emits a reference from each of these three (a return
+ * annotation, a typed parameter/attribute annotation, an isinstance check) and from none of the
+ * others (`except Exception as ex:` and `raise ValueError("x")` emit nothing) — see
+ * validation/m14/fixtures/python/builtin-type-name-is-still-a-reference.{py,expectation.json} and
+ * validation/m14/fixtures/python/builtin-type-name-is-not-a-control-flow-edge.{py,expectation.json}.
+ */
+const REFERENCES_TYPE_POSITIONS = new Set(["declared_type", "return_type", "instanceof_check"])
 const PLACEHOLDERS = new Set(["<unknown>", "unknown_symbol", "unknownsymbol", "unknownSymbol", "<anonymous>", "<lambda>", "PLACEHOLDER", "PLACEHOLDER_SYMBOL"])
 const PLACEHOLDER_PREFIXES = ["<"]
 
@@ -147,7 +173,7 @@ const admitted = LIMIT ? all.slice(0, LIMIT) : all
 // ---------------------------------------------------------------- tallies
 type Defect = { count: number; files: Set<string>; byType: Map<string, number>; byName: Map<string, number>; samples: string[] }
 const mk = (): Defect => ({ count: 0, files: new Set(), byType: new Map(), byName: new Map(), samples: [] })
-const D1 = mk(), D2 = mk(), D3 = mk(), D4invented = mk(), D4present = mk(), D5 = mk(), D6empty = mk(), D6placeholder = mk(), D7 = mk()
+const D1 = mk(), D2 = mk(), D2b = mk(), D3 = mk(), D4invented = mk(), D4present = mk(), D5 = mk(), D6empty = mk(), D6placeholder = mk(), D7 = mk()
 
 const hit = (d: Defect, label: string, type: string, name: string, sample: string, cap = 8) => {
   d.count++
@@ -232,9 +258,16 @@ const worker = async (): Promise<void> => {
       if (tgt !== "" && !keepSymbol({ name: tgt }, "python")) {
         hit(D1, label, t, tgt, `${label} ${t} ${src} -> ${tgt} line ${rel.line_number ?? "none"} (keepSymbol deletes '${tgt}')`)
       }
-      // D2 — references into an interpreter builtin the analyzer does not filter.
+      // D2 — references into an interpreter builtin the analyzer does not filter. DECLARED
+      // (see the header): a population size, not a fault.
       if (t === "references" && tgt !== "" && !ANALYZER_PRIMITIVES.has(tgt) && PY_BUILTIN_NAMES.has(tgt)) {
         hit(D2, label, t, tgt, `${label} references ${src} -> ${tgt} line ${rel.line_number ?? "none"}`)
+        // D2b — the part of D2 that CAN be wrong: the same edge arriving from a position the
+        // analyzer does not declare as a type position.
+        const posKind = String(rel.metadata?.relationshipType ?? "(none)")
+        if (!REFERENCES_TYPE_POSITIONS.has(posKind)) {
+          hit(D2b, label, t, `${tgt} from ${posKind}`, `${label} references ${src} -> ${tgt} from a NON-type position '${posKind}' line ${rel.line_number ?? "none"}`)
+        }
       }
       // D4 — placeholder-literal endpoints, split by whether the file declares it.
       for (const [which, name] of [["src", src], ["tgt", tgt]] as Array<[string, string]>) {
@@ -269,7 +302,8 @@ const report = (id: string, d: Defect, what: string, cap = 8) => {
 }
 
 report("D1", D1, "edges naming a symbol the PRODUCTION path deletes (pool-worker keepSymbol UNIVERSAL denylist)")
-report("D2", D2, "references edges into an interpreter builtin outside the analyzer's 11-name primitive list")
+report("D2", D2, "references into a builtin name from a TYPE POSITION — DECLARED, not a defect: only the 11 scalars are filtered; pinned in both directions by fixtures python/builtin-type-name-is-still-a-reference and python/builtin-type-name-is-not-a-control-flow-edge")
+report("D2b", D2b, "DEFECT: the same reference arriving from a position that is NOT declared_type/return_type/instanceof_check")
 report("D3", D3, "edges with an empty or whitespace-only endpoint")
 report("D4a", D4invented, "placeholder-literal endpoints ABSENT from the file (invented — R7)")
 report("D4b", D4present, "placeholder-literal endpoints PRESENT in the file (the RULE firing on real code)")
@@ -293,6 +327,7 @@ if (OUT) {
     builtinNames: PY_BUILTIN_NAMES.size, analyzerPrimitives: [...ANALYZER_PRIMITIVES],
     D1_containsIntoDeletedSymbol: ser(D1),
     D2_referencesIntoInterpreterBuiltin: ser(D2),
+    D2b_builtinReferenceFromUndeclaredPosition: ser(D2b),
     D3_emptyEndpoint: ser(D3),
     D4a_placeholderInvented: ser(D4invented),
     D4b_placeholderPresentInSource: ser(D4present),
