@@ -36,7 +36,14 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   // `.cts` is deliberately NOT declared: the measured corpus is ZERO files, so there is
   // nothing to support a claim about it (the same rule that kept `.jul` undeclared). Add it
   // with its numbers once a corpus exists.
-  ts: "typescript", tsx: "tsx", mts: "typescript", js: "javascript", cjs: "javascript", mjs: "javascript", jsx: "javascript",
+  ts: "typescript", tsx: "tsx", mts: "typescript",
+  // `.cts` was MISSING while every sibling was present — `ts`, `tsx`, `mts` and `js`, `cjs`, `mjs`, `jsx`.
+  // It is TypeScript's CommonJS extension and the exact counterpart of `.mts`, which maps to `typescript`,
+  // so this is an omission and not a decision. MEASURED: 3,118 `.cts` files in the corpus, and one lane
+  // probed a stride that held 3 of them, which is how it read as a 3-file curiosity rather than a fleet gap.
+  // Same defect class as `.graphqls` (97 files) — an extension the corpus carries that NOTHING routes, so the
+  // file is read, answered with the fallback, and produces no symbols while APPEARING in the population.
+  cts: "typescript", js: "javascript", cjs: "javascript", mjs: "javascript", jsx: "javascript",
   html: "html", htm: "html", vue: "vue", svelte: "svelte", css: "css",
   // scss is its own language, not a css dialect. It was mapped to "css" here while
   // the CSS grammar was the only wasm available, which is a decision made for lack of
