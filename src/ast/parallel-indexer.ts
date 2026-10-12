@@ -4196,6 +4196,42 @@ export async function storeResults(
              // language. Map the real shape (M14.1 fix).
              const moduleName = imp.module ?? imp.path ?? imp.localName ?? ""
              if (!moduleName) continue
+             // ROUND 17 — WHAT WAS IMPORTED IS NOT WHICH MODULE IT CAME FROM, and the column only ever
+             // held the module. `imp.name` is the field the worker's per-item rows carry
+             // (`{name, path, type, isExternal, line}`, one row per item — its own comment calls them
+             // "the analyzer's per-file granularity ... so fidelity here directly determines audit
+             // precision"), and it was NEVER READ here: the M14.1 fix mapped the ANALYZER shape
+             // (`module`/`items`) into this variable and the worker's `name` was dropped with it.
+             // Measured through the real pipeline on a four-file project: `from models import
+             // ProductVariant as PV` stored `imported_name = "models"` (the module) with the item
+             // nowhere in `brain_import`, and the same for typescript's `import { C } from "./a"`
+             // (stored `"./a"`) — while java's `import java.util.List` is right by accident, because
+             // there the imported name and the module ARE the same string.
+             //
+             // The correct value is the one M60's OWN verifier already asserts
+             // (`script/m14/verify-import-alias.ts` writes `String(i.name)` into `imported_name` and
+             // then looks up a row named `Cygdb`, the ITEM) — that check stayed green only because it
+             // RE-IMPLEMENTS this insert instead of exercising it, which is the gap that let this
+             // survive. `patterns.ts` is the production consumer: it searches the file for
+             // `usedName = imported_as || imported_name`, so with the module stored it searched for
+             // `models` and reported `ProductVariant` imports unused (or found the module by
+             // accident) — the mirror of the aliasing defect M60 fixed one column over.
+             //
+             // NARROW BY CONSTRUCTION, in three named cases where `name` is NOT the imported name:
+             //   `*`                 a star/namespace import asks for the MODULE itself (the rule the
+             //                       star-import axis and `exporter` lanes already state), so the
+             //                       module stays the imported name — this keeps `import os` at `os`
+             //                       instead of inventing `*`.
+             //   name === moduleName  nothing to distinguish (java, c includes): unchanged.
+             //   name === boundName   the row states one spelling for both roles — the projection used
+             //                       to do this for `X as Y` and no longer does (see pool-worker), so
+             //                       this arm now only catches a producer that still conflates them.
+             const boundName = imp.alias ?? imp.localName ?? null
+             const impName = typeof imp.name === "string" ? imp.name : ""
+             const importedName =
+               impName && impName !== "*" && impName !== moduleName && impName !== boundName
+                 ? impName
+                 : moduleName
              const importType =
                imp.importType ??
                (imp.isDefault || imp.isDefaultImport ? "default" : imp.isNamespace || imp.isNamespaceImport ? "namespace" : "named")
@@ -4211,7 +4247,7 @@ export async function storeResults(
              // undeclared dependency stays 0 (unknown ≠ external).
              const impMeta = (imp.metadata ?? {}) as Record<string, any>
              const impIsExternal =
-               imp.isExternal === true || impMeta.isExternal === true || impMeta.isSystemInclude === true ? 1 : 0
+               imp.isExternal === true || impMeta.isExternal === true ||               impMeta.isSystemInclude === true ? 1 : 0
              // M60/#910: the row's LINE was always 0 for every import that
              // arrived in the worker's BasicImport shape (`{name, path, type,
              // isExternal, line}`) — the worker carried the line, this read
@@ -4228,7 +4264,7 @@ export async function storeResults(
                importId,
                projectId,
                fileId,
-               moduleName,
+               importedName,
                // M60: the alias the analyzers already publish on ImportInfo.alias /
                // ImportInfo.localName, and which brain_import.imported_as has carried
                // in the DDL and the TS type since before either had a writer. Three
@@ -6346,7 +6382,17 @@ export async function indexProjectParallel(
         // other lane's name. Sequential on purpose: each builds its companion from
         // the same `results` and re-parses its own subset, and interleaving two
         // re-parse waves over one results array is a race nobody needs.
-        for (const companionLang of ["perl", "python"] as const) {
+        // JAVASCRIPT ADDED 2026-10-12. The third lane, and python's gap exactly: the analyzer emits
+        // `first-parent-guess` at 0.5 ONLY when `context.overrideCompanion` is absent
+        // (`real-javascript-analyzer.ts:1606`), while `:1585` already asks the right question —
+        // "does the base declare this member?" — of the map this pass builds. Measured over the
+        // whole JS population (13,162 files, 0 degraded, 0 threw): 6,268 of 6,820 `overrides` edges
+        // are guesses; with the companion, 571 are confirmed at 0.95, **1,163 false ones are never
+        // emitted at all**, and 4,534 whose base is outside the project keep guessing — a boundary
+        // that is real, so this reaches 1,734 rows and not 6,268. TYPESCRIPT IS DELIBERATELY NOT
+        // ADDED: `real-typescript-analyzer.ts` has zero `overrideCompanion` references, so the token
+        // would be a no-op that looks like a fix.
+        for (const companionLang of ["perl", "python", "javascript"] as const) {
           const passStats = await populateOverrideCompanion({
             projectPath,
             results,
