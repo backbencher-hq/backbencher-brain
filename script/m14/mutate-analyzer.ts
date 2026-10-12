@@ -9593,6 +9593,59 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "vue/local-const-name-revert",
+    language: "vue",
+    defectClass: "identity-loss",
+    description: "F32 regression: a component whose `name:` value is bound by a LOCAL CONSTANT keeps the file stem again — the pre-F32 shape, and the one F17 generalized to every identifier on the premise that the value 'lives in another module'. Measured before the fix: 253 of 724 unresolved component-usage instantiates edges named a component whose name is assigned as a literal in the declaring file (ElInput 59, ElSelect 42, ElSwitch 33, 25 names). Expressed from the analyzer's OWN metadata (nameFromLocalConst), so it stays a regression of the rule as the rule changes: whatever name the lane resolved, the mutant un-resolves it and re-points the edges back to the stem, which is exactly what the rename+re-point pair exists to prevent. Caught by vue/component-name-local-const and vue/options-name-local-const, whose stem-as-Class forbids and whose expectSymbols both fire.",
+    transform: r => {
+      const affected = (r.symbols ?? []).filter((s: any) => typeof ((s.metadata ?? {}) as any).nameFromLocalConst === "string")
+      if (affected.length === 0) return r
+      const to = new Map<string, string>()
+      for (const s of affected) {
+        const md = (s.metadata ?? {}) as any
+        to.set(String(s.name), String(md.moduleName ?? s.name))
+      }
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => {
+          const md = (s.metadata ?? {}) as any
+          if (typeof md.nameFromLocalConst !== "string") return s
+          const rest = { ...md }
+          delete rest.nameFromLocalConst
+          return { ...s, name: to.get(String(s.name)) ?? s.name, metadata: rest }
+        }),
+        relationships: (r.relationships ?? []).map((e: any) => {
+          const src = to.get(String(e.source)) ?? e.source
+          const tgt = to.get(String(e.target)) ?? e.target
+          return src === e.source && tgt === e.target ? e : { ...e, source: src, target: tgt }
+        }),
+      }
+    },
+  },
+  {
+    id: "vue/kebab-target-revert",
+    language: "vue",
+    defectClass: "target-unresolvable",
+    description: "F31 regression: publishes template component tags AS WRITTEN again, dropping the registry name — <el-button/> targets `el-button` while the corpus declares `ElButton`, which is the CASING row vue-instantiates-targets.mts rules the analyzer owns (1,409 of 2,267 edges, 62.2%, pre-fix) — vue/kebab-registry-name pins the normalized target and forbids the written spelling, so reverting loses 7 rows and adds 6 forbid violations",
+    transform: r => ({
+      ...r,
+      // The revert is expressed from the EDGE's own declaration (`tagAsWritten`), not
+      // from a list of tag spellings, so it stays a regression of this rule as the rule
+      // changes: whatever the lane normalized, the mutant un-normalizes.
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        if (String(x.type ?? x.relationshipType ?? "") !== "instantiates") return x
+        if (typeof md.tagAsWritten !== "string") return x
+        const rest = { ...md }
+        delete rest.tagAsWritten
+        delete rest.componentNameCandidates
+        delete rest.componentNameNormalized
+        delete rest.tagSpellingsWritten
+        return { ...x, target: md.tagAsWritten, metadata: rest }
+      }),
+    }),
+  },
+  {
     id: "vue/data-keys-drop",
     language: "vue",
     defectClass: "symbol-loss",

@@ -152,6 +152,81 @@ const VUE_COMPILER_MACROS = new Set([
   "defineSlots", "defineOptions",
 ])
 
+/**
+ * F31 (2026-10-12). The REGISTRY NAME of a template tag, and the lookup order
+ * Vue itself uses to get from the tag to it.
+ *
+ * The defect this closes was measured, not argued. On the 1,162-file vue draw the
+ * lane published 2,267 `instantiates` edges and 2,156 of them (95.1%) named a
+ * declaration no admitted file publishes, of which **1,409 (62.2%) name a
+ * component the corpus DOES declare under Vue's own rule and the as-written
+ * spelling does not match**: `<el-button>` against a corpus that declares
+ * `ElButton`, `<svg-icon>` against `SvgIcon`. The project's own instrument for
+ * this question (`script/m14/vue-instantiates-targets.mts`) classifies exactly
+ * that row as `CASING` and rules on it in its own header: "the as-written target
+ * does not [match]. The graph cannot walk it and Vue resolves it. The analyzer
+ * owns this." `script/m14/vue-six-questions.mts` states the rule the analyzer was
+ * not applying: "a template may write a component in PascalCase, camelCase or
+ * kebab-case and the compiler resolves all three to the registered name".
+ *
+ * So the target is the name a registry holds — the SAME rule this lane already
+ * applies to a dotted tag, where `<Form.Input/>` publishes `Form` "because that is
+ * what the components registry holds and what a resolver must match" (F9(b),
+ * vue/tag-namespace-and-dotted) rather than the as-written `Form.Input`.
+ *
+ * Vue's `resolveAsset` tries the written spelling, then `camelize`, then
+ * `capitalize(camelize)`. Both non-identity spellings are recorded on the edge in
+ * `componentNameCandidates`, in that order, so the as-written spelling is never
+ * lost: a project that registers the KEBAB key (`Vue.component('svg-icon', SvgIcon)`
+ * is one such site in this corpus) can still bind it, and the target names the
+ * component the way its own declaration does.
+ *
+ * Deliberately NOT applied to the svelte half of this family: Svelte resolves a
+ * component by its binding, and treats a hyphenated tag as a custom element, so
+ * there the as-written spelling IS the name — `svelte/relationship-kind-catalog`
+ * is the fixture that keeps the two lanes apart on this exact shape.
+ *
+ * And deliberately not applied to a SINGLE ALL-LOWERCASE WORD either, which is the
+ * second measurement this rule is made of rather than an omission: capitalizing one
+ * word is measured to GAIN 8 edges and LOSE 20 on the draw (8+20 of the 53 such
+ * edges change hands), because `<loading/>` in this corpus names the component whose
+ * file is `loading.vue`. See the body.
+ */
+function vueRegistryName(tag: string): { target: string; candidates: string[]; normalized: boolean } {
+  const candidates = [tag]
+  // THE ONE DEVIATION FROM VUE'S RULE, and it is the deviation the corpus forces.
+  // A single all-lowercase word is published AS WRITTEN: Vue tries the written spelling
+  // FIRST, so for one word the written spelling is itself a registry key, and on this draw
+  // it often IS the declaration — `<loading/>` names the component whose file is
+  // `loading.vue`, `<message/>` `message.vue`, `<calendar/>` `calendar.vue`. Measured over
+  // the 53 such edges on the draw, capitalizing one word would GAIN 8 and LOSE 20, so the
+  // rule stops one step short of Vue's capitalize on exactly this shape. (This is the
+  // number a first pass got wrong by generalizing it: the two-sided class was measured
+  // only for HYPHENLESS tags, where the kebab side of the same table reads +1,433 / -16.)
+  const kebab = tag.includes("-")
+  const camel = !kebab && /[A-Z]/.test(tag.slice(1))
+  if (!kebab && !camel) return { target: tag, candidates, normalized: false }
+  // A KEBAB (or camel) tag is the shape Vue's compiler normalizes for you, and it is the
+  // shape the measurement is about: 1,433 edges whose written spelling resolves NOWHERE
+  // and whose capitalized form resolves to a declaration (`el-button` -> `ElButton`,
+  // `el-icon` -> `ElIcon`), against 16 edges that resolve as written because a FILE is
+  // named that way (`guide-svg.vue`, `vp-link.vue`, `sponsors-button.vue`, 15 distinct
+  // spellings) — the stem seam recorded at the end of this lane's `instantiates`
+  // resolution section. The camel half is rule-completeness rather than corpus evidence
+  // and is labelled as such: every camel-shaped tag spelling on the draw is an SVG native
+  // (`feGaussianBlur`, `linearGradient`), filtered as markup before this rule runs, so it
+  // has no live instance either way.
+  const pascal = kebab
+    ? tag.split("-").filter(Boolean).map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join("")
+    : tag.charAt(0).toUpperCase() + tag.slice(1)
+  if (pascal.length === 0 || pascal === tag) return { target: tag, candidates, normalized: false }
+  // camelize, then capitalize — the two steps Vue tries after the exact spelling.
+  const camelized = pascal.charAt(0).toLowerCase() + pascal.slice(1)
+  if (camelized !== tag) candidates.push(camelized)
+  candidates.push(pascal)
+  return { target: pascal, candidates, normalized: true }
+}
+
 // ============================================================================
 // PURE-STRING HELPERS (regex-free)
 // ============================================================================
@@ -277,7 +352,12 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Walk the SFC tree; skip <script>/<style> subtrees; every non-builtin
     // element tag is a component usage (leaf tag name as written).
     const templateStack: Node[] = [rootNode]
-    const seenUsages = new Set<string>()
+    // F31: keyed on the REGISTRY name, not the written spelling. `<el-button>` and
+    // `<ElButton>` in one template are one component (Vue resolves both to
+    // `ElButton`), so they are one edge; the spellings that produced it accumulate
+    // in `usageSpellings` and are published as `metadata.tagSpellingsWritten`.
+    const usageRows = new Map<string, ASTEngine.UniversalRelationship>()
+    const usageSpellings = new Map<string, string[]>()
     let templateDecisions = 0
     // V2 (#419): template expressions reference script-side members — collect
     // the identifiers from {{ interp }} and directive value expressions
@@ -329,31 +409,55 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         const member = dotIdx > 0 ? rawTag!.slice(dotIdx + 1) : undefined
         const nsPrefix = colonIdx > 0 ? rawTag!.slice(0, colonIdx) : undefined
         const isBuiltinNamespace = nsPrefix !== undefined && BUILTIN_NAMESPACES.has(nsPrefix)
-        if (
-          tag &&
-          !isBuiltinNamespace &&
-          !HTML_BUILTIN_TAGS.has(tag) &&
-          !VUE_BUILTIN_TAGS.has(tag) &&
-          !seenUsages.has(tag)
-        ) {
-          seenUsages.add(tag)
-          const tagNode = this.elementTagNameNode(n)
-          relationships.push({
-            source: moduleName,
-            target: tag,
-            type: ASTEngine.RelationshipType.Instantiates,
-            confidence: 0.95,
-            // M59 (#825): the `<Child/>` tag as written in the template.
-            ...(tagNode ? { line_number: tagNode.startPosition.row + 1 } : {}),
-            metadata: {
-              // F9(b): the leaf of a dotted tag — see the comment at the filter.
-              // Merged HERE rather than spread above, because this literal's own
-              // `metadata` key comes later and a spread placed before it is
-              // silently overwritten (which is exactly what the first attempt did).
-              ...(member ? { member, componentPath: rawTag! } : {}),
-              isComponentUsage: true,
-            },
-          })
+        if (tag && !isBuiltinNamespace && !HTML_BUILTIN_TAGS.has(tag) && !VUE_BUILTIN_TAGS.has(tag)) {
+          const registry = vueRegistryName(tag)
+          const spellings = usageSpellings.get(registry.target)
+          if (spellings) {
+            // The SAME component, written a second way. One component, one edge;
+            // what grows is the set of spellings that reached it.
+            if (!spellings.includes(tag)) {
+              spellings.push(tag)
+              const row = usageRows.get(registry.target)!
+              row.metadata = { ...row.metadata, tagSpellingsWritten: [...spellings].sort() }
+            }
+          } else {
+            usageSpellings.set(registry.target, [tag])
+            const tagNode = this.elementTagNameNode(n)
+            const row: ASTEngine.UniversalRelationship = {
+              source: moduleName,
+              target: registry.target,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: 0.95,
+              // M59 (#825): the `<Child/>` tag as written in the template.
+              ...(tagNode ? { line_number: tagNode.startPosition.row + 1 } : {}),
+              metadata: {
+                // F9(b): the leaf of a dotted tag — see the comment at the filter.
+                // Merged HERE rather than spread above, because this literal's own
+                // `metadata` key comes later and a spread placed before it is
+                // silently overwritten (which is exactly what the first attempt did).
+                ...(member ? { member, componentPath: rawTag! } : {}),
+                // F31: the target is the registry name (see `vueRegistryName`). When it
+                // is not the spelling the template wrote, the edge says so and carries
+                // the written spelling plus Vue's lookup order, so nothing is lost and a
+                // reader can tell a normalized target from a literal one.
+                ...(registry.normalized
+                  ? {
+                      // The family's reason code for "why this target string is what it
+                      // is" (`svelte` writes `resolution: namespace-member` for its own
+                      // non-literal target), so a reader has one key to look for.
+                      resolution: "registry-name",
+                      tagSpellingsWritten: [tag],
+                      tagAsWritten: tag,
+                      componentNameCandidates: registry.candidates,
+                      componentNameNormalized: true,
+                    }
+                  : {}),
+                isComponentUsage: true,
+              },
+            }
+            usageRows.set(registry.target, row)
+            relationships.push(row)
+          }
         }
       }
       if (t === "directive_attribute") {
@@ -459,6 +563,12 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     // exactly the case where NO rename happens, because the identity stays the
     // stem and that is the whole point of the fallback.
     let declaredNameUnread = false
+    // F32: the identity came from a local `const NAME = 'Literal'`. Recorded rather
+    // than merely applied, so the metadata says how the name was obtained.
+    let declaredNameFromLocalConst: string | undefined
+    // F32: the `<script setup>` path never recorded an unreadable declared name —
+    // F17's marker existed only on the Options path. Separate flag, ORed in below.
+    let declaredNameUnreadSetup = false
     // F16: the declared name from `defineOptions`, applied after the block loop.
     let declaredNameFromOptions: string | undefined
     let optionsScriptIndex = 0
@@ -560,8 +670,16 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           // value of a `name:` option is a string literal, so stripping
           // surrounding quotes is the whole job. Pinned for both quote styles by
           // vue/options-rename-identity (single) and vue/component-name-double-quotes.
-          if (v && v.type === "string") componentName = unquote(v.text)
-          else if (v) declaredNameUnreadable = true
+          //
+          // F32: a name bound by a LOCAL CONSTANT is read through the same helper the
+          // `defineOptions` site uses, so one rule serves both spellings of the option.
+          // An identifier that is neither imported nor a readable local const still
+          // takes F17's fallback and marker.
+          const declared = this.declaredNameValue(v, scriptTree.rootNode)
+          if (declared) {
+            componentName = declared.name
+            declaredNameFromLocalConst = declared.constName
+          } else if (v) declaredNameUnreadable = true
         }
         declaredNameUnread = declaredNameUnread || declaredNameUnreadable
         // F8 (master review 2026-09-30): ONE component, ONE Class symbol.
@@ -1067,8 +1185,18 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         const n = stack.pop()!
         const keyNode = this.findChildByType(n, "property_identifier")
         if (n.type === "pair" && keyNode && keyNode.text === "name") {
-          const v = this.findChildByType(n, "string")
-          if (v) declaredNameFromOptions = unquote(v.text)
+          // F32: a string literal, or a LOCAL CONSTANT holding one. The identifier
+          // case used to fall through silently here — no name AND no marker — so a
+          // component that named itself through a constant looked exactly like one
+          // that never named itself. Both halves are fixed: the value is read when it
+          // is in the file, and `declaredNameUnreadable` (F17's marker, which this
+          // site never set) is recorded when it is not.
+          const value = n.childForFieldName("value") ?? this.findChildByType(n, "string")
+          const declared = this.declaredNameValue(value, scriptTree.rootNode)
+          if (declared) {
+            declaredNameFromOptions = declared.name
+            declaredNameFromLocalConst = declared.constName
+          } else if (value) declaredNameUnreadSetup = true
         }
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
@@ -1145,7 +1273,12 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         // F17: and the reason it is the stem is not that no name was declared —
         // one WAS, as an identifier this lane cannot read. Silence would claim
         // the component never named itself.
-        if (declaredNameUnread) cls.metadata = { ...(cls.metadata ?? {}), declaredNameUnreadable: true }
+        if (declaredNameUnread || declaredNameUnreadSetup) cls.metadata = { ...(cls.metadata ?? {}), declaredNameUnreadable: true }
+        // F32: one writer for the const-name record, after every block has been read,
+        // so the setup path and the Options path publish it the same way.
+        if (declaredNameFromLocalConst) {
+          cls.metadata = { ...(cls.metadata ?? {}), nameFromLocalConst: declaredNameFromLocalConst }
+        }
       }
     }
 
@@ -2397,6 +2530,63 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return null
+  }
+
+  /**
+   * F32 (2026-10-12). The component name a `name:` option declares, resolved one
+   * step further than a string literal.
+   *
+   * WHY. F17 (2026-10-31) ruled that a non-literal `name:` keeps the file stem and
+   * records `declaredNameUnreadable`, because the value is "an IMPORTED IDENTIFIER,
+   * whose value lives in another module". That ruling is right about an import and
+   * wrong about the shape this corpus is full of — element-plus declares almost
+   * every component's name through a LOCAL constant:
+   *
+   *     const COMPONENT_NAME = 'ElInput'      // input.vue
+   *     defineOptions({ name: COMPONENT_NAME })
+   *
+   * Measured on the 1,162-file draw before this: 724 unresolved component-usage
+   * `instantiates` edges, of which **253 (34.9%) named a component whose own name is
+   * assigned as a string literal in the DECLARING file** — `ElInput` 59 edges,
+   * `ElSelect` 42, `ElSwitch` 33, `ElForm` 20, 25 distinct names — while the lane
+   * published the stem (`input`, `select`) and no reader could bind the tag.
+   *
+   * WHAT IT READS, and the ORDER is the contract: an IMPORTED identifier is refused
+   * FIRST (F17's case — the value really is in another module, and this lane does not
+   * do cross-file resolution), then a TOP-LEVEL `const`/`let`/`var NAME = '<literal>'`
+   * in the SAME program is read. Top-level only, for the same reason
+   * `importModuleFor` and `hasTopLevelDeclaration` are: a declarator nested inside a
+   * function body is not a binding the options object can see, so `program`'s direct
+   * children are the complete search space.
+   *
+   * A `name:` that is neither a literal nor a readable local const still returns
+   * undefined, so the caller keeps F17's stem fallback and its marker.
+   */
+  private declaredNameValue(
+    valueNode: Node | null | undefined,
+    scriptRoot: Node,
+  ): { name: string; constName?: string } | undefined {
+    if (!valueNode) return undefined
+    if (valueNode.type === "string") return { name: unquote(valueNode.text) }
+    if (valueNode.type !== "identifier") return undefined
+    const name = valueNode.text
+    if (this.importModuleFor(name, valueNode) !== undefined) return undefined
+    for (let i = 0; i < scriptRoot.namedChildCount; i++) {
+      const stmt = scriptRoot.namedChild(i)
+      if (!stmt) continue
+      if (stmt.type !== "lexical_declaration" && stmt.type !== "variable_declaration") continue
+      for (let j = 0; j < stmt.namedChildCount; j++) {
+        const d = stmt.namedChild(j)
+        if (!d || d.type !== "variable_declarator") continue
+        if (d.childForFieldName("name")?.text !== name) continue
+        const value = d.childForFieldName("value")
+        // The constant's NAME travels back with its value: `metadata.nameFromLocalConst`
+        // records HOW the identity was obtained, beside `identityFromFileStem` and
+        // `synthesized`, and it is what makes the revert expressible as a mutant.
+        if (value?.type === "string") return { name: unquote(value.text), constName: name }
+      }
+    }
+    return undefined
   }
 
   /** The first object-typed argument of a call, if any (F16). */
