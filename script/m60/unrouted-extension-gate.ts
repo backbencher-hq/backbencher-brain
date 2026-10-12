@@ -62,6 +62,7 @@ const GATE_BOUNDARIES = [
   "A new key that is a filename FRAGMENT does not fail — the census's own standard (fragments are counted, labelled, and are never work items).",
   "The corpus is machine-local, so this gate cannot run on a CI runner; it belongs to the local `npm run verify` chain, like M19's checkout-dependent legs. GitHub CI runs the runner-certified `verify:fast` subset, which must not gain this leg.",
   "Exit 2 (cannot adjudicate) is never a pass: a missing corpus or a missing/unreadable baseline stops the gate's claim entirely rather than reporting clean.",
+  "A tracked file that is not present on disk cannot be read and is not adjudicated; the walk COUNTS it (`scope.trackedButNotOnDisk` — 22,861 when this boundary was written, concentrated in three partially-materialized pb-* repos) rather than reporting a population it never saw.",
 ]
 
 type KeyClass = "text-bearing" | "binary-only" | "name-fragment"
@@ -288,7 +289,7 @@ const exitCode = !selfTestsOk || gateDisagreementFail || verdict === "FAIL" ? 1 
 const knownKeysNoLongerRefused = [...known.keys()].filter((k) => !walk.buckets.has(k)).length
 const byShape = { "extension-shaped": refused.filter((k) => isExtensionShaped(k)).length, "suspect-name-fragment": refused.filter((k) => !isExtensionShaped(k)).length }
 
-console.log(`  walk: ${walk.filesScanned.toLocaleString()} tracked file(s) across ${walk.reposWalked.length} repo(s) in ${(walkMs / 1000).toFixed(1)}s · ${walk.overCap} over the 1MB cap not bucketed`)
+console.log(`  walk: ${walk.filesScanned.toLocaleString()} tracked file(s) on disk across ${walk.reposWalked.length} repo(s) in ${(walkMs / 1000).toFixed(1)}s · ${walk.overCap} over the 1MB cap not bucketed · ${walk.trackedButNotOnDisk.toLocaleString()} tracked but NOT on disk (unreadable, not adjudicated)`)
 console.log(`  register: ${known.size} known key(s) from ${sources.filter((s) => s.present).length} source(s) · refused now: ${refused.length} (${byShape["extension-shaped"]} extension-shaped, ${byShape["suspect-name-fragment"]} fragments) · still refused and known: ${knownKeysStillRefused} · known but no longer refused: ${knownKeysNoLongerRefused}`)
 console.log(`  new keys: ${newKeys.length} (text-bearing ${failKeys.length}, binary-only ${newKeys.filter((k) => k.class === "binary-only").length}, fragments ${newKeys.filter((k) => k.class === "name-fragment").length})`)
 console.log(`  single gate asserted on ${gateCheck.filesChecked.toLocaleString()} file(s): ${gateCheck.disagreements.length} disagreement(s)`)
@@ -320,6 +321,7 @@ const artifact = {
     corpusRoot: CORPUS,
     reposWalked: walk.reposWalked,
     filesScanned: walk.filesScanned,
+    trackedButNotOnDisk: walk.trackedButNotOnDisk,
     filesOverTheCapNotBucketed: walk.overCap,
     refusedKeysNow: refused.length,
     refusedKeysByShape: byShape,

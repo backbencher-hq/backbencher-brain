@@ -18,7 +18,8 @@
  *
  * `parallel-indexer.ts:693` reads `hasValidExtension(p) => detectLanguageFromPath(p) !== null`. So "the router
  * refuses it" and "the walk never admits it" are the SAME condition, and a file in this census is not merely
- * mis-analyzed — it is absent from the store entirely. `assertSingleGate()` asserts that delegation per
+ * mis-analyzed — it is absent from the store entirely. `routerDisagreements()` — shared with the gate in
+ * `corpus-extension-walk.ts` — asserts that delegation per
  * bucket instead of quoting the source, because an edit that split the two gates would otherwise make this
  * document silently wrong.
  *
@@ -48,11 +49,12 @@
  *   BB_UEC_RESET=1                                           # start the checkpoint over
  */
 import { execFileSync } from "node:child_process"
-import { appendFileSync, cpSync, existsSync, mkdtempSync, openSync, readSync, closeSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
+import { appendFileSync, cpSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { detectLanguageFromPath, EXTENSION_LANGUAGE } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
+import { isExtensionShaped, routerDisagreements, walkCorpus, type WalkFile } from "./corpus-extension-walk"
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..", "..")
 const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
@@ -66,7 +68,6 @@ const PRICE_BYTES = Number(process.env.BB_UEC_PRICE_BYTES ?? "600000")
 const TOP_CANDIDATES = Number(process.env.BB_UEC_TOP_CANDIDATES ?? "2")
 /** A parse longer than this stops that candidate / that extension. It cannot be interrupted — only avoided. */
 const SLOW_PARSE_MS = Number(process.env.BB_UEC_SLOW_MS ?? "4000")
-const FILE_CAP = 1024 * 1024
 const PARSE_FILE_CAP = 256 * 1024
 const MAX_PARSES = Number(process.env.BB_UEC_MAX_PARSES ?? "20000")
 /**
@@ -80,7 +81,8 @@ const MAX_PARSES = Number(process.env.BB_UEC_MAX_PARSES ?? "20000")
 const INFLIGHT = `${CHECKPOINT}.inflight`
 const RETRY_HANG = process.env.BB_UEC_RETRY_HANG === "1"
 
-type File = { repo: string; rel: string; abs: string; size: number; text: boolean }
+/** The walk's file record (shared with the gate); the census keeps the short name because it is used below. */
+type File = WalkFile
 
 /**
  * TEXT vs BINARY, decided PER FILE from the bytes — and this rule has a version because its first version was
@@ -112,47 +114,16 @@ const CANDIDATE_RULE_VERSION = 3
 const DECLARED_EXTENSIONS: string[] = Object.keys(EXTENSION_LANGUAGE).map((e) => `.${e}`)
 /** Buckets whose verdict can move when the text rule moves; the rest are text-independent and are reused. */
 const TEXT_RULE_SENSITIVE = new Set(["no-grammar-reads-it", "sibling-grammar-reads-it"])
-const looksText = (abs: string): boolean => {
-  try {
-    const fd = openSync(abs, "r")
-    const buf = Buffer.alloc(4096)
-    const n = readSync(fd, buf, 0, 4096, 0)
-    closeSync(fd)
-    if (n === 0) return true // an empty file carries no bytes that say "binary"
-    let bad = 0
-    for (let i = 0; i < n; i++) {
-      const c = buf[i]
-      if (c === 0) return false
-      if (c < 9 || (c > 13 && c < 32) || c === 127) bad++
-    }
-    if (bad / n >= 0.05) return false
-    for (let trim = 0; trim <= 3 && trim < n; trim++) {
-      try {
-        new TextDecoder("utf-8", { fatal: true }).decode(buf.subarray(0, n - trim))
-        return true
-      } catch {
-        // try a shorter window: the cut may be mid-sequence, which is not evidence of binary
-      }
-    }
-    return false
-  } catch {
-    return false
-  }
-}
-
-const extensionOf = (rel: string): string => {
-  const base = rel.split("/").pop() ?? rel
-  const dot = base.lastIndexOf(".")
-  return dot > 0 ? base.slice(dot).toLowerCase() : "(none)"
-}
+// `looksText` (the per-file text/binary rule), `extensionOf`, `EXTENSION_SHAPE` and `isExtensionShaped` now
+// live in `corpus-extension-walk.ts` and are imported above, so the census and the gate label a key's texthood
+// and shape identically. TEXT_RULE_VERSION above still versions the ROWS this census writes with the text rule.
 
 // ---------------------------------------------------------------- 1. discover the population
-const routedExts = new Set<string>()
-const buckets = new Map<string, File[]>()
-let counted = 0
-let overCap = 0
-/** EVERY extension's population, routed or not — the denominator these refusals are a share of. */
-const allExts = new Map<string, { files: number; bytes: number }>()
+// THE WALK IS NOT DEFINED HERE. It lives in `corpus-extension-walk.ts`, shared with the gate
+// (`unrouted-extension-gate.ts`), because "the population this census measures" and "the population the gate
+// refuses on" have to be ONE definition — two walks that drifted apart would let the gate pass over keys this
+// census never saw, or fail on keys this census had already priced. The walk's outputs are destructured below
+// its call, with the census's own accounting comments kept beside them.
 /**
  * THE SETTLED LEDGER'S FILE POOL — collected on the way past, whether or not the router accepts them.
  *
@@ -162,8 +133,7 @@ const allExts = new Map<string, { files: number; bytes: number }>()
  * is the direction that matters. The three extensions below are the ones this wave fixed; their files are kept
  * REGARDLESS of the gate so they can be priced even once the gate has stopped refusing them.
  */
-const settledFiles = new Map<string, File[]>()
-const SETTLED_EXTENSIONS = [".graphqls", ".cts", ".mts"] as const
+const SETTLED_EXTENSIONS = [".graphqls", ".jsonl", ".cts", ".mts"] as const
 /**
  * What fixed each one, and — where the measurement exists — the artifact that priced it while it was still
  * unrouted. The citation is REPLAYED from disk rather than transcribed, and an absent artifact is reported as
@@ -179,6 +149,11 @@ const SETTLED_CITATIONS: Record<string, { routedAt: string; fix: string; costArt
       why: "the PRE-FIX measurement, taken by the graphql lane through PRODUCTION DISCOVERY while the extension was still unrouted: all 97 files, `filesTheIndexerDidNotAdmit`, with the Lead's admitted count 0",
     },
   },
+  ".jsonl": {
+    routedAt: "bd8703156 (15:58 today — the same minute this census priced it)",
+    fix: "`jsonl: \"json\"` added; that commit cites THIS census's price as what the entry was worth and calls the extension the safest of its 154 candidates. Its row here is not re-invented: the citation is this instrument's own measurement, taken while the extension was still unrouted",
+    costArtifact: null,
+  },
   ".cts": {
     routedAt: "6ed5d0508 (14:52 today)",
     fix: "`cts: \"typescript\"` added beside every sibling — `ts`, `tsx`, `mts`",
@@ -190,54 +165,23 @@ const SETTLED_CITATIONS: Record<string, { routedAt: string; fix: string; costArt
     costArtifact: null,
   },
 }
-for (const name of readdirSync(CORPUS).sort()) {
-  const dir = path.join(CORPUS, name)
-  try {
-    if (!statSync(dir).isDirectory()) continue
-    execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" })
-  } catch {
-    continue
-  }
-  let tracked: string[]
-  try {
-    tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }).split("\0").filter(Boolean)
-  } catch {
-    continue
-  }
-  for (const rel of tracked) {
-    const abs = path.join(dir, rel)
-    let size = 0
-    try {
-      size = statSync(abs).size
-    } catch {
-      continue
-    }
-    if (size > FILE_CAP) {
-      overCap++
-      continue
-    }
-    const ext = extensionOf(rel)
-    const tally = allExts.get(ext) ?? { files: 0, bytes: 0 }
-    tally.files++
-    tally.bytes += size
-    allExts.set(ext, tally)
-    if ((SETTLED_EXTENSIONS as readonly string[]).includes(ext)) {
-      const pool = settledFiles.get(ext) ?? []
-      pool.push({ repo: name, rel, abs, size, text: looksText(abs) })
-      settledFiles.set(ext, pool)
-    }
-    if (detectLanguageFromPath(rel)) {
-      routedExts.add(ext)
-      continue
-    }
-    const f: File = { repo: name, rel, abs, size, text: looksText(abs) }
-    const list = buckets.get(ext)
-    if (list) list.push(f)
-    else buckets.set(ext, [f])
-    counted++
-  }
-  console.log(`  walked ${name}: ${counted.toLocaleString()} unrouted files across ${buckets.size} extensions so far`)
-}
+const walk = walkCorpus({
+  corpusRoot: CORPUS,
+  settledExtensions: SETTLED_EXTENSIONS,
+  detectText: true,
+  onRepo: (name, soFar) => console.log(`  walked ${name}: ${soFar.counted.toLocaleString()} unrouted files across ${soFar.refusedKeys} extensions so far`),
+})
+/**
+ * The walk's outputs, with this census's accounting rules kept beside the fields that carry them:
+ *
+ *  - `overCapByExt`: over-cap files PER EXTENSION. Counted rather than swallowed, because it is the difference
+ *    between two true statements that look like a contradiction — the corpus carries 100 tracked `.graphqls`
+ *    files, and the census counts 97, because three of them are 5–7 MB `graphql-java` test schemas. A ledger
+ *    that reports only its own 97 leaves the reader to find those three; this map lets the settled row say it
+ *    out loud.
+ *  - `allExts`: EVERY extension's population, routed or not — the denominator these refusals are a share of.
+ */
+const { buckets, routedExts, allExts, settledFiles, counted, overCap, overCapByExt } = walk
 
 /**
  * THE SINGLE-GATE ASSERTION. Every file counted here must also be refused by the walk's own admission test,
@@ -245,13 +189,14 @@ for (const name of readdirSync(CORPUS).sort()) {
  * gave the walk its own allowlist would make these two disagree, and this census would be describing the
  * wrong gate while still producing a table.
  */
-for (const [ext, files] of buckets) {
-  for (const f of files.slice(0, 3)) {
-    if (detectLanguageFromPath(f.rel) !== null) {
-      throw new Error(`gate disagreement on ${ext}: the router refuses ${f.rel} but the walk's admission test (hasValidExtension) admits it`)
-    }
-  }
+// The rule itself is `routerDisagreements` in `corpus-extension-walk.ts`, shared with the gate so both assert
+// the IDENTICAL test; only the consequence (throw here) belongs to this instrument.
+const gateCheck = routerDisagreements(buckets)
+if (gateCheck.disagreements.length > 0) {
+  const d = gateCheck.disagreements[0]!
+  throw new Error(`gate disagreement on ${d.ext}: the router refuses ${d.rel} but the walk's admission test (hasValidExtension) admits it`)
 }
+const gate = { filesChecked: gateCheck.filesChecked }
 
 // ---------------------------------------------------------------- 2. resume from the checkpoint
 type Row = {
@@ -288,6 +233,8 @@ type Row = {
   textRule?: number
   /** Which candidate universe was searched; older rows are re-measured (see CANDIDATE_RULE_VERSION). */
   candidateRule?: number
+  /** Derived at assembly: whether the key is an extension at all, or a filename fragment (see EXTENSION_SHAPE). */
+  extensionShape?: "extension-shaped" | "suspect-name-fragment"
 }
 const done = new Map<string, Row>()
 if (!RESET && existsSync(CHECKPOINT)) {
@@ -561,12 +508,49 @@ for (const [ext, files] of ordered) {
   }
 }
 
-// ---------------------------------------------------------------- 4. the settled ledger, priced AFTER the walk
+// ---------------------------------------------------------------- 4. assemble the rows from the checkpoint
+// The checkpoint is read AFTER the loop, not before it: rows written by THIS run have to be in the assembly,
+// and a read taken at startup would not see them.
+const byExt = new Map<string, Row>()
+for (const line of readFileSync(CHECKPOINT, "utf8").split("\n")) {
+  if (line.trim() === "") continue
+  try {
+    // LAST LINE WINS: re-measurement appends a fresh row beside the stale one, and the stale one is history
+    const r = JSON.parse(line) as Row
+    byExt.set(r.ext, r)
+  } catch {
+    // torn line: the extension it belongs to is not counted as done
+  }
+}
+/**
+ * LIVE ROWS vs ROUTED-SINCE-MEASURED. A row for an extension the router now ACCEPTS is not a refusal any
+ * more — `.jsonl` was priced by this instrument and routed by another lane the same minute (`bd8703156`), and
+ * leaving such a row in `rows` would publish a refusal the router no longer makes and make `complete` read
+ * false for a run that missed nothing. They are separated, kept, and labelled; `complete` is then a statement
+ * about the extensions the walk actually refused.
+ */
+const bucketExts = new Set(buckets.keys())
+const allRows = [...byExt.values()]
+const rows = allRows.filter((r) => bucketExts.has(r.ext))
+const routedSinceMeasured = allRows.filter((r) => !bucketExts.has(r.ext))
+// Every priced row is scaled to its pool HERE, and the language is derived HERE, so rows written by an earlier
+// run of this instrument — before either field existed, or under an older text rule — are treated identically
+// to the ones priced a minute ago.
+for (const r of allRows) {
+  r.extensionShape = isExtensionShaped(r.ext) ? "extension-shaped" : "suspect-name-fragment"
+  if (r.grammar !== null && (r.grammarLanguage ?? null) === null) r.grammarLanguage = languageOfCandidate(r.grammar)
+  if (r.priced === null) continue
+  r.priced.extrapolatedToTextPool = scaleToPool(r.priced.files, r.textFiles, r.priced.symbols, r.priced.relationships, !r.priced.capped)
+}
+
+// ---------------------------------------------------------------- 5. the settled ledger, priced AFTER the walk
 type SettledRow = {
   ext: string
   routedAt: string
   fix: string
   now: { files: number; bytes: number }
+  /** Files of this extension in the corpus that are OVER the 1 MB cap: counted, never sampled or priced. */
+  overTheCap: number
   priced: { files: number; bytes: number; symbols: number; relationships: number; byType: Record<string, number>; capped: boolean; extrapolatedToTextPool: { files: number; symbols: number; relationships: number; exact: boolean; method: string } | null } | null
   citedCost: { artifact: string; arm: string; why: string; artifactGeneratedAt: string | null; values: unknown; problem?: string } | null
   note: string
@@ -574,7 +558,7 @@ type SettledRow = {
 const settled: SettledRow[] = []
 for (const ext of SETTLED_EXTENSIONS) {
   const citation = SETTLED_CITATIONS[ext]
-  const row: SettledRow = { ext, ...citation, now: allExts.get(ext) ?? { files: 0, bytes: 0 }, priced: null, citedCost: null, note: "" }
+  const row: SettledRow = { ext, ...citation, now: allExts.get(ext) ?? { files: 0, bytes: 0 }, overTheCap: overCapByExt.get(ext) ?? 0, priced: null, citedCost: null, note: "" }
   // Priced AT THE REAL EXTENSION — the extension is routed now, so no copy of its name is needed and the
   // grammar used is the one production picks. Same caps and same caveat as every other price in this file.
   const pool = (settledFiles.get(ext) ?? []).filter((f) => f.text && f.size <= PARSE_FILE_CAP)
@@ -615,29 +599,23 @@ for (const ext of SETTLED_EXTENSIONS) {
     } else {
       row.citedCost = { artifact: citation.costArtifact.path, arm: citation.costArtifact.arm, why: citation.costArtifact.why, artifactGeneratedAt: null, values: null, problem: "the declared artifact is absent — reported as an unresolved citation rather than dropped" }
     }
+  } else {
+    // NO SEPARATE ARTIFACT TO CITE, BUT THIS INSTRUMENT'S OWN MEASUREMENT OF IT CIRCULATED: the row it priced
+    // while the extension was unrouted drove the fix, so the citation is that row rather than a fresh number.
+    const orphan = routedSinceMeasured.find((o) => o.ext === ext)
+    if (orphan !== undefined && orphan.priced !== null) {
+      row.citedCost = {
+        artifact: "(this census, while the extension was still unrouted)",
+        arm: orphan.bucket,
+        why: `${orphan.files} file(s) measured before the router accepted the extension; the fix commit cites this census's price`,
+        artifactGeneratedAt: null,
+        values: { files: orphan.files, symbols: orphan.priced.symbols, relationships: orphan.priced.relationships, byType: orphan.priced.byType },
+      }
+    }
   }
   settled.push(row)
 }
 
-// ---------------------------------------------------------------- 5. assemble the artifact from the checkpoint
-const byExt = new Map<string, Row>()
-for (const line of readFileSync(CHECKPOINT, "utf8").split("\n")) {
-  if (line.trim() === "") continue
-  try {
-    // LAST LINE WINS: re-measurement appends a fresh row beside the stale one, and the stale one is history
-    const r = JSON.parse(line) as Row
-    byExt.set(r.ext, r)
-  } catch {
-    // torn line: the extension it belongs to is not counted as done
-  }
-}
-const rows = [...byExt.values()]
-// Every priced row is scaled to its pool HERE, so rows written by an earlier run of this instrument — before
-// the scaling existed, or under an older text rule — are treated identically to the ones priced a minute ago.
-for (const r of rows) {
-  if (r.priced === null) continue
-  r.priced.extrapolatedToTextPool = scaleToPool(r.priced.files, r.textFiles, r.priced.symbols, r.priced.relationships, !r.priced.capped)
-}
 const withGrammar = rows.filter((r) => r.bucket === "sibling-grammar-reads-it")
 const pricedTotals = withGrammar.reduce(
   (a, r) => ({
@@ -664,8 +642,12 @@ const report = {
     unroutedExtensionsInCorpus: buckets.size,
     unroutedExtensionsMeasured: rows.length,
     complete: rows.length === buckets.size,
+    rowsForExtensionsTheRouterNowAccepts: routedSinceMeasured.length,
     unroutedFiles: counted,
+    /** The walk's denominator, and the tracked files it could not read — reported, never implied. */
+    filesScanned: walk.filesScanned,
     filesOverTheCapNotCounted: overCap,
+    trackedButNotOnDisk: walk.trackedButNotOnDisk,
     routedExtensionsObservedInCorpus: routedExts.size,
     extensionsDeclaredByTheRouter: DECLARED_EXTENSIONS.length,
     settledExtensionsMeasured: settled.length,
@@ -677,6 +659,8 @@ const report = {
   singleGate: {
     claim: "`parallel-indexer.ts:693` — `hasValidExtension(p) === (detectLanguageFromPath(p) !== null)`, so an unrouted extension is never admitted to the store either. Asserted per bucket by this instrument, not quoted.",
     disagreements: 0,
+    /** The assertion's own population, so the artifact states what was checked rather than a bare zero. */
+    filesChecked: gate.filesChecked,
   },
   taxonomy: {
     "sibling-grammar-reads-it": "a grammar already in the fleet reads this content (measured: real symbols on the sample, and separated from the runner-up). The extension is missing; the analyzer is not.",
@@ -685,8 +669,16 @@ const report = {
     extensionless: "the walk's other admission path is a `#!` read.",
     "unmeasured-did-not-return": "a parse of this extension did not return and the run was killed: no value is published for it, because a row filled in for the file that hung would be invented.",
   },
+  /**
+   * Keys that are NOT extensions: filename fragments the last-dot rule mistook for one. They are excluded from
+   * the actionable class below and reported here with their file counts, so nothing is dropped silently.
+   */
+  suspectNameFragments: rows
+    .filter((r) => r.extensionShape === "suspect-name-fragment")
+    .map((r) => ({ ext: r.ext, files: r.files, bucket: r.bucket, note: "the key is a filename fragment, not an extension — counted, never a work item" })),
   conclusion: {
     keysWithAGrammarThatReadsThem: withGrammar.length,
+    keysWithAGrammarThatReadsThemAndAnExtensionShapedName: withGrammar.filter((r) => r.extensionShape === "extension-shaped").length,
     keysNothingReads: rows.filter((r) => r.bucket === "no-grammar-reads-it").length,
     keysBinaryOnly: rows.filter((r) => r.bucket === "binary-only").length,
     keysExtensionless: rows.filter((r) => r.bucket === "extensionless").length,
@@ -697,6 +689,19 @@ const report = {
     pricedRelationshipsScaledIsAnExtrapolationForCappedRows: true,
     note: "priced = the ANALYZER's yield on the CONTENT through the winning grammar, under the declared caps, NOT store edges: a rerouted copy has no cross-file resolution",
   },
+  /**
+   * Rows this census measured for extensions the router ACCEPTS by the time of this run. They are refusals
+   * that were real when measured and are not refusals now; the settled ledger above carries what they cost.
+   */
+  routedSinceMeasured: routedSinceMeasured.map((r) => ({
+    ext: r.ext,
+    files: r.files,
+    bucketWhenMeasured: r.bucket,
+    grammarWhenMeasured: r.grammar ?? null,
+    symbolsWhenMeasured: r.priced?.symbols ?? null,
+    relationshipsWhenMeasured: r.priced?.relationships ?? null,
+    note: "measured while the extension was still unrouted — this is a price that got a fix, not a live refusal",
+  })),
   rows,
 }
 if (!existsSync(path.dirname(OUT))) execFileSync("mkdir", ["-p", path.dirname(OUT)])
@@ -704,21 +709,22 @@ writeFileSync(OUT, JSON.stringify(report, null, 2) + "\n")
 
 const fmt = (n: number) => n.toLocaleString()
 console.log(`\nunrouted-extension census — ${CORPUS}`)
-console.log(`  ${fmt(counted)} files across ${buckets.size} unrouted extensions · ${routedExts.size} accepted extensions observed · ${DECLARED_EXTENSIONS.length} declared by the router · ${overCap} over the 1MB cap not counted`)
+const suspectCount = rows.filter((r) => r.extensionShape === "suspect-name-fragment").length
+console.log(`  ${fmt(counted)} files across ${buckets.size} refused keys = ${buckets.size - suspectCount} extension-shaped + ${suspectCount} filename fragments · ${DECLARED_EXTENSIONS.length} declared by the router · ${overCap} over the 1MB cap not counted`)
 console.log(`  measured ${rows.length}/${buckets.size} extensions${rows.length === buckets.size ? " (COMPLETE)" : " — RE-RUN TO RESUME"} · parses this run ${fmt(parses)} · slow-parse stops ${slowStops} · unmeasured (a parse did not return) ${rows.filter((r) => r.bucket === "unmeasured-did-not-return").length}`)
-console.log(`  single gate asserted per bucket: 0 disagreements (the router IS the walk's admission test)`)
+console.log(`  single gate asserted on ${fmt(gate.filesChecked)} file(s) across ${buckets.size} buckets: 0 disagreements (the router IS the walk's admission test)`)
+for (const o of routedSinceMeasured) console.log(`  ROUTED SINCE IT WAS MEASURED: ${o.ext} — ${o.files} file(s), priced at ${o.priced?.relationships ?? "-"} relationships while it was still unrouted${o.priced?.capped === true ? " (stride, capped)" : ""}; not counted as a refusal in this run`)
 console.log(`\nSETTLED — THE ROWS THIS WAVE FIXED (the live walk can no longer see them, so each is priced here):`)
 for (const s of settled) {
   const cited = s.citedCost?.values as any
   console.log(`  ${s.ext.padEnd(11)} routed at ${s.routedAt}`)
-  console.log(`     files in the corpus NOW: ${fmt(s.now.files)} (${(s.now.bytes / 1e6).toFixed(2)} MB) · priced here: ${s.priced!.files} file(s) -> ${fmt(s.priced!.symbols)} symbols, ${fmt(s.priced!.relationships)} relationships${s.priced!.capped ? " (capped)" : ""}`)
+  console.log(`     files in the corpus NOW: ${fmt(s.now.files)} (${(s.now.bytes / 1e6).toFixed(2)} MB)${s.overTheCap > 0 ? ` + ${s.overTheCap} over the 1MB cap, NOT counted (the corpus holds ${fmt(s.now.files + s.overTheCap)})` : ""} · priced here: ${s.priced!.files} file(s) -> ${fmt(s.priced!.symbols)} symbols, ${fmt(s.priced!.relationships)} relationships${s.priced!.capped ? " (capped)" : ""}`)
   if (s.priced!.extrapolatedToTextPool !== null) console.log(`     whole pool: ${fmt(s.priced!.extrapolatedToTextPool.files)} file(s) -> ~${fmt(s.priced!.extrapolatedToTextPool.symbols)} symbols, ~${fmt(s.priced!.extrapolatedToTextPool.relationships)} relationships${s.priced!.extrapolatedToTextPool.exact ? " (MEASURED, not extrapolated)" : " (extrapolated from the stride — see the artifact's method field)"}`)
   if (cited) console.log(`     cited from ${s.citedCost!.artifact} [${s.citedCost!.arm}]: ${fmt(cited.files)} files, ${fmt(cited.symbols)} symbols, ${fmt(cited.relationships)} relationships — ${s.citedCost!.why}`)
   else if (s.citedCost !== null) console.log(`     cited from ${s.citedCost.artifact} [${s.citedCost.arm}]: ${s.citedCost.problem}`)
   else console.log(`     no cost artifact: the fix commit's own measurement is the citation — ${s.fix}`)
   if (s.note !== "") console.log(`     NOTE: ${s.note}`)
-}
-console.log(`\nA GRAMMAR ALREADY READS THESE (${withGrammar.length}) — cost if routed:`)
+}  console.log(`\nA GRAMMAR ALREADY READS THESE (${withGrammar.length}, of which ${withGrammar.filter((r) => r.extensionShape === "extension-shaped").length} have an extension-shaped name and ${withGrammar.filter((r) => r.extensionShape === "suspect-name-fragment").length} are name fragments) — cost if routed:`)
 console.log(`  ${"ext".padEnd(12)} ${"files".padStart(6)} ${"MB".padStart(7)}  ${"candidate".padEnd(9)} ${"language".padEnd(10)} ${"priced".padStart(7)} ${"symbols".padStart(9)} ${"rels".padStart(9)} ${"~whole pool".padStart(11)}  sample winner vs runner-up`)
 for (const r of withGrammar.sort((a, b) => (b.priced?.relationships ?? 0) - (a.priced?.relationships ?? 0)).slice(0, 25)) {
   const s = r.sample!

@@ -105,6 +105,13 @@ export type ExtensionWalk = {
   reposWalked: string[]
   /** Every tracked file considered, admitted or refused — so a reader can see the walk's denominator. */
   filesScanned: number
+  /**
+   * Tracked files that `statSync` could not reach — MISSING FROM THE CHECKOUT, not absent from the population.
+   * Measured at 22,861 on 2026-10-12, concentrated in three partially-materialized `pb-*` repos, and counted
+   * HERE rather than passed over in silence: a census that says "all files" while skipping 22,861 of them is
+   * the class of overstatement this programme keeps refusing.
+   */
+  trackedButNotOnDisk: number
 }
 
 /**
@@ -133,6 +140,7 @@ export function walkCorpus(opts: {
   let counted = 0
   let overCap = 0
   let filesScanned = 0
+  let trackedButNotOnDisk = 0
 
   const text = (abs: string): boolean => (opts.detectText ? looksText(abs) : false)
 
@@ -157,6 +165,7 @@ export function walkCorpus(opts: {
       try {
         size = statSync(abs).size
       } catch {
+        trackedButNotOnDisk++
         continue
       }
       filesScanned++
@@ -188,7 +197,7 @@ export function walkCorpus(opts: {
     opts.onRepo?.(name, { counted, refusedKeys: buckets.size })
   }
 
-  return { buckets, routedExts, allExts, settledFiles, counted, overCap, overCapByExt, reposWalked, filesScanned }
+  return { buckets, routedExts, allExts, settledFiles, counted, overCap, overCapByExt, reposWalked, filesScanned, trackedButNotOnDisk }
 }
 
 /**
