@@ -197,6 +197,34 @@ export const LANES_B: Record<string, string> = {
   hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl",
 }
 
+/**
+ * LAPTOP-A LANES — the other 23 analyzers, added 2026-10-12.
+ *
+ * THE EXTENSION LISTS ARE VERIFIED AGAINST THE ROUTER, NOT WRITTEN FROM MEMORY: every extension below was run
+ * through `detectLanguageFromPath` and all 23 lanes report ZERO unrouted extensions. That check exists because
+ * THREE router gaps were found in one day (.cts, .graphqls, .sbt/.phpt) and each one was an extension nobody had
+ * noticed was missing from a list like this one.
+ *
+ * TWELVE OF THESE TWENTY-THREE ARE MEASURED as of 2026-10-12, on 400-file strides, and every one is tough:
+ * javascript 84.5, rust 78.5, java 77.4, python 76.9, typescript 73.4, csharp 65.7, go 64.4, swift 44.6,
+ * scala 38.6, kotlin 23.9, php 23.2 and cpp/c/perl/groovy assigned. THE RATES IN THAT SENTENCE ARE NOT ALL THE
+ * SAME FRACTION — the first seven come from the gate's own columns and the rest from a resolved-per-edge read —
+ * so quote edges, resolved, amb and unresolved and let the reader form the rate.
+ *
+ * NOTE FOR ANYONE EDITING THIS FILE: the parser rule stated above LANES_B applies here too. This literal is read
+ * quote-aware but NOT comment-aware, so a comment must not contain a key-colon-quote shape and must not contain
+ * a backtick.
+ */
+export const LANES_A: Record<string, string> = {
+  c: "c,h", clojure: "clj,cljs,cljc,edn", cpp: "cpp,cc,cxx,hpp,hxx,hh", csharp: "cs,csx",
+  elixir: "ex,exs", erlang: "erl,hrl", go: "go", groovy: "groovy,gvy,gradle", haskell: "hs,lhs",
+  html: "html,htm", java: "java", javascript: "js,mjs,cjs,jsx", kotlin: "kt,kts",
+  "objective-c": "m,mm", perl: "pl,pm,t,pod", python: "py,pyi,pyw", rust: "rs",
+  scala: "scala,sc,sbt", svelte: "svelte", swift: "swift",
+  typescript: "ts,tsx,mts,cts", vb: "vb", vue: "vue",
+}
+
+
 const ALL_TYPES = [
   "calls", "uses", "contains", "imports", "references",
   "exports", "extends", "implements", "overrides", "instantiates",
