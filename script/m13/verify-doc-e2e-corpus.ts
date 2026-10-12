@@ -32,7 +32,9 @@ for (const fmt of ["markdown","json"]) {
     const out = execFileSync("node", [bb, "tool", "bb_doc", "--dir", root, "--args",
       JSON.stringify({ mode: "symbol", target: "greet", format: fmt })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
     harness.check("CLI symbol "+fmt+": has output", out.length > 10, "len="+String(out.length))
-  } catch {}
+    } catch (error) {
+      harness.check("CLI symbol "+fmt+" -- bb_doc did not run", false, "bb_doc exited non-zero: " + (error instanceof Error ? error.message.slice(0, 140) : String(error)))
+    }
 }
 
 // MCP
@@ -75,7 +77,9 @@ for (const [repo, subPath, family] of [["rake","lib/rake","Ruby"],["rebar3","app
       const out = execFileSync("node", [bb, "tool", "bb_doc", "--dir", idxRoot, "--args",
         JSON.stringify({ mode: "project" })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
       harness.check("corpus "+repo+" project: has output", out.length > 20, "len="+String(out.length))
-    } catch {}
+      } catch (error) {
+        harness.check("corpus "+repo+" project: bb_doc did not run", false, "bb_doc exited non-zero: " + (error instanceof Error ? error.message.slice(0, 140) : String(error)))
+      }
   } catch(e) {
     harness.check("corpus "+repo+": session", false, e instanceof Error ? e.message : String(e))
   } finally {

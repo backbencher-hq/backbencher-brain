@@ -322,20 +322,42 @@ const files = [...walkSourceFiles(path.join(ROOT, "script")), ...walkSourceFiles
   .filter((f) => f.endsWith(".ts") || f.endsWith(".mts"))
   .map((f) => path.relative(ROOT, f))
 
+// A SWEEP THAT RECOGNISES NOTHING REPORTS ZERO, AND ZERO IS INDISTINGUISHABLE FROM CLEAN.
+//
+// This is the whole failure mode of the path-encoding gate earlier in this session: it
+// scanned zero files and called the tree clean. This gate's own first version reported "0
+// inverted calls across 4601 files" for the same reason — declaresLabelFirst answered false
+// for every helper — and the zero looked exactly like a pass.
+//
+// So the count of files where the detector DID recognise a label-first helper is measured
+// and published alongside the offender count. If that number is ever 0, the sweep is
+// vacuous and the "0 inverted calls" line above it means nothing. It is the one statistic
+// that makes the other one readable.
+const recognised: string[] = []
 const offenders: Array<{ file: string; sites: string[]; inChain: boolean }> = []
 for (const rel of files) {
   const src = readFileSync(path.join(ROOT, rel), "utf8")
+  const blanks = blankCommentsAndStrings(src)
+  if ([...HELPERS].some((h) => declaresLabelFirst(blanks, h))) recognised.push(rel)
   const sites = invertedCalls(src)
   if (sites.length > 0) offenders.push({ file: rel, sites, inChain: runsInChain(rel) })
 }
+
+const sites = offenders.reduce((n, o) => n + o.sites.length, 0)
+
+check(
+  "the detector RECOGNISES real helpers (a sweep that matches nothing would report 0 and look clean)",
+  recognised.length > 0,
+  recognised.length > 0
+    ? `${recognised.length} of ${files.length} file(s) declare a helper this detector reads as (message, condition) — so the ${sites} inverted call(s) below were looked for, not merely absent`
+    : `*** the detector recognised NO helper in ${files.length} files, so "0 inverted calls" below is VACUOUS ***`,
+)
 
 check(
   "the sweep actually READ files (zero scanned means the walk failed, not that the tree is clean)",
   files.length > 0,
   `${files.length} file(s) scanned`,
 )
-
-const sites = offenders.reduce((n, o) => n + o.sites.length, 0)
 
 check(
   "no assertion helper is called with a boolean where its signature declares the label",
