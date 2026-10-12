@@ -156,6 +156,20 @@ export interface DeclarationSpec {
    */
   nameOnlyNodes?: string[]
   /**
+   * NAME A ROOT TYPE BY THE FILE IT LIVES IN. A grammar whose type unit IS the file — SCSS, where
+   * the stylesheet root node is the module and its name is the file's basename — declares that here,
+   * and `indexTree` uses the `fileName` its callers pass. WITHOUT THIS THE EXTRACTION IS EMPTY and
+   * silently so: `stylesheet` matches `typeNodes` but `childForFieldName("name")` reads "", the type
+   * branch requires a non-empty name, and the type AND every member under it are dropped —
+   * measured: `typeMembers` and `symbolNames` both `[]` over real SCSS files, one of which the
+   * grammar gives 12 `function_statement` nodes.
+   *
+   * Absent the flag the behaviour is byte-for-byte what it was; every other spec's type nodes
+   * carry their own `name` field, so the fallback never fires for them even when a caller passes a
+   * path.
+   */
+  nameFromFile?: boolean
+  /**
    * Resolve a declaration's KIND from its own node, when the grammar spells TWO DIFFERENT kinds
    * with the SAME node type. `typeNodes` is a static map, so it can only answer a question the
    * grammar already separated — and F# does not separate this one: `type I = abstract member M :
@@ -473,8 +487,11 @@ function fsharpKindResolver(node: Node): DeclarationKind | undefined {
 // SOLIDITY's spec), `parallel-indexer.ts` had no way to map the language, and the gate had no way to
 // build the index that would exercise the mechanism at all.
 export const SCSS_DECLARATION_SPEC: DeclarationSpec = {
-  // The stylesheet root node IS the module declaration. Its name is the file's basename
-  // (handled by the caller via file path). We treat it as a "module" kind.
+  // The stylesheet root node IS the module declaration, and its name is the file's basename —
+  // which is what `nameFromFile` now makes true. The sentence that used to stand here said
+  // "(handled by the caller via file path)" and NO CALLER EVER PASSED IT, so the extraction was
+  // empty and this spec indexed nothing.
+  nameFromFile: true,
   typeNodes: {
     stylesheet: "module",
   },
@@ -709,7 +726,12 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
       if (resolved !== undefined) kind = resolved
     }
     if (kind !== undefined) {
-      const name = nameOf(node)
+      let name = nameOf(node)
+      // A TYPE UNIT NAMED BY ITS FILE. `indexTree` has always accepted `fileName` and no caller
+      // passed it, so this branch is the missing half of the SCSS spec's own documented contract.
+      if (name === "" && spec.nameFromFile === true && fileName !== undefined && fileName !== "") {
+        name = fileName.split(/[\\/]/).pop() ?? ""
+      }
       if (name !== "") {
         // A name declared twice with DIFFERENT kinds is a compile error in Solidity;
         // recording `unknown` rather than letting the last writer win means a
@@ -841,7 +863,7 @@ export function buildProjectIndex(
       index.stats.damaged++
       index.damagedFiles.add(f.path)
     }
-    indexTree(f.tree.rootNode, index, spec)
+    indexTree(f.tree.rootNode, index, spec, f.path)
   }
   return index
 }
@@ -929,7 +951,7 @@ export async function buildProjectIndexStreaming(
     try {
       tree = parser.parse(text)
       if (tree?.rootNode) {
-        indexTree(tree.rootNode, index, spec)
+        indexTree(tree.rootNode, index, spec, f)
       } else {
         damaged++
       }
@@ -1057,9 +1079,24 @@ export interface SerializedProjectIndex {
   symbolNames: string[]
   damagedFiles: string[]
   stats: { files: number; damaged: number }
+  /**
+   * THE CLOSED-MEMBER MAP, which the SCSS resolver reads (`__closedMembers`) and which this
+   * serializer did NOT carry: it was a runtime-only property on the in-memory index, so every
+   * deserialized index — the worker's and the gate's alike — had it `undefined` and
+   * `resolveModuleImports` returned at its first guard. Optional on read, so a payload written
+   * before this field existed still deserializes (to an absent map, exactly as before).
+   */
+  closedMembers?: [string, string[]][]
 }
 
 export function serializeProjectIndex(index: ProjectIndex): SerializedProjectIndex {
+  // THE PAYLOAD MUST CARRY WHAT THE RESOLVER READS. `__closedMembers` is attached by
+  // `buildResolutionTables`, and the indexer's path (`buildProjectIndexFromDisk` -> here) never
+  // called it — so the serialized payload had no closed-member map at all and
+  // `resolveModuleImports` read `undefined` on every deserialized index. Computing it here, only
+  // when it is absent, makes the serializer self-sufficient for EVERY caller rather than fixing one
+  // of them; the cost is one closure pass over the shallow index, which is what the map is.
+  if ((index as any).__closedMembers === undefined) buildResolutionTables(index)
   return {
     version: 1,
     typeKinds: [...index.typeKinds.entries()],
@@ -1068,6 +1105,7 @@ export function serializeProjectIndex(index: ProjectIndex): SerializedProjectInd
     symbolNames: [...index.symbolNames],
     damagedFiles: [...index.damagedFiles],
     stats: { ...index.stats },
+    closedMembers: [...((index as any).__closedMembers?.entries() ?? [])].map(([k, v]: [string, Set<string>]) => [k, [...v]]),
   }
 }
 
@@ -1087,6 +1125,9 @@ export function deserializeProjectIndex(raw: unknown): ProjectIndex | null {
   for (const n of r.symbolNames) index.symbolNames.add(n)
   for (const f of r.damagedFiles ?? []) index.damagedFiles.add(f)
   index.stats = { files: r.stats?.files ?? 0, damaged: r.stats?.damaged ?? 0 }
+  if (Array.isArray(r.closedMembers)) {
+    ;(index as any).__closedMembers = new Map(r.closedMembers.map(([k, v]) => [k, new Set(v)]))
+  }
   return index
 }
 
@@ -1128,6 +1169,23 @@ export function roundTripProjectIndex(index: ProjectIndex): string[] {
   if (back.stats.files !== index.stats.files) problems.push("stats.files")
   if (back.stats.damaged !== index.stats.damaged) problems.push("stats.damaged")
   if (back.damagedFiles.size !== index.damagedFiles.size) problems.push("damagedFiles")
+  // THE FIELD THE TRANSPORT ACTUALLY LOST. `roundTripProjectIndex` checked every DECLARED field and
+  // this one is not declared on `ProjectIndex` — it is attached at runtime — so the transport test
+  // passed while `resolveModuleImports` read `undefined` on every deserialized index. A test that
+  // enumerates the fields it knows about cannot see a field nobody declared.
+  {
+    const before = (index as any).__closedMembers as Map<string, Set<string>> | undefined
+    const after = (back as any).__closedMembers as Map<string, Set<string>> | undefined
+    if ((before?.size ?? 0) !== (after?.size ?? 0)) {
+      problems.push(`__closedMembers: ${after?.size ?? 0} of ${before?.size ?? 0}`)
+    } else if (before !== undefined && after !== undefined) {
+      for (const [k, v] of before) {
+        const got = after.get(k)
+        if (got === undefined) { problems.push(`__closedMembers lost the key ${k}`); continue }
+        if (got.size !== v.size) problems.push(`__closedMembers[${k}]: ${got.size} of ${v.size}`)
+      }
+    }
+  }
   // The payload the analyzer actually reads, checked end to end: a member name that
   // fails to survive means a call target that fails to resolve.
   const probe = index.typeMembers.keys().next().value

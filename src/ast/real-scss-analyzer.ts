@@ -1145,7 +1145,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // CROSS-FILE RESOLUTION: if we have a projectIndex, resolve the imported module's exports
     // and create exports edges from this file's module to the imported module's public members
     if (ctx.projectIndex && namespace) {
-      this.resolveModuleImports(ctx, namespace, module)
+      this.resolveModuleImports(ctx, namespace, module, this.nodeToRange(node).startLine)
     }
   }
 
@@ -1154,7 +1154,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * exports edges from this file's module to those members.
    * This allows `@use 'other' as ns` to make `ns.$var`, `ns.mixin()`, `ns.function()` resolvable.
    */
-  private resolveModuleImports(ctx: ScssContext, namespace: string, modulePath: string): void {
+  private resolveModuleImports(ctx: ScssContext, namespace: string, modulePath: string, importLine?: number): void {
     if (!ctx.projectIndex) return
 
     // The projectIndex has typeMembers mapping module names to their exported members
@@ -1162,27 +1162,37 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // We need to find which type in the index corresponds to the imported module path
     const index = ctx.projectIndex
 
-    // Try to find the module in the index by matching the module path
-    // The module path could be relative ('./theme'), absolute, or namespaced ('sass:map')
+    // For built-in sass: modules, they won't be in the project index
+    if (modulePath.startsWith("sass:")) return
+
+    /**
+     * MATCHED BY BASENAME, NOT BY PATH SUFFIX, and the difference is the whole mechanism.
+     * A `@use` argument is a SPECIFIER — `'../utilities/css-variables'`, `'./theme'` — while the
+     * index names a module by its BASENAME with the extension (`css-variables.scss`). The previous
+     * rule was `typeName === modulePath || typeName.endsWith("/" + modulePath)`, which cannot match
+     * those two spellings: measured, no key ends with `/../utilities/css-variables`, so the resolver
+     * returned before emitting anything. Sass conventions are applied on BOTH sides: a partial's
+     * leading `_` and the `.scss`/`.sass`/`.css` extension carry no part of the module's identity.
+     */
+    const norm = (spelling: string): string =>
+      (spelling.split(/[\\/]/).pop() ?? spelling).replace(/\.(scss|sass|css)$/i, "").replace(/^_/, "")
+    const want = norm(modulePath)
     let targetTypeName: string | undefined
-
-    // First, try exact match on symbolNames (the index records all declared names)
-    for (const typeName of index.typeMembers.keys()) {
-      // The module's public surface is what @use exposes
-      // Check if this typeName corresponds to the imported module
-      if (typeName === modulePath || typeName.endsWith("/" + modulePath) || typeName.endsWith("\\" + modulePath)) {
-        targetTypeName = typeName
-        break
+    if (want !== "") {
+      for (const typeName of index.typeMembers.keys()) {
+        if (norm(typeName) === want) { targetTypeName = typeName; break }
       }
-      // For built-in sass: modules, they won't be in the project index
-      if (modulePath.startsWith("sass:")) return
     }
-
     if (!targetTypeName) return
 
-    // Get the closed members for this module (includes inherited members)
-    const closedMembers = (index as any).__closedMembers?.get(targetTypeName)
-    if (!closedMembers) return
+    // THE DECLARED MEMBERS, then the closed ones. `typeMembers` is what the index DECLARES for this
+    // module and it is now both populated (the extraction fix) and CARRIED BY THE TRANSPORT (the
+    // serialization fix); `__closedMembers` adds inherited members on top and is carried too. Before
+    // those two fixes this line read `undefined` on every deserialized index, which is where the
+    // mechanism has been dying since it was written.
+    const declared = index.typeMembers.get(targetTypeName)
+    const closedMembers = ((index as any).__closedMembers as Map<string, Set<string>> | undefined)?.get(targetTypeName) ?? declared
+    if (!closedMembers || closedMembers.size === 0) return
 
     // For each exported member, create an exports edge from this file's module
     // to the member, qualified by the namespace
@@ -1195,7 +1205,9 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: ctx.moduleName,
         target: qualifiedName,
         type: ASTEngine.RelationshipType.Exports,
-        line_number: 0, // import statement line
+        // THE EDGE'S OWN LINE, not a fabricated 0: the import statement's line is what the edge
+        // describes, and `0` is the sentinel this programme has refused everywhere else.
+        line_number: importLine ?? 0,
         confidence: 1.0,
         metadata: {
           evidenceClass: "structural",
