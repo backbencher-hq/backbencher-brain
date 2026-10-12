@@ -259,8 +259,17 @@ function seedWithOrphans(dbFile: string): string {
 
 // ── S5. REAL DB: ship state has zero orphan rows (read-only) ────────────────
 {
-  const realDataDir = "$HOME/.bb"
-  const realRepo = "$HOME/mcp/backbencher-brain"
+  // The owner's LIVE data dir and repo, on the machine that has them. This is not a
+  // corpus that should resolve everywhere: the leg reads the ship-state database of
+  // whichever machine it runs on, and there is no substitute for it. It is already guarded
+  // — the block below runs only if `projects/` exists — so unlike the gates fixed earlier
+  // today it never measured nothing silently; it skipped.
+  //
+  // Kept as a literal on purpose, but overridable: BB_DATA_DIR is the codebase's own
+  // convention for this, and on a machine that HAS a ship state the leg should read it
+  // rather than skip.
+  const realDataDir = process.env.BB_DATA_DIR ?? path.join(process.env.HOME ?? "", ".bb")
+  const realRepo = process.env.BB_REAL_REPO ?? process.cwd()
   if (existsSync(path.join(realDataDir, "projects"))) {
     const { createHash } = await import("node:crypto")
     const { realpathSync } = await import("node:fs")

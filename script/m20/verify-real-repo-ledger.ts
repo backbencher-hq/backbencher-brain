@@ -28,6 +28,7 @@ import { securitySourceFingerprint } from "../../src/intelligence/security/evide
 import { docSourceFingerprint } from "../../src/intelligence/documentation/evidence"
 import { createHash } from "node:crypto"
 import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+import { resolveOptionalCorpus } from "../lib/optional-corpus.ts"
 
 let checks = 0
 let passed = 0
@@ -50,7 +51,15 @@ function crossToolSourceFingerprint(rootPath: string): string {
 // Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
 
 const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
-const TSC = "$HOME/TypeScript/src/compiler"
+// WAS: the literal "$HOME/TypeScript/src/compiler" — the owner's TypeScript
+// clone on the OTHER laptop. It does not exist on this machine, so the ledger was
+// derived from a real-repo anchor that is not here.
+//
+// Resolved through script/lib/optional-corpus.ts, which searches declared locations
+// in order; the sub-path is appended to whichever checkout it finds. When none is
+// present the entry is reported absent rather than silently measuring nothing.
+const TSC_ROOT = resolveOptionalCorpus("TypeScript", "BB_TYPESCRIPT_REPO")
+const TSC = TSC_ROOT === null ? "TSC_UNRESOLVED" : path.join(TSC_ROOT, "src/compiler")
 const corpora: Array<{ id: string; path: string; family: string }> = [
   { id: "rake", path: path.join(REPO_ROOT, "rake", "lib", "rake"), family: "ruby" },
   { id: "rebar3", path: path.join(REPO_ROOT, "rebar3", "apps"), family: "erlang" },
