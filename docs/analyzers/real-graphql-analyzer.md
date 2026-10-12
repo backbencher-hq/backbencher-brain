@@ -1091,62 +1091,120 @@ rule 3's julia counter-example). Attaching it would take `extFAIL` off the zero 
 | bare name absent everywhere | 10,396 | the schema the document selects against is outside the admitted `.graphql` population (executable fixtures: a query names fields of an API schema that no file in the corpus declares) | admit those schema files, or index-assisted resolution |
 | dotted owner absent | 6,149 | the member's owner type is declared nowhere in the population | as above |
 
-### THE DETERMINACY RULING IS MEASURED AGAINST A REAL STORE, AND THE MECHANISM HOLDS ON 60,333 EDGES
+### THE DETERMINACY RULING IS MEASURED AGAINST A REAL STORE: 131,514 EDGES, 0 EXCEPTIONS — AFTER CORRECTING THIS PROBE'S OWN KEY
 
 The falsifier named in the table above is `validation/m14/fixtures/graphql/store-binding-truth.mts`: it
 copies every admitted `.graphql`/`.gql`/`.graphqls` file into a project root, indexes it through the
 PRODUCTION indexer, and reads each edge's binding off `brain_relationship.target_symbol_id` — so the
 question "does production bind the own-file declaration?" stops being a reading of `resolveTargetStmt`'s
-`ORDER BY` and becomes a column in a table. One run, one index, 1,754 files and 257,279 relationship rows,
-and the store is order-dependent, which the probe's own output says:
+`ORDER BY` and becomes a column in a table. One run, one index — the committed one holds 1,909 files and
+261,745 relationship rows (the pre-fix run held 1,754 and 257,279; why they differ is stated below) — and
+the store is order-dependent, which the probe's own output says. The artifact on disk is the
+POST-FIX run (see below); it holds **1,909 files and 261,745 relationship rows**, and its first axis reads:
 
+    axis (a), the symbol's NAME only
     class      edges     bound   ->THE own-once decl   ->own file   ->elsewhere   unbound
-    own-once  60,333    60,333            60,333          60,333           0            0
-    own-many  45,035    45,035               n/a          45,035           0            0
-    own-none 141,776   124,447               n/a          69,290      55,157       17,329
-    no-source 10,135    10,129               n/a               0      10,129            6
+    own-once  61,334    61,334            61,334          61,334           0            0
+    own-many  45,672    45,672               n/a          45,672           0            0
+    own-none 144,318   127,567               n/a          71,021      56,578       17,315
+    no-source 10,421    10,415               n/a               0      10,415            6
 
-    per type, own-once: contains 14,855 · uses 8,516 · references 33,934 · implements 3,028
-    per type, own-many: contains 44,468 · uses    59 · references    506 · implements     2
-    whole type totals: contains 118,412 · references 66,059 · uses 49,949 · exports 10,047 ·
-                       overrides 9,643 · implements 3,083 · imports 86
+    per type, own-once: contains 15,253 · uses 8,686 · references 34,276 · implements 3,119
+    per type, own-many: contains 45,103 · uses    59 · references    508 · implements     2
+    whole type totals: contains 120,433 · references 67,172 · uses 50,754 · exports 10,333 ·
+                       overrides 9,790 · implements 3,177 · imports 86
     VIOLATIONS (own-once edges that did NOT bind the own-once declaration): 0
 
-**So the 20,121-edge ruling is no longer a MODEL claim.** The ruling is about the predicate "the edge's
-own file declares the target name exactly once"; over the whole index **every one of the 60,333 edges in
-that class bound that very declaration — 0 bound elsewhere, 0 bound to nothing** — and the 20,121 edges
-the lane ruled are the sub-population of it that the classifier called ambiguous. The store also confirms
-the *clause order* rather than only its first clause: `own-many` bound in-file 45,035 of 45,035, and
-`own-none` bound out-of-file (uses 23,636 · references 31,480 · implements 40), which is what
-`COALESCE(s.is_declaration,0), (s.file_id = ?) DESC, id` predicts for each class.
+**THE CORRECTION, and it is this instrument's error rather than the analyzer's.** A declaration is
+findable under THREE spellings, and the first version looked at one of them:
 
-**One disagreement between the name-keyed model and the store is reported rather than smoothed:** all
-9,643 `overrides` edges classify `own-none` — the edge's own file declares the target NAME zero times —
-yet 9,641 of them bound to a symbol **in that file**. The resolver bound on something other than the bare
-name for that type (the analyzer's `target_external` for an override is not the declaration's `name`), so
-the probe bins the type as reported-not-scored rather than forcing it into a class its own predicate
-denies. That is the shape of the residual for `overrides` and it is visible only because the probe reads
-the store instead of agreeing with itself.
+| axis | key | what it is |
+|---|---|---|
+| (a) | `symbol.name` | what the first probe matched |
+| (b) | `symbol.qualified_name` | **the alias of the SAME declaration** — `Type.field` is one declaration spelled twice, and the lane's own probe bumps this second key (`probe-graphql-residual-causes.mts` does it only when `qname !== name`, with the comment "THE ALIAS IS THE SAME DECLARATION, not a second one") |
+| (c) | `extractLeaf(target)` against `symbol.name` | the key `resolveTargetStmt` is actually queried with (`parallel-indexer.ts:3096` matches `s.name = ?`; `4269-4305` feeds it the leaf) |
 
-**THE POPULATION THE RULING COVERS, and the 254 files that never reached the store.** A predicate about
-"the edge's own file" is only as strong as the index it runs over, and the index refuses files: of 2,008
-copied candidates, 1,754 were stored. The probe now CHARGES each refusal to a rule the production walk
-tiself applies, and the test that the rule list is complete is that nothing is left `UNEXPLAINED`:
+Measured on the same store, so the size of the error is known rather than felt:
 
-    156  built-in ignore glob in discoverAndFilterFiles  — `**/testData/**`
-      1  ParallelIndexerConfig.skipPatterns             — `/\/generated\//i`
-     97  extension not routed anywhere by language-detection.ts — `.graphqls`
-      0  UNEXPLAINED
+    own-once by (a) NAME                            61,334 edges · bound that declaration 61,334 · 0 outside
+    own-once by (b) QUALIFIED-NAME alias only       69,907 edges · bound that declaration 69,907 · 0 outside
+    own-once by (c) LEAF only, invisible to (a)+(b)    273 edges · bound that declaration    273 · 0 outside
+    own-many by (a)+(b)+(c)              45,672 + 47 + 198 · bound in the own file 45,672 + 47 + 197
+    declared NOWHERE under any of the three keys    73,893 edges · bound out-of-file 56,578 · unbound 17,315
+    OWN-FILE-DETERMINATE ACROSS ALL THREE KEYS     131,514 edges · 131,514 bound EXACTLY the own-file
+                                                   declaration · 0 bound elsewhere · 0 bound to nothing
 
-Two of those are worth naming. **`**/testData/**` matches the corpus's lowercase `testdata/`, because the
-`ignore` npm package (5.3.2) matches case-insensitively by default** — measured directly:
+**TWO STORES, TWO NUMBERS, AND BOTH ARE STATED — because something else changed between them.** The
+PRE-fix store, measured an hour earlier on the same corpus and the same analyzer, read **60,333 / 68,773 /
+273 — 129,379 determinate** and refused **254** files. The post-fix store reads **61,334 / 69,907 / 273 —
+131,514 determinate** and refuses **99**. The difference is not this lane: at 14:25, between the two runs,
+the shared indexer landed `1c530e78b` ("the `ignore` package defaults to CASE-INSENSITIVE — make it agree
+with GIT"), whose message states the defect was costing **12,479 routed-extension files across the corpus
+— `.graphql` 156 of them**, and cites this lane's 156 as one of its three confirmations. Its own falsifier
+was stated as "the indexer's admission count should RISE by the files this was losing", and the post-fix
+run is that falsifier firing: **1,754 → 1,909 files admitted (+155 net), 257,279 → 261,745 relationship
+rows (+4,466)**, and the own-file-determinate class **+2,135 edges**. The pre-fix numbers above are the
+artifact `store-binding-truth-run5`; the committed JSON is the post-fix one.
+
+**Axis (b) carries 69,907 edges — more than axis (a) found — and this is why the correction matters:
+the lane's own probe already uses it, so the lane's TABLE 4 was never wrong, and MY instrument was.**
+Two dimensions of that error are worth recording for whoever reads the next store probe. **Axis (c) is
+small**: 273 edges, 0.21% of the determinate class, so a name+qname probe is not materially wrong for
+this language and the fleet's other probes are not implicated by this measurement. **And the pattern it
+broke was already in the repository**: the ancestor this probe was modelled on,
+`validation/m14/fixtures/xml/store-binding-truth.mts`, documents the leaf rule in its own header
+("insert time `extractLeaf(target)` first (`parallel-indexer.ts:3375-3390`)", line 13) and reports a
+`qnameSuffix` strategy beside it — so the key that was missing here was a regression from the pattern
+rather than a new blind spot, which is the kind of thing only running the instrument against a real
+store can expose. The
+9,643 `overrides` edges that the first version reported as an unexplained disagreement between analyzer
+and store are the same story: they classify `own-none` under (a) because the analyzer publishes an
+override as `Type.field` while the symbol's `name` is `field` and its `qualified_name` is `Type.field`.
+All 9,641 bound edges ARE the own-file declaration, and the class is scored, not excused. The earlier
+sentence in this section — "the analyzer's override target is not the declaration's `name`, so the type is
+reported, not scored" — is TRUE about the spelling and was the WRONG CONCLUSION about the class: the
+spelling difference is a key, not a defect. The rows stay in the document because the mistake is the
+useful part of this section: **an instrument whose key does not match the resolver's reports phantom
+anomalies, and it reports them confidently.**
+
+So **the 20,121-edge ruling is no longer a MODEL claim** and it is not a name-keyed 61,334-edge claim
+either: over the whole index **every one of the 131,514 own-file-determinate edges bound its own-file
+declaration — 0 bound elsewhere, 0 bound to nothing** — and the 20,121 edges the lane ruled are the
+sub-population of it that the classifier called ambiguous. The store also confirms the *clause order* rather than only its
+first clause: `own-many` bound in-file 45,035 of 45,035 under (a), and `own-none` bound out-of-file (uses
+23,636 · references 31,480 · implements 40), which is what `COALESCE(s.is_declaration,0), (s.file_id = ?)
+DESC, id` predicts for each class.
+
+**THE POPULATION THE RULING COVERS, and the files that never reached the store.** A predicate about "the
+edge's own file" is only as strong as the index it runs over, and the index refuses files. The probe
+CHARGES each refusal to a rule the production walk itself applies, and the test that the rule list is
+complete is that nothing is left `UNEXPLAINED` — **post-fix, 2,008 copied candidates / 1,909 stored / 99
+refused, and the three rules account for all 99:**
+
+    97  extension not routed anywhere by language-detection.ts — `.graphqls`
+     1  ParallelIndexerConfig.skipPatterns             — `/\/generated\//i`
+     1  built-in ignore glob in discoverAndFilterFiles — `**/testData/**`, its INTENDED spelling
+     0  UNEXPLAINED
+
+**The pre-fix run of the same probe read 156 + 1 + 97 = 254, and the 156 is what the fix removed.** That
+first run found `**/testData/**` refusing the corpus's lowercase `testdata/` — the `ignore` npm package
+(5.3.2) matches case-insensitively by default, measured directly:
 `ignore().add(["**/testData/**"]).ignores("x/testdata/a")` is `true` while `x/test/a` and `x/tests/a` are
-kept, which is also exactly what the index shows (156 of 157 testdata-segment `.graphql` files absent,
-0 of 1,449 non-testdata absent). **And `.graphqls` is routed nowhere in the entire analyzer fleet**:
-`language-detection.ts` maps `graphql` and `gql` and has no `graphqls` entry, so production reads 0 of the
-corpus's 97 `.graphqls` files regardless of path — a product gap rather than a ruling, recorded here
-because this lane's census (1,911 = 305 `.gql` + 1,606 `.graphql`) correctly excludes them and a reader
-comparing the two numbers deserves the reason.
+kept, and the index agreed exactly (156 of 157 testdata-segment `.graphql` files absent, 0 of 1,449
+non-testdata absent). That measurement was published in this document, and the shared indexer fixed it the
+same afternoon (`1c530e78b`, four construction sites, `ignorecase: false`). **The surviving 1 is the rule
+working as written — a file spelled with the capital-D `testData` it was written for** — which is why the
+post-fix run still charges one file to it rather than reading 0. **And `.graphqls` was routed nowhere in the analyzer fleet when this section was written — it was FIXED while this lane's fleet census ran, and this section is now labelled PRE-FIX everywhere below.** `language-detection.ts` gained one map entry, `graphqls: "graphql"` (**`1150b2140`, 15:12 today**), so the corpus's 97 `.graphqls` files are admitted and routed from that commit on, and the price below is what that one entry was worth. **The fix moves this lane's OWN population and no number in this section has been re-derived over it**: the lane's census reads 1,911 files (305 `.gql` + 1,606 `.graphql`) precisely because the unrouted 97 were excluded, and the router now accepts them, so the population this lane's numbers describe has grown by 97 and every rate below is a rate over the smaller set. That is stated rather than silently rewritten — re-running the lane's census over the larger population is the falsifier and it is still owed.
+
+The class `.graphqls` belongs to now HAS the census it lacked: `script/m60/unrouted-extension-census.ts` → `validation/m14/measurements/unrouted-extension-census.json`, and **`.graphqls` is that census's first settled row**. A live walk cannot contain it any more, because "fixed" is exactly what that means, so the census keeps a ledger of the rows this wave fixed, prices each on its real file pool, and REPLAYS this document's artifact as the citation beside it — the settled entry reads the corpus's `.graphqls` count, its own stride priced at run time, and `armA`'s 97 files / 83,371 symbols / 195,108 relationships quoted from `unrouted-population-price.json` rather than transcribed — the settled entry reports **97 counted + 3 over the census's 1 MB sampling cap**, and the corpus holds **100 tracked `.graphqls`** (`graphql-java`'s three 5–7 MB test schemas are the difference), so the lane arithmetic above should be read as **+97 under that cap and +100 without it**. The census's method, its results over 1,059 refused extensions, and its own four self-corrections are recorded in `docs/analyzers/unrouted-extensions-census.md`. It is a product gap rather than a ruling, and the gap is closed; what remains open is the REST of the class.
+recorded here because this lane's census (1,911 = 305 `.gql` + 1,606 `.graphql`) correctly excludes those
+files and a reader comparing the two numbers deserves the reason. **The census the router's comment points at does NOT
+answer this question, and that is worth knowing before it is trusted for it**:
+`script/m60/routing-outlier-census.ts` measures extensions routed to a grammar that CANNOT REPRESENT the
+format (`.pyx` as Python, `.gsp` as Groovy — its own header's examples), which is a different class from an
+extension routed NOWHERE, and `grep -c graphqls` over that 408-line instrument returns **0**. That is exactly
+why the fleet census above is a SEPARATE instrument rather than an extension of it: the same `.graphqls`
+measurement is **0 rows in the sibling census and the first row in this one**.
 
 ### THE TWO PRODUCT REFUSALS ARE PRICED, AND ONE OF THEM IS NOT A TUNING DECISION
 
@@ -1172,16 +1230,19 @@ make, and it moves the arbiter's own corpus for this language (the gate selects 
 A2 caveat travels with the number: a temp-dir copy has no cross-file resolution and no store, so A2 is the
 analyzer's yield on the CONTENT, not a store edge count.
 
-**Arm B is a decision about a rule, not a defect in one.** Those 156 files are 3,575 relationships
-(references 1,126 · contains 992 · uses 805 · exports 411 · overrides 147 · implements 94) and they are
-test fixtures — genqlient's error corpus, gqlgen's federation/modelgen testdata, hasura's test projects.
-Skipping a test-data directory is what the glob says it does. What it does not say is that it matches
-case-INSENSITIVELY, which is why a glob written for the Azure spelling also refuses the corpus's lowercase
-`testdata/`. Whether that is intended is a product call, and the number to make it with is 3,575 edges on
-156 fixture files — against a rule whose other half is deliberately kept, measured: **1,056 `.graphql`
-files under a `/test/`, `/tests/` or `/__tests__/` segment ARE in the store**, and `isTestFileCandidate`
+**Arm B turned out to be a defect, and it is FIXED — the price is what got it fixed.** Those 156 files are
+3,575 relationships (references 1,126 · contains 992 · uses 805 · exports 411 · overrides 147 · implements
+94) and they are test fixtures: genqlient's error corpus, gqlgen's federation/modelgen testdata, hasura's
+test projects. Skipping a test-data directory is what the glob says it does; what it did not say is that
+it matched case-INSENSITIVELY, so a glob written for the Azure spelling also refused the corpus's
+lowercase `testdata/`. The measurement in this document is one of the three confirmations the shared
+indexer's fix cites (`1c530e78b`), and **the post-fix store admits them**, which is why the committed
+store artifact holds 1,909 files against the pre-fix 1,754. What remains true is the reason the rule was
+worth keeping rather than deleting: its other half is deliberately narrow and was measured while deciding
+this — **1,056 `.graphql` files under a `/test/`, `/tests/` or `/__tests__/` segment were ALREADY in the
+store before the fix** (those directories are kept on purpose, measured), and `isTestFileCandidate`
 returns `false` for this language by construction (`NON_CODE_TEST_LANGUAGES` holds `graphql`), so no part
-of the pipeline called them tests.
+of the pipeline ever called them tests.
 
 And **45 files hold content and returned NO symbols AND NO relationships** (45 of 1,911) — those files
 contribute nothing, so every count above describes evidence that is missing rather than evidence that is

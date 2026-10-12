@@ -347,3 +347,5 @@ src/ast/__stratcount-indexer.ts
 validation/m14/fixtures/julia/__ambkind-split.ts
 # Any r-lane scratch instrument in julias fixture dir (the __ prefix is the convention).
 validation/m14/fixtures/julia/__*.ts
+# Any r-lane scratch instrument in src/ast (the __ prefix is the convention).
+src/ast/__*.ts

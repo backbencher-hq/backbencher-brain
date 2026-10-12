@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "m60-unrouted-extension-gate",
-  "generatedAt": "2026-10-12T21:15:06.794Z",
+  "generatedAt": "2026-10-12T21:26:29.408Z",
   "producedBy": "script/m60/unrouted-extension-gate.ts",
   "question": "does the corpus carry an extension-shaped, text-bearing key that the router refuses with neither a census row nor a ruling?",
   "verdict": "PASS",
@@ -18,7 +18,7 @@
     {
       "path": "$HOME/mcp/backbencher-brain/validation/m14/measurements/unrouted-extension-census.json",
       "kind": "m60-unrouted-extension-census",
-      "generatedAt": "2026-10-12T20:47:35.159Z",
+      "generatedAt": "2026-10-12T21:26:05.081Z",
       "keys": 1060,
       "present": true
     },
@@ -234,15 +234,16 @@
       "zls"
     ],
     "filesScanned": 502725,
+    "trackedButNotOnDisk": 22861,
     "filesOverTheCapNotBucketed": 461,
-    "refusedKeysNow": 1056,
+    "refusedKeysNow": 1052,
     "refusedKeysByShape": {
-      "extension-shaped": 998,
+      "extension-shaped": 994,
       "suspect-name-fragment": 58
     },
     "knownKeys": 1060,
-    "knownKeysStillRefused": 1056,
-    "knownKeysNoLongerRefused": 4,
+    "knownKeysStillRefused": 1052,
+    "knownKeysNoLongerRefused": 8,
     "newKeysByClass": {
       "text-bearing": 0,
       "binary-only": 0,
@@ -253,7 +254,7 @@
   },
   "singleGate": {
     "claim": "`parallel-indexer.ts:693` — `hasValidExtension(p) === (detectLanguageFromPath(p) !== null)`, so an unrouted extension is never admitted to the store either. Asserted here by the shared `routerDisagreements`, the same rule the census asserts.",
-    "filesChecked": 2231,
+    "filesChecked": 2219,
     "disagreements": []
   },
   "selfTests": [
@@ -283,11 +284,12 @@
     "A new key is text-classified by a DECLARED sample — the first 4 file(s) in walk order, read through the census's own text rule. A key whose sampled files are all binary passes as binary-only; a text file beyond the sample is not seen.",
     "A new key that is a filename FRAGMENT does not fail — the census's own standard (fragments are counted, labelled, and are never work items).",
     "The corpus is machine-local, so this gate cannot run on a CI runner; it belongs to the local `npm run verify` chain, like M19's checkout-dependent legs. GitHub CI runs the runner-certified `verify:fast` subset, which must not gain this leg.",
-    "Exit 2 (cannot adjudicate) is never a pass: a missing corpus or a missing/unreadable baseline stops the gate's claim entirely rather than reporting clean."
+    "Exit 2 (cannot adjudicate) is never a pass: a missing corpus or a missing/unreadable baseline stops the gate's claim entirely rather than reporting clean.",
+    "A tracked file that is not present on disk cannot be read and is not adjudicated; the walk COUNTS it (`scope.trackedButNotOnDisk` — 22,861 when this boundary was written, concentrated in three partially-materialized pb-* repos) rather than reporting a population it never saw."
   ],
   "timing": {
-    "walkedMs": 68337,
+    "walkedMs": 13202,
     "sniffedMs": 12,
-    "totalMs": 68859
+    "totalMs": 13465
   }
 }

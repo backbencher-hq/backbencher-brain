@@ -497,15 +497,61 @@ export const SCSS_DECLARATION_SPEC: DeclarationSpec = {
   },
   // Modules are the "types" — the file IS the module
   nameOnlyNodes: ["use_statement", "forward_statement"],
-  // Mixins and functions are callable members of a module
-  memberNodes: ["mixin_statement", "function_statement"],
+  // A Sass module's public surface is EXACTLY its top-level `$variables`, `@mixin`s and
+  // `@function`s — that is what `@use` binds. `declaration` is listed so a top-level `$x: …`
+  // becomes a member; the `nameResolver` below returns "" for any declaration whose
+  // property_name is not `$`-prefixed, so a plain `color: red` at the root is NOT a member.
+  // MEASURED before this list carried `declaration`: `bulma/sass/utilities/initial-variables.scss`
+  // has 65 top-level `$` declarations and the index recorded ZERO members for it, because a
+  // variable is a `declaration` node and no member channel named it.
+  memberNodes: ["mixin_statement", "function_statement", "declaration"],
   memberNodesCallable: ["mixin_statement", "function_statement"],
-  // Variables are exported but not callable
-  // The module name is the file's basename; the index will use the file path from the caller
+  // Scope nodes: a declaration inside a rule, a mixin/function body, or a control-flow block is
+  // LOCAL to that scope and is not part of the module's surface. `@media` is deliberately ABSENT
+  // for the reason the analyzer records: Sass gives a media query no new variable scope, so a
+  // root-level `@media { $x: 1 }` still assigns the module-level `$x`.
   scopeNodes: ["mixin_statement", "function_statement", "if_statement", "each_statement", "for_statement", "while_statement", "rule_set"],
-  // Variables are declared by property_name starting with $ inside a declaration
-  // The index will pick these up as members of the module (via emitModuleExports in analyzer)
-  // We rely on the analyzer's own symbol emission for variables
+  /**
+   * Read the member name in the spelling the analyzer PUBLISHES, so a cross-file consumer looks up
+   * the same string the declaring file would have published:
+   *   `@mixin button`   -> `button`        (the analyzer's `mixinNames` key is the BARE name, and
+   *                                         `@include ns.button` splits on the dot to reach it)
+   *   `@function double`-> `double`
+   *   `$brand: …`       -> `$brand`        (the analyzer publishes a variable as `$brand`, and a
+   *                                         read edge targets `$brand`, so the `$` is load-bearing)
+   * Anything else (a plain `color: red` declaration, a selector) returns "" and is not a member.
+   */
+  nameResolver: (node: Node): string => {
+    const isPrivate = (published: string): boolean => {
+      // Sass's PRIVATE-MEMBER rule, identical to `isPrivateSassName` in the analyzer: a name
+      // beginning `-` or `_` is not exposed by `@use`, so it is not part of the module's surface.
+      const bare = published.startsWith("$") ? published.slice(1) : published
+      return bare.startsWith("-") || bare.startsWith("_")
+    }
+    if (node.type === "mixin_statement" || node.type === "function_statement") {
+      let bare = ""
+      const viaField = node.childForFieldName("name")
+      if (viaField) bare = viaField.text
+      else {
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const c = node.namedChild(i)
+          if (c && c.type === "identifier") { bare = c.text; break }
+        }
+      }
+      return bare !== "" && !isPrivate(bare) ? bare : ""
+    }
+    if (node.type === "declaration") {
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && c.type === "property_name") {
+          if (!c.text.startsWith("$")) return ""
+          return isPrivate(c.text) ? "" : c.text
+        }
+      }
+      return ""
+    }
+    return node.childForFieldName("name")?.text ?? ""
+  },
 }
 
 export const FSHARP_DECLARATION_SPEC: DeclarationSpec = {

@@ -315,10 +315,24 @@ other 22 lanes need.
    `**/testData/**`, which swallows the corpus's lowercase `testdata/` because the `ignore` package
    (5.3.2) matches case-insensitively by default (measured: `ignores("x/testdata/a")` is `true`,
    `x/test/a` and `x/tests/a` are kept), **1** to `skipPatterns`' `/\/generated\//i`, and **97** because
-   **`.graphqls` is routed by NO extension map anywhere in the fleet** — `language-detection.ts` maps
-   `graphql` and `gql` and nothing else, so production reads 0 of the corpus's 97 `.graphqls` files
-   regardless of path. That last one is a product gap rather than a ruling; this lane's census (1,911 =
-   305 `.gql` + 1,606 `.graphql`) already excludes those files and now states why.
+   **`.graphqls` was routed by NO extension map anywhere in the fleet** — `language-detection.ts` mapped
+   `graphql` and `gql` and nothing else, so production read 0 of the corpus's 97 `.graphqls` files
+   regardless of path. **THAT ONE IS NOW FIXED** (`1150b2140`, 15:12 today: one map entry,
+   `graphqls: "graphql"`), and the fix moves THIS LANE'S population too — the census below reads
+   1,911 = 305 `.gql` + 1,606 `.graphql` because it excluded the unrouted 97, so every published number in
+   this section is PRE-FIX and is labelled that way here rather than silently rewritten. The class it
+   belongs to now has a fleet census — `script/m60/unrouted-extension-census.ts` →
+   `validation/m14/measurements/unrouted-extension-census.json` — whose FIRST SETTLED ROW is `.graphqls` (the class's
+   census, method and four self-corrections: `docs/analyzers/unrouted-extensions-census.md`),
+   priced on its own file pool and cited beside this lane's `armA` (97 files · 83,371 symbols ·
+   195,108 relationships) replayed from `unrouted-population-price.json`.
+   The class now has ENFORCEMENT as well as measurement: `script/m60/unrouted-extension-gate.ts` →
+   `validation/m60/results/unrouted-extension-gate.json` refuses a new text-bearing unrouted key on the local
+   `npm run verify` chain — verdict PASS against a register of 1,060 known keys (1,052 still refused, 0 new).
+   The refused count FELL 1,058 → 1,052 across the session's runs because other lanes kept routing live
+   entries (`.sbt`/`.phpt` at 21:00 UTC, four more after 21:16), which is the register shrinking rather than
+   the measurement drifting. Its four self-tests (a new text key must FAIL; binary-only, registered and
+   routed keys must pass) are what makes "0 new" a reading rather than an omission.
    (g) **Both refusals are PRICED, and the extension one is not a tuning decision.
    `validation/m14/fixtures/graphql/unrouted-population-price.mts` measured the same 97 `.graphqls` files
    twice, because the first measurement is the finding: as they sit, production answers all 97 with the
@@ -2173,7 +2187,7 @@ explicit declaration that X lives in the MODULE namespace, so a project-scope bi
 reading and the analyzer currently records none.
 
 ### 6. The store seam, and two wrong pins that became the instrument
-`python/import-bound-name-seam.mts` drives the REAL pipeline (`indexProjectParallel`, worker pool included) over a generated project, so the near side (`ASTEngine.parseFile`) and the far side (`brain_import` / `brain_symbol` / `brain_relationship`) are measured in one process. It has four rows: A the analyzer carries the binding; B the store holds it — PINNED AT THE DECLARED GAP (PY-D13's store half: `imported_as` NULL, `import_type` `named`); C the control that keeps B meaningful; D the route.
+`python/import-bound-name-seam.mts` drives the REAL pipeline (`indexProjectParallel`, worker pool included) over a generated project, so the near side (`ASTEngine.parseFile`) and the far side (`brain_import` / `brain_symbol` / `brain_relationship`) are measured in one process. It has FIVE rows (**round 17 rewrote B and added E**): A the analyzer carries the binding (the relation's `metadata.importedAs` AND the row's `itemBindings`); B the store holds it — a POSITIVE assertion since round 17 (`imported_as` = `t` / `PV` / `v`, NULL for the plain import, `import_type` `named` as the still-declared classification half); C the control that keeps B meaningful; D the route; E the shared projection's two roles for `X as Y` (`name` imported, `alias` bound), asserted on a TYPESCRIPT import.
 
 **Row D was wrong twice, and the wrongness is the useful part.** Pin 1 pointed the route at the one class the project declares — the leaf was project-unique, the store's leaf fallback bound it, and the row read RESOLVED, saying nothing about routes. Pin 2 declared the leaf TWICE expecting ambiguity to force a decline — also wrong, because the pass's strategy 3c RANKS dotted candidates and takes the best, so an ambiguous leaf resolves too, silently. Both pins asked a one-row question with more than one cause. The rule the folder now follows: **A PIN THAT ASSERTS "THE ROUTE WAS NOT USED" MUST OBSERVE TWO ROUTES THAT WOULD GIVE DIFFERENT ANSWERS.** So the project carries two references to the SAME leaf through two DIFFERENT alias-bound modules (`models_alias.ProductVariant` and `v.ProductVariant`, aliases 2 binding different modules that each declare the name) and asserts they land on the SAME symbol. They do — measured, `via_models` and `via_vendor` both → `models.py` — which is the proof the route is unread, and the flip signal is exact: a route consumer would split them and turn the gate red.
 
@@ -4059,3 +4073,35 @@ routing it is a contract decision — pinned at `named` so it cannot drift. (2) 
 item of a multi-item statement is visible (PY-D32, 6 statements). (3) The route is still unread — check D's
 finding is untouched by any of this: `models_alias.ProductVariant` and `v.ProductVariant` still land on the
 same symbol.
+
+- **dart — THE CONTRACT ROW IS CLOSED (sections A-H 8/8 pass) AND THE FIRST TYPED-RECEIVER LEVER IS
+  BUILT, with arm14 pre-registered.** Two things this round, in the order the pricing said.
+  (1) **The row.** `references` and `exports` join dart's `requiredKinds` (`script/m14/completeness-inventory.ts`):
+  the lane publishes references **73,561** edges — **44,181 of them ambiguous by declaration and 0
+  unresolved**, the fourth-largest ambiguous cell in the lane and more than 5 % of its 781,930 —
+  plus exports **2,030**, and neither was named in the row while the lane's OWN `coverage.implemented`
+  named both and its fixtures already pinned both (14 `references` pins in
+  `type-references.expectation.json` alone). Section B's reverse check was convicting a row that
+  disagreed with the lane's coverage block and with its own fixtures, and the 44,181 ambiguous rows sat
+  outside every lever table this programme kept. `script/m14/spec/dart-completeness.json` now also
+  classifies the ABI pair the gate FORCES into every type list: **ERROR → handled_verified** (the error
+  pass at `real-dart-analyzer.ts:715-730` and ERROR on the type-mention skip list at line 243, rationale
+  at 3439) and **MISSING → internal_silent** (the analyzer consults the CONDITION `n.isMissing`, never
+  the type; the string does not appear in the file), which is the split java/javascript/kotlin/bash
+  record for the same pair. Measured: `completeness-inventory --lang dart` → **224 types classified;
+  sections A-H: 8/8 pass** (was 6/8, exit 0), `coverage-block-gate` unchanged (`dart yes 10 10 0 - -`),
+  harness typecheck PASS at baseline (that gate covers `script/m14/**`; the one remaining error in the
+  333-error baseline is another lane's `verify-clean-import-884.ts`).
+  (2) **The lever.** `extractParameters` now accepts a `formal_parameter_list` AS ITSELF — a closure is
+  `function_expression parameters: (formal_parameter_list …) body: (function_expression_body …)`, so the
+  body's previous named sibling IS the list and the reader was searching for a child list INSIDE the
+  list, returning nothing — and `collectDartLocalTypes` reads an explicitly typed for-in variable
+  (`for (Element e in xs)`, `for (final Element e in xs)`, `await for (…)`: one shape; the C-style loop
+  and the Dart 3 pattern form are guarded off, `inferred_type` declines). Both are reads of a type the
+  SOURCE writes; nothing is inferred. New pin `validation/m14/fixtures/dart/typed-receiver-heads.{dart,expectation.json}`
+  (31 dart fixtures pass, 0 fail, no regressions; the expectation also pins the two DECLINES and the
+  DARTD7 dedupe counts). Sample footprint, same 1,500-file stride: **bare rows 31,725 → 31,284**,
+  `receiverTypeUnknown` −447, **−441 = 447 − 6** with the arithmetic closed by the cause shifts
+  (+1/+1 memberOutsideRun, +2/+2 unnamed). arm14 (`incoming-gate.ts dart dart 0`) was **pre-registered
+  before its run** — edge totals unchanged at 3,436,077, `causeOK` and `resolved` up, ≈10,000 rows
+  leaving the receiver-cause population — receipt in `real-dart-analyzer.md` §arm14.

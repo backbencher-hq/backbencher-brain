@@ -236,7 +236,16 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-dart-analyzer.md"],
     differentialCheck: "differential-dart",
     perfKey: "proxicall:dart",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "overrides", "imports"],
+    // `references` and `exports` are ADDED 2026-10-12, and the omission was a contract-row defect
+    // rather than a policy. Dart publishes references 73,561 edges (44,181 ambiguous by declaration,
+    // 0 unresolved) and exports 2,030; the lane's own `coverage.implemented` already names BOTH; and
+    // its fixtures already pin both (14 `references` pins in type-references.expectation.json alone,
+    // measured). So section B's reverse check — "EMITTED but absent from requiredKinds" — was
+    // convicting a row that disagreed with the lane's coverage block AND with its own fixtures, and
+    // the 44,181 ambiguous `references` rows were outside every lever table this programme kept,
+    // including the receiver-cause pricing that sized the dart residual.
+    // swift's row (below) names `references`; the two rows are now consistent.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "overrides", "imports", "references", "exports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "dart/payload-and-complexity" },
       parameters: { key: "expectParameters", pin: "dart/payload-and-complexity" },
