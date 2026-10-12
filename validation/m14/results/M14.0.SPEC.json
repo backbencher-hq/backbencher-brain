@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "98349c57489b18acd3b0fa890ef79b1d0ddddf58bcb0c22a43a61f3cd4d67408",
-    "sealedAt": "2026-10-12T15:49:01.771Z"
+    "contentSha256": "b6f3232789eafdb1ddc93df0cd6aa95381b1af2f79949d3c577849b03d76bbb1",
+    "sealedAt": "2026-10-12T15:58:38.421Z"
   },
   "checks": [
     {
@@ -39,11 +39,11 @@
       "status": "pass"
     },
     {
-      "description": "6 relationship kinds pinned by bash fixtures; 8 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: instantiates, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "7 relationship kinds pinned by bash fixtures; 7 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, imports, overrides, references, uses; emitted: calls, contains, exports, imports, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "bash",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for bash (1)",
@@ -203,11 +203,11 @@
       "status": "pass"
     },
     {
-      "description": "9 relationship kinds pinned by groovy fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by groovy fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, case_pattern, cast_type, constructor_invocation, contains, declared_type, exported_function, exported_type, exports, extends, implements, imports, instanceof_expression, instantiates, method_reference, overrides, references, return_type, single_type_import, static_member_import, throws_type, type_on_demand_import, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "groovy",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for groovy (6)",
@@ -285,11 +285,11 @@
       "status": "pass"
     },
     {
-      "description": "9 relationship kinds pinned by kotlin fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by kotlin fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: as_expression, callable_reference, calls, check_expression, compose_ui_tree, constructor_invocation, contains, coroutine_dispatch, declared_type, exported_declaration, exports, extends, implements, imported_declaration, imported_package_wildcard, imports, instantiates, object_literal, overrides, references, return_type, type_alias, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "kotlin",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for kotlin (7)",
@@ -367,11 +367,11 @@
       "status": "pass"
     },
     {
-      "description": "9 relationship kinds pinned by scala fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by scala fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, cast_target, contains, declared_type, derives_type, exports, expression_use, extends, given_type, implements, imports, instanceof_check, instantiates, method_value, overrides, pattern_type, references, return_type, scala_export_clause, scala_public_export, self_type, throw_target, throws_type, type_alias, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "scala",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for scala (6)",
@@ -777,11 +777,11 @@
       "status": "pass"
     },
     {
-      "description": "4 relationship kinds pinned by c fixtures; 8 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: calls, contains, instantiates, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "8 relationship kinds pinned by c fixtures; 8 emitted and all accounted for",
+      "detail": "pinned: c_function_call, calls, contains, exports, field_access, identifier_usage, imports, include_dependency, instantiates, overrides, references, uses; emitted: calls, contains, exports, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "c",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for c (1)",
@@ -859,11 +859,11 @@
       "status": "pass"
     },
     {
-      "description": "7 relationship kinds pinned by cpp fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: contains, exports, implements — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by cpp fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, export_attribute, exports, extends, field_access, implements, imports, include_dependency, instantiates, module_export, overrides, references, uses, using_dependency; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "cpp",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for cpp (2)",
@@ -941,11 +941,11 @@
       "status": "pass"
     },
     {
-      "description": "8 relationship kinds pinned by rust fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: imports, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by rust fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, declared_type, exports, extends, implements, imports, instantiates, overrides, public_item, re_export, references, trait_method_implementation, use_import, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "rust",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for rust (2)",
@@ -1023,11 +1023,11 @@
       "status": "pass"
     },
     {
-      "description": "8 relationship kinds pinned by go fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: exports, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by go fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, declared_type, exports, extends, go_channel_operation, go_composite_literal_construction, go_exported_identifier, go_function_call, go_instantiation, go_interface_embedding, go_interface_implementation, go_method_promotion_shadowing, go_package_scope_call, go_package_scope_instantiation, go_selector_use, go_struct_embedding, identifier_usage, implements, imports, instantiates, overrides, references, return_type, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "go",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for go (2)",
@@ -1105,11 +1105,11 @@
       "status": "pass"
     },
     {
-      "description": "5 relationship kinds pinned by zig fixtures; 7 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: exports, instantiates — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "7 relationship kinds pinned by zig fixtures; 7 emitted and all accounted for",
+      "detail": "pinned: calls, contains, declared_type, exports, identifier_usage, imports, instantiates, references, uses, zig_export, zig_field_access, zig_field_reflection, zig_function_call, zig_import, zig_instantiation, zig_ownership; emitted: calls, contains, exports, imports, instantiates, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "zig",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for zig (3)",
@@ -1187,11 +1187,11 @@
       "status": "pass"
     },
     {
-      "description": "9 relationship kinds pinned by csharp fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by csharp fixtures; 9 emitted and all accounted for",
+      "detail": "pinned: assembly_public_surface, calls, contains, csharp_field_access, csharp_public_type_export, declared_type, exports, extends, identifier_usage, implements, imports, instantiates, method_override, overrides, references, return_type, uses, using_import, using_type_argument; emitted: calls, contains, exports, extends, implements, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "csharp",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for csharp (3)",
@@ -1269,11 +1269,11 @@
       "status": "pass"
     },
     {
-      "description": "8 relationship kinds pinned by dart fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: exports, references — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by dart fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "dart",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for dart (3)",
@@ -1351,11 +1351,11 @@
       "status": "pass"
     },
     {
-      "description": "8 relationship kinds pinned by swift fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: exports, imports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by swift fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "swift",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for swift (2)",
@@ -1515,11 +1515,11 @@
       "status": "pass"
     },
     {
-      "description": "9 relationship kinds pinned by php fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by php fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, declared_type, define_call, exports, extends, implements, imports, include_path, instantiates, overrides, references, return_type, use_clause, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "php",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for php (1)",
@@ -1597,11 +1597,11 @@
       "status": "pass"
     },
     {
-      "description": "6 relationship kinds pinned by ruby fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: exports, imports, overrides, references — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by ruby fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "ruby",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for ruby (1)",
@@ -1679,11 +1679,11 @@
       "status": "pass"
     },
     {
-      "description": "9 relationship kinds pinned by python fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: implements — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by python fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, declared_type, exports, extends, implements, imports, instanceof_check, instantiates, overrides, references, return_type, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "python",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for python (1)",
@@ -1761,11 +1761,11 @@
       "status": "pass"
     },
     {
-      "description": "6 relationship kinds pinned by haskell fixtures; 10 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: exports, imports, overrides, uses — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "10 relationship kinds pinned by haskell fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "haskell",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for haskell (1)",
@@ -1843,11 +1843,11 @@
       "status": "pass"
     },
     {
-      "description": "5 relationship kinds pinned by hcl fixtures; 7 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: calls, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "7 relationship kinds pinned by hcl fixtures; 7 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, imports, overrides, references, uses; emitted: calls, contains, exports, imports, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "hcl",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for hcl (0)",
@@ -1925,11 +1925,11 @@
       "status": "pass"
     },
     {
-      "description": "3 relationship kinds pinned by xml fixtures; 7 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: calls, extends, overrides, uses — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "6 relationship kinds pinned by xml fixtures; 6 emitted and all accounted for",
+      "detail": "pinned: calls, contains, extends, imports, overrides, references; emitted: calls, contains, extends, imports, overrides, references",
       "id": "section-b-relationship-kinds",
       "language": "xml",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for xml (1)",
@@ -2089,11 +2089,11 @@
       "status": "pass"
     },
     {
-      "description": "6 relationship kinds pinned by perl fixtures; 8 emitted and all accounted for",
-      "detail": "EMITTED but absent from requiredKinds: references, uses — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
+      "description": "8 relationship kinds pinned by perl fixtures; 8 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, require_file, require_module, use_module, uses; emitted: calls, contains, extends, implements, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "perl",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "Matrix 1b payload rows pinned for perl (5)",
@@ -2139,8 +2139,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "e586ea4ef53a5da22ec7daf041dee541ad07bf98",
-  "committedAt": "2026-10-12T11:44:11-04:00",
+  "commit": "bd50eafaf58df01714e2987dcba9a0d371261cd9",
+  "committedAt": "2026-10-12T11:49:56-04:00",
   "data": {
     "languages": {
       "bash": {
@@ -2178,8 +2178,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: instantiates, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, exports, imports, overrides, references, uses; emitted: calls, contains, exports, imports, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity",
@@ -2248,8 +2248,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: calls, contains, instantiates, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: c_function_call, calls, contains, exports, field_access, identifier_usage, imports, include_dependency, instantiates, overrides, references, uses; emitted: calls, contains, exports, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity",
@@ -2320,8 +2320,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: contains, exports, implements — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, export_attribute, exports, extends, field_access, implements, imports, include_dependency, instantiates, module_export, overrides, references, uses, using_dependency; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity, qualified_calls",
@@ -2380,8 +2380,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: assembly_public_surface, calls, contains, csharp_field_access, csharp_public_type_export, declared_type, exports, extends, identifier_usage, implements, imports, instantiates, method_override, overrides, references, return_type, uses, using_import, using_type_argument; emitted: calls, contains, exports, extends, implements, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity, parameters, visibility",
@@ -2467,8 +2467,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: exports, references — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity, parameters, visibility",
@@ -2578,8 +2578,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: exports, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, declared_type, exports, extends, go_channel_operation, go_composite_literal_construction, go_exported_identifier, go_function_call, go_instantiation, go_interface_embedding, go_interface_implementation, go_method_promotion_shadowing, go_package_scope_call, go_package_scope_instantiation, go_selector_use, go_struct_embedding, identifier_usage, implements, imports, instantiates, overrides, references, return_type, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity, qualified_calls",
@@ -2651,8 +2651,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, case_pattern, cast_type, constructor_invocation, contains, declared_type, exported_function, exported_type, exports, extends, implements, imports, instanceof_expression, instantiates, method_reference, overrides, references, return_type, single_type_import, static_member_import, throws_type, type_on_demand_import, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, parameters",
@@ -2719,8 +2719,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: exports, imports, overrides, uses — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity",
@@ -2772,8 +2772,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: calls, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, exports, imports, overrides, references, uses; emitted: calls, contains, exports, imports, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "",
@@ -3043,8 +3043,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: as_expression, callable_reference, calls, check_expression, compose_ui_tree, constructor_invocation, contains, coroutine_dispatch, declared_type, exported_declaration, exports, extends, implements, imported_declaration, imported_package_wildcard, imports, instantiates, object_literal, overrides, references, return_type, type_alias, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, apiContract, parameters",
@@ -3224,8 +3224,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: references, uses — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, require_file, require_module, use_module, uses; emitted: calls, contains, extends, implements, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity, parameters, decorators, imports, exports",
@@ -3304,8 +3304,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, declared_type, define_call, exports, extends, implements, imports, include_path, instantiates, overrides, references, return_type, use_clause, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity",
@@ -3358,8 +3358,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: implements — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, declared_type, exports, extends, implements, imports, instanceof_check, instantiates, overrides, references, return_type, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity",
@@ -3428,8 +3428,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: exports, imports, overrides, references — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity",
@@ -3517,8 +3517,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: imports, overrides — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, declared_type, exports, extends, implements, imports, instantiates, overrides, public_item, re_export, references, trait_method_implementation, use_import, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity, qualified_calls",
@@ -3623,8 +3623,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: exports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, cast_target, contains, declared_type, derives_type, exports, expression_use, extends, given_type, implements, imports, instanceof_check, instantiates, method_value, overrides, pattern_type, references, return_type, scala_export_clause, scala_public_export, self_type, throw_target, throws_type, type_alias, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, parameters",
@@ -3787,8 +3787,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: exports, imports — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity, visibility",
@@ -4009,8 +4009,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: calls, extends, overrides, uses — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, extends, imports, overrides, references; emitted: calls, contains, extends, imports, overrides, references",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity",
@@ -4129,8 +4129,8 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "EMITTED but absent from requiredKinds: exports, instantiates — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it",
-            "status": "fail"
+            "detail": "pinned: calls, contains, declared_type, exports, identifier_usage, imports, instantiates, references, uses, zig_export, zig_field_access, zig_field_reflection, zig_function_call, zig_import, zig_instantiation, zig_ownership; emitted: calls, contains, exports, imports, instantiates, references, uses",
+            "status": "pass"
           },
           "section-c-payload-matrix": {
             "detail": "complexity, parameters, visibility",
@@ -4185,8 +4185,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-12T15:49:01.769Z",
-  "regeneratedAtCommit": "e586ea4ef53a5da22ec7daf041dee541ad07bf98",
+  "regeneratedAt": "2026-10-12T15:58:38.419Z",
+  "regeneratedAtCommit": "bd50eafaf58df01714e2987dcba9a0d371261cd9",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"

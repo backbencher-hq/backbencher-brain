@@ -48,6 +48,16 @@ async function countParseErrorNodes(lang: string, content: string): Promise<{ li
 }
 
 
+// REUSED RATHER THAN DUPLICATED (2026-10-12): already exported at the bottom of this
+// file, and the completeness inventory's section B now reads the SAME source-extension
+// rule this runner selects files with instead of spelling a second one. The defect
+// that forced it: `emittedKinds` parsed EVERY non-JSON file in a lane's fixture
+// directory, so bash's `.ts`/`.mts` probe scripts were parsed AS BASH — where the
+// language's analyzer finds nothing and `pool-worker.ts`'s regex fallback answers
+// instead, publishing `instantiates` edges from `new ClassName(` text in a language
+// that has no constructors. Section B then reported those as kinds the row omits. One
+// rule, one owner: the lane's `ext` is measured from the fixtures (see the notes in
+// the map), and both readers now take it from here.
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
   // M60 VB wave. `ext` is `vb`, which is what language-detection.ts routes, and
   // `wasm` is the GRAMMAR's name rather than the language's -- the lane reads
