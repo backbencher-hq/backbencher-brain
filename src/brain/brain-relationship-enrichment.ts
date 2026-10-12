@@ -120,6 +120,23 @@ const CRITICALITY_MEDIUM_MIN_IN_DEGREE = 10
 /** Resolved and reported so a reader can tell a real layer from an absent one. */
 const UNRESOLVED_TARGET = "unresolved"
 
+// Keys that this enrichment pass OWNS and writes. Any key not in this set is
+// considered "foreign" — it belongs to another pass (analyzer, framework, etc.)
+// and must not be overwritten. This set is the source of truth for the no-op
+// filter (sameEnrichment) and for ownedSubset.
+const ENRICHMENT_OWNED_KEYS: ReadonlySet<string> = new Set([
+  "role",
+  "pattern",
+  "layerFlow",
+  "criticality",
+  "frequency",
+  "isTestCode",
+  "isFrameworkContract",
+  "isGeneratedCode",
+  "isDependencyInjection",
+  "inferredAt",
+])
+
 export interface EnrichRelationshipsResult {
   /** Rows whose metadata was actually rewritten (COMMITTED writes only). */
   enriched: number
