@@ -3043,6 +3043,75 @@ export function buildStoreableSpans(
   return out
 }
 
+/** The JS-family languages whose scope names are noise, shared by the factory below and by every
+ *  caller that needs the same judgement. A pure constant — hoisting it cannot change behaviour. */
+const JS_FAMILY = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
+
+/**
+ * THE ONE DEFINITION OF "IS THIS NAME STOREABLE" (r-lane, 2026-10-12).
+ *
+ * IT BUILDS ITS OWN DENYLIST ON EVERY CALL, AND THAT IS THE WHOLE POINT. The denylist was per-call before
+ * this factory existed and it MUST STAY per-call: it is extended conditionally on whether the result came
+ * from the REGEX FALLBACK path and on the FILE'S LANGUAGE. Hoisting the SET to module scope — which is the
+ * obvious move and the one this lane nearly made — would make those extensions PERSIST FOR EVERY SUBSEQUENT
+ * FILE IN THE PROCESS:
+ *
+ *   * one fallback-parsed file would make `true`/`false`/`None`/`unknown` … unstoreable everywhere after it;
+ *   * ONE JAVASCRIPT FILE WOULD MAKE `module`, `default`, `exports`, `window` AND `document` UNSTOREABLE IN
+ *     EVERY SUBSEQUENT FILE OF EVERY OTHER LANGUAGE — and `module` and `default` are ordinary identifiers in
+ *     python, ruby, java and c#.
+ *
+ * The victim is a different file from the cause, and WHICH file is the victim depends on the walk order, so
+ * the same repository indexed twice could produce different symbols. There is no module-level set here for
+ * that to persist in — the leak is impossible by construction rather than avoided by care.
+ *
+ * AND IT IS THE SINGLE IMPLEMENTATION: `storeResults` calls it and the companion pass calls it. One
+ * implementation, two callers — not two copies that are free to drift apart silently.
+ */
+export function makeStoreableName(
+  isFallbackResult: boolean,
+  fileLang: string | undefined,
+): { denylist: Set<string>; isStoreable: (nm: string | undefined, startLine: number) => boolean } {
+  const denylist = new Set([
+    "this", "super", "self", "Self", "me", "My",
+    "root", "program", "source_file", "module_declaration",
+    "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
+  ])
+  if (isFallbackResult) {
+    denylist.add("true")
+    denylist.add("false")
+    denylist.add("null")
+    denylist.add("nil")
+    denylist.add("None")
+    denylist.add("True")
+    denylist.add("False")
+    denylist.add("undefined")
+    denylist.add("NaN")
+    denylist.add("Infinity")
+    // `unknown` moved here from the universal set: it is a REAL method name (Ruby's Logger has it,
+    // as do protobuf/graphql `Status.unknown` and schema `unknown` fields), and it is noise only on
+    // the regex fallback path — which is exactly what this block gates.
+    denylist.add("unknown")
+  }
+  if (JS_FAMILY.has(fileLang ?? "")) {
+    denylist.add("global")
+    denylist.add("Global")
+    denylist.add("window")
+    denylist.add("Window")
+    denylist.add("document")
+    denylist.add("module")
+    denylist.add("exports")
+    denylist.add("default")
+    denylist.add("globalThis")
+  }
+  const isStoreable = (nm: string | undefined, startLine: number): boolean => {
+    if (!nm || denylist.has(nm) || nm.length > 500) return false
+    if (startLine < 1) return false
+    return !(isFallbackResult ? isIndexArtifactNameStrict(nm) : isIndexArtifactName(nm))
+  }
+  return { denylist, isStoreable }
+}
+
 export async function storeResults(
   projectId: ProjectID,
   projectPath: string,
@@ -3555,50 +3624,13 @@ export async function storeResults(
          // identifiers in verified analyzer output (e.g. TypeScript/C# enum
          // members named `None`) and only the regex fallback path can pick
          // them up as noise (const None = ...), so they are gated on fallback.
-         const JS_FAMILY = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
-         const SYMBOL_NAME_DENYLIST = new Set([
-           "this", "super", "self", "Self", "me", "My",
-           "root", "program", "source_file", "module_declaration",
-           "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
-         ])
          const isFallbackResult = !!result.fallback
-         if (isFallbackResult) {
-           SYMBOL_NAME_DENYLIST.add("true")
-           SYMBOL_NAME_DENYLIST.add("false")
-           SYMBOL_NAME_DENYLIST.add("null")
-           SYMBOL_NAME_DENYLIST.add("nil")
-           SYMBOL_NAME_DENYLIST.add("None")
-           SYMBOL_NAME_DENYLIST.add("True")
-           SYMBOL_NAME_DENYLIST.add("False")
-           SYMBOL_NAME_DENYLIST.add("undefined")
-           SYMBOL_NAME_DENYLIST.add("NaN")
-           SYMBOL_NAME_DENYLIST.add("Infinity")
-           // `unknown` moved here from the universal set, and it is the one entry
-           // above that was not noise "everywhere" — it is noise from a REGEX
-           // FALLBACK, which is exactly what this block is for. The rationale
-           // three lines up already says it: language-literal words are legitimate
-           // identifiers in verified analyzer output, and only the fallback path
-           // picks them up as noise. `unknown` is a real method name — Ruby's
-           // Logger has five standard severities and `unknown` is one of them, so
-           // `ActiveSupport::Logger#unknown` (activesupport/lib/
-           // active_support/colorize_logging.rb:46) was parsed, stored, and then
-           // dropped here, and never reached the graph. Same for `Status.unknown`
-           // in protobuf/graphql lanes and an `unknown` field in a schema. It also
-           // matches the JS-family treatment right below: `undefined` is already
-           // gated rather than universal for precisely this reason.
-           SYMBOL_NAME_DENYLIST.add("unknown")
-         }
-         if (JS_FAMILY.has(fileLang)) {
-           SYMBOL_NAME_DENYLIST.add("global")
-           SYMBOL_NAME_DENYLIST.add("Global")
-           SYMBOL_NAME_DENYLIST.add("window")
-           SYMBOL_NAME_DENYLIST.add("Window")
-           SYMBOL_NAME_DENYLIST.add("document")
-           SYMBOL_NAME_DENYLIST.add("module")
-           SYMBOL_NAME_DENYLIST.add("exports")
-           SYMBOL_NAME_DENYLIST.add("default")
-           SYMBOL_NAME_DENYLIST.add("globalThis")
-         }
+         // ONE IMPLEMENTATION, TWO CALLERS: the same factory the companion pass calls. The denylist it
+         // returns is built for THIS call and cannot leak into the next file — see the factory's note.
+         const { denylist: SYMBOL_NAME_DENYLIST, isStoreable: storeableName } = makeStoreableName(
+           isFallbackResult,
+           fileLang,
+         )
          const nameToSymbol = new Map<string, any>()
          const containersByStart: { name: string; start: number; end: number }[] = []
          // M59/#855: intervals of the symbols this file will ACTUALLY STORE, so
@@ -3658,13 +3690,7 @@ export async function storeResults(
          // leaving every child pointing at a ghost. Consumers JOIN on
          // owner_symbol_id, so a phantom value was already invisible — omitting
          // it removes the lie without changing any read path.
-         const storeableName = (nm: string | undefined, startLine: number): boolean => {
-           if (!nm || SYMBOL_NAME_DENYLIST.has(nm) || nm.length > 500) return false
-           if (startLine < 1) return false
-           return !(isFallbackResult
-             ? isIndexArtifactNameStrict(nm)
-             : isIndexArtifactName(nm))
-         }
+         // `storeableName` comes from makeStoreableName above — ONE implementation.
  
          // M59/#879: hoisted to the FUNCTION scope. The owner fallback helper is
          // defined ABOVE this block and calls it, and a block-scoped name used
