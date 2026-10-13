@@ -25,8 +25,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "467a70592592c9b228d9d7f67a704d16dd57e9da",
-  "committedAt": "2026-10-09T17:40:06-04:00",
+  "commit": "b5819c5ec9ed4576e7370884589a57d12b9a80f5",
+  "committedAt": "2026-10-10T18:34:56-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -226,8 +226,8 @@
         "oracleFieldCount": 22,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
-        "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 98,
+        "referencedFieldLiterals": 1,
+        "referencedTypeLiterals": 93,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -674,8 +674,8 @@
         "oracleFieldCount": 32,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 266,
-        "referencedFieldLiterals": 10,
-        "referencedTypeLiterals": 69,
+        "referencedFieldLiterals": 11,
+        "referencedTypeLiterals": 67,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -789,19 +789,19 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 823,
         "referencedFieldLiterals": 5,
-        "referencedTypeLiterals": 52,
+        "referencedTypeLiterals": 48,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [
           {
             "justification": "M14 grammar audit (real-sql-analyzer.ts:58, the SQL_KEYWORDS set): a SQL KEYWORD in a keyword table, not a parse-tree node reference. `table` is the reserved word the guard exists to recognise, and the audit's `X.type === \"lit\"` / set-literal heuristic reports set members the way it reports node types. Waived, not fixed — deleting the keyword would change behaviour, and the swift `String` entry is the same shape (a type-name table, waived with a justification).",
-            "line": 766,
+            "line": 724,
             "literal": "table"
           },
           {
             "justification": "M14.0.F1 register repayment (2026-10-08, real-sql-analyzer.ts:922 adoptLateDeclaredIndexOwners): this is the symbol-metadata TAG THE ANALYZER ITSELF WRITES — `createSymbol(..., { type: \"index\", indexName, table, columns })` at real-sql-analyzer.ts:2380, read back as `symbol.metadata?.type !== \"index\"` — not a parse-tree node reference. The pinned sql grammar declares no node named `index` (its index productions are `create_index` / `alter_index` / `drop_index` / `index_fields` / `index_hint` / `keyword_index`), and no comparison in this analyzer ever tests a node against it. Waived, not fixed: deleting the comparison would drop the CREATE INDEX symbols' owner adoption, which is a behaviour change with no grammar conformance to buy. Same shape as the sql `table`/`grant_statement` and typescript `default_export_expression` entries above — an analyzer-owned payload compared against a literal, making no grammar claim. The site carries a comment saying so.",
-            "line": 974,
+            "line": 932,
             "literal": "index"
           }
         ],
@@ -960,15 +960,15 @@
         "oracleFieldCount": 46,
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 386,
-        "referencedFieldLiterals": 24,
-        "referencedTypeLiterals": 103,
+        "referencedFieldLiterals": 25,
+        "referencedTypeLiterals": 109,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [
           {
             "justification": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code.",
-            "line": 5833,
+            "line": 6447,
             "literal": "default_export_expression"
           }
         ],
@@ -1115,9 +1115,9 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-10-09T21:41:28.580Z",
-  "regeneratedAtCommit": "467a70592592c9b228d9d7f67a704d16dd57e9da",
-  "runtime": "node v22.22.1",
+  "regeneratedAt": "2026-10-10T22:36:21.332Z",
+  "regeneratedAtCommit": "b5819c5ec9ed4576e7370884589a57d12b9a80f5",
+  "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
 }

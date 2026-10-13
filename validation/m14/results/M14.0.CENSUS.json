@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "description": "every reference-shaped (tag@attr) pair in 300 corpus files carries a ruling (21 pairs, 42496 occurrences)",
+      "description": "every reference-shaped (tag@attr) pair in 4000 corpus files carries a ruling (23 pairs, 366389 occurrences)",
       "id": "census-pairs-ruled",
       "status": "pass"
     },
@@ -17,19 +17,19 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "16778cb2db9b8874f85e4e1015cc7f5c3711d341",
-  "committedAt": "2026-09-27T02:10:40-04:00",
+  "commit": "86c3582aebb8f9196c37bb3b57c219ce0ae9c631",
+  "committedAt": "2026-10-11T19:42:52-04:00",
   "data": {
     "claimedCarriersBroken": [],
     "claimedCarriersProbed": 38,
     "conditionalCarriers": 2,
     "conditionalCarriersBroken": [],
-    "distinctPairs": 21,
-    "files": 300,
-    "occurrencesRuled": 42496,
-    "pairsRuled": 21,
-    "referenceShapedOccurrences": 42496,
-    "repos": 65,
+    "distinctPairs": 23,
+    "files": 4000,
+    "occurrencesRuled": 366389,
+    "pairsRuled": 23,
+    "referenceShapedOccurrences": 366389,
+    "repos": 97,
     "unreviewedPairs": []
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -48,9 +48,9 @@
       "description": "the corpus is the pinned fixtures repositories and rotates as a pool; the census reports what those files contain, not what the HTML specification permits, so a carrier that no corpus exercises is outside its reach and is covered only by CARRIER_PROBES"
     }
   ],
-  "regeneratedAt": "2026-09-27T06:14:44.668Z",
-  "regeneratedAtCommit": "16778cb2db9b8874f85e4e1015cc7f5c3711d341",
-  "runtime": "node v24.3.0",
+  "regeneratedAt": "2026-10-12T11:50:02.568Z",
+  "regeneratedAtCommit": "86c3582aebb8f9196c37bb3b57c219ce0ae9c631",
+  "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "html carrier census"
 }
