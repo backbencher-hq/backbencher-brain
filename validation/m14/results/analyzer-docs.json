@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M14",
   "rule": "analyzer documentation completeness",
-  "generatedAt": "2026-10-12T18:26:41.980Z",
+  "generatedAt": "2026-10-13T22:04:11.617Z",
   "boundary": "A section counts only when it has CONTENT under its heading, not merely the heading: a renamed or empty section is a missing section. Measures the DOCUMENT, not the analyzer: a language can pass all eleven sections here and still have an analyzer defect, and a language can fail here with a correct analyzer. This gate is about a claim being checkable, and it is deliberately weaker than the gates that measure behaviour.",
   "requiredSections": [
     "## Language",
@@ -18,15 +18,15 @@
     "analyzers": 48,
     "present": 47,
     "absent": 1,
-    "sectionComplete": 19,
-    "sectionShort": 28,
-    "ontologyCellGaps": 16,
-    "fullyComplete": 17
+    "sectionComplete": 18,
+    "sectionShort": 29,
+    "ontologyCellGaps": 17,
+    "fullyComplete": 16
   },
   "baseline": {
     "present": 47,
-    "sectionComplete": 19,
-    "ontologyCellGaps": 16,
+    "sectionComplete": 18,
+    "ontologyCellGaps": 17,
     "note": "measured 2026-09-28 at the gate's first run; a language that LOSES ground fails, a language already short does not"
   },
   "worklist": {
@@ -60,6 +60,14 @@
         "lang": "clojure",
         "doc": "docs/analyzers/real-clojure-analyzer.md",
         "missing": [
+          "## Corpus validation"
+        ]
+      },
+      {
+        "lang": "cpp",
+        "doc": "docs/analyzers/real-cpp-analyzer.md",
+        "missing": [
+          "## Complexity envelope",
           "## Corpus validation"
         ]
       },
@@ -344,6 +352,13 @@
         ]
       },
       {
+        "lang": "cpp",
+        "doc": "docs/analyzers/real-cpp-analyzer.md",
+        "gaps": [
+          "(no relationship-ontology section)"
+        ]
+      },
+      {
         "lang": "groovy",
         "doc": "docs/analyzers/real-groovy-analyzer.md",
         "gaps": [
@@ -489,8 +504,13 @@
       "lang": "cpp",
       "present": true,
       "doc": "docs/analyzers/real-cpp-analyzer.md",
-      "missingSections": [],
-      "ontologyGaps": []
+      "missingSections": [
+        "## Complexity envelope",
+        "## Corpus validation"
+      ],
+      "ontologyGaps": [
+        "(no relationship-ontology section)"
+      ]
     },
     {
       "lang": "csharp",
