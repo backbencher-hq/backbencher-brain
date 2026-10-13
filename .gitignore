@@ -357,3 +357,4 @@ src/ast/__*.ts
 # Found by the Lead, 2026-10-13, while checking whether a lane's live scratch could be swept.
 *-scratch.ts
 *-scratch.mts
+.tmp-rewrite/
