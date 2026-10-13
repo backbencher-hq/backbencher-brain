@@ -4282,6 +4282,32 @@ export async function storeResults(
          }
  
          if (result.imports) {
+           // ROUND 18 — ONE ROW PER ITEM, because the row id used to be one row per STATEMENT.
+           //
+           // The projection above is per ITEM by construction (`{name, path, alias?, type,
+           // isExternal, line}`, one entry per name the statement binds) and its own comment calls
+           // that granularity the thing that "directly determines audit precision". This loop then
+           // gave every one of those rows the SAME id — `${fileId}:import:${moduleName}:${impLine}`,
+           // module and line, both of which a multi-item statement shares — and wrote them with
+           // `INSERT OR REPLACE`, so all but the LAST item were replaced by the next one and the file's
+           // import surface could not be read as a set. Measured on the real projection over 2,000
+           // stride-sampled corpus files (`.tmp-py/probe-import-rows-sample.mts`, python 800 /
+           // typescript 600 / javascript 600, <=1MiB, every repo): **11,903 item rows projected,
+           // 8,903 distinct ids written — 3,000 rows lost, 785 files affected, +33.70%** and a largest
+           // single statement of 45 items. The `ast` arm cross-checks it (`python3
+           // .tmp-py/price-import-rows-ast.py --list .tmp-py/round18-sample.files.txt`) and the two agree
+           // per file on 796 of 800; the four that differ are ANALYZER drops, not this loop's, and each
+           // is named in `.tmp-py/round18-instrument-diff.log` (see `extractImport` in
+           // `real-python-analyzer.ts` for both).
+           //
+           // The suffix is an OCCURRENCE COUNTER inside one (module, line) group, not the item name: a
+           // statement may legally bind the same name twice (`from m import a, a`), and an id that can
+           // collide is the defect this is fixing. The first row of each group keeps its HISTORICAL id
+           // byte for byte, so nothing that already reads an id sees a new value and only the rows that
+           // were previously destroyed are new. Ids are per FILE and this loop runs per file, and the
+           // file's rows are deleted and rewritten together (`deleteFileImports`), so the counter is
+           // deterministic for a given source and no stale id survives a reindex.
+           const importIdSeq = new Map<string, number>()
            for (const imp of result.imports) {
              // ImportInfo canonical fields are module/importType — analyzers
              // never set name/path/type, so those reads silently produced
@@ -4352,7 +4378,10 @@ export async function storeResults(
                (typeof imp.range?.startLine === "number" && imp.range.startLine > 0 ? imp.range.startLine : 0) ||
                (typeof (imp.range as any)?.start?.line === "number" && (imp.range as any).start.line > 0 ? (imp.range as any).start.line : 0) ||
                (typeof imp.line === "number" && imp.line > 0 ? imp.line : 0)
-             const importId = `${fileId}:import:${moduleName}:${impLine}`
+             const importIdBase = `${fileId}:import:${moduleName}:${impLine}`
+             const importIdSeqN = (importIdSeq.get(importIdBase) ?? 0) + 1
+             importIdSeq.set(importIdBase, importIdSeqN)
+             const importId = importIdSeqN === 1 ? importIdBase : `${importIdBase}:${importIdSeqN}`
              stmt.insertImport.run(
                importId,
                projectId,
@@ -6542,7 +6571,8 @@ export async function indexProjectParallel(
                 // `ids` is 0 while `confirmed` is not has a wiring fault, and this line reports it.
                 `${passStats.confirmedIds.length} id(s) computed, ${passStats.confirmedIdsMissed} without one, ` +
                 `${passStats.confirmedIdsDuplicates} collapsed onto an id another row already claimed, ` +
-                `${passStats.confirmedNewInReparse} new in the re-parse`,
+                `${passStats.confirmedNewInReparse} new in the re-parse, ` +
+                `${passStats.stillGuessIds?.length ?? 0} unconfirmed id(s)`,
             )
           }
           // ── THE WRITE-BACK (r-lane, 2026-10-12) ────────────────────────────────────────────────
@@ -6686,6 +6716,47 @@ export async function indexProjectParallel(
             } catch (e: any) {
               // The write-back must never turn a completed index into a failed one.
               log.warn(`override companion (${companionLang}) write-back failed: ${e?.message ?? e}`)
+            }
+          }
+          // ── CLAUSE 4's SECOND FORM, PER ID (r-lane) ──────────────────────────────────────────
+          //
+          // THE ONE INFERENCE IN THE ACCEPTANCE, MADE MEASURABLE. The store census merges every 0.5 row, so
+          // "the unconfirmed are still at 0.5" could only be inferred from an equal-and-opposite aggregate
+          // movement — and THAT INFERENCE SURVIVES A DEFECT: if a confirmed key's UPDATE had landed on a row
+          // the pass did NOT confirm, the aggregate would still balance. THE PRIMARY KEY CANNOT DO THAT: each
+          // unconfirmed id is looked up BY ID, so a row either is the row the pass named or it is not.
+          //
+          // THREE OUTCOMES REPORTED SEPARATELY RATHER THAN AS A RATIO: still below the floor (the clause
+          // holding), moved to or above it (THE FINDING — the write-back touched a row it did not confirm),
+          // and ABSENT (expected non-zero: an unconfirmed row NEW IN THE RE-PARSE has no store row, for the
+          // same reason the seven confirmed ones do not). ABSENCE AND DISPLACEMENT ARE DIFFERENT FACTS, and
+          // folding them together would hide the one that matters.
+          if (passStats.stillGuessIds?.length) {
+            try {
+              const cdb: any = await BrainDatabase.getRawInstance(projectId)
+              const q = cdb.prepare("SELECT confidence AS c FROM brain_relationship WHERE id = ?")
+              let stillBelow = 0
+              let movedUp = 0
+              let absent = 0
+              for (const g of passStats.stillGuessIds) {
+                const row = q.get(g.id) as any
+                if (!row) absent++
+                else if (Number(row.c) < 0.7) stillBelow++
+                else movedUp++
+              }
+              log.info(
+                `override companion (${companionLang}) CLAUSE 4 per id: ${stillBelow} of ` +
+                  `${passStats.stillGuessIds.length} unconfirmed id(s) still below the floor, ` +
+                  `${movedUp} MOVED to or above it, ${absent} absent from the store`,
+              )
+              if (movedUp > 0) {
+                log.warn(
+                  `override companion (${companionLang}) CLAUSE 4 VIOLATED: ${movedUp} row(s) the pass did ` +
+                    `NOT confirm moved to or above the floor. THE FINDING. The acceptance does not close.`,
+                )
+              }
+            } catch (e: any) {
+              log.warn(`override companion (${companionLang}) clause 4 check failed: ${e?.message ?? e}`)
             }
           }
         }

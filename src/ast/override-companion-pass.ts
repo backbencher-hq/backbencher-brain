@@ -167,6 +167,15 @@ export interface OverrideCompanionPassStats {
    * reason: the acceptance needs the identities, not the count.
    */
   stillGuessKeys: Array<{ target: string; line: number | null }>
+  /**
+   * THE STILL-GUESS ROWS' STORE IDS, BESIDE THEIR COUNT (r-lane). Clause 4's second form asks whether the
+   * UNCONFIRMED rows are still present and still at 0.5 — and the census merges every 0.5 row, so it can
+   * only answer that in aggregate. THE PRIMARY KEY CAN ANSWER IT PER ROW, which is the reason the tuple was
+   * replaced with an id in the first place. `stillGuessIdsMissed` is the same count for the rows whose id
+   * could not be computed.
+   */
+  stillGuessIds: Array<{ id: string; line: number | null }>
+  stillGuessIdsMissed: number
   /** `overrides` edges still below it: the base is outside the project. */
   stillGuess: number
   /** Errors from a re-analysis; the pass keeps the first-run result for these. */
@@ -194,6 +203,8 @@ export async function populateOverrideCompanion(
     confirmedIdsDuplicates: 0,
     confirmedNewInReparse: 0,
     stillGuessKeys: [],
+    stillGuessIds: [],
+    stillGuessIdsMissed: 0,
     stillGuess: 0,
     failed: 0,
   }
@@ -327,6 +338,10 @@ export async function populateOverrideCompanion(
           target: String((rel as any).target ?? ""),
           line: (rel as any).line_number ?? null,
         })
+        // THE ID, BESIDE THE COUNT, by the same relIdOf the confirmed rows use.
+        const skey = relIdOf(result, rel)
+        if (skey) stats.stillGuessIds.push({ id: skey, line: (rel as any).line_number ?? null })
+        else stats.stillGuessIdsMissed++
       }
     }
   }
