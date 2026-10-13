@@ -7013,3 +7013,256 @@ run:**
 6. extFAIL stays 0; self-test PASS; fixtures 31/0 (verified BEFORE the run, including the new
    `dart/typed-receiver-heads` pin).
 
+### arm14 — THE RESULT, and one registered cell is FALSE
+
+**Arm identity, so the pair is reproducible from git alone.** This change is `dc7b55e4099c4107…`,
+committed as `e6cc8db0a`; arm13's analyzer is `8f97cc2711922b78…`, which is exactly
+`e6cc8db0a^:src/ast/real-dart-analyzer.ts` (both blobs hashed, this round). So the arm pair is two
+git objects and nothing else, and every A/B below re-runs them by swapping that one file.
+
+`incoming-gate.ts dart dart 0`, whole population, 18:09:49 → 19:07:35 (3,466 s): **33,738 parsed of
+33,738, 0 failed, 2 degraded** (`deep_nesting_expression_test.dart`,
+`deep_nesting_statement_test.dart`), self-test PASS. The run carries the same 13-minute stall on
+`deep_nesting_statement_test.dart` (18:26 → 18:39, `Maximum call stack size exceeded`) that arm13
+carried, which is why the lane's arm wall-time is not comparable run to run.
+
+**THE VERDICT IS `FAIL` AND THAT IS NOT THE ARM'S READING.** 776,901 ambiguous + 139,963 unresolved of
+3,437,804 edges is an absolute count at ~52 % ambient per-project resolution; arm13 FAILed the same
+way on 781,930 + 143,548. The arm is the DELTA between those two lines, and nothing else.
+
+| # | registered cell (written before the run) | measured | verdict |
+|---|---|---|---|
+| 1 | population and parse unchanged: 33,738 · 0 failed · 2 degraded | 33,738 · 0 · 2 | **HELD** |
+| 2 | **edge totals UNCHANGED: 3,436,077, every per-type total unchanged** | **3,437,804 — `calls` +149, `uses` +1,578, the other eight types byte-identical** | **FALSIFIED** |
+| 3 | `causeOK` rises by the order of the rows that left the gap | 128,667 → 135,656 (**+6,989**) | **HELD** |
+| 4 | `resolved` rises, `amb(decl)` falls; NO direction registered on `unresolved` | resolved 1,796,179 → 1,799,531 (**+3,352**) · amb(decl) 781,930 → 776,901 (**−5,029**) · unresolved 143,548 → 139,963 (**−3,585**, it FELL) | **HELD** |
+| 5 | magnitude: ≈**10,000** rows leave the receiver-cause population | **11,751** — bare 416,322 → 410,327 (−5,995), `isLocalRead` −118, `isMemberRead` −5,638 | **HELD** |
+| 6 | `extFAIL` stays 0 · self-test PASS · fixtures 31/0 | 0 in both arms · PASS · `run-fixtures --lang dart` **31/0, no regressions** · `completeness-inventory --lang dart` **A–H 8/8** (224 types) | **HELD** |
+
+Cell 4's unregistered direction is the favourable branch and it is worth the sentence: a spelled
+`Type.member` could have been unresolved where the bare leaf was ambiguous, and it was not — the
+spelled targets are the ones the projects can answer or that DECLARE their base beyond the run
+(`causeOK` +6,989 is that column).
+
+#### The falsified cell, and the mechanism, MEASURED
+
+The registration read the change as *"it rewrites TARGETS on rows that already exist; it adds and
+removes none"*. **Per write site that is exactly right, and per FILE it is wrong**, because the
+lane's own dedup (`real-dart-analyzer.ts:1147`, DARTD7) keys on
+``${type}|${source}|${target}|${confidence}`` — **no line number** — and keeps the first row per key.
+Retargeting a row therefore changes which rows are first, which are duplicates, and which keys exist
+at all. Three measurements, each through the production `parseFile` path:
+
+**1. The fixture: a pure retarget, because one file with one producer per key cannot show the effect.**
+`dart/typed-receiver-heads` is 30 rows before and 30 rows after; the whole diff is three rewrites —
+`calls closures -> poke` → `Element.poke`, `calls loops -> poke` → `Element.poke`,
+`uses closures -> id` → `Element.id` — each losing `receiverCause: receiverTypeUnknown` and gaining
+`baseBeyondRunScope` plus `qualifier: chain`/`head`. This is also why the output-transform mutant
+models this change faithfully HERE, and the limitation is named below.
+
+**2. A 374-file real stride, both arms at fixed HEAD, only the analyzer file swapped:** 9 of 374 files
+change count, in **both directions** — `calls` 7,273 → 7,265 (−8), `uses` 21,556 → 21,567 (+11),
+every other type byte-identical.
+
+```
+metadata_helper.dart    (GAINER  +4)   A rows 295 → B rows 299   removed 12 · added 16
+  six receiver reads in `_formalParametersToText` leave the bare population:
+  − uses _formalParametersToText -> defaultValue|isNamed|isRequired|metadata|name|typeAnnotation
+    (receiverCause: receiverTypeUnknown, no base)
+  + uses _formalParametersToText -> FormalParameter.<same six>   (base=yes, qualifier=head)
+icon_button_test.dart   (LOSER   −8)   A rows 456 → B rows 448   removed 34 · added 26
+```
+
+**3. The loser is the proof that the count is not the interesting column.** In `icon_button_test.dart`
+a key BOTH arms produce survives at a DIFFERENT LINE — `calls main -> WidgetTester.getSize` is
+published at line 3,597 in A and 448 in B — because the surviving row is whichever producer the
+walk reached first. Keys that A dropped as duplicates appear in B at all (`WidgetTester.ensureSemantics`,
+`firstWidget`, `getSemantics`, `getTopLeft`, `longPress`, `longPressAt`, `pump`), and keys that B's
+retargeting emptied disappear. So the change can move the line of an edge it did not change, and the
+edge-count delta is **second-order with a sign that is not stable across populations** (the 400-file
+gate stride reads `calls` −4 / `uses` +10; the corpus reads +149 / +1,578). What IS first-order and
+stable in every population measured: the gap falls and `causeOK` rises.
+
+#### What the lever bought, in the numbers the board reads
+
+Per project — the verdict's scope: gap (`amb(decl)` + `unresolved`) **925,478 → 916,864 (−8,614)**,
+resolved **1,796,179 → 1,799,531**, resolution share **52.27 % → 52.35 % (+0.08 pp)**. Under the pooled
+corpus key space (not production's scope, printed for continuity): ambiguous 846,306 → 841,110,
+unresolved 86,876 → 84,057, resolved +3,669. The honest size of this lever is **+0.08 pp of corpus
+resolution from 11,751 labelled rows** — the typed-receiver cut is worth what the pricing said it was
+worth, and the lane's residual did not move to a new class.
+
+#### The mutant, and the one thing it cannot see
+
+Three mutants were added for this change — `dart/typed-receiver-heads-unread` (both reads reverted),
+and one per read (`extractParameters`, `collectDartLocalTypes`) so a green suite cannot rest on either
+alone — plus one OVER-READ mutant for the DECLINE half (the record pattern's type must stay unread).
+`BB_MUTANT_ONLY="dart/"` catches all of them, the new failure being exactly
+`dart/typed-receiver-heads`.
+
+**What they cannot do is fail on the count movement, and the harness says so about itself** — its own
+emitted limitation is *"mutants wrap analyzer output rather than rewriting analyzer source"*, so a
+mutant cannot ADD a row. The retarget is pinned by these mutants and by the fixture's `equals: 1`
+counts and forbids; the ±few-hundred-row count movement measured above is pinned by **nothing**, and a
+later change could move it again without a single red. That is a named gap in the suite, not a
+resolved one, and closing it needs a source-level injection the harness does not have (reported, not
+built here).
+### The store lever, PRICED — and the measurement says the receiver cut is not where it lands
+
+The residual table above ends with its own to-do: *"What would firm these numbers: `--all` … and the
+STORE read as the member index — which turns 'type declared elsewhere' (31.3 %) from an upper bound into
+a measured bind/unbind count."* This section is that measurement, and it produces one number nobody was
+looking for.
+
+**FIRST, WHAT THE CODE SAYS, because the measurement only means something against it.** Every fact here
+is a citation, not a reading of intent:
+
+```
+the index is consulted in EXACTLY ONE branch   `qualifiedTarget` (real-dart-analyzer.ts:2412-2461),
+                                               and only at :2459 — after `visibleTypes.has(ownerText)`
+                                               was TRUE and the IN-FILE ancestry walk
+                                               (`declaringOwner`, :2357) named nothing.
+what it reads there                            `indexDeclares` (:2344-2349) reads
+                                               `projectIndex.typeMembers` — the DECLARED map. The
+                                               transitively CLOSED map `buildResolutionTables`
+                                               builds is a different field (`__closedMembers`,
+                                               project-index.ts:1051) and this branch does not read it.
+supplying an index MOVES rows between branches `visibleTypes` (:2213-2222) is file types PLUS index
+                                               types, so an owner that was capitalized-and-unseen
+                                               can become visible and take the ancestry branch.
+                                               Filling the gap and re-labelling it are the same act.
+and it is NEVER supplied for `.dart`           `PROJECT_INDEX_EXTENSIONS` (parallel-indexer.ts:1631)
+                                               is `{".sol","…",".fs","…",".proto","…",".scss","…"}`
+                                               — no `.dart` — and the parent's `wasmByLang` (:1648)
+                                               and `specByLang` (:1660) maps carry no dart entry
+                                               either, so the loop `continue`s before building.
+                                               Yet `wasm/tree-sitter-dart.wasm` is on disk,
+                                               `DART_DECLARATION_SPEC` is exported
+                                               (project-index.ts:285), and THIS LANE'S OWN instruments
+                                               build a dart index with it (incoming-gate.ts,
+                                               differential.ts, project-index-effect.ts).
+```
+
+THE LAST OF THOSE IS NOT A FINDING, IT IS A CITED FACT: `docs/analyzers/HANDOFF.md` §5hh already
+adjudicated it fleet-wide — *"PRODUCTION INDEXES `.sol` AND `.fs`, AND DART'S SPEC IS UNREACHABLE …
+Dart's spec exists but is UNREACHABLE, there is no `.dart` entry that reaches it"* — correcting the claim
+("`INDEX_SPECS` carries dart alone") that every summary had repeated. Two things are worth saying about it
+here anyway. (1) **It still drifts.** The registry has grown since §5hh read it (`.proto` on 2026-10-11,
+`.scss`), so the stalest available sentence about it is still in the tree: `pool-worker.ts:1865` explains
+the shape of its context with *"`INDEX_SPECS` carries `dart` alone"*, a symbol that does not exist (the
+registry is the function-local `PROJECT_INDEX_EXTENSIONS`), and §5hh names exactly that sentence as the
+wrong explanation. And (2) that sentence is why the lane instrument `project-index-effect.ts` was written
+with the premise *"Production does [pass a `{ projectIndex }`]"* — it does not, for dart — so the header
+now says what §5hh says. The instrument was the right A/B regardless: arm A is the gate's invocation
+**and** production's.
+
+The analyzer's own comments (`:1778`, `:3406`; §5hh cites `:1721`, `:3274` from before the file was
+edited) already say production hands dart no index, which is also why the indexer's stated policy —
+"per EXTENSION, and the only entries are ones this repository has measured the benefit of" — makes dart's
+absence a POLICY state rather than an oversight. The measurement below is the measurement that policy
+asks for, and it is the part §5hh does not have: §5hh corrects the EXPLANATION of which languages have an
+index; it does not price what dart's would buy.
+
+**MEASUREMENT — `project-index-effect.ts dart-http`, 333 admitted `.dart` files, same files in the same
+order in one process; A = no context (production today), B = the `DART_DECLARATION_SPEC` index the lane's
+own gates build. Index built: 333 files, 0 damaged, 380 types, 283 with members. Run twice: the tables
+below are byte-identical both times.**
+
+```
+type            A edges  A unres  B edges  B unres  Δ resolved
+calls           4855     2815     4833     2728     8
+contains        2595     0        2595     0        0
+exports         103      2        103      2        0
+extends         212      123      212      123      0
+implements      126      64       126      64       0
+imports         1303     691      1303     691      0
+instantiates    1019     476      1019     476      0
+overrides       326      191      210      18       57
+references      476      0        1227     0        740
+uses            8377     5284     8345     5233     -62
+TOTAL           19392    9646     19973    9335     743
+```
+
+and the table the store-as-member-index question is actually about — the instrument grew it this round,
+because the first table answers "what does the index change for the lane" and the store lever is a
+question about ONE cause and one branch of `qualifiedTarget`:
+
+```
+receiverCause                 A rows  A res  A unres B rows  B res  B unres Δ resolved
+(qualified)                   11983   6177   5274    13343   7486   5273    1309
+libraryScopeCallee            17      17     0       17      17     0       0
+receiverMemberOutsideRun      223     136    52      658     252    222     116
+receiverTypeUnknown           2539    362    1039    2528    360    1038    -2
+receiverUnnamed               1977    276    1347    1972    274    1347    -2
+spelled:baseBeyondRunScope    2653    678    1934    1455    0      1455    -678
+```
+
+**THE ROW THAT MATTERS IS THE THIRD ONE, AND IT GOES THE WRONG WAY.** The cell the residual table sizes
+the store lever from — `receiverMemberOutsideRun`, "the enclosing type does not declare it:
+heritage/INDEX" — holds **223** rows in arm A. Supplying the index RESOLVES **116** of them and creates
+**435** new ones: the index makes more owner types *visible* than it answers, and every newly-visible
+owner whose member the index's DECLARED `typeMembers` does not carry lands in this same cell, bare. Read
+as a rate, the store-as-member-index buys **0.27** resolved rows per row it creates here — and on the
+second repository it is **0.19** (193 resolved against 1,016 created), so this is the direction, not one
+repository's accident. The missing piece is not data, it is the READ: `declaringOwner` walks this file's
+heritage and nothing else, so an index that knows `Owner extends Base` in another file still cannot name
+`Base` as the declarer — and `indexDeclares` consults the declared map, where an inherited member does
+not appear.
+
+**WHERE THE INDEX ACTUALLY PAYS, on this repository, is two other passes.** `references` 476 → 1,227
+edges, +740 resolved. The mechanism is one line of `collectTypeMention`
+(`real-dart-analyzer.ts:3487`): `if (!visibleTypes.has(name)) return` — a type MENTION publishes only
+when the mentioned name binds to a type the run can point at, so without an index every mention of a
+type declared in another file of the same project is DROPPED. The analyzer already knows this and says so
+on the edge it does publish: `metadata.isIndexResolved: !fileTypes.has(name)` is a marker whose `true`
+value can only be produced by a run that has an index, so the added class is self-labelling. That is the
+SAME species of loss as DARTD16's cross-file overrides, in the class whose 44,181 ambiguous rows joined
+the contract row this round — and it makes the contract row's `references` figure (73,561 edges,
+corpus-wide, at HEAD) a FLOOR rather than a count of what the pass can produce. And `overrides` 326 →
+210 edges with unresolved 191 → 18: the cross-file path (`companionForPass2`) turns guesses into checked
+edges. Both are bigger than every receiver-cause cell move combined, and neither is the reason one would
+add the entry.
+
+**THE SECOND REPOSITORY, `riverpod` (1,295 files, 1,634 types in the index), measured the same way:**
+
+```
+type            A edges  A unres  B edges  B unres  Δ resolved
+calls           12251    3676     12071    3283     -68
+contains        18208    0        18208    0        0
+exports         53       4        53       4        0
+extends         4647     1297     4647     1297     0
+implements      244      29       244      29       0
+imports         4215     1630     4215     1630     0
+instantiates    6363     2103     6363     2103     0
+overrides       7903     4832     5550     2175     275
+references      3520     0        8774     0        4264
+uses            22536    11272    22372    11003    -108
+TOTAL           79940    24843    82497    21524    4363
+
+receiverCause                 A rows  A res  A unres B rows  B res  B unres Δ resolved
+(qualified)                   56034   19639  16035   66730   27870  17267    8231
+libraryScopeCallee            1171    198    0       1171    198    0       0
+receiverMemberOutsideRun      2660    945    162     3676    1138   234      193
+receiverTypeUnknown           6481    858    1162    6317    845    1160     -13
+receiverUnnamed               3325    484    1542    3281    476    1541     -8
+spelled:baseBeyondRunScope    10269   4040   5942    1322    0      1322    -4040
+```
+
+The two repositories agree on every direction and on which cells move: `references` is the pass the index
+pays for (here 3,520 → 8,774 edges, +4,264 resolved — the index more than DOUBLES the class), the
+override pass trades guesses for checks (7,903 → 5,550 edges, unresolved 4,832 → 2,175), `calls` and
+`uses` both go slightly NEGATIVE as spelled rows replace bare ones that used to resolve, and
+`receiverMemberOutsideRun` grows while barely resolving. The two receiver questions the index cannot
+touch — `receiverTypeUnknown` and `receiverUnnamed` — move by −13 and −8 of 6,481 and 3,325, which is
+what a control is supposed to look like.
+
+**WHAT THIS DOES NOT SAY.** Two repositories are measured (333 and 1,295 files, ~4.8 % of the population
+between them); the corpus is dominated by `dart-sdk` and `flutter-packages`, so these shares are not
+corpus shares and no scaling to 33,738 is claimed. The instrument's resolution rule is its own
+(`decls === 1` over the names and qualified names it collects), so its `resolved` column is comparable
+between its two arms and not to the gate's. The strict controls are the two receiver rows the index
+cannot answer (`receiverTypeUnknown`, `receiverUnnamed`), which barely move on either repository; the
+`(qualified)` row moves a lot, and that is the index doing its job rather than a control failure. And the
+corpus-scale version of this table needs a whole-corpus dart index (25,734 files of `dart-sdk` alone) —
+the two-repo A/B is what is available now, and the cell's corpus size stays the sample-scaled estimate
+the residual table already labels as one.

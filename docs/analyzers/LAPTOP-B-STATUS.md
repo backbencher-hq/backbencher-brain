@@ -4149,3 +4149,29 @@ same symbol.
   exist (the registry is the function-local `PROJECT_INDEX_EXTENSIONS`), the exact sentence §5hh names
   as the wrong explanation — and that sentence is why `project-index-effect.ts`'s header had asserted
   production passes a dart index. Header corrected this round, not the shared comment (reported).
+- **dart — arm14 COMPLETED whole-corpus (33,738/0 failed/2 degraded, self-test PASS, 3,466 s), and ONE
+  REGISTERED CELL IS FALSE.** The arm pair is reproducible from git alone: arm13 is
+  `e6cc8db0a^:src/ast/real-dart-analyzer.ts` (`8f97cc27…`) and the change is `e6cc8db0a`
+  (`dc7b55e4099c4107…`), both hashed. **5 of 6 registered cells HELD** — population/parse identical;
+  `causeOK` 128,667 → 135,656 (+6,989); `resolved` +3,352 with `amb(decl)` −5,029 and `unresolved`
+  −3,585 (the unregistered direction took the FAVOURABLE branch); the magnitude cell predicted ≈10,000
+  rows leaving the receiver-cause population and measured **11,751** (bare −5,995, `isLocalRead` −118,
+  `isMemberRead` −5,638); `extFAIL` 0, self-test PASS, `run-fixtures --lang dart` **31/0**,
+  `completeness-inventory --lang dart` **A–H 8/8** (224 types). **Cell 2 is FALSIFIED**: I registered
+  "edge totals UNCHANGED, every per-type total unchanged" and the run is **3,437,804, +1,727**
+  (`calls` +149, `uses` +1,578, the other eight types byte-identical). The mechanism is MEASURED, not
+  argued: the write is a pure retarget per site, and the count moves because DARTD7's dedup key
+  (`real-dart-analyzer.ts:1147`) is `type|source|target|confidence` with **no line number** and
+  first-row-wins. Evidence: the fixture is 30 rows → 30 rows (three rewrites, net 0); on a 374-file real
+  stride at fixed HEAD **9 files change count in BOTH directions** (`calls` −8, `uses` +11, everything
+  else identical), `metadata_helper.dart` −12/+16 = +4 and `icon_button_test.dart` −34/+26 = −8; and the
+  loser shows a key BOTH arms produce surviving at a DIFFERENT LINE (`calls main -> WidgetTester.getSize`
+  at 3,597 in A, 448 in B), with previously-dropped keys appearing and previously-present ones emptied.
+  So the count delta is second-order and its SIGN is not stable across populations (400-file gate stride
+  `calls` −4 / `uses` +10 vs corpus +149 / +1,578); the first-order facts hold everywhere. **What the
+  lever bought, stated as a number: the gap fell 925,478 → 916,864 and per-project resolution rose
+  52.27 % → 52.35 % (+0.08 pp).** The three new mutants plus the pattern OVER-READ mutant are all CAUGHT
+  (`BB_MUTANT_ONLY="dart/"`, new failure exactly `dart/typed-receiver-heads`) — and **they cannot fail on
+  the count movement**, because the harness's own emitted limitation is that mutants wrap analyzer OUTPUT
+  rather than rewriting source: the ±few-hundred-row movement is pinned by NOTHING, and that gap is named
+  rather than left implied. Full receipt in `real-dart-analyzer.md` §arm14 (result) and §store lever.
