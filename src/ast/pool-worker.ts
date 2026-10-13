@@ -714,7 +714,85 @@ for (const n of [
   NOISE_TARGET_FAMILIES[n] = CSS_FAMILY_LANGUAGES
 }
 
-export function filterNoiseRelationships(rels: any[], language: string, declaredNames?: Set<string>): any[] {
+/**
+ * The names a file BINDS without DECLARING — import bindings.
+ *
+ * WHY THIS EXISTS (JS lane finding §1). The NOISE_TARGETS escape hatch admits a
+ * row when the file DECLARES the name, on the reasoning recorded at the check:
+ * "an analyzer that accidentally emits `node.type` emits a name the file never
+ * declares". An import binding is exactly that second case and the hatch cannot
+ * see it: `import text from "./text.js"` binds `text`, publishes no symbol named
+ * `text`, and so EVERY row naming `text` is deleted on the way to the index — the
+ * `uses` reads AND the `imports` row itself, because the filter tests the target's
+ * last segment and that segment is the bound name. Measured on a 600-file svelte
+ * sample by `script/m14/javascript-two-path-loss.ts`: 378 rows lost, 0 gained, and
+ * the instrument attributes each deletion as "the escape hatch being unreachable for
+ * a name the file only READS or BINDS".
+ *
+ * This does NOT widen the hatch to property reads (see the OPEN half recorded in
+ * `docs/analyzers/real-javascript-analyzer.md` §1): a name the file neither
+ * declares nor binds is still treated as noise, and `type`/`parent` read off an
+ * external object keep being deleted until a policy decision is taken for them.
+ *
+ * Shape-agnostic on purpose: analyzers spell their import records differently
+ * (`items`, `localName`, `defaultName`, `alias`, `namespaceName`, and
+ * `"./m:item"` / `"X as Y"` / path-ish tails), and a language whose record this
+ * does not understand contributes nothing rather than contributing the wrong name.
+ */
+export function importBindingNames(imports: any[] | undefined): Set<string> {
+  const names = new Set<string>()
+  const add = (raw: unknown): void => {
+    if (typeof raw !== "string") return
+    let s = raw.trim()
+    if (!s) return
+    // `./m:text` — the last `:`-segment is the item; a `:12` line suffix was
+    // already consumed by the same split.
+    const colon = s.lastIndexOf(":")
+    if (colon >= 0) s = s.slice(colon + 1).trim()
+    // A path-ish tail names a module, not a binding.
+    const slash = s.lastIndexOf("/")
+    if (slash >= 0) s = s.slice(slash + 1).trim()
+    if (!s) return
+    // `X as Y` binds BOTH spellings in the file's text; the local one is Y.
+    const asAt = s.indexOf(" as ")
+    if (asAt > 0) {
+      const imported = s.slice(0, asAt).trim()
+      const local = s.slice(asAt + 4).trim()
+      if (imported) names.add(imported)
+      if (local) names.add(local)
+      return
+    }
+    names.add(s)
+  }
+  for (const i of imports ?? []) {
+    if (!i || typeof i !== "object") continue
+    if (Array.isArray(i.items)) for (const it of i.items) add(it)
+    add(i.localName)
+    add(i.defaultName)
+    add(i.alias)
+    add(i.namespaceName)
+  }
+  return names
+}
+
+/**
+ * UNION: main's helper, absent from this branch's copy and imported by `js-filter-hatch-probe.ts`.
+ * Verbatim from `origin/main` — it is self-contained and depends on nothing this file changed.
+ */
+export function filterNoiseRelationships(
+  rels: any[],
+  language: string,
+  declaredNames?: Set<string>,
+  /**
+   * NAMES THE FILE BINDS WITHOUT DECLARING THEM (`importBindingNames`). UNION: this parameter and the
+   * hatch below are main's, whose side of this file had them while this branch's did not — and a probe
+   * taken from main calls this function with FOUR arguments, so the two sides disagree about the
+   * signature rather than about the body. The body kept here is THIS BRANCH's (it carries the
+   * binding-separator and qualified-exemption fixes recorded below), so main's parameter was ported
+   * INTO it rather than the body being replaced.
+   */
+  boundNames?: Set<string>,
+): any[] {
   if (!rels || rels.length === 0) return rels
 
   // M60 (objc lane, 2026-09-25): the leaf must be the last NON-EMPTY segment.
@@ -922,7 +1000,13 @@ export function filterNoiseRelationships(rels: any[], language: string, declared
     const declaredTarget =
       !!declaredNames &&
       (declaredNames.has(String(r.target ?? r.to ?? "")) || declaredNames.has(leaf))
-    if (NOISE_TARGETS.has(leaf) && !declaredTarget) {
+    if (
+      NOISE_TARGETS.has(leaf) &&
+      !declaredTarget &&
+      // UNION: main's second hatch — a name the file BINDS without declaring (an imported binding is
+      // not framework noise). Absent here, present there, and the probe taken from main depends on it.
+      !(boundNames && boundNames.has(leaf))
+    ) {
       // M60 LUA-16: `NOISE_TARGETS` bundles three groups whose names are noise
       // ONLY in the languages that own the convention, and all three were applied
       // to every language. Measured over every Lua file of two pinned corpora, the
