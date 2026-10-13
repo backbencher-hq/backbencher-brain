@@ -6512,6 +6512,23 @@ export async function indexProjectParallel(
             results,
             language: companionLang,
             reparse: (f, p, ctx) => reparse(f, p, ctx),
+            // ── THE ID-CARRYING JOIN (r-lane, 2026-10-12) ────────────────────────────────────────
+            // The store's primary key is `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine}`,
+            // and `sourceId` is the SOURCE SYMBOL's id, found by scanning the file's storeable spans. The
+            // pass cannot compute either without these four, and they are the STORE'S OWN functions and
+            // rules rather than copies: ONE IMPLEMENTATION, TWO CALLERS. A second computation of the same
+            // resolution would be free to disagree with the store's, which is the whole reason the tuple
+            // key that preceded this one is being replaced.
+            //
+            // IT IS INERT UNTIL THE WRITE-BACK READS `confirmedIds`: the write-back below still keys on
+            // `confirmedKeys`, so these four populate an id list nothing consumes yet. A reader who sees
+            // `confirmedIds` in the stats could reasonably assume the id path was live; it is NOT, until
+            // the write-back changes, and this comment says so.
+            projectId: String(projectId),
+            fileIdOf: (fp: string) => `${projectId}:${path.relative(projectPath, fp)}`,
+            buildSpans: buildStoreableSpans,
+            enclosingSpanId,
+            makeStoreableName,
           })
           if (passStats.owners > 0) {
             log.info(

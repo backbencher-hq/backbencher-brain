@@ -92,11 +92,22 @@ export interface OverrideCompanionPassOptions {
   projectId?: string
   /** The store's file id for a path — `${projectId}:${relativePath}` in `storeResults`. */
   fileIdOf?: (filePath: string) => string
-  /** The store's span index for one file's symbols. INCLUDES ITS SORT — a caller-supplied one must too. */
+  /**
+   * The store's span index for one file's symbols. INCLUDES ITS SORT — a caller-supplied one must too.
+   * IT TAKES THE NAME PREDICATE as its third argument rather than reading one from a module, because the
+   * predicate is PER-CALL MUTABLE STATE (it depends on the file's fallback path and language) and a
+   * module-level one would leak across files. The pass obtains it from `makeStoreableName` below.
+   */
   buildSpans?: (
     symbols: any[],
     fileId: string,
+    isStoreable: (nm: string | undefined, startLine: number) => boolean,
   ) => Array<{ id: string; name: string; start: number; end: number; kind: string }>
+  /** The store's `makeStoreableName` — ONE implementation, called here per file. */
+  makeStoreableName?: (
+    isFallbackResult: boolean,
+    fileLang: string | undefined,
+  ) => { denylist: Set<string>; isStoreable: (nm: string | undefined, startLine: number) => boolean }
   /** The store's innermost-enclosing-span scan. */
   enclosingSpanId?: (
     spans: Array<{ id: string; name: string; start: number; end: number; kind: string }>,
@@ -237,7 +248,13 @@ export async function populateOverrideCompanion(
       let spans = spansByResult.get(result as unknown as object)
       if (!spans) {
         if (!result.filePath) return null
-        spans = opts.buildSpans(result.symbols ?? [], opts.fileIdOf(result.filePath))
+        // THE PREDICATE IS BUILT FOR **THIS** FILE, from that file's own fallback state and language,
+        // and handed to the builder. The store does the same thing with the same factory — one
+        // implementation, two callers — which is also why the denylist cannot leak between files.
+        const isStoreable = opts.makeStoreableName
+          ? opts.makeStoreableName(!!(result as any).fallback, (result as any).language).isStoreable
+          : () => true
+        spans = opts.buildSpans(result.symbols ?? [], opts.fileIdOf(result.filePath), isStoreable)
         spansByResult.set(result as unknown as object, spans)
       }
       const line = (rel as any).line_number ?? null
