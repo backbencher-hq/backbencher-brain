@@ -4,9 +4,9 @@
   "milestone": "M61",
   "status": "known-gap",
   "checks": 15,
-  "passed": 12,
-  "failed": 3,
-  "realFailed": 3,
+  "passed": 14,
+  "failed": 1,
+  "realFailed": 1,
   "negativeCases": 11,
   "mutantsTotal": 11,
   "mutantsCaught": 11,
@@ -56,27 +56,21 @@
       "caught": true
     }
   ],
-  "currentCommit": "d3108fc04e89a991cc59b44fcd24156ef64ce9df",
+  "currentCommit": "d9b3084b99d7c2da134b612e5b98c8c41db8bc71",
   "verifierCommand": "npx tsx script/m61/verify-orphan-gates.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-10-05T21:43:45.408Z",
+  "generatedAt": "2026-10-13T14:49:10.180Z",
   "census": {
-    "verifiers": 609,
-    "wiredByNpmScripts": 416,
-    "wiredIncludingClosureGateBodies": 416,
-    "orphans": 193,
-    "declaredOrphans": 184,
-    "verifiersNamedBySource": 67,
-    "unprotectedBySource": 14,
-    "declaredSourceNamed": 8,
-    "undeclaredSourceNamed": [
-      "script/m24/verify-position-arithmetic.ts (named by src/lsp/navigation.ts)",
-      "script/m26/verify-graph-transport.ts (named by src/lsp/server.ts)",
-      "script/m28/verify-surface-parity.ts (named by src/intelligence/documentation/doc-engine.ts)",
-      "script/m42/verify-rich-hover.ts (named by src/lsp/rich_hover.ts)",
-      "script/m55/verify-hover-coverage.ts (named by src/lsp/rich_hover.ts, src/lsp/rich_hover.ts)",
-      "script/m60/verify-lua-dedupe-invariant.ts (named by src/ast/real-lua-analyzer.ts)"
-    ]
+    "verifiers": 648,
+    "wiredByNpmScripts": 420,
+    "wiredIncludingClosureGateBodies": 420,
+    "orphans": 228,
+    "declaredOrphans": 228,
+    "newOrphans": [],
+    "verifiersNamedBySource": 77,
+    "unprotectedBySource": 21,
+    "declaredSourceNamed": 21,
+    "undeclaredSourceNamed": []
   },
   "ledgerDrift": [
     "m20.M2: ledger=verified record=known-gap (M2.json)",
@@ -90,7 +84,14 @@
     "m20.D1: ledger=verified record=known-gap (D1.json)",
     "m20.D2: ledger=verified record=known-gap (D2.json)",
     "m20.D3: ledger=verified record=known-gap (D3.json)",
+    "m21.W1: ledger=verified record=known-gap (W1.json)",
     "m26.G1: ledger=verified record=known-gap (G1.json)",
+    "m26.W3: ledger=verified record=known-gap (W3.json)",
+    "m26.X1: ledger=verified record=known-gap (X1.json)",
+    "m29.R1: ledger=verified record=known-gap (R1.json)",
+    "m29.R2: ledger=verified record=known-gap (R2.json)",
+    "m29.R3: ledger=verified record=known-gap (R3-verify.json)",
+    "m29.R5: ledger=verified record=known-gap (R5-verify.json)",
     "m62.A2: ledger=verified record=known-gap (A2.json)"
   ],
   "sourceNamedExemptions": {
@@ -101,7 +102,20 @@
     "script/m21/verify-w1-worker-lifecycle.ts": "co-agent M21 worker-lifecycle gate; M21's own ladder is its entry point (lane m21)",
     "script/m59/verify-865-metadata-survival.ts": "co-agent M59 (Call-Site Truth) metadata-survival gate; M59's own entry point runs it (lane m59)",
     "script/m59/verify-rel-multiplicity.ts": "co-agent M59 relationship-multiplicity gate; M59's own entry point runs it (lane m59)",
-    "script/m60/verify-vue-no-regex.ts": "co-agent M60 (grammar migration) Vue no-regex gate; M60's survey/preflight scripts are its entry point (lane m60)"
+    "script/m60/verify-vue-no-regex.ts": "co-agent M60 (grammar migration) Vue no-regex gate; M60's survey/preflight scripts are its entry point (lane m60)",
+    "script/m14/verify-erlang-identity.ts": "named by src/ast/real-erlang-analyzer.ts as its identity gate; already declared unwired — declared on-demand, no npm chain runs it (lane m14)",
+    "script/m14/verify-import-alias.ts": "named by src/ast/parallel-indexer.ts as its import-alias gate; already declared unwired — declared on-demand (lane m14)",
+    "script/m24/verify-position-arithmetic.ts": "named by src/lsp/navigation.ts as its permanence gate; not in any npm chain — declared on-demand (lane m24)",
+    "script/m26/verify-graph-transport.ts": "named by src/lsp/server.ts as its transport gate; already declared unwired — declared on-demand (lane m26)",
+    "script/m28/verify-surface-parity.ts": "named by src/intelligence/documentation/doc-engine.ts as its surface-parity gate; not in any npm chain — declared on-demand (lane m28)",
+    "script/m42/verify-rich-hover.ts": "named by src/lsp/rich_hover.ts as its gate; already declared unwired — declared on-demand (lane m42)",
+    "script/m55/verify-hover-coverage.ts": "named by src/lsp/rich_hover.ts as its coverage gate; not in any npm chain — declared on-demand (lane m55)",
+    "script/m60/verify-lua-dedupe-invariant.ts": "named by src/ast/real-lua-analyzer.ts; not in any npm chain — declared on-demand (lane m60)",
+    "script/m60/verify-lua-stdlib-external.mts": "named by src/ast/real-lua-analyzer.ts; not in any npm chain — declared on-demand (lane m60)",
+    "script/perf/verify-scaling-linear.ts": "named by src/ast/parallel-indexer.ts as its scaling gate; machine-local perf instrument — declared on-demand (lane perf)",
+    "script/perf/verify-space-reclaim.ts": "named by src/ast/index-space.ts as its reclaim gate; machine-local perf instrument — declared on-demand (lane perf)",
+    "script/perf/verify-store-failure-honesty.ts": "named by src/ast/parallel-indexer.ts and src/cli/index.ts as their failure-honesty gate; machine-local perf instrument — declared on-demand (lane perf)",
+    "script/perf/verify-watchdog-policy.ts": "named by src/ast/watchdog-policy.ts as its gate; machine-local perf instrument — declared on-demand (lane perf)"
   },
   "limitations": [
     "Reachability is derived by parsing package.json script strings and closure-gate source text for `script/…` references. A gate invoked by a mechanism this parser does not model (a shell script, a CI workflow file, a Makefile, a `.mjs` runner that spawns by computed path) would be reported as an orphan. Every declared orphan in the baseline therefore carries a stated reason, and the baseline is the review surface for that judgement.",
@@ -110,7 +124,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T21:43:45.410Z",
-    "contentSha256": "0b94271178d4728fee909488a3ec0eaef2ffbb04bd8fc45cc5c67b551bbf1a00"
+    "sealedAt": "2026-10-13T14:49:10.181Z",
+    "contentSha256": "4a6bc3ebf11378184458f18d046b6457824545014dbc52d3bb734b40203c2f7f"
   }
 }
