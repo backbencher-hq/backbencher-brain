@@ -196,7 +196,11 @@ files; every count is production `parseFile`.
 
 **Zero, and unchanged.** `deriveTomlEdges` derives `contains` and the lane emits
 `contains` and nothing else, so every edge the analyzer produces is audited by the
-differential. This is the property the two `references` measurements above would
+differential. **UNION (main): the derivation is measured rather than asserted, and main records
+how** — `deriveTomlEdges` in `script/m14/differential.ts` derives exactly one label (`contains`,
+from its `emit` helper, which is the only `label:` literal in the function); the difference of the
+two sets is **0**, so nothing this lane stores is compared against nothing, and it is computed by
+`pass2-probes.ts`, which prints both sets. This is the property the two `references` measurements above would
 destroy: an emitted type with no oracle is stored and compared against nothing.
 
 ## Defects the census found

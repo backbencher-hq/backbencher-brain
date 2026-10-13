@@ -15,6 +15,8 @@ import { BrainDatabase } from "../../src/brain/database"
 import { visualizeProject, formatVisualization } from "../../src/intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../../src/intelligence/migration/migration-engine"
 import { fileURLToPath } from "node:url"
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
@@ -175,7 +177,20 @@ const FIXTURE: Record<string, string> = {
       }
     }
     // real-repo e2e
-    const rake = "$HOME/fixtures/repositories/rake/lib"
+    //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+    //  each repo path below resolved to a filesystem that does not exist here and the leg
+    //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+    //  candidates in order and names them all when none exists.
+    //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+    //  each repo path below resolved to a filesystem that does not exist here and the leg
+    //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+    //  candidates in order and names them all when none exists.
+    // Per-repo corpus paths were built on the literal foreign root
+    //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+    //  each repo path below resolved to a filesystem that does not exist here and the leg
+    //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+    //  candidates in order and names them all when none exists.
+    const rake = `${CORPUS_BASE}/rake/lib`
     if (existsSync(rake)) {
       const projectId = await indexProject(rake)
       try {
@@ -251,7 +266,11 @@ const FIXTURE: Record<string, string> = {
   // M3: M-parts real-repo e2e (plan on a real repo symbol)
   // ═══════════════════════════════════════════════════════════════════
   {
-    const rake = "$HOME/fixtures/repositories/rake/lib"
+    //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+    //  each repo path below resolved to a filesystem that does not exist here and the leg
+    //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+    //  candidates in order and names them all when none exists.
+    const rake = `${CORPUS_BASE}/rake/lib`
     if (existsSync(rake)) {
       const projectId = await indexProject(rake)
       try {
