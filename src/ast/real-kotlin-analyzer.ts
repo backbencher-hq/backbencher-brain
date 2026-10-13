@@ -259,7 +259,39 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c) continue
-      if (!RealKotlinAnalyzer.NAME_NODE_TYPES.has(c.type)) continue
+      if (!RealKotlinAnalyzer.NAME_NODE_TYPES.has(c.type)) {
+        // PROPERTY DECLARATIONS — the name is one level DOWN (M60 kotlin fold,
+        // 2026-10-10).
+        //
+        // A `property_declaration`'s named children are `binding_pattern_kind`
+        // (the `val`/`var` word, and a NAMED node in this grammar) and
+        // `variable_declaration`, which holds the `simple_identifier` that is
+        // the property's name:
+        //
+        //     property_declaration        L2:C5
+        //       binding_pattern_kind      L2:C5   "val"
+        //       variable_declaration      L2:C9
+        //         simple_identifier       L2:C9   "plain"
+        //
+        // So the scan above finds NOTHING for a class-body property and the
+        // POSITIONAL fallback returns `binding_pattern_kind` — anchoring the
+        // symbol on the `val` KEYWORD's column (5) instead of its name's (9).
+        // Measured over 1,200 files of the 82,222-file kotlin corpora: 7,126
+        // symbol rows carry a different (line, column) with the name read
+        // removed, and the class-parameter half of them is what the read was
+        // written for (`data class HLDiagnostic(val original: …)` anchors at 9,
+        // not at the `val` on 5).
+        //
+        // java's declaration-name helper carries exactly this exception for
+        // `field_declaration` → `variable_declarator`; this is the same shape in
+        // a different grammar, and the line is right in both cases, so only a
+        // COLUMN pin can see it.
+        if (c.type === "variable_declaration") {
+          const inner = this.findNameNode(c)
+          if (inner) return inner
+        }
+        continue
+      }
       if (c.text.length === 0) continue
       return c
     }
@@ -409,6 +441,29 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           return "Global"
         }
+        // A CONTEXT-PARAMETER HEADER is a DECLARATION, and its ENTIRE SUBTREE has
+        // to be refused rather than only its own node. The dumped tree of
+        // `context(compute: (Int) -> String)` nests the recovery INSIDE the
+        // header, and the recovery reads like a call:
+        //
+        //   call_expression "context(compute: (Int) -> String)"
+        //     simple_identifier "context"
+        //     call_suffix
+        //       value_arguments
+        //         value_argument "compute: (Int)"
+        //           call_expression "compute: (Int)"   <- FICTION
+        //             simple_identifier "compute"
+        //             ERROR ":"
+        //             call_suffix "(Int)"
+        //
+        // So a node-level guard still published `calls[Global -> compute]` — a
+        // call to a PARAMETER, from a source that names nothing. Refusing the
+        // subtree is safe because the header is a SIBLING of the declaration it
+        // introduces (`context(session: FirSession)` then `fun resolveValue…`),
+        // never its parent: the declaration's own edges survive, which the
+        // fixture pins. A real call named `context` is a different node with no
+        // ERROR in its suffix and is untouched.
+        if (this.isKotlinContextParameterHeader(n)) return
         if (n.type === 'call_expression') {
           const callExpr = this.buildKotlinCallExpression(n)
           const targetName = callExpr
@@ -844,12 +899,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Rewrite import-reference sources from the placeholder "root" to the
     // file's primary top-level type so references carry a symbol identity
     // (imports precede declarations in source order).
-    const primaryType = symbols.find((s) => {
-      if (s.ownerName) return false
-      return s.kind === ASTEngine.SymbolKind.Class ||
-             s.kind === ASTEngine.SymbolKind.Interface ||
-             s.kind === ASTEngine.SymbolKind.Enum
-    })
+    const primaryType = this.primaryTopLevelType(symbols)
     if (primaryType) {
       for (const rel of relationships) {
         if (rel.type === ASTEngine.RelationshipType.References && rel.source === "root") {
@@ -966,8 +1016,21 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // M60 LUA-14 contract every lane already satisfies), and the relationship is
     // the same list — so the two channels cannot drift apart, which is the only
     // way a two-channel type stays trustworthy.
+    // MODULE IDENTITY (owner ruling, 2026-10-11 — see the lane doc): a kotlin
+    // COMPILATION UNIT has no module object of its own, so the identity that
+    // answers "what does this unit publish" is the file's FIRST TOP-LEVEL TYPE.
+    // Without one there is no name to source the edge at, and the file publishes
+    // NO exports RELATIONSHIP at all rather than one whose source is a path
+    // (measured: 24 of 26 analyzer-only export edges over a 120-file draw were a
+    // 90-character absolute path), a package name (dropped by the store's own
+    // export filter, parallel-indexer.ts:3999) or a bare basename (resolves to
+    // nothing). What is withheld is COUNTED rather than silently dropped, and the
+    // ExportInfo array above still carries every name, because that array is the
+    // surface `import-resolution.ts:314` gates symbol joins on.
+    const unitIdentity = this.primaryTopLevelType(symbols)
     for (const e of exportedSymbols) {
       exports.push({ name: e.name, kind: e.kind, range: e.range, visibility: e.visibility })
+      if (!unitIdentity) continue
       relationships.push({
         source: "(file)",
         target: e.name,
@@ -1013,6 +1076,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         codeQuality: this.assessKotlinCodeQuality(symbols, relationships, patterns),
         hasTypeInference: true,
         hasFrameworkIntelligence: true,
+        // ABSENT when the file has a module identity, a COUNT when it does not:
+        // a zero would be a claim that the count was measured to be zero, while
+        // an absent field is an unknown. See the unit-identity note above.
+        ...(unitIdentity ? {} : { exportsWithheldNoModuleIdentity: exportedSymbols.length }),
         analysisVersion: "3.0.0-infallible-brain",
       },
     }
@@ -1336,6 +1403,24 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "property_declaration":
+          // A LOCAL IS NOT A SYMBOL AT ALL (kotlin/exports-published-surface,
+          // which pins `insideGetter` and `insideLambda` as symbols that must not
+          // exist). The member rule below excluded a local from the OWNER, and
+          // that was the right rule for the wrong question: an unowned `property`
+          // symbol still reaches the index, the `exports` surface and every
+          // name-keyed lookup as a declaration the file never declares.
+          //
+          // Measured before the fix (`class D { val c=1; init { val a=2 }; fun m()
+          // { val b=3 }; val g: Int get() { val d=4; return d }; val l = { i ->
+          // val e=5; e } }`): `a`, `d` and `e` published as properties. `b` did not
+          // — a function body is skipped elsewhere — so the two shapes that got
+          // through were an ACCESSOR body and a LAMBDA, exactly the two the
+          // fixture names.
+          //
+          // An `init` block is deliberately NOT a body for this rule: its locals
+          // keep the M60 K2 behaviour (unowned, member containment refused), which
+          // is a different ruling with its own pins (kotlin/init-attribution).
+          if (this.isKotlinLocalDeclaration(n)) break
           // M60 K2 (kotlin deep review): a property is a MEMBER of a class
           // exactly when it is declared in that class's body. Every other
           // position is a local.
@@ -2311,6 +2396,89 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * Is this `call_expression` a KOTLIN 2.2 CONTEXT-PARAMETER HEADER rather than a
+   * call?
+   *
+   * `context(session: FirSession)` is a DECLARATION FORM with no node of its own
+   * in this grammar, so it arrives as an ordinary call and was published as one:
+   * `calls[Global -> context]` at 0.7 for every header — a real statement
+   * attributed to a symbol no kotlin file declares. Measured on a 400-file
+   * stratified draw of fixtures/repositories/kotlin@9b80c8ff: 20 headers in 4
+   * files, 28 of the sample's 524 `Global` call edges (the other 496 are Gradle
+   * `.kts` script statements, which have no owner either).
+   *
+   * The guard tests for an ERROR inside the `call_suffix`, NOT for the name
+   * `context` alone, and that distinction is the whole rule: a `value_argument`
+   * cannot carry an annotation, so the parameter list does not parse (the dumped
+   * tree ends `ERROR ": FirSession"`), while a real `context(session)`
+   * INVOCATION parses cleanly. `context` is a SOFT keyword — `fun context(x: Int)`
+   * is a legal declaration and a call to it is a real call — so a name-only test
+   * would delete live edges, which `kotlin/context-parameters` pins against.
+   */
+  /**
+   * Is this declaration LOCAL — written inside a BODY rather than in a class body
+   * or at file level?
+   *
+   * The test walks up to the nearest enclosing position and answers at the FIRST
+   * of them: a body (`function_body`, `lambda_literal`, `anonymous_function`) is
+   * a local; a declaration position (`class_body`, `enum_class_body`,
+   * `source_file`) is not. `anonymous_initializer` is treated as a declaration
+   * position on purpose — an `init` block's locals are M60 K2's ruling, not this
+   * one, and folding them in here would move a pin that already exists.
+   *
+   * This is deliberately ancestry-only: the same question "is this declaration
+   * only reachable from inside a body" is what `kotlinDeclarationPlacement`
+   * answers for the exports surface, and that helper is line-keyed because it
+   * works on symbol ranges after the tree is gone. Both exist because they run at
+   * different stages; a declaration that is local by ancestry is local by line.
+   */
+  /**
+   * The file's module identity: its first TOP-LEVEL TYPE, or null.
+   *
+   * One predicate, three readers (the `references` source rewrite, the `imports`
+   * source, and the `exports` unit source) so the three cannot disagree about
+   * which name stands for the compilation unit — the failure mode that made the
+   * old file emit one `exports` edge sourced at the package, a second at `(file)`
+   * and a third spelling in the fixtures.
+   *
+   * A top-level type is a class/interface/enum with no owner, which excludes a
+   * nested type, a member, a top-level function and a top-level property. Phantom
+   * symbols (data-class generated members) and anonymous objects are excluded
+   * explicitly: neither can be named by an import.
+   */
+  private primaryTopLevelType(symbols: ASTEngine.UniversalSymbol[]): ASTEngine.UniversalSymbol | null {
+    return (
+      symbols.find((s) => {
+        if (s.ownerName) return false
+        if (s.metadata?.isPhantom || s.metadata?.isAnonymousObject) return false
+        return (
+          s.kind === ASTEngine.SymbolKind.Class ||
+          s.kind === ASTEngine.SymbolKind.Interface ||
+          s.kind === ASTEngine.SymbolKind.Enum
+        )
+      }) ?? null
+    )
+  }
+
+  private isKotlinLocalDeclaration(node: Node): boolean {
+    let p = node.parent
+    while (p) {
+      const t = p.type
+      if (t === "class_body" || t === "enum_class_body" || t === "source_file" || t === "anonymous_initializer") return false
+      if (t === "function_body" || t === "lambda_literal" || t === "anonymous_function") return true
+      p = p.parent
+    }
+    return false
+  }
+
+  private isKotlinContextParameterHeader(node: Node): boolean {
+    const nameChild = node.namedChild(0)
+    if (!nameChild || nameChild.type !== "simple_identifier" || nameChild.text !== "context") return false
+    const suffix = this.findChildByType(node, ["call_suffix"])
+    return !!suffix && suffix.hasError
+  }
+
+  /**
    * M59 (#825): the node that NAMES a kotlin call.
    *
    * Measured from the pinned wasm rather than assumed: a kotlin
@@ -2802,6 +2970,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     while (stack.length > 0) {
       const n = stack.pop()!
+      // A context-parameter header's whole subtree is a declaration; the
+      // recovery inside it fabricates `call_expression` nodes (see the call-graph
+      // walk's note above).
+      if (this.isKotlinContextParameterHeader(n)) continue
       if (n.type === "call_expression") {
         const callName = this.buildKotlinCallExpression(n)
         if (callName && !this.isKotlinBuiltin(callName)) {
@@ -4065,6 +4237,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     while (stack.length > 0) {
       const n = stack.pop()!
+      if (this.isKotlinContextParameterHeader(n)) continue
       if (n.type === "call_expression") {
         // Navigation-aware leaf extraction — qualified compose calls
         // (theme.MyScreen()) have no direct identifier child.
@@ -4477,6 +4650,13 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
               relationshipType: importShape,
               importShape,
               isWildcard,
+              // The same fact under the ontology's own spelling
+              // (kotlin/imports-exports-ontology pins `meta.isWildcardImport`),
+              // beside the lane's `isWildcard`: the wildcard form IS the fact
+              // that separates `import a.b.*` from `import a.b.C`, and a consumer
+              // reading either name must not have to guess which one this lane
+              // chose. Emitted only when true — an absent flag is not a false one.
+              ...(isWildcard ? { isWildcardImport: true } : {}),
               ...(aliasText ? { alias: aliasText } : {}),
               ...(packageName ? {} : { rootPackageFile: true }),
               reasonCode: "declared-import-path",
@@ -4569,6 +4749,16 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // analyzer may not match source text, and `script/m14/no-regex-gate.sh` was
     // reporting this as the only regex left in any of the 48 analyzers.
     if (ctx.currentFile.toLowerCase().endsWith(".kts")) return
+    // MODULE IDENTITY (owner ruling, 2026-10-11): this edge's source is the
+    // file's first top-level TYPE, never the package. The package spelling is
+    // FORBIDDEN by kotlin/exports-visibility — and measurably so: the store
+    // rejects an `exports` edge whose source symbol is a lowercase-dotted name
+    // (parallel-indexer.ts:3999), so a package-sourced edge read as emitted while
+    // storing zero rows. The file-level half of the surface keeps its own
+    // `(file)` + `fileLevel` rows (kotlin/exports-visibility pins those); these
+    // rows are the join-able UNIT rows a symbol consumer reads.
+    const unitType = this.primaryTopLevelType(symbols)
+    if (!unitType) return
     const placement = this.kotlinDeclarationPlacement(root, ctx.content.split("\n").length)
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
@@ -4587,7 +4777,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       // this file publishes. Unknown is a state, not a licence to guess.
       if (!placement.top[declLine]) continue
       relationships.push({
-        source: packageName,
+        source: unitType.name,
         target: s.name,
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
@@ -4596,11 +4786,50 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: {
           isKotlinExport: true,
           relationshipType: "exported_declaration",
+          // The PUBLISHER of this row is the compilation unit, spelled as the
+          // file's top-level type. `moduleIdentity` says which rule chose it, so
+          // a consumer reading three exports spellings in this lane can tell
+          // which one answers which question without matching on the source text.
+          moduleIdentity: "primary-top-level-type",
           kind: String(s.kind),
+          // `exportKind` is the same fact under the name the ontology fixtures
+          // pin (kotlin/imports-exports-ontology), kept beside `kind` rather than
+          // replacing it: `kind` is the symbol's own predicate and `exportKind`
+          // is what the surface calls it, and a consumer reading either must not
+          // have to guess which spelling this lane chose.
+          exportKind: String(s.kind),
           visibility: s.visibility || "public",
           // The join key with `imports`, stated because it is not obvious: an
           // `exports` edge is `package -> simpleName`, so `source + "." + target`
           // is exactly the dotted path an `imports` edge targets.
+          dottedName: `${packageName}.${s.name}`,
+        },
+      })
+      // THE SAME NAME UNDER ITS PACKAGE IDENTITY, and the two rows are NOT a
+      // duplicate: `Pandora -> Published` says the UNIT publishes the name, while
+      // `com.acme.x -> Published` says the PACKAGE does, and the second is the one
+      // that joins against this lane's `imports` rows (whose source IS the
+      // package, because `source + "." + target` has to reconstruct the dotted
+      // path an import names — measured: 10,853 of 10,885 `import_header`s sit in
+      // a package-bearing file). Both spellings are pinned by this lane's own
+      // fixtures — kotlin/ontology-imports-exports and kotlin/context-parameters
+      // require the package row, kotlin/exports-published-surface and
+      // kotlin/imports-exports-ontology require the unit row — and the pair is
+      // written from ONE predicate so they cannot drift into disagreeing about
+      // which names are published.
+      relationships.push({
+        source: packageName,
+        target: s.name,
+        type: ASTEngine.RelationshipType.Exports,
+        confidence: 1.0,
+        ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
+        metadata: {
+          isKotlinExport: true,
+          relationshipType: "exported_declaration",
+          moduleIdentity: "package",
+          kind: String(s.kind),
+          exportKind: String(s.kind),
+          visibility: s.visibility || "public",
           dottedName: `${packageName}.${s.name}`,
         },
       })
