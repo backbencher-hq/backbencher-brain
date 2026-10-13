@@ -465,6 +465,26 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // ------------------------------------------- THE FILE-SCOPED IDENTITY (SCSS-added symbols)
+    //
+    // The delegate publishes a project-unique `qualifiedName` per declaration and respells the
+    // edges whose declaration is in the file that wrote them (`publishFileScopedIdentities`,
+    // css-D15). It runs INSIDE `RealCssAnalyzer.analyze` — i.e. BEFORE this lane adds a single
+    // symbol or edge — so everything added here is invisible to it and carries a BARE name.
+    //
+    // MEASURED, and it is the largest single residual class on this lane: a `$variable` is the
+    // property of a THEME, so the same name is declared by every flavour file in one project
+    // (`Documenter.jl/.../catppuccin/{_frappe,_macchiato,_mocha}.scss` each declare
+    // `$catppuccin-rosewater`). The gate's own classification puts references 787 amb + exports
+    // 953 amb on the VARIABLE shape and nothing else — 1,740 edges, 58% of the whole residual —
+    // and every one of them is this lane's symbol spelling a bare name into a key space that
+    // holds four declarations of it.
+    //
+    // The rule is the delegate's, reused rather than restated (the same reason `cssFileScopeOf`
+    // is imported rather than re-implemented): the discriminator rides the PREFIX, never the
+    // name, because `normTarget`/`extractLeaf` both take the last `.`/`:`-delimited segment.
+    this.publishScssFileScopedIdentities(ctx, filePath)
+
     return {
       ...base,
       symbols: ctx.symbols,
@@ -491,6 +511,58 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     const normalized = filePath.split("\\").join("/")
     const base = normalized.slice(normalized.lastIndexOf("/") + 1)
     return base.length > 0 ? base : "module.scss"
+  }
+
+  /**
+   * Give the symbols THIS analyzer added — and only those — a project-unique `qualifiedName`,
+   * then respell the edges that name one of them from the file that declares it.
+   *
+   * WHY ONLY THE ONES THIS ANALYZER ADDED. The delegate already ran
+   * `publishFileScopedIdentities` over its own output, so every symbol it published already
+   * carries a `qualifiedName` and every edge it could respell already has. A target that is
+   * STILL bare after the delegate declined it (no local declaration, or several and no line to
+   * choose between them) is a decision the delegate made deliberately, and re-deciding it here
+   * would be a second implementation of a rule this lane is supposed to inherit. So the pass
+   * touches a symbol only when `qualifiedName` is ABSENT, which is exactly the set added here:
+   * `$variables`, `@mixin`/`@function` symbols, the module's namespaces, the control-flow
+   * `interface` symbols, the imported-member symbols, and the module row itself.
+   *
+   * WHY REFERENCES/EXPORTS/CALLS/USES/OVERRIDES. `Exports` and `Calls` are the two the delegate
+   * has no analogue for (CSS has neither a module surface nor a call), and they are the two
+   * carrying this lane's measured collisions; `References` and `Uses` are here because the SCSS
+   * reads (`$var`, `@include`) are pushed AFTER the delegate's pass and so were never seen by
+   * it. `Imports` is deliberately ABSENT for the delegate's own stated reason: an `imports`
+   * edge names ANOTHER file's module, and this file's module symbol happens to share its
+   * spelling with that file's basename — respelling it would point the import at the importing
+   * file itself.
+   */
+  private publishScssFileScopedIdentities(ctx: ScssContext, filePath: string): void {
+    const scope = cssFileScopeOf(filePath)
+    if (scope === "") return
+    const byName = new Map<string, string>()
+    for (const sym of ctx.symbols) {
+      const name = String(sym.name ?? "")
+      if (name.length === 0) continue
+      if (sym.qualifiedName !== undefined && sym.qualifiedName !== "") continue
+      sym.qualifiedName = `${scope}::${name}`
+      if (!byName.has(name)) byName.set(name, String(sym.qualifiedName))
+    }
+    if (byName.size === 0) return
+    const REWRITABLE = new Set<string>([
+      ASTEngine.RelationshipType.References,
+      ASTEngine.RelationshipType.Exports,
+      ASTEngine.RelationshipType.Calls,
+      ASTEngine.RelationshipType.Uses,
+      ASTEngine.RelationshipType.Overrides,
+    ])
+    for (const rel of ctx.relationships) {
+      if (!REWRITABLE.has(String(rel.type ?? ""))) continue
+      const target = String(rel.target ?? "")
+      // an already-scoped target is the delegate's decision, or this pass's own output
+      if (target.length === 0 || target.includes("::")) continue
+      const qname = byName.get(target)
+      if (qname !== undefined) rel.target = qname
+    }
   }
 
   // ── helpers ────────────────────────────────────────────────────────────────
