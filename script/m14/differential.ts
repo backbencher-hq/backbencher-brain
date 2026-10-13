@@ -24862,6 +24862,20 @@ async function main() {
       // is scored against a different sample and mislabelled a regression.
       if (v.sampleHash) { clean[k].sampleSetHash = v.sampleHash; hashes[k] = v.sampleHash }
     }
+    // THE THREE KEYS THIS WRITER DOES NOT RECOMPUTE ARE CARRIED FROM THE FILE IT REPLACED.
+    // `floorMoves` (a floor that moved UP, with the reason it was allowed to), `unmeasured`
+    // (rows measured but deliberately NOT pinned — pinning would bury a real anomaly, #870)
+    // and `recovered` (rows lost in a named merge and restored from a named commit) are
+    // BOOKKEEPING: nothing here regenerates them and no consumer reads them. Measured
+    // 2026-10-13: this writer rebuilt `merged` from scratch, so every baseline update deleted
+    // `unmeasured` 9 -> 0 and `recovered` 9 -> 0 — 18 records carrying their own commit
+    // attribution (`lostAt: 16075a5a1`, `recoveredFrom: 7ab888b79`) and 283 lines, with nothing
+    // in the artifact saying so. A field no gate reads is exactly the field a rebuild loses
+    // silently, so it is preserved BY NAME rather than by hoping someone remembers it.
+    const carried: Record<string, unknown> = {}
+    for (const k of ["floorMoves", "unmeasured", "recovered"] as const) {
+      if (previous[k] !== undefined && previous[k] !== null) carried[k] = previous[k]
+    }
     const merged = {
       samplePerLang: SAMPLE_PER_LANG,
       // #871 §1: the load context the pinned rows were measured under — a
@@ -24869,6 +24883,7 @@ async function main() {
       loadContext: { loadAvgStart: runLoadAvgStart, loadAvgEnd: loadAvg1(), sliceCount: willBatch ? Math.ceil(lanes.length / BATCH_SIZE) : 1 },
       counts: { ...(previous.counts ?? previous), ...clean },
       hashes,
+      ...carried,
     }
     fs.writeFileSync(BASELINE, JSON.stringify(merged, null, 2) + "\n")
     console.log(`differential baseline updated (primary + second lanes): ${Object.keys(clean).length} lane(s) pinned/refreshed; drawn file sets pinned: ${Object.keys(hashes).length}`)
