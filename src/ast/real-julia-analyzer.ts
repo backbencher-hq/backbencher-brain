@@ -1,6 +1,46 @@
+import { readFileSync } from "node:fs"
+import * as path from "node:path"
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { BINDING_SEP } from "./types"
+
+/**
+ * THE PACKAGE MODULE — the binding a julia package's file-scope declarations actually belong to.
+ *
+ * `include("src/a.jl")` evaluates a file INSIDE the including module, and a package's entry point
+ * includes its `src/` files into the module named by the package's `Project.toml`. So two file-scope
+ * `f` declarations in two files of one package are two methods of ONE generic function, while two
+ * file-scope `f` declarations in two unrelated projects are two functions that merely share a
+ * spelling. A per-file analyzer cannot see the difference, which is why this rule is scoped by the
+ * FILE's own facts and the package name only:
+ *
+ *   - the declaration must have NO owner (file scope, not inside a `module` block in this file), and
+ *   - the file must declare NO `module` block anywhere, and
+ *   - the package name must come from `<projectRoot>/Project.toml`.
+ *
+ * All three are needed. The first two are what makes the claim "this file's file-scope code is
+ * evaluated in the package module" true; the third is what NAMES it. When any is missing the symbol
+ * is published exactly as before, so a repo without a `Project.toml` — the julia language repo itself,
+ * for instance — is untouched rather than guessed at.
+ *
+ * Measured before this was written: of the 21,168 one-region edges, 6,493 have a candidate file that
+ * DOES open a `module` block (and 965 of those declare DIFFERENT modules), and those are exactly the
+ * edges this rule must not touch. Per-file conditions reproduce that split without a project pass.
+ */
+const JULIA_PACKAGE_CACHE = new Map<string, string>()
+function juliaPackageName(projectRoot: string | undefined): string {
+  if (!projectRoot) return ""
+  const hit = JULIA_PACKAGE_CACHE.get(projectRoot)
+  if (hit !== undefined) return hit
+  let name = ""
+  try {
+    const text = readFileSync(path.join(projectRoot, "Project.toml"), "utf8")
+    const m = /^[ 	]*name[ 	]*=[ 	]*"([^"]+)"/m.exec(text)
+    if (m && m[1]) name = m[1].trim()
+  } catch { /* no Project.toml at the project root: no package module to publish */ }
+  JULIA_PACKAGE_CACHE.set(projectRoot, name)
+  return name
+}
 
 /**
  * Julia — analyzer.
@@ -359,7 +399,14 @@ export class RealJuliaAnalyzer {
    */
   private declaredSymbolKinds = new Map<string, ASTEngine.SymbolKind>()
 
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  /**
+   * THE FOURTH PARAMETER IS NEW, AND ITS ABSENCE WAS A WIRING GAP OF EXACTLY THE KIND THIS PROGRAMME
+   * HAS NOW FOUND THREE TIMES: `engine.ts` passes an `AnalyzeContext` to every analyzer, python's once
+   * stopped at three parameters so the companion "never reached it at all", and this analyzer did the
+   * same — the context was available at every call site and dropped here. It is ADDITIVE: a caller that
+   * passes nothing gets the previous behaviour byte for byte, which is what the five fixtures assert.
+   */
+  analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     this.inMacroBody = false
     this.foreignMarked.clear()
     this.declSites.clear()
@@ -389,6 +436,12 @@ export class RealJuliaAnalyzer {
       // counts a symbol's alias as THE SAME declaration, never a second one, so no bare-name count
       // moves.
       if (s.ownerName && !s.qualifiedName) s.qualifiedName = `${s.ownerName}.${s.name}`
+      // THE PACKAGE MODULE, for a DECLARATION AT FILE SCOPE in a file that opens no `module` block.
+      // Additive in the same sense as the owner alias above: the gate counts a symbol's qualifiedName
+      // as the SAME declaration, so no bare-name count moves — and the binding it names is one this
+      // lane previously left unnamed, which is why a call to it read as ambiguous against a name
+      // coincidence instead of resolving to the package's generic function.
+      else if (!s.ownerName && !fileDeclaresModule && packageName) s.qualifiedName = `${packageName}.${s.name}`
       symbols.push(s)
       this.declaredSymbolKinds.set(s.name, s.kind)
     }
@@ -458,6 +511,20 @@ export class RealJuliaAnalyzer {
     // FUNCTION, which is julia's own scoping rule, and only `calls` and `references` with a BARE
     // target are touched. `uses` is excluded because its target is a MEMBER name, and a dotted
     // target because a qualified path is not a local binding.
+    // THIS FILE'S OWN FACTS for the package-module rule (see `juliaPackageName`): does it declare a
+    // `module` block anywhere, and what is the package it belongs to. Both are read BEFORE the walk
+    // because `pushSym` runs during it and a `module` declared LATER in the file would otherwise be
+    // invisible to a declaration that precedes it.
+    let fileDeclaresModule = false
+    {
+      const scan = (n: Node) => {
+        if (n.type === "module_definition") fileDeclaresModule = true
+        for (const c of this.namedChildren(n)) if (!fileDeclaresModule) scan(c)
+      }
+      scan(rootNode)
+    }
+    const packageName = juliaPackageName((context as any)?.projectRoot)
+
     const bindingsByScope = new Map<string, Set<string>>()
     {
       const bindName = (b: Node | null | undefined): string => {
@@ -1345,15 +1412,6 @@ export class RealJuliaAnalyzer {
       list.push(s)
       declsByName.set(s.name, list)
     }
-    for (const r of relationships) {
-      if (r.type !== ASTEngine.RelationshipType.References) continue
-      const tgt = String(r.target ?? "")
-      if (!tgt || tgt.includes(".")) continue
-      const decls = declsByName.get(tgt)
-      if (!decls || decls.length !== 1) continue
-      const q = decls[0]!.qualifiedName
-      if (typeof q === "string" && q) r.target = q
-    }
 
     /**
      * THE BINDING SPELLING, applied after the reference retarget and BEFORE the dedup (so two edges
@@ -1367,6 +1425,16 @@ export class RealJuliaAnalyzer {
      * coincides with a parameter name, which is exactly the shape this restriction excludes), and
      * `uses` is left alone because its target is a MEMBER name.
      */
+    for (const r of relationships) {
+      if (r.type !== ASTEngine.RelationshipType.References) continue
+      const tgt = String(r.target ?? "")
+      if (!tgt || tgt.includes(".")) continue
+      const decls = declsByName.get(tgt)
+      if (!decls || decls.length !== 1) continue
+      const q = decls[0]!.qualifiedName
+      if (typeof q === "string" && q) r.target = q
+    }
+
     if (bindingsByScope.size > 0) {
       for (const r of relationships) {
         if (r.type !== ASTEngine.RelationshipType.Calls && r.type !== ASTEngine.RelationshipType.References) continue

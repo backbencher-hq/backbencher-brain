@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "m60-unrouted-extension-gate",
-  "generatedAt": "2026-10-12T21:56:11.457Z",
+  "generatedAt": "2026-10-13T14:47:01.692Z",
   "producedBy": "script/m60/unrouted-extension-gate.ts",
   "question": "does the corpus carry an extension-shaped, text-bearing key that the router refuses with neither a census row nor a ruling?",
   "verdict": "PASS",
@@ -288,8 +288,8 @@
     "A tracked file that is not present on disk cannot be read and is not adjudicated; the walk COUNTS it (`scope.trackedButNotOnDisk` — 22,861 when this boundary was written, concentrated in three partially-materialized pb-* repos) rather than reporting a population it never saw."
   ],
   "timing": {
-    "walkedMs": 11751,
-    "sniffedMs": 12,
-    "totalMs": 11971
+    "walkedMs": 62932,
+    "sniffedMs": 16,
+    "totalMs": 63376
   }
 }

@@ -3021,6 +3021,44 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (typeof cx === "number" && s.complexity === undefined) s.complexity = cx
     }
 
+    // ── CLJ-IN1: THE LANGUAGE'S OWN QUALIFIED SPELLING ──────────────────────
+    // A Clojure var is spelled `ns/name`, and this analyzer TARGETS that
+    // spelling everywhere it resolves one: a qualified call is emitted as
+    // `alias`→`ns` + `/` + `name` (resolveCallee, CLJ-D28), a libspec reference
+    // as the required namespace, an implements/extends target as
+    // `resolveQualified(name)`. But the SYMBOLS carried no qualifiedName of
+    // their own, so `pool-worker.ts:1228`'s fallback published the `scope` and
+    // the `name` joined by a DOT — `clojure.test.is` — and an edge naming
+    // `clojure.test/is` matched no published key.
+    //
+    // MEASURED, whole admitted population (646 files, 3 repos, `incoming-gate`
+    // at maxFiles 0): 19,220 unresolved of 43,454 edges, and
+    // `validation/m14/fixtures/clojure/incoming-classify.ts` splits them:
+    // QUAL-NAME-IN-NS — the edge's OWN PROJECT declares `<name>` in `<ns>`, so
+    // the declaration exists and the edge spells it correctly — is **6,929
+    // edges (656 distinct targets, 294 files)**, the single largest class in the
+    // residual. `clj-kondo.test-utils/lint!` 2,485, `clojure.test/is` 1,845,
+    // `clojure.test/testing` 1,150, `clj-kondo.test-utils/assert-submaps2` 748.
+    //
+    // This is not a resolution policy, it is the language's spelling: Clojure's
+    // reader, clj-kondo, and every REPL print a qualified var as `ns/name`.
+    // Setting it makes the endpoint these edges ALREADY name resolvable, both in
+    // the arbiter's key space and in production, whose
+    // `parallel-indexer.resolveRelationships` matches a project-scoped
+    // qualified name exactly. It changes NO edge and NO symbol name — the field
+    // is additive, and pool-worker's fallback is a `||` chain, so an explicit
+    // value wins.
+    //
+    // The `scope` field itself is untouched: it is this lane's namespace
+    // attribution (and the store reads it separately). Only the SPELLING of the
+    // qualified name moves, and only where there is a scope to qualify with —
+    // a file-scope-less symbol (the module/namespace symbol) keeps its name.
+    for (const s of symbols) {
+      const sc = typeof s.scope === "string" ? s.scope : ""
+      if (sc.length === 0 || sc === s.name) continue
+      s.qualifiedName = `${sc}/${s.name}`
+    }
+
     return {
       language: "clojure",
       symbols,

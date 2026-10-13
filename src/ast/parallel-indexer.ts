@@ -6535,7 +6535,7 @@ export async function indexProjectParallel(
         // that is real, so this reaches 1,734 rows and not 6,268. TYPESCRIPT IS DELIBERATELY NOT
         // ADDED: `real-typescript-analyzer.ts` has zero `overrideCompanion` references, so the token
         // would be a no-op that looks like a fix.
-        for (const companionLang of ["perl", "python", "javascript"] as const) {
+        for (const companionLang of ["perl", "python", "javascript", "ruby"] as const) {
           const passStats = await populateOverrideCompanion({
             projectPath,
             results,

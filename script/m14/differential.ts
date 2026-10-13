@@ -54,6 +54,14 @@ import { derivePhpExportsTruth } from "./oracles/php-exports"
 import { derivePhpOverridesTruth } from "./oracles/php-overrides"
 import { deriveDartImportsTruth } from "./oracles/dart-imports"
 import { deriveDartOverridesTruth } from "./oracles/dart-overrides"
+// M14 ontology wave (2026-10-13): `references` — the TENTH dart label, and the last one this
+// lane emitted with no comparison behind it. The oracle has existed since the label landed
+// (`script/m14/verify-dart-references.ts` pins its shapes, and the file states its own
+// independence argument), but it was wired to NOTHING else: no truth push here, no entry in the
+// analyzer-side allowlist. So both halves of the class were absent — not "measured and failing",
+// not "measured and passing", simply unread — which is the state that reads most like coverage
+// and is why it took a reader of the allowlist to find it.
+import { deriveDartReferencesTruth, dartTypesDeclaredIn } from "./oracles/dart-references"
 import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
 import { deriveJuliaExtendsTruth, deriveJuliaInstantiatesTruth } from "./oracles/julia-type-edges"
 import { deriveJuliaCallsTruth } from "./oracles/julia-calls"
@@ -23000,8 +23008,26 @@ async function main() {
         // on both sides: not "measured and passing", not "measured and failing",
         // simply absent, which is the state that reads most like coverage.
         //
-        // Both halves again, in one commit: truth here, the allowlist entry below.
+        // THIS COMMENT USED TO END "and the allowlist entry below". THERE WAS NO SUCH ENTRY, and
+        // the claim survived two months because nothing reads this file's prose: the truth push
+        // landed at M60, the filter term did not, so the oracle's rows arrived at a comparison
+        // that had already discarded the analyzer's — the G7 groovy shape (an oracle with no
+        // entry compares nothing) sitting inside the very comment that says both halves landed.
+        // The missing terms are added on 2026-10-13, below, in the dart arm of the filter.
         for (const e of deriveDartOverridesTruth(root, dartCompanion ?? undefined)) {
+          ;(truth as any[]).push(e)
+        }
+        // M14 ontology wave (2026-10-13): `references`, and the ONE thing this push must get
+        // right is the VISIBLE SET. The analyzer publishes a type mention only when the mention
+        // binds to a type the run can point at, and "the run" is this file's types PLUS
+        // `projectIndex.typeKinds` — while the oracle's own default is the per-file set. Deriving
+        // truth from the narrower set while the analyzer reads the wider one would charge the
+        // analyzer's cross-file mentions as FABRICATED, which measures the harness rather than the
+        // lane. One set, both sides — exactly why the `overrides` oracle above is handed
+        // `dartCompanion` (the index's closed member sets) instead of building its own.
+        const dartVisible = new Set<string>(dartTypesDeclaredIn(root))
+        for (const t of dartProjectIndex?.typeKinds?.keys?.() ?? []) dartVisible.add(String(t))
+        for (const e of deriveDartReferencesTruth(root, dartVisible)) {
           ;(truth as any[]).push(e)
         }
       }
@@ -23440,7 +23466,22 @@ async function main() {
           // references, imports, instantiates, exports, contains); the local side adds
           // typescript to the references and uses sets and dart to imports/exports.
           // Neither list is a subset of the other, so both contributions are kept.
-          ...(lang === "zig" ? ["calls", "uses", "references", "imports", "instantiates", "exports", "contains"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "typescript" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" || lang === "typescript" ? ["uses"] : []), ...(lang === "dart" ? ["imports", "exports"] : []),
+          ...(lang === "zig" ? ["calls", "uses", "references", "imports", "instantiates", "exports", "contains"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "typescript" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" || lang === "typescript" ? ["uses"] : []),          ...(lang === "dart" ? ["imports", "exports"] : []),
+          // M14 ontology wave (2026-10-13): `overrides` — the largest label this lane publishes
+          // (316,120 edges corpus-wide at arm13) and, until today, the last one compared against
+          // NOTHING. Its truth has been pushed since M60 (see the correction in the dart truth
+          // block; that comment claimed this entry existed and it did not). Admitted through an
+          // explicit arm rather than by dropping `!== "dart"` from the negated one above, because
+          // that negation is shared with csharp/swift/cpp/go and a reader must be able to see
+          // WHICH languages have an overrides oracle rather than which do not.
+          ...(lang === "dart" ? ["overrides"] : []),
+          // M14 ontology wave (2026-10-13): `references` joins the compared set, with its truth
+          // push added in the same commit. This file records the rule in both directions (the
+          // #910 c-imports note, the G7 groovy note): an entry with no oracle turns every
+          // analyzer row into a fabrication, and an oracle with no entry compares nothing. The
+          // label sat in the second state — emitted since the ontology wave, derived and
+          // shape-pinned by `verify-dart-references.ts`, admitted by neither side.
+          ...(lang === "dart" ? ["references"] : []),
           // M60 K2 (2026-09-27): kotlin joins the uses-audited set.
           // 1,758 `uses` edges on the primary corpus, every one of them from
           // five emission sites that NO oracle derived and the allowlist dropped
