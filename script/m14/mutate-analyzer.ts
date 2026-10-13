@@ -26,6 +26,13 @@ import { PROTOBUF_MUTANTS } from "./protobuf-mutants"
 import { JSON_MUTANTS } from "./json-mutants"
 import { CLEAN_MUTANTS } from "./clean-mutants"
 import { PHP_MUTANTS } from "./php-mutants"
+// ── ORPHAN REGISTRIES RESTORED (task-7) ──────────────────────────────────────────────────────────
+// Each of these exported a registry that this file never spread, so `verify-orphaned-mutants.ts`
+// listed it and the canonical F4 run executed NONE of its mutants while reporting the lane green.
+// Wired one file per batch, each batch verified by running the gate and a scoped mutant run.
+import { CSHARP_MUTANTS } from "./csharp-mutants"
+import { ELIXIR4_MUTANTS } from "./elixir4-mutants"
+import { PERL_MUTANTS } from "./perl-mutants"
 import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
 import { SQL_ONTOLOGY_MUTANTS } from "../m60/sql-ontology-mutants"
 import { JULIA_MUTANTS } from "../m60/julia-mutants"
@@ -2470,6 +2477,12 @@ export const MUTANTS: Mutant[] = [
   // is still an orphan, and a spread with no import does not compile. Both lines or neither.
   ...JAVASCRIPT_MUTANTS,
   ...CLEAN_MUTANTS,
+  // task-7 batch A: three registries whose `Mutant[]` comes from this file's own exported type, so
+  // their entries are canonically shaped by construction. An import with no spread is still an
+  // orphan and a spread with no import does not compile: both lines, in the same commit.
+  ...CSHARP_MUTANTS,
+  ...ELIXIR4_MUTANTS,
+  ...PERL_MUTANTS,
   // The php lane's registry — MEASURED as orphaned before this line existed, not suspected.
   // `npx tsx script/m14/verify-orphaned-mutants.ts` reported
   // `script/m14/php-mutants.ts  PHP_MUTANTS  6  ORPHANED` and FAILED with "3 mutant file(s)
