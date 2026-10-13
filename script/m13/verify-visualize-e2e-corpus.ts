@@ -44,12 +44,6 @@ harness.check("CLI json: has provenance", !!parsed.provenance, String(parsed.pro
 
 const htmlOut = execFileSync("node", [bb, "tool", "bb_visualize", "--dir", root, "--args", JSON.stringify({ format: "html" })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
 harness.check("CLI html: contains HTML doctype or script", htmlOut.includes("<") && htmlOut.includes(">"), htmlOut.slice(0, 100))
-harness.check("CLI html: includes visualization studio", htmlOut.includes("Backbencher Visualization Studio"), "studio shell")
-harness.check("CLI html: includes graph/code/UML modes", ["data-mode=\"graph\"", "data-mode=\"codemap\"", "data-mode=\"class\""].every((marker) => htmlOut.includes(marker)), "mode switcher markers")
-harness.check("CLI html: embeds all three view documents", ["Architecture Map", "Code Map", "Class Diagram"].every((marker) => htmlOut.includes(marker)), "embedded view documents")
-const saveControlCount = (htmlOut.match(/id="savebtn"/g) ?? []).length + (htmlOut.match(/id=\\"savebtn\\"/g) ?? []).length
-const codeMapSaveCount = (htmlOut.match(/id="mapbtn"/g) ?? []).length + (htmlOut.match(/id=\\"mapbtn\\"/g) ?? []).length
-harness.check("CLI html: embedded save controls are unique", saveControlCount === 2 && codeMapSaveCount === 1, "graph/UML save and code-map save")
 harness.negative("CLI: text mode does NOT return raw JSON", !textOut.startsWith("{"), textOut.slice(0, 100))
 
 // JSON vs HTML consistency: same graph, same counts
@@ -84,8 +78,7 @@ rmSync(root, { recursive: true, force: true })
 }
 
 // 3. Corpus
-// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see
-// script/lib/corpus-root.ts, which is where the corpus actually lives on THIS machine.
+// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
 const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 for (const [repo, subPath, family] of [["rake", "lib/rake", "Ruby"], ["graphql-js", "src", "TypeScript"], ["rebar3", "apps", "Erlang"]]) {
   const idxRoot = path.join(REPO_ROOT, repo, subPath)

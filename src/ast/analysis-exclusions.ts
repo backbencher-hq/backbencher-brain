@@ -106,7 +106,7 @@ export function isTestPath(relativePath: string): boolean {
  * the first place — see intelligence/patterns/orphans.ts.
  */
 export const NON_CODE_LANGUAGES = new Set([
-  "markdown", "yaml", "toml", "json", "xml", "css", "scss", "sass", "less",
+  "markdown", "yaml", "toml", "json", "xml", "css", "scss", "less",
   "html", "htm", "vue", "svelte",
   "ini", "cfg", "conf", "properties", "env", "csv", "tsv", "text", "plaintext",
   "rst", "tex", "bib", "org", "adoc", "asciidoc",
@@ -141,7 +141,23 @@ export function isNoiseSymbolName(name: string): boolean {
   if (/^(block|lambda)[_-]\d+/i.test(name)) return true
   if (/^object_\d+$/.test(name)) return true
   // Language keywords indexed as symbols by imperfect parsers.
-  if (/^(this|global|window|self|super|arguments|undefined|null)$/.test(name)) return true
+  //
+  // JSD44: `self` is NOT one of them, and this regex was a fourth copy of a list
+  // src/ast/symbol-name-rules.ts now owns. Measured: `export function self(fn)` at
+  // packages/svelte/src/internal/client/dom/legacy/event-modifiers.js:27 passed the
+  // analyzer and `keepSymbol`, and was dropped HERE — it appeared in no symbol row
+  // project-wide, so a consumer importing `self` could never resolve. The same
+  // removal was already measured for `self` on six lanes (R 12 symbols over 9 files,
+  // lua 236 declarations, sql 3 of 18,325, graphql `Query.me`, hcl H10, solidity's
+  // store-vs-analyzer divergence); this file was the replica that kept dropping it.
+  //
+  // The names left in this regex are the UNMEASURED remainder, kept deliberately:
+  // `this`/`super` are refused by the universal set for the same reasons, and
+  // `global`/`window`/`arguments`/`undefined`/`null` have no lane measurement either
+  // way — they are JS literals and JS globals, and legal identifiers in languages
+  // this project parses, so a lane that measures one is free to remove it the same
+  // way, with its count.
+  if (/^(this|global|window|super|arguments|undefined|null)$/.test(name)) return true
   // Absolute file paths indexed as symbol names (indexer artifact).
   if (name.startsWith("/") && name.includes("/")) return true
   // NOTE: soft rules (quoted names, parenthesized names, numeric prefixes,
@@ -171,8 +187,10 @@ export function isIndexArtifactName(name: string): boolean {
   if (/^(anonymous|anon|unnamed)[_-]/i.test(name)) return true
   if (/^(block|lambda)[_-]\d+/i.test(name)) return true
   if (/^object_\d+$/.test(name)) return true
-  // Language keywords can never be declared identifiers in real code.
-  if (/^(this|global|window|self|super|arguments|undefined|null)$/.test(name)) return true
+  // Language keywords can never be declared identifiers in real code — see the
+  // JSD44 note on the same regex in `isNoiseSymbolName` above for why `self` is not
+  // here and for the measured set that is.
+  if (/^(this|global|window|super|arguments|undefined|null)$/.test(name)) return true
   // Absolute file paths indexed as symbol names.
   if (name.startsWith("/") && name.includes("/")) return true
   return false
@@ -235,7 +253,10 @@ export function analysisPathScopeSQL(...fileAliases: string[]): string {
 const NOISE_NAME_LIKES = ["anonymous%", "anon_%", "unnamed_%", "block_%", "lambda_%", "/%"]
 
 const NOISE_NAME_GLOBS = ["object_[0-9]*"]
-const NOISE_KEYWORD_NAMES = ["this", "global", "window", "self", "super", "arguments", "undefined", "null"]
+// SQL-side mirror of the regex above, and the same JSD44 removal applies: `self`
+// left this list with the symbol filter, or the store would hide the very rows the
+// filter now admits from every analysis query that builds on this condition.
+const NOISE_KEYWORD_NAMES = ["this", "global", "window", "super", "arguments", "undefined", "null"]
 
 export function analysisSymbolNameConditions(): SQL[] {
   return [
