@@ -44,7 +44,20 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   // Same defect class as `.graphqls` (97 files) — an extension the corpus carries that NOTHING routes, so the
   // file is read, answered with the fallback, and produces no symbols while APPEARING in the population.
   cts: "typescript", js: "javascript", cjs: "javascript", mjs: "javascript", jsx: "javascript",
-  html: "html", htm: "html", vue: "vue", svelte: "svelte", css: "css",
+  html: "html", htm: "html",
+  // THIRTEENTH ROUTER GAP, AND THE LARGEST FAMILY YET — found by hcl-lane's html population census on
+  // 2026-10-13, which counted these files IN THE CORPUS while every one of them was UNROUTED:
+  //     xhtml 30 · hbs 1,531 · twig 274 · pug 70 · erb 46   = 1,951 files, and `.hbs` alone is 1,531.
+  // These are HTML-TEMPLATE languages: the file IS HTML with embedded template syntax, so the html
+  // analyzer reads the structure it already reads. AND `detectLanguageFromPath` returned null for every
+  // one of them, which means ZERO ROWS — routing them cannot lose a row, only add.
+  // MEASURED, not remembered: xhtml/hbs/twig/pug/erb/mustache/ejs/liquid/njk/jinja/j2 ALL returned
+  // `*** UNROUTED ***` in a single check against this function.
+  // AND THE UNROUTED-EXTENSION GATE PASSED WHILE THIS WAS TRUE — so its `textBearingNewKeys 0` is a
+  // statement about the corpus IT walks, not about the corpus at large. Named, not hidden.
+  xhtml: "html", hbs: "html", twig: "html", pug: "html", erb: "html", mustache: "html",
+  ejs: "html", liquid: "html", njk: "html", jinja: "html", j2: "html",
+  vue: "vue", svelte: "svelte", css: "css",
   // scss is its own language, not a css dialect. It was mapped to "css" here while
   // the CSS grammar was the only wasm available, which is a decision made for lack of
   // an alternative and then left in place after the alternative existed — the shape of
