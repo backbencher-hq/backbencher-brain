@@ -2,13 +2,13 @@
   "language": "css",
   "grammar": "tree-sitter-css.wasm",
   "vocabulary": {
-    "_description": "The grammar pin gate (script/m14/verify-grammar-pins.ts) reports three counts for a lane, and this file uses the same three so the two documents can be compared directly. `ids` is tree-sitter's whole symbol space, which mixes three vocabularies; `namedUnique` and `anonUnique` are the two halves of it by tree-sitter's OWN nodeTypeIsNamed flag, not by a regex on the name. This spec buckets by ANALYZER REACHABILITY instead, which is a different axis and deliberately not the same partition \u2014 `internal_silent` holds named types (hidden `_rules`, generated `_repeatN`/`_tokenN` wrappers) AND anonymous tokens (punctuation, keywords, comments). The two axes are reconciled in `internal_silent.named_vs_anonymous`.",
+    "_description": "The grammar pin gate (script/m14/verify-grammar-pins.ts) reports three counts for a lane, and this file uses the same three so the two documents can be compared directly. `ids` is tree-sitter's whole symbol space, which mixes three vocabularies; `namedUnique` and `anonUnique` are the two halves of it by tree-sitter's OWN nodeTypeIsNamed flag, not by a regex on the name. This spec buckets by ANALYZER REACHABILITY instead, which is a different axis and deliberately not the same partition — `internal_silent` holds named types (hidden `_rules`, generated `_repeatN`/`_tokenN` wrappers) AND anonymous tokens (punctuation, keywords, comments). The two axes are reconciled in `internal_silent.named_vs_anonymous`.",
     "ids": 152,
     "namedUnique": 64,
     "anonUnique": 66
   },
   "handled_verified": {
-    "_description": "Analyzer-referenced node types, behavior-verified 2026-09-26 (real-css-analyzer.ts, at the CSS spec wave). Verification is three independent signals, all measured: 81 node types reached by a minimal reproduction (css-spec-classify.ts), 116 of 152 wasm symbol ids present in the real corpus of 185 non-empty svelte .css files (css-spec-corpus-census.ts), and for each type an observed symbol, edge, or pattern count. A type counts as HANDLED when the analyzer names it or reads its field AND it was observed in real code or in a reproduction \u2014 never on name alone. Handled does NOT mean \"emits a symbol\": the analyzer can handle a construct by consciously declaring that it emits nothing for it, and two types do exactly that (CSS-D5). The distinction that matters is handled vs unexamined: nothing in this list is merely unaccounted for. Types reached only through a parent construct (unit, integer_value, color_value, escape_sequence, feature_name, keyframe_block, binary_expression, \u2026) are handled via that parent and are listed here rather than left unadjudicated.",
+    "_description": "Analyzer-referenced node types, behavior-verified 2026-09-26 (real-css-analyzer.ts, at the CSS spec wave). Verification is three independent signals, all measured: 81 node types reached by a minimal reproduction (css-spec-classify.ts), 116 of 152 wasm symbol ids present in the real corpus of 185 non-empty svelte .css files (css-spec-corpus-census.ts), and for each type an observed symbol, edge, or pattern count. A type counts as HANDLED when the analyzer names it or reads its field AND it was observed in real code or in a reproduction — never on name alone. Handled does NOT mean \"emits a symbol\": the analyzer can handle a construct by consciously declaring that it emits nothing for it, and two types do exactly that (CSS-D5). The distinction that matters is handled vs unexamined: nothing in this list is merely unaccounted for. Types reached only through a parent construct (unit, integer_value, color_value, escape_sequence, feature_name, keyframe_block, binary_expression, …) are handled via that parent and are listed here rather than left unadjudicated.",
     "types": [
       "adjacent_sibling_selector",
       "arguments",
@@ -71,7 +71,7 @@
       "universal_selector"
     ],
     "flagged_anonymous": {
-      "_description": "Handled, but tree-sitter's `nodeTypeIsNamed` flag says they are not named node types, so they are OUT of `types` above and would otherwise read to F3's section A as grammar drift. The flag is authoritative about the ABI and is wrong about intent here: `selector` is a rule of this grammar that the analyzer genuinely handles \u2014 `@media selector(.a)` reaches it \u2014 and tree-sitter reports it as a token because it is an alias target rather than a directly-declared named rule. Dropping the row would lose a real construct; claiming it as structural would be asserting something the wasm contradicts. It is filed here, in both directions.",
+      "_description": "Handled, but tree-sitter's `nodeTypeIsNamed` flag says they are not named node types, so they are OUT of `types` above and would otherwise read to F3's section A as grammar drift. The flag is authoritative about the ABI and is wrong about intent here: `selector` is a rule of this grammar that the analyzer genuinely handles — `@media selector(.a)` reaches it — and tree-sitter reports it as a token because it is an alias target rather than a directly-declared named rule. Dropping the row would lose a real construct; claiming it as structural would be asserting something the wasm contradicts. It is filed here, in both directions.",
       "types": [
         "selector"
       ]
@@ -90,7 +90,7 @@
     }
   },
   "internal_silent": {
-    "_description": "Grammar-internal containers, generated repetition/token wrappers, hidden rules, punctuation and keyword tokens, comment and string payloads, and tree-sitter's id-0 end-of-input symbol \u2014 72 of 152 unique type names across 152 wasm symbol ids (the id list repeats names, which is how tree-sitter aliases a token to several rules). Every entry below is silent BY CONTRACT: a symbol's edge names a construct, and none of these IS a construct. Each carries a stated reason so \"silent\" is auditable rather than assumed.",
+    "_description": "Grammar-internal containers, generated repetition/token wrappers, hidden rules, punctuation and keyword tokens, comment and string payloads, and tree-sitter's id-0 end-of-input symbol — 72 of 152 unique type names across 152 wasm symbol ids (the id list repeats names, which is how tree-sitter aliases a token to several rules). Every entry below is silent BY CONTRACT: a symbol's edge names a construct, and none of these IS a construct. Each carries a stated reason so \"silent\" is auditable rather than assumed.",
     "types": [
       "ERROR",
       "MISSING",
@@ -101,7 +101,7 @@
       "string_content"
     ],
     "not_structural": {
-      "_description": "Silent, and deliberately OUT of `types` above: the anonymous punctuation and keyword tokens, the hidden `_`-prefixed rules, the generated `_repeatN`/`_tokenN` wrappers, and tree-sitter's id-0 end-of-input symbol. None of these is a STRUCTURAL node type \u2014 F3's section A asks the grammar for `nodeTypeIsNamed(i)` with `_`-prefixed names dropped, and a row outside that vocabulary reads to it as grammar drift. They are silent for the same reason the rows above are silent, and the reasons are the same map.",
+      "_description": "Silent, and deliberately OUT of `types` above: the anonymous punctuation and keyword tokens, the hidden `_`-prefixed rules, the generated `_repeatN`/`_tokenN` wrappers, and tree-sitter's id-0 end-of-input symbol. None of these is a STRUCTURAL node type — F3's section A asks the grammar for `nodeTypeIsNamed(i)` with `_`-prefixed names dropped, and a row outside that vocabulary reads to it as grammar drift. They are silent for the same reason the rows above are silent, and the reasons are the same map.",
       "types": [
         "\"",
         "#",
@@ -252,78 +252,78 @@
       "_note": "tree-sitter nodeTypeIsNamed, from the census. The named half is entirely hidden rules, generated wrappers and comments; the anonymous half is punctuation and keywords."
     },
     "reasons": {
-      "\"": "punctuation or keyword token \u2014 the construct is its parent",
-      "#": "punctuation or keyword token \u2014 the construct is its parent",
-      "$=": "punctuation or keyword token \u2014 the construct is its parent",
-      "'": "punctuation or keyword token \u2014 the construct is its parent",
-      "(": "punctuation or keyword token \u2014 the construct is its parent",
-      ")": "punctuation or keyword token \u2014 the construct is its parent",
-      "*": "punctuation or keyword token \u2014 the construct is its parent",
-      "*=": "punctuation or keyword token \u2014 the construct is its parent",
-      "+": "punctuation or keyword token \u2014 the construct is its parent",
-      ",": "punctuation or keyword token \u2014 the construct is its parent",
-      "-": "punctuation or keyword token \u2014 the construct is its parent",
-      ".": "punctuation or keyword token \u2014 the construct is its parent",
-      "/": "punctuation or keyword token \u2014 the construct is its parent",
-      ":": "punctuation or keyword token \u2014 the construct is its parent",
-      "::": "punctuation or keyword token \u2014 the construct is its parent",
-      ";": "punctuation or keyword token \u2014 the construct is its parent",
-      "=": "punctuation or keyword token \u2014 the construct is its parent",
-      ">": "punctuation or keyword token \u2014 the construct is its parent",
-      "@charset": "punctuation or keyword token \u2014 the construct is its parent",
-      "@import": "punctuation or keyword token \u2014 the construct is its parent",
-      "@keyframes": "punctuation or keyword token \u2014 the construct is its parent",
-      "@media": "punctuation or keyword token \u2014 the construct is its parent",
-      "@namespace": "punctuation or keyword token \u2014 the construct is its parent",
-      "@scope": "punctuation or keyword token \u2014 the construct is its parent",
-      "@supports": "punctuation or keyword token \u2014 the construct is its parent",
+      "\"": "punctuation or keyword token — the construct is its parent",
+      "#": "punctuation or keyword token — the construct is its parent",
+      "$=": "punctuation or keyword token — the construct is its parent",
+      "'": "punctuation or keyword token — the construct is its parent",
+      "(": "punctuation or keyword token — the construct is its parent",
+      ")": "punctuation or keyword token — the construct is its parent",
+      "*": "punctuation or keyword token — the construct is its parent",
+      "*=": "punctuation or keyword token — the construct is its parent",
+      "+": "punctuation or keyword token — the construct is its parent",
+      ",": "punctuation or keyword token — the construct is its parent",
+      "-": "punctuation or keyword token — the construct is its parent",
+      ".": "punctuation or keyword token — the construct is its parent",
+      "/": "punctuation or keyword token — the construct is its parent",
+      ":": "punctuation or keyword token — the construct is its parent",
+      "::": "punctuation or keyword token — the construct is its parent",
+      ";": "punctuation or keyword token — the construct is its parent",
+      "=": "punctuation or keyword token — the construct is its parent",
+      ">": "punctuation or keyword token — the construct is its parent",
+      "@charset": "punctuation or keyword token — the construct is its parent",
+      "@import": "punctuation or keyword token — the construct is its parent",
+      "@keyframes": "punctuation or keyword token — the construct is its parent",
+      "@media": "punctuation or keyword token — the construct is its parent",
+      "@namespace": "punctuation or keyword token — the construct is its parent",
+      "@scope": "punctuation or keyword token — the construct is its parent",
+      "@supports": "punctuation or keyword token — the construct is its parent",
       "ERROR": "tree-sitter's universal error/recovery symbol, present in every parse tree and declared by no grammar's source. It is a position inside a recovery region, not a construct: the analyzer reads it to report error ranges, and there is nothing in it to name.",
       "MISSING": "tree-sitter's universal error/recovery symbol, present in every parse tree and declared by no grammar's source. It is a position inside a recovery region, not a construct: the analyzer reads it to report error ranges, and there is nothing in it to name.",
-      "[": "punctuation or keyword token \u2014 the construct is its parent",
-      "]": "punctuation or keyword token \u2014 the construct is its parent",
-      "^=": "punctuation or keyword token \u2014 the construct is its parent",
+      "[": "punctuation or keyword token — the construct is its parent",
+      "]": "punctuation or keyword token — the construct is its parent",
+      "^=": "punctuation or keyword token — the construct is its parent",
       "__error_recovery": "hidden rule: not visible as a named child in the tree, so no analyzer can reach it as a node",
       "_descendant_operator": "hidden rule: not visible as a named child in the tree, so no analyzer can reach it as a node",
       "_nth_child_pseudo_class_selector": "hidden rule: not visible as a named child in the tree, so no analyzer can reach it as a node",
       "_query": "hidden rule: not visible as a named child in the tree, so no analyzer can reach it as a node",
       "_selector": "hidden rule: not visible as a named child in the tree, so no analyzer can reach it as a node",
       "_value": "hidden rule: not visible as a named child in the tree, so no analyzer can reach it as a node",
-      "and": "punctuation or keyword token \u2014 the construct is its parent",
-      "arguments_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "block_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "class_name_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
+      "and": "punctuation or keyword token — the construct is its parent",
+      "arguments_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "block_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "class_name_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
       "color_value_token1": "generated token wrapper for a lexeme the value rules already cover",
-      "comment": "comment or string payload \u2014 carries no symbol and no edge",
-      "declaration_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "end": "tree-sitter id 0 \u2014 the language's end-of-input symbol, not a grammar rule (absent from grammar.js and from the scanner's TokenType enum)",
+      "comment": "comment or string payload — carries no symbol and no edge",
+      "declaration_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "end": "tree-sitter id 0 — the language's end-of-input symbol, not a grammar rule (absent from grammar.js and from the scanner's TokenType enum)",
       "float_value_token1": "generated token wrapper for a lexeme the value rules already cover",
-      "grid_value_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "import_statement_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
+      "grid_value_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "import_statement_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
       "important_value": "the non-standard `!foo` fallback; `!important` parses as `important`, and `important_value` is only ever produced inside an ERROR subtree (reproduction `.a { color: red !urgent; }` has hasError=true), so no clean source reaches it",
       "integer_value_token1": "generated token wrapper for a lexeme the value rules already cover",
-      "js_comment": "comment or string payload \u2014 carries no symbol and no edge",
-      "keyframe_block_list_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "keyframe_block_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "not": "punctuation or keyword token \u2014 the construct is its parent",
-      "of": "punctuation or keyword token \u2014 the construct is its parent",
-      "only": "punctuation or keyword token \u2014 the construct is its parent",
-      "or": "punctuation or keyword token \u2014 the construct is its parent",
-      "parenthesized_value_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "postcss_statement": "RULED (CSS-D2): the rule is defined at prec(-1) and un-precedenced `at_rule` matches the same shape, so tree-sitter prefers at_rule on every conflict \u2014 `@tailwind --apply;` parses CLEAN as at_rule + keyword_query, and `@custom-selector :--n .a, .b;` errors without ever producing it. The construct is handled through at_rule; handling it here would mean handling a rule no input can select.",
-      "postcss_statement_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "pseudo_class_arguments_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "pseudo_class_arguments_repeat2": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "selectors_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "string_content": "comment or string payload \u2014 carries no symbol and no edge",
-      "string_value_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "string_value_repeat2": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "stylesheet_repeat1": "generated repetition wrapper \u2014 holds the repeated children, is not itself a construct",
-      "{": "punctuation or keyword token \u2014 the construct is its parent",
-      "|": "punctuation or keyword token \u2014 the construct is its parent",
-      "|=": "punctuation or keyword token \u2014 the construct is its parent",
-      "}": "punctuation or keyword token \u2014 the construct is its parent",
-      "~": "punctuation or keyword token \u2014 the construct is its parent",
-      "~=": "punctuation or keyword token \u2014 the construct is its parent"
+      "js_comment": "comment or string payload — carries no symbol and no edge",
+      "keyframe_block_list_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "keyframe_block_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "not": "punctuation or keyword token — the construct is its parent",
+      "of": "punctuation or keyword token — the construct is its parent",
+      "only": "punctuation or keyword token — the construct is its parent",
+      "or": "punctuation or keyword token — the construct is its parent",
+      "parenthesized_value_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "postcss_statement": "RULED (CSS-D2): the rule is defined at prec(-1) and un-precedenced `at_rule` matches the same shape, so tree-sitter prefers at_rule on every conflict — `@tailwind --apply;` parses CLEAN as at_rule + keyword_query, and `@custom-selector :--n .a, .b;` errors without ever producing it. The construct is handled through at_rule; handling it here would mean handling a rule no input can select.",
+      "postcss_statement_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "pseudo_class_arguments_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "pseudo_class_arguments_repeat2": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "selectors_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "string_content": "comment or string payload — carries no symbol and no edge",
+      "string_value_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "string_value_repeat2": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "stylesheet_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
+      "{": "punctuation or keyword token — the construct is its parent",
+      "|": "punctuation or keyword token — the construct is its parent",
+      "|=": "punctuation or keyword token — the construct is its parent",
+      "}": "punctuation or keyword token — the construct is its parent",
+      "~": "punctuation or keyword token — the construct is its parent",
+      "~=": "punctuation or keyword token — the construct is its parent"
     }
   },
   "limitations": [
@@ -331,17 +331,17 @@
       "id": "CSS-L1",
       "scope": "the .scss / .sass / .less files this lane is also ROUTED",
       "severity": "declared, not a defect in the CSS contract",
-      "measured": "The product routes all four extensions to this analyzer (src/ast/parallel-indexer.ts lists .css/.scss/.sass, and script/m13/corpus-map.ts maps .scss/.sass/.less -> css), and every one of the 254 real .scss files in the corpus routes here \u2014 measured, 254/254. The CSS grammar does not support SCSS: 42 of 244 non-empty .scss files parse CLEAN (17.2%), 202 produce errors, 0 crash, for 11,451 distinct error lines. The lane still emits 4,477 symbols and 2,025 relationships from them, so a caller indexing an SCSS file gets a partial graph.",
-      "cause_breakdown": "SCSS variables and @include dominate: $variable reference 17.9%, @include 12.8%, $variable declaration 6.7%, `//` line comment 2.7%, @use 1.6%, #{...} interpolation 1.2%, @each/@for/@if/@else 1.1%, @mixin 0.6%; 55.3% is the structural fallout of those rather than a separate cause. (@use looked like the dominant cause in a first pass and was not \u2014 that sample read only the first error rows of files in name order, and @use sorts early. The number above is every distinct error line.)",
+      "measured": "The product routes all four extensions to this analyzer (src/ast/parallel-indexer.ts lists .css/.scss/.sass, and script/m13/corpus-map.ts maps .scss/.sass/.less -> css), and every one of the 254 real .scss files in the corpus routes here — measured, 254/254. The CSS grammar does not support SCSS: 42 of 244 non-empty .scss files parse CLEAN (17.2%), 202 produce errors, 0 crash, for 11,451 distinct error lines. The lane still emits 4,477 symbols and 2,025 relationships from them, so a caller indexing an SCSS file gets a partial graph.",
+      "cause_breakdown": "SCSS variables and @include dominate: $variable reference 17.9%, @include 12.8%, $variable declaration 6.7%, `//` line comment 2.7%, @use 1.6%, #{...} interpolation 1.2%, @each/@for/@if/@else 1.1%, @mixin 0.6%; 55.3% is the structural fallout of those rather than a separate cause. (@use looked like the dominant cause in a first pass and was not — that sample read only the first error rows of files in name order, and @use sorts early. The number above is every distinct error line.)",
       "decision": "DECLARED, and deliberately not fixed here. The plain-CSS rules inside an SCSS file parse correctly and are worth keeping, so removing the routing would take away real capability; and teaching the CSS grammar SCSS is a different grammar (tree-sitter-scss) with its own A/B, not a third hunk on a pinned 0.25.0 that has already been measured twice. What was missing was not the behaviour but the DECLARATION: nothing in the repo said this lane also receives .scss, so an 82.8% parse-failure rate on 254 real files was invisible to every gate. It is now stated here, in docs/analyzers/real-css-analyzer.md, and in reviews/m49-css-review.md."
     },
     {
       "id": "CSS-L2",
       "scope": "the `progid:` value class",
       "severity": "residual floor, not fixed",
-      "measured": "An IE filter value (`filter: progid:DXImageTransform.Microsoft.gradient(startColorStr = '#fff')`) does not parse. This is the same family as the relative-url defect that WAS patched, and it is the LARGEST remaining class by a wide margin: 37 of the 62 corpus .css files that still fail (60%), and in all 37 the error sits ON the progid line. It is not one class but two \u2014 13 error files are genuine modern CSS the newest grammar cannot read (range queries, `&div`, `@page :right`, `[attr i]`, escaped unicode ids, HTML comments, `chrome://` imports, `--foo: ;`) and 37 are this one.",
-      "attempted_and_rejected": "Adding `=` to the separator choice in the `arguments` rule \u2014 the obvious one-token edit \u2014 was built and A/B'd and is PROVABLY INERT: 61 error files before, 61 after, 0 fixed, 0 regressed, 151 -> 151 node types, 0 field delta. Not adopted, because adopting a build that changes nothing while looking like a fix is worse than not patching. The reason it cannot work is worth recording, because it is the opposite of the obvious diagnosis: the `progid:` TOKEN already lexes fine (`plain_value`'s trailing repeat has always admitted `:`), and the failure is INSIDE the parentheses. The value parses as `parenthesized_value`, whose rule is `seq('(', $._value, ')')` \u2014 exactly ONE value \u2014 so `startColorStr = '#fff'` cannot be a `parenthesized_value` at all, and `arguments` (which does allow separators) is unreachable because nothing matched the callee as a `function_name`.",
-      "decision": "Left unpatched, and the reason is now measured rather than asserted. A real fix has to widen `parenthesized_value` from one value to a separated list, or add an IE-filter argument form \u2014 and `parenthesized_value` participates in EVERY parenthesized value in CSS (`calc((1px + 2px) * 3)`, nested parens, `var()` fallbacks). That is a different KIND of change from the two additive hunks adopted earlier, which only widened a token BODY and a step CHOICE while leaving every existing parse path untouched, and it would need its own A/B plus a shape-delta decision. Recorded so the next person does not write the inert patch: the cause is the rule's ARITY, not the token's character set."
+      "measured": "An IE filter value (`filter: progid:DXImageTransform.Microsoft.gradient(startColorStr = '#fff')`) does not parse. This is the same family as the relative-url defect that WAS patched, and it is the LARGEST remaining class by a wide margin: 37 of the 62 corpus .css files that still fail (60%), and in all 37 the error sits ON the progid line. It is not one class but two — 13 error files are genuine modern CSS the newest grammar cannot read (range queries, `&div`, `@page :right`, `[attr i]`, escaped unicode ids, HTML comments, `chrome://` imports, `--foo: ;`) and 37 are this one.",
+      "attempted_and_rejected": "Adding `=` to the separator choice in the `arguments` rule — the obvious one-token edit — was built and A/B'd and is PROVABLY INERT: 61 error files before, 61 after, 0 fixed, 0 regressed, 151 -> 151 node types, 0 field delta. Not adopted, because adopting a build that changes nothing while looking like a fix is worse than not patching. The reason it cannot work is worth recording, because it is the opposite of the obvious diagnosis: the `progid:` TOKEN already lexes fine (`plain_value`'s trailing repeat has always admitted `:`), and the failure is INSIDE the parentheses. The value parses as `parenthesized_value`, whose rule is `seq('(', $._value, ')')` — exactly ONE value — so `startColorStr = '#fff'` cannot be a `parenthesized_value` at all, and `arguments` (which does allow separators) is unreachable because nothing matched the callee as a `function_name`.",
+      "decision": "Left unpatched, and the reason is now measured rather than asserted. A real fix has to widen `parenthesized_value` from one value to a separated list, or add an IE-filter argument form — and `parenthesized_value` participates in EVERY parenthesized value in CSS (`calc((1px + 2px) * 3)`, nested parens, `var()` fallbacks). That is a different KIND of change from the two additive hunks adopted earlier, which only widened a token BODY and a step CHOICE while leaving every existing parse path untouched, and it would need its own A/B plus a shape-delta decision. Recorded so the next person does not write the inert patch: the cause is the rule's ARITY, not the token's character set."
     },
     {
       "id": "CSS-L3",
@@ -352,7 +352,7 @@
     }
   ],
   "gap": {
-    "_description": "EMPTY, and that is a claim with a method rather than a default. Searched for: a node type that parses with hasError=false and still yields no symbol, edge, or pattern. Two types parse clean and emit nothing by DESIGN and are recorded as rulings instead \u2014 charset_statement (an encoding declaration, not a construct) and universal_selector (* matches every element; publishing a symbol named * would be the same noise the HTML lane already ruled out for anonymous structural tags). Everything else that is silent is silent for a reason in internal_silent.reasons, and the earlier waves carry the behavioral half of this: the 41/41 M12 differential, the ontology class-resolution census, and the M59 line oracle over 7,647 edges.",
+    "_description": "EMPTY, and that is a claim with a method rather than a default. Searched for: a node type that parses with hasError=false and still yields no symbol, edge, or pattern. Two types parse clean and emit nothing by DESIGN and are recorded as rulings instead — charset_statement (an encoding declaration, not a construct) and universal_selector (* matches every element; publishing a symbol named * would be the same noise the HTML lane already ruled out for anonymous structural tags). Everything else that is silent is silent for a reason in internal_silent.reasons, and the earlier waves carry the behavioral half of this: the 41/41 M12 differential, the ontology class-resolution census, and the M59 line oracle over 7,647 edges.",
     "gaps": []
   },
   "design_decision": {
@@ -363,14 +363,14 @@
         "node_type": "end",
         "status": "RULED",
         "question": "`end` is reported as node type id 0 by the wasm but appears nowhere in grammar.js or in the scanner's TokenType enum.",
-        "resolution": "It is tree-sitter's end-of-input symbol, not a rule of this grammar \u2014 the language's reserved id 0, which is why enumerating node types reports it and why no source can ever produce it. internal_silent, with the absence from both grammars recorded as the evidence rather than a guess."
+        "resolution": "It is tree-sitter's end-of-input symbol, not a rule of this grammar — the language's reserved id 0, which is why enumerating node types reports it and why no source can ever produce it. internal_silent, with the absence from both grammars recorded as the evidence rather than a guess."
       },
       {
         "id": "CSS-D10",
         "node_type": "nested rule_set (contains, isNestedSelector)",
         "status": "RULED",
         "question": "a `&`-composed nested rule's `contains` edge carries NO line, because the edge's TARGET is the RESOLVED selector (`.a { & .b {} }` -> `.a .b`) and that string is written nowhere in the file. 52 of the lane's 28,432 relationships are in this state. Should the line be omitted, or should it be the nested rule's own line?",
-        "resolution": "OMITTED, on a measurement rather than a preference. Claiming the nested rule's line made 96 of 96 nested-selector edges INCONSISTENT against the source text \u2014 not because the line was nearly right, but because the name the line is supposed to carry is not in the file at all. The governing rule is M59's: a relationship's line belongs to the NAME node, not to the enclosing construct, and `.a .b` has no line because it is not written on one. The test for which case applies is not `does the selector contain &` \u2014 an IMPLICIT descendant (`.a { .b {} }`, no `&` at all) also resolves to a composed name that is written nowhere, and it accounted for the 67 INCONSISTENT edges left after the `&` test. The exact test is whether the resolved text and the as-written text are the same string, so the one case where the name genuinely IS written keeps its line. LOCATABILITY IS NOT LOST: the edge carries `asWrittenSelector` (`& .title`) in its metadata, so a consumer can find the site by text even though it cannot be given a line that would imply the name is there. The alternative \u2014 stamping the construct's line and weakening the oracle to check the as-written form instead \u2014 is defensible and was considered; it is not adopted because it would trade a guarantee the rest of the lane holds (the line carries the name) for one it does not (the line carries the construct), and that trade should be made once for the whole codebase rather than lane by lane."
+        "resolution": "OMITTED, on a measurement rather than a preference. Claiming the nested rule's line made 96 of 96 nested-selector edges INCONSISTENT against the source text — not because the line was nearly right, but because the name the line is supposed to carry is not in the file at all. The governing rule is M59's: a relationship's line belongs to the NAME node, not to the enclosing construct, and `.a .b` has no line because it is not written on one. The test for which case applies is not `does the selector contain &` — an IMPLICIT descendant (`.a { .b {} }`, no `&` at all) also resolves to a composed name that is written nowhere, and it accounted for the 67 INCONSISTENT edges left after the `&` test. The exact test is whether the resolved text and the as-written text are the same string, so the one case where the name genuinely IS written keeps its line. LOCATABILITY IS NOT LOST: the edge carries `asWrittenSelector` (`& .title`) in its metadata, so a consumer can find the site by text even though it cannot be given a line that would imply the name is there. The alternative — stamping the construct's line and weakening the oracle to check the as-written form instead — is defensible and was considered; it is not adopted because it would trade a guarantee the rest of the lane holds (the line carries the name) for one it does not (the line carries the construct), and that trade should be made once for the whole codebase rather than lane by lane."
       },
       {
         "id": "CSS-D2",
@@ -384,28 +384,28 @@
         "node_type": "important_value",
         "status": "RULED",
         "question": "a named `important_value` rule exists alongside `important`; which one does real CSS produce?",
-        "resolution": "`!important` produces `important`; `important_value` matches a non-standard `!foo` and is only ever produced INSIDE an error subtree \u2014 `.a { color: red !urgent; }` yields important_value together with hasError=true. A rule the analyzer can only meet on already-broken input is not coverage, so it is internal_silent with that measurement attached rather than counted as handled."
+        "resolution": "`!important` produces `important`; `important_value` matches a non-standard `!foo` and is only ever produced INSIDE an error subtree — `.a { color: red !urgent; }` yields important_value together with hasError=true. A rule the analyzer can only meet on already-broken input is not coverage, so it is internal_silent with that measurement attached rather than counted as handled."
       },
       {
         "id": "CSS-D4",
         "node_type": "of",
         "status": "RULED",
         "question": "`of` is reported by the wasm but my first three candidate sources missed it entirely.",
-        "resolution": "It is the anonymous keyword token of nth-child's selector list (grammar.js: `optional(seq('of', $._selector))` inside `pseudo_class_nth_child_arguments`), so the construct is the parent and the token is internal_silent. The reason it is a decision rather than a line in the reasons table: `.a:nth-child(odd of .b)` parses clean and produces it, while the more natural `.a:nth-child(2n of .b, .c)` spelling ERRORS in this grammar. Recorded because the obvious spelling is the broken one \u2014 a future reader must not 'fix' the reproduction into the form that does not parse."
+        "resolution": "It is the anonymous keyword token of nth-child's selector list (grammar.js: `optional(seq('of', $._selector))` inside `pseudo_class_nth_child_arguments`), so the construct is the parent and the token is internal_silent. The reason it is a decision rather than a line in the reasons table: `.a:nth-child(odd of .b)` parses clean and produces it, while the more natural `.a:nth-child(2n of .b, .c)` spelling ERRORS in this grammar. Recorded because the obvious spelling is the broken one — a future reader must not 'fix' the reproduction into the form that does not parse."
       },
       {
         "id": "CSS-D5",
         "node_type": "charset_statement,universal_selector",
         "status": "RULED",
         "question": "the only two types that parse clean and emit nothing.",
-        "resolution": "Both are silent by design, and both are in handled_verified rather than in gap BECAUSE the analyzer switches on them and decides: `@charset` declares the document encoding, which is not a construct a caller navigates to, and `*` matches every element \u2014 publishing a symbol named `*` would be the anonymous-structural-tag noise the HTML lane already ruled out. The measured count of clean-parses-with-no-emit types is exactly these two, and the search that produced it is recorded in gap._description. A zero-symbol result here is the contract working, not a gap."
+        "resolution": "Both are silent by design, and both are in handled_verified rather than in gap BECAUSE the analyzer switches on them and decides: `@charset` declares the document encoding, which is not a construct a caller navigates to, and `*` matches every element — publishing a symbol named `*` would be the anonymous-structural-tag noise the HTML lane already ruled out. The measured count of clean-parses-with-no-emit types is exactly these two, and the search that produced it is recorded in gap._description. A zero-symbol result here is the contract working, not a gap."
       },
       {
         "id": "CSS-D6",
         "node_type": "grid_value,parenthesized_value",
         "status": "RULED",
         "question": "two real value shapes the 185-file corpus never contains.",
-        "resolution": "Reached by reproduction instead \u2014 `[full-start] minmax(1em, 1fr) [main] \u2026` and `calc((1px + 2px) * 3)`, both clean. They are value payload under a property the analyzer already resolves, so no separate symbol is owed; the spec says so explicitly instead of letting corpus-absence read as ignorance of the feature."
+        "resolution": "Reached by reproduction instead — `[full-start] minmax(1em, 1fr) [main] …` and `calc((1px + 2px) * 3)`, both clean. They are value payload under a property the analyzer already resolves, so no separate symbol is owed; the spec says so explicitly instead of letting corpus-absence read as ignorance of the feature."
       },
       {
         "id": "CSS-D7",
@@ -419,14 +419,14 @@
         "node_type": "_repeat1,_token1,_selector,_query,_value,_descendant_operator,__error_recovery",
         "status": "RULED",
         "question": "17 _repeatN/_tokenN wrappers and 6 hidden rules are unreachable by any source.",
-        "resolution": "They are generated by tree-sitter's rule flattening and the external scanner: hidden rules are not named children, so no analyzer can receive them as a node, and the scanner's enum holds exactly DESCENDANT_OP, PSEUDO_CLASS_SELECTOR_COLON and ERROR_RECOVERY \u2014 the three that back real constructs. Recorded against the scanner source so the silence is a property of the grammar's shape, not of an omission in the analyzer."
+        "resolution": "They are generated by tree-sitter's rule flattening and the external scanner: hidden rules are not named children, so no analyzer can receive them as a node, and the scanner's enum holds exactly DESCENDANT_OP, PSEUDO_CLASS_SELECTOR_COLON and ERROR_RECOVERY — the three that back real constructs. Recorded against the scanner source so the silence is a property of the grammar's shape, not of an omission in the analyzer."
       },
       {
         "id": "CSS-D9",
         "node_type": "@page,@starting-style,@position-try",
         "status": "RULED",
-        "question": "three at-rules that wrap rules in a block, like @media and @layer do, but which the analyzer gives no symbol and no `contains` edge \u2014 so a rule inside one is published with no context at all.",
-        "resolution": "Not a gap, and the reason is a property of the LANGUAGE rather than a choice about the analyzer: none of the three can be NAMED by anything else in CSS. There is no `var(@starting-style)`, no `@layer` that points at one, no query that resolves it \u2014 so a `contains` edge sourced from one would have to name a node that cannot exist, which is the unjoinable-string failure the F10 differential exists to catch. Compare `@layer base`, which another `@layer base { }` can join, and `@container card`, which a `container-name: card` can query: those two are nameable, so they get symbols and edges. The rules inside the three are still symbolized and their own declarations still read; what is dropped is the attribution that the language gives no way to express. NOTE these are not node types in this grammar at all \u2014 `@starting-style` reaches the analyzer as a generic `at_keyword` under `at_rule`, which is why they do not appear in `internal_silent` and why an earlier version of real-css-analyzer.ts pointed at a per-type entry here that did not and could not exist."
+        "question": "three at-rules that wrap rules in a block, like @media and @layer do, but which the analyzer gives no symbol and no `contains` edge — so a rule inside one is published with no context at all.",
+        "resolution": "Not a gap, and the reason is a property of the LANGUAGE rather than a choice about the analyzer: none of the three can be NAMED by anything else in CSS. There is no `var(@starting-style)`, no `@layer` that points at one, no query that resolves it — so a `contains` edge sourced from one would have to name a node that cannot exist, which is the unjoinable-string failure the F10 differential exists to catch. Compare `@layer base`, which another `@layer base { }` can join, and `@container card`, which a `container-name: card` can query: those two are nameable, so they get symbols and edges. The rules inside the three are still symbolized and their own declarations still read; what is dropped is the attribution that the language gives no way to express. NOTE these are not node types in this grammar at all — `@starting-style` reaches the analyzer as a generic `at_keyword` under `at_rule`, which is why they do not appear in `internal_silent` and why an earlier version of real-css-analyzer.ts pointed at a per-type entry here that did not and could not exist."
       },
       {
         "id": "CSS-D11",
@@ -474,7 +474,7 @@
           "alt_qualified_spelling_still_ambiguous": 410217,
           "no_alt_qualified_spelling": 42312
         },
-        "resolution": "RULED AS IRREDUCIBLE BY THE LANGUAGE, on a split measured with the arbiter's OWN counting rule (script/m14/incoming-rule.ts classifyEdge/tally, imported, not copied). The classification is asserted against the gate's own printed line at both scopes \u2014 the 60-file sample reproduces 32432/19291/12453/688 exactly, the whole population 485882/24412/456587/4883 exactly \u2014 so the split is of the number the gate reports and not of a lookalike. THE SPLIT: DUP-EMISSION 0 (no node published twice \u2014 the analyzer's own `ONE SYMBOL PER IDENTITY` merge, real-css-analyzer.ts:864-918, makes that structural); IN-FILE-MULTI 3, and those 3 are the only ones under ONE NAME AND TWO KINDS (`progress` published as a `type` rule and as a `function` keyframes in phoenix/installer/templates/phx_static/default.css) \u2014 which is exactly the gate's `amb(kind)` column reading 3 beside `amb(decl)` 456,587, the two-orders-of-magnitude gap its own header was written about; CROSS-FILE-ONLY 181 (1 in `imports`, 180 in `references`); CROSS-FILE-TWIN 456,403 = 99.96%, i.e. the edge's own file declares the target EXACTLY ONCE and every other declaration answering that name is in ANOTHER FILE (7,856 distinct targets over 516 files). WHAT THE BIG CLASS IS: 12,752 edges to `--pico-transition`, 9,460 to `--pico-color`, thousands to `--bulma-*` \u2014 Pico and Bulma ship 10-12 theme/variant builds, each of which really does declare the property, and the declaring files are not one file copied: the digest histogram over the same run puts only 1,178 of 456,587 edges on a target whose declaring files are all byte-identical, with the mass at 10-12 distinct digests. A CSS selector name or custom-property name is not an identity: `.nav` in two files is two real declarations that both apply, and the gate's question ('does this target name exactly ONE declaration') presupposes a 1:1 naming model the language does not have for these names. WHAT A FIX WOULD COST, measured rather than argued: the only file dimension the key space already contains is a symbol's `qualifiedName`, and respelling targets to it resolves 4,058 of 456,587 edges (0.9%) to exactly one declaration while 410,217 stay ambiguous and 42,312 have no such spelling at all \u2014 and for the `references` half it would assert a SCOPING the cascade does not guarantee (the analyzer classifies `var(--x)` as `import_based` precisely because the winning declaration depends on load order and specificity). The remaining option \u2014 a file-scoped published name for CSS selectors \u2014 is a family-wide publication-contract change (store `qualified_name`, parallel-indexer strategy 1, every consumer's idea of a CSS rule's name), not a lane fix, and it is not taken here. THIS RULING IS ABOUT THE AMBIGUITY COLUMN ONLY: the gate's verdict stays FAIL, because `bad` counts `ambiguousByDecl` and no claim mechanism can touch an edge whose target names a declaration."
+        "resolution": "RULED AS IRREDUCIBLE BY THE LANGUAGE, on a split measured with the arbiter's OWN counting rule (script/m14/incoming-rule.ts classifyEdge/tally, imported, not copied). The classification is asserted against the gate's own printed line at both scopes — the 60-file sample reproduces 32432/19291/12453/688 exactly, the whole population 485882/24412/456587/4883 exactly — so the split is of the number the gate reports and not of a lookalike. THE SPLIT: DUP-EMISSION 0 (no node published twice — the analyzer's own `ONE SYMBOL PER IDENTITY` merge, real-css-analyzer.ts:864-918, makes that structural); IN-FILE-MULTI 3, and those 3 are the only ones under ONE NAME AND TWO KINDS (`progress` published as a `type` rule and as a `function` keyframes in phoenix/installer/templates/phx_static/default.css) — which is exactly the gate's `amb(kind)` column reading 3 beside `amb(decl)` 456,587, the two-orders-of-magnitude gap its own header was written about; CROSS-FILE-ONLY 181 (1 in `imports`, 180 in `references`); CROSS-FILE-TWIN 456,403 = 99.96%, i.e. the edge's own file declares the target EXACTLY ONCE and every other declaration answering that name is in ANOTHER FILE (7,856 distinct targets over 516 files). WHAT THE BIG CLASS IS: 12,752 edges to `--pico-transition`, 9,460 to `--pico-color`, thousands to `--bulma-*` — Pico and Bulma ship 10-12 theme/variant builds, each of which really does declare the property, and the declaring files are not one file copied: the digest histogram over the same run puts only 1,178 of 456,587 edges on a target whose declaring files are all byte-identical, with the mass at 10-12 distinct digests. A CSS selector name or custom-property name is not an identity: `.nav` in two files is two real declarations that both apply, and the gate's question ('does this target name exactly ONE declaration') presupposes a 1:1 naming model the language does not have for these names. WHAT A FIX WOULD COST, measured rather than argued: the only file dimension the key space already contains is a symbol's `qualifiedName`, and respelling targets to it resolves 4,058 of 456,587 edges (0.9%) to exactly one declaration while 410,217 stay ambiguous and 42,312 have no such spelling at all — and for the `references` half it would assert a SCOPING the cascade does not guarantee (the analyzer classifies `var(--x)` as `import_based` precisely because the winning declaration depends on load order and specificity). The remaining option — a file-scoped published name for CSS selectors — is a family-wide publication-contract change (store `qualified_name`, parallel-indexer strategy 1, every consumer's idea of a CSS rule's name), not a lane fix, and it is not taken here. THIS RULING IS ABOUT THE AMBIGUITY COLUMN ONLY: the gate's verdict stays FAIL, because `bad` counts `ambiguousByDecl` and no claim mechanism can touch an edge whose target names a declaration."
       },
       {
         "id": "CSS-D12",
@@ -500,7 +500,7 @@
           "declared_in_the_edges_own_project": 0,
           "declared_in_ANOTHER_project_of_the_corpus": 141,
           "declared_nowhere_in_the_1174_file_corpus": 4742,
-          "scope_split_command": "npx tsx script/m14/incoming-gate.ts css css 0 \u2014 TABLE 1 (per project) unresolved 4883 vs TABLE 2 (pooled corpus) unresolved 4742",
+          "scope_split_command": "npx tsx script/m14/incoming-gate.ts css css 0 — TABLE 1 (per project) unresolved 4883 vs TABLE 2 (pooled corpus) unresolved 4742",
           "top_names": [
             "--pico-form-label-font-weight 236",
             "--fa-animation-iteration-count 96",
@@ -510,7 +510,7 @@
             "--bulma-*-light-invert-l 34 each"
           ]
         },
-        "resolution": "RULED: NO MARKER CAN VERIFY THESE, and the contract is read rather than guessed (script/m14/incoming-rule.ts). The dominant class is the CSS customization hook: `var(--fa-animation-duration)` in Font Awesome, `var(--pico-form-label-font-weight)` in Pico, `var(--bulma-*)` in Bulma \u2014 a stylesheet reading a property it deliberately does not declare, so the CONSUMER supplies it. That is genuinely external, and the marker is still the wrong instrument, because `verifyExternalClaim` (incoming-rule.ts:474) looks up `targetOwner` = everything before the LAST dot: `--fa-animation-duration` has NO dot, so the owner is null and the claim is `externalUnverified`; a Google-Fonts `@import` URL has `https://fonts.googleapis` as its owner, which carries `:` and `/`, also `externalUnverified`; the 46 `@primer/primitives/...` npm specifiers likewise. And `verdict()` (incoming-gate.ts:1159) requires `externalUnverified === 0` for a PASS, so marking converts `unresolved` into a different non-passing column \u2014 it buys nothing and spends the lane's credibility. The `cause` claim is worse than useless here: `baseBeyondRunScope` is REFUTED unless `base` IS the target's own owner, and a dotless target has no owner, so `causeRefuted` is counted AGAINST the lane (incoming-rule.ts:537-553). The 8 `dotted-name` imports (`e4_classic.css`) would verify, and are still not marked: a relative `@import` naming a file the project does not admit is a DANGLING INTERNAL reference, which the dart lane's own rule holds must not be excused with a marker, and the file claim that WOULD be the honest instrument (`importProjectFile`, checked against the project's admitted list) is REFUTED for them by construction \u2014 they are unresolved precisely because the file is not in that list. THE SCOPE SPLIT, the sharper form of external-vs-in-corpus: the gate prints TWO key spaces on one run, and 141 of the 4,883 targets are declared in ANOTHER repository of the corpus (unresolved per project, resolved or ambiguous pooled) while 4,742 are declared NOWHERE in the 1,174-file corpus at all. The first 141 are cross-project references, not externals; the second 4,742 are the external-or-dead mass, and no per-file analyzer can tell those two apart from inside one file. FLEET PRECEDENT, and it is the same finding twice: php records that 2,478 of its 2,483 unresolved targets have NO DOT AT ALL and that even a PERFECTLY marked php lane lands in `externalUnverified` and FAILS (docs/analyzers/real-php-analyzer.md:3279-3296), and fsharp rules that its 18,028 bare unresolved targets stay unclaimed and CANNOT be claimed, because a bare name has no owner, so marking one reads `externalUnverified`, which blocks a pass anyway (docs/analyzers/real-fsharp-analyzer.md:2422-2426). bash marks ONLY the narrow subset a LANGUAGE FACT proves cannot be a project declaration \u2014 a call whose command word contains `/` cannot be a shell function name \u2014 ten edges, zero refuted, pinned in both directions (docs/analyzers/bash.md:140-150). CSS has no such per-file fact for a custom property: ANY stylesheet may declare ANY custom property, so the claim is a PROJECT-level statement a per-file analyzer cannot support, and `verifyExternalClaim` cannot refute it either \u2014 an unfalsifiable marker is worse than a stated gap, so this lane writes none. The honest state is a reported, counted gap; the 14 `contains`/class-selector edges that were in this column BEFORE the chain-term kind fix (CSS-D13) are gone because they were a real defect, not because they were excused."
+        "resolution": "RULED: NO MARKER CAN VERIFY THESE, and the contract is read rather than guessed (script/m14/incoming-rule.ts). The dominant class is the CSS customization hook: `var(--fa-animation-duration)` in Font Awesome, `var(--pico-form-label-font-weight)` in Pico, `var(--bulma-*)` in Bulma — a stylesheet reading a property it deliberately does not declare, so the CONSUMER supplies it. That is genuinely external, and the marker is still the wrong instrument, because `verifyExternalClaim` (incoming-rule.ts:474) looks up `targetOwner` = everything before the LAST dot: `--fa-animation-duration` has NO dot, so the owner is null and the claim is `externalUnverified`; a Google-Fonts `@import` URL has `https://fonts.googleapis` as its owner, which carries `:` and `/`, also `externalUnverified`; the 46 `@primer/primitives/...` npm specifiers likewise. And `verdict()` (incoming-gate.ts:1159) requires `externalUnverified === 0` for a PASS, so marking converts `unresolved` into a different non-passing column — it buys nothing and spends the lane's credibility. The `cause` claim is worse than useless here: `baseBeyondRunScope` is REFUTED unless `base` IS the target's own owner, and a dotless target has no owner, so `causeRefuted` is counted AGAINST the lane (incoming-rule.ts:537-553). The 8 `dotted-name` imports (`e4_classic.css`) would verify, and are still not marked: a relative `@import` naming a file the project does not admit is a DANGLING INTERNAL reference, which the dart lane's own rule holds must not be excused with a marker, and the file claim that WOULD be the honest instrument (`importProjectFile`, checked against the project's admitted list) is REFUTED for them by construction — they are unresolved precisely because the file is not in that list. THE SCOPE SPLIT, the sharper form of external-vs-in-corpus: the gate prints TWO key spaces on one run, and 141 of the 4,883 targets are declared in ANOTHER repository of the corpus (unresolved per project, resolved or ambiguous pooled) while 4,742 are declared NOWHERE in the 1,174-file corpus at all. The first 141 are cross-project references, not externals; the second 4,742 are the external-or-dead mass, and no per-file analyzer can tell those two apart from inside one file. FLEET PRECEDENT, and it is the same finding twice: php records that 2,478 of its 2,483 unresolved targets have NO DOT AT ALL and that even a PERFECTLY marked php lane lands in `externalUnverified` and FAILS (docs/analyzers/real-php-analyzer.md:3279-3296), and fsharp rules that its 18,028 bare unresolved targets stay unclaimed and CANNOT be claimed, because a bare name has no owner, so marking one reads `externalUnverified`, which blocks a pass anyway (docs/analyzers/real-fsharp-analyzer.md:2422-2426). bash marks ONLY the narrow subset a LANGUAGE FACT proves cannot be a project declaration — a call whose command word contains `/` cannot be a shell function name — ten edges, zero refuted, pinned in both directions (docs/analyzers/bash.md:140-150). CSS has no such per-file fact for a custom property: ANY stylesheet may declare ANY custom property, so the claim is a PROJECT-level statement a per-file analyzer cannot support, and `verifyExternalClaim` cannot refute it either — an unfalsifiable marker is worse than a stated gap, so this lane writes none. The honest state is a reported, counted gap; the 14 `contains`/class-selector edges that were in this column BEFORE the chain-term kind fix (CSS-D13) are gone because they were a real defect, not because they were excused."
       },
       {
         "id": "CSS-D13",
@@ -553,7 +553,7 @@
           "chain_ends_resolved_by_a_suffix_sub_test_after_the_fix": 0,
           "chain_edges_whose_both_ends_are_exact_published_names_after_the_fix": 5912
         },
-        "resolution": "IMPLEMENTED, and the implementation is a KIND test rather than a deletion: a chain term is a single simple selector, so its spelling says which kind it is (`.x` class, `#x` id, `:x` pseudo, `*` universal, bare = tag/attribute), and a suffix match is now accepted only from a published name of the SAME kind (real-css-analyzer.ts `chainTermKind`). The exact-name test is untouched: a published name that IS the term is the term. THE DEFECT, measured before the change over the whole corpus: 29 chain edges withheld, of which 14 named nothing in their own project at all (the gate's `unresolved` column: `.button` in semantic.min.css, six `.small` and a `.h1` in bootstrap.css), 10 were ambiguous, and 5 the gate had called RESOLVED \u2014 the arbiter could not see those five, because a wrong target that happens to be unique looks exactly like a right one. Fixture `validation/m14/fixtures/css/chain-term-kind-must-match.css` was authored from the RULE before the change and FAILED against the unfixed analyzer on exactly its two forbid rows, with `.card -> .title` (both terms published class selectors) staying as the control that the fix did not simply stop emitting chains; after the fix all 21 css fixtures pass. THE SUFFIX SUB-TESTS ARE NOW MEASURABLY UNREACHABLE: over 1,174 files the census finds 5,912 chain edges and 11,824 ends, every one of them the exact name \u2014 leaf-only 0, boundary-only 0, unexplained 0, kind-inconsistent 0. The guard is retained (removing it would also strand `stripOccurrenceSuffix`, a helper the lane's provenance table documents) and its reachability is now a measured number rather than an assumption. RESIDUAL, reported and not fixed: 136 chain edges remain self-edges (`ul -> ul`, `.media -> .media`) and every one has both ends as exact published names, which is a repeated term in a real descendant selector rather than a fabricated pair \u2014 the lane's rule ('both chain leaves are published symbols') is satisfied, and suppressing them is a different question from the one this ruling answers."
+        "resolution": "IMPLEMENTED, and the implementation is a KIND test rather than a deletion: a chain term is a single simple selector, so its spelling says which kind it is (`.x` class, `#x` id, `:x` pseudo, `*` universal, bare = tag/attribute), and a suffix match is now accepted only from a published name of the SAME kind (real-css-analyzer.ts `chainTermKind`). The exact-name test is untouched: a published name that IS the term is the term. THE DEFECT, measured before the change over the whole corpus: 29 chain edges withheld, of which 14 named nothing in their own project at all (the gate's `unresolved` column: `.button` in semantic.min.css, six `.small` and a `.h1` in bootstrap.css), 10 were ambiguous, and 5 the gate had called RESOLVED — the arbiter could not see those five, because a wrong target that happens to be unique looks exactly like a right one. Fixture `validation/m14/fixtures/css/chain-term-kind-must-match.css` was authored from the RULE before the change and FAILED against the unfixed analyzer on exactly its two forbid rows, with `.card -> .title` (both terms published class selectors) staying as the control that the fix did not simply stop emitting chains; after the fix all 21 css fixtures pass. THE SUFFIX SUB-TESTS ARE NOW MEASURABLY UNREACHABLE: over 1,174 files the census finds 5,912 chain edges and 11,824 ends, every one of them the exact name — leaf-only 0, boundary-only 0, unexplained 0, kind-inconsistent 0. The guard is retained (removing it would also strand `stripOccurrenceSuffix`, a helper the lane's provenance table documents) and its reachability is now a measured number rather than an assumption. RESIDUAL, reported and not fixed: 136 chain edges remain self-edges (`ul -> ul`, `.media -> .media`) and every one has both ends as exact published names, which is a repeated term in a real descendant selector rather than a fabricated pair — the lane's rule ('both chain leaves are published symbols') is satisfied, and suppressing them is a different question from the one this ruling answers."
       },
       {
         "id": "CSS-D14",
@@ -607,7 +607,7 @@
           },
           "pico_import_statements": "0 of 238 pico .css files contain the substring `@import`, so the 120-file sample's silence for `imports` is the corpus's, not the analyzer's"
         },
-        "resolution": "RULED per type, each on the whole admitted population with the probe's own positive control firing (a stylesheet planted with one of every construct it rules on, parsed with the same grammar; the run exits 3 if any control count is 0 \u2014 and it DID exit 3 once, which is how a real probe defect was found: the first counter read `at_keyword` only inside `at_rule`, and `@keyframes` arrives as a dedicated `keyframes_statement` whose keyword is an ANONYMOUS child, so it reported `@keyframes 0` across the corpus while the analyzer was publishing 2,667 keyframe `uses` edges). EMITTED, not silent, and measured at population scale: `imports` 127 edges over 34 files (127 `import_statement` nodes on the tree \u2014 a 1:1 match, so the silence in the firing-check sample is pico's: 0 of pico's 238 files contain `@import`, and a text search is sound for a ZERO because an `import_statement` node cannot exist without that substring); `overrides` 149 edges over 15 files. RULED WITH A ZERO, each with its construct counted on the tree: `extends` \u2014 0 `@extend` at-rules (the sibling css-ruled.ts row records the 46 keyword occurrences in this family all sitting inside ERROR nodes in `.sass` partials, 0 in an at_rule); `calls` \u2014 0 `@function` at-rules, and the 341,686 `call_expression` nodes over 90 distinct function names are all CSS BUILT-INS (`var`, `calc`, `rgba`, `url`), which declare nothing and so cannot be a `calls` target; `exports` \u2014 0 `composes` declarations of any kind and 0 `:export` rule_sets (a convention with no syntax of its own, counted on the tree for the JSON lane's stated reason); `implements`, `instantiates` \u2014 0 of the 64 distinct node types the corpus's parse trees contain is a supertype clause or an object-creation production. `@property` (58) is counted and is not one of the ten relationship types. THE FIVE ZEROS ARE CORPUS FACTS, NOT GRAMMAR FACTS: a CSS-Modules-heavy or `@function`-using repository overturns them, which is exactly how the sibling table's rows are written to be falsified."
+        "resolution": "RULED per type, each on the whole admitted population with the probe's own positive control firing (a stylesheet planted with one of every construct it rules on, parsed with the same grammar; the run exits 3 if any control count is 0 — and it DID exit 3 once, which is how a real probe defect was found: the first counter read `at_keyword` only inside `at_rule`, and `@keyframes` arrives as a dedicated `keyframes_statement` whose keyword is an ANONYMOUS child, so it reported `@keyframes 0` across the corpus while the analyzer was publishing 2,667 keyframe `uses` edges). EMITTED, not silent, and measured at population scale: `imports` 127 edges over 34 files (127 `import_statement` nodes on the tree — a 1:1 match, so the silence in the firing-check sample is pico's: 0 of pico's 238 files contain `@import`, and a text search is sound for a ZERO because an `import_statement` node cannot exist without that substring); `overrides` 149 edges over 15 files. RULED WITH A ZERO, each with its construct counted on the tree: `extends` — 0 `@extend` at-rules (the sibling css-ruled.ts row records the 46 keyword occurrences in this family all sitting inside ERROR nodes in `.sass` partials, 0 in an at_rule); `calls` — 0 `@function` at-rules, and the 341,686 `call_expression` nodes over 90 distinct function names are all CSS BUILT-INS (`var`, `calc`, `rgba`, `url`), which declare nothing and so cannot be a `calls` target; `exports` — 0 `composes` declarations of any kind and 0 `:export` rule_sets (a convention with no syntax of its own, counted on the tree for the JSON lane's stated reason); `implements`, `instantiates` — 0 of the 64 distinct node types the corpus's parse trees contain is a supertype clause or an object-creation production. `@property` (58) is counted and is not one of the ten relationship types. THE FIVE ZEROS ARE CORPUS FACTS, NOT GRAMMAR FACTS: a CSS-Modules-heavy or `@function`-using repository overturns them, which is exactly how the sibling table's rows are written to be falsified."
       },
       {
         "id": "CSS-D15",
@@ -674,57 +674,127 @@
           },
           "edges_lost": 0,
           "edges_that_would_have_been_lost_without_the_budget_guard": 468,
-        "_budget_guard_retired": "That guard is RETIRED as of 2026-10-10: pool-worker.ts moved its 200-character budget from the whole target to the target's LEAF, so a file-scoped spelling can no longer cross it (the leaf of `<scope>::<name>` is the bare name's own leaf). The guard then existed only to hold 1,883 edges on the bare spelling, which is the ambiguity CSS-D15 removes — measured by the gate's `ofWhich` column going 1,883 -> 0 when it was removed.",
+          "_budget_guard_retired": "That guard is RETIRED as of 2026-10-10: pool-worker.ts moved its 200-character budget from the whole target to the target's LEAF, so a file-scoped spelling can no longer cross it (the leaf of `<scope>::<name>` is the bare name's own leaf). The guard then existed only to hold 1,883 edges on the bare spelling, which is the ambiguity CSS-D15 removes — measured by the gate's `ofWhich` column going 1,883 -> 0 when it was removed.",
           "fixtures": "20 pass / 0 fail",
           "fixture_assertions_respelled": 72,
-        "gate_population_final": {
-          "instrument": "npx tsx script/m14/residual-gate.ts --lane css, run 00:35-00:38 on the revision carrying the leaf-budget fix and the retired guard",
-          "edges": 487844,
-          "resolved": 482728,
-          "resolvedAmongCollision": 0,
-          "ambiguous": 233,
-          "unresolved": 4883,
-          "residual": 5116,
-          "residualPct": 1.0,
-          "resolvedPct": 99.0,
-          "extFAIL": 0,
-          "bindFAIL": 0,
-          "causeFAIL": 0,
-          "perType": {
-            "contains": { "edges": 236991, "resolved": 236991, "ofWhichCollision": 0, "ambiguous": 0, "unresolved": 0, "residualPct": 0.0 },
-            "references": { "edges": 247859, "resolved": 242876, "ofWhichCollision": 0, "ambiguous": 180, "unresolved": 4803, "residualPct": 2.0 },
-            "uses": { "edges": 2667, "resolved": 2665, "ofWhichCollision": 0, "ambiguous": 2, "unresolved": 0, "residualPct": 0.1 },
-            "overrides": { "edges": 149, "resolved": 149, "ofWhichCollision": 0, "ambiguous": 0, "unresolved": 0, "residualPct": 0.0 },
-            "imports": { "edges": 178, "resolved": 47, "ofWhichCollision": 0, "ambiguous": 51, "unresolved": 80, "residualPct": 73.6 }
+          "gate_population_final": {
+            "instrument": "npx tsx script/m14/residual-gate.ts --lane css, run 00:35-00:38 on the revision carrying the leaf-budget fix and the retired guard",
+            "edges": 487844,
+            "resolved": 482728,
+            "resolvedAmongCollision": 0,
+            "ambiguous": 233,
+            "unresolved": 4883,
+            "residual": 5116,
+            "residualPct": 1,
+            "resolvedPct": 99,
+            "extFAIL": 0,
+            "bindFAIL": 0,
+            "causeFAIL": 0,
+            "perType": {
+              "contains": {
+                "edges": 236991,
+                "resolved": 236991,
+                "ofWhichCollision": 0,
+                "ambiguous": 0,
+                "unresolved": 0,
+                "residualPct": 0
+              },
+              "references": {
+                "edges": 247859,
+                "resolved": 242876,
+                "ofWhichCollision": 0,
+                "ambiguous": 180,
+                "unresolved": 4803,
+                "residualPct": 2
+              },
+              "uses": {
+                "edges": 2667,
+                "resolved": 2665,
+                "ofWhichCollision": 0,
+                "ambiguous": 2,
+                "unresolved": 0,
+                "residualPct": 0.1
+              },
+              "overrides": {
+                "edges": 149,
+                "resolved": 149,
+                "ofWhichCollision": 0,
+                "ambiguous": 0,
+                "unresolved": 0,
+                "residualPct": 0
+              },
+              "imports": {
+                "edges": 178,
+                "resolved": 47,
+                "ofWhichCollision": 0,
+                "ambiguous": 51,
+                "unresolved": 80,
+                "residualPct": 73.6
+              }
+            },
+            "_thisIsTheFinalNumber": "1.0% residual, 99.0% resolved, and `ofWhich` 0 ON EVERY TYPE — every edge that resolves now resolves to exactly ONE declaration, with none of the 1,883 collision-bound `contains` resolutions the pre-retirement run recorded. The remaining residual is named: `references` 180 ambiguous + 4,803 unresolved (the dotless custom-property reads are the customization hook, a corpus fact), `imports` 51 ambiguous + 80 unresolved of 178 (an `@import` target is another FILE — a name-space fix cannot reach it, and CSS-D15 deliberately leaves it bare), `uses` 2 ambiguous.",
+            "_supersedes": "gate_population_current_revision above (residual 1.0% with ofWhich 1,883), measured before the worker's budget moved to the leaf and this lane's guard was retired."
           },
-          "_thisIsTheFinalNumber": "1.0% residual, 99.0% resolved, and `ofWhich` 0 ON EVERY TYPE — every edge that resolves now resolves to exactly ONE declaration, with none of the 1,883 collision-bound `contains` resolutions the pre-retirement run recorded. The remaining residual is named: `references` 180 ambiguous + 4,803 unresolved (the dotless custom-property reads are the customization hook, a corpus fact), `imports` 51 ambiguous + 80 unresolved of 178 (an `@import` target is another FILE — a name-space fix cannot reach it, and CSS-D15 deliberately leaves it bare), `uses` 2 ambiguous.",
-          "_supersedes": "gate_population_current_revision above (residual 1.0% with ofWhich 1,883), measured before the worker's budget moved to the leaf and this lane's guard was retired."
-        },
-        "gate_population_current_revision": {
-          "instrument": "npx tsx script/m14/residual-gate.ts --lane css, run 00:24-00:27 on the revision carrying fa2dc27e8 + d43a5fa4d + 2a42ae815 + bbd13098c",
-          "edges": 487844,
-          "resolved": 482728,
-          "resolvedAmongCollision": 1883,
-          "ambiguous": 233,
-          "unresolved": 4883,
-          "residual": 5116,
-          "residualPct": 1.0,
-          "resolvedPct": 99.0,
-          "extFAIL": 0,
-          "bindFAIL": 0,
-          "causeFAIL": 0,
-          "perType": {
-            "references": { "edges": 247859, "resolved": 242876, "ofWhichCollision": 0, "ambiguous": 180, "unresolved": 4803, "residualPct": 2.0 },
-            "contains": { "edges": 236991, "resolved": 236991, "ofWhichCollision": 1883, "ambiguous": 0, "unresolved": 0, "residualPct": 0.0 },
-            "uses": { "edges": 2667, "resolved": 2665, "ofWhichCollision": 0, "ambiguous": 2, "unresolved": 0, "residualPct": 0.1 },
-            "overrides": { "edges": 149, "resolved": 149, "ofWhichCollision": 0, "ambiguous": 0, "unresolved": 0, "residualPct": 0.0 },
-            "imports": { "edges": 178, "resolved": 47, "ofWhichCollision": 0, "ambiguous": 51, "unresolved": 80, "residualPct": 73.6 }
+          "gate_population_current_revision": {
+            "instrument": "npx tsx script/m14/residual-gate.ts --lane css, run 00:24-00:27 on the revision carrying fa2dc27e8 + d43a5fa4d + 2a42ae815 + bbd13098c",
+            "edges": 487844,
+            "resolved": 482728,
+            "resolvedAmongCollision": 1883,
+            "ambiguous": 233,
+            "unresolved": 4883,
+            "residual": 5116,
+            "residualPct": 1,
+            "resolvedPct": 99,
+            "extFAIL": 0,
+            "bindFAIL": 0,
+            "causeFAIL": 0,
+            "perType": {
+              "references": {
+                "edges": 247859,
+                "resolved": 242876,
+                "ofWhichCollision": 0,
+                "ambiguous": 180,
+                "unresolved": 4803,
+                "residualPct": 2
+              },
+              "contains": {
+                "edges": 236991,
+                "resolved": 236991,
+                "ofWhichCollision": 1883,
+                "ambiguous": 0,
+                "unresolved": 0,
+                "residualPct": 0
+              },
+              "uses": {
+                "edges": 2667,
+                "resolved": 2665,
+                "ofWhichCollision": 0,
+                "ambiguous": 2,
+                "unresolved": 0,
+                "residualPct": 0.1
+              },
+              "overrides": {
+                "edges": 149,
+                "resolved": 149,
+                "ofWhichCollision": 0,
+                "ambiguous": 0,
+                "unresolved": 0,
+                "residualPct": 0
+              },
+              "imports": {
+                "edges": 178,
+                "resolved": 47,
+                "ofWhichCollision": 0,
+                "ambiguous": 51,
+                "unresolved": 80,
+                "residualPct": 73.6
+              }
+            },
+            "_totalColumnCaveat": "The gate's TOTAL line prints its `ofWhich` column BLANK rather than summing it: the TOTAL row reads `487844 482728 (blank) 233 4883 0 0 0 1.0%`, i.e. ambiguous 233 + unresolved 4,883 = 5,116 = the residual the summary line prints. The 1,883 above is the per-type subtotal, all of it `contains`. Read from the per-type table, never from the TOTAL row, until the instrument sums it.",
+            "_theNumberOfRecord": "1.0% residual, 99.0% resolved, and the largest remaining type-residual is `imports` at 73.6% (51 ambiguous + 80 unresolved of 178) — NOT a name-space problem: an `@import` target is another FILE, and CSS-D15 deliberately leaves it bare.",
+            "_reconciliation": "The A/B replication above reads 2,066 ambiguous where this run reads 183 ambiguous + 1,883 `ofWhich` (resolved among a collision). 183 + 1,883 = 2,066 EXACTLY: the two instruments agree, and they differ only in whether a collision-bound edge is reported as ambiguous (the pre-2a42ae815 rule the replication models) or as resolved-with-collision (the third outcome added at 00:06). No unexplained divergence remains."
           },
-          "_totalColumnCaveat": "The gate's TOTAL line prints its `ofWhich` column BLANK rather than summing it: the TOTAL row reads `487844 482728 (blank) 233 4883 0 0 0 1.0%`, i.e. ambiguous 233 + unresolved 4,883 = 5,116 = the residual the summary line prints. The 1,883 above is the per-type subtotal, all of it `contains`. Read from the per-type table, never from the TOTAL row, until the instrument sums it.",
-          "_theNumberOfRecord": "1.0% residual, 99.0% resolved, and the largest remaining type-residual is `imports` at 73.6% (51 ambiguous + 80 unresolved of 178) — NOT a name-space problem: an `@import` target is another FILE, and CSS-D15 deliberately leaves it bare.",
-          "_reconciliation": "The A/B replication above reads 2,066 ambiguous where this run reads 183 ambiguous + 1,883 `ofWhich` (resolved among a collision). 183 + 1,883 = 2,066 EXACTLY: the two instruments agree, and they differ only in whether a collision-bound edge is reported as ambiguous (the pre-2a42ae815 rule the replication models) or as resolved-with-collision (the third outcome added at 00:06). No unexplained divergence remains."
-        },
-        "_instrument_revision": "MEASURED ACROSS A MOVING INSTRUMENT, stated because it changes how these numbers should be read. The population and 60-file lines above were taken on the arbiter as it stood at 23:49-23:52. Between then and 00:23 the arbiter gained fa2dc27e8 (23:46 — contains classified with production\u0027s LINE-AWARE statement instead of by declaration count), d43a5fa4d (00:04 — the population gate), 2a42ae815 (00:06 — the collRes third outcome: resolved, but bound among a collision) and bbd13098c (00:08). On the later revision the 60-file gate read edges 32,630 · resolved 31,942 · ambiguous 0 · unresolved 688, and this replication reads 95 ambiguous contains edges for the same scope because it does not yet model the new contains rule — that divergence is the instrument\u0027s to close. The A/B above, whose BOTH arms ran on ONE revision, is the measurement that isolates THIS change: ambiguous 458,094 -> 2,066, residual 94.92% -> 1.42%, delta 0 edges on every type. A residual-gate --lane css re-run on the current revision LANDED at 00:27 and is recorded in gate_population_current_revision: 487,844 edges, resolved 99.0%, residual 1.0% (233 ambiguous + 4,883 unresolved), extFAIL/bindFAIL/causeFAIL all 0, and ofWhich 1,883 — the edges still resolving by production tie-break, all of them contains, which is the count this change exists to reduce."
+          "_instrument_revision": "MEASURED ACROSS A MOVING INSTRUMENT, stated because it changes how these numbers should be read. The population and 60-file lines above were taken on the arbiter as it stood at 23:49-23:52. Between then and 00:23 the arbiter gained fa2dc27e8 (23:46 — contains classified with production's LINE-AWARE statement instead of by declaration count), d43a5fa4d (00:04 — the population gate), 2a42ae815 (00:06 — the collRes third outcome: resolved, but bound among a collision) and bbd13098c (00:08). On the later revision the 60-file gate read edges 32,630 · resolved 31,942 · ambiguous 0 · unresolved 688, and this replication reads 95 ambiguous contains edges for the same scope because it does not yet model the new contains rule — that divergence is the instrument's to close. The A/B above, whose BOTH arms ran on ONE revision, is the measurement that isolates THIS change: ambiguous 458,094 -> 2,066, residual 94.92% -> 1.42%, delta 0 edges on every type. A residual-gate --lane css re-run on the current revision LANDED at 00:27 and is recorded in gate_population_current_revision: 487,844 edges, resolved 99.0%, residual 1.0% (233 ambiguous + 4,883 unresolved), extFAIL/bindFAIL/causeFAIL all 0, and ofWhich 1,883 — the edges still resolving by production tie-break, all of them contains, which is the count this change exists to reduce."
         },
         "resolution": "RULED — landed in src/ast/real-css-analyzer.ts, not attested. THE CAUSE, NAMED AND COUNTED FIRST. validation/m14/fixtures/css/ambiguity-classify.ts (counting rule imported from the arbiter, totals asserted against the gate's own printed line) splits the gate's 456,587 ambiguous edges: CROSS-FILE-TWIN 456,403 = 99.96%, CROSS-FILE-ONLY 181, IN-FILE-MULTI 3, DUP-EMISSION 0. CROSS-FILE-TWIN means the edge's own file declares the target EXACTLY ONCE and every other declaration of that name is in another file — so the language does not make the edge unresolvable; the published SPELLING did. WHAT IS PUBLISHED. Every symbol gains a project-unique `qualifiedName = <file-scope>::<name>`, where the scope is the file's path relative to its checkout root with the extension removed and `.`/`:` sanitised; an edge of type contains/references/uses/overrides is respelled to it only when the edge's own file publishes exactly one declaration of that name, and only when the longer spelling stays within the worker's budget. The bare spelling is kept for a name this file does not declare (a cross-file or external reference) and for `imports`, whose target is ANOTHER file's module — respelling it would point the import at the importing file. The symbol's `name` is untouched, and every rule can only ADD resolution. LOSSLESS, AND MEASURED. An A/B of the pre-change analyzer against the current one over the same 1,174-file population reads 487,744 edges for BOTH arms with delta 0 on every type. That matters because the shared filter `src/ast/pool-worker.ts filterNoiseRelationships` DELETES any target over 200 characters: without the budget guard 468 edges crossed it and were silently missing (the first run of this change read 485,414 against 487,744), so the rewrite refused to qualify a target that would cross it and left the bare name standing — until 2026-10-10, when the budget moved to the target's LEAF (`pool-worker.ts`, whose comment credits this lane's measurement as the reason), the guard was RETIRED and those edges resolved uniquely: the gate's `ofWhich` column went 1,883 -> 0 with the residual unchanged, i.e. 1,883 edges moved from resolved-by-tie-break to resolved-to-exactly-one-declaration. TWO SHARED RULES CONSTRAIN THE SPELLING, both asserted on live analyzer output by validation/m14/fixtures/css/qualified-target-compat.ts, whose controls MUST fire: (1) script/m14/differential.ts matches a truth row on `label + normTarget(target)` and normTarget takes the last `.`/`::` segment, so `::` with a dotless scope preserves the leaf the css differential compares (75 live qualified targets, 0 failures; the controls reject BOTH a one-colon separator and an extension-keeping scope); (2) the worker's LEAF budget, asserted by a control that KEEPS a 400-character scope with a short leaf and DROPS an 81-character leaf. WHAT REMAINS, NOT FOLDED INTO THE WIN. `references` keeps 180 ambiguous + 4,803 unresolved and `contains` 0 ambiguous + 0 unresolved under the gate; the 233 gate-ambiguous edges are `references` 180, `imports` 51 and `uses` 2 — none of them `contains`, whose collision-bound resolutions are now 0 — the 4,883 unresolved are the class this lane already classifies by marker set (4,803 dotless custom-property reads — the CSS customization hook — plus 80 imports), and a name declared twice in the edge's own file (3 edges) cannot be resolved by any file-scoped spelling because the edge does not say which site it means. extFAIL, bindFAIL and causeFAIL are 0 in both arms. TWO THINGS THIS RULING DOES NOT CLAIM. (a) The mandated run and the A/B disagree on the AFTER ambiguity — the gate reads 183, the A/B replication reads 2,066 — because the two build the project key space from different symbol sets (the gate's comes from parseFile, the replication's from the analyzer's own list). Both read ~95% before and ~1% after; the gate is the arbiter and is quoted as the headline, and the discrepancy is recorded here rather than averaged away. (b) The differential was NOT re-run at its pinned rotation: the normTarget identity, asserted on live targets, is the evidence that its comparison is unchanged, and a scoped run (rotation 1 of a cold pool, not the pinned sample) reported MISSING=2 on `imports` — a type CSS-D15 does not touch — and unexplained=1 on `overrides`, a label the harness itself prints as COMPARED WITH NO TRUTH. THE FIXTURES MOVED BECAUSE THE CONTRACT MOVED: 72 target assertions across 15 expectation files were re-spelled by the deterministic rule `<scope>::<name>` (not transcribed from analyzer output), each file carries a `_targetSpelling` note, and the suite reads 20 pass / 0 fail."
       },
@@ -743,11 +813,23 @@
           "remainder_ambiguous": 180,
           "remainder_unresolved": 4803,
           "verifier_verdict_on_all_5641_before_the_fix": "externalUnverified",
-    "marked": 5641,
-    "effect": { "unresolved": "4803 -> 0", "residual_pct": "1.0 -> 0.1", "extFAIL": 0, "ambiguous_untouched": 180, "ofWhich": 0 },
-    "store_binding_120_file_sample": { "qualified_attached": 100689, "qualified_total": 100782, "pct": 99.9, "references": "53355/53355 = 100.0%", "nulls_all_of_type": "contains (93)" },
-        "_population": "THE LANE'S DECLARED POPULATION IS `css,less` (1,228 files), not `.css` (1,174). Corrected 2026-10-10 after the residual gate and this lane quoted different `imports` counts (178 vs 127): settled with ONE command — `incoming-gate.ts css css,less 0` reads `imports 178` — so it is a POPULATION difference, not a parse difference, and the residual gate was right. What MOVES when the 54 `.less` files are admitted: `contains` 236,942 -> 236,991; `imports` 127 -> 178 (the 51 added edges are ALL basename-ambiguous, which is why the lane's residual reads 311, not 263); TOTAL 487,744 -> 487,844. What does NOT move: `references` 247,859 and every number in CSS-D15/CSS-D17 (the 5,641 dotless custom-property reads are IDENTICAL on both populations), and `uses` is 0 ambiguous after the isKeyframes fix. This lane's instruments now default to the declared population (BB_CSS_EXTS).",
-        "_resolution_note": "RESOLVED IN TWO PARTS. (1) THE ARBITER WAS WIDENED (11fb2e07e, Lead's file): the dotless branch now tests `a spelling a published name may carry` instead of a JS identifier, with path/URI shapes still refused upstream by `pathLikeTarget` — the premise the old test rested on was already enforced before it. Its self-test carries ten assertions including both of this lane's cases (`--pico-color` declared -> refuted, `--pico-undeclared -> verified`). (2) THE MARKER IS ATTACHED in `real-css-analyzer.ts`, ONLY on a dotless `var(--x)` read that THIS FILE declares no property for — where the project declares it the edge resolves and the claim is never consulted, and claiming `external` for a name the file itself declares would be a false statement in the metadata even though no verdict reads it. Dotted custom-property names are deliberately NOT marked: `verifyExternalClaim` sends a dotted target down its OWNER branch, where a published owner REFUTES the claim, and `extFAIL` must stay 0. MEASURED: marked 5,641; `references` unresolved 4,803 -> 0; total residual 1.0% -> 0.1%; `extFAIL`/`bindFAIL`/`causeFAIL` 0; the 180 ambiguous untouched and `ofWhich` still 0. (3) THE STORE BINDING IS VERIFIED, which is the check that could have invalidated the whole of CSS-D15: a target carrying `:` is EXCLUDED from the bare-name resolution pass by construction, so a qualified target can only attach through the exact-`qualified_name` strategy. `validation/m14/fixtures/css/store-binding.ts` indexes a 120-file sample through `indexProjectParallel` (92 files, 50,578 symbols, 102,422 relationships) and reads `target_symbol_id` back: QUALIFIED 100,689/100,782 attached (99.9%), with `references` at 53,355/53,355 = 100.0%, against UNQUALIFIED 101/1,640 (6.2%). OPEN SUB-CAUSE, named and not folded in: all 93 NULLs are `contains`, consistent with its resolution path — `contains` is resolved EAGERLY by the LEAF of its target (`resolveContainsTargetStmt`, `s.name = ?` on `extractLeaf(target)`) and is excluded from the deferred pass, so a qualified `contains` target has no path that reads the qualified spelling.",
+          "marked": 5641,
+          "effect": {
+            "unresolved": "4803 -> 0",
+            "residual_pct": "1.0 -> 0.1",
+            "extFAIL": 0,
+            "ambiguous_untouched": 180,
+            "ofWhich": 0
+          },
+          "store_binding_120_file_sample": {
+            "qualified_attached": 100689,
+            "qualified_total": 100782,
+            "pct": 99.9,
+            "references": "53355/53355 = 100.0%",
+            "nulls_all_of_type": "contains (93)"
+          },
+          "_population": "THE LANE'S DECLARED POPULATION IS `css,less` (1,228 files), not `.css` (1,174). Corrected 2026-10-10 after the residual gate and this lane quoted different `imports` counts (178 vs 127): settled with ONE command — `incoming-gate.ts css css,less 0` reads `imports 178` — so it is a POPULATION difference, not a parse difference, and the residual gate was right. What MOVES when the 54 `.less` files are admitted: `contains` 236,942 -> 236,991; `imports` 127 -> 178 (the 51 added edges are ALL basename-ambiguous, which is why the lane's residual reads 311, not 263); TOTAL 487,744 -> 487,844. What does NOT move: `references` 247,859 and every number in CSS-D15/CSS-D17 (the 5,641 dotless custom-property reads are IDENTICAL on both populations), and `uses` is 0 ambiguous after the isKeyframes fix. This lane's instruments now default to the declared population (BB_CSS_EXTS).",
+          "_resolution_note": "RESOLVED IN TWO PARTS. (1) THE ARBITER WAS WIDENED (11fb2e07e, Lead's file): the dotless branch now tests `a spelling a published name may carry` instead of a JS identifier, with path/URI shapes still refused upstream by `pathLikeTarget` — the premise the old test rested on was already enforced before it. Its self-test carries ten assertions including both of this lane's cases (`--pico-color` declared -> refuted, `--pico-undeclared -> verified`). (2) THE MARKER IS ATTACHED in `real-css-analyzer.ts`, ONLY on a dotless `var(--x)` read that THIS FILE declares no property for — where the project declares it the edge resolves and the claim is never consulted, and claiming `external` for a name the file itself declares would be a false statement in the metadata even though no verdict reads it. Dotted custom-property names are deliberately NOT marked: `verifyExternalClaim` sends a dotted target down its OWNER branch, where a published owner REFUTES the claim, and `extFAIL` must stay 0. MEASURED: marked 5,641; `references` unresolved 4,803 -> 0; total residual 1.0% -> 0.1%; `extFAIL`/`bindFAIL`/`causeFAIL` 0; the 180 ambiguous untouched and `ofWhich` still 0. (3) THE STORE BINDING IS VERIFIED, which is the check that could have invalidated the whole of CSS-D15: a target carrying `:` is EXCLUDED from the bare-name resolution pass by construction, so a qualified target can only attach through the exact-`qualified_name` strategy. `validation/m14/fixtures/css/store-binding.ts` indexes a 120-file sample through `indexProjectParallel` (92 files, 50,578 symbols, 102,422 relationships) and reads `target_symbol_id` back: QUALIFIED 100,689/100,782 attached (99.9%), with `references` at 53,355/53,355 = 100.0%, against UNQUALIFIED 101/1,640 (6.2%). OPEN SUB-CAUSE, named and not folded in: all 93 NULLs are `contains`, consistent with its resolution path — `contains` is resolved EAGERLY by the LEAF of its target (`resolveContainsTargetStmt`, `s.name = ?` on `extractLeaf(target)`) and is excluded from the deferred pass, so a qualified `contains` target has no path that reads the qualified spelling.",
           "controls": "JS-shaped undeclared -> externalVerified (FIRES) · JS-shaped declared -> externalRefuted (FIRES) · `--pico-color` undeclared -> externalUnverified · `--pico-color` DECLARED -> externalUnverified, i.e. the SHAPE TEST and not the claim is what blocks"
         },
         "resolution": "CROSS-TABBED, BOTH SIDES, AND THE CLAIM IS WITHHELD ON PURPOSE. TARGET SIDE: of the 5,641 dotless custom-property reads, 658 resolve in their own project (one declaration), 138 name a property declared ONLY in another corpus project, and 4,665 name one declared NOWHERE in the 1,174-file population; the remainder is exactly the gate's 180 ambiguous + 4,803 unresolved. So the claim would not be a lie about the population for the 4,665, and it would not be a name claim about a file (css has no business writing a `projectFile` claim for a property — that is the yaml counter-example's shape). VERIFIER SIDE, AND THIS IS THE BLOCKER: `verifyExternalClaim` (`script/m14/incoming-rule.ts:582-585`) handles a dotless target by asking about the TARGET ITSELF, but only when it matches `/^[A-Za-z_$][A-Za-z0-9_$]*$/` — a JS-identifier test. CSS targets are sigiled (`--x`, `.class`, `#id`), so all 5,641 read `externalUnverified`. The branch's stated premise is that `a path or URI cannot be a published symbol's name, so a lookup returning 0 would prove nothing about the claim`; for this lane that premise is FALSE — a custom property IS a published symbol name here (this analyzer publishes the declaration), so a lookup returning 0 proves the project declares no such property. The fourth control makes it undeniable that the test, not the marker, is what blocks: `--pico-color` reads `externalUnverified` whether or not the key space declares it, so a refusal there is not a safety property at all — it is the same verdict for a true and a false claim. WHY NO MARKER IS WRITTEN: attaching one today would move 4,803 edges from `unresolved` to `externalUnverified` — a different NON-PASSING column (`verdict()` requires `externalUnverified === 0`, which the gate's own header states is why the bare-name path was built for php and bash) — while asserting a fact a per-file analyzer cannot see and the arbiter cannot check. That is motion without progress on the one class the objective names, so it stays open and visible. WHAT WOULD UNBLOCK IT, one line in the arbiter (Lead's file, not this lane's): widen the dotless branch from 'is a JS identifier' to 'is a spelling a published name may carry' — still refusing the path/URI shapes `pathLikeTarget` already catches and anything containing whitespace, but admitting the sigils. The gate's own controls at `incoming-gate.ts:1182-1194` already pin the bare-name path in three directions, so the widened test inherits a falsifier rather than needing a new one."
@@ -836,13 +918,13 @@
       {
         "label": "exports",
         "evidence": "zero-sites",
-        "from": "CSS-D14 counts: composes_declarations_any 0, composes_from_declarations 0, :export rule_sets 0 \u2014 the ICSS/CSS-Modules convention EXISTS in the language and occurs 0 times in the .css population, so by the class definition it STAYS IN the denominator (the hand table excluded it; corrected 2026-10-09)"
+        "from": "CSS-D14 counts: composes_declarations_any 0, composes_from_declarations 0, :export rule_sets 0 — the ICSS/CSS-Modules convention EXISTS in the language and occurs 0 times in the .css population, so by the class definition it STAYS IN the denominator (the hand table excluded it; corrected 2026-10-09)"
       }
     ],
     "corpusUnexercised": [],
-    "_from": "CSS-D14 counts.emitted_edges: contains 238,585 \u00b7 imports 127 \u00b7 overrides 149 \u00b7 references 247,859 \u00b7 uses 2,667 \u2014 the five the lane emits over the whole admitted population (imports/overrides fire 0 times on pico, which is why the firing log reads 3).",
+    "_from": "CSS-D14 counts.emitted_edges: contains 238,585 · imports 127 · overrides 149 · references 247,859 · uses 2,667 — the five the lane emits over the whole admitted population (imports/overrides fire 0 times on pico, which is why the firing log reads 3).",
     "_implemented_measured": {
-      "_unit": "edges published over the WHOLE 1,174-file `.css` population (85 repos, 0 parse failures, 5 tracked-but-absent, 2 over the 1 MB cap) \u2014 the lane's own census, WHICH PREDATES the population correction: the lane's DECLARED population is now `css,less` (1,228 files, d43a5fa4d), so this census describes a NARROWER set and its `imports` 127 is the `.css` half of the gate's 178. Kept as the record of what was measured rather than restated on a population it never walked, recorded in `design_decision.CSS-D14.counts.emitted_edges` of this file. THE LANE'S OWN INSTRUMENT POPULATION IS ONE REPO: `firing-check.mjs CSS_B` pins `pico` (238 files), on which imports and overrides fire ZERO times, which is why its log reads `3 types fired \u2014 SILENT imports exports overrides`. Whole-corpus `contains` is 238,585 and pico's share of it is the same order; whole-corpus `imports` is 127 and `overrides` is 149, in the 936 files pico does not contain. Same lesson as bash: a one-repo instrument cannot see a type whose occurrences live elsewhere.",
+      "_unit": "edges published over the WHOLE 1,174-file `.css` population (85 repos, 0 parse failures, 5 tracked-but-absent, 2 over the 1 MB cap) — the lane's own census, WHICH PREDATES the population correction: the lane's DECLARED population is now `css,less` (1,228 files, d43a5fa4d), so this census describes a NARROWER set and its `imports` 127 is the `.css` half of the gate's 178. Kept as the record of what was measured rather than restated on a population it never walked, recorded in `design_decision.CSS-D14.counts.emitted_edges` of this file. THE LANE'S OWN INSTRUMENT POPULATION IS ONE REPO: `firing-check.mjs CSS_B` pins `pico` (238 files), on which imports and overrides fire ZERO times, which is why its log reads `3 types fired — SILENT imports exports overrides`. Whole-corpus `contains` is 238,585 and pico's share of it is the same order; whole-corpus `imports` is 127 and `overrides` is 149, in the 936 files pico does not contain. Same lesson as bash: a one-repo instrument cannot see a type whose occurrences live elsewhere.",
       "contains": {
         "edges": 238585,
         "populationFiles": 1174

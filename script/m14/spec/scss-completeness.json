@@ -503,7 +503,7 @@
     "count": 0,
     "types": {},
     "gaps": [],
-    "note": "Empty in BOTH forms, and the search is recorded: every type the grammar declares is either reached or labelled, and the unadjudicated count is reported below rather than folded into a bucket. The `gaps` array is the half the BOARD reads — it counts only `gap.gaps` — and it was missing until 2026-10-09, so this object rendered as `gaps≠array` (not counted, and deliberately not read as zero) while `count` and `types` beside it both said 0. The array now agrees with the coverage block below, whose board-computed gap list is also empty: `overrides` is corpusUnexercised, not a gap."
+    "note": "Empty in BOTH forms, and the search is recorded: every type the grammar declares is either reached or labelled, and the unadjudicated count is reported below rather than folded into a bucket. The `gaps` array is the half the BOARD reads — it counts only `gap.gaps` — and it was missing until 2026-10-09, so this object rendered as `gaps≠array` (not counted, and deliberately not read as zero) while `count` and `types` beside it both said 0. The array now agrees with the coverage block below, whose board-computed gap list is also empty: `overrides` is corpusUnexercised, not a gap.\n\n[UNION: the version from the other side read — Empty, and the search is recorded: every type the grammar declares is either reached or labelled, and the unadjudicated count is reported below rather than folded into a bucket.]"
   },
   "design_decision": {
     "unadjudicatedCells": 0,
@@ -595,5 +595,11 @@
     ],
     "_from": "MEASURED over the WHOLE corpus, not sampled: `BB_PICK_CAP=1000 NFILES=400 bun script/m14/firing-check.mjs SCSS` reports `179/179 parsed of 179 admitted (even stride)  [corpus=bulma WHOLE]` — calls 102 · contains 845 · exports 65 · extends 52 · imports 69 · references 601 · uses 4 — with implements overrides instantiates producing nothing. The committed 120-file stride in validation/m14/results/firing-laptop-b.current.log reads the same seven fired and the same three SILENT, so the three are genuinely absent from this corpus rather than missed by the sample, which is the question a sample can never answer. The four types both lanes emit — contains · imports · references · uses — are this lane's OWN readings and not CSS's: the delegated walk runs inside the SCSS analyzer and every count above was taken through parseFile.",
     "_extends_vs_css": "SCSS and CSS do NOT disagree about `extends`, and the difference a reader will notice is explained by the GRAMMAR rather than by the ruling: the .css population cannot contain the construct at all — CSS-D14 counts 0 `@extend` at-rules and 0 candidate node types, so the CSS lane declares it grammar-absence — whereas tree-sitter-scss is `grammar(require('tree-sitter-css/grammar'), {…})` with an `extend_statement` production ADDED to that CSS base — `extend_statement: $ => seq('@extend', choice($._value, $.class_selector), ';')`, a plain rule of the vendored grammar and NOT one of its local patches, grammars/tree-sitter-scss/grammar.js:314 — so `@extend` is real syntax in this language and the type FIRES — 52 edges over the whole 179-file corpus, 38 on the committed 120-file stride, and this lane's `extend_statement` row in handled_verified above records how the target is named. `extends` is the ONE type whose verdict differs between the two lanes, and it differs because their grammars do."
+  },
+  "_unionConflicts": {
+    "count": 1,
+    "at": [
+      "$.gap.note"
+    ]
   }
 }

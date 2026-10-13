@@ -45,8 +45,12 @@
       "enumerator_list",
       "field_declaration",
       "field_declaration_list",
-      "type_definition"
-    ]
+      "type_definition",
+      "macro_enum_arguments"
+    ],
+    "_notes": {
+      "macro_enum_arguments": "CONSULTED and WITNESSED 2026-10-12: the analyzer reads it to take the LAST identifier of `NS_ENUM(underlying, Name)` as the enum's name (src/ast/real-objective-c-analyzer.ts:571 — the same read the lane's doc records as NS_OPTIONS naming), and `macro-wrapped-enum-and-guarded.m` is a committed fixture whose parse tree contains the node."
+    }
   },
   "internal_silent": {
     "types": [
@@ -58,9 +62,6 @@
       "alignas_specifier",
       "alignof_expression",
       "argument_list",
-      "argument_list",
-      "array_declarator",
-      "array_declarator",
       "array_declarator",
       "array_literal",
       "array_type_specifier",
@@ -76,8 +77,6 @@
       "availability_attribute_specifier",
       "available_expression",
       "bitfield_clause",
-      "block_pointer_declarator",
-      "block_pointer_declarator",
       "block_pointer_declarator",
       "break_statement",
       "cast_expression",
@@ -98,7 +97,6 @@
       "else_clause",
       "encode_expression",
       "escape_sequence",
-      "expression_statement",
       "expression_statement",
       "false",
       "field_designator",
@@ -127,7 +125,6 @@
       "macro_type_specifier",
       "method_identifier",
       "method_parameter",
-      "method_parameter",
       "method_type",
       "module_import",
       "ms_asm_block",
@@ -145,15 +142,9 @@
       "offsetof_expression",
       "parameter_declaration",
       "parameter_list",
-      "parameter_list",
       "parenthesized_declarator",
-      "parenthesized_declarator",
-      "parenthesized_declarator",
-      "parenthesized_expression",
       "parenthesized_expression",
       "platform",
-      "pointer_declarator",
-      "pointer_declarator",
       "pointer_declarator",
       "pointer_expression",
       "preproc_arg",
@@ -162,23 +153,10 @@
       "preproc_defined",
       "preproc_directive",
       "preproc_elif",
-      "preproc_elif",
-      "preproc_elif",
-      "preproc_elif",
-      "preproc_elif",
       "preproc_elifdef",
-      "preproc_else",
-      "preproc_else",
-      "preproc_else",
-      "preproc_else",
       "preproc_else",
       "preproc_function_def",
       "preproc_if",
-      "preproc_if",
-      "preproc_if",
-      "preproc_if",
-      "preproc_ifdef",
-      "preproc_ifdef",
       "preproc_ifdef",
       "preproc_linemarker",
       "preproc_params",
@@ -210,14 +188,30 @@
       "typedefed_specifier",
       "typeof_specifier",
       "unary_expression",
-      "unary_expression",
       "update_expression",
       "va_arg_expression",
       "variadic_parameter",
       "version",
       "version_number",
-      "visibility_specification"
-    ]
+      "visibility_specification",
+      "ERROR",
+      "MISSING",
+      "alignas_qualifier",
+      "extension_expression",
+      "subscript_range_designator",
+      "availability_macro_specifier"
+    ],
+    "_removed": {
+      "alignas_specifier": "REMOVED 2026-10-12: the pinned objc grammar (wasm/tree-sitter-objc.wasm) no longer declares this spelling (renamed), AND the analyzer never read it — 0 hits for `alignas` in src/ast/real-objective-c-analyzer.ts, and no fixture's parse tree contains the node. The row was a claim carried from an older grammar revision, so keeping it would be the one thing this gate must not do: report a row as grammar drift that nothing ever consulted. objc's current spellings of this family are classified above."
+    },
+    "_notes": {
+      "availability_macro_specifier": "produced by the pinned objc grammar and WITNESSED (validation/m14/fixtures/objc/macro-wrapped-enum-and-guarded.m contains one), but the analyzer consults it 0 times: a `handled_verified` row would be a claim the code does not back. Silent, with the witness recorded here so the next reader can close it by making the analyzer read it rather than by writing a new fixture.",
+      "subscript_range_designator": "produced by the pinned objc grammar and not a construct this analyzer models: the row is silent BY CONTRACT, not by omission — measured 2026-10-12, `src/ast/real-objective-c-analyzer.ts` reads this spelling 0 times.",
+      "extension_expression": "produced by the pinned objc grammar and not a construct this analyzer models: the row is silent BY CONTRACT, not by omission — measured 2026-10-12, `src/ast/real-objective-c-analyzer.ts` reads this spelling 0 times.",
+      "alignas_qualifier": "produced by the pinned objc grammar and not a construct this analyzer models: the row is silent BY CONTRACT, not by omission — measured 2026-10-12, `src/ast/real-objective-c-analyzer.ts` reads this spelling 0 times.",
+      "ERROR": "produced by every tree-sitter parser and not a construct; this lane's analyzer does not consult ERROR anywhere (measured src/ast/real-objective-c-analyzer.ts: no `type === \"ERROR\"` / `isError` read), so the row is silent by contract rather than handled. Silent here means the analyzer never looks, which is auditable.",
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-objective-c-analyzer.ts:41, :172, :241); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+    }
   },
   "gap": {
     "gaps": [

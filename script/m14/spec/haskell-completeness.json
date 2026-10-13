@@ -56,17 +56,21 @@
       "type_synomym",
       "gadt_constructors",
       "gadt_constructor",
-      "foreign_import"
+      "foreign_import",
+      "ERROR"
     ],
     "_closed_gaps": {
       "foreign_import": "HS-G4, closed 2026-09-29: Ffi.hs is 6 declarations and published 0 symbols (only the module). The Haskell-side name is signature -> variable; the C entity is kept as metadata and a references edge.",
-      "gadt_constructor": "HS-G2, closed 2026-09-29 \u2014 see gadt_constructors.",
+      "gadt_constructor": "HS-G2, closed 2026-09-29 — see gadt_constructors.",
       "gadt_constructors": "HS-G2, closed 2026-09-29: GADT constructors live under gadt_constructors, not data_constructors, so the type published and every constructor vanished (postgrest Hasql/Decoders/All.hs:116-118). Collected now, with ownership edges.",
       "type_synomym": "HS-G1, closed 2026-09-29: verified on real corpus code (hasql GenerateSeries.hs:16 `type Result = [Int64]` published nothing before; publishes a Type symbol now). The node name carries the upstream grammar's own typo."
+    },
+    "_notes": {
+      "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-haskell-analyzer.ts:132-133 and :956), and `exports-and-ffi.hs` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
     }
   },
   "internal_silent": {
-    "_description": "Grammar-internal containers, literals, comments/pragmas, and structural wrappers that correctly emit nothing (no relationship semantics in the analyzer's contract). |  is the analyzer evidenceClass STRING (real-haskell-analyzer.ts:972), not a grammar node type \u2014 moved 2026-09-03 after the F6 probe proved it never occurs in parses.",
+    "_description": "Grammar-internal containers, literals, comments/pragmas, and structural wrappers that correctly emit nothing (no relationship semantics in the analyzer's contract). |  is the analyzer evidenceClass STRING (real-haskell-analyzer.ts:972), not a grammar node type — moved 2026-09-03 after the F6 probe proved it never occurs in parses.",
     "types": [
       "all_names",
       "alternative",
@@ -200,10 +204,17 @@
       "nominal",
       "default",
       "e",
-      "p"
+      "p",
+      "MISSING"
     ],
     "_m60hk_note": "M60-HK: `$`/`$$`/`d`/`ERROR` were classified after restoring the cabal corpus. `$` is the ordinary apply operator; `$$` and `d` are machinist template delimiters that appear because cabal ships .template.hs files, which are NOT valid Haskell (`$$name$$` placeholders); `ERROR` is the defensive parse-error node and only fires on those same 13 template/macro files. All four emit nothing, which is correct.",
-    "_m60hk_note2": "M60-HK, measured over the restored three-corpus sweep: %=65 '=34 stock=17 anyclass=17 ''=11 #=9 nominal=4 default=2 e=2 p=1. `%` and `'` are operators and type-level ticks and declare nothing. stock/anyclass/nominal are DeriveAnyClass strategies -- the same family as HS-G9's unhandled `via`, and likewise no symbol by design. `default` is a class default signature (HS-G7). ''/#/e/p occur only in cabal's machinist template files, which are not valid Haskell at all."
+    "_m60hk_note2": "M60-HK, measured over the restored three-corpus sweep: %=65 '=34 stock=17 anyclass=17 ''=11 #=9 nominal=4 default=2 e=2 p=1. `%` and `'` are operators and type-level ticks and declare nothing. stock/anyclass/nominal are DeriveAnyClass strategies -- the same family as HS-G9's unhandled `via`, and likewise no symbol by design. `default` is a class default signature (HS-G7). ''/#/e/p occur only in cabal's machinist template files, which are not valid Haskell at all.",
+    "_removed": {
+      "_": "REMOVED 2026-10-12: no symbol the pinned haskell wasm declares carries the spelling `_` (checked against every id, named and anonymous), and the analyzer reads it 0 times. A row naming a symbol the grammar does not declare is not a classification; the wildcard is a pattern-level construct the analyzer reaches through the pattern node's own kind."
+    },
+    "_notes": {
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-haskell-analyzer.ts:132-133); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+    }
   },
   "gap": {
     "_description": "Advanced GHC-extension surfaces the analyzer does not model (declared limitations; bounded to extension syntax, not core Haskell). Differential floor target: Prelude/cabal corpora exercise few of these.",
@@ -212,7 +223,7 @@
         "id": "HS-G1",
         "severity": "medium",
         "node_type": "type_synomym",
-        "missing": "type aliases (`type Alias = Text`) emit no Type symbol \u2014 verified against the fixture probe"
+        "missing": "type aliases (`type Alias = Text`) emit no Type symbol — verified against the fixture probe"
       },
       {
         "id": "HS-G2",
@@ -224,7 +235,7 @@
         "id": "HS-G3",
         "severity": "low",
         "node_type": "type_family,type_instance,abstract_family,data_family,data_instance,associated_type,type_family_result,type_family_injectivity,equations,family,infixl,infixr",
-        "missing": "type/data family machinery emits no symbols or edges The restored `cabal` corpus has family=5, infixl=8, infixr=5 \u2014 the type-family keyword and its injectivity annotations, which the postgrest substitute never exercised."
+        "missing": "type/data family machinery emits no symbols or edges The restored `cabal` corpus has family=5, infixl=8, infixr=5 — the type-family keyword and its injectivity annotations, which the postgrest substitute never exercised."
       },
       {
         "id": "HS-G4",
@@ -242,7 +253,7 @@
         "id": "HS-G6",
         "severity": "low",
         "node_type": "pattern_synonym,binding_list,constructor_synonym,constructor_synonyms,pattern",
-        "missing": "pattern synonyms emit no symbols The restored `cabal` corpus has 96 `pattern` nodes across 50 files \u2014 the earlier \"0 occurrences\" was an artefact of the postgrest SUBSTITUTE corpus, which contains no pattern synonyms at all."
+        "missing": "pattern synonyms emit no symbols The restored `cabal` corpus has 96 `pattern` nodes across 50 files — the earlier \"0 occurrences\" was an artefact of the postgrest SUBSTITUTE corpus, which contains no pattern synonyms at all."
       },
       {
         "id": "HS-G7",
@@ -314,13 +325,13 @@
         "node_type": "local_binds,let_in,do,bind",
         "status": "RULED",
         "question": "where/let locals: symbol scope and call attribution.",
-        "resolution": "locals never become module symbols; a where-local function's internal calls attribute to the LOCAL function itself (go->local is a true edge); do-binds (`z <- fetch x`) are values, excluded from the callable prepass. SCOPED IDENTITY (2026-09-26, closes the bare-name caveat): a local's edge identity is its lexical owner chain (`owner.local`, nested `owner.inner.local`) and target resolution is lexical \u2014 a local is a candidate target only from inside its own scope, a shadowing binder wins for its whole RHS, and do-block `let` binders stay visible for the rest of the do block. Module-qualified targets are untouched."
+        "resolution": "locals never become module symbols; a where-local function's internal calls attribute to the LOCAL function itself (go->local is a true edge); do-binds (`z <- fetch x`) are values, excluded from the callable prepass. SCOPED IDENTITY (2026-09-26, closes the bare-name caveat): a local's edge identity is its lexical owner chain (`owner.local`, nested `owner.inner.local`) and target resolution is lexical — a local is a candidate target only from inside its own scope, a shadowing binder wins for its whole RHS, and do-block `let` binders stay visible for the rest of the do block. Module-qualified targets are untouched."
       },
       {
         "id": "HS-D7",
         "node_type": "function",
         "status": "RULED",
-        "question": "type-position function nodes polluted the declared-function prepass with type variables (a, f, m) \u2014 fabricated calls.",
+        "question": "type-position function nodes polluted the declared-function prepass with type variables (a, f, m) — fabricated calls.",
         "resolution": "function nodes carrying the parameter/result FIELD are type expressions and are skipped by the prepass; signature/internal function nodes likewise."
       },
       {
@@ -331,18 +342,11 @@
         "resolution": "class -> Interface, instance -> Class named by target type (universal impl-naming), signature inside class body -> Method owned by the Interface; instance methods are Functions owned by the instance Class."
       },
       {
-        "id": "HS-D2",
-        "node_type": "apply,qualified_variable",
-        "status": "RULED",
-        "question": "Bare constructor VALUES in body position (`x = Just`, `registry = C.Registry`) emit nothing while constructor APPLICATIONS (`x = Just 1`, `f = C.Registry 1`) emit instantiates. Asymmetric-looking: is the bare-value silence a gap?",
-        "resolution": "RULED a coherent semantic boundary (probe 2026-09-04, F9 battery authoring): a bare constructor reference binds a FUNCTION VALUE, not an instance \u2014 instantiates means an instance is created, which requires application. Ruling holds for BOTH qualified and unqualified forms (verified symmetric). Bare values are rare in real code; corpus differentials (cabal/hledger/postgrest/shellcheck at 100%/0/0) show no unexplained residue. Recorded as declared design decision, not a silent hole."
-      },
-      {
         "id": "HS-D9",
         "node_type": "class context (superclass constraint tree)",
         "status": "RULED",
         "question": "#872 (F5 rotated-sample finding, Cabal-syntax FieldGrammar/Class.hs): which superclass heads emit extends? The old direct-apply + one-parens fallback missed tuple lists, applied heads (Eq (f a) => D f a), qualified heads (P.Show a), and quantified bodies (forall a. Applicative (f a)); the oracle shared the direct-apply blind spot and additionally over-emitted (descended into arguments).",
-        "resolution": "RULED: the context is a CONSTRAINT TREE. Analyzer and oracle walk the same set of wrappers (context/tuple/parens/forall-body); an apply contributes its LEFT-SPINE head \u2014 name, constructor, or qualified (verbatim dotted text) \u2014 as the superclass; type arguments never become classes. Fixture pins Mergeable2->Show/Eq + Applied->Eq (payload-and-complexity); mutants haskell/drop-tuple-superclass + haskell/apply-head-as-argument; both pinned corpora 100%/0/0 @200/186 after the fix."
+        "resolution": "RULED: the context is a CONSTRAINT TREE. Analyzer and oracle walk the same set of wrappers (context/tuple/parens/forall-body); an apply contributes its LEFT-SPINE head — name, constructor, or qualified (verbatim dotted text) — as the superclass; type arguments never become classes. Fixture pins Mergeable2->Show/Eq + Applied->Eq (payload-and-complexity); mutants haskell/drop-tuple-superclass + haskell/apply-head-as-argument; both pinned corpora 100%/0/0 @200/186 after the fix."
       },
       {
         "id": "HS-D10",
@@ -357,7 +361,7 @@
         "node_type": "corpus registration",
         "status": "RULED",
         "question": "M60-HK: both registered haskell corpora (cabal, hledger) are absent from this machine, so the differential could not run at all and every coverage claim was unfalsifiable.",
-        "resolution": "Primary corpus re-registered to `postgrest` \u2014 the only checkout on this box with any Haskell (207 tracked .hs files: the hasql library plus postgrest's own src). DISCLOSED AS A SUBSTITUTE, not a replacement: it is smaller than the 637 cabal files the lane originally measured and its .hs surface is a vendored database library, so it exercises less dialect. The second corpus is DECLARED ABSENT rather than retargeted, because postgrest is the only Haskell checkout and pointing both entries at it would count one corpus twice. haskell therefore runs single-corpus, the same position fsharp records for itself. What that costs: a defect with zero occurrences in postgrest cannot be exercised by a second dialect. Restoring cabal or hledger is the M12/M60 owner's call.",
+        "resolution": "Primary corpus re-registered to `postgrest` — the only checkout on this box with any Haskell (207 tracked .hs files: the hasql library plus postgrest's own src). DISCLOSED AS A SUBSTITUTE, not a replacement: it is smaller than the 637 cabal files the lane originally measured and its .hs surface is a vendored database library, so it exercises less dialect. The second corpus is DECLARED ABSENT rather than retargeted, because postgrest is the only Haskell checkout and pointing both entries at it would count one corpus twice. haskell therefore runs single-corpus, the same position fsharp records for itself. What that costs: a defect with zero occurrences in postgrest cannot be exercised by a second dialect. Restoring cabal or hledger is the M12/M60 owner's call.",
         "evidence": "With the corpus registered the lane runs: postgrest 60-file sample, 2,120 truth edges, 2,120 covered (100%), 0 MISSING, 1 unexplained (0.1%). Whole-file oracle-vs-analyzer comparison over 209 files: 8,302 of 8,304 truth rows (99.98%), nine of ten labels at exactly zero discrepancy."
       }
     ]

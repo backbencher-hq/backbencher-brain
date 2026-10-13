@@ -495,6 +495,21 @@
         "label": "implements",
         "reason": "`implements` is admitted for this lane and compared, but no implements oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a implements oracle exists for this language.",
         "closes_when": "a implements oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "uses",
+        "reason": "`uses` is admitted for this lane and compared, but no uses oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a uses oracle exists for this language.",
+        "closes_when": "a uses oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "imports",
+        "reason": "`imports` is admitted for this lane and compared, but no imports oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a imports oracle exists for this language.",
+        "closes_when": "a imports oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "exports",
+        "reason": "`exports` is admitted for this lane and compared, but no exports oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a exports oracle exists for this language.",
+        "closes_when": "a exports oracle exists for this language; then admit it and reconcile"
       }
     ],
     "_closed": [

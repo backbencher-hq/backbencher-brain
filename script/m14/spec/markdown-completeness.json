@@ -1,405 +1,413 @@
 {
- "_comment": "M14.0.SPEC (#290) \u2014 markdown completeness classification. Every public NAMED node type of BOTH pinned wasms is in exactly one bucket: 51 distinct from wasm/tree-sitter-markdown.wasm (the block grammar, 207 nodeTypeForId slots) and 26 from wasm/tree-sitter-markdown_inline.wasm (the companion inline grammar, 153 slots), for a UNION of 70 distinct names after the 7 the two share. Silence is guilt: a type in no bucket fails section A, and a type neither grammar produces any more is a stale row and also fails. The handled set was derived MECHANICALLY, not by eye \u2014 every double-quoted literal in src/ast/real-markdown-analyzer.ts was intersected with the two grammars' named-type sets (see the MEASURED tally at the end of this comment), and the un-named types are each classified below with a measured site count over the lane's pinned corpus (scala3@18df09c0, 738 tracked .md files). MEASURED 2026-10-09 by validation/m14/fixtures/markdown/spec-surface-check.ts: 30 handled_verified + 42 internal_silent + 0 gap = 72 rows, of which 70 are the pinned union's named types (block 51 + inline 26 \u2212 7 shared) and 2 \u2014 ERROR and MISSING \u2014 are tree-sitter's synthesised error types, which no grammar's symbol table produces. 0 of the 70 are unclassified and 0 names sit in two buckets, so the classification is complete. THE TALLY PREVIOUSLY READ 29 handled_verified + 39 internal_silent + 2 gap = 70, which did not match the arrays it described.",
- "coverage": {
-  "_from": "MEASURED per type on 2026-10-09 from four instruments, each named so it can be re-run. (1) script/m14/firing-check.mjs MARKDOWN_B, NFILES=120 even stride over redwood, instrument self-test PASS: 3 types fired \u2014 contains:3479 references:89 uses:1349, 120/120 parsed, 0 degraded. (2) validation/m14/fixtures/markdown/firing-corpus-census.ts: production parseFile over the WHOLE redwood markdown population, 2,105/2,105 parsed, 0 degraded \u2014 contains:58,921 uses:23,081 references:1,497 imports:0 calls:0 exports:0 extends:0 implements:0 overrides:0 instantiates:0. (SUPERSEDED NUMBERS, kept visible: the first run of this census read 2,101 files and contains:58,914 because it copied firing-check's walk admission verbatim and that admission pruned every directory whose name CONTAINS `.git` \u2014 `.github` included. 28d79cb99 corrected the rule in five instruments; re-run on the corrected admission the population is 2,105 and contains is 58,921, and NO RULING MOVED: the 4 recovered `.github/actions/*/README.md` files add 7 `contains` edges and nothing else.) (3) the same script's instrument A over BOTH sha256-verified pinned grammars: 108 distinct node types across 17,456 parsed files, 0 of them in any A-row vocabulary, and each row's membership test fires on a planted member (6/6 controls), so the zeroes are a fact about the grammar and not about the filter. (4) validation/m60/markdown/whole-corpus-census.json (17,456 admitted files, production parseFile): imports 105 edges over 74 files \u2014 traefik 57, bulma 35, vega 12, scala3 1, redwood 0 \u2014 reproduced on current bytes at 105 edges by validation/m14/fixtures/markdown/imports-reverification.json (those four repos, 1,181/1,181 parsed, 0 degraded).",
-  "implemented": [
-   "contains",
-   "references",
-   "uses",
-   "imports"
-  ],
-  "excluded": [
-   {
-    "label": "calls",
-    "evidence": "grammar-absence",
-    "from": "MD-D12 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=calls]",
-    "quote": "0 of the 108 node types either pinned grammar produces is any of the nine call names (call_expression, call, function_call, invocation, method_invocation, arguments, command, function_definition, method_definition); the planted control (`document`) FIRES, so the membership test can see a member. Corpus: 0 calls edges over the whole 2,101-file firing population. The census's 8 calls are src/ast/pool-worker.ts extractFallback() regex output (source the literal \"this\", confidence 0.5) on concurrency-degraded files \u2014 a sequential whole-corpus run reports 0 degraded and 0 calls."
-   },
-   {
-    "label": "exports",
-    "evidence": "grammar-absence",
-    "from": "MD-D9 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=exports]",
-    "quote": "0 of the 108 node types is any of the eight export names (export_statement, export_declaration, module_exports, public_declaration, visibility_modifier, package_declaration, manifest, plugin_registration); planted control FIRES. The convention half was measured too, because a grammar cannot see a convention: 193 front-matter/first-H1 names over 193 files, and every one names THE DOCUMENT ITSELF, so the edge would be a document->document self-edge (validation/m60/markdown/construct-probe.json B6); the Jekyll title:/permalink: key sits inside minus_metadata, which has zero named children (319 nodes in 319 files, construct-probe.json A1)."
-   },
-   {
-    "label": "extends",
-    "evidence": "grammar-absence",
-    "from": "MD-D7 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=extends]",
-    "quote": "0 of the 108 node types either pinned grammar produces is any of the ten inheritance names (class_declaration, class, class_specifier, interface_declaration, trait_declaration, struct_declaration, inheritance_specifier, superclass, base_class, type_declaration); planted control FIRES. Markdown has no type system: a section is CONTAINED in a section (this lane's `contains`, 58,914 edges over the whole firing population) rather than inheriting from it."
-   },
-   {
-    "label": "implements",
-    "evidence": "grammar-absence",
-    "from": "MD-D8 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=implements]",
-    "quote": "0 of the 108 node types is any of the eight conformance names (implements_clause, extends_clause, interface_implementation, superclass, base_class, constraint, protocol_conformance, mixin); planted control FIRES. The one corpus construct that binds one document to another by FILE is a Jekyll `{% include %}`, and this lane emits it as `imports` (MD-G3), not as a type relationship \u2014 there is no type for it to implement."
-   },
-   {
-    "label": "overrides",
-    "evidence": "grammar-absence",
-    "from": "MD-D10 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=overrides]",
-    "quote": "0 of the 108 node types is any of the six override names (redefinition, override_specifier, declaration_replacement, duplicate_definition, method_declaration, member_redeclaration); planted control FIRES. The naive probe was measured on markdown and returns a large non-zero number on the WRONG question: 570 same-parent same-level same-text heading redeclarations and 2,453 repeated heading texts at any scope, against 0 displacements, because a repeated heading gets an ordinal anchor (#slug-1) rather than replacing the first (validation/m60/markdown/overrides-probe.json A/B/C)."
-   },
-   {
-    "label": "instantiates",
-    "evidence": "grammar-absence",
-    "from": "MD-D11 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=instantiates]",
-    "quote": "0 of the 108 node types is any of the eight construction names (new_expression, object_creation_expression, constructor_invocation, class_instance, instance_expression, jsx_element, component_element, tag_name); planted control FIRES. The component reading was measured too and is 0: 1,802 html_block nodes in the draw, 10 containing a <script> and NONE carrying a src, and 0 html_tag with a capitalised name. The census's 3 instantiates edges are the same extractFallback path as `calls` (confidence 0.6); a sequential whole-corpus run reports 0."
-   }
-  ],
-  "corpusUnexercised": [],
-  "_measured": {
-   "firingLog": {
-    "instrument": "script/m14/firing-check.mjs MARKDOWN_B",
-    "population": "120 files, even stride over redwood",
-    "fired": {
-     "contains": 3479,
-     "references": 89,
-     "uses": 1349
-    },
-    "parsed": "120/120",
-    "degraded": 0,
-    "instrumentSelfTest": "PASS \u2014 planted markdown link through parseFile: uses FIRED",
-    "_supersession": "The numbers above are the ones committed in validation/m14/results/firing-laptop-b.current.log, measured BEFORE 28d79cb99 fixed the walk admission (population 2,101). Re-run on the corrected instrument (population 2,105) the SAME TYPE SET fires \u2014 contains 3731 \u00b7 references 73 \u00b7 uses 1312, 120/120 parsed, 0 degraded, instrument self-test PASS \u2014 because a stride over 4 more files lands on different files. The draw moved; the verdict did not, and this is the only place the two draws are recorded together."
-   },
-   "firingCorpusWhole": {
-    "artifact": "validation/m14/fixtures/markdown/firing-corpus-census.json",
-    "population": 2105,
-    "parsed": 2105,
-    "degraded": 0,
-    "types": {
-     "contains": 58921,
-     "uses": 23081,
-     "references": 1497,
-     "imports": 0,
-     "calls": 0,
-     "exports": 0,
-     "extends": 0,
-     "implements": 0,
-     "overrides": 0,
-     "instantiates": 0
-    },
-    "_supersession": "This read population 2,101 and contains 58,914 until 2026-10-09, when 28d79cb99 corrected the shared walk admission (`.github` is not `.git`). The 4 files it recovers add 7 contains edges; uses, references and every zero are unchanged."
-   },
-   "instrumentA": {
-    "artifact": "validation/m14/fixtures/markdown/firing-corpus-census.json",
-    "unionDistinct": 108,
-    "parsedFiles": 17456,
-    "controlsFired": "6/6",
-    "wasmPins": "block and inline companions both MATCH validation/m14/grammar-pins.json (sha256)"
-   },
-   "importsWholePopulation": {
-    "artifact": "validation/m60/markdown/whole-corpus-census.json",
-    "edges": 105,
-    "files": 74,
-    "measuredOn": "2026-10-04T22:19",
-    "perRepo": {
-     "traefik": 57,
-     "bulma": 35,
-     "vega": 12,
-     "scala3": 1,
-     "redwood": 0
+  "_comment": "M14.0.SPEC (#290) — markdown completeness classification. Every public NAMED node type of BOTH pinned wasms is in exactly one bucket: 51 distinct from wasm/tree-sitter-markdown.wasm (the block grammar, 207 nodeTypeForId slots) and 26 from wasm/tree-sitter-markdown_inline.wasm (the companion inline grammar, 153 slots), for a UNION of 70 distinct names after the 7 the two share. Silence is guilt: a type in no bucket fails section A, and a type neither grammar produces any more is a stale row and also fails. The handled set was derived MECHANICALLY, not by eye — every double-quoted literal in src/ast/real-markdown-analyzer.ts was intersected with the two grammars' named-type sets (see the MEASURED tally at the end of this comment), and the un-named types are each classified below with a measured site count over the lane's pinned corpus (scala3@18df09c0, 738 tracked .md files). MEASURED 2026-10-09 by validation/m14/fixtures/markdown/spec-surface-check.ts: 30 handled_verified + 42 internal_silent + 0 gap = 72 rows, of which 70 are the pinned union's named types (block 51 + inline 26 − 7 shared) and 2 — ERROR and MISSING — are tree-sitter's synthesised error types, which no grammar's symbol table produces. 0 of the 70 are unclassified and 0 names sit in two buckets, so the classification is complete. THE TALLY PREVIOUSLY READ 29 handled_verified + 39 internal_silent + 2 gap = 70, which did not match the arrays it described.\n\n[UNION: the version from the other side read — M14.0.SPEC (#290) — markdown completeness classification. Every public NAMED node type of BOTH pinned wasms is in exactly one bucket: 51 distinct from wasm/tree-sitter-markdown.wasm (the block grammar, 207 nodeTypeForId slots) and 26 from wasm/tree-sitter-markdown_inline.wasm (the companion inline grammar, 153 slots), for a UNION of 70 distinct names after the 7 the two share. Silence is guilt: a type in no bucket fails section A, and a type neither grammar produces any more is a stale row and also fails. The handled set was derived MECHANICALLY, not by eye — every double-quoted literal in src/ast/real-markdown-analyzer.ts was intersected with the two grammars' named-type sets (29 of 70), and the 41 un-named types are each classified below with a measured site count over the lane's pinned corpus (scala3@18df09c0, 738 tracked .md files). 29 handled_verified + 39 internal_silent + 2 gap = 70.]",
+  "coverage": {
+    "_from": "MEASURED per type on 2026-10-09 from four instruments, each named so it can be re-run. (1) script/m14/firing-check.mjs MARKDOWN_B, NFILES=120 even stride over redwood, instrument self-test PASS: 3 types fired — contains:3479 references:89 uses:1349, 120/120 parsed, 0 degraded. (2) validation/m14/fixtures/markdown/firing-corpus-census.ts: production parseFile over the WHOLE redwood markdown population, 2,105/2,105 parsed, 0 degraded — contains:58,921 uses:23,081 references:1,497 imports:0 calls:0 exports:0 extends:0 implements:0 overrides:0 instantiates:0. (SUPERSEDED NUMBERS, kept visible: the first run of this census read 2,101 files and contains:58,914 because it copied firing-check's walk admission verbatim and that admission pruned every directory whose name CONTAINS `.git` — `.github` included. 28d79cb99 corrected the rule in five instruments; re-run on the corrected admission the population is 2,105 and contains is 58,921, and NO RULING MOVED: the 4 recovered `.github/actions/*/README.md` files add 7 `contains` edges and nothing else.) (3) the same script's instrument A over BOTH sha256-verified pinned grammars: 108 distinct node types across 17,456 parsed files, 0 of them in any A-row vocabulary, and each row's membership test fires on a planted member (6/6 controls), so the zeroes are a fact about the grammar and not about the filter. (4) validation/m60/markdown/whole-corpus-census.json (17,456 admitted files, production parseFile): imports 105 edges over 74 files — traefik 57, bulma 35, vega 12, scala3 1, redwood 0 — reproduced on current bytes at 105 edges by validation/m14/fixtures/markdown/imports-reverification.json (those four repos, 1,181/1,181 parsed, 0 degraded).",
+    "implemented": [
+      "contains",
+      "references",
+      "uses",
+      "imports"
+    ],
+    "excluded": [
+      {
+        "label": "calls",
+        "evidence": "grammar-absence",
+        "from": "MD-D12 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=calls]",
+        "quote": "0 of the 108 node types either pinned grammar produces is any of the nine call names (call_expression, call, function_call, invocation, method_invocation, arguments, command, function_definition, method_definition); the planted control (`document`) FIRES, so the membership test can see a member. Corpus: 0 calls edges over the whole 2,101-file firing population. The census's 8 calls are src/ast/pool-worker.ts extractFallback() regex output (source the literal \"this\", confidence 0.5) on concurrency-degraded files — a sequential whole-corpus run reports 0 degraded and 0 calls."
+      },
+      {
+        "label": "exports",
+        "evidence": "grammar-absence",
+        "from": "MD-D9 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=exports]",
+        "quote": "0 of the 108 node types is any of the eight export names (export_statement, export_declaration, module_exports, public_declaration, visibility_modifier, package_declaration, manifest, plugin_registration); planted control FIRES. The convention half was measured too, because a grammar cannot see a convention: 193 front-matter/first-H1 names over 193 files, and every one names THE DOCUMENT ITSELF, so the edge would be a document->document self-edge (validation/m60/markdown/construct-probe.json B6); the Jekyll title:/permalink: key sits inside minus_metadata, which has zero named children (319 nodes in 319 files, construct-probe.json A1)."
+      },
+      {
+        "label": "extends",
+        "evidence": "grammar-absence",
+        "from": "MD-D7 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=extends]",
+        "quote": "0 of the 108 node types either pinned grammar produces is any of the ten inheritance names (class_declaration, class, class_specifier, interface_declaration, trait_declaration, struct_declaration, inheritance_specifier, superclass, base_class, type_declaration); planted control FIRES. Markdown has no type system: a section is CONTAINED in a section (this lane's `contains`, 58,914 edges over the whole firing population) rather than inheriting from it."
+      },
+      {
+        "label": "implements",
+        "evidence": "grammar-absence",
+        "from": "MD-D8 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=implements]",
+        "quote": "0 of the 108 node types is any of the eight conformance names (implements_clause, extends_clause, interface_implementation, superclass, base_class, constraint, protocol_conformance, mixin); planted control FIRES. The one corpus construct that binds one document to another by FILE is a Jekyll `{% include %}`, and this lane emits it as `imports` (MD-G3), not as a type relationship — there is no type for it to implement."
+      },
+      {
+        "label": "overrides",
+        "evidence": "grammar-absence",
+        "from": "MD-D10 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=overrides]",
+        "quote": "0 of the 108 node types is any of the six override names (redefinition, override_specifier, declaration_replacement, duplicate_definition, method_declaration, member_redeclaration); planted control FIRES. The naive probe was measured on markdown and returns a large non-zero number on the WRONG question: 570 same-parent same-level same-text heading redeclarations and 2,453 repeated heading texts at any scope, against 0 displacements, because a repeated heading gets an ordinal anchor (#slug-1) rather than replacing the first (validation/m60/markdown/overrides-probe.json A/B/C)."
+      },
+      {
+        "label": "instantiates",
+        "evidence": "grammar-absence",
+        "from": "MD-D11 + instrument A: validation/m14/fixtures/markdown/firing-corpus-census.json instrumentA.rows[type=instantiates]",
+        "quote": "0 of the 108 node types is any of the eight construction names (new_expression, object_creation_expression, constructor_invocation, class_instance, instance_expression, jsx_element, component_element, tag_name); planted control FIRES. The component reading was measured too and is 0: 1,802 html_block nodes in the draw, 10 containing a <script> and NONE carrying a src, and 0 html_tag with a capitalised name. The census's 3 instantiates edges are the same extractFallback path as `calls` (confidence 0.6); a sequential whole-corpus run reports 0."
+      }
+    ],
+    "corpusUnexercised": [],
+    "_measured": {
+      "firingLog": {
+        "instrument": "script/m14/firing-check.mjs MARKDOWN_B",
+        "population": "120 files, even stride over redwood",
+        "fired": {
+          "contains": 3479,
+          "references": 89,
+          "uses": 1349
+        },
+        "parsed": "120/120",
+        "degraded": 0,
+        "instrumentSelfTest": "PASS — planted markdown link through parseFile: uses FIRED",
+        "_supersession": "The numbers above are the ones committed in validation/m14/results/firing-laptop-b.current.log, measured BEFORE 28d79cb99 fixed the walk admission (population 2,101). Re-run on the corrected instrument (population 2,105) the SAME TYPE SET fires — contains 3731 · references 73 · uses 1312, 120/120 parsed, 0 degraded, instrument self-test PASS — because a stride over 4 more files lands on different files. The draw moved; the verdict did not, and this is the only place the two draws are recorded together."
+      },
+      "firingCorpusWhole": {
+        "artifact": "validation/m14/fixtures/markdown/firing-corpus-census.json",
+        "population": 2105,
+        "parsed": 2105,
+        "degraded": 0,
+        "types": {
+          "contains": 58921,
+          "uses": 23081,
+          "references": 1497,
+          "imports": 0,
+          "calls": 0,
+          "exports": 0,
+          "extends": 0,
+          "implements": 0,
+          "overrides": 0,
+          "instantiates": 0
+        },
+        "_supersession": "This read population 2,101 and contains 58,914 until 2026-10-09, when 28d79cb99 corrected the shared walk admission (`.github` is not `.git`). The 4 files it recovers add 7 contains edges; uses, references and every zero are unchanged."
+      },
+      "instrumentA": {
+        "artifact": "validation/m14/fixtures/markdown/firing-corpus-census.json",
+        "unionDistinct": 108,
+        "parsedFiles": 17456,
+        "controlsFired": "6/6",
+        "wasmPins": "block and inline companions both MATCH validation/m14/grammar-pins.json (sha256)"
+      },
+      "importsWholePopulation": {
+        "artifact": "validation/m60/markdown/whole-corpus-census.json",
+        "edges": 105,
+        "files": 74,
+        "measuredOn": "2026-10-04T22:19",
+        "perRepo": {
+          "traefik": 57,
+          "bulma": 35,
+          "vega": 12,
+          "scala3": 1,
+          "redwood": 0
+        }
+      },
+      "importsReverified": {
+        "artifact": "validation/m14/fixtures/markdown/imports-reverification.json",
+        "edges": 105,
+        "files": 74,
+        "perRepo": {
+          "traefik": 57,
+          "bulma": 35,
+          "vega": 12,
+          "scala3": 1
+        },
+        "population": 1198,
+        "parsed": 1198,
+        "degraded": 0,
+        "_note": "The four repos the 2026-10-04 census attributes imports to, re-measured on current bytes: 105 edges over 74 DISTINCT files, and the per-repo split reproduces the census's own perRepo key for key. Population moved 1,181 -> 1,198 with the same 28d79cb99 admission correction; the edge count did not."
+      },
+      "fixtures": {
+        "instrument": "npx tsx script/m14/run-fixtures.ts --lang markdown",
+        "summary": "{\"markdown\":{\"pass\":11,\"fail\":0}}",
+        "detail": "11 fixtures, 0 fail, 'fixture baseline gate: no regressions' — including markdown/template-include-imports, the fixture for the construct MD-G3 emits and the one that would fail if `imports` stopped being produced"
+      },
+      "silentTypesNote": "The firing log's SILENT line names seven types. SIX are grammar-absence, each measured by instrument A with its own planted control and each already ruled in MD-D7..MD-D12. The SEVENTH, `imports`, is EMITTED and is therefore declared implemented: it has 105 corpus sites over 74 files, just none of them in redwood. `zero-sites` is not its class (the construct exists and occurs) and `corpusUnexercised` is not its class either (the lane implements it and the corpus exercises it), so the firing-corpus silence is recorded here rather than in the denominator arithmetic. This CORRECTS _sectionsBEH.relationship_kinds_produced, which read [contains, uses] and listed both `imports` and `references` as declared absent — stale text from before MD-G3 (imports, 2026-10-03) and MD-D6 (references, internal anchors); both are emitted and fire.",
+      "board": "implemented 4 + corpusUnexercised 0 + gaps 0 = applicable 4 = 10 - 6 grammar-absence - 0 unclassified"
     }
-   },
-   "importsReverified": {
-    "artifact": "validation/m14/fixtures/markdown/imports-reverification.json",
-    "edges": 105,
-    "files": 74,
-    "perRepo": {
-     "traefik": 57,
-     "bulma": 35,
-     "vega": 12,
-     "scala3": 1
+  },
+  "handled_verified": {
+    "types": [
+      "atx_h1_marker",
+      "atx_h2_marker",
+      "atx_h3_marker",
+      "atx_h4_marker",
+      "atx_h5_marker",
+      "atx_h6_marker",
+      "atx_heading",
+      "setext_heading",
+      "setext_h1_underline",
+      "setext_h2_underline",
+      "inline",
+      "document",
+      "fenced_code_block",
+      "info_string",
+      "language",
+      "pipe_table",
+      "pipe_table_header",
+      "pipe_table_cell",
+      "minus_metadata",
+      "link_destination",
+      "link_label",
+      "link_reference_definition",
+      "link_text",
+      "full_reference_link",
+      "collapsed_reference_link",
+      "shortcut_link",
+      "uri_autolink",
+      "email_autolink",
+      "image",
+      "indented_code_block"
+    ],
+    "note": "Thirty types, every one pinned. The six `atx_hN_marker` and two `setext_hN_underline` types are how a heading's LEVEL is read — from the marker's own name, never from the marker's text, so a document that indents its heading markers differently still nests correctly. `atx_heading`/`setext_heading` are the two containers and they are handled TOGETHER because their text lives in different places: an ATX heading's text is its `inline` child, a setext heading's is the first line of its paragraph, and the analyzer branches on the container type rather than falling through from one to the other. That branch is not cosmetic — see the MD-D7 entry in the design decisions, where the wrong branch published a heading name containing a newline. `fenced_code_block` + `info_string` + `language` are the code-fence triple: the block is the site, the info string names the language, and the `language` child is preferred over the info string's own text because a fence can carry a title after the language. `pipe_table` + `pipe_table_header` + `pipe_table_cell` are the table triple, and the pair `minus_metadata` / `plus_metadata` is deliberately NOT a triple — see the plus_metadata gap entry. `link_destination` is read in BOTH grammars' shapes (an inline link's own child, and a reference definition's destination) and `link_label` carries the reference in the full form while `link_text` carries it in the collapsed and shortcut forms, so the three reference-link types plus those two are one contract, not five. `image` is read only for its REFERENCE form; an inline-form image's destination is its `link_destination` child and is already handled. `document` is the walk root."
+  },
+  "internal_silent": {
+    "types": [
+      "ERROR",
+      "MISSING",
+      "backslash_escape",
+      "block_continuation",
+      "block_quote",
+      "block_quote_marker",
+      "code_fence_content",
+      "code_span",
+      "code_span_delimiter",
+      "emphasis",
+      "emphasis_delimiter",
+      "entity_reference",
+      "fenced_code_block_delimiter",
+      "hard_line_break",
+      "html_block",
+      "html_tag",
+      "image_description",
+      "inline_link",
+      "latex_block",
+      "latex_span_delimiter",
+      "link_title",
+      "list",
+      "list_item",
+      "list_marker_dot",
+      "list_marker_minus",
+      "list_marker_parenthesis",
+      "list_marker_plus",
+      "list_marker_star",
+      "numeric_character_reference",
+      "paragraph",
+      "pipe_table_align_left",
+      "pipe_table_align_right",
+      "pipe_table_delimiter_cell",
+      "pipe_table_delimiter_row",
+      "pipe_table_row",
+      "plus_metadata",
+      "section",
+      "strikethrough",
+      "strong_emphasis",
+      "task_list_marker_checked",
+      "task_list_marker_unchecked",
+      "thematic_break"
+    ],
+    "note": "Thirty-nine types that correctly emit nothing, each with a measured reason rather than a shrug. INLINE PRESENTATION (17 types): `emphasis`/`emphasis_delimiter`/`strong_emphasis`/`strikethrough`/`code_span`/`code_span_delimiter`/`hard_line_break`/`latex_block`/`latex_span_delimiter`/`backslash_escape`/`entity_reference`/`numeric_character_reference`/`link_text`'s siblings — formatting is not a graph fact. The load-bearing member of this group is `code_span`: a link inside one is excluded STRUCTURALLY, because the inline grammar gives a code span only ANONYMOUS children and the walker descends NAMED children only, so no `link_destination` is reachable beneath it. That is a property a reader can check, and it is what F9-PROBE-MD6 pins — if a future grammar gave `code_span` a named destination child, the probe fails and the exclusion has to become an explicit guard. A link inside `strong_emphasis` IS published, because those are named nodes with named children, and that is also correct. `latex_block` and `latex_span_delimiter` are the math forms; they carry no destination and no identity. LIST STRUCTURE (9 types, measured 6,264 `list_item` sites over 372 files): a list is a container, its items are containers, and its markers are presentation. What the lane DOES publish from inside a list is every link in its inline content, which the M12 contract probe pins ('link inside list item uses edge'). TASK MARKERS (2 types, 17 checked sites in 1 file): a checkbox is state, not a name; the doc declares them as noise. BLOCK CONTAINERS (6 types): `paragraph` and `section` are the grammar's structural wrappers — `section` in particular is a pure nesting artifact with no content of its own; `block_quote`/`block_quote_marker`/`block_continuation` likewise, and the links inside a quote ARE published (contract probe: 'link inside blockquote uses edge', 49 quote sites over 25 files). `thematic_break` (212 sites over 200 files) is `---`/`***`/___ and is worth naming for a specific reason: it is visually identical to a setext H2 underline, so a reader who assumed the marker was a break would mis-describe every setext heading in the lane. FENCE FURNITURE (2 types, 4,076 `code_fence_content` sites over 607 files): the fence's body text and its ``` delimiters are not facts; the language and the site are. TABLE FURNITURE (5 types, 224 `pipe_table_row` sites over 14 files): the analyzer reads the table's HEADER row and stops. A body cell is DATA — the same ruling toml's spec records for a value, and it is why a 224-row corpus of table bodies produces no symbols and no edges. RAW HTML (2 types, 579 `html_block` sites over 291 files — the largest silent class in the lane): the block grammar models a raw HTML block as an opaque region, and the companion inline grammar's `html_tag` covers inline raw HTML. Neither is a link destination. The corpus-errors artifact already names the one place this costs real recovery (`<details>` indented inside a numbered-list item, an ERROR at each list-item boundary), and that is a GRAMMAR limitation recorded against the grammar, not an analyzer gap. ZERO-SITE TYPES, named so the count is on the record rather than implied: `entity_reference` and `numeric_character_reference` are 0 over 738 files, which is why the character-reference ruling below is declared rather than measured. ERROR AND MISSING ARE THE ENGINE'S, NOT THE ANALYZER'S, and that boundary is the whole reason they are here rather than in handled_verified: `engine.ts` walks the parsed tree and pushes a `ParseError` for every `node.type === \"ERROR\" || node.isMissing` (the one condition, the one diagnostic, anchored to the offending node's own 1-based span), while `real-markdown-analyzer.ts` names NEITHER literal — measured, 0 occurrences in its source. So a markdown parse error is reported by the shared engine path every language uses, and the lane's own error contract is the four NAMED grammar limits in markdown-corpus-errors.json, not a recovery walk: 12 error nodes over 4 of 738 corpus files, all four named, 0 unexpected, 0 crashes. This is the same split the html spec records for the same two types, reached independently on a second grammar — ERROR reported, MISSING silent — and the useful part is that two lanes agree on it by measurement rather than by copying.  **`plus_metadata` is in this list for a reason worth reading twice: it is not the analyzer's choice, it is the GRAMMAR's.** The type is DECLARED in the pinned block grammar's node-type list, which is why the union census counts it among the 72 named types, but the grammar never INSTANTIATES it. Measured: the bare Pandoc `+++` form parses to a `paragraph`; the MyST `<!--[metadata]>` + `+++` form parses to an `html_block`; and across all 5,501 markdown files in every pinned corpus, 18 carry MyST title-block metadata and the grammar produces ZERO `plus_metadata` nodes for any of them. The gap entry that used to carry this asked for the `+++` form to be 'decided by measurement against a real MyST corpus when one is pinned' — that measurement has now been made, and it answers the question by removing it: a branch on the front-matter path keyed to this node type would be DEAD CODE, because the node never arrives. The only way to read a `+++` title block is to parse the paragraph's text, which is exactly what this lane's zero-regex, AST-derived-everything rule forbids. If a future grammar instantiates the node, `validation/m14/grammar-pins.json` goes red on `typeSetDigest` or `fieldSetDigest` and this entry is where the obligation is written down — that is the mechanism, and it already exists."
+  },
+  "gap": {
+    "gaps": []
+  },
+  "design_decision": {
+    "decisions": [
+      {
+        "id": "MD-D1",
+        "status": "RULED",
+        "node_type": "link_reference_definition",
+        "question": "Should a reference link with NO matching `link_reference_definition` publish a `uses` edge to its bare label? RULED: no. CommonMark is explicit — 'If a link reference definition has not been defined for the link label, then it is not a link', and the construct renders as literal text.",
+        "measured": "The alternative was implemented and MEASURED before being rejected: publishing the undefined case produced 171 edges across 34 of 738 corpus files, and sampling them showed the class dominated by bare bracketed citation markers (`NOTICE.md: document -> 1`, six times in one file). Those are fabricated endpoints and an R10 target-spelling violation, because `1` is not a name this lane spells its symbols with.",
+        "consequence": "An undefined reference is INVISIBLE rather than flagged, so a reader cannot distinguish 'this document has a broken reference' from 'this document never had one'. That is a real limitation and it is a decision. The two rejected alternatives were publishing 171 fabrications, or inventing a suppression heuristic — and a heuristic with no evidence behind it is what this repository refuses most loudly.",
+        "pinned_by": "F9-PROBE-MD1b, whose FORBID half also asserts the ORACLE refuses it, so the day the oracle starts deriving it the probe fails as COLLUSION rather than the lane quietly agreeing with itself."
+      },
+      {
+        "id": "MD-D2",
+        "status": "RULED",
+        "node_type": "atx_heading",
+        "question": "Is a heading's published NAME its source text or its rendered text? RULED: its source text, with exactly two corrections that are grammar facts rather than style — the ATX closing run is removed, and an empty heading publishes ABSENCE.",
+        "measured": "The rendered-text alternative has NO corpus evidence: `entity_reference` and `numeric_character_reference` are 0 over 738 files, and a 99-line fixture corpus is not a basis for a contract. So the source-text spelling stands, the two corrections stand on the pinned grammar's own shape, and the wider question is recorded here as UNDECIDED rather than answered by assertion.",
+        "consequence": "Two headings that RENDER identically but differ in markup publish two symbols (`## **Setup**` and `## Setup`), and a formatting-only edit changes a symbol's identity. Stated rather than hidden. The corrections are load-bearing on their own: without the closing-run removal a document that closes its headings and one that does not produce two symbols for the same section, and without the absence rule a document of empty headings publishes a `contains` chain named `#` -> `##` -> `###`, which is the M60 R7 class (a name that is not a name).",
+        "pinned_by": "markdown/heading-identity, whose `forbidSymbols` half carries the absent-name contract, and F9-PROBE-MD10 for the closing run."
+      },
+      {
+        "id": "MD-D3",
+        "status": "RULED",
+        "node_type": "pipe_table_row",
+        "question": "Should a table's BODY rows publish symbols or `contains` edges? RULED: no. A header cell is a column NAME — the identity of the table's structure — and a body cell is DATA.",
+        "measured": "224 `pipe_table_row` sites over 14 of 738 corpus files produce no symbols, and the header-only reading is what the M11 contract named when it fixed the lane's symbol map (`pipe_table -> class`, columns as `contains` children).",
+        "consequence": "A table's data is not queryable through this lane. For a documentation graph that is the right trade — the structure is the document's, the values are the reader's — and it is the same ruling toml's spec records for a value being data rather than a node.",
+        "pinned_by": "the M12 contract probe's 'contains table -> column', and markdown/payload-lines-evidence for the column edges' line and tier."
+      },
+      {
+        "id": "MD-D4",
+        "status": "RULED",
+        "node_type": "html_block",
+        "question": "Should a raw HTML block publish a symbol? RULED: no, and the cost is attributed to the GRAMMAR rather than the analyzer.",
+        "measured": "579 `html_block` sites over 291 of 738 corpus files. The corpus-errors artifact already names the one construct where the block grammar genuinely fails rather than declining: an indented `<details>` inside a numbered-list item, which recovers with an ERROR node at each list-item boundary, in 2 of 738 files. The remaining 577 sites are regions the grammar models as opaque and the lane correctly declines to invent structure for.",
+        "consequence": "A document that is largely HTML (a generated API reference, say) contributes only its markdown skeleton to the graph. Declared, not hidden — and the alternative, fabricating a tree for a region the parser did not resolve, is the 'a guess dressed as a fact' the erlang/html lanes both record as a refusal.",
+        "pinned_by": "validation/m12/results/markdown-corpus-errors.json, whose four named grammar limits are the measured half of this ruling."
+      },
+      {
+        "id": "MD-D5",
+        "status": "RULED",
+        "node_type": "section",
+        "question": "The block grammar wraps content in `section` nodes. Should a `section` be a symbol, or should the heading hierarchy BE the containment tree? RULED: the heading hierarchy is the tree, and `section` is an internal artifact.",
+        "measured": "The M11 contract fixed the symbol map as 'ATX headings -> type with hierarchy', and the M12 ground truth's 59 facts are all heading/table/code containment with no `section` among them.",
+        "consequence": "A heading is the document's own structure and a `section` is the grammar's, so publishing the latter would put a node in the graph that no author wrote and no reader navigates by. The heading hierarchy carries the same information with a name the document chose.",
+        "pinned_by": "the 59 M12 ground-truth facts and the 31-check M12 contract probe, both of which would gain a `section` row if this ruling were reversed."
+      },
+      {
+        "id": "MD-D6",
+        "status": "RULED",
+        "node_type": "same-document link fragment (`#anchor`)",
+        "question": "Should a link whose destination is only a `#fragment` be published as a `uses` edge to that literal fragment?",
+        "ruling": "No — and the fragment must be RESOLVED to the heading it names, or suppressed. A fragment names a heading in the SAME document, written as that heading's GitHub ANCHOR rather than its text. The lane published heading TEXT and had no notion of an anchor, so the two spellings could not meet: `## Install Now!` publishes as `Install Now!` while a link to it says `#install-now`, and nothing in the file is called `install-now`.",
+        "measured": "420 pinned corpus files: 10,174 bare fragments, of which 10,158 resolve to a published heading and 16 name a heading that does not exist. Before, 0 of 10,174 could resolve, by construction.",
+        "rule": "Anchors from the heading's display text: lowercase, keep letters/digits/hyphens, spaces and tabs to hyphens, drop the rest; a repeated anchor takes a `-1`, `-2` ordinal. A fragment is percent-decoded (invalid escapes fall back to raw text rather than throwing, so a typo cannot fail a parse) and lowercased before matching. Resolution is DEFERRED to the end of the block walk, because a link may precede its heading. A fragment matching no heading is NOT published — the internal twin of MD-D1 — and the count is disclosed in `metadata.patterns` as `Markdown undefined internal anchors: N` so the measurement survives where the edge does not. Each resolved edge carries the HEADING's line (M59 #825: the line that carries the name the edge is about, and the only choice under which the store's `fileId:name:line` key resolves) with the link's own line kept as `metadata.linkLine`.",
+        "limitation": "Non-ASCII LETTERS in a heading diverge from the renderer: GitHub's slugger keeps Unicode letters (`Café` -> `#café`), this lane's slug is ASCII-only, so it would produce `#caf`. The ASCII-only rule is deliberate and MEASURED, not an oversight. The corpus has 24 headings containing non-ASCII characters and all 24 are Unicode PUNCTUATION (the right single quote in `What’s new in the 0.13.0-RC1 technology preview?`), which the renderer also drops, so ASCII-only matches on every one of them; and 0 corpus links target a non-ASCII anchor. Telling a Unicode letter from Unicode punctuation without a pattern IS the whole problem, and this lane's zero-regex property is measured and pinned, so the boundary is declared rather than quietly approximated. Documents affected: 0 as measured, unknown in general — which is the honest form of that sentence.",
+        "pinned_by": "validation/m14/fixtures/markdown/internal-anchor-links (six behaviours, incl. forbidRelationships naming the RAW FRAGMENT) + markdown/internal-anchor-unresolved mutant. The oracle implements the same specification INDEPENDENTLY from the tree (script/m14/markdown-oracle.ts mdAnchorSlug/mdDecodeFragment): the specification is external and checkable, so two implementations agreeing is evidence, whereas the shared helper that would have guaranteed agreement is the mistake this lane has now paid for twice."
+      },
+      {
+        "id": "MD-D7",
+        "status": "RULED",
+        "node_type": "ontology:extends",
+        "instrument": "A:grammar-inventory",
+        "question": "Should the markdown analyzer emit a `extends` relationship? RULED: no.",
+        "ruling": "RULED",
+        "resolution": "RULED: markdown emits no `extends` edge, and the construct one needs does not exist. A document declares SECTIONS and a section is CONTAINED in a section, which this lane emits as `contains` (7,603 edges over 322 corpus files, both ends resolving 100.0%); it never inherits from one. Measured: 0 of the 104 node types BOTH pinned grammars produce across a 1,200-file draw is a type declaration or a supertype clause. OVERTURN: the grammar instantiating a type-declaration or superclass node, which `validation/m14/grammar-pins.json` is drift-gated against.",
+        "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
+      },
+      {
+        "id": "MD-D8",
+        "status": "RULED",
+        "node_type": "ontology:implements",
+        "instrument": "A:grammar-inventory",
+        "question": "Should the markdown analyzer emit a `implements` relationship? RULED: no.",
+        "ruling": "RULED",
+        "resolution": "RULED: markdown emits no `implements` edge. There are no types, so there is nothing to conform to and no endpoint an edge could name. Measured: 0 of the 104 node types either pinned grammar produces is a supertype, conformance or constraint clause. The one corpus construct that binds one document to another BY CONTRACT is a Jekyll `{% include %}`, and that is a binding by FILE, which this lane emits under MD-G3 as a file dependency rather than as a type relationship. OVERTURN: a clause binding a document to a named type, or any grammar node expressing conformance.",
+        "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
+      },
+      {
+        "id": "MD-D9",
+        "status": "RULED",
+        "node_type": "ontology:exports",
+        "instrument": "A:grammar-inventory",
+        "question": "Should the markdown analyzer emit a `exports` relationship? RULED: no.",
+        "ruling": "RULED",
+        "resolution": "RULED, and this is the type where a grammar alone is NOT enough — json's lane recorded that a grammar cannot see a CONVENTION, and json's own `exports` ruling was overturned by measuring one. So the convention was measured here too, on the document's own reserved positions: front matter and the first H1, 193 occurrences in 193 files on the draw. Every one of the 193 names THE DOCUMENT ITSELF, so the edge would be a self-edge, which is the M60 R7 class. The Jekyll keys that do carry cross-file meaning (`title:`, `permalink:`, `redirect_from:`) live inside `minus_metadata`, which has ZERO named children across 319 nodes in 319 files, so the grammar exposes no key to read. 0 of the 104 node types is an export or manifest node. OVERTURN: a document publishing a name that a DIFFERENT corpus document binds to — measurable by parsing both and looking for the pair, not by reading a spec.",
+        "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
+      },
+      {
+        "id": "MD-D10",
+        "status": "RULED",
+        "node_type": "ontology:overrides",
+        "instrument": "A:grammar-inventory",
+        "question": "Should the markdown analyzer emit a `overrides` relationship? RULED: no.",
+        "ruling": "RULED",
+        "resolution": "RULED: markdown emits no `overrides` edge, and the naive probe for it is wrong on this language in a way worth recording. The bash probe — a second declaration of a name already declared in the file — returns 570 same-parent, same-level, same-text heading redeclarations in 23 of 1,200 files, and 2,453 repeated heading texts at any scope in 50. Those are two SECTIONS sharing a title, not one replacing the other: CommonMark renders both, and the renderer's rule gives each a distinct anchor. Measured: 224 anchors in 61 files are held by more than one heading and 0 of them displace, because the ordinal (`slug`, `slug-1`) exists; `markdown/internal-anchor-links` pins that on `Duplicate` and `Duplicate#2`. So the deciding count is 570 redeclarations and 0 displacements. OVERTURN: a heading becoming unreachable after a later one claims its address, which `markdown/internal-anchor-links` would fail on.",
+        "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
+      },
+      {
+        "id": "MD-D11",
+        "status": "RULED",
+        "node_type": "ontology:instantiates",
+        "instrument": "A:grammar-inventory",
+        "question": "Should the markdown analyzer emit a `instantiates` relationship? RULED: no.",
+        "ruling": "RULED",
+        "resolution": "RULED: markdown emits no `instantiates` edge. Measured two ways, because a grammar alone leaves the component case open. 0 of the 104 node types either pinned grammar produces is a construction node. And the component reading is 0 as well: `html_block` holds 1,802 nodes in the draw, 10 contain a `<script>` tag and none carries a `src`, and 0 `html_tag` in the corpus has a capitalised name, so nothing is used as a component. OVERTURN: a capitalised tag inside an `html_block`, or a grammar node expressing a construction.",
+        "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
+      },
+      {
+        "id": "MD-D12",
+        "status": "RULED",
+        "node_type": "ontology:calls",
+        "instrument": "A:grammar-inventory",
+        "question": "Should the markdown analyzer emit a `calls` relationship? RULED: no.",
+        "ruling": "RULED",
+        "resolution": "RULED, with the measured alternative stated because markdown demonstrably CARRIES other languages' programs. 0 of the 104 node types either pinned grammar produces is a call or invocation node. 6,243 fenced code blocks in the 1,200-file draw declare another language in their info string; a call inside one is a fact about that language and an edge emitted from it would name endpoints no markdown file declares, so `bb_impact` would offer to rewrite a caller that does not exist. The delegation route is measured too and is empty: 1,802 `html_block` nodes, 10 carrying a `<script>`, none with a `src`. OVERTURN: a call edge derivable from markdown's own nodes.",
+        "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
+      },
+      {
+        "id": "MD-D13",
+        "node_type": "ontology:the extQ disposal at scale, and the rows this lane does not emit",
+        "status": "RULED (extQ, falsifier RUN; denominator restated: ext? 115,317 identical on the run that measured the fix) · FIXED AND MEASURED (residual 15,525 -> 10,273, -33.8%) · 5,452 of the remaining count are fallback rows, not this analyzer's edges",
+        "question": "The lane's `uses` column carries ext? 115,317 — the largest extQ population in the programme (41% of its edges, 60x yaml's 1,903) — and clause 2 wants an edge resolved or carrying a claim the project VERIFIES. Only 48 of 115,365 verify. Split by emitting site, and ask per site: a claim the arbiter cannot check, or a claim the lane should stop making?",
+        "command": "npx tsx validation/m14/fixtures/markdown/probe-markdown-extq-split.mts --nf 0   (whole admitted population, 17,460 files; the counting rule is imported from script/m14/incoming-rule.ts and the run reproduces the gate's columns EXACTLY: edges 283,976 · resolved 153,086 · ofWhich 124,969 · amb 3,202 · unres 12,323 · extOK 48 · ext? 115,317)",
+        "counts": {
+          "emitting_sites_of_the_115,365_claims": "markdown_link/externalUri 114,378 (99.16%) · markdown_autolink/externalUri 939 (0.81%) · markdown_autolink/emailAutolink 48 (0.04%) — ONE SITE DOMINATES, and the 48 email autolinks are exactly the extOK, because a dotted target is verified by OWNER while a URI is refused before any lookup.",
+          "shape_of_every_claimed_target": "scheme:https 113,686 · scheme:http 1,198 · scheme:mailto 407 · dotted name 48 · relative path 18 · scheme:xref 3 · scheme:hds 2 · scheme:some 1 · scheme:std 1 · scheme:tcp 1",
+          "mechanism": "`pathLikeTarget(tgt)` returns true for a URI scheme or a separator, so `verifyExternalClaim` returns `externalUnverified` BEFORE the owner lookup (incoming-rule.ts:577) — the class cannot be verified by construction, and no other claim kind reaches it: a `projectFile` claim REFUTES on a miss and a URL is a miss; `remoteRef` is a spelling check that refuses a URI; `baseBeyondRunScope` needs an identifier-shaped base and a URL is not one. extFAIL is 0, so the claims are not wrong — they are unverifiable.",
+          "falsifier_RUN": "Independently of the arbiter, each claimed target's LEAF was tested against the project's own two key spaces (an admitted file whose repo-relative path ends with the leaf, or a published symbol equal to it): **4,107 of 115,365 (3.6%) HIT**. They are coincidences, not refutations — `https://github.com/intellifactory/Bolero/blob/master/CONTRIBUTING.md` in Bolero hits Bolero's own `CONTRIBUTING.md`, and `https://rdatatable.gitlab.io/data.table/` hits the symbol `data.table` — which is exactly why the arbiter's URI refusal is LOAD-BEARING rather than lazy: a leaf-based check (the differential's own `normTarget` identity) would bind 4,107 of these URLs to a local declaration and be wrong every time. NOTHING in the falsifier refutes the claim; it prices the alternative.",
+          "the_fixable_half": "The lane's `uses` UNRESOLVED column is 9,555: relative path **6,367** · dotted name 2,673 · bare token 487 · fragment 27 · scheme:x 1. Of the 6,367 relative-path targets, **2,464 name a file the project ADMITS** — the CEILING of resolving a repo-relative link to the file it names, which is the language's own rule (a markdown link is relative to the CONTAINING file) and the css-D15 sibling pattern exactly. Priced, not yet measured as a before/after.",
+          "and_the_rows_the_lane_does_not_emit": "calls 5,528 and instantiates 399 are NOT this analyzer's output. MD-D12 rules that markdown emits no `calls` (grammar-absence: 0 of 108 node types is any of the nine call names) and the analyzer contains no `Calls`/`Instantiates` emission at all (grep: only comments). They are `src/ast/pool-worker.ts` `extractFallback()` REGEX rows (confidence 0.4-0.6, `metadata.method: \"regex\"`) produced for files whose parse fell back under load, and the lane's own whole-population census measured the truth on a sequential run: contains 334,773 · uses 270,779 · references 16,857 · imports 105 · **calls 0 · instantiates 0, 0 degraded**. Independent confirmation on the gate's own run: it logged **9,057 `Aborted()` wasm parse errors** (the engine silently retries), and re-parsing the aborted files individually produces NO fallback and NO calls. The programme already prints the distinction this needs (`ontology-coverage-gate.ts:945-956`: `DEGRADED (regex fallback, not the analyzer)` and `>>> excluded from EMITTED`), so the fix belongs in the pool worker's degraded path or in the gate's exclusion — NOT in this analyzer, which would have to emit a type its grammar does not have.",
+          "the_file_model_fix": "LANDED AND MEASURED (84c9236e0, after-run committed as measurements/residual-gate-after-file-model.txt). Whole admitted population, production scope, same instrument both sides:\n  uses      BEFORE edges 124,925 · resolved 4 · unresolved 9,555 · residual 7.6%   ->   AFTER edges 124,924 · resolved **5,255** · unresolved **4,302** · residual **3.4%**\n  TOTAL     BEFORE 283,976 · resolved 153,086 · unresolved 12,323 · residual 15,525 (5.5%)   ->   AFTER 283,975 · resolved **158,337** · unresolved **7,070** · residual **10,273 (3.6%)**\n  DELTA     resolved +5,251 · unresolved -5,253 · residual -5,252 (-33.8%). extFAIL/bindFAIL/causeFAIL all 0 on both sides. ext? **115,317 unchanged** and ofWhich 124,969 unchanged, so the extQ ruling's denominator is identical on the run that measured the fix.",
+          "the_sample_that_could_not_show_it": "`incoming-gate.ts markdown md,markdown 300` (a 300-file stride of 17,460, labelled `stride sample` by the gate itself): edges 11,681 · uses 4,566 (103 resolved · 335 unresolved · 4,125 ext? · 3 extOK) · contains 6,592 all resolved · **calls 0**. The zero is the fallback finding confirmed from the other side: a clean sequential run produces no fallback rows at all, which is why the Lead's new FALLBACK ROWS block printed nothing here.",
+          "ceiling_correction": "THE PRICED CEILING WAS 2,464 AND THE FIX REACHED 5,253 — 2.13x it, and the understatement is mine and explained: the ceiling counted a relative target as resolvable only when the ADMITTED FILE LIST held a path matching it exactly (after stripping `./`). The analyzer's rule is broader in three measured ways — it resolves `../` against the containing directory, it strips a fragment or query before resolving, and it tests EXISTENCE rather than membership in the admitted list (so a file present on disk but untracked resolves too, which the earlier probe could not see). A ceiling measured with a stricter predicate than the fix's own is a LOWER bound, and it was labelled a ceiling — the label was wrong, not the number.",
+          "the_fallback_rows_in_this_run": "`calls` 5,528 and `instantiates` 399 are PRESENT and UNCHANGED in the after-run, so this run was NOT clean: fallback rows recur under load, which is the same fact as the 5,452 residual share measured earlier and the `calls 0` of the 300-file sample, from a third side. The FALLBACK ROWS block itself prints in the INCOMING gate (the residual gate captures that run's table and does not echo the block), and a whole-population incoming-gate re-run did not fit the budget, so it is NOT quoted here rather than paraphrased.",
+          "the_lane_gate_does_not_state_what_its_residual_contains": "OPEN ITEM, FOUND FROM THIS LANE, PATCH NOT LANDED (`script/m14/` is shared). `residual-gate --lane markdown` printed residual 10,273 and the fallback split (5,452) existed ONLY in the incoming gate's output, which the residual gate CAPTURES and did not echo — so a lane reading its own instrument cannot see that 53% of that number is not the analyzer's. THE PATCH (measurements/lane-gate-fallback-line.patch) adds NO COLUMN: the residual gate already holds the incoming gate's stdout, so it gains one parser and one printed line, and the incoming gate's existing block gains the per-type IN-RESIDUAL counts (a type's fallback total and its residual share differ: markdown's calls is 5,528 rows but 5,062 residual). Choosing no-column over a trailing column removes the positional risk entirely rather than moving it to the end of the table — residual-gate, this lane's extQ probe, toml's guard and every lane's enumerator all parse that table positionally. THE CONTROL (fallback-line-control.mts) fires on two arms and builds its synthetic block from the gate's OWN literal strings, so a format change fails it: ARM 1 reads 5,452 fallback / own residual 4,821 out of 10,273; ARM 2 takes two REAL clean captures (300- and 600-file stride samples, calls 0) and requires the block's ABSENCE, so the quiet case is pinned too. EXPECTED AFTER LANDING: `residual 10,273 — 5,452 fallback, analyzer's own 4,821`, and `NONE` on a clean run."
+        },
+        "resolution": "RULED for the extQ class (one dominant site; mechanism read from the arbiter's own code; shape and count measured; the falsifier RUN and it prices the alternative rather than refuting the claim) — AND the lane is NOT complete, because the unresolved column has a measured fixable half of 2,464 edges and because 5,927 counted edges are the fallback's. Stated as three numbers rather than one: 115,317 ext? RULED · 2,464 FIXABLE (ceiling measured) · 5,927 NOT THE LANE'S (fallback, with the census that proves it)."
+      }
+    ]
+  },
+  "_sectionsBEH": {
+    "note": "Sections B-H are not carried in this file. B (every relationship kind pinned) and C (the payload matrix) are declared in script/m14/completeness-inventory.ts's LANG_CONFIGS entry, D (>=2 distinct evidenceClass pinned) and E/F (the differential floor and the perf budget) are read from the F3 fixtures and the differential baseline, G from the two docs, and H from M14.CC1.json. markdown reached CONFORMANT and JOINED GATED_LANGS on 2026-09-27 at 8/8. THIS NOTE USED TO SAY OTHERWISE — it claimed markdown was not gated because docs/analyzers/markdown.md did not exist, which stopped being true the moment that file was written, and a self-description of a lane's own gate status that is stale is the same failure as a results artifact quoting a commit that predates the change: the sentence reads as a census of the lane and is a snapshot of an earlier tree. The gate's own output is the authority; this note is a pointer to where the authority lives.",
+    "relationship_kinds_produced": [
+      "contains",
+      "references",
+      "uses",
+      "imports"
+    ],
+    "_relationship_kinds_produced_corrected": "This list read [contains, uses] until 2026-10-09 and omitted two types the lane EMITS, so the spec told its own readers the lane produces two relationships while the analyzer produces four. Measured on the whole redwood firing population (2,101 .md files, production parseFile, 2,101/2,101 parsed, 0 degraded — validation/m14/fixtures/markdown/firing-corpus-census.json): contains 58,914 · uses 23,081 · references 1,497 · imports 0. Measured on the whole admitted population (17,456 files, production parseFile — validation/m60/markdown/whole-corpus-census.json): contains 334,773 · uses 270,779 · references 16,857 · imports 105. `references` has been emitted since MD-D6 (a bare `#fragment` resolved to the heading it names) and `imports` since MD-G3 (a Jekyll/Liquid `{% include %}` naming a file), and this spec's OWN MD-D8 resolution already named MD-G3 — the BEH list was the last place still saying otherwise.",
+    "relationship_kinds_declared_absent": {
+      "_corrected": "`imports` and `references` were listed below as declared-absent until 2026-10-09, and both entries were FALSE by measurement: both are emitted and both fire (see _relationship_kinds_produced_corrected, coverage.implemented, and validation/m14/fixtures/markdown/firing-corpus-census.json). They were stale prose from before MD-G3 (2026-10-03) and MD-D6, left behind when the analyzer changed — which is exactly the failure mode this section's own `note` names. The six that remain are the six grammar-absence exclusions in `coverage`, each re-measured on current bytes with a planted control.",
+      "exports": "a markdown file exports nothing; it is a leaf of the project's file tree.",
+      "calls": "no call syntax exists in CommonMark.",
+      "extends": "no inheritance syntax exists in CommonMark.",
+      "implements": "no interface syntax exists in CommonMark.",
+      "overrides": "no member syntax exists in CommonMark.",
+      "instantiates": "no constructor syntax exists in CommonMark.",
+      "imports": "markdown has no module system. There is nothing to import, and a `uses` edge to a relative path is a LINK, not a dependency — bb_doc's Dependencies section stays empty for a .md file for exactly this reason, which is a real consequence of the ruling and not an oversight.",
+      "references": "the lane declares front-matter keys as a boundary rather than a graph: `title:`, `permalink:`, `redirect_from:` and `weight:` are the cross-file link carriers in a Jekyll site and the block grammar models `minus_metadata` as ONE node with no key/value children, so there is no key to reference from. Declared, with the reason, rather than left silent."
     },
-    "population": 1198,
-    "parsed": 1198,
-    "degraded": 0,
-    "_note": "The four repos the 2026-10-04 census attributes imports to, re-measured on current bytes: 105 edges over 74 DISTINCT files, and the per-repo split reproduces the census's own perRepo key for key. Population moved 1,181 -> 1,198 with the same 28d79cb99 admission correction; the edge count did not."
-   },
-   "fixtures": {
-    "instrument": "npx tsx script/m14/run-fixtures.ts --lang markdown",
-    "summary": "{\"markdown\":{\"pass\":11,\"fail\":0}}",
-    "detail": "11 fixtures, 0 fail, 'fixture baseline gate: no regressions' \u2014 including markdown/template-include-imports, the fixture for the construct MD-G3 emits and the one that would fail if `imports` stopped being produced"
-   },
-   "silentTypesNote": "The firing log's SILENT line names seven types. SIX are grammar-absence, each measured by instrument A with its own planted control and each already ruled in MD-D7..MD-D12. The SEVENTH, `imports`, is EMITTED and is therefore declared implemented: it has 105 corpus sites over 74 files, just none of them in redwood. `zero-sites` is not its class (the construct exists and occurs) and `corpusUnexercised` is not its class either (the lane implements it and the corpus exercises it), so the firing-corpus silence is recorded here rather than in the denominator arithmetic. This CORRECTS _sectionsBEH.relationship_kinds_produced, which read [contains, uses] and listed both `imports` and `references` as declared absent \u2014 stale text from before MD-G3 (imports, 2026-10-03) and MD-D6 (references, internal anchors); both are emitted and fire.",
-   "board": "implemented 4 + corpusUnexercised 0 + gaps 0 = applicable 4 = 10 - 6 grammar-absence - 0 unclassified"
-  }
- },
- "handled_verified": {
-  "types": [
-   "atx_h1_marker",
-   "atx_h2_marker",
-   "atx_h3_marker",
-   "atx_h4_marker",
-   "atx_h5_marker",
-   "atx_h6_marker",
-   "atx_heading",
-   "setext_heading",
-   "setext_h1_underline",
-   "setext_h2_underline",
-   "inline",
-   "document",
-   "fenced_code_block",
-   "info_string",
-   "language",
-   "pipe_table",
-   "pipe_table_header",
-   "pipe_table_cell",
-   "minus_metadata",
-   "link_destination",
-   "link_label",
-   "link_reference_definition",
-   "link_text",
-   "full_reference_link",
-   "collapsed_reference_link",
-   "shortcut_link",
-   "uri_autolink",
-   "email_autolink",
-   "image",
-   "indented_code_block"
-  ],
-  "note": "Thirty types, every one pinned. The six `atx_hN_marker` and two `setext_hN_underline` types are how a heading's LEVEL is read \u2014 from the marker's own name, never from the marker's text, so a document that indents its heading markers differently still nests correctly. `atx_heading`/`setext_heading` are the two containers and they are handled TOGETHER because their text lives in different places: an ATX heading's text is its `inline` child, a setext heading's is the first line of its paragraph, and the analyzer branches on the container type rather than falling through from one to the other. That branch is not cosmetic \u2014 see the MD-D7 entry in the design decisions, where the wrong branch published a heading name containing a newline. `fenced_code_block` + `info_string` + `language` are the code-fence triple: the block is the site, the info string names the language, and the `language` child is preferred over the info string's own text because a fence can carry a title after the language. `pipe_table` + `pipe_table_header` + `pipe_table_cell` are the table triple, and the pair `minus_metadata` / `plus_metadata` is deliberately NOT a triple \u2014 see the plus_metadata gap entry. `link_destination` is read in BOTH grammars' shapes (an inline link's own child, and a reference definition's destination) and `link_label` carries the reference in the full form while `link_text` carries it in the collapsed and shortcut forms, so the three reference-link types plus those two are one contract, not five. `image` is read only for its REFERENCE form; an inline-form image's destination is its `link_destination` child and is already handled. `document` is the walk root."
- },
- "internal_silent": {
-  "types": [
-   "ERROR",
-   "MISSING",
-   "backslash_escape",
-   "block_continuation",
-   "block_quote",
-   "block_quote_marker",
-   "code_fence_content",
-   "code_span",
-   "code_span_delimiter",
-   "emphasis",
-   "emphasis_delimiter",
-   "entity_reference",
-   "fenced_code_block_delimiter",
-   "hard_line_break",
-   "html_block",
-   "html_tag",
-   "image_description",
-   "inline_link",
-   "latex_block",
-   "latex_span_delimiter",
-   "link_title",
-   "list",
-   "list_item",
-   "list_marker_dot",
-   "list_marker_minus",
-   "list_marker_parenthesis",
-   "list_marker_plus",
-   "list_marker_star",
-   "numeric_character_reference",
-   "paragraph",
-   "pipe_table_align_left",
-   "pipe_table_align_right",
-   "pipe_table_delimiter_cell",
-   "pipe_table_delimiter_row",
-   "pipe_table_row",
-   "plus_metadata",
-   "section",
-   "strikethrough",
-   "strong_emphasis",
-   "task_list_marker_checked",
-   "task_list_marker_unchecked",
-   "thematic_break"
-  ],
-  "note": "Thirty-nine types that correctly emit nothing, each with a measured reason rather than a shrug. INLINE PRESENTATION (17 types): `emphasis`/`emphasis_delimiter`/`strong_emphasis`/`strikethrough`/`code_span`/`code_span_delimiter`/`hard_line_break`/`latex_block`/`latex_span_delimiter`/`backslash_escape`/`entity_reference`/`numeric_character_reference`/`link_text`'s siblings \u2014 formatting is not a graph fact. The load-bearing member of this group is `code_span`: a link inside one is excluded STRUCTURALLY, because the inline grammar gives a code span only ANONYMOUS children and the walker descends NAMED children only, so no `link_destination` is reachable beneath it. That is a property a reader can check, and it is what F9-PROBE-MD6 pins \u2014 if a future grammar gave `code_span` a named destination child, the probe fails and the exclusion has to become an explicit guard. A link inside `strong_emphasis` IS published, because those are named nodes with named children, and that is also correct. `latex_block` and `latex_span_delimiter` are the math forms; they carry no destination and no identity. LIST STRUCTURE (9 types, measured 6,264 `list_item` sites over 372 files): a list is a container, its items are containers, and its markers are presentation. What the lane DOES publish from inside a list is every link in its inline content, which the M12 contract probe pins ('link inside list item uses edge'). TASK MARKERS (2 types, 17 checked sites in 1 file): a checkbox is state, not a name; the doc declares them as noise. BLOCK CONTAINERS (6 types): `paragraph` and `section` are the grammar's structural wrappers \u2014 `section` in particular is a pure nesting artifact with no content of its own; `block_quote`/`block_quote_marker`/`block_continuation` likewise, and the links inside a quote ARE published (contract probe: 'link inside blockquote uses edge', 49 quote sites over 25 files). `thematic_break` (212 sites over 200 files) is `---`/`***`/___ and is worth naming for a specific reason: it is visually identical to a setext H2 underline, so a reader who assumed the marker was a break would mis-describe every setext heading in the lane. FENCE FURNITURE (2 types, 4,076 `code_fence_content` sites over 607 files): the fence's body text and its ``` delimiters are not facts; the language and the site are. TABLE FURNITURE (5 types, 224 `pipe_table_row` sites over 14 files): the analyzer reads the table's HEADER row and stops. A body cell is DATA \u2014 the same ruling toml's spec records for a value, and it is why a 224-row corpus of table bodies produces no symbols and no edges. RAW HTML (2 types, 579 `html_block` sites over 291 files \u2014 the largest silent class in the lane): the block grammar models a raw HTML block as an opaque region, and the companion inline grammar's `html_tag` covers inline raw HTML. Neither is a link destination. The corpus-errors artifact already names the one place this costs real recovery (`<details>` indented inside a numbered-list item, an ERROR at each list-item boundary), and that is a GRAMMAR limitation recorded against the grammar, not an analyzer gap. ZERO-SITE TYPES, named so the count is on the record rather than implied: `entity_reference` and `numeric_character_reference` are 0 over 738 files, which is why the character-reference ruling below is declared rather than measured. ERROR AND MISSING ARE THE ENGINE'S, NOT THE ANALYZER'S, and that boundary is the whole reason they are here rather than in handled_verified: `engine.ts` walks the parsed tree and pushes a `ParseError` for every `node.type === \"ERROR\" || node.isMissing` (the one condition, the one diagnostic, anchored to the offending node's own 1-based span), while `real-markdown-analyzer.ts` names NEITHER literal \u2014 measured, 0 occurrences in its source. So a markdown parse error is reported by the shared engine path every language uses, and the lane's own error contract is the four NAMED grammar limits in markdown-corpus-errors.json, not a recovery walk: 12 error nodes over 4 of 738 corpus files, all four named, 0 unexpected, 0 crashes. This is the same split the html spec records for the same two types, reached independently on a second grammar \u2014 ERROR reported, MISSING silent \u2014 and the useful part is that two lanes agree on it by measurement rather than by copying.  **`plus_metadata` is in this list for a reason worth reading twice: it is not the analyzer's choice, it is the GRAMMAR's.** The type is DECLARED in the pinned block grammar's node-type list, which is why the union census counts it among the 72 named types, but the grammar never INSTANTIATES it. Measured: the bare Pandoc `+++` form parses to a `paragraph`; the MyST `<!--[metadata]>` + `+++` form parses to an `html_block`; and across all 5,501 markdown files in every pinned corpus, 18 carry MyST title-block metadata and the grammar produces ZERO `plus_metadata` nodes for any of them. The gap entry that used to carry this asked for the `+++` form to be 'decided by measurement against a real MyST corpus when one is pinned' \u2014 that measurement has now been made, and it answers the question by removing it: a branch on the front-matter path keyed to this node type would be DEAD CODE, because the node never arrives. The only way to read a `+++` title block is to parse the paragraph's text, which is exactly what this lane's zero-regex, AST-derived-everything rule forbids. If a future grammar instantiates the node, `validation/m14/grammar-pins.json` goes red on `typeSetDigest` or `fieldSetDigest` and this entry is where the obligation is written down \u2014 that is the mechanism, and it already exists."
- },
- "gap": {
-  "gaps": []
- },
- "design_decision": {
-  "decisions": [
-   {
-    "id": "MD-D1",
-    "status": "RULED",
-    "node_type": "link_reference_definition",
-    "question": "Should a reference link with NO matching `link_reference_definition` publish a `uses` edge to its bare label? RULED: no. CommonMark is explicit \u2014 'If a link reference definition has not been defined for the link label, then it is not a link', and the construct renders as literal text.",
-    "measured": "The alternative was implemented and MEASURED before being rejected: publishing the undefined case produced 171 edges across 34 of 738 corpus files, and sampling them showed the class dominated by bare bracketed citation markers (`NOTICE.md: document -> 1`, six times in one file). Those are fabricated endpoints and an R10 target-spelling violation, because `1` is not a name this lane spells its symbols with.",
-    "consequence": "An undefined reference is INVISIBLE rather than flagged, so a reader cannot distinguish 'this document has a broken reference' from 'this document never had one'. That is a real limitation and it is a decision. The two rejected alternatives were publishing 171 fabrications, or inventing a suppression heuristic \u2014 and a heuristic with no evidence behind it is what this repository refuses most loudly.",
-    "pinned_by": "F9-PROBE-MD1b, whose FORBID half also asserts the ORACLE refuses it, so the day the oracle starts deriving it the probe fails as COLLUSION rather than the lane quietly agreeing with itself."
-   },
-   {
-    "id": "MD-D2",
-    "status": "RULED",
-    "node_type": "atx_heading",
-    "question": "Is a heading's published NAME its source text or its rendered text? RULED: its source text, with exactly two corrections that are grammar facts rather than style \u2014 the ATX closing run is removed, and an empty heading publishes ABSENCE.",
-    "measured": "The rendered-text alternative has NO corpus evidence: `entity_reference` and `numeric_character_reference` are 0 over 738 files, and a 99-line fixture corpus is not a basis for a contract. So the source-text spelling stands, the two corrections stand on the pinned grammar's own shape, and the wider question is recorded here as UNDECIDED rather than answered by assertion.",
-    "consequence": "Two headings that RENDER identically but differ in markup publish two symbols (`## **Setup**` and `## Setup`), and a formatting-only edit changes a symbol's identity. Stated rather than hidden. The corrections are load-bearing on their own: without the closing-run removal a document that closes its headings and one that does not produce two symbols for the same section, and without the absence rule a document of empty headings publishes a `contains` chain named `#` -> `##` -> `###`, which is the M60 R7 class (a name that is not a name).",
-    "pinned_by": "markdown/heading-identity, whose `forbidSymbols` half carries the absent-name contract, and F9-PROBE-MD10 for the closing run."
-   },
-   {
-    "id": "MD-D3",
-    "status": "RULED",
-    "node_type": "pipe_table_row",
-    "question": "Should a table's BODY rows publish symbols or `contains` edges? RULED: no. A header cell is a column NAME \u2014 the identity of the table's structure \u2014 and a body cell is DATA.",
-    "measured": "224 `pipe_table_row` sites over 14 of 738 corpus files produce no symbols, and the header-only reading is what the M11 contract named when it fixed the lane's symbol map (`pipe_table -> class`, columns as `contains` children).",
-    "consequence": "A table's data is not queryable through this lane. For a documentation graph that is the right trade \u2014 the structure is the document's, the values are the reader's \u2014 and it is the same ruling toml's spec records for a value being data rather than a node.",
-    "pinned_by": "the M12 contract probe's 'contains table -> column', and markdown/payload-lines-evidence for the column edges' line and tier."
-   },
-   {
-    "id": "MD-D4",
-    "status": "RULED",
-    "node_type": "html_block",
-    "question": "Should a raw HTML block publish a symbol? RULED: no, and the cost is attributed to the GRAMMAR rather than the analyzer.",
-    "measured": "579 `html_block` sites over 291 of 738 corpus files. The corpus-errors artifact already names the one construct where the block grammar genuinely fails rather than declining: an indented `<details>` inside a numbered-list item, which recovers with an ERROR node at each list-item boundary, in 2 of 738 files. The remaining 577 sites are regions the grammar models as opaque and the lane correctly declines to invent structure for.",
-    "consequence": "A document that is largely HTML (a generated API reference, say) contributes only its markdown skeleton to the graph. Declared, not hidden \u2014 and the alternative, fabricating a tree for a region the parser did not resolve, is the 'a guess dressed as a fact' the erlang/html lanes both record as a refusal.",
-    "pinned_by": "validation/m12/results/markdown-corpus-errors.json, whose four named grammar limits are the measured half of this ruling."
-   },
-   {
-    "id": "MD-D5",
-    "status": "RULED",
-    "node_type": "section",
-    "question": "The block grammar wraps content in `section` nodes. Should a `section` be a symbol, or should the heading hierarchy BE the containment tree? RULED: the heading hierarchy is the tree, and `section` is an internal artifact.",
-    "measured": "The M11 contract fixed the symbol map as 'ATX headings -> type with hierarchy', and the M12 ground truth's 59 facts are all heading/table/code containment with no `section` among them.",
-    "consequence": "A heading is the document's own structure and a `section` is the grammar's, so publishing the latter would put a node in the graph that no author wrote and no reader navigates by. The heading hierarchy carries the same information with a name the document chose.",
-    "pinned_by": "the 59 M12 ground-truth facts and the 31-check M12 contract probe, both of which would gain a `section` row if this ruling were reversed."
-   },
-   {
-    "id": "MD-D6",
-    "status": "RULED",
-    "node_type": "same-document link fragment (`#anchor`)",
-    "question": "Should a link whose destination is only a `#fragment` be published as a `uses` edge to that literal fragment?",
-    "ruling": "No \u2014 and the fragment must be RESOLVED to the heading it names, or suppressed. A fragment names a heading in the SAME document, written as that heading's GitHub ANCHOR rather than its text. The lane published heading TEXT and had no notion of an anchor, so the two spellings could not meet: `## Install Now!` publishes as `Install Now!` while a link to it says `#install-now`, and nothing in the file is called `install-now`.",
-    "measured": "420 pinned corpus files: 10,174 bare fragments, of which 10,158 resolve to a published heading and 16 name a heading that does not exist. Before, 0 of 10,174 could resolve, by construction.",
-    "rule": "Anchors from the heading's display text: lowercase, keep letters/digits/hyphens, spaces and tabs to hyphens, drop the rest; a repeated anchor takes a `-1`, `-2` ordinal. A fragment is percent-decoded (invalid escapes fall back to raw text rather than throwing, so a typo cannot fail a parse) and lowercased before matching. Resolution is DEFERRED to the end of the block walk, because a link may precede its heading. A fragment matching no heading is NOT published \u2014 the internal twin of MD-D1 \u2014 and the count is disclosed in `metadata.patterns` as `Markdown undefined internal anchors: N` so the measurement survives where the edge does not. Each resolved edge carries the HEADING's line (M59 #825: the line that carries the name the edge is about, and the only choice under which the store's `fileId:name:line` key resolves) with the link's own line kept as `metadata.linkLine`.",
-    "limitation": "Non-ASCII LETTERS in a heading diverge from the renderer: GitHub's slugger keeps Unicode letters (`Caf\u00e9` -> `#caf\u00e9`), this lane's slug is ASCII-only, so it would produce `#caf`. The ASCII-only rule is deliberate and MEASURED, not an oversight. The corpus has 24 headings containing non-ASCII characters and all 24 are Unicode PUNCTUATION (the right single quote in `What\u2019s new in the 0.13.0-RC1 technology preview?`), which the renderer also drops, so ASCII-only matches on every one of them; and 0 corpus links target a non-ASCII anchor. Telling a Unicode letter from Unicode punctuation without a pattern IS the whole problem, and this lane's zero-regex property is measured and pinned, so the boundary is declared rather than quietly approximated. Documents affected: 0 as measured, unknown in general \u2014 which is the honest form of that sentence.",
-    "pinned_by": "validation/m14/fixtures/markdown/internal-anchor-links (six behaviours, incl. forbidRelationships naming the RAW FRAGMENT) + markdown/internal-anchor-unresolved mutant. The oracle implements the same specification INDEPENDENTLY from the tree (script/m14/markdown-oracle.ts mdAnchorSlug/mdDecodeFragment): the specification is external and checkable, so two implementations agreeing is evidence, whereas the shared helper that would have guaranteed agreement is the mistake this lane has now paid for twice."
-   },
-   {
-    "id": "MD-D7",
-    "status": "RULED",
-    "node_type": "ontology:extends",
-    "instrument": "A:grammar-inventory",
-    "question": "Should the markdown analyzer emit a `extends` relationship? RULED: no.",
-    "ruling": "RULED",
-    "resolution": "RULED: markdown emits no `extends` edge, and the construct one needs does not exist. A document declares SECTIONS and a section is CONTAINED in a section, which this lane emits as `contains` (7,603 edges over 322 corpus files, both ends resolving 100.0%); it never inherits from one. Measured: 0 of the 104 node types BOTH pinned grammars produce across a 1,200-file draw is a type declaration or a supertype clause. OVERTURN: the grammar instantiating a type-declaration or superclass node, which `validation/m14/grammar-pins.json` is drift-gated against.",
-    "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
-   },
-   {
-    "id": "MD-D8",
-    "status": "RULED",
-    "node_type": "ontology:implements",
-    "instrument": "A:grammar-inventory",
-    "question": "Should the markdown analyzer emit a `implements` relationship? RULED: no.",
-    "ruling": "RULED",
-    "resolution": "RULED: markdown emits no `implements` edge. There are no types, so there is nothing to conform to and no endpoint an edge could name. Measured: 0 of the 104 node types either pinned grammar produces is a supertype, conformance or constraint clause. The one corpus construct that binds one document to another BY CONTRACT is a Jekyll `{% include %}`, and that is a binding by FILE, which this lane emits under MD-G3 as a file dependency rather than as a type relationship. OVERTURN: a clause binding a document to a named type, or any grammar node expressing conformance.",
-    "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
-   },
-   {
-    "id": "MD-D9",
-    "status": "RULED",
-    "node_type": "ontology:exports",
-    "instrument": "A:grammar-inventory",
-    "question": "Should the markdown analyzer emit a `exports` relationship? RULED: no.",
-    "ruling": "RULED",
-    "resolution": "RULED, and this is the type where a grammar alone is NOT enough \u2014 json's lane recorded that a grammar cannot see a CONVENTION, and json's own `exports` ruling was overturned by measuring one. So the convention was measured here too, on the document's own reserved positions: front matter and the first H1, 193 occurrences in 193 files on the draw. Every one of the 193 names THE DOCUMENT ITSELF, so the edge would be a self-edge, which is the M60 R7 class. The Jekyll keys that do carry cross-file meaning (`title:`, `permalink:`, `redirect_from:`) live inside `minus_metadata`, which has ZERO named children across 319 nodes in 319 files, so the grammar exposes no key to read. 0 of the 104 node types is an export or manifest node. OVERTURN: a document publishing a name that a DIFFERENT corpus document binds to \u2014 measurable by parsing both and looking for the pair, not by reading a spec.",
-    "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
-   },
-   {
-    "id": "MD-D10",
-    "status": "RULED",
-    "node_type": "ontology:overrides",
-    "instrument": "A:grammar-inventory",
-    "question": "Should the markdown analyzer emit a `overrides` relationship? RULED: no.",
-    "ruling": "RULED",
-    "resolution": "RULED: markdown emits no `overrides` edge, and the naive probe for it is wrong on this language in a way worth recording. The bash probe \u2014 a second declaration of a name already declared in the file \u2014 returns 570 same-parent, same-level, same-text heading redeclarations in 23 of 1,200 files, and 2,453 repeated heading texts at any scope in 50. Those are two SECTIONS sharing a title, not one replacing the other: CommonMark renders both, and the renderer's rule gives each a distinct anchor. Measured: 224 anchors in 61 files are held by more than one heading and 0 of them displace, because the ordinal (`slug`, `slug-1`) exists; `markdown/internal-anchor-links` pins that on `Duplicate` and `Duplicate#2`. So the deciding count is 570 redeclarations and 0 displacements. OVERTURN: a heading becoming unreachable after a later one claims its address, which `markdown/internal-anchor-links` would fail on.",
-    "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
-   },
-   {
-    "id": "MD-D11",
-    "status": "RULED",
-    "node_type": "ontology:instantiates",
-    "instrument": "A:grammar-inventory",
-    "question": "Should the markdown analyzer emit a `instantiates` relationship? RULED: no.",
-    "ruling": "RULED",
-    "resolution": "RULED: markdown emits no `instantiates` edge. Measured two ways, because a grammar alone leaves the component case open. 0 of the 104 node types either pinned grammar produces is a construction node. And the component reading is 0 as well: `html_block` holds 1,802 nodes in the draw, 10 contain a `<script>` tag and none carries a `src`, and 0 `html_tag` in the corpus has a capitalised name, so nothing is used as a component. OVERTURN: a capitalised tag inside an `html_block`, or a grammar node expressing a construction.",
-    "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
-   },
-   {
-    "id": "MD-D12",
-    "status": "RULED",
-    "node_type": "ontology:calls",
-    "instrument": "A:grammar-inventory",
-    "question": "Should the markdown analyzer emit a `calls` relationship? RULED: no.",
-    "ruling": "RULED",
-    "resolution": "RULED, with the measured alternative stated because markdown demonstrably CARRIES other languages' programs. 0 of the 104 node types either pinned grammar produces is a call or invocation node. 6,243 fenced code blocks in the 1,200-file draw declare another language in their info string; a call inside one is a fact about that language and an edge emitted from it would name endpoints no markdown file declares, so `bb_impact` would offer to rewrite a caller that does not exist. The delegation route is measured too and is empty: 1,802 `html_block` nodes, 10 carrying a `<script>`, none with a `src`. OVERTURN: a call edge derivable from markdown's own nodes.",
-    "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
-   },
-   {
-    "id": "MD-D13",
-    "node_type": "ontology:the extQ disposal at scale, and the rows this lane does not emit",
-    "status": "RULED (extQ, falsifier RUN; denominator restated: ext? 115,317 identical on the run that measured the fix) \u00b7 FIXED AND MEASURED (residual 15,525 -> 10,273, -33.8%) \u00b7 5,452 of the remaining count are fallback rows, not this analyzer's edges",
-    "question": "The lane's `uses` column carries ext? 115,317 \u2014 the largest extQ population in the programme (41% of its edges, 60x yaml's 1,903) \u2014 and clause 2 wants an edge resolved or carrying a claim the project VERIFIES. Only 48 of 115,365 verify. Split by emitting site, and ask per site: a claim the arbiter cannot check, or a claim the lane should stop making?",
-    "command": "npx tsx validation/m14/fixtures/markdown/probe-markdown-extq-split.mts --nf 0   (whole admitted population, 17,460 files; the counting rule is imported from script/m14/incoming-rule.ts and the run reproduces the gate's columns EXACTLY: edges 283,976 \u00b7 resolved 153,086 \u00b7 ofWhich 124,969 \u00b7 amb 3,202 \u00b7 unres 12,323 \u00b7 extOK 48 \u00b7 ext? 115,317)",
-    "counts": {
-     "emitting_sites_of_the_115,365_claims": "markdown_link/externalUri 114,378 (99.16%) \u00b7 markdown_autolink/externalUri 939 (0.81%) \u00b7 markdown_autolink/emailAutolink 48 (0.04%) \u2014 ONE SITE DOMINATES, and the 48 email autolinks are exactly the extOK, because a dotted target is verified by OWNER while a URI is refused before any lookup.",
-     "shape_of_every_claimed_target": "scheme:https 113,686 \u00b7 scheme:http 1,198 \u00b7 scheme:mailto 407 \u00b7 dotted name 48 \u00b7 relative path 18 \u00b7 scheme:xref 3 \u00b7 scheme:hds 2 \u00b7 scheme:some 1 \u00b7 scheme:std 1 \u00b7 scheme:tcp 1",
-     "mechanism": "`pathLikeTarget(tgt)` returns true for a URI scheme or a separator, so `verifyExternalClaim` returns `externalUnverified` BEFORE the owner lookup (incoming-rule.ts:577) \u2014 the class cannot be verified by construction, and no other claim kind reaches it: a `projectFile` claim REFUTES on a miss and a URL is a miss; `remoteRef` is a spelling check that refuses a URI; `baseBeyondRunScope` needs an identifier-shaped base and a URL is not one. extFAIL is 0, so the claims are not wrong \u2014 they are unverifiable.",
-     "falsifier_RUN": "Independently of the arbiter, each claimed target's LEAF was tested against the project's own two key spaces (an admitted file whose repo-relative path ends with the leaf, or a published symbol equal to it): **4,107 of 115,365 (3.6%) HIT**. They are coincidences, not refutations \u2014 `https://github.com/intellifactory/Bolero/blob/master/CONTRIBUTING.md` in Bolero hits Bolero's own `CONTRIBUTING.md`, and `https://rdatatable.gitlab.io/data.table/` hits the symbol `data.table` \u2014 which is exactly why the arbiter's URI refusal is LOAD-BEARING rather than lazy: a leaf-based check (the differential's own `normTarget` identity) would bind 4,107 of these URLs to a local declaration and be wrong every time. NOTHING in the falsifier refutes the claim; it prices the alternative.",
-     "the_fixable_half": "The lane's `uses` UNRESOLVED column is 9,555: relative path **6,367** \u00b7 dotted name 2,673 \u00b7 bare token 487 \u00b7 fragment 27 \u00b7 scheme:x 1. Of the 6,367 relative-path targets, **2,464 name a file the project ADMITS** \u2014 the CEILING of resolving a repo-relative link to the file it names, which is the language's own rule (a markdown link is relative to the CONTAINING file) and the css-D15 sibling pattern exactly. Priced, not yet measured as a before/after.",
-     "and_the_rows_the_lane_does_not_emit": "calls 5,528 and instantiates 399 are NOT this analyzer's output. MD-D12 rules that markdown emits no `calls` (grammar-absence: 0 of 108 node types is any of the nine call names) and the analyzer contains no `Calls`/`Instantiates` emission at all (grep: only comments). They are `src/ast/pool-worker.ts` `extractFallback()` REGEX rows (confidence 0.4-0.6, `metadata.method: \"regex\"`) produced for files whose parse fell back under load, and the lane's own whole-population census measured the truth on a sequential run: contains 334,773 \u00b7 uses 270,779 \u00b7 references 16,857 \u00b7 imports 105 \u00b7 **calls 0 \u00b7 instantiates 0, 0 degraded**. Independent confirmation on the gate's own run: it logged **9,057 `Aborted()` wasm parse errors** (the engine silently retries), and re-parsing the aborted files individually produces NO fallback and NO calls. The programme already prints the distinction this needs (`ontology-coverage-gate.ts:945-956`: `DEGRADED (regex fallback, not the analyzer)` and `>>> excluded from EMITTED`), so the fix belongs in the pool worker's degraded path or in the gate's exclusion \u2014 NOT in this analyzer, which would have to emit a type its grammar does not have.",
-     "the_file_model_fix": "LANDED AND MEASURED (84c9236e0, after-run committed as measurements/residual-gate-after-file-model.txt). Whole admitted population, production scope, same instrument both sides:\n  uses      BEFORE edges 124,925 \u00b7 resolved 4 \u00b7 unresolved 9,555 \u00b7 residual 7.6%   ->   AFTER edges 124,924 \u00b7 resolved **5,255** \u00b7 unresolved **4,302** \u00b7 residual **3.4%**\n  TOTAL     BEFORE 283,976 \u00b7 resolved 153,086 \u00b7 unresolved 12,323 \u00b7 residual 15,525 (5.5%)   ->   AFTER 283,975 \u00b7 resolved **158,337** \u00b7 unresolved **7,070** \u00b7 residual **10,273 (3.6%)**\n  DELTA     resolved +5,251 \u00b7 unresolved -5,253 \u00b7 residual -5,252 (-33.8%). extFAIL/bindFAIL/causeFAIL all 0 on both sides. ext? **115,317 unchanged** and ofWhich 124,969 unchanged, so the extQ ruling's denominator is identical on the run that measured the fix.",
-     "the_sample_that_could_not_show_it": "`incoming-gate.ts markdown md,markdown 300` (a 300-file stride of 17,460, labelled `stride sample` by the gate itself): edges 11,681 \u00b7 uses 4,566 (103 resolved \u00b7 335 unresolved \u00b7 4,125 ext? \u00b7 3 extOK) \u00b7 contains 6,592 all resolved \u00b7 **calls 0**. The zero is the fallback finding confirmed from the other side: a clean sequential run produces no fallback rows at all, which is why the Lead's new FALLBACK ROWS block printed nothing here.",
-     "ceiling_correction": "THE PRICED CEILING WAS 2,464 AND THE FIX REACHED 5,253 \u2014 2.13x it, and the understatement is mine and explained: the ceiling counted a relative target as resolvable only when the ADMITTED FILE LIST held a path matching it exactly (after stripping `./`). The analyzer's rule is broader in three measured ways \u2014 it resolves `../` against the containing directory, it strips a fragment or query before resolving, and it tests EXISTENCE rather than membership in the admitted list (so a file present on disk but untracked resolves too, which the earlier probe could not see). A ceiling measured with a stricter predicate than the fix's own is a LOWER bound, and it was labelled a ceiling \u2014 the label was wrong, not the number.",
-     "the_fallback_rows_in_this_run": "`calls` 5,528 and `instantiates` 399 are PRESENT and UNCHANGED in the after-run, so this run was NOT clean: fallback rows recur under load, which is the same fact as the 5,452 residual share measured earlier and the `calls 0` of the 300-file sample, from a third side. The FALLBACK ROWS block itself prints in the INCOMING gate (the residual gate captures that run's table and does not echo the block), and a whole-population incoming-gate re-run did not fit the budget, so it is NOT quoted here rather than paraphrased.",
-     "the_lane_gate_does_not_state_what_its_residual_contains": "OPEN ITEM, FOUND FROM THIS LANE, PATCH NOT LANDED (`script/m14/` is shared). `residual-gate --lane markdown` printed residual 10,273 and the fallback split (5,452) existed ONLY in the incoming gate's output, which the residual gate CAPTURES and did not echo \u2014 so a lane reading its own instrument cannot see that 53% of that number is not the analyzer's. THE PATCH (measurements/lane-gate-fallback-line.patch) adds NO COLUMN: the residual gate already holds the incoming gate's stdout, so it gains one parser and one printed line, and the incoming gate's existing block gains the per-type IN-RESIDUAL counts (a type's fallback total and its residual share differ: markdown's calls is 5,528 rows but 5,062 residual). Choosing no-column over a trailing column removes the positional risk entirely rather than moving it to the end of the table \u2014 residual-gate, this lane's extQ probe, toml's guard and every lane's enumerator all parse that table positionally. THE CONTROL (fallback-line-control.mts) fires on two arms and builds its synthetic block from the gate's OWN literal strings, so a format change fails it: ARM 1 reads 5,452 fallback / own residual 4,821 out of 10,273; ARM 2 takes two REAL clean captures (300- and 600-file stride samples, calls 0) and requires the block's ABSENCE, so the quiet case is pinned too. EXPECTED AFTER LANDING: `residual 10,273 \u2014 5,452 fallback, analyzer's own 4,821`, and `NONE` on a clean run."
+    "payload_fields_pinned": {
+      "range": "markdown/payload-lines-evidence — every symbol carries a 1-based startLine/endLine, and the store's (file, name, startLine) key is what makes two sites of one construct distinct rows.",
+      "visibility": "every markdown symbol is `public`; there is no private or package scope in a document, so the field is constant rather than absent.",
+      "ownerName": "markdown/code-block-site-identity and heading-identity pin owner attribution, including the case that broke it (a repeated heading's children must attach to the right occurrence).",
+      "metadata": "markdown/code-block-site-identity pins nodeType/language/isMarkdownCodeBlock/isRepeatedSite at the ANALYZER seam. NOT pinned at the WORKER seam, and the reason is recorded there: pool-worker's BasicSymbol projection narrows symbol.metadata to a 15-key CSS-only allowlist, and the F3 lane calls engine.parseFile rather than the worker, so no fixture can currently see the difference. Named as owed rather than claimed."
     },
-    "resolution": "RULED for the extQ class (one dominant site; mechanism read from the arbiter's own code; shape and count measured; the falsifier RUN and it prices the alternative rather than refuting the claim) \u2014 AND the lane is NOT complete, because the unresolved column has a measured fixable half of 2,464 edges and because 5,927 counted edges are the fallback's. Stated as three numbers rather than one: 115,317 ext? RULED \u00b7 2,464 FIXABLE (ceiling measured) \u00b7 5,927 NOT THE LANE'S (fallback, with the census that proves it)."
-   }
-  ]
- },
- "_sectionsBEH": {
-  "note": "Sections B-H are not carried in this file. B (every relationship kind pinned) and C (the payload matrix) are declared in script/m14/completeness-inventory.ts's LANG_CONFIGS entry, D (>=2 distinct evidenceClass pinned) and E/F (the differential floor and the perf budget) are read from the F3 fixtures and the differential baseline, G from the two docs, and H from M14.CC1.json. markdown reached CONFORMANT and JOINED GATED_LANGS on 2026-09-27 at 8/8. THIS NOTE USED TO SAY OTHERWISE \u2014 it claimed markdown was not gated because docs/analyzers/markdown.md did not exist, which stopped being true the moment that file was written, and a self-description of a lane's own gate status that is stale is the same failure as a results artifact quoting a commit that predates the change: the sentence reads as a census of the lane and is a snapshot of an earlier tree. The gate's own output is the authority; this note is a pointer to where the authority lives.",
-  "relationship_kinds_produced": [
-   "contains",
-   "references",
-   "uses",
-   "imports"
+    "evidence_tiers": {
+      "contains": "structural — a parent/child relation read off the block tree",
+      "uses": "reference_qualified — the destination is a node's own text, and for a reference link the destination the document's own definition declares",
+      "measured": "11,401/11,401 relationships over the pinned corpus carry a 1-based line_number and an evidenceClass from the closed vocabulary. Before this round it was 0/9,132, and because graph-core's read-time derivation does not list `contains` among its structural types the entire heading hierarchy was rendered to readers as `inferred` — 'a guess, treat as a hint, never as fact' — for edges that cannot be anything else."
+    }
+  },
+  "closed_gaps": [
+    {
+      "id": "MD-G1",
+      "node_type": "indented_code_block",
+      "closed": "2026-09-28",
+      "measured": "An indented (four-space) code block published NOTHING while the fenced form beside it published a per-site `function`, so a reader could not tell 'this document has no code' from 'this document has code the lane dropped'. CORRECTION TO THE ORIGINAL ESTIMATE, and the correction is the interesting part: the gap recorded '2 sites in 2 of 738 corpus files', measured by a text heuristic for four-space-indented lines — which mostly matches wrapped list-item continuation, not code. Measured with the BLOCK GRAMMAR over 1,138 pinned corpus files (738 scala3 + 400 kubernetes) the figure is 217 nodes, 100x the estimate. All 217 now publish.",
+      "population_note": "Most of the 217 are not authored code. They are the wrapped continuation lines of deeply-nested list items, which CommonMark genuinely reads as indented code: `* a bullet` / `    * a nested bullet` / `        the wrapped text`. The grammar is right and the author did not mean a code block. They are published anyway, because the alternative is the asymmetry this closes, and because a consumer that cares can read `nodeType: indented_code_block` and the range and discount them. A population 100x the original estimate is a fact about the ESTIMATE, not about the construct — and the estimate was made with the wrong instrument, which is the generalisable half of this entry.",
+      "rule": "One more node type on the block DFS, sharing the fenced path's site identity so the two forms cannot collide: a fence with no info string and an indented block under one heading both publish `code_block`, so the second is `code_block#2`. A block with a language keeps it in its NAME (`code_block.scala`) and therefore has its own base, so the ordinal never reaches it. An indented block publishes NO `language` key at all: the construct has nowhere to declare one, and the fence's `text` default means 'a fence that declared none', which is a different fact. The ORACLE derives the node too — a differential that derived fenced blocks and stopped at indented ones would be asserting that a document with an indented block and one without it have the same truth, and leaving it alone turned the fix into 5 unexplained edges on the kubernetes draw.",
+      "pinned_by": "validation/m14/fixtures/markdown/indented-code-block (three properties + a control section where an indented line is a NESTED LIST ITEM and must publish nothing, so the fixture cannot be satisfied by treating any indentation as code) + markdown/indented-code-block-dropped mutant, whose assertion is the symbol COUNT rather than a name for the reason given in its description.",
+      "why_it_was_open": "Left open rather than classified silent on purpose. `internal_silent` means 'correctly emits nothing', and for a code block the correct answer is a symbol — the fenced form proves the lane has one. Classifying it silent would have made the count zero and the question closed, which is the 'silent gap' the M14 standing rules call the actual shame."
+    },
+    {
+      "id": "MD-G2",
+      "node_type": "plus_metadata",
+      "closed": "2026-09-28",
+      "closed_as": "internal_silent (grammar-forced, not analyzer-chosen)",
+      "measured": "The node is declared in the pinned block grammar's node-type list — which is why the union census counts it among the 72 named types — but never instantiated. The bare Pandoc `+++` form parses to a `paragraph`; the MyST `<!--[metadata]>` + `+++` form parses to an `html_block`. Across all 5,501 markdown files in every pinned corpus, 18 carry MyST title-block metadata (docker/api/docs) and the grammar produces ZERO `plus_metadata` nodes for any of them. The gap's own recorded population of '0 sites in 738 corpus files' was true and misleading: it was true of the lane's DECLARED corpus, and the wider measurement found 18 files that look like candidates.",
+      "rule": "No analyzer branch. A front-matter branch keyed to this node type would be dead code, because the node never arrives, and the only way to read a `+++` title block is to parse the paragraph's TEXT — which is precisely what this lane's zero-regex, every-fact-AST-derived rule forbids. The asymmetry the gap complained about (the `---` spelling is handled and the `+++` spelling is not) is not the analyzer's to close: the grammar reads one as front matter and the other as prose.",
+      "forward_obligation": "If a future grammar instantiates the node, the grammar pin goes red on `typeSetDigest` or `fieldSetDigest` (it is drift-gated on all ten surface keys) and this entry is where the obligation is written down. A pin that detects its own trigger is a real mechanism; a TODO in a spec is not.",
+      "pinned_by": "The classification itself (completeness section A: 30 handled / 42 silent / 0 gaps / 6 decisions) plus the grammar pin's surface drift gate, which is the detector. No fixture is written here, and deliberately: a fixture for a node the grammar never produces would assert nothing, which is the same reason the gap was filed as unpinnable in the first place."
+    }
   ],
-  "_relationship_kinds_produced_corrected": "This list read [contains, uses] until 2026-10-09 and omitted two types the lane EMITS, so the spec told its own readers the lane produces two relationships while the analyzer produces four. Measured on the whole redwood firing population (2,101 .md files, production parseFile, 2,101/2,101 parsed, 0 degraded \u2014 validation/m14/fixtures/markdown/firing-corpus-census.json): contains 58,914 \u00b7 uses 23,081 \u00b7 references 1,497 \u00b7 imports 0. Measured on the whole admitted population (17,456 files, production parseFile \u2014 validation/m60/markdown/whole-corpus-census.json): contains 334,773 \u00b7 uses 270,779 \u00b7 references 16,857 \u00b7 imports 105. `references` has been emitted since MD-D6 (a bare `#fragment` resolved to the heading it names) and `imports` since MD-G3 (a Jekyll/Liquid `{% include %}` naming a file), and this spec's OWN MD-D8 resolution already named MD-G3 \u2014 the BEH list was the last place still saying otherwise.",
-  "relationship_kinds_declared_absent": {
-   "_corrected": "`imports` and `references` were listed below as declared-absent until 2026-10-09, and both entries were FALSE by measurement: both are emitted and both fire (see _relationship_kinds_produced_corrected, coverage.implemented, and validation/m14/fixtures/markdown/firing-corpus-census.json). They were stale prose from before MD-G3 (2026-10-03) and MD-D6, left behind when the analyzer changed \u2014 which is exactly the failure mode this section's own `note` names. The six that remain are the six grammar-absence exclusions in `coverage`, each re-measured on current bytes with a planted control.",
-   "exports": "a markdown file exports nothing; it is a leaf of the project's file tree.",
-   "calls": "no call syntax exists in CommonMark.",
-   "extends": "no inheritance syntax exists in CommonMark.",
-   "implements": "no interface syntax exists in CommonMark.",
-   "overrides": "no member syntax exists in CommonMark.",
-   "instantiates": "no constructor syntax exists in CommonMark."
-  },
-  "payload_fields_pinned": {
-   "range": "markdown/payload-lines-evidence \u2014 every symbol carries a 1-based startLine/endLine, and the store's (file, name, startLine) key is what makes two sites of one construct distinct rows.",
-   "visibility": "every markdown symbol is `public`; there is no private or package scope in a document, so the field is constant rather than absent.",
-   "ownerName": "markdown/code-block-site-identity and heading-identity pin owner attribution, including the case that broke it (a repeated heading's children must attach to the right occurrence).",
-   "metadata": "markdown/code-block-site-identity pins nodeType/language/isMarkdownCodeBlock/isRepeatedSite at the ANALYZER seam. NOT pinned at the WORKER seam, and the reason is recorded there: pool-worker's BasicSymbol projection narrows symbol.metadata to a 15-key CSS-only allowlist, and the F3 lane calls engine.parseFile rather than the worker, so no fixture can currently see the difference. Named as owed rather than claimed."
-  },
-  "evidence_tiers": {
-   "contains": "structural \u2014 a parent/child relation read off the block tree",
-   "uses": "reference_qualified \u2014 the destination is a node's own text, and for a reference link the destination the document's own definition declares",
-   "measured": "11,401/11,401 relationships over the pinned corpus carry a 1-based line_number and an evidenceClass from the closed vocabulary. Before this round it was 0/9,132, and because graph-core's read-time derivation does not list `contains` among its structural types the entire heading hierarchy was rendered to readers as `inferred` \u2014 'a guess, treat as a hint, never as fact' \u2014 for edges that cannot be anything else."
+  "_unionConflicts": {
+    "count": 1,
+    "at": [
+      "$._comment"
+    ]
   }
- },
- "closed_gaps": [
-  {
-   "id": "MD-G1",
-   "node_type": "indented_code_block",
-   "closed": "2026-09-28",
-   "measured": "An indented (four-space) code block published NOTHING while the fenced form beside it published a per-site `function`, so a reader could not tell 'this document has no code' from 'this document has code the lane dropped'. CORRECTION TO THE ORIGINAL ESTIMATE, and the correction is the interesting part: the gap recorded '2 sites in 2 of 738 corpus files', measured by a text heuristic for four-space-indented lines \u2014 which mostly matches wrapped list-item continuation, not code. Measured with the BLOCK GRAMMAR over 1,138 pinned corpus files (738 scala3 + 400 kubernetes) the figure is 217 nodes, 100x the estimate. All 217 now publish.",
-   "population_note": "Most of the 217 are not authored code. They are the wrapped continuation lines of deeply-nested list items, which CommonMark genuinely reads as indented code: `* a bullet` / `    * a nested bullet` / `        the wrapped text`. The grammar is right and the author did not mean a code block. They are published anyway, because the alternative is the asymmetry this closes, and because a consumer that cares can read `nodeType: indented_code_block` and the range and discount them. A population 100x the original estimate is a fact about the ESTIMATE, not about the construct \u2014 and the estimate was made with the wrong instrument, which is the generalisable half of this entry.",
-   "rule": "One more node type on the block DFS, sharing the fenced path's site identity so the two forms cannot collide: a fence with no info string and an indented block under one heading both publish `code_block`, so the second is `code_block#2`. A block with a language keeps it in its NAME (`code_block.scala`) and therefore has its own base, so the ordinal never reaches it. An indented block publishes NO `language` key at all: the construct has nowhere to declare one, and the fence's `text` default means 'a fence that declared none', which is a different fact. The ORACLE derives the node too \u2014 a differential that derived fenced blocks and stopped at indented ones would be asserting that a document with an indented block and one without it have the same truth, and leaving it alone turned the fix into 5 unexplained edges on the kubernetes draw.",
-   "pinned_by": "validation/m14/fixtures/markdown/indented-code-block (three properties + a control section where an indented line is a NESTED LIST ITEM and must publish nothing, so the fixture cannot be satisfied by treating any indentation as code) + markdown/indented-code-block-dropped mutant, whose assertion is the symbol COUNT rather than a name for the reason given in its description.",
-   "why_it_was_open": "Left open rather than classified silent on purpose. `internal_silent` means 'correctly emits nothing', and for a code block the correct answer is a symbol \u2014 the fenced form proves the lane has one. Classifying it silent would have made the count zero and the question closed, which is the 'silent gap' the M14 standing rules call the actual shame."
-  },
-  {
-   "id": "MD-G2",
-   "node_type": "plus_metadata",
-   "closed": "2026-09-28",
-   "closed_as": "internal_silent (grammar-forced, not analyzer-chosen)",
-   "measured": "The node is declared in the pinned block grammar's node-type list \u2014 which is why the union census counts it among the 72 named types \u2014 but never instantiated. The bare Pandoc `+++` form parses to a `paragraph`; the MyST `<!--[metadata]>` + `+++` form parses to an `html_block`. Across all 5,501 markdown files in every pinned corpus, 18 carry MyST title-block metadata (docker/api/docs) and the grammar produces ZERO `plus_metadata` nodes for any of them. The gap's own recorded population of '0 sites in 738 corpus files' was true and misleading: it was true of the lane's DECLARED corpus, and the wider measurement found 18 files that look like candidates.",
-   "rule": "No analyzer branch. A front-matter branch keyed to this node type would be dead code, because the node never arrives, and the only way to read a `+++` title block is to parse the paragraph's TEXT \u2014 which is precisely what this lane's zero-regex, every-fact-AST-derived rule forbids. The asymmetry the gap complained about (the `---` spelling is handled and the `+++` spelling is not) is not the analyzer's to close: the grammar reads one as front matter and the other as prose.",
-   "forward_obligation": "If a future grammar instantiates the node, the grammar pin goes red on `typeSetDigest` or `fieldSetDigest` (it is drift-gated on all ten surface keys) and this entry is where the obligation is written down. A pin that detects its own trigger is a real mechanism; a TODO in a spec is not.",
-   "pinned_by": "The classification itself (completeness section A: 30 handled / 42 silent / 0 gaps / 6 decisions) plus the grammar pin's surface drift gate, which is the detector. No fixture is written here, and deliberately: a fixture for a node the grammar never produces would assert nothing, which is the same reason the gap was filed as unpinnable in the first place."
-  }
- ]
 }
