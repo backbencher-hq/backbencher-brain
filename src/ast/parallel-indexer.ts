@@ -32,6 +32,7 @@ import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
 import { resolveImportTargets } from "./import-resolution"
 import { retargetCrossFileOverrides } from "./override-retarget"
+import { retargetJuliaMethodTableBindings } from "./julia-binding-collapse"
 import { claimOwnerCarryingTargets } from "./member-owner-resolution"
 import { ASTEngine } from "./engine"
 
@@ -5073,6 +5074,27 @@ export async function storeResults(
          // declares is left exactly as it was, which keeps it visible as declared
          // low-confidence suspicion rather than silently deleting a real override.
          retargetCrossFileOverrides(rawDb as any, projectId)
+
+         // JULIA'S METHOD TABLE, the second landing site for the gate rule
+         // (`script/m14/incoming-gate.ts --binding-collapse`, measured there as 1,489 edges moving
+         // `amb -> resolved` with `unresolved` unchanged). The name strategies above bind a bare name
+         // only when its count in the project is exactly 1, so every edge naming a multi-method
+         // binding stays unbound — and the gate MODELS that rule, which is why the model and this pass
+         // have to move together or the measurement and the store diverge silently.
+         //
+         // It is a NO-OP FOR EVERY OTHER LANGUAGE BY CONSTRUCTION: the language guard is a join on
+         // `brain_file.language = 'julia'` inside the pass's own SQL, for the rows it may bind and for
+         // the declarations that may form a binding, so a project of another language matches nothing.
+         // It never re-points a row that already has a target and never rewrites a target's spelling.
+         const juliaBind = retargetJuliaMethodTableBindings(rawDb as any, projectId)
+         if (juliaBind.bound > 0 || juliaBind.foreignRowsSeen > 0) {
+           log.info(
+             `julia method-table bindings: ${juliaBind.bound} row(s) bound of ${juliaBind.scanned} ` +
+             `unbound julia row(s) scanned, from ${juliaBind.keys} one-binding key(s) over ` +
+             `${juliaBind.declarations} declaration(s); ${juliaBind.boundOwnFile} bound to a declaration ` +
+             `in the row's own file; ${juliaBind.foreignRowsSeen} non-julia row(s) seen and untouched`,
+           )
+         }
 
          // Cleanup temp tables
          rawDb.run(`DROP TABLE IF EXISTS _res_qname`)
