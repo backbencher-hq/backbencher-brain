@@ -974,7 +974,14 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       // read BEFORE the key is counted: `--binding-collapse` needs to know, per declaration, whether
       // this symbol carries a qualifiedName at all
       const symQual = String((s as any)?.qualifiedName ?? "")
-      countKey(name, symKind, f, symLine, symQual)
+      // A QUALIFICATION, NOT A FALLBACK. `pool-worker.ts:1228` normalises every symbol to
+      // `qualifiedName: s.qualifiedName || s.metadata?.fqn || (s.scope ? `${s.scope}.${s.name}` : s.name)`
+      // — so a FILE-SCOPE declaration arrives with `qualifiedName === name`, which is non-empty and
+      // says nothing about a binding. Testing only "non-empty" let the name-coincidence class through
+      // and collapsed 30,190 edges when the method-table class is a small fraction of that; the
+      // requirement is a spelling that actually QUALIFIES, so it must differ from the symbol's name.
+      const genuineQual = symQual && symQual !== name ? symQual : ""
+      countKey(name, symKind, f, symLine, genuineQual)
 
       // THE QUALIFIED-NAME ALIAS, and this gate's first version omitted it — which is
       // worth recording, because the omission did not produce a small error. It produced
@@ -1056,6 +1063,9 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
         if ((bq.get(key) ?? 0) !== n) continue
         decl.set(key, 1)
         collapsedKeys++
+        if (collapsedKeys <= Number(process.env.BB_COLLAPSE_SHOW ?? 0)) {
+          console.log(`  collapsed[${collapsedKeys}] key=${JSON.stringify(key)} decls=${n} qualifiedNames=${JSON.stringify([...names])}`)
+        }
       }
     }
   }
