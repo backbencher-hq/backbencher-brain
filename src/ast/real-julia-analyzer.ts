@@ -1414,8 +1414,14 @@ export class RealJuliaAnalyzer {
     }
 
     /**
-     * THE BINDING SPELLING, applied after the reference retarget and BEFORE the dedup (so two edges
-     * that become the same fact collapse into one row).
+     * THE BINDING SPELLING, applied BEFORE the reference retarget and therefore before the dedup.
+     *
+     * ORDER IS NOT COSMETIC HERE: a parameter of the enclosing function SHADOWS a file-scope
+     * declaration of the same spelling (julia's own scoping rule), so a local binding must be
+     * claimed FIRST. Measured: with the own-key retarget running first, the target was renamed to
+     * its qualified spelling and 8 `isTypeReference + localBinding` edges lost their binding claim
+     * (bindOK 875 -> 867) — they became resolutions to the WRONG thing instead of claims about the
+     * right one.
      *
      * Only `calls` and `references`, only a BARE target, and only a binding THIS FILE introduces:
      * `localBindings` above holds this file's parameters, loop, let and catch variables and nothing
@@ -1425,16 +1431,6 @@ export class RealJuliaAnalyzer {
      * coincides with a parameter name, which is exactly the shape this restriction excludes), and
      * `uses` is left alone because its target is a MEMBER name.
      */
-    for (const r of relationships) {
-      if (r.type !== ASTEngine.RelationshipType.References) continue
-      const tgt = String(r.target ?? "")
-      if (!tgt || tgt.includes(".")) continue
-      const decls = declsByName.get(tgt)
-      if (!decls || decls.length !== 1) continue
-      const q = decls[0]!.qualifiedName
-      if (typeof q === "string" && q) r.target = q
-    }
-
     if (bindingsByScope.size > 0) {
       for (const r of relationships) {
         if (r.type !== ASTEngine.RelationshipType.Calls && r.type !== ASTEngine.RelationshipType.References) continue
@@ -1444,6 +1440,16 @@ export class RealJuliaAnalyzer {
         r.target = `${r.source}${BINDING_SEP}${tgt}`
         r.metadata = { ...(r.metadata ?? {}), localBinding: true }
       }
+    }
+
+    for (const r of relationships) {
+      if (r.type !== ASTEngine.RelationshipType.References) continue
+      const tgt = String(r.target ?? "")
+      if (!tgt || tgt.includes(".")) continue
+      const decls = declsByName.get(tgt)
+      if (!decls || decls.length !== 1) continue
+      const q = decls[0]!.qualifiedName
+      if (typeof q === "string" && q) r.target = q
     }
 
     const relMap = new Map<string, ASTEngine.UniversalRelationship>()
