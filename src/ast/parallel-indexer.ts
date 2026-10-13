@@ -6609,7 +6609,40 @@ export async function indexProjectParallel(
                 for (const r of rows) {
                   const n = upd.run(r.confidence, r.id).changes
                   matched += n
-                  if (n === 0) zeroRow++
+                  if (n === 0) {
+                    zeroRow++
+                    // ── THE ATTRIBUTION OF A MISS (r-lane) ──────────────────────────────────────────
+                    // A zero-row UPDATE is either (i) an edge the store NEVER HAD — which the merge shape
+                    // makes correct and which the design cannot fix, because the shape that can insert is
+                    // the re-store shape that can delete — or (ii) a row that EXISTS UNDER A DIFFERENT ID,
+                    // which would be a defect in the id construction and would poison every other id this
+                    // run computed. The id's own format carries the fields, so the lookup needs nothing
+                    // extra and CANNOT be steered by what it finds.
+                    try {
+                      const tail = String(r.id).split(":rel:")[1] ?? ""
+                      const bits = tail.split(":")
+                      // READ FROM THE RIGHT, because sourceId is `${fileId}:${name}:${line}` and
+                      // fileId is `${projectId}:${relativePath}` — SO sourceId OCCUPIES FOUR
+                      // COLON-SEGMENTS. The first version of this probe sliced from the left and
+                      // searched the store for a target containing the TAIL OF THE SOURCE ID, which
+                      // returned NO_ROW for reasons that had nothing to do with the question.
+                      const relLine = bits[bits.length - 1] ?? "?"
+                      const relType = bits[bits.length - 2] ?? "overrides"
+                      const target = bits[bits.length - 3] ?? ""
+                      const hit = wbDb
+                        .prepare(
+                          "SELECT id FROM brain_relationship WHERE project_id = ? AND relationship_type = ? " +
+                            "AND target_external = ? AND line_number IS ?",
+                        )
+                        .all(String(projectId), relType, target, relLine === "?" ? null : Number(relLine)) as any[]
+                      process.stderr.write(
+                        `[SEVEN] ${hit.length === 0 ? "NO_ROW" : "DIFFERENT_ID"} storeRows=${hit.length} ` +
+                          `target=${target} line=${relLine} diffId=${hit[0]?.id ?? "-"} attemptedId=${r.id}\n`,
+                      )
+                    } catch (e: any) {
+                      process.stderr.write(`[SEVEN] lookup failed ${e?.message ?? e}\n`)
+                    }
+                  }
                 }
                 return { matched, zeroRow }
               })
