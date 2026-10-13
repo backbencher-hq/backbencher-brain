@@ -27,6 +27,7 @@
  *
  * CLI: bun run script/m14/verify-toml-census.ts [--json] [--cap N]
  */
+import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
@@ -100,7 +101,11 @@ const SHAPES_RULED: { shape: string; why: string }[] = [
 ]
 
 async function main() {
-  const repoRoot = process.env.BB_CENSUS_REPOS ?? "$HOME/fixtures/repositories"
+  // Was: a literal foreign corpus root — see script/lib/corpus-root.ts. That path is
+// the OTHER laptop's home directory; on this machine the gate was measuring a
+// directory that does not exist. Measured on m13/verify-ask-e2e-corpus: 4/8 checks
+// passed before, 19/20 after, from the root alone.
+  const repoRoot = resolveCorpusRoot(process.cwd()) ?? "repoRoot_UNRESOLVED"
   const repos = fs.existsSync(repoRoot) ? fs.readdirSync(repoRoot).filter((d) => !d.startsWith(".")) : []
   if (repos.length === 0) {
     console.error(`no corpora under ${repoRoot} — set BB_CENSUS_REPOS`)
