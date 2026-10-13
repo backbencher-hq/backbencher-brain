@@ -405,6 +405,98 @@ function reportStaleHigh(drift: Array<{ lane: string; recorded: number; measured
 }
 
 /**
+ * PORTED FROM ORIGINAL MAIN (1b71d837c), self-contained, and here is why it now is.
+ *
+ * This branch HAD lost this function along with `allowanceDrift` / `reportStaleHigh` /
+ * `unrecordedLanes` / `reportUnrecorded`: at this lane's census revision `fc6df238b` the file was
+ * 1,730 lines and all four names occurred ZERO times. Main carries them. The Lead restored the four
+ * helpers in `39bd46160` (+111 lines) and this selftest was the last piece — it was NOT a
+ * self-contained take until that landed, because it calls `unrecordedLanes`.
+ *
+ * WHAT IT IS FOR. `allowanceDrift` and `unrecordedLanes` are the two directions a fixture-allowance
+ * record can lie: a lane recording MORE failing fixtures than it measures hands out a free pass for
+ * a NEW failure, and a failing lane the record does not name at all has no allowance to compare
+ * against. Both are silent in the run's own output when they are wrong, so the rule that decides
+ * them is tested here rather than trusted.
+ */
+function selftestAllowance(): number {
+  const cases: Array<{ name: string; base: Record<string, number>; measured: Record<string, number>; want: string[]; wantSurplus: number }> = [
+    {
+      name: "lanes measuring fewer than they record -> surplus, biggest first",
+      base: { groovy: 20, cpp: 6, vue: 7 },
+      measured: { groovy: 0, cpp: 0, vue: 7 },
+      want: ["groovy:20->0", "cpp:6->0"],
+      wantSurplus: 26,
+    },
+    { name: "a lane at its baseline -> nothing to retire", base: { vue: 7 }, measured: { vue: 7 }, want: [], wantSurplus: 0 },
+    {
+      name: "a lane WORSE than its record -> the regression rule's business, not this one's",
+      base: { vue: 7 },
+      measured: { vue: 9 },
+      want: [],
+      wantSurplus: 0,
+    },
+    { name: "a lane the record does not name -> nothing to compare against", base: {}, measured: { html: 4 }, want: [], wantSurplus: 0 },
+    { name: "a lane this run did not measure -> not evidence about its allowance", base: { cpp: 6 }, measured: {}, want: [], wantSurplus: 0 },
+    {
+      name: "equal surplus -> lane name breaks the tie (stable, diffable output)",
+      base: { b: 3, a: 3 },
+      measured: { b: 0, a: 0 },
+      want: ["a:3->0", "b:3->0"],
+      wantSurplus: 6,
+    },
+  ]
+  let pass = 0
+  for (const c of cases) {
+    const got = allowanceDrift(c.base, c.measured)
+    const shape = got.map((d) => `${d.lane}:${d.recorded}->${d.measured}`)
+    const total = got.reduce((a, d) => a + d.retirable, 0)
+    if (JSON.stringify(shape) === JSON.stringify(c.want) && total === c.wantSurplus) {
+      pass++
+      console.log(`  ok    ${c.name}`)
+    } else {
+      console.log(`  FAIL  ${c.name}: want ${JSON.stringify(c.want)} (surplus ${c.wantSurplus}), got ${JSON.stringify(shape)} (surplus ${total})`)
+    }
+  }
+  // The other direction: failing lanes the record does not name. Same shape of test —
+  // the rule has to separate "unrecorded" from "recorded but lower", because the second
+  // is the regression rule's business and reporting it here too would double-count it.
+  const unrecCases: Array<{ name: string; base: Record<string, number>; measured: Record<string, number>; want: string[]; wantFailures: number }> = [
+    {
+      name: "a failing lane the record does not name -> reported, most failures first",
+      base: { perl: 8, vue: 7 },
+      measured: { perl: 8, vue: 7, groovy: 3 },
+      want: ["groovy:3"],
+      wantFailures: 3,
+    },
+    { name: "a recorded lane at its baseline -> the count gate's business, not this one's", base: { vue: 7 }, measured: { vue: 7 }, want: [], wantFailures: 0 },
+    { name: "a recorded lane WORSE than its record -> a regression, reported once, not as unrecorded", base: { vue: 7 }, measured: { vue: 9 }, want: [], wantFailures: 0 },
+    { name: "an unrecorded lane that PASSES -> nothing to record but a zero", base: {}, measured: { zig: 0 }, want: [], wantFailures: 0 },
+    {
+      name: "equal failure counts -> lane name breaks the tie (stable, diffable output)",
+      base: {},
+      measured: { b: 2, a: 2 },
+      want: ["a:2", "b:2"],
+      wantFailures: 4,
+    },
+  ]
+  let passUnrec = 0
+  for (const c of unrecCases) {
+    const got = unrecordedLanes(c.base, c.measured)
+    const shape = got.map((r) => `${r.lane}:${r.measured}`)
+    const total = got.reduce((a, r) => a + r.measured, 0)
+    if (JSON.stringify(shape) === JSON.stringify(c.want) && total === c.wantFailures) {
+      passUnrec++
+      console.log(`  ok    ${c.name}`)
+    } else {
+      console.log(`  FAIL  ${c.name}: want ${JSON.stringify(c.want)} (failures ${c.wantFailures}), got ${JSON.stringify(shape)} (failures ${total})`)
+    }
+  }
+  console.log(`selftest: ${pass}/${cases.length} allowance cases, ${passUnrec}/${unrecCases.length} unrecorded-lane cases`)
+  return pass === cases.length && passUnrec === unrecCases.length ? 0 : 1
+}
+
+/**
  * UNRECORDED — a lane this run MEASURES failing that the record does not name at all.
  *
  * `current > base` is inexpressible when `base[l] === undefined`, so such a lane gets no
@@ -1721,6 +1813,11 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
 export { runLang, LANGS, matchConstraints, getParser }
 
 async function main() {
+  // PORTED FROM ORIGINAL MAIN, and it is the FIRST statement of main() on purpose: the selftest
+  // must be reachable WITHOUT any of main()'s side effects -- no fixture run, no baseline write,
+  // no evidence emit -- and the process must exit with the selftest's code and nothing else.
+  if (process.argv.includes("--selftest")) process.exit(selftestAllowance())
+
   const argLangs = process.argv.includes("--lang")
     ? process.argv[process.argv.indexOf("--lang") + 1].split(",")
     : Object.keys(LANGS)
