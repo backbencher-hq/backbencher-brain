@@ -104,6 +104,23 @@ const VUE_BUILTIN_TAGS = new Set([
 // NOT a "contains a colon => builtin" rule: an unknown namespace fails toward
 // VISIBILITY (it is reported as a usage a human can then reject) rather than
 // silence, which is the failure mode a blanket colon rule would introduce.
+// SVG MARKUP THE RENDERER OWNS — the class the population measurement named as FABRICATED. A bare
+// `<feFlood>` inside `<svg>` is markup, not a component, yet `isComponentUsage` emitted it as an
+// `instantiates` edge because this file's sets cover HTML and Vue's own built-ins and NO SVG element.
+//
+// MEASURED on the 1,155-file population (validation/m14/fixtures/vue/tools/vue-population-partition.mts):
+// 2,676 `isComponentUsage` edges, of which 377 (14.1%) name one of these tags.
+//
+// NOT WIRED, AND THAT IS THE MEASURED OUTCOME: see the revert note at the filter below. Kept because the
+// finding lives here for the next worker — a name-only SVG filter removes 64 edges that are local
+// component usages (`filter`, `mask`), so the class is real (377) but the predicate is wrong.
+const VUE_SVG_MARKUP_TAGS = new Set([
+  "feFlood", "feColorMatrix", "feOffset", "feGaussianBlur", "feComposite", "feBlend", "feMerge",
+  "feMergeNode", "feTurbulence", "feDisplacementMap", "feDropShadow", "feImage", "feMorphology",
+  "feTile", "foreignObject", "linearGradient", "radialGradient", "clipPath", "mask", "pattern",
+  "marker", "symbol", "use", "textPath", "animate", "animateTransform", "filter", "stop",
+])
+
 const BUILTIN_NAMESPACES = new Set([
   "svg", "math", "mathml", "xlink", "html", "xhtml",
 ])
@@ -264,6 +281,13 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           !isBuiltinNamespace &&
           !HTML_BUILTIN_TAGS.has(tag) &&
           !VUE_BUILTIN_TAGS.has(tag) &&
+          // THE WIRED ARM WAS RUN AND REVERTED. Wiring `VUE_SVG_MARKUP_TAGS` here removed 441 edges where
+          // the class predicted 377, and the 64 difference is `filter` and `mask` — the two names in the
+          // set that ALSO exist as local `.vue` component stems. A name-only filter cannot tell `<mask>`
+          // (SVG markup) from `<Mask/>` (a local component), so it suppresses real component usages.
+          // THE REFINEMENT IS CONTEXT, NOT THE SET: filter a tag only inside an `<svg>` subtree, which
+          // needs the element's ancestor chain rather than its name. Evidence, both arms and the control:
+          // validation/m14/fixtures/vue/tools/vue-svg-falsifier.json.
           !seenUsages.has(tag)
         ) {
           seenUsages.add(tag)
